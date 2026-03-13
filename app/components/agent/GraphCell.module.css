@@ -1,0 +1,5 @@
+.graphCell {
+  flex-shrink: 0;
+  display: block;
+  vertical-align: middle;
+}

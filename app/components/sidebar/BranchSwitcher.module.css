@@ -1,0 +1,84 @@
+.wrapper {
+  position: relative;
+  margin-top: 2px;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+  width: 100%;
+}
+
+.trigger:hover:not(.disabled) {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
+.triggerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+
+.chevron {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.trigger:hover .chevron {
+  opacity: 1;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 2px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.branchItem {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.branchItem:hover {
+  background: var(--bg-hover);
+}
+
+.branchItemActive {
+  color: var(--accent);
+}

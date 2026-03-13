@@ -1,0 +1,269 @@
+.card {
+  padding: 5px 8px 5px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.card:hover {
+  background: var(--bg-hover);
+}
+
+.card.selected {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-tertiary));
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: 22px;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.titleRow svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.card.selected .titleRow svg {
+  color: var(--accent);
+}
+
+.projectName {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card.selected .projectName {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.diffStats {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+  font-size: 9px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.diffFileCount {
+  color: var(--text-muted);
+}
+
+.diffAdd {
+  color: var(--success);
+}
+
+.diffRemove {
+  color: var(--error);
+}
+
+.branchSubtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 16px;
+  line-height: 1.4;
+}
+
+.descriptionInline {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.agentDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.agent_running {
+  background: var(--success);
+  box-shadow: 0 0 4px var(--success);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.agent_error {
+  background: var(--error);
+}
+
+.agent_idle,
+.agent_stopped {
+  background: var(--text-muted);
+  opacity: 0.4;
+}
+
+.agentCount {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--success);
+  line-height: 1;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.statusBadge {
+  font-size: 9px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.ws_ready {
+  /* Hidden via JSX — only shown for non-ready states */
+}
+
+.ws_initializing {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
+}
+
+.ws_error {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  color: var(--error);
+}
+
+.branchRow {
+  padding-left: 16px;
+}
+
+.setupProgressWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 16px;
+}
+
+.progressBar {
+  height: 3px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.setupProgress {
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.8;
+}
+
+.menuAnchor {
+  position: relative;
+  align-self: flex-end;
+}
+
+.actionBtn {
+  font-size: var(--font-size-xs);
+  padding: 1px 5px;
+  border-radius: var(--border-radius-sm);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+  color: var(--text-muted);
+}
+
+.ellipsisBtn {
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.card:hover .ellipsisBtn {
+  opacity: 1;
+}
+
+.ellipsisBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.contextMenu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 100;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.contextMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  font-size: var(--font-size-xs);
+  color: var(--error);
+  border-radius: var(--border-radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.contextMenuItem:hover {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+}
+
+.contextMenuItem:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

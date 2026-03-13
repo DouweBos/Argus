@@ -1,0 +1,334 @@
+.container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+  background: var(--bg-primary);
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* --- Stash list (left panel) --- */
+
+.stashList {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+}
+
+.stashListHeader {
+  padding: 8px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stashCount {
+  font-weight: 400;
+}
+
+.stashItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition-fast);
+}
+
+.stashItem:hover {
+  background: var(--bg-hover);
+}
+
+.stashItemActive {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.stashItemActive:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.stashInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.stashMessage {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stashDate {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* --- Detail panel (right) --- */
+
+.detailPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.detailContent {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.detailHeader {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.detailHeaderRow {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.detailMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.metaRow {
+  display: flex;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+  align-items: baseline;
+}
+
+.metaLabel {
+  width: 90px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: right;
+}
+
+.metaValue {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.detailAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.detailMessage {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.detailActions {
+  display: flex;
+  gap: 6px;
+}
+
+.applyBtn {
+  padding: 4px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.applyBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.applyBtn:disabled {
+  opacity: 0.5;
+}
+
+.deleteBtn {
+  padding: 4px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error) 20%, transparent);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.5;
+}
+
+/* --- Files header (Expand All + stats) --- */
+
+.filesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.expandAllBtn {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.expandAllBtn:hover {
+  color: var(--text-primary);
+}
+
+.filesStats {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.statAdd {
+  color: var(--success);
+}
+
+.statDel {
+  color: var(--error);
+}
+
+/* --- File rows (collapsible) --- */
+
+.filesList {
+  flex-shrink: 0;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 16px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--border);
+}
+
+.fileRow:hover {
+  background: var(--bg-hover);
+}
+
+.fileRowExpanded {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.fileRowExpanded:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.fileChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.fileStatusLabel {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.fileBadge {
+  font-size: 10px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.badgeM {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.badgeA {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+
+.badgeD {
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 15%, transparent);
+}
+
+.badgeR {
+  color: var(--warning, var(--accent));
+  background: color-mix(in srgb, var(--warning, var(--accent)) 15%, transparent);
+}
+
+.filePath {
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Inline diff (expanded below file row) --- */
+
+.fileDiffInline {
+  border-bottom: 1px solid var(--border);
+}

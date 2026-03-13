@@ -1,0 +1,28 @@
+.toggles {
+  display: flex;
+  gap: 2px;
+  /* Positioned after macOS traffic lights (~54px) + padding */
+  margin-left: 78px;
+  -webkit-app-region: no-drag;
+}
+
+.toggle {
+  padding: 3px 4px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.toggle:hover {
+  background: var(--bg-hover);
+  opacity: 1;
+}
+
+.toggle.active {
+  color: var(--text-secondary);
+  opacity: 1;
+}

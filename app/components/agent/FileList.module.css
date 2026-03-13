@@ -1,0 +1,157 @@
+/* Column headers */
+.fileListColumns {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.colStatus {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition-fast);
+}
+
+.colStatus:hover {
+  color: var(--text-primary);
+}
+
+.colFilename {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--transition-fast);
+}
+
+.colFilename:hover {
+  color: var(--text-primary);
+}
+
+.sortIcon {
+  font-size: 8px;
+  margin-right: 4px;
+}
+
+/* File list items */
+.fileListScroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.fileListItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 3px 12px;
+  gap: 0;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-left: 2px solid transparent;
+}
+
+.fileListItem:hover {
+  background: var(--bg-hover);
+}
+
+.fileListItemActive {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--text-primary);
+  border-left-color: var(--accent);
+}
+
+.fileListItemActive:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.fileItemStatus {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stagedIconFull,
+.stagedIconPartial,
+.stagedIconNone {
+  flex-shrink: 0;
+  display: block;
+}
+
+.fileItemBadge {
+  font-size: 10px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.badgeM {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.badgeA {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+
+.badgeD {
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 15%, transparent);
+}
+
+.badgeR {
+  color: var(--warning, var(--accent));
+  background: color-mix(
+    in srgb,
+    var(--warning, var(--accent)) 15%,
+    transparent
+  );
+}
+
+.fileItemPath {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+  white-space: nowrap;
+  /* Truncate from the start by scrolling the text to the end */
+  direction: rtl;
+  text-align: left;
+}
+
+.fileItemPathInner {
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
+
+.fileItemDir {
+  color: var(--text-muted);
+}
+
+.fileItemName {
+  color: var(--text-primary);
+}

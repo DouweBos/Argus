@@ -1,0 +1,29 @@
+appId: com.stagehand.app
+productName: Stagehand
+directories:
+  buildResources: build
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - "!node_modules/**/*"
+  - node_modules/node-pty/**/*
+extraResources:
+  - from: native/stagehand-sim-bridge/stagehand-sim-bridge
+    to: stagehand-sim-bridge
+    filter:
+      - "**/*"
+mac:
+  identity: null
+  target:
+    - target: dir
+      arch:
+        - arm64
+  category: public.app-category.developer-tools
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  hardenedRuntime: true
+  gatekeeperAssess: false
+dmg:
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+asar: true

@@ -1,0 +1,28 @@
+.runBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--accent-fg);
+  background: var(--accent);
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    opacity var(--transition-fast);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.runBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.runBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

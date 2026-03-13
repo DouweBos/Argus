@@ -1,0 +1,38 @@
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background var(--transition-fast);
+  z-index: 10;
+}
+
+.divider:hover,
+.divider:active {
+  background: var(--accent);
+}
+
+.divider.right {
+  right: 0;
+}
+
+.divider.left {
+  left: 0;
+}

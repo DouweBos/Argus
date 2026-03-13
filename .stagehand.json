@@ -1,0 +1,20 @@
+{
+  "setup": {
+    "copy": [".claude", "node_modules"],
+    "symlink": [],
+    "commands": []
+  },
+  "terminals": [
+    {
+      "name": "Shell",
+      "dir": "."
+    }
+  ],
+  "workspace_env": {
+    "name": "STAGEHAND_PORT",
+    "base_value": 1420,
+    "range": 100,
+    "strategy": "sequential"
+  },
+  "run": "pnpm dev"
+}

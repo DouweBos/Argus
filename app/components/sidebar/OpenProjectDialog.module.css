@@ -1,0 +1,126 @@
+.body {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.browseBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.browseBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.recentsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recentsLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.recentsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.recentsItem {
+  display: flex;
+  align-items: center;
+  border-radius: var(--border-radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.recentsItem:hover {
+  background: var(--bg-hover);
+}
+
+.recentsBtn {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  color: var(--text-secondary);
+  text-align: left;
+  min-width: 0;
+}
+
+.recentsBtn:hover {
+  color: var(--text-primary);
+}
+
+.recentsBtn svg {
+  flex-shrink: 0;
+  color: var(--warning);
+}
+
+.recentsInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+}
+
+.recentsName {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentsPath {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentsRemove {
+  flex-shrink: 0;
+  padding: 4px;
+  margin-right: 6px;
+  color: var(--text-muted);
+  border-radius: 4px;
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.recentsItem:hover .recentsRemove {
+  opacity: 1;
+}
+
+.recentsRemove:hover {
+  color: var(--text-primary);
+}

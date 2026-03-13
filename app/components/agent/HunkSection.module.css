@@ -1,0 +1,152 @@
+/* --- Hunks --- */
+
+.hunk {
+  /* hunks flow naturally */
+}
+
+.hunkHeader {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  gap: 8px;
+  user-select: none;
+}
+
+.hunkHeaderText {
+  flex: 1;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hunkActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.hunkHeader:hover .hunkActions,
+.hunkActionsVisible {
+  opacity: 1;
+}
+
+.hunkBtn {
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.hunkBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+/* --- Diff lines --- */
+
+.line {
+  display: flex;
+  min-height: 20px;
+  line-height: 20px;
+}
+
+/* Gutter (line numbers) — wraps both old/new nums, handles click target */
+.lineGutter {
+  display: flex;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.lineGutterSelectable {
+  cursor: pointer;
+  border-radius: 1px;
+}
+
+.lineGutterSelectable:hover {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.lineGutterSelected {
+  background: var(--accent) !important;
+}
+
+.lineGutterSelected .lineNum {
+  color: var(--accent-fg) !important;
+  opacity: 1 !important;
+}
+
+.lineNum {
+  width: 44px;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 8px;
+  color: var(--text-muted);
+  opacity: 0.4;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.lineText {
+  flex: 1;
+  white-space: pre;
+  padding-right: 12px;
+  padding-left: 2px;
+}
+
+.lineAdd {
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+  color: var(--text-primary);
+}
+
+.lineAdd .lineNum {
+  opacity: 0.6;
+  color: var(--success);
+}
+
+.lineRemove {
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--text-primary);
+}
+
+.lineRemove .lineNum {
+  opacity: 0.6;
+  color: var(--error);
+}
+
+/* Selected lines — brighten existing add/remove color */
+.lineSelected.lineAdd {
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.lineSelected.lineRemove {
+  background: color-mix(in srgb, var(--error) 22%, transparent);
+}
+
+/* Staged lines — brighter background */
+.lineStaged.lineAdd {
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.lineStaged.lineRemove {
+  background: color-mix(in srgb, var(--error) 22%, transparent);
+}

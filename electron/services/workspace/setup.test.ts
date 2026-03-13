@@ -1,0 +1,160 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import fs from "node:fs";
+import { loadStagehandConfig } from "./setup";
+
+// Mock fs so we don't hit the real filesystem
+vi.mock("node:fs", () => {
+  const actual = vi.importActual("node:fs");
+  return {
+    ...actual,
+    default: {
+      ...(actual as typeof fs),
+      existsSync: vi.fn(),
+      readFileSync: vi.fn(),
+    },
+    existsSync: vi.fn(),
+    readFileSync: vi.fn(),
+  };
+});
+
+// Mock main.ts to avoid Electron imports
+vi.mock("../../main", () => ({
+  getMainWindow: () => null,
+}));
+
+const mockExistsSync = vi.mocked(fs.existsSync);
+const mockReadFileSync = vi.mocked(fs.readFileSync);
+
+describe("loadStagehandConfig", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns default config when no files exist", () => {
+    mockExistsSync.mockReturnValue(false);
+    const config = loadStagehandConfig("/repo");
+    expect(config.setup.copy).toEqual([]);
+    expect(config.setup.symlink).toEqual([]);
+    expect(config.setup.commands).toEqual([]);
+    expect(config.terminals).toEqual([]);
+    expect(config.workspace_env).toBeNull();
+    expect(config.run).toBeNull();
+  });
+
+  it("parses .stagehand.json with setup block", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".stagehand.json") &&
+        !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        setup: {
+          copy: ["node_modules"],
+          symlink: [".env"],
+          commands: ["pnpm install"],
+        },
+      }),
+    );
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.setup.copy).toEqual(["node_modules"]);
+    expect(config.setup.symlink).toEqual([".env"]);
+    expect(config.setup.commands).toEqual(["pnpm install"]);
+  });
+
+  it("handles run as a plain string", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".stagehand.json") &&
+        !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify({ run: "pnpm start" }));
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.run).toEqual({ command: "pnpm start" });
+  });
+
+  it("handles run as an object", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".stagehand.json") &&
+        !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({ run: { command: "npm start", dir: "packages/app" } }),
+    );
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.run).toEqual({ command: "npm start", dir: "packages/app" });
+  });
+
+  it("merges local config on top of base", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      if (String(p).includes("local")) {
+        return JSON.stringify({
+          setup: {
+            copy: ["Pods"],
+            symlink: [".env.local"],
+            commands: [],
+          },
+          terminals: [{ name: "Local", dir: "." }],
+        });
+      }
+      return JSON.stringify({
+        setup: {
+          copy: ["node_modules"],
+          symlink: [".env"],
+          commands: ["pnpm install"],
+        },
+        terminals: [{ name: "Shell", dir: "." }],
+      });
+    });
+
+    const config = loadStagehandConfig("/repo");
+    // copy should be deduped-concatenated
+    expect(config.setup.copy).toEqual(["node_modules", "Pods"]);
+    expect(config.setup.symlink).toEqual([".env", ".env.local"]);
+    // commands from base kept, local has empty
+    expect(config.setup.commands).toEqual(["pnpm install"]);
+    // terminals concatenated
+    expect(config.terminals).toHaveLength(2);
+  });
+
+  it("local workspace_env overrides base", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      if (String(p).includes("local")) {
+        return JSON.stringify({
+          setup: {},
+          workspace_env: {
+            name: "LOCAL_PORT",
+            base_value: 4000,
+            range: 50,
+            strategy: "sequential",
+          },
+        });
+      }
+      return JSON.stringify({
+        setup: {},
+        workspace_env: {
+          name: "PORT",
+          base_value: 3000,
+          range: 100,
+          strategy: "hash",
+        },
+      });
+    });
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.workspace_env?.name).toBe("LOCAL_PORT");
+  });
+
+  it("throws on invalid JSON", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".stagehand.json") &&
+        !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue("{invalid json");
+
+    expect(() => loadStagehandConfig("/repo")).toThrow();
+  });
+});

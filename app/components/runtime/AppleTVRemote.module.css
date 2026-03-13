@@ -1,0 +1,181 @@
+.remote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  width: 120px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Circular trackpad / click area */
+.clickpad {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.clickpad:hover {
+  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
+}
+
+/* Inner select ring indicator */
+.clickpad::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36%;
+  height: 36%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Directional zone highlights */
+.zone {
+  position: absolute;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  pointer-events: none;
+}
+
+.zone.active {
+  opacity: 1;
+}
+
+.zoneUp {
+  top: 0;
+  left: 25%;
+  width: 50%;
+  height: 32%;
+  background: radial-gradient(
+    ellipse at center bottom,
+    var(--bg-hover),
+    transparent
+  );
+}
+
+.zoneDown {
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 32%;
+  background: radial-gradient(
+    ellipse at center top,
+    var(--bg-hover),
+    transparent
+  );
+}
+
+.zoneLeft {
+  left: 0;
+  top: 25%;
+  width: 32%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse at right center,
+    var(--bg-hover),
+    transparent
+  );
+}
+
+.zoneRight {
+  right: 0;
+  top: 25%;
+  width: 32%;
+  height: 50%;
+  background: radial-gradient(
+    ellipse at left center,
+    var(--bg-hover),
+    transparent
+  );
+}
+
+.zoneSelect {
+  top: 32%;
+  left: 32%;
+  width: 36%;
+  height: 36%;
+  border-radius: 50%;
+  background: var(--bg-hover);
+}
+
+/* Direction arrows */
+.arrow {
+  position: absolute;
+  color: var(--text-muted);
+  font-size: 8px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.arrowUp {
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrowDown {
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrowLeft {
+  left: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.arrowRight {
+  right: 10%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Auxiliary buttons row */
+.buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.button {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+  line-height: 1;
+}
+
+.button:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
+}
+
+.button.active {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
