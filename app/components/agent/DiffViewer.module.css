@@ -1,0 +1,181 @@
+/* ============================================================
+   DiffViewer — Tower-style layout
+   Top: header bar | Below: file list (left) + diff (right)
+   ============================================================ */
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  background: var(--bg-primary);
+}
+
+.contentRow {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* --- Empty / loading states --- */
+
+.loadingFull {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorMsg {
+  padding: 16px;
+  font-size: var(--font-size-sm);
+  color: var(--error);
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ============================================================
+   Breadcrumb bar (inside file list panel)
+   ============================================================ */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: var(--font-size-xs);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.breadcrumbBranch {
+  color: var(--text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumbSep {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.breadcrumbTracking {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   File list container
+   ============================================================ */
+
+.fileList {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.conflictBanner {
+  padding: 4px 12px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--warning, #e5a100);
+  background: color-mix(in srgb, var(--warning, #e5a100) 10%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ============================================================
+   Bottom bar
+   ============================================================ */
+
+.bottomBar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.bottomBarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.bottomBarBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.bottomBarBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.bottomBarSpacer {
+  flex: 1;
+}
+
+/* ============================================================
+   Diff detail (right panel)
+   ============================================================ */
+
+.diffDetail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.diffScroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.diffScrollItem {
+  border-bottom: 2px solid var(--border);
+}

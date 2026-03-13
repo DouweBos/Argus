@@ -1,0 +1,115 @@
+.segment {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.segmentHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--border-radius-sm);
+  margin: 0 4px;
+  transition: background var(--transition-fast);
+}
+
+.segmentHeader:hover {
+  background: var(--bg-hover);
+}
+
+.collapseIcon {
+  width: 10px;
+  height: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.collapseIcon.collapsed {
+  transform: rotate(-90deg);
+}
+
+.projectName {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.segmentHeader:hover .projectName {
+  color: var(--text-primary);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.segmentHeader:hover .headerActions {
+  opacity: 1;
+}
+
+.headerBtn {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.headerBtn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.segmentBody {
+  padding: 2px 4px 4px;
+}
+
+.workspaceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.newWorkspaceBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  margin: 2px 0 0 8px;
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.newWorkspaceBtn:hover {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+.newWorkspaceBtn svg {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+}

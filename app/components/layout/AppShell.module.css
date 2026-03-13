@@ -1,0 +1,75 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+.center {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--bg-primary);
+}
+
+/* Peek trigger zone — thin strip on collapsed sidebar edge */
+.peekZone {
+  position: relative;
+  width: 6px;
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.peekZoneRight {
+  /* right side variant — class hook only */
+}
+
+/* Peek overlay — slides in on hover */
+.peekOverlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  background: var(--bg-secondary);
+  transition: transform 150ms ease;
+  overflow: hidden;
+}
+
+.peekOverlayLeft {
+  left: 0;
+  width: 18vw;
+  min-width: 220px;
+  max-width: 360px;
+  transform: translateX(-100%);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+}
+
+.peekOverlayLeft[data-visible="true"] {
+  transform: translateX(0);
+}
+
+.peekOverlayRight {
+  right: 0;
+  width: 35vw;
+  min-width: 320px;
+  max-width: 700px;
+  transform: translateX(100%);
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.3);
+}
+
+.peekOverlayRight[data-visible="true"] {
+  transform: translateX(0);
+}

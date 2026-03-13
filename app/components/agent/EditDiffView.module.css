@@ -1,0 +1,62 @@
+.diff {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-primary);
+  overflow-x: auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.line {
+  display: flex;
+  min-height: 18px;
+  padding: 0 8px 0 0;
+}
+
+.lineAdd {
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+}
+
+.lineRemove {
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.lineNo {
+  flex-shrink: 0;
+  width: 36px;
+  padding: 0 6px;
+  text-align: right;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.linePrefix {
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  user-select: none;
+}
+
+.lineAdd .linePrefix {
+  color: #22c55e;
+}
+
+.lineRemove .linePrefix {
+  color: #ef4444;
+}
+
+.lineContent {
+  white-space: pre;
+  color: var(--text-secondary);
+}
+
+.lineAdd .lineContent {
+  color: var(--text-primary);
+}
+
+.lineRemove .lineContent {
+  color: var(--text-primary);
+}

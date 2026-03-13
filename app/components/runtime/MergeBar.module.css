@@ -1,0 +1,73 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+
+.barReady {
+  background: color-mix(in srgb, var(--success) 12%, var(--bg-secondary));
+  border-top-color: color-mix(in srgb, var(--success) 25%, var(--border));
+}
+
+.barConflict {
+  background: color-mix(in srgb, var(--warning) 10%, var(--bg-secondary));
+  border-top-color: color-mix(in srgb, var(--warning) 20%, var(--border));
+}
+
+.barNoStaged {
+  background: var(--bg-secondary);
+}
+
+.statusText {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.statusTextReady {
+  color: var(--success);
+}
+
+.statusTextConflict {
+  color: var(--warning);
+}
+
+.statusTextNoStaged {
+  color: var(--text-muted);
+}
+
+/* Merge CTA button */
+.mergeBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--success);
+  color: var(--accent-fg);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.mergeBtn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 40%, transparent);
+}
+
+.mergeBtn:disabled {
+  opacity: 0.35;
+}
+
+.error {
+  font-size: var(--font-size-xs);
+  color: var(--error);
+  padding: 2px 12px 4px;
+}

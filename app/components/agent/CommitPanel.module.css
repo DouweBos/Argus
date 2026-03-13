@@ -1,0 +1,177 @@
+/* --- Commit panel --- */
+
+.commitPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.commitSubject {
+  padding: 6px 8px;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.commitSubject:focus {
+  border-color: var(--accent);
+}
+
+.commitSubject::placeholder {
+  color: var(--text-muted);
+}
+
+/* --- Expanded: body textarea --- */
+
+.commitBody {
+  padding: 6px 8px;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  resize: vertical;
+  min-height: 48px;
+  transition: border-color var(--transition-fast);
+}
+
+.commitBody:focus {
+  border-color: var(--accent);
+}
+
+.commitBody::placeholder {
+  color: var(--text-muted);
+}
+
+/* --- Hints --- */
+
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+
+/* --- Options row: checkboxes + author --- */
+
+.optionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkbox {
+  accent-color: var(--accent);
+}
+
+.authorArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.authorInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.authorName {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.authorEmail {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.authorAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* --- Error --- */
+
+.commitError {
+  font-size: var(--font-size-xs);
+  color: var(--error);
+  padding: 2px 0;
+}
+
+/* --- Actions row --- */
+
+.commitActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stageAllBtn {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.stageAllBtn:hover {
+  background: var(--bg-hover);
+}
+
+.commitBtn {
+  padding: 4px 14px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.commitBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.commitBtn:disabled {
+  opacity: 0.35;
+}

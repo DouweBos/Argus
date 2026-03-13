@@ -1,0 +1,59 @@
+/**
+ * Data types for the Claude Code agent lifecycle.
+ */
+
+import type { ChildProcess } from "node:child_process";
+import type { Writable } from "node:stream";
+
+import type { PermissionBroker } from "./permissions";
+
+// ---------------------------------------------------------------------------
+// AgentStatus
+// ---------------------------------------------------------------------------
+
+/**
+ * Lifecycle state of a Claude Code agent process.
+ *
+ * Mirrors the Rust `AgentStatus` enum (serialised as snake_case strings).
+ */
+export type AgentStatusValue = "running" | "stopped" | "idle" | "error";
+
+// ---------------------------------------------------------------------------
+// AgentSession
+// ---------------------------------------------------------------------------
+
+/**
+ * A live session wrapping a `claude --output-format stream-json` subprocess.
+ *
+ * `stdin` is kept as a plain `Writable` reference. Because Node.js IPC
+ * handlers are single-threaded there is no need for a Mutex wrapper.
+ */
+export interface AgentSession {
+  /** Unique identifier for this agent instance. */
+  agentId: string;
+  /** Workspace this agent is attached to. */
+  workspaceId: string;
+  /** Write end of the child's stdin pipe. */
+  stdin: Writable;
+  /** The child process; used for `kill()` on stop. */
+  child: ChildProcess;
+  /** Current status, updated when the process exits. */
+  status: AgentStatusValue;
+  /** File-based IPC broker for interactive permission prompts. */
+  permissionBroker: PermissionBroker | null;
+}
+
+// ---------------------------------------------------------------------------
+// AgentInfo
+// ---------------------------------------------------------------------------
+
+/**
+ * Serialisable agent info returned to the frontend via IPC.
+ *
+ * Uses snake_case field names to match the frontend types.
+ */
+export interface AgentInfo {
+  agent_id: string;
+  workspace_id: string;
+  status: AgentStatusValue;
+}

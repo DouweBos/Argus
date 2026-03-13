@@ -1,0 +1,193 @@
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  margin-bottom: 4px;
+  background: var(--bg-primary);
+}
+
+.card:last-child {
+  margin-bottom: 0;
+}
+
+.cardError {
+  border-color: var(--error);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  text-align: left;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.header:hover {
+  background: var(--bg-hover);
+}
+
+.chevron {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 10px;
+}
+
+.name {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.summary {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.doneTag {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--success) 20%, transparent);
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+.errorTag {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--error-bg);
+  color: var(--error);
+  flex-shrink: 0;
+}
+
+.body {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sectionLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-secondary);
+  max-height: 200px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+.bash {
+  color: var(--text-primary);
+}
+
+.result {
+  color: var(--text-secondary);
+}
+
+.resultError {
+  color: var(--error);
+  background: var(--error-bg);
+  border-color: var(--error);
+}
+
+.cardPending {
+  border-color: var(--warning);
+}
+
+.pendingTag {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--warning) 20%, transparent);
+  color: var(--warning);
+  flex-shrink: 0;
+}
+
+.runningTag {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.permissionActions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.allowBtn,
+.allowAllBtn,
+.denyBtn {
+  padding: 4px 14px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.allowBtn {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.allowBtn:hover {
+  background: var(--accent-hover);
+}
+
+.allowAllBtn {
+  background: var(--bg-hover);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.allowAllBtn:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.denyBtn {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.denyBtn:hover {
+  background: var(--error);
+  color: var(--error-fg);
+}

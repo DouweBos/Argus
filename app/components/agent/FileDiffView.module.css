@@ -1,0 +1,154 @@
+.fileDiffContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.fileDiffInline {
+  flex: none;
+  overflow: visible;
+}
+
+.fileDiffInline .fileDiffContent {
+  overflow: visible;
+}
+
+/* --- File header bar --- */
+
+.fileDiffHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.fileIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.fileDiffName {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.fileDiffActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Discard button in file header */
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.actionBtnDanger:hover {
+  background: color-mix(in srgb, var(--error) 20%, transparent);
+  color: var(--error);
+}
+
+/* Staged / Unstaged toggle */
+.stagedToggle {
+  display: flex;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.stagedBtn,
+.unstagedBtn {
+  padding: 3px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+  cursor: pointer;
+}
+
+.stagedBtn:hover,
+.unstagedBtn:hover {
+  color: var(--text-primary);
+}
+
+.stagedBtnActive,
+.unstagedBtnActive {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.stagedBtnActive:hover,
+.unstagedBtnActive:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+/* --- Stats subheader --- */
+
+.fileDiffStats {
+  padding: 4px 12px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* --- Diff content --- */
+
+.fileDiffContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-height: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+/* --- Bottom status bar --- */
+
+.fileDiffFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.footerStats {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.statAdd {
+  color: var(--success);
+}
+
+.statRemove {
+  color: var(--error);
+}
