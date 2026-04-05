@@ -2,7 +2,9 @@
   padding: 5px 8px 5px 12px;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition:
+    background var(--transition-base),
+    box-shadow var(--transition-base);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -10,11 +12,12 @@
 }
 
 .card:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .card.selected {
-  background: color-mix(in srgb, var(--accent) 8%, var(--bg-tertiary));
+  background: rgba(0, 212, 170, 0.08);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .main {
@@ -71,6 +74,7 @@
   font-size: 9px;
   font-weight: 500;
   flex-shrink: 0;
+  font-family: var(--font-mono);
 }
 
 .diffFileCount {
@@ -97,7 +101,7 @@
 
 .descriptionInline {
   color: var(--text-muted);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .right {
@@ -116,7 +120,7 @@
 
 .agent_running {
   background: var(--success);
-  box-shadow: 0 0 4px var(--success);
+  box-shadow: 0 0 6px var(--accent-glow);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -127,7 +131,7 @@
 .agent_idle,
 .agent_stopped {
   background: var(--text-muted);
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .agentCount {
@@ -135,6 +139,7 @@
   font-weight: 600;
   color: var(--success);
   line-height: 1;
+  font-family: var(--font-mono);
 }
 
 @keyframes pulse {
@@ -143,14 +148,14 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0.4;
   }
 }
 
 .statusBadge {
   font-size: 9px;
-  padding: 0 4px;
-  border-radius: 8px;
+  padding: 1px 6px;
+  border-radius: var(--border-radius-pill);
   font-weight: 500;
   line-height: 16px;
 }
@@ -160,12 +165,12 @@
 }
 
 .ws_initializing {
-  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  background: rgba(245, 166, 35, 0.1);
   color: var(--warning);
 }
 
 .ws_error {
-  background: color-mix(in srgb, var(--error) 12%, transparent);
+  background: var(--error-bg);
   color: var(--error);
 }
 
@@ -181,17 +186,17 @@
 }
 
 .progressBar {
-  height: 3px;
-  background: var(--bg-tertiary);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progressBarFill {
   height: 100%;
-  background: var(--accent);
+  background: var(--accent-gradient);
   border-radius: 2px;
-  transition: width 0.2s ease;
+  transition: width 0.3s ease;
 }
 
 .setupProgress {
@@ -200,7 +205,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
 .menuAnchor {
@@ -213,16 +218,16 @@
   padding: 1px 5px;
   border-radius: var(--border-radius-sm);
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-base),
+    color var(--transition-base);
   color: var(--text-muted);
 }
 
 .ellipsisBtn {
   opacity: 0;
   transition:
-    opacity var(--transition-fast),
-    background var(--transition-fast);
+    opacity var(--transition-base),
+    background var(--transition-base);
 }
 
 .card:hover .ellipsisBtn {
@@ -230,7 +235,7 @@
 }
 
 .ellipsisBtn:hover {
-  background: var(--bg-hover);
+  background: var(--glass-bg-hover);
   color: var(--text-secondary);
 }
 
@@ -241,10 +246,11 @@
   z-index: 100;
   min-width: 160px;
   padding: 4px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .contextMenuItem {
@@ -252,15 +258,15 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 5px 8px;
+  padding: 6px 8px;
   font-size: var(--font-size-xs);
   color: var(--error);
   border-radius: var(--border-radius-sm);
-  transition: background var(--transition-fast);
+  transition: background var(--transition-base);
 }
 
 .contextMenuItem:hover {
-  background: color-mix(in srgb, var(--error) 12%, transparent);
+  background: var(--error-bg);
 }
 
 .contextMenuItem:disabled {

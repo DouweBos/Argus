@@ -17,11 +17,11 @@
 }
 
 .lineAdd {
-  background: color-mix(in srgb, #22c55e 12%, transparent);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
 }
 
 .lineRemove {
-  background: color-mix(in srgb, #ef4444 12%, transparent);
+  background: color-mix(in srgb, var(--error) 12%, transparent);
 }
 
 .lineNo {
@@ -41,11 +41,11 @@
 }
 
 .lineAdd .linePrefix {
-  color: #22c55e;
+  color: var(--success);
 }
 
 .lineRemove .linePrefix {
-  color: #ef4444;
+  color: var(--error);
 }
 
 .lineContent {

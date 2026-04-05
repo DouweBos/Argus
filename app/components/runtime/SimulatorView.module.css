@@ -10,16 +10,16 @@
 .phoneFrame {
   width: 110px;
   height: 200px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--glass-border);
   border-radius: 22px;
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.03);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--border) 50%, transparent),
-    0 4px 16px rgba(0, 0, 0, 0.4);
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* Dynamic island / notch pill */
@@ -28,7 +28,7 @@
   display: block;
   width: 36px;
   height: 4px;
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   margin: 9px auto 0;
   flex-shrink: 0;
@@ -66,7 +66,7 @@
   min-height: 0;
   user-select: none;
   -webkit-user-select: none;
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 .canvas {
@@ -87,7 +87,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  background: rgba(17, 17, 24, 0.85);
 }
 
 .connecting p {
@@ -111,8 +111,8 @@
   gap: 6px;
   padding: 5px 8px;
   flex-shrink: 0;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .titleBarLabel {
@@ -177,7 +177,7 @@
 }
 
 .titleBarButton:hover {
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
 }
 
@@ -227,9 +227,9 @@
 .tvScreen {
   width: 160px;
   height: 100px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid var(--glass-border);
   border-radius: 6px;
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.03);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +239,7 @@
 .tvStand {
   width: 60px;
   height: 6px;
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 0 0 3px 3px;
   margin-top: -1px;
 }

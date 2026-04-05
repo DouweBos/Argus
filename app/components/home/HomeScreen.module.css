@@ -6,58 +6,78 @@
   justify-content: flex-start;
   background: var(--bg-primary);
   overflow-y: auto;
+  position: relative;
+}
+
+/* Subtle radial glow behind the content */
+.screen::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(0, 212, 170, 0.06) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .content {
   width: 100%;
   max-width: 640px;
-  padding: 44px 24px 32px;
+  padding: 56px 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 36px;
+  position: relative;
+  z-index: 1;
 }
 
 .header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
 }
 
 .logo {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 20px rgba(0, 212, 170, 0.3));
 }
 
 .title {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
 .subtitle {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-md);
   color: var(--text-muted);
   text-align: center;
+  line-height: 1.5;
 }
 
-/* Inline status banners */
+/* Inline status banners — glass style */
 .warningBanner {
-  padding: 10px 14px;
-  background: color-mix(in srgb, var(--warning) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+  padding: 12px 16px;
+  background: rgba(245, 166, 35, 0.08);
+  border: 1px solid rgba(245, 166, 35, 0.2);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   color: var(--warning);
+  backdrop-filter: blur(8px);
 }
 
 .errorBanner {
-  padding: 10px 14px;
-  background: color-mix(in srgb, var(--error) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
+  padding: 12px 16px;
+  background: var(--error-bg);
+  border: 1px solid rgba(255, 68, 102, 0.2);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-sm);
   color: var(--error);
+  backdrop-filter: blur(8px);
 }
 
 .actions {
@@ -65,35 +85,37 @@
   justify-content: center;
 }
 
-/* Dashed "add" CTA */
+/* Gradient CTA button — the star of the show */
 .addBtn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: transparent;
-  border: 1px dashed var(--border);
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--glass-bg);
+  border: 1px dashed var(--glass-border);
   border-radius: var(--border-radius);
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .addBtn:hover {
-  background: var(--bg-hover);
+  background: var(--glass-bg-hover);
   border-color: var(--accent);
   color: var(--text-primary);
+  box-shadow: 0 0 24px var(--accent-glow);
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .sectionTitle {
@@ -101,33 +123,37 @@
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
-/* Project cards */
+/* Project cards — glassmorphic panels */
 .card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  gap: 10px;
+  padding: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   cursor: pointer;
   transition:
-    border-color var(--transition-fast),
-    background var(--transition-fast);
+    border-color var(--transition-base),
+    background var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
 }
 
 .card:hover {
-  background: var(--bg-tertiary);
-  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
+  background: var(--glass-bg-hover);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
 }
 
 .cardIcon {
@@ -137,22 +163,24 @@
 .cardBody {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
 .cardName {
-  font-size: var(--font-size-sm);
-  font-weight: 500;
+  font-size: var(--font-size-md);
+  font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .cardPath {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -162,31 +190,32 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
-/* Primary open button — accent fill */
+/* Primary open button — gradient pill */
 .openBtn {
-  padding: 4px 12px;
+  padding: 6px 16px;
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--accent-fg);
-  background: var(--accent);
+  background: var(--accent-gradient);
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: var(--border-radius-pill);
   cursor: pointer;
+  letter-spacing: 0.02em;
   transition:
-    background var(--transition-fast),
-    box-shadow var(--transition-fast);
+    opacity var(--transition-fast),
+    box-shadow var(--transition-base);
 }
 
 .openBtn:hover:not(:disabled) {
-  background: var(--accent-hover);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  opacity: 0.9;
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 
 .openBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -201,7 +230,8 @@
   opacity: 0;
   transition:
     opacity var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    background var(--transition-fast);
 }
 
 .card:hover .removeBtn {
@@ -210,6 +240,7 @@
 
 .removeBtn:hover {
   color: var(--error);
+  background: var(--error-bg);
 }
 
 /* Empty state */
@@ -217,8 +248,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 32px 16px;
+  gap: 6px;
+  padding: 40px 16px;
 }
 
 .emptyText {
@@ -229,5 +260,5 @@
 .emptyHint {
   font-size: var(--font-size-xs);
   color: var(--text-muted);
-  opacity: 0.7;
+  opacity: 0.6;
 }

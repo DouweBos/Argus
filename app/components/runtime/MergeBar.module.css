@@ -4,21 +4,21 @@
   justify-content: space-between;
   padding: 6px 12px;
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--glass-border);
 }
 
 .barReady {
-  background: color-mix(in srgb, var(--success) 12%, var(--bg-secondary));
-  border-top-color: color-mix(in srgb, var(--success) 25%, var(--border));
+  background: rgba(0, 212, 170, 0.08);
+  border-top-color: rgba(0, 212, 170, 0.2);
 }
 
 .barConflict {
-  background: color-mix(in srgb, var(--warning) 10%, var(--bg-secondary));
-  border-top-color: color-mix(in srgb, var(--warning) 20%, var(--border));
+  background: rgba(245, 166, 35, 0.06);
+  border-top-color: rgba(245, 166, 35, 0.15);
 }
 
 .barNoStaged {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 .statusText {
