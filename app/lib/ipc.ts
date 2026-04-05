@@ -314,6 +314,12 @@ export const readStagehandConfig = (
   repoRoot: string,
 ): Promise<StagehandConfig> => invoke("read_stagehand_config", { repoRoot });
 
+// Command metrics (per-project slash command popularity)
+export const getCommandMetrics = (
+  repoRoot: string,
+): Promise<Record<string, number>> =>
+  invoke("get_command_metrics", { repoRoot });
+
 // Terminal commands
 export const createTerminal = (
   workspaceId: string,

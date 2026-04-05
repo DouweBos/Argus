@@ -5,16 +5,16 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .commitSubject {
-  padding: 6px 8px;
+  padding: 8px 10px;
   font-size: var(--font-size-sm);
   font-family: var(--font-ui);
   color: var(--text-primary);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   outline: none;
   transition: border-color var(--transition-fast);
@@ -31,12 +31,12 @@
 /* --- Expanded: body textarea --- */
 
 .commitBody {
-  padding: 6px 8px;
+  padding: 8px 10px;
   font-size: var(--font-size-xs);
   font-family: var(--font-ui);
   color: var(--text-primary);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   outline: none;
   resize: vertical;
@@ -139,12 +139,12 @@
 }
 
 .stageAllBtn {
-  padding: 4px 10px;
+  padding: 4px 12px;
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--text-primary);
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--border-radius-pill);
   transition:
     background var(--transition-fast),
     color var(--transition-fast);
@@ -152,24 +152,24 @@
 }
 
 .stageAllBtn:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .commitBtn {
-  padding: 4px 14px;
+  padding: 4px 16px;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-sm);
+  color: var(--accent-fg);
+  background: var(--accent-gradient);
+  border-radius: var(--border-radius-pill);
   transition: background var(--transition-fast);
   white-space: nowrap;
   margin-left: auto;
 }
 
 .commitBtn:hover:not(:disabled) {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+  opacity: 0.9;
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .commitBtn:disabled {

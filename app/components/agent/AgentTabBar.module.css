@@ -15,25 +15,25 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   cursor: pointer;
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-base),
+    color var(--transition-base);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .tab:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
 }
 
 .tab.active {
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   font-weight: 500;
 }
@@ -47,12 +47,13 @@
 
 .dot_running {
   background: var(--success);
-  box-shadow: 0 0 4px var(--success);
+  box-shadow: 0 0 6px var(--accent-glow);
   animation: pulse 2s ease-in-out infinite;
 }
 
 .dot_stopped {
   background: var(--text-muted);
+  opacity: 0.5;
 }
 
 .dot_idle {
@@ -65,7 +66,7 @@
 
 .dot_pending {
   background: var(--warning);
-  box-shadow: 0 0 4px var(--warning);
+  box-shadow: 0 0 6px rgba(245, 166, 35, 0.4);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -75,7 +76,7 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.3;
   }
 }
 
@@ -89,12 +90,12 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-sm);
   color: var(--text-muted);
   opacity: 0;
   transition:
-    opacity var(--transition-fast),
-    background var(--transition-fast);
+    opacity var(--transition-base),
+    background var(--transition-base);
 }
 
 .tab:hover .closeBtn {
@@ -102,6 +103,6 @@
 }
 
 .closeBtn:hover {
-  background: color-mix(in srgb, var(--error) 20%, transparent);
+  background: var(--error-bg);
   color: var(--error);
 }

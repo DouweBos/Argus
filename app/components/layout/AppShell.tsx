@@ -5,7 +5,8 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { WorkspaceSidebar } from "../sidebar/WorkspaceSidebar";
 import { AgentPanel } from "../agent/AgentPanel";
 import { HomeScreen } from "../home/HomeScreen";
-import { RuntimeSidebar } from "../runtime/RuntimeSidebar";
+import { ToolPanel } from "../toolrail/ToolPanel";
+import { ToolRail } from "../toolrail/ToolRail";
 import { useWorkspaceStore } from "../../stores/workspaceStore";
 import { useLayoutStore } from "../../stores/layoutStore";
 import { useWindowFocus } from "../../hooks/useWindowFocus";
@@ -17,16 +18,12 @@ const PEEK_LEAVE_DELAY_MS = 1000;
 export function AppShell() {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
   const leftVisible = useLayoutStore((s) => s.leftSidebarVisible);
-  const rightVisible = useLayoutStore((s) => s.rightSidebarVisible);
   const setLeftWidth = useLayoutStore((s) => s.setLeftPanelWidth);
-  const setRightWidth = useLayoutStore((s) => s.setRightPanelWidth);
   useWindowFocus();
 
-  // Peek overlay state
+  // Left peek overlay state
   const [leftPeeking, setLeftPeeking] = useState(false);
-  const [rightPeeking, setRightPeeking] = useState(false);
   const leftTimerRef = useRef<null | ReturnType<typeof setTimeout>>(null);
-  const rightTimerRef = useRef<null | ReturnType<typeof setTimeout>>(null);
 
   const handleLeftPeekEnter = useCallback(() => {
     if (leftTimerRef.current) clearTimeout(leftTimerRef.current);
@@ -40,22 +37,6 @@ export function AppShell() {
     if (leftTimerRef.current) clearTimeout(leftTimerRef.current);
     leftTimerRef.current = setTimeout(
       () => setLeftPeeking(false),
-      PEEK_LEAVE_DELAY_MS,
-    );
-  }, []);
-
-  const handleRightPeekEnter = useCallback(() => {
-    if (rightTimerRef.current) clearTimeout(rightTimerRef.current);
-    rightTimerRef.current = setTimeout(
-      () => setRightPeeking(true),
-      PEEK_ENTER_DELAY_MS,
-    );
-  }, []);
-
-  const handleRightPeekLeave = useCallback(() => {
-    if (rightTimerRef.current) clearTimeout(rightTimerRef.current);
-    rightTimerRef.current = setTimeout(
-      () => setRightPeeking(false),
       PEEK_LEAVE_DELAY_MS,
     );
   }, []);
@@ -99,30 +80,8 @@ export function AppShell() {
           </ErrorBoundary>
         </main>
 
-        {rightVisible ? (
-          <ResizablePanel
-            defaultWidth={0.35}
-            minWidth={0.15}
-            maxWidth={0.6}
-            side="right"
-            onResize={setRightWidth}
-          >
-            <RuntimeSidebar workspaceId={selectedId} />
-          </ResizablePanel>
-        ) : (
-          <div
-            className={`${styles.peekZone} ${styles.peekZoneRight}`}
-            onMouseEnter={handleRightPeekEnter}
-            onMouseLeave={handleRightPeekLeave}
-          >
-            <div
-              className={`${styles.peekOverlay} ${styles.peekOverlayRight}`}
-              data-visible={rightPeeking}
-            >
-              {rightPeeking && <RuntimeSidebar workspaceId={selectedId} />}
-            </div>
-          </div>
-        )}
+        <ToolPanel workspaceId={selectedId} />
+        <ToolRail hasWorkspace={selectedId !== null} />
       </div>
     </div>
   );

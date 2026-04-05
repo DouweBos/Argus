@@ -20,7 +20,7 @@
 
 .trigger:hover:not(.disabled) {
   color: var(--text-secondary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .disabled {
@@ -52,10 +52,12 @@
   left: 0;
   right: 0;
   margin-top: 2px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(17, 17, 24, 0.92);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   max-height: 200px;
   overflow-y: auto;
   z-index: 100;
@@ -76,7 +78,7 @@
 }
 
 .branchItem:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .branchItemActive {

@@ -2,13 +2,13 @@
 .fileListColumns {
   display: flex;
   align-items: center;
-  padding: 4px 12px;
+  padding: 5px 14px;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   user-select: none;
 }
 
@@ -57,29 +57,29 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 3px 12px;
+  padding: 4px 14px;
   gap: 0;
   font-size: var(--font-size-xs);
   font-family: var(--font-mono);
   color: var(--text-secondary);
   text-align: left;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-base);
   border-left: 2px solid transparent;
 }
 
 .fileListItem:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .fileListItemActive {
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  background: rgba(77, 159, 255, 0.08);
   color: var(--text-primary);
   border-left-color: var(--accent);
 }
 
 .fileListItemActive:hover {
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  background: rgba(77, 159, 255, 0.1);
 }
 
 .fileItemStatus {

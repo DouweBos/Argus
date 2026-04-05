@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgentStore } from "../stores/agentStore";
 import { useConversationStore } from "../stores/conversationStore";
 import { useIpcEvent } from "./useIpcEvent";
-import { useWorkspaceStore } from "../stores/workspaceStore";
 import {
   startAgent as apiStartAgent,
   stopAgent as apiStopAgent,
@@ -99,30 +98,9 @@ export function useWorkspaceAgents(
           status: "running",
           permission_mode: permissionMode,
         });
-        // Send a bootstrap message to kick the CLI into emitting init events
-        // (model, tools, slash commands). Without this the CLI waits for the
-        // first stdin message before emitting anything. The response is
-        // suppressed via the bootstrapping flag in the conversation store.
-        if (!resumeSessionId) {
-          const ws = useWorkspaceStore
-            .getState()
-            .workspaces.find((w) => w.id === workspaceId);
-          const repoName = ws
-            ? (ws.repo_root.split("/").pop() ?? "unknown")
-            : "unknown";
-          const branch = ws?.branch ?? "unknown";
-          const bootstrap = [
-            `Repository: ${repoName}. Branch: ${branch}.`,
-            ws?.path ? `Working directory: ${ws.path}` : "",
-            'Respond with exactly "ready" and nothing else.',
-          ]
-            .filter(Boolean)
-            .join(" ");
-          useConversationStore
-            .getState()
-            .setBootstrapping(agentInfo.agent_id, true);
-          apiSendAgentMessage(agentInfo.agent_id, bootstrap).catch(() => {});
-        }
+        // Capabilities (commands, models, agents) are now discovered via the
+        // initialize control_request sent by the backend on spawn. No
+        // bootstrap user prompt needed.
       } finally {
         setIsStarting(false);
       }

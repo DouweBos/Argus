@@ -3,25 +3,25 @@
   bottom: calc(100% + 6px);
   left: 0;
   width: clamp(200px, 52%, 340px);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background: rgba(17, 17, 24, 0.92);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
-  box-shadow:
-    0 -2px 8px rgba(0, 0, 0, 0.5),
-    0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
   z-index: 10;
 }
 
 .header {
-  padding: 5px 10px 4px;
+  padding: 6px 12px 5px;
   font-size: var(--font-size-xs);
   font-family: var(--font-sans, system-ui, sans-serif);
   color: var(--text-muted);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
   user-select: none;
 }
 
@@ -29,24 +29,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 10px 5px 12px;
+  padding: 6px 12px 6px 14px;
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   text-align: left;
   width: 100%;
   cursor: pointer;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-base);
   border-left: 2px solid transparent;
   line-height: 1.4;
 }
 
 .option:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
 }
 
 .optionActive {
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary));
+  background: rgba(77, 159, 255, 0.06);
   border-left-color: var(--accent);
   color: var(--text-primary);
 }

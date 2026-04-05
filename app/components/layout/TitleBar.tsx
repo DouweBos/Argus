@@ -15,9 +15,9 @@ export function TitleBar() {
   const updateWorkspace = useWorkspaceStore((s) => s.updateWorkspace);
 
   const leftVisible = useLayoutStore((s) => s.leftSidebarVisible);
-  const rightVisible = useLayoutStore((s) => s.rightSidebarVisible);
   const leftWidth = useLayoutStore((s) => s.leftPanelWidth);
-  const rightWidth = useLayoutStore((s) => s.rightPanelWidth);
+  const activeToolId = useLayoutStore((s) => s.activeToolId);
+  const toolPanelWidth = useLayoutStore((s) => s.toolPanelWidth);
 
   const [showLogs, setShowLogs] = useState(false);
 
@@ -129,10 +129,14 @@ export function TitleBar() {
         )}
       </div>
 
-      {/* Right section — matches right panel width */}
+      {/* Right section — matches tool rail + optional tool panel width */}
       <div
         className={styles.rightSection}
-        style={rightVisible ? { width: `${rightWidth * 100}%` } : undefined}
+        style={{
+          width: activeToolId
+            ? `calc(48px + ${toolPanelWidth * 100}%)`
+            : "48px",
+        }}
       >
         <div className={styles.rightActions}>
           <button

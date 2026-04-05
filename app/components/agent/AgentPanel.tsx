@@ -4,12 +4,12 @@ import { useWorkspaceStore } from "../../stores/workspaceStore";
 import { isWorkspaceReady } from "../../lib/types";
 import { AgentChat } from "./AgentChat";
 import { AgentTabBar } from "./AgentTabBar";
-import { ChangesView } from "./ChangesView";
+import { MergeBar } from "../runtime/MergeBar";
 import { EditorPanel } from "../editor/EditorPanel";
 import { StagehandLogo, AgentStartIcon, PlusIcon } from "../shared/Icons";
 import styles from "./AgentPanel.module.css";
 
-type ActiveView = "agents" | "changes" | "editor";
+type ActiveView = "agents" | "editor";
 
 interface AgentPanelProps {
   workspaceId: null | string;
@@ -58,12 +58,6 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
       <div className={styles.navRow}>
         <div className={styles.viewSwitcher}>
           <button
-            className={`${styles.viewTab} ${activeView === "changes" ? styles.viewTabActive : ""}`}
-            onClick={() => setActiveView("changes")}
-          >
-            Changes
-          </button>
-          <button
             className={`${styles.viewTab} ${activeView === "agents" ? styles.viewTabActive : ""}`}
             onClick={() => setActiveView("agents")}
           >
@@ -80,15 +74,6 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
 
       {/* Content area */}
       {activeView === "editor" && <EditorPanel workspaceId={workspaceId} />}
-
-      {activeView === "changes" && (
-        <ChangesView
-          workspaceId={workspaceId}
-          baseBranch={workspace.base_branch}
-          branchName={workspace.branch}
-          repoRoot={workspace.repo_root}
-        />
-      )}
 
       {activeView === "agents" && (
         <>
@@ -164,6 +149,9 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
           )}
         </>
       )}
+
+      {/* Merge bar at bottom, always visible for worktree workspaces */}
+      <MergeBar workspaceId={workspaceId} />
     </div>
   );
 }
