@@ -26,7 +26,6 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
     activeAgent,
     startNew,
     stopAgent,
-    restartAgent,
     setActive,
     hasAgents,
     isStarting,
@@ -135,16 +134,6 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
               agentId={activeAgent.agent_id}
               workspaceId={workspaceId}
               permissionMode={activeAgent.permission_mode}
-              onRestartWithModel={async (model) => {
-                await restartAgent(activeAgent.agent_id, { model });
-              }}
-              onTogglePlanMode={async () => {
-                const currentMode = activeAgent.permission_mode;
-                const newMode = currentMode === "plan" ? undefined : "plan";
-                await restartAgent(activeAgent.agent_id, {
-                  permissionMode: newMode,
-                });
-              }}
             />
           )}
         </>

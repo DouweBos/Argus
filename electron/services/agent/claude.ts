@@ -390,6 +390,73 @@ export function sendAgentMessage(
 }
 
 // ---------------------------------------------------------------------------
+// set_agent_model
+// ---------------------------------------------------------------------------
+
+/**
+ * Change the model for an active agent session via the control protocol.
+ *
+ * Sends a `set_model` control request to the CLI and awaits the response.
+ * The model change takes effect on the next conversation turn without
+ * restarting the process.
+ *
+ * @throws string if no agent is found or the CLI rejects the request.
+ */
+export async function setAgentModel(
+  agentId: string,
+  model: string,
+): Promise<void> {
+  const session = appState.agents.get(agentId);
+  if (!session) throw `No agent found: ${agentId}`;
+  if (session.status !== "running") throw `Agent is not running: ${agentId}`;
+
+  const handler = session.controlHandler;
+  if (!handler) throw `Agent has no control handler: ${agentId}`;
+
+  const [json, promise] = handler.buildSetModelRequest(model);
+  session.stdin.write(json + "\n");
+  await promise;
+
+  getMainWindow()?.webContents.send(`agent:model-changed:${agentId}`, model);
+  console.info(`[agent:${agentId}] model changed to ${model}`);
+}
+
+// ---------------------------------------------------------------------------
+// set_agent_permission_mode
+// ---------------------------------------------------------------------------
+
+/**
+ * Change the permission mode for an active agent session via the control
+ * protocol (e.g. switching to/from plan mode).
+ *
+ * Sends a `set_permission_mode` control request to the CLI and awaits the
+ * response. The mode change applies immediately without restarting.
+ *
+ * @throws string if no agent is found or the CLI rejects the request.
+ */
+export async function setAgentPermissionMode(
+  agentId: string,
+  mode: string,
+): Promise<void> {
+  const session = appState.agents.get(agentId);
+  if (!session) throw `No agent found: ${agentId}`;
+  if (session.status !== "running") throw `Agent is not running: ${agentId}`;
+
+  const handler = session.controlHandler;
+  if (!handler) throw `Agent has no control handler: ${agentId}`;
+
+  const [json, promise] = handler.buildSetPermissionModeRequest(mode);
+  session.stdin.write(json + "\n");
+  await promise;
+
+  getMainWindow()?.webContents.send(
+    `agent:permission-mode-changed:${agentId}`,
+    mode,
+  );
+  console.info(`[agent:${agentId}] permission mode changed to ${mode}`);
+}
+
+// ---------------------------------------------------------------------------
 // list_agents
 // ---------------------------------------------------------------------------
 

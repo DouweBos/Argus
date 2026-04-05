@@ -1,4 +1,9 @@
-import { useRef, useCallback, useSyncExternalStore, useEffect } from "react";
+import {
+  useRef,
+  useCallback,
+  useSyncExternalStore,
+  useLayoutEffect,
+} from "react";
 
 /**
  * Connects to the local MJPEG server and returns an img ref for rendering.
@@ -34,7 +39,7 @@ export function useSimulatorCapture(mjpegPort: null | number) {
     ? `http://127.0.0.1:${mjpegPort}/stream.mjpeg`
     : null;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     retryCountRef.current = 0;
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);
@@ -69,6 +74,13 @@ export function useSimulatorCapture(mjpegPort: null | number) {
 
     img.addEventListener("load", handleLoad);
     img.addEventListener("error", handleError);
+
+    // The img src is set via JSX before this effect runs. If the local
+    // MJPEG server responded fast enough, the first frame may have already
+    // arrived and the `load` event already fired — catch that case here.
+    if (img.complete && img.naturalWidth > 0) {
+      handleLoad();
+    }
 
     return () => {
       img.removeEventListener("load", handleLoad);

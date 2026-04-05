@@ -20,13 +20,6 @@ function useTabLabel(agentId: string, fallback: string): string {
   });
 }
 
-function useHasPendingPermission(agentId: string): boolean {
-  return useConversationStore((s) => {
-    const messages = s.conversations[agentId]?.messages ?? [];
-    return messages.some((m) => m.toolCalls.some((tc) => tc.pendingPermission));
-  });
-}
-
 function AgentTab({
   agent,
   index,
@@ -41,14 +34,11 @@ function AgentTab({
   onSelect: (id: string) => void;
 }) {
   const label = useTabLabel(agent.agent_id, `Agent ${index + 1}`);
-  const hasPending = useHasPendingPermission(agent.agent_id);
-  const dotClass = hasPending ? "dot_pending" : `dot_${agent.status}`;
   return (
     <div
       className={`${styles.tab} ${isActive ? styles.active : ""}`}
       onClick={() => onSelect(agent.agent_id)}
     >
-      <span className={`${styles.dot} ${styles[dotClass]}`} />
       <span className={styles.label}>{label}</span>
       <button
         className={styles.closeBtn}

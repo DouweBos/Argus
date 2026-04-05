@@ -77,6 +77,8 @@ import {
   sendAgentMessage,
   listAgents,
   respondToPermission,
+  setAgentModel,
+  setAgentPermissionMode,
 } from "./services/agent/claude";
 import {
   createTerminal,
@@ -274,6 +276,12 @@ export function registerIpcHandlers(): void {
       a.allowRule as string | undefined,
       a.allowAll as boolean | undefined,
     ),
+  );
+  handle("set_agent_model", (a) =>
+    setAgentModel(a.agentId as string, a.model as string),
+  );
+  handle("set_agent_permission_mode", (a) =>
+    setAgentPermissionMode(a.agentId as string, a.mode as string),
   );
 
   // Terminal commands

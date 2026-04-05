@@ -2,7 +2,7 @@ import { useRef, useCallback, useState, useEffect } from "react";
 import type { ImageAttachment } from "../../lib/ipc";
 import type { SlashCommand } from "../../lib/types";
 import { useCombinedRef } from "../../hooks/useCombinedRef";
-import { ModelPicker } from "./ModelPicker";
+import { ModelPicker, type ModelOption } from "./ModelPicker";
 import {
   SendIcon,
   StopIcon,
@@ -11,12 +11,6 @@ import {
   LinearIcon,
 } from "../shared/Icons";
 import styles from "./ChatInput.module.css";
-
-const AVAILABLE_MODELS = [
-  "claude-sonnet-4-6",
-  "claude-opus-4-6",
-  "claude-haiku-4-5-20251001",
-];
 
 const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/gif,image/webp";
 
@@ -28,12 +22,15 @@ interface PendingImage {
 
 interface ChatInputProps {
   agentStatus?: "error" | "idle" | "running" | "stopped" | null;
-  costStr?: null | string;
   disabled?: boolean;
   disabledPlaceholder?: string;
-  durationStr?: null | string;
   model?: string;
+  modelPickerOpen?: boolean;
+  models?: ModelOption[];
+  /** The model identifier used for matching in the picker (e.g. "default"). */
+  modelValue?: string;
   onInterrupt?: () => void;
+  onModelPickerOpenChange?: (open: boolean) => void;
   onModelSelect?: (model: string) => void;
   onSend: (message: string, images?: ImageAttachment[]) => void;
   onTogglePlanMode?: () => void;
@@ -64,8 +61,10 @@ export function ChatInput({
   disabledPlaceholder,
   slashCommands,
   model,
-  durationStr,
-  costStr,
+  models,
+  modelValue,
+  modelPickerOpen: controlledPickerOpen,
+  onModelPickerOpenChange,
   onModelSelect,
   planMode = false,
   onTogglePlanMode,
@@ -78,8 +77,15 @@ export function ChatInput({
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [internalPickerOpen, setInternalPickerOpen] = useState(false);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+
+  // Model picker: controlled from parent if props provided, otherwise internal.
+  const modelPickerOpen = controlledPickerOpen ?? internalPickerOpen;
+  const setModelPickerOpen = (open: boolean) => {
+    onModelPickerOpenChange?.(open);
+    setInternalPickerOpen(open);
+  };
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -340,15 +346,15 @@ export function ChatInput({
               <div className={styles.modelPickerAnchor}>
                 <button
                   className={styles.modelBadge}
-                  onClick={() => setModelPickerOpen((o) => !o)}
+                  onClick={() => setModelPickerOpen(!modelPickerOpen)}
                   title="Switch model"
                 >
                   {model}
                 </button>
-                {modelPickerOpen && onModelSelect && (
+                {modelPickerOpen && onModelSelect && models && models.length > 0 && (
                   <ModelPicker
-                    models={AVAILABLE_MODELS}
-                    currentModel={model}
+                    models={models}
+                    currentModel={modelValue ?? model}
                     onSelect={(m) => {
                       setModelPickerOpen(false);
                       onModelSelect(m);
@@ -424,15 +430,6 @@ export function ChatInput({
         </div>
       </div>
 
-      {(durationStr || costStr) && (
-        <div className={styles.statusRow}>
-          <span className={styles.statusSpacer} />
-          {durationStr && (
-            <span className={styles.statusItem}>{durationStr}</span>
-          )}
-          {costStr && <span className={styles.statusItem}>{costStr}</span>}
-        </div>
-      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@
 
 /* The unified card surface — glass panel with teal focus glow */
 .container {
-  margin: 10px 16px 0;
+  margin: 10px 16px;
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--border-radius);
@@ -148,7 +148,7 @@
 .toolbarLeft {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
 
 .toolbarRight {
@@ -204,14 +204,6 @@
 .stopBtn:hover {
   background: var(--error);
   opacity: 0.85;
-}
-
-/* Status row below the card — Air's bottom bar */
-.statusRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 18px 8px;
 }
 
 .modelPickerAnchor {
@@ -303,16 +295,6 @@
 .linkIssueBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.statusSpacer {
-  flex: 1;
-}
-
-.statusItem {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  flex-shrink: 0;
 }
 
 /* Slash command autocomplete popup — glass */

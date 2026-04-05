@@ -80,8 +80,12 @@ export function AppShell() {
           </ErrorBoundary>
         </main>
 
-        <ToolPanel workspaceId={selectedId} />
-        <ToolRail hasWorkspace={selectedId !== null} />
+        {selectedId !== null && (
+          <>
+            <ToolPanel workspaceId={selectedId} />
+            <ToolRail />
+          </>
+        )}
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ import {
   interruptAgent,
   respondToPermission,
   getCommandMetrics,
+  setAgentModel as ipcSetAgentModel,
+  setAgentPermissionMode as ipcSetAgentPermissionMode,
   type ImageAttachment,
 } from "../../lib/ipc";
 import { useWorkspaceStore } from "../../stores/workspaceStore";
@@ -42,16 +44,12 @@ const EMPTY_MESSAGES: ConversationMessage[] = [];
 
 interface AgentChatProps {
   agentId: null | string;
-  onRestartWithModel?: (model: string) => Promise<void>;
-  onTogglePlanMode?: () => Promise<void>;
   permissionMode?: string;
   workspaceId: string;
 }
 
 export function AgentChat({
   agentId,
-  onRestartWithModel,
-  onTogglePlanMode,
   permissionMode,
   workspaceId,
 }: AgentChatProps) {
@@ -70,13 +68,32 @@ export function AgentChat({
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [commandMetrics, setCommandMetrics] = useState<Record<string, number>>({});
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
 
   const messages = conversation?.messages ?? EMPTY_MESSAGES;
   const queuedMessages = conversation?.queuedMessages ?? [];
-  const model = conversation?.model;
-  const totalCost = conversation?.totalCost;
-  const totalDuration = conversation?.totalDuration;
   const slashCommands = conversation?.slashCommands;
+  const capabilitiesModels = conversation?.capabilities?.models;
+
+  // The model ID from events (e.g. "claude-opus-4-6") or "default".
+  const modelValue = conversation?.model ?? "default";
+
+  // Resolve display name from capabilities; fall back to the raw model ID.
+  const model = useMemo(() => {
+    if (!capabilitiesModels?.length) return conversation?.model;
+    const match = capabilitiesModels.find((m) => m.value === modelValue);
+    return match?.displayName ?? capabilitiesModels[0]?.displayName;
+  }, [capabilitiesModels, modelValue, conversation?.model]);
+
+  // Model options for the picker, derived from capabilities.
+  const modelOptions = useMemo(() => {
+    if (!capabilitiesModels?.length) return undefined;
+    return capabilitiesModels.map((m) => ({
+      value: m.value,
+      displayName: m.displayName,
+      description: m.description,
+    }));
+  }, [capabilitiesModels]);
 
   // Fetch per-project command metrics for popularity sorting.
   const repoRoot = useWorkspaceStore(
@@ -199,10 +216,14 @@ export function AgentChat({
 
   const handleModelSelect = useCallback(
     async (selectedModel: string) => {
-      if (!agentId || !onRestartWithModel) return;
-      await onRestartWithModel(selectedModel);
+      if (!agentId) return;
+      try {
+        await ipcSetAgentModel(agentId, selectedModel);
+      } catch {
+        // Best-effort — agent may have exited.
+      }
     },
-    [agentId, onRestartWithModel],
+    [agentId],
   );
 
   const handlePermissionRespond = useCallback(
@@ -242,13 +263,41 @@ export function AgentChat({
     async (message: string, images?: ImageAttachment[]) => {
       if (!agentId) return;
 
-      // Handle client-side commands
+      // Handle client-side commands (commands that the CLI cannot handle in
+      // stream-json mode because they are `local-jsx` type and require an
+      // interactive terminal UI).
       const trimmed = message.trim();
       if (trimmed.startsWith("/")) {
         const parts = trimmed.slice(1).split(/\s+/);
         const cmd = parts[0].toLowerCase();
         if (cmd === "clear") {
           clearConversation(agentId);
+          return;
+        }
+        if (cmd === "plan") {
+          const newMode = permissionMode === "plan" ? "default" : "plan";
+          try {
+            await ipcSetAgentPermissionMode(agentId, newMode);
+            useAgentStore.getState().updateAgent(agentId, {
+              permission_mode: newMode === "default" ? undefined : newMode,
+            });
+          } catch {
+            // Best-effort — agent may have exited.
+          }
+          return;
+        }
+        if (cmd === "model") {
+          const modelArg = parts.slice(1).join(" ");
+          if (modelArg) {
+            try {
+              await ipcSetAgentModel(agentId, modelArg);
+            } catch {
+              // Best-effort — agent may have exited.
+            }
+          } else {
+            // No args — open the model picker.
+            setModelPickerOpen(true);
+          }
           return;
         }
       }
@@ -278,7 +327,7 @@ export function AgentChat({
         // Message failed — user sees the optimistic message
       }
     },
-    [agentId, addUserMessage, queueMessage, clearConversation],
+    [agentId, addUserMessage, queueMessage, clearConversation, permissionMode, repoRoot],
   );
 
   if (!agentId) {
@@ -288,15 +337,6 @@ export function AgentChat({
       </div>
     );
   }
-
-  const durationStr =
-    totalDuration !== undefined && totalDuration > 0
-      ? formatDuration(totalDuration)
-      : null;
-  const costStr =
-    totalCost !== undefined && totalCost > 0
-      ? `$${totalCost.toFixed(4)}`
-      : null;
 
   return (
     <div className={styles.chat}>
@@ -375,23 +415,28 @@ export function AgentChat({
         disabled={!isAlive}
         slashCommands={allCommands}
         model={model}
-        durationStr={durationStr}
-        costStr={costStr}
-        onModelSelect={onRestartWithModel ? handleModelSelect : undefined}
+        models={modelOptions}
+        modelValue={modelValue}
+        modelPickerOpen={modelPickerOpen}
+        onModelPickerOpenChange={setModelPickerOpen}
+        onModelSelect={handleModelSelect}
         planMode={permissionMode === "plan"}
-        onTogglePlanMode={onTogglePlanMode}
+        onTogglePlanMode={async () => {
+          if (!agentId) return;
+          const newMode = permissionMode === "plan" ? "default" : "plan";
+          try {
+            await ipcSetAgentPermissionMode(agentId, newMode);
+            useAgentStore.getState().updateAgent(agentId, {
+              permission_mode: newMode === "default" ? undefined : newMode,
+            });
+          } catch {
+            // Best-effort
+          }
+        }}
         textareaRef={chatInputRef}
       />
     </div>
   );
-}
-
-function formatDuration(ms: number): string {
-  const sec = ms / 1000;
-  if (sec < 60) return `${sec.toFixed(1)}s`;
-  const min = Math.floor(sec / 60);
-  const remSec = Math.round(sec % 60);
-  return `${min}m ${remSec}s`;
 }
 
 type Segment =
