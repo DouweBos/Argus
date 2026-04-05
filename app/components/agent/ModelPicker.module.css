@@ -2,7 +2,7 @@
   position: absolute;
   bottom: calc(100% + 6px);
   left: 0;
-  width: clamp(200px, 52%, 340px);
+  width: clamp(200px, 60%, 600px);
   background: rgba(17, 17, 24, 0.92);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
@@ -51,10 +51,22 @@
   color: var(--text-primary);
 }
 
+.optionLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
 .optionName {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans, system-ui, sans-serif);
   font-size: var(--font-size-sm);
   font-weight: 500;
+}
+
+.optionDesc {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }
 
 .optionCheck {

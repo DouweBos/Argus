@@ -1,11 +1,20 @@
 import { useEffect, useRef } from "react";
 import styles from "./ModelPicker.module.css";
 
+export interface ModelOption {
+  /** Display label shown in the picker. */
+  displayName: string;
+  /** Optional short description shown below the name. */
+  description?: string;
+  /** The model identifier sent to the CLI (e.g. "claude-opus-4-6"). */
+  value: string;
+}
+
 interface ModelPickerProps {
   currentModel: string | undefined;
-  models: string[];
+  models: ModelOption[];
   onClose: () => void;
-  onSelect: (model: string) => void;
+  onSelect: (modelValue: string) => void;
 }
 
 export function ModelPicker({
@@ -36,21 +45,27 @@ export function ModelPicker({
   return (
     <div className={styles.picker} ref={ref}>
       <div className={styles.header}>Switch model</div>
-      {models.map((model) => (
-        <button
-          key={model}
-          className={`${styles.option} ${model === currentModel ? styles.optionActive : ""}`}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onSelect(model);
-          }}
-        >
-          <span className={styles.optionName}>{model}</span>
-          {model === currentModel && (
-            <span className={styles.optionCheck}>✓</span>
-          )}
-        </button>
-      ))}
+      {models.map((model) => {
+        const isActive = model.value === currentModel;
+        return (
+          <button
+            key={model.value}
+            className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onSelect(model.value);
+            }}
+          >
+            <div className={styles.optionLabel}>
+              <span className={styles.optionName}>{model.displayName}</span>
+              {model.description && (
+                <span className={styles.optionDesc}>{model.description}</span>
+              )}
+            </div>
+            {isActive && <span className={styles.optionCheck}>✓</span>}
+          </button>
+        );
+      })}
     </div>
   );
 }

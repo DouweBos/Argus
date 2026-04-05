@@ -80,6 +80,8 @@ interface ConversationState {
   ) => void;
   /** Store capabilities from the initialize control_request response. */
   setCapabilities: (agentId: string, capabilities: AgentCapabilities) => void;
+  /** Update the model for a conversation (after a set_model control request). */
+  setModel: (agentId: string, model: string) => void;
   /** Mark a tool call as pending permission so the UI shows Allow/Deny.
    *  Returns true if the tool call was found, false otherwise. */
   setPermissionPending: (
@@ -388,6 +390,17 @@ export const useConversationStore = create<ConversationState>((set) => ({
             capabilities,
             slashCommands: capabilities.commands,
           },
+        },
+      };
+    }),
+
+  setModel: (agentId, model) =>
+    set((state) => {
+      const existing = state.conversations[agentId] ?? emptyConversation();
+      return {
+        conversations: {
+          ...state.conversations,
+          [agentId]: { ...existing, model },
         },
       };
     }),

@@ -128,15 +128,17 @@ window.MonacoEnvironment = {
 // workbench color tokens so the editor, explorer, status bar, etc. all
 // match the surrounding Stagehand shell.
 //
-// Palette reference:
-//   --bg-primary:   #141418    --text-primary:   #e8e8e8
-//   --bg-secondary: #1a1a1e    --text-secondary: #a0a0b0
-//   --bg-tertiary:  #1e1e24    --text-muted:     #606070
-//   --bg-hover:     #2a2a32    --accent:         #10b981
-//   --border:       #252530    --accent-hover:   #34d399
-//   --error:        #ef4444    --warning:        #f59e0b
-//   --success:      #10b981
+// Palette reference (keep in sync with global.css):
+//   --bg-primary:   #0a0a0f    --text-primary:   #f0f0f5
+//   --bg-secondary: #111118    --text-secondary: #a0a0b8
+//   --bg-tertiary:  #1a1a24    --text-muted:     #55556a
+//   --bg-hover:     #222233    --accent:         #4d9fff
+//   --border:       rgba(255,255,255,0.08) ≈ #15151d on #0a0a0f
+//   --error:        #ff4466    --warning:        #f5a623
+//   --success:      #00d4aa
 // ---------------------------------------------------------------------------
+const BORDER = "#1c1c28"; // Solid approximation of rgba(255,255,255,0.08) on bg-primary
+
 const stagehandUserConfig = JSON.stringify({
   // Force our base theme and disable theme picker
   "workbench.colorTheme": "Default Dark Modern",
@@ -162,166 +164,166 @@ const stagehandUserConfig = JSON.stringify({
   // Override every significant workbench color to match the Stagehand palette
   "workbench.colorCustomizations": {
     // Editor
-    "editor.background": "#141418",
-    "editor.foreground": "#e8e8e8",
-    "editor.lineHighlightBackground": "#1e1e24",
-    "editor.selectionBackground": "#10b98140",
-    "editor.inactiveSelectionBackground": "#10b98120",
-    "editorCursor.foreground": "#10b981",
-    "editorLineNumber.foreground": "#606070",
-    "editorLineNumber.activeForeground": "#a0a0b0",
-    "editorIndentGuide.background": "#252530",
-    "editorIndentGuide.activeBackground": "#2a2a32",
-    "editorWidget.background": "#1a1a1e",
-    "editorWidget.border": "#252530",
-    "editorBracketMatch.border": "#10b98180",
-    "editorBracketMatch.background": "#10b98118",
-    "editorGutter.background": "#141418",
-    "editorOverviewRuler.border": "#252530",
-    "editorGroup.border": "#252530",
-    "editorGroupHeader.tabsBackground": "#1a1a1e",
-    "editorGroupHeader.tabsBorder": "#252530",
+    "editor.background": "#0a0a0f",
+    "editor.foreground": "#f0f0f5",
+    "editor.lineHighlightBackground": "#1a1a24",
+    "editor.selectionBackground": "#4d9fff40",
+    "editor.inactiveSelectionBackground": "#4d9fff20",
+    "editorCursor.foreground": "#4d9fff",
+    "editorLineNumber.foreground": "#55556a",
+    "editorLineNumber.activeForeground": "#a0a0b8",
+    "editorIndentGuide.background": BORDER,
+    "editorIndentGuide.activeBackground": "#222233",
+    "editorWidget.background": "#111118",
+    "editorWidget.border": BORDER,
+    "editorBracketMatch.border": "#4d9fff80",
+    "editorBracketMatch.background": "#4d9fff18",
+    "editorGutter.background": "#0a0a0f",
+    "editorOverviewRuler.border": BORDER,
+    "editorGroup.border": BORDER,
+    "editorGroupHeader.tabsBackground": "#111118",
+    "editorGroupHeader.tabsBorder": BORDER,
 
     // Tabs
-    "tab.activeBackground": "#141418",
-    "tab.activeForeground": "#e8e8e8",
-    "tab.activeBorderTop": "#10b981",
-    "tab.inactiveBackground": "#1a1a1e",
-    "tab.inactiveForeground": "#606070",
-    "tab.border": "#252530",
-    "tab.hoverBackground": "#2a2a32",
+    "tab.activeBackground": "#0a0a0f",
+    "tab.activeForeground": "#f0f0f5",
+    "tab.activeBorderTop": "#4d9fff",
+    "tab.inactiveBackground": "#111118",
+    "tab.inactiveForeground": "#55556a",
+    "tab.border": BORDER,
+    "tab.hoverBackground": "#222233",
 
-    // Activity bar
-    "activityBar.background": "#141418",
-    "activityBar.foreground": "#e8e8e8",
-    "activityBar.inactiveForeground": "#606070",
-    "activityBar.border": "#252530",
-    "activityBarBadge.background": "#10b981",
-    "activityBarBadge.foreground": "#ffffff",
+    // Activity bar (hidden, but keep colors for consistency)
+    "activityBar.background": "#0a0a0f",
+    "activityBar.foreground": "#f0f0f5",
+    "activityBar.inactiveForeground": "#55556a",
+    "activityBar.border": BORDER,
+    "activityBarBadge.background": "#4d9fff",
+    "activityBarBadge.foreground": "#0a0a0f",
 
     // Sidebar (explorer, search, etc.)
-    "sideBar.background": "#1a1a1e",
-    "sideBar.foreground": "#a0a0b0",
-    "sideBar.border": "#252530",
-    "sideBarTitle.foreground": "#e8e8e8",
-    "sideBarSectionHeader.background": "#1a1a1e",
-    "sideBarSectionHeader.foreground": "#a0a0b0",
-    "sideBarSectionHeader.border": "#252530",
+    "sideBar.background": "#111118",
+    "sideBar.foreground": "#a0a0b8",
+    "sideBar.border": BORDER,
+    "sideBarTitle.foreground": "#f0f0f5",
+    "sideBarSectionHeader.background": "#111118",
+    "sideBarSectionHeader.foreground": "#a0a0b8",
+    "sideBarSectionHeader.border": BORDER,
 
     // Lists (file tree, search results, etc.)
-    "list.activeSelectionBackground": "#10b98120",
-    "list.activeSelectionForeground": "#e8e8e8",
-    "list.inactiveSelectionBackground": "#2a2a32",
-    "list.inactiveSelectionForeground": "#e8e8e8",
-    "list.hoverBackground": "#2a2a32",
-    "list.hoverForeground": "#e8e8e8",
-    "list.focusOutline": "#10b98180",
-    "list.highlightForeground": "#10b981",
+    "list.activeSelectionBackground": "#4d9fff20",
+    "list.activeSelectionForeground": "#f0f0f5",
+    "list.inactiveSelectionBackground": "#222233",
+    "list.inactiveSelectionForeground": "#f0f0f5",
+    "list.hoverBackground": "#222233",
+    "list.hoverForeground": "#f0f0f5",
+    "list.focusOutline": "#4d9fff80",
+    "list.highlightForeground": "#4d9fff",
 
     // Status bar
-    "statusBar.background": "#141418",
-    "statusBar.foreground": "#606070",
-    "statusBar.border": "#252530",
-    "statusBar.noFolderBackground": "#141418",
-    "statusBarItem.hoverBackground": "#2a2a32",
-    "statusBarItem.activeBackground": "#2a2a32",
+    "statusBar.background": "#0a0a0f",
+    "statusBar.foreground": "#55556a",
+    "statusBar.border": BORDER,
+    "statusBar.noFolderBackground": "#0a0a0f",
+    "statusBarItem.hoverBackground": "#222233",
+    "statusBarItem.activeBackground": "#222233",
 
     // Title bar
-    "titleBar.activeBackground": "#141418",
-    "titleBar.activeForeground": "#e8e8e8",
-    "titleBar.inactiveBackground": "#141418",
-    "titleBar.inactiveForeground": "#606070",
-    "titleBar.border": "#252530",
+    "titleBar.activeBackground": "#0a0a0f",
+    "titleBar.activeForeground": "#f0f0f5",
+    "titleBar.inactiveBackground": "#0a0a0f",
+    "titleBar.inactiveForeground": "#55556a",
+    "titleBar.border": BORDER,
 
     // Panel (problems, output, terminal)
-    "panel.background": "#141418",
-    "panel.border": "#252530",
-    "panelTitle.activeBorder": "#10b981",
-    "panelTitle.activeForeground": "#e8e8e8",
-    "panelTitle.inactiveForeground": "#606070",
+    "panel.background": "#0a0a0f",
+    "panel.border": BORDER,
+    "panelTitle.activeBorder": "#4d9fff",
+    "panelTitle.activeForeground": "#f0f0f5",
+    "panelTitle.inactiveForeground": "#55556a",
 
     // Input controls
-    "input.background": "#1e1e24",
-    "input.foreground": "#e8e8e8",
-    "input.border": "#252530",
-    "input.placeholderForeground": "#606070",
-    "inputOption.activeBorder": "#10b981",
-    "inputOption.activeBackground": "#10b98130",
-    "focusBorder": "#10b981",
+    "input.background": "#1a1a24",
+    "input.foreground": "#f0f0f5",
+    "input.border": BORDER,
+    "input.placeholderForeground": "#55556a",
+    "inputOption.activeBorder": "#4d9fff",
+    "inputOption.activeBackground": "#4d9fff30",
+    "focusBorder": "#4d9fff",
 
     // Buttons
-    "button.background": "#10b981",
-    "button.foreground": "#ffffff",
-    "button.hoverBackground": "#34d399",
+    "button.background": "#4d9fff",
+    "button.foreground": "#0a0a0f",
+    "button.hoverBackground": "#70b3ff",
 
     // Dropdown
-    "dropdown.background": "#1a1a1e",
-    "dropdown.foreground": "#e8e8e8",
-    "dropdown.border": "#252530",
+    "dropdown.background": "#111118",
+    "dropdown.foreground": "#f0f0f5",
+    "dropdown.border": BORDER,
 
     // Badges
-    "badge.background": "#10b981",
-    "badge.foreground": "#ffffff",
+    "badge.background": "#4d9fff",
+    "badge.foreground": "#0a0a0f",
 
     // Scrollbar
     "scrollbar.shadow": "#00000000",
-    "scrollbarSlider.background": "#2a2a3280",
-    "scrollbarSlider.hoverBackground": "#60607080",
-    "scrollbarSlider.activeBackground": "#60607080",
+    "scrollbarSlider.background": "#22223380",
+    "scrollbarSlider.hoverBackground": "#55556a80",
+    "scrollbarSlider.activeBackground": "#55556a80",
 
     // Minimap
-    "minimap.background": "#141418",
+    "minimap.background": "#0a0a0f",
 
     // Breadcrumbs
-    "breadcrumb.foreground": "#606070",
-    "breadcrumb.focusForeground": "#e8e8e8",
-    "breadcrumb.activeSelectionForeground": "#e8e8e8",
-    "breadcrumbPicker.background": "#1a1a1e",
+    "breadcrumb.foreground": "#55556a",
+    "breadcrumb.focusForeground": "#f0f0f5",
+    "breadcrumb.activeSelectionForeground": "#f0f0f5",
+    "breadcrumbPicker.background": "#111118",
 
     // Notifications
-    "notifications.background": "#1a1a1e",
-    "notifications.foreground": "#e8e8e8",
-    "notifications.border": "#252530",
-    "notificationCenterHeader.background": "#1a1a1e",
+    "notifications.background": "#111118",
+    "notifications.foreground": "#f0f0f5",
+    "notifications.border": BORDER,
+    "notificationCenterHeader.background": "#111118",
 
     // Quick input (command palette)
-    "quickInput.background": "#1a1a1e",
-    "quickInput.foreground": "#e8e8e8",
-    "quickInputList.focusBackground": "#2a2a32",
-    "quickInputTitle.background": "#1a1a1e",
+    "quickInput.background": "#111118",
+    "quickInput.foreground": "#f0f0f5",
+    "quickInputList.focusBackground": "#222233",
+    "quickInputTitle.background": "#111118",
 
     // Peek view
-    "peekView.border": "#10b981",
-    "peekViewEditor.background": "#141418",
-    "peekViewResult.background": "#1a1a1e",
-    "peekViewTitle.background": "#1a1a1e",
+    "peekView.border": "#4d9fff",
+    "peekViewEditor.background": "#0a0a0f",
+    "peekViewResult.background": "#111118",
+    "peekViewTitle.background": "#111118",
 
     // Diff editor
-    "diffEditor.insertedTextBackground": "#10b98118",
-    "diffEditor.removedTextBackground": "#ef444418",
+    "diffEditor.insertedTextBackground": "#00d4aa18",
+    "diffEditor.removedTextBackground": "#ff446618",
 
     // Git decorations
-    "gitDecoration.modifiedResourceForeground": "#f59e0b",
-    "gitDecoration.untrackedResourceForeground": "#10b981",
-    "gitDecoration.deletedResourceForeground": "#ef4444",
-    "gitDecoration.conflictingResourceForeground": "#ef4444",
-    "gitDecoration.ignoredResourceForeground": "#606070",
+    "gitDecoration.modifiedResourceForeground": "#f5a623",
+    "gitDecoration.untrackedResourceForeground": "#00d4aa",
+    "gitDecoration.deletedResourceForeground": "#ff4466",
+    "gitDecoration.conflictingResourceForeground": "#ff4466",
+    "gitDecoration.ignoredResourceForeground": "#55556a",
 
     // Error / warning / info
-    "editorError.foreground": "#ef4444",
-    "editorWarning.foreground": "#f59e0b",
-    "editorInfo.foreground": "#10b981",
+    "editorError.foreground": "#ff4466",
+    "editorWarning.foreground": "#f5a623",
+    "editorInfo.foreground": "#4d9fff",
 
     // Selection highlight
-    "editor.wordHighlightBackground": "#10b98118",
-    "editor.wordHighlightStrongBackground": "#10b98128",
-    "editor.findMatchBackground": "#f59e0b40",
-    "editor.findMatchHighlightBackground": "#f59e0b20",
+    "editor.wordHighlightBackground": "#4d9fff18",
+    "editor.wordHighlightStrongBackground": "#4d9fff28",
+    "editor.findMatchBackground": "#f5a62340",
+    "editor.findMatchHighlightBackground": "#f5a62320",
   },
 
-  // Editor settings matching the old MonacoWrapper options
+  // Editor settings
   "editor.fontSize": 13,
-  "editor.fontFamily": "'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+  "editor.fontFamily": "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
   "editor.lineHeight": 20,
   "editor.minimap.enabled": true,
   "editor.minimap.scale": 1,

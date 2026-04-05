@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useLayoutStore, type ToolId } from "../../stores/layoutStore";
 import {
   GitChangesIcon,
@@ -12,31 +11,21 @@ interface ToolDef {
   id: ToolId;
   label: string;
   icon: React.ComponentType<IconProps>;
-  requiresWorkspace?: boolean;
 }
 
 const TOOLS: ToolDef[] = [
-  { id: "changes", label: "Changes", icon: GitChangesIcon, requiresWorkspace: true },
+  { id: "changes", label: "Changes", icon: GitChangesIcon },
   { id: "terminal", label: "Terminal", icon: TerminalToolIcon },
   { id: "simulator", label: "Simulator", icon: SimulatorIcon },
 ];
 
-interface ToolRailProps {
-  hasWorkspace?: boolean;
-}
-
-export function ToolRail({ hasWorkspace }: ToolRailProps) {
+export function ToolRail() {
   const activeToolId = useLayoutStore((s) => s.activeToolId);
   const toggleTool = useLayoutStore((s) => s.toggleTool);
 
-  const visibleTools = useMemo(
-    () => TOOLS.filter((t) => !t.requiresWorkspace || hasWorkspace),
-    [hasWorkspace],
-  );
-
   return (
     <div className={styles.rail}>
-      {visibleTools.map(({ id, label, icon: Icon }) => (
+      {TOOLS.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
           className={`${styles.tool} ${activeToolId === id ? styles.active : ""}`}

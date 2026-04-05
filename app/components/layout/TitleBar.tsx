@@ -3,8 +3,7 @@ import { useWorkspaceStore } from "../../stores/workspaceStore";
 import { useLayoutStore } from "../../stores/layoutStore";
 import { listBranches, setWorkspaceBaseBranch } from "../../lib/ipc";
 import { SidebarToggles } from "./SidebarToggles";
-import { LogsModal } from "../agent/LogsPanel";
-import { LogsIcon, PencilIcon } from "../shared/Icons";
+import { PencilIcon } from "../shared/Icons";
 import styles from "./TitleBar.module.css";
 
 export function TitleBar() {
@@ -18,8 +17,6 @@ export function TitleBar() {
   const leftWidth = useLayoutStore((s) => s.leftPanelWidth);
   const activeToolId = useLayoutStore((s) => s.activeToolId);
   const toolPanelWidth = useLayoutStore((s) => s.toolPanelWidth);
-
-  const [showLogs, setShowLogs] = useState(false);
 
   // Base-branch picker state
   const [isEditingBase, setIsEditingBase] = useState(false);
@@ -137,19 +134,7 @@ export function TitleBar() {
             ? `calc(48px + ${toolPanelWidth * 100}%)`
             : "48px",
         }}
-      >
-        <div className={styles.rightActions}>
-          <button
-            className={styles.iconButton}
-            onClick={() => setShowLogs(true)}
-            title="View logs"
-          >
-            <LogsIcon />
-          </button>
-        </div>
-      </div>
-
-      {showLogs && <LogsModal onClose={() => setShowLogs(false)} />}
+      />
     </div>
   );
 }

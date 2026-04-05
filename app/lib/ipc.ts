@@ -288,6 +288,14 @@ export const sendAgentMessage = (
 export const listAgents = (workspaceId: string): Promise<AgentStatus[]> =>
   invoke("list_agents", { workspaceId });
 
+export const setAgentModel = (agentId: string, model: string): Promise<void> =>
+  invoke("set_agent_model", { agentId, model });
+
+export const setAgentPermissionMode = (
+  agentId: string,
+  mode: string,
+): Promise<void> => invoke("set_agent_permission_mode", { agentId, mode });
+
 export const respondToPermission = (
   agentId: string,
   toolUseId: string,

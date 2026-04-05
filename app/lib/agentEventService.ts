@@ -19,6 +19,8 @@ const exitListeners = new Map<string, UnlistenFn>();
 const permListeners = new Map<string, UnlistenFn>();
 const permCancelListeners = new Map<string, UnlistenFn>();
 const capListeners = new Map<string, UnlistenFn>();
+const modelListeners = new Map<string, UnlistenFn>();
+const permModeListeners = new Map<string, UnlistenFn>();
 
 /** Subscribe to all agent event channels. */
 export function startAgentListening(agentId: string): void {
@@ -145,6 +147,34 @@ export function startAgentListening(agentId: string): void {
     }
     capListeners.set(agentId, unlisten);
   });
+
+  // Watch for model changes via the control protocol.
+  modelListeners.set(agentId, () => {});
+
+  listen<string>(`agent:model-changed:${agentId}`, (event) => {
+    useConversationStore.getState().setModel(agentId, event.payload);
+  }).then((unlisten) => {
+    if (!modelListeners.has(agentId)) {
+      unlisten();
+      return;
+    }
+    modelListeners.set(agentId, unlisten);
+  });
+
+  // Watch for permission mode changes via the control protocol.
+  permModeListeners.set(agentId, () => {});
+
+  listen<string>(`agent:permission-mode-changed:${agentId}`, (event) => {
+    useAgentStore.getState().updateAgent(agentId, {
+      permission_mode: event.payload === "default" ? undefined : event.payload,
+    });
+  }).then((unlisten) => {
+    if (!permModeListeners.has(agentId)) {
+      unlisten();
+      return;
+    }
+    permModeListeners.set(agentId, unlisten);
+  });
 }
 
 /**
@@ -185,4 +215,12 @@ export function stopAgentListening(agentId: string): void {
   const capUnlisten = capListeners.get(agentId);
   if (capUnlisten) capUnlisten();
   capListeners.delete(agentId);
+
+  const modelUnlisten = modelListeners.get(agentId);
+  if (modelUnlisten) modelUnlisten();
+  modelListeners.delete(agentId);
+
+  const permModeUnlisten = permModeListeners.get(agentId);
+  if (permModeUnlisten) permModeUnlisten();
+  permModeListeners.delete(agentId);
 }

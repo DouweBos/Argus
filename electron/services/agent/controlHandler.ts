@@ -71,6 +71,12 @@ export class ControlHandler {
   /** The request_id of our outbound initialize request (if pending). */
   private initializeRequestId: string | null = null;
 
+  /** Outbound control requests awaiting a response, keyed by `request_id`. */
+  private readonly outboundRequests = new Map<
+    string,
+    { resolve: (response: Record<string, unknown> | undefined) => void; reject: (error: string) => void }
+  >();
+
   constructor(private readonly agentId: string) {}
 
   // -------------------------------------------------------------------------
@@ -107,8 +113,22 @@ export class ControlHandler {
   ): boolean {
     const requestId = response.response.request_id;
 
+    // Check if this is a response to an outbound request (set_model, etc.).
+    const outbound = this.outboundRequests.get(requestId);
+    if (outbound) {
+      this.outboundRequests.delete(requestId);
+      if (response.response.subtype === "error") {
+        outbound.reject(response.response.error);
+      } else {
+        outbound.resolve(
+          response.response.response as Record<string, unknown> | undefined,
+        );
+      }
+      return true;
+    }
+
     if (requestId !== this.initializeRequestId) {
-      return false; // Not our initialize response.
+      return false; // Not our response.
     }
 
     this.initializeRequestId = null;
@@ -283,13 +303,58 @@ export class ControlHandler {
   }
 
   // -------------------------------------------------------------------------
+  // Outbound control requests: set_model, set_permission_mode
+  // -------------------------------------------------------------------------
+
+  /**
+   * Build a `control_request` with `subtype: "set_model"` and track it for
+   * response matching. Returns `[jsonString, promise]`.
+   */
+  buildSetModelRequest(
+    model: string,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    return this.buildOutboundRequest({ subtype: "set_model", model });
+  }
+
+  /**
+   * Build a `control_request` with `subtype: "set_permission_mode"` and track
+   * it for response matching. Returns `[jsonString, promise]`.
+   */
+  buildSetPermissionModeRequest(
+    mode: string,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    return this.buildOutboundRequest({ subtype: "set_permission_mode", mode });
+  }
+
+  private buildOutboundRequest(
+    request: Record<string, unknown>,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    const requestId = crypto.randomUUID();
+    const promise = new Promise<Record<string, unknown> | undefined>(
+      (resolve, reject) => {
+        this.outboundRequests.set(requestId, { resolve, reject });
+      },
+    );
+    const json = JSON.stringify({
+      type: "control_request",
+      request_id: requestId,
+      request,
+    });
+    return [json, promise];
+  }
+
+  // -------------------------------------------------------------------------
   // Lifecycle
   // -------------------------------------------------------------------------
 
-  /** No-op cleanup — no files or intervals to clear. */
+  /** Clean up pending state and reject outstanding outbound requests. */
   cleanup(): void {
     this.pending.clear();
     this.toolUseToRequestId.clear();
+    for (const [, entry] of this.outboundRequests) {
+      entry.reject("Agent stopped");
+    }
+    this.outboundRequests.clear();
   }
 }
 

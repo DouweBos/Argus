@@ -198,8 +198,13 @@ app.whenReady().then(() => {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const headers = { ...details.responseHeaders };
 
-    // Gravatar images need CORP: cross-origin to satisfy COEP require-corp.
-    if (details.url.startsWith("https://www.gravatar.com/")) {
+    // Cross-origin resources need CORP: cross-origin to satisfy COEP require-corp.
+    // Gravatar images and the local simulator MJPEG stream (served by the bridge
+    // binary on 127.0.0.1) both need this header injected.
+    if (
+      details.url.startsWith("https://www.gravatar.com/") ||
+      details.url.startsWith("http://127.0.0.1:")
+    ) {
       headers["Cross-Origin-Resource-Policy"] = ["cross-origin"];
     }
 
@@ -210,7 +215,7 @@ app.whenReady().then(() => {
         "script-src 'self' stagehand-ext:" + (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
         "style-src 'self' 'unsafe-inline' stagehand-ext:",
         "font-src 'self' stagehand-ext: data:",
-        "img-src 'self' stagehand-ext: extension-file: data: https:",
+        "img-src 'self' stagehand-ext: extension-file: data: https: http://127.0.0.1:*",
         "connect-src 'self' stagehand-ext: https://open-vsx.org" + (isDev ? " ws://localhost:* http://localhost:*" : ""),
         "worker-src 'self' blob: stagehand-ext:",
       ].join("; ");

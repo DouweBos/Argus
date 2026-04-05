@@ -17,7 +17,7 @@ const execFileAsync = promisify(execFile);
 // Public types
 // ---------------------------------------------------------------------------
 
-/** A discovered iOS simulator device. Matches the Rust SimulatorDevice struct. */
+/** A discovered iOS simulator device. */
 export interface SimulatorDevice {
   udid: string;
   name: string;
