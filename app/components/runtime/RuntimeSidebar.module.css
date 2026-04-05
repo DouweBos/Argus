@@ -2,7 +2,10 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-secondary);
+  background: rgba(17, 17, 24, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid var(--glass-border);
   overflow: hidden;
 }
 
@@ -10,10 +13,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 12px 5px;
-  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 .sectionLabel {
@@ -21,7 +24,7 @@
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .terminalSection {
@@ -46,15 +49,15 @@
   text-align: center;
 }
 
-/* Resize handle — thin line that blooms to accent on hover */
+/* Resize handle — subtle line that blooms to accent glow on hover */
 .hDivider {
   height: 5px;
   cursor: row-resize;
   background: transparent;
   flex-shrink: 0;
   position: relative;
-  border-top: 1px solid var(--border);
-  transition: border-color var(--transition-fast);
+  border-top: 1px solid var(--glass-border);
+  transition: border-color var(--transition-base);
 }
 
 .hDivider::after {
@@ -69,8 +72,8 @@
   border-radius: 1px;
   opacity: 0;
   transition:
-    opacity var(--transition-fast),
-    background var(--transition-fast);
+    opacity var(--transition-base),
+    background var(--transition-base);
 }
 
 .hDivider:hover,

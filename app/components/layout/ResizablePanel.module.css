@@ -20,13 +20,14 @@
   width: 4px;
   cursor: col-resize;
   background: transparent;
-  transition: background var(--transition-fast);
+  transition: background var(--transition-base);
   z-index: 10;
 }
 
 .divider:hover,
 .divider:active {
   background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .divider.right {

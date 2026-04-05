@@ -2,7 +2,10 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-secondary);
+  background: rgba(17, 17, 24, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--glass-border);
   overflow: hidden;
 }
 
@@ -10,9 +13,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 6px;
-  padding: 5px 12px;
-  margin: 6px 8px 2px;
+  gap: 8px;
+  padding: 6px 12px;
+  margin: 8px 8px 2px;
   box-sizing: border-box;
   width: calc(100% - 16px);
   font-size: var(--font-size-xs);
@@ -25,13 +28,13 @@
   text-align: left;
   flex-shrink: 0;
   transition:
-    color var(--transition-fast),
-    background var(--transition-fast);
+    color var(--transition-base),
+    background var(--transition-base);
 }
 
 .homeHeader:hover {
   color: var(--text-primary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .homeHeader svg {
@@ -46,11 +49,11 @@
 
 .homeHeaderActive {
   color: var(--text-primary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .homeHeaderActive:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .errorMsg {
@@ -72,7 +75,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px 16px;
-  gap: 4px;
+  gap: 6px;
 }
 
 .emptyText {
@@ -85,13 +88,13 @@
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   text-align: center;
-  opacity: 0.7;
+  opacity: 0.6;
   line-height: 1.4;
 }
 
 .bottomBar {
   flex-shrink: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--glass-border);
   padding: 6px 8px;
   display: flex;
   align-items: center;
@@ -101,9 +104,9 @@
 .addProjectBtn {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   flex: 1;
-  padding: 4px 10px;
+  padding: 5px 10px;
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--text-muted);
@@ -112,13 +115,13 @@
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition:
-    color var(--transition-fast),
-    background var(--transition-fast);
+    color var(--transition-base),
+    background var(--transition-base);
 }
 
 .addProjectBtn:hover {
   color: var(--text-secondary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .bottomIcons {
@@ -139,11 +142,11 @@
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition:
-    color var(--transition-fast),
-    background var(--transition-fast);
+    color var(--transition-base),
+    background var(--transition-base);
 }
 
 .bottomIconBtn:hover {
   color: var(--text-secondary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }

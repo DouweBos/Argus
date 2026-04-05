@@ -417,21 +417,30 @@ export function StagehandLogo({ size = 48, className }: IconProps) {
       fill="none"
       className={className}
     >
+      <defs>
+        <linearGradient id="stagehand-grad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#00d4aa" />
+          <stop offset="100%" stopColor="#4d9fff" />
+        </linearGradient>
+        <linearGradient id="stagehand-grad-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#00d4aa" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#4d9fff" stopOpacity="0.12" />
+        </linearGradient>
+      </defs>
       <rect
         width="48"
         height="48"
-        rx="12"
-        fill="var(--accent)"
-        opacity="0.15"
+        rx="14"
+        fill="url(#stagehand-grad-bg)"
       />
       <path
         d="M12 24 L24 12 L36 24 L24 36 Z"
-        stroke="var(--accent)"
+        stroke="url(#stagehand-grad)"
         strokeWidth="2.5"
         fill="none"
         strokeLinejoin="round"
       />
-      <circle cx="24" cy="24" r="4" fill="var(--accent)" />
+      <circle cx="24" cy="24" r="4" fill="url(#stagehand-grad)" />
     </svg>
   );
 }

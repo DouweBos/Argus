@@ -7,18 +7,18 @@
 }
 
 .toggle {
-  padding: 3px 4px;
+  padding: 4px 5px;
   border-radius: var(--border-radius-sm);
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.5;
   transition:
-    background var(--transition-fast),
-    color var(--transition-fast),
-    opacity var(--transition-fast);
+    background var(--transition-base),
+    color var(--transition-base),
+    opacity var(--transition-base);
 }
 
 .toggle:hover {
-  background: var(--bg-hover);
+  background: var(--glass-bg-hover);
   opacity: 1;
 }
 
