@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import type { ImageAttachment } from "../../lib/ipc";
+import type { SlashCommand } from "../../lib/types";
 import { useCombinedRef } from "../../hooks/useCombinedRef";
 import { ModelPicker } from "./ModelPicker";
 import {
@@ -37,7 +38,7 @@ interface ChatInputProps {
   onSend: (message: string, images?: ImageAttachment[]) => void;
   onTogglePlanMode?: () => void;
   planMode?: boolean;
-  slashCommands?: string[];
+  slashCommands?: SlashCommand[];
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -74,7 +75,7 @@ export function ChatInput({
   const combinedRef = useCombinedRef(textareaRef, externalTextareaRef);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
@@ -98,7 +99,7 @@ export function ChatInput({
     if (val.startsWith("/") && !val.includes(" ") && !val.includes("\n")) {
       const query = val.slice(1).toLowerCase();
       const matches = slashCommands.filter((cmd) =>
-        cmd.toLowerCase().startsWith(query),
+        cmd.name.toLowerCase().startsWith(query),
       );
       setSuggestions(matches.slice(0, 8));
       setSelectedIndex(0);
@@ -189,9 +190,9 @@ export function ChatInput({
   }, []);
 
   const applySuggestion = useCallback(
-    (cmd: string) => {
+    (cmd: SlashCommand) => {
       if (!textareaRef.current) return;
-      textareaRef.current.value = `/${cmd} `;
+      textareaRef.current.value = `/${cmd.name} `;
       textareaRef.current.focus();
       setSuggestions([]);
       adjustHeight();
@@ -251,7 +252,7 @@ export function ChatInput({
             <div className={styles.suggestionsHeader}>Commands</div>
             {suggestions.map((cmd, i) => (
               <button
-                key={cmd}
+                key={cmd.name}
                 className={`${styles.suggestion} ${i === selectedIndex ? styles.suggestionActive : ""}`}
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -260,7 +261,10 @@ export function ChatInput({
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <span className={styles.suggestionSlash}>/</span>
-                <span className={styles.suggestionName}>{cmd}</span>
+                <span className={styles.suggestionName}>{cmd.name}</span>
+                {cmd.description && (
+                  <span className={styles.suggestionDesc}>{cmd.description}</span>
+                )}
               </button>
             ))}
           </div>
@@ -420,25 +424,15 @@ export function ChatInput({
         </div>
       </div>
 
-      <div className={styles.statusRow}>
-        {agentStatus && (
-          <span
-            className={`${styles.statusIndicator} ${agentStatus === "running" ? styles.statusRunning : agentStatus === "idle" ? styles.statusIdle : styles.statusStopped}`}
-          >
-            <span className={styles.statusDot} />
-            {agentStatus === "running"
-              ? "Thinking"
-              : agentStatus === "idle"
-                ? "Idle"
-                : "Stopped"}
-          </span>
-        )}
-        <span className={styles.statusSpacer} />
-        {durationStr && (
-          <span className={styles.statusItem}>{durationStr}</span>
-        )}
-        {costStr && <span className={styles.statusItem}>{costStr}</span>}
-      </div>
+      {(durationStr || costStr) && (
+        <div className={styles.statusRow}>
+          <span className={styles.statusSpacer} />
+          {durationStr && (
+            <span className={styles.statusItem}>{durationStr}</span>
+          )}
+          {costStr && <span className={styles.statusItem}>{costStr}</span>}
+        </div>
+      )}
     </div>
   );
 }

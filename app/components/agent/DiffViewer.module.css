@@ -34,7 +34,7 @@
 .spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid var(--border);
+  border: 2px solid var(--glass-border);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -73,7 +73,7 @@
   gap: 6px;
   padding: 6px 12px;
   font-size: var(--font-size-xs);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -104,7 +104,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-secondary);
+  background: rgba(17, 17, 24, 0.5);
   overflow: hidden;
 }
 
@@ -126,8 +126,8 @@
   align-items: center;
   gap: 2px;
   padding: 4px 8px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-secondary);
+  border-top: 1px solid var(--glass-border);
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -146,7 +146,7 @@
 }
 
 .bottomBarBtn:hover:not(:disabled) {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
@@ -177,5 +177,5 @@
 }
 
 .diffScrollItem {
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid var(--glass-border);
 }

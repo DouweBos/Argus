@@ -8,8 +8,8 @@
 }
 
 .barReady {
-  background: rgba(0, 212, 170, 0.08);
-  border-top-color: rgba(0, 212, 170, 0.2);
+  background: rgba(77, 159, 255, 0.08);
+  border-top-color: rgba(77, 159, 255, 0.2);
 }
 
 .barConflict {

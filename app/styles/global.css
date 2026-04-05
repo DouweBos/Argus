@@ -13,13 +13,13 @@
   --text-secondary: #a0a0b8;
   --text-muted: #55556a;
 
-  /* Accent — teal-to-blue gradient system */
-  --accent: #00d4aa;
-  --accent-hover: #00e4bb;
-  --accent-secondary: #4d9fff;
+  /* Accent — blue system */
+  --accent: #4d9fff;
+  --accent-hover: #70b3ff;
+  --accent-secondary: #3a7edf;
   --accent-fg: #0a0a0f;
-  --accent-glow: rgba(0, 212, 170, 0.15);
-  --accent-gradient: linear-gradient(135deg, #00d4aa, #4d9fff);
+  --accent-glow: rgba(77, 159, 255, 0.15);
+  --accent-gradient: linear-gradient(135deg, #4d9fff, #7c5cfc);
 
   /* Semantic */
   --success: #00d4aa;

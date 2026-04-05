@@ -114,33 +114,28 @@ describe("conversationStore", () => {
     expect(conv.totalDuration).toBe(1500);
   });
 
-  it("suppresses events during bootstrapping except system and result", () => {
-    useConversationStore.getState().setBootstrapping("agent-1", true);
+  it("stores capabilities from initialize response", () => {
+    const capabilities = {
+      commands: [
+        { name: "commit", description: "Commit changes", argumentHint: "" },
+        { name: "review", description: "Review code", argumentHint: "<pr>" },
+      ],
+      models: [
+        {
+          value: "claude-sonnet-4-6",
+          displayName: "Sonnet 4.6",
+          description: "Fast",
+        },
+      ],
+      agents: [{ name: "Explore", description: "Explore codebase" }],
+    };
 
-    // Assistant event should be suppressed
-    useConversationStore.getState().appendEvent("agent-1", {
-      type: "assistant",
-      message: {
-        content: [{ type: "text", text: "hidden" }],
-        model: "claude-sonnet-4-20250514",
-        usage: { input_tokens: 0, output_tokens: 0 },
-      },
-    });
+    useConversationStore.getState().setCapabilities("agent-1", capabilities);
 
     const conv = useConversationStore.getState().conversations["agent-1"];
-    expect(conv.messages).toHaveLength(0);
-
-    // Result event clears bootstrapping
-    useConversationStore.getState().appendEvent("agent-1", {
-      type: "result",
-      subtype: "success",
-      total_cost_usd: 0,
-      duration_ms: 0,
-      usage: { input_tokens: 0, output_tokens: 0 },
-    });
-
-    expect(
-      useConversationStore.getState().conversations["agent-1"].bootstrapping,
-    ).toBe(false);
+    expect(conv.capabilities).toEqual(capabilities);
+    expect(conv.slashCommands).toHaveLength(2);
+    expect(conv.slashCommands![0].name).toBe("commit");
+    expect(conv.slashCommands![0].description).toBe("Commit changes");
   });
 });

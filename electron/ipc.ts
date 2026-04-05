@@ -86,6 +86,7 @@ import {
   terminalResize,
 } from "./services/terminal/multiplexer";
 import { discoverExtensions } from "./services/extensions/loader";
+import { loadCommandMetrics } from "./services/workspace/commandMetrics";
 import {
   listSimulators,
   bootSimulator,
@@ -200,6 +201,9 @@ export function registerIpcHandlers(): void {
   );
   handle("write_stagehand_config", (a) =>
     writeStagehandConfig(a.repoRoot as string, a.content as string),
+  );
+  handle("get_command_metrics", (a) =>
+    loadCommandMetrics(a.repoRoot as string),
   );
   handle("set_workspace_base_branch", (a) =>
     setWorkspaceBaseBranch(a.id as string, a.baseBranch as string),

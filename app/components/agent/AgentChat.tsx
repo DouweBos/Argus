@@ -8,16 +8,36 @@ import {
   sendAgentMessage,
   interruptAgent,
   respondToPermission,
+  getCommandMetrics,
   type ImageAttachment,
 } from "../../lib/ipc";
+import { useWorkspaceStore } from "../../stores/workspaceStore";
+import { deriveActivity } from "../../lib/activityDescription";
 import { ChatMessage } from "./ChatMessage";
 import { CollapsedToolGroup } from "./CollapsedToolGroup";
 import { ChatInput } from "./ChatInput";
 import { ChevronDownIcon } from "../shared/Icons";
 import styles from "./AgentChat.module.css";
 
-/** Commands handled entirely on the client, never sent to the backend. */
-const CLIENT_COMMANDS = ["clear"];
+import type { SlashCommand } from "../../lib/types";
+
+/**
+ * Well-known commands that should always appear in autocomplete.
+ *
+ * Includes client-side commands (handled locally) and built-in CLI commands
+ * that the CLI filters out in headless mode but still accepts via stdin.
+ */
+const BUILTIN_COMMANDS: SlashCommand[] = [
+  { name: "clear", description: "Clear conversation history", argumentHint: "" },
+  { name: "plan", description: "Enable plan mode or view the session plan", argumentHint: "[open|<description>]" },
+  { name: "model", description: "Switch the model for this session", argumentHint: "[model]" },
+  { name: "compact", description: "Summarize and clear conversation context", argumentHint: "[instructions]" },
+  { name: "help", description: "Show help and available commands", argumentHint: "" },
+  { name: "doctor", description: "Diagnose your Claude Code installation", argumentHint: "" },
+  { name: "status", description: "Show model, account, and tool status", argumentHint: "" },
+  { name: "fast", description: "Toggle fast mode", argumentHint: "" },
+  { name: "effort", description: "Set reasoning effort level", argumentHint: "[low|medium|high|max]" },
+];
 const EMPTY_MESSAGES: ConversationMessage[] = [];
 
 interface AgentChatProps {
@@ -33,6 +53,7 @@ export function AgentChat({
   onRestartWithModel,
   onTogglePlanMode,
   permissionMode,
+  workspaceId,
 }: AgentChatProps) {
   const conversation = useConversationStore((s) =>
     agentId ? (s.conversations[agentId] ?? null) : null,
@@ -48,6 +69,7 @@ export function AgentChat({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  const [commandMetrics, setCommandMetrics] = useState<Record<string, number>>({});
 
   const messages = conversation?.messages ?? EMPTY_MESSAGES;
   const queuedMessages = conversation?.queuedMessages ?? [];
@@ -56,14 +78,43 @@ export function AgentChat({
   const totalDuration = conversation?.totalDuration;
   const slashCommands = conversation?.slashCommands;
 
+  // Fetch per-project command metrics for popularity sorting.
+  const repoRoot = useWorkspaceStore(
+    (s) => s.workspaces.find((w) => w.id === workspaceId)?.repo_root ?? null,
+  );
+  useEffect(() => {
+    if (!repoRoot) return;
+    getCommandMetrics(repoRoot).then(setCommandMetrics).catch(() => {});
+  }, [repoRoot]);
+
   // Group consecutive tool-call-only assistant messages into collapsed segments
   const segments = useMemo(() => groupMessages(messages), [messages]);
 
-  // Build the combined list: client commands + backend slash commands
-  const allCommands = useMemo(
-    () => [...CLIENT_COMMANDS, ...(slashCommands ?? [])],
-    [slashCommands],
-  );
+  // Merge built-in commands with backend-reported commands, deduplicating by
+  // name and preferring richer objects (ones with a description).
+  // Sort by project-level usage count (descending), then alphabetically.
+  const allCommands = useMemo(() => {
+    const map = new Map<string, SlashCommand>();
+    // Add built-ins first (lowest priority — overwritten by richer data).
+    for (const cmd of BUILTIN_COMMANDS) {
+      map.set(cmd.name, cmd);
+    }
+    // Add backend commands (higher priority — may have richer descriptions).
+    for (const cmd of slashCommands ?? []) {
+      const existing = map.get(cmd.name);
+      if (!existing || cmd.description) {
+        map.set(cmd.name, cmd);
+      }
+    }
+    const cmds = Array.from(map.values());
+    cmds.sort((a, b) => {
+      const countA = commandMetrics[a.name] ?? 0;
+      const countB = commandMetrics[b.name] ?? 0;
+      if (countA !== countB) return countB - countA; // Most-used first.
+      return a.name.localeCompare(b.name);
+    });
+    return cmds;
+  }, [slashCommands, commandMetrics]);
 
   // Auto-scroll to bottom when new messages arrive (only if already at bottom)
   useEffect(() => {
@@ -78,10 +129,13 @@ export function AgentChat({
     // The scroll handler will update isAtBottom from the new position.
   }, [agentId]);
 
-  // Scroll to bottom when a permission prompt appears
-  const hasPendingPermission = messages.some((m) =>
-    m.toolCalls.some((tc) => tc.pendingPermission),
+  // Track whether any tool call is waiting for user permission.
+  const hasPendingPermission = useMemo(
+    () => messages.some((m) => m.toolCalls.some((tc) => tc.pendingPermission)),
+    [messages],
   );
+
+  // Scroll to bottom when a permission prompt appears.
   useEffect(() => {
     if (hasPendingPermission) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -125,12 +179,21 @@ export function AgentChat({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Determine if agent is "thinking": running and last event wasn't an assistant response
+  // Derive rich activity state for the status row.
   const lastEventType = conversation?.lastEventType;
-  const isThinking =
-    agentStatus === "running" &&
-    lastEventType !== undefined &&
-    lastEventType !== "assistant";
+  const pendingToolName = conversation?.pendingToolName ?? null;
+  const pendingToolInput = conversation?.pendingToolInput ?? null;
+  const activity = useMemo(
+    () =>
+      deriveActivity(
+        agentStatus,
+        lastEventType,
+        pendingToolName,
+        pendingToolInput,
+        hasPendingPermission,
+      ),
+    [agentStatus, lastEventType, pendingToolName, pendingToolInput, hasPendingPermission],
+  );
 
   const isAlive = agentStatus === "running" || agentStatus === "idle";
 
@@ -206,6 +269,11 @@ export function AgentChat({
       useAgentStore.getState().updateAgent(agentId, { status: "running" });
       try {
         await sendAgentMessage(agentId, message, images);
+        // Refresh command metrics after sending a slash command so sorting
+        // updates immediately.
+        if (trimmed.startsWith("/") && repoRoot) {
+          getCommandMetrics(repoRoot).then(setCommandMetrics).catch(() => {});
+        }
       } catch {
         // Message failed — user sees the optimistic message
       }
@@ -257,11 +325,21 @@ export function AgentChat({
           ),
         )}
 
-        {isThinking && (
-          <div className={styles.thinking}>
-            <span className={styles.thinkingDot} />
-            <span className={styles.thinkingDot} />
-            <span className={styles.thinkingDot} />
+        {activity && activity.state !== "stopped" && activity.state !== "idle" && (
+          <div className={`${styles.activityBubble} ${
+            activity.state === "working"
+              ? styles.activityWorking
+              : styles.activityBlocked
+          }`}>
+            <span className={styles.activityDot} />
+            <span className={styles.activityText}>{activity.description}</span>
+            {activity.state === "working" && (
+              <span className={styles.activityDots}>
+                <span className={styles.thinkingDot} />
+                <span className={styles.thinkingDot} />
+                <span className={styles.thinkingDot} />
+              </span>
+            )}
           </div>
         )}
 

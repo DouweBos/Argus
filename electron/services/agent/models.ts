@@ -5,7 +5,7 @@
 import type { ChildProcess } from "node:child_process";
 import type { Writable } from "node:stream";
 
-import type { PermissionBroker } from "./permissions";
+import type { ControlHandler } from "./controlHandler";
 
 // ---------------------------------------------------------------------------
 // AgentStatus
@@ -39,8 +39,8 @@ export interface AgentSession {
   child: ChildProcess;
   /** Current status, updated when the process exits. */
   status: AgentStatusValue;
-  /** File-based IPC broker for interactive permission prompts. */
-  permissionBroker: PermissionBroker | null;
+  /** Handles the control protocol for interactive permission prompts. */
+  controlHandler: ControlHandler | null;
 }
 
 // ---------------------------------------------------------------------------

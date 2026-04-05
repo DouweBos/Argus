@@ -115,9 +115,33 @@ export type ClaudeStreamEvent =
   | {
       model: string;
       session_id: string;
+      /** All user-invocable commands (built-in + skills + plugins). */
       slash_commands?: string[];
+      /** Skills specifically (plugins, user settings, bundled). */
+      skills?: string[];
       subtype: "init";
       tools: Array<{ name: string }>;
+      type: "system";
+    }
+  | {
+      /** Authoritative idle/running signal from the CLI. */
+      state: "idle" | "requires_action" | "running";
+      subtype: "session_state_changed";
+      type: "system";
+    }
+  | {
+      /** Emitted when an API request fails with a retryable error. */
+      attempt: number;
+      error_status: number | null;
+      max_retries: number;
+      retry_delay_ms: number;
+      subtype: "api_retry";
+      type: "system";
+    }
+  | {
+      /** Generic status update from the CLI. */
+      status: string;
+      subtype: "status";
       type: "system";
     };
 
@@ -144,11 +168,55 @@ export interface TokenUsage {
 }
 
 // ---------------------------------------------------------------------------
-// Permission request (from PreToolUse hook via IPC event)
+// Permission request (from control protocol via IPC event)
 // ---------------------------------------------------------------------------
 
+export interface PermissionSuggestion {
+  prefix?: string;
+  tool: string;
+  type: string;
+}
+
 export interface PermissionRequest {
+  /** Permission suggestions from the CLI (e.g. "always allow Edit in /src"). */
+  permission_suggestions?: PermissionSuggestion[];
+  /** Control protocol request_id — needed for the response round-trip. */
+  request_id: string;
   tool_input: Record<string, unknown>;
   tool_name: string;
   tool_use_id: string;
+}
+
+/** Emitted when the CLI withdraws a pending permission request. */
+export interface PermissionCancellation {
+  request_id: string;
+  tool_use_id: string;
+}
+
+// ---------------------------------------------------------------------------
+// Capabilities (from initialize control_request response)
+// ---------------------------------------------------------------------------
+
+export interface SlashCommand {
+  /** Hint for arguments (e.g. "<file>", ""). */
+  argumentHint: string;
+  /** Description of what the command does. */
+  description: string;
+  /** Command name without leading slash. */
+  name: string;
+}
+
+export interface ModelInfo {
+  description: string;
+  displayName: string;
+  supportedEffortLevels?: string[];
+  supportsEffort?: boolean;
+  supportsFastMode?: boolean;
+  value: string;
+}
+
+export interface AgentCapabilities {
+  agents: Array<{ description: string; model?: string; name: string }>;
+  commands: SlashCommand[];
+  models: ModelInfo[];
 }

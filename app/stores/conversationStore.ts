@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import type {
+  AgentCapabilities,
   ClaudeStreamEvent,
   ClaudeContentBlock,
   PermissionRequest,
+  SlashCommand,
   TokenUsage,
 } from "../lib/types";
 import type { ImageAttachment } from "../lib/ipc";
@@ -34,19 +36,24 @@ export interface ConversationMessage {
 }
 
 export interface AgentConversation {
-  /** When true, suppress assistant/user events from the bootstrap prompt. */
-  bootstrapping?: boolean;
+  /** Rich capabilities from the initialize control_request response. */
+  capabilities?: AgentCapabilities | null;
   /** Tracks the type of the most recent Claude CLI event for thinking-state derivation. */
   lastEventType?: string;
   messages: ConversationMessage[];
   model?: string;
+  /** Tool input of the currently executing tool (for richer activity descriptions). */
+  pendingToolInput?: Record<string, unknown> | null;
+  /** Name of the tool currently executing (awaiting result). Null when thinking/idle. */
+  pendingToolName?: string | null;
   /** Messages waiting to be sent when the agent becomes idle. */
   queuedMessages: QueuedMessage[];
   /** When true, skip replayed events from a --resume until the first result. */
   resuming?: boolean;
   /** Claude CLI session ID from the init event, used for --resume. */
   sessionId?: string;
-  slashCommands?: string[];
+  /** Slash commands — rich objects from initialize, or bare strings from init event. */
+  slashCommands?: SlashCommand[];
   tools?: string[];
   totalCost?: number;
   totalDuration?: number;
@@ -55,6 +62,8 @@ export interface AgentConversation {
 interface ConversationState {
   addUserMessage: (agentId: string, text: string) => void;
   appendEvent: (agentId: string, event: ClaudeStreamEvent) => void;
+  /** Cancel a pending permission prompt (CLI withdrew the request). */
+  cancelPermission: (agentId: string, toolUseId: string) => void;
   clearConversation: (agentId: string) => void;
   /** Clear the pendingPermission flag on a tool call after user responds. */
   clearPermission: (agentId: string, toolUseId: string) => void;
@@ -69,8 +78,8 @@ interface ConversationState {
     text: string,
     images?: ImageAttachment[],
   ) => void;
-  /** Mark a conversation as bootstrapping (suppress assistant/user events). */
-  setBootstrapping: (agentId: string, bootstrapping: boolean) => void;
+  /** Store capabilities from the initialize control_request response. */
+  setCapabilities: (agentId: string, capabilities: AgentCapabilities) => void;
   /** Mark a tool call as pending permission so the UI shows Allow/Deny.
    *  Returns true if the tool call was found, false otherwise. */
   setPermissionPending: (
@@ -166,23 +175,6 @@ export const useConversationStore = create<ConversationState>((set) => ({
     set((state) => {
       const existing = state.conversations[agentId] ?? emptyConversation();
 
-      // During bootstrap, suppress assistant/user events (the response to
-      // the hidden init prompt). Let system and result events through.
-      // The result event clears the flag so subsequent turns render normally.
-      if (existing.bootstrapping) {
-        if (event.type === "result") {
-          return {
-            conversations: {
-              ...state.conversations,
-              [agentId]: { ...existing, bootstrapping: false },
-            },
-          };
-        }
-        if (event.type !== "system") {
-          return state;
-        }
-      }
-
       // When resuming a session, the CLI replays the last turn. Skip those
       // events so we don't duplicate messages. Let the init event through
       // (to refresh session metadata), and clear the flag on the first result.
@@ -201,6 +193,25 @@ export const useConversationStore = create<ConversationState>((set) => ({
       }
 
       if (event.type === "system" && event.subtype === "init") {
+        // Merge slash_commands and skills from the init event with any
+        // richer data already received from the initialize control_request.
+        // The init event provides bare string names; we convert them to
+        // SlashCommand objects but preserve existing entries with descriptions.
+        const existingByName = new Map<string, SlashCommand>(
+          (existing.slashCommands ?? []).map((c) => [c.name, c]),
+        );
+
+        // Add commands and skills from the init event (bare names).
+        const allNames = new Set([
+          ...(event.slash_commands ?? []),
+          ...(event.skills ?? []),
+        ]);
+        for (const name of allNames) {
+          if (!existingByName.has(name)) {
+            existingByName.set(name, { name, description: "", argumentHint: "" });
+          }
+        }
+
         return {
           conversations: {
             ...state.conversations,
@@ -210,7 +221,45 @@ export const useConversationStore = create<ConversationState>((set) => ({
               model: event.model,
               sessionId: event.session_id,
               tools: event.tools.map((t) => t.name),
-              slashCommands: event.slash_commands,
+              slashCommands: Array.from(existingByName.values()),
+            },
+          },
+        };
+      }
+
+      // session_state_changed — track as lastEventType for UI derivation.
+      if (event.type === "system" && event.subtype === "session_state_changed") {
+        return {
+          conversations: {
+            ...state.conversations,
+            [agentId]: {
+              ...existing,
+              lastEventType: `system:${event.subtype}:${event.state}`,
+            },
+          },
+        };
+      }
+
+      // api_retry — add a transient system message so the user knows about retries.
+      if (event.type === "system" && event.subtype === "api_retry") {
+        const retryMsg: ConversationMessage = {
+          id: crypto.randomUUID(),
+          role: "system",
+          textBlocks: [
+            `API retry ${event.attempt}/${event.max_retries}` +
+              (event.error_status ? ` (HTTP ${event.error_status})` : "") +
+              ` — retrying in ${Math.round(event.retry_delay_ms / 1000)}s`,
+          ],
+          toolCalls: [],
+          timestamp: Date.now(),
+        };
+        return {
+          conversations: {
+            ...state.conversations,
+            [agentId]: {
+              ...existing,
+              lastEventType: `system:${event.subtype}`,
+              messages: [...existing.messages, retryMsg],
             },
           },
         };
@@ -242,6 +291,9 @@ export const useConversationStore = create<ConversationState>((set) => ({
           usage: event.message.usage,
         };
 
+        // Track the last tool_use block as the "pending tool" for activity display.
+        const lastTool = toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
+
         return {
           conversations: {
             ...state.conversations,
@@ -250,6 +302,8 @@ export const useConversationStore = create<ConversationState>((set) => ({
               lastEventType: event.type,
               model: existing.model ?? event.message.model,
               messages: [...existing.messages, assistantMsg],
+              pendingToolName: lastTool?.name ?? null,
+              pendingToolInput: lastTool?.input ?? null,
             },
           },
         };
@@ -286,7 +340,14 @@ export const useConversationStore = create<ConversationState>((set) => ({
         return {
           conversations: {
             ...state.conversations,
-            [agentId]: { ...existing, lastEventType: event.type, messages },
+            [agentId]: {
+              ...existing,
+              lastEventType: event.type,
+              messages,
+              // Tool result arrived — clear pending tool so activity shows "Thinking".
+              pendingToolName: null,
+              pendingToolInput: null,
+            },
           },
         };
       }
@@ -304,6 +365,8 @@ export const useConversationStore = create<ConversationState>((set) => ({
             [agentId]: {
               ...existing,
               lastEventType: event.type,
+              pendingToolName: null,
+              pendingToolInput: null,
               totalCost: newTotal,
               totalDuration: newDuration,
             },
@@ -314,13 +377,17 @@ export const useConversationStore = create<ConversationState>((set) => ({
       return state;
     }),
 
-  setBootstrapping: (agentId, bootstrapping) =>
+  setCapabilities: (agentId, capabilities) =>
     set((state) => {
       const existing = state.conversations[agentId] ?? emptyConversation();
       return {
         conversations: {
           ...state.conversations,
-          [agentId]: { ...existing, bootstrapping },
+          [agentId]: {
+            ...existing,
+            capabilities,
+            slashCommands: capabilities.commands,
+          },
         },
       };
     }),
@@ -364,6 +431,37 @@ export const useConversationStore = create<ConversationState>((set) => ({
   },
 
   clearPermission: (agentId, toolUseId) =>
+    set((state) => {
+      const existing = state.conversations[agentId];
+      if (!existing) return state;
+
+      const messages = [...existing.messages];
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role !== "assistant") continue;
+        const idx = messages[i].toolCalls.findIndex(
+          (tc) => tc.id === toolUseId,
+        );
+        if (idx === -1) continue;
+
+        const updated = { ...messages[i] };
+        updated.toolCalls = [...updated.toolCalls];
+        updated.toolCalls[idx] = {
+          ...updated.toolCalls[idx],
+          pendingPermission: false,
+        };
+        messages[i] = updated;
+        break;
+      }
+
+      return {
+        conversations: {
+          ...state.conversations,
+          [agentId]: { ...existing, messages },
+        },
+      };
+    }),
+
+  cancelPermission: (agentId, toolUseId) =>
     set((state) => {
       const existing = state.conversations[agentId];
       if (!existing) return state;

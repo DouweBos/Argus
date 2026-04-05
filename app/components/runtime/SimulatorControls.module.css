@@ -3,8 +3,8 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--glass-border);
+  background: transparent;
   flex-shrink: 0;
 }
 
@@ -72,22 +72,22 @@
   justify-content: center;
   gap: 5px;
   padding: 5px 8px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
   transition:
-    background var(--transition-fast),
-    border-color var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
 }
 
 .actionBtn:hover:not(:disabled) {
-  background: var(--bg-hover);
-  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
 }
 

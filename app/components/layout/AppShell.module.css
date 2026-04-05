@@ -34,10 +34,6 @@
   z-index: 5;
 }
 
-.peekZoneRight {
-  /* right side variant — class hook only */
-}
-
 /* Peek overlay — slides in on hover with glass effect */
 .peekOverlay {
   position: absolute;
@@ -64,20 +60,5 @@
 }
 
 .peekOverlayLeft[data-visible="true"] {
-  transform: translateX(0);
-}
-
-.peekOverlayRight {
-  right: 0;
-  width: 35vw;
-  min-width: 320px;
-  max-width: 700px;
-  transform: translateX(100%);
-  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.5);
-  border-right: none;
-  border-radius: var(--border-radius) 0 0 var(--border-radius);
-}
-
-.peekOverlayRight[data-visible="true"] {
   transform: translateX(0);
 }

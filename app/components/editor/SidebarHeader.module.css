@@ -1,7 +1,7 @@
 .header {
   position: relative;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
@@ -24,7 +24,7 @@
 
 .iconBtn:hover {
   color: var(--text-primary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .iconBtn:focus-visible {
@@ -67,7 +67,7 @@
 }
 
 .item:hover {
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
@@ -132,6 +132,6 @@
 
 .pinBtn:hover {
   color: var(--text-primary);
-  background: var(--bg-hover);
+  background: rgba(255, 255, 255, 0.06);
   opacity: 1;
 }

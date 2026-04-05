@@ -1,11 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-// Mock the main module to avoid Electron imports
-vi.mock("../../main", () => ({
-  getMainWindow: () => null,
-}));
-
-import { parseAllowRule, extractSpecifier, globMatch } from "./permissions";
+import { parseAllowRule, extractSpecifier, globMatch } from "./allowRules";
 
 describe("parseAllowRule", () => {
   it("parses bare tool name", () => {

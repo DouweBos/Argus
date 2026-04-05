@@ -2,18 +2,22 @@
  * Claude Code CLI subprocess management.
  *
  * Spawns `claude --print --output-format stream-json --input-format
- * stream-json --verbose --settings <path>` as a child process with piped
- * stdin/stdout. A `readline` interface drains stdout line by line and forwards
- * each JSON line to the renderer as an `agent:event:{agentId}` IPC event.
+ * stream-json --verbose --permission-prompt-tool stdio` as a child process
+ * with piped stdin/stdout. A `readline` interface drains stdout line by line.
+ *
+ * Lines containing `control_request` or `control_cancel_request` are parsed
+ * in the backend and handled by {@link ControlHandler}. Everything else is
+ * forwarded as raw JSON strings to the renderer via IPC.
  *
  * # Event contract
  *
- * | IPC channel                   | Payload                        |
- * |-------------------------------|--------------------------------|
- * | `agent:event:{agentId}`       | Raw JSON string (one per line) |
- * | `agent:exit:{agentId}`        | Exit code (number)             |
- * | `agent:status:{agentId}`      | Status string                  |
- * | `agent:permission:{agentId}`  | PermissionRequest object       |
+ * | IPC channel                          | Payload                        |
+ * |--------------------------------------|--------------------------------|
+ * | `agent:event:{agentId}`              | Raw JSON string (one per line) |
+ * | `agent:exit:{agentId}`               | Exit code (number)             |
+ * | `agent:status:{agentId}`             | Status string                  |
+ * | `agent:permission:{agentId}`         | PermissionRequestPayload       |
+ * | `agent:permission-cancel:{agentId}`  | PermissionCancelPayload        |
  *
  * # Input contract
  *
@@ -21,6 +25,8 @@
  * ```json
  * {"type":"user","message":{"role":"user","content":[{"type":"text","text":"…"}]}}
  * ```
+ *
+ * Permission responses are written as `control_response` JSON lines.
  */
 
 import { spawn } from "node:child_process";
@@ -31,7 +37,8 @@ import readline from "node:readline";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import type { AgentInfo, AgentSession, AgentStatusValue } from "./models";
-import { PermissionBroker } from "./permissions";
+import { ControlHandler } from "./controlHandler";
+import { incrementCommandMetric } from "../workspace/commandMetrics";
 
 const execFileAsync = promisify(execFile);
 
@@ -72,9 +79,10 @@ export async function checkClaudeCli(): Promise<string> {
  * Spawn a new `claude` CLI process for the given workspace.
  *
  * Claude is started in `--output-format stream-json` mode so that the
- * renderer receives structured JSON events. A `PreToolUse` hook is configured
- * via `--settings` so write-tools trigger an interactive permission prompt in
- * the Stagehand frontend.
+ * renderer receives structured JSON events. Permission prompts are handled
+ * natively via the `--permission-prompt-tool stdio` flag — the CLI sends
+ * `control_request` messages on stdout and expects `control_response`
+ * messages on stdin.
  *
  * Returns an {@link AgentInfo} containing the generated `agentId`.
  *
@@ -96,11 +104,10 @@ export function startAgent(
 
   const agentId = crypto.randomUUID();
 
-  // Create the permission broker (hook script + polling interval).
-  const broker = new PermissionBroker(agentId);
-  const settingsPath = broker.settingsFilePath;
+  // Create the control handler for permission management.
+  const controlHandler = new ControlHandler(agentId);
 
-  // Build extra CLI args.
+  // Build CLI args.
   const args: string[] = [
     "--print",
     "--output-format",
@@ -108,8 +115,8 @@ export function startAgent(
     "--input-format",
     "stream-json",
     "--verbose",
-    "--settings",
-    settingsPath,
+    "--permission-prompt-tool",
+    "stdio",
   ];
 
   if (model) {
@@ -131,13 +138,13 @@ export function startAgent(
   });
 
   if (!child.stdin || !child.stdout || !child.stderr) {
-    broker.cleanup();
+    controlHandler.cleanup();
     throw `Failed to acquire stdio pipes for agent ${agentId}`;
   }
 
   const stdin = child.stdin;
 
-  // Drain stderr and log each line (mirrors the Rust fire-and-forget thread).
+  // Drain stderr and log each line.
   child.stderr.on("data", (chunk: Buffer) => {
     const lines = chunk.toString().split("\n");
     for (const line of lines) {
@@ -147,7 +154,12 @@ export function startAgent(
     }
   });
 
-  // Drain stdout line by line and forward each JSON line as an IPC event.
+  // Helper to emit IPC events to the renderer.
+  const emit = (channel: string, data: unknown): void => {
+    getMainWindow()?.webContents.send(channel, data);
+  };
+
+  // Drain stdout line by line.
   const rl = readline.createInterface({
     input: child.stdout,
     crlfDelay: Infinity,
@@ -157,7 +169,61 @@ export function startAgent(
 
   rl.on("line", (line) => {
     if (!line.trim()) return; // Skip blank separator lines.
-    getMainWindow()?.webContents.send(eventChannel, line);
+
+    // Fast-path check: only parse lines that look like control messages.
+    // Most lines are assistant/user/result/system events and can be forwarded
+    // as raw strings without parsing, keeping the backend lightweight.
+    if (
+      line.includes('"control_request"') ||
+      line.includes('"control_cancel_request"') ||
+      line.includes('"control_response"')
+    ) {
+      let parsed: {
+        type: string;
+        request_id?: string;
+        request?: unknown;
+        response?: { request_id?: string; subtype?: string; response?: unknown; error?: string };
+      };
+      try {
+        parsed = JSON.parse(line);
+      } catch {
+        // Malformed line — forward to renderer and let it deal with it.
+        emit(eventChannel, line);
+        return;
+      }
+
+      if (parsed.type === "control_response") {
+        // Response to a control_request we sent (e.g. initialize).
+        const consumed = controlHandler.handleControlResponse(
+          parsed as import("./protocol").ControlResponse,
+          emit,
+        );
+        if (consumed) return; // Don't forward consumed responses to renderer.
+        // Fall through — forward unrecognised responses as raw events.
+      }
+
+      if (parsed.type === "control_request") {
+        const autoResponse = controlHandler.handleControlRequest(
+          parsed as import("./protocol").ControlRequest,
+          emit,
+        );
+        if (autoResponse) {
+          stdin.write(autoResponse + "\n");
+        }
+        return; // Don't forward control_requests to renderer.
+      }
+
+      if (parsed.type === "control_cancel_request") {
+        controlHandler.cancelRequest(
+          parsed.request_id ?? "",
+          emit,
+        );
+        return; // Don't forward cancel requests to renderer.
+      }
+    }
+
+    // Forward everything else to renderer as raw JSON string.
+    emit(eventChannel, line);
   });
 
   // When the process exits update agent status and emit the exit event.
@@ -181,10 +247,15 @@ export function startAgent(
     stdin,
     child,
     status: "running",
-    permissionBroker: broker,
+    controlHandler,
   };
 
   appState.agents.set(agentId, session);
+
+  // Send an initialize control_request to discover capabilities (commands,
+  // models, agents) without requiring a bootstrap user prompt.
+  const initRequest = controlHandler.buildInitializeRequest();
+  stdin.write(initRequest + "\n");
 
   emitAgentStatus(agentId, "running");
   console.info(`[agent:${agentId}] started for workspace ${workspaceId}`);
@@ -222,8 +293,8 @@ export function stopAgent(agentId: string): void {
     );
   }
 
-  // Cleanup the permission broker before removing the session.
-  session.permissionBroker?.cleanup();
+  // Cleanup the control handler before removing the session.
+  session.controlHandler?.cleanup();
 
   appState.agents.delete(agentId);
 
@@ -297,6 +368,18 @@ export function sendAgentMessage(
     throw `Agent is not running: ${agentId}`;
   }
 
+  // Track slash command usage for autocomplete sorting.
+  const trimmed = message.trim();
+  if (trimmed.startsWith("/")) {
+    const cmdName = trimmed.slice(1).split(/\s+/)[0];
+    if (cmdName) {
+      const workspace = appState.workspaces.get(session.workspaceId);
+      if (workspace?.repo_root) {
+        incrementCommandMetric(workspace.repo_root, cmdName);
+      }
+    }
+  }
+
   const payload = buildUserMessagePayload(message, images ?? []);
 
   try {
@@ -332,14 +415,15 @@ export function listAgents(workspaceId: string): AgentInfo[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Respond to a pending permission request from the Claude Code `PreToolUse`
- * hook. Writes a `.res` file that unblocks the hook script.
+ * Respond to a pending permission request via the control protocol.
+ *
+ * Builds a `control_response` and writes it to the CLI's stdin.
  *
  * `decision` must be `"allow"` or `"deny"`.
  * `allowRule` is a Claude CLI-style rule like `Bash(npm *)` or
  * `Edit(**\/*.tsx)`. Only registered when `allowAll` is true.
  *
- * @throws string if no agent or broker is found.
+ * @throws string if no agent, control handler, or pending request is found.
  */
 export function respondToPermission(
   agentId: string,
@@ -353,17 +437,18 @@ export function respondToPermission(
     throw `No agent found: ${agentId}`;
   }
 
-  const broker = session.permissionBroker;
-  if (!broker) {
-    throw `Agent has no permission broker: ${agentId}`;
+  const handler = session.controlHandler;
+  if (!handler) {
+    throw `Agent has no control handler: ${agentId}`;
   }
 
-  // If the user chose "always allow", register the rule for the session.
-  if (allowAll === true && allowRule) {
-    broker.allowRule(allowRule);
-  }
+  const response = handler.respond(toolUseId, decision, allowRule, allowAll);
 
-  broker.respond(toolUseId, decision);
+  try {
+    session.stdin.write(response + "\n");
+  } catch (e) {
+    throw `Failed to write permission response to agent stdin: ${String(e)}`;
+  }
 }
 
 // ---------------------------------------------------------------------------

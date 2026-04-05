@@ -2,7 +2,12 @@ import { listen, type UnlistenFn } from "../lib/events";
 import { useConversationStore } from "../stores/conversationStore";
 import { useAgentStore } from "../stores/agentStore";
 import { sendAgentMessage } from "./ipc";
-import type { ClaudeStreamEvent, PermissionRequest } from "./types";
+import type {
+  AgentCapabilities,
+  ClaudeStreamEvent,
+  PermissionCancellation,
+  PermissionRequest,
+} from "./types";
 
 /**
  * Singleton service that owns event subscriptions for agent stream events.
@@ -12,8 +17,10 @@ import type { ClaudeStreamEvent, PermissionRequest } from "./types";
 const listeners = new Map<string, UnlistenFn>();
 const exitListeners = new Map<string, UnlistenFn>();
 const permListeners = new Map<string, UnlistenFn>();
+const permCancelListeners = new Map<string, UnlistenFn>();
+const capListeners = new Map<string, UnlistenFn>();
 
-/** Subscribe to agent:event:{agentId} and agent:exit:{agentId}. */
+/** Subscribe to all agent event channels. */
 export function startAgentListening(agentId: string): void {
   if (listeners.has(agentId)) return;
 
@@ -27,15 +34,28 @@ export function startAgentListening(agentId: string): void {
 
       // A "result" event means Claude finished processing the current prompt.
       // A "system" init event means the CLI just started and is ready for input.
-      // In both cases, drain any queued messages (or transition to idle).
+      // session_state_changed with state "idle" is the authoritative turn-over
+      // signal — use it as the primary idle trigger.
       if (
         parsed.type === "result" ||
         (parsed.type === "system" && parsed.subtype === "init")
       ) {
         drainNextQueued(agentId);
       }
+
+      // Authoritative idle/running signal from the CLI.
+      if (
+        parsed.type === "system" &&
+        parsed.subtype === "session_state_changed"
+      ) {
+        if (parsed.state === "idle") {
+          drainNextQueued(agentId);
+        } else if (parsed.state === "running") {
+          useAgentStore.getState().updateAgent(agentId, { status: "running" });
+        }
+      }
     } catch {
-      // Ignore malformed or non-JSON events (e.g. rate_limit_event)
+      // Ignore malformed or non-JSON events (e.g. unknown system subtypes)
     }
   }).then((unlisten) => {
     if (!listeners.has(agentId)) {
@@ -59,27 +79,71 @@ export function startAgentListening(agentId: string): void {
     exitListeners.set(agentId, unlisten);
   });
 
-  // Watch for permission requests from the PreToolUse hook.
+  // Watch for permission requests from the control protocol.
+  // With the native control protocol, the assistant event (containing the
+  // tool_use block) is always forwarded to the renderer *before* the
+  // permission event is emitted, because the control_request arrives on a
+  // subsequent stdout line. No retry loop needed.
   permListeners.set(agentId, () => {});
 
   listen<PermissionRequest>(`agent:permission:${agentId}`, (event) => {
-    // The permission event can arrive before the assistant message with the
-    // tool call has been processed. Retry a few times to handle the race.
     const store = useConversationStore.getState;
     const request = event.payload;
-    const trySet = (attemptsLeft: number) => {
-      const found = store().setPermissionPending(agentId, request);
-      if (!found && attemptsLeft > 0) {
-        setTimeout(() => trySet(attemptsLeft - 1), 100);
-      }
-    };
-    trySet(10);
+    const found = store().setPermissionPending(agentId, request);
+    if (!found) {
+      // Fallback: if the tool call hasn't been processed yet (unlikely but
+      // possible during very fast streaming), retry a few times.
+      let attempts = 3;
+      const retry = () => {
+        if (attempts-- > 0 && !store().setPermissionPending(agentId, request)) {
+          setTimeout(retry, 50);
+        }
+      };
+      setTimeout(retry, 50);
+    }
   }).then((unlisten) => {
     if (!permListeners.has(agentId)) {
       unlisten();
       return;
     }
     permListeners.set(agentId, unlisten);
+  });
+
+  // Watch for permission cancellations (CLI withdrew the request).
+  permCancelListeners.set(agentId, () => {});
+
+  listen<PermissionCancellation>(
+    `agent:permission-cancel:${agentId}`,
+    (event) => {
+      const { tool_use_id } = event.payload;
+      useConversationStore.getState().cancelPermission(agentId, tool_use_id);
+    },
+  ).then((unlisten) => {
+    if (!permCancelListeners.has(agentId)) {
+      unlisten();
+      return;
+    }
+    permCancelListeners.set(agentId, unlisten);
+  });
+
+  // Watch for capabilities from the initialize control_request response.
+  capListeners.set(agentId, () => {});
+
+  listen<AgentCapabilities>(
+    `agent:capabilities:${agentId}`,
+    (event) => {
+      useConversationStore.getState().setCapabilities(agentId, event.payload);
+      // The capabilities response means the CLI is initialized and ready for
+      // input. Drain any queued messages or transition to idle — this replaces
+      // the old bootstrap prompt that triggered system/init.
+      drainNextQueued(agentId);
+    },
+  ).then((unlisten) => {
+    if (!capListeners.has(agentId)) {
+      unlisten();
+      return;
+    }
+    capListeners.set(agentId, unlisten);
   });
 }
 
@@ -113,4 +177,12 @@ export function stopAgentListening(agentId: string): void {
   const permUnlisten = permListeners.get(agentId);
   if (permUnlisten) permUnlisten();
   permListeners.delete(agentId);
+
+  const permCancelUnlisten = permCancelListeners.get(agentId);
+  if (permCancelUnlisten) permCancelUnlisten();
+  permCancelListeners.delete(agentId);
+
+  const capUnlisten = capListeners.get(agentId);
+  if (capUnlisten) capUnlisten();
+  capListeners.delete(agentId);
 }

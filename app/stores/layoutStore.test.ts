@@ -5,18 +5,18 @@ describe("layoutStore", () => {
   beforeEach(() => {
     useLayoutStore.setState({
       leftSidebarVisible: true,
-      rightSidebarVisible: true,
       leftPanelWidth: 0.18,
-      rightPanelWidth: 0.35,
+      activeToolId: null,
+      toolPanelWidth: 0.3,
     });
   });
 
   it("has sensible defaults", () => {
     const state = useLayoutStore.getState();
     expect(state.leftSidebarVisible).toBe(true);
-    expect(state.rightSidebarVisible).toBe(true);
     expect(state.leftPanelWidth).toBe(0.18);
-    expect(state.rightPanelWidth).toBe(0.35);
+    expect(state.activeToolId).toBeNull();
+    expect(state.toolPanelWidth).toBe(0.3);
   });
 
   it("toggles left sidebar", () => {
@@ -26,18 +26,30 @@ describe("layoutStore", () => {
     expect(useLayoutStore.getState().leftSidebarVisible).toBe(true);
   });
 
-  it("toggles right sidebar", () => {
-    useLayoutStore.getState().toggleRightSidebar();
-    expect(useLayoutStore.getState().rightSidebarVisible).toBe(false);
-  });
-
   it("sets left panel width", () => {
     useLayoutStore.getState().setLeftPanelWidth(0.25);
     expect(useLayoutStore.getState().leftPanelWidth).toBe(0.25);
   });
 
-  it("sets right panel width", () => {
-    useLayoutStore.getState().setRightPanelWidth(0.5);
-    expect(useLayoutStore.getState().rightPanelWidth).toBe(0.5);
+  it("toggles tool open", () => {
+    useLayoutStore.getState().toggleTool("terminal");
+    expect(useLayoutStore.getState().activeToolId).toBe("terminal");
+  });
+
+  it("toggles same tool closed", () => {
+    useLayoutStore.getState().toggleTool("terminal");
+    useLayoutStore.getState().toggleTool("terminal");
+    expect(useLayoutStore.getState().activeToolId).toBeNull();
+  });
+
+  it("switches tool when different id toggled", () => {
+    useLayoutStore.getState().toggleTool("terminal");
+    useLayoutStore.getState().toggleTool("simulator");
+    expect(useLayoutStore.getState().activeToolId).toBe("simulator");
+  });
+
+  it("sets tool panel width", () => {
+    useLayoutStore.getState().setToolPanelWidth(0.4);
+    expect(useLayoutStore.getState().toolPanelWidth).toBe(0.4);
   });
 });

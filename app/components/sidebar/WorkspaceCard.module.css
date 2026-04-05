@@ -1,5 +1,5 @@
 .card {
-  padding: 5px 8px 5px 12px;
+  padding: 6px 10px 6px 14px;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition:
@@ -9,15 +9,18 @@
   flex-direction: column;
   align-items: stretch;
   gap: 2px;
+  margin: 0 4px;
 }
 
 .card:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 
+/* Selected — teal tint with left accent, like Air's active task */
 .card.selected {
-  background: rgba(0, 212, 170, 0.08);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: rgba(77, 159, 255, 0.06);
+  box-shadow: inset 3px 0 0 var(--accent);
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
 }
 
 .main {
@@ -26,13 +29,13 @@
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
-  min-height: 22px;
+  min-height: 24px;
 }
 
 .left {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
@@ -40,17 +43,19 @@
 .titleRow {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   overflow: hidden;
 }
 
 .titleRow svg {
   flex-shrink: 0;
   color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .card.selected .titleRow svg {
   color: var(--accent);
+  opacity: 1;
 }
 
 .projectName {
@@ -67,12 +72,13 @@
   font-weight: 600;
 }
 
+/* Diff stats — monospace, colored */
 .diffStats {
   display: inline-flex;
-  gap: 3px;
-  margin-left: 4px;
-  font-size: 9px;
-  font-weight: 500;
+  gap: 4px;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
   flex-shrink: 0;
   font-family: var(--font-mono);
 }
@@ -95,47 +101,50 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-left: 16px;
+  padding-left: 22px;
   line-height: 1.4;
+  opacity: 0.7;
 }
 
 .descriptionInline {
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .right {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
+/* Agent status dot */
 .agentDot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .agent_running {
   background: var(--success);
-  box-shadow: 0 0 6px var(--accent-glow);
+  box-shadow: 0 0 8px var(--accent-glow);
   animation: pulse 2s ease-in-out infinite;
 }
 
 .agent_error {
   background: var(--error);
+  box-shadow: 0 0 4px rgba(255, 68, 102, 0.3);
 }
 
 .agent_idle,
 .agent_stopped {
   background: var(--text-muted);
-  opacity: 0.3;
+  opacity: 0.25;
 }
 
 .agentCount {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--success);
   line-height: 1;
@@ -148,13 +157,14 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.35;
   }
 }
 
+/* Status badges — pill-shaped */
 .statusBadge {
   font-size: 9px;
-  padding: 1px 6px;
+  padding: 1px 8px;
   border-radius: var(--border-radius-pill);
   font-weight: 500;
   line-height: 16px;
@@ -165,7 +175,7 @@
 }
 
 .ws_initializing {
-  background: rgba(245, 166, 35, 0.1);
+  background: rgba(245, 166, 35, 0.08);
   color: var(--warning);
 }
 
@@ -175,19 +185,20 @@
 }
 
 .branchRow {
-  padding-left: 16px;
+  padding-left: 22px;
 }
 
+/* Setup progress — gradient bar */
 .setupProgressWrap {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding-left: 16px;
+  padding-left: 22px;
 }
 
 .progressBar {
   height: 2px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -205,9 +216,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
+/* Context menu and actions */
 .menuAnchor {
   position: relative;
   align-self: flex-end;
@@ -235,7 +247,7 @@
 }
 
 .ellipsisBtn:hover {
-  background: var(--glass-bg-hover);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
 }
 
@@ -246,11 +258,12 @@
   z-index: 100;
   min-width: 160px;
   padding: 4px;
-  background: var(--bg-secondary);
+  background: rgba(17, 17, 24, 0.92);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .contextMenuItem {
@@ -258,7 +271,7 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 6px 8px;
+  padding: 6px 10px;
   font-size: var(--font-size-xs);
   color: var(--error);
   border-radius: var(--border-radius-sm);
