@@ -114,6 +114,70 @@ describe("workspaceStore", () => {
     });
   });
 
+  describe("branch update propagation", () => {
+    it("updateWorkspace updates branch on repo_root workspace", () => {
+      const ws = workspace({
+        kind: "repo_root",
+        branch: "main",
+        path: "/home/user/Projects/MyApp",
+      });
+      useWorkspaceStore.getState().addWorkspace(ws);
+      useWorkspaceStore
+        .getState()
+        .updateWorkspace("ws-1", { branch: "feature/new-branch" });
+
+      const updated = useWorkspaceStore.getState().workspaces[0];
+      expect(updated.branch).toBe("feature/new-branch");
+    });
+
+    it("setProjectBranch + updateWorkspace keep branch in sync", () => {
+      const repoRoot = "/home/user/Projects/MyApp";
+      useWorkspaceStore.getState().addProject(repoRoot);
+      const ws = workspace({
+        kind: "repo_root",
+        branch: "main",
+        path: repoRoot,
+      });
+      useWorkspaceStore.getState().addWorkspace(ws);
+
+      // Simulate what the branch-changed event handler now does:
+      const newBranch = "claude/str-3696-firetv-deeplink-focus";
+      useWorkspaceStore.getState().setProjectBranch(repoRoot, newBranch);
+      useWorkspaceStore
+        .getState()
+        .updateWorkspace("ws-1", { branch: newBranch });
+
+      // Both sources should agree
+      const project = useWorkspaceStore
+        .getState()
+        .projects.find((p) => p.repoRoot === repoRoot);
+      const wsResult = useWorkspaceStore.getState().workspaces[0];
+      expect(project?.repoBranch).toBe(newBranch);
+      expect(wsResult.branch).toBe(newBranch);
+    });
+
+    it("workspace.branch stays stale if only setProjectBranch is called (old behavior)", () => {
+      const repoRoot = "/home/user/Projects/MyApp";
+      useWorkspaceStore.getState().addProject(repoRoot);
+      const ws = workspace({
+        kind: "repo_root",
+        branch: "main",
+        path: repoRoot,
+      });
+      useWorkspaceStore.getState().addWorkspace(ws);
+
+      // Only call setProjectBranch (the old code path)
+      useWorkspaceStore.getState().setProjectBranch(repoRoot, "new-branch");
+
+      const project = useWorkspaceStore
+        .getState()
+        .projects.find((p) => p.repoRoot === repoRoot);
+      const wsState = useWorkspaceStore.getState().workspaces[0];
+      expect(project?.repoBranch).toBe("new-branch");
+      expect(wsState.branch).toBe("main"); // still stale!
+    });
+  });
+
   describe("mergeWorkspacesForProject", () => {
     it("preserves existing IDs when paths match", () => {
       const ws = workspace();

@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc";
 import { fixProcessPath } from "./services/terminal/shellEnv";
+import { refreshAllBranches } from "./services/workspace/watcher";
 
 // Register the stagehand-ext:// protocol as privileged before app is ready.
 // This lets the renderer fetch extension files via URL.
@@ -238,6 +239,12 @@ app.whenReady().then(() => {
   registerIpcHandlers();
 
   createWindow();
+
+  // Refresh branch names when the window regains focus — fallback for cases
+  // where fs.watch on .git/HEAD misses events (network drives, sleep/wake).
+  app.on("browser-window-focus", () => {
+    refreshAllBranches();
+  });
 });
 
 /** Return the main BrowserWindow (used by services to send events). */

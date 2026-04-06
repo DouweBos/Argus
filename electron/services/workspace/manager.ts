@@ -24,6 +24,7 @@ import {
 } from "./metadata";
 import { defaultStagehandConfig, Workspace, WorkspaceStatus } from "./models";
 import { loadStagehandConfig, runSetupPipeline } from "./setup";
+import { startBranchWatcher } from "./watcher";
 
 // ---------------------------------------------------------------------------
 // add_repo_root / remove_repo_root
@@ -338,6 +339,11 @@ export function createHeadWorkspace(repoRoot: string): Workspace {
   };
 
   appState.workspaces.set(ws.id, ws);
+
+  // Watch .git/HEAD for external branch switches.
+  const branchHandle = startBranchWatcher(repoRoot, ws.id);
+  appState.watchers.set(ws.id, branchHandle);
+
   console.info(`Created repo-root (HEAD) workspace ${ws.id}`);
   return { ...ws };
 }

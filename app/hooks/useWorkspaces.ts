@@ -223,6 +223,25 @@ export function useProjectWorkspaces(repoRoot: string) {
     return () => clearInterval(interval);
   }, [hasInitializing, repoRoot]);
 
+  // Listen for branch changes pushed from the backend (fs.watch on .git/HEAD).
+  const repoRootWorkspace = workspaces.find((w) => w.kind === "repo_root");
+  const repoRootId = repoRootWorkspace?.id ?? null;
+  useEffect(() => {
+    if (!repoRootId) return;
+    const unlisten = listen<{ branch: string }>(
+      `workspace:branch-changed:${repoRootId}`,
+      (event) => {
+        const { branch } = event.payload;
+        const state = useWorkspaceStore.getState();
+        state.setProjectBranch(repoRoot, branch);
+        state.updateWorkspace(repoRootId, { branch });
+      },
+    );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [repoRootId, repoRoot]);
+
   // Manage event listeners for workspace status/progress
   const workspaceIds = workspaces
     .map((w) => w.id)
