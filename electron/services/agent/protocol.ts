@@ -145,7 +145,9 @@ export interface PermissionDecisionDeny {
   message?: string;
 }
 
-export type PermissionDecision = PermissionDecisionAllow | PermissionDecisionDeny;
+export type PermissionDecision =
+  | PermissionDecisionAllow
+  | PermissionDecisionDeny;
 
 // ---------------------------------------------------------------------------
 // Initialize response (returned by CLI after initialize control_request)

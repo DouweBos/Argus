@@ -77,11 +77,11 @@ React 19 + TypeScript + Vite 7. State managed by Zustand stores (`app/stores/`).
 
 Node.js + TypeScript, Electron. Entry point in `main.ts` (BrowserWindow creation, app lifecycle).
 
-| Module         | Purpose                                                                      |
-| -------------- | ---------------------------------------------------------------------------- |
-| `state.ts`     | `AppState` — singleton `Map`s for workspaces, agents, terminals              |
-| `ipc.ts`       | All `ipcMain.handle` registrations, routes to services                       |
-| `preload.ts`   | `contextBridge.exposeInMainWorld('stagehand', { invoke, on })`               |
+| Module                | Purpose                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| `state.ts`            | `AppState` — singleton `Map`s for workspaces, agents, terminals            |
+| `ipc.ts`              | All `ipcMain.handle` registrations, routes to services                     |
+| `preload.ts`          | `contextBridge.exposeInMainWorld('stagehand', { invoke, on })`             |
 | `services/workspace/` | Git worktree create/delete/list, `.stagehand.json` parsing, setup pipeline |
 | `services/agent/`     | Spawn/kill Claude Code as subprocess, stream parsing, permission broker    |
 | `services/terminal/`  | node-pty lifecycle + event emission                                        |
@@ -165,15 +165,15 @@ This lets multiple instances of the same project run in parallel without port co
 
 ## Key technical decisions
 
-| Decision                                   | Rationale                                                                     |
-| ------------------------------------------ | ----------------------------------------------------------------------------- |
-| `node-pty` for terminals                   | Same as VSCode — spawns immediately, reliable PTY implementation              |
-| Git CLI over libgit2                       | libgit2 has incomplete worktree support                                       |
-| Claude Code as subprocess (`stream-json`)  | Piped stdin/stdout, structured JSON events, not interactive PTY               |
-| Simulator bridge as standalone binary      | Swift/ObjC code uses private frameworks that can't run in Node.js             |
-| Worktrees outside project directory        | Keeps the user's repo and git client clean                                    |
-| Zustand over Redux/Context                 | Minimal boilerplate, no providers, good async story                           |
-| `@codingame/monaco-vscode-api`             | Embeds real VS Code editor/explorer/search without forking VS Code            |
+| Decision                                  | Rationale                                                          |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| `node-pty` for terminals                  | Same as VSCode — spawns immediately, reliable PTY implementation   |
+| Git CLI over libgit2                      | libgit2 has incomplete worktree support                            |
+| Claude Code as subprocess (`stream-json`) | Piped stdin/stdout, structured JSON events, not interactive PTY    |
+| Simulator bridge as standalone binary     | Swift/ObjC code uses private frameworks that can't run in Node.js  |
+| Worktrees outside project directory       | Keeps the user's repo and git client clean                         |
+| Zustand over Redux/Context                | Minimal boilerplate, no providers, good async story                |
+| `@codingame/monaco-vscode-api`            | Embeds real VS Code editor/explorer/search without forking VS Code |
 
 ## License
 

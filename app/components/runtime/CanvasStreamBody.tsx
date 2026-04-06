@@ -5,14 +5,14 @@ const DRAG_THROTTLE_MS = 17;
 
 interface CanvasStreamBodyProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  videoWidth: number;
-  videoHeight: number;
-  isReceiving: boolean;
   /** Whether the decoder has received its H.264 config (SPS/PPS). */
   isConfigured: boolean;
-  onTouch: (x: number, y: number, eventType: number) => void;
+  isReceiving: boolean;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onKeyUp: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  onTouch: (x: number, y: number, eventType: number) => void;
+  videoHeight: number;
+  videoWidth: number;
 }
 
 /**

@@ -330,8 +330,8 @@ export function IosSimulatorView({
         isReceiving,
       }: {
         imgRef: React.RefObject<HTMLImageElement | null>;
-        streamUrl: string | null;
         isReceiving: boolean;
+        streamUrl: null | string;
       }) => (
         <div className={styles.tvBody}>
           <div className={styles.canvasContainer}>

@@ -105,8 +105,8 @@ export function ChangesToolbar({
   searchQuery,
   onSearchChange,
 }: ChangesToolbarProps) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<null | string>(null);
+  const [error, setError] = useState<null | string>(null);
 
   // Pull dropdown state
   const pullDrop = useDropdown();

@@ -6,27 +6,27 @@ const DRAG_THROTTLE_MS = 17;
 
 interface StreamRenderProps {
   imgRef: React.RefObject<HTMLImageElement | null>;
-  streamUrl: string | null;
   isReceiving: boolean;
+  streamUrl: null | string;
 }
 
 export interface DeviceStreamViewProps {
+  actionButtons: React.ReactNode;
+  capturing: boolean;
   /** Platform toggle, rendered at the start of the title bar. */
   children?: React.ReactNode;
-  capturing: boolean;
-  mjpegPort: number | null;
-  toolsAvailable: boolean | null;
-  toolsMissing: { title: string; body: React.ReactNode };
   devicePicker: React.ReactNode;
-  actionButtons: React.ReactNode;
-  placeholder: React.ReactNode;
-  /** Called with normalized [0..1] coordinates and event type (0=down, 1=move, 2=up). */
-  onTouch: (x: number, y: number, eventType: number) => void;
+  mjpegPort: null | number;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onKeyUp: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  /** Called with normalized [0..1] coordinates and event type (0=down, 1=move, 2=up). */
+  onTouch: (x: number, y: number, eventType: number) => void;
+  placeholder: React.ReactNode;
   /** Override the default stream body (e.g. tvOS side-by-side remote layout). */
   renderStream?: (props: StreamRenderProps) => React.ReactNode;
   streamAlt?: string;
+  toolsAvailable: boolean | null;
+  toolsMissing: { body: React.ReactNode; title: string };
 }
 
 export function DeviceStreamView({

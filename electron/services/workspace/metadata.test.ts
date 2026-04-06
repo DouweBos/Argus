@@ -45,10 +45,7 @@ describe("getMeta", () => {
       description: "Test",
     });
 
-    const result = getMeta(
-      meta,
-      "C:\\Users\\dev\\worktrees\\App\\feature",
-    );
+    const result = getMeta(meta, "C:\\Users\\dev\\worktrees\\App\\feature");
     expect(result?.id).toBe("ws-1");
   });
 

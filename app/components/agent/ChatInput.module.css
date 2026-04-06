@@ -23,7 +23,9 @@
 
 .container:focus-within {
   border-color: rgba(77, 159, 255, 0.25);
-  box-shadow: 0 0 0 1px rgba(77, 159, 255, 0.08), 0 4px 24px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 0 1px rgba(77, 159, 255, 0.08),
+    0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .containerDisabled {

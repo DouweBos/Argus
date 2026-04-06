@@ -131,16 +131,13 @@ export function startAgentListening(agentId: string): void {
   // Watch for capabilities from the initialize control_request response.
   capListeners.set(agentId, () => {});
 
-  listen<AgentCapabilities>(
-    `agent:capabilities:${agentId}`,
-    (event) => {
-      useConversationStore.getState().setCapabilities(agentId, event.payload);
-      // The capabilities response means the CLI is initialized and ready for
-      // input. Drain any queued messages or transition to idle — this replaces
-      // the old bootstrap prompt that triggered system/init.
-      drainNextQueued(agentId);
-    },
-  ).then((unlisten) => {
+  listen<AgentCapabilities>(`agent:capabilities:${agentId}`, (event) => {
+    useConversationStore.getState().setCapabilities(agentId, event.payload);
+    // The capabilities response means the CLI is initialized and ready for
+    // input. Drain any queued messages or transition to idle — this replaces
+    // the old bootstrap prompt that triggered system/init.
+    drainNextQueued(agentId);
+  }).then((unlisten) => {
     if (!capListeners.has(agentId)) {
       unlisten();
       return;

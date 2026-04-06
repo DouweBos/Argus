@@ -50,9 +50,7 @@ export function fixProcessPath(): void {
  * Tries interactive login (`-ilc`) first; falls back to login-only (`-lc`).
  * Returns `undefined` if both attempts fail or produce no useful value.
  */
-function resolvePathFromLoginShell(
-  currentPath: string,
-): string | undefined {
+function resolvePathFromLoginShell(currentPath: string): string | undefined {
   const shell = process.env.SHELL ?? "/bin/zsh";
 
   // Try interactive-login first — sources both .zprofile and .zshrc.

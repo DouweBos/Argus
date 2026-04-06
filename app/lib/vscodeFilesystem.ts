@@ -7,7 +7,10 @@
  */
 
 import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
-import { Emitter, Event } from "@codingame/monaco-vscode-api/vscode/vs/base/common/event";
+import {
+  Emitter,
+  Event,
+} from "@codingame/monaco-vscode-api/vscode/vs/base/common/event";
 import { Disposable } from "@codingame/monaco-vscode-api/vscode/vs/base/common/lifecycle";
 import { reinitializeWorkspace } from "@codingame/monaco-vscode-configuration-service-override";
 import {
@@ -28,20 +31,23 @@ import {
 // Electron IPC helpers — thin wrappers that call the backend directly
 // ---------------------------------------------------------------------------
 
-function invoke<T>(channel: string, args?: Record<string, unknown>): Promise<T> {
+function invoke<T>(
+  channel: string,
+  args?: Record<string, unknown>,
+): Promise<T> {
   return window.stagehand.invoke<T>(channel, args);
 }
 
 interface BackendDirEntry {
-  name: string;
   is_dir: boolean;
+  name: string;
   size: number;
 }
 
 interface BackendStat {
   is_dir: boolean;
-  size: number;
   mtime: number;
+  size: number;
 }
 
 async function backendStat(absPath: string): Promise<BackendStat> {
@@ -52,7 +58,10 @@ async function backendReadFile(absPath: string): Promise<string> {
   return invoke<string>("read_path", { path: absPath });
 }
 
-async function backendWriteFile(absPath: string, content: string): Promise<void> {
+async function backendWriteFile(
+  absPath: string,
+  content: string,
+): Promise<void> {
   return invoke<void>("write_path", { path: absPath, content });
 }
 
@@ -84,11 +93,17 @@ class IpcFileSystemProvider
     FileSystemProviderCapabilities.FileReadWrite |
     FileSystemProviderCapabilities.PathCaseSensitive;
 
-  private readonly _onDidChangeCapabilities = this._register(new Emitter<void>());
-  readonly onDidChangeCapabilities: Event<void> = this._onDidChangeCapabilities.event;
+  private readonly _onDidChangeCapabilities = this._register(
+    new Emitter<void>(),
+  );
+  readonly onDidChangeCapabilities: Event<void> =
+    this._onDidChangeCapabilities.event;
 
-  private readonly _onDidChangeFile = this._register(new Emitter<readonly IFileChange[]>());
-  readonly onDidChangeFile: Event<readonly IFileChange[]> = this._onDidChangeFile.event;
+  private readonly _onDidChangeFile = this._register(
+    new Emitter<readonly IFileChange[]>(),
+  );
+  readonly onDidChangeFile: Event<readonly IFileChange[]> =
+    this._onDidChangeFile.event;
 
   watch() {
     // File watching is handled by Stagehand's existing chokidar watcher
@@ -172,7 +187,7 @@ export function registerIpcFilesystem(): void {
 // Workspace switching
 // ---------------------------------------------------------------------------
 
-let currentPath: string | null = null;
+let currentPath: null | string = null;
 
 /**
  * Switch the VS Code workspace to the given worktree directory path.
@@ -193,6 +208,6 @@ export async function updateWorkspaceFolder(
 /**
  * Get the currently active worktree path, if any.
  */
-export function getActiveWorktreePath(): string | null {
+export function getActiveWorktreePath(): null | string {
   return currentPath;
 }

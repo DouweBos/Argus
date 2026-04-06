@@ -128,7 +128,9 @@ export function SidebarHeader() {
   // Refresh views when dropdown opens (picks up late-loaded extensions)
   useEffect(() => {
     if (!dropdownOpen) return;
-    getSidebarViews().then(setAllViews).catch(() => {});
+    getSidebarViews()
+      .then(setAllViews)
+      .catch(() => {});
   }, [dropdownOpen]);
 
   const handleViewClick = (viewId: string) => {

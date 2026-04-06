@@ -1,19 +1,19 @@
 import { create } from "zustand";
 
-export type ToolId = "changes" | "terminal" | "simulator";
+export type ToolId = "changes" | "simulator" | "terminal";
 
 interface LayoutState {
+  /** Right-side tool rail */
+  activeToolId: null | ToolId;
   /** Panel width fractions (0–1), shared between TitleBar and ResizablePanel */
   leftPanelWidth: number;
   leftSidebarVisible: boolean;
   setLeftPanelWidth: (w: number) => void;
-  toggleLeftSidebar: () => void;
 
-  /** Right-side tool rail */
-  activeToolId: ToolId | null;
-  toolPanelWidth: number;
-  toggleTool: (id: ToolId) => void;
   setToolPanelWidth: (w: number) => void;
+  toggleLeftSidebar: () => void;
+  toggleTool: (id: ToolId) => void;
+  toolPanelWidth: number;
 }
 
 export const useLayoutStore = create<LayoutState>((set) => ({

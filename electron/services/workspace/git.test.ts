@@ -66,14 +66,24 @@ describe("worktreesRoot", () => {
   it("computes correct path for a repo", () => {
     const result = worktreesRoot("/home/user/Projects/MyApp");
     expect(result).toBe(
-      path.join(os.homedir(), ".stagehand", "worktrees", "MyApp-stagehand-worktrees"),
+      path.join(
+        os.homedir(),
+        ".stagehand",
+        "worktrees",
+        "MyApp-stagehand-worktrees",
+      ),
     );
   });
 
   it("uses 'repo' as fallback for root path", () => {
     const result = worktreesRoot("/");
     expect(result).toBe(
-      path.join(os.homedir(), ".stagehand", "worktrees", "repo-stagehand-worktrees"),
+      path.join(
+        os.homedir(),
+        ".stagehand",
+        "worktrees",
+        "repo-stagehand-worktrees",
+      ),
     );
   });
 });

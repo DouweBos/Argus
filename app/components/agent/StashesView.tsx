@@ -11,16 +11,12 @@ import { ResizablePanel } from "../layout/ResizablePanel";
 import { parseDiff } from "../../lib/diffParser";
 import type { DiffFile } from "../../lib/diffParser";
 import { FileDiffView } from "./FileDiffView";
-import {
-  FileIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-} from "../shared/Icons";
+import { FileIcon, ChevronRightIcon, ChevronDownIcon } from "../shared/Icons";
 import styles from "./StashesView.module.css";
 
 interface StashesViewProps {
-  workspaceId: string;
   onRefresh: () => void;
+  workspaceId: string;
 }
 
 function formatDate(iso: string): string {
@@ -38,18 +34,23 @@ function formatDate(iso: string): string {
 
 function statusLabel(status: string): string {
   switch (status) {
-    case "A": return "added";
-    case "D": return "deleted";
-    case "M": return "modified";
-    case "R": return "renamed";
-    default: return status;
+    case "A":
+      return "added";
+    case "D":
+      return "deleted";
+    case "M":
+      return "modified";
+    case "R":
+      return "renamed";
+    default:
+      return status;
   }
 }
 
 export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
   const [stashes, setStashes] = useState<GitStashEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const [diffFiles, setDiffFiles] = useState<DiffFile[]>([]);
   const [expandedFiles, setExpandedFiles] = useState<Set<number>>(new Set());
@@ -201,9 +202,7 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
               <div className={styles.stashInfo}>
                 <div className={styles.stashMessage}>{stash.message}</div>
               </div>
-              <span className={styles.stashDate}>
-                {formatDate(stash.date)}
-              </span>
+              <span className={styles.stashDate}>{formatDate(stash.date)}</span>
             </button>
           ))}
           {stashes.length === 0 && (
@@ -234,7 +233,9 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
                   </div>
                   <div className={styles.metaRow}>
                     <span className={styles.metaLabel}>Parent Hash</span>
-                    <span className={styles.metaValue}>{selected.parentHash}</span>
+                    <span className={styles.metaValue}>
+                      {selected.parentHash}
+                    </span>
                   </div>
                 </div>
                 {gravatarUrl && (

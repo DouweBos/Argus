@@ -65,9 +65,7 @@ export function ToolPanel({ workspaceId }: ToolPanelProps) {
                   repoRoot={workspace?.repo_root ?? ""}
                 />
               )}
-              {id === "terminal" && (
-                <TerminalTool workspaceId={workspaceId} />
-              )}
+              {id === "terminal" && <TerminalTool workspaceId={workspaceId} />}
               {id === "simulator" && (
                 <SimulatorTool workspaceId={workspaceId} />
               )}

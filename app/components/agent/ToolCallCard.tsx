@@ -26,7 +26,10 @@ interface ToolCallCardProps {
  *   WebFetch(domain:example.com)
  *   Grep            — allow all Grep calls (no meaningful specifier)
  */
-export function alwaysAllowRule(name: string, input: Record<string, unknown>): string {
+export function alwaysAllowRule(
+  name: string,
+  input: Record<string, unknown>,
+): string {
   switch (name) {
     case "Bash": {
       const cmd = ((input.command ?? "") as string).trim();

@@ -38,7 +38,12 @@ export function FileDiffView(props: FileDiffViewProps): ReactElement {
   return <FileDiffViewInner key={fileKey} {...props} />;
 }
 
-function FileDiffViewInner({ file, workspaceId, onAction, inline }: FileDiffViewProps) {
+function FileDiffViewInner({
+  file,
+  workspaceId,
+  onAction,
+  inline,
+}: FileDiffViewProps) {
   const displayPath = file.newPath || file.oldPath;
   const fileName = displayPath.split("/").pop() ?? displayPath;
 
@@ -238,7 +243,9 @@ function FileDiffViewInner({ file, workspaceId, onAction, inline }: FileDiffView
   );
 
   return (
-    <div className={`${styles.fileDiffContainer} ${inline ? styles.fileDiffInline : ""}`}>
+    <div
+      className={`${styles.fileDiffContainer} ${inline ? styles.fileDiffInline : ""}`}
+    >
       {/* File header bar */}
       <div className={styles.fileDiffHeader}>
         <FileIcon className={styles.fileIcon} />

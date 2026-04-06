@@ -74,7 +74,10 @@ export class ControlHandler {
   /** Outbound control requests awaiting a response, keyed by `request_id`. */
   private readonly outboundRequests = new Map<
     string,
-    { resolve: (response: Record<string, unknown> | undefined) => void; reject: (error: string) => void }
+    {
+      resolve: (response: Record<string, unknown> | undefined) => void;
+      reject: (error: string) => void;
+    }
   >();
 
   constructor(private readonly agentId: string) {}
@@ -145,9 +148,7 @@ export class ControlHandler {
       return true;
     }
 
-    const data = response.response.response as
-      | InitializeResponse
-      | undefined;
+    const data = response.response.response as InitializeResponse | undefined;
     if (data) {
       const cmds = data.commands ?? [];
       const models = data.models ?? [];

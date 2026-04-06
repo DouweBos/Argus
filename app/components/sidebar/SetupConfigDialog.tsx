@@ -45,8 +45,8 @@ function useTerminalListState(initial: TerminalEntry[]) {
 }
 
 interface EnvEntry {
-  name: string;
   base_value: string;
+  name: string;
   range: string;
   strategy: "hash" | "sequential";
 }
@@ -74,11 +74,11 @@ function useEnvListState(initial: EnvEntry[]) {
 /* ------------------------------------------------------------------ */
 
 interface ConfigSectionProps {
-  title: string;
-  summary: string;
-  description: string;
-  defaultOpen: boolean;
   children: React.ReactNode;
+  defaultOpen: boolean;
+  description: string;
+  summary: string;
+  title: string;
 }
 
 function ConfigSection({
@@ -120,10 +120,10 @@ function ConfigSection({
 /* ------------------------------------------------------------------ */
 
 interface ListFieldProps {
-  label: string;
-  placeholder: string;
   emptyLabel: string;
+  label: string;
   list: ReturnType<typeof useListState>;
+  placeholder: string;
 }
 
 function ListField({ label, placeholder, emptyLabel, list }: ListFieldProps) {
@@ -251,7 +251,9 @@ function EnvField({ list }: EnvFieldProps) {
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Strategy</label>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div
+                    style={{ display: "flex", gap: 6, alignItems: "center" }}
+                  >
                     <select
                       className={styles.input}
                       value={entry.strategy}
@@ -642,11 +644,7 @@ export function SetupConfigDialog({
         )}
 
         <div className={styles.stickyFooter}>
-          <button
-            type="button"
-            className={styles.cancelBtn}
-            onClick={onClose}
-          >
+          <button type="button" className={styles.cancelBtn} onClick={onClose}>
             Cancel
           </button>
           <button

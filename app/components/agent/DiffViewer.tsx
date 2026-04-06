@@ -56,7 +56,8 @@ export function DiffViewer({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<null | string>(null);
   const [conflictFiles, setConflictFiles] = useState<string[]>([]);
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(INITIAL_SELECTION);
+  const [selectedIndices, setSelectedIndices] =
+    useState<Set<number>>(INITIAL_SELECTION);
   const [searchQuery, setSearchQuery] = useState("");
   const isMounted = useRef(true);
 
@@ -311,11 +312,7 @@ export function DiffViewer({
                 <MinusIcon size={12} />
               </button>
               <div className={styles.bottomBarSpacer} />
-              <button
-                className={styles.bottomBarBtn}
-                title="Filter"
-                disabled
-              >
+              <button className={styles.bottomBarBtn} title="Filter" disabled>
                 <FilterIcon size={11} />
               </button>
             </div>
@@ -338,7 +335,10 @@ export function DiffViewer({
           ) : selectedFiles.length > 1 ? (
             <div className={styles.diffScroll}>
               {selectedFiles.map((file) => (
-                <div key={file.newPath || file.oldPath} className={styles.diffScrollItem}>
+                <div
+                  key={file.newPath || file.oldPath}
+                  className={styles.diffScrollItem}
+                >
                   <FileDiffView
                     file={file}
                     workspaceId={workspaceId}

@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ConversationMessage } from "../../stores/conversationStore";
 import { categorizeTools } from "./CollapsedToolGroup";
 
-function makeMessage(
-  toolNames: string[],
-): ConversationMessage {
+function makeMessage(toolNames: string[]): ConversationMessage {
   return {
     id: "msg-1",
     role: "assistant",
@@ -42,9 +40,7 @@ describe("categorizeTools", () => {
   });
 
   it("categorizes web tools (WebSearch, WebFetch)", () => {
-    const result = categorizeTools([
-      makeMessage(["WebSearch", "WebFetch"]),
-    ]);
+    const result = categorizeTools([makeMessage(["WebSearch", "WebFetch"])]);
     expect(result.web).toBe(2);
   });
 

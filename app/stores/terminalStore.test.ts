@@ -80,9 +80,7 @@ describe("terminalStore", () => {
 
     it("updates session fields", () => {
       useTerminalStore.getState().addSession(session());
-      useTerminalStore
-        .getState()
-        .updateSession("sess-1", { title: "Renamed" });
+      useTerminalStore.getState().updateSession("sess-1", { title: "Renamed" });
       const sessions = useTerminalStore
         .getState()
         .getSessionsForWorkspace("ws-1");

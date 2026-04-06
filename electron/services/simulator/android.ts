@@ -80,7 +80,6 @@ async function findEmulator(): Promise<string> {
   return cachedEmulatorPath;
 }
 
-
 // ---------------------------------------------------------------------------
 // Tool availability check
 // ---------------------------------------------------------------------------

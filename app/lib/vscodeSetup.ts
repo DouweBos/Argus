@@ -5,7 +5,11 @@
  * any editor component renders.
  */
 
-import { initialize, getService, IContextKeyService } from "@codingame/monaco-vscode-api";
+import {
+  initialize,
+  getService,
+  IContextKeyService,
+} from "@codingame/monaco-vscode-api";
 import getConfigurationServiceOverride, {
   initUserConfiguration,
 } from "@codingame/monaco-vscode-configuration-service-override";
@@ -249,7 +253,7 @@ const stagehandUserConfig = JSON.stringify({
     "input.placeholderForeground": "#55556a",
     "inputOption.activeBorder": "#4d9fff",
     "inputOption.activeBackground": "#4d9fff30",
-    "focusBorder": "#4d9fff",
+    focusBorder: "#4d9fff",
 
     // Buttons
     "button.background": "#4d9fff",
@@ -323,7 +327,8 @@ const stagehandUserConfig = JSON.stringify({
 
   // Editor settings
   "editor.fontSize": 13,
-  "editor.fontFamily": "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+  "editor.fontFamily":
+    "'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
   "editor.lineHeight": 20,
   "editor.minimap.enabled": true,
   "editor.minimap.scale": 1,
@@ -361,89 +366,89 @@ export const vscodeReady = (async () => {
   await initUserConfiguration(stagehandUserConfig);
 
   await initialize(
-  {
-    ...getConfigurationServiceOverride(),
-    ...getKeybindingsServiceOverride(),
-    ...getFilesServiceOverride(),
-    ...getViewsServiceOverride(undefined, undefined, false),
-    ...getQuickAccessServiceOverride(),
-    ...getModelServiceOverride(),
-    ...getNotificationsServiceOverride(),
-    ...getDialogsServiceOverride(),
-    ...getTextmateServiceOverride(),
-    ...getThemeServiceOverride(),
-    ...getLanguagesServiceOverride(),
-    ...getExtensionsServiceOverride(),
-    ...getExplorerServiceOverride(),
-    ...getSearchServiceOverride(),
-    ...getMarkersServiceOverride(),
-    ...getOutlineServiceOverride(),
-    ...getSnippetsServiceOverride(),
-    ...getEmmetServiceOverride(),
-    ...getDebugServiceOverride(),
-    ...getPreferencesServiceOverride(),
-    ...getAccessibilityServiceOverride(),
-    ...getLanguageDetectionWorkerServiceOverride(),
-    ...getStorageServiceOverride(),
-    ...getLifecycleServiceOverride(),
-    ...getEnvironmentServiceOverride(),
-    ...getWorkspaceTrustServiceOverride(),
-    ...getLogServiceOverride(),
-    ...getWorkingCopyServiceOverride(),
-    ...getOutputServiceOverride(),
-    ...getViewBannerServiceOverride(),
-    ...getViewStatusBarServiceOverride(),
-    ...getViewTitleBarServiceOverride(),
-    ...getTestingServiceOverride(),
-    ...getNotebookServiceOverride(),
-    ...getWelcomeServiceOverride(),
-    ...getWalkthroughServiceOverride(),
-    ...getUserDataSyncServiceOverride(),
-    ...getUserDataProfileServiceOverride(),
-    ...getTaskServiceOverride(),
-    ...getTimelineServiceOverride(),
-    ...getCommentsServiceOverride(),
-    ...getEditSessionsServiceOverride(),
-    ...getInteractiveServiceOverride(),
-    ...getMultiDiffEditorServiceOverride(),
-    ...getPerformanceServiceOverride(),
-    ...getLocalizationServiceOverride({
-      async setLocale() {},
-      async clearLocale() {},
-      availableLanguages: [{ locale: "en" }],
-    }),
-    ...getTreesitterServiceOverride(),
-    ...getTelemetryServiceOverride(),
-    ...getSecretStorageServiceOverride(),
-    ...getExtensionGalleryServiceOverride(),
-  },
-  document.body,
-  {
-    workspaceProvider: {
-      trusted: true,
-      async open() {
-        return false;
+    {
+      ...getConfigurationServiceOverride(),
+      ...getKeybindingsServiceOverride(),
+      ...getFilesServiceOverride(),
+      ...getViewsServiceOverride(undefined, undefined, false),
+      ...getQuickAccessServiceOverride(),
+      ...getModelServiceOverride(),
+      ...getNotificationsServiceOverride(),
+      ...getDialogsServiceOverride(),
+      ...getTextmateServiceOverride(),
+      ...getThemeServiceOverride(),
+      ...getLanguagesServiceOverride(),
+      ...getExtensionsServiceOverride(),
+      ...getExplorerServiceOverride(),
+      ...getSearchServiceOverride(),
+      ...getMarkersServiceOverride(),
+      ...getOutlineServiceOverride(),
+      ...getSnippetsServiceOverride(),
+      ...getEmmetServiceOverride(),
+      ...getDebugServiceOverride(),
+      ...getPreferencesServiceOverride(),
+      ...getAccessibilityServiceOverride(),
+      ...getLanguageDetectionWorkerServiceOverride(),
+      ...getStorageServiceOverride(),
+      ...getLifecycleServiceOverride(),
+      ...getEnvironmentServiceOverride(),
+      ...getWorkspaceTrustServiceOverride(),
+      ...getLogServiceOverride(),
+      ...getWorkingCopyServiceOverride(),
+      ...getOutputServiceOverride(),
+      ...getViewBannerServiceOverride(),
+      ...getViewStatusBarServiceOverride(),
+      ...getViewTitleBarServiceOverride(),
+      ...getTestingServiceOverride(),
+      ...getNotebookServiceOverride(),
+      ...getWelcomeServiceOverride(),
+      ...getWalkthroughServiceOverride(),
+      ...getUserDataSyncServiceOverride(),
+      ...getUserDataProfileServiceOverride(),
+      ...getTaskServiceOverride(),
+      ...getTimelineServiceOverride(),
+      ...getCommentsServiceOverride(),
+      ...getEditSessionsServiceOverride(),
+      ...getInteractiveServiceOverride(),
+      ...getMultiDiffEditorServiceOverride(),
+      ...getPerformanceServiceOverride(),
+      ...getLocalizationServiceOverride({
+        async setLocale() {},
+        async clearLocale() {},
+        availableLanguages: [{ locale: "en" }],
+      }),
+      ...getTreesitterServiceOverride(),
+      ...getTelemetryServiceOverride(),
+      ...getSecretStorageServiceOverride(),
+      ...getExtensionGalleryServiceOverride(),
+    },
+    document.body,
+    {
+      workspaceProvider: {
+        trusted: true,
+        async open() {
+          return false;
+        },
+        workspace: undefined,
       },
-      workspace: undefined,
-    },
-    productConfiguration: {
-      nameShort: "Stagehand",
-      nameLong: "Stagehand IDE",
-      extensionsGallery: {
-        serviceUrl: "https://open-vsx.org/vscode/gallery",
-        controlUrl: "",
-        extensionUrlTemplate:
-          "https://open-vsx.org/vscode/item?itemName={publisher}.{name}",
-        resourceUrlTemplate:
-          "https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}",
-        nlsBaseUrl: "",
+      productConfiguration: {
+        nameShort: "Stagehand",
+        nameLong: "Stagehand IDE",
+        extensionsGallery: {
+          serviceUrl: "https://open-vsx.org/vscode/gallery",
+          controlUrl: "",
+          extensionUrlTemplate:
+            "https://open-vsx.org/vscode/item?itemName={publisher}.{name}",
+          resourceUrlTemplate:
+            "https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}",
+          nlsBaseUrl: "",
+        },
+      },
+      defaultLayout: {
+        views: [{ id: "workbench.explorer.fileView" }],
+        force: true,
       },
     },
-    defaultLayout: {
-      views: [{ id: "workbench.explorer.fileView" }],
-      force: true,
-    },
-  },
   );
 
   // Register the IPC filesystem overlay so VS Code reads/writes via Electron
@@ -463,8 +468,13 @@ export const vscodeReady = (async () => {
   } catch {
     // Non-fatal — commands just remain visible but return false from workspaceProvider.open
   }
-
 })();
 
 // Re-export parts API for use by EditorPanel
-export { Parts, attachPart, isPartVisibile, onPartVisibilityChange, setPartVisibility };
+export {
+  Parts,
+  attachPart,
+  isPartVisibile,
+  onPartVisibilityChange,
+  setPartVisibility,
+};

@@ -124,9 +124,7 @@ function mergeConfig(
     },
     terminals: [...base.terminals, ...local.terminals],
     workspace_env:
-      local.workspace_env.length > 0
-        ? local.workspace_env
-        : base.workspace_env,
+      local.workspace_env.length > 0 ? local.workspace_env : base.workspace_env,
     run: local.run ?? base.run,
     agent_prompt: local.agent_prompt ?? base.agent_prompt,
   };
@@ -149,10 +147,7 @@ function isGlobPattern(s: string): boolean {
  */
 function filterNestedPaths(paths: string[]): string[] {
   return paths.filter(
-    (p) =>
-      !paths.some(
-        (other) => other !== p && p.startsWith(other + "/"),
-      ),
+    (p) => !paths.some((other) => other !== p && p.startsWith(other + "/")),
   );
 }
 
@@ -180,9 +175,7 @@ async function expandPatterns(
     onlyFiles: false,
     ignore: ["**/.git/**", ".git"],
   });
-  return matches
-    .filter((m) => !m.split("/").includes(".git"))
-    .sort();
+  return matches.filter((m) => !m.split("/").includes(".git")).sort();
 }
 
 // ---------------------------------------------------------------------------

@@ -43,8 +43,9 @@ describe("loadStagehandConfig", () => {
 
   it("parses .stagehand.json with setup block", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return String(p).endsWith(".stagehand.json") &&
-        !String(p).includes("local");
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
@@ -64,8 +65,9 @@ describe("loadStagehandConfig", () => {
 
   it("handles run as a plain string", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return String(p).endsWith(".stagehand.json") &&
-        !String(p).includes("local");
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
     });
     mockReadFileSync.mockReturnValue(JSON.stringify({ run: "pnpm start" }));
 
@@ -75,8 +77,9 @@ describe("loadStagehandConfig", () => {
 
   it("handles run as an object", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return String(p).endsWith(".stagehand.json") &&
-        !String(p).includes("local");
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({ run: { command: "npm start", dir: "packages/app" } }),
@@ -151,8 +154,9 @@ describe("loadStagehandConfig", () => {
 
   it("throws on invalid JSON", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return String(p).endsWith(".stagehand.json") &&
-        !String(p).includes("local");
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
     });
     mockReadFileSync.mockReturnValue("{invalid json");
 

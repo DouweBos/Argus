@@ -47,8 +47,10 @@
   --border-radius-pill: 999px;
 
   /* Typography */
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Menlo, monospace;
+  --font-ui:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Menlo, monospace;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-base: 13px;
@@ -184,7 +186,6 @@ body.sim-touching * {
 .action-item:has(.codicon-settings-gear) {
   display: none !important;
 }
-
 
 /* Match VS Code workbench font to Stagehand app */
 .monaco-workbench .part.sidebar .composite.title,

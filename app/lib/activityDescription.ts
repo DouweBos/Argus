@@ -59,7 +59,9 @@ export function toolActivity(
       if (typeof fp === "string") {
         const basename = fp.split("/").pop() ?? fp;
         const verb = toolName === "Read" ? "Reading" : "Editing";
-        return toolName === "Write" ? `Writing ${basename}` : `${verb} ${basename}`;
+        return toolName === "Write"
+          ? `Writing ${basename}`
+          : `${verb} ${basename}`;
       }
       return toolVerb(toolName);
     }
@@ -121,8 +123,8 @@ export interface Activity {
 export function deriveActivity(
   agentStatus: "error" | "idle" | "running" | "stopped" | null | undefined,
   lastEventType: string | undefined,
-  pendingToolName: string | null,
-  pendingToolInput: Record<string, unknown> | null,
+  pendingToolName: null | string,
+  pendingToolInput: null | Record<string, unknown>,
   hasPendingPermission: boolean,
 ): Activity {
   if (!agentStatus || agentStatus === "stopped" || agentStatus === "error") {

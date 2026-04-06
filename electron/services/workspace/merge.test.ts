@@ -3,7 +3,9 @@ import { parseConflictingFiles } from "./merge";
 
 describe("parseConflictingFiles", () => {
   it("returns empty array for clean merge output", () => {
-    expect(parseConflictingFiles("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n")).toEqual([]);
+    expect(
+      parseConflictingFiles("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2\n"),
+    ).toEqual([]);
   });
 
   it("parses CONFLICT lines with 'Merge conflict in'", () => {
