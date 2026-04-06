@@ -120,9 +120,7 @@ export async function git(cwd: string, args: string[]): Promise<string> {
  * This handles the case where `git worktree prune` (or a failed delete)
  * removed git's back-reference but left the directory intact.
  */
-export async function repairOrphanedWorktrees(
-  repoRoot: string,
-): Promise<void> {
+export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
   const root = worktreesRoot(repoRoot);
   if (!fs.existsSync(root)) {
     return;

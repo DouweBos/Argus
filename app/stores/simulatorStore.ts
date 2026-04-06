@@ -50,41 +50,42 @@ function loadPlatform(): "android" | "ios" {
 export type Platform = "android" | "ios";
 
 interface SimulatorState {
-  // --- Shared ---
-  platform: Platform;
-  setPlatform: (platform: Platform) => void;
+  androidBooting: boolean;
+  androidCapturing: boolean;
 
-  // --- iOS ---
-  iosToolsAvailable: boolean | null;
-  iosToolsError: string | null;
-  setIosToolsStatus: (available: boolean, error: string | null) => void;
+  androidDevices: AndroidDevice[];
+  androidDisconnected: boolean;
+  // --- Android ---
+  androidToolsAvailable: boolean | null;
+  androidToolsError: null | string;
   booting: boolean;
   capturing: boolean;
   devices: SimulatorDevice[];
   disconnected: boolean;
+  // --- iOS ---
+  iosToolsAvailable: boolean | null;
+  iosToolsError: null | string;
   mjpegPort: null | number;
+
+  // --- Shared ---
+  platform: Platform;
+  selectAndroidDevice: (workspaceId: string, serial: null | string) => void;
   selectDevice: (workspaceId: string, udid: null | string) => void;
+  selectedAndroidByWorkspace: Record<string, null | string>;
   selectedUdidByWorkspace: Record<string, null | string>;
+  setAndroidBooting: (booting: boolean) => void;
+  setAndroidCapturing: (capturing: boolean) => void;
+  setAndroidDevices: (devices: AndroidDevice[]) => void;
+
+  setAndroidDisconnected: (disconnected: boolean) => void;
+  setAndroidToolsStatus: (available: boolean, error: null | string) => void;
   setBooting: (booting: boolean) => void;
   setCapturing: (capturing: boolean) => void;
   setDevices: (devices: SimulatorDevice[]) => void;
   setDisconnected: (disconnected: boolean) => void;
+  setIosToolsStatus: (available: boolean, error: null | string) => void;
   setMjpegPort: (port: null | number) => void;
-
-  // --- Android ---
-  androidToolsAvailable: boolean | null;
-  androidToolsError: string | null;
-  setAndroidToolsStatus: (available: boolean, error: string | null) => void;
-  androidBooting: boolean;
-  androidCapturing: boolean;
-  androidDevices: AndroidDevice[];
-  androidDisconnected: boolean;
-  selectAndroidDevice: (workspaceId: string, serial: null | string) => void;
-  selectedAndroidByWorkspace: Record<string, null | string>;
-  setAndroidBooting: (booting: boolean) => void;
-  setAndroidCapturing: (capturing: boolean) => void;
-  setAndroidDevices: (devices: AndroidDevice[]) => void;
-  setAndroidDisconnected: (disconnected: boolean) => void;
+  setPlatform: (platform: Platform) => void;
 }
 
 export const useSimulatorStore = create<SimulatorState>((set) => ({

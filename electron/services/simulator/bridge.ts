@@ -137,9 +137,7 @@ export class SimBridge {
    * @throws if the bridge process is not running, the stdin write fails, or
    *   the response is not valid JSON.
    */
-  sendCommand(
-    cmd: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
+  sendCommand(cmd: Record<string, unknown>): Promise<Record<string, unknown>> {
     return new Promise<Record<string, unknown>>((resolve, reject) => {
       if (!this.proc || !this.proc.stdin.writable) {
         reject(new Error("Bridge process is not running"));
@@ -194,10 +192,8 @@ export class SimBridge {
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(trimmed) as Record<string, unknown>;
-    } catch (e) {
-      waiter.reject(
-        new Error(`Bridge returned invalid JSON: ${trimmed}`),
-      );
+    } catch {
+      waiter.reject(new Error(`Bridge returned invalid JSON: ${trimmed}`));
       return;
     }
 

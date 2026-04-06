@@ -64,7 +64,7 @@ export function TitleBar() {
 
   // Derive project name from repo_root basename
   const projectName = workspace?.repo_root
-    ? workspace.repo_root.split("/").filter(Boolean).pop() ?? null
+    ? (workspace.repo_root.split("/").filter(Boolean).pop() ?? null)
     : null;
 
   return (

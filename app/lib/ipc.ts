@@ -149,28 +149,28 @@ export const gitStashPop = (id: string): Promise<string> =>
   invoke("git_stash_pop", { id });
 
 export interface GitCommit {
-  hash: string;
   abbreviatedHash: string;
   author: string;
   authorEmail: string;
-  date: string;
   committer: string;
-  committerEmail: string;
   committerDate: string;
+  committerEmail: string;
+  date: string;
+  hash: string;
   parentHash: string;
-  treeHash: string;
-  subject: string;
   refs: string;
+  subject: string;
+  treeHash: string;
 }
 
 export interface GitStashEntry {
-  index: number;
-  hash: string;
   author: string;
   authorEmail: string;
   date: string;
-  parentHash: string;
+  hash: string;
+  index: number;
   message: string;
+  parentHash: string;
 }
 
 export const gitLog = (

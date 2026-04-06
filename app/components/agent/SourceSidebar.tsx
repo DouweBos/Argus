@@ -3,8 +3,8 @@ import styles from "./SourceSidebar.module.css";
 
 interface SourceSidebarProps {
   activeView: SourceView;
-  onViewChange: (view: SourceView) => void;
   fileCount: number;
+  onViewChange: (view: SourceView) => void;
 }
 
 function WorkingCopyIcon({ size = 14 }: { size?: number }) {

@@ -105,8 +105,8 @@ export function EditorPanel({ workspaceId }: EditorPanelProps) {
     mountedRef.current = true;
 
     const containers: Array<{
-      ref: React.RefObject<HTMLDivElement | null>;
       part: Parts;
+      ref: React.RefObject<HTMLDivElement | null>;
     }> = [
       { ref: activityBarRef, part: Parts.ACTIVITYBAR_PART },
       { ref: sidebarRef, part: Parts.SIDEBAR_PART },
@@ -121,7 +121,6 @@ export function EditorPanel({ workspaceId }: EditorPanelProps) {
         attachPart(part, ref.current);
       }
     }
-
   }, []);
 
   // Track part visibility for layout

@@ -43,9 +43,9 @@ export interface AgentConversation {
   messages: ConversationMessage[];
   model?: string;
   /** Tool input of the currently executing tool (for richer activity descriptions). */
-  pendingToolInput?: Record<string, unknown> | null;
+  pendingToolInput?: null | Record<string, unknown>;
   /** Name of the tool currently executing (awaiting result). Null when thinking/idle. */
-  pendingToolName?: string | null;
+  pendingToolName?: null | string;
   /** Messages waiting to be sent when the agent becomes idle. */
   queuedMessages: QueuedMessage[];
   /** When true, skip replayed events from a --resume until the first result. */
@@ -210,7 +210,11 @@ export const useConversationStore = create<ConversationState>((set) => ({
         ]);
         for (const name of allNames) {
           if (!existingByName.has(name)) {
-            existingByName.set(name, { name, description: "", argumentHint: "" });
+            existingByName.set(name, {
+              name,
+              description: "",
+              argumentHint: "",
+            });
           }
         }
 
@@ -230,7 +234,10 @@ export const useConversationStore = create<ConversationState>((set) => ({
       }
 
       // session_state_changed — track as lastEventType for UI derivation.
-      if (event.type === "system" && event.subtype === "session_state_changed") {
+      if (
+        event.type === "system" &&
+        event.subtype === "session_state_changed"
+      ) {
         return {
           conversations: {
             ...state.conversations,
@@ -294,7 +301,8 @@ export const useConversationStore = create<ConversationState>((set) => ({
         };
 
         // Track the last tool_use block as the "pending tool" for activity display.
-        const lastTool = toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
+        const lastTool =
+          toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
 
         return {
           conversations: {

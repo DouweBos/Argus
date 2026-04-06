@@ -77,9 +77,9 @@ describe("extractSpecifier", () => {
   });
 
   it("handles WebFetch without scheme", () => {
-    expect(
-      extractSpecifier("WebFetch", { url: "example.com/path" }),
-    ).toBe("domain:example.com");
+    expect(extractSpecifier("WebFetch", { url: "example.com/path" })).toBe(
+      "domain:example.com",
+    );
   });
 
   it("returns null for unknown tool", () => {

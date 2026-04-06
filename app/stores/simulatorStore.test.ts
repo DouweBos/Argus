@@ -68,16 +68,16 @@ describe("simulatorStore", () => {
   it("preserves selected UDID when device still exists", () => {
     useSimulatorStore.getState().selectDevice("ws-1", "AAAA-BBBB");
     useSimulatorStore.getState().setDevices([device()]);
-    expect(
-      useSimulatorStore.getState().selectedUdidByWorkspace["ws-1"],
-    ).toBe("AAAA-BBBB");
+    expect(useSimulatorStore.getState().selectedUdidByWorkspace["ws-1"]).toBe(
+      "AAAA-BBBB",
+    );
   });
 
   it("selects a device for a workspace", () => {
     useSimulatorStore.getState().selectDevice("ws-1", "AAAA-BBBB");
-    expect(
-      useSimulatorStore.getState().selectedUdidByWorkspace["ws-1"],
-    ).toBe("AAAA-BBBB");
+    expect(useSimulatorStore.getState().selectedUdidByWorkspace["ws-1"]).toBe(
+      "AAAA-BBBB",
+    );
   });
 
   it("clears disconnected flag when selecting a device", () => {

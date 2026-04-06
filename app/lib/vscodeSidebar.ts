@@ -9,16 +9,16 @@ import { viewContainerRegistry } from "@codingame/monaco-vscode-views-service-ov
 const SIDEBAR_LOCATION = 0;
 
 export type SidebarViewIcon =
-  | { type: "codicon"; name: string }
-  | { type: "url"; src: string };
+  | { name: string; type: "codicon" }
+  | { src: string; type: "url" };
 
 export interface SidebarViewInfo {
+  icon?: SidebarViewIcon;
   id: string;
   name: string;
-  icon?: SidebarViewIcon;
 }
 
-let servicePromise: Promise<IPaneCompositePartService> | null = null;
+let servicePromise: null | Promise<IPaneCompositePartService> = null;
 
 function getPaneService() {
   if (!servicePromise) {
@@ -33,7 +33,11 @@ function getPaneService() {
  * them to the registered `stagehand-ext://` protocol which resolves
  * to the local filesystem.
  */
-function toLoadableUrl(uri: { scheme?: string; path?: string; toString(): string }): string {
+function toLoadableUrl(uri: {
+  path?: string;
+  scheme?: string;
+  toString(): string;
+}): string {
   if (uri.scheme === "extension-file" && uri.path) {
     return `stagehand-ext://ext${uri.path}`;
   }
@@ -41,9 +45,7 @@ function toLoadableUrl(uri: { scheme?: string; path?: string; toString(): string
 }
 
 /** Build icon info from a view container's icon property */
-function resolveIcon(
-  icon: unknown | undefined,
-): SidebarViewIcon | undefined {
+function resolveIcon(icon: undefined | unknown): SidebarViewIcon | undefined {
   if (!icon || typeof icon !== "object") return undefined;
 
   // ThemeIcon — has an `id` string property (codicon name)
@@ -53,7 +55,7 @@ function resolveIcon(
 
   // URI — has `scheme` and `path` or `toString()`
   if ("scheme" in icon) {
-    const uri = icon as { scheme?: string; path?: string; toString(): string };
+    const uri = icon as { path?: string; scheme?: string; toString(): string };
     return { type: "url", src: toLoadableUrl(uri) };
   }
 
@@ -71,9 +73,7 @@ export async function getSidebarViews(): Promise<SidebarViewInfo[]> {
   // Build a map from view container ID → icon using the registry
   const iconMap = new Map<string, SidebarViewIcon>();
   for (const vc of viewContainerRegistry.all) {
-    const resolved = resolveIcon(
-      (vc as unknown as { icon?: unknown }).icon,
-    );
+    const resolved = resolveIcon((vc as unknown as { icon?: unknown }).icon);
     if (resolved) {
       iconMap.set(vc.id, resolved);
     }
@@ -91,9 +91,9 @@ export async function getActiveSidebarViewId(): Promise<string | undefined> {
   return svc.getActivePaneComposite(SIDEBAR_LOCATION)?.getId();
 }
 
-export function onSidebarViewChange(
-  callback: (viewId: string) => void,
-): { dispose: () => void } {
+export function onSidebarViewChange(callback: (viewId: string) => void): {
+  dispose: () => void;
+} {
   let disposed = false;
   let inner: { dispose(): void } | null = null;
 

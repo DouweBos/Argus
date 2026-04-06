@@ -14,8 +14,15 @@ import {
   titleToBranchSlug,
   worktreesRoot,
 } from "./git";
-import { getMeta, isValidWorktree, loadMetadata, migrateOrphaned, saveMetadata, WorkspaceMeta } from "./metadata";
-import { defaultStagehandConfig, Workspace, WorkspaceKind, WorkspaceStatus } from "./models";
+import {
+  getMeta,
+  isValidWorktree,
+  loadMetadata,
+  migrateOrphaned,
+  saveMetadata,
+  WorkspaceMeta,
+} from "./metadata";
+import { defaultStagehandConfig, Workspace, WorkspaceStatus } from "./models";
 import { loadStagehandConfig, runSetupPipeline } from "./setup";
 
 // ---------------------------------------------------------------------------
@@ -171,7 +178,9 @@ export async function listWorkspaces(repoRoot: string): Promise<Workspace[]> {
   for (const ws of appState.workspaces.values()) {
     if (ws.kind === "repo_root" && ws.repo_root === repoRoot) {
       try {
-        ws.branch = (await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])).trim();
+        ws.branch = (
+          await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
+        ).trim();
         appState.workspaces.set(ws.id, ws);
       } catch {
         // Keep existing branch name on failure.
@@ -212,7 +221,12 @@ export async function createWorkspace(
 
   let workspace: Workspace;
   if (useExistingBranch === true) {
-    workspace = await createWorktreeFromExisting(repoRoot, branch, description, baseBranch);
+    workspace = await createWorktreeFromExisting(
+      repoRoot,
+      branch,
+      description,
+      baseBranch,
+    );
   } else {
     workspace = await createWorktree(repoRoot, branch, description, baseBranch);
   }
@@ -264,7 +278,9 @@ export async function createWorkspace(
     })
     .catch((e: unknown) => {
       const errMsg = typeof e === "string" ? e : String(e);
-      console.error(`Setup pipeline failed for workspace ${taskWorkspaceId}: ${errMsg}`);
+      console.error(
+        `Setup pipeline failed for workspace ${taskWorkspaceId}: ${errMsg}`,
+      );
       const finalStatus: WorkspaceStatus = { error: errMsg };
       const ws = appState.workspaces.get(taskWorkspaceId);
       if (ws) {
@@ -403,7 +419,9 @@ export async function deleteWorkspace(
         await git(taskRepoRoot, ["worktree", "prune"]);
       } catch (e) {
         const errMsg = typeof e === "string" ? e : String(e);
-        console.error(`Background delete failed for workspace ${taskId}: ${errMsg}`);
+        console.error(
+          `Background delete failed for workspace ${taskId}: ${errMsg}`,
+        );
         getMainWindow()?.webContents.send("workspace:delete-failed", {
           id: taskId,
           error: errMsg,
@@ -487,7 +505,9 @@ async function createWorktree(
     "HEAD",
   ]);
 
-  console.info(`Created worktree for branch '${branchSlug}' at ${worktreePath}`);
+  console.info(
+    `Created worktree for branch '${branchSlug}' at ${worktreePath}`,
+  );
 
   return {
     id: crypto.randomUUID(),
@@ -526,7 +546,9 @@ async function createWorktreeFromExisting(
 
   await git(repoRoot, ["worktree", "add", worktreePath, branch]);
 
-  console.info(`Created worktree for existing branch '${branch}' at ${worktreePath}`);
+  console.info(
+    `Created worktree for existing branch '${branch}' at ${worktreePath}`,
+  );
 
   return {
     id: crypto.randomUUID(),

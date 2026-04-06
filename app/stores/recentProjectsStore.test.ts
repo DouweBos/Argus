@@ -100,9 +100,7 @@ describe("recentProjectsStore", () => {
 
     it("persists to localStorage", () => {
       useRecentProjectsStore.getState().addOpenProject("/test");
-      const stored = JSON.parse(
-        mockStorage["stagehand:openProjects"] ?? "[]",
-      );
+      const stored = JSON.parse(mockStorage["stagehand:openProjects"] ?? "[]");
       expect(stored).toHaveLength(1);
     });
   });

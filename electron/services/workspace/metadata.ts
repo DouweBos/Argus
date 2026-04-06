@@ -56,7 +56,9 @@ export function isValidWorktree(worktreePath: string): boolean {
 /**
  * Load persisted workspace metadata. Returns an empty Map if file is missing or invalid.
  */
-export function loadMetadata(worktreesRootDir: string): Map<string, WorkspaceMeta> {
+export function loadMetadata(
+  worktreesRootDir: string,
+): Map<string, WorkspaceMeta> {
   const filePath = metadataPath(worktreesRootDir);
   let raw: string;
   try {

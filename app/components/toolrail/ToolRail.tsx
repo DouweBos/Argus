@@ -8,9 +8,9 @@ import type { IconProps } from "../shared/Icons";
 import styles from "./ToolRail.module.css";
 
 interface ToolDef {
+  icon: React.ComponentType<IconProps>;
   id: ToolId;
   label: string;
-  icon: React.ComponentType<IconProps>;
 }
 
 const TOOLS: ToolDef[] = [

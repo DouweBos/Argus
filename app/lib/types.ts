@@ -46,7 +46,7 @@ export interface SimulatorDevice {
 
 export interface AndroidDevice {
   /** AVD name (emulators only — used to boot). Null for physical devices. */
-  avdName: string | null;
+  avdName: null | string;
   name: string;
   online: boolean;
   serial: string;
@@ -56,8 +56,8 @@ export interface AndroidDevice {
 /** Sent once when SPS+PPS are parsed from the H.264 stream. */
 export interface AndroidVideoConfig {
   codec: string;
-  codedWidth: number;
   codedHeight: number;
+  codedWidth: number;
   description: Uint8Array;
 }
 
@@ -102,6 +102,8 @@ export interface FileStat {
 export type RunConfig = { command: string; dir?: string } | string;
 
 export interface StagehandConfig {
+  /** Optional prompt appended to the Claude agent's system prompt. */
+  agent_prompt?: string;
   /** Shell command to run via the "Run" button (e.g. `npx expo start`). */
   run?: RunConfig;
   setup?: {
@@ -112,8 +114,6 @@ export interface StagehandConfig {
   terminals?: TerminalConfigEntry[];
   /** Env vars set in each workspace's terminals with a unique integer per workspace. */
   workspace_env?: WorkspaceEnvConfig[];
-  /** Optional prompt appended to the Claude agent's system prompt. */
-  agent_prompt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +121,27 @@ export interface StagehandConfig {
 // ---------------------------------------------------------------------------
 
 export type ClaudeStreamEvent =
+  | {
+      /** Authoritative idle/running signal from the CLI. */
+      state: "idle" | "requires_action" | "running";
+      subtype: "session_state_changed";
+      type: "system";
+    }
+  | {
+      /** Emitted when an API request fails with a retryable error. */
+      attempt: number;
+      error_status: null | number;
+      max_retries: number;
+      retry_delay_ms: number;
+      subtype: "api_retry";
+      type: "system";
+    }
+  | {
+      /** Generic status update from the CLI. */
+      status: string;
+      subtype: "status";
+      type: "system";
+    }
   | {
       duration_ms: number;
       result?: string;
@@ -141,33 +162,12 @@ export type ClaudeStreamEvent =
   | {
       model: string;
       session_id: string;
-      /** All user-invocable commands (built-in + skills + plugins). */
-      slash_commands?: string[];
       /** Skills specifically (plugins, user settings, bundled). */
       skills?: string[];
+      /** All user-invocable commands (built-in + skills + plugins). */
+      slash_commands?: string[];
       subtype: "init";
       tools: Array<{ name: string }>;
-      type: "system";
-    }
-  | {
-      /** Authoritative idle/running signal from the CLI. */
-      state: "idle" | "requires_action" | "running";
-      subtype: "session_state_changed";
-      type: "system";
-    }
-  | {
-      /** Emitted when an API request fails with a retryable error. */
-      attempt: number;
-      error_status: number | null;
-      max_retries: number;
-      retry_delay_ms: number;
-      subtype: "api_retry";
-      type: "system";
-    }
-  | {
-      /** Generic status update from the CLI. */
-      status: string;
-      subtype: "status";
       type: "system";
     };
 

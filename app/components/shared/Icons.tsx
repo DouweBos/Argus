@@ -427,12 +427,7 @@ export function StagehandLogo({ size = 48, className }: IconProps) {
           <stop offset="100%" stopColor="#4d9fff" stopOpacity="0.12" />
         </linearGradient>
       </defs>
-      <rect
-        width="48"
-        height="48"
-        rx="14"
-        fill="url(#stagehand-grad-bg)"
-      />
+      <rect width="48" height="48" rx="14" fill="url(#stagehand-grad-bg)" />
       <path
         d="M12 24 L24 12 L36 24 L24 36 Z"
         stroke="url(#stagehand-grad)"

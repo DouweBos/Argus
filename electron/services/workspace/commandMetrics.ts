@@ -28,9 +28,7 @@ function metricsPath(repoRoot: string): string {
  * Load command usage counts for a project. Returns an empty object if the
  * file is missing or invalid.
  */
-export function loadCommandMetrics(
-  repoRoot: string,
-): Record<string, number> {
+export function loadCommandMetrics(repoRoot: string): Record<string, number> {
   const filePath = metricsPath(repoRoot);
   let raw: string;
   try {
@@ -59,7 +57,11 @@ function saveCommandMetrics(
   const dir = worktreesRoot(repoRoot);
   try {
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(metricsPath(repoRoot), JSON.stringify(file, null, 2), "utf8");
+    fs.writeFileSync(
+      metricsPath(repoRoot),
+      JSON.stringify(file, null, 2),
+      "utf8",
+    );
   } catch {
     // Non-fatal — metrics are best-effort.
   }

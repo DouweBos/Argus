@@ -251,11 +251,11 @@ export async function writePath(
 }
 
 /** List directory contents at an absolute path. */
-export async function listPath(
-  absPath: string,
-): Promise<DirEntry[]> {
+export async function listPath(absPath: string): Promise<DirEntry[]> {
   assertInsideWorkspace(absPath);
-  const rawEntries = await fs.promises.readdir(absPath, { withFileTypes: true });
+  const rawEntries = await fs.promises.readdir(absPath, {
+    withFileTypes: true,
+  });
   const entries: DirEntry[] = [];
   for (const dirent of rawEntries) {
     if (dirent.name === ".git") continue;
@@ -263,7 +263,9 @@ export async function listPath(
     try {
       const s = await fs.promises.stat(path.join(absPath, dirent.name));
       size = s.size;
-    } catch { /* size 0 on stat failure */ }
+    } catch {
+      /* size 0 on stat failure */
+    }
     entries.push({ name: dirent.name, is_dir: dirent.isDirectory(), size });
   }
   entries.sort((a, b) => {
@@ -291,10 +293,7 @@ export async function deletePath(absPath: string): Promise<void> {
 }
 
 /** Rename/move a file at an absolute path. */
-export async function renamePath(
-  from: string,
-  to: string,
-): Promise<void> {
+export async function renamePath(from: string, to: string): Promise<void> {
   assertInsideWorkspace(from);
   assertInsideWorkspace(to);
   await fs.promises.mkdir(path.dirname(to), { recursive: true });
@@ -324,7 +323,10 @@ function workspacePath(id: string): string {
  *
  * @throws string if the path cannot be resolved or escapes the workspace root.
  */
-async function resolveSafePath(root: string, relative: string): Promise<string> {
+async function resolveSafePath(
+  root: string,
+  relative: string,
+): Promise<string> {
   let canonicalRoot: string;
   try {
     canonicalRoot = await fs.promises.realpath(root);
@@ -340,7 +342,10 @@ async function resolveSafePath(root: string, relative: string): Promise<string> 
     throw `Failed to resolve path: ${String(e)}`;
   }
 
-  if (!canonicalTarget.startsWith(canonicalRoot + path.sep) && canonicalTarget !== canonicalRoot) {
+  if (
+    !canonicalTarget.startsWith(canonicalRoot + path.sep) &&
+    canonicalTarget !== canonicalRoot
+  ) {
     throw "Path escapes workspace root";
   }
 

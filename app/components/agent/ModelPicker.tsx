@@ -2,10 +2,10 @@ import { useEffect, useRef } from "react";
 import styles from "./ModelPicker.module.css";
 
 export interface ModelOption {
-  /** Display label shown in the picker. */
-  displayName: string;
   /** Optional short description shown below the name. */
   description?: string;
+  /** Display label shown in the picker. */
+  displayName: string;
   /** The model identifier sent to the CLI (e.g. "claude-opus-4-6"). */
   value: string;
 }

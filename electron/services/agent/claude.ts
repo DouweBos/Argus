@@ -60,7 +60,12 @@ function getAgentSystemPrompt(): string {
     try {
       const promptPath = app.isPackaged
         ? path.join(process.resourcesPath, "agent-system-prompt.md")
-        : path.join(process.cwd(), "electron", "prompts", "agent-system-prompt.md");
+        : path.join(
+            process.cwd(),
+            "electron",
+            "prompts",
+            "agent-system-prompt.md",
+          );
       cachedSystemPrompt = readFileSync(promptPath, "utf-8");
     } catch (e) {
       console.warn(`Failed to load agent system prompt: ${String(e)}`);
@@ -208,7 +213,12 @@ export function startAgent(
         type: string;
         request_id?: string;
         request?: unknown;
-        response?: { request_id?: string; subtype?: string; response?: unknown; error?: string };
+        response?: {
+          request_id?: string;
+          subtype?: string;
+          response?: unknown;
+          error?: string;
+        };
       };
       try {
         parsed = JSON.parse(line);
@@ -240,10 +250,7 @@ export function startAgent(
       }
 
       if (parsed.type === "control_cancel_request") {
-        controlHandler.cancelRequest(
-          parsed.request_id ?? "",
-          emit,
-        );
+        controlHandler.cancelRequest(parsed.request_id ?? "", emit);
         return; // Don't forward cancel requests to renderer.
       }
     }
@@ -262,9 +269,7 @@ export function startAgent(
     }
 
     getMainWindow()?.webContents.send(`agent:exit:${agentId}`, exitCode);
-    console.info(
-      `[agent:${agentId}] process exited with code ${exitCode}`,
-    );
+    console.info(`[agent:${agentId}] process exited with code ${exitCode}`);
   });
 
   const session: AgentSession = {
@@ -331,9 +336,7 @@ export function stopAgent(agentId: string): void {
     session.child.kill();
   } catch (e) {
     // The process may have already exited; treat as non-fatal.
-    console.info(
-      `[agent:${agentId}] child.kill() returned: ${String(e)}`,
-    );
+    console.info(`[agent:${agentId}] child.kill() returned: ${String(e)}`);
   }
 
   // Cleanup the control handler before removing the session.

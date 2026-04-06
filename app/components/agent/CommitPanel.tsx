@@ -87,7 +87,16 @@ export function CommitPanel({
     } finally {
       setIsCommitting(false);
     }
-  }, [workspaceId, commitSubject, commitBody, amend, signOff, authorName, authorEmail, onCommitted]);
+  }, [
+    workspaceId,
+    commitSubject,
+    commitBody,
+    amend,
+    signOff,
+    authorName,
+    authorEmail,
+    onCommitted,
+  ]);
 
   return (
     <div className={styles.commitPanel} ref={panelRef}>
@@ -121,7 +130,10 @@ export function CommitPanel({
           />
           <div className={styles.hints}>
             <span>· Type "/" for commands</span>
-            <span>· Hold "Option" key for quick amend while text field is not focused</span>
+            <span>
+              · Hold "Option" key for quick amend while text field is not
+              focused
+            </span>
           </div>
 
           <div className={styles.optionsRow}>

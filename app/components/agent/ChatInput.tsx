@@ -269,7 +269,9 @@ export function ChatInput({
                 <span className={styles.suggestionSlash}>/</span>
                 <span className={styles.suggestionName}>{cmd.name}</span>
                 {cmd.description && (
-                  <span className={styles.suggestionDesc}>{cmd.description}</span>
+                  <span className={styles.suggestionDesc}>
+                    {cmd.description}
+                  </span>
                 )}
               </button>
             ))}
@@ -351,17 +353,20 @@ export function ChatInput({
                 >
                   {model}
                 </button>
-                {modelPickerOpen && onModelSelect && models && models.length > 0 && (
-                  <ModelPicker
-                    models={models}
-                    currentModel={modelValue ?? model}
-                    onSelect={(m) => {
-                      setModelPickerOpen(false);
-                      onModelSelect(m);
-                    }}
-                    onClose={() => setModelPickerOpen(false)}
-                  />
-                )}
+                {modelPickerOpen &&
+                  onModelSelect &&
+                  models &&
+                  models.length > 0 && (
+                    <ModelPicker
+                      models={models}
+                      currentModel={modelValue ?? model}
+                      onSelect={(m) => {
+                        setModelPickerOpen(false);
+                        onModelSelect(m);
+                      }}
+                      onClose={() => setModelPickerOpen(false)}
+                    />
+                  )}
               </div>
             )}
             {onTogglePlanMode && (
@@ -429,7 +434,6 @@ export function ChatInput({
           </div>
         </div>
       </div>
-
     </div>
   );
 }

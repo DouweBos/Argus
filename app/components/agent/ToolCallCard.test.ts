@@ -13,15 +13,15 @@ describe("alwaysAllowRule", () => {
   });
 
   it("generates Bash rule for complex command", () => {
-    expect(
-      alwaysAllowRule("Bash", { command: "git commit -m 'fix'" }),
-    ).toBe("Bash(git *)");
+    expect(alwaysAllowRule("Bash", { command: "git commit -m 'fix'" })).toBe(
+      "Bash(git *)",
+    );
   });
 
   it("generates Edit rule with extension glob", () => {
-    expect(
-      alwaysAllowRule("Edit", { file_path: "/src/main.tsx" }),
-    ).toBe("Edit(**/*.tsx)");
+    expect(alwaysAllowRule("Edit", { file_path: "/src/main.tsx" })).toBe(
+      "Edit(**/*.tsx)",
+    );
   });
 
   it("generates bare Edit rule when no extension", () => {
@@ -29,9 +29,9 @@ describe("alwaysAllowRule", () => {
   });
 
   it("generates Write rule with extension", () => {
-    expect(
-      alwaysAllowRule("Write", { file_path: "/src/styles.css" }),
-    ).toBe("Write(**/*.css)");
+    expect(alwaysAllowRule("Write", { file_path: "/src/styles.css" })).toBe(
+      "Write(**/*.css)",
+    );
   });
 
   it("generates Read rule using path fallback", () => {

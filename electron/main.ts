@@ -99,9 +99,12 @@ function createWindow(): void {
     log("did-fail-load: code=%d desc=%s url=%s", code, desc, url);
   });
 
-  mainWindow.webContents.on("console-message", (_e, level, message, line, sourceId) => {
-    log("renderer [%d]: %s (source: %s:%d)", level, message, sourceId, line);
-  });
+  mainWindow.webContents.on(
+    "console-message",
+    (_e, level, message, line, sourceId) => {
+      log("renderer [%d]: %s (source: %s:%d)", level, message, sourceId, line);
+    },
+  );
 
   // Open external links in the system browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -152,7 +155,11 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(() => {
-  log("app ready, isPackaged=%s, resourcesPath=%s", app.isPackaged, process.resourcesPath);
+  log(
+    "app ready, isPackaged=%s, resourcesPath=%s",
+    app.isPackaged,
+    process.resourcesPath,
+  );
 
   // Fix PATH for bundled .app builds — ensures PATH includes Homebrew, mise, etc.
   fixProcessPath();
@@ -212,11 +219,13 @@ app.whenReady().then(() => {
     if (details.resourceType === "mainFrame") {
       const csp = [
         "default-src 'self' stagehand-ext:",
-        "script-src 'self' stagehand-ext:" + (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
+        "script-src 'self' stagehand-ext:" +
+          (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
         "style-src 'self' 'unsafe-inline' stagehand-ext:",
         "font-src 'self' stagehand-ext: data:",
         "img-src 'self' stagehand-ext: extension-file: data: https: http://127.0.0.1:*",
-        "connect-src 'self' stagehand-ext: https://open-vsx.org" + (isDev ? " ws://localhost:* http://localhost:*" : ""),
+        "connect-src 'self' stagehand-ext: https://open-vsx.org" +
+          (isDev ? " ws://localhost:* http://localhost:*" : ""),
         "worker-src 'self' blob: stagehand-ext:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];

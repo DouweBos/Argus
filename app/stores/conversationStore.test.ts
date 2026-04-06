@@ -44,9 +44,7 @@ describe("conversationStore", () => {
 
   it("migrates conversation to new agent ID", () => {
     useConversationStore.getState().addUserMessage("agent-1", "hello");
-    useConversationStore
-      .getState()
-      .migrateConversation("agent-1", "agent-2");
+    useConversationStore.getState().migrateConversation("agent-1", "agent-2");
 
     expect(
       useConversationStore.getState().conversations["agent-1"],

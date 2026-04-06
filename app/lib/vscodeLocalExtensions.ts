@@ -17,8 +17,8 @@ import {
 
 interface DiscoveredExtension {
   extensionPath: string;
-  manifest: Record<string, unknown>;
   files: string[];
+  manifest: Record<string, unknown>;
 }
 
 /**

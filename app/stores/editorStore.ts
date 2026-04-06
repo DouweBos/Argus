@@ -9,9 +9,9 @@ import { create } from "zustand";
  * cross-component coordination that isn't covered by VS Code services.
  */
 interface EditorState {
-  activeWorkspaceId: string | null;
-  setActiveWorkspace: (workspaceId: string) => void;
+  activeWorkspaceId: null | string;
   clearWorkspace: () => void;
+  setActiveWorkspace: (workspaceId: string) => void;
 }
 
 export const useEditorStore = create<EditorState>((set) => ({

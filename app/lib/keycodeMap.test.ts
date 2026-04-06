@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { KEYCODE_MAP, modifierFlagsFromEvent } from "./keycodeMap";
 
-function fakeEvent(
-  overrides: Partial<KeyboardEvent> = {},
-): KeyboardEvent {
+function fakeEvent(overrides: Partial<KeyboardEvent> = {}): KeyboardEvent {
   return {
     shiftKey: false,
     ctrlKey: false,

@@ -4,13 +4,13 @@ import type { AndroidVideoConfig, AndroidVideoFrame } from "../lib/types";
 
 export interface UseAndroidVideoDecoderResult {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  /** True once the first decoded frame has been rendered. */
-  isReceiving: boolean;
   /** True once the H.264 config (SPS/PPS) has been received and the decoder is configured. */
   isConfigured: boolean;
+  /** True once the first decoded frame has been rendered. */
+  isReceiving: boolean;
+  videoHeight: number;
   /** Natural video dimensions (for touch coordinate normalization). */
   videoWidth: number;
-  videoHeight: number;
 }
 
 /**
@@ -21,7 +21,7 @@ export function useAndroidVideoDecoder(
   active: boolean,
 ): UseAndroidVideoDecoderResult {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const decoderRef = useRef<VideoDecoder | null>(null);
+  const decoderRef = useRef<null | VideoDecoder>(null);
   const dimensionsRef = useRef({ width: 0, height: 0 });
 
   // --- isReceiving via useSyncExternalStore ---

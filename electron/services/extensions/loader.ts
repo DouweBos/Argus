@@ -83,10 +83,7 @@ export async function discoverExtensions(): Promise<DiscoveredExtension[]> {
   return results;
 }
 
-async function collectFiles(
-  root: string,
-  relative: string,
-): Promise<string[]> {
+async function collectFiles(root: string, relative: string): Promise<string[]> {
   const result: string[] = [];
   const absDir = path.join(root, relative);
 

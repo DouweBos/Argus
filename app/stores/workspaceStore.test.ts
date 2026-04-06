@@ -98,9 +98,11 @@ describe("workspaceStore", () => {
     });
 
     it("sets and clears setup progress", () => {
-      useWorkspaceStore
-        .getState()
-        .setSetupProgress("ws-1", { item: "node_modules", current: 1, total: 3 });
+      useWorkspaceStore.getState().setSetupProgress("ws-1", {
+        item: "node_modules",
+        current: 1,
+        total: 3,
+      });
       expect(
         useWorkspaceStore.getState().setupProgressByWorkspaceId["ws-1"],
       ).toEqual({ item: "node_modules", current: 1, total: 3 });

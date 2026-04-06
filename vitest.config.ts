@@ -9,10 +9,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: [
-      "app/**/*.test.{ts,tsx}",
-      "electron/**/*.test.ts",
-    ],
+    include: ["app/**/*.test.{ts,tsx}", "electron/**/*.test.ts"],
     environment: "node",
     environmentMatchGlobs: [
       // Frontend tests that need DOM

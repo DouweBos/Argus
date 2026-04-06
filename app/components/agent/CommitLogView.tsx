@@ -15,9 +15,9 @@ const ROW_HEIGHT = 42;
 const PAGE_SIZE = 100;
 
 interface CommitLogViewProps {
-  workspaceId: string;
   allBranches: boolean;
   showGraph?: boolean;
+  workspaceId: string;
 }
 
 function formatDate(iso: string): string {
@@ -66,20 +66,29 @@ export function CommitLogView({
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const [diffFiles, setDiffFiles] = useState<DiffFile[]>([]);
   const [expandedFiles, setExpandedFiles] = useState<Set<number>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [prevDeps, setPrevDeps] = useState({ allBranches, workspaceId });
 
-  // Initial load
-  useEffect(() => {
+  // Reset state when workspace or branch filter changes
+  if (
+    workspaceId !== prevDeps.workspaceId ||
+    allBranches !== prevDeps.allBranches
+  ) {
+    setPrevDeps({ allBranches, workspaceId });
     setCommits([]);
     setIsLoading(true);
     setError(null);
     setHasMore(true);
     setSelectedIdx(-1);
+  }
+
+  // Initial load
+  useEffect(() => {
     gitLog(workspaceId, PAGE_SIZE, allBranches)
       .then((c) => {
         setCommits(c);
@@ -170,11 +179,12 @@ export function CommitLogView({
 
   const selected = selectedIdx >= 0 ? commits[selectedIdx] : null;
 
+  const authorEmail = selected?.authorEmail ?? null;
   const gravatarUrl = useMemo(() => {
-    if (!selected?.authorEmail) return null;
-    const hash = selected.authorEmail.trim().toLowerCase();
+    if (!authorEmail) return null;
+    const hash = authorEmail.trim().toLowerCase();
     return `https://www.gravatar.com/avatar/${md5Hex(hash)}?s=80&d=identicon`;
-  }, [selected?.authorEmail]);
+  }, [authorEmail]);
 
   let totalAdds = 0;
   let totalDels = 0;

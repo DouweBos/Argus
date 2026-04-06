@@ -18,10 +18,7 @@ function vscodeCssResolverPlugin(): Plugin {
       if (!importer || !source.endsWith(".css")) return null;
 
       // Only handle relative imports from within the monaco-vscode-api tree
-      if (
-        !source.startsWith("./") &&
-        !source.startsWith("../")
-      ) {
+      if (!source.startsWith("./") && !source.startsWith("../")) {
         return null;
       }
 

@@ -30,15 +30,47 @@ import type { SlashCommand } from "../../lib/types";
  * that the CLI filters out in headless mode but still accepts via stdin.
  */
 const BUILTIN_COMMANDS: SlashCommand[] = [
-  { name: "clear", description: "Clear conversation history", argumentHint: "" },
-  { name: "plan", description: "Enable plan mode or view the session plan", argumentHint: "[open|<description>]" },
-  { name: "model", description: "Switch the model for this session", argumentHint: "[model]" },
-  { name: "compact", description: "Summarize and clear conversation context", argumentHint: "[instructions]" },
-  { name: "help", description: "Show help and available commands", argumentHint: "" },
-  { name: "doctor", description: "Diagnose your Claude Code installation", argumentHint: "" },
-  { name: "status", description: "Show model, account, and tool status", argumentHint: "" },
+  {
+    name: "clear",
+    description: "Clear conversation history",
+    argumentHint: "",
+  },
+  {
+    name: "plan",
+    description: "Enable plan mode or view the session plan",
+    argumentHint: "[open|<description>]",
+  },
+  {
+    name: "model",
+    description: "Switch the model for this session",
+    argumentHint: "[model]",
+  },
+  {
+    name: "compact",
+    description: "Summarize and clear conversation context",
+    argumentHint: "[instructions]",
+  },
+  {
+    name: "help",
+    description: "Show help and available commands",
+    argumentHint: "",
+  },
+  {
+    name: "doctor",
+    description: "Diagnose your Claude Code installation",
+    argumentHint: "",
+  },
+  {
+    name: "status",
+    description: "Show model, account, and tool status",
+    argumentHint: "",
+  },
   { name: "fast", description: "Toggle fast mode", argumentHint: "" },
-  { name: "effort", description: "Set reasoning effort level", argumentHint: "[low|medium|high|max]" },
+  {
+    name: "effort",
+    description: "Set reasoning effort level",
+    argumentHint: "[low|medium|high|max]",
+  },
 ];
 const EMPTY_MESSAGES: ConversationMessage[] = [];
 
@@ -67,7 +99,9 @@ export function AgentChat({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const [commandMetrics, setCommandMetrics] = useState<Record<string, number>>({});
+  const [commandMetrics, setCommandMetrics] = useState<Record<string, number>>(
+    {},
+  );
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
 
   const messages = conversation?.messages ?? EMPTY_MESSAGES;
@@ -101,7 +135,9 @@ export function AgentChat({
   );
   useEffect(() => {
     if (!repoRoot) return;
-    getCommandMetrics(repoRoot).then(setCommandMetrics).catch(() => {});
+    getCommandMetrics(repoRoot)
+      .then(setCommandMetrics)
+      .catch(() => {});
   }, [repoRoot]);
 
   // Group consecutive tool-call-only assistant messages into collapsed segments
@@ -209,7 +245,13 @@ export function AgentChat({
         pendingToolInput,
         hasPendingPermission,
       ),
-    [agentStatus, lastEventType, pendingToolName, pendingToolInput, hasPendingPermission],
+    [
+      agentStatus,
+      lastEventType,
+      pendingToolName,
+      pendingToolInput,
+      hasPendingPermission,
+    ],
   );
 
   const isAlive = agentStatus === "running" || agentStatus === "idle";
@@ -321,13 +363,22 @@ export function AgentChat({
         // Refresh command metrics after sending a slash command so sorting
         // updates immediately.
         if (trimmed.startsWith("/") && repoRoot) {
-          getCommandMetrics(repoRoot).then(setCommandMetrics).catch(() => {});
+          getCommandMetrics(repoRoot)
+            .then(setCommandMetrics)
+            .catch(() => {});
         }
       } catch {
         // Message failed — user sees the optimistic message
       }
     },
-    [agentId, addUserMessage, queueMessage, clearConversation, permissionMode, repoRoot],
+    [
+      agentId,
+      addUserMessage,
+      queueMessage,
+      clearConversation,
+      permissionMode,
+      repoRoot,
+    ],
   );
 
   if (!agentId) {
@@ -365,23 +416,29 @@ export function AgentChat({
           ),
         )}
 
-        {activity && activity.state !== "stopped" && activity.state !== "idle" && (
-          <div className={`${styles.activityBubble} ${
-            activity.state === "working"
-              ? styles.activityWorking
-              : styles.activityBlocked
-          }`}>
-            <span className={styles.activityDot} />
-            <span className={styles.activityText}>{activity.description}</span>
-            {activity.state === "working" && (
-              <span className={styles.activityDots}>
-                <span className={styles.thinkingDot} />
-                <span className={styles.thinkingDot} />
-                <span className={styles.thinkingDot} />
+        {activity &&
+          activity.state !== "stopped" &&
+          activity.state !== "idle" && (
+            <div
+              className={`${styles.activityBubble} ${
+                activity.state === "working"
+                  ? styles.activityWorking
+                  : styles.activityBlocked
+              }`}
+            >
+              <span className={styles.activityDot} />
+              <span className={styles.activityText}>
+                {activity.description}
               </span>
-            )}
-          </div>
-        )}
+              {activity.state === "working" && (
+                <span className={styles.activityDots}>
+                  <span className={styles.thinkingDot} />
+                  <span className={styles.thinkingDot} />
+                  <span className={styles.thinkingDot} />
+                </span>
+              )}
+            </div>
+          )}
 
         {queuedMessages.length > 0 && (
           <div className={styles.queuedSection}>

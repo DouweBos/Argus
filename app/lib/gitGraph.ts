@@ -1,19 +1,19 @@
 export interface GraphRow {
+  /** Color index for the commit node */
+  color: number;
   column: number;
-  laneCount: number;
-  /** Lane indices with lines going up (active before this commit) */
-  lanesToTop: number[];
-  /** Lane indices with lines going down (active after this commit) */
-  lanesToBottom: number[];
-  /** Extra lanes merging into the commit column */
-  merges: Array<{ fromCol: number; toCol: number }>;
   /** New lanes forking out from the commit column */
   forks: Array<{ fromCol: number; toCol: number }>;
   isMerge: boolean;
   /** Color index for each lane column (column index → palette index) */
   laneColorMap: Map<number, number>;
-  /** Color index for the commit node */
-  color: number;
+  laneCount: number;
+  /** Lane indices with lines going down (active after this commit) */
+  lanesToBottom: number[];
+  /** Lane indices with lines going up (active before this commit) */
+  lanesToTop: number[];
+  /** Extra lanes merging into the commit column */
+  merges: Array<{ fromCol: number; toCol: number }>;
 }
 
 interface CommitLike {
@@ -27,9 +27,9 @@ interface CommitLike {
  */
 export function buildGraphLanes(commits: CommitLike[]): GraphRow[] {
   // Active lanes: each entry is the commit hash the lane is "waiting for"
-  const lanes: (string | null)[] = [];
+  const lanes: (null | string)[] = [];
   // Color index assigned to each lane column
-  const colColors: (number | null)[] = [];
+  const colColors: (null | number)[] = [];
   const rows: GraphRow[] = [];
   const laneColors = new Map<string, number>();
   let nextColor = 0;
