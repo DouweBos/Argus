@@ -7,7 +7,7 @@ import {
   isWorkspaceReady,
   type Workspace,
 } from "../../lib/types";
-import { watchWorkspace, unwatchWorkspace } from "../../lib/ipc";
+import { watchWorkspace } from "../../lib/ipc";
 import { RepoIcon, BranchIcon, EllipsisIcon, TrashIcon } from "../shared/Icons";
 import { BranchSwitcher } from "./BranchSwitcher";
 import styles from "./WorkspaceCard.module.css";
@@ -86,7 +86,6 @@ export function WorkspaceCard({
     return () => {
       cancelled = true;
       unlistenPromise.then((fn) => fn());
-      unwatchWorkspace(workspace.id).catch(() => {});
     };
   }, [workspace.id, workspace.status]);
 

@@ -6,6 +6,7 @@ import {
   getWorkspaceConflicts,
   stageFile,
   unstageFile,
+  watchWorkspace,
 } from "../../lib/ipc";
 import { useIpcEvent } from "../../hooks/useIpcEvent";
 import { ResizablePanel } from "../layout/ResizablePanel";
@@ -110,6 +111,11 @@ export function DiffViewer({
     fetchDiff();
     fetchConflicts();
   }, [fetchDiff, fetchConflicts]);
+
+  // Ensure the backend file watcher is running (no-op if already active).
+  useEffect(() => {
+    watchWorkspace(workspaceId).catch(() => {});
+  }, [workspaceId]);
 
   useIpcEvent(`workspace:diff-changed:${workspaceId}`, () => {
     fetchDiff();
@@ -238,7 +244,7 @@ export function DiffViewer({
     );
   }
 
-  const noChanges = !fullDiff || fullDiff.trim() === "";
+  const noChanges = files.length === 0;
 
   return (
     <div className={styles.container}>
