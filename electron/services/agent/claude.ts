@@ -31,19 +31,44 @@
 
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { promisify } from "node:util";
 import readline from "node:readline";
+import { app } from "electron";
 
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import type { AgentInfo, AgentSession, AgentStatusValue } from "./models";
 import { ControlHandler } from "./controlHandler";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
+import { loadStagehandConfig } from "../workspace/setup";
 
 const execFileAsync = promisify(execFile);
 
 /** The executable name used to invoke the Claude Code CLI. */
 const CLAUDE_BIN = "claude";
+
+/**
+ * Lazily-loaded system prompt appended to every agent session.
+ * Read once from `electron/prompts/agent-system-prompt.md`.
+ */
+let cachedSystemPrompt: string | null = null;
+
+function getAgentSystemPrompt(): string {
+  if (cachedSystemPrompt === null) {
+    try {
+      const promptPath = app.isPackaged
+        ? path.join(process.resourcesPath, "agent-system-prompt.md")
+        : path.join(process.cwd(), "electron", "prompts", "agent-system-prompt.md");
+      cachedSystemPrompt = readFileSync(promptPath, "utf-8");
+    } catch (e) {
+      console.warn(`Failed to load agent system prompt: ${String(e)}`);
+      cachedSystemPrompt = "";
+    }
+  }
+  return cachedSystemPrompt;
+}
 
 // ---------------------------------------------------------------------------
 // check_claude_cli
@@ -94,6 +119,7 @@ export function startAgent(
   model?: string,
   permissionMode?: string,
   resumeSessionId?: string,
+  appendSystemPrompt?: string,
 ): AgentInfo {
   // Verify the workspace exists and grab its path.
   const workspace = appState.workspaces.get(workspaceId);
@@ -252,9 +278,26 @@ export function startAgent(
 
   appState.agents.set(agentId, session);
 
+  // Load project-level agent prompt from .stagehand.json (if present).
+  let projectPrompt: string | null = null;
+  try {
+    const config = loadStagehandConfig(workspace.repo_root);
+    projectPrompt = config.agent_prompt ?? null;
+  } catch {
+    // Config missing or invalid — non-fatal, skip project prompt.
+  }
+
+  // Combine prompts: built-in → project-level → caller-provided.
+  const builtInPrompt = getAgentSystemPrompt();
+  const combinedPrompt = [builtInPrompt, projectPrompt, appendSystemPrompt]
+    .filter(Boolean)
+    .join("\n\n");
+
   // Send an initialize control_request to discover capabilities (commands,
   // models, agents) without requiring a bootstrap user prompt.
-  const initRequest = controlHandler.buildInitializeRequest();
+  const initRequest = controlHandler.buildInitializeRequest(
+    combinedPrompt || undefined,
+  );
   stdin.write(initRequest + "\n");
 
   emitAgentStatus(agentId, "running");

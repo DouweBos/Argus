@@ -7,6 +7,7 @@
 
 import type {
   AgentStatus,
+  AndroidDevice,
   DirEntry,
   FileStat,
   Workspace,
@@ -252,6 +253,7 @@ export const startAgent = (
   model?: string,
   permissionMode?: string,
   resumeSessionId?: string,
+  appendSystemPrompt?: string,
 ): Promise<AgentStatus> =>
   invoke("start_agent", {
     workspaceId,
@@ -259,6 +261,8 @@ export const startAgent = (
     ...(permissionMode != null && permissionMode !== "" && { permissionMode }),
     ...(resumeSessionId != null &&
       resumeSessionId !== "" && { resumeSessionId }),
+    ...(appendSystemPrompt != null &&
+      appendSystemPrompt !== "" && { appendSystemPrompt }),
   });
 
 export const stopAgent = (agentId: string): Promise<void> =>
@@ -359,6 +363,8 @@ export const terminalResize = (
 ): Promise<void> => invoke("terminal_resize", { sessionId, cols, rows });
 
 // Simulator commands
+export const checkIosTools = (): Promise<void> => invoke("check_ios_tools");
+
 export const listSimulators = (): Promise<SimulatorDevice[]> =>
   invoke("list_simulators");
 
@@ -390,3 +396,40 @@ export const simulatorKeyboard = (
   isDown: boolean,
 ): Promise<void> =>
   invoke("simulator_keyboard", { keyCode, modifierFlags, isDown });
+
+// Android device commands
+export const checkAndroidTools = (): Promise<void> =>
+  invoke("check_android_tools");
+
+export const listAndroidDevices = (): Promise<AndroidDevice[]> =>
+  invoke("list_android_devices");
+
+export const listAvds = (): Promise<string[]> => invoke("list_avds");
+
+export const bootAndroidEmulator = (avdName: string): Promise<string> =>
+  invoke("boot_android_emulator", { avdName });
+
+export const startAndroidCapture = (serial: string): Promise<void> =>
+  invoke("start_android_capture", { serial });
+
+export const stopAndroidCapture = (): Promise<void> =>
+  invoke("stop_android_capture");
+
+export const disconnectAndroidDevice = (serial: string): Promise<void> =>
+  invoke("disconnect_android_device", { serial });
+
+export const androidTouch = (
+  serial: string,
+  x: number,
+  y: number,
+  eventType: number,
+): Promise<void> => invoke("android_touch", { serial, x, y, eventType });
+
+export const androidKeyboard = (
+  keyCode: number,
+  metaState: number,
+  isDown: boolean,
+): Promise<void> => invoke("android_keyboard", { keyCode, metaState, isDown });
+
+export const androidButton = (button: string): Promise<void> =>
+  invoke("android_button", { button });

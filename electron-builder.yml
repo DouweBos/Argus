@@ -13,6 +13,10 @@ extraResources:
     to: stagehand-sim-bridge
     filter:
       - "**/*"
+  - from: native/scrcpy-server/scrcpy-server.jar
+    to: scrcpy-server.jar
+  - from: electron/prompts/agent-system-prompt.md
+    to: agent-system-prompt.md
 mac:
   identity: null
   target:

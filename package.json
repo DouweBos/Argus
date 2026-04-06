@@ -27,7 +27,8 @@
     "lint:fix": "eslint . --fix && prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "postinstall": "tsx scripts/fetch-scrcpy-server.ts"
   },
   "dependencies": {
     "@codingame/monaco-vscode-accessibility-service-override": "~28.3.0",
@@ -144,6 +145,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "jsdom": "^29.0.1",
     "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^7.0.4",

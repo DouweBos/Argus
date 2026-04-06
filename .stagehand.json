@@ -10,11 +10,13 @@
       "dir": "."
     }
   ],
-  "workspace_env": {
-    "name": "STAGEHAND_PORT",
-    "base_value": 1420,
-    "range": 100,
-    "strategy": "sequential"
-  },
+  "workspace_env": [
+    {
+      "name": "STAGEHAND_PORT",
+      "base_value": 1420,
+      "range": 100,
+      "strategy": "sequential"
+    }
+  ],
   "run": "pnpm dev"
 }

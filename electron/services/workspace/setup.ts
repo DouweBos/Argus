@@ -11,7 +11,12 @@ import { promisify } from "node:util";
 import fg from "fast-glob";
 
 import { getMainWindow } from "../../main";
-import { defaultStagehandConfig, SetupConfig, StagehandConfig } from "./models";
+import {
+  defaultStagehandConfig,
+  SetupConfig,
+  StagehandConfig,
+  WorkspaceEnvConfig,
+} from "./models";
 
 const execFileAsync = promisify(execFile);
 
@@ -51,6 +56,17 @@ export function loadStagehandConfig(repoRoot: string): StagehandConfig {
 }
 
 /**
+ * Normalise `workspace_env` from its possible JSON forms into an array.
+ * Accepts: null/undefined, a single object, or an array.
+ */
+function normalizeWorkspaceEnv(raw: unknown): WorkspaceEnvConfig[] {
+  if (raw == null) return [];
+  if (Array.isArray(raw)) return raw as WorkspaceEnvConfig[];
+  if (typeof raw === "object") return [raw as WorkspaceEnvConfig];
+  return [];
+}
+
+/**
  * Parse raw JSON into a `StagehandConfig`. Handles the `run` field's dual
  * string/object form (matching the Rust custom deserializer).
  */
@@ -67,16 +83,16 @@ function parseStagehandConfig(raw: string): StagehandConfig {
       commands: (setup.commands as string[]) ?? [],
     },
     terminals: (parsed.terminals as StagehandConfig["terminals"]) ?? [],
-    workspace_env:
-      (parsed.workspace_env as StagehandConfig["workspace_env"]) ??
-      (parsed.workspace_port_env as StagehandConfig["workspace_env"]) ??
-      null,
+    workspace_env: normalizeWorkspaceEnv(
+      parsed.workspace_env ?? parsed.workspace_port_env,
+    ),
     run:
       runRaw == null
         ? null
         : typeof runRaw === "string"
           ? { command: runRaw }
           : (runRaw as StagehandConfig["run"]),
+    agent_prompt: (parsed.agent_prompt as string) ?? null,
   };
 }
 
@@ -107,8 +123,12 @@ function mergeConfig(
       commands: dedupExtend(base.setup.commands, local.setup.commands),
     },
     terminals: [...base.terminals, ...local.terminals],
-    workspace_env: local.workspace_env ?? base.workspace_env,
+    workspace_env:
+      local.workspace_env.length > 0
+        ? local.workspace_env
+        : base.workspace_env,
     run: local.run ?? base.run,
+    agent_prompt: local.agent_prompt ?? base.agent_prompt,
   };
 }
 

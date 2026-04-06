@@ -87,16 +87,21 @@ export class ControlHandler {
    * Build a `control_request` with `subtype: "initialize"`.
    * Returns the JSON string to write to stdin.
    */
-  buildInitializeRequest(): string {
+  buildInitializeRequest(appendSystemPrompt?: string): string {
     const requestId = crypto.randomUUID();
     this.initializeRequestId = requestId;
+
+    const request: Record<string, unknown> = {
+      subtype: "initialize",
+    };
+    if (appendSystemPrompt) {
+      request.appendSystemPrompt = appendSystemPrompt;
+    }
 
     return JSON.stringify({
       type: "control_request",
       request_id: requestId,
-      request: {
-        subtype: "initialize",
-      },
+      request,
     });
   }
 
