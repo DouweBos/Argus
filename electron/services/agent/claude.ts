@@ -32,6 +32,7 @@
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import readline from "node:readline";
@@ -50,29 +51,35 @@ const execFileAsync = promisify(execFile);
 const CLAUDE_BIN = "claude";
 
 /**
- * Lazily-loaded system prompt appended to every agent session.
- * Read once from `electron/prompts/agent-system-prompt.md`.
+ * Lazily-loaded system prompts, one per workspace kind.
+ * - Worktree agents: `worktree-agent-system-prompt.md`
+ * - Root agents: `root-agent-system-prompt.md`
  */
-let cachedSystemPrompt: string | null = null;
+const cachedPrompts: Record<string, string | null> = {
+  worktree: null,
+  repo_root: null,
+};
 
-function getAgentSystemPrompt(): string {
-  if (cachedSystemPrompt === null) {
-    try {
-      const promptPath = app.isPackaged
-        ? path.join(process.resourcesPath, "agent-system-prompt.md")
-        : path.join(
-            process.cwd(),
-            "electron",
-            "prompts",
-            "agent-system-prompt.md",
-          );
-      cachedSystemPrompt = readFileSync(promptPath, "utf-8");
-    } catch (e) {
-      console.warn(`Failed to load agent system prompt: ${String(e)}`);
-      cachedSystemPrompt = "";
-    }
+function loadPromptFile(filename: string): string {
+  try {
+    const promptPath = app.isPackaged
+      ? path.join(process.resourcesPath, filename)
+      : path.join(process.cwd(), "electron", "prompts", filename);
+    return readFileSync(promptPath, "utf-8");
+  } catch (e) {
+    console.warn(`Failed to load prompt ${filename}: ${String(e)}`);
+    return "";
   }
-  return cachedSystemPrompt;
+}
+
+function getSystemPromptForKind(kind: "worktree" | "repo_root"): string {
+  if (cachedPrompts[kind] === null) {
+    cachedPrompts[kind] =
+      kind === "repo_root"
+        ? loadPromptFile("root-agent-system-prompt.md")
+        : loadPromptFile("worktree-agent-system-prompt.md");
+  }
+  return cachedPrompts[kind] ?? "";
 }
 
 // ---------------------------------------------------------------------------
@@ -160,12 +167,17 @@ export function startAgent(
     args.push("--resume", resumeSessionId);
   }
 
+  // Prepend ~/.stagehand/bin to PATH so the `stagehand` CLI is available.
+  const env = { ...process.env };
+  const stagehandBin = path.join(os.homedir(), ".stagehand", "bin");
+  env.PATH = `${stagehandBin}:${env.PATH ?? ""}`;
+
   const child = spawn(CLAUDE_BIN, args, {
     cwd: worktreePath,
     stdio: ["pipe", "pipe", "pipe"],
-    // Inherit the current process environment so PATH, HOME, and any API
-    // keys are available to the child.
-    env: process.env,
+    // Inherit the current process environment (with stagehand bin prepended)
+    // so PATH, HOME, and any API keys are available to the child.
+    env,
   });
 
   if (!child.stdin || !child.stdout || !child.stderr) {
@@ -292,9 +304,9 @@ export function startAgent(
     // Config missing or invalid — non-fatal, skip project prompt.
   }
 
-  // Combine prompts: built-in → project-level → caller-provided.
-  const builtInPrompt = getAgentSystemPrompt();
-  const combinedPrompt = [builtInPrompt, projectPrompt, appendSystemPrompt]
+  // Combine prompts: kind-specific → project-level → caller-provided.
+  const systemPrompt = getSystemPromptForKind(workspace.kind);
+  const combinedPrompt = [systemPrompt, projectPrompt, appendSystemPrompt]
     .filter(Boolean)
     .join("\n\n");
 
