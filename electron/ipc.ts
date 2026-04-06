@@ -90,6 +90,7 @@ import {
 import { discoverExtensions } from "./services/extensions/loader";
 import { loadCommandMetrics } from "./services/workspace/commandMetrics";
 import {
+  checkIosTools,
   listSimulators,
   bootSimulator,
   disconnectSimulator,
@@ -100,6 +101,18 @@ import {
   simulatorButton,
   simulatorKeyboard,
 } from "./services/simulator/ios";
+import {
+  checkAndroidTools,
+  listAndroidDevices,
+  listAvds,
+  bootAndroidEmulator,
+  startAndroidCapture,
+  stopAndroidCapture,
+  disconnectAndroidDevice,
+  androidTouch,
+  androidKeyboard,
+  androidButton,
+} from "./services/simulator/android";
 
 type Args = Record<string, unknown>;
 
@@ -256,6 +269,7 @@ export function registerIpcHandlers(): void {
       a.model as string | undefined,
       a.permissionMode as string | undefined,
       a.resumeSessionId as string | undefined,
+      a.appendSystemPrompt as string | undefined,
     ),
   );
   handle("stop_agent", (a) => stopAgent(a.agentId as string));
@@ -304,6 +318,7 @@ export function registerIpcHandlers(): void {
   );
 
   // Simulator commands
+  handle("check_ios_tools", () => checkIosTools());
   handle("list_simulators", () => listSimulators());
   handle("boot_simulator", (a) => bootSimulator(a.udid as string));
   handle("disconnect_simulator", (a) => disconnectSimulator(a.udid as string));
@@ -328,6 +343,37 @@ export function registerIpcHandlers(): void {
       a.isDown as boolean,
     ),
   );
+
+  // Android device commands
+  handle("check_android_tools", () => checkAndroidTools());
+  handle("list_android_devices", () => listAndroidDevices());
+  handle("list_avds", () => listAvds());
+  handle("boot_android_emulator", (a) =>
+    bootAndroidEmulator(a.avdName as string),
+  );
+  handle("start_android_capture", (a) =>
+    startAndroidCapture(a.serial as string),
+  );
+  handle("stop_android_capture", () => stopAndroidCapture());
+  handle("disconnect_android_device", (a) =>
+    disconnectAndroidDevice(a.serial as string),
+  );
+  handle("android_touch", (a) =>
+    androidTouch(
+      a.serial as string,
+      a.x as number,
+      a.y as number,
+      a.eventType as number,
+    ),
+  );
+  handle("android_keyboard", (a) =>
+    androidKeyboard(
+      a.keyCode as number,
+      a.metaState as number,
+      a.isDown as boolean,
+    ),
+  );
+  handle("android_button", (a) => androidButton(a.button as string));
 
   // Extensions
   handle("discover_extensions", () => discoverExtensions());

@@ -99,10 +99,12 @@ export interface StagehandConfig {
   setup: SetupConfig;
   /** Terminals to auto-open when a workspace is selected. */
   terminals: TerminalConfig[];
-  /** Optional env var with a unique integer per workspace. */
-  workspace_env?: WorkspaceEnvConfig | null;
+  /** Env vars with a unique integer per workspace (e.g. for port allocation). */
+  workspace_env: WorkspaceEnvConfig[];
   /** Optional run config for the "Run" button. */
   run?: RunConfig | null;
+  /** Optional prompt appended to the Claude agent's system prompt. */
+  agent_prompt?: string | null;
 }
 
 /** Default/empty `SetupConfig`. */
@@ -115,7 +117,8 @@ export function defaultStagehandConfig(): StagehandConfig {
   return {
     setup: defaultSetupConfig(),
     terminals: [],
-    workspace_env: null,
+    workspace_env: [],
     run: null,
+    agent_prompt: null,
   };
 }

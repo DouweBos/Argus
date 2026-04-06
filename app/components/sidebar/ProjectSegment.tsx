@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useProjectWorkspaces } from "../../hooks/useWorkspaces";
 import { useWorkspaceStore } from "../../stores/workspaceStore";
 import type { Workspace } from "../../lib/types";
@@ -123,29 +124,35 @@ export function ProjectSegment({
         </div>
       )}
 
-      {showCreate && (
-        <CreateWorkspaceDialog
-          repoRoot={repoRoot}
-          onClose={() => setShowCreate(false)}
-        />
-      )}
+      {showCreate &&
+        createPortal(
+          <CreateWorkspaceDialog
+            repoRoot={repoRoot}
+            onClose={() => setShowCreate(false)}
+          />,
+          document.body,
+        )}
 
-      {showConfig && (
-        <SetupConfigDialog
-          repoRoot={repoRoot}
-          onClose={() => setShowConfig(false)}
-        />
-      )}
+      {showConfig &&
+        createPortal(
+          <SetupConfigDialog
+            repoRoot={repoRoot}
+            onClose={() => setShowConfig(false)}
+          />,
+          document.body,
+        )}
 
-      {workspaceToDelete && (
-        <DeleteWorkspaceDialog
-          workspace={workspaceToDelete}
-          onClose={() => setWorkspaceToDelete(null)}
-          onConfirm={async (deleteBranch) => {
-            await deleteWorkspace(workspaceToDelete.id, deleteBranch);
-          }}
-        />
-      )}
+      {workspaceToDelete &&
+        createPortal(
+          <DeleteWorkspaceDialog
+            workspace={workspaceToDelete}
+            onClose={() => setWorkspaceToDelete(null)}
+            onConfirm={async (deleteBranch) => {
+              await deleteWorkspace(workspaceToDelete.id, deleteBranch);
+            }}
+          />,
+          document.body,
+        )}
     </div>
   );
 }

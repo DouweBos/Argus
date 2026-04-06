@@ -37,7 +37,7 @@ describe("loadStagehandConfig", () => {
     expect(config.setup.symlink).toEqual([]);
     expect(config.setup.commands).toEqual([]);
     expect(config.terminals).toEqual([]);
-    expect(config.workspace_env).toBeNull();
+    expect(config.workspace_env).toEqual([]);
     expect(config.run).toBeNull();
   });
 
@@ -145,7 +145,8 @@ describe("loadStagehandConfig", () => {
     });
 
     const config = loadStagehandConfig("/repo");
-    expect(config.workspace_env?.name).toBe("LOCAL_PORT");
+    expect(config.workspace_env).toHaveLength(1);
+    expect(config.workspace_env[0].name).toBe("LOCAL_PORT");
   });
 
   it("throws on invalid JSON", () => {

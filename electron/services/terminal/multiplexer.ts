@@ -114,10 +114,11 @@ function buildWorkspaceEnv(
 
   try {
     const config = loadStagehandConfig(repoRoot);
-    const we = config.workspace_env;
-    if (we && we.name) {
-      const value = workspaceEnvValue(workspaceId, envIndex, we);
-      extra[we.name] = String(value);
+    for (const we of config.workspace_env) {
+      if (we.name) {
+        const value = workspaceEnvValue(workspaceId, envIndex, we);
+        extra[we.name] = String(value);
+      }
     }
   } catch {
     // Missing or unparseable .stagehand.json is non-fatal.

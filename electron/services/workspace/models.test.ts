@@ -23,7 +23,7 @@ describe("defaultStagehandConfig", () => {
     const config = defaultStagehandConfig();
     expect(config.setup.copy).toEqual([]);
     expect(config.terminals).toEqual([]);
-    expect(config.workspace_env).toBeNull();
+    expect(config.workspace_env).toEqual([]);
     expect(config.run).toBeNull();
   });
 

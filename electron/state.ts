@@ -16,6 +16,13 @@ export interface SimulatorSession {
   mjpegPort: number | null;
 }
 
+export interface AndroidDeviceSession {
+  serial: string;
+  deviceName: string;
+  type: "emulator" | "physical";
+  captureActive: boolean;
+}
+
 class AppState {
   /** Set of absolute paths to all open repository roots. */
   repoRoots = new Set<string>();
@@ -29,8 +36,11 @@ class AppState {
   /** Live Claude Code agent sessions, keyed by agent UUID. */
   agents = new Map<string, AgentSession>();
 
-  /** Active simulator capture session, if any. */
+  /** Active iOS simulator capture session, if any. */
   simulator: SimulatorSession | null = null;
+
+  /** Active Android device capture session, if any. */
+  androidDevice: AndroidDeviceSession | null = null;
 
   /** Active file system watchers, keyed by workspace UUID. */
   watchers = new Map<string, WatcherHandle>();

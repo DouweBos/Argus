@@ -73,7 +73,10 @@ export function useProjects() {
   } = useRecentProjectsStore();
 
   const openProject = useCallback(
-    async (path: string, options?: { autoSelect?: boolean }) => {
+    async (
+      path: string,
+      options?: { autoSelect?: boolean; skipRecent?: boolean },
+    ) => {
       store.setError(null);
       try {
         await apiAddRepoRoot(path);
@@ -107,7 +110,7 @@ export function useProjects() {
           store.selectWorkspace(projectWorkspaces[0].id);
         }
 
-        addRecentProject(path);
+        if (!options?.skipRecent) addRecentProject(path);
         addOpenProject(path);
       } catch (err) {
         store.setError(err instanceof Error ? err.message : String(err));
@@ -140,7 +143,7 @@ export function useProjects() {
       (async () => {
         for (const p of sorted) {
           try {
-            await openProject(p.path, { autoSelect: false });
+            await openProject(p.path, { autoSelect: false, skipRecent: true });
           } catch {
             // Directory may have been deleted — remove stale entry
             removeOpenProject(p.path);

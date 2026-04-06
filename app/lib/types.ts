@@ -44,6 +44,30 @@ export interface SimulatorDevice {
   udid: string;
 }
 
+export interface AndroidDevice {
+  /** AVD name (emulators only — used to boot). Null for physical devices. */
+  avdName: string | null;
+  name: string;
+  online: boolean;
+  serial: string;
+  type: "emulator" | "physical";
+}
+
+/** Sent once when SPS+PPS are parsed from the H.264 stream. */
+export interface AndroidVideoConfig {
+  codec: string;
+  codedWidth: number;
+  codedHeight: number;
+  description: Uint8Array;
+}
+
+/** Sent per H.264 access unit (frame). */
+export interface AndroidVideoFrame {
+  data: Uint8Array;
+  keyFrame: boolean;
+  timestamp: number;
+}
+
 export interface TerminalConfigEntry {
   dir?: string;
   name?: string;
@@ -86,8 +110,10 @@ export interface StagehandConfig {
     symlink?: string[];
   };
   terminals?: TerminalConfigEntry[];
-  /** Env var set in each workspace's terminals with a unique integer per workspace. */
-  workspace_env?: WorkspaceEnvConfig;
+  /** Env vars set in each workspace's terminals with a unique integer per workspace. */
+  workspace_env?: WorkspaceEnvConfig[];
+  /** Optional prompt appended to the Claude agent's system prompt. */
+  agent_prompt?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -97,6 +97,19 @@ export function fixupRuntimeVersion(s: string): string {
 // ---------------------------------------------------------------------------
 
 /**
+ * Check whether Xcode Command Line Tools (xcrun + simctl) are available.
+ *
+ * Resolves on success, throws a user-facing message on failure.
+ */
+export async function checkIosTools(): Promise<void> {
+  try {
+    await execFileAsync("xcrun", ["simctl", "help"]);
+  } catch {
+    throw "Xcode Command Line Tools not found. Install them by running: xcode-select --install";
+  }
+}
+
+/**
  * List all available iOS simulator devices.
  *
  * Runs `xcrun simctl list devices --json`, converts runtime IDs to
