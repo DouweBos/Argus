@@ -10,6 +10,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc";
+import { installCli } from "./services/cli/installer";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { refreshAllBranches } from "./services/workspace/watcher";
 
@@ -164,6 +165,9 @@ app.whenReady().then(() => {
 
   // Fix PATH for bundled .app builds — ensures PATH includes Homebrew, mise, etc.
   fixProcessPath();
+
+  // Install/update the stagehand CLI to ~/.stagehand/bin/stagehand.
+  installCli();
 
   // Allowed root directories for extension file serving.
   const extensionRoots = [

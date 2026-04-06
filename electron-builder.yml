@@ -15,8 +15,12 @@ extraResources:
       - "**/*"
   - from: native/scrcpy-server/scrcpy-server.jar
     to: scrcpy-server.jar
-  - from: electron/prompts/agent-system-prompt.md
-    to: agent-system-prompt.md
+  - from: electron/prompts/worktree-agent-system-prompt.md
+    to: worktree-agent-system-prompt.md
+  - from: electron/prompts/root-agent-system-prompt.md
+    to: root-agent-system-prompt.md
+  - from: electron/cli/stagehand.sh
+    to: stagehand.sh
 mac:
   identity: null
   target:
