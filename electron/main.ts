@@ -164,7 +164,8 @@ app.whenReady().then(() => {
   );
 
   // Fix PATH for bundled .app builds — ensures PATH includes Homebrew, mise, etc.
-  fixProcessPath();
+  const pathDiag = fixProcessPath();
+  pathDiag.forEach((d) => log("[shellEnv] %s", d));
 
   // Install/update the stagehand CLI to ~/.stagehand/bin/stagehand.
   installCli();

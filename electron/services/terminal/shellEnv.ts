@@ -12,6 +12,9 @@
  */
 
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -27,17 +30,46 @@ import { execFileSync } from "node:child_process";
  *
  * No-ops if the resolved PATH is identical to the current one.
  */
-export function fixProcessPath(): void {
+export function fixProcessPath(): string[] {
+  const diagnostics: string[] = [];
   const current = process.env.PATH ?? "";
+  diagnostics.push(`SHELL=${process.env.SHELL ?? "(unset)"}`);
+  diagnostics.push(`current PATH has ${current.split(":").length} entries`);
 
-  const resolved = resolvePathFromLoginShell(current);
-  if (!resolved) {
-    return;
-  }
-
-  if (resolved !== current) {
+  const resolved = resolvePathFromLoginShell(current, diagnostics);
+  if (resolved && resolved !== current) {
+    diagnostics.push("PATH updated from login shell");
     process.env.PATH = resolved;
+  } else {
+    diagnostics.push(
+      "login shell did not yield a new PATH, applying known fallback dirs",
+    );
+    // When the login shell approach fails (e.g. hardened runtime, missing
+    // SHELL, slow init files), manually prepend well-known directories where
+    // developer tools are commonly installed on macOS.
+    const home = process.env.HOME ?? os.homedir();
+    const fallbackDirs = [
+      path.join(home, ".local", "bin"), // Claude Code CLI, pipx, etc.
+      path.join(home, ".local", "share", "mise", "shims"), // mise
+      "/opt/homebrew/bin", // Homebrew on Apple Silicon
+      "/opt/homebrew/sbin",
+      "/usr/local/bin", // Homebrew on Intel / manual installs
+    ];
+
+    const existingParts = new Set(current.split(":"));
+    const additions = fallbackDirs.filter(
+      (d) => !existingParts.has(d) && fs.existsSync(d),
+    );
+
+    if (additions.length > 0) {
+      process.env.PATH = [...additions, current].join(":");
+      diagnostics.push(`prepended fallback dirs: ${additions.join(", ")}`);
+    } else {
+      diagnostics.push("no new fallback dirs to add");
+    }
   }
+
+  return diagnostics;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,26 +82,28 @@ export function fixProcessPath(): void {
  * Tries interactive login (`-ilc`) first; falls back to login-only (`-lc`).
  * Returns `undefined` if both attempts fail or produce no useful value.
  */
-function resolvePathFromLoginShell(currentPath: string): string | undefined {
+function resolvePathFromLoginShell(
+  currentPath: string,
+  diagnostics: string[],
+): string | undefined {
   const shell = process.env.SHELL ?? "/bin/zsh";
 
   // Try interactive-login first — sources both .zprofile and .zshrc.
-  const interactive = runShellForPath(
-    shell,
-    ["-ilc", `printf '%s' "$PATH"`],
-    currentPath,
-  );
+  const interactive = runShellForPath(shell, ["-ilc", `printf '%s' "$PATH"`], currentPath);
   if (interactive) {
+    diagnostics.push(`interactive login shell succeeded (${interactive.split(":").length} entries)`);
     return interactive;
   }
+  diagnostics.push("interactive login shell failed or returned same PATH");
 
   // Fallback: login-only — sources .zprofile but not .zshrc.
-  const loginOnly = runShellForPath(
-    shell,
-    ["-lc", `printf '%s' "$PATH"`],
-    currentPath,
-  );
-  return loginOnly;
+  const loginOnly = runShellForPath(shell, ["-lc", `printf '%s' "$PATH"`], currentPath);
+  if (loginOnly) {
+    diagnostics.push(`login-only shell succeeded (${loginOnly.split(":").length} entries)`);
+    return loginOnly;
+  }
+  diagnostics.push("login-only shell also failed or returned same PATH");
+  return undefined;
 }
 
 /**
@@ -91,13 +125,21 @@ function runShellForPath(
       timeout: 10_000,
     });
 
-    const resolved = stdout.trim();
+    // Strip ANSI/OSC escape sequences (e.g. iTerm2 shell integration emits
+    // OSC 1337 sequences during interactive shell startup that pollute stdout).
+    const cleaned = stdout
+      .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "") // OSC sequences
+      .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")              // CSI sequences
+      .trim();
+
+    const resolved = cleaned;
     if (!resolved || resolved === currentPath) {
       return undefined;
     }
 
     return resolved;
-  } catch {
+  } catch (err) {
+    console.warn("[shellEnv] shell invocation failed:", shell, args, String(err));
     return undefined;
   }
 }
