@@ -15,6 +15,7 @@ import {
 } from "../../lib/ipc";
 import { useWorkspaceStore } from "../../stores/workspaceStore";
 import { deriveActivity } from "../../lib/activityDescription";
+import { notifyMessageSent } from "../../lib/agentEventService";
 import { ChatMessage } from "./ChatMessage";
 import { CollapsedToolGroup } from "./CollapsedToolGroup";
 import { ChatInput } from "./ChatInput";
@@ -76,12 +77,14 @@ const EMPTY_MESSAGES: ConversationMessage[] = [];
 
 interface AgentChatProps {
   agentId: null | string;
+  onRestart?: () => void;
   permissionMode?: string;
   workspaceId: string;
 }
 
 export function AgentChat({
   agentId,
+  onRestart,
   permissionMode,
   workspaceId,
 }: AgentChatProps) {
@@ -357,6 +360,7 @@ export function AgentChat({
         ? `${message} [${images.length} image${images.length > 1 ? "s" : ""}]`
         : message;
       addUserMessage(agentId, label);
+      notifyMessageSent(agentId);
       useAgentStore.getState().updateAgent(agentId, { status: "running" });
       try {
         await sendAgentMessage(agentId, message, images);
@@ -463,6 +467,19 @@ export function AgentChat({
           <ChevronDownIcon size={12} />
           Scroll to bottom
         </button>
+      )}
+
+      {!isAlive && onRestart && (
+        <div className={styles.errorBanner}>
+          <span className={styles.errorBannerText}>
+            {agentStatus === "error"
+              ? "Agent process exited with an error."
+              : "Agent has stopped."}
+          </span>
+          <button className={styles.restartBtn} onClick={onRestart}>
+            Restart
+          </button>
+        </div>
       )}
 
       <ChatInput

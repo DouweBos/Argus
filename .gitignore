@@ -37,6 +37,7 @@ release
 native/stagehand-sim-bridge/stagehand-sim-bridge
 native/stagehand-sim-bridge/.build/
 native/scrcpy-server/
+native/conductor/
 
 # Packaging artifacts
 *.dmg

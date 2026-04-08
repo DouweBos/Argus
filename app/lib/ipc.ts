@@ -433,3 +433,7 @@ export const androidKeyboard = (
 
 export const androidButton = (button: string): Promise<void> =>
   invoke("android_button", { button });
+
+// Shell commands
+export const revealInFinder = (path: string): Promise<void> =>
+  invoke("reveal_in_finder", { path });

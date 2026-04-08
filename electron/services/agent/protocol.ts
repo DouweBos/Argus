@@ -136,13 +136,13 @@ export interface ControlResponse {
 
 export interface PermissionDecisionAllow {
   behavior: "allow";
-  updatedInput?: Record<string, unknown>;
+  updatedInput: Record<string, unknown>;
   updatedPermissions?: PermissionSuggestion[];
 }
 
 export interface PermissionDecisionDeny {
   behavior: "deny";
-  message?: string;
+  message: string;
 }
 
 export type PermissionDecision =

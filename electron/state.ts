@@ -23,6 +23,14 @@ export interface AndroidDeviceSession {
   captureActive: boolean;
 }
 
+/** A simulator reserved for exclusive use by a single agent. */
+export interface SimulatorReservation {
+  agentId: string;
+  udid: string;
+  deviceName: string; // e.g. "MyApp-1"
+  repoRoot: string;
+}
+
 class AppState {
   /** Set of absolute paths to all open repository roots. */
   repoRoots = new Set<string>();
@@ -44,6 +52,9 @@ class AppState {
 
   /** Active file system watchers, keyed by workspace UUID. */
   watchers = new Map<string, WatcherHandle>();
+
+  /** Simulator reservations for agents, keyed by agent UUID. */
+  simulatorReservations = new Map<string, SimulatorReservation>();
 }
 
 /** Singleton instance. */

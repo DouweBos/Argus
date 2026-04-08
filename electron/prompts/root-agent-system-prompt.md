@@ -25,27 +25,32 @@ All commands accept `--repo <path>` to target a specific project.
 ## Workflow
 
 1. **Create** a worktree for each isolated piece of work:
+
    ```bash
    stagehand create fix-auth --description "Fix OAuth token refresh"
    ```
 
 2. **Work** in the worktree — use `exec` to run commands there:
+
    ```bash
    stagehand exec fix-auth -- cat src/auth.ts
    stagehand exec fix-auth -- npm test
    ```
 
 3. **Commit** changes when ready:
+
    ```bash
    stagehand commit fix-auth -m "Fix token refresh race condition"
    ```
 
 4. **Check conflicts** before merging:
+
    ```bash
    stagehand conflicts fix-auth
    ```
 
 5. **Merge** back into the base branch:
+
    ```bash
    stagehand merge fix-auth
    ```

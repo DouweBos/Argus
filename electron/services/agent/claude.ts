@@ -42,13 +42,41 @@ import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import type { AgentInfo, AgentSession, AgentStatusValue } from "./models";
 import { ControlHandler } from "./controlHandler";
+import { getConductorSkillPath } from "../cli/conductorInstaller";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
 import { loadStagehandConfig } from "../workspace/setup";
+import { simulatorPool } from "../simulator/pool";
 
 const execFileAsync = promisify(execFile);
 
 /** The executable name used to invoke the Claude Code CLI. */
 const CLAUDE_BIN = "claude";
+
+// ---------------------------------------------------------------------------
+// Lazy simulator helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Ensure a simulator is reserved for the given agent, acquiring one on first
+ * use. Returns the device UDID.
+ */
+async function ensureSimulatorForAgent(
+  agentId: string,
+  repoRoot: string,
+): Promise<string> {
+  const existing = simulatorPool.getReservedUdid(agentId);
+  if (existing) return existing;
+  return simulatorPool.acquireSimulator(agentId, repoRoot);
+}
+
+/**
+ * Inject `--device {udid}` into a conductor CLI command string.
+ * No-op if the command already contains `--device`.
+ */
+function injectDeviceFlag(command: string, udid: string): string {
+  if (command.includes("--device")) return command;
+  return command.replace(/\bconductor(\s+\S+)/, `conductor$1 --device ${udid}`);
+}
 
 /**
  * Lazily-loaded system prompts, one per workspace kind.
@@ -58,6 +86,7 @@ const CLAUDE_BIN = "claude";
 const cachedPrompts: Record<string, string | null> = {
   worktree: null,
   repo_root: null,
+  conductor: null,
 };
 
 function loadPromptFile(filename: string): string {
@@ -80,6 +109,23 @@ function getSystemPromptForKind(kind: "worktree" | "repo_root"): string {
         : loadPromptFile("worktree-agent-system-prompt.md");
   }
   return cachedPrompts[kind] ?? "";
+}
+
+function getConductorSkill(): string {
+  if (cachedPrompts.conductor === null) {
+    const skillPath = getConductorSkillPath();
+    if (skillPath) {
+      try {
+        cachedPrompts.conductor = readFileSync(skillPath, "utf-8");
+      } catch (e) {
+        console.warn(`Failed to load conductor skill: ${String(e)}`);
+        cachedPrompts.conductor = "";
+      }
+    } else {
+      cachedPrompts.conductor = "";
+    }
+  }
+  return cachedPrompts.conductor ?? "";
 }
 
 // ---------------------------------------------------------------------------
@@ -126,13 +172,13 @@ export async function checkClaudeCli(): Promise<string> {
  * @throws string if the workspace is not found or the process cannot be
  *   spawned.
  */
-export function startAgent(
+export async function startAgent(
   workspaceId: string,
   model?: string,
   permissionMode?: string,
   resumeSessionId?: string,
   appendSystemPrompt?: string,
-): AgentInfo {
+): Promise<AgentInfo> {
   // Verify the workspace exists and grab its path.
   const workspace = appState.workspaces.get(workspaceId);
   if (!workspace) {
@@ -187,12 +233,14 @@ export function startAgent(
 
   const stdin = child.stdin;
 
-  // Drain stderr and log each line.
+  // Drain stderr and log each line. Forward to the renderer so auth errors
+  // and other CLI diagnostics are visible in the conversation.
   child.stderr.on("data", (chunk: Buffer) => {
     const lines = chunk.toString().split("\n");
     for (const line of lines) {
       if (line.trim()) {
         console.warn(`[agent:${agentId}] stderr:`, line);
+        emit(`agent:stderr:${agentId}`, line.trim());
       }
     }
   });
@@ -251,10 +299,39 @@ export function startAgent(
       }
 
       if (parsed.type === "control_request") {
-        const autoResponse = controlHandler.handleControlRequest(
-          parsed as import("./protocol").ControlRequest,
-          emit,
-        );
+        const req = parsed as import("./protocol").ControlRequest;
+        const payload = req.request;
+
+        // Lazy simulator acquisition: intercept conductor bash commands and
+        // inject --device {UDID} transparently via updatedInput.
+        if (
+          payload.subtype === "can_use_tool" &&
+          payload.tool_name === "Bash"
+        ) {
+          const cmd = (payload.input?.command as string) ?? "";
+          if (cmd.includes("conductor") && !cmd.includes("--device")) {
+            ensureSimulatorForAgent(agentId, workspace.repo_root)
+              .then((udid) => {
+                payload.input = {
+                  ...payload.input,
+                  command: injectDeviceFlag(cmd, udid),
+                };
+                const resp = controlHandler.handleControlRequest(req, emit);
+                if (resp) stdin.write(resp + "\n");
+              })
+              .catch((e) => {
+                console.warn(
+                  `[agent:${agentId}] simulator acquisition failed: ${String(e)}`,
+                );
+                // Fall through without injection.
+                const resp = controlHandler.handleControlRequest(req, emit);
+                if (resp) stdin.write(resp + "\n");
+              });
+            return; // Async path handles the response.
+          }
+        }
+
+        const autoResponse = controlHandler.handleControlRequest(req, emit);
         if (autoResponse) {
           stdin.write(autoResponse + "\n");
         }
@@ -280,6 +357,11 @@ export function startAgent(
       session.status = exitCode === 0 ? "stopped" : "error";
     }
 
+    // Release the simulator reservation (async, fire-and-forget).
+    simulatorPool.releaseSimulator(agentId).catch((e) => {
+      console.warn(`[agent:${agentId}] simulator release failed: ${String(e)}`);
+    });
+
     getMainWindow()?.webContents.send(`agent:exit:${agentId}`, exitCode);
     console.info(`[agent:${agentId}] process exited with code ${exitCode}`);
   });
@@ -304,9 +386,16 @@ export function startAgent(
     // Config missing or invalid — non-fatal, skip project prompt.
   }
 
-  // Combine prompts: kind-specific → project-level → caller-provided.
+  // Combine prompts: kind-specific → conductor skill → project-level → caller-provided.
   const systemPrompt = getSystemPromptForKind(workspace.kind);
-  const combinedPrompt = [systemPrompt, projectPrompt, appendSystemPrompt]
+  const conductorSkill = getConductorSkill();
+  const combinedPrompt = [
+    systemPrompt,
+    conductorSkill,
+    projectPrompt,
+    "## Simulator\n\nDo not call `conductor start-device` — a simulator will be provisioned automatically when you first use conductor.",
+    appendSystemPrompt,
+  ]
     .filter(Boolean)
     .join("\n\n");
 
@@ -336,7 +425,7 @@ export function startAgent(
  *
  * @throws string if no agent is found with the given ID.
  */
-export function stopAgent(agentId: string): void {
+export async function stopAgent(agentId: string): Promise<void> {
   const session = appState.agents.get(agentId);
   if (!session) {
     throw `No agent found: ${agentId}`;
@@ -353,6 +442,9 @@ export function stopAgent(agentId: string): void {
 
   // Cleanup the control handler before removing the session.
   session.controlHandler?.cleanup();
+
+  // Release the simulator reservation and clean up the device.
+  await simulatorPool.releaseSimulator(agentId);
 
   appState.agents.delete(agentId);
 

@@ -10,6 +10,7 @@ import {
 import {
   startAgentListening,
   stopAgentListening,
+  notifyMessageSent,
 } from "../lib/agentEventService";
 import type { AgentStatus } from "../lib/types";
 
@@ -216,6 +217,7 @@ export function useWorkspaceAgents(
   const sendMessage = useCallback(
     async (message: string) => {
       if (!activeAgent) return;
+      notifyMessageSent(activeAgent.agent_id);
       updateAgent(activeAgent.agent_id, { status: "running" });
       await apiSendAgentMessage(activeAgent.agent_id, message);
     },

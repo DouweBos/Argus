@@ -28,6 +28,8 @@ export interface ToolCallInfo {
 
 export interface ConversationMessage {
   id: string;
+  /** True for stderr / error system messages (styled differently). */
+  isError?: boolean;
   role: "assistant" | "system" | "user";
   textBlocks: string[];
   timestamp: number;
@@ -62,6 +64,8 @@ export interface AgentConversation {
 interface ConversationState {
   addUserMessage: (agentId: string, text: string) => void;
   appendEvent: (agentId: string, event: ClaudeStreamEvent) => void;
+  /** Append a pre-built system message (e.g. stderr output). */
+  appendSystemMessage: (agentId: string, msg: ConversationMessage) => void;
   /** Cancel a pending permission prompt (CLI withdrew the request). */
   cancelPermission: (agentId: string, toolUseId: string) => void;
   clearConversation: (agentId: string) => void;
@@ -102,6 +106,20 @@ export const useConversationStore = create<ConversationState>((set) => ({
       const next = { ...state.conversations };
       delete next[agentId];
       return { conversations: next };
+    }),
+
+  appendSystemMessage: (agentId, msg) =>
+    set((state) => {
+      const existing = state.conversations[agentId] ?? emptyConversation();
+      return {
+        conversations: {
+          ...state.conversations,
+          [agentId]: {
+            ...existing,
+            messages: [...existing.messages, msg],
+          },
+        },
+      };
     }),
 
   migrateConversation: (oldAgentId, newAgentId) =>

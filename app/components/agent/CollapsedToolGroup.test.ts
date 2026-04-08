@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ConversationMessage } from "../../stores/conversationStore";
-import { categorizeTools } from "./CollapsedToolGroup";
+import { categorizeTools } from "./categorizeTools";
 
 function makeMessage(toolNames: string[]): ConversationMessage {
   return {

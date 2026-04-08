@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ConversationMessage } from "../../stores/conversationStore";
 import { ToolCallCard } from "./ToolCallCard";
+import { categorizeTools } from "./categorizeTools";
 import styles from "./CollapsedToolGroup.module.css";
 
 interface CollapsedToolGroupProps {
@@ -62,52 +63,6 @@ function AgentIcon() {
       <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
     </svg>
   );
-}
-
-/** Categorize tool calls into display categories. */
-export function categorizeTools(messages: ConversationMessage[]) {
-  const categories = {
-    read: 0,
-    search: 0,
-    edit: 0,
-    bash: 0,
-    web: 0,
-    agent: 0,
-    other: 0,
-  };
-  for (const msg of messages) {
-    for (const tc of msg.toolCalls) {
-      switch (tc.name) {
-        case "Read":
-          categories.read++;
-          break;
-        case "Glob":
-        case "Grep":
-        case "LS":
-          categories.search++;
-          break;
-        case "Edit":
-        case "MultiEdit":
-        case "Write":
-          categories.edit++;
-          break;
-        case "Bash":
-          categories.bash++;
-          break;
-        case "WebSearch":
-        case "WebFetch":
-          categories.web++;
-          break;
-        case "Agent":
-          categories.agent++;
-          break;
-        default:
-          categories.other++;
-          break;
-      }
-    }
-  }
-  return categories;
 }
 
 export function CollapsedToolGroup({
