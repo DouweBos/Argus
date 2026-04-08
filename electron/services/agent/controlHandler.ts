@@ -187,7 +187,7 @@ export class ControlHandler {
     if (payload.subtype !== "can_use_tool") {
       // For non-permission control requests (initialize, elicitation, etc.)
       // respond with an empty success so the CLI doesn't hang.
-      return buildControlResponse(request.request_id, { behavior: "allow" });
+      return buildControlResponse(request.request_id, {} as PermissionDecision);
     }
 
     const { tool_name, input, tool_use_id, permission_suggestions } = payload;
@@ -205,7 +205,10 @@ export class ControlHandler {
     });
 
     if (isAllowed) {
-      return buildControlResponse(request.request_id, { behavior: "allow" });
+      return buildControlResponse(request.request_id, {
+        behavior: "allow",
+        updatedInput: input,
+      });
     }
 
     // Store as pending and forward to the renderer.
@@ -262,13 +265,17 @@ export class ControlHandler {
       this.addAllowRule(allowRule);
     }
 
+    // Grab toolInput before cleanup.
+    const pending = this.pending.get(requestId);
+    const toolInput = pending?.toolInput ?? {};
+
     // Clean up pending state.
     this.pending.delete(requestId);
     this.toolUseToRequestId.delete(toolUseId);
 
     const body: PermissionDecision =
       decision === "allow"
-        ? { behavior: "allow" }
+        ? { behavior: "allow", updatedInput: toolInput }
         : { behavior: "deny", message: "User denied" };
 
     return buildControlResponse(requestId, body);

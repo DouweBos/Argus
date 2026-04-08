@@ -158,6 +158,43 @@
   word-break: break-word;
 }
 
+/* Error / stopped banner — restart prompt above the input */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--error-bg);
+  border-top: 1px solid rgba(255, 68, 102, 0.15);
+  flex-shrink: 0;
+}
+
+.errorBannerText {
+  font-size: var(--font-size-xs);
+  color: var(--error);
+}
+
+.restartBtn {
+  padding: 4px 14px;
+  border-radius: var(--border-radius-pill);
+  background: rgba(255, 68, 102, 0.12);
+  border: 1px solid rgba(255, 68, 102, 0.25);
+  color: var(--error);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base);
+  flex-shrink: 0;
+}
+
+.restartBtn:hover {
+  background: rgba(255, 68, 102, 0.2);
+  border-color: var(--error);
+}
+
 .scrollToBottom {
   position: absolute;
   left: 50%;

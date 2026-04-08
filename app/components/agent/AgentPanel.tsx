@@ -26,6 +26,7 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
     activeAgent,
     startNew,
     stopAgent,
+    restartAgent,
     setActive,
     hasAgents,
     isStarting,
@@ -108,13 +109,6 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
           </div>
 
           {/* Agent content */}
-          {activeAgent?.status === "error" && (
-            <div className={styles.noSession}>
-              <p className={styles.errorText}>
-                Agent encountered an error. Try starting it again.
-              </p>
-            </div>
-          )}
           {!activeAgent && !isStarting && (
             <div className={styles.noSession}>
               <p className={styles.hintText}>
@@ -129,11 +123,12 @@ export function AgentPanel({ workspaceId }: AgentPanelProps) {
               <p className={styles.hintText}>Starting agent…</p>
             </div>
           )}
-          {activeAgent && activeAgent.status !== "error" && (
+          {activeAgent && (
             <AgentChat
               agentId={activeAgent.agent_id}
               workspaceId={workspaceId}
               permissionMode={activeAgent.permission_mode}
+              onRestart={() => restartAgent(activeAgent.agent_id)}
             />
           )}
         </>

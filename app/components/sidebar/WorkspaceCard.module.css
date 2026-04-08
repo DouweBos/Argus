@@ -250,39 +250,3 @@
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
 }
-
-.contextMenu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 100;
-  min-width: 160px;
-  padding: 4px;
-  background: rgba(17, 17, 24, 0.92);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.contextMenuItem {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 6px 10px;
-  font-size: var(--font-size-xs);
-  color: var(--error);
-  border-radius: var(--border-radius-sm);
-  transition: background var(--transition-base);
-}
-
-.contextMenuItem:hover {
-  background: var(--error-bg);
-}
-
-.contextMenuItem:disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}

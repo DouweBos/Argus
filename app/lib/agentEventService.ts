@@ -21,6 +21,7 @@ const permCancelListeners = new Map<string, UnlistenFn>();
 const capListeners = new Map<string, UnlistenFn>();
 const modelListeners = new Map<string, UnlistenFn>();
 const permModeListeners = new Map<string, UnlistenFn>();
+const stderrListeners = new Map<string, UnlistenFn>();
 
 /** Subscribe to all agent event channels. */
 export function startAgentListening(agentId: string): void {
@@ -35,14 +36,25 @@ export function startAgentListening(agentId: string): void {
       useConversationStore.getState().appendEvent(agentId, parsed);
 
       // A "result" event means Claude finished processing the current prompt.
-      // A "system" init event means the CLI just started and is ready for input.
-      // session_state_changed with state "idle" is the authoritative turn-over
-      // signal — use it as the primary idle trigger.
-      if (
-        parsed.type === "result" ||
-        (parsed.type === "system" && parsed.subtype === "init")
-      ) {
-        drainNextQueued(agentId);
+      // Clear the in-flight flag and drain queued messages. If nothing is
+      // queued, transition to idle — we cannot rely solely on a subsequent
+      // session_state_changed(idle) because it may arrive before result
+      // (creating a race where trySetIdle is blocked by inflight) or not
+      // arrive at all for text-only responses.
+      if (parsed.type === "result") {
+        inflight.delete(agentId);
+        if (!trySendNextQueued(agentId)) {
+          trySetIdle(agentId);
+        }
+      }
+
+      // A "system" init event means the CLI just started and is ready for
+      // input.  Try to drain queued messages; set idle only if nothing is
+      // in-flight.
+      if (parsed.type === "system" && parsed.subtype === "init") {
+        if (!trySendNextQueued(agentId)) {
+          trySetIdle(agentId);
+        }
       }
 
       // Authoritative idle/running signal from the CLI.
@@ -51,7 +63,9 @@ export function startAgentListening(agentId: string): void {
         parsed.subtype === "session_state_changed"
       ) {
         if (parsed.state === "idle") {
-          drainNextQueued(agentId);
+          if (!trySendNextQueued(agentId)) {
+            trySetIdle(agentId);
+          }
         } else if (parsed.state === "running") {
           useAgentStore.getState().updateAgent(agentId, { status: "running" });
         }
@@ -71,8 +85,11 @@ export function startAgentListening(agentId: string): void {
   // Also watch for agent process exit
   exitListeners.set(agentId, () => {});
 
-  listen<string>(`agent:exit:${agentId}`, () => {
-    useAgentStore.getState().updateAgent(agentId, { status: "stopped" });
+  listen<number>(`agent:exit:${agentId}`, (event) => {
+    const exitCode = event.payload;
+    const status = exitCode === 0 ? "stopped" : "error";
+    useAgentStore.getState().updateAgent(agentId, { status });
+    inflight.delete(agentId);
   }).then((unlisten) => {
     if (!exitListeners.has(agentId)) {
       unlisten();
@@ -134,9 +151,11 @@ export function startAgentListening(agentId: string): void {
   listen<AgentCapabilities>(`agent:capabilities:${agentId}`, (event) => {
     useConversationStore.getState().setCapabilities(agentId, event.payload);
     // The capabilities response means the CLI is initialized and ready for
-    // input. Drain any queued messages or transition to idle — this replaces
-    // the old bootstrap prompt that triggered system/init.
-    drainNextQueued(agentId);
+    // input. Drain any queued messages or transition to idle — but only if
+    // nothing is already in-flight.
+    if (!trySendNextQueued(agentId)) {
+      trySetIdle(agentId);
+    }
   }).then((unlisten) => {
     if (!capListeners.has(agentId)) {
       unlisten();
@@ -172,27 +191,72 @@ export function startAgentListening(agentId: string): void {
     }
     permModeListeners.set(agentId, unlisten);
   });
+
+  // Watch for stderr output from the CLI process (auth errors, diagnostics).
+  stderrListeners.set(agentId, () => {});
+
+  listen<string>(`agent:stderr:${agentId}`, (event) => {
+    const line = event.payload;
+    if (!line) return;
+    useConversationStore.getState().appendSystemMessage(agentId, {
+      id: crypto.randomUUID(),
+      role: "system",
+      isError: true,
+      textBlocks: [line],
+      toolCalls: [],
+      timestamp: Date.now(),
+    });
+  }).then((unlisten) => {
+    if (!stderrListeners.has(agentId)) {
+      unlisten();
+      return;
+    }
+    stderrListeners.set(agentId, unlisten);
+  });
 }
 
 /**
- * Pop the next queued message for an agent and send it.
- * If the queue is empty, set status to idle.
+ * Tracks agent IDs that have an outstanding message (sent, no result yet).
+ * Guards against stale `session_state_changed(idle)` signals setting the
+ * agent to idle while it's still processing.
  */
-function drainNextQueued(agentId: string): void {
-  const store = useConversationStore.getState();
-  const next = store.dequeueMessage(agentId);
-  if (!next) {
-    useAgentStore.getState().updateAgent(agentId, { status: "idle" });
-    return;
-  }
-  // Move the queued message into the conversation timeline.
-  store.addUserMessage(agentId, next.text);
-  useAgentStore.getState().updateAgent(agentId, { status: "running" });
-  sendAgentMessage(agentId, next.text, next.images).catch(() => {});
+const inflight = new Set<string>();
+
+/**
+ * Mark an agent as having an in-flight message.  Call this whenever a
+ * message is sent directly (not via the queue).
+ */
+export function notifyMessageSent(agentId: string): void {
+  inflight.add(agentId);
 }
 
-/** Unsubscribe all listeners for an agent. */
+/**
+ * If the queue has a message, dequeue it, send it, and mark in-flight.
+ * Returns true if a message was sent.
+ */
+function trySendNextQueued(agentId: string): boolean {
+  const store = useConversationStore.getState();
+  const next = store.dequeueMessage(agentId);
+  if (!next) return false;
+  store.addUserMessage(agentId, next.text);
+  inflight.add(agentId);
+  useAgentStore.getState().updateAgent(agentId, { status: "running" });
+  sendAgentMessage(agentId, next.text, next.images).catch(() => {});
+  return true;
+}
+
+/**
+ * Set the agent to idle — but only if no message is currently in-flight.
+ * This prevents stale idle signals from hiding the activity indicator.
+ */
+function trySetIdle(agentId: string): void {
+  if (inflight.has(agentId)) return;
+  useAgentStore.getState().updateAgent(agentId, { status: "idle" });
+}
+
+/** Unsubscribe all listeners for an agent and clean up tracking state. */
 export function stopAgentListening(agentId: string): void {
+  inflight.delete(agentId);
   const unlisten = listeners.get(agentId);
   if (unlisten) unlisten();
   listeners.delete(agentId);
@@ -220,4 +284,8 @@ export function stopAgentListening(agentId: string): void {
   const permModeUnlisten = permModeListeners.get(agentId);
   if (permModeUnlisten) permModeUnlisten();
   permModeListeners.delete(agentId);
+
+  const stderrUnlisten = stderrListeners.get(agentId);
+  if (stderrUnlisten) stderrUnlisten();
+  stderrListeners.delete(agentId);
 }

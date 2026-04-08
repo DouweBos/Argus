@@ -28,7 +28,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "postinstall": "tsx scripts/fetch-scrcpy-server.ts"
+    "postinstall": "tsx scripts/fetch-scrcpy-server.ts && tsx scripts/prepare-conductor.ts"
   },
   "dependencies": {
     "@codingame/monaco-vscode-accessibility-service-override": "~28.3.0",

@@ -88,6 +88,7 @@ import {
   terminalResize,
 } from "./services/terminal/multiplexer";
 import { discoverExtensions } from "./services/extensions/loader";
+import { revealInFinder } from "./services/shell/operations";
 import { loadCommandMetrics } from "./services/workspace/commandMetrics";
 import {
   checkIosTools,
@@ -374,6 +375,9 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("android_button", (a) => androidButton(a.button as string));
+
+  // Shell
+  handle("reveal_in_finder", (a) => revealInFinder(a.path as string));
 
   // Extensions
   handle("discover_extensions", () => discoverExtensions());

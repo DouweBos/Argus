@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc";
 import { installCli } from "./services/cli/installer";
+import { installConductor } from "./services/cli/conductorInstaller";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { refreshAllBranches } from "./services/workspace/watcher";
 
@@ -169,6 +170,9 @@ app.whenReady().then(() => {
 
   // Install/update the stagehand CLI to ~/.stagehand/bin/stagehand.
   installCli();
+
+  // Install/update the conductor CLI to ~/.stagehand/bin/conductor.
+  installConductor();
 
   // Allowed root directories for extension file serving.
   const extensionRoots = [

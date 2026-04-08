@@ -21,7 +21,9 @@ export function ChatMessage({
 }: ChatMessageProps) {
   if (message.role === "system") {
     return (
-      <div className={styles.systemMsg}>
+      <div
+        className={`${styles.systemMsg}${message.isError ? ` ${styles.systemMsgError}` : ""}`}
+      >
         {message.textBlocks.map((text, i) => (
           <span key={i}>{text}</span>
         ))}

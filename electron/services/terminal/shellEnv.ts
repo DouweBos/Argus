@@ -89,17 +89,29 @@ function resolvePathFromLoginShell(
   const shell = process.env.SHELL ?? "/bin/zsh";
 
   // Try interactive-login first — sources both .zprofile and .zshrc.
-  const interactive = runShellForPath(shell, ["-ilc", `printf '%s' "$PATH"`], currentPath);
+  const interactive = runShellForPath(
+    shell,
+    ["-ilc", `printf '%s' "$PATH"`],
+    currentPath,
+  );
   if (interactive) {
-    diagnostics.push(`interactive login shell succeeded (${interactive.split(":").length} entries)`);
+    diagnostics.push(
+      `interactive login shell succeeded (${interactive.split(":").length} entries)`,
+    );
     return interactive;
   }
   diagnostics.push("interactive login shell failed or returned same PATH");
 
   // Fallback: login-only — sources .zprofile but not .zshrc.
-  const loginOnly = runShellForPath(shell, ["-lc", `printf '%s' "$PATH"`], currentPath);
+  const loginOnly = runShellForPath(
+    shell,
+    ["-lc", `printf '%s' "$PATH"`],
+    currentPath,
+  );
   if (loginOnly) {
-    diagnostics.push(`login-only shell succeeded (${loginOnly.split(":").length} entries)`);
+    diagnostics.push(
+      `login-only shell succeeded (${loginOnly.split(":").length} entries)`,
+    );
     return loginOnly;
   }
   diagnostics.push("login-only shell also failed or returned same PATH");
@@ -127,9 +139,13 @@ function runShellForPath(
 
     // Strip ANSI/OSC escape sequences (e.g. iTerm2 shell integration emits
     // OSC 1337 sequences during interactive shell startup that pollute stdout).
+    // eslint-disable-next-line no-control-regex
+    const oscPattern = /\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g;
+    // eslint-disable-next-line no-control-regex
+    const csiPattern = /\x1b\[[0-9;]*[a-zA-Z]/g;
     const cleaned = stdout
-      .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "") // OSC sequences
-      .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "")              // CSI sequences
+      .replace(oscPattern, "") // OSC sequences (e.g. iTerm2 shell integration)
+      .replace(csiPattern, "") // CSI sequences (ANSI escape codes)
       .trim();
 
     const resolved = cleaned;
@@ -139,7 +155,12 @@ function runShellForPath(
 
     return resolved;
   } catch (err) {
-    console.warn("[shellEnv] shell invocation failed:", shell, args, String(err));
+    console.warn(
+      "[shellEnv] shell invocation failed:",
+      shell,
+      args,
+      String(err),
+    );
     return undefined;
   }
 }
