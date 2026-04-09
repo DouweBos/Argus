@@ -46,6 +46,7 @@ import { getConductorSkillPath } from "../cli/conductorInstaller";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
 import { loadStagehandConfig } from "../workspace/setup";
 import { simulatorPool } from "../simulator/pool";
+import { getMcpPort } from "../mcp/server";
 
 const execFileAsync = promisify(execFile);
 
@@ -213,7 +214,17 @@ export async function startAgent(
     args.push("--resume", resumeSessionId);
   }
 
-  // Prepend ~/.stagehand/bin to PATH so the `stagehand` CLI is available.
+  // Connect the agent to the Stagehand MCP server for workspace/agent
+  // orchestration tools (create_workspace, spawn_agent, trigger_run, etc.).
+  const mcpPort = getMcpPort();
+  if (mcpPort) {
+    const mcpConfig = JSON.stringify({
+      stagehand: { type: "http", url: `http://127.0.0.1:${mcpPort}/mcp` },
+    });
+    args.push("--mcp-config", mcpConfig);
+  }
+
+  // Prepend ~/.stagehand/bin to PATH so the `conductor` CLI is available.
   const env = { ...process.env };
   const stagehandBin = path.join(os.homedir(), ".stagehand", "bin");
   env.PATH = `${stagehandBin}:${env.PATH ?? ""}`;

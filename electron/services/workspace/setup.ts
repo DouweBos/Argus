@@ -13,6 +13,7 @@ import fg from "fast-glob";
 import { getMainWindow } from "../../main";
 import {
   defaultStagehandConfig,
+  RelatedProject,
   SetupConfig,
   StagehandConfig,
   WorkspaceEnvConfig,
@@ -93,7 +94,25 @@ function parseStagehandConfig(raw: string): StagehandConfig {
           ? { command: runRaw }
           : (runRaw as StagehandConfig["run"]),
     agent_prompt: (parsed.agent_prompt as string) ?? null,
+    related_projects: normalizeRelatedProjects(parsed.related_projects),
   };
+}
+
+/**
+ * Normalise `related_projects` from its possible JSON forms into an array.
+ * Accepts: null/undefined or an array of { path, description } objects.
+ */
+function normalizeRelatedProjects(raw: unknown): RelatedProject[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (entry): entry is RelatedProject =>
+      typeof entry === "object" &&
+      entry !== null &&
+      typeof (entry as Record<string, unknown>).path === "string",
+  ).map((entry) => ({
+    path: entry.path,
+    description: entry.description ?? "",
+  }));
 }
 
 /**
@@ -127,7 +146,27 @@ function mergeConfig(
       local.workspace_env.length > 0 ? local.workspace_env : base.workspace_env,
     run: local.run ?? base.run,
     agent_prompt: local.agent_prompt ?? base.agent_prompt,
+    related_projects: dedupRelatedProjects(
+      base.related_projects ?? [],
+      local.related_projects ?? [],
+    ),
   };
+}
+
+/** Merge related project lists, deduplicating by path. */
+function dedupRelatedProjects(
+  base: RelatedProject[],
+  local: RelatedProject[],
+): RelatedProject[] {
+  const seen = new Set(base.map((p) => p.path));
+  const result = [...base];
+  for (const p of local) {
+    if (!seen.has(p.path)) {
+      seen.add(p.path);
+      result.push(p);
+    }
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

@@ -32,6 +32,7 @@ import {
 import {
   getRepoBranch,
   listBranches,
+  listAllBranches,
   checkoutBranch,
   getWorkspaceDiff,
   getWorkspaceFullDiff,
@@ -161,6 +162,7 @@ export function registerIpcHandlers(): void {
       a.branch as string,
       a.description as string,
       a.useExistingBranch as boolean | undefined,
+      a.baseBranch as string | undefined,
     ),
   );
   handle("create_head_workspace", (a) =>
@@ -176,6 +178,7 @@ export function registerIpcHandlers(): void {
   // Workspace ops
   handle("get_repo_branch", (a) => getRepoBranch(a.repoRoot as string));
   handle("list_branches", (a) => listBranches(a.repoRoot as string));
+  handle("list_all_branches", (a) => listAllBranches(a.repoRoot as string));
   handle("checkout_branch", (a) =>
     checkoutBranch(a.repoRoot as string, a.branch as string),
   );

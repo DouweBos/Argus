@@ -129,6 +129,13 @@ export function ProjectSegment({
           <CreateWorkspaceDialog
             repoRoot={repoRoot}
             onClose={() => setShowCreate(false)}
+            sourceWorkspace={
+              selectedId
+                ? workspaces.find(
+                    (w) => w.id === selectedId && w.kind === "worktree",
+                  ) ?? null
+                : null
+            }
           />,
           document.body,
         )}

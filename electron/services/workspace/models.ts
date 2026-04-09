@@ -66,6 +66,14 @@ export interface WorkspaceEnvConfig {
   strategy: WorkspaceEnvStrategy;
 }
 
+/** A related project that agents can create worktrees in and work on. */
+export interface RelatedProject {
+  /** Relative path from this project's root to the related project's root. */
+  path: string;
+  /** Human-readable description of what this project is. */
+  description: string;
+}
+
 /** Configuration for the "Run" button. */
 export interface RunConfig {
   /** Shell command to execute (e.g. `npx expo start`). */
@@ -105,6 +113,8 @@ export interface StagehandConfig {
   run?: RunConfig | null;
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string | null;
+  /** Related projects that agents can create worktrees in and work on. */
+  related_projects?: RelatedProject[];
 }
 
 /** Default/empty `SetupConfig`. */
@@ -120,5 +130,6 @@ export function defaultStagehandConfig(): StagehandConfig {
     workspace_env: [],
     run: null,
     agent_prompt: null,
+    related_projects: [],
   };
 }

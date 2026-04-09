@@ -8,6 +8,7 @@
 import type {
   AgentStatus,
   AndroidDevice,
+  BranchList,
   DirEntry,
   FileStat,
   Workspace,
@@ -44,6 +45,9 @@ export const getRepoBranch = (repoRoot: string): Promise<string> =>
 export const listBranches = (repoRoot: string): Promise<string[]> =>
   invoke("list_branches", { repoRoot });
 
+export const listAllBranches = (repoRoot: string): Promise<BranchList> =>
+  invoke("list_all_branches", { repoRoot });
+
 export const checkoutBranch = (
   repoRoot: string,
   branch: string,
@@ -57,12 +61,14 @@ export const createWorkspace = (
   branch: string,
   description: string,
   useExistingBranch?: boolean,
+  baseBranch?: string,
 ): Promise<Workspace> =>
   invoke("create_workspace", {
     repoRoot,
     branch,
     description,
     useExistingBranch: useExistingBranch ?? false,
+    baseBranch,
   });
 
 export const createHeadWorkspace = (repoRoot: string): Promise<Workspace> =>

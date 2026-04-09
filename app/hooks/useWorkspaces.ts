@@ -307,6 +307,7 @@ export function useProjectWorkspaces(repoRoot: string) {
       branch: string,
       description: string,
       useExistingBranch?: boolean,
+      baseBranch?: string,
     ) => {
       useWorkspaceStore.getState().setError(null);
       try {
@@ -315,6 +316,7 @@ export function useProjectWorkspaces(repoRoot: string) {
           branch,
           description,
           useExistingBranch,
+          baseBranch,
         );
         useWorkspaceStore.getState().addWorkspace(workspace);
         useWorkspaceStore.getState().selectWorkspace(workspace.id);
