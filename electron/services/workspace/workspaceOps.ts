@@ -442,7 +442,12 @@ export async function gitStashDrop(
  * If a watcher is already active for this workspace, this is a no-op.
  */
 export function watchWorkspace(id: string): void {
-  if (appState.watchers.has(id)) return;
+  const existing = appState.watchers.get(id);
+  if (existing) {
+    // Re-emit current stats for newly mounted listeners.
+    existing.emitCurrent();
+    return;
+  }
 
   const wtPath = workspacePath(id);
   const handle: WatcherHandle = startWatcher(id, wtPath);

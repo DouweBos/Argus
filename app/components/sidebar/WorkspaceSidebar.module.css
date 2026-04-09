@@ -5,8 +5,17 @@
   background: rgba(17, 17, 24, 0.6);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-right: 1px solid var(--glass-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+}
+
+.homeRow {
+  display: flex;
+  align-items: center;
+  height: var(--toolbar-height);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .homeHeader {
@@ -14,19 +23,17 @@
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
-  padding: 6px 12px;
-  margin: 8px 8px 2px;
-  box-sizing: border-box;
-  width: calc(100% - 16px);
+  padding: 0 14px;
+  flex: 1;
+  height: 100%;
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--text-muted);
   background: transparent;
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: 0;
   cursor: pointer;
   text-align: left;
-  flex-shrink: 0;
   transition:
     color var(--transition-base),
     background var(--transition-base);

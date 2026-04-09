@@ -58,6 +58,12 @@ export class WatcherHandle {
     }
   }
 
+  /** Re-emit current stats (for newly mounted listeners). */
+  emitCurrent(): void {
+    this.lastFingerprint = "";
+    this.poll();
+  }
+
   private async poll(): Promise<void> {
     if (this.paused) return;
 

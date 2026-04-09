@@ -53,7 +53,7 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
   const [error, setError] = useState<null | string>(null);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const [diffFiles, setDiffFiles] = useState<DiffFile[]>([]);
-  const [expandedFiles, setExpandedFiles] = useState<Set<number>>(new Set());
+  const [expandedFiles, setExpandedFiles] = useState(() => new Set());
   const [applying, setApplying] = useState(false);
 
   const fetchStashes = useCallback(async () => {

@@ -64,7 +64,13 @@ function setupWorkspaceProgressListener(
 // ---------------------------------------------------------------------------
 
 export function useProjects() {
-  const store = useWorkspaceStore();
+  // Select only the reactive data we expose to callers — avoids subscribing
+  // to the entire store which would make every useCallback unstable.
+  const projects = useWorkspaceStore((s) => s.projects);
+  const selectedId = useWorkspaceStore((s) => s.selectedId);
+  const error = useWorkspaceStore((s) => s.error);
+  const isLoading = useWorkspaceStore((s) => s.isLoading);
+
   const {
     addOpenProject,
     removeOpenProject,
@@ -77,24 +83,27 @@ export function useProjects() {
       path: string,
       options?: { autoSelect?: boolean; skipRecent?: boolean },
     ) => {
-      store.setError(null);
+      const ws = useWorkspaceStore.getState();
+      ws.setError(null);
       try {
         await apiAddRepoRoot(path);
-        store.addProject(path);
+        ws.addProject(path);
 
         // Create the HEAD workspace for this project
         await apiCreateHeadWorkspace(path);
 
         // Fetch workspaces for this project
         const workspaces = await listWorkspaces(path);
-        store.mergeWorkspacesForProject(path, workspaces);
+        useWorkspaceStore
+          .getState()
+          .mergeWorkspacesForProject(path, workspaces);
 
         // Fetch branch
         try {
           const branch = await getRepoBranch(path);
-          store.setProjectBranch(path, branch);
+          useWorkspaceStore.getState().setProjectBranch(path, branch);
         } catch {
-          store.setProjectBranch(path, null);
+          useWorkspaceStore.getState().setProjectBranch(path, null);
         }
 
         // Auto-select the first workspace when user explicitly opens (not on app restore)
@@ -107,31 +116,35 @@ export function useProjects() {
           projectWorkspaces.length > 0 &&
           useWorkspaceStore.getState().selectedId === null
         ) {
-          store.selectWorkspace(projectWorkspaces[0].id);
+          useWorkspaceStore.getState().selectWorkspace(projectWorkspaces[0].id);
         }
 
         if (!options?.skipRecent) addRecentProject(path);
         addOpenProject(path);
       } catch (err) {
-        store.setError(err instanceof Error ? err.message : String(err));
+        useWorkspaceStore
+          .getState()
+          .setError(err instanceof Error ? err.message : String(err));
         throw err;
       }
     },
-    [store, addRecentProject, addOpenProject],
+    [addRecentProject, addOpenProject],
   );
 
   const closeProject = useCallback(
     async (repoRoot: string) => {
-      store.setError(null);
+      useWorkspaceStore.getState().setError(null);
       try {
         await apiRemoveRepoRoot(repoRoot);
-        store.removeProject(repoRoot);
+        useWorkspaceStore.getState().removeProject(repoRoot);
         removeOpenProject(repoRoot);
       } catch (err) {
-        store.setError(err instanceof Error ? err.message : String(err));
+        useWorkspaceStore
+          .getState()
+          .setError(err instanceof Error ? err.message : String(err));
       }
     },
-    [store, removeOpenProject],
+    [removeOpenProject],
   );
 
   // On mount: reopen all previously open projects (do not auto-select; user lands on Home)
@@ -151,7 +164,7 @@ export function useProjects() {
         }
       })();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [getOpenProjects, openProject, removeOpenProject]);
 
   // Listen for background delete failures
   useEffect(() => {
@@ -170,13 +183,13 @@ export function useProjects() {
   }, []);
 
   return {
-    projects: store.projects,
-    selectedId: store.selectedId,
-    selectWorkspace: store.selectWorkspace,
+    projects,
+    selectedId,
+    selectWorkspace: useWorkspaceStore.getState().selectWorkspace,
     openProject,
     closeProject,
-    error: store.error,
-    isLoading: store.isLoading,
+    error,
+    isLoading,
   };
 }
 
