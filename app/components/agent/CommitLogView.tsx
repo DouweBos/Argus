@@ -69,7 +69,7 @@ export function CommitLogView({
   const [error, setError] = useState<null | string>(null);
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const [diffFiles, setDiffFiles] = useState<DiffFile[]>([]);
-  const [expandedFiles, setExpandedFiles] = useState<Set<number>>(new Set());
+  const [expandedFiles, setExpandedFiles] = useState(() => new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [prevDeps, setPrevDeps] = useState({ allBranches, workspaceId });

@@ -21,15 +21,17 @@ export function WorkspaceSidebar() {
       {error && <p className={styles.errorMsg}>{error}</p>}
 
       {/* Home header */}
-      <button
-        type="button"
-        className={`${styles.homeHeader} ${selectedId === null ? styles.homeHeaderActive : ""}`}
-        onClick={() => selectWorkspace(null)}
-        title="Home"
-      >
-        <HomeIcon />
-        <span className={styles.homeLabel}>Home</span>
-      </button>
+      <div className={styles.homeRow}>
+        <button
+          type="button"
+          className={`${styles.homeHeader} ${selectedId === null ? styles.homeHeaderActive : ""}`}
+          onClick={() => selectWorkspace(null)}
+          title="Home"
+        >
+          <HomeIcon />
+          <span className={styles.homeLabel}>Home</span>
+        </button>
+      </div>
 
       {/* Project segments */}
       <div className={styles.projectList}>

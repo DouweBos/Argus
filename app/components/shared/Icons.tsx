@@ -314,6 +314,27 @@ export function FileIcon({ size = 14, className }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ size = 8, className }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className={className}
+    >
+      <path
+        d="M10 4l-4 4 4 4"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ size = 8, className }: IconProps) {
   return (
     <svg

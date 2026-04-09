@@ -49,14 +49,11 @@
   background: var(--accent-gradient);
   color: var(--accent-fg);
   border-radius: var(--border-radius-sm);
-  margin: 0 6px;
-  width: calc(100% - 12px);
-  padding-left: 12px;
 }
 
 .navItemActive:hover {
   opacity: 0.9;
-  color: var(--accent-fg);
+  color: #fff;
 }
 
 .navLabel {

@@ -163,7 +163,7 @@ describe("external branch switch → full pipeline", () => {
       .getState()
       .workspaces.find((w) => w.id === selectedId);
 
-    // This is the value ToolPanel passes as branchName to ChangesTool
+    // This is the value ToolPanel passes to ChangesSummary
     expect(workspace?.branch).toBe("claude/str-3696-firetv-deeplink-focus");
 
     unmount();

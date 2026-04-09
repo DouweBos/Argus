@@ -5,6 +5,8 @@ export type ToolId = "changes" | "simulator" | "terminal";
 interface LayoutState {
   /** Right-side tool rail */
   activeToolId: null | ToolId;
+  /** Last non-null tool so header stays correct during close animation */
+  lastActiveToolId: ToolId;
   /** Panel width fractions (0–1), shared between TitleBar and ResizablePanel */
   leftPanelWidth: number;
   leftSidebarVisible: boolean;
@@ -24,8 +26,12 @@ export const useLayoutStore = create<LayoutState>((set) => ({
   setLeftPanelWidth: (w) => set({ leftPanelWidth: w }),
 
   activeToolId: null,
+  lastActiveToolId: "terminal",
   toolPanelWidth: 0.3,
   toggleTool: (id) =>
-    set((s) => ({ activeToolId: s.activeToolId === id ? null : id })),
+    set((s) => ({
+      activeToolId: s.activeToolId === id ? null : id,
+      lastActiveToolId: id,
+    })),
   setToolPanelWidth: (w) => set({ toolPanelWidth: w }),
 }));

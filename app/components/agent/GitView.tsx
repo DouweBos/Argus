@@ -4,23 +4,23 @@ import { DiffViewer } from "./DiffViewer";
 import { HistoryView } from "./HistoryView";
 import { BranchView } from "./BranchView";
 import { StashesView } from "./StashesView";
-import styles from "./ChangesView.module.css";
+import styles from "./GitView.module.css";
 
 export type SourceView = "branch" | "history" | "stashes" | "working-copy";
 
-interface ChangesViewProps {
+interface GitViewProps {
   baseBranch?: null | string;
   branchName?: string;
   repoRoot: string;
   workspaceId: string;
 }
 
-export function ChangesView({
+export function GitView({
   workspaceId,
   baseBranch,
   branchName,
   repoRoot,
-}: ChangesViewProps) {
+}: GitViewProps) {
   const [activeView, setActiveView] = useState<SourceView>("working-copy");
   const [fileCount, setFileCount] = useState(0);
   const [prevWorkspaceId, setPrevWorkspaceId] = useState(workspaceId);

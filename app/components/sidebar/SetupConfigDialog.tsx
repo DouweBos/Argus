@@ -382,19 +382,23 @@ export function SetupConfigDialog({
   const [error, setError] = useState<null | string>(null);
   const [showPreview, setShowPreview] = useState(false);
 
+  const setCopies = copyList.setItems;
+  const setSymlinks = symlinkList.setItems;
+  const setCommands = commandList.setItems;
+  const setTerminals = terminalList.setItems;
+  const setEnvs = envList.setItems;
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const config = await readStagehandConfig(repoRoot);
         if (cancelled) return;
-        if (config.setup?.copy?.length) copyList.setItems(config.setup.copy);
-        if (config.setup?.symlink?.length)
-          symlinkList.setItems(config.setup.symlink);
-        if (config.setup?.commands?.length)
-          commandList.setItems(config.setup.commands);
+        if (config.setup?.copy?.length) setCopies(config.setup.copy);
+        if (config.setup?.symlink?.length) setSymlinks(config.setup.symlink);
+        if (config.setup?.commands?.length) setCommands(config.setup.commands);
         if (config.terminals?.length) {
-          terminalList.setItems(
+          setTerminals(
             config.terminals.map((t) => ({
               name: t.name ?? "",
               dir: t.dir ?? "",
@@ -411,7 +415,7 @@ export function SetupConfigDialog({
         }
         if (config.agent_prompt) setAgentPrompt(config.agent_prompt);
         if (config.workspace_env?.length) {
-          envList.setItems(
+          setEnvs(
             config.workspace_env.map((we: WorkspaceEnvConfig) => ({
               name: we.name ?? "",
               base_value: we.base_value != null ? String(we.base_value) : "",
@@ -429,7 +433,7 @@ export function SetupConfigDialog({
     return () => {
       cancelled = true;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [repoRoot, setCopies, setSymlinks, setCommands, setTerminals, setEnvs]);
 
   const buildConfig = (): StagehandConfig => {
     const config: StagehandConfig = { setup: {} };

@@ -1,4 +1,4 @@
-import type { SourceView } from "./ChangesView";
+import type { SourceView } from "./GitView";
 import styles from "./SourceSidebar.module.css";
 
 interface SourceSidebarProps {
@@ -57,7 +57,7 @@ export function SourceSidebar({
         >
           <WorkingCopyIcon size={13} />
           <span className={styles.navLabel}>Working Copy</span>
-          {fileCount > 0 && <span className={styles.badge}>{fileCount}</span>}
+          <span className={styles.badge}>{fileCount}</span>
         </button>
         <button
           className={`${styles.navItem} ${activeView === "branch" ? styles.navItemActive : ""}`}

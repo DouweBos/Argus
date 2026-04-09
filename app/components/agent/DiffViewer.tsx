@@ -1,16 +1,7 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import {
-  getWorkspaceFullDiff,
-  getWorkspaceStagedDiff,
-  getWorkspaceUntrackedDiff,
-  getWorkspaceConflicts,
-  stageFile,
-  unstageFile,
-  watchWorkspace,
-} from "../../lib/ipc";
-import { useIpcEvent } from "../../hooks/useIpcEvent";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { stageFile, unstageFile } from "../../lib/ipc";
+import { useDiffFiles } from "../../hooks/useDiffFiles";
 import { ResizablePanel } from "../layout/ResizablePanel";
-import { parseDiff, mergeStaged } from "../../lib/diffParser";
 import { CommitPanel } from "./CommitPanel";
 import { FileList } from "./FileList";
 import { FileDiffView } from "./FileDiffView";
@@ -51,119 +42,50 @@ export function DiffViewer({
   repoRoot,
   onFileCountChange,
 }: DiffViewerProps) {
-  const [fullDiff, setFullDiff] = useState<null | string>(null);
-  const [stagedDiff, setStagedDiff] = useState<null | string>(null);
-  const [untrackedDiff, setUntrackedDiff] = useState<null | string>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<null | string>(null);
-  const [conflictFiles, setConflictFiles] = useState<string[]>([]);
+  const {
+    files,
+    conflictFiles,
+    isLoading,
+    error: fetchError,
+    refetch: fetchDiff,
+  } = useDiffFiles(workspaceId, { baseBranch });
   const [selectedIndices, setSelectedIndices] =
     useState<Set<number>>(INITIAL_SELECTION);
   const [searchQuery, setSearchQuery] = useState("");
-  const isMounted = useRef(true);
+  const [actionError, setActionError] = useState<null | string>(null);
 
+  // Report file count to parent (skip zero during initial load to avoid badge flicker)
   useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  const fetchDiff = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const [full, staged, untracked] = await Promise.all([
-        getWorkspaceFullDiff(workspaceId),
-        getWorkspaceStagedDiff(workspaceId),
-        getWorkspaceUntrackedDiff(workspaceId),
-      ]);
-      if (isMounted.current) {
-        setFullDiff(full);
-        setStagedDiff(staged);
-        setUntrackedDiff(untracked);
-      }
-    } catch (err) {
-      if (isMounted.current) {
-        setError(err instanceof Error ? err.message : "Failed to load diff");
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
+    if (!isLoading || files.length > 0) {
+      onFileCountChange?.(files.length);
     }
-  }, [workspaceId]);
+  }, [files.length, isLoading, onFileCountChange]);
 
-  const fetchConflicts = useCallback(async () => {
-    if (!baseBranch) {
-      setConflictFiles([]);
-      return;
-    }
-    try {
-      const conflicts = await getWorkspaceConflicts(workspaceId);
-      setConflictFiles(conflicts);
-    } catch {
-      setConflictFiles([]);
-    }
-  }, [workspaceId, baseBranch]);
-
-  useEffect(() => {
-    fetchDiff();
-    fetchConflicts();
-  }, [fetchDiff, fetchConflicts]);
-
-  // Ensure the backend file watcher is running (no-op if already active).
-  useEffect(() => {
-    watchWorkspace(workspaceId).catch(() => {});
-  }, [workspaceId]);
-
-  useIpcEvent(`workspace:diff-changed:${workspaceId}`, () => {
-    fetchDiff();
-  });
-
-  const files = useMemo(() => {
-    if (!fullDiff && !untrackedDiff) return [];
-    const parsed = fullDiff ? parseDiff(fullDiff) : [];
-    const merged = stagedDiff ? mergeStaged(parsed, stagedDiff) : parsed;
-    if (untrackedDiff && untrackedDiff.trim()) {
-      const untracked = parseDiff(untrackedDiff);
-      for (const f of untracked) {
-        f.staged = "none";
-        f.status = "A";
-      }
-      return [...merged, ...untracked];
-    }
-    return merged;
-  }, [fullDiff, stagedDiff, untrackedDiff]);
-
-  // Report file count to parent
-  useEffect(() => {
-    onFileCountChange?.(files.length);
-  }, [files.length, onFileCountChange]);
-
-  // Clamp selection when files change
-  useEffect(() => {
+  // Clamp selection when file count changes (adjust during render)
+  const [prevFileCount, setPrevFileCount] = useState(files.length);
+  if (files.length !== prevFileCount) {
+    setPrevFileCount(files.length);
     if (files.length === 0) {
       setSelectedIndices(new Set());
-      return;
-    }
-    let changed = false;
-    const next = new Set<number>();
-    for (const idx of selectedIndices) {
-      if (idx < files.length) {
-        next.add(idx);
-      } else {
+    } else {
+      let changed = false;
+      const next = new Set<number>();
+      for (const idx of selectedIndices) {
+        if (idx < files.length) {
+          next.add(idx);
+        } else {
+          changed = true;
+        }
+      }
+      if (next.size === 0) {
+        next.add(0);
         changed = true;
       }
+      if (changed) {
+        setSelectedIndices(next);
+      }
     }
-    if (next.size === 0) {
-      next.add(0);
-      changed = true;
-    }
-    if (changed) {
-      setSelectedIndices(next);
-    }
-  }, [files.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   const selectedFiles = useMemo(() => {
     const sorted = [...selectedIndices].sort((a, b) => a - b);
@@ -176,7 +98,7 @@ export function DiffViewer({
         await action();
         await fetchDiff();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Operation failed");
+        setActionError(err instanceof Error ? err.message : "Operation failed");
       }
     },
     [fetchDiff],
@@ -225,7 +147,7 @@ export function DiffViewer({
   const allStaged = files.length > 0 && files.every((f) => f.staged === "full");
   const anyStaged = files.length > 0 && files.some((f) => f.staged !== "none");
 
-  if (isLoading && fullDiff === null) {
+  if (isLoading && files.length === 0) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingFull}>
@@ -236,6 +158,7 @@ export function DiffViewer({
     );
   }
 
+  const error = fetchError || actionError;
   if (error) {
     return (
       <div className={styles.container}>
