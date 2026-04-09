@@ -19,6 +19,7 @@ import { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
 
+import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import {
   createWorkspace,
@@ -195,7 +196,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "create_workspace",
-    "Create a new isolated git worktree workspace. Returns the workspace ID and branch name. The workspace will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Can target any project — if the repo_root is not yet registered, it will be registered automatically.",
+    "Create a new isolated git worktree workspace. Returns the workspace ID and branch name. The workspace will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Requires repo_root — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
     {
       name: z
         .string()
@@ -206,20 +207,42 @@ export function createMcpServer(): McpServer {
         .describe("Human-readable description of what this workspace is for"),
       repo_root: z
         .string()
-        .optional()
-        .describe("Absolute path to the repository root. Defaults to the first registered repo."),
+        .describe("Absolute path to the repository root. Use the repo_root from your system prompt for the current project, or a path from list_projects for another project."),
       base_branch: z
         .string()
         .optional()
         .describe("Branch to fork from. Defaults to the repo root HEAD. Use this to create a child worktree off another worktree's branch."),
     },
     async ({ name, description, repo_root, base_branch }) => {
-      const repoRoot = resolveRepoRoot(repo_root);
+      const repoRoot = repo_root;
 
       // Auto-register the repo root if targeting a cross-project workspace.
+      const isNew = !appState.repoRoots.has(repoRoot);
       ensureRepoRegistered(repoRoot);
+      if (isNew) {
+        getMainWindow()?.webContents.send("project:added", repoRoot);
+      }
 
-      const ws = await createWorkspace(repoRoot, name, description ?? "", false, base_branch);
+      // Append a short unique suffix to prevent branch name collisions when
+      // multiple agents create workspaces with the same display name.
+      const suffix = crypto.randomUUID().slice(0, 6);
+      const uniqueName = `${name}-${suffix}`;
+
+      const ws = await createWorkspace(repoRoot, uniqueName, description ?? "", false, base_branch);
+
+      // Notify the renderer so the sidebar updates immediately.
+      getMainWindow()?.webContents.send("workspace:created", {
+        id: ws.id,
+        kind: ws.kind,
+        branch: ws.branch,
+        display_name: ws.display_name,
+        description: ws.description,
+        path: ws.path,
+        repo_root: ws.repo_root,
+        status: ws.status,
+        base_branch: ws.base_branch,
+      });
+
       return {
         content: [
           {
@@ -302,12 +325,18 @@ export function createMcpServer(): McpServer {
           isError: true,
         };
       }
-      await deleteWorkspace(ws.id, delete_branch ?? false);
+      const wsId = ws.id;
+      const wsName = ws.display_name ?? ws.branch;
+      await deleteWorkspace(wsId, delete_branch ?? false);
+
+      // Notify the renderer so the sidebar removes the workspace.
+      getMainWindow()?.webContents.send("workspace:deleted", wsId);
+
       return {
         content: [
           {
             type: "text" as const,
-            text: `Deleted workspace '${ws.display_name ?? ws.branch}' (${ws.id})`,
+            text: `Deleted workspace '${wsName}' (${wsId})`,
           },
         ],
       };
@@ -661,8 +690,6 @@ export async function startMcpServer(): Promise<number> {
     throw new Error("MCP server is already running");
   }
 
-  const mcpServer = createMcpServer();
-
   // Track transports per session for proper lifecycle management.
   const transports = new Map<string, StreamableHTTPServerTransport>();
 
@@ -682,7 +709,10 @@ export async function startMcpServer(): Promise<number> {
       let transport = sessionId ? transports.get(sessionId) : undefined;
 
       if (!transport) {
-        // New session — create a new transport.
+        // New session — create a fresh McpServer + transport pair.
+        // Each session needs its own McpServer because the MCP SDK's
+        // Server class only supports one active transport at a time.
+        const mcpServer = createMcpServer();
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => crypto.randomUUID(),
         });
@@ -693,14 +723,15 @@ export async function startMcpServer(): Promise<number> {
         };
 
         await mcpServer.connect(transport);
-
-        // Store after connect so sessionId is set.
-        if (transport.sessionId) {
-          transports.set(transport.sessionId, transport);
-        }
       }
 
       await transport.handleRequest(req, res);
+
+      // Store after handleRequest — the session ID is generated during
+      // the initialize handshake inside handleRequest, not during connect.
+      if (transport.sessionId && !transports.has(transport.sessionId)) {
+        transports.set(transport.sessionId, transport);
+      }
     } else if (req.method === "GET") {
       // SSE stream for server-initiated messages.
       const sessionId = req.headers["mcp-session-id"] as string | undefined;

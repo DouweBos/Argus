@@ -219,7 +219,9 @@ export async function startAgent(
   const mcpPort = getMcpPort();
   if (mcpPort) {
     const mcpConfig = JSON.stringify({
-      stagehand: { type: "http", url: `http://127.0.0.1:${mcpPort}/mcp` },
+      mcpServers: {
+        stagehand: { type: "http", url: `http://127.0.0.1:${mcpPort}/mcp` },
+      },
     });
     args.push("--mcp-config", mcpConfig);
   }
@@ -397,11 +399,13 @@ export async function startAgent(
     // Config missing or invalid — non-fatal, skip project prompt.
   }
 
-  // Combine prompts: kind-specific → conductor skill → project-level → caller-provided.
+  // Combine prompts: kind-specific → project context → conductor skill → project-level → caller-provided.
   const systemPrompt = getSystemPromptForKind(workspace.kind);
   const conductorSkill = getConductorSkill();
+  const projectContext = `## Current Project\n\nYou are working in **${workspace.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${workspace.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
   const combinedPrompt = [
     systemPrompt,
+    projectContext,
     conductorSkill,
     projectPrompt,
     "## Simulator\n\nDo not call `conductor start-device` — a simulator will be provisioned automatically when you first use conductor.",

@@ -14,7 +14,7 @@ You have access to the **Stagehand MCP server** which provides tools for workspa
 ### Workspace management
 
 - **`list_workspaces`** — List all workspaces to see what else is in progress. Pass `repo_root` to list workspaces for a specific project.
-- **`create_workspace`** — Create a new worktree. Pass `base_branch` with your current branch name to create a child worktree. Pass `repo_root` to create a workspace in another project.
+- **`create_workspace`** — Create a new worktree. **Always pass `repo_root`** — use your current project path for work here, or a path from `list_projects` for another project. Pass `base_branch` with your current branch name to create a child worktree.
 - **`delete_workspace`** — Clean up a workspace you no longer need.
 
 ### Agent orchestration
