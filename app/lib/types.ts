@@ -18,6 +18,11 @@ export function workspaceStatusLabel(status: Workspace["status"]): string {
   return "error";
 }
 
+export interface BranchList {
+  local: string[];
+  remote: string[];
+}
+
 /** Check if workspace is ready. */
 export function isWorkspaceReady(status: Workspace["status"]): boolean {
   return status === "ready";

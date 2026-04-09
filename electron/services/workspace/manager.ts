@@ -209,15 +209,19 @@ export async function createWorkspace(
   branch: string,
   description: string,
   useExistingBranch?: boolean,
+  explicitBaseBranch?: string,
 ): Promise<Workspace> {
-  // Capture the current branch as the base branch before creating the worktree.
-  let baseBranch: string | undefined;
-  try {
-    baseBranch = (
-      await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
-    ).trim();
-  } catch {
-    baseBranch = undefined;
+  // Use the explicit base branch if provided (e.g. when creating a child
+  // worktree from another worktree), otherwise fall back to the repo root HEAD.
+  let baseBranch: string | undefined = explicitBaseBranch;
+  if (!baseBranch) {
+    try {
+      baseBranch = (
+        await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
+      ).trim();
+    } catch {
+      baseBranch = undefined;
+    }
   }
 
   let workspace: Workspace;
@@ -508,7 +512,7 @@ async function createWorktree(
     "-b",
     branchSlug,
     worktreePath,
-    "HEAD",
+    baseBranch ?? "HEAD",
   ]);
 
   console.info(

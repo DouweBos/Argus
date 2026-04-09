@@ -50,6 +50,43 @@ export async function listBranches(repoRoot: string): Promise<string[]> {
     .sort();
 }
 
+export interface BranchList {
+  local: string[];
+  remote: string[];
+}
+
+/** Return local + remote branch names, with remote deduped against local. */
+export async function listAllBranches(repoRoot: string): Promise<BranchList> {
+  const localRaw = await git(repoRoot, [
+    "for-each-ref",
+    "--format=%(refname:short)",
+    "refs/heads/",
+  ]);
+  const local = localRaw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+    .sort();
+
+  const localSet = new Set(local);
+
+  const remoteRaw = await git(repoRoot, [
+    "for-each-ref",
+    "--format=%(refname:short)",
+    "refs/remotes/origin/",
+  ]);
+  const remote = remoteRaw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("origin/"))
+    .map((l) => l.slice("origin/".length))
+    .filter((l) => l.length > 0 && l !== "HEAD")
+    .filter((l) => !localSet.has(l))
+    .sort();
+
+  return { local, remote };
+}
+
 /** Checkout an existing local branch in the repo root. */
 export async function checkoutBranch(
   repoRoot: string,

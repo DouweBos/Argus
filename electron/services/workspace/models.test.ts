@@ -27,6 +27,11 @@ describe("defaultStagehandConfig", () => {
     expect(config.run).toBeNull();
   });
 
+  it("returns empty related_projects array", () => {
+    const config = defaultStagehandConfig();
+    expect(config.related_projects).toEqual([]);
+  });
+
   it("returns a new instance each time", () => {
     const a = defaultStagehandConfig();
     const b = defaultStagehandConfig();

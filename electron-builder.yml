@@ -19,8 +19,6 @@ extraResources:
     to: worktree-agent-system-prompt.md
   - from: electron/prompts/root-agent-system-prompt.md
     to: root-agent-system-prompt.md
-  - from: electron/cli/stagehand.sh
-    to: stagehand.sh
   - from: native/conductor
     to: conductor
     filter:

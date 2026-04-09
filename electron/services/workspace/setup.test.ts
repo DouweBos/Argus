@@ -152,6 +152,115 @@ describe("loadStagehandConfig", () => {
     expect(config.workspace_env[0].name).toBe("LOCAL_PORT");
   });
 
+  it("parses related_projects from config", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        related_projects: [
+          { path: "../backend", description: "Backend API" },
+          { path: "../shared", description: "Shared lib" },
+        ],
+      }),
+    );
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.related_projects).toHaveLength(2);
+    expect(config.related_projects![0]).toEqual({
+      path: "../backend",
+      description: "Backend API",
+    });
+    expect(config.related_projects![1]).toEqual({
+      path: "../shared",
+      description: "Shared lib",
+    });
+  });
+
+  it("returns empty related_projects when field is absent", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
+    });
+    mockReadFileSync.mockReturnValue(JSON.stringify({ setup: {} }));
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.related_projects).toEqual([]);
+  });
+
+  it("filters invalid related_projects entries", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        related_projects: [
+          { path: "../valid", description: "Valid" },
+          { description: "Missing path" },
+          "not an object",
+          null,
+          { path: 123, description: "Numeric path" },
+        ],
+      }),
+    );
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.related_projects).toHaveLength(1);
+    expect(config.related_projects![0].path).toBe("../valid");
+  });
+
+  it("defaults missing description to empty string in related_projects", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return (
+        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
+      );
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        related_projects: [{ path: "../no-desc" }],
+      }),
+    );
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.related_projects).toHaveLength(1);
+    expect(config.related_projects![0].description).toBe("");
+  });
+
+  it("deduplicates related_projects when merging local config", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      if (String(p).includes("local")) {
+        return JSON.stringify({
+          setup: {},
+          related_projects: [
+            { path: "../backend", description: "Backend (local override)" },
+            { path: "../new-project", description: "New project" },
+          ],
+        });
+      }
+      return JSON.stringify({
+        setup: {},
+        related_projects: [
+          { path: "../backend", description: "Backend API" },
+          { path: "../shared", description: "Shared lib" },
+        ],
+      });
+    });
+
+    const config = loadStagehandConfig("/repo");
+    // backend should not be duplicated — base wins.
+    expect(config.related_projects).toHaveLength(3);
+    const paths = config.related_projects!.map((p) => p.path);
+    expect(paths).toEqual(["../backend", "../shared", "../new-project"]);
+    // Base description preserved for the duplicate.
+    expect(config.related_projects![0].description).toBe("Backend API");
+  });
+
   it("throws on invalid JSON", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
       return (

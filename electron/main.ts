@@ -10,8 +10,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc";
-import { installCli } from "./services/cli/installer";
 import { installConductor } from "./services/cli/conductorInstaller";
+import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { refreshAllBranches } from "./services/workspace/watcher";
 
@@ -139,6 +139,7 @@ let isQuitting = false;
 app.on("before-quit", () => {
   log("before-quit fired, setting isQuitting=true");
   isQuitting = true;
+  stopMcpServer();
   // The @codingame/monaco-vscode-api registers a beforeunload handler via
   // addEventListener that cancels the first close. Destroy the window directly
   // to bypass it — we handle our own save state, not VS Code's.
@@ -168,8 +169,11 @@ app.whenReady().then(() => {
   const pathDiag = fixProcessPath();
   pathDiag.forEach((d) => log("[shellEnv] %s", d));
 
-  // Install/update the stagehand CLI to ~/.stagehand/bin/stagehand.
-  installCli();
+  // Start the Stagehand MCP server so agents can orchestrate workspaces and
+  // sibling agents via the Model Context Protocol.
+  startMcpServer().catch((e) =>
+    log("Failed to start MCP server: %s", String(e)),
+  );
 
   // Install/update the conductor CLI to ~/.stagehand/bin/conductor.
   installConductor();
