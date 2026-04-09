@@ -285,7 +285,7 @@ describe("create_workspace", () => {
 
     const result = await client.callTool({
       name: "create_workspace",
-      arguments: { name: "Cool Thing", description: "A cool feature" },
+      arguments: { name: "Cool Thing", description: "A cool feature", repo_root: "/projects/frontend" },
     });
     const parsed = jsonOf(result) as { workspace_id: string; branch: string };
     expect(parsed.workspace_id).toBe("ws-1");
@@ -293,7 +293,7 @@ describe("create_workspace", () => {
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/frontend");
     expect(mockCreateWorkspace).toHaveBeenCalledWith(
       "/projects/frontend",
-      "Cool Thing",
+      expect.stringContaining("Cool Thing"),
       "A cool feature",
       false,
       undefined,
@@ -316,7 +316,7 @@ describe("create_workspace", () => {
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/backend");
     expect(mockCreateWorkspace).toHaveBeenCalledWith(
       "/projects/backend",
-      "API fix",
+      expect.stringContaining("API fix"),
       "",
       false,
       "develop",
@@ -775,20 +775,16 @@ describe("merge_workspace", () => {
 // resolveRepoRoot (tested indirectly)
 // ===========================================================================
 
-describe("resolveRepoRoot (via create_workspace)", () => {
-  it("defaults to first registered repo when repo_root omitted", async () => {
+describe("create_workspace repo_root handling", () => {
+  it("requires repo_root — omitting it returns an error", async () => {
     appState.repoRoots.add("/first/repo");
-    appState.repoRoots.add("/second/repo");
-    mockCreateWorkspace.mockResolvedValue(
-      mockWorkspace({ repo_root: "/first/repo" }),
-    );
 
-    await client.callTool({
+    const result = await client.callTool({
       name: "create_workspace",
       arguments: { name: "test" },
     });
-    // Should have used the first registered repo.
-    expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/first/repo");
+    // Zod validation should reject the missing required field.
+    expect(result.isError).toBe(true);
   });
 
   it("uses explicit repo_root when provided", async () => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { listen } from "../lib/events";
 import { useWorkspaceStore } from "../stores/workspaceStore";
 import { useRecentProjectsStore } from "../stores/recentProjectsStore";
+import type { Workspace } from "../lib/types";
 import {
   listWorkspaces,
   getRepoBranch,
@@ -177,6 +178,51 @@ export function useProjects() {
           .setError(`Failed to delete workspace: ${error}`);
       },
     );
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  // Listen for MCP-driven project additions (e.g. agent creates a cross-project workspace).
+  useEffect(() => {
+    const unlisten = listen<string>("project:added", (event) => {
+      const repoRoot = event.payload;
+      // Open the project in the sidebar (skip recent — the user didn't open it manually).
+      openProject(repoRoot, { autoSelect: false, skipRecent: true }).catch(
+        () => {
+          // Project may not exist or be invalid — non-fatal.
+        },
+      );
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [openProject]);
+
+  // Listen for MCP-driven workspace creation (e.g. agent creates a workspace via MCP tool).
+  useEffect(() => {
+    const unlisten = listen<Workspace>("workspace:created", (event) => {
+      const ws = event.payload;
+      const store = useWorkspaceStore.getState();
+      // Only add if not already present (frontend-initiated creates already add it).
+      if (!store.workspaces.some((w) => w.id === ws.id)) {
+        store.addWorkspace(ws);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  // Listen for MCP-driven workspace deletion.
+  useEffect(() => {
+    const unlisten = listen<string>("workspace:deleted", (event) => {
+      const wsId = event.payload;
+      const store = useWorkspaceStore.getState();
+      if (store.workspaces.some((w) => w.id === wsId)) {
+        store.removeWorkspace(wsId);
+      }
+    });
     return () => {
       unlisten.then((fn) => fn());
     };

@@ -13,7 +13,7 @@ You have access to the **Stagehand MCP server** which provides tools for managin
 
 ### Workspace management
 
-- **`create_workspace`** — Create a new isolated git worktree with its own branch. The workspace is automatically initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Pass `base_branch` to fork from a specific branch instead of HEAD. Pass `repo_root` to create a workspace **in another project** — the project will be auto-registered if needed.
+- **`create_workspace`** — Create a new isolated git worktree with its own branch. The workspace is automatically initialized with the project's setup pipeline (dependency installs, symlinks, etc.). **Always pass `repo_root`** — use your current project path for work here, or a path from `list_projects` for another project. Pass `base_branch` to fork from a specific branch instead of HEAD.
 - **`list_workspaces`** — List all workspaces with their IDs, branches, statuses, and paths. Pass `repo_root` to list workspaces for a specific project.
 - **`delete_workspace`** — Remove a workspace, killing any running agents and terminals.
 
@@ -37,7 +37,7 @@ You have access to the **Stagehand MCP server** which provides tools for managin
 
 1. **Create** workspaces for each independent piece of work:
 
-   Use the `create_workspace` tool to create an isolated worktree. Each workspace gets its own branch forked from HEAD.
+   Use the `create_workspace` tool to create an isolated worktree. Always pass your current project's `repo_root`. Each workspace gets its own branch forked from HEAD.
 
 2. **Spawn** agents to work in parallel:
 
