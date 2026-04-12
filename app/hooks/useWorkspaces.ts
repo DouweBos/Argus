@@ -1,17 +1,39 @@
-import { useCallback, useEffect, useRef } from "react";
-import { listen } from "../lib/events";
-import { useWorkspaceStore } from "../stores/workspaceStore";
-import { useRecentProjectsStore } from "../stores/recentProjectsStore";
 import type { Workspace } from "../lib/types";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { listen } from "../lib/events";
 import {
-  listWorkspaces,
-  getRepoBranch,
-  createWorkspace as apiCreateWorkspace,
-  createHeadWorkspace as apiCreateHeadWorkspace,
-  deleteWorkspace as apiDeleteWorkspace,
   addRepoRoot as apiAddRepoRoot,
+  createHeadWorkspace as apiCreateHeadWorkspace,
+  createWorkspace as apiCreateWorkspace,
+  deleteWorkspace as apiDeleteWorkspace,
   removeRepoRoot as apiRemoveRepoRoot,
+  getRepoBranch,
+  listWorkspaces,
 } from "../lib/ipc";
+import {
+  addOpenProject,
+  addRecentProject,
+  getOpenProjects,
+  removeOpenProject,
+} from "../stores/recentProjectsStore";
+import {
+  addProject,
+  addWorkspace,
+  getWorkspaceState,
+  mergeWorkspacesForProject,
+  removeProject,
+  removeWorkspace,
+  selectWorkspace,
+  setError,
+  setProjectBranch,
+  setSetupProgress,
+  updateWorkspace,
+  useSelectedWorkspaceId,
+  useWorkspaceError,
+  useWorkspaceLoading,
+  useWorkspaceProjects,
+  useWorkspaces,
+} from "../stores/workspaceStore";
 import { isWindowFocused } from "./useWindowFocus";
 
 // ---------------------------------------------------------------------------
@@ -26,14 +48,15 @@ function setupWorkspaceStatusListener(
     let status: "initializing" | "ready" | { error: string };
     if (payload === "ready") {
       status = "ready";
-      useWorkspaceStore.getState().setSetupProgress(workspaceId, null);
+      setSetupProgress(workspaceId, null);
     } else if (payload.startsWith("error:")) {
       status = { error: payload.slice(6) };
-      useWorkspaceStore.getState().setSetupProgress(workspaceId, null);
+      setSetupProgress(workspaceId, null);
     } else {
       status = "initializing";
     }
-    useWorkspaceStore.getState().updateWorkspace(workspaceId, { status });
+
+    updateWorkspace(workspaceId, { status });
   });
 }
 
@@ -52,7 +75,7 @@ function setupWorkspaceProgressListener(
         typeof data.current === "number" &&
         typeof data.total === "number"
       ) {
-        useWorkspaceStore.getState().setSetupProgress(workspaceId, data);
+        setSetupProgress(workspaceId, data);
       }
     } catch {
       // Ignore malformed payload
@@ -65,164 +88,132 @@ function setupWorkspaceProgressListener(
 // ---------------------------------------------------------------------------
 
 export function useProjects() {
-  // Select only the reactive data we expose to callers — avoids subscribing
-  // to the entire store which would make every useCallback unstable.
-  const projects = useWorkspaceStore((s) => s.projects);
-  const selectedId = useWorkspaceStore((s) => s.selectedId);
-  const error = useWorkspaceStore((s) => s.error);
-  const isLoading = useWorkspaceStore((s) => s.isLoading);
-
-  const {
-    addOpenProject,
-    removeOpenProject,
-    getOpenProjects,
-    addProject: addRecentProject,
-  } = useRecentProjectsStore();
+  const projects = useWorkspaceProjects();
+  const selectedId = useSelectedWorkspaceId();
+  const error = useWorkspaceError();
+  const isLoading = useWorkspaceLoading();
 
   const openProject = useCallback(
     async (
       path: string,
       options?: { autoSelect?: boolean; skipRecent?: boolean },
     ) => {
-      const ws = useWorkspaceStore.getState();
-      ws.setError(null);
+      setError(null);
       try {
         await apiAddRepoRoot(path);
-        ws.addProject(path);
+        addProject(path);
 
-        // Create the HEAD workspace for this project
         await apiCreateHeadWorkspace(path);
 
-        // Fetch workspaces for this project
         const workspaces = await listWorkspaces(path);
-        useWorkspaceStore
-          .getState()
-          .mergeWorkspacesForProject(path, workspaces);
+        mergeWorkspacesForProject(path, workspaces);
 
-        // Fetch branch
         try {
           const branch = await getRepoBranch(path);
-          useWorkspaceStore.getState().setProjectBranch(path, branch);
+          setProjectBranch(path, branch);
         } catch {
-          useWorkspaceStore.getState().setProjectBranch(path, null);
+          setProjectBranch(path, null);
         }
 
-        // Auto-select the first workspace when user explicitly opens (not on app restore)
         const shouldAutoSelect = options?.autoSelect !== false;
-        const projectWorkspaces = useWorkspaceStore
-          .getState()
-          .workspaces.filter((w) => w.repo_root === path);
+        const projectWorkspaces = getWorkspaceState().workspaces.filter(
+          (w) => w.repo_root === path,
+        );
         if (
           shouldAutoSelect &&
           projectWorkspaces.length > 0 &&
-          useWorkspaceStore.getState().selectedId === null
+          getWorkspaceState().selectedId === null
         ) {
-          useWorkspaceStore.getState().selectWorkspace(projectWorkspaces[0].id);
+          selectWorkspace(projectWorkspaces[0].id);
         }
 
-        if (!options?.skipRecent) addRecentProject(path);
+        if (!options?.skipRecent) {
+          addRecentProject(path);
+        }
         addOpenProject(path);
       } catch (err) {
-        useWorkspaceStore
-          .getState()
-          .setError(err instanceof Error ? err.message : String(err));
+        setError(err instanceof Error ? err.message : String(err));
         throw err;
       }
     },
-    [addRecentProject, addOpenProject],
+    [],
   );
 
-  const closeProject = useCallback(
-    async (repoRoot: string) => {
-      useWorkspaceStore.getState().setError(null);
-      try {
-        await apiRemoveRepoRoot(repoRoot);
-        useWorkspaceStore.getState().removeProject(repoRoot);
-        removeOpenProject(repoRoot);
-      } catch (err) {
-        useWorkspaceStore
-          .getState()
-          .setError(err instanceof Error ? err.message : String(err));
-      }
-    },
-    [removeOpenProject],
-  );
+  const closeProject = useCallback(async (repoRoot: string) => {
+    setError(null);
+    try {
+      await apiRemoveRepoRoot(repoRoot);
+      removeProject(repoRoot);
+      removeOpenProject(repoRoot);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
 
-  // On mount: reopen all previously open projects (do not auto-select; user lands on Home)
   useEffect(() => {
     const open = getOpenProjects();
     if (open.length > 0) {
-      // Open them in order (sorted by addedAt ascending)
       const sorted = [...open].sort((a, b) => a.addedAt - b.addedAt);
       (async () => {
         for (const p of sorted) {
           try {
             await openProject(p.path, { autoSelect: false, skipRecent: true });
           } catch {
-            // Directory may have been deleted — remove stale entry
             removeOpenProject(p.path);
           }
         }
       })();
     }
-  }, [getOpenProjects, openProject, removeOpenProject]);
+  }, [openProject]);
 
-  // Listen for background delete failures
   useEffect(() => {
     const unlisten = listen<{ error: string; id: string }>(
       "workspace:delete-failed",
       (event) => {
-        const { error } = event.payload;
-        useWorkspaceStore
-          .getState()
-          .setError(`Failed to delete workspace: ${error}`);
+        const { error: message } = event.payload;
+        setError(`Failed to delete workspace: ${message}`);
       },
     );
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, []);
 
-  // Listen for MCP-driven project additions (e.g. agent creates a cross-project workspace).
   useEffect(() => {
     const unlisten = listen<string>("project:added", (event) => {
       const repoRoot = event.payload;
-      // Open the project in the sidebar (skip recent — the user didn't open it manually).
       openProject(repoRoot, { autoSelect: false, skipRecent: true }).catch(
-        () => {
-          // Project may not exist or be invalid — non-fatal.
-        },
+        () => {},
       );
     });
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, [openProject]);
 
-  // Listen for MCP-driven workspace creation (e.g. agent creates a workspace via MCP tool).
   useEffect(() => {
     const unlisten = listen<Workspace>("workspace:created", (event) => {
       const ws = event.payload;
-      const store = useWorkspaceStore.getState();
-      // Only add if not already present (frontend-initiated creates already add it).
-      if (!store.workspaces.some((w) => w.id === ws.id)) {
-        store.addWorkspace(ws);
+      if (!getWorkspaceState().workspaces.some((w) => w.id === ws.id)) {
+        addWorkspace(ws);
       }
     });
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, []);
 
-  // Listen for MCP-driven workspace deletion.
   useEffect(() => {
     const unlisten = listen<string>("workspace:deleted", (event) => {
       const wsId = event.payload;
-      const store = useWorkspaceStore.getState();
-      if (store.workspaces.some((w) => w.id === wsId)) {
-        store.removeWorkspace(wsId);
+      if (getWorkspaceState().workspaces.some((w) => w.id === wsId)) {
+        removeWorkspace(wsId);
       }
     });
+
     return () => {
       unlisten.then((fn) => fn());
     };
@@ -231,7 +222,7 @@ export function useProjects() {
   return {
     projects,
     selectedId,
-    selectWorkspace: useWorkspaceStore.getState().selectWorkspace,
+    selectWorkspace,
     openProject,
     closeProject,
     error,
@@ -244,85 +235,97 @@ export function useProjects() {
 // ---------------------------------------------------------------------------
 
 export function useProjectWorkspaces(repoRoot: string) {
-  const store = useWorkspaceStore();
+  const allWorkspaces = useWorkspaces();
+  const allProjects = useWorkspaceProjects();
   const listenersRef = useRef<Map<string, () => void>>(new Map());
 
-  const workspaces = store.workspaces.filter((w) => w.repo_root === repoRoot);
-  const project = store.projects.find((p) => p.repoRoot === repoRoot);
+  const workspaces = useMemo(
+    () => allWorkspaces.filter((w) => w.repo_root === repoRoot),
+    [allWorkspaces, repoRoot],
+  );
+  const project = useMemo(
+    () => allProjects.find((p) => p.repoRoot === repoRoot),
+    [allProjects, repoRoot],
+  );
   const repoBranch = project?.repoBranch ?? null;
 
   const refresh = useCallback(async () => {
     try {
       const ws = await listWorkspaces(repoRoot);
-      useWorkspaceStore.getState().mergeWorkspacesForProject(repoRoot, ws);
+      mergeWorkspacesForProject(repoRoot, ws);
       try {
         const branch = await getRepoBranch(repoRoot);
-        useWorkspaceStore.getState().setProjectBranch(repoRoot, branch);
+        setProjectBranch(repoRoot, branch);
       } catch {
-        useWorkspaceStore.getState().setProjectBranch(repoRoot, null);
+        setProjectBranch(repoRoot, null);
       }
     } catch {
       // Ignore refresh errors
     }
   }, [repoRoot]);
 
-  // Poll for workspace status when any are initializing
   const hasInitializing = workspaces.some((w) => w.status === "initializing");
   useEffect(() => {
-    if (!hasInitializing) return;
+    if (!hasInitializing) {
+      return;
+    }
     const interval = setInterval(async () => {
-      if (!isWindowFocused()) return;
+      if (!isWindowFocused()) {
+        return;
+      }
       try {
         const ws = await listWorkspaces(repoRoot);
-        useWorkspaceStore.getState().mergeWorkspacesForProject(repoRoot, ws);
+        mergeWorkspacesForProject(repoRoot, ws);
       } catch {
         // Ignore poll errors
       }
     }, 500);
+
     return () => clearInterval(interval);
   }, [hasInitializing, repoRoot]);
 
-  // Listen for branch changes pushed from the backend (fs.watch on .git/HEAD).
   const repoRootWorkspace = workspaces.find((w) => w.kind === "repo_root");
   const repoRootId = repoRootWorkspace?.id ?? null;
   useEffect(() => {
-    if (!repoRootId) return;
+    if (!repoRootId) {
+      return;
+    }
     const unlisten = listen<{ branch: string }>(
       `workspace:branch-changed:${repoRootId}`,
       (event) => {
         const { branch } = event.payload;
-        const state = useWorkspaceStore.getState();
-        state.setProjectBranch(repoRoot, branch);
-        state.updateWorkspace(repoRootId, { branch });
+        setProjectBranch(repoRoot, branch);
+        updateWorkspace(repoRootId, { branch });
       },
     );
+
     return () => {
       unlisten.then((fn) => fn());
     };
   }, [repoRootId, repoRoot]);
 
-  // Manage event listeners for workspace status/progress
   const workspaceIds = workspaces
     .map((w) => w.id)
     .sort()
     .join(",");
   useEffect(() => {
-    const currentWorkspaces = useWorkspaceStore
-      .getState()
-      .workspaces.filter((w) => w.repo_root === repoRoot);
+    const currentWorkspaces = getWorkspaceState().workspaces.filter(
+      (w) => w.repo_root === repoRoot,
+    );
     const currentIds = new Set(currentWorkspaces.map((w) => w.id));
 
-    // Remove listeners for workspaces no longer in the list
     const toRemove: string[] = [];
     for (const [id] of listenersRef.current) {
-      if (!currentIds.has(id)) toRemove.push(id);
+      if (!currentIds.has(id)) {
+        toRemove.push(id);
+      }
     }
+
     for (const id of toRemove) {
       listenersRef.current.get(id)?.();
       listenersRef.current.delete(id);
     }
 
-    // Add listeners for new workspaces
     for (const ws of currentWorkspaces) {
       if (!listenersRef.current.has(ws.id)) {
         const id = ws.id;
@@ -339,9 +342,9 @@ export function useProjectWorkspaces(repoRoot: string) {
     }
   }, [workspaceIds, repoRoot]);
 
-  // Clean up listeners on unmount
   useEffect(() => {
     const listeners = listenersRef.current;
+
     return () => {
       listeners.forEach((unlisten) => unlisten());
       listeners.clear();
@@ -355,7 +358,7 @@ export function useProjectWorkspaces(repoRoot: string) {
       useExistingBranch?: boolean,
       baseBranch?: string,
     ) => {
-      useWorkspaceStore.getState().setError(null);
+      setError(null);
       try {
         const workspace = await apiCreateWorkspace(
           repoRoot,
@@ -364,10 +367,9 @@ export function useProjectWorkspaces(repoRoot: string) {
           useExistingBranch,
           baseBranch,
         );
-        useWorkspaceStore.getState().addWorkspace(workspace);
-        useWorkspaceStore.getState().selectWorkspace(workspace.id);
+        addWorkspace(workspace);
+        selectWorkspace(workspace.id);
 
-        // Register listeners immediately
         const [unlistenStatus, unlistenProgress] = await Promise.all([
           setupWorkspaceStatusListener(workspace.id),
           setupWorkspaceProgressListener(workspace.id),
@@ -379,9 +381,7 @@ export function useProjectWorkspaces(repoRoot: string) {
 
         return workspace;
       } catch (err) {
-        useWorkspaceStore
-          .getState()
-          .setError(err instanceof Error ? err.message : String(err));
+        setError(err instanceof Error ? err.message : String(err));
         throw err;
       }
     },
@@ -390,14 +390,12 @@ export function useProjectWorkspaces(repoRoot: string) {
 
   const deleteWorkspace = useCallback(
     async (id: string, deleteBranch?: boolean) => {
-      useWorkspaceStore.getState().setError(null);
+      setError(null);
       try {
         await apiDeleteWorkspace(id, deleteBranch);
-        useWorkspaceStore.getState().removeWorkspace(id);
+        removeWorkspace(id);
       } catch (err) {
-        useWorkspaceStore
-          .getState()
-          .setError(err instanceof Error ? err.message : String(err));
+        setError(err instanceof Error ? err.message : String(err));
         throw err;
       }
     },

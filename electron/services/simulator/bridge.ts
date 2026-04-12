@@ -15,10 +15,11 @@
  *           "modifierFlags":0,"isDown":true}                → {"ok":true}
  */
 
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import * as readline from "node:readline";
-import path from "node:path";
 import { app } from "electron";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import path from "node:path";
+import * as readline from "node:readline";
+import { error, warn } from "../../../app/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Binary path resolution
@@ -104,13 +105,13 @@ export class SimBridge {
     });
 
     child.on("error", (err) => {
-      console.error("[SimBridge] process error:", err);
+      error("[SimBridge] process error:", err);
       this.rejectAllPending(err);
       this.cleanup();
     });
 
     child.on("close", (code) => {
-      console.error(`[SimBridge] process exited with code ${String(code)}`);
+      error(`[SimBridge] process exited with code ${String(code)}`);
       this.rejectAllPending(
         new Error(`Bridge process exited (code ${String(code)})`),
       );
@@ -141,6 +142,7 @@ export class SimBridge {
     return new Promise<Record<string, unknown>>((resolve, reject) => {
       if (!this.proc || !this.proc.stdin.writable) {
         reject(new Error("Bridge process is not running"));
+
         return;
       }
 
@@ -185,7 +187,8 @@ export class SimBridge {
     const waiter = this.pending.shift();
     if (!waiter) {
       // Unsolicited output — log and discard
-      console.warn("[SimBridge] unexpected output:", trimmed);
+      warn("[SimBridge] unexpected output:", trimmed);
+
       return;
     }
 
@@ -194,6 +197,7 @@ export class SimBridge {
       parsed = JSON.parse(trimmed) as Record<string, unknown>;
     } catch {
       waiter.reject(new Error(`Bridge returned invalid JSON: ${trimmed}`));
+
       return;
     }
 

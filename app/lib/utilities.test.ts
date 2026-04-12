@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fileIconColor, fileExtLabel } from "./fileIcons";
-import { workspaceStatusLabel, isWorkspaceReady } from "./types";
+import { fileExtLabel, fileIconColor } from "./fileIcons";
 import { md5Hex } from "./md5";
+import { isWorkspaceReady, workspaceStatusLabel } from "./types";
 
 describe("fileIconColor", () => {
   it("returns TypeScript blue for .ts", () => {

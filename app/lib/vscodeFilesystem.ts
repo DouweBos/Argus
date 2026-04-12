@@ -6,25 +6,25 @@
  * workspace to a real worktree directory.
  */
 
-import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
 import {
   Emitter,
-  Event,
+  type Event,
 } from "@codingame/monaco-vscode-api/vscode/vs/base/common/event";
 import { Disposable } from "@codingame/monaco-vscode-api/vscode/vs/base/common/lifecycle";
+import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
 import { reinitializeWorkspace } from "@codingame/monaco-vscode-configuration-service-override";
 import {
-  registerFileSystemOverlay,
-  FileType,
   FileSystemProviderCapabilities,
   FileSystemProviderError,
   FileSystemProviderErrorCode,
-  type IFileSystemProviderWithFileReadWriteCapability,
-  type IStat,
-  type IFileWriteOptions,
+  FileType,
+  type IFileChange,
   type IFileDeleteOptions,
   type IFileOverwriteOptions,
-  type IFileChange,
+  type IFileSystemProviderWithFileReadWriteCapability,
+  type IFileWriteOptions,
+  type IStat,
+  registerFileSystemOverlay,
 } from "@codingame/monaco-vscode-files-service-override";
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ async function backendWriteFile(
   absPath: string,
   content: string,
 ): Promise<void> {
-  return invoke<void>("write_path", { path: absPath, content });
+  await invoke("write_path", { path: absPath, content });
 }
 
 async function backendReaddir(absPath: string): Promise<BackendDirEntry[]> {
@@ -70,15 +70,15 @@ async function backendReaddir(absPath: string): Promise<BackendDirEntry[]> {
 }
 
 async function backendMkdir(absPath: string): Promise<void> {
-  return invoke<void>("mkdir_path", { path: absPath });
+  await invoke("mkdir_path", { path: absPath });
 }
 
 async function backendDelete(absPath: string): Promise<void> {
-  return invoke<void>("delete_path", { path: absPath });
+  await invoke("delete_path", { path: absPath });
 }
 
 async function backendRename(from: string, to: string): Promise<void> {
-  return invoke<void>("rename_path", { from, to });
+  await invoke("rename_path", { from, to });
 }
 
 // ---------------------------------------------------------------------------
@@ -113,6 +113,7 @@ class IpcFileSystemProvider
   async stat(resource: URI): Promise<IStat> {
     try {
       const s = await backendStat(resource.fsPath);
+
       return {
         type: s.is_dir ? FileType.Directory : FileType.File,
         ctime: s.mtime,
@@ -129,6 +130,7 @@ class IpcFileSystemProvider
 
   async readdir(resource: URI): Promise<[string, FileType][]> {
     const entries = await backendReaddir(resource.fsPath);
+
     return entries.map((e) => [
       e.name,
       e.is_dir ? FileType.Directory : FileType.File,
@@ -137,6 +139,7 @@ class IpcFileSystemProvider
 
   async readFile(resource: URI): Promise<Uint8Array> {
     const text = await backendReadFile(resource.fsPath);
+
     return new TextEncoder().encode(text);
   }
 
@@ -177,7 +180,9 @@ let registered = false;
  * through the Electron backend. Must be called after initialize().
  */
 export function registerIpcFilesystem(): void {
-  if (registered) return;
+  if (registered) {
+    return;
+  }
   registered = true;
   // Priority > 0 puts our provider in front of the default in-memory one
   registerFileSystemOverlay(1, new IpcFileSystemProvider());
@@ -187,7 +192,7 @@ export function registerIpcFilesystem(): void {
 // Workspace switching
 // ---------------------------------------------------------------------------
 
-let currentPath: null | string = null;
+let currentPath: string | null = null;
 
 /**
  * Switch the VS Code workspace to the given worktree directory path.
@@ -196,7 +201,9 @@ let currentPath: null | string = null;
 export async function updateWorkspaceFolder(
   worktreePath: string,
 ): Promise<void> {
-  if (worktreePath === currentPath) return;
+  if (worktreePath === currentPath) {
+    return;
+  }
   currentPath = worktreePath;
 
   await reinitializeWorkspace({
@@ -208,6 +215,6 @@ export async function updateWorkspaceFolder(
 /**
  * Get the currently active worktree path, if any.
  */
-export function getActiveWorktreePath(): null | string {
+export function getActiveWorktreePath(): string | null {
   return currentPath;
 }

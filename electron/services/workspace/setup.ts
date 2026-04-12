@@ -3,20 +3,20 @@
  * (copy, symlink, commands).
  */
 
+import fg from "fast-glob";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-
-import fg from "fast-glob";
-
+import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import {
+  type BrowserPresetConfig,
   defaultStagehandConfig,
-  RelatedProject,
-  SetupConfig,
-  StagehandConfig,
-  WorkspaceEnvConfig,
+  type RelatedProject,
+  type SetupConfig,
+  type StagehandConfig,
+  type WorkspaceEnvConfig,
 } from "./models";
 
 const execFileAsync = promisify(execFile);
@@ -61,21 +61,37 @@ export function loadStagehandConfig(repoRoot: string): StagehandConfig {
  * Accepts: null/undefined, a single object, or an array.
  */
 function normalizeWorkspaceEnv(raw: unknown): WorkspaceEnvConfig[] {
-  if (raw == null) return [];
-  if (Array.isArray(raw)) return raw as WorkspaceEnvConfig[];
-  if (typeof raw === "object") return [raw as WorkspaceEnvConfig];
+  if (raw == null) {
+    return [];
+  }
+  if (Array.isArray(raw)) {
+    return raw as WorkspaceEnvConfig[];
+  }
+  if (typeof raw === "object") {
+    return [raw as WorkspaceEnvConfig];
+  }
+
   return [];
 }
 
 /**
  * Parse raw JSON into a `StagehandConfig`. Handles the `run` field's dual
- * string/object form (matching the Rust custom deserializer).
+ * string/object form.
  */
 function parseStagehandConfig(raw: string): StagehandConfig {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
 
   const setup = (parsed.setup as Partial<SetupConfig>) ?? {};
   const runRaw = parsed.run ?? parsed.workspace_port_env;
+
+  let run: StagehandConfig["run"];
+  if (runRaw == null) {
+    run = null;
+  } else if (typeof runRaw === "string") {
+    run = { command: runRaw };
+  } else {
+    run = runRaw as StagehandConfig["run"];
+  }
 
   return {
     setup: {
@@ -87,15 +103,42 @@ function parseStagehandConfig(raw: string): StagehandConfig {
     workspace_env: normalizeWorkspaceEnv(
       parsed.workspace_env ?? parsed.workspace_port_env,
     ),
-    run:
-      runRaw == null
-        ? null
-        : typeof runRaw === "string"
-          ? { command: runRaw }
-          : (runRaw as StagehandConfig["run"]),
+    run,
     agent_prompt: (parsed.agent_prompt as string) ?? null,
     related_projects: normalizeRelatedProjects(parsed.related_projects),
+    browser_url: (parsed.browser_url as string) ?? null,
+    browser_presets: normalizeBrowserPresets(parsed.browser_presets),
+    save_chat_history:
+      parsed.save_chat_history != null
+        ? Boolean(parsed.save_chat_history)
+        : true,
+    platforms: normalizePlatforms(parsed.platforms),
   };
+}
+
+/**
+ * Normalise `platforms` from `.stagehand.json`. Accepts an array of the
+ * strings "ios" | "android" | "web" (case-insensitive); returns null if
+ * absent or unparseable so the prompt falls back to describing all three.
+ */
+function normalizePlatforms(raw: unknown): StagehandConfig["platforms"] {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+  const valid: ("android" | "ios" | "web")[] = [];
+  for (const entry of raw) {
+    if (typeof entry !== "string") {
+      continue;
+    }
+    const lower = entry.toLowerCase();
+    if (lower === "ios" || lower === "android" || lower === "web") {
+      if (!valid.includes(lower)) {
+        valid.push(lower);
+      }
+    }
+  }
+
+  return valid.length > 0 ? valid : null;
 }
 
 /**
@@ -103,16 +146,56 @@ function parseStagehandConfig(raw: string): StagehandConfig {
  * Accepts: null/undefined or an array of { path, description } objects.
  */
 function normalizeRelatedProjects(raw: unknown): RelatedProject[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (entry): entry is RelatedProject =>
-      typeof entry === "object" &&
-      entry !== null &&
-      typeof (entry as Record<string, unknown>).path === "string",
-  ).map((entry) => ({
-    path: entry.path,
-    description: entry.description ?? "",
-  }));
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .filter(
+      (entry): entry is RelatedProject =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof (entry as Record<string, unknown>).path === "string",
+    )
+    .map((entry) => ({
+      path: entry.path,
+      description: entry.description ?? "",
+    }));
+}
+
+/**
+ * Normalise `browser_presets` from its possible JSON forms into an array.
+ * Accepts: null/undefined or an array of { id, width, height, ... } objects.
+ * Filters out entries with missing/invalid id, width, or height.
+ */
+function normalizeBrowserPresets(raw: unknown): BrowserPresetConfig[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw
+    .filter((entry): entry is BrowserPresetConfig => {
+      if (typeof entry !== "object" || entry === null) {
+        return false;
+      }
+      const obj = entry as Record<string, unknown>;
+
+      return (
+        typeof obj.id === "string" &&
+        obj.id.length > 0 &&
+        typeof obj.width === "number" &&
+        obj.width > 0 &&
+        typeof obj.height === "number" &&
+        obj.height > 0
+      );
+    })
+    .map((entry) => ({
+      id: entry.id,
+      width: entry.width,
+      height: entry.height,
+      ...(entry.label ? { label: entry.label } : {}),
+      ...(entry.user_agent ? { user_agent: entry.user_agent } : {}),
+    }));
 }
 
 /**
@@ -130,8 +213,11 @@ function mergeConfig(
   function dedupExtend(target: string[], source: string[]): string[] {
     const result = [...target];
     for (const item of source) {
-      if (!result.includes(item)) result.push(item);
+      if (!result.includes(item)) {
+        result.push(item);
+      }
     }
+
     return result;
   }
 
@@ -150,6 +236,13 @@ function mergeConfig(
       base.related_projects ?? [],
       local.related_projects ?? [],
     ),
+    browser_url: local.browser_url ?? base.browser_url,
+    browser_presets: dedupBrowserPresets(
+      base.browser_presets,
+      local.browser_presets,
+    ),
+    save_chat_history: local.save_chat_history ?? base.save_chat_history,
+    platforms: local.platforms ?? base.platforms ?? null,
   };
 }
 
@@ -166,7 +259,19 @@ function dedupRelatedProjects(
       result.push(p);
     }
   }
+
   return result;
+}
+
+/** Merge browser preset lists, deduplicating by id (local wins on collision). */
+function dedupBrowserPresets(
+  base: BrowserPresetConfig[],
+  local: BrowserPresetConfig[],
+): BrowserPresetConfig[] {
+  const localIds = new Set(local.map((p) => p.id));
+  const result = base.filter((p) => !localIds.has(p.id));
+
+  return [...result, ...local];
 }
 
 // ---------------------------------------------------------------------------
@@ -204,6 +309,7 @@ async function expandPatterns(
     if (fs.existsSync(full) && !rel.split("/").includes(".git")) {
       return [rel];
     }
+
     return [];
   }
 
@@ -214,6 +320,7 @@ async function expandPatterns(
     onlyFiles: false,
     ignore: ["**/.git/**", ".git"],
   });
+
   return matches.filter((m) => !m.split("/").includes(".git")).sort();
 }
 
@@ -240,7 +347,7 @@ export async function runSetupPipeline(
     ? setupSessionId.slice("setup:".length)
     : setupSessionId;
 
-  console.info(
+  info(
     `Setup pipeline started for workspace ${workspaceId}, repo_root=${repoRoot}, worktree=${worktreePath}`,
   );
 
@@ -265,7 +372,7 @@ export async function runSetupPipeline(
   // Pre-compute all items to get total count for progress bar.
   const allItems: string[] = [];
 
-  console.info("Setup pipeline: expanding copy patterns");
+  info("Setup pipeline: expanding copy patterns");
   for (const rel of config.setup.copy) {
     emitProgressItem(`Matching: ${rel}`, 0, 0);
     emit(`[stagehand] Matching pattern ${rel}...\r\n`);
@@ -277,7 +384,7 @@ export async function runSetupPipeline(
     }
   }
 
-  console.info("Setup pipeline: expanding symlink patterns");
+  info("Setup pipeline: expanding symlink patterns");
   for (const rel of config.setup.symlink) {
     emitProgressItem(`Matching: ${rel}`, 0, 0);
     emit(`[stagehand] Matching pattern ${rel}...\r\n`);
@@ -294,33 +401,35 @@ export async function runSetupPipeline(
   }
 
   const total = allItems.length;
-  console.info(
+  info(
     `Setup pipeline: ${total} items total (${config.setup.copy.length} copy, ${config.setup.symlink.length} symlink, ${config.setup.commands.length} commands)`,
   );
 
   let idx = 0;
 
   // -- Copy phase ------------------------------------------------------------
-  console.info("Setup pipeline: starting copy phase");
+  info("Setup pipeline: starting copy phase");
   for (const rel of config.setup.copy) {
     const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
-    if (expanded.length === 0) continue;
+    if (expanded.length === 0) {
+      continue;
+    }
 
     for (const relPath of expanded) {
       const src = path.join(repoRoot, relPath);
       const dst = path.join(worktreePath, relPath);
       idx += 1;
-      console.info(`Setup pipeline: copying [${idx}/${total}] ${relPath}`);
+      info(`Setup pipeline: copying [${idx}/${total}] ${relPath}`);
       emitProgressItem(relPath, idx, total);
       emit(`[stagehand] Copying ${relPath}...\r\n`);
 
       try {
-        const stat = fs.statSync(src);
+        const stat = await fs.promises.stat(src);
         if (stat.isDirectory()) {
-          copyDirAll(src, dst);
+          await copyDirAll(src, dst);
         } else if (stat.isFile()) {
-          fs.mkdirSync(path.dirname(dst), { recursive: true });
-          fs.copyFileSync(src, dst);
+          await fs.promises.mkdir(path.dirname(dst), { recursive: true });
+          await fs.promises.copyFile(src, dst);
         } else {
           emit(`[stagehand] Warning: ${relPath} not found, skipping.\r\n`);
         }
@@ -331,7 +440,7 @@ export async function runSetupPipeline(
   }
 
   // -- Symlink phase ---------------------------------------------------------
-  console.info("Setup pipeline: starting symlink phase");
+  info("Setup pipeline: starting symlink phase");
   for (const rel of config.setup.symlink) {
     const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
     if (expanded.length === 0) {
@@ -343,7 +452,7 @@ export async function runSetupPipeline(
       const src = path.join(repoRoot, relPath);
       const dst = path.join(worktreePath, relPath);
       idx += 1;
-      console.info(`Setup pipeline: symlinking [${idx}/${total}] ${relPath}`);
+      info(`Setup pipeline: symlinking [${idx}/${total}] ${relPath}`);
       emitProgressItem(relPath, idx, total);
       emit(`[stagehand] Symlinking ${relPath}...\r\n`);
 
@@ -372,10 +481,10 @@ export async function runSetupPipeline(
   }
 
   // -- Commands phase --------------------------------------------------------
-  console.info("Setup pipeline: starting commands phase");
+  info("Setup pipeline: starting commands phase");
   for (const cmdStr of config.setup.commands) {
     idx += 1;
-    console.info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
+    info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
     emitProgressItem(cmdStr, idx, total);
     emit(`[stagehand] Running: ${cmdStr}\r\n`);
 
@@ -403,10 +512,14 @@ export async function runSetupPipeline(
     }
 
     for (const line of stdout.split("\n")) {
-      if (line) emit(`${line}\r\n`);
+      if (line) {
+        emit(`${line}\r\n`);
+      }
     }
     for (const line of stderr.split("\n")) {
-      if (line) emit(`${line}\r\n`);
+      if (line) {
+        emit(`${line}\r\n`);
+      }
     }
 
     if (failed) {
@@ -416,10 +529,10 @@ export async function runSetupPipeline(
       throw `Setup command failed: ${cmdStr}`;
     }
 
-    console.info(`Setup pipeline: command completed: ${cmdStr}`);
+    info(`Setup pipeline: command completed: ${cmdStr}`);
   }
 
-  console.info(`Setup pipeline: complete for workspace ${workspaceId}`);
+  info(`Setup pipeline: complete for workspace ${workspaceId}`);
   emit("[stagehand] Setup complete.\r\n");
 }
 
@@ -427,35 +540,19 @@ export async function runSetupPipeline(
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/** Recursively copy a directory tree from `src` to `dst`. */
-function copyDirAll(src: string, dst: string): void {
-  fs.mkdirSync(dst, { recursive: true });
-  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath = path.join(src, entry.name);
-    const dstPath = path.join(dst, entry.name);
-
-    if (entry.isDirectory()) {
-      copyDirAll(srcPath, dstPath);
-    } else if (entry.isSymbolicLink()) {
-      // Dereference the symlink and copy its target.
-      const target = fs.readlinkSync(srcPath);
-      const resolved = path.isAbsolute(target)
-        ? target
-        : path.join(path.dirname(srcPath), target);
-      try {
-        const resolvedStat = fs.statSync(resolved);
-        if (resolvedStat.isDirectory()) {
-          copyDirAll(resolved, dstPath);
-        } else {
-          fs.copyFileSync(srcPath, dstPath);
-        }
-      } catch {
-        fs.copyFileSync(srcPath, dstPath);
-      }
-    } else {
-      fs.copyFileSync(srcPath, dstPath);
-    }
-  }
+/**
+ * Recursively copy a directory tree from `src` to `dst`.
+ *
+ * Async so the main process event loop stays responsive — sync fs calls
+ * on large trees (e.g. `node_modules`) freeze IPC and the renderer.
+ * Symlinks are dereferenced to match the previous behaviour.
+ */
+async function copyDirAll(src: string, dst: string): Promise<void> {
+  await fs.promises.cp(src, dst, {
+    recursive: true,
+    dereference: true,
+    force: true,
+  });
 }
 
 /** Returns true if `p` is a symlink (without throwing on missing path). */

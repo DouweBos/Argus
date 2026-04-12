@@ -1,9 +1,10 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import fs from "node:fs";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getMeta, loadMetadata, type WorkspaceMeta } from "./metadata";
 
 vi.mock("node:fs", () => {
   const actual = vi.importActual("node:fs");
+
   return {
     ...actual,
     default: {

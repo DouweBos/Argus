@@ -101,10 +101,21 @@ export const KEYCODE_MAP: Record<string, number> = {
 /// Build the HID modifier flags bitmask from a KeyboardEvent.
 export function modifierFlagsFromEvent(e: KeyboardEvent): number {
   let flags = 0;
-  if (e.getModifierState("CapsLock")) flags |= 0x10000;
-  if (e.shiftKey) flags |= 0x20000;
-  if (e.ctrlKey) flags |= 0x40000;
-  if (e.altKey) flags |= 0x80000;
-  if (e.metaKey) flags |= 0x100000;
+  if (e.getModifierState("CapsLock")) {
+    flags |= 0x10000;
+  }
+  if (e.shiftKey) {
+    flags |= 0x20000;
+  }
+  if (e.ctrlKey) {
+    flags |= 0x40000;
+  }
+  if (e.altKey) {
+    flags |= 0x80000;
+  }
+  if (e.metaKey) {
+    flags |= 0x100000;
+  }
+
   return flags;
 }

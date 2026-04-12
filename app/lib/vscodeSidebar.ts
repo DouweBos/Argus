@@ -18,12 +18,13 @@ export interface SidebarViewInfo {
   name: string;
 }
 
-let servicePromise: null | Promise<IPaneCompositePartService> = null;
+let servicePromise: Promise<IPaneCompositePartService> | null = null;
 
 function getPaneService() {
   if (!servicePromise) {
     servicePromise = getService(IPaneCompositePartService);
   }
+
   return servicePromise;
 }
 
@@ -36,17 +37,20 @@ function getPaneService() {
 function toLoadableUrl(uri: {
   path?: string;
   scheme?: string;
-  toString(): string;
+  toString: () => string;
 }): string {
   if (uri.scheme === "extension-file" && uri.path) {
     return `stagehand-ext://ext${uri.path}`;
   }
+
   return uri.toString();
 }
 
 /** Build icon info from a view container's icon property */
-function resolveIcon(icon: undefined | unknown): SidebarViewIcon | undefined {
-  if (!icon || typeof icon !== "object") return undefined;
+function resolveIcon(icon: unknown | undefined): SidebarViewIcon | undefined {
+  if (!icon || typeof icon !== "object") {
+    return undefined;
+  }
 
   // ThemeIcon — has an `id` string property (codicon name)
   if ("id" in icon && typeof (icon as { id: unknown }).id === "string") {
@@ -55,7 +59,12 @@ function resolveIcon(icon: undefined | unknown): SidebarViewIcon | undefined {
 
   // URI — has `scheme` and `path` or `toString()`
   if ("scheme" in icon) {
-    const uri = icon as { path?: string; scheme?: string; toString(): string };
+    const uri = icon as {
+      path?: string;
+      scheme?: string;
+      toString: () => string;
+    };
+
     return { type: "url", src: toLoadableUrl(uri) };
   }
 
@@ -88,6 +97,7 @@ export async function getSidebarViews(): Promise<SidebarViewInfo[]> {
 
 export async function getActiveSidebarViewId(): Promise<string | undefined> {
   const svc = await getPaneService();
+
   return svc.getActivePaneComposite(SIDEBAR_LOCATION)?.getId();
 }
 
@@ -95,10 +105,12 @@ export function onSidebarViewChange(callback: (viewId: string) => void): {
   dispose: () => void;
 } {
   let disposed = false;
-  let inner: { dispose(): void } | null = null;
+  let inner: { dispose: () => void } | null = null;
 
   getPaneService().then((svc) => {
-    if (disposed) return;
+    if (disposed) {
+      return;
+    }
     inner = svc.onDidPaneCompositeOpen(
       ({ composite, viewContainerLocation }) => {
         if (viewContainerLocation === SIDEBAR_LOCATION) {

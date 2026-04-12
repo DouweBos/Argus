@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "app"),
+      "@logger": path.resolve(__dirname, "app/lib/logger.ts"),
     },
   },
   test: {

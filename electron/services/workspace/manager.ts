@@ -4,9 +4,9 @@
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-
-import { appState } from "../../state";
+import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
+import { appState } from "../../state";
 import {
   branchToDir,
   git,
@@ -20,9 +20,13 @@ import {
   loadMetadata,
   migrateOrphaned,
   saveMetadata,
-  WorkspaceMeta,
+  type WorkspaceMeta,
 } from "./metadata";
-import { defaultStagehandConfig, Workspace, WorkspaceStatus } from "./models";
+import {
+  defaultStagehandConfig,
+  type Workspace,
+  type WorkspaceStatus,
+} from "./models";
 import { loadStagehandConfig, runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
 
@@ -35,7 +39,7 @@ export function addRepoRoot(dirPath: string): void {
   if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
     throw `Path is not a directory: ${dirPath}`;
   }
-  console.info(`Adding repo root: ${dirPath}`);
+  info(`Adding repo root: ${dirPath}`);
   appState.repoRoots.add(dirPath);
 }
 
@@ -57,7 +61,7 @@ export function removeRepoRoot(dirPath: string): void {
       try {
         session.child.kill();
       } catch (e) {
-        console.info(`removeRepoRoot: kill agent ${key} returned:`, e);
+        info(`removeRepoRoot: kill agent ${key} returned:`, e);
       }
       appState.agents.delete(key);
     }
@@ -94,7 +98,7 @@ export function removeRepoRoot(dirPath: string): void {
     appState.workspaces.delete(wsId);
   }
 
-  console.info(`Removed repo root and ${wsIds.length} workspaces: ${dirPath}`);
+  info(`Removed repo root and ${wsIds.length} workspaces: ${dirPath}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +267,7 @@ export async function createWorkspace(
   const taskWorkspaceId = workspace.id;
   const taskWorkspacePath = workspace.path;
 
-  console.info(
+  info(
     `Spawning setup pipeline for workspace ${taskWorkspaceId} (path=${taskWorkspacePath})`,
   );
 
@@ -283,7 +287,7 @@ export async function createWorkspace(
     })
     .catch((e: unknown) => {
       const errMsg = typeof e === "string" ? e : String(e);
-      console.error(
+      error(
         `Setup pipeline failed for workspace ${taskWorkspaceId}: ${errMsg}`,
       );
       const finalStatus: WorkspaceStatus = { error: errMsg };
@@ -348,7 +352,8 @@ export function createHeadWorkspace(repoRoot: string): Workspace {
   const branchHandle = startBranchWatcher(repoRoot, ws.id);
   appState.watchers.set(ws.id, branchHandle);
 
-  console.info(`Created repo-root (HEAD) workspace ${ws.id}`);
+  info(`Created repo-root (HEAD) workspace ${ws.id}`);
+
   return { ...ws };
 }
 
@@ -379,7 +384,7 @@ export async function deleteWorkspace(
       try {
         session.child.kill();
       } catch (e) {
-        console.info(`deleteWorkspace: kill agent ${key} returned:`, e);
+        info(`deleteWorkspace: kill agent ${key} returned:`, e);
       }
       appState.agents.delete(key);
     }
@@ -429,13 +434,12 @@ export async function deleteWorkspace(
         await git(taskRepoRoot, ["worktree", "prune"]);
       } catch (e) {
         const errMsg = typeof e === "string" ? e : String(e);
-        console.error(
-          `Background delete failed for workspace ${taskId}: ${errMsg}`,
-        );
+        error(`Background delete failed for workspace ${taskId}: ${errMsg}`);
         getMainWindow()?.webContents.send("workspace:delete-failed", {
           id: taskId,
           error: errMsg,
         });
+
         return;
       }
 
@@ -443,7 +447,7 @@ export async function deleteWorkspace(
         try {
           await git(taskRepoRoot, ["branch", "-D", taskBranch]);
         } catch (e) {
-          console.error(`Failed to delete branch '${taskBranch}':`, e);
+          error(`Failed to delete branch '${taskBranch}':`, e);
           // Not fatal — worktree is already removed.
         }
       }
@@ -457,10 +461,10 @@ export async function deleteWorkspace(
         // Non-fatal
       }
 
-      console.info(`Deleted workspace ${taskId} (background)`);
+      info(`Deleted workspace ${taskId} (background)`);
     })();
   } else {
-    console.info(`Deleted workspace ${id}`);
+    info(`Deleted workspace ${id}`);
   }
 }
 
@@ -500,7 +504,7 @@ async function createWorktree(
       throw `Worktree directory already exists: ${worktreePath}`;
     }
 
-    console.info(`Removing orphaned worktree directory: ${worktreePath}`);
+    info(`Removing orphaned worktree directory: ${worktreePath}`);
     fs.rmSync(worktreePath, { recursive: true, force: true });
   }
 
@@ -515,9 +519,7 @@ async function createWorktree(
     baseBranch ?? "HEAD",
   ]);
 
-  console.info(
-    `Created worktree for branch '${branchSlug}' at ${worktreePath}`,
-  );
+  info(`Created worktree for branch '${branchSlug}' at ${worktreePath}`);
 
   return {
     id: crypto.randomUUID(),
@@ -556,9 +558,7 @@ async function createWorktreeFromExisting(
 
   await git(repoRoot, ["worktree", "add", worktreePath, branch]);
 
-  console.info(
-    `Created worktree for existing branch '${branch}' at ${worktreePath}`,
-  );
+  info(`Created worktree for existing branch '${branch}' at ${worktreePath}`);
 
   return {
     id: crypto.randomUUID(),
@@ -594,7 +594,9 @@ async function listWorktrees(repoRoot: string): Promise<Workspace[]> {
 
   const lines = raw.split("\n");
   // Ensure a trailing blank line so the final block is flushed.
-  if (lines[lines.length - 1] !== "") lines.push("");
+  if (lines[lines.length - 1] !== "") {
+    lines.push("");
+  }
 
   for (const line of lines) {
     if (line.startsWith("worktree ")) {

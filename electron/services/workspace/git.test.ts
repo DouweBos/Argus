@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { branchToDir, titleToBranchSlug, worktreesRoot } from "./git";
 import os from "node:os";
 import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { branchToDir, titleToBranchSlug, worktreesRoot } from "./git";
 
 describe("branchToDir", () => {
   it("replaces forward slashes", () => {

@@ -21,19 +21,17 @@
  * | `terminal:exit:{session_id}`  | Exit code (`number`)     |
  */
 
+import type { WorkspaceEnvConfig } from "../workspace/models";
+import type { IPty } from "node-pty";
+import type * as NodePty from "node-pty";
 import fs from "node:fs";
 import path from "node:path";
-
-import type { IPty } from "node-pty";
-// node-pty is a native module; CJS require avoids ESM interop issues with
-// native addons and matches how VSCode loads it.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pty = require("node-pty") as typeof import("node-pty");
-
-import { appState } from "../../state";
 import { getMainWindow } from "../../main";
+import { appState } from "../../state";
 import { loadStagehandConfig } from "../workspace/setup";
-import type { WorkspaceEnvConfig } from "../workspace/models";
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pty = require("node-pty") as typeof NodePty;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -55,8 +53,6 @@ export interface TerminalSession {
 
 /**
  * Return the user's preferred shell, falling back to `/bin/sh`.
- *
- * Mirrors `default_shell()` in `multiplexer.rs`.
  */
 export function defaultShell(): string {
   return process.env.SHELL ?? "/bin/sh";
@@ -66,8 +62,6 @@ export function defaultShell(): string {
  * Compute a deterministic per-workspace integer from `workspaceId` using a
  * simple djb2-style hash, bounded by `range`.
  *
- * Mirrors `workspace_env_value()` / `WorkspaceEnvStrategy::Hash` in
- * `terminal_cmds.rs`.
  */
 export function workspaceEnvValue(
   workspaceId: string,
@@ -90,6 +84,7 @@ export function workspaceEnvValue(
   }
   // Ensure non-negative before modulo.
   const offset = Math.abs(hash) % range;
+
   return baseValue + offset;
 }
 
@@ -97,7 +92,6 @@ export function workspaceEnvValue(
  * Build any extra environment variables that should be injected into a
  * workspace terminal.
  *
- * Mirrors `build_workspace_env()` in `terminal_cmds.rs`.
  */
 function buildWorkspaceEnv(
   workspaceId: string,
@@ -186,7 +180,9 @@ export function createTerminal(
   // undefined entries from process.env to avoid posix_spawnp failures.
   const cleanEnv: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (v !== undefined) cleanEnv[k] = v;
+    if (v !== undefined) {
+      cleanEnv[k] = v;
+    }
   }
   Object.assign(cleanEnv, extraEnv);
 

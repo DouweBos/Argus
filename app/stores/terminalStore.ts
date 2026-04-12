@@ -1,149 +1,183 @@
-import { create } from "zustand";
 import type { TerminalSession } from "../lib/types";
+import { create } from "zustand";
 
-interface TerminalState {
+interface TerminalStoreData {
   // Map of workspaceId -> active session id
-  activeSessionId: Record<string, null | string>;
-  addSession: (session: TerminalSession) => void;
+  activeSessionId: Record<string, string | null>;
   /** Serialized xterm buffer cache for unmounted terminals. */
   bufferCache: Record<string, string>;
-  cacheBuffer: (sessionId: string, data: string) => void;
-
-  /** Remove cached buffer (call when session is destroyed). */
-  clearBuffer: (sessionId: string) => void;
-  getActiveSessionId: (workspaceId: string) => null | string;
-  /** Read cached buffer (non-destructive — survives StrictMode double-mount). */
-  getBuffer: (sessionId: string) => null | string;
-  getRunSessionId: (workspaceId: string) => null | string;
-  getSessionsForWorkspace: (workspaceId: string) => TerminalSession[];
-  isRunBusy: (workspaceId: string) => boolean;
-  /** Move sessions from one workspace ID to another (e.g. when ID changes after merge). */
-  migrateSessions: (fromId: string, toId: string) => void;
-  removeSession: (workspaceId: string, sessionId: string) => void;
   // Map of workspaceId -> whether the run command is executing
   runBusy: Record<string, boolean>;
   // Map of workspaceId -> run terminal session id
-  runSessionId: Record<string, null | string>;
+  runSessionId: Record<string, string | null>;
   // Map of workspaceId -> list of sessions
   sessions: Record<string, TerminalSession[]>;
-  setActiveSession: (workspaceId: string, sessionId: null | string) => void;
-  setRunBusy: (workspaceId: string, busy: boolean) => void;
-  setRunSession: (workspaceId: string, sessionId: null | string) => void;
-  updateSession: (sessionId: string, patch: Partial<TerminalSession>) => void;
 }
 
-export const useTerminalStore = create<TerminalState>((set, get) => ({
+const terminalStore = create<TerminalStoreData>(() => ({
   sessions: {},
   activeSessionId: {},
   runSessionId: {},
   runBusy: {},
   bufferCache: {},
+}));
 
-  addSession: (session) =>
-    set((state) => {
-      const existing = state.sessions[session.workspace_id] ?? [];
-      return {
-        sessions: {
-          ...state.sessions,
-          [session.workspace_id]: [...existing, session],
-        },
-        activeSessionId: {
-          ...state.activeSessionId,
-          [session.workspace_id]: session.id,
-        },
-      };
-    }),
+const useTerminalStore = terminalStore;
 
-  removeSession: (workspaceId, sessionId) =>
-    set((state) => {
-      const existing = state.sessions[workspaceId] ?? [];
-      const remaining = existing.filter((s) => s.id !== sessionId);
-      const currentActive = state.activeSessionId[workspaceId];
-      const newActive =
-        currentActive === sessionId
-          ? (remaining[remaining.length - 1]?.id ?? null)
-          : currentActive;
-      return {
-        sessions: { ...state.sessions, [workspaceId]: remaining },
-        activeSessionId: {
-          ...state.activeSessionId,
-          [workspaceId]: newActive,
-        },
-      };
-    }),
+export const addSession = (session: TerminalSession) => {
+  terminalStore.setState((state) => {
+    const existing = state.sessions[session.workspace_id] ?? [];
 
-  setActiveSession: (workspaceId, sessionId) =>
-    set((state) => ({
+    return {
+      sessions: {
+        ...state.sessions,
+        [session.workspace_id]: [...existing, session],
+      },
       activeSessionId: {
         ...state.activeSessionId,
-        [workspaceId]: sessionId,
+        [session.workspace_id]: session.id,
       },
-    })),
+    };
+  });
+};
 
-  getSessionsForWorkspace: (workspaceId) => get().sessions[workspaceId] ?? [],
+export const removeSession = (workspaceId: string, sessionId: string) => {
+  terminalStore.setState((state) => {
+    const existing = state.sessions[workspaceId] ?? [];
+    const remaining = existing.filter((s) => s.id !== sessionId);
+    const currentActive = state.activeSessionId[workspaceId];
+    const newActive =
+      currentActive === sessionId
+        ? (remaining[remaining.length - 1]?.id ?? null)
+        : currentActive;
 
-  getActiveSessionId: (workspaceId) =>
-    get().activeSessionId[workspaceId] ?? null,
+    return {
+      sessions: { ...state.sessions, [workspaceId]: remaining },
+      activeSessionId: {
+        ...state.activeSessionId,
+        [workspaceId]: newActive,
+      },
+    };
+  });
+};
 
-  updateSession: (sessionId, patch) =>
-    set((state) => {
-      const updatedSessions: Record<string, TerminalSession[]> = {};
-      for (const [wid, list] of Object.entries(state.sessions)) {
-        updatedSessions[wid] = list.map((s) =>
-          s.id === sessionId ? { ...s, ...patch } : s,
-        );
-      }
-      return { sessions: updatedSessions };
-    }),
+export const setActiveSession = (
+  workspaceId: string,
+  sessionId: string | null,
+) => {
+  terminalStore.setState((state) => ({
+    activeSessionId: {
+      ...state.activeSessionId,
+      [workspaceId]: sessionId,
+    },
+  }));
+};
 
-  setRunSession: (workspaceId, sessionId) =>
-    set((state) => ({
-      runSessionId: { ...state.runSessionId, [workspaceId]: sessionId },
-    })),
+export const getSessionsForWorkspace = (
+  workspaceId: string,
+): TerminalSession[] => terminalStore.getState().sessions[workspaceId] ?? [];
 
-  setRunBusy: (workspaceId, busy) =>
-    set((state) => ({
-      runBusy: { ...state.runBusy, [workspaceId]: busy },
-    })),
+export const getActiveSessionId = (workspaceId: string): string | null =>
+  terminalStore.getState().activeSessionId[workspaceId] ?? null;
 
-  getRunSessionId: (workspaceId) => get().runSessionId[workspaceId] ?? null,
+export const updateSession = (
+  sessionId: string,
+  patch: Partial<TerminalSession>,
+) => {
+  terminalStore.setState((state) => {
+    const updatedSessions: Record<string, TerminalSession[]> = {};
+    for (const [wid, list] of Object.entries(state.sessions)) {
+      updatedSessions[wid] = list.map((s) =>
+        s.id === sessionId ? { ...s, ...patch } : s,
+      );
+    }
 
-  isRunBusy: (workspaceId) => get().runBusy[workspaceId] ?? false,
+    return { sessions: updatedSessions };
+  });
+};
 
-  cacheBuffer: (sessionId, data) =>
-    set((state) => ({
-      bufferCache: { ...state.bufferCache, [sessionId]: data },
-    })),
+export const setRunSession = (
+  workspaceId: string,
+  sessionId: string | null,
+) => {
+  terminalStore.setState((state) => ({
+    runSessionId: { ...state.runSessionId, [workspaceId]: sessionId },
+  }));
+};
 
-  getBuffer: (sessionId) => get().bufferCache[sessionId] ?? null,
+export const setRunBusy = (workspaceId: string, busy: boolean) => {
+  terminalStore.setState((state) => ({
+    runBusy: { ...state.runBusy, [workspaceId]: busy },
+  }));
+};
 
-  clearBuffer: (sessionId) =>
-    set((state) => {
-      const next = { ...state.bufferCache };
-      delete next[sessionId];
-      return { bufferCache: next };
-    }),
+export const getRunSessionId = (workspaceId: string): string | null =>
+  terminalStore.getState().runSessionId[workspaceId] ?? null;
 
-  migrateSessions: (fromId, toId) =>
-    set((state) => {
-      if (fromId === toId) return state;
-      const sessionsToMove = state.sessions[fromId] ?? [];
-      if (sessionsToMove.length === 0) return state;
-      const existing = state.sessions[toId] ?? [];
-      const newSessions = { ...state.sessions };
-      delete newSessions[fromId];
-      newSessions[toId] = [
-        ...existing,
-        ...sessionsToMove.map((s) => ({ ...s, workspace_id: toId })),
-      ];
-      const fromActive = state.activeSessionId[fromId];
-      const toActive = state.activeSessionId[toId];
-      const newActiveSessionId = { ...state.activeSessionId };
-      delete newActiveSessionId[fromId];
-      newActiveSessionId[toId] = toActive ?? fromActive ?? null;
-      return {
-        sessions: newSessions,
-        activeSessionId: newActiveSessionId,
-      };
-    }),
-}));
+export const isRunBusy = (workspaceId: string): boolean =>
+  terminalStore.getState().runBusy[workspaceId] ?? false;
+
+export const cacheBuffer = (sessionId: string, data: string) => {
+  terminalStore.setState((state) => ({
+    bufferCache: { ...state.bufferCache, [sessionId]: data },
+  }));
+};
+
+export const getBuffer = (sessionId: string): string | null =>
+  terminalStore.getState().bufferCache[sessionId] ?? null;
+
+export const clearBuffer = (sessionId: string) => {
+  terminalStore.setState((state) => {
+    const next = { ...state.bufferCache };
+    delete next[sessionId];
+
+    return { bufferCache: next };
+  });
+};
+
+export const migrateSessions = (fromId: string, toId: string) => {
+  terminalStore.setState((state) => {
+    if (fromId === toId) {
+      return state;
+    }
+    const sessionsToMove = state.sessions[fromId] ?? [];
+    if (sessionsToMove.length === 0) {
+      return state;
+    }
+    const existing = state.sessions[toId] ?? [];
+    const newSessions = { ...state.sessions };
+    delete newSessions[fromId];
+    newSessions[toId] = [
+      ...existing,
+      ...sessionsToMove.map((s) => ({ ...s, workspace_id: toId })),
+    ];
+    const fromActive = state.activeSessionId[fromId];
+    const toActive = state.activeSessionId[toId];
+    const newActiveSessionId = { ...state.activeSessionId };
+    delete newActiveSessionId[fromId];
+    newActiveSessionId[toId] = toActive ?? fromActive ?? null;
+
+    return {
+      sessions: newSessions,
+      activeSessionId: newActiveSessionId,
+    };
+  });
+};
+
+const EMPTY_SESSIONS: TerminalSession[] = [];
+
+export const useTerminalSessionsSlice = (workspaceId: string) =>
+  useTerminalStore((s) => s.sessions[workspaceId] ?? EMPTY_SESSIONS);
+
+export const useActiveSessionId = (workspaceId: string) =>
+  useTerminalStore((s) => s.activeSessionId[workspaceId] ?? null);
+
+export const useRunSessionId = (workspaceId: string) =>
+  useTerminalStore((s) => s.runSessionId[workspaceId] ?? null);
+
+export const useRunBusy = (workspaceId: string) =>
+  useTerminalStore((s) => s.runBusy[workspaceId] ?? false);
+
+/** For tests */
+export const getTerminalState = () => terminalStore.getState();
+export const setTerminalState = terminalStore.setState.bind(terminalStore);

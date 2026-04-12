@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getWorkspaceConflicts,
   getWorkspaceStagedDiff,
@@ -11,19 +11,21 @@ interface UseMergeStatusResult {
   handleMerge: () => Promise<void>;
   hasStaged: boolean;
   isMerging: boolean;
-  mergeError: null | string;
+  mergeError: string | null;
 }
 
 export function useMergeStatus(
-  workspaceId: null | string,
+  workspaceId: string | null,
 ): UseMergeStatusResult {
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
-  const [mergeError, setMergeError] = useState<null | string>(null);
+  const [mergeError, setMergeError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     try {
       const [conflictResult, stagedDiff] = await Promise.all([
         getWorkspaceConflicts(workspaceId),
@@ -46,7 +48,9 @@ export function useMergeStatus(
   );
 
   const handleMerge = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {
+      return;
+    }
     setIsMerging(true);
     setMergeError(null);
     try {

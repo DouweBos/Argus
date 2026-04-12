@@ -15,8 +15,10 @@ export function alwaysAllowRule(
     case "Bash": {
       const cmd = ((input.command ?? "") as string).trim();
       const binary = cmd.split(/\s+/)[0] ?? "";
+
       return binary ? `${name}(${binary} *)` : name;
     }
+
     case "Edit":
     case "MultiEdit":
     case "Write":
@@ -26,17 +28,21 @@ export function alwaysAllowRule(
       if (ext && ext !== filePath && !ext.includes("/")) {
         return `${name}(**/*.${ext})`;
       }
+
       return name;
     }
+
     case "WebFetch": {
       const url = (input.url ?? "") as string;
       try {
         const domain = new URL(url).hostname;
+
         return domain ? `${name}(domain:${domain})` : name;
       } catch {
         return name;
       }
     }
+
     default:
       return name;
   }

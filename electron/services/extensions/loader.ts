@@ -5,8 +5,8 @@
  */
 
 import fs from "fs";
-import path from "path";
 import os from "os";
+import path from "path";
 
 export interface ExtensionFile {
   /** Path relative to the extension root (e.g. "client/out/extension.js") */
@@ -38,7 +38,9 @@ export async function discoverExtensions(): Promise<DiscoveredExtension[]> {
   const results: DiscoveredExtension[] = [];
 
   for (const extDir of EXTENSION_DIRS) {
-    if (!fs.existsSync(extDir)) continue;
+    if (!fs.existsSync(extDir)) {
+      continue;
+    }
 
     let entries: fs.Dirent[];
     try {
@@ -48,12 +50,16 @@ export async function discoverExtensions(): Promise<DiscoveredExtension[]> {
     }
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      if (!entry.isDirectory()) {
+        continue;
+      }
 
       const extPath = path.join(extDir, entry.name);
       const pkgPath = path.join(extPath, "package.json");
 
-      if (!fs.existsSync(pkgPath)) continue;
+      if (!fs.existsSync(pkgPath)) {
+        continue;
+      }
 
       let manifest: Record<string, unknown>;
       try {
@@ -65,12 +71,16 @@ export async function discoverExtensions(): Promise<DiscoveredExtension[]> {
 
       const publisher = manifest.publisher as string | undefined;
       const name = manifest.name as string | undefined;
-      if (!publisher || !name) continue;
+      if (!publisher || !name) {
+        continue;
+      }
 
       const id = `${publisher}.${name}`.toLowerCase();
 
       // Skip if already seen (first dir wins — Cursor before VS Code)
-      if (seen.has(id)) continue;
+      if (seen.has(id)) {
+        continue;
+      }
       seen.add(id);
 
       // Collect all files recursively (relative paths)
@@ -96,7 +106,9 @@ async function collectFiles(root: string, relative: string): Promise<string[]> {
 
   for (const entry of entries) {
     // Skip common noise
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
+    if (entry.name === "node_modules" || entry.name === ".git") {
+      continue;
+    }
 
     const rel = relative ? `${relative}/${entry.name}` : entry.name;
 

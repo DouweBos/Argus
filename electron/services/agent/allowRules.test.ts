@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-
 import { parseAllowRule, extractSpecifier, globMatch } from "./allowRules";
 
 describe("parseAllowRule", () => {

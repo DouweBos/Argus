@@ -10,10 +10,11 @@
  */
 
 import {
-  registerExtension,
   ExtensionHostKind,
   type IExtensionManifest,
+  registerExtension,
 } from "@codingame/monaco-vscode-api/extensions";
+import { log, warn } from "@logger";
 
 interface DiscoveredExtension {
   extensionPath: string;
@@ -32,11 +33,12 @@ export async function loadLocalExtensions(): Promise<void> {
       "discover_extensions",
     );
   } catch (e) {
-    console.warn("[extensions] Failed to discover local extensions:", e);
+    warn("[extensions] Failed to discover local extensions:", e);
+
     return;
   }
 
-  console.log(
+  log(
     `[extensions] Found ${extensions.length} local extensions, registering...`,
   );
 
@@ -45,7 +47,7 @@ export async function loadLocalExtensions(): Promise<void> {
       registerLocalExtension(ext);
     } catch (e) {
       const id = `${ext.manifest.publisher}.${ext.manifest.name}`;
-      console.warn(`[extensions] Failed to register ${id}:`, e);
+      warn(`[extensions] Failed to register ${id}:`, e);
     }
   }
 }

@@ -1,0 +1,137 @@
+.header {
+  position: relative;
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+/* ── Pinned icon row ── */
+.iconRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  gap: 2px;
+}
+
+.iconBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.iconBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.iconBtn:focus-visible {
+  outline: none;
+}
+
+.iconBtn.active {
+  color: var(--text-primary);
+}
+
+.chevronBtn {
+  font-size: 14px;
+  margin-left: 2px;
+}
+
+/* ── Dropdown ── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 6px;
+  right: 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: 4px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.item.active {
+  color: var(--text-primary);
+}
+
+/* Extension icon (URL-based, e.g. GitLens) — invert for dark theme */
+.extensionIcon {
+  flex-shrink: 0;
+  object-fit: contain;
+  opacity: 0.7;
+  filter: invert(1) brightness(0.75);
+}
+
+.item:hover .extensionIcon {
+  opacity: 1;
+  filter: invert(1) brightness(1);
+}
+
+.itemLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemShortcut {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.pinBtn {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+/* Point pin icon straight down (codicon classes come from VS Code / global stylesheet) */
+.pinBtn :global(.codicon) {
+  display: inline-block;
+  transform: rotate(45deg);
+}
+
+/* Show pin on row hover or when item is pinned */
+.item:hover .pinBtn,
+.pinned {
+  opacity: 1;
+}
+
+.pinned {
+  color: var(--text-secondary);
+}
+
+.pinBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  opacity: 1;
+}

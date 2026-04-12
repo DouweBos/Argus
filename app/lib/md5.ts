@@ -2,10 +2,10 @@
 export function md5Hex(input: string): string {
   // Simple MD5 implementation for browser (no crypto dependency needed for Gravatar)
   function md5cycle(x: number[], k: number[]) {
-    let a = x[0],
-      b = x[1],
-      c = x[2],
-      d = x[3];
+    let a = x[0];
+    let b = x[1];
+    let c = x[2];
+    let d = x[3];
     a = ff(a, b, c, d, k[0], 7, -680876936);
     d = ff(d, a, b, c, k[1], 12, -389564586);
     c = ff(c, d, a, b, k[2], 17, 606105819);
@@ -75,6 +75,7 @@ export function md5Hex(input: string): string {
     x[2] = add32(c, x[2]);
     x[3] = add32(d, x[3]);
   }
+
   function cmn(
     q: number,
     a: number,
@@ -84,8 +85,10 @@ export function md5Hex(input: string): string {
     t: number,
   ) {
     a = add32(add32(a, q), add32(x, t));
+
     return add32((a << s) | (a >>> (32 - s)), b);
   }
+
   function ff(
     a: number,
     b: number,
@@ -97,6 +100,7 @@ export function md5Hex(input: string): string {
   ) {
     return cmn((b & c) | (~b & d), a, b, x, s, t);
   }
+
   function gg(
     a: number,
     b: number,
@@ -108,6 +112,7 @@ export function md5Hex(input: string): string {
   ) {
     return cmn((b & d) | (c & ~d), a, b, x, s, t);
   }
+
   function hh(
     a: number,
     b: number,
@@ -119,6 +124,7 @@ export function md5Hex(input: string): string {
   ) {
     return cmn(b ^ c ^ d, a, b, x, s, t);
   }
+
   function ii(
     a: number,
     b: number,
@@ -130,41 +136,57 @@ export function md5Hex(input: string): string {
   ) {
     return cmn(c ^ (b | ~d), a, b, x, s, t);
   }
+
   function add32(a: number, b: number) {
     return (a + b) & 0xffffffff;
   }
+
   function md5blk(s: string) {
     const blks: number[] = [];
-    for (let i = 0; i < 64; i += 4)
+    for (let i = 0; i < 64; i += 4) {
       blks[i >> 2] =
         s.charCodeAt(i) +
         (s.charCodeAt(i + 1) << 8) +
         (s.charCodeAt(i + 2) << 16) +
         (s.charCodeAt(i + 3) << 24);
+    }
+
     return blks;
   }
+
   const hex = "0123456789abcdef".split("");
+
   function rhex(n: number) {
     let s = "";
-    for (let j = 0; j < 4; j++)
+    for (let j = 0; j < 4; j++) {
       s += hex[(n >> (j * 8 + 4)) & 0x0f] + hex[(n >> (j * 8)) & 0x0f];
+    }
+
     return s;
   }
+
   const n = input.length;
   const state = [1732584193, -271733879, -1732584194, 271733878];
   let i: number;
-  for (i = 64; i <= n; i += 64)
+  for (i = 64; i <= n; i += 64) {
     md5cycle(state, md5blk(input.substring(i - 64, i)));
+  }
   const tail = input.substring(i - 64);
   const len = tail.length;
   const arr: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-  for (i = 0; i < len; i++) arr[i >> 2] |= tail.charCodeAt(i) << ((i % 4) << 3);
+  for (i = 0; i < len; i++) {
+    arr[i >> 2] |= tail.charCodeAt(i) << ((i % 4) << 3);
+  }
   arr[i >> 2] |= 0x80 << ((i % 4) << 3);
   if (i > 55) {
     md5cycle(state, arr);
-    for (i = 0; i < 16; i++) arr[i] = 0;
+    for (i = 0; i < 16; i++) {
+      arr[i] = 0;
+    }
   }
+
   arr[14] = n * 8;
   md5cycle(state, arr);
+
   return rhex(state[0]) + rhex(state[1]) + rhex(state[2]) + rhex(state[3]);
 }

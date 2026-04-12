@@ -7,6 +7,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { warn } from "../../../app/lib/logger";
 
 const METADATA_FILENAME = ".stagehand-workspaces.json";
 const SCHEMA_VERSION = 1;
@@ -82,6 +83,7 @@ export function loadMetadata(
   for (const [key, value] of Object.entries(file.workspaces)) {
     result.set(normalizePathKey(key), value);
   }
+
   return result;
 }
 
@@ -127,7 +129,7 @@ export function migrateOrphaned(
     try {
       saveMetadata(worktreesRootDir, migrated);
     } catch (e) {
-      console.warn("Failed to persist migrated metadata:", e);
+      warn("Failed to persist migrated metadata:", e);
     }
   }
 

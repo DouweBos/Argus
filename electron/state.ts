@@ -4,10 +4,17 @@
  * Node.js is single-threaded for IPC handlers, so no Mutex is needed.
  */
 
-import type { Workspace } from "./services/workspace/models";
 import type { AgentSession } from "./services/agent/models";
 import type { TerminalSession } from "./services/terminal/multiplexer";
+import type { Workspace } from "./services/workspace/models";
 import type { WatcherHandle } from "./services/workspace/watcher";
+
+export interface BrowserSession {
+  id: string;
+  url: string;
+  /** @deprecated No longer backed by Electron WebContents. */
+  webContentsId: number | null;
+}
 
 export interface SimulatorSession {
   udid: string;
@@ -21,6 +28,15 @@ export interface AndroidDeviceSession {
   deviceName: string;
   type: "emulator" | "physical";
   captureActive: boolean;
+}
+
+/** A web browser reserved for exclusive use by a single agent. */
+export interface WebBrowserReservation {
+  agentId: string;
+  deviceId: string; // "web:chromium:a1b2c3d4"
+  cdpPort: number; // Chromium's remote-debugging-port
+  cdpTargetId: string; // CDP target for the page
+  driverPort: number; // Conductor's web-server HTTP port
 }
 
 /** A simulator reserved for exclusive use by a single agent. */
@@ -55,6 +71,12 @@ class AppState {
 
   /** Simulator reservations for agents, keyed by agent UUID. */
   simulatorReservations = new Map<string, SimulatorReservation>();
+
+  /** Web browser sessions, keyed by workspace ID (storeKey). */
+  browserSessions = new Map<string, BrowserSession>();
+
+  /** Web browser reservations for agents, keyed by agent UUID. */
+  webBrowserReservations = new Map<string, WebBrowserReservation>();
 }
 
 /** Singleton instance. */

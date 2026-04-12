@@ -28,7 +28,93 @@ export interface DiffFile {
   status: "A" | "D" | "M" | "R";
 }
 
+/**
+ * Path to pass to `git add` / `git reset` for this entry.
+ * Deletes reference the old path; renames and edits use the new tree path.
+ */
+export function gitIndexPath(file: DiffFile): string {
+  if (file.status === "D") {
+    return file.oldPath;
+  }
+
+  if (file.newPath) {
+    return file.newPath;
+  }
+
+  return file.oldPath;
+}
+
 // --- Parser ---
+
+/** Paths from the line after `diff --git ` (e.g. `a/foo b/foo`). */
+function parsePathsFromDiffGitLine(line: string): {
+  newPath: string;
+  oldPath: string;
+} {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return { oldPath: "", newPath: "" };
+  }
+
+  // Quoted paths (spaces / special chars)
+  if (trimmed.startsWith('"')) {
+    const m = trimmed.match(/^"a\/((?:[^"\\]|\\.)+)" "b\/((?:[^"\\]|\\.)+)"/);
+    if (m) {
+      const unescape = (s: string) => s.replace(/\\(.)/g, "$1");
+
+      return { oldPath: unescape(m[1]), newPath: unescape(m[2]) };
+    }
+  }
+
+  const bAt = trimmed.indexOf(" b/");
+  if (bAt !== -1 && trimmed.startsWith("a/")) {
+    return {
+      oldPath: trimmed.slice(2, bAt),
+      newPath: trimmed.slice(bAt + 3),
+    };
+  }
+
+  return { oldPath: "", newPath: "" };
+}
+
+function pathFromBinaryToken(token: string): string {
+  const t = token.trim();
+  if (t === "/dev/null") {
+    return "";
+  }
+
+  if (t.startsWith("a/") || t.startsWith("b/") || t.startsWith("c/")) {
+    return t.slice(2);
+  }
+
+  return t;
+}
+
+/** Strip optional double-quotes from `git diff` path tokens. */
+function unquoteGitPath(token: string): string {
+  const t = token.trim();
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    return t.slice(1, -1).replace(/\\(.)/g, "$1");
+  }
+
+  return t;
+}
+
+/** When git omits ---/+++ (e.g. binary-only diffs), paths still appear here. */
+function parsePathsFromBinaryFilesLine(line: string): {
+  newPath: string;
+  oldPath: string;
+} | null {
+  const m = line.match(/^Binary files (.+) and (.+) differ$/);
+  if (!m) {
+    return null;
+  }
+
+  return {
+    oldPath: pathFromBinaryToken(m[1]),
+    newPath: pathFromBinaryToken(m[2]),
+  };
+}
 
 export function parseDiff(raw: string): DiffFile[] {
   const files: DiffFile[] = [];
@@ -48,22 +134,67 @@ export function parseDiff(raw: string): DiffFile[] {
       if (j > 0 && !line.startsWith("@@")) {
         headerLines.push(line);
       }
+
       if (line.startsWith("--- ")) {
         oldPath = line.replace(/^--- (a\/)?/, "");
-        if (oldPath === "/dev/null") oldPath = "";
+        if (oldPath === "/dev/null") {
+          oldPath = "";
+        }
       } else if (line.startsWith("+++ ")) {
         newPath = line.replace(/^\+\+\+ (b\/)?/, "");
-        if (newPath === "/dev/null") newPath = "";
+        if (newPath === "/dev/null") {
+          newPath = "";
+        }
         bodyStart = j + 1;
         break;
       }
     }
 
+    if (!oldPath && !newPath) {
+      const fromGit = parsePathsFromDiffGitLine(lines[0] ?? "");
+      oldPath = fromGit.oldPath;
+      newPath = fromGit.newPath;
+    }
+
+    if (!oldPath && !newPath) {
+      for (const line of lines) {
+        const fromBin = parsePathsFromBinaryFilesLine(line);
+        if (fromBin) {
+          oldPath = fromBin.oldPath;
+          newPath = fromBin.newPath;
+          break;
+        }
+      }
+    }
+
+    let renameFrom = "";
+    let renameTo = "";
+    for (const line of lines) {
+      if (line.startsWith("rename from ")) {
+        renameFrom = unquoteGitPath(line.slice("rename from ".length));
+      } else if (line.startsWith("rename to ")) {
+        renameTo = unquoteGitPath(line.slice("rename to ".length));
+      }
+    }
+
+    if (!oldPath && renameFrom) {
+      oldPath = renameFrom;
+    }
+
+    if (!newPath && renameTo) {
+      newPath = renameTo;
+    }
+
     let status: DiffFile["status"];
-    if (!oldPath || oldPath === "/dev/null") status = "A";
-    else if (!newPath || newPath === "/dev/null") status = "D";
-    else if (oldPath !== newPath) status = "R";
-    else status = "M";
+    if (!oldPath || oldPath === "/dev/null") {
+      status = "A";
+    } else if (!newPath || newPath === "/dev/null") {
+      status = "D";
+    } else if (oldPath !== newPath) {
+      status = "R";
+    } else {
+      status = "M";
+    }
 
     const diffHeader = headerLines.join("\n");
 
@@ -82,6 +213,7 @@ export function parseDiff(raw: string): DiffFile[] {
           currentHunk.patch =
             diffHeader + "\n" + currentHunkLines.join("\n") + "\n";
         }
+
         currentHunk = {
           header: line,
           oldStart: parseInt(hunkMatch[1], 10),
@@ -94,7 +226,9 @@ export function parseDiff(raw: string): DiffFile[] {
         continue;
       }
 
-      if (!currentHunk) continue;
+      if (!currentHunk) {
+        continue;
+      }
       currentHunkLines.push(line);
 
       const lastLine = currentHunk.lines[currentHunk.lines.length - 1];
@@ -141,6 +275,54 @@ export function parseDiff(raw: string): DiffFile[] {
   return files;
 }
 
+/** Same change identity in the index (paths + status) for file-level staging. */
+function sameDiffIdentity(a: DiffFile, b: DiffFile): boolean {
+  if (a.status !== b.status) {
+    return false;
+  }
+
+  switch (a.status) {
+    case "R":
+      return a.oldPath === b.oldPath && a.newPath === b.newPath;
+    case "M":
+      return a.oldPath === b.oldPath && a.newPath === b.newPath;
+    case "D":
+      return a.oldPath === b.oldPath;
+    case "A":
+      return a.newPath === b.newPath;
+  }
+}
+
+/**
+ * When `git diff HEAD` has no @@ hunks (pure rename, binary, etc.), line-level
+ * merge cannot run. Infer staged state from the cached diff shape.
+ *
+ * Notably: if you stage the new path before the old deletion, `git diff HEAD`
+ * may still show a single rename with no hunk lines, while `git diff --cached`
+ * shows the new path as an added file — sameDiffIdentity is false (R vs A).
+ */
+function mergeStagedEmptyHunkFile(
+  file: DiffFile,
+  stagedFile: DiffFile,
+): Pick<DiffFile, "hunks" | "staged"> {
+  if (stagedFile.hunks.length === 0) {
+    return {
+      hunks: file.hunks,
+      staged: sameDiffIdentity(file, stagedFile) ? "full" : "none",
+    };
+  }
+
+  if (
+    file.status === "R" &&
+    stagedFile.status === "A" &&
+    stagedFile.newPath === file.newPath
+  ) {
+    return { hunks: file.hunks, staged: "partial" };
+  }
+
+  return { hunks: file.hunks, staged: "none" };
+}
+
 /** Merge staged info into files parsed from full diff */
 export function mergeStaged(
   fullFiles: DiffFile[],
@@ -149,15 +331,28 @@ export function mergeStaged(
   const stagedFiles = parseDiff(stagedRaw);
   const stagedMap = new Map<string, DiffFile>();
   for (const f of stagedFiles) {
-    stagedMap.set(f.newPath || f.oldPath, f);
+    const k = f.newPath || f.oldPath;
+    stagedMap.set(k, f);
+    if (f.status === "R" && f.oldPath && f.newPath) {
+      stagedMap.set(f.oldPath, f);
+      stagedMap.set(f.newPath, f);
+    }
   }
 
   return fullFiles.map((file) => {
     const key = file.newPath || file.oldPath;
-    const stagedFile = stagedMap.get(key);
+    let stagedFile = stagedMap.get(key);
+    if (!stagedFile && file.status === "R") {
+      stagedFile =
+        stagedMap.get(file.oldPath) ?? stagedMap.get(file.newPath) ?? undefined;
+    }
 
     if (!stagedFile) {
       return { ...file, staged: "none" as const };
+    }
+
+    if (file.hunks.length === 0) {
+      return { ...file, ...mergeStagedEmptyHunkFile(file, stagedFile) };
     }
 
     const stagedLineKeys = new Set<string>();
@@ -179,7 +374,9 @@ export function mergeStaged(
       let hunkAnyStaged = false;
 
       const mergedLines = hunk.lines.map((line) => {
-        if (line.type === "context") return line;
+        if (line.type === "context") {
+          return line;
+        }
         const lineKey = `${line.type}:${line.oldNum ?? ""}:${line.newNum ?? ""}:${line.content}`;
         const isStaged = stagedLineKeys.has(lineKey);
         if (isStaged) {
@@ -189,6 +386,7 @@ export function mergeStaged(
           allStaged = false;
           hunkAllStaged = false;
         }
+
         return { ...line, staged: isStaged };
       });
 
@@ -199,16 +397,23 @@ export function mergeStaged(
       };
     });
 
-    if (!anyStaged) allStaged = false;
+    if (!anyStaged) {
+      allStaged = false;
+    }
+
+    let staged: "full" | "none" | "partial";
+    if (allStaged) {
+      staged = "full";
+    } else if (anyStaged) {
+      staged = "partial";
+    } else {
+      staged = "none";
+    }
 
     return {
       ...file,
       hunks: mergedHunks,
-      staged: allStaged
-        ? ("full" as const)
-        : anyStaged
-          ? ("partial" as const)
-          : ("none" as const),
+      staged,
     };
   });
 }
@@ -257,6 +462,7 @@ export function buildPartialPatch(
   }
 
   const hunkHeader = `@@ -${hunk.oldStart},${oldCount} +${hunk.newStart},${newCount} @@`;
+
   return (
     file.diffHeader + "\n" + hunkHeader + "\n" + patchLines.join("\n") + "\n"
   );

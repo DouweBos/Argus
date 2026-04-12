@@ -1,0 +1,1 @@
+export { FileDiffView } from "./FileDiffView";

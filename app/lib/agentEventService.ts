@@ -1,18 +1,119 @@
-import { listen, type UnlistenFn } from "../lib/events";
-import { useConversationStore } from "../stores/conversationStore";
-import { useAgentStore } from "../stores/agentStore";
-import { sendAgentMessage } from "./ipc";
+import type { SavedConversation } from "./chatHistory";
 import type {
   AgentCapabilities,
+  AgentStatus,
   ClaudeStreamEvent,
   PermissionCancellation,
   PermissionRequest,
 } from "./types";
+import { addAgent, getAgentState, updateAgent } from "../stores/agentStore";
+import {
+  addUserMessage,
+  appendEvent,
+  appendSystemMessage,
+  cancelPermission,
+  dequeueMessage,
+  getConversationState,
+  setCapabilities,
+  setModel,
+  setPermissionPending,
+} from "../stores/conversationStore";
+import { getWorkspaceState } from "../stores/workspaceStore";
+import { deriveTitle } from "./chatHistory";
+import { type UnlistenFn, listen } from "./events";
+import { saveChatHistory, sendAgentMessage } from "./ipc";
 
 /**
  * Singleton service that owns event subscriptions for agent stream events.
  * Decouples event subscription lifetime from React component lifetime.
  */
+
+/**
+ * Tracks sessionIds that have already been saved to avoid double-saving
+ * (the exit listener and stopAgent may both attempt to save).
+ */
+const savedSessions = new Set<string>();
+
+/**
+ * Build a SavedConversation from the current store state and persist it.
+ * No-op if the conversation has no messages or was already saved.
+ */
+export function saveAgentConversation(agentId: string): void {
+  const conv = getConversationState().conversations[agentId];
+  if (!conv || conv.messages.length === 0) {
+    return;
+  }
+  if (conv.sessionId && savedSessions.has(conv.sessionId)) {
+    return;
+  }
+
+  const agent = getAgentState().agents[agentId];
+  if (!agent) {
+    return;
+  }
+
+  const wsState = getWorkspaceState();
+  const workspace = wsState.workspaces.find((w) => w.id === agent.workspace_id);
+  if (!workspace) {
+    return;
+  }
+
+  const saved: SavedConversation = {
+    id: crypto.randomUUID(),
+    sessionId: conv.sessionId ?? "",
+    title: deriveTitle(conv.messages),
+    workspaceBranch: workspace.branch ?? "",
+    workspaceDescription: workspace.description ?? "",
+    model: conv.model,
+    totalCost: conv.totalCost,
+    totalDuration: conv.totalDuration,
+    messageCount: conv.messages.length,
+    createdAt: conv.messages[0]?.timestamp ?? Date.now(),
+    endedAt: Date.now(),
+    messages: conv.messages,
+  };
+
+  if (conv.sessionId) {
+    savedSessions.add(conv.sessionId);
+  }
+
+  // Fire-and-forget — saving is best-effort
+  saveChatHistory(workspace.repo_root, saved).catch(() => {});
+}
+
+/**
+ * Listen for app quit and save all active conversations.
+ * Called once at app startup.
+ */
+export function initAppQuitSave(): void {
+  listen<undefined>("app:will-quit", () => {
+    const agents = getAgentState().agents;
+    for (const agentId of Object.keys(agents)) {
+      saveAgentConversation(agentId);
+    }
+  });
+}
+
+/**
+ * Listen for agents spawned outside the UI flow (e.g. via the MCP
+ * `spawn_agent` tool). Registers them in the agent store and starts
+ * subscribing to their event channels so they appear in the UI.
+ */
+export function initExternalAgentStarted(): void {
+  listen<AgentStatus>("agent:started", (event) => {
+    const info = event.payload;
+    if (getAgentState().agents[info.agent_id]) {
+      return;
+    }
+    addAgent({
+      agent_id: info.agent_id,
+      workspace_id: info.workspace_id,
+      status: info.status,
+      permission_mode: info.permission_mode,
+    });
+    startAgentListening(info.agent_id);
+  });
+}
 
 const listeners = new Map<string, UnlistenFn>();
 const exitListeners = new Map<string, UnlistenFn>();
@@ -25,7 +126,9 @@ const stderrListeners = new Map<string, UnlistenFn>();
 
 /** Subscribe to all agent event channels. */
 export function startAgentListening(agentId: string): void {
-  if (listeners.has(agentId)) return;
+  if (listeners.has(agentId)) {
+    return;
+  }
 
   // Store placeholder so we know listening has been requested
   listeners.set(agentId, () => {});
@@ -33,7 +136,7 @@ export function startAgentListening(agentId: string): void {
   listen<string>(`agent:event:${agentId}`, (event) => {
     try {
       const parsed: ClaudeStreamEvent = JSON.parse(event.payload);
-      useConversationStore.getState().appendEvent(agentId, parsed);
+      appendEvent(agentId, parsed);
 
       // A "result" event means Claude finished processing the current prompt.
       // Clear the in-flight flag and drain queued messages. If nothing is
@@ -67,7 +170,7 @@ export function startAgentListening(agentId: string): void {
             trySetIdle(agentId);
           }
         } else if (parsed.state === "running") {
-          useAgentStore.getState().updateAgent(agentId, { status: "running" });
+          updateAgent(agentId, { status: "running" });
         }
       }
     } catch {
@@ -77,8 +180,10 @@ export function startAgentListening(agentId: string): void {
     if (!listeners.has(agentId)) {
       // stopAgentListening was called before promise resolved
       unlisten();
+
       return;
     }
+
     listeners.set(agentId, unlisten);
   });
 
@@ -88,13 +193,17 @@ export function startAgentListening(agentId: string): void {
   listen<number>(`agent:exit:${agentId}`, (event) => {
     const exitCode = event.payload;
     const status = exitCode === 0 ? "stopped" : "error";
-    useAgentStore.getState().updateAgent(agentId, { status });
+    // Save conversation before updating status (data still in store)
+    saveAgentConversation(agentId);
+    updateAgent(agentId, { status });
     inflight.delete(agentId);
   }).then((unlisten) => {
     if (!exitListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     exitListeners.set(agentId, unlisten);
   });
 
@@ -106,25 +215,27 @@ export function startAgentListening(agentId: string): void {
   permListeners.set(agentId, () => {});
 
   listen<PermissionRequest>(`agent:permission:${agentId}`, (event) => {
-    const store = useConversationStore.getState;
     const request = event.payload;
-    const found = store().setPermissionPending(agentId, request);
+    const found = setPermissionPending(agentId, request);
     if (!found) {
       // Fallback: if the tool call hasn't been processed yet (unlikely but
       // possible during very fast streaming), retry a few times.
       let attempts = 3;
       const retry = () => {
-        if (attempts-- > 0 && !store().setPermissionPending(agentId, request)) {
+        if (attempts-- > 0 && !setPermissionPending(agentId, request)) {
           setTimeout(retry, 50);
         }
       };
+
       setTimeout(retry, 50);
     }
   }).then((unlisten) => {
     if (!permListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     permListeners.set(agentId, unlisten);
   });
 
@@ -135,13 +246,15 @@ export function startAgentListening(agentId: string): void {
     `agent:permission-cancel:${agentId}`,
     (event) => {
       const { tool_use_id } = event.payload;
-      useConversationStore.getState().cancelPermission(agentId, tool_use_id);
+      cancelPermission(agentId, tool_use_id);
     },
   ).then((unlisten) => {
     if (!permCancelListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     permCancelListeners.set(agentId, unlisten);
   });
 
@@ -149,7 +262,7 @@ export function startAgentListening(agentId: string): void {
   capListeners.set(agentId, () => {});
 
   listen<AgentCapabilities>(`agent:capabilities:${agentId}`, (event) => {
-    useConversationStore.getState().setCapabilities(agentId, event.payload);
+    setCapabilities(agentId, event.payload);
     // The capabilities response means the CLI is initialized and ready for
     // input. Drain any queued messages or transition to idle — but only if
     // nothing is already in-flight.
@@ -159,8 +272,10 @@ export function startAgentListening(agentId: string): void {
   }).then((unlisten) => {
     if (!capListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     capListeners.set(agentId, unlisten);
   });
 
@@ -168,12 +283,14 @@ export function startAgentListening(agentId: string): void {
   modelListeners.set(agentId, () => {});
 
   listen<string>(`agent:model-changed:${agentId}`, (event) => {
-    useConversationStore.getState().setModel(agentId, event.payload);
+    setModel(agentId, event.payload);
   }).then((unlisten) => {
     if (!modelListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     modelListeners.set(agentId, unlisten);
   });
 
@@ -181,14 +298,16 @@ export function startAgentListening(agentId: string): void {
   permModeListeners.set(agentId, () => {});
 
   listen<string>(`agent:permission-mode-changed:${agentId}`, (event) => {
-    useAgentStore.getState().updateAgent(agentId, {
+    updateAgent(agentId, {
       permission_mode: event.payload === "default" ? undefined : event.payload,
     });
   }).then((unlisten) => {
     if (!permModeListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     permModeListeners.set(agentId, unlisten);
   });
 
@@ -197,8 +316,10 @@ export function startAgentListening(agentId: string): void {
 
   listen<string>(`agent:stderr:${agentId}`, (event) => {
     const line = event.payload;
-    if (!line) return;
-    useConversationStore.getState().appendSystemMessage(agentId, {
+    if (!line) {
+      return;
+    }
+    appendSystemMessage(agentId, {
       id: crypto.randomUUID(),
       role: "system",
       isError: true,
@@ -209,8 +330,10 @@ export function startAgentListening(agentId: string): void {
   }).then((unlisten) => {
     if (!stderrListeners.has(agentId)) {
       unlisten();
+
       return;
     }
+
     stderrListeners.set(agentId, unlisten);
   });
 }
@@ -235,13 +358,15 @@ export function notifyMessageSent(agentId: string): void {
  * Returns true if a message was sent.
  */
 function trySendNextQueued(agentId: string): boolean {
-  const store = useConversationStore.getState();
-  const next = store.dequeueMessage(agentId);
-  if (!next) return false;
-  store.addUserMessage(agentId, next.text);
+  const next = dequeueMessage(agentId);
+  if (!next) {
+    return false;
+  }
+  addUserMessage(agentId, next.text);
   inflight.add(agentId);
-  useAgentStore.getState().updateAgent(agentId, { status: "running" });
+  updateAgent(agentId, { status: "running" });
   sendAgentMessage(agentId, next.text, next.images).catch(() => {});
+
   return true;
 }
 
@@ -250,42 +375,60 @@ function trySendNextQueued(agentId: string): boolean {
  * This prevents stale idle signals from hiding the activity indicator.
  */
 function trySetIdle(agentId: string): void {
-  if (inflight.has(agentId)) return;
-  useAgentStore.getState().updateAgent(agentId, { status: "idle" });
+  if (inflight.has(agentId)) {
+    return;
+  }
+  updateAgent(agentId, { status: "idle" });
 }
 
 /** Unsubscribe all listeners for an agent and clean up tracking state. */
 export function stopAgentListening(agentId: string): void {
   inflight.delete(agentId);
   const unlisten = listeners.get(agentId);
-  if (unlisten) unlisten();
+  if (unlisten) {
+    unlisten();
+  }
   listeners.delete(agentId);
 
   const exitUnlisten = exitListeners.get(agentId);
-  if (exitUnlisten) exitUnlisten();
+  if (exitUnlisten) {
+    exitUnlisten();
+  }
   exitListeners.delete(agentId);
 
   const permUnlisten = permListeners.get(agentId);
-  if (permUnlisten) permUnlisten();
+  if (permUnlisten) {
+    permUnlisten();
+  }
   permListeners.delete(agentId);
 
   const permCancelUnlisten = permCancelListeners.get(agentId);
-  if (permCancelUnlisten) permCancelUnlisten();
+  if (permCancelUnlisten) {
+    permCancelUnlisten();
+  }
   permCancelListeners.delete(agentId);
 
   const capUnlisten = capListeners.get(agentId);
-  if (capUnlisten) capUnlisten();
+  if (capUnlisten) {
+    capUnlisten();
+  }
   capListeners.delete(agentId);
 
   const modelUnlisten = modelListeners.get(agentId);
-  if (modelUnlisten) modelUnlisten();
+  if (modelUnlisten) {
+    modelUnlisten();
+  }
   modelListeners.delete(agentId);
 
   const permModeUnlisten = permModeListeners.get(agentId);
-  if (permModeUnlisten) permModeUnlisten();
+  if (permModeUnlisten) {
+    permModeUnlisten();
+  }
   permModeListeners.delete(agentId);
 
   const stderrUnlisten = stderrListeners.get(agentId);
-  if (stderrUnlisten) stderrUnlisten();
+  if (stderrUnlisten) {
+    stderrUnlisten();
+  }
   stderrListeners.delete(agentId);
 }

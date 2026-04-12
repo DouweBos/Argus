@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { execFileSync } from "node:child_process";
-
+import type * as NodeFs from "node:fs";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fixProcessPath } from "./shellEnv";
 
 vi.mock("node:child_process", () => ({
@@ -10,7 +10,8 @@ vi.mock("node:child_process", () => ({
 // Mock fs.existsSync so the fallback-dirs branch doesn't hit the real
 // filesystem and pick up machine-specific paths.
 vi.mock("node:fs", async () => {
-  const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+  const actual = await vi.importActual<typeof NodeFs>("node:fs");
+
   return {
     ...actual,
     default: { ...actual, existsSync: vi.fn(() => false) },

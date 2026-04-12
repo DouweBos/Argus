@@ -1,0 +1,79 @@
+import type { ConversationMessage } from "../../../stores/conversationStore";
+import { renderMarkdown } from "../../../lib/markdown";
+import { FileLinkHandler } from "../FileLinkHandler";
+import { ToolCallCard } from "../ToolCallCard";
+import styles from "./ChatMessage.module.css";
+
+interface ChatMessageProps {
+  agentId?: string;
+  message: ConversationMessage;
+  onPermissionRespond?: (
+    toolUseId: string,
+    decision: "allow" | "deny",
+    allowRule?: string,
+    allowAll?: boolean,
+  ) => void;
+}
+
+export function ChatMessage({
+  agentId,
+  message,
+  onPermissionRespond,
+}: ChatMessageProps) {
+  if (message.role === "system") {
+    return (
+      <div
+        className={`${styles.systemMsg}${message.isError ? ` ${styles.systemMsgError}` : ""}`}
+      >
+        {message.textBlocks.map((text, i) => (
+          <span key={i}>{text}</span>
+        ))}
+      </div>
+    );
+  }
+
+  if (message.role === "user") {
+    return (
+      <div className={styles.userMsg}>
+        {message.textBlocks.map((text, i) => (
+          <p key={i} className={styles.userText}>
+            {text}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  // assistant role
+  const hasToolCalls = message.toolCalls.length > 0;
+  const hasText = message.textBlocks.length > 0;
+
+  return (
+    <div className={styles.assistantMsg}>
+      {hasText && (
+        <FileLinkHandler className={styles.textContent}>
+          {message.textBlocks.map((text, i) => (
+            <div
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+              key={i}
+              className={styles.markdown}
+            />
+          ))}
+        </FileLinkHandler>
+      )}
+
+      {hasToolCalls && (
+        <div className={styles.toolCallsSection}>
+          {message.toolCalls.map((tc) => (
+            <ToolCallCard
+              key={tc.id}
+              agentId={agentId}
+              toolCall={tc}
+              onPermissionRespond={onPermissionRespond}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

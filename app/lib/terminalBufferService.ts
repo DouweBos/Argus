@@ -1,4 +1,4 @@
-import { listen, type UnlistenFn } from "../lib/events";
+import { type UnlistenFn, listen } from "../lib/events";
 
 /**
  * Singleton service that owns event subscriptions for terminal data.
@@ -27,7 +27,9 @@ function decodePayload(payload: string): Uint8Array {
 
 /** Subscribe to terminal:data:{sessionId}. Route data to writer or buffer. */
 export function startListening(sessionId: string): void {
-  if (listeners.has(sessionId)) return;
+  if (listeners.has(sessionId)) {
+    return;
+  }
 
   // Initialize pending buffer
   if (!pendingChunks.has(sessionId)) {
@@ -51,8 +53,10 @@ export function startListening(sessionId: string): void {
     // Guard against stopListening being called before the promise resolved
     if (!listeners.has(sessionId)) {
       unlisten();
+
       return;
     }
+
     listeners.set(sessionId, unlisten);
   });
 
@@ -63,7 +67,9 @@ export function startListening(sessionId: string): void {
 /** Unsubscribe and clean up all state for a session (called on session destroy). */
 export function stopListening(sessionId: string): void {
   const unlisten = listeners.get(sessionId);
-  if (unlisten) unlisten();
+  if (unlisten) {
+    unlisten();
+  }
   listeners.delete(sessionId);
   liveWriters.delete(sessionId);
   pendingChunks.delete(sessionId);
@@ -82,8 +88,11 @@ export function detachWriter(sessionId: string): void {
 /** Return and clear any buffered chunks received while no writer was attached. */
 export function drainPending(sessionId: string): Uint8Array[] {
   const chunks = pendingChunks.get(sessionId);
-  if (!chunks || chunks.length === 0) return [];
+  if (!chunks || chunks.length === 0) {
+    return [];
+  }
   const drained = [...chunks];
   chunks.length = 0;
+
   return drained;
 }

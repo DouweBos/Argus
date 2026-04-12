@@ -49,13 +49,16 @@ class ExpGolombReader {
   }
 
   private readBit(): number {
-    if (this.byteOffset >= this.data.length) return 0;
+    if (this.byteOffset >= this.data.length) {
+      return 0;
+    }
     const bit = (this.data[this.byteOffset] >> (7 - this.bitOffset)) & 1;
     this.bitOffset++;
     if (this.bitOffset === 8) {
       this.bitOffset = 0;
       this.byteOffset++;
     }
+
     return bit;
   }
 
@@ -64,21 +67,30 @@ class ExpGolombReader {
     for (let i = 0; i < n; i++) {
       val = (val << 1) | this.readBit();
     }
+
     return val;
   }
 
   /** Read unsigned Exp-Golomb coded value. */
   readUE(): number {
     let zeros = 0;
-    while (this.readBit() === 0 && zeros < 31) zeros++;
-    if (zeros === 0) return 0;
+    while (this.readBit() === 0 && zeros < 31) {
+      zeros++;
+    }
+    if (zeros === 0) {
+      return 0;
+    }
+
     return (1 << zeros) - 1 + this.readBits(zeros);
   }
 
   /** Read signed Exp-Golomb coded value. */
   readSE(): number {
     const val = this.readUE();
-    if (val % 2 === 0) return -(val >> 1);
+    if (val % 2 === 0) {
+      return -(val >> 1);
+    }
+
     return (val + 1) >> 1;
   }
 }
@@ -122,7 +134,9 @@ function parseSps(spsNalBody: Uint8Array): SpsInfo {
     profileIdc === 134
   ) {
     const chromaFormatIdc = r.readUE();
-    if (chromaFormatIdc === 3) r.readBits(1); // separate_colour_plane_flag
+    if (chromaFormatIdc === 3) {
+      r.readBits(1);
+    } // separate_colour_plane_flag
     r.readUE(); // bit_depth_luma_minus8
     r.readUE(); // bit_depth_chroma_minus8
     r.readBits(1); // qpprime_y_zero_transform_bypass_flag
@@ -156,7 +170,9 @@ function parseSps(spsNalBody: Uint8Array): SpsInfo {
     r.readSE(); // offset_for_non_ref_pic
     r.readSE(); // offset_for_top_to_bottom_field
     const numRefFrames = r.readUE();
-    for (let i = 0; i < numRefFrames; i++) r.readSE();
+    for (let i = 0; i < numRefFrames; i++) {
+      r.readSE();
+    }
   }
 
   r.readUE(); // max_num_ref_frames
@@ -169,7 +185,9 @@ function parseSps(spsNalBody: Uint8Array): SpsInfo {
   let width = (picWidthInMbsMinus1 + 1) * 16;
   let height = (2 - frameMbsOnlyFlag) * (picHeightInMapUnitsMinus1 + 1) * 16;
 
-  if (!frameMbsOnlyFlag) r.readBits(1); // mb_adaptive_frame_field_flag
+  if (!frameMbsOnlyFlag) {
+    r.readBits(1);
+  } // mb_adaptive_frame_field_flag
   r.readBits(1); // direct_8x8_inference_flag
 
   // Frame cropping
@@ -196,6 +214,7 @@ function buildCodecString(info: SpsInfo): string {
   const pp = info.profileIdc.toString(16).padStart(2, "0");
   const cc = info.constraintFlags.toString(16).padStart(2, "0");
   const ll = info.levelIdc.toString(16).padStart(2, "0");
+
   return `avc1.${pp}${cc}${ll}`;
 }
 
@@ -249,12 +268,15 @@ function findStartCode(
 ): { index: number; length: number } | null {
   for (let i = offset; i < buf.length - 2; i++) {
     if (buf[i] === 0 && buf[i + 1] === 0) {
-      if (buf[i + 2] === 1) return { index: i, length: 3 };
+      if (buf[i + 2] === 1) {
+        return { index: i, length: 3 };
+      }
       if (buf[i + 2] === 0 && i + 3 < buf.length && buf[i + 3] === 1) {
         return { index: i, length: 4 };
       }
     }
   }
+
   return null;
 }
 
@@ -307,12 +329,16 @@ export class H264AccessUnitParser {
   private processBuffer(): void {
     // Find first start code
     let sc = findStartCode(this.buffer, 0);
-    if (!sc) return;
+    if (!sc) {
+      return;
+    }
 
     while (true) {
       // Find next start code after this one
       const nextSc = findStartCode(this.buffer, sc.index + sc.length);
-      if (!nextSc) break; // Need more data
+      if (!nextSc) {
+        break;
+      } // Need more data
 
       // Extract NAL unit (between current and next start code)
       const nalStart = sc.index + sc.length;
@@ -336,7 +362,9 @@ export class H264AccessUnitParser {
   }
 
   private processNal(nal: Uint8Array, startCodeLen: number): void {
-    if (nal.length === 0) return;
+    if (nal.length === 0) {
+      return;
+    }
 
     const nalType = nal[0] & 0x1f;
 
@@ -344,17 +372,20 @@ export class H264AccessUnitParser {
     if (nalType === NAL_SPS) {
       this.sps = nal;
       this.emitConfigIfReady();
+
       return;
     }
     if (nalType === NAL_PPS) {
       this.pps = nal;
       this.emitConfigIfReady();
+
       return;
     }
 
     // SEI — include in current access unit but don't trigger flush
     if (nalType === NAL_SEI) {
       this.addToAccessUnit(nal, startCodeLen);
+
       return;
     }
 
@@ -371,6 +402,7 @@ export class H264AccessUnitParser {
 
       // For simplicity, emit immediately (single-slice frames)
       this.emitAccessUnit();
+
       return;
     }
 
@@ -389,11 +421,14 @@ export class H264AccessUnitParser {
   }
 
   private emitAccessUnit(): void {
-    if (this.currentAccessUnit.length === 0) return;
+    if (this.currentAccessUnit.length === 0) {
+      return;
+    }
     if (!this.configEmitted) {
       // Can't emit frames until we have SPS+PPS config
       this.currentAccessUnit = [];
       this.currentIsKey = false;
+
       return;
     }
 
@@ -423,8 +458,12 @@ export class H264AccessUnitParser {
   }
 
   private emitConfigIfReady(): void {
-    if (!this.sps || !this.pps) return;
-    if (this.configEmitted) return;
+    if (!this.sps || !this.pps) {
+      return;
+    }
+    if (this.configEmitted) {
+      return;
+    }
 
     const info = parseSps(this.sps.slice(1)); // skip NAL header byte
     const codec = buildCodecString(info);

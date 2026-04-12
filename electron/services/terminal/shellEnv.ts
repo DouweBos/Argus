@@ -15,6 +15,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { warn } from "../../../app/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -98,6 +99,7 @@ function resolvePathFromLoginShell(
     diagnostics.push(
       `interactive login shell succeeded (${interactive.split(":").length} entries)`,
     );
+
     return interactive;
   }
   diagnostics.push("interactive login shell failed or returned same PATH");
@@ -112,9 +114,11 @@ function resolvePathFromLoginShell(
     diagnostics.push(
       `login-only shell succeeded (${loginOnly.split(":").length} entries)`,
     );
+
     return loginOnly;
   }
   diagnostics.push("login-only shell also failed or returned same PATH");
+
   return undefined;
 }
 
@@ -155,12 +159,8 @@ function runShellForPath(
 
     return resolved;
   } catch (err) {
-    console.warn(
-      "[shellEnv] shell invocation failed:",
-      shell,
-      args,
-      String(err),
-    );
+    warn("[shellEnv] shell invocation failed:", shell, args, String(err));
+
     return undefined;
   }
 }

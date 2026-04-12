@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildGraphLanes, LANE_COLORS } from "./gitGraph";
+import { LANE_COLORS, buildGraphLanes } from "./gitGraph";
 
 function commits(
-  ...specs: Array<{ hash: string; parents?: string }>
-): Array<{ hash: string; parentHash: string }> {
+  ...specs: { hash: string; parents?: string }[]
+): { hash: string; parentHash: string }[] {
   return specs.map((s) => ({
     hash: s.hash,
     parentHash: s.parents ?? "",

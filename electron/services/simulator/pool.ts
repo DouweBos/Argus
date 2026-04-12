@@ -12,7 +12,7 @@ import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-
+import { info } from "../../../app/lib/logger";
 import { appState, type SimulatorReservation } from "../../state";
 import { bootSimulator, listSimulators } from "./ios";
 
@@ -42,6 +42,7 @@ export function nextDeviceName(
   while (taken.has(`${prefix}-${n}`)) {
     n++;
   }
+
   return `${prefix}-${n}`;
 }
 
@@ -51,9 +52,14 @@ export function nextDeviceName(
  */
 export function iphoneModelNumber(name: string): number {
   const num = name.match(/^iPhone\s+(\d+)/);
-  if (num) return parseInt(num[1], 10);
+  if (num) {
+    return parseInt(num[1], 10);
+  }
   // iPhone X, XS, XR, XS Max are all generation 10.
-  if (/^iPhone\s+X/i.test(name)) return 10;
+  if (/^iPhone\s+X/i.test(name)) {
+    return 10;
+  }
+
   return 0;
 }
 
@@ -80,6 +86,7 @@ async function resolveLatestDeviceType(): Promise<string> {
   // Sort: highest model first, then shortest name (base model over Pro Max).
   iphones.sort((a, b) => {
     const diff = iphoneModelNumber(b.name) - iphoneModelNumber(a.name);
+
     return diff !== 0 ? diff : a.name.length - b.name.length;
   });
 
@@ -134,9 +141,10 @@ async function createSimulator(name: string): Promise<string> {
     throw `simctl create returned empty output for "${name}"`;
   }
 
-  console.info(
+  info(
     `[simulator-pool] Created "${name}" (${udid}) — ${deviceType} / ${runtime}`,
   );
+
   return udid;
 }
 
@@ -249,7 +257,7 @@ class SimulatorPool {
         await bootSimulator(udid);
       }
 
-      console.info(
+      info(
         `[simulator-pool] Reusing "${deviceName}" (${udid}) for agent ${agentId}`,
       );
     } else {
@@ -270,17 +278,20 @@ class SimulatorPool {
     };
     appState.simulatorReservations.set(agentId, reservation);
 
-    console.info(
+    info(
       `[simulator-pool] Reserved "${deviceName}" (${udid}) → agent ${agentId}`,
     );
+
     return udid;
   }
 
   private async doRelease(agentId: string): Promise<void> {
     const reservation = appState.simulatorReservations.get(agentId);
-    if (!reservation) return; // Already released or never acquired.
+    if (!reservation) {
+      return;
+    } // Already released or never acquired.
 
-    console.info(
+    info(
       `[simulator-pool] Releasing "${reservation.deviceName}" (${reservation.udid}) from agent ${agentId}`,
     );
 

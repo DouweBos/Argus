@@ -1,12 +1,20 @@
-import { describe, expect, it, vi, beforeAll, beforeEach, afterAll } from "vitest";
-import fs from "node:fs";
-
+import type { AgentSession } from "../agent/models";
+import type { Workspace } from "../workspace/models";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-
+import fs from "node:fs";
+import {
+  describe,
+  expect,
+  it,
+  vi,
+  beforeAll,
+  beforeEach,
+  afterAll,
+} from "vitest";
 import { appState } from "../../state";
-import type { Workspace } from "../workspace/models";
-import type { AgentSession } from "../agent/models";
+
+/* eslint-disable vitest/require-top-level-describe */
 
 // ---------------------------------------------------------------------------
 // Mocks — hoisted before any imports from server.ts
@@ -14,6 +22,7 @@ import type { AgentSession } from "../agent/models";
 
 vi.mock("node:fs", () => {
   const actual = vi.importActual("node:fs");
+
   return {
     ...actual,
     default: {
@@ -68,21 +77,21 @@ vi.mock("./projects", () => ({
 // Import mocked modules + server factory
 // ---------------------------------------------------------------------------
 
-const { createWorkspace, deleteWorkspace, listWorkspaces } = await import(
-  "../workspace/manager"
-);
-const { getWorkspaceConflicts, mergeWorkspaceIntoBase, readStagehandConfig, writeStagehandConfig } =
-  await import("../workspace/workspaceOps");
-const { startAgent, sendAgentMessage, listAgents } = await import(
-  "../agent/claude"
-);
-const { createTerminal, startTerminal } = await import(
-  "../terminal/multiplexer"
-);
+const { createWorkspace, deleteWorkspace, listWorkspaces } =
+  await import("../workspace/manager");
+const {
+  getWorkspaceConflicts,
+  mergeWorkspaceIntoBase,
+  readStagehandConfig,
+  writeStagehandConfig,
+} = await import("../workspace/workspaceOps");
+const { startAgent, sendAgentMessage, listAgents } =
+  await import("../agent/claude");
+const { createTerminal, startTerminal } =
+  await import("../terminal/multiplexer");
 const { loadStagehandConfig } = await import("../workspace/setup");
-const { isGitRepo, ensureRepoRegistered, collectAllProjects } = await import(
-  "./projects"
-);
+const { isGitRepo, ensureRepoRegistered, collectAllProjects } =
+  await import("./projects");
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockCreateWorkspace = vi.mocked(createWorkspace);
@@ -155,16 +164,16 @@ beforeAll(async () => {
   await client.connect(clientTransport);
 });
 
-afterAll(async () => {
-  await client.close();
-});
-
 beforeEach(() => {
   vi.clearAllMocks();
   appState.repoRoots.clear();
   appState.workspaces.clear();
   appState.agents.clear();
   appState.terminals.clear();
+});
+
+afterAll(async () => {
+  await client.close();
 });
 
 // ===========================================================================
@@ -174,17 +183,28 @@ beforeEach(() => {
 describe("list_projects", () => {
   it("delegates to collectAllProjects and returns JSON", async () => {
     mockCollectAllProjects.mockReturnValue([
-      { path: "/projects/frontend", description: "Frontend", registered: true, source: "/projects/frontend" },
+      {
+        path: "/projects/frontend",
+        description: "Frontend",
+        registered: true,
+        source: "/projects/frontend",
+      },
     ]);
-    const result = await client.callTool({ name: "list_projects", arguments: {} });
-    const parsed = jsonOf(result) as Array<{ path: string }>;
+    const result = await client.callTool({
+      name: "list_projects",
+      arguments: {},
+    });
+    const parsed = jsonOf(result) as { path: string }[];
     expect(parsed).toHaveLength(1);
     expect(parsed[0].path).toBe("/projects/frontend");
   });
 
   it("returns empty array when no projects", async () => {
     mockCollectAllProjects.mockReturnValue([]);
-    const result = await client.callTool({ name: "list_projects", arguments: {} });
+    const result = await client.callTool({
+      name: "list_projects",
+      arguments: {},
+    });
     expect(jsonOf(result)).toEqual([]);
   });
 });
@@ -260,7 +280,9 @@ describe("add_related_project", () => {
         description: "Backend API",
       },
     });
-    const parsed = jsonOf(result) as { added: { path: string; description: string } };
+    const parsed = jsonOf(result) as {
+      added: { path: string; description: string };
+    };
     expect(parsed.added.path).toBe("../backend");
     expect(parsed.added.description).toBe("Backend API");
     expect(mockWriteStagehandConfig).toHaveBeenCalledWith(
@@ -285,7 +307,11 @@ describe("create_workspace", () => {
 
     const result = await client.callTool({
       name: "create_workspace",
-      arguments: { name: "Cool Thing", description: "A cool feature", repo_root: "/projects/frontend" },
+      arguments: {
+        name: "Cool Thing",
+        description: "A cool feature",
+        repo_root: "/projects/frontend",
+      },
     });
     const parsed = jsonOf(result) as { workspace_id: string; branch: string };
     expect(parsed.workspace_id).toBe("ws-1");
@@ -341,7 +367,7 @@ describe("list_workspaces", () => {
       name: "list_workspaces",
       arguments: {},
     });
-    const parsed = jsonOf(result) as Array<{ workspace_id: string }>;
+    const parsed = jsonOf(result) as { workspace_id: string }[];
     expect(parsed).toHaveLength(1);
     expect(parsed[0].workspace_id).toBe("ws-1");
     expect(parsed[0]).toHaveProperty("branch", "feat/cool-thing");
@@ -523,7 +549,7 @@ describe("list_agents", () => {
       name: "list_agents",
       arguments: { workspace: "ws-1" },
     });
-    const parsed = jsonOf(result) as Array<{ agent_id: string }>;
+    const parsed = jsonOf(result) as { agent_id: string }[];
     expect(parsed).toHaveLength(1);
     expect(parsed[0].agent_id).toBe("a-1");
     expect(parsed[0]).toHaveProperty("branch", "feat/cool-thing");
@@ -536,10 +562,17 @@ describe("list_agents", () => {
     appState.workspaces.set("ws-1", ws1);
     appState.workspaces.set("ws-2", ws2);
     mockListAgents.mockImplementation((wsId: string) => {
-      if (wsId === "ws-1")
-        return [{ agent_id: "a-1", workspace_id: "ws-1", status: "running" as const }];
-      if (wsId === "ws-2")
-        return [{ agent_id: "a-2", workspace_id: "ws-2", status: "running" as const }];
+      if (wsId === "ws-1") {
+        return [
+          { agent_id: "a-1", workspace_id: "ws-1", status: "running" as const },
+        ];
+      }
+      if (wsId === "ws-2") {
+        return [
+          { agent_id: "a-2", workspace_id: "ws-2", status: "running" as const },
+        ];
+      }
+
       return [];
     });
 
@@ -547,7 +580,7 @@ describe("list_agents", () => {
       name: "list_agents",
       arguments: {},
     });
-    const parsed = jsonOf(result) as Array<{ agent_id: string }>;
+    const parsed = jsonOf(result) as { agent_id: string }[];
     expect(parsed).toHaveLength(2);
     expect(parsed.map((a) => a.agent_id).sort()).toEqual(["a-1", "a-2"]);
   });
@@ -669,10 +702,17 @@ describe("trigger_run", () => {
       name: "trigger_run",
       arguments: { workspace: "ws-1" },
     });
-    const parsed = jsonOf(result) as { command: string; terminal_session_id: string };
+    const parsed = jsonOf(result) as {
+      command: string;
+      terminal_session_id: string;
+    };
     expect(parsed.command).toBe("pnpm dev");
     expect(parsed.terminal_session_id).toBe("term-1");
-    expect(mockCreateTerminal).toHaveBeenCalledWith("ws-1", "packages/app", "pnpm dev");
+    expect(mockCreateTerminal).toHaveBeenCalledWith(
+      "ws-1",
+      "packages/app",
+      "pnpm dev",
+    );
     expect(mockStartTerminal).toHaveBeenCalledWith("term-1", 120, 40);
   });
 
@@ -835,7 +875,11 @@ describe("resolveWorkspace (via delete_workspace)", () => {
   it("resolves by display_name as last resort", async () => {
     appState.workspaces.set(
       "ws-y",
-      mockWorkspace({ id: "ws-y", branch: "feat/xyz", display_name: "My Feature" }),
+      mockWorkspace({
+        id: "ws-y",
+        branch: "feat/xyz",
+        display_name: "My Feature",
+      }),
     );
     mockDeleteWorkspace.mockResolvedValue(undefined);
 

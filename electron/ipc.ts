@@ -8,8 +8,48 @@
 
 import { dialog, ipcMain } from "electron";
 import { getMainWindow } from "./main";
+import { appState } from "./state";
+import {
+  saveConversation,
+  loadHistoryIndex,
+  loadConversation,
+  deleteHistoryEntry,
+} from "./services/agent/chatHistory";
+import {
+  checkClaudeCli,
+  startAgent,
+  stopAgent,
+  interruptAgent,
+  sendAgentMessage,
+  listAgents,
+  respondToPermission,
+  setAgentModel,
+  setAgentPermissionMode,
+} from "./services/agent/claude";
+import {
+  startScreencast,
+  stopScreencast,
+  restartScreencast,
+} from "./services/browser/cdpScreencast";
+import {
+  type BrowserPreset,
+  type NavState,
+  mouseEvent as conductorMouseEvent,
+  keyboardEvent as conductorKeyboardEvent,
+  wheelEvent as conductorWheelEvent,
+  navigate as conductorNavigate,
+  goBack as conductorGoBack,
+  goForward as conductorGoForward,
+  reload as conductorReload,
+  setViewport as conductorSetViewport,
+} from "./services/browser/conductorInput";
+import { getMjpegPort } from "./services/browser/mjpegServer";
+import { webBrowserPool } from "./services/browser/pool";
+import { discoverExtensions } from "./services/extensions/loader";
 import {
   listDirectory,
+  listWorkspaceFiles,
+  resolveMentionPath,
   readFile,
   writeFile,
   statFile,
@@ -21,6 +61,39 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
+import { revealInFinder } from "./services/shell/operations";
+import {
+  checkAndroidTools,
+  listAndroidDevices,
+  listAvds,
+  bootAndroidEmulator,
+  startAndroidCapture,
+  stopAndroidCapture,
+  disconnectAndroidDevice,
+  androidTouch,
+  androidKeyboard,
+  androidButton,
+} from "./services/simulator/android";
+import {
+  checkIosTools,
+  listSimulators,
+  bootSimulator,
+  disconnectSimulator,
+  activeSimulator,
+  startSimulatorCapture,
+  stopSimulatorCapture,
+  simulatorTouch,
+  simulatorButton,
+  simulatorKeyboard,
+} from "./services/simulator/ios";
+import {
+  createTerminal,
+  startTerminal,
+  destroyTerminal,
+  terminalWrite,
+  terminalResize,
+} from "./services/terminal/multiplexer";
+import { loadCommandMetrics } from "./services/workspace/commandMetrics";
 import {
   addRepoRoot,
   removeRepoRoot,
@@ -40,7 +113,9 @@ import {
   getWorkspaceUntrackedDiff,
   getWorkspaceStatus,
   stageFile,
+  stageAll,
   unstageFile,
+  unstageAll,
   discardFile,
   stageHunk,
   unstageHunk,
@@ -70,58 +145,22 @@ import {
   gitStashApply,
   gitStashDrop,
 } from "./services/workspace/workspaceOps";
-import {
-  checkClaudeCli,
-  startAgent,
-  stopAgent,
-  interruptAgent,
-  sendAgentMessage,
-  listAgents,
-  respondToPermission,
-  setAgentModel,
-  setAgentPermissionMode,
-} from "./services/agent/claude";
-import {
-  createTerminal,
-  startTerminal,
-  destroyTerminal,
-  terminalWrite,
-  terminalResize,
-} from "./services/terminal/multiplexer";
-import { discoverExtensions } from "./services/extensions/loader";
-import { revealInFinder } from "./services/shell/operations";
-import { loadCommandMetrics } from "./services/workspace/commandMetrics";
-import {
-  checkIosTools,
-  listSimulators,
-  bootSimulator,
-  disconnectSimulator,
-  activeSimulator,
-  startSimulatorCapture,
-  stopSimulatorCapture,
-  simulatorTouch,
-  simulatorButton,
-  simulatorKeyboard,
-} from "./services/simulator/ios";
-import {
-  checkAndroidTools,
-  listAndroidDevices,
-  listAvds,
-  bootAndroidEmulator,
-  startAndroidCapture,
-  stopAndroidCapture,
-  disconnectAndroidDevice,
-  androidTouch,
-  androidKeyboard,
-  androidButton,
-} from "./services/simulator/android";
 
 type Args = Record<string, unknown>;
+
+function emitNavState(workspaceId: string, nav: NavState): void {
+  getMainWindow()?.webContents.send("browser_view:nav", {
+    workspaceId,
+    url: nav.url,
+    canGoBack: nav.canGoBack,
+    canGoForward: nav.canGoForward,
+  });
+}
 
 /** Helper: register a handler that unwraps args. */
 function handle(
   channel: string,
-  handler: (args: Args) => unknown | Promise<unknown>,
+  handler: (args: Args) => Promise<unknown> | unknown,
 ): void {
   ipcMain.handle(channel, async (_event, args: Args = {}) => {
     return handler(args);
@@ -141,6 +180,10 @@ export function registerIpcHandlers(): void {
   );
   handle("stat_file", (a) =>
     statFile(a.id as string, a.relativePath as string),
+  );
+  handle("list_workspace_files", (a) => listWorkspaceFiles(a.id as string));
+  handle("resolve_mention_path", (a) =>
+    resolveMentionPath(a.id as string, a.query as string),
   );
 
   // Absolute-path file operations (used by VS Code filesystem provider)
@@ -194,9 +237,11 @@ export function registerIpcHandlers(): void {
   );
   handle("get_workspace_status", (a) => getWorkspaceStatus(a.id as string));
   handle("stage_file", (a) => stageFile(a.id as string, a.filePath as string));
+  handle("stage_all", (a) => stageAll(a.id as string));
   handle("unstage_file", (a) =>
     unstageFile(a.id as string, a.filePath as string),
   );
+  handle("unstage_all", (a) => unstageAll(a.id as string));
   handle("discard_file", (a) =>
     discardFile(a.id as string, a.filePath as string),
   );
@@ -282,7 +327,7 @@ export function registerIpcHandlers(): void {
     sendAgentMessage(
       a.agentId as string,
       a.message as string,
-      a.images as Array<{ data: string; media_type: string }> | undefined,
+      a.images as { data: string; media_type: string }[] | undefined,
     ),
   );
   handle("list_agents", (a) => listAgents(a.workspaceId as string));
@@ -300,6 +345,21 @@ export function registerIpcHandlers(): void {
   );
   handle("set_agent_permission_mode", (a) =>
     setAgentPermissionMode(a.agentId as string, a.mode as string),
+  );
+
+  // Chat history commands
+  handle("save_chat_history", (a) =>
+    saveConversation(
+      a.repoRoot as string,
+      a.conversation as Parameters<typeof saveConversation>[1],
+    ),
+  );
+  handle("list_chat_history", (a) => loadHistoryIndex(a.repoRoot as string));
+  handle("load_chat_history", (a) =>
+    loadConversation(a.repoRoot as string, a.historyId as string),
+  );
+  handle("delete_chat_history", (a) =>
+    deleteHistoryEntry(a.repoRoot as string, a.historyId as string),
   );
 
   // Terminal commands
@@ -379,6 +439,120 @@ export function registerIpcHandlers(): void {
   );
   handle("android_button", (a) => androidButton(a.button as string));
 
+  // Browser — Conductor-backed Chromium per workspace. Pool manages daemons;
+  // screencast via raw CDP WebSocket; input forwarded through Conductor HTTP.
+  handle("browser_view_ensure", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    let reservation = webBrowserPool.getReservation(workspaceId);
+    if (!reservation) {
+      reservation = await webBrowserPool.acquireBrowser(workspaceId);
+    }
+    appState.browserSessions.set(workspaceId, {
+      id: workspaceId,
+      url: "",
+      webContentsId: null,
+    });
+    await startScreencast(workspaceId, reservation.cdpPort, reservation.cdpTargetId, {
+      maxWidth: 1440,
+      maxHeight: 900,
+    });
+    getMainWindow()?.webContents.send("browser:ensure_mounted", {
+      sessionId: workspaceId,
+    });
+  });
+  handle("browser_view_navigate", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    const reservation = webBrowserPool.getReservation(workspaceId);
+    if (!reservation) return;
+    const nav = await conductorNavigate(reservation, a.url as string);
+    emitNavState(workspaceId, nav);
+  });
+  handle("browser_view_back", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    const reservation = webBrowserPool.getReservation(workspaceId);
+    if (!reservation) return;
+    const nav = await conductorGoBack(reservation);
+    emitNavState(workspaceId, nav);
+  });
+  handle("browser_view_forward", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    const reservation = webBrowserPool.getReservation(workspaceId);
+    if (!reservation) return;
+    const nav = await conductorGoForward(reservation);
+    emitNavState(workspaceId, nav);
+  });
+  handle("browser_view_reload", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    const reservation = webBrowserPool.getReservation(workspaceId);
+    if (!reservation) return;
+    const nav = await conductorReload(reservation);
+    emitNavState(workspaceId, nav);
+  });
+  handle("browser_view_destroy", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    await stopScreencast(workspaceId);
+    appState.browserSessions.delete(workspaceId);
+    await webBrowserPool.releaseBrowser(workspaceId);
+  });
+  handle("browser_mouse_event", async (a) => {
+    const reservation = webBrowserPool.getReservation(a.workspaceId as string);
+    if (reservation) {
+      await conductorMouseEvent(
+        reservation,
+        a.type as "click" | "down" | "move" | "up",
+        a.x as number,
+        a.y as number,
+        a.button as "left" | "middle" | "right" | undefined,
+      );
+    }
+  });
+  handle("browser_keyboard_event", async (a) => {
+    const reservation = webBrowserPool.getReservation(a.workspaceId as string);
+    if (reservation) {
+      await conductorKeyboardEvent(
+        reservation,
+        a.type as "down" | "press" | "up",
+        a.key as string,
+      );
+    }
+  });
+  handle("browser_wheel_event", async (a) => {
+    const reservation = webBrowserPool.getReservation(a.workspaceId as string);
+    if (reservation) {
+      await conductorWheelEvent(
+        reservation,
+        a.x as number,
+        a.y as number,
+        a.deltaX as number,
+        a.deltaY as number,
+      );
+    }
+  });
+  handle("browser_update_preset", async (a) => {
+    const workspaceId = a.workspaceId as string;
+    const preset = a.preset as BrowserPreset;
+    const reservation = webBrowserPool.getReservation(workspaceId);
+    if (!reservation) return;
+
+    const isMobile = preset.screenPosition === "mobile";
+    const newTargetId = await conductorSetViewport(reservation, {
+      width: preset.internalWidth,
+      height: preset.internalHeight,
+      userAgent: preset.userAgent,
+      isMobile,
+      deviceScaleFactor: isMobile ? 2 : 1,
+    });
+
+    if (newTargetId) {
+      reservation.cdpTargetId = newTargetId;
+      await restartScreencast(workspaceId, reservation.cdpPort, newTargetId, {
+        maxWidth: preset.internalWidth,
+        maxHeight: preset.internalHeight,
+      });
+    }
+  });
+  handle("browser_get_mjpeg_port", () => getMjpegPort());
+
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));
 
@@ -388,12 +562,17 @@ export function registerIpcHandlers(): void {
   // Dialog
   handle("show_open_dialog", async () => {
     const win = getMainWindow();
-    if (!win) return null;
+    if (!win) {
+      return null;
+    }
     const result = await dialog.showOpenDialog(win, {
       properties: ["openDirectory"],
       title: "Select Repository Root",
     });
-    if (result.canceled || result.filePaths.length === 0) return null;
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
     return result.filePaths[0];
   });
 }

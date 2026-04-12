@@ -7,6 +7,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { warn } from "../../../app/lib/logger";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,6 +25,7 @@ const execFileAsync = promisify(execFile);
  */
 export function worktreesRoot(repoRoot: string): string {
   const name = path.basename(repoRoot) || "repo";
+
   return path.join(
     os.homedir(),
     ".stagehand",
@@ -51,7 +53,9 @@ export function titleToBranchSlug(title: string): string {
     .trim()
     .split("")
     .map((c) => {
-      if (c === " " || c === "\t") return "-";
+      if (c === " " || c === "\t") {
+        return "-";
+      }
       if (
         c === "~" ||
         c === "^" ||
@@ -69,7 +73,10 @@ export function titleToBranchSlug(title: string): string {
       ) {
         return "_";
       }
-      if (/[a-zA-Z0-9\-_/]/.test(c)) return c;
+      if (/[a-zA-Z0-9\-_/]/.test(c)) {
+        return c;
+      }
+
       return "-";
     })
     .join("");
@@ -97,6 +104,7 @@ export function titleToBranchSlug(title: string): string {
 export async function git(cwd: string, args: string[]): Promise<string> {
   try {
     const { stdout } = await execFileAsync("git", args, { cwd });
+
     return stdout;
   } catch (err: unknown) {
     // execFile rejects with an object that has stdout/stderr when the process
@@ -151,7 +159,9 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
 
   const orphanPaths: string[] = [];
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory()) {
+      continue;
+    }
     const dirPath = path.join(root, entry.name);
     const gitFile = path.join(dirPath, ".git");
     if (fs.existsSync(gitFile) && !known.has(dirPath)) {
@@ -159,7 +169,9 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
     }
   }
 
-  if (orphanPaths.length === 0) return;
+  if (orphanPaths.length === 0) {
+    return;
+  }
 
   // `git worktree repair <path>...` re-creates the back-references in
   // `.git/worktrees/` for each listed path.
@@ -184,7 +196,7 @@ export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
       } catch {
         // Unreadable .git file — leave it alone.
       }
-      console.warn(`Failed to repair orphaned worktree: ${orphanPath}`);
+      warn(`Failed to repair orphaned worktree: ${orphanPath}`);
     }
   }
 }

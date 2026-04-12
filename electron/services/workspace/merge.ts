@@ -4,7 +4,6 @@
 
 import { execFile } from "node:child_process";
 import fs from "node:fs";
-
 import { branchToDir, git, worktreesRoot } from "./git";
 
 // ---------------------------------------------------------------------------
@@ -48,6 +47,7 @@ export async function checkMergeConflicts(
         if (!err) {
           // Exit code 0 = clean merge.
           resolve([]);
+
           return;
         }
 
@@ -56,6 +56,7 @@ export async function checkMergeConflicts(
 
         if (parsed.length > 0) {
           resolve(parsed);
+
           return;
         }
 
@@ -77,7 +78,9 @@ export async function checkMergeConflicts(
           if (line.startsWith("+<<<<<<<") || line.includes("changed in both")) {
             const rest = line.replace(/^changed in both/, "");
             const filePath = rest.replace(/^:+/, "").trim();
-            if (filePath) legacyConflicts.push(filePath);
+            if (filePath) {
+              legacyConflicts.push(filePath);
+            }
           }
         }
 
@@ -92,6 +95,7 @@ export async function checkMergeConflicts(
   });
 
   const unique = [...new Set(conflicts)].sort();
+
   return unique;
 }
 
@@ -190,10 +194,14 @@ export function parseConflictingFiles(stdout: string): string[] {
       inInformational = true;
       continue;
     }
-    if (!inInformational) continue;
+    if (!inInformational) {
+      continue;
+    }
 
     const trimmed = line.trim();
-    if (!trimmed) continue;
+    if (!trimmed) {
+      continue;
+    }
 
     if (trimmed.startsWith("CONFLICT")) {
       const rest = trimmed.slice("CONFLICT".length);
@@ -203,10 +211,14 @@ export function parseConflictingFiles(stdout: string): string[] {
       const idx2 = rest.lastIndexOf(marker2);
       if (idx1 !== -1) {
         const filePath = rest.slice(idx1 + marker1.length).trim();
-        if (filePath) conflicts.push(filePath);
+        if (filePath) {
+          conflicts.push(filePath);
+        }
       } else if (idx2 !== -1) {
         const filePath = rest.slice(idx2 + marker2.length).trim();
-        if (filePath) conflicts.push(filePath);
+        if (filePath) {
+          conflicts.push(filePath);
+        }
       }
     }
   }

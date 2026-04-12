@@ -4,13 +4,12 @@
  * Extracted from the MCP server so the logic is independently testable.
  */
 
+import type { StagehandConfig } from "../workspace/models";
 import fs from "node:fs";
 import path from "node:path";
-
 import { appState } from "../../state";
 import { addRepoRoot, createHeadWorkspace } from "../workspace/manager";
 import { loadStagehandConfig } from "../workspace/setup";
-import type { StagehandConfig } from "../workspace/models";
 
 /** Check if a directory is a git repository. */
 export function isGitRepo(dirPath: string): boolean {
@@ -26,7 +25,9 @@ export function isGitRepo(dirPath: string): boolean {
  * its head workspace so the UI shows it.
  */
 export function ensureRepoRegistered(repoRoot: string): void {
-  if (appState.repoRoots.has(repoRoot)) return;
+  if (appState.repoRoots.has(repoRoot)) {
+    return;
+  }
   if (!isGitRepo(repoRoot)) {
     throw new Error(`Not a git repository: ${repoRoot}`);
   }

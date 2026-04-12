@@ -1,7 +1,7 @@
-import path from "node:path";
-import { defineConfig, type Plugin } from "vite";
-import react from "@vitejs/plugin-react";
 import importMetaUrlPlugin from "@codingame/esbuild-import-meta-url-plugin";
+import react from "@vitejs/plugin-react";
+import path from "node:path";
+import { type Plugin, defineConfig } from "vite";
 
 const port = parseInt(process.env.STAGEHAND_PORT ?? "1420", 10);
 
@@ -15,7 +15,9 @@ function vscodeCssResolverPlugin(): Plugin {
     name: "vscode-css-resolver",
     enforce: "pre",
     async resolveId(source, importer) {
-      if (!importer || !source.endsWith(".css")) return null;
+      if (!importer || !source.endsWith(".css")) {
+        return null;
+      }
 
       // Only handle relative imports from within the monaco-vscode-api tree
       if (!source.startsWith("./") && !source.startsWith("../")) {
@@ -27,6 +29,7 @@ function vscodeCssResolverPlugin(): Plugin {
         importer.includes("monaco-vscode-api")
       ) {
         const resolved = path.resolve(path.dirname(importer), source);
+
         return resolved;
       }
 
@@ -42,6 +45,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "app"),
+      "@logger": path.resolve(__dirname, "app/lib/logger.ts"),
       // Alias monaco-editor to the @codingame wrapper
       "monaco-editor": path.resolve(
         __dirname,

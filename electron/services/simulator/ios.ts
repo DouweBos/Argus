@@ -7,7 +7,6 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-
 import { appState } from "../../state";
 import { SimBridge } from "./bridge";
 
@@ -53,6 +52,7 @@ interface SimctlDevice {
 export function runtimeIdToHuman(runtimeId: string): string {
   const last = runtimeId.split(".").at(-1) ?? runtimeId;
   const spaced = last.replace(/-/g, " ");
+
   return fixupRuntimeVersion(spaced);
 }
 
@@ -155,6 +155,7 @@ export async function listSimulators(): Promise<SimulatorDevice[]> {
     if (a.booted !== b.booted) {
       return a.booted ? -1 : 1;
     }
+
     return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   });
 
@@ -216,6 +217,7 @@ export function disconnectSimulator(udid: string): void {
  */
 export async function activeSimulator(): Promise<string | null> {
   const devices = await listSimulators();
+
   return devices.find((d) => d.booted)?.udid ?? null;
 }
 
@@ -317,7 +319,7 @@ export async function simulatorTouch(
  * Send a named button press (e.g. "home", "menu") to the active simulator.
  *
  * The bridge maps button names to macOS virtual keycodes and issues a
- * down+up pair, exactly as keyboard.rs does.
+ * down+up pair.
  *
  * @throws string if there is no active session, or the bridge returns an error.
  */

@@ -1,0 +1,34 @@
+/* Stack container — fills the parent and positions children absolutely. */
+.stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Active workspace webview — visible and interactive. */
+.layerVisible {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Inactive workspace webviews — keep mounted but hidden.
+   Avoid display:none — it tears down the Electron guest webview process
+   and forces a reload when returning. Instead use visibility:hidden +
+   position:absolute so the element stays in the DOM, the guest process
+   stays alive, but the webview is inert and invisible. */
+.layerHidden {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}

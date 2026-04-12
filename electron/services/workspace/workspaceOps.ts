@@ -6,19 +6,19 @@
  * delegates to the lower-level modules.
  */
 
-import fs from "node:fs";
 import { execFile } from "node:child_process";
-
+import fs from "node:fs";
+import { info } from "../../../app/lib/logger";
 import { appState } from "../../state";
 import { git, worktreesRoot } from "./git";
-import { loadMetadata, saveMetadata } from "./metadata";
-import { defaultStagehandConfig, StagehandConfig } from "./models";
-import { loadStagehandConfig } from "./setup";
-import { startWatcher, WatcherHandle } from "./watcher";
 import {
   checkMergeConflicts,
   mergeWorkspaceIntoBase as doMergeWorkspaceIntoBase,
 } from "./merge";
+import { loadMetadata, saveMetadata } from "./metadata";
+import { defaultStagehandConfig, type StagehandConfig } from "./models";
+import { loadStagehandConfig } from "./setup";
+import { startWatcher, type WatcherHandle } from "./watcher";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,7 +27,10 @@ import {
 /** Look up a workspace's path by ID, or throw. */
 function workspacePath(id: string): string {
   const ws = appState.workspaces.get(id);
-  if (!ws) throw `Workspace not found: ${id}`;
+  if (!ws) {
+    throw `Workspace not found: ${id}`;
+  }
+
   return ws.path;
 }
 
@@ -43,6 +46,7 @@ export async function getRepoBranch(repoRoot: string): Promise<string> {
 /** Return all local branch names for the repo root, sorted alphabetically. */
 export async function listBranches(repoRoot: string): Promise<string[]> {
   const raw = await git(repoRoot, ["branch", "--list"]);
+
   return raw
     .split("\n")
     .map((l) => l.replace(/^\*\s+/, "").trim())
@@ -128,7 +132,9 @@ export async function getWorkspaceUntrackedDiff(id: string): Promise<string> {
   let output = "";
   for (const filePath of raw.split("\n")) {
     const trimmed = filePath.trim();
-    if (!trimmed) continue;
+    if (!trimmed) {
+      continue;
+    }
 
     const fullPath = `${wtPath}/${trimmed}`;
     let content: string;
@@ -141,7 +147,9 @@ export async function getWorkspaceUntrackedDiff(id: string): Promise<string> {
 
     const lines = content.split("\n");
     // Remove the trailing empty element that split() adds for files ending in \n.
-    if (lines[lines.length - 1] === "") lines.pop();
+    if (lines[lines.length - 1] === "") {
+      lines.pop();
+    }
     const lineCount = lines.length;
 
     output += `diff --git a/${trimmed} b/${trimmed}\n`;
@@ -177,6 +185,20 @@ export async function unstageFile(id: string, filePath: string): Promise<void> {
 }
 
 /**
+ * Stage all changes in the workspace tree in one `git add -A`.
+ * Avoids hundreds of sequential `git add -- <path>` calls that contend for
+ * `.git/index.lock` with each other and with the diff watcher’s polling.
+ */
+export async function stageAll(id: string): Promise<void> {
+  await git(workspacePath(id), ["add", "-A"]);
+}
+
+/** Unstage all index entries in one `git reset HEAD`. */
+export async function unstageAll(id: string): Promise<void> {
+  await git(workspacePath(id), ["reset", "HEAD"]);
+}
+
+/**
  * Discard all changes to a tracked file (checkout from HEAD).
  * For untracked files, removes them from disk.
  */
@@ -184,6 +206,7 @@ export async function discardFile(id: string, filePath: string): Promise<void> {
   const wtPath = workspacePath(id);
   try {
     await git(wtPath, ["checkout", "HEAD", "--", filePath]);
+
     return;
   } catch {
     // Checkout failed — likely an untracked file.
@@ -252,7 +275,10 @@ export async function gitCommit(
   amend: boolean,
 ): Promise<string> {
   const args = ["commit", "-m", message];
-  if (amend) args.push("--amend");
+  if (amend) {
+    args.push("--amend");
+  }
+
   return git(workspacePath(id), args);
 }
 
@@ -271,6 +297,7 @@ export async function getGitAuthor(id: string): Promise<[string, string]> {
   } catch {
     // No user.email configured — leave empty.
   }
+
   return [name, email];
 }
 
@@ -341,11 +368,15 @@ export async function gitLog(
     `--format=${format}${COMMIT_SEP}`,
     `-${count}`,
   ];
-  if (allBranches) args.splice(1, 0, "--all");
+  if (allBranches) {
+    args.splice(1, 0, "--all");
+  }
   const raw = await git(workspacePath(id), args);
   const entries = raw.split(COMMIT_SEP).filter((s) => s.trim());
+
   return entries.map((entry) => {
     const lines = entry.trim().split("\n");
+
     return {
       hash: lines[0] ?? "",
       abbreviatedHash: lines[1] ?? "",
@@ -385,10 +416,14 @@ export async function gitStashList(id: string): Promise<GitStashEntry[]> {
     "list",
     `--format=%H%n%an%n%ae%n%aI%n%P%n%s${COMMIT_SEP}`,
   ]);
-  if (!raw.trim()) return [];
+  if (!raw.trim()) {
+    return [];
+  }
   const entries = raw.split(COMMIT_SEP).filter((s) => s.trim());
+
   return entries.map((entry, i) => {
     const lines = entry.trim().split("\n");
+
     return {
       index: i,
       hash: lines[0] ?? "",
@@ -425,8 +460,13 @@ export async function gitPull(
   rebase?: boolean,
 ): Promise<string> {
   const args = ["pull"];
-  if (rebase) args.push("--rebase");
-  if (remoteBranch) args.push("origin", remoteBranch);
+  if (rebase) {
+    args.push("--rebase");
+  }
+  if (remoteBranch) {
+    args.push("origin", remoteBranch);
+  }
+
   return git(workspacePath(id), args);
 }
 
@@ -483,6 +523,7 @@ export function watchWorkspace(id: string): void {
   if (existing) {
     // Re-emit current stats for newly mounted listeners.
     existing.emitCurrent();
+
     return;
   }
 
@@ -497,7 +538,7 @@ export function unwatchWorkspace(id: string): void {
   if (handle) {
     handle.stop();
     appState.watchers.delete(id);
-    console.info(`Stopped file watcher for workspace ${id}`);
+    info(`Stopped file watcher for workspace ${id}`);
   }
 }
 
@@ -506,7 +547,7 @@ export function pauseAllWatchers(): void {
   for (const handle of appState.watchers.values()) {
     handle.pause();
   }
-  console.info(`Paused all file watchers (${appState.watchers.size} active)`);
+  info(`Paused all file watchers (${appState.watchers.size} active)`);
 }
 
 /** Resume all active file watchers (recompute diffs when window regains focus). */
@@ -514,7 +555,7 @@ export function resumeAllWatchers(): void {
   for (const handle of appState.watchers.values()) {
     handle.resume();
   }
-  console.info(`Resumed all file watchers (${appState.watchers.size} active)`);
+  info(`Resumed all file watchers (${appState.watchers.size} active)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -547,7 +588,7 @@ export function writeStagehandConfig(repoRoot: string, content: string): void {
   }
   const filePath = `${repoRoot}/.stagehand.json`;
   fs.writeFileSync(filePath, content, "utf8");
-  console.info(`Wrote .stagehand.json to ${filePath}`);
+  info(`Wrote .stagehand.json to ${filePath}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -557,7 +598,9 @@ export function writeStagehandConfig(repoRoot: string, content: string): void {
 /** Update the base branch for a workspace (persisted to metadata). */
 export function setWorkspaceBaseBranch(id: string, baseBranch: string): void {
   const ws = appState.workspaces.get(id);
-  if (!ws) throw `Workspace not found: ${id}`;
+  if (!ws) {
+    throw `Workspace not found: ${id}`;
+  }
 
   ws.base_branch = baseBranch;
   appState.workspaces.set(id, ws);
@@ -583,8 +626,12 @@ export function setWorkspaceBaseBranch(id: string, baseBranch: string): void {
  */
 export async function getWorkspaceConflicts(id: string): Promise<string[]> {
   const ws = appState.workspaces.get(id);
-  if (!ws) throw `Workspace not found: ${id}`;
-  if (!ws.base_branch) return [];
+  if (!ws) {
+    throw `Workspace not found: ${id}`;
+  }
+  if (!ws.base_branch) {
+    return [];
+  }
 
   return checkMergeConflicts(ws.repo_root, ws.branch, ws.base_branch);
 }
@@ -592,8 +639,12 @@ export async function getWorkspaceConflicts(id: string): Promise<string[]> {
 /** Merge workspace's branch into its base branch. */
 export async function mergeWorkspaceIntoBase(id: string): Promise<void> {
   const ws = appState.workspaces.get(id);
-  if (!ws) throw `Workspace not found: ${id}`;
-  if (!ws.base_branch) throw "No base branch set for this workspace";
+  if (!ws) {
+    throw `Workspace not found: ${id}`;
+  }
+  if (!ws.base_branch) {
+    throw "No base branch set for this workspace";
+  }
 
   await doMergeWorkspaceIntoBase(ws.repo_root, ws.branch, ws.base_branch);
 }
