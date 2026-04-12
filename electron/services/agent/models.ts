@@ -2,21 +2,16 @@
  * Data types for the Claude Code agent lifecycle.
  */
 
+import type { ControlHandler } from "./controlHandler";
 import type { ChildProcess } from "node:child_process";
 import type { Writable } from "node:stream";
-
-import type { ControlHandler } from "./controlHandler";
 
 // ---------------------------------------------------------------------------
 // AgentStatus
 // ---------------------------------------------------------------------------
 
-/**
- * Lifecycle state of a Claude Code agent process.
- *
- * Mirrors the Rust `AgentStatus` enum (serialised as snake_case strings).
- */
-export type AgentStatusValue = "running" | "stopped" | "idle" | "error";
+/** Lifecycle state of a Claude Code agent process. */
+export type AgentStatusValue = "error" | "idle" | "running" | "stopped";
 
 // ---------------------------------------------------------------------------
 // AgentSession

@@ -29,24 +29,32 @@
  * Permission responses are written as `control_response` JSON lines.
  */
 
+import type { AgentInfo, AgentSession, AgentStatusValue } from "./models";
+import type { ControlRequest, ControlResponse } from "./protocol";
+import type {
+  AndroidDeviceSession,
+  BrowserSession,
+  SimulatorReservation,
+} from "../../state";
+import type { RuntimePlatform } from "../workspace/models";
+import { app } from "electron";
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import readline from "node:readline";
-import { app } from "electron";
-
+import { promisify } from "node:util";
+import { info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
-import type { AgentInfo, AgentSession, AgentStatusValue } from "./models";
-import { ControlHandler } from "./controlHandler";
+import { webBrowserPool } from "../browser/pool";
 import { getConductorSkillPath } from "../cli/conductorInstaller";
+import { getMcpPort } from "../mcp/server";
+import { simulatorPool } from "../simulator/pool";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
 import { loadStagehandConfig } from "../workspace/setup";
-import { simulatorPool } from "../simulator/pool";
-import { getMcpPort } from "../mcp/server";
+import { ControlHandler } from "./controlHandler";
 
 const execFileAsync = promisify(execFile);
 
@@ -54,7 +62,7 @@ const execFileAsync = promisify(execFile);
 const CLAUDE_BIN = "claude";
 
 // ---------------------------------------------------------------------------
-// Lazy simulator helpers
+// Lazy device helpers
 // ---------------------------------------------------------------------------
 
 /**
@@ -66,8 +74,25 @@ async function ensureSimulatorForAgent(
   repoRoot: string,
 ): Promise<string> {
   const existing = simulatorPool.getReservedUdid(agentId);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
+
   return simulatorPool.acquireSimulator(agentId, repoRoot);
+}
+
+/**
+ * Ensure a web browser is reserved for the given agent, acquiring one on first
+ * use. Returns the Conductor device ID (e.g. "web:chromium:a1b2c3d4").
+ */
+async function ensureWebBrowserForAgent(agentId: string): Promise<string> {
+  const existing = webBrowserPool.getReservation(agentId);
+  if (existing) {
+    return existing.deviceId;
+  }
+
+  const reservation = await webBrowserPool.acquireBrowser(agentId);
+  return reservation.deviceId;
 }
 
 /**
@@ -75,7 +100,10 @@ async function ensureSimulatorForAgent(
  * No-op if the command already contains `--device`.
  */
 function injectDeviceFlag(command: string, udid: string): string {
-  if (command.includes("--device")) return command;
+  if (command.includes("--device")) {
+    return command;
+  }
+
   return command.replace(/\bconductor(\s+\S+)/, `conductor$1 --device ${udid}`);
 }
 
@@ -95,20 +123,23 @@ function loadPromptFile(filename: string): string {
     const promptPath = app.isPackaged
       ? path.join(process.resourcesPath, filename)
       : path.join(process.cwd(), "electron", "prompts", filename);
+
     return readFileSync(promptPath, "utf-8");
   } catch (e) {
-    console.warn(`Failed to load prompt ${filename}: ${String(e)}`);
+    warn(`Failed to load prompt ${filename}: ${String(e)}`);
+
     return "";
   }
 }
 
-function getSystemPromptForKind(kind: "worktree" | "repo_root"): string {
+function getSystemPromptForKind(kind: "repo_root" | "worktree"): string {
   if (cachedPrompts[kind] === null) {
     cachedPrompts[kind] =
       kind === "repo_root"
         ? loadPromptFile("root-agent-system-prompt.md")
         : loadPromptFile("worktree-agent-system-prompt.md");
   }
+
   return cachedPrompts[kind] ?? "";
 }
 
@@ -119,13 +150,14 @@ function getConductorSkill(): string {
       try {
         cachedPrompts.conductor = readFileSync(skillPath, "utf-8");
       } catch (e) {
-        console.warn(`Failed to load conductor skill: ${String(e)}`);
+        warn(`Failed to load conductor skill: ${String(e)}`);
         cachedPrompts.conductor = "";
       }
     } else {
       cachedPrompts.conductor = "";
     }
   }
+
   return cachedPrompts.conductor ?? "";
 }
 
@@ -148,9 +180,12 @@ export async function checkClaudeCli(): Promise<string> {
     if (!resolved) {
       throw `Claude Code CLI (\`${CLAUDE_BIN}\`) not found on PATH. Install it first: https://docs.anthropic.com/en/docs/claude-code`;
     }
+
     return resolved;
   } catch (e) {
-    if (typeof e === "string") throw e;
+    if (typeof e === "string") {
+      throw e;
+    }
     throw `Claude Code CLI (\`${CLAUDE_BIN}\`) not found on PATH. Install it first: https://docs.anthropic.com/en/docs/claude-code`;
   }
 }
@@ -179,6 +214,7 @@ export async function startAgent(
   permissionMode?: string,
   resumeSessionId?: string,
   appendSystemPrompt?: string,
+  platformsOverride?: RuntimePlatform[],
 ): Promise<AgentInfo> {
   // Verify the workspace exists and grab its path.
   const workspace = appState.workspaces.get(workspaceId);
@@ -231,6 +267,16 @@ export async function startAgent(
   const stagehandBin = path.join(os.homedir(), ".stagehand", "bin");
   env.PATH = `${stagehandBin}:${env.PATH ?? ""}`;
 
+  // Pre-acquire a web browser for this agent so the conductor shim can
+  // rewrite `--device web` to the specific device ID without an HTTP
+  // round-trip to a CDP resolver.
+  try {
+    const webDeviceId = await ensureWebBrowserForAgent(agentId);
+    env.CONDUCTOR_WEB_DEVICE_ID = webDeviceId;
+  } catch (e) {
+    warn(`[agent:${agentId}] web browser acquisition failed: ${String(e)}`);
+  }
+
   const child = spawn(CLAUDE_BIN, args, {
     cwd: worktreePath,
     stdio: ["pipe", "pipe", "pipe"],
@@ -252,7 +298,7 @@ export async function startAgent(
     const lines = chunk.toString().split("\n");
     for (const line of lines) {
       if (line.trim()) {
-        console.warn(`[agent:${agentId}] stderr:`, line);
+        warn(`[agent:${agentId}] stderr:`, line);
         emit(`agent:stderr:${agentId}`, line.trim());
       }
     }
@@ -272,7 +318,9 @@ export async function startAgent(
   const eventChannel = `agent:event:${agentId}`;
 
   rl.on("line", (line) => {
-    if (!line.trim()) return; // Skip blank separator lines.
+    if (!line.trim()) {
+      return;
+    } // Skip blank separator lines.
 
     // Fast-path check: only parse lines that look like control messages.
     // Most lines are assistant/user/result/system events and can be forwarded
@@ -298,30 +346,38 @@ export async function startAgent(
       } catch {
         // Malformed line — forward to renderer and let it deal with it.
         emit(eventChannel, line);
+
         return;
       }
 
       if (parsed.type === "control_response") {
         // Response to a control_request we sent (e.g. initialize).
         const consumed = controlHandler.handleControlResponse(
-          parsed as import("./protocol").ControlResponse,
+          parsed as ControlResponse,
           emit,
         );
-        if (consumed) return; // Don't forward consumed responses to renderer.
+        if (consumed) {
+          return;
+        } // Don't forward consumed responses to renderer.
         // Fall through — forward unrecognised responses as raw events.
       }
 
       if (parsed.type === "control_request") {
-        const req = parsed as import("./protocol").ControlRequest;
+        const req = parsed as ControlRequest;
         const payload = req.request;
 
-        // Lazy simulator acquisition: intercept conductor bash commands and
-        // inject --device {UDID} transparently via updatedInput.
+        // Intercept conductor bash commands to transparently inject an
+        // iOS/Android device UDID. (Web CDP injection lives in the conductor
+        // shim at `~/.stagehand/bin/conductor` — it runs regardless of
+        // permission mode, which matters because `bypassPermissions` skips
+        // `can_use_tool` for auto-approved tools.)
         if (
           payload.subtype === "can_use_tool" &&
           payload.tool_name === "Bash"
         ) {
           const cmd = (payload.input?.command as string) ?? "";
+
+          // iOS/Android: lazy simulator acquisition — inject --device {UDID}.
           if (cmd.includes("conductor") && !cmd.includes("--device")) {
             ensureSimulatorForAgent(agentId, workspace.repo_root)
               .then((udid) => {
@@ -330,16 +386,21 @@ export async function startAgent(
                   command: injectDeviceFlag(cmd, udid),
                 };
                 const resp = controlHandler.handleControlRequest(req, emit);
-                if (resp) stdin.write(resp + "\n");
+                if (resp) {
+                  stdin.write(resp + "\n");
+                }
               })
               .catch((e) => {
-                console.warn(
+                warn(
                   `[agent:${agentId}] simulator acquisition failed: ${String(e)}`,
                 );
                 // Fall through without injection.
                 const resp = controlHandler.handleControlRequest(req, emit);
-                if (resp) stdin.write(resp + "\n");
+                if (resp) {
+                  stdin.write(resp + "\n");
+                }
               });
+
             return; // Async path handles the response.
           }
         }
@@ -348,11 +409,13 @@ export async function startAgent(
         if (autoResponse) {
           stdin.write(autoResponse + "\n");
         }
+
         return; // Don't forward control_requests to renderer.
       }
 
       if (parsed.type === "control_cancel_request") {
         controlHandler.cancelRequest(parsed.request_id ?? "", emit);
+
         return; // Don't forward cancel requests to renderer.
       }
     }
@@ -370,13 +433,16 @@ export async function startAgent(
       session.status = exitCode === 0 ? "stopped" : "error";
     }
 
-    // Release the simulator reservation (async, fire-and-forget).
+    // Release device reservations (async, fire-and-forget).
     simulatorPool.releaseSimulator(agentId).catch((e) => {
-      console.warn(`[agent:${agentId}] simulator release failed: ${String(e)}`);
+      warn(`[agent:${agentId}] simulator release failed: ${String(e)}`);
+    });
+    webBrowserPool.releaseBrowser(agentId).catch((e) => {
+      warn(`[agent:${agentId}] web browser release failed: ${String(e)}`);
     });
 
     getMainWindow()?.webContents.send(`agent:exit:${agentId}`, exitCode);
-    console.info(`[agent:${agentId}] process exited with code ${exitCode}`);
+    info(`[agent:${agentId}] process exited with code ${exitCode}`);
   });
 
   const session: AgentSession = {
@@ -390,16 +456,36 @@ export async function startAgent(
 
   appState.agents.set(agentId, session);
 
-  // Load project-level agent prompt from .stagehand.json (if present).
+  // Load project-level config from .stagehand.json (if present).
   let projectPrompt: string | null = null;
+  let browserUrl: string | null = null;
+  let configPlatforms: RuntimePlatform[] | null = null;
   try {
     const config = loadStagehandConfig(workspace.repo_root);
     projectPrompt = config.agent_prompt ?? null;
+    browserUrl = config.browser_url ?? null;
+    configPlatforms = config.platforms ?? null;
   } catch {
     // Config missing or invalid — non-fatal, skip project prompt.
   }
 
-  // Combine prompts: kind-specific → project context → conductor skill → project-level → caller-provided.
+  // Resolve which runtime sections to emit: explicit override (from
+  // spawn_agent) wins over `.stagehand.json`, which wins over the full
+  // triple fallback.
+  const resolvedPlatforms =
+    platformsOverride && platformsOverride.length > 0
+      ? platformsOverride
+      : (configPlatforms ?? ["ios", "android", "web"]);
+
+  const runtimeSection = buildRuntimeSection({
+    platforms: new Set(resolvedPlatforms),
+    iosReservation: appState.simulatorReservations.get(agentId) ?? null,
+    androidDevice: appState.androidDevice,
+    browserSession: appState.browserSessions.get(workspaceId) ?? null,
+    browserUrl,
+  });
+
+  // Combine prompts: kind-specific → project context → conductor skill → project-level → runtime → caller-provided.
   const systemPrompt = getSystemPromptForKind(workspace.kind);
   const conductorSkill = getConductorSkill();
   const projectContext = `## Current Project\n\nYou are working in **${workspace.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${workspace.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
@@ -408,7 +494,7 @@ export async function startAgent(
     projectContext,
     conductorSkill,
     projectPrompt,
-    "## Simulator\n\nDo not call `conductor start-device` — a simulator will be provisioned automatically when you first use conductor.",
+    runtimeSection,
     appendSystemPrompt,
   ]
     .filter(Boolean)
@@ -422,7 +508,7 @@ export async function startAgent(
   stdin.write(initRequest + "\n");
 
   emitAgentStatus(agentId, "running");
-  console.info(`[agent:${agentId}] started for workspace ${workspaceId}`);
+  info(`[agent:${agentId}] started for workspace ${workspaceId}`);
 
   return {
     agent_id: agentId,
@@ -452,19 +538,20 @@ export async function stopAgent(agentId: string): Promise<void> {
     session.child.kill();
   } catch (e) {
     // The process may have already exited; treat as non-fatal.
-    console.info(`[agent:${agentId}] child.kill() returned: ${String(e)}`);
+    info(`[agent:${agentId}] child.kill() returned: ${String(e)}`);
   }
 
   // Cleanup the control handler before removing the session.
   session.controlHandler?.cleanup();
 
-  // Release the simulator reservation and clean up the device.
+  // Release device reservations and clean up.
   await simulatorPool.releaseSimulator(agentId);
+  await webBrowserPool.releaseBrowser(agentId);
 
   appState.agents.delete(agentId);
 
   emitAgentStatus(agentId, "stopped");
-  console.info(`[agent:${agentId}] stopped`);
+  info(`[agent:${agentId}] stopped`);
 }
 
 // ---------------------------------------------------------------------------
@@ -495,7 +582,7 @@ export function interruptAgent(agentId: string): void {
     throw `Failed to send SIGINT to agent ${agentId} (pid ${pid}): ${String(e)}`;
   }
 
-  console.info(`[agent:${agentId}] sent SIGINT (pid ${pid})`);
+  info(`[agent:${agentId}] sent SIGINT (pid ${pid})`);
 }
 
 // ---------------------------------------------------------------------------
@@ -523,7 +610,7 @@ export interface ImageAttachment {
 export function sendAgentMessage(
   agentId: string,
   message: string,
-  images?: Array<ImageAttachment>,
+  images?: ImageAttachment[],
 ): void {
   const session = appState.agents.get(agentId);
   if (!session) {
@@ -572,18 +659,24 @@ export async function setAgentModel(
   model: string,
 ): Promise<void> {
   const session = appState.agents.get(agentId);
-  if (!session) throw `No agent found: ${agentId}`;
-  if (session.status !== "running") throw `Agent is not running: ${agentId}`;
+  if (!session) {
+    throw `No agent found: ${agentId}`;
+  }
+  if (session.status !== "running") {
+    throw `Agent is not running: ${agentId}`;
+  }
 
   const handler = session.controlHandler;
-  if (!handler) throw `Agent has no control handler: ${agentId}`;
+  if (!handler) {
+    throw `Agent has no control handler: ${agentId}`;
+  }
 
   const [json, promise] = handler.buildSetModelRequest(model);
   session.stdin.write(json + "\n");
   await promise;
 
   getMainWindow()?.webContents.send(`agent:model-changed:${agentId}`, model);
-  console.info(`[agent:${agentId}] model changed to ${model}`);
+  info(`[agent:${agentId}] model changed to ${model}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -604,11 +697,17 @@ export async function setAgentPermissionMode(
   mode: string,
 ): Promise<void> {
   const session = appState.agents.get(agentId);
-  if (!session) throw `No agent found: ${agentId}`;
-  if (session.status !== "running") throw `Agent is not running: ${agentId}`;
+  if (!session) {
+    throw `No agent found: ${agentId}`;
+  }
+  if (session.status !== "running") {
+    throw `Agent is not running: ${agentId}`;
+  }
 
   const handler = session.controlHandler;
-  if (!handler) throw `Agent has no control handler: ${agentId}`;
+  if (!handler) {
+    throw `Agent has no control handler: ${agentId}`;
+  }
 
   const [json, promise] = handler.buildSetPermissionModeRequest(mode);
   session.stdin.write(json + "\n");
@@ -618,7 +717,7 @@ export async function setAgentPermissionMode(
     `agent:permission-mode-changed:${agentId}`,
     mode,
   );
-  console.info(`[agent:${agentId}] permission mode changed to ${mode}`);
+  info(`[agent:${agentId}] permission mode changed to ${mode}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -639,6 +738,7 @@ export function listAgents(workspaceId: string): AgentInfo[] {
       });
     }
   }
+
   return result;
 }
 
@@ -688,6 +788,115 @@ export function respondToPermission(
 // ---------------------------------------------------------------------------
 
 /**
+ * Context driving which runtime sections (iOS / Android / Web) are emitted
+ * in the agent system prompt and which specifics (device UDID, booted
+ * Android serial, live CDP session) are interpolated into them.
+ */
+interface RuntimeContext {
+  platforms: Set<RuntimePlatform>;
+  iosReservation: SimulatorReservation | null;
+  androidDevice: AndroidDeviceSession | null;
+  browserSession: BrowserSession | null;
+  browserUrl: string | null;
+}
+
+/**
+ * Build the "Runtime Environment" system prompt section, tailored to the
+ * platforms this workspace actually targets and whatever devices are already
+ * attached/reserved at agent start. Falls back to the full triple when
+ * `.stagehand.json` does not declare `platforms`.
+ */
+function buildRuntimeSection(ctx: RuntimeContext): string {
+  const {
+    platforms,
+    iosReservation,
+    androidDevice,
+    browserSession,
+    browserUrl,
+  } = ctx;
+  const lines: string[] = [
+    "## Runtime Environment",
+    "",
+    "You are running inside **Stagehand**, an agentic IDE. The user can see your code editor, a terminal, and one or more **runtime views** side by side. These runtime views show the live state of the app or website you are working on — the user is looking at them right now.",
+  ];
+
+  if (platforms.has("ios")) {
+    lines.push("", "### iOS Simulator", "");
+    if (iosReservation) {
+      lines.push(
+        `Your iOS simulator is **${iosReservation.deviceName}** (UDID \`${iosReservation.udid}\`) — reserved exclusively for this agent. Conductor will target it automatically; do **not** call \`conductor start-device\` yourself.`,
+      );
+    } else {
+      lines.push(
+        "An iOS simulator is attached to your workspace. It will be provisioned automatically the first time you run a `conductor` command — do **not** call `conductor start-device` yourself.",
+      );
+    }
+  }
+
+  if (platforms.has("android")) {
+    lines.push("", "### Android Emulator", "");
+    if (androidDevice) {
+      lines.push(
+        `An Android ${androidDevice.type} **${androidDevice.deviceName}** (serial \`${androidDevice.serial}\`) is booted. Target it with \`conductor <command> --device ${androidDevice.serial}\`.`,
+      );
+    } else {
+      lines.push(
+        "An Android emulator may be available. Use `conductor list-devices` to check for booted Android devices. Conductor commands work the same way for Android — just target the Android device ID with `--device`.",
+      );
+    }
+  }
+
+  if (platforms.has("web")) {
+    const browserDefault = browserUrl
+      ? `, currently loaded at **${browserUrl}**`
+      : "";
+    const cdpNote = browserSession
+      ? " A live CDP session is already wired to this workspace's webview."
+      : "";
+    lines.push(
+      "",
+      "### Web Browser",
+      "",
+      `A web browser view is attached to your workspace${browserDefault}.${cdpNote} The user can see this browser view in the runtime panel. When the user asks about "the website", "the page", or "what site we're on", they are referring to this web browser view.`,
+      "",
+      "To interact with the web browser view, use `conductor` with `--device web`:",
+      "- `conductor inspect --device web` — see what's on the web page (ARIA tree, element names)",
+      "- `conductor take-screenshot --device web` — capture the web browser view",
+      '- `conductor tap-on "element" --device web` — click an element in the web page',
+      '- `conductor input-text "text" --device web` — type text into the focused field',
+      "- `conductor open-link <url> --device web` — navigate the web browser to a URL",
+      "",
+      "Stagehand wires `--device web` directly to this workspace's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
+    );
+  }
+
+  lines.push("", "### Using conductor", "");
+  lines.push(
+    "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor cheat-sheet` for a quick command reference or `conductor --help` for full usage.",
+    "",
+  );
+  if (platforms.has("ios")) {
+    lines.push(
+      "- **iOS simulator**: `conductor <command>` (no `--device` flag needed — auto-provisioned on first use)",
+    );
+  }
+  if (platforms.has("android")) {
+    lines.push(
+      "- **Android emulator**: `conductor <command> --device <android-id>`",
+    );
+  }
+  if (platforms.has("web")) {
+    lines.push("- **Web browser**: `conductor <command> --device web`");
+  }
+  lines.push(
+    "",
+    "When the user asks about what they see, what's on screen, or what the app/website is showing, use conductor to answer from the device's current state.",
+  );
+
+  return lines.join("\n");
+}
+
+/**
  * Emit an `agent:status:{agentId}` event to the renderer.
  */
 function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
@@ -705,7 +914,7 @@ function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
  */
 function buildUserMessagePayload(
   text: string,
-  images: Array<ImageAttachment>,
+  images: ImageAttachment[],
 ): string {
   const contentBlocks: string[] = [];
 
@@ -727,7 +936,6 @@ function buildUserMessagePayload(
  * Minimal JSON string escaper for embedding text in a JSON string literal.
  *
  * Handles all characters required to be escaped by the JSON specification.
- * Port of the Rust `escape_json_string` function in `stream.rs`.
  */
 function escapeJsonString(s: string): string {
   let out = "";
@@ -752,5 +960,6 @@ function escapeJsonString(s: string): string {
       out += ch;
     }
   }
+
   return out;
 }

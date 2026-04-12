@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { parseDiff, mergeStaged, buildPartialPatch } from "./diffParser";
+import {
+  buildPartialPatch,
+  gitIndexPath,
+  mergeStaged,
+  parseDiff,
+} from "./diffParser";
 
 const SIMPLE_DIFF = `diff --git a/src/main.ts b/src/main.ts
 --- a/src/main.ts
@@ -42,6 +47,25 @@ const MULTI_HUNK_DIFF = `diff --git a/file.ts b/file.ts
  ten
 -removed
  twelve
+`;
+
+/** Git omits ---/+++ for binary files; paths only appear on diff --git / Binary lines. */
+const BINARY_DIFF = `diff --git a/assets/logo.png b/assets/logo.png
+index 1111111..2222222 100644
+Binary files a/assets/logo.png and b/assets/logo.png differ
+`;
+
+const BINARY_ADD_DIFF = `diff --git a/new.bin b/new.bin
+new file mode 100644
+index 0000000..3333333
+Binary files /dev/null and b/new.bin differ
+`;
+
+/** Some renames omit ---/+++ when there is no hunk; paths only appear on rename lines. */
+const RENAME_HEADER_ONLY = `diff --git a/oldname.txt b/newname.txt
+similarity index 100%
+rename from oldname.txt
+rename to newname.txt
 `;
 
 describe("parseDiff", () => {
@@ -117,6 +141,32 @@ describe("parseDiff", () => {
     expect(patch).toContain("@@ -1,3 +1,4 @@");
     expect(patch).toContain("+added-top");
   });
+
+  it("parses binary diffs without ---/+++ lines", () => {
+    const files = parseDiff(BINARY_DIFF);
+    expect(files).toHaveLength(1);
+    expect(files[0].oldPath).toBe("assets/logo.png");
+    expect(files[0].newPath).toBe("assets/logo.png");
+    expect(files[0].status).toBe("M");
+    expect(files[0].hunks).toHaveLength(0);
+  });
+
+  it("parses new binary files (diff --git + Binary files /dev/null)", () => {
+    const files = parseDiff(BINARY_ADD_DIFF);
+    expect(files).toHaveLength(1);
+    expect(files[0].oldPath).toBe("new.bin");
+    expect(files[0].newPath).toBe("new.bin");
+    expect(files[0].status).toBe("M");
+  });
+
+  it("parses rename metadata when ---/+++ are missing", () => {
+    const files = parseDiff(RENAME_HEADER_ONLY);
+    expect(files).toHaveLength(1);
+    expect(files[0].oldPath).toBe("oldname.txt");
+    expect(files[0].newPath).toBe("newname.txt");
+    expect(files[0].status).toBe("R");
+    expect(gitIndexPath(files[0])).toBe("newname.txt");
+  });
 });
 
 describe("mergeStaged", () => {
@@ -138,6 +188,33 @@ describe("mergeStaged", () => {
     const firstHunkOnly = full[0].hunks[0].patch;
     const merged = mergeStaged(full, firstHunkOnly);
     expect(merged[0].staged).toBe("partial");
+  });
+
+  /** `git diff --cached` after `git add newname` only — index has an add, not a rename record yet. */
+  const RENAME_STAGED_AS_ADD = `diff --git a/newname.txt b/newname.txt
+new file mode 100644
+--- /dev/null
++++ b/newname.txt
+@@ -0,0 +1 @@
++hello
+`;
+
+  it("treats pure rename (no @@ hunk in HEAD) as fully staged when cached matches", () => {
+    const full = parseDiff(RENAME_HEADER_ONLY);
+    const merged = mergeStaged(full, RENAME_HEADER_ONLY);
+    expect(merged[0].staged).toBe("full");
+  });
+
+  it("marks partial when rename has no hunk in HEAD but the new path is staged as added first", () => {
+    const full = parseDiff(RENAME_HEADER_ONLY);
+    const merged = mergeStaged(full, RENAME_STAGED_AS_ADD);
+    expect(merged[0].staged).toBe("partial");
+  });
+
+  it("marks binary modification fully staged when cached matches without hunks", () => {
+    const full = parseDiff(BINARY_DIFF);
+    const merged = mergeStaged(full, BINARY_DIFF);
+    expect(merged[0].staged).toBe("full");
   });
 });
 

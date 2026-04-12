@@ -47,52 +47,64 @@ export function toolActivity(
   toolName: string,
   toolInput?: Record<string, unknown>,
 ): string {
-  if (!toolInput) return toolVerb(toolName);
+  if (!toolInput) {
+    return toolVerb(toolName);
+  }
 
   switch (toolName) {
     case "Edit":
     case "MultiEdit":
     case "Write":
     case "Read": {
-      const fp =
-        (toolInput["file_path"] as string) ?? (toolInput["path"] as string);
+      const fp = (toolInput.file_path as string) ?? (toolInput.path as string);
       if (typeof fp === "string") {
         const basename = fp.split("/").pop() ?? fp;
         const verb = toolName === "Read" ? "Reading" : "Editing";
+
         return toolName === "Write"
           ? `Writing ${basename}`
           : `${verb} ${basename}`;
       }
+
       return toolVerb(toolName);
     }
+
     case "WebFetch": {
-      const url = toolInput["url"];
+      const url = toolInput.url;
       if (typeof url === "string") {
         try {
           const hostname = new URL(url).hostname;
+
           return `Fetching ${hostname}`;
         } catch {
           return toolVerb(toolName);
         }
       }
+
       return toolVerb(toolName);
     }
+
     case "Glob": {
-      const pattern = toolInput["pattern"];
+      const pattern = toolInput.pattern;
       if (typeof pattern === "string") {
         return `Finding ${pattern}`;
       }
+
       return toolVerb(toolName);
     }
+
     case "Grep": {
-      const pattern = toolInput["pattern"];
+      const pattern = toolInput.pattern;
       if (typeof pattern === "string") {
         const short =
           pattern.length > 20 ? pattern.slice(0, 20) + "..." : pattern;
+
         return `Searching for "${short}"`;
       }
+
       return toolVerb(toolName);
     }
+
     default:
       return toolVerb(toolName);
   }
@@ -123,8 +135,8 @@ export interface Activity {
 export function deriveActivity(
   agentStatus: "error" | "idle" | "running" | "stopped" | null | undefined,
   lastEventType: string | undefined,
-  pendingToolName: null | string,
-  pendingToolInput: null | Record<string, unknown>,
+  pendingToolName: string | null,
+  pendingToolInput: Record<string, unknown> | null,
   hasPendingPermission: boolean,
 ): Activity {
   if (!agentStatus || agentStatus === "stopped" || agentStatus === "error") {

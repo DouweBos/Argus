@@ -4,7 +4,7 @@ import fs from "node:fs";
 // Bundle the main process into a single file.
 // electron and node-pty are external (electron is provided at runtime,
 // node-pty is a native addon that must remain in node_modules).
-const external = ["electron", "node-pty"];
+const external = ["electron", "node-pty", "playwright-core"];
 
 const shared = {
   bundle: true,

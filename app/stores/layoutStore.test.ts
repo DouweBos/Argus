@@ -1,18 +1,31 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { useLayoutStore } from "./layoutStore";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  getLayoutState,
+  setLayoutState,
+  setLeftPanelWidth,
+  setToolPanelWidth,
+  toggleLeftSidebar,
+  toggleTool,
+} from "./layoutStore";
 
 describe("layoutStore", () => {
   beforeEach(() => {
-    useLayoutStore.setState({
+    setLayoutState({
       leftSidebarVisible: true,
       leftPanelWidth: 0.18,
       activeToolId: null,
+      lastActiveToolId: "terminal",
+      mountedToolIds: {
+        changes: false,
+        simulator: false,
+        terminal: false,
+      },
       toolPanelWidth: 0.3,
     });
   });
 
   it("has sensible defaults", () => {
-    const state = useLayoutStore.getState();
+    const state = getLayoutState();
     expect(state.leftSidebarVisible).toBe(true);
     expect(state.leftPanelWidth).toBe(0.18);
     expect(state.activeToolId).toBeNull();
@@ -20,36 +33,44 @@ describe("layoutStore", () => {
   });
 
   it("toggles left sidebar", () => {
-    useLayoutStore.getState().toggleLeftSidebar();
-    expect(useLayoutStore.getState().leftSidebarVisible).toBe(false);
-    useLayoutStore.getState().toggleLeftSidebar();
-    expect(useLayoutStore.getState().leftSidebarVisible).toBe(true);
+    toggleLeftSidebar();
+    expect(getLayoutState().leftSidebarVisible).toBe(false);
+    toggleLeftSidebar();
+    expect(getLayoutState().leftSidebarVisible).toBe(true);
   });
 
   it("sets left panel width", () => {
-    useLayoutStore.getState().setLeftPanelWidth(0.25);
-    expect(useLayoutStore.getState().leftPanelWidth).toBe(0.25);
+    setLeftPanelWidth(0.25);
+    expect(getLayoutState().leftPanelWidth).toBe(0.25);
   });
 
   it("toggles tool open", () => {
-    useLayoutStore.getState().toggleTool("terminal");
-    expect(useLayoutStore.getState().activeToolId).toBe("terminal");
+    toggleTool("terminal");
+    expect(getLayoutState().activeToolId).toBe("terminal");
   });
 
   it("toggles same tool closed", () => {
-    useLayoutStore.getState().toggleTool("terminal");
-    useLayoutStore.getState().toggleTool("terminal");
-    expect(useLayoutStore.getState().activeToolId).toBeNull();
+    toggleTool("terminal");
+    toggleTool("terminal");
+    expect(getLayoutState().activeToolId).toBeNull();
   });
 
   it("switches tool when different id toggled", () => {
-    useLayoutStore.getState().toggleTool("terminal");
-    useLayoutStore.getState().toggleTool("simulator");
-    expect(useLayoutStore.getState().activeToolId).toBe("simulator");
+    toggleTool("terminal");
+    toggleTool("simulator");
+    expect(getLayoutState().activeToolId).toBe("simulator");
+  });
+
+  it("marks a tool mounted when opened and keeps it after close", () => {
+    expect(getLayoutState().mountedToolIds.terminal).toBe(false);
+    toggleTool("terminal");
+    expect(getLayoutState().mountedToolIds.terminal).toBe(true);
+    toggleTool("terminal");
+    expect(getLayoutState().mountedToolIds.terminal).toBe(true);
   });
 
   it("sets tool panel width", () => {
-    useLayoutStore.getState().setToolPanelWidth(0.4);
-    expect(useLayoutStore.getState().toolPanelWidth).toBe(0.4);
+    setToolPanelWidth(0.4);
+    expect(getLayoutState().toolPanelWidth).toBe(0.4);
   });
 });

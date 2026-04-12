@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseDragResizeOptions {
   axis: "horizontal" | "vertical";
@@ -12,7 +12,7 @@ interface UseDragResizeOptions {
    * For pixels: (delta) => delta
    */
   mapDelta?: (deltaPx: number) => number;
-  max: (() => number) | number;
+  max: number | (() => number);
   min: number;
 }
 
@@ -52,7 +52,9 @@ export function useDragResize({
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (!dragging.current) return;
+      if (!dragging.current) {
+        return;
+      }
 
       const pos = axis === "vertical" ? e.clientY : e.clientX;
       const rawDelta = pos - startPos.current;
@@ -66,7 +68,9 @@ export function useDragResize({
     };
 
     const onMouseUp = () => {
-      if (!dragging.current) return;
+      if (!dragging.current) {
+        return;
+      }
       dragging.current = false;
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
@@ -74,6 +78,7 @@ export function useDragResize({
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);

@@ -43,5 +43,6 @@ export function categorizeTools(messages: ConversationMessage[]) {
       }
     }
   }
+
   return categories;
 }

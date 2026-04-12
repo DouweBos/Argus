@@ -120,9 +120,18 @@ export const ANDROID_KEYCODE_MAP: Record<string, number> = {
  */
 export function androidMetaStateFromEvent(e: KeyboardEvent): number {
   let meta = 0;
-  if (e.shiftKey) meta |= 0x1;
-  if (e.altKey) meta |= 0x2;
-  if (e.ctrlKey) meta |= 0x1000;
-  if (e.metaKey) meta |= 0x10000;
+  if (e.shiftKey) {
+    meta |= 0x1;
+  }
+  if (e.altKey) {
+    meta |= 0x2;
+  }
+  if (e.ctrlKey) {
+    meta |= 0x1000;
+  }
+  if (e.metaKey) {
+    meta |= 0x10000;
+  }
+
   return meta;
 }

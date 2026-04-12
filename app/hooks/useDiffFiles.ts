@@ -1,21 +1,21 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type DiffFile, mergeStaged, parseDiff } from "../lib/diffParser";
 import {
+  getWorkspaceConflicts,
   getWorkspaceFullDiff,
   getWorkspaceStagedDiff,
   getWorkspaceUntrackedDiff,
-  getWorkspaceConflicts,
   watchWorkspace,
 } from "../lib/ipc";
 import { useIpcEvent } from "./useIpcEvent";
-import { parseDiff, mergeStaged, type DiffFile } from "../lib/diffParser";
 
 interface UseDiffFilesOptions {
-  baseBranch?: null | string;
+  baseBranch?: string | null;
 }
 
 interface UseDiffFilesResult {
   conflictFiles: string[];
-  error: null | string;
+  error: string | null;
   files: DiffFile[];
   isLoading: boolean;
   refetch: () => Promise<void>;
@@ -26,16 +26,17 @@ export function useDiffFiles(
   options?: UseDiffFilesOptions,
 ): UseDiffFilesResult {
   const baseBranch = options?.baseBranch;
-  const [fullDiff, setFullDiff] = useState<null | string>(null);
-  const [stagedDiff, setStagedDiff] = useState<null | string>(null);
-  const [untrackedDiff, setUntrackedDiff] = useState<null | string>(null);
+  const [fullDiff, setFullDiff] = useState<string | null>(null);
+  const [stagedDiff, setStagedDiff] = useState<string | null>(null);
+  const [untrackedDiff, setUntrackedDiff] = useState<string | null>(null);
   const [conflictFiles, setConflictFiles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<null | string>(null);
+  const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(true);
 
   useEffect(() => {
     isMounted.current = true;
+
     return () => {
       isMounted.current = false;
     };
@@ -71,9 +72,13 @@ export function useDiffFiles(
     } else {
       try {
         const conflicts = await getWorkspaceConflicts(workspaceId);
-        if (isMounted.current) setConflictFiles(conflicts);
+        if (isMounted.current) {
+          setConflictFiles(conflicts);
+        }
       } catch {
-        if (isMounted.current) setConflictFiles([]);
+        if (isMounted.current) {
+          setConflictFiles([]);
+        }
       }
     }
   }, [workspaceId, baseBranch]);
@@ -92,7 +97,9 @@ export function useDiffFiles(
   });
 
   const files = useMemo(() => {
-    if (!fullDiff && !untrackedDiff) return [];
+    if (!fullDiff && !untrackedDiff) {
+      return [];
+    }
     const parsed = fullDiff ? parseDiff(fullDiff) : [];
     const merged = stagedDiff ? mergeStaged(parsed, stagedDiff) : parsed;
     if (untrackedDiff && untrackedDiff.trim()) {
@@ -101,8 +108,10 @@ export function useDiffFiles(
         f.staged = "none";
         f.status = "A";
       }
+
       return [...merged, ...untracked];
     }
+
     return merged;
   }, [fullDiff, stagedDiff, untrackedDiff]);
 

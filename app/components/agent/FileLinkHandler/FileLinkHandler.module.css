@@ -1,0 +1,15 @@
+.container :global(.file-link) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cmdActive :global(.file-link) {
+  cursor: pointer;
+  color: var(--color-accent, #4da3ff);
+}
+
+.cmdActive :global(.file-link):hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}

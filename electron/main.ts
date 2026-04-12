@@ -5,18 +5,38 @@
  * index.html (prod), and wires up IPC handlers.
  */
 
-import { app, BrowserWindow, net, protocol, session, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  nativeTheme,
+  net,
+  protocol,
+  session,
+  shell,
+} from "electron";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { log as emitLog } from "../app/lib/logger";
 import { registerIpcHandlers } from "./ipc";
+import { stopAllScreencasts } from "./services/browser/cdpScreencast";
+import { setColorScheme } from "./services/browser/conductorInput";
+import {
+  startMjpegServer,
+  stopMjpegServer,
+} from "./services/browser/mjpegServer";
 import { installConductor } from "./services/cli/conductorInstaller";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
+import { appState } from "./state";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { refreshAllBranches } from "./services/workspace/watcher";
 
-// Register the stagehand-ext:// protocol as privileged before app is ready.
-// This lets the renderer fetch extension files via URL.
+// Remote debugging port is no longer needed — Conductor now owns the browser
+// and Stagehand connects via CDP to Conductor's Chromium instance.
+
+// Register custom protocols as privileged before app is ready.
+// This lets the renderer fetch extension files and workspace images via URL.
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "stagehand-ext",
@@ -30,6 +50,16 @@ protocol.registerSchemesAsPrivileged([
   },
   {
     scheme: "extension-file",
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      bypassCSP: true,
+    },
+  },
+  {
+    scheme: "stagehand-file",
     privileges: {
       standard: true,
       secure: true,
@@ -57,7 +87,7 @@ const logStream = fs.createWriteStream(logPath, { flags: "a" });
 function log(msg: string, ...args: unknown[]): void {
   const line = `[${new Date().toISOString()}] ${msg} ${args.map((a) => String(a)).join(" ")}\n`;
   logStream.write(line);
-  console.log(`[Stagehand] ${msg}`, ...args);
+  emitLog(`[Stagehand] ${msg}`, ...args);
 }
 
 function createWindow(): void {
@@ -112,6 +142,7 @@ function createWindow(): void {
   // Open external links in the system browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
+
     return { action: "deny" };
   });
 
@@ -136,15 +167,30 @@ app.on("window-all-closed", () => {
 // macOS: Cmd+Q triggers before-quit before closing windows. Track it so
 // window-all-closed (which fires after) knows not to keep the app alive.
 let isQuitting = false;
-app.on("before-quit", () => {
+app.on("before-quit", (e) => {
+  if (isQuitting) {
+    return;
+  }
   log("before-quit fired, setting isQuitting=true");
   isQuitting = true;
   stopMcpServer();
-  // The @codingame/monaco-vscode-api registers a beforeunload handler via
-  // addEventListener that cancels the first close. Destroy the window directly
-  // to bypass it — we handle our own save state, not VS Code's.
+  stopMjpegServer();
+  stopAllScreencasts();
+  // Give the renderer a moment to save active conversations before destroying
+  // the window. The renderer listens for `app:will-quit` and persists chat
+  // history synchronously via IPC.
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.destroy();
+    e.preventDefault();
+    mainWindow.webContents.send("app:will-quit");
+    setTimeout(() => {
+      // The @codingame/monaco-vscode-api registers a beforeunload handler via
+      // addEventListener that cancels the first close. Destroy the window
+      // directly to bypass it — we handle our own save state, not VS Code's.
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.destroy();
+      }
+      app.quit();
+    }, 300);
   }
 });
 
@@ -175,8 +221,23 @@ app.whenReady().then(() => {
     log("Failed to start MCP server: %s", String(e)),
   );
 
+  // Start the MJPEG server for streaming browser frames via CDP screencast.
+  startMjpegServer().catch((e) =>
+    log("Failed to start MJPEG server: %s", String(e)),
+  );
+
   // Install/update the conductor CLI to ~/.stagehand/bin/conductor.
   installConductor();
+
+  // Sync system dark/light theme to all active Conductor-managed browsers.
+  nativeTheme.on("updated", () => {
+    const scheme = nativeTheme.shouldUseDarkColors ? "dark" : "light";
+    for (const reservation of appState.webBrowserReservations.values()) {
+      setColorScheme(reservation, scheme).catch((e) =>
+        log("setColorScheme failed: %s", String(e)),
+      );
+    }
+  });
 
   // Allowed root directories for extension file serving.
   const extensionRoots = [
@@ -188,6 +249,7 @@ app.whenReady().then(() => {
   /** Validate that a file path falls within an allowed extension directory. */
   function isAllowedExtensionPath(filePath: string): boolean {
     const resolved = path.resolve(filePath);
+
     return extensionRoots.some(
       (root) => resolved.startsWith(root + path.sep) || resolved === root,
     );
@@ -201,6 +263,7 @@ app.whenReady().then(() => {
     if (!isAllowedExtensionPath(filePath)) {
       return new Response("Forbidden", { status: 403 });
     }
+
     return net.fetch(`file://${filePath}`);
   });
 
@@ -212,7 +275,22 @@ app.whenReady().then(() => {
     if (!isAllowedExtensionPath(filePath)) {
       return new Response("Forbidden", { status: 403 });
     }
+
     return net.fetch(`file://${filePath}`);
+  });
+
+  // Serve local files via stagehand-file:// protocol.
+  // Used by the renderer to load full-resolution images from disk (e.g. tool
+  // result screenshots) instead of relying on base64 blobs.
+  // URL format: stagehand-file:///absolute/path/to/file
+  protocol.handle("stagehand-file", (request) => {
+    const url = new URL(request.url);
+    const filePath = decodeURIComponent(url.pathname);
+    if (!fs.existsSync(filePath)) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    return net.fetch(pathToFileURL(filePath).href);
   });
 
   // Set Content-Security-Policy and inject CORP headers for external images.
@@ -237,7 +315,7 @@ app.whenReady().then(() => {
           (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
         "style-src 'self' 'unsafe-inline' stagehand-ext:",
         "font-src 'self' stagehand-ext: data:",
-        "img-src 'self' stagehand-ext: extension-file: data: https: http://127.0.0.1:*",
+        "img-src 'self' stagehand-ext: stagehand-file: extension-file: data: https: http://127.0.0.1:*",
         "connect-src 'self' stagehand-ext: https://open-vsx.org" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
         "worker-src 'self' blob: stagehand-ext:",
@@ -264,3 +342,4 @@ app.whenReady().then(() => {
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
+

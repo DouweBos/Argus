@@ -15,5 +15,6 @@ export function listen<T>(
   const unlisten = window.stagehand.on<T>(event, (payload) => {
     handler({ payload });
   });
+
   return Promise.resolve(unlisten);
 }

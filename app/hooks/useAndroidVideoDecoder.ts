@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
-import { useIpcEvent } from "./useIpcEvent";
 import type { AndroidVideoConfig, AndroidVideoFrame } from "../lib/types";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { error, log } from "@logger";
+import { useIpcEvent } from "./useIpcEvent";
 
 export interface UseAndroidVideoDecoderResult {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -21,7 +22,7 @@ export function useAndroidVideoDecoder(
   active: boolean,
 ): UseAndroidVideoDecoderResult {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const decoderRef = useRef<null | VideoDecoder>(null);
+  const decoderRef = useRef<VideoDecoder | null>(null);
   const dimensionsRef = useRef({ width: 0, height: 0 });
 
   // --- isReceiving via useSyncExternalStore ---
@@ -30,6 +31,7 @@ export function useAndroidVideoDecoder(
 
   const subscribe = useCallback((cb: () => void) => {
     listenersRef.current.add(cb);
+
     return () => {
       listenersRef.current.delete(cb);
     };
@@ -52,6 +54,7 @@ export function useAndroidVideoDecoder(
 
   const subscribeConfigured = useCallback((cb: () => void) => {
     configuredListenersRef.current.add(cb);
+
     return () => {
       configuredListenersRef.current.delete(cb);
     };
@@ -78,6 +81,7 @@ export function useAndroidVideoDecoder(
 
   const subscribeDims = useCallback((cb: () => void) => {
     dimsListenersRef.current.add(cb);
+
     return () => {
       dimsListenersRef.current.delete(cb);
     };
@@ -95,6 +99,7 @@ export function useAndroidVideoDecoder(
       if (decoderRef.current?.state !== "closed") {
         decoderRef.current?.close();
       }
+
       decoderRef.current = null;
       setReceiving(false);
       setConfigured(false);
@@ -130,8 +135,10 @@ export function useAndroidVideoDecoder(
             const cvs = canvasRef.current;
             if (!cvs) {
               frame.close();
+
               return;
             }
+
             // Resize canvas if needed (e.g. rotation)
             if (
               cvs.width !== frame.displayWidth ||
@@ -143,15 +150,17 @@ export function useAndroidVideoDecoder(
               videoHeightRef.current = frame.displayHeight;
               dimsListenersRef.current.forEach((cb) => cb());
             }
+
             const ctx = cvs.getContext("2d");
             if (ctx) {
               ctx.drawImage(frame, 0, 0);
             }
+
             frame.close();
             setReceiving(true);
           },
           error: (e: DOMException) => {
-            console.error("[VideoDecoder] error:", e.name, e.message);
+            error("[VideoDecoder] error:", e.name, e.message);
           },
         });
 
@@ -171,7 +180,7 @@ export function useAndroidVideoDecoder(
 
         decoderRef.current = decoder;
         setConfigured(true);
-        console.log(
+        log(
           `[VideoDecoder] configured: ${config.codec} ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
       },
@@ -184,7 +193,9 @@ export function useAndroidVideoDecoder(
     active ? "android_video_frame" : "",
     useCallback((frame: AndroidVideoFrame) => {
       const decoder = decoderRef.current;
-      if (!decoder || decoder.state !== "configured") return;
+      if (!decoder || decoder.state !== "configured") {
+        return;
+      }
 
       // data may arrive as a plain object from structured clone
       const data =
@@ -199,7 +210,9 @@ export function useAndroidVideoDecoder(
       });
 
       // Drop frames if decoder queue gets too deep
-      if (decoder.decodeQueueSize > 3) return;
+      if (decoder.decodeQueueSize > 3) {
+        return;
+      }
 
       decoder.decode(chunk);
     }, []),

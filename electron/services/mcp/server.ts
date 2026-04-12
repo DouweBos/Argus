@@ -11,31 +11,34 @@
  * to `appState` and all service functions. No proxy layer or IPC needed.
  */
 
-import http from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { z } from "zod";
-
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
-
+import { z } from "zod";
+import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import { startAgent, sendAgentMessage, listAgents } from "../agent/claude";
+import { createTerminal, startTerminal } from "../terminal/multiplexer";
 import {
   createWorkspace,
   deleteWorkspace,
   listWorkspaces,
 } from "../workspace/manager";
+import { loadStagehandConfig } from "../workspace/setup";
 import {
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
   readStagehandConfig,
   writeStagehandConfig,
 } from "../workspace/workspaceOps";
-import { startAgent, sendAgentMessage, listAgents } from "../agent/claude";
-import { createTerminal, startTerminal } from "../terminal/multiplexer";
-import { loadStagehandConfig } from "../workspace/setup";
-import { isGitRepo, ensureRepoRegistered, collectAllProjects } from "./projects";
+import {
+  isGitRepo,
+  ensureRepoRegistered,
+  collectAllProjects,
+} from "./projects";
 
 // ---------------------------------------------------------------------------
 // State
@@ -55,16 +58,22 @@ let mcpPort: number | null = null;
 function resolveWorkspace(idOrBranch: string) {
   // Try by ID first.
   const byId = appState.workspaces.get(idOrBranch);
-  if (byId) return byId;
+  if (byId) {
+    return byId;
+  }
 
   // Search by branch name.
   for (const ws of appState.workspaces.values()) {
-    if (ws.branch === idOrBranch) return ws;
+    if (ws.branch === idOrBranch) {
+      return ws;
+    }
   }
 
   // Search by display_name.
   for (const ws of appState.workspaces.values()) {
-    if (ws.display_name === idOrBranch) return ws;
+    if (ws.display_name === idOrBranch) {
+      return ws;
+    }
   }
 
   return null;
@@ -72,12 +81,16 @@ function resolveWorkspace(idOrBranch: string) {
 
 /** Resolve the repo_root for a workspace or fall back to the first repo root. */
 function resolveRepoRoot(repoRoot?: string): string {
-  if (repoRoot) return repoRoot;
+  if (repoRoot) {
+    return repoRoot;
+  }
   const first = appState.repoRoots.values().next();
-  if (first.done) throw new Error("No repository roots registered");
+  if (first.done) {
+    throw new Error("No repository roots registered");
+  }
+
   return first.value;
 }
-
 
 // ---------------------------------------------------------------------------
 // Tool registration
@@ -100,6 +113,7 @@ export function createMcpServer(): McpServer {
     {},
     async () => {
       const projects = collectAllProjects();
+
       return {
         content: [
           {
@@ -122,13 +136,17 @@ export function createMcpServer(): McpServer {
       repo_root: z
         .string()
         .optional()
-        .describe("Absolute path to the project whose config to update. Defaults to the first registered repo."),
+        .describe(
+          "Absolute path to the project whose config to update. Defaults to the first registered repo.",
+        ),
       project_path: z
         .string()
         .describe("Absolute path to the related project to add."),
       description: z
         .string()
-        .describe("Human-readable description of what this related project is (e.g. 'Backend API server', 'Shared component library')."),
+        .describe(
+          "Human-readable description of what this related project is (e.g. 'Backend API server', 'Shared component library').",
+        ),
     },
     async ({ repo_root, project_path, description }) => {
       const repoRoot = resolveRepoRoot(repo_root);
@@ -136,13 +154,23 @@ export function createMcpServer(): McpServer {
       // Validate the target path exists and is a git repo.
       if (!fs.existsSync(project_path)) {
         return {
-          content: [{ type: "text" as const, text: `Path does not exist: ${project_path}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Path does not exist: ${project_path}`,
+            },
+          ],
           isError: true,
         };
       }
       if (!isGitRepo(project_path)) {
         return {
-          content: [{ type: "text" as const, text: `Not a git repository: ${project_path}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Not a git repository: ${project_path}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -200,18 +228,24 @@ export function createMcpServer(): McpServer {
     {
       name: z
         .string()
-        .describe("Display name for the workspace (will be slugified into a branch name)"),
+        .describe(
+          "Display name for the workspace (will be slugified into a branch name)",
+        ),
       description: z
         .string()
         .optional()
         .describe("Human-readable description of what this workspace is for"),
       repo_root: z
         .string()
-        .describe("Absolute path to the repository root. Use the repo_root from your system prompt for the current project, or a path from list_projects for another project."),
+        .describe(
+          "Absolute path to the repository root. Use the repo_root from your system prompt for the current project, or a path from list_projects for another project.",
+        ),
       base_branch: z
         .string()
         .optional()
-        .describe("Branch to fork from. Defaults to the repo root HEAD. Use this to create a child worktree off another worktree's branch."),
+        .describe(
+          "Branch to fork from. Defaults to the repo root HEAD. Use this to create a child worktree off another worktree's branch.",
+        ),
     },
     async ({ name, description, repo_root, base_branch }) => {
       const repoRoot = repo_root;
@@ -228,7 +262,13 @@ export function createMcpServer(): McpServer {
       const suffix = crypto.randomUUID().slice(0, 6);
       const uniqueName = `${name}-${suffix}`;
 
-      const ws = await createWorkspace(repoRoot, uniqueName, description ?? "", false, base_branch);
+      const ws = await createWorkspace(
+        repoRoot,
+        uniqueName,
+        description ?? "",
+        false,
+        base_branch,
+      );
 
       // Notify the renderer so the sidebar updates immediately.
       getMainWindow()?.webContents.send("workspace:created", {
@@ -275,7 +315,9 @@ export function createMcpServer(): McpServer {
       repo_root: z
         .string()
         .optional()
-        .describe("Absolute path to the repository root. Defaults to the first registered repo."),
+        .describe(
+          "Absolute path to the repository root. Defaults to the first registered repo.",
+        ),
     },
     async ({ repo_root }) => {
       const repoRoot = resolveRepoRoot(repo_root);
@@ -290,6 +332,7 @@ export function createMcpServer(): McpServer {
         status: ws.status,
         base_branch: ws.base_branch,
       }));
+
       return {
         content: [
           {
@@ -321,7 +364,12 @@ export function createMcpServer(): McpServer {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
-          content: [{ type: "text" as const, text: `Workspace not found: ${workspace}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace not found: ${workspace}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -353,20 +401,35 @@ export function createMcpServer(): McpServer {
     {
       workspace: z
         .string()
-        .describe("Workspace ID, branch name, or display name to run the agent in"),
+        .describe(
+          "Workspace ID, branch name, or display name to run the agent in",
+        ),
       prompt: z
         .string()
         .describe("Initial message/instructions to send to the agent"),
       permission_mode: z
         .string()
         .optional()
-        .describe("Permission mode for the agent (e.g. 'auto', 'default'). Defaults to the app's setting."),
+        .describe(
+          "Permission mode for the agent (e.g. 'auto', 'default'). Defaults to the app's setting.",
+        ),
+      platforms: z
+        .array(z.enum(["ios", "android", "web"]))
+        .optional()
+        .describe(
+          "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.stagehand.json` `platforms` field, or all three if unset.",
+        ),
     },
-    async ({ workspace, prompt, permission_mode }) => {
+    async ({ workspace, prompt, permission_mode, platforms }) => {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
-          content: [{ type: "text" as const, text: `Workspace not found: ${workspace}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace not found: ${workspace}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -377,7 +440,17 @@ export function createMcpServer(): McpServer {
         permission_mode,
         undefined, // resumeSessionId
         undefined, // appendSystemPrompt
+        platforms, // platformsOverride
       );
+
+      // Notify the renderer so the agent store and event listeners pick up
+      // the new agent — normally done by the UI-initiated start_agent path.
+      getMainWindow()?.webContents.send("agent:started", {
+        agent_id: agentInfo.agent_id,
+        workspace_id: agentInfo.workspace_id,
+        status: agentInfo.status,
+        permission_mode,
+      });
 
       // Send the initial prompt after startup.
       sendAgentMessage(agentInfo.agent_id, prompt);
@@ -413,7 +486,9 @@ export function createMcpServer(): McpServer {
       workspace: z
         .string()
         .optional()
-        .describe("Optional workspace ID, branch name, or display name to filter by"),
+        .describe(
+          "Optional workspace ID, branch name, or display name to filter by",
+        ),
     },
     async ({ workspace }) => {
       let agents;
@@ -421,7 +496,12 @@ export function createMcpServer(): McpServer {
         const ws = resolveWorkspace(workspace);
         if (!ws) {
           return {
-            content: [{ type: "text" as const, text: `Workspace not found: ${workspace}` }],
+            content: [
+              {
+                type: "text" as const,
+                text: `Workspace not found: ${workspace}`,
+              },
+            ],
             isError: true,
           };
         }
@@ -437,6 +517,7 @@ export function createMcpServer(): McpServer {
       // Enrich with workspace info.
       const enriched = agents.map((a) => {
         const ws = appState.workspaces.get(a.workspace_id);
+
         return {
           agent_id: a.agent_id,
           workspace_id: a.workspace_id,
@@ -450,9 +531,10 @@ export function createMcpServer(): McpServer {
         content: [
           {
             type: "text" as const,
-            text: enriched.length > 0
-              ? JSON.stringify(enriched, null, 2)
-              : "No agents running.",
+            text:
+              enriched.length > 0
+                ? JSON.stringify(enriched, null, 2)
+                : "No agents running.",
           },
         ],
       };
@@ -473,7 +555,9 @@ export function createMcpServer(): McpServer {
       const session = appState.agents.get(agent_id);
       if (!session) {
         return {
-          content: [{ type: "text" as const, text: `Agent not found: ${agent_id}` }],
+          content: [
+            { type: "text" as const, text: `Agent not found: ${agent_id}` },
+          ],
           isError: true,
         };
       }
@@ -514,6 +598,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ agent_id, message }) => {
       sendAgentMessage(agent_id, message);
+
       return {
         content: [
           {
@@ -541,7 +626,12 @@ export function createMcpServer(): McpServer {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
-          content: [{ type: "text" as const, text: `Workspace not found: ${workspace}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace not found: ${workspace}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -568,8 +658,7 @@ export function createMcpServer(): McpServer {
 
       const command =
         typeof runConfig === "string" ? runConfig : runConfig.command;
-      const dir =
-        typeof runConfig === "string" ? undefined : runConfig.dir;
+      const dir = typeof runConfig === "string" ? undefined : runConfig.dir;
 
       const sessionId = createTerminal(ws.id, dir, command);
       startTerminal(sessionId, 120, 40);
@@ -610,7 +699,12 @@ export function createMcpServer(): McpServer {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
-          content: [{ type: "text" as const, text: `Workspace not found: ${workspace}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace not found: ${workspace}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -655,7 +749,12 @@ export function createMcpServer(): McpServer {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
-          content: [{ type: "text" as const, text: `Workspace not found: ${workspace}` }],
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace not found: ${workspace}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -699,6 +798,7 @@ export async function startMcpServer(): Promise<number> {
     if (url.pathname !== "/mcp") {
       res.writeHead(404);
       res.end("Not Found");
+
       return;
     }
 
@@ -719,7 +819,9 @@ export async function startMcpServer(): Promise<number> {
 
         transport.onclose = () => {
           const sid = transport!.sessionId;
-          if (sid) transports.delete(sid);
+          if (sid) {
+            transports.delete(sid);
+          }
         };
 
         await mcpServer.connect(transport);
@@ -739,6 +841,7 @@ export async function startMcpServer(): Promise<number> {
       if (!transport) {
         res.writeHead(400);
         res.end("No active session");
+
         return;
       }
       await transport.handleRequest(req, res);
@@ -764,7 +867,7 @@ export async function startMcpServer(): Promise<number> {
       const addr = httpServer!.address();
       if (typeof addr === "object" && addr) {
         mcpPort = addr.port;
-        console.info(`[mcp] Stagehand MCP server listening on 127.0.0.1:${mcpPort}`);
+        info(`[mcp] Stagehand MCP server listening on 127.0.0.1:${mcpPort}`);
         resolve(mcpPort);
       } else {
         reject(new Error("Failed to get server address"));
@@ -781,7 +884,7 @@ export function stopMcpServer(): void {
     httpServer.close();
     httpServer = null;
     mcpPort = null;
-    console.info("[mcp] Stagehand MCP server stopped");
+    info("[mcp] Stagehand MCP server stopped");
   }
 }
 

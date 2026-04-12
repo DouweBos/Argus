@@ -12,7 +12,7 @@ function fakeEvent(overrides: Partial<KeyboardEvent> = {}): KeyboardEvent {
   } as unknown as KeyboardEvent;
 }
 
-describe("KEYCODE_MAP", () => {
+describe("kEYCODE_MAP", () => {
   it("maps Enter to keycode 36", () => {
     expect(KEYCODE_MAP.Enter).toBe(36);
   });

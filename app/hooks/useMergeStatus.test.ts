@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useMergeStatus } from "./useMergeStatus";
 
 // ---------------------------------------------------------------------------
 // Mock window.stagehand
@@ -12,15 +13,20 @@ const eventListeners = new Map<string, Set<EventHandler>>();
 function emitEvent(event: string, payload: unknown = {}) {
   const handlers = eventListeners.get(event);
   if (handlers) {
-    for (const handler of handlers) handler(payload);
+    for (const handler of handlers) {
+      handler(payload);
+    }
   }
 }
 
 (window as unknown as Record<string, unknown>).stagehand = {
   invoke: vi.fn().mockResolvedValue(undefined),
   on: (event: string, callback: EventHandler) => {
-    if (!eventListeners.has(event)) eventListeners.set(event, new Set());
+    if (!eventListeners.has(event)) {
+      eventListeners.set(event, new Set());
+    }
     eventListeners.get(event)!.add(callback);
+
     return () => {
       eventListeners.get(event)?.delete(callback);
     };
@@ -43,8 +49,6 @@ vi.mock("../lib/ipc", () => ({
   mergeWorkspaceIntoBase: (...args: unknown[]) =>
     mockMergeWorkspaceIntoBase(...args),
 }));
-
-import { useMergeStatus } from "./useMergeStatus";
 
 // ---------------------------------------------------------------------------
 // Tests

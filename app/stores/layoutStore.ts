@@ -2,36 +2,72 @@ import { create } from "zustand";
 
 export type ToolId = "changes" | "simulator" | "terminal";
 
-interface LayoutState {
+interface LayoutStoreData {
   /** Right-side tool rail */
-  activeToolId: null | ToolId;
+  activeToolId: ToolId | null;
   /** Last non-null tool so header stays correct during close animation */
   lastActiveToolId: ToolId;
   /** Panel width fractions (0–1), shared between TitleBar and ResizablePanel */
   leftPanelWidth: number;
   leftSidebarVisible: boolean;
-  setLeftPanelWidth: (w: number) => void;
-
-  setToolPanelWidth: (w: number) => void;
-  toggleLeftSidebar: () => void;
-  toggleTool: (id: ToolId) => void;
+  /** Tools whose panel content has been mounted at least once (lazy mount; stays true). */
+  mountedToolIds: Record<ToolId, boolean>;
   toolPanelWidth: number;
 }
 
-export const useLayoutStore = create<LayoutState>((set) => ({
+const layoutStore = create<LayoutStoreData>(() => ({
   leftSidebarVisible: true,
-  toggleLeftSidebar: () =>
-    set((s) => ({ leftSidebarVisible: !s.leftSidebarVisible })),
   leftPanelWidth: 0.18,
-  setLeftPanelWidth: (w) => set({ leftPanelWidth: w }),
-
   activeToolId: null,
   lastActiveToolId: "terminal",
+  mountedToolIds: {
+    changes: false,
+    simulator: false,
+    terminal: false,
+  },
   toolPanelWidth: 0.3,
-  toggleTool: (id) =>
-    set((s) => ({
-      activeToolId: s.activeToolId === id ? null : id,
-      lastActiveToolId: id,
-    })),
-  setToolPanelWidth: (w) => set({ toolPanelWidth: w }),
 }));
+
+const useLayoutStore = layoutStore;
+
+export const toggleLeftSidebar = () =>
+  layoutStore.setState((s) => ({ leftSidebarVisible: !s.leftSidebarVisible }));
+
+export const setLeftPanelWidth = (w: number) => {
+  layoutStore.setState({ leftPanelWidth: w });
+};
+
+export const toggleTool = (id: ToolId) =>
+  layoutStore.setState((s) => {
+    if (s.activeToolId === id) {
+      return { activeToolId: null };
+    }
+
+    return {
+      activeToolId: id,
+      lastActiveToolId: id,
+      mountedToolIds: { ...s.mountedToolIds, [id]: true },
+    };
+  });
+
+export const setToolPanelWidth = (w: number) => {
+  layoutStore.setState({ toolPanelWidth: w });
+};
+
+export const useLeftSidebarVisible = () =>
+  useLayoutStore((s) => s.leftSidebarVisible);
+
+export const useLeftPanelWidth = () => useLayoutStore((s) => s.leftPanelWidth);
+
+export const useActiveToolId = () => useLayoutStore((s) => s.activeToolId);
+
+export const useLastActiveToolId = () =>
+  useLayoutStore((s) => s.lastActiveToolId);
+
+export const useMountedToolIds = () => useLayoutStore((s) => s.mountedToolIds);
+
+export const useToolPanelWidth = () => useLayoutStore((s) => s.toolPanelWidth);
+
+/** For tests */
+export const getLayoutState = () => layoutStore.getState();
+export const setLayoutState = layoutStore.setState.bind(layoutStore);

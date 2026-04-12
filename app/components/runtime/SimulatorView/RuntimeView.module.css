@@ -1,0 +1,363 @@
+/* Outer layout — wraps title bar + platform view */
+.layout {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Stacking above the off-screen web shell when iOS/Android is selected */
+.nativeSimulatorLayer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Keeps WebBrowserView mounted while iOS/Android is selected (display toggled). */
+.webPersistentShell {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.webPersistentShellVisible {
+  display: flex;
+}
+
+/* Avoid display:none — it tears down the guest webview and reloads when
+   returning to Web. Keep the panel full-size but inert and behind native UI. */
+.webPersistentShellHidden {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.runtimeEmbeddedShell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.runtimeRoot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.runtimeExpandToggle {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.runtimeExpandToggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.runtimeBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.runtimeDialog {
+  position: fixed;
+  inset: 10%;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 24px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.layout:focus,
+.layout:focus-visible {
+  outline: none;
+}
+
+.floatingNavPrimary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Platform toggle (iOS / Android) */
+.platformToggle {
+  display: flex;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 5px;
+  padding: 1px;
+  flex-shrink: 0;
+}
+
+.platformBtn {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.platformBtn:hover {
+  color: var(--text-secondary);
+}
+
+.platformBtnActive {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* iOS phone frame placeholder */
+.phoneFrame {
+  width: 110px;
+  height: 200px;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Dynamic island / notch pill */
+.phoneFrame::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  margin: 9px auto 0;
+  flex-shrink: 0;
+}
+
+.phoneScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 8px 10px;
+  background: var(--bg-primary);
+  border-radius: 14px;
+}
+
+/* Android phone frame placeholder */
+.androidFrame {
+  width: 110px;
+  height: 200px;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Camera punch-hole */
+.androidFrame::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  margin: 8px auto 0;
+  flex-shrink: 0;
+}
+
+.androidScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px 6px 8px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+}
+
+/* Tools-missing placeholder */
+.toolsMissingHint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.toolsMissingTitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.toolsMissingHint code {
+  font-size: 9px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Stream body — wraps canvas when capturing (iOS/Android phone) */
+.streamBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 6px;
+}
+
+.streamBody:focus,
+.streamBody:focus-visible {
+  outline: none;
+}
+
+/* tvOS body — stream + remote side by side */
+.tvBody {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+  padding: 8px;
+  overflow: auto;
+}
+
+.tvBody .canvasContainer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Live canvas container */
+.canvasContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  background: transparent;
+}
+
+.canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+  touch-action: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.tvCanvas {
+  cursor: default;
+}
+
+/* Connecting overlay */
+.connecting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+}
+
+.connecting p {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* TV placeholder frame */
+.tvFrame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tvScreen {
+  width: 160px;
+  height: 100px;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.tvStand {
+  width: 60px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 3px 3px;
+  margin-top: -1px;
+}

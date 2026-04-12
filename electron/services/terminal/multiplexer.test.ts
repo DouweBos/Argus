@@ -1,4 +1,6 @@
+import type { WorkspaceEnvConfig } from "../workspace/models";
 import { describe, expect, it, vi } from "vitest";
+import { workspaceEnvValue, defaultShell } from "./multiplexer";
 
 // Mock node-pty (native module) and other Electron deps
 vi.mock("node-pty", () => ({ spawn: vi.fn() }));
@@ -6,9 +8,6 @@ vi.mock("../../main", () => ({ getMainWindow: () => null }));
 vi.mock("../../state", () => ({
   appState: { workspaces: new Map(), terminals: new Map() },
 }));
-
-import { workspaceEnvValue, defaultShell } from "./multiplexer";
-import type { WorkspaceEnvConfig } from "../workspace/models";
 
 describe("workspaceEnvValue", () => {
   it("uses sequential strategy with envIndex", () => {

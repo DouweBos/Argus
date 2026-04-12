@@ -1,0 +1,110 @@
+.floatingNavActions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.floatingNavUrlSlot {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+}
+
+.urlBar {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 3px 8px;
+  font-family: inherit;
+  transition:
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.urlBar:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.urlBar::placeholder {
+  color: var(--text-muted);
+}
+
+/* Container for the stream body. */
+.browserViewport {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Stream body — wraps the MJPEG img when streaming. */
+.browserStreamBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.browserStreamBody:focus,
+.browserStreamBody:focus-visible {
+  outline: none;
+}
+
+/* Canvas container with pointer capture. */
+.browserCanvasContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  background: transparent;
+}
+
+.browserCanvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+  touch-action: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* Connecting overlay. */
+.browserConnecting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+}
+
+.browserConnecting p {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.browserInline {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}

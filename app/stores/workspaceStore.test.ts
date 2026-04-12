@@ -1,6 +1,20 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { useWorkspaceStore } from "./workspaceStore";
+import type { Project } from "./workspaceStore";
 import type { Workspace } from "../lib/types";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  addProject,
+  addWorkspace,
+  getWorkspaceState,
+  mergeWorkspacesForProject,
+  removeProject,
+  removeWorkspace,
+  selectWorkspace,
+  setProjectBranch,
+  setSetupProgress,
+  setWorkspaceState,
+  toggleProjectCollapsed,
+  updateWorkspace,
+} from "./workspaceStore";
 
 function workspace(overrides: Partial<Workspace> = {}): Workspace {
   return {
@@ -17,7 +31,7 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
 
 describe("workspaceStore", () => {
   beforeEach(() => {
-    useWorkspaceStore.setState({
+    setWorkspaceState({
       projects: [],
       workspaces: [],
       selectedId: null,
@@ -29,87 +43,83 @@ describe("workspaceStore", () => {
 
   describe("projects", () => {
     it("adds a project", () => {
-      useWorkspaceStore.getState().addProject("/home/user/Projects/MyApp");
-      expect(useWorkspaceStore.getState().projects).toHaveLength(1);
-      expect(useWorkspaceStore.getState().projects[0].repoRoot).toBe(
+      addProject("/home/user/Projects/MyApp");
+      expect(getWorkspaceState().projects).toHaveLength(1);
+      expect(getWorkspaceState().projects[0].repoRoot).toBe(
         "/home/user/Projects/MyApp",
       );
     });
 
     it("does not add duplicate projects", () => {
-      useWorkspaceStore.getState().addProject("/home/user/Projects/MyApp");
-      useWorkspaceStore.getState().addProject("/home/user/Projects/MyApp");
-      expect(useWorkspaceStore.getState().projects).toHaveLength(1);
+      addProject("/home/user/Projects/MyApp");
+      addProject("/home/user/Projects/MyApp");
+      expect(getWorkspaceState().projects).toHaveLength(1);
     });
 
     it("removes a project and its workspaces", () => {
-      useWorkspaceStore.getState().addProject("/home/user/Projects/MyApp");
-      useWorkspaceStore.getState().addWorkspace(workspace());
-      useWorkspaceStore.getState().removeProject("/home/user/Projects/MyApp");
-      expect(useWorkspaceStore.getState().projects).toHaveLength(0);
-      expect(useWorkspaceStore.getState().workspaces).toHaveLength(0);
+      addProject("/home/user/Projects/MyApp");
+      addWorkspace(workspace());
+      removeProject("/home/user/Projects/MyApp");
+      expect(getWorkspaceState().projects).toHaveLength(0);
+      expect(getWorkspaceState().workspaces).toHaveLength(0);
     });
 
     it("clears selectedId when removing a project that owns the selected workspace", () => {
-      useWorkspaceStore.getState().addProject("/home/user/Projects/MyApp");
-      useWorkspaceStore.getState().addWorkspace(workspace());
-      useWorkspaceStore.getState().selectWorkspace("ws-1");
-      useWorkspaceStore.getState().removeProject("/home/user/Projects/MyApp");
-      expect(useWorkspaceStore.getState().selectedId).toBeNull();
+      addProject("/home/user/Projects/MyApp");
+      addWorkspace(workspace());
+      selectWorkspace("ws-1");
+      removeProject("/home/user/Projects/MyApp");
+      expect(getWorkspaceState().selectedId).toBeNull();
     });
 
     it("toggles project collapsed state", () => {
-      useWorkspaceStore.getState().addProject("/home/user/Projects/MyApp");
-      expect(useWorkspaceStore.getState().projects[0].isCollapsed).toBe(false);
-      useWorkspaceStore
-        .getState()
-        .toggleProjectCollapsed("/home/user/Projects/MyApp");
-      expect(useWorkspaceStore.getState().projects[0].isCollapsed).toBe(true);
+      addProject("/home/user/Projects/MyApp");
+      expect(getWorkspaceState().projects[0].isCollapsed).toBe(false);
+      toggleProjectCollapsed("/home/user/Projects/MyApp");
+      expect(getWorkspaceState().projects[0].isCollapsed).toBe(true);
     });
   });
 
   describe("workspaces", () => {
     it("adds a workspace", () => {
-      useWorkspaceStore.getState().addWorkspace(workspace());
-      expect(useWorkspaceStore.getState().workspaces).toHaveLength(1);
+      addWorkspace(workspace());
+      expect(getWorkspaceState().workspaces).toHaveLength(1);
     });
 
     it("removes a workspace", () => {
-      useWorkspaceStore.getState().addWorkspace(workspace());
-      useWorkspaceStore.getState().removeWorkspace("ws-1");
-      expect(useWorkspaceStore.getState().workspaces).toHaveLength(0);
+      addWorkspace(workspace());
+      removeWorkspace("ws-1");
+      expect(getWorkspaceState().workspaces).toHaveLength(0);
     });
 
     it("clears selectedId when removing the selected workspace", () => {
-      useWorkspaceStore.getState().addWorkspace(workspace());
-      useWorkspaceStore.getState().selectWorkspace("ws-1");
-      useWorkspaceStore.getState().removeWorkspace("ws-1");
-      expect(useWorkspaceStore.getState().selectedId).toBeNull();
+      addWorkspace(workspace());
+      selectWorkspace("ws-1");
+      removeWorkspace("ws-1");
+      expect(getWorkspaceState().selectedId).toBeNull();
     });
 
     it("updates workspace fields", () => {
-      useWorkspaceStore.getState().addWorkspace(workspace());
-      useWorkspaceStore
-        .getState()
-        .updateWorkspace("ws-1", { status: "initializing" });
-      expect(useWorkspaceStore.getState().workspaces[0].status).toBe(
-        "initializing",
-      );
+      addWorkspace(workspace());
+      updateWorkspace("ws-1", { status: "initializing" });
+      expect(getWorkspaceState().workspaces[0].status).toBe("initializing");
     });
 
     it("sets and clears setup progress", () => {
-      useWorkspaceStore.getState().setSetupProgress("ws-1", {
+      setSetupProgress("ws-1", {
         item: "node_modules",
         current: 1,
         total: 3,
       });
-      expect(
-        useWorkspaceStore.getState().setupProgressByWorkspaceId["ws-1"],
-      ).toEqual({ item: "node_modules", current: 1, total: 3 });
+      expect(getWorkspaceState().setupProgressByWorkspaceId["ws-1"]).toEqual({
+        item: "node_modules",
+        current: 1,
+        total: 3,
+      });
 
-      useWorkspaceStore.getState().setSetupProgress("ws-1", null);
+      setSetupProgress("ws-1", null);
       expect(
-        useWorkspaceStore.getState().setupProgressByWorkspaceId["ws-1"],
+        getWorkspaceState().setupProgressByWorkspaceId["ws-1"],
       ).toBeUndefined();
     });
   });
@@ -121,83 +131,70 @@ describe("workspaceStore", () => {
         branch: "main",
         path: "/home/user/Projects/MyApp",
       });
-      useWorkspaceStore.getState().addWorkspace(ws);
-      useWorkspaceStore
-        .getState()
-        .updateWorkspace("ws-1", { branch: "feature/new-branch" });
+      addWorkspace(ws);
+      updateWorkspace("ws-1", { branch: "feature/new-branch" });
 
-      const updated = useWorkspaceStore.getState().workspaces[0];
+      const updated = getWorkspaceState().workspaces[0];
       expect(updated.branch).toBe("feature/new-branch");
     });
 
     it("setProjectBranch + updateWorkspace keep branch in sync", () => {
       const repoRoot = "/home/user/Projects/MyApp";
-      useWorkspaceStore.getState().addProject(repoRoot);
+      addProject(repoRoot);
       const ws = workspace({
         kind: "repo_root",
         branch: "main",
         path: repoRoot,
       });
-      useWorkspaceStore.getState().addWorkspace(ws);
+      addWorkspace(ws);
 
-      // Simulate what the branch-changed event handler now does:
       const newBranch = "claude/str-3696-firetv-deeplink-focus";
-      useWorkspaceStore.getState().setProjectBranch(repoRoot, newBranch);
-      useWorkspaceStore
-        .getState()
-        .updateWorkspace("ws-1", { branch: newBranch });
+      setProjectBranch(repoRoot, newBranch);
+      updateWorkspace("ws-1", { branch: newBranch });
 
-      // Both sources should agree
-      const project = useWorkspaceStore
-        .getState()
-        .projects.find((p) => p.repoRoot === repoRoot);
-      const wsResult = useWorkspaceStore.getState().workspaces[0];
+      const project = getWorkspaceState().projects.find(
+        (p: Project) => p.repoRoot === repoRoot,
+      );
+      const wsResult = getWorkspaceState().workspaces[0];
       expect(project?.repoBranch).toBe(newBranch);
       expect(wsResult.branch).toBe(newBranch);
     });
 
     it("workspace.branch stays stale if only setProjectBranch is called (old behavior)", () => {
       const repoRoot = "/home/user/Projects/MyApp";
-      useWorkspaceStore.getState().addProject(repoRoot);
+      addProject(repoRoot);
       const ws = workspace({
         kind: "repo_root",
         branch: "main",
         path: repoRoot,
       });
-      useWorkspaceStore.getState().addWorkspace(ws);
+      addWorkspace(ws);
 
-      // Only call setProjectBranch (the old code path)
-      useWorkspaceStore.getState().setProjectBranch(repoRoot, "new-branch");
+      setProjectBranch(repoRoot, "new-branch");
 
-      const project = useWorkspaceStore
-        .getState()
-        .projects.find((p) => p.repoRoot === repoRoot);
-      const wsState = useWorkspaceStore.getState().workspaces[0];
+      const project = getWorkspaceState().projects.find(
+        (p: Project) => p.repoRoot === repoRoot,
+      );
+      const wsState = getWorkspaceState().workspaces[0];
       expect(project?.repoBranch).toBe("new-branch");
-      expect(wsState.branch).toBe("main"); // still stale!
+      expect(wsState.branch).toBe("main");
     });
   });
 
   describe("mergeWorkspacesForProject", () => {
     it("preserves existing IDs when paths match", () => {
       const ws = workspace();
-      useWorkspaceStore.getState().addWorkspace(ws);
+      addWorkspace(ws);
 
-      // Backend returns the same workspace with a different ID
       const backendWs = { ...ws, id: "ws-new" };
-      useWorkspaceStore
-        .getState()
-        .mergeWorkspacesForProject(ws.repo_root, [backendWs]);
+      mergeWorkspacesForProject(ws.repo_root, [backendWs]);
 
-      // Should keep the original ID
-      expect(useWorkspaceStore.getState().workspaces[0].id).toBe("ws-1");
+      expect(getWorkspaceState().workspaces[0].id).toBe("ws-1");
     });
 
     it("adds new workspaces from backend", () => {
-      useWorkspaceStore
-        .getState()
-        .mergeWorkspacesForProject("/home/user/Projects/MyApp", [workspace()]);
-      expect(useWorkspaceStore.getState().workspaces).toHaveLength(1);
+      mergeWorkspacesForProject("/home/user/Projects/MyApp", [workspace()]);
+      expect(getWorkspaceState().workspaces).toHaveLength(1);
     });
 
     it("does not affect workspaces from other projects", () => {
@@ -205,11 +202,9 @@ describe("workspaceStore", () => {
         id: "ws-other",
         repo_root: "/other/project",
       });
-      useWorkspaceStore.getState().addWorkspace(otherWs);
-      useWorkspaceStore
-        .getState()
-        .mergeWorkspacesForProject("/home/user/Projects/MyApp", [workspace()]);
-      expect(useWorkspaceStore.getState().workspaces).toHaveLength(2);
+      addWorkspace(otherWs);
+      mergeWorkspacesForProject("/home/user/Projects/MyApp", [workspace()]);
+      expect(getWorkspaceState().workspaces).toHaveLength(2);
     });
   });
 });

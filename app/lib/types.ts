@@ -1,10 +1,10 @@
 export interface Workspace {
   /** The branch this workspace was created from (e.g. "main"). */
-  base_branch?: null | string;
+  base_branch?: string | null;
   branch: string;
   description: string;
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
-  display_name?: null | string;
+  display_name?: string | null;
   id: string;
   kind: "repo_root" | "worktree";
   path: string;
@@ -14,7 +14,10 @@ export interface Workspace {
 
 /** Normalise workspace status to a simple display string. */
 export function workspaceStatusLabel(status: Workspace["status"]): string {
-  if (typeof status === "string") return status;
+  if (typeof status === "string") {
+    return status;
+  }
+
   return "error";
 }
 
@@ -51,7 +54,7 @@ export interface SimulatorDevice {
 
 export interface AndroidDevice {
   /** AVD name (emulators only — used to boot). Null for physical devices. */
-  avdName: null | string;
+  avdName: string | null;
   name: string;
   online: boolean;
   serial: string;
@@ -97,6 +100,16 @@ export interface DirEntry {
   size: number;
 }
 
+export interface MentionDirEntry {
+  is_dir: boolean;
+  name: string;
+}
+
+export interface MentionPathResult {
+  entries: MentionDirEntry[];
+  resolvedPath: string;
+}
+
 export interface FileStat {
   is_dir: boolean;
   mtime: number;
@@ -104,13 +117,28 @@ export interface FileStat {
 }
 
 /** Run button configuration — either a plain command string or object with dir. */
-export type RunConfig = { command: string; dir?: string } | string;
+export type RunConfig = string | { command: string; dir?: string };
+
+/** JSON-facing shape for custom browser device presets in `.stagehand.json`. */
+export interface BrowserPresetConfig {
+  height: number;
+  id: string;
+  label?: string;
+  user_agent?: string;
+  width: number;
+}
 
 export interface StagehandConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
+  /** Custom browser device presets for the web browser panel. */
+  browser_presets?: BrowserPresetConfig[];
+  /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
+  browser_url?: string;
   /** Shell command to run via the "Run" button (e.g. `npx expo start`). */
   run?: RunConfig;
+  /** Whether to save chat history when agents stop. Defaults to true. */
+  save_chat_history?: boolean;
   setup?: {
     commands?: string[];
     copy?: string[];
@@ -135,7 +163,7 @@ export type ClaudeStreamEvent =
   | {
       /** Emitted when an API request fails with a retryable error. */
       attempt: number;
-      error_status: null | number;
+      error_status: number | null;
       max_retries: number;
       retry_delay_ms: number;
       subtype: "api_retry";
@@ -163,7 +191,6 @@ export type ClaudeStreamEvent =
       };
       type: "assistant";
     }
-  | { message: { content: ClaudeToolResult[] }; type: "user" }
   | {
       model: string;
       session_id: string;
@@ -172,9 +199,10 @@ export type ClaudeStreamEvent =
       /** All user-invocable commands (built-in + skills + plugins). */
       slash_commands?: string[];
       subtype: "init";
-      tools: Array<{ name: string }>;
+      tools: { name: string }[];
       type: "system";
-    };
+    }
+  | { message: { content: ClaudeToolResult[] }; type: "user" };
 
 export type ClaudeContentBlock =
   | {
@@ -247,7 +275,7 @@ export interface ModelInfo {
 }
 
 export interface AgentCapabilities {
-  agents: Array<{ description: string; model?: string; name: string }>;
+  agents: { description: string; model?: string; name: string }[];
   commands: SlashCommand[];
   models: ModelInfo[];
 }

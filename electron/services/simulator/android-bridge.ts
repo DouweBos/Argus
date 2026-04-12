@@ -10,13 +10,12 @@
  *   5. Send touch/key events via the scrcpy binary control protocol
  */
 
+import { app } from "electron";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as net from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
-
-import { app } from "electron";
-
+import { log } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { H264AccessUnitParser } from "./h264-parser";
 
@@ -32,6 +31,7 @@ function scrcpyServerPath(): string {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, JAR_NAME);
   }
+
   return path.join(process.cwd(), "native", "scrcpy-server", JAR_NAME);
 }
 
@@ -52,6 +52,7 @@ function buildKeyMessage(
   buf.writeUInt32BE(keycode, 2);
   buf.writeUInt32BE(repeat, 6);
   buf.writeUInt32BE(metaState, 10);
+
   return buf;
 }
 
@@ -76,6 +77,7 @@ function buildTouchMessage(
   buf.writeUInt16BE(pressure === 0 ? 0 : 0xffff, 22); // normalized pressure
   buf.writeInt32BE(1, 24); // actionButton (primary)
   buf.writeInt32BE(action === 0 ? 1 : 0, 28); // buttons (pressed on DOWN)
+
   return buf;
 }
 
@@ -84,6 +86,7 @@ function buildBackOrScreenOnMessage(action: number): Buffer {
   const buf = Buffer.alloc(2);
   buf.writeUInt8(4, 0); // type = back or screen on
   buf.writeUInt8(action, 1);
+
   return buf;
 }
 
@@ -156,7 +159,9 @@ export class AndroidBridge {
 
   /** Send a touch event via the scrcpy control protocol. */
   sendTouch(action: number, x: number, y: number, pressure: number): void {
-    if (!this.controlSocket) return;
+    if (!this.controlSocket) {
+      return;
+    }
 
     // Convert normalized [0, 1] coordinates to device pixels
     const px = Math.round(x * this.deviceWidth);
@@ -176,14 +181,18 @@ export class AndroidBridge {
 
   /** Send a key event via the scrcpy control protocol. */
   sendKey(action: number, keycode: number, metaState: number): void {
-    if (!this.controlSocket) return;
+    if (!this.controlSocket) {
+      return;
+    }
     const msg = buildKeyMessage(action, keycode, 0, metaState);
     this.controlSocket.write(msg);
   }
 
   /** Send back-or-screen-on event. */
   sendBackOrScreenOn(action: number): void {
-    if (!this.controlSocket) return;
+    if (!this.controlSocket) {
+      return;
+    }
     const msg = buildBackOrScreenOnMessage(action);
     this.controlSocket.write(msg);
   }
@@ -391,7 +400,7 @@ export class AndroidBridge {
 
     this.h264Parser = new H264AccessUnitParser({
       onConfig: (config) => {
-        console.log(
+        log(
           `[AndroidBridge] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
         win?.webContents.send("android_video_config", config);
@@ -408,14 +417,16 @@ export class AndroidBridge {
     this.videoSocket!.on("data", (chunk: Buffer) => {
       if (!headerParsed) {
         headerBuf = Buffer.concat([headerBuf, chunk]);
-        if (headerBuf.length < HEADER_SIZE) return;
+        if (headerBuf.length < HEADER_SIZE) {
+          return;
+        }
 
         headerParsed = true;
         const nameEnd = headerBuf.indexOf(0);
         const deviceName = headerBuf
           .subarray(0, nameEnd > 0 ? nameEnd : HEADER_SIZE)
           .toString("utf-8");
-        console.log(
+        log(
           `[AndroidBridge] Device: ${deviceName}, resolution: ${String(this.deviceWidth)}x${String(this.deviceHeight)}`,
         );
 
@@ -425,6 +436,7 @@ export class AndroidBridge {
           this.h264Parser?.push(overflow);
         }
         headerBuf = Buffer.alloc(0);
+
         return;
       }
 
@@ -432,7 +444,7 @@ export class AndroidBridge {
     });
 
     this.videoSocket!.on("end", () => {
-      console.log("[AndroidBridge] Video socket ended");
+      log("[AndroidBridge] Video socket ended");
     });
   }
 

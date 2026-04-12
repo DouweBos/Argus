@@ -34,8 +34,10 @@ export function parseAllowRule(ruleStr: string): AllowRule {
     const tool = ruleStr.slice(0, openParen);
     // Strip trailing ')' from specifier.
     const specifier = ruleStr.slice(openParen + 1).replace(/\)$/, "");
+
     return { tool, specifier };
   }
+
   // Bare tool name — matches all uses.
   return { tool: ruleStr, specifier: null };
 }
@@ -56,27 +58,34 @@ export function extractSpecifier(
   toolName: string,
   toolInput: Record<string, unknown> | null | undefined,
 ): string | null {
-  if (!toolInput) return null;
+  if (!toolInput) {
+    return null;
+  }
 
   switch (toolName) {
     case "Bash": {
-      const cmd = toolInput["command"];
+      const cmd = toolInput.command;
+
       return typeof cmd === "string" ? cmd : null;
     }
     case "Edit":
     case "MultiEdit":
     case "Write":
     case "Read": {
-      const fp = toolInput["file_path"] ?? toolInput["path"];
+      const fp = toolInput.file_path ?? toolInput.path;
+
       return typeof fp === "string" ? fp : null;
     }
     case "WebFetch": {
-      const url = toolInput["url"];
-      if (typeof url !== "string") return null;
+      const url = toolInput.url;
+      if (typeof url !== "string") {
+        return null;
+      }
       const afterScheme = url.includes("://")
         ? url.slice(url.indexOf("://") + 3)
         : url;
       const host = afterScheme.split("/")[0]?.split(":")[0] ?? "";
+
       return host ? `domain:${host}` : null;
     }
     default:
@@ -107,7 +116,9 @@ export function globMatch(pattern: string, value: string): boolean {
         regexStr += ".*";
         i += 2;
         // Consume an optional following `/`.
-        if (pattern[i] === "/") i++;
+        if (pattern[i] === "/") {
+          i++;
+        }
       } else {
         // `*` matches any sequence of characters except `/`.
         regexStr += "[^/]*";

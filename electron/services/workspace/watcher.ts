@@ -1,15 +1,18 @@
 /**
  * File system watcher for workspace directories.
  *
- * Uses polling `git diff --numstat` on an interval rather than recursive
- * fs watches, which hit macOS EMFILE limits on large monorepos (60K+ dirs).
+ * Polls `git diff HEAD --numstat` (working tree vs last commit) so sidebar
+ * stats include **staged** changes as well as unstaged. Plain `git diff
+ * --numstat` would only cover unstaged vs index and would miss fully staged
+ * files. Uses polling instead of recursive fs watches, which hit macOS
+ * EMFILE limits on large monorepos (60K+ dirs).
  */
 
 import fs from "node:fs";
 import path from "node:path";
-
-import { appState } from "../../state";
+import { warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
+import { appState } from "../../state";
 import { git } from "./git";
 
 /** Diff statistics emitted to the frontend. */
@@ -65,13 +68,15 @@ export class WatcherHandle {
   }
 
   private async poll(): Promise<void> {
-    if (this.paused) return;
+    if (this.paused) {
+      return;
+    }
 
     try {
-      // --numstat gives us a stable, parseable summary of changes.
-      // Include untracked files via a second command.
+      // Compare to HEAD so counts match the Git view (`git diff HEAD`) and include
+      // staged changes (plain `git diff` only shows unstaged vs index).
       const [numstat, untrackedRaw] = await Promise.all([
-        git(this.worktreePath, ["diff", "--numstat"]),
+        git(this.worktreePath, ["diff", "HEAD", "--numstat"]),
         git(this.worktreePath, ["ls-files", "--others", "--exclude-standard"]),
       ]);
 
@@ -81,7 +86,9 @@ export class WatcherHandle {
 
       // Build a fingerprint to avoid emitting duplicate events.
       const fingerprint = `${numstat}::${untrackedCount}`;
-      if (fingerprint === this.lastFingerprint) return;
+      if (fingerprint === this.lastFingerprint) {
+        return;
+      }
       this.lastFingerprint = fingerprint;
 
       const stats = parseDiffStats(numstat);
@@ -104,6 +111,7 @@ export function startWatcher(
 ): WatcherHandle {
   const handle = new WatcherHandle(workspaceId, worktreePath);
   handle.start();
+
   return handle;
 }
 
@@ -111,22 +119,30 @@ export function startWatcher(
 // Branch watcher — monitors .git/HEAD for external branch switches
 // ---------------------------------------------------------------------------
 
-/** Parse `git diff --numstat` output into DiffStats. */
+/** Parse `git diff HEAD --numstat` output into DiffStats. */
 function parseDiffStats(numstatOutput: string): DiffStats {
   let files = 0;
   let additions = 0;
   let deletions = 0;
 
   for (const line of numstatOutput.trim().split("\n")) {
-    if (!line) continue;
+    if (!line) {
+      continue;
+    }
     const parts = line.split("\t");
-    if (parts.length < 3) continue;
+    if (parts.length < 3) {
+      continue;
+    }
     // Binary files show "-" for additions/deletions.
     const added = parseInt(parts[0], 10);
     const removed = parseInt(parts[1], 10);
     files += 1;
-    if (!Number.isNaN(added)) additions += added;
-    if (!Number.isNaN(removed)) deletions += removed;
+    if (!Number.isNaN(added)) {
+      additions += added;
+    }
+    if (!Number.isNaN(removed)) {
+      deletions += removed;
+    }
   }
 
   return { additions, deletions, files };
@@ -143,7 +159,7 @@ async function emitBranchAndDiff(
   });
 
   try {
-    const numstat = await git(repoRoot, ["diff", "--numstat"]);
+    const numstat = await git(repoRoot, ["diff", "HEAD", "--numstat"]);
     const stats = parseDiffStats(numstat);
     getMainWindow()?.webContents.send(
       `workspace:diff-changed:${workspaceId}`,
@@ -170,7 +186,9 @@ export async function refreshBranchForWorkspace(
 
     const previous =
       lastKnownBranch ?? appState.workspaces.get(workspaceId)?.branch;
-    if (branch === previous) return branch;
+    if (branch === previous) {
+      return branch;
+    }
 
     // Update in-memory state.
     const ws = appState.workspaces.get(workspaceId);
@@ -180,6 +198,7 @@ export async function refreshBranchForWorkspace(
     }
 
     await emitBranchAndDiff(repoRoot, workspaceId, branch);
+
     return branch;
   } catch {
     return null;
@@ -194,7 +213,9 @@ export async function refreshBranchForWorkspace(
  */
 export async function refreshAllBranches(): Promise<void> {
   for (const [id, ws] of appState.workspaces.entries()) {
-    if (ws.kind !== "repo_root") continue;
+    if (ws.kind !== "repo_root") {
+      continue;
+    }
     await refreshBranchForWorkspace(ws.repo_root, id);
   }
 }
@@ -211,14 +232,18 @@ export class BranchWatcherHandle extends WatcherHandle {
 
   override stop(): void {
     super.stop();
-    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
     this.fsWatcher?.close();
     this.fsWatcher = null;
   }
 
   /** Schedule a debounced refresh callback. */
   scheduleRefresh(cb: () => void): void {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
     this.debounceTimer = setTimeout(cb, 300);
   }
 }
@@ -248,16 +273,19 @@ export function startBranchWatcher(
         workspaceId,
         lastBranch ?? undefined,
       );
-      if (branch) lastBranch = branch;
+      if (branch) {
+        lastBranch = branch;
+      }
     });
   });
 
   fsWatcher.on("error", (err) => {
-    console.warn(`Branch watcher error for ${repoRoot}:`, err);
+    warn(`Branch watcher error for ${repoRoot}:`, err);
   });
 
   const handle = new BranchWatcherHandle(workspaceId, repoRoot, fsWatcher);
   // Also poll for diff changes (same as regular watchers).
   handle.start();
+
   return handle;
 }

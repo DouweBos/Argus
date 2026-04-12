@@ -7,8 +7,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 export interface StagehandAPI {
-  invoke<T>(channel: string, args?: Record<string, unknown>): Promise<T>;
-  on<T>(event: string, callback: (payload: T) => void): () => void;
+  invoke: <T>(channel: string, args?: Record<string, unknown>) => Promise<T>;
+  on: <T>(event: string, callback: (payload: T) => void) => () => void;
+  send: (channel: string, args?: Record<string, unknown>) => void;
 }
 
 const api: StagehandAPI = {
@@ -21,6 +22,15 @@ const api: StagehandAPI = {
   },
 
   /**
+   * Fire-and-forget message to main. No reply round-trip. Use for
+   * high-frequency, one-way updates (e.g. resize-driven bounds pushes)
+   * where waiting on a microtask reply would add a frame of latency.
+   */
+  send(channel: string, args?: Record<string, unknown>): void {
+    ipcRenderer.send(channel, args);
+  },
+
+  /**
    * Subscribe to a push event from the main process.
    * Returns an unlisten function.
    */
@@ -29,6 +39,7 @@ const api: StagehandAPI = {
       callback(payload);
     };
     ipcRenderer.on(event, handler);
+
     return () => {
       ipcRenderer.removeListener(event, handler);
     };

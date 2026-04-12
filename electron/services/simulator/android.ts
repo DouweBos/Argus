@@ -9,7 +9,7 @@ import { execFile, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-
+import { error } from "../../../app/lib/logger";
 import { appState } from "../../state";
 import { AndroidBridge } from "./android-bridge";
 
@@ -54,7 +54,9 @@ async function findAndroidBinary(
   try {
     const { stdout } = await execFileAsync("which", [binary]);
     const resolved = stdout.trim();
-    if (resolved) return resolved;
+    if (resolved) {
+      return resolved;
+    }
   } catch {
     // not found
   }
@@ -66,8 +68,11 @@ async function findAndroidBinary(
 let cachedAdbPath: string | null = null;
 
 export async function findAdb(): Promise<string> {
-  if (cachedAdbPath) return cachedAdbPath;
+  if (cachedAdbPath) {
+    return cachedAdbPath;
+  }
   cachedAdbPath = await findAndroidBinary("adb", "platform-tools");
+
   return cachedAdbPath;
 }
 
@@ -75,8 +80,11 @@ export async function findAdb(): Promise<string> {
 let cachedEmulatorPath: string | null = null;
 
 async function findEmulator(): Promise<string> {
-  if (cachedEmulatorPath) return cachedEmulatorPath;
+  if (cachedEmulatorPath) {
+    return cachedEmulatorPath;
+  }
   cachedEmulatorPath = await findAndroidBinary("emulator", "emulator");
+
   return cachedEmulatorPath;
 }
 
@@ -118,7 +126,9 @@ export async function listAndroidDevices(): Promise<AndroidDevice[]> {
   // Build a set of AVD names that are already running so we don't duplicate
   const runningAvds = new Set<string>();
   for (const d of adbDevices) {
-    if (d.avdName) runningAvds.add(d.avdName);
+    if (d.avdName) {
+      runningAvds.add(d.avdName);
+    }
   }
 
   // Add unbooted AVDs
@@ -137,7 +147,10 @@ export async function listAndroidDevices(): Promise<AndroidDevice[]> {
 
   // Sort: online first, then alphabetically
   devices.sort((a, b) => {
-    if (a.online !== b.online) return a.online ? -1 : 1;
+    if (a.online !== b.online) {
+      return a.online ? -1 : 1;
+    }
+
     return a.name.localeCompare(b.name);
   });
 
@@ -174,7 +187,9 @@ async function listAdbDevices(): Promise<AndroidDevice[]> {
     }
 
     const parts = trimmed.split(/\s+/);
-    if (parts.length < 2) continue;
+    if (parts.length < 2) {
+      continue;
+    }
 
     const serial = parts[0];
     const state = parts[1];
@@ -242,6 +257,7 @@ export async function listAvds(): Promise<string[]> {
 
   try {
     const { stdout } = await execFileAsync(emulatorPath, ["-list-avds"]);
+
     return stdout
       .split("\n")
       .map((l) => l.trim())
@@ -286,7 +302,7 @@ export async function bootAndroidEmulator(avdName: string): Promise<string> {
   emulatorProc.unref();
 
   emulatorProc.on("error", (err) => {
-    console.error("[Android] emulator launch error:", err);
+    error("[Android] emulator launch error:", err);
   });
 
   // Poll adb until a new emulator comes online (up to 90s — cold boot is slow)

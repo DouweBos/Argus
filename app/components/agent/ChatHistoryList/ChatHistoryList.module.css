@@ -1,0 +1,127 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+}
+
+.title {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background var(--transition-base);
+  position: relative;
+}
+
+.entry:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.entryTitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.entryMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.entryMeta span {
+  white-space: nowrap;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.entry:hover .actions {
+  opacity: 1;
+}
+
+.resumeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+  color: var(--accent);
+  background: rgba(77, 159, 255, 0.1);
+  border: 1px solid rgba(77, 159, 255, 0.2);
+}
+
+.resumeBtn:hover {
+  background: rgba(77, 159, 255, 0.2);
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.deleteBtn:hover {
+  color: var(--error);
+  background: rgba(255, 68, 102, 0.1);
+}

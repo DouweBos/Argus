@@ -1,10 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import fs from "node:fs";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { loadStagehandConfig } from "./setup";
 
 // Mock fs so we don't hit the real filesystem
 vi.mock("node:fs", () => {
   const actual = vi.importActual("node:fs");
+
   return {
     ...actual,
     default: {
@@ -102,6 +103,7 @@ describe("loadStagehandConfig", () => {
           terminals: [{ name: "Local", dir: "." }],
         });
       }
+
       return JSON.stringify({
         setup: {
           copy: ["node_modules"],
@@ -136,6 +138,7 @@ describe("loadStagehandConfig", () => {
           },
         });
       }
+
       return JSON.stringify({
         setup: {},
         workspace_env: {
@@ -243,6 +246,7 @@ describe("loadStagehandConfig", () => {
           ],
         });
       }
+
       return JSON.stringify({
         setup: {},
         related_projects: [
@@ -259,6 +263,43 @@ describe("loadStagehandConfig", () => {
     expect(paths).toEqual(["../backend", "../shared", "../new-project"]);
     // Base description preserved for the duplicate.
     expect(config.related_projects![0].description).toBe("Backend API");
+  });
+
+  it("local browser_url overrides base when merging", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      if (String(p).includes("local")) {
+        return JSON.stringify({
+          setup: {},
+          browser_url: "http://localhost:4000",
+        });
+      }
+
+      return JSON.stringify({
+        setup: {},
+        browser_url: "http://localhost:3000",
+      });
+    });
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.browser_url).toBe("http://localhost:4000");
+  });
+
+  it("keeps base browser_url when local omits it", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      if (String(p).includes("local")) {
+        return JSON.stringify({ setup: {} });
+      }
+
+      return JSON.stringify({
+        setup: {},
+        browser_url: "http://localhost:3000",
+      });
+    });
+
+    const config = loadStagehandConfig("/repo");
+    expect(config.browser_url).toBe("http://localhost:3000");
   });
 
   it("throws on invalid JSON", () => {

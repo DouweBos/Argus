@@ -1,36 +1,43 @@
+import type { AgentStatus } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAgentStore } from "../stores/agentStore";
-import { useConversationStore } from "../stores/conversationStore";
-import { useIpcEvent } from "./useIpcEvent";
+import { error } from "@logger";
 import {
-  startAgent as apiStartAgent,
-  stopAgent as apiStopAgent,
-  sendAgentMessage as apiSendAgentMessage,
-} from "../lib/ipc";
-import {
+  notifyMessageSent,
+  saveAgentConversation,
   startAgentListening,
   stopAgentListening,
-  notifyMessageSent,
 } from "../lib/agentEventService";
-import type { AgentStatus } from "../lib/types";
+import {
+  sendAgentMessage as apiSendAgentMessage,
+  startAgent as apiStartAgent,
+  stopAgent as apiStopAgent,
+} from "../lib/ipc";
+import {
+  addAgent,
+  getAgentState,
+  removeAgent,
+  replaceAgent,
+  setActiveAgent,
+  updateAgent,
+  useActiveAgentIds,
+  useAgentsRecord,
+} from "../stores/agentStore";
+import {
+  clearConversation,
+  getConversationState,
+  migrateConversation,
+} from "../stores/conversationStore";
+import { useIpcEvent } from "./useIpcEvent";
 
 export function useWorkspaceAgents(
-  workspaceId: null | string,
+  workspaceId: string | null,
   options?: { autoStart?: boolean; workspaceReady?: boolean },
 ) {
   const { autoStart = true, workspaceReady = false } = options ?? {};
 
-  // Targeted selectors — only re-render when these specific slices change
-  const allAgents = useAgentStore((s) => s.agents);
-  const activeAgentIds = useAgentStore((s) => s.activeAgentId);
-  const addAgent = useAgentStore((s) => s.addAgent);
-  const updateAgent = useAgentStore((s) => s.updateAgent);
-  const removeAgent = useAgentStore((s) => s.removeAgent);
-  const replaceAgent = useAgentStore((s) => s.replaceAgent);
-  const setActiveAgentStore = useAgentStore((s) => s.setActiveAgent);
-  const clearConversation = useConversationStore((s) => s.clearConversation);
+  const allAgents = useAgentsRecord();
+  const activeAgentIds = useActiveAgentIds();
 
-  // Derive agents and activeAgent from state
   const agents = useMemo(
     () =>
       workspaceId
@@ -40,24 +47,29 @@ export function useWorkspaceAgents(
   );
 
   const activeAgent = useMemo(() => {
-    if (!workspaceId) return null;
+    if (!workspaceId) {
+      return null;
+    }
     const agentId = activeAgentIds[workspaceId];
-    if (!agentId) return null;
+    if (!agentId) {
+      return null;
+    }
+
     return allAgents[agentId] ?? null;
   }, [allAgents, activeAgentIds, workspaceId]);
 
   const [isStarting, setIsStarting] = useState(false);
   const autoStartAttemptedRef = useRef<Set<string>>(new Set());
 
-  // Track agent IDs to listen for status events
   const agentIdsRef = useRef<string[]>([]);
   agentIdsRef.current = agents.map((a) => a.agent_id);
 
-  // Listen for backend status events for the active agent
   useIpcEvent<string>(
     activeAgent ? `agent:status:${activeAgent.agent_id}` : "",
     (payload) => {
-      if (!activeAgent) return;
+      if (!activeAgent) {
+        return;
+      }
       const validStatuses = ["idle", "running", "stopped", "error"] as const;
       type StatusType = (typeof validStatuses)[number];
       const status: StatusType = validStatuses.includes(payload as StatusType)
@@ -67,7 +79,6 @@ export function useWorkspaceAgents(
     },
   );
 
-  // Placeholder effect for non-active agent IDs (reserved for future use)
   const nonActiveKey = agents
     .filter((a) => a.agent_id !== activeAgent?.agent_id)
     .map((a) => a.agent_id)
@@ -81,9 +92,13 @@ export function useWorkspaceAgents(
       model?: string,
       permissionMode?: string,
       resumeSessionId?: string,
-    ) => {
-      if (!workspaceId) return;
-      if (isStarting) return;
+    ): Promise<string | null> => {
+      if (!workspaceId) {
+        return null;
+      }
+      if (isStarting) {
+        return null;
+      }
       setIsStarting(true);
       try {
         const agentInfo: AgentStatus = await apiStartAgent(
@@ -99,17 +114,15 @@ export function useWorkspaceAgents(
           status: "running",
           permission_mode: permissionMode,
         });
-        // Capabilities (commands, models, agents) are now discovered via the
-        // initialize control_request sent by the backend on spawn. No
-        // bootstrap user prompt needed.
+
+        return agentInfo.agent_id;
       } finally {
         setIsStarting(false);
       }
     },
-    [workspaceId, addAgent, isStarting],
+    [workspaceId, isStarting],
   );
 
-  // Auto-start agent when workspace is selected and ready
   useEffect(() => {
     if (
       !autoStart ||
@@ -117,9 +130,12 @@ export function useWorkspaceAgents(
       !workspaceReady ||
       agents.length > 0 ||
       isStarting
-    )
+    ) {
       return;
-    if (autoStartAttemptedRef.current.has(workspaceId)) return;
+    }
+    if (autoStartAttemptedRef.current.has(workspaceId)) {
+      return;
+    }
     autoStartAttemptedRef.current.add(workspaceId);
     startNew().catch(() => {
       autoStartAttemptedRef.current.delete(workspaceId);
@@ -133,36 +149,39 @@ export function useWorkspaceAgents(
     startNew,
   ]);
 
-  // Allow retry when switching to a *different* workspace.
-  // Only clear the previous ID so StrictMode unmount→remount cannot re-trigger auto-start.
-  const prevWorkspaceId = useRef<null | string>(null);
+  const prevWorkspaceId = useRef<string | null>(null);
   useEffect(() => {
     const prev = prevWorkspaceId.current;
     if (prev && prev !== workspaceId) {
       autoStartAttemptedRef.current.delete(prev);
     }
+
     prevWorkspaceId.current = workspaceId;
   }, [workspaceId]);
 
-  const stopAgent = useCallback(
-    async (agentId: string) => {
-      stopAgentListening(agentId);
-      try {
-        await apiStopAgent(agentId);
-      } catch (err) {
-        console.error(`Failed to stop agent ${agentId}:`, err);
-      }
-      clearConversation(agentId);
-      removeAgent(agentId);
-    },
-    [removeAgent, clearConversation],
-  );
+  const stopAgent = useCallback(async (agentId: string) => {
+    // Save conversation before cleanup
+    saveAgentConversation(agentId);
+    stopAgentListening(agentId);
+    try {
+      await apiStopAgent(agentId);
+    } catch (err) {
+      error(`Failed to stop agent ${agentId}:`, err);
+    }
+
+    clearConversation(agentId);
+    removeAgent(agentId);
+  }, []);
 
   const stopAll = useCallback(async () => {
-    if (!workspaceId) return;
-    const currentAgents = Object.values(useAgentStore.getState().agents).filter(
+    if (!workspaceId) {
+      return;
+    }
+    const currentAgents = Object.values(getAgentState().agents).filter(
       (a) => a.workspace_id === workspaceId,
     );
+    // Save all conversations before cleanup
+    currentAgents.forEach((a) => saveAgentConversation(a.agent_id));
     await Promise.allSettled(
       currentAgents.map((a) => apiStopAgent(a.agent_id)),
     );
@@ -171,38 +190,32 @@ export function useWorkspaceAgents(
       clearConversation(a.agent_id);
       removeAgent(a.agent_id);
     });
-  }, [workspaceId, removeAgent, clearConversation]);
+  }, [workspaceId]);
 
-  /** Stop the agent process and restart with new settings, resuming the same
-   *  Claude CLI session so the conversation is preserved. */
   const restartAgent = useCallback(
     async (
       agentId: string,
       opts?: { model?: string; permissionMode?: string },
     ) => {
-      if (!workspaceId) return;
-      const conv = useConversationStore.getState().conversations[agentId];
+      if (!workspaceId) {
+        return;
+      }
+      const conv = getConversationState().conversations[agentId];
       const sessionId = conv?.sessionId;
-      const currentAgent = useAgentStore.getState().agents[agentId];
+      const currentAgent = getAgentState().agents[agentId];
       const newPermissionMode =
         opts?.permissionMode !== undefined
           ? opts.permissionMode
           : currentAgent?.permission_mode;
       stopAgentListening(agentId);
-      // Fire-and-forget — no need to wait for the old process to die before
-      // spawning the new one (they have different agent IDs).
       apiStopAgent(agentId).catch(() => {});
-      // Do NOT clear the conversation — we're resuming.
       const agentInfo: AgentStatus = await apiStartAgent(
         workspaceId,
         opts?.model,
         newPermissionMode,
         sessionId,
       );
-      // Re-key conversation and agent store entry in-place (same tab slot).
-      useConversationStore
-        .getState()
-        .migrateConversation(agentId, agentInfo.agent_id);
+      migrateConversation(agentId, agentInfo.agent_id);
       replaceAgent(agentId, {
         agent_id: agentInfo.agent_id,
         workspace_id: agentInfo.workspace_id,
@@ -211,25 +224,29 @@ export function useWorkspaceAgents(
       });
       startAgentListening(agentInfo.agent_id);
     },
-    [workspaceId, replaceAgent],
+    [workspaceId],
   );
 
   const sendMessage = useCallback(
     async (message: string) => {
-      if (!activeAgent) return;
+      if (!activeAgent) {
+        return;
+      }
       notifyMessageSent(activeAgent.agent_id);
       updateAgent(activeAgent.agent_id, { status: "running" });
       await apiSendAgentMessage(activeAgent.agent_id, message);
     },
-    [activeAgent, updateAgent],
+    [activeAgent],
   );
 
   const setActive = useCallback(
     (agentId: string) => {
-      if (!workspaceId) return;
-      setActiveAgentStore(workspaceId, agentId);
+      if (!workspaceId) {
+        return;
+      }
+      setActiveAgent(workspaceId, agentId);
     },
-    [workspaceId, setActiveAgentStore],
+    [workspaceId],
   );
 
   return {

@@ -86,13 +86,13 @@ export interface HookCallbackPayload {
 
 export type ControlRequestPayload =
   | CanUseToolPayload
+  | ElicitationPayload
+  | HookCallbackPayload
   | InitializePayload
   | InterruptPayload
-  | SetModelPayload
-  | SetPermissionModePayload
   | McpStatusPayload
-  | ElicitationPayload
-  | HookCallbackPayload;
+  | SetModelPayload
+  | SetPermissionModePayload;
 
 // ---------------------------------------------------------------------------
 // Top-level control messages (stdout: CLI → Parent)
@@ -127,7 +127,7 @@ export interface ControlResponseError {
 
 export interface ControlResponse {
   type: "control_response";
-  response: ControlResponseSuccess | ControlResponseError;
+  response: ControlResponseError | ControlResponseSuccess;
 }
 
 // ---------------------------------------------------------------------------

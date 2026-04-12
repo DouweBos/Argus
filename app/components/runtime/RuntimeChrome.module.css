@@ -1,0 +1,125 @@
+/* Shared runtime chrome — title bar, floating action bar, pickers, buttons,
+   and placeholder styles used by iOS, Android, and Web runtime views. */
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--toolbar-height);
+  min-width: 0;
+  padding: 0 36px 0 10px;
+  flex-shrink: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.titleBarTrailing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Floating action bar that sits below the title row. */
+.floatingBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 8px 10px 8px;
+  padding: 5px 8px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.floatingBarSpaced {
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+/* Select picker (device / browser preset) */
+.titleBarSelect {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 3px 20px 3px 4px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23606070' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  transition: color var(--transition-fast);
+}
+
+.titleBarSelect:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.titleBarSelect:focus {
+  outline: none;
+  color: var(--text-primary);
+}
+
+.titleBarSelect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Small icon button used in title bars and floating bars */
+.titleBarButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.titleBarButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.titleBarButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.titleBarButtonDestructive:hover {
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+}
+
+/* Empty-state placeholder */
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+}
+
+.phaseHint {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 8px;
+  opacity: 0.7;
+  line-height: 1.4;
+}

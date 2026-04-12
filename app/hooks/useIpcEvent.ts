@@ -17,8 +17,10 @@ export function useIpcEvent<T>(
   });
 
   useEffect(() => {
-    if (!event) return;
-    let unlisten: null | UnlistenFn = null;
+    if (!event) {
+      return;
+    }
+    let unlisten: UnlistenFn | null = null;
 
     unlisten = window.stagehand.on<T>(event, (payload) => {
       handlerRef.current(payload);

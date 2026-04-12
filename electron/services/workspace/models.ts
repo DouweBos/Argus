@@ -6,13 +6,12 @@
  */
 
 /** Whether this workspace is backed by a git worktree or the repo root itself. */
-export type WorkspaceKind = "worktree" | "repo_root";
+export type WorkspaceKind = "repo_root" | "worktree";
 
 /**
  * Lifecycle state of a workspace.
  *
- * Matches the Rust enum serialised with `rename_all = "snake_case"` and
- * the frontend `WorkspaceStatus` type in `src/lib/types.ts`.
+ * Matches the frontend `WorkspaceStatus` type in `src/lib/types.ts`.
  */
 export type WorkspaceStatus = "initializing" | "ready" | { error: string };
 
@@ -66,6 +65,20 @@ export interface WorkspaceEnvConfig {
   strategy: WorkspaceEnvStrategy;
 }
 
+/** JSON-facing shape for custom browser device presets in `.stagehand.json`. */
+export interface BrowserPresetConfig {
+  /** Viewport height in CSS pixels. */
+  height: number;
+  /** Unique preset identifier (e.g. "iphone-15-pro"). */
+  id: string;
+  /** Display name shown in the preset picker. Defaults to `id`. */
+  label?: string;
+  /** Custom user-agent string. Defaults to a desktop Chrome UA. */
+  user_agent?: string;
+  /** Viewport width in CSS pixels. */
+  width: number;
+}
+
 /** A related project that agents can create worktrees in and work on. */
 export interface RelatedProject {
   /** Relative path from this project's root to the related project's root. */
@@ -101,6 +114,10 @@ export interface SetupConfig {
   commands: string[];
 }
 
+/** Runtime platform a workspace targets. Drives which device-specific sections
+ * appear in the agent system prompt. */
+export type RuntimePlatform = "android" | "ios" | "web";
+
 /** Parsed representation of `.stagehand.json` found at the repo root. */
 export interface StagehandConfig {
   /** Setup instructions run once when a new workspace is created. */
@@ -115,6 +132,19 @@ export interface StagehandConfig {
   agent_prompt?: string | null;
   /** Related projects that agents can create worktrees in and work on. */
   related_projects?: RelatedProject[];
+  /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
+  browser_url?: string | null;
+  /** Custom browser device presets for the web browser panel. */
+  browser_presets: BrowserPresetConfig[];
+  /** Whether to save chat history when agents stop. Defaults to true. */
+  save_chat_history?: boolean | null;
+  /**
+   * Runtime platforms this project targets (e.g. `["ios", "web"]`).
+   * When set, the agent system prompt only describes these runtimes instead
+   * of the full iOS + Android + Web triple. If omitted, all three are
+   * described (backward compatible).
+   */
+  platforms?: RuntimePlatform[] | null;
 }
 
 /** Default/empty `SetupConfig`. */
@@ -131,5 +161,9 @@ export function defaultStagehandConfig(): StagehandConfig {
     run: null,
     agent_prompt: null,
     related_projects: [],
+    browser_url: null,
+    browser_presets: [],
+    save_chat_history: true,
+    platforms: null,
   };
 }

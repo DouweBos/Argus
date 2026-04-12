@@ -22,7 +22,8 @@
 
     /* Aliases */
     "paths": {
-      "@/*": ["./app/*"]
+      "@/*": ["./app/*"],
+      "@logger": ["./app/lib/logger.ts"]
     }
   },
   "include": ["app"],

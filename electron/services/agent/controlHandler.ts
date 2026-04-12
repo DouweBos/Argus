@@ -14,6 +14,7 @@ import type {
   InitializeResponse,
   PermissionDecision,
 } from "./protocol";
+import { info, warn } from "../../../app/lib/logger";
 import {
   type AllowRule,
   parseAllowRule,
@@ -39,11 +40,11 @@ export interface PermissionRequestPayload {
   tool_input: Record<string, unknown>;
   tool_name: string;
   tool_use_id: string;
-  permission_suggestions?: Array<{
+  permission_suggestions?: {
     type: string;
     tool: string;
     prefix?: string;
-  }>;
+  }[];
   title?: string;
   description?: string;
 }
@@ -132,6 +133,7 @@ export class ControlHandler {
           response.response.response as Record<string, unknown> | undefined,
         );
       }
+
       return true;
     }
 
@@ -142,9 +144,10 @@ export class ControlHandler {
     this.initializeRequestId = null;
 
     if (response.response.subtype === "error") {
-      console.warn(
+      warn(
         `[agent:${this.agentId}] initialize failed: ${response.response.error}`,
       );
+
       return true;
     }
 
@@ -153,12 +156,12 @@ export class ControlHandler {
       const cmds = data.commands ?? [];
       const models = data.models ?? [];
       const agents = data.agents ?? [];
-      console.info(
+      info(
         `[agent:${this.agentId}] initialized — ` +
           `${cmds.length} commands, ${models.length} models, ${agents.length} agents`,
       );
       if (cmds.length > 0) {
-        console.info(
+        info(
           `[agent:${this.agentId}] commands: ${cmds.map((c) => c.name).join(", ")}`,
         );
       }
@@ -198,9 +201,16 @@ export class ControlHandler {
       input as Record<string, unknown>,
     );
     const isAllowed = this.allowedRules.some((rule) => {
-      if (rule.tool !== tool_name) return false;
-      if (rule.specifier === null) return true;
-      if (specifier === null) return false;
+      if (rule.tool !== tool_name) {
+        return false;
+      }
+      if (rule.specifier === null) {
+        return true;
+      }
+      if (specifier === null) {
+        return false;
+      }
+
       return globMatch(rule.specifier, specifier);
     });
 
@@ -281,6 +291,15 @@ export class ControlHandler {
     return buildControlResponse(requestId, body);
   }
 
+  /**
+   * Build a programmatic deny response for a `can_use_tool` request without
+   * prompting the user. Used when the harness itself needs to block a tool
+   * call (e.g. a `conductor --device web` command when no webview is wired).
+   */
+  buildDenyResponse(requestId: string, message: string): string {
+    return buildControlResponse(requestId, { behavior: "deny", message });
+  }
+
   // -------------------------------------------------------------------------
   // Cancel: handle control_cancel_request from the CLI
   // -------------------------------------------------------------------------
@@ -294,7 +313,9 @@ export class ControlHandler {
     emit: (channel: string, data: unknown) => void,
   ): void {
     const pending = this.pending.get(requestId);
-    if (!pending) return;
+    if (!pending) {
+      return;
+    }
 
     this.pending.delete(requestId);
     this.toolUseToRequestId.delete(pending.toolUseId);
@@ -353,6 +374,7 @@ export class ControlHandler {
       request_id: requestId,
       request,
     });
+
     return [json, promise];
   }
 
@@ -390,5 +412,6 @@ function buildControlResponse(
       response: decision as unknown as Record<string, unknown>,
     },
   };
+
   return JSON.stringify(response);
 }

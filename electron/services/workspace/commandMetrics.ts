@@ -9,7 +9,6 @@
 
 import fs from "node:fs";
 import path from "node:path";
-
 import { worktreesRoot } from "./git";
 
 const METRICS_FILENAME = ".stagehand-command-metrics.json";
@@ -39,7 +38,10 @@ export function loadCommandMetrics(repoRoot: string): Record<string, number> {
 
   try {
     const file = JSON.parse(raw) as MetricsFile;
-    if (file.version !== SCHEMA_VERSION) return {};
+    if (file.version !== SCHEMA_VERSION) {
+      return {};
+    }
+
     return file.counts ?? {};
   } catch {
     return {};

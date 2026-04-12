@@ -69,6 +69,7 @@ When a task requires changes across multiple projects (e.g. frontend + backend):
 4. **Coordinate** — if the backend agent needs to finish before the frontend agent can start, monitor with `agent_status` and spawn the dependent agent after.
 
 Example: a ticket requires a new API endpoint and a frontend screen that calls it.
+
 - `list_projects` → find the backend project path
 - `create_workspace` with `repo_root` set to the backend path → get a workspace ID
 - `spawn_agent` in that backend workspace with instructions to add the endpoint

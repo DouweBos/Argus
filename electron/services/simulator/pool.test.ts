@@ -1,5 +1,14 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { SimulatorDevice } from "./ios";
+import { execFile } from "node:child_process";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { appState } from "../../state";
+import { listSimulators, bootSimulator } from "./ios";
+import {
+  simulatorPool,
+  projectPrefix,
+  nextDeviceName,
+  iphoneModelNumber,
+} from "./pool";
 
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before any imports that use them.
@@ -21,16 +30,6 @@ vi.mock("electron", () => ({ app: { isPackaged: false } }));
 
 // Mock main.ts to avoid Electron window references.
 vi.mock("../../main", () => ({ getMainWindow: () => null }));
-
-import { execFile } from "node:child_process";
-import { appState } from "../../state";
-import { listSimulators, bootSimulator } from "./ios";
-import {
-  simulatorPool,
-  projectPrefix,
-  nextDeviceName,
-  iphoneModelNumber,
-} from "./pool";
 
 const mockExecFile = vi.mocked(execFile);
 const mockListSimulators = vi.mocked(listSimulators);
@@ -61,6 +60,7 @@ function stubExecFile(stdout: string): void {
           stdout,
         });
       }
+
       return undefined as never;
     },
   );
@@ -104,6 +104,7 @@ function stubSimctlCreate(createdUdid: string): void {
           stdout,
         });
       }
+
       return undefined as never;
     },
   );
@@ -170,7 +171,7 @@ describe("iphoneModelNumber", () => {
   });
 });
 
-describe("SimulatorPool", () => {
+describe("simulatorPool", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Clear all reservations between tests.
@@ -305,6 +306,7 @@ describe("SimulatorPool", () => {
               stdout,
             });
           }
+
           return undefined as never;
         },
       );
@@ -329,6 +331,7 @@ describe("SimulatorPool", () => {
         if (callCount === 1) {
           return [fakeDevice("iPhone 16", "uuid-other")];
         }
+
         return [
           fakeDevice("iPhone 16", "uuid-other"),
           fakeDevice("MyApp-1", "uuid-first"),
@@ -372,6 +375,7 @@ describe("SimulatorPool", () => {
               stdout,
             });
           }
+
           return undefined as never;
         },
       );
@@ -436,6 +440,7 @@ describe("SimulatorPool", () => {
           if (typeof cb === "function") {
             (cb as (err: Error) => void)(new Error("conductor not found"));
           }
+
           return undefined as never;
         },
       );
@@ -446,8 +451,9 @@ describe("SimulatorPool", () => {
     });
 
     it("no-ops for an unknown agent", async () => {
-      await simulatorPool.releaseSimulator("nonexistent");
-      // Just shouldn't throw.
+      await expect(
+        simulatorPool.releaseSimulator("nonexistent"),
+      ).resolves.toBeUndefined();
     });
   });
 

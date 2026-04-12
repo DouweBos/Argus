@@ -1,4 +1,5 @@
 import { marked } from "marked";
+import { linkifyFilePaths } from "./filePathLink";
 
 /**
  * Configure marked for safe, consistent rendering.
@@ -12,5 +13,7 @@ marked.use({
 
 /** Parse markdown text to an HTML string (synchronous). */
 export function renderMarkdown(text: string): string {
-  return marked.parse(text, { async: false }) as string;
+  const html = marked.parse(text, { async: false }) as string;
+
+  return linkifyFilePaths(html);
 }

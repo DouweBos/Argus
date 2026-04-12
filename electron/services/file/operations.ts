@@ -8,9 +8,10 @@
  */
 
 import fs from "fs";
+import os from "os";
 import path from "path";
-
 import { appState } from "../../state";
+import { git } from "../workspace/git";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -78,6 +79,7 @@ export async function listDirectory(
     if (a.is_dir !== b.is_dir) {
       return a.is_dir ? -1 : 1;
     }
+
     return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   });
 
@@ -231,12 +233,14 @@ export async function statPath(
 ): Promise<{ is_dir: boolean; size: number; mtime: number }> {
   assertInsideWorkspace(absPath);
   const stat = await fs.promises.stat(absPath);
+
   return { is_dir: stat.isDirectory(), size: stat.size, mtime: stat.mtimeMs };
 }
 
 /** Read a text file at an absolute path. */
 export async function readPath(absPath: string): Promise<string> {
   assertInsideWorkspace(absPath);
+
   return fs.promises.readFile(absPath, "utf8");
 }
 
@@ -258,7 +262,9 @@ export async function listPath(absPath: string): Promise<DirEntry[]> {
   });
   const entries: DirEntry[] = [];
   for (const dirent of rawEntries) {
-    if (dirent.name === ".git") continue;
+    if (dirent.name === ".git") {
+      continue;
+    }
     let size = 0;
     try {
       const s = await fs.promises.stat(path.join(absPath, dirent.name));
@@ -269,9 +275,13 @@ export async function listPath(absPath: string): Promise<DirEntry[]> {
     entries.push({ name: dirent.name, is_dir: dirent.isDirectory(), size });
   }
   entries.sort((a, b) => {
-    if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+    if (a.is_dir !== b.is_dir) {
+      return a.is_dir ? -1 : 1;
+    }
+
     return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   });
+
   return entries;
 }
 
@@ -300,6 +310,95 @@ export async function renamePath(from: string, to: string): Promise<void> {
   await fs.promises.rename(from, to);
 }
 
+/**
+ * List all files in a workspace using `git ls-files`.
+ *
+ * Returns tracked files plus untracked non-ignored files, sorted
+ * alphabetically. Falls back to an empty array if the git command fails.
+ */
+export async function listWorkspaceFiles(id: string): Promise<string[]> {
+  const root = workspacePath(id);
+
+  const [tracked, untracked] = await Promise.all([
+    git(root, ["ls-files"]).catch(() => ""),
+    git(root, ["ls-files", "--others", "--exclude-standard"]).catch(() => ""),
+  ]);
+
+  const parse = (out: string) => out.split("\n").filter((l) => l.length > 0);
+
+  const allFiles = [...new Set([...parse(tracked), ...parse(untracked)])];
+  allFiles.sort((a, b) => a.localeCompare(b));
+
+  return allFiles;
+}
+
+/** Entry returned by {@link resolveMentionPath}. */
+export interface MentionDirEntry {
+  name: string;
+  is_dir: boolean;
+}
+
+/**
+ * Resolve a mention path query and list the target directory contents.
+ *
+ * Handles `~` (home directory), absolute paths, and workspace-relative paths.
+ * The `query` should be the directory portion of the mention (e.g. `src/`,
+ * `~/Work/`, `/Users/douwe/`).
+ *
+ * Returns the resolved absolute path and sorted directory entries
+ * (directories first, then alphabetical). Returns empty entries for
+ * non-existent or non-directory paths.
+ */
+export async function resolveMentionPath(
+  id: string,
+  query: string,
+): Promise<{ resolvedPath: string; entries: MentionDirEntry[] }> {
+  const root = workspacePath(id);
+
+  let resolved: string;
+  if (query.startsWith("~/") || query === "~") {
+    resolved = path.join(os.homedir(), query.slice(1));
+  } else if (query.startsWith("/")) {
+    resolved = query;
+  } else {
+    resolved = path.join(root, query);
+  }
+
+  // Remove trailing slash for stat/readdir
+  resolved = resolved.replace(/\/+$/, "") || "/";
+
+  let stat: fs.Stats;
+  try {
+    stat = await fs.promises.stat(resolved);
+  } catch {
+    return { resolvedPath: resolved, entries: [] };
+  }
+
+  if (!stat.isDirectory()) {
+    return { resolvedPath: resolved, entries: [] };
+  }
+
+  let rawEntries: fs.Dirent[];
+  try {
+    rawEntries = await fs.promises.readdir(resolved, { withFileTypes: true });
+  } catch {
+    return { resolvedPath: resolved, entries: [] };
+  }
+
+  const entries: MentionDirEntry[] = rawEntries
+    .filter((d) => d.name !== ".git" && !d.name.startsWith("."))
+    .map((d) => ({ name: d.name, is_dir: d.isDirectory() }))
+    .sort((a, b) => {
+      if (a.is_dir !== b.is_dir) {
+        return a.is_dir ? -1 : 1;
+      }
+
+      return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    });
+
+  return { resolvedPath: resolved, entries };
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -314,6 +413,7 @@ function workspacePath(id: string): string {
   if (!workspace) {
     throw `Workspace not found: ${id}`;
   }
+
   return workspace.path;
 }
 

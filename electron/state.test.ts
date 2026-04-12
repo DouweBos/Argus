@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { appState } from "./state";
 
-describe("AppState", () => {
+describe("appState", () => {
   it("has empty collections by default", () => {
     expect(appState.repoRoots.size).toBe(0);
     expect(appState.workspaces.size).toBe(0);

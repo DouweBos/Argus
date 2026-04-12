@@ -1,22 +1,22 @@
+import { FitAddon } from "@xterm/addon-fit";
+import { SearchAddon } from "@xterm/addon-search";
+import { SerializeAddon } from "@xterm/addon-serialize";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import { Terminal } from "@xterm/xterm";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
   useSyncExternalStore,
 } from "react";
-import { Terminal } from "@xterm/xterm";
-import { FitAddon } from "@xterm/addon-fit";
-import { WebLinksAddon } from "@xterm/addon-web-links";
-import { SerializeAddon } from "@xterm/addon-serialize";
-import { SearchAddon } from "@xterm/addon-search";
-import { terminalWrite, terminalResize, startTerminal } from "../lib/ipc";
-import { useTerminalStore } from "../stores/terminalStore";
+import { startTerminal, terminalResize, terminalWrite } from "../lib/ipc";
 import {
   attachWriter,
   detachWriter,
   drainPending,
 } from "../lib/terminalBufferService";
+import { cacheBuffer, getBuffer } from "../stores/terminalStore";
 import "@xterm/xterm/css/xterm.css";
 
 const DEFAULT_FONT_SIZE = 13;
@@ -25,7 +25,7 @@ const MAX_FONT_SIZE = 24;
 
 interface UseTerminalOptions {
   onExit?: (code: number) => void;
-  sessionId: null | string;
+  sessionId: string | null;
 }
 
 interface SearchState {
@@ -41,7 +41,7 @@ interface UseTerminalResult {
   searchState: SearchState;
   searchVisible: boolean;
   showSearch: () => void;
-  terminal: null | Terminal;
+  terminal: Terminal | null;
   terminalRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -50,9 +50,9 @@ export function useTerminal({
   onExit,
 }: UseTerminalOptions): UseTerminalResult {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const terminalInstanceRef = useRef<null | Terminal>(null);
+  const terminalInstanceRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const searchAddonRef = useRef<null | SearchAddon>(null);
+  const searchAddonRef = useRef<SearchAddon | null>(null);
   const fontSizeRef = useRef(DEFAULT_FONT_SIZE);
   const onExitRef = useRef(onExit);
   const listenersRef = useRef(new Set<() => void>());
@@ -68,6 +68,7 @@ export function useTerminal({
 
   const subscribe = useCallback((cb: () => void) => {
     listenersRef.current.add(cb);
+
     return () => {
       listenersRef.current.delete(cb);
     };
@@ -90,7 +91,9 @@ export function useTerminal({
   }, []);
   const countMatches = useCallback((query: string): number => {
     const term = terminalInstanceRef.current;
-    if (!term || !query) return 0;
+    if (!term || !query) {
+      return 0;
+    }
     const buf = term.buffer.active;
     let count = 0;
     const lowerQuery = query.toLowerCase();
@@ -102,6 +105,7 @@ export function useTerminal({
         idx += lowerQuery.length;
       }
     }
+
     return count;
   }, []);
 
@@ -114,13 +118,18 @@ export function useTerminal({
       if (!found || total === 0) {
         setSearchState({ resultIndex: -1, resultCount: total });
         lastQueryRef.current = query;
+
         return;
       }
+
       const isNewQuery = query !== lastQueryRef.current;
       lastQueryRef.current = query;
       setSearchState((prev) => {
-        if (isNewQuery) return { resultIndex: 0, resultCount: total };
+        if (isNewQuery) {
+          return { resultIndex: 0, resultCount: total };
+        }
         const next = prev.resultIndex + 1;
+
         return { resultIndex: next >= total ? 0 : next, resultCount: total };
       });
     },
@@ -134,13 +143,18 @@ export function useTerminal({
       if (!found || total === 0) {
         setSearchState({ resultIndex: -1, resultCount: total });
         lastQueryRef.current = query;
+
         return;
       }
+
       const isNewQuery = query !== lastQueryRef.current;
       lastQueryRef.current = query;
       setSearchState((prev) => {
-        if (isNewQuery) return { resultIndex: total - 1, resultCount: total };
+        if (isNewQuery) {
+          return { resultIndex: total - 1, resultCount: total };
+        }
         const next = prev.resultIndex - 1;
+
         return { resultIndex: next < 0 ? total - 1 : next, resultCount: total };
       });
     },
@@ -149,7 +163,9 @@ export function useTerminal({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !sessionId) return;
+    if (!container || !sessionId) {
+      return;
+    }
 
     const term = new Terminal({
       theme: {
@@ -205,7 +221,7 @@ export function useTerminal({
     startTerminal(sessionId, cols, rows).catch(() => {});
 
     // Restore cached buffer (non-destructive read — survives StrictMode)
-    const cached = useTerminalStore.getState().getBuffer(sessionId);
+    const cached = getBuffer(sessionId);
     if (cached) {
       term.write(cached);
     }
@@ -225,25 +241,31 @@ export function useTerminal({
       for (const chunk of pending) {
         term.write(chunk);
       }
+
       attachWriter(sessionId, (data) => term.write(data));
     });
 
     // macOS keyboard shortcuts
     term.attachCustomKeyEventHandler((e) => {
-      if (e.type !== "keydown" || !e.metaKey) return true;
+      if (e.type !== "keydown" || !e.metaKey) {
+        return true;
+      }
 
       switch (e.key) {
         // Cmd+K — clear terminal
         case "k":
           term.clear();
+
           return false;
 
         // Cmd+C — copy selection (fall through to PTY if no selection)
         case "c":
           if (term.hasSelection()) {
             navigator.clipboard.writeText(term.getSelection());
+
             return false;
           }
+
           return true;
 
         // Cmd+V — paste from clipboard
@@ -253,16 +275,19 @@ export function useTerminal({
               terminalWrite(sessionId, btoa(text)).catch(() => {});
             }
           });
+
           return false;
 
         // Cmd+A — select all
         case "a":
           term.selectAll();
+
           return false;
 
         // Cmd+F — find in terminal
         case "f":
           setSearchVisible(true);
+
           return false;
 
         // Cmd+Plus / Cmd+= — zoom in
@@ -276,6 +301,7 @@ export function useTerminal({
             term.options.fontSize = fontSizeRef.current;
             fitAddon.fit();
           }
+
           return false;
 
         // Cmd+Minus — zoom out
@@ -288,6 +314,7 @@ export function useTerminal({
             term.options.fontSize = fontSizeRef.current;
             fitAddon.fit();
           }
+
           return false;
 
         // Cmd+0 — reset zoom
@@ -295,6 +322,7 @@ export function useTerminal({
           fontSizeRef.current = DEFAULT_FONT_SIZE;
           term.options.fontSize = DEFAULT_FONT_SIZE;
           fitAddon.fit();
+
           return false;
 
         default:
@@ -309,11 +337,13 @@ export function useTerminal({
 
     // ResizeObserver to keep terminal dimensions in sync
     const resizeObserver = new ResizeObserver(() => {
-      if (!fitAddonRef.current || !terminalInstanceRef.current) return;
+      if (!fitAddonRef.current || !terminalInstanceRef.current) {
+        return;
+      }
       try {
         fitAddonRef.current.fit();
-        const { cols, rows } = terminalInstanceRef.current;
-        terminalResize(sessionId, cols, rows).catch(() => {});
+        const { cols: termCols, rows: termRows } = terminalInstanceRef.current;
+        terminalResize(sessionId, termCols, termRows).catch(() => {});
       } catch {
         // ignore fit errors during layout transitions
       }
@@ -322,6 +352,7 @@ export function useTerminal({
 
     const sid = sessionId;
     const listeners = listenersRef.current;
+
     return () => {
       cancelAnimationFrame(flushId);
 
@@ -332,7 +363,7 @@ export function useTerminal({
         try {
           const serialized = serializeAddon.serialize();
           if (serialized) {
-            useTerminalStore.getState().cacheBuffer(sid, serialized);
+            cacheBuffer(sid, serialized);
           }
         } catch {
           // serialization can fail if terminal is already disposed

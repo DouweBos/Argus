@@ -1,0 +1,89 @@
+/* Agent bar */
+.agentBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 14px;
+  background: transparent;
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+  height: var(--toolbar-height);
+}
+
+.agentBarAddBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.agentBarAddBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.agentBarBtnActive {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.noAgentContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-primary);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 24px 24px;
+}
+
+.startAgentBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border: 1px solid rgba(77, 159, 255, 0.3);
+  border-radius: var(--border-radius-pill);
+  background: rgba(77, 159, 255, 0.08);
+  color: var(--accent);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.startAgentBtn:hover:not(:disabled) {
+  background: rgba(77, 159, 255, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.startAgentBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.hintText {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 280px;
+  line-height: 1.6;
+}

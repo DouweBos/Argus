@@ -5,22 +5,28 @@
  * Components should never call `window.stagehand.invoke()` directly.
  */
 
+import type { ChatHistoryEntry, SavedConversation } from "./chatHistory";
 import type {
   AgentStatus,
   AndroidDevice,
   BranchList,
   DirEntry,
   FileStat,
-  Workspace,
+  MentionPathResult,
   SimulatorDevice,
   StagehandConfig,
+  Workspace,
 } from "./types";
 
 declare global {
   interface Window {
     stagehand: {
-      invoke<T>(channel: string, args?: Record<string, unknown>): Promise<T>;
-      on<T>(event: string, callback: (payload: T) => void): () => void;
+      invoke: <T>(
+        channel: string,
+        args?: Record<string, unknown>,
+      ) => Promise<T>;
+      on: <T>(event: string, callback: (payload: T) => void) => () => void;
+      send: (channel: string, args?: Record<string, unknown>) => void;
     };
   }
 }
@@ -30,6 +36,11 @@ function invoke<T>(
   args?: Record<string, unknown>,
 ): Promise<T> {
   return window.stagehand.invoke<T>(channel, args);
+}
+
+/** Fire-and-forget IPC — skips the invoke reply round-trip. */
+export function send(channel: string, args?: Record<string, unknown>): void {
+  window.stagehand.send(channel, args);
 }
 
 // Workspace commands
@@ -101,8 +112,14 @@ export const getWorkspaceUntrackedDiff = (id: string): Promise<string> =>
 export const stageFile = (id: string, filePath: string): Promise<void> =>
   invoke("stage_file", { id, filePath });
 
+export const stageAll = (id: string): Promise<void> =>
+  invoke("stage_all", { id });
+
 export const unstageFile = (id: string, filePath: string): Promise<void> =>
   invoke("unstage_file", { id, filePath });
+
+export const unstageAll = (id: string): Promise<void> =>
+  invoke("unstage_all", { id });
 
 export const discardFile = (id: string, filePath: string): Promise<void> =>
   invoke("discard_file", { id, filePath });
@@ -239,6 +256,14 @@ export const listDirectory = (
   relativePath: string,
 ): Promise<DirEntry[]> => invoke("list_directory", { id, relativePath });
 
+export const listWorkspaceFiles = (id: string): Promise<string[]> =>
+  invoke("list_workspace_files", { id });
+
+export const resolveMentionPath = (
+  id: string,
+  query: string,
+): Promise<MentionPathResult> => invoke("resolve_mention_path", { id, query });
+
 export const readFile = (id: string, relativePath: string): Promise<string> =>
   invoke("read_file", { id, relativePath });
 
@@ -337,6 +362,31 @@ export const getCommandMetrics = (
   repoRoot: string,
 ): Promise<Record<string, number>> =>
   invoke("get_command_metrics", { repoRoot });
+
+// Chat history commands
+export const saveChatHistory = (
+  repoRoot: string,
+  conversation: SavedConversation,
+): Promise<void> =>
+  invoke("save_chat_history", {
+    repoRoot,
+    conversation: conversation as unknown as Record<string, unknown>,
+  });
+
+export const listChatHistory = (
+  repoRoot: string,
+): Promise<ChatHistoryEntry[]> => invoke("list_chat_history", { repoRoot });
+
+export const loadChatHistory = (
+  repoRoot: string,
+  historyId: string,
+): Promise<SavedConversation | null> =>
+  invoke("load_chat_history", { repoRoot, historyId });
+
+export const deleteChatHistory = (
+  repoRoot: string,
+  historyId: string,
+): Promise<void> => invoke("delete_chat_history", { repoRoot, historyId });
 
 // Terminal commands
 export const createTerminal = (
@@ -439,6 +489,68 @@ export const androidKeyboard = (
 
 export const androidButton = (button: string): Promise<void> =>
   invoke("android_button", { button });
+
+// Browser commands — Playwright Chromium-backed embedded browser per workspace.
+
+export const browserViewEnsure = (workspaceId: string): Promise<void> =>
+  invoke("browser_view_ensure", { workspaceId });
+
+export const browserViewNavigate = (
+  workspaceId: string,
+  url: string,
+): Promise<void> => invoke("browser_view_navigate", { workspaceId, url });
+
+export const browserViewBack = (workspaceId: string): Promise<void> =>
+  invoke("browser_view_back", { workspaceId });
+
+export const browserViewForward = (workspaceId: string): Promise<void> =>
+  invoke("browser_view_forward", { workspaceId });
+
+export const browserViewReload = (workspaceId: string): Promise<void> =>
+  invoke("browser_view_reload", { workspaceId });
+
+export const browserViewDestroy = (workspaceId: string): Promise<void> =>
+  invoke("browser_view_destroy", { workspaceId });
+
+export const browserMouseEvent = (
+  workspaceId: string,
+  type: "click" | "down" | "move" | "up",
+  x: number,
+  y: number,
+  button?: "left" | "middle" | "right",
+): Promise<void> =>
+  invoke("browser_mouse_event", { workspaceId, type, x, y, button });
+
+export const browserKeyboardEvent = (
+  workspaceId: string,
+  type: "down" | "press" | "up",
+  key: string,
+): Promise<void> =>
+  invoke("browser_keyboard_event", { workspaceId, type, key });
+
+export const browserWheelEvent = (
+  workspaceId: string,
+  x: number,
+  y: number,
+  deltaX: number,
+  deltaY: number,
+): Promise<void> =>
+  invoke("browser_wheel_event", { workspaceId, x, y, deltaX, deltaY });
+
+export interface BrowserPresetConfig {
+  internalHeight: number;
+  internalWidth: number;
+  screenPosition?: "desktop" | "mobile";
+  userAgent?: string;
+}
+
+export const browserUpdatePreset = (
+  workspaceId: string,
+  preset: BrowserPresetConfig,
+): Promise<void> => invoke("browser_update_preset", { workspaceId, preset });
+
+export const browserGetMjpegPort = (): Promise<number> =>
+  invoke("browser_get_mjpeg_port");
 
 // Shell commands
 export const revealInFinder = (path: string): Promise<void> =>

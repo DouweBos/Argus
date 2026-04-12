@@ -3,7 +3,7 @@ export interface GraphRow {
   color: number;
   column: number;
   /** New lanes forking out from the commit column */
-  forks: Array<{ fromCol: number; toCol: number }>;
+  forks: { fromCol: number; toCol: number }[];
   isMerge: boolean;
   /** Color index for each lane column (column index → palette index) */
   laneColorMap: Map<number, number>;
@@ -13,7 +13,7 @@ export interface GraphRow {
   /** Lane indices with lines going up (active before this commit) */
   lanesToTop: number[];
   /** Extra lanes merging into the commit column */
-  merges: Array<{ fromCol: number; toCol: number }>;
+  merges: { fromCol: number; toCol: number }[];
 }
 
 interface CommitLike {
@@ -27,9 +27,9 @@ interface CommitLike {
  */
 export function buildGraphLanes(commits: CommitLike[]): GraphRow[] {
   // Active lanes: each entry is the commit hash the lane is "waiting for"
-  const lanes: (null | string)[] = [];
+  const lanes: (string | null)[] = [];
   // Color index assigned to each lane column
-  const colColors: (null | number)[] = [];
+  const colColors: (number | null)[] = [];
   const rows: GraphRow[] = [];
   const laneColors = new Map<string, number>();
   let nextColor = 0;
@@ -87,10 +87,11 @@ export function buildGraphLanes(commits: CommitLike[]): GraphRow[] {
     if (!laneColorMap.has(column)) {
       laneColorMap.set(column, color % LANE_COLORS.length);
     }
+
     colColors[column] = color;
 
     // Collect merges (extra matching lanes collapsing into the commit column)
-    const merges: Array<{ fromCol: number; toCol: number }> = [];
+    const merges: { fromCol: number; toCol: number }[] = [];
     for (let i = matchingLanes.length - 1; i >= 1; i--) {
       const extraLane = matchingLanes[i]!;
       merges.push({ fromCol: extraLane, toCol: column });
@@ -110,7 +111,7 @@ export function buildGraphLanes(commits: CommitLike[]): GraphRow[] {
     }
 
     // Additional parents: find or allocate lanes
-    const forks: Array<{ fromCol: number; toCol: number }> = [];
+    const forks: { fromCol: number; toCol: number }[] = [];
     for (let p = 1; p < parents.length; p++) {
       const parentHash = parents[p]!;
       let parentLane = lanes.indexOf(parentHash);
@@ -123,11 +124,14 @@ export function buildGraphLanes(commits: CommitLike[]): GraphRow[] {
           parentLane = lanes.length;
           lanes.push(parentHash);
         }
+
         if (!laneColors.has(parentHash)) {
           laneColors.set(parentHash, nextColor++);
         }
+
         colColors[parentLane] = laneColors.get(parentHash)!;
       }
+
       forks.push({ fromCol: column, toCol: parentLane });
       // Add fork destination color to the map
       laneColorMap.set(
