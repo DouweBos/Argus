@@ -1,15 +1,14 @@
 import { useMemo } from "react";
 import {
   setActiveCenterView,
-  setAgentPanel,
   useActiveCenterView,
-  useAgentPanel,
 } from "../../../stores/editorStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { EditorPanel } from "../../editor/EditorPanel";
 import { ArgusLogo, HomeIcon } from "../../shared/Icons";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
+import { HomePanel } from "../HomePanel";
 import styles from "./CenterPanel.module.css";
 
 interface CenterPanelProps {
@@ -28,9 +27,6 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
 
   const activeView = useActiveCenterView();
   const setActiveView = setActiveCenterView;
-  const agentPanel = useAgentPanel();
-  const homeActive = activeView === "agents" && agentPanel === "home";
-  const agentsActive = activeView === "agents" && agentPanel === "agent";
 
   if (!workspaceId || !workspace) {
     return (
@@ -53,21 +49,15 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
         <div className={styles.viewSwitcher}>
           <button
             aria-label="Repo home"
-            className={`${styles.homeTab} ${homeActive ? styles.viewTabActive : ""}`}
+            className={`${styles.homeTab} ${activeView === "home" ? styles.viewTabActive : ""}`}
             title="Repo home"
-            onClick={() => {
-              setActiveView("agents");
-              setAgentPanel("home");
-            }}
+            onClick={() => setActiveView("home")}
           >
             <HomeIcon />
           </button>
           <button
-            className={`${styles.viewTab} ${agentsActive ? styles.viewTabActive : ""}`}
-            onClick={() => {
-              setActiveView("agents");
-              setAgentPanel("agent");
-            }}
+            className={`${styles.viewTab} ${activeView === "agents" ? styles.viewTabActive : ""}`}
+            onClick={() => setActiveView("agents")}
           >
             Agents
           </button>
@@ -87,6 +77,8 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
       </div>
 
       {/* Content area */}
+      {activeView === "home" && <HomePanel workspaceId={workspaceId} />}
+
       {activeView === "agents" && <AgentView workspaceId={workspaceId} />}
 
       {activeView === "editor" && <EditorPanel workspaceId={workspaceId} />}

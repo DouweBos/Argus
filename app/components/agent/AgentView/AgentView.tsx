@@ -1,15 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useWorkspaceAgents } from "../../../hooks/useAgent";
-import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
 import { isWorkspaceReady } from "../../../lib/types";
-import { setActiveAgent } from "../../../stores/agentStore";
-import {
-  clearConversation,
-  loadSavedMessages,
-} from "../../../stores/conversationStore";
-import { setAgentPanel, useAgentPanel } from "../../../stores/editorStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
-import { RepoHomeScreen } from "../../home/RepoHomeScreen";
+import { useWorkspaces } from "../../../stores/workspaceStore";
 import { AgentStartIcon, PlusIcon } from "../../shared/Icons";
 import { AgentChat } from "../AgentChat";
 import { AgentTabBar } from "../AgentTabBar";
@@ -26,8 +18,6 @@ export function AgentView({ workspaceId }: AgentViewProps) {
     [workspaces, workspaceId],
   );
 
-  const repoRoot = workspace?.repo_root ?? null;
-
   const {
     agents,
     activeAgent,
@@ -42,105 +32,6 @@ export function AgentView({ workspaceId }: AgentViewProps) {
     workspaceReady: workspace ? isWorkspaceReady(workspace.status) : false,
   });
 
-  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
-  const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
-  const panel = useAgentPanel();
-
-  const handleOrchestrationSelect = useCallback(
-    (agentId: string, agentWorkspaceId: string) => {
-      if (agentWorkspaceId !== workspaceId) {
-        selectWorkspace(agentWorkspaceId);
-      }
-      setActiveAgent(agentWorkspaceId, agentId);
-      setAgentPanel("agent");
-    },
-    [workspaceId],
-  );
-
-  const historyAgentId = viewingHistoryId
-    ? `history:${viewingHistoryId}`
-    : null;
-
-  const handleViewHistory = useCallback(
-    (historyId: string) => {
-      if (!repoRoot) {
-        return;
-      }
-      loadChatHistory(repoRoot, historyId)
-        .then((saved) => {
-          if (!saved) {
-            return;
-          }
-          const syntheticId = `history:${historyId}`;
-          loadSavedMessages(
-            syntheticId,
-            saved.messages,
-            saved.model,
-            saved.sessionId,
-          );
-          setViewingHistoryId(historyId);
-          setViewingSessionId(saved.sessionId);
-          setAgentPanel("agent");
-        })
-        .catch(() => {});
-    },
-    [repoRoot],
-  );
-
-  const handleCloseHistory = useCallback(() => {
-    if (historyAgentId) {
-      clearConversation(historyAgentId);
-    }
-    setViewingHistoryId(null);
-    setViewingSessionId(null);
-  }, [historyAgentId]);
-
-  const handleResumeHistory = useCallback(
-    async (sessionId: string) => {
-      handleCloseHistory();
-      setAgentPanel("agent");
-
-      const newAgentId = await startNew(undefined, undefined, sessionId);
-      if (!newAgentId || !repoRoot) {
-        return;
-      }
-
-      const entries = await listChatHistory(repoRoot).catch(() => []);
-      const entry = entries.find((e) => e.sessionId === sessionId);
-      if (entry) {
-        const saved = await loadChatHistory(repoRoot, entry.id).catch(
-          () => null,
-        );
-        if (saved && saved.messages.length > 0) {
-          loadSavedMessages(
-            newAgentId,
-            saved.messages,
-            saved.model,
-            saved.sessionId,
-            true,
-          );
-        }
-      }
-    },
-    [handleCloseHistory, repoRoot, startNew],
-  );
-
-  if (viewingHistoryId && historyAgentId) {
-    return (
-      <AgentChat
-        agentId={historyAgentId}
-        readOnly
-        workspaceId={workspaceId}
-        onClose={handleCloseHistory}
-        onResume={
-          viewingSessionId
-            ? () => handleResumeHistory(viewingSessionId)
-            : undefined
-        }
-      />
-    );
-  }
-
   const wsReady = workspace != null && isWorkspaceReady(workspace.status);
 
   return (
@@ -148,23 +39,15 @@ export function AgentView({ workspaceId }: AgentViewProps) {
       {hasAgents && (
         <div className={styles.agentBar}>
           <AgentTabBar
-            activeAgentId={
-              panel === "agent" ? (activeAgent?.agent_id ?? null) : null
-            }
+            activeAgentId={activeAgent?.agent_id ?? null}
             agents={agents}
             onClose={(agentId) => stopAgent(agentId)}
-            onSelect={(agentId) => {
-              setAgentPanel("agent");
-              setActive(agentId);
-            }}
+            onSelect={(agentId) => setActive(agentId)}
           />
           <button
             className={styles.agentBarAddBtn}
             title="Start new agent"
-            onClick={() => {
-              setAgentPanel("agent");
-              startNew();
-            }}
+            onClick={() => startNew()}
           >
             <PlusIcon />
           </button>
@@ -172,24 +55,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
         </div>
       )}
 
-      {panel === "home" && (
-        <RepoHomeScreen
-          canStart={wsReady}
-          isStarting={isStarting}
-          repoRoot={repoRoot}
-          workspaceId={workspaceId}
-          workspaceLabel={workspace?.branch ?? null}
-          onResumeHistory={handleResumeHistory}
-          onSelectAgent={handleOrchestrationSelect}
-          onStart={() => {
-            setAgentPanel("agent");
-            startNew();
-          }}
-          onViewHistory={handleViewHistory}
-        />
-      )}
-
-      {panel === "agent" && activeAgent && (
+      {activeAgent && (
         <AgentChat
           agentId={activeAgent.agent_id}
           permissionMode={activeAgent.permission_mode}
@@ -198,7 +64,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
         />
       )}
 
-      {panel === "agent" && !activeAgent && (
+      {!activeAgent && (
         <div className={styles.agentEmpty}>
           <div className={styles.agentEmptyCard}>
             <div className={styles.agentEmptyDot} />
