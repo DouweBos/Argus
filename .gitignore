@@ -28,14 +28,14 @@ release
 # Environment / secrets
 .env
 .env.*
-.stagehand.local.json
+.argus.local.json
 
 # Claude Code
 .claude/
 
 # Native build artifacts
-native/stagehand-sim-bridge/stagehand-sim-bridge
-native/stagehand-sim-bridge/.build/
+native/argus-sim-bridge/argus-sim-bridge
+native/argus-sim-bridge/.build/
 native/scrcpy-server/
 native/conductor/
 

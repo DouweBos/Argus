@@ -13,11 +13,12 @@
  */
 
 import http from "node:http";
-import { info, warn } from "../../../app/lib/logger";
+import type { Duplex } from "node:stream";
+import { info } from "../../../app/lib/logger";
 import { pushFrame } from "./mjpegServer";
 
 interface ActiveScreencast {
-  ws: import("node:stream").Duplex;
+  ws: Duplex;
   sessionId: string | null;
   closed: boolean;
 }
@@ -38,24 +39,21 @@ async function resolveWsUrl(
   targetId: string,
 ): Promise<string> {
   const body = await new Promise<string>((resolve, reject) => {
-    const req = http.get(
-      `http://127.0.0.1:${cdpPort}/json`,
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (c: Buffer) => chunks.push(c));
-        res.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
-      },
-    );
+    const req = http.get(`http://127.0.0.1:${cdpPort}/json`, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (c: Buffer) => chunks.push(c));
+      res.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    });
     req.on("error", reject);
     req.setTimeout(5000, () =>
       req.destroy(new Error("CDP /json request timed out")),
     );
   });
 
-  const targets = JSON.parse(body) as Array<{
+  const targets = JSON.parse(body) as {
     id: string;
     webSocketDebuggerUrl?: string;
-  }>;
+  }[];
 
   const target = targets.find((t) => t.id === targetId);
   if (!target?.webSocketDebuggerUrl) {
@@ -74,9 +72,7 @@ async function resolveWsUrl(
  * Returns a Duplex stream that speaks the WebSocket wire protocol via a
  * minimal frame encoder/decoder.
  */
-function connectCdpWebSocket(
-  wsUrl: string,
-): Promise<{
+function connectCdpWebSocket(wsUrl: string): Promise<{
   send: (msg: string) => void;
   onMessage: (cb: (data: string) => void) => void;
   close: () => void;
@@ -99,18 +95,22 @@ function connectCdpWebSocket(
 
     const req = http.get(options);
     req.on("upgrade", (_res, socket) => {
-      const listeners: Array<(data: string) => void> = [];
+      const listeners: ((data: string) => void)[] = [];
       let buffer = Buffer.alloc(0);
 
       socket.on("data", (chunk: Buffer) => {
         buffer = Buffer.concat([buffer, chunk]);
         while (buffer.length >= 2) {
           const frame = parseWsFrame(buffer);
-          if (!frame) break;
+          if (!frame) {
+            break;
+          }
           buffer = buffer.subarray(frame.totalLength);
           if (frame.opcode === 0x1) {
             const text = frame.payload.toString("utf-8");
-            for (const cb of listeners) cb(text);
+            for (const cb of listeners) {
+              cb(text);
+            }
           } else if (frame.opcode === 0x8) {
             socket.end();
           } else if (frame.opcode === 0x9) {
@@ -147,24 +147,34 @@ function connectCdpWebSocket(
 function parseWsFrame(
   buf: Buffer,
 ): { opcode: number; payload: Buffer; totalLength: number } | null {
-  if (buf.length < 2) return null;
+  if (buf.length < 2) {
+    return null;
+  }
   const opcode = buf[0] & 0x0f;
   const masked = (buf[1] & 0x80) !== 0;
   let payloadLen = buf[1] & 0x7f;
   let offset = 2;
 
   if (payloadLen === 126) {
-    if (buf.length < 4) return null;
+    if (buf.length < 4) {
+      return null;
+    }
     payloadLen = buf.readUInt16BE(2);
     offset = 4;
   } else if (payloadLen === 127) {
-    if (buf.length < 10) return null;
+    if (buf.length < 10) {
+      return null;
+    }
     payloadLen = Number(buf.readBigUInt64BE(2));
     offset = 10;
   }
 
-  if (masked) offset += 4;
-  if (buf.length < offset + payloadLen) return null;
+  if (masked) {
+    offset += 4;
+  }
+  if (buf.length < offset + payloadLen) {
+    return null;
+  }
 
   let payload = buf.subarray(offset, offset + payloadLen);
   if (masked) {
@@ -180,12 +190,14 @@ function parseWsFrame(
 
 /** Build a WebSocket frame (client frames are masked per RFC 6455). */
 function buildWsFrame(payload: Buffer, opcode: number): Buffer {
-  const mask = Buffer.from([
-    Math.random() * 256,
-    Math.random() * 256,
-    Math.random() * 256,
-    Math.random() * 256,
-  ].map(Math.floor));
+  const mask = Buffer.from(
+    [
+      Math.random() * 256,
+      Math.random() * 256,
+      Math.random() * 256,
+      Math.random() * 256,
+    ].map(Math.floor),
+  );
 
   let header: Buffer;
   if (payload.length < 126) {
@@ -243,14 +255,16 @@ export async function startScreencast(
   const ws = await connectCdpWebSocket(wsUrl);
 
   const state: ActiveScreencast = {
-    ws: null as unknown as import("node:stream").Duplex,
+    ws: null as unknown as Duplex,
     sessionId: null,
     closed: false,
   };
   screencasts.set(workspaceId, state);
 
   ws.onMessage((data) => {
-    if (state.closed) return;
+    if (state.closed) {
+      return;
+    }
     try {
       const msg = JSON.parse(data);
 
@@ -308,7 +322,9 @@ export async function startScreencast(
  */
 export async function stopScreencast(workspaceId: string): Promise<void> {
   const state = screencasts.get(workspaceId);
-  if (!state) return;
+  if (!state) {
+    return;
+  }
 
   state.closed = true;
   try {

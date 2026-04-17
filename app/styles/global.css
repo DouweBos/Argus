@@ -187,7 +187,7 @@ body.sim-touching * {
   display: none !important;
 }
 
-/* Match VS Code workbench font to Stagehand app */
+/* Match VS Code workbench font to Argus app */
 .monaco-workbench .part.sidebar .composite.title,
 .monaco-workbench .part.sidebar .pane-header,
 .monaco-workbench .part.sidebar .monaco-list-row,

@@ -1,6 +1,4 @@
 import type { ChatHistoryEntry } from "../../../lib/chatHistory";
-import { useCallback, useEffect, useState } from "react";
-import { deleteChatHistory, listChatHistory } from "../../../lib/ipc";
 import { CloseIcon } from "../../shared/Icons";
 import styles from "./ChatHistoryList.module.css";
 
@@ -40,46 +38,18 @@ function formatCost(cost?: number): string | null {
 }
 
 interface ChatHistoryListProps {
+  entries: ChatHistoryEntry[];
+  onDelete: (historyId: string) => void;
   onResume: (sessionId: string) => void;
   onView: (historyId: string) => void;
-  repoRoot: string;
 }
 
 export function ChatHistoryList({
-  repoRoot,
+  entries,
   onView,
   onResume,
+  onDelete,
 }: ChatHistoryListProps) {
-  const [entries, setEntries] = useState<ChatHistoryEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  const refresh = useCallback(() => {
-    listChatHistory(repoRoot)
-      .then((result) => {
-        setEntries(result);
-        setLoaded(true);
-      })
-      .catch(() => setLoaded(true));
-  }, [repoRoot]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const handleDelete = useCallback(
-    (e: React.MouseEvent, entry: ChatHistoryEntry) => {
-      e.stopPropagation();
-      deleteChatHistory(repoRoot, entry.id)
-        .then(refresh)
-        .catch(() => {});
-    },
-    [repoRoot, refresh],
-  );
-
-  if (!loaded) {
-    return null;
-  }
-
   if (entries.length === 0) {
     return null;
   }
@@ -134,7 +104,10 @@ export function ChatHistoryList({
               <button
                 className={styles.deleteBtn}
                 title="Delete"
-                onClick={(e) => handleDelete(e, entry)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(entry.id);
+                }}
               >
                 <CloseIcon />
               </button>

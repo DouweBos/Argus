@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultSetupConfig, defaultStagehandConfig } from "./models";
+import { defaultSetupConfig, defaultArgusConfig } from "./models";
 
 describe("defaultSetupConfig", () => {
   it("returns empty arrays", () => {
@@ -18,9 +18,9 @@ describe("defaultSetupConfig", () => {
   });
 });
 
-describe("defaultStagehandConfig", () => {
+describe("defaultArgusConfig", () => {
   it("returns empty config with null optionals", () => {
-    const config = defaultStagehandConfig();
+    const config = defaultArgusConfig();
     expect(config.setup.copy).toEqual([]);
     expect(config.terminals).toEqual([]);
     expect(config.workspace_env).toEqual([]);
@@ -28,13 +28,13 @@ describe("defaultStagehandConfig", () => {
   });
 
   it("returns empty related_projects array", () => {
-    const config = defaultStagehandConfig();
+    const config = defaultArgusConfig();
     expect(config.related_projects).toEqual([]);
   });
 
   it("returns a new instance each time", () => {
-    const a = defaultStagehandConfig();
-    const b = defaultStagehandConfig();
+    const a = defaultArgusConfig();
+    const b = defaultArgusConfig();
     expect(a).not.toBe(b);
   });
 });

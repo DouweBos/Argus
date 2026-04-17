@@ -23,11 +23,11 @@ import {
   type WorkspaceMeta,
 } from "./metadata";
 import {
-  defaultStagehandConfig,
+  defaultArgusConfig,
   type Workspace,
   type WorkspaceStatus,
 } from "./models";
-import { loadStagehandConfig, runSetupPipeline } from "./setup";
+import { loadArgusConfig, runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
 
 // ---------------------------------------------------------------------------
@@ -262,7 +262,7 @@ export async function createWorkspace(
     // Non-fatal
   }
 
-  const config = loadStagehandConfig(repoRoot) ?? defaultStagehandConfig();
+  const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();
   const setupSessionId = `setup:${workspace.id}`;
   const taskWorkspaceId = workspace.id;
   const taskWorkspacePath = workspace.path;

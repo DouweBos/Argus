@@ -24,7 +24,7 @@ const DEFAULT_PINNED = [
   "workbench.view.extensions",
 ];
 
-const STORAGE_KEY = "stagehand.sidebar.pinned";
+const STORAGE_KEY = "argus.sidebar.pinned";
 
 function loadPinned(): string[] {
   try {

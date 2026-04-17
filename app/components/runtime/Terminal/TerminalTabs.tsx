@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createTerminal,
   destroyTerminal,
-  readStagehandConfig,
+  readArgusConfig,
 } from "../../../lib/ipc";
 import {
   startListening,
@@ -69,7 +69,7 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
         if (!ws) {
           return;
         }
-        const config = await readStagehandConfig(ws.repo_root);
+        const config = await readArgusConfig(ws.repo_root);
         if (!config.terminals?.length) {
           return;
         }

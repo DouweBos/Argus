@@ -48,8 +48,8 @@ vi.mock("../workspace/manager", () => ({
 vi.mock("../workspace/workspaceOps", () => ({
   getWorkspaceConflicts: vi.fn(),
   mergeWorkspaceIntoBase: vi.fn(),
-  readStagehandConfig: vi.fn(),
-  writeStagehandConfig: vi.fn(),
+  readArgusConfig: vi.fn(),
+  writeArgusConfig: vi.fn(),
 }));
 
 vi.mock("../agent/claude", () => ({
@@ -65,7 +65,7 @@ vi.mock("../terminal/multiplexer", () => ({
 }));
 
 vi.mock("../workspace/setup", () => ({
-  loadStagehandConfig: vi.fn(),
+  loadArgusConfig: vi.fn(),
 }));
 
 vi.mock("./projects", () => ({
@@ -83,14 +83,14 @@ const { createWorkspace, deleteWorkspace, listWorkspaces } =
 const {
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
-  readStagehandConfig,
-  writeStagehandConfig,
+  readArgusConfig,
+  writeArgusConfig,
 } = await import("../workspace/workspaceOps");
 const { startAgent, sendAgentMessage, listAgents } =
   await import("../agent/claude");
 const { createTerminal, startTerminal } =
   await import("../terminal/multiplexer");
-const { loadStagehandConfig } = await import("../workspace/setup");
+const { loadArgusConfig } = await import("../workspace/setup");
 const { isGitRepo, ensureRepoRegistered, collectAllProjects } =
   await import("./projects");
 
@@ -100,14 +100,14 @@ const mockDeleteWorkspace = vi.mocked(deleteWorkspace);
 const mockListWorkspaces = vi.mocked(listWorkspaces);
 const mockGetWorkspaceConflicts = vi.mocked(getWorkspaceConflicts);
 const mockMergeWorkspaceIntoBase = vi.mocked(mergeWorkspaceIntoBase);
-const mockReadStagehandConfig = vi.mocked(readStagehandConfig);
-const mockWriteStagehandConfig = vi.mocked(writeStagehandConfig);
+const mockReadArgusConfig = vi.mocked(readArgusConfig);
+const mockWriteArgusConfig = vi.mocked(writeArgusConfig);
 const mockStartAgent = vi.mocked(startAgent);
 const mockSendAgentMessage = vi.mocked(sendAgentMessage);
 const mockListAgents = vi.mocked(listAgents);
 const mockCreateTerminal = vi.mocked(createTerminal);
 const mockStartTerminal = vi.mocked(startTerminal);
-const mockLoadStagehandConfig = vi.mocked(loadStagehandConfig);
+const mockLoadArgusConfig = vi.mocked(loadArgusConfig);
 const mockIsGitRepo = vi.mocked(isGitRepo);
 const mockEnsureRepoRegistered = vi.mocked(ensureRepoRegistered);
 const mockCollectAllProjects = vi.mocked(collectAllProjects);
@@ -243,7 +243,7 @@ describe("add_related_project", () => {
   it("detects duplicates and returns without writing", async () => {
     mockExistsSync.mockReturnValue(true);
     mockIsGitRepo.mockReturnValue(true);
-    mockReadStagehandConfig.mockReturnValue({
+    mockReadArgusConfig.mockReturnValue({
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
       workspace_env: [],
@@ -260,13 +260,13 @@ describe("add_related_project", () => {
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("already listed");
-    expect(mockWriteStagehandConfig).not.toHaveBeenCalled();
+    expect(mockWriteArgusConfig).not.toHaveBeenCalled();
   });
 
   it("adds a new related project and writes config", async () => {
     mockExistsSync.mockReturnValue(true);
     mockIsGitRepo.mockReturnValue(true);
-    mockReadStagehandConfig.mockReturnValue({
+    mockReadArgusConfig.mockReturnValue({
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
       workspace_env: [],
@@ -286,7 +286,7 @@ describe("add_related_project", () => {
     };
     expect(parsed.added.path).toBe("../backend");
     expect(parsed.added.description).toBe("Backend API");
-    expect(mockWriteStagehandConfig).toHaveBeenCalledWith(
+    expect(mockWriteArgusConfig).toHaveBeenCalledWith(
       "/projects/frontend",
       expect.any(String),
     );
@@ -549,7 +549,12 @@ describe("list_agents", () => {
     const ws = mockWorkspace();
     appState.workspaces.set("ws-1", ws);
     mockListAgents.mockReturnValue([
-      { agent_id: "a-1", workspace_id: "ws-1", status: "running", parent_agent_id: null },
+      {
+        agent_id: "a-1",
+        workspace_id: "ws-1",
+        status: "running",
+        parent_agent_id: null,
+      },
     ]);
 
     const result = await client.callTool({
@@ -571,12 +576,22 @@ describe("list_agents", () => {
     mockListAgents.mockImplementation((wsId: string) => {
       if (wsId === "ws-1") {
         return [
-          { agent_id: "a-1", workspace_id: "ws-1", status: "running" as const, parent_agent_id: null },
+          {
+            agent_id: "a-1",
+            workspace_id: "ws-1",
+            status: "running" as const,
+            parent_agent_id: null,
+          },
         ];
       }
       if (wsId === "ws-2") {
         return [
-          { agent_id: "a-2", workspace_id: "ws-2", status: "running" as const, parent_agent_id: null },
+          {
+            agent_id: "a-2",
+            workspace_id: "ws-2",
+            status: "running" as const,
+            parent_agent_id: null,
+          },
         ];
       }
 
@@ -682,7 +697,7 @@ describe("trigger_run", () => {
   it("returns error when no run command configured", async () => {
     const ws = mockWorkspace();
     appState.workspaces.set("ws-1", ws);
-    mockLoadStagehandConfig.mockReturnValue({
+    mockLoadArgusConfig.mockReturnValue({
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
       workspace_env: [],
@@ -700,7 +715,7 @@ describe("trigger_run", () => {
   it("handles run config as object with command and dir", async () => {
     const ws = mockWorkspace();
     appState.workspaces.set("ws-1", ws);
-    mockLoadStagehandConfig.mockReturnValue({
+    mockLoadArgusConfig.mockReturnValue({
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
       workspace_env: [],
@@ -729,7 +744,7 @@ describe("trigger_run", () => {
   it("handles config load failure gracefully", async () => {
     const ws = mockWorkspace();
     appState.workspaces.set("ws-1", ws);
-    mockLoadStagehandConfig.mockImplementation(() => {
+    mockLoadArgusConfig.mockImplementation(() => {
       throw new Error("bad config");
     });
 

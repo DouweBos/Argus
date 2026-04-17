@@ -1,6 +1,6 @@
+import type { AgentStatus, Workspace } from "../../../lib/types";
 import { useMemo } from "react";
 import { stopAgentById } from "../../../lib/agentEventService";
-import type { AgentStatus, Workspace } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { CloseIcon } from "../../shared/Icons";
@@ -11,6 +11,12 @@ interface OrchestrationTreeProps {
   activeAgentId: string | null;
   /** Called when the user clicks a child agent row. */
   onSelectAgent: (agentId: string, workspaceId: string) => void;
+  /** Called when the user changes the workspace filter dropdown. */
+  onWorkspaceFilterChange?: (workspaceId: string) => void;
+  /** Whether to show the workspace filter dropdown in the header. */
+  showFilter?: boolean;
+  /** Override the header title (defaults to "Agents"). */
+  title?: string;
   /**
    * Restrict the view to agents whose workspace_id matches this value, or
    * `"all"` / undefined to show every agent. Children of a matching
@@ -18,12 +24,6 @@ interface OrchestrationTreeProps {
    * if those children live in a different workspace.
    */
   workspaceFilter?: string;
-  /** Called when the user changes the workspace filter dropdown. */
-  onWorkspaceFilterChange?: (workspaceId: string) => void;
-  /** Whether to show the workspace filter dropdown in the header. */
-  showFilter?: boolean;
-  /** Override the header title (defaults to "Agents"). */
-  title?: string;
 }
 
 interface AgentNode {
@@ -71,7 +71,9 @@ export function OrchestrationTree({
 
   const tree = useMemo(() => {
     const allAgents = Object.values(agents);
-    if (allAgents.length === 0) return [];
+    if (allAgents.length === 0) {
+      return [];
+    }
 
     const wsMap = new Map(workspaces.map((w) => [w.id, w]));
 
@@ -104,16 +106,14 @@ export function OrchestrationTree({
     const orchestrators = roots
       .filter((a) => allAgents.some((c) => c.parent_agent_id === a.agent_id))
       .sort(
-        (a, b) =>
-          (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9),
+        (a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9),
       )
       .map(buildNode);
 
     const standalone = roots
       .filter((a) => !allAgents.some((c) => c.parent_agent_id === a.agent_id))
       .sort(
-        (a, b) =>
-          (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9),
+        (a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9),
       )
       .map(buildNode);
 
@@ -127,7 +127,9 @@ export function OrchestrationTree({
     // workspace — this way orchestrators stay visible when their children
     // span workspaces.
     function matches(node: AgentNode): boolean {
-      if (node.agent.workspace_id === activeFilter) return true;
+      if (node.agent.workspace_id === activeFilter) {
+        return true;
+      }
 
       return node.children.some(matches);
     }
@@ -145,7 +147,9 @@ export function OrchestrationTree({
 
   const allAgents = Object.values(agents);
   const visibleAgents = useMemo(() => {
-    if (activeFilter === "all") return allAgents;
+    if (activeFilter === "all") {
+      return allAgents;
+    }
 
     return allAgents.filter((a) => a.workspace_id === activeFilter);
   }, [allAgents, activeFilter]);
@@ -161,9 +165,7 @@ export function OrchestrationTree({
     <div className={styles.container}>
       <div className={styles.header}>
         <span className={styles.headerTitle}>{title}</span>
-        <span className={styles.headerCount}>
-          {visibleAgents.length} total
-        </span>
+        <span className={styles.headerCount}>{visibleAgents.length} total</span>
         {showFilter && workspacesWithAgents.length > 0 && (
           <select
             aria-label="Filter by workspace"
@@ -192,9 +194,7 @@ export function OrchestrationTree({
           <div key={group.key} className={styles.workspaceGroup}>
             {group.showHeader && (
               <div className={styles.workspaceGroupHeader}>
-                <span className={styles.workspaceGroupName}>
-                  {group.label}
-                </span>
+                <span className={styles.workspaceGroupName}>{group.label}</span>
                 <span className={styles.workspaceGroupCount}>
                   {group.nodes.length}
                 </span>
@@ -220,9 +220,7 @@ export function OrchestrationTree({
         <div className={styles.summary}>
           {counts.running > 0 && (
             <div className={styles.summaryItem}>
-              <span
-                className={`${styles.statusDot} ${styles.statusRunning}`}
-              />
+              <span className={`${styles.statusDot} ${styles.statusRunning}`} />
               {counts.running} running
             </div>
           )}
@@ -234,17 +232,13 @@ export function OrchestrationTree({
           )}
           {counts.stopped > 0 && (
             <div className={styles.summaryItem}>
-              <span
-                className={`${styles.statusDot} ${styles.statusStopped}`}
-              />
+              <span className={`${styles.statusDot} ${styles.statusStopped}`} />
               {counts.stopped} done
             </div>
           )}
           {counts.error > 0 && (
             <div className={styles.summaryItem}>
-              <span
-                className={`${styles.statusDot} ${styles.statusError}`}
-              />
+              <span className={`${styles.statusDot} ${styles.statusError}`} />
               {counts.error} error
             </div>
           )}
@@ -327,9 +321,7 @@ function AgentNodeRow({
     <>
       <div
         className={`${styles.agentRow} ${isActive ? styles.agentRowActive : ""} ${depth > 0 ? styles.childRow : ""}`}
-        onClick={() =>
-          onSelect(node.agent.agent_id, node.agent.workspace_id)
-        }
+        onClick={() => onSelect(node.agent.agent_id, node.agent.workspace_id)}
       >
         {depth > 0 && <span className={styles.connector} />}
         <span

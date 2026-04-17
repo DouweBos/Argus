@@ -3,7 +3,7 @@
  *
  * Saves and loads agent conversations to disk. Stored per project (repo root)
  * alongside workspace metadata in:
- * `~/.stagehand/worktrees/{RepoName}-stagehand-worktrees/.stagehand-chat-history/`
+ * `~/.argus/worktrees/{RepoName}-argus-worktrees/.argus-chat-history/`
  *
  * Each conversation is an individual JSON file ({id}.json). A lightweight
  * `index.json` stores summaries for fast listing without parsing every file.
@@ -13,9 +13,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
 import { worktreesRoot } from "../workspace/git";
-import { loadStagehandConfig } from "../workspace/setup";
+import { loadArgusConfig } from "../workspace/setup";
 
-const HISTORY_DIR_NAME = ".stagehand-chat-history";
+const HISTORY_DIR_NAME = ".argus-chat-history";
 const INDEX_FILENAME = "index.json";
 const SCHEMA_VERSION = 1;
 
@@ -106,7 +106,7 @@ export function saveConversation(
 ): void {
   // Check project setting
   try {
-    const config = loadStagehandConfig(repoRoot);
+    const config = loadArgusConfig(repoRoot);
     if (config.save_chat_history === false) {
       return;
     }

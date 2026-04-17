@@ -1,5 +1,5 @@
 /**
- * Stagehand MCP server — exposes workspace and agent orchestration tools to
+ * Argus MCP server — exposes workspace and agent orchestration tools to
  * Claude Code agents via the Model Context Protocol (streamable HTTP).
  *
  * Runs an HTTP server on a random localhost port. The port is passed to agents
@@ -34,12 +34,12 @@ import {
   deleteWorkspace,
   listWorkspaces,
 } from "../workspace/manager";
-import { loadStagehandConfig } from "../workspace/setup";
+import { loadArgusConfig } from "../workspace/setup";
 import {
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
-  readStagehandConfig,
-  writeStagehandConfig,
+  readArgusConfig,
+  writeArgusConfig,
 } from "../workspace/workspaceOps";
 import {
   isGitRepo,
@@ -133,7 +133,7 @@ function resolveRepoRoot(repoRoot?: string): string {
 /** Exported for testing via InMemoryTransport. */
 export function createMcpServer(): McpServer {
   const server = new McpServer({
-    name: "stagehand",
+    name: "argus",
     version: "1.0.0",
   });
 
@@ -143,7 +143,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_projects",
-    "List all known projects: currently registered projects and related projects declared in .stagehand.json configs. Use this to discover other projects you can create workspaces in and work on.",
+    "List all known projects: currently registered projects and related projects declared in .argus.json configs. Use this to discover other projects you can create workspaces in and work on.",
     {},
     async () => {
       const projects = collectAllProjects();
@@ -165,7 +165,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "add_related_project",
-    "Add a related project to a project's .stagehand.json configuration. Use this when you discover that work on your current project requires changes in another project that isn't yet listed as related.",
+    "Add a related project to a project's .argus.json configuration. Use this when you discover that work on your current project requires changes in another project that isn't yet listed as related.",
     {
       repo_root: z
         .string()
@@ -213,7 +213,7 @@ export function createMcpServer(): McpServer {
       const relativePath = path.relative(repoRoot, project_path);
 
       // Read existing config, add the entry, write back.
-      const config = readStagehandConfig(repoRoot);
+      const config = readArgusConfig(repoRoot);
       const existing = config.related_projects ?? [];
 
       // Check for duplicate.
@@ -232,7 +232,7 @@ export function createMcpServer(): McpServer {
 
       existing.push({ path: relativePath, description });
       const updatedConfig = { ...config, related_projects: existing };
-      writeStagehandConfig(repoRoot, JSON.stringify(updatedConfig, null, 2));
+      writeArgusConfig(repoRoot, JSON.stringify(updatedConfig, null, 2));
 
       return {
         content: [
@@ -448,7 +448,7 @@ export function createMcpServer(): McpServer {
         .array(z.enum(["ios", "android", "web"]))
         .optional()
         .describe(
-          "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.stagehand.json` `platforms` field, or all three if unset.",
+          "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.argus.json` `platforms` field, or all three if unset.",
         ),
       parent_agent_id: z
         .string()
@@ -954,7 +954,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "trigger_run",
-    "Trigger the configured 'run' command (from .stagehand.json) in a workspace's terminal. This starts the app's dev server, test runner, or whatever the project has configured as its run command. The command runs in a visible UI terminal.",
+    "Trigger the configured 'run' command (from .argus.json) in a workspace's terminal. This starts the app's dev server, test runner, or whatever the project has configured as its run command. The command runs in a visible UI terminal.",
     {
       workspace: z
         .string()
@@ -976,7 +976,7 @@ export function createMcpServer(): McpServer {
 
       let runConfig;
       try {
-        const config = loadStagehandConfig(ws.repo_root);
+        const config = loadArgusConfig(ws.repo_root);
         runConfig = config.run;
       } catch {
         // No config
@@ -987,7 +987,7 @@ export function createMcpServer(): McpServer {
           content: [
             {
               type: "text" as const,
-              text: "No 'run' command configured in .stagehand.json",
+              text: "No 'run' command configured in .argus.json",
             },
           ],
           isError: true,
@@ -1118,7 +1118,7 @@ export function createMcpServer(): McpServer {
 // ---------------------------------------------------------------------------
 
 /**
- * Start the Stagehand MCP server on a random localhost port.
+ * Start the Argus MCP server on a random localhost port.
  *
  * Returns the port number so it can be passed to agents via `--mcp-config`.
  */
@@ -1136,7 +1136,7 @@ export async function startMcpServer(): Promise<number> {
     // Lazy device resolver — called by the conductor shim the first time an
     // agent runs `conductor --device ios|web`. Acquires the device on demand
     // so agents that never use a given runtime don't pay for one.
-    if (url.pathname === "/stagehand/acquire-device") {
+    if (url.pathname === "/argus/acquire-device") {
       if (req.method !== "POST") {
         res.writeHead(405);
         res.end("Method Not Allowed");
@@ -1261,7 +1261,7 @@ export async function startMcpServer(): Promise<number> {
       const addr = httpServer!.address();
       if (typeof addr === "object" && addr) {
         mcpPort = addr.port;
-        info(`[mcp] Stagehand MCP server listening on 127.0.0.1:${mcpPort}`);
+        info(`[mcp] Argus MCP server listening on 127.0.0.1:${mcpPort}`);
         resolve(mcpPort);
       } else {
         reject(new Error("Failed to get server address"));
@@ -1278,7 +1278,7 @@ export function stopMcpServer(): void {
     httpServer.close();
     httpServer = null;
     mcpPort = null;
-    info("[mcp] Stagehand MCP server stopped");
+    info("[mcp] Argus MCP server stopped");
   }
 }
 

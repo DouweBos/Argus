@@ -22,7 +22,7 @@ export function useIpcEvent<T>(
     }
     let unlisten: UnlistenFn | null = null;
 
-    unlisten = window.stagehand.on<T>(event, (payload) => {
+    unlisten = window.argus.on<T>(event, (payload) => {
       handlerRef.current(payload);
     });
 

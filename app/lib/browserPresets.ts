@@ -13,7 +13,7 @@ export interface BrowserPreset {
   userAgent: string;
 }
 
-/** JSON-facing shape for custom presets in `.stagehand.json`. */
+/** JSON-facing shape for custom presets in `.argus.json`. */
 export interface BrowserPresetConfig {
   height: number;
   id: string;

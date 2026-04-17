@@ -20,7 +20,7 @@ const execFileAsync = promisify(execFile);
  *
  * ```
  * repo  = /home/user/Projects/MyApp
- * roots = /home/user/.stagehand/worktrees/MyApp-stagehand-worktrees
+ * roots = /home/user/.argus/worktrees/MyApp-argus-worktrees
  * ```
  */
 export function worktreesRoot(repoRoot: string): string {
@@ -28,9 +28,9 @@ export function worktreesRoot(repoRoot: string): string {
 
   return path.join(
     os.homedir(),
-    ".stagehand",
+    ".argus",
     "worktrees",
-    `${name}-stagehand-worktrees`,
+    `${name}-argus-worktrees`,
   );
 }
 

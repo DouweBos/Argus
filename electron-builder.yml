@@ -1,5 +1,5 @@
-appId: com.stagehand.app
-productName: Stagehand
+appId: com.argus.app
+productName: Argus
 directories:
   buildResources: build
   output: release
@@ -9,8 +9,8 @@ files:
   - "!node_modules/**/*"
   - node_modules/node-pty/**/*
 extraResources:
-  - from: native/stagehand-sim-bridge/stagehand-sim-bridge
-    to: stagehand-sim-bridge
+  - from: native/argus-sim-bridge/argus-sim-bridge
+    to: argus-sim-bridge
     filter:
       - "**/*"
   - from: native/scrcpy-server/scrcpy-server.jar

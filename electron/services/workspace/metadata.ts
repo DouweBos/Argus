@@ -1,7 +1,7 @@
 /**
  * Persisted workspace metadata (display names, descriptions) keyed by path.
  *
- * Stored at `{worktreesRoot}/.stagehand-workspaces.json`. Survives app restarts.
+ * Stored at `{worktreesRoot}/.argus-workspaces.json`. Survives app restarts.
  * Migration removes entries for worktrees that no longer exist on disk.
  */
 
@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
 
-const METADATA_FILENAME = ".stagehand-workspaces.json";
+const METADATA_FILENAME = ".argus-workspaces.json";
 const SCHEMA_VERSION = 1;
 
 /** Persisted metadata for a single workspace. */

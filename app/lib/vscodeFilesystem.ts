@@ -6,6 +6,8 @@
  * workspace to a real worktree directory.
  */
 
+import { getService } from "@codingame/monaco-vscode-api";
+import { ISearchService } from "@codingame/monaco-vscode-api/services";
 import {
   Emitter,
   type Event,
@@ -35,7 +37,7 @@ function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  return window.stagehand.invoke<T>(channel, args);
+  return window.argus.invoke<T>(channel, args);
 }
 
 interface BackendDirEntry {
@@ -106,7 +108,7 @@ class IpcFileSystemProvider
     this._onDidChangeFile.event;
 
   watch() {
-    // File watching is handled by Stagehand's existing chokidar watcher
+    // File watching is handled by Argus's existing chokidar watcher
     return { dispose() {} };
   }
 
@@ -196,7 +198,7 @@ let currentPath: string | null = null;
 
 /**
  * Switch the VS Code workspace to the given worktree directory path.
- * Called when the user selects a workspace in Stagehand's sidebar.
+ * Called when the user selects a workspace in Argus's sidebar.
  */
 export async function updateWorkspaceFolder(
   worktreePath: string,
@@ -210,6 +212,49 @@ export async function updateWorkspaceFolder(
     id: worktreePath,
     uri: URI.file(worktreePath),
   });
+
+  // The file search provider caches workspace folders at construction time and
+  // never reacts to workspace changes. Reach in and re-index against the new
+  // worktree so cmd+P and the search panel return results for the current
+  // workspace.
+  await refreshFileSearchIndex(worktreePath);
+}
+
+interface FileSearchProviderInternals {
+  cachedFiles?: Set<URI>;
+  initializeFileCache?: () => Promise<void>;
+  initializeProvider?: () => Promise<void>;
+  isInitialized?: boolean;
+  workspaceFolders?: URI[];
+}
+
+/**
+ * Force the monaco-vscode-api WorkspaceSearchProvider to re-index with the
+ * current worktree as its single workspace folder. The provider is private
+ * to the search service, so we reach into it by its shape.
+ */
+async function refreshFileSearchIndex(worktreePath: string): Promise<void> {
+  try {
+    const searchService = (await getService(ISearchService)) as unknown as {
+      fileSearchProviders?: Map<string, FileSearchProviderInternals>;
+    };
+
+    const provider = searchService.fileSearchProviders?.get("file");
+    if (!provider) {
+      return;
+    }
+
+    const folderUri = URI.file(worktreePath);
+    provider.workspaceFolders = [folderUri];
+    provider.cachedFiles?.clear();
+    if (provider.isInitialized) {
+      await provider.initializeFileCache?.();
+    } else {
+      await provider.initializeProvider?.();
+    }
+  } catch {
+    // Best-effort — search may remain unavailable until the service is ready.
+  }
 }
 
 /**

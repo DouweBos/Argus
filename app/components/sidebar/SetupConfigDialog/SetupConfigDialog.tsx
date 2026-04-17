@@ -1,12 +1,12 @@
 import type {
   BrowserPresetConfig,
   RuntimePlatform,
-  StagehandConfig,
+  ArgusConfig,
   WorkspaceEnvConfig,
 } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import { useOverlayDismiss } from "../../../hooks/useOverlayDismiss";
-import { readStagehandConfig, writeStagehandConfig } from "../../../lib/ipc";
+import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
 import { ChevronRightIcon, CloseIcon } from "../../shared/Icons";
 import styles from "../Dialog/Dialog.module.css";
 
@@ -284,7 +284,7 @@ function EnvField({ list }: EnvFieldProps) {
                   <label className={styles.label}>Env var name</label>
                   <input
                     className={styles.input}
-                    placeholder="e.g. STAGEHAND_PORT"
+                    placeholder="e.g. ARGUS_PORT"
                     type="text"
                     value={entry.name}
                     onChange={(e) => list.update(i, "name", e.target.value)}
@@ -582,7 +582,7 @@ export function SetupConfigDialog({
     let cancelled = false;
     (async () => {
       try {
-        const config = await readStagehandConfig(repoRoot);
+        const config = await readArgusConfig(repoRoot);
         if (cancelled) {
           return;
         }
@@ -675,8 +675,8 @@ export function SetupConfigDialog({
     setBrowserPresets,
   ]);
 
-  const buildConfig = (): StagehandConfig => {
-    const config: StagehandConfig = { setup: {} };
+  const buildConfig = (): ArgusConfig => {
+    const config: ArgusConfig = { setup: {} };
     const copies = copyList.items.filter(Boolean);
     const symlinks = symlinkList.items.filter(Boolean);
     const commands = commandList.items.filter(Boolean);
@@ -760,7 +760,7 @@ export function SetupConfigDialog({
     setIsSaving(true);
     setError(null);
     try {
-      await writeStagehandConfig(repoRoot, previewJson);
+      await writeArgusConfig(repoRoot, previewJson);
       onSaved?.();
       onClose();
     } catch (err) {
@@ -1014,7 +1014,7 @@ export function SetupConfigDialog({
             type="button"
             onClick={handleSave}
           >
-            {isSaving ? "Saving..." : "Save .stagehand.json"}
+            {isSaving ? "Saving..." : "Save .argus.json"}
           </button>
         </div>
       </div>

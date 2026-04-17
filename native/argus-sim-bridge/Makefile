@@ -1,23 +1,23 @@
-# Makefile — builds the stagehand-sim-bridge binary.
+# Makefile — builds the argus-sim-bridge binary.
 #
-# Compiles main.swift + StagehandBridge.swift with swiftc, compiles
-# StagehandHID.m with clang, and links everything into a single macOS
+# Compiles main.swift + ArgusBridge.swift with swiftc, compiles
+# ArgusHID.m with clang, and links everything into a single macOS
 # command-line binary.
 #
 # Usage:
-#   make              # build stagehand-sim-bridge
+#   make              # build argus-sim-bridge
 #   make clean        # remove build artefacts
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 
-BRIDGE_SWIFT    := StagehandBridge.swift
-HID_OBJC        := StagehandHID.m
-BRIDGE_HEADER   := StagehandBridge.h
+BRIDGE_SWIFT    := ArgusBridge.swift
+HID_OBJC        := ArgusHID.m
+BRIDGE_HEADER   := ArgusBridge.h
 
 BUILD_DIR       := .build
-BINARY          := stagehand-sim-bridge
+BINARY          := argus-sim-bridge
 
 # ---------------------------------------------------------------------------
 # Toolchain
@@ -33,7 +33,7 @@ SDK             := $(shell xcrun --show-sdk-path)
 # Compiler flags
 # ---------------------------------------------------------------------------
 
-# Swift: compile main.swift and StagehandBridge.swift together in one pass so
+# Swift: compile main.swift and ArgusBridge.swift together in one pass so
 # they share the same module and can call each other's @_cdecl symbols.
 SWIFT_FLAGS     := \
     -sdk $(SDK) \
@@ -49,7 +49,7 @@ CLANG_FLAGS     := \
     -O2 \
     -c
 
-# Linker frameworks required by StagehandBridge.swift + StagehandHID.m.
+# Linker frameworks required by ArgusBridge.swift + ArgusHID.m.
 FRAMEWORKS      := \
     -framework IOSurface \
     -framework CoreGraphics \
@@ -64,8 +64,8 @@ FRAMEWORKS      := \
 
 all: $(BINARY)
 
-# Step 1 — compile StagehandHID.m to an object file
-$(BUILD_DIR)/StagehandHID.o: $(HID_OBJC) | $(BUILD_DIR)
+# Step 1 — compile ArgusHID.m to an object file
+$(BUILD_DIR)/ArgusHID.o: $(HID_OBJC) | $(BUILD_DIR)
 	$(CLANG) $(CLANG_FLAGS) -o $@ $<
 
 # Step 2 — compile the Swift sources and link everything into the final binary.
@@ -73,10 +73,10 @@ $(BUILD_DIR)/StagehandHID.o: $(HID_OBJC) | $(BUILD_DIR)
 # swiftc is used as the linker driver here so it automatically links the Swift
 # standard library and runtime. The ObjC object is passed directly as an extra
 # input so swiftc forwards it to the linker.
-$(BINARY): main.swift $(BRIDGE_SWIFT) $(BUILD_DIR)/StagehandHID.o
+$(BINARY): main.swift $(BRIDGE_SWIFT) $(BUILD_DIR)/ArgusHID.o
 	$(SWIFTC) $(SWIFT_FLAGS) \
 	    main.swift $(BRIDGE_SWIFT) \
-	    $(BUILD_DIR)/StagehandHID.o \
+	    $(BUILD_DIR)/ArgusHID.o \
 	    $(FRAMEWORKS) \
 	    -o $@
 

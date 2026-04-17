@@ -1,20 +1,14 @@
 import { useEffect, useState } from "react";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { checkClaudeCli } from "../../../lib/ipc";
-import {
-  setActiveAgent,
-  useAgentsRecord,
-} from "../../../stores/agentStore";
+import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
   removeRecentProject,
   useRecentProjects,
 } from "../../../stores/recentProjectsStore";
-import {
-  selectWorkspace,
-  useWorkspaces,
-} from "../../../stores/workspaceStore";
+import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
 import { OrchestrationTree } from "../../agent/OrchestrationTree/OrchestrationTree";
-import { CloseIcon, FolderIcon, StagehandLogo } from "../../shared/Icons";
+import { CloseIcon, FolderIcon, ArgusLogo } from "../../shared/Icons";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import styles from "./HomeScreen.module.css";
 
@@ -41,7 +35,9 @@ export function HomeScreen() {
 
   const handleSelectAgent = (agentId: string, workspaceId: string) => {
     const ws = workspaces.find((w) => w.id === workspaceId);
-    if (!ws) return;
+    if (!ws) {
+      return;
+    }
     // Ensure the containing project is open, then select the workspace and
     // make the clicked agent active.
     openProject(ws.repo_root)
@@ -77,8 +73,8 @@ export function HomeScreen() {
     <div className={styles.screen}>
       <div className={styles.content}>
         <div className={styles.header}>
-          <StagehandLogo className={styles.logo} />
-          <h1 className={styles.title}>Stagehand</h1>
+          <ArgusLogo className={styles.logo} />
+          <h1 className={styles.title}>Argus</h1>
           <p className={styles.subtitle}>
             Select a project to get started, or add a new repository.
           </p>

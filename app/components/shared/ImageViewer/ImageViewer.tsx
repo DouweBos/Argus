@@ -18,7 +18,9 @@ function sliderToScale(v: number, min: number, max: number): number {
 
 /** Inverse: scale → 0–1 slider position. */
 function scaleToSlider(s: number, min: number, max: number): number {
-  if (max <= min) {return 0;}
+  if (max <= min) {
+    return 0;
+  }
 
   return Math.log(s / min) / Math.log(max / min);
 }
@@ -28,7 +30,9 @@ export function ImageViewer() {
   const alt = useImageViewerAlt();
   const fallbackSrc = useImageViewerFallbackSrc();
 
-  if (!src) {return null;}
+  if (!src) {
+    return null;
+  }
 
   return createPortal(
     <ImageViewerOverlay alt={alt} fallbackSrc={fallbackSrc} src={src} />,
@@ -47,14 +51,14 @@ function ImageViewerOverlay({
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [imgSize, setImgSize] = useState<{ h: number; w: number; } | null>(
-    null,
-  );
+  const [imgSize, setImgSize] = useState<{ h: number; w: number } | null>(null);
   const [boxSize, setBoxSize] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
     const el = canvasRef.current;
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
     const ro = new ResizeObserver(([entry]) => {
       setBoxSize({
         w: entry.contentRect.width,
@@ -75,7 +79,9 @@ function ImageViewerOverlay({
 
   const constrain = useCallback(
     (t: { scale: number; tx: number; ty: number }) => {
-      if (!imgSize || boxSize.w === 0) {return t;}
+      if (!imgSize || boxSize.w === 0) {
+        return t;
+      }
 
       return constrainPan(t, imgSize.w, imgSize.h, boxSize.w, boxSize.h);
     },
@@ -89,19 +95,21 @@ function ImageViewerOverlay({
   });
 
   const fitToScreen = useCallback(() => {
-    if (!imgSize || boxSize.w === 0) {return;}
+    if (!imgSize || boxSize.w === 0) {
+      return;
+    }
     resetTo(fitTransform(imgSize.w, imgSize.h, boxSize.w, boxSize.h));
   }, [imgSize, boxSize.w, boxSize.h, resetTo]);
 
   const onImageLoad = useCallback(() => {
     const img = imgRef.current;
     const el = canvasRef.current;
-    if (!img || !el) {return;}
+    if (!img || !el) {
+      return;
+    }
     setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
     const { width, height } = el.getBoundingClientRect();
-    resetTo(
-      fitTransform(img.naturalWidth, img.naturalHeight, width, height),
-    );
+    resetTo(fitTransform(img.naturalWidth, img.naturalHeight, width, height));
   }, [resetTo]);
 
   const onSliderChange = useCallback(
@@ -124,7 +132,9 @@ function ImageViewerOverlay({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {closeImageViewer();}
+      if (e.key === "Escape") {
+        closeImageViewer();
+      }
     };
     document.addEventListener("keydown", onKey);
 
@@ -180,12 +190,8 @@ function ImageViewerOverlay({
             src={src}
             style={{
               transform: `translate(${transform.tx}px, ${transform.ty}px)`,
-              width: imgSize
-                ? imgSize.w * transform.scale
-                : undefined,
-              height: imgSize
-                ? imgSize.h * transform.scale
-                : undefined,
+              width: imgSize ? imgSize.w * transform.scale : undefined,
+              height: imgSize ? imgSize.h * transform.scale : undefined,
             }}
           />
           {canPan && imgSize && (
@@ -256,7 +262,9 @@ function Minimap({
   const panToMiniCoords = useCallback(
     (mx: number, my: number) => {
       const anchor = dragAnchorRef.current;
-      if (!anchor) {return;}
+      if (!anchor) {
+        return;
+      }
       const newVpLeft = mx - anchor.offX;
       const newVpTop = my - anchor.offY;
       onPan(-(newVpLeft / m) * scale, -(newVpTop / m) * scale);
@@ -269,7 +277,9 @@ function Minimap({
       e.stopPropagation();
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       const rect = minimapRef.current?.getBoundingClientRect();
-      if (!rect) {return;}
+      if (!rect) {
+        return;
+      }
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
 
@@ -294,9 +304,13 @@ function Minimap({
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!dragAnchorRef.current) {return;}
+      if (!dragAnchorRef.current) {
+        return;
+      }
       const rect = minimapRef.current?.getBoundingClientRect();
-      if (!rect) {return;}
+      if (!rect) {
+        return;
+      }
       panToMiniCoords(e.clientX - rect.left, e.clientY - rect.top);
     },
     [panToMiniCoords],

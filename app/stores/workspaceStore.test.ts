@@ -21,7 +21,7 @@ function workspace(overrides: Partial<Workspace> = {}): Workspace {
     id: "ws-1",
     branch: "feature-1",
     description: "Test workspace",
-    path: "/home/user/.stagehand/worktrees/MyApp/feature-1",
+    path: "/home/user/.argus/worktrees/MyApp/feature-1",
     repo_root: "/home/user/Projects/MyApp",
     kind: "worktree",
     status: "ready",

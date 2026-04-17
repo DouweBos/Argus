@@ -28,7 +28,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
-import { loadStagehandConfig } from "../workspace/setup";
+import { loadArgusConfig } from "../workspace/setup";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty") as typeof NodePty;
@@ -107,7 +107,7 @@ function buildWorkspaceEnv(
   }
 
   try {
-    const config = loadStagehandConfig(repoRoot);
+    const config = loadArgusConfig(repoRoot);
     for (const we of config.workspace_env) {
       if (we.name) {
         const value = workspaceEnvValue(workspaceId, envIndex, we);
@@ -115,7 +115,7 @@ function buildWorkspaceEnv(
       }
     }
   } catch {
-    // Missing or unparseable .stagehand.json is non-fatal.
+    // Missing or unparseable .argus.json is non-fatal.
   }
 
   return extra;

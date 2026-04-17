@@ -129,7 +129,9 @@ export function usePanZoom(
 
   useEffect(() => {
     const el = elRef.current;
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -178,7 +180,9 @@ export function usePanZoom(
     (e: React.PointerEvent) => {
       const ptrs = pointersRef.current;
       const idx = ptrs.findIndex((p) => p.id === e.pointerId);
-      if (idx === -1) {return;}
+      if (idx === -1) {
+        return;
+      }
       ptrs[idx] = { id: e.pointerId, x: e.clientX, y: e.clientY };
 
       if (ptrs.length === 1 && dragRef.current) {

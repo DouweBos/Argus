@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 import {
   setActiveCenterView,
+  setAgentPanel,
   useActiveCenterView,
+  useAgentPanel,
 } from "../../../stores/editorStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { EditorPanel } from "../../editor/EditorPanel";
-import { StagehandLogo } from "../../shared/Icons";
+import { ArgusLogo, HomeIcon } from "../../shared/Icons";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import styles from "./CenterPanel.module.css";
@@ -26,13 +28,16 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
 
   const activeView = useActiveCenterView();
   const setActiveView = setActiveCenterView;
+  const agentPanel = useAgentPanel();
+  const homeActive = activeView === "agents" && agentPanel === "home";
+  const agentsActive = activeView === "agents" && agentPanel === "agent";
 
   if (!workspaceId || !workspace) {
     return (
       <div className={styles.empty}>
         <div className={styles.emptyContent}>
-          <StagehandLogo className={styles.logo} />
-          <h2 className={styles.emptyTitle}>Stagehand</h2>
+          <ArgusLogo className={styles.logo} />
+          <h2 className={styles.emptyTitle}>Argus</h2>
           <p className={styles.emptySubtitle}>
             Select or create a workspace to begin.
           </p>
@@ -47,8 +52,22 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
       <div className={styles.navRow}>
         <div className={styles.viewSwitcher}>
           <button
-            className={`${styles.viewTab} ${activeView === "agents" ? styles.viewTabActive : ""}`}
-            onClick={() => setActiveView("agents")}
+            aria-label="Repo home"
+            className={`${styles.homeTab} ${homeActive ? styles.viewTabActive : ""}`}
+            title="Repo home"
+            onClick={() => {
+              setActiveView("agents");
+              setAgentPanel("home");
+            }}
+          >
+            <HomeIcon />
+          </button>
+          <button
+            className={`${styles.viewTab} ${agentsActive ? styles.viewTabActive : ""}`}
+            onClick={() => {
+              setActiveView("agents");
+              setAgentPanel("agent");
+            }}
           >
             Agents
           </button>

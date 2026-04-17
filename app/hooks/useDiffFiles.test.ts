@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useDiffFiles } from "./useDiffFiles";
 
 // ---------------------------------------------------------------------------
-// Mock window.stagehand
+// Mock window.argus
 // ---------------------------------------------------------------------------
 
 type EventHandler = (payload: unknown) => void;
@@ -19,7 +19,7 @@ function emitEvent(event: string, payload: unknown = {}) {
   }
 }
 
-(window as unknown as Record<string, unknown>).stagehand = {
+(window as unknown as Record<string, unknown>).argus = {
   invoke: vi.fn().mockResolvedValue(undefined),
   on: (event: string, callback: EventHandler) => {
     if (!eventListeners.has(event)) {

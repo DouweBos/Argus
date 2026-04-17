@@ -29,7 +29,7 @@ interface DiscoveredExtension {
 export async function loadLocalExtensions(): Promise<void> {
   let extensions: DiscoveredExtension[];
   try {
-    extensions = await window.stagehand.invoke<DiscoveredExtension[]>(
+    extensions = await window.argus.invoke<DiscoveredExtension[]>(
       "discover_extensions",
     );
   } catch (e) {
@@ -68,11 +68,11 @@ function registerLocalExtension(ext: DiscoveredExtension): void {
     path: ext.extensionPath,
   });
 
-  // Map every file in the extension to a stagehand-ext:// URL so VS Code
+  // Map every file in the extension to a argus-ext:// URL so VS Code
   // can fetch them (grammars, themes, icons, etc.)
   for (const file of ext.files) {
     const absolutePath = `${ext.extensionPath}/${file}`;
-    const url = `stagehand-ext://ext${absolutePath}`;
+    const url = `argus-ext://ext${absolutePath}`;
     result.registerFileUrl(file, url);
   }
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export type CenterView = "agents" | "editor" | "git";
+export type AgentPanel = "agent" | "home";
 
 /**
  * Simplified editor store for the monaco-vscode-api migration.
@@ -13,11 +14,13 @@ export type CenterView = "agents" | "editor" | "git";
 interface EditorStoreData {
   activeCenterView: CenterView;
   activeWorkspaceId: string | null;
+  agentPanel: AgentPanel;
 }
 
 const editorStore = create<EditorStoreData>(() => ({
   activeWorkspaceId: null,
   activeCenterView: "agents",
+  agentPanel: "home",
 }));
 
 const useEditorStore = editorStore;
@@ -34,11 +37,17 @@ export const setActiveCenterView = (view: CenterView) => {
   editorStore.setState({ activeCenterView: view });
 };
 
+export const setAgentPanel = (panel: AgentPanel) => {
+  editorStore.setState({ agentPanel: panel });
+};
+
 export const useActiveWorkspaceId = () =>
   useEditorStore((s) => s.activeWorkspaceId);
 
 export const useActiveCenterView = () =>
   useEditorStore((s) => s.activeCenterView);
+
+export const useAgentPanel = () => useEditorStore((s) => s.agentPanel);
 
 /** For tests and imperative reads */
 export const getEditorState = () => editorStore.getState();

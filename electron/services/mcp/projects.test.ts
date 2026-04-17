@@ -114,7 +114,7 @@ describe("projects service", () => {
 
     it("returns registered repos even without config files", () => {
       appState.repoRoots.add("/projects/frontend");
-      // loadStagehandConfig will try to read files — make them not exist.
+      // loadArgusConfig will try to read files — make them not exist.
       mockExistsSync.mockReturnValue(false);
 
       const projects = collectAllProjects();
@@ -130,11 +130,11 @@ describe("projects service", () => {
     it("discovers related projects from config", () => {
       appState.repoRoots.add("/projects/frontend");
 
-      // Return .stagehand.json with related_projects for the frontend repo.
+      // Return .argus.json with related_projects for the frontend repo.
       mockExistsSync.mockImplementation((p: fs.PathLike) => {
         const s = String(p);
 
-        return s.endsWith(".stagehand.json") && !s.includes("local");
+        return s.endsWith(".argus.json") && !s.includes("local");
       });
       mockReadFileSync.mockReturnValue(
         JSON.stringify({
@@ -167,7 +167,7 @@ describe("projects service", () => {
       mockExistsSync.mockImplementation((p: fs.PathLike) => {
         const s = String(p);
 
-        return s.endsWith(".stagehand.json") && !s.includes("local");
+        return s.endsWith(".argus.json") && !s.includes("local");
       });
       mockReadFileSync.mockImplementation((p: fs.PathLike) => {
         if (String(p).startsWith("/projects/frontend")) {
@@ -200,7 +200,7 @@ describe("projects service", () => {
       mockExistsSync.mockImplementation((p: fs.PathLike) => {
         const s = String(p);
 
-        return s.endsWith(".stagehand.json") && !s.includes("local");
+        return s.endsWith(".argus.json") && !s.includes("local");
       });
       mockReadFileSync.mockImplementation((p: fs.PathLike) => {
         if (String(p).startsWith("/projects/frontend")) {

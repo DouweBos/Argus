@@ -75,9 +75,7 @@ describe("recentProjectsStore", () => {
 
     it("persists to localStorage", () => {
       addRecentProject("/test");
-      const stored = JSON.parse(
-        mockStorage["stagehand:recentProjects"] ?? "[]",
-      );
+      const stored = JSON.parse(mockStorage["argus:recentProjects"] ?? "[]");
       expect(stored).toHaveLength(1);
       expect(stored[0].path).toBe("/test");
     });
@@ -110,7 +108,7 @@ describe("recentProjectsStore", () => {
 
     it("persists to localStorage", () => {
       addOpenProject("/test");
-      const stored = JSON.parse(mockStorage["stagehand:openProjects"] ?? "[]");
+      const stored = JSON.parse(mockStorage["argus:openProjects"] ?? "[]");
       expect(stored).toHaveLength(1);
     });
   });

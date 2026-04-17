@@ -16,8 +16,8 @@ import {
   mergeWorkspaceIntoBase as doMergeWorkspaceIntoBase,
 } from "./merge";
 import { loadMetadata, saveMetadata } from "./metadata";
-import { defaultStagehandConfig, type StagehandConfig } from "./models";
-import { loadStagehandConfig } from "./setup";
+import { defaultArgusConfig, type ArgusConfig } from "./models";
+import { loadArgusConfig } from "./setup";
 import { startWatcher, type WatcherHandle } from "./watcher";
 
 // ---------------------------------------------------------------------------
@@ -559,36 +559,36 @@ export function resumeAllWatchers(): void {
 }
 
 // ---------------------------------------------------------------------------
-// read_stagehand_config / write_stagehand_config
+// read_argus_config / write_argus_config
 // ---------------------------------------------------------------------------
 
 /**
- * Read and parse the `.stagehand.json` configuration from the given repo root.
+ * Read and parse the `.argus.json` configuration from the given repo root.
  *
  * Returns the default (empty) config if the file does not exist.
  */
-export function readStagehandConfig(repoRoot: string): StagehandConfig {
+export function readArgusConfig(repoRoot: string): ArgusConfig {
   try {
-    return loadStagehandConfig(repoRoot);
+    return loadArgusConfig(repoRoot);
   } catch {
-    return defaultStagehandConfig();
+    return defaultArgusConfig();
   }
 }
 
 /**
- * Write a `.stagehand.json` configuration file to the given repo root.
+ * Write a `.argus.json` configuration file to the given repo root.
  * Validates that the content is valid JSON before writing.
  */
-export function writeStagehandConfig(repoRoot: string, content: string): void {
+export function writeArgusConfig(repoRoot: string, content: string): void {
   // Validate JSON before writing.
   try {
     JSON.parse(content);
   } catch (e) {
     throw `Invalid JSON: ${e}`;
   }
-  const filePath = `${repoRoot}/.stagehand.json`;
+  const filePath = `${repoRoot}/.argus.json`;
   fs.writeFileSync(filePath, content, "utf8");
-  info(`Wrote .stagehand.json to ${filePath}`);
+  info(`Wrote .argus.json to ${filePath}`);
 }
 
 // ---------------------------------------------------------------------------

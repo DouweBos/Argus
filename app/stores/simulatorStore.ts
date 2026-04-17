@@ -7,10 +7,10 @@ export function isTvOS(device: SimulatorDevice | undefined): boolean {
   return device?.runtime.startsWith("tvOS") ?? false;
 }
 
-const STORAGE_KEY = "stagehand:simulatorByWorkspace";
-const ANDROID_STORAGE_KEY = "stagehand:androidByWorkspace";
-const PLATFORM_STORAGE_KEY = "stagehand:platform";
-const BROWSER_PRESET_STORAGE_KEY = "stagehand:browserPreset";
+const STORAGE_KEY = "argus:simulatorByWorkspace";
+const ANDROID_STORAGE_KEY = "argus:androidByWorkspace";
+const PLATFORM_STORAGE_KEY = "argus:platform";
+const BROWSER_PRESET_STORAGE_KEY = "argus:browserPreset";
 
 function loadSelectedByWorkspace(key: string): Record<string, string> {
   try {

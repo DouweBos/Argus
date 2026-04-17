@@ -10,7 +10,7 @@
 import http from "node:http";
 import { info } from "../../../app/lib/logger";
 
-const BOUNDARY = "stagehand-frame";
+const BOUNDARY = "argus-frame";
 
 /** Connected MJPEG clients per workspace. */
 const clients = new Map<string, Set<http.ServerResponse>>();

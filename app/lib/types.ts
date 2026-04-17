@@ -88,7 +88,7 @@ export type WorkspaceEnvStrategy = "hash" | "sequential";
 export interface WorkspaceEnvConfig {
   /** Starting integer. Final value is base_value + offset. */
   base_value?: number;
-  /** Env var name (e.g. STAGEHAND_PORT, RCT_METRO_PORT). */
+  /** Env var name (e.g. ARGUS_PORT, RCT_METRO_PORT). */
   name: string;
   /** Modulus for the hash strategy (default 1000). */
   range?: number;
@@ -121,7 +121,7 @@ export interface FileStat {
 /** Run button configuration — either a plain command string or object with dir. */
 export type RunConfig = string | { command: string; dir?: string };
 
-/** JSON-facing shape for custom browser device presets in `.stagehand.json`. */
+/** JSON-facing shape for custom browser device presets in `.argus.json`. */
 export interface BrowserPresetConfig {
   height: number;
   id: string;
@@ -132,7 +132,7 @@ export interface BrowserPresetConfig {
 
 export type RuntimePlatform = "android" | "ios" | "web";
 
-export interface StagehandConfig {
+export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
   /** Custom browser device presets for the web browser panel. */

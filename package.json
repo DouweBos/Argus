@@ -1,15 +1,15 @@
 {
-  "name": "stagehand",
+  "name": "argus",
   "description": "Agentic IDE for mobile development",
   "author": "Houwert",
   "license": "MIT",
   "private": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/DouweBos/Stagehand.git"
+    "url": "https://github.com/DouweBos/Argus.git"
   },
-  "homepage": "https://github.com/DouweBos/Stagehand",
-  "bugs": "https://github.com/DouweBos/Stagehand/issues",
+  "homepage": "https://github.com/DouweBos/Argus",
+  "bugs": "https://github.com/DouweBos/Argus/issues",
   "version": "0.1.0",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -23,7 +23,7 @@
     "build:app": "pnpm build && electron-builder",
     "preview": "vite preview",
     "lint": "tsc --noEmit && eslint . && prettier --check . && pnpm run lint:css-modules",
-    "build:bridge": "make -C native/stagehand-sim-bridge",
+    "build:bridge": "make -C native/argus-sim-bridge",
     "lint:css-modules": "tsx scripts/check-css-module-usage.ts",
     "lint:ts": "tsc --noEmit && eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",

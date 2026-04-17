@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import type { AgentStatus } from "../../../lib/types";
+import { useMemo } from "react";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversation } from "../../../stores/conversationStore";
 import { CloseIcon } from "../../shared/Icons";
@@ -49,10 +49,7 @@ function AgentTab({
       onClick={() => onSelect(agent.agent_id)}
     >
       {hasParent && (
-        <span
-          className={styles.parentBadge}
-          title="Spawned by another agent"
-        >
+        <span className={styles.parentBadge} title="Spawned by another agent">
           ↳
         </span>
       )}

@@ -58,7 +58,7 @@ import { getConductorSkillPath } from "../cli/conductorInstaller";
 import { getMcpPort } from "../mcp/server";
 import { simulatorPool } from "../simulator/pool";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
-import { loadStagehandConfig } from "../workspace/setup";
+import { loadArgusConfig } from "../workspace/setup";
 import { ControlHandler } from "./controlHandler";
 
 const execFileAsync = promisify(execFile);
@@ -259,36 +259,36 @@ export async function startAgent(
     args.push("--resume", resumeSessionId);
   }
 
-  // Connect the agent to the Stagehand MCP server for workspace/agent
+  // Connect the agent to the Argus MCP server for workspace/agent
   // orchestration tools (create_workspace, spawn_agent, trigger_run, etc.).
   const mcpPort = getMcpPort();
   if (mcpPort) {
     const mcpConfig = JSON.stringify({
       mcpServers: {
-        stagehand: { type: "http", url: `http://127.0.0.1:${mcpPort}/mcp` },
+        argus: { type: "http", url: `http://127.0.0.1:${mcpPort}/mcp` },
       },
     });
     args.push("--mcp-config", mcpConfig);
   }
 
-  // Prepend ~/.stagehand/bin to PATH so the `conductor` CLI is available.
+  // Prepend ~/.argus/bin to PATH so the `conductor` CLI is available.
   const env = { ...process.env };
-  const stagehandBin = path.join(os.homedir(), ".stagehand", "bin");
-  env.PATH = `${stagehandBin}:${env.PATH ?? ""}`;
+  const argusBin = path.join(os.homedir(), ".argus", "bin");
+  env.PATH = `${argusBin}:${env.PATH ?? ""}`;
 
   // Devices (iOS simulator, headless Chromium) are acquired **lazily** by the
   // conductor shim the first time the agent runs `conductor --device ios|web`.
-  // The shim resolves the device ID via an HTTP call to the Stagehand MCP
+  // The shim resolves the device ID via an HTTP call to the Argus MCP
   // server using these env vars.
-  env.STAGEHAND_AGENT_ID = agentId;
+  env.ARGUS_AGENT_ID = agentId;
   if (mcpPort) {
-    env.STAGEHAND_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/stagehand/acquire-device`;
+    env.ARGUS_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/argus/acquire-device`;
   }
 
   const child = spawn(CLAUDE_BIN, args, {
     cwd: worktreePath,
     stdio: ["pipe", "pipe", "pipe"],
-    // Inherit the current process environment (with stagehand bin prepended)
+    // Inherit the current process environment (with argus bin prepended)
     // so PATH, HOME, and any API keys are available to the child.
     env,
   });
@@ -376,7 +376,7 @@ export async function startAgent(
 
         // Intercept conductor bash commands to transparently inject an
         // iOS/Android device UDID. (Web CDP injection lives in the conductor
-        // shim at `~/.stagehand/bin/conductor` — it runs regardless of
+        // shim at `~/.argus/bin/conductor` — it runs regardless of
         // permission mode, which matters because `bypassPermissions` skips
         // `can_use_tool` for auto-approved tools.)
         if (
@@ -500,12 +500,12 @@ export async function startAgent(
 
   appState.agents.set(agentId, session);
 
-  // Load project-level config from .stagehand.json (if present).
+  // Load project-level config from .argus.json (if present).
   let projectPrompt: string | null = null;
   let browserUrl: string | null = null;
   let configPlatforms: RuntimePlatform[] | null = null;
   try {
-    const config = loadStagehandConfig(workspace.repo_root);
+    const config = loadArgusConfig(workspace.repo_root);
     projectPrompt = config.agent_prompt ?? null;
     browserUrl = config.browser_url ?? null;
     configPlatforms = config.platforms ?? null;
@@ -514,7 +514,7 @@ export async function startAgent(
   }
 
   // Resolve which runtime sections to emit: explicit override (from
-  // spawn_agent) wins over `.stagehand.json`, which wins over the full
+  // spawn_agent) wins over `.argus.json`, which wins over the full
   // triple fallback.
   const resolvedPlatforms =
     platformsOverride && platformsOverride.length > 0
@@ -919,7 +919,7 @@ interface RuntimeContext {
  * Build the "Runtime Environment" system prompt section, tailored to the
  * platforms this workspace actually targets and whatever devices are already
  * attached/reserved at agent start. Falls back to the full triple when
- * `.stagehand.json` does not declare `platforms`.
+ * `.argus.json` does not declare `platforms`.
  */
 function buildRuntimeSection(ctx: RuntimeContext): string {
   const {
@@ -932,7 +932,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
   const lines: string[] = [
     "## Runtime Environment",
     "",
-    "You are running inside **Stagehand**, an agentic IDE. The user can see your code editor, a terminal, and one or more **runtime views** side by side. These runtime views show the live state of the app or website you are working on — the user is looking at them right now.",
+    "You are running inside **Argus**, an agentic IDE. The user can see your code editor, a terminal, and one or more **runtime views** side by side. These runtime views show the live state of the app or website you are working on — the user is looking at them right now.",
   ];
 
   if (platforms.has("ios")) {
@@ -989,7 +989,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       '- `conductor input-text "text" --device web` — type text into the focused field',
       "- `conductor open-link <url> --device web` — navigate the web browser to a URL",
       "",
-      "Stagehand wires `--device web` directly to this workspace's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
+      "Argus wires `--device web` directly to this workspace's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
     );
   }
 
