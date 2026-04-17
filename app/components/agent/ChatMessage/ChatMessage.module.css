@@ -36,12 +36,59 @@
   word-break: break-word;
 }
 
+.userAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+  max-width: 75%;
+}
+
+.userAttachment {
+  display: block;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  border: 1px solid rgba(77, 159, 255, 0.18);
+  background: rgba(77, 159, 255, 0.04);
+  cursor: zoom-in;
+  transition:
+    border-color var(--transition-base),
+    transform var(--transition-base);
+}
+
+.userAttachment:hover {
+  border-color: rgba(77, 159, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.userAttachmentImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 /* Assistant message — full width, generous spacing */
 .assistantMsg {
   padding: 14px 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Tool-call-only messages stack tightly — consecutive calls should read as
+   one continuous activity log, not as individually padded turns. */
+.assistantMsgToolOnly {
+  padding: 0 20px;
+  gap: 0;
+}
+
+.assistantMsgToolOnly + .assistantMsgToolOnly {
+  margin-top: -1px;
 }
 
 .textContent {
@@ -175,5 +222,5 @@
 .toolCallsSection {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
 }

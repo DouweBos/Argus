@@ -379,6 +379,7 @@ export async function deleteWorkspace(
   const repoRoot = workspace.repo_root;
 
   // Kill all agent sessions for this workspace.
+  const killedAgentIds: string[] = [];
   for (const [key, session] of appState.agents.entries()) {
     if (session.workspaceId === id) {
       try {
@@ -387,6 +388,7 @@ export async function deleteWorkspace(
         info(`deleteWorkspace: kill agent ${key} returned:`, e);
       }
       appState.agents.delete(key);
+      killedAgentIds.push(key);
     }
   }
 
@@ -414,6 +416,15 @@ export async function deleteWorkspace(
 
   // Remove from in-memory state immediately so the UI updates without delay.
   appState.workspaces.delete(id);
+
+  // Notify the renderer: the workspace is gone, and so are its agents.
+  const win = getMainWindow();
+  if (win) {
+    for (const agentId of killedAgentIds) {
+      win.webContents.send(`agent:exit:${agentId}`, 0);
+    }
+    win.webContents.send("workspace:deleted", id);
+  }
 
   if (workspace.kind !== "repo_root") {
     const taskRepoRoot = repoRoot;

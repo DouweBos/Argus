@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useOverlayDismiss } from "../../../hooks/useOverlayDismiss";
 import {
   removeRecentProject,
@@ -36,7 +37,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
     await onOpen(path);
   };
 
-  return (
+  return createPortal(
     <div className={styles.overlay} {...overlay}>
       <div
         aria-labelledby="open-project-title"
@@ -103,6 +104,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

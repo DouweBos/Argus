@@ -1,10 +1,10 @@
 import type { AgentStatus } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { error } from "@logger";
 import {
   notifyMessageSent,
   saveAgentConversation,
   startAgentListening,
+  stopAgentById,
   stopAgentListening,
 } from "../lib/agentEventService";
 import {
@@ -160,17 +160,7 @@ export function useWorkspaceAgents(
   }, [workspaceId]);
 
   const stopAgent = useCallback(async (agentId: string) => {
-    // Save conversation before cleanup
-    saveAgentConversation(agentId);
-    stopAgentListening(agentId);
-    try {
-      await apiStopAgent(agentId);
-    } catch (err) {
-      error(`Failed to stop agent ${agentId}:`, err);
-    }
-
-    clearConversation(agentId);
-    removeAgent(agentId);
+    await stopAgentById(agentId);
   }, []);
 
   const stopAll = useCallback(async () => {

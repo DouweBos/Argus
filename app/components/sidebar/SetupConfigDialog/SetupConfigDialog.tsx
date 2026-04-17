@@ -1,5 +1,6 @@
 import type {
   BrowserPresetConfig,
+  RuntimePlatform,
   StagehandConfig,
   WorkspaceEnvConfig,
 } from "../../../lib/types";
@@ -502,8 +503,12 @@ function runtimeSummary(
   terminals: TerminalEntry[],
   envEntries: EnvEntry[],
   browserPresets: BrowserPresetEntry[],
+  platforms: RuntimePlatform[],
 ): string {
   const parts: string[] = [];
+  if (platforms.length) {
+    parts.push(platforms.join("+"));
+  }
   if (runCommand.trim()) {
     parts.push(runCommand.trim());
   }
@@ -558,6 +563,7 @@ export function SetupConfigDialog({
   const [runCommand, setRunCommand] = useState("");
   const [runDir, setRunDir] = useState("");
   const [browserUrl, setBrowserUrl] = useState("");
+  const [platforms, setPlatforms] = useState<RuntimePlatform[]>([]);
   const [agentPrompt, setAgentPrompt] = useState("");
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -617,6 +623,14 @@ export function SetupConfigDialog({
         }
         if (config.browser_url) {
           setBrowserUrl(config.browser_url);
+        }
+        if (config.platforms?.length) {
+          setPlatforms(
+            config.platforms.filter(
+              (p): p is RuntimePlatform =>
+                p === "ios" || p === "android" || p === "web",
+            ),
+          );
         }
         if (config.workspace_env?.length) {
           setEnvs(
@@ -696,6 +710,9 @@ export function SetupConfigDialog({
     if (browserUrlVal) {
       config.browser_url = browserUrlVal;
     }
+    if (platforms.length) {
+      config.platforms = platforms;
+    }
     const envVars = envList.items
       .filter((e) => e.name.trim())
       .map((e) => {
@@ -765,7 +782,8 @@ export function SetupConfigDialog({
     !!browserUrl.trim() ||
     browserPresetList.items.length > 0 ||
     terminalList.items.length > 0 ||
-    envList.items.length > 0;
+    envList.items.length > 0 ||
+    platforms.length > 0;
   const hasAgent = !!agentPrompt.trim() || !saveChatHistory;
 
   return (
@@ -843,9 +861,42 @@ export function SetupConfigDialog({
                 terminalList.items,
                 envList.items,
                 browserPresetList.items,
+                platforms,
               )}
               title="Runtime"
             >
+              <div className={styles.field}>
+                <p className={styles.sectionTitle}>Target Platforms</p>
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                  {(["ios", "android", "web"] as const).map((p) => (
+                    <label key={p} className={styles.checkboxRow}>
+                      <input
+                        checked={platforms.includes(p)}
+                        type="checkbox"
+                        onChange={(e) =>
+                          setPlatforms((prev) =>
+                            e.target.checked
+                              ? [...prev, p]
+                              : prev.filter((x) => x !== p),
+                          )
+                        }
+                      />
+                      {p === "ios"
+                        ? "iOS"
+                        : p === "android"
+                          ? "Android"
+                          : "Web"}
+                    </label>
+                  ))}
+                </div>
+                <p className={styles.helpText}>
+                  Runtimes agents pre-allocate per workspace (iOS simulator,
+                  Android emulator, headless Chromium). Leave empty if this
+                  project doesn&apos;t need any of them — each unused runtime
+                  still consumes CPU and memory.
+                </p>
+              </div>
+
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="setup-browser-url">
                   Default browser URL

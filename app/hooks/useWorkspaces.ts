@@ -1,6 +1,8 @@
 import type { Workspace } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { stopAgentListening } from "../lib/agentEventService";
 import { listen } from "../lib/events";
+import { getAgentState, removeAgent } from "../stores/agentStore";
 import {
   addRepoRoot as apiAddRepoRoot,
   createHeadWorkspace as apiCreateHeadWorkspace,
@@ -209,6 +211,16 @@ export function useProjects() {
   useEffect(() => {
     const unlisten = listen<string>("workspace:deleted", (event) => {
       const wsId = event.payload;
+      // Purge any agents tracked for this workspace — the backend has
+      // already killed their processes, but the renderer store would
+      // otherwise keep showing them indefinitely.
+      const agents = getAgentState().agents;
+      for (const agent of Object.values(agents)) {
+        if (agent.workspace_id === wsId) {
+          stopAgentListening(agent.agent_id);
+          removeAgent(agent.agent_id);
+        }
+      }
       if (getWorkspaceState().workspaces.some((w) => w.id === wsId)) {
         removeWorkspace(wsId);
       }

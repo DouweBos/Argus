@@ -31,3 +31,16 @@ You have access to the **Stagehand MCP server** which provides tools for workspa
 - **`trigger_run`** — Start the project's dev server or run command in this workspace's UI terminal.
 - **`check_conflicts`** — Check if your branch would conflict with the base branch.
 - **`merge_workspace`** — Merge your branch back into the base branch when your work is complete.
+
+## Working alongside other agents
+
+You are almost certainly not the only agent running. A parent (usually the root agent) may have spawned several sibling worktree agents to parallelize independent pieces of work, and they may be editing the same repository in other worktrees right now.
+
+- **Stay in scope.** Do only what your prompt asks for. Avoid drive-by refactors in files that other agents are likely touching — shared configs, design tokens, root layouts, barrel exports, dependency manifests.
+- **Discover siblings when useful.** `list_agents` and `list_workspaces` show what else is in progress. Check if you suspect overlap.
+- **Don't merge on behalf of others.** Only merge your own workspace. Let the orchestrator integrate sibling branches.
+- **Coordinate through the parent, not directly.** If you're blocked on work another agent is doing, finish what you can and report it in your final message rather than messaging the sibling.
+
+## Spawning your own sub-agents
+
+You can spawn sub-agents too — if your task naturally decomposes into independent pieces, use `create_workspace` + `spawn_agent` (or `spawn_agents_batch` for 3+) to fan out. Pass your own agent ID as `parent_agent_id` so orchestration stays traceable. Use `wait_for_agent` to collect results, then `check_conflicts` + `merge_workspace` to integrate. Give each child a fully self-contained prompt — they inherit no context from yours.

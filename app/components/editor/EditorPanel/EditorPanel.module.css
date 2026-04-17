@@ -31,6 +31,13 @@
   overflow: hidden;
 }
 
+/* Hide VS Code's Explorer folder pane header (shows the workspace folder
+   basename, which reflects VS Code's persisted state rather than the
+   Stagehand-selected workspace). */
+.sidebar :global(.explorer-folders-view > .pane-header) {
+  display: none;
+}
+
 /* Resize sash — invisible overlay on the right edge of the sidebar */
 .resizeHandle {
   position: absolute;

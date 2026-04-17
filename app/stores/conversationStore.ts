@@ -36,6 +36,8 @@ export interface ToolCallInfo {
 
 export interface ConversationMessage {
   id: string;
+  /** Image attachments the user sent alongside this message (user role only). */
+  images?: ImageAttachment[];
   /** True for stderr / error system messages (styled differently). */
   isError?: boolean;
   role: "assistant" | "system" | "user";
@@ -169,7 +171,11 @@ export function dequeueMessage(agentId: string): QueuedMessage | undefined {
   return msg;
 }
 
-export function addUserMessage(agentId: string, text: string) {
+export function addUserMessage(
+  agentId: string,
+  text: string,
+  images?: ImageAttachment[],
+) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
     const msg: ConversationMessage = {
@@ -178,6 +184,7 @@ export function addUserMessage(agentId: string, text: string) {
       textBlocks: [text],
       toolCalls: [],
       timestamp: Date.now(),
+      images: images?.length ? images : undefined,
     };
 
     return {

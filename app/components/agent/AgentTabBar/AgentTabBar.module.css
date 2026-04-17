@@ -43,6 +43,32 @@
   line-height: 1;
 }
 
+.childBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: var(--accent, #4d9fff);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.parentBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
 .closeBtn {
   display: flex;
   align-items: center;

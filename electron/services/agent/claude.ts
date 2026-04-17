@@ -74,7 +74,7 @@ const CLAUDE_BIN = "claude";
  * Ensure a simulator is reserved for the given agent, acquiring one on first
  * use. Returns the device UDID.
  */
-async function ensureSimulatorForAgent(
+export async function ensureSimulatorForAgent(
   agentId: string,
   repoRoot: string,
 ): Promise<string> {
@@ -90,13 +90,16 @@ async function ensureSimulatorForAgent(
  * Ensure a web browser is reserved for the given agent, acquiring one on first
  * use. Returns the Conductor device ID (e.g. "web:chromium:a1b2c3d4").
  */
-async function ensureWebBrowserForAgent(agentId: string): Promise<string> {
+export async function ensureWebBrowserForAgent(
+  agentId: string,
+): Promise<string> {
   const existing = webBrowserPool.getReservation(agentId);
   if (existing) {
     return existing.deviceId;
   }
 
   const reservation = await webBrowserPool.acquireBrowser(agentId);
+
   return reservation.deviceId;
 }
 
@@ -273,14 +276,13 @@ export async function startAgent(
   const stagehandBin = path.join(os.homedir(), ".stagehand", "bin");
   env.PATH = `${stagehandBin}:${env.PATH ?? ""}`;
 
-  // Pre-acquire a web browser for this agent so the conductor shim can
-  // rewrite `--device web` to the specific device ID without an HTTP
-  // round-trip to a CDP resolver.
-  try {
-    const webDeviceId = await ensureWebBrowserForAgent(agentId);
-    env.CONDUCTOR_WEB_DEVICE_ID = webDeviceId;
-  } catch (e) {
-    warn(`[agent:${agentId}] web browser acquisition failed: ${String(e)}`);
+  // Devices (iOS simulator, headless Chromium) are acquired **lazily** by the
+  // conductor shim the first time the agent runs `conductor --device ios|web`.
+  // The shim resolves the device ID via an HTTP call to the Stagehand MCP
+  // server using these env vars.
+  env.STAGEHAND_AGENT_ID = agentId;
+  if (mcpPort) {
+    env.STAGEHAND_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/stagehand/acquire-device`;
   }
 
   const child = spawn(CLAUDE_BIN, args, {
@@ -517,7 +519,7 @@ export async function startAgent(
   const resolvedPlatforms =
     platformsOverride && platformsOverride.length > 0
       ? platformsOverride
-      : (configPlatforms ?? ["ios", "android", "web"]);
+      : (configPlatforms ?? []);
 
   const runtimeSection = buildRuntimeSection({
     platforms: new Set(resolvedPlatforms),
@@ -602,30 +604,35 @@ export async function stopAgent(agentId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * Send SIGINT to the Claude Code process to interrupt the current prompt
- * without killing the agent. The process stays alive and returns to an idle
- * state, ready for the next message.
+ * Send an `interrupt` control request to the Claude Code CLI to stop the
+ * current prompt without killing the agent. The process stays alive and
+ * returns to an idle state, ready for the next message.
  *
- * @throws string if no agent is found or the signal cannot be delivered.
+ * @throws string if no agent is found or the CLI rejects the request.
  */
-export function interruptAgent(agentId: string): void {
+export async function interruptAgent(agentId: string): Promise<void> {
   const session = appState.agents.get(agentId);
   if (!session) {
     throw `No agent found: ${agentId}`;
   }
-
-  const pid = session.child.pid;
-  if (pid === undefined) {
-    throw `Agent process has no PID: ${agentId}`;
+  if (session.status !== "running") {
+    return;
   }
 
+  const handler = session.controlHandler;
+  if (!handler) {
+    throw `Agent has no control handler: ${agentId}`;
+  }
+
+  const [json, promise] = handler.buildInterruptRequest();
+  session.stdin.write(json + "\n");
   try {
-    process.kill(pid, "SIGINT");
+    await promise;
   } catch (e) {
-    throw `Failed to send SIGINT to agent ${agentId} (pid ${pid}): ${String(e)}`;
+    throw `Failed to interrupt agent ${agentId}: ${String(e)}`;
   }
 
-  info(`[agent:${agentId}] sent SIGINT (pid ${pid})`);
+  info(`[agent:${agentId}] interrupted`);
 }
 
 // ---------------------------------------------------------------------------
@@ -864,6 +871,7 @@ export function respondToPermission(
   decision: "allow" | "deny",
   allowRule?: string,
   allowAll?: boolean,
+  denyMessage?: string,
 ): void {
   const session = appState.agents.get(agentId);
   if (!session) {
@@ -875,7 +883,13 @@ export function respondToPermission(
     throw `Agent has no control handler: ${agentId}`;
   }
 
-  const response = handler.respond(toolUseId, decision, allowRule, allowAll);
+  const response = handler.respond(
+    toolUseId,
+    decision,
+    allowRule,
+    allowAll,
+    denyMessage,
+  );
 
   try {
     session.stdin.write(response + "\n");
@@ -925,7 +939,15 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
     lines.push("", "### iOS Simulator", "");
     if (iosReservation) {
       lines.push(
-        `Your iOS simulator is **${iosReservation.deviceName}** (UDID \`${iosReservation.udid}\`) — reserved exclusively for this agent. Conductor will target it automatically; do **not** call \`conductor start-device\` yourself.`,
+        `Your iOS simulator is **${iosReservation.deviceName}** (UDID \`${iosReservation.udid}\`) — reserved exclusively for this agent. Other parallel agents have their own separate simulators; never try to use theirs.`,
+        "",
+        "Conductor automatically targets your simulator when you run `conductor <cmd>` with no `--device` flag — do **not** call `conductor start-device` yourself.",
+        "",
+        `When you launch the app via a native tool that doesn't use conductor (e.g. \`pnpm ios\`, \`npx expo run:ios\`, \`xcrun simctl\`), you MUST target your simulator explicitly by name or UDID, otherwise it will install on whatever simulator happens to be booted first and collide with other agents. Examples:`,
+        `- \`pnpm ios --device "${iosReservation.deviceName}"\``,
+        `- \`xcrun simctl install ${iosReservation.udid} <path/to/app>\``,
+        "",
+        `The UDID is also available in your environment as \`$CONDUCTOR_IOS_DEVICE_ID\`.`,
       );
     } else {
       lines.push(
@@ -975,20 +997,39 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
   lines.push(
     "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor cheat-sheet` for a quick command reference or `conductor --help` for full usage.",
     "",
+    "Device targeting:",
   );
   if (platforms.has("ios")) {
     lines.push(
-      "- **iOS simulator**: `conductor <command>` (no `--device` flag needed — auto-provisioned on first use)",
+      '- **iOS simulator**: `conductor <command>` (no `--device` flag needed — auto-provisioned on first use). To target a specific booted device when multiple exist, use `--device-name "<name>"` (e.g. a reference simulator running a different build).',
     );
   }
   if (platforms.has("android")) {
     lines.push(
-      "- **Android emulator**: `conductor <command> --device <android-id>`",
+      "- **Android emulator**: `conductor <command> --device <android-id>` (run `conductor list-devices` to find the ID).",
     );
   }
   if (platforms.has("web")) {
     lines.push("- **Web browser**: `conductor <command> --device web`");
   }
+
+  if (platforms.has("ios") || platforms.has("android")) {
+    lines.push(
+      "",
+      "Common commands for mobile UI validation:",
+      "- `conductor take-screenshot --output <path>` — capture the current screen (PNG). Read the file back to see it.",
+      "- `conductor inspect` — print the accessibility tree (element IDs, labels, text) for the current screen.",
+      '- `conductor tap-on "<element>"` — tap a visible element by text/accessibility label.',
+      '- `conductor input-text "<text>"` — type into the focused text field.',
+      "- `conductor swipe <direction>` / `conductor scroll <direction>` — navigate lists and scroll views.",
+      "- `conductor foreground-app` — print the bundle ID / package name of the app currently in foreground.",
+      '- `conductor assert-visible "<element>"` / `assert-not-visible "<element>"` — quick invariants for tests.',
+      "- `conductor hide-keyboard` — dismiss the on-screen keyboard.",
+      "",
+      "When validating UI changes, screenshot the before/after state and compare. If the project has reference screenshots or a design spec (commonly under `legacy/`, `docs/`, or referenced in the project config), compare against those rather than relying on memory.",
+    );
+  }
+
   lines.push(
     "",
     "When the user asks about what they see, what's on screen, or what the app/website is showing, use conductor to answer from the device's current state.",

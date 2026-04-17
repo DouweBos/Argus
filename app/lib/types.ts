@@ -130,6 +130,8 @@ export interface BrowserPresetConfig {
   width: number;
 }
 
+export type RuntimePlatform = "android" | "ios" | "web";
+
 export interface StagehandConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
@@ -137,6 +139,12 @@ export interface StagehandConfig {
   browser_presets?: BrowserPresetConfig[];
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
   browser_url?: string;
+  /**
+   * Runtime platforms this project targets. Agents only pre-allocate iOS
+   * simulators / Android emulators / headless Chromium browsers for the
+   * platforms listed here. Omitted or empty → no runtimes pre-allocated.
+   */
+  platforms?: RuntimePlatform[];
   /** Shell command to run via the "Run" button (e.g. `npx expo start`). */
   run?: RunConfig;
   /** Whether to save chat history when agents stop. Defaults to true. */

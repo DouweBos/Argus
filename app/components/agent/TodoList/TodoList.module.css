@@ -1,0 +1,126 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  margin: 0 12px 8px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background var(--transition-base);
+}
+
+.header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.progress {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.chevron {
+  color: var(--text-muted);
+  transition: transform var(--transition-base);
+  display: flex;
+  align-items: center;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+.checkbox {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid var(--text-muted);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.completed .checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.inProgress .checkbox {
+  border-color: var(--accent);
+  background: rgba(77, 159, 255, 0.15);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.completed .text {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.inProgress .text {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.pending .text {
+  color: var(--text-secondary);
+}
+
+.text {
+  word-break: break-word;
+  min-width: 0;
+  flex: 1;
+}

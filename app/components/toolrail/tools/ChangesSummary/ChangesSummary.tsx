@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDiffFiles } from "../../../../hooks/useDiffFiles";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";
 import { useWorkspaces } from "../../../../stores/workspaceStore";
@@ -72,6 +72,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
     useMergeStatus(workspaceId);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const fileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const fileStats = useMemo(() => {
     return files.map((f) => {
@@ -115,13 +116,50 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
     [files.length],
   );
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+        return;
+      }
+
+      if (!container.contains(document.activeElement)) {
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) {
+          return;
+        }
+      }
+
+      if (files.length === 0) {
+        return;
+      }
+
+      e.preventDefault();
+      const delta = e.key === "ArrowRight" ? 1 : -1;
+      navigateToFile(currentFileIndex + delta);
+    };
+
+    container.addEventListener("keydown", handleKeyDown);
+
+    return () => container.removeEventListener("keydown", handleKeyDown);
+  }, [files.length, currentFileIndex, navigateToFile]);
+
   const showMerge = workspace?.kind === "worktree" && workspace.base_branch;
   const hasConflicts = conflicts.length > 0;
   const canMerge = hasStaged && !hasConflicts && !isMerging;
 
   if (isLoading && files.length === 0) {
     return (
-      <div className={styles.container}>
+      <div ref={containerRef} className={styles.container} tabIndex={-1}>
         <div className={styles.empty}>
           <span className={styles.emptyText}>Loading changes...</span>
         </div>
@@ -131,7 +169,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
 
   if (files.length === 0) {
     return (
-      <div className={styles.container}>
+      <div ref={containerRef} className={styles.container} tabIndex={-1}>
         <div className={styles.empty}>
           <CheckIcon size={24} />
           <span className={styles.emptyText}>No changes</span>
@@ -162,7 +200,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
   }
 
   return (
-    <div className={styles.container}>
+    <div ref={containerRef} className={styles.container} tabIndex={-1}>
       {/* Stats header */}
       <div className={styles.statsHeader}>
         <span className={styles.statsLabel}>

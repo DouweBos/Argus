@@ -337,6 +337,7 @@ export const respondToPermission = (
   decision: "allow" | "deny",
   allowRule?: string,
   allowAll?: boolean,
+  denyMessage?: string,
 ): Promise<void> =>
   invoke("respond_to_permission", {
     agentId,
@@ -344,6 +345,7 @@ export const respondToPermission = (
     decision,
     allowRule: allowRule ?? null,
     allowAll: allowAll ?? null,
+    denyMessage: denyMessage ?? null,
   });
 
 // Config file command
