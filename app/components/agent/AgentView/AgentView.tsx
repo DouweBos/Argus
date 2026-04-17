@@ -7,27 +7,17 @@ import {
   clearConversation,
   loadSavedMessages,
 } from "../../../stores/conversationStore";
-import {
-  selectWorkspace,
-  useWorkspaces,
-} from "../../../stores/workspaceStore";
-import {
-  AgentStartIcon,
-  HistoryIcon,
-  OrchestrationIcon,
-  PlusIcon,
-} from "../../shared/Icons";
+import { setAgentPanel, useAgentPanel } from "../../../stores/editorStore";
+import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
+import { RepoHomeScreen } from "../../home/RepoHomeScreen";
+import { AgentStartIcon, PlusIcon } from "../../shared/Icons";
 import { AgentChat } from "../AgentChat";
 import { AgentTabBar } from "../AgentTabBar";
-import { ChatHistoryList } from "../ChatHistoryList";
-import { OrchestrationTree } from "../OrchestrationTree/OrchestrationTree";
 import styles from "./AgentView.module.css";
 
 interface AgentViewProps {
   workspaceId: string;
 }
-
-type Panel = "agent" | "history" | "orchestration";
 
 export function AgentView({ workspaceId }: AgentViewProps) {
   const workspaces = useWorkspaces();
@@ -54,7 +44,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
 
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
-  const [panel, setPanel] = useState<Panel>("agent");
+  const panel = useAgentPanel();
 
   const handleOrchestrationSelect = useCallback(
     (agentId: string, agentWorkspaceId: string) => {
@@ -62,7 +52,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
         selectWorkspace(agentWorkspaceId);
       }
       setActiveAgent(agentWorkspaceId, agentId);
-      setPanel("agent");
+      setAgentPanel("agent");
     },
     [workspaceId],
   );
@@ -90,7 +80,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
           );
           setViewingHistoryId(historyId);
           setViewingSessionId(saved.sessionId);
-          setPanel("agent");
+          setAgentPanel("agent");
         })
         .catch(() => {});
     },
@@ -108,7 +98,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
   const handleResumeHistory = useCallback(
     async (sessionId: string) => {
       handleCloseHistory();
-      setPanel("agent");
+      setAgentPanel("agent");
 
       const newAgentId = await startNew(undefined, undefined, sessionId);
       if (!newAgentId || !repoRoot) {
@@ -153,101 +143,50 @@ export function AgentView({ workspaceId }: AgentViewProps) {
 
   const wsReady = workspace != null && isWorkspaceReady(workspace.status);
 
-  const togglePanel = (target: Panel) => {
-    setPanel((p) => (p === target ? "agent" : target));
-  };
-
   return (
     <>
-      {/* Agent bar — always visible so the orchestration/history toggles
-          are reachable even before any agent is running. */}
-      <div className={styles.agentBar}>
-        {hasAgents && (
+      {hasAgents && (
+        <div className={styles.agentBar}>
           <AgentTabBar
             activeAgentId={
-              panel === "agent" ? activeAgent?.agent_id ?? null : null
+              panel === "agent" ? (activeAgent?.agent_id ?? null) : null
             }
             agents={agents}
             onClose={(agentId) => stopAgent(agentId)}
             onSelect={(agentId) => {
-              setPanel("agent");
+              setAgentPanel("agent");
               setActive(agentId);
             }}
           />
-        )}
-        {hasAgents && (
           <button
             className={styles.agentBarAddBtn}
             title="Start new agent"
             onClick={() => {
-              setPanel("agent");
+              setAgentPanel("agent");
               startNew();
             }}
           >
             <PlusIcon />
           </button>
-        )}
-        <div className={styles.agentBarSpacer} />
-        <button
-          className={`${styles.agentBarAddBtn} ${panel === "orchestration" ? styles.agentBarBtnActive : ""}`}
-          title="Agent orchestration"
-          onClick={() => togglePanel("orchestration")}
-        >
-          <OrchestrationIcon />
-        </button>
-        {repoRoot && (
-          <button
-            className={`${styles.agentBarAddBtn} ${panel === "history" ? styles.agentBarBtnActive : ""}`}
-            title="Chat history"
-            onClick={() => togglePanel("history")}
-          >
-            <HistoryIcon />
-          </button>
-        )}
-      </div>
-
-      {panel === "orchestration" && (
-        <OrchestrationTree
-          activeAgentId={activeAgent?.agent_id ?? null}
-          title="Agents in workspace"
-          workspaceFilter={workspaceId}
-          onSelectAgent={handleOrchestrationSelect}
-        />
-      )}
-
-      {panel === "history" && repoRoot && (
-        <ChatHistoryList
-          repoRoot={repoRoot}
-          onResume={handleResumeHistory}
-          onView={handleViewHistory}
-        />
-      )}
-
-      {panel === "agent" && !activeAgent && (
-        <div className={styles.noAgentContent}>
-          <div className={styles.emptyState}>
-            <button
-              className={styles.startAgentBtn}
-              disabled={!wsReady || isStarting}
-              onClick={() => startNew()}
-            >
-              <AgentStartIcon />
-              {isStarting ? "Starting…" : "Start Agent"}
-            </button>
-            <p className={styles.hintText}>
-              {wsReady
-                ? "Launch a Claude Code agent in this workspace."
-                : "Workspace is being prepared…"}
-            </p>
-          </div>
-          {repoRoot && (
-            <ChatHistoryList
-              repoRoot={repoRoot}
-              onResume={handleResumeHistory}
-              onView={handleViewHistory}
-            />
-          )}
+          <div className={styles.agentBarSpacer} />
         </div>
+      )}
+
+      {panel === "home" && (
+        <RepoHomeScreen
+          canStart={wsReady}
+          isStarting={isStarting}
+          repoRoot={repoRoot}
+          workspaceId={workspaceId}
+          workspaceLabel={workspace?.branch ?? null}
+          onResumeHistory={handleResumeHistory}
+          onSelectAgent={handleOrchestrationSelect}
+          onStart={() => {
+            setAgentPanel("agent");
+            startNew();
+          }}
+          onViewHistory={handleViewHistory}
+        />
       )}
 
       {panel === "agent" && activeAgent && (
@@ -257,6 +196,30 @@ export function AgentView({ workspaceId }: AgentViewProps) {
           workspaceId={workspaceId}
           onRestart={() => restartAgent(activeAgent.agent_id)}
         />
+      )}
+
+      {panel === "agent" && !activeAgent && (
+        <div className={styles.agentEmpty}>
+          <div className={styles.agentEmptyCard}>
+            <div className={styles.agentEmptyDot} />
+            <h2 className={styles.agentEmptyTitle}>No agent running</h2>
+            <p className={styles.agentEmptyHint}>
+              Spin up a Claude Code agent to work on{" "}
+              <span className={styles.agentEmptyBranch}>
+                {workspace?.branch ?? "this workspace"}
+              </span>
+              .
+            </p>
+            <button
+              className={styles.agentEmptyStartBtn}
+              disabled={!wsReady || isStarting}
+              onClick={() => startNew()}
+            >
+              <AgentStartIcon />
+              {isStarting ? "Starting\u2026" : "Start Agent"}
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

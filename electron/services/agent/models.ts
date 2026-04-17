@@ -52,7 +52,7 @@ export interface AgentSession {
    * Resolvers for callers waiting on this agent to exit (e.g. `wait_for_agent`).
    * Each entry is called with the exit code when the process closes.
    */
-  exitWaiters: Array<(exitCode: number) => void>;
+  exitWaiters: ((exitCode: number) => void)[];
 }
 
 // ---------------------------------------------------------------------------

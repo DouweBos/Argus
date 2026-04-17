@@ -4,12 +4,12 @@
  * Extracted from the MCP server so the logic is independently testable.
  */
 
-import type { StagehandConfig } from "../workspace/models";
+import type { ArgusConfig } from "../workspace/models";
 import fs from "node:fs";
 import path from "node:path";
 import { appState } from "../../state";
 import { addRepoRoot, createHeadWorkspace } from "../workspace/manager";
-import { loadStagehandConfig } from "../workspace/setup";
+import { loadArgusConfig } from "../workspace/setup";
 
 /** Check if a directory is a git repository. */
 export function isGitRepo(dirPath: string): boolean {
@@ -63,9 +63,9 @@ export function collectAllProjects(): ProjectEntry[] {
 
   // Scan related_projects from each registered repo's config.
   for (const repoRoot of appState.repoRoots) {
-    let config: StagehandConfig;
+    let config: ArgusConfig;
     try {
-      config = loadStagehandConfig(repoRoot);
+      config = loadArgusConfig(repoRoot);
     } catch {
       continue;
     }

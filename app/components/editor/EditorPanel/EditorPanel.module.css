@@ -33,7 +33,7 @@
 
 /* Hide VS Code's Explorer folder pane header (shows the workspace folder
    basename, which reflects VS Code's persisted state rather than the
-   Stagehand-selected workspace). */
+   Argus-selected workspace). */
 .sidebar :global(.explorer-folders-view > .pane-header) {
   display: none;
 }

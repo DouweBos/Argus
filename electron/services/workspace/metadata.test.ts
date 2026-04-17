@@ -26,16 +26,13 @@ const mockReadFileSync = vi.mocked(fs.readFileSync);
 describe("getMeta", () => {
   it("looks up by normalized path", () => {
     const meta = new Map<string, WorkspaceMeta>();
-    meta.set("/home/user/.stagehand/worktrees/App/feature", {
+    meta.set("/home/user/.argus/worktrees/App/feature", {
       id: "ws-1",
       description: "Test",
     });
 
     // Trailing slash should still match
-    const result = getMeta(
-      meta,
-      "/home/user/.stagehand/worktrees/App/feature/",
-    );
+    const result = getMeta(meta, "/home/user/.argus/worktrees/App/feature/");
     expect(result?.id).toBe("ws-1");
   });
 

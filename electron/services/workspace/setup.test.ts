@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { loadStagehandConfig } from "./setup";
+import { loadArgusConfig } from "./setup";
 
 // Mock fs so we don't hit the real filesystem
 vi.mock("node:fs", () => {
@@ -26,14 +26,14 @@ vi.mock("../../main", () => ({
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
 
-describe("loadStagehandConfig", () => {
+describe("loadArgusConfig", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("returns default config when no files exist", () => {
     mockExistsSync.mockReturnValue(false);
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.setup.copy).toEqual([]);
     expect(config.setup.symlink).toEqual([]);
     expect(config.setup.commands).toEqual([]);
@@ -42,11 +42,9 @@ describe("loadStagehandConfig", () => {
     expect(config.run).toBeNull();
   });
 
-  it("parses .stagehand.json with setup block", () => {
+  it("parses .argus.json with setup block", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
@@ -58,7 +56,7 @@ describe("loadStagehandConfig", () => {
       }),
     );
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.setup.copy).toEqual(["node_modules"]);
     expect(config.setup.symlink).toEqual([".env"]);
     expect(config.setup.commands).toEqual(["pnpm install"]);
@@ -66,27 +64,23 @@ describe("loadStagehandConfig", () => {
 
   it("handles run as a plain string", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(JSON.stringify({ run: "pnpm start" }));
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.run).toEqual({ command: "pnpm start" });
   });
 
   it("handles run as an object", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({ run: { command: "npm start", dir: "packages/app" } }),
     );
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.run).toEqual({ command: "npm start", dir: "packages/app" });
   });
 
@@ -114,7 +108,7 @@ describe("loadStagehandConfig", () => {
       });
     });
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     // copy should be deduped-concatenated
     expect(config.setup.copy).toEqual(["node_modules", "Pods"]);
     expect(config.setup.symlink).toEqual([".env", ".env.local"]);
@@ -150,16 +144,14 @@ describe("loadStagehandConfig", () => {
       });
     });
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.workspace_env).toHaveLength(1);
     expect(config.workspace_env[0].name).toBe("LOCAL_PORT");
   });
 
   it("parses related_projects from config", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
@@ -170,7 +162,7 @@ describe("loadStagehandConfig", () => {
       }),
     );
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.related_projects).toHaveLength(2);
     expect(config.related_projects![0]).toEqual({
       path: "../backend",
@@ -184,21 +176,17 @@ describe("loadStagehandConfig", () => {
 
   it("returns empty related_projects when field is absent", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(JSON.stringify({ setup: {} }));
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.related_projects).toEqual([]);
   });
 
   it("filters invalid related_projects entries", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
@@ -212,16 +200,14 @@ describe("loadStagehandConfig", () => {
       }),
     );
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.related_projects).toHaveLength(1);
     expect(config.related_projects![0].path).toBe("../valid");
   });
 
   it("defaults missing description to empty string in related_projects", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
@@ -229,7 +215,7 @@ describe("loadStagehandConfig", () => {
       }),
     );
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.related_projects).toHaveLength(1);
     expect(config.related_projects![0].description).toBe("");
   });
@@ -256,7 +242,7 @@ describe("loadStagehandConfig", () => {
       });
     });
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     // backend should not be duplicated — base wins.
     expect(config.related_projects).toHaveLength(3);
     const paths = config.related_projects!.map((p) => p.path);
@@ -281,7 +267,7 @@ describe("loadStagehandConfig", () => {
       });
     });
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.browser_url).toBe("http://localhost:4000");
   });
 
@@ -298,18 +284,16 @@ describe("loadStagehandConfig", () => {
       });
     });
 
-    const config = loadStagehandConfig("/repo");
+    const config = loadArgusConfig("/repo");
     expect(config.browser_url).toBe("http://localhost:3000");
   });
 
   it("throws on invalid JSON", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return (
-        String(p).endsWith(".stagehand.json") && !String(p).includes("local")
-      );
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue("{invalid json");
 
-    expect(() => loadStagehandConfig("/repo")).toThrow();
+    expect(() => loadArgusConfig("/repo")).toThrow();
   });
 });

@@ -3,7 +3,7 @@ import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   createTerminal,
   destroyTerminal,
-  readStagehandConfig,
+  readArgusConfig,
 } from "../../../lib/ipc";
 import {
   startListening,
@@ -43,7 +43,7 @@ export function RunButton({ workspaceId }: RunButtonProps) {
         if (!ws) {
           return;
         }
-        const config = await readStagehandConfig(ws.repo_root);
+        const config = await readArgusConfig(ws.repo_root);
         if (!config.run) {
           setRunCommand(null);
           setRunDir(undefined);

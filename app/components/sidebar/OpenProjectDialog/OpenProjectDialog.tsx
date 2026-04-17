@@ -20,7 +20,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
 
   const handleBrowse = async () => {
     try {
-      const selected = await window.stagehand.invoke<string | null>(
+      const selected = await window.argus.invoke<string | null>(
         "show_open_dialog",
       );
       if (selected && typeof selected === "string") {

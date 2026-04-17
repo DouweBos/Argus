@@ -31,7 +31,7 @@ function getPaneService() {
 /**
  * Convert a URI to a loadable URL. Extension URIs use schemes like
  * `extension-file://` that Electron doesn't natively serve. Rewrite
- * them to the registered `stagehand-ext://` protocol which resolves
+ * them to the registered `argus-ext://` protocol which resolves
  * to the local filesystem.
  */
 function toLoadableUrl(uri: {
@@ -40,7 +40,7 @@ function toLoadableUrl(uri: {
   toString: () => string;
 }): string {
   if (uri.scheme === "extension-file" && uri.path) {
-    return `stagehand-ext://ext${uri.path}`;
+    return `argus-ext://ext${uri.path}`;
   }
 
   return uri.toString();

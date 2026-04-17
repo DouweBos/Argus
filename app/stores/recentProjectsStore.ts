@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
-const STORAGE_KEY = "stagehand:recentProjects";
-const OPEN_PROJECTS_KEY = "stagehand:openProjects";
+const STORAGE_KEY = "argus:recentProjects";
+const OPEN_PROJECTS_KEY = "argus:openProjects";
 const MAX_PROJECTS = 10;
 
 export interface RecentProject {

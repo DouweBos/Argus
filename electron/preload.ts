@@ -1,18 +1,18 @@
 /**
- * Preload script — exposes a typed `stagehand` API to the renderer via
+ * Preload script — exposes a typed `argus` API to the renderer via
  * contextBridge. This is the only bridge between the renderer (React) and
  * the main process (Node.js).
  */
 
 import { contextBridge, ipcRenderer } from "electron";
 
-export interface StagehandAPI {
+export interface ArgusAPI {
   invoke: <T>(channel: string, args?: Record<string, unknown>) => Promise<T>;
   on: <T>(event: string, callback: (payload: T) => void) => () => void;
   send: (channel: string, args?: Record<string, unknown>) => void;
 }
 
-const api: StagehandAPI = {
+const api: ArgusAPI = {
   /**
    * Calls ipcRenderer.invoke() and returns the result as a typed promise.
    * Errors thrown in the handler reject the returned promise.
@@ -46,4 +46,4 @@ const api: StagehandAPI = {
   },
 };
 
-contextBridge.exposeInMainWorld("stagehand", api);
+contextBridge.exposeInMainWorld("argus", api);

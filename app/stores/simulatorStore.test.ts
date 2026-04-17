@@ -130,7 +130,7 @@ describe("simulatorStore", () => {
   it("persists selection to localStorage", () => {
     selectDevice("ws-1", "AAAA-BBBB");
     const stored = JSON.parse(
-      mockStorage["stagehand:simulatorByWorkspace"] ?? "{}",
+      mockStorage["argus:simulatorByWorkspace"] ?? "{}",
     );
     expect(stored["ws-1"]).toBe("AAAA-BBBB");
   });

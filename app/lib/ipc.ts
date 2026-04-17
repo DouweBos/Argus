@@ -2,7 +2,7 @@
  * Typed IPC wrappers for all Electron backend commands.
  *
  * All renderer → main communication goes through these functions.
- * Components should never call `window.stagehand.invoke()` directly.
+ * Components should never call `window.argus.invoke()` directly.
  */
 
 import type { ChatHistoryEntry, SavedConversation } from "./chatHistory";
@@ -14,13 +14,13 @@ import type {
   FileStat,
   MentionPathResult,
   SimulatorDevice,
-  StagehandConfig,
+  ArgusConfig,
   Workspace,
 } from "./types";
 
 declare global {
   interface Window {
-    stagehand: {
+    argus: {
       invoke: <T>(
         channel: string,
         args?: Record<string, unknown>,
@@ -35,12 +35,12 @@ function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  return window.stagehand.invoke<T>(channel, args);
+  return window.argus.invoke<T>(channel, args);
 }
 
 /** Fire-and-forget IPC — skips the invoke reply round-trip. */
 export function send(channel: string, args?: Record<string, unknown>): void {
-  window.stagehand.send(channel, args);
+  window.argus.send(channel, args);
 }
 
 // Workspace commands
@@ -349,15 +349,14 @@ export const respondToPermission = (
   });
 
 // Config file command
-export const writeStagehandConfig = (
+export const writeArgusConfig = (
   repoRoot: string,
   content: string,
-): Promise<void> => invoke("write_stagehand_config", { repoRoot, content });
+): Promise<void> => invoke("write_argus_config", { repoRoot, content });
 
 // Config read command
-export const readStagehandConfig = (
-  repoRoot: string,
-): Promise<StagehandConfig> => invoke("read_stagehand_config", { repoRoot });
+export const readArgusConfig = (repoRoot: string): Promise<ArgusConfig> =>
+  invoke("read_argus_config", { repoRoot });
 
 // Command metrics (per-project slash command popularity)
 export const getCommandMetrics = (

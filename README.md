@@ -1,4 +1,4 @@
-# Stagehand
+# Argus
 
 Agentic IDE for mobile development. Multiple Claude Code agents work on features in parallel, each in an isolated git worktree, with embedded iOS simulators for live testing.
 
@@ -20,7 +20,7 @@ pnpm install        # installs dependencies
 The simulator capture binary must be compiled locally:
 
 ```sh
-cd native/stagehand-sim-bridge
+cd native/argus-sim-bridge
 make
 ```
 
@@ -77,18 +77,18 @@ React 19 + TypeScript + Vite 7. State managed by Zustand stores (`app/stores/`).
 
 Node.js + TypeScript, Electron. Entry point in `main.ts` (BrowserWindow creation, app lifecycle).
 
-| Module                | Purpose                                                                    |
-| --------------------- | -------------------------------------------------------------------------- |
-| `state.ts`            | `AppState` — singleton `Map`s for workspaces, agents, terminals            |
-| `ipc.ts`              | All `ipcMain.handle` registrations, routes to services                     |
-| `preload.ts`          | `contextBridge.exposeInMainWorld('stagehand', { invoke, on })`             |
-| `services/workspace/` | Git worktree create/delete/list, `.stagehand.json` parsing, setup pipeline |
-| `services/agent/`     | Spawn/kill Claude Code as subprocess, stream parsing, permission broker    |
-| `services/terminal/`  | node-pty lifecycle + event emission                                        |
-| `services/simulator/` | `xcrun simctl` wrapper, native bridge binary communication                 |
-| `services/file/`      | Workspace file operations (list, read, write)                              |
+| Module                | Purpose                                                                 |
+| --------------------- | ----------------------------------------------------------------------- |
+| `state.ts`            | `AppState` — singleton `Map`s for workspaces, agents, terminals         |
+| `ipc.ts`              | All `ipcMain.handle` registrations, routes to services                  |
+| `preload.ts`          | `contextBridge.exposeInMainWorld('argus', { invoke, on })`              |
+| `services/workspace/` | Git worktree create/delete/list, `.argus.json` parsing, setup pipeline  |
+| `services/agent/`     | Spawn/kill Claude Code as subprocess, stream parsing, permission broker |
+| `services/terminal/`  | node-pty lifecycle + event emission                                     |
+| `services/simulator/` | `xcrun simctl` wrapper, native bridge binary communication              |
+| `services/file/`      | Workspace file operations (list, read, write)                           |
 
-### Native (`native/stagehand-sim-bridge/`)
+### Native (`native/argus-sim-bridge/`)
 
 Standalone Swift/ObjC binary for simulator screen capture and HID injection. Communicates with the Electron backend via JSON-over-stdio.
 
@@ -110,10 +110,10 @@ Key event patterns:
 
 ## Workspace lifecycle
 
-Each workspace maps 1:1 with a git worktree stored in `~/.stagehand/worktrees/{RepoName}-stagehand-worktrees/{branch}/`.
+Each workspace maps 1:1 with a git worktree stored in `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`.
 
 1. **Create** — `git worktree add` from the base branch
-2. **Setup** — run the pipeline defined in `.stagehand.json`:
+2. **Setup** — run the pipeline defined in `.argus.json`:
    - **Copy** large untracked dirs (e.g. `node_modules`) from the main repo
    - **Symlink** secret/config files (e.g. `.env`) from the main repo
    - **Run commands** (e.g. `pnpm install --frozen-lockfile`) to reconcile
@@ -121,9 +121,9 @@ Each workspace maps 1:1 with a git worktree stored in `~/.stagehand/worktrees/{R
 4. **Review** — view diffs, stage/unstage hunks, commit, merge back to base
 5. **Delete** — kills agent + terminals, removes the worktree
 
-### `.stagehand.json`
+### `.argus.json`
 
-Drop this in any repo root to configure Stagehand for that project:
+Drop this in any repo root to configure Argus for that project:
 
 ```json
 {
@@ -152,7 +152,7 @@ Drop this in any repo root to configure Stagehand for that project:
 | `workspace_env`  | Env var set per-workspace with a unique port/offset    |
 | `run`            | Command executed by the Run button                     |
 
-A `.stagehand.local.json` can override/extend the base config (not committed).
+A `.argus.local.json` can override/extend the base config (not committed).
 
 ### Port isolation
 

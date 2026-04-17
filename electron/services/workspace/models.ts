@@ -2,7 +2,7 @@
  * Data types for workspace management.
  *
  * A `Workspace` maps 1-to-1 with a git worktree living in the sibling
- * `<repo>-stagehand-worktrees/<branch>/` directory.
+ * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
 /** Whether this workspace is backed by a git worktree or the repo root itself. */
@@ -55,7 +55,7 @@ export type WorkspaceEnvStrategy = "hash" | "sequential";
 
 /** Config for an env var set in each workspace's terminals with a unique integer. */
 export interface WorkspaceEnvConfig {
-  /** Env var name (e.g. `STAGEHAND_PORT`, `RCT_METRO_PORT`). */
+  /** Env var name (e.g. `ARGUS_PORT`, `RCT_METRO_PORT`). */
   name: string;
   /** Starting integer. Final value is `base_value + offset`. */
   base_value: number;
@@ -65,7 +65,7 @@ export interface WorkspaceEnvConfig {
   strategy: WorkspaceEnvStrategy;
 }
 
-/** JSON-facing shape for custom browser device presets in `.stagehand.json`. */
+/** JSON-facing shape for custom browser device presets in `.argus.json`. */
 export interface BrowserPresetConfig {
   /** Viewport height in CSS pixels. */
   height: number;
@@ -95,7 +95,7 @@ export interface RunConfig {
   dir?: string;
 }
 
-/** The `setup` block inside `.stagehand.json`. */
+/** The `setup` block inside `.argus.json`. */
 export interface SetupConfig {
   /**
    * Directories/files to copy from the main repo into the new worktree.
@@ -118,8 +118,8 @@ export interface SetupConfig {
  * appear in the agent system prompt. */
 export type RuntimePlatform = "android" | "ios" | "web";
 
-/** Parsed representation of `.stagehand.json` found at the repo root. */
-export interface StagehandConfig {
+/** Parsed representation of `.argus.json` found at the repo root. */
+export interface ArgusConfig {
   /** Setup instructions run once when a new workspace is created. */
   setup: SetupConfig;
   /** Terminals to auto-open when a workspace is selected. */
@@ -152,8 +152,8 @@ export function defaultSetupConfig(): SetupConfig {
   return { copy: [], symlink: [], commands: [] };
 }
 
-/** Default/empty `StagehandConfig`. */
-export function defaultStagehandConfig(): StagehandConfig {
+/** Default/empty `ArgusConfig`. */
+export function defaultArgusConfig(): ArgusConfig {
   return {
     setup: defaultSetupConfig(),
     terminals: [],

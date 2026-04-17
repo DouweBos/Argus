@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 /**
- * Chromium/Electron scroll the nearest scrollable ancestor on Space. Stagehand
+ * Chromium/Electron scroll the nearest scrollable ancestor on Space. Argus
  * uses Space for actions (e.g. git staging); we suppress that default globally
  * while leaving Space to real text fields and common native Space semantics.
  */

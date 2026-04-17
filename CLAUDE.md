@@ -1,4 +1,4 @@
-# Stagehand
+# Argus
 
 Agentic IDE for mobile development. Electron desktop app (Node.js/TypeScript backend + React frontend) where multiple Claude Code agents work on features in parallel, each in an isolated git worktree, with embedded iOS simulators for live testing.
 
@@ -29,7 +29,7 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
 
 - **Node.js + TypeScript, Electron**
 - **Entry:** `main.ts` — BrowserWindow creation, app lifecycle, PATH fixup
-- **Preload:** `preload.ts` — `contextBridge.exposeInMainWorld('stagehand', { invoke, on })`
+- **Preload:** `preload.ts` — `contextBridge.exposeInMainWorld('argus', { invoke, on })`
 - **IPC:** `ipc.ts` — all `ipcMain.handle` registrations, routes to services
 - **State:** `state.ts` — `AppState` singleton with `Map`s (no Mutex needed, Node.js is single-threaded)
 - **Services:** `services/` — one directory per domain:
@@ -38,7 +38,7 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
   - `terminal/` — node-pty multiplexer, shell env PATH fixup
   - `simulator/` — xcrun simctl wrapper, native bridge binary communication
   - `file/` — workspace file operations (list, read, write)
-- **Native:** `native/stagehand-sim-bridge/` — standalone Swift/ObjC binary for simulator capture + HID injection (communicates via JSON-over-stdio)
+- **Native:** `native/argus-sim-bridge/` — standalone Swift/ObjC binary for simulator capture + HID injection (communicates via JSON-over-stdio)
 
 ## Conventions
 
@@ -48,7 +48,7 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
 
 ### Backend (Node.js/TypeScript)
 
-- IPC commands are `snake_case` strings — the frontend calls them via `window.stagehand.invoke('snake_case')`
+- IPC commands are `snake_case` strings — the frontend calls them via `window.argus.invoke('snake_case')`
 - Use `child_process.execFile` for git CLI calls (not libgit2)
 - Use `node-pty` for terminal sessions (same as VSCode)
 - Errors: throw string errors from IPC handlers (Electron rejects the renderer's promise)
@@ -62,7 +62,7 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
 - Prefer small, focused components (under 300 lines). Extract subcomponents, hooks, and pure logic into separate files when a component grows beyond this. Keep orchestrator/container components thin — they should wire data and layout, not contain business logic or complex UI
 - Extract pure logic (parsers, transforms, utilities) into `src/lib/` — no React imports in utility modules
 - Zustand stores: simple `create<State>()` pattern, no providers
-- IPC: always go through `src/lib/ipc.ts` wrappers, never call `window.stagehand.invoke()` directly from components
+- IPC: always go through `src/lib/ipc.ts` wrappers, never call `window.argus.invoke()` directly from components
 - Events: use `src/hooks/useIpcEvent.ts` for event subscriptions
 
 ### IPC contract
@@ -76,7 +76,7 @@ When adding a new backend command:
 
 ### Worktree lifecycle
 
-Worktrees live in `~/.stagehand/worktrees/{RepoName}-stagehand-worktrees/{branch}/`. Workspace initialization after `git worktree add`: copy dirs, symlink files, run commands — all configured in `.stagehand.json` at repo root.
+Worktrees live in `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Workspace initialization after `git worktree add`: copy dirs, symlink files, run commands — all configured in `.argus.json` at repo root.
 
 ## Key technical decisions
 

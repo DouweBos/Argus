@@ -1,7 +1,7 @@
 /**
- * SimBridge — JSON-over-stdio client for the stagehand-sim-bridge binary.
+ * SimBridge — JSON-over-stdio client for the argus-sim-bridge binary.
  *
- * The bridge binary wraps StagehandBridge.swift + StagehandHID.m and exposes
+ * The bridge binary wraps ArgusBridge.swift + ArgusHID.m and exposes
  * all simulator capabilities (framebuffer capture, touch, keyboard) as a
  * newline-delimited JSON protocol over stdin/stdout.
  *
@@ -25,15 +25,15 @@ import { error, warn } from "../../../app/lib/logger";
 // Binary path resolution
 // ---------------------------------------------------------------------------
 
-const BINARY_NAME = "stagehand-sim-bridge";
+const BINARY_NAME = "argus-sim-bridge";
 
 /**
  * Resolve the path to the bridge binary.
  *
- * - Packaged app: `<app>/Contents/Resources/stagehand-sim-bridge`
+ * - Packaged app: `<app>/Contents/Resources/argus-sim-bridge`
  *   (process.resourcesPath is set by Electron for packaged builds)
  * - Development: relative to this compiled file inside the electron output
- *   directory — `electron/native/stagehand-sim-bridge/stagehand-sim-bridge`
+ *   directory — `electron/native/argus-sim-bridge/argus-sim-bridge`
  */
 function bridgeBinaryPath(): string {
   if (app.isPackaged) {
@@ -41,12 +41,7 @@ function bridgeBinaryPath(): string {
   }
 
   // In dev, resolve from the project root (cwd).
-  return path.join(
-    process.cwd(),
-    "native",
-    "stagehand-sim-bridge",
-    BINARY_NAME,
-  );
+  return path.join(process.cwd(), "native", "argus-sim-bridge", BINARY_NAME);
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +58,7 @@ interface PendingRequest {
 // ---------------------------------------------------------------------------
 
 /**
- * JSON-over-stdio client for the stagehand-sim-bridge native binary.
+ * JSON-over-stdio client for the argus-sim-bridge native binary.
  *
  * The protocol is strictly sequential: one command is in flight at a time.
  * Responses are matched to requests by FIFO order — the bridge guarantees
@@ -101,7 +96,7 @@ export class SimBridge {
 
     child.stderr.on("data", (chunk: Buffer) => {
       // Forward bridge stderr to the main process stderr for diagnostics
-      process.stderr.write(`[stagehand-sim-bridge] ${chunk.toString()}`);
+      process.stderr.write(`[argus-sim-bridge] ${chunk.toString()}`);
     });
 
     child.on("error", (err) => {

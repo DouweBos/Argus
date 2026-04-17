@@ -34,9 +34,7 @@ export function TodoList({ todos }: TodoListProps) {
             {headerText} · {completed}/{todos.length}
           </span>
         </div>
-        <span
-          className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}
-        >
+        <span className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}>
           <ChevronDownIcon size={12} />
         </span>
       </button>

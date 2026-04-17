@@ -125,7 +125,7 @@ function safeResultText(result: unknown): string {
 /**
  * Build an image src for a tool result image block. When the tool is Read and
  * the input contains a file path, load the image directly from disk via the
- * stagehand-file:// protocol at full resolution. Otherwise fall back to the
+ * argus-file:// protocol at full resolution. Otherwise fall back to the
  * base64 data URL embedded in the result.
  */
 function imageSrc(
@@ -138,7 +138,7 @@ function imageSrc(
       | string
       | undefined;
     if (filePath) {
-      return `stagehand-file://local${encodeURI(filePath)}`;
+      return `argus-file://local${encodeURI(filePath)}`;
     }
   }
 
@@ -263,7 +263,13 @@ export function ToolCallCard({
       // let the CLI execute its own (piped, non-interactive) question UI.
       // We deny with a structured message that the model reads as the user's
       // response to the question.
-      onPermissionRespond?.(toolCall.id, "deny", undefined, false, formattedAnswer);
+      onPermissionRespond?.(
+        toolCall.id,
+        "deny",
+        undefined,
+        false,
+        formattedAnswer,
+      );
     },
     [onPermissionRespond, toolCall.id],
   );
@@ -368,52 +374,52 @@ export function ToolCallCard({
             (isExitPlanMode || (isAskUserQuestion && questions.length > 0))
           ) &&
             (isAgent ? (
-            <>
-              {agentDesc && (
-                <div className={styles.section}>
-                  <span className={styles.sectionLabel}>Description</span>
-                  <pre className={styles.code}>{agentDesc}</pre>
-                </div>
-              )}
-              {hasResult && (
-                <div className={styles.section}>
-                  <span className={styles.sectionLabel}>
-                    {toolCall.isError ? "Error" : "Result"}
-                  </span>
-                  <pre
-                    className={`${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`}
-                  >
-                    <LinkifiedText
-                      text={
-                        safeResultText(toolCall.result).slice(0, 500) +
-                        (safeResultText(toolCall.result).length > 500
-                          ? "…"
-                          : "")
-                      }
-                    />
-                  </pre>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {structuredInputPreview}
+              <>
+                {agentDesc && (
+                  <div className={styles.section}>
+                    <span className={styles.sectionLabel}>Description</span>
+                    <pre className={styles.code}>{agentDesc}</pre>
+                  </div>
+                )}
+                {hasResult && (
+                  <div className={styles.section}>
+                    <span className={styles.sectionLabel}>
+                      {toolCall.isError ? "Error" : "Result"}
+                    </span>
+                    <pre
+                      className={`${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`}
+                    >
+                      <LinkifiedText
+                        text={
+                          safeResultText(toolCall.result).slice(0, 500) +
+                          (safeResultText(toolCall.result).length > 500
+                            ? "…"
+                            : "")
+                        }
+                      />
+                    </pre>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {structuredInputPreview}
 
-              {hasResult && (
-                <div className={styles.section}>
-                  <span className={styles.sectionLabel}>
-                    {toolCall.isError ? "Error" : "Result"}
-                  </span>
-                  {renderResult(
-                    toolCall.result,
-                    `${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`,
-                    toolCall.name,
-                    toolCall.input,
-                  )}
-                </div>
-              )}
-            </>
-          ))}
+                {hasResult && (
+                  <div className={styles.section}>
+                    <span className={styles.sectionLabel}>
+                      {toolCall.isError ? "Error" : "Result"}
+                    </span>
+                    {renderResult(
+                      toolCall.result,
+                      `${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`,
+                      toolCall.name,
+                      toolCall.input,
+                    )}
+                  </div>
+                )}
+              </>
+            ))}
 
           {isPending &&
             agentId &&
@@ -423,10 +429,7 @@ export function ToolCallCard({
                 <button className={styles.allowBtn} onClick={handleAllow}>
                   Allow
                 </button>
-                <button
-                  className={styles.allowAllBtn}
-                  onClick={handleAllowAll}
-                >
+                <button className={styles.allowAllBtn} onClick={handleAllowAll}>
                   Always Allow {allowRule}
                 </button>
                 <button className={styles.denyBtn} onClick={handleDeny}>

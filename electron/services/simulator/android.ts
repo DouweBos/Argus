@@ -283,7 +283,7 @@ let emulatorProc: ChildProcess | null = null;
  * Note: we intentionally do NOT use `-no-window`. Newer emulators (API 34+)
  * often fail to fully initialize headless — the device stays "offline" in
  * adb because the graphics subsystem never starts. The emulator window can
- * be minimised; scrcpy provides the mirror in Stagehand.
+ * be minimised; scrcpy provides the mirror in Argus.
  */
 export async function bootAndroidEmulator(avdName: string): Promise<string> {
   const emulatorPath = await findEmulator();

@@ -1,5 +1,5 @@
 /**
- * `.stagehand.json` config loading, merging, and the worktree setup pipeline
+ * `.argus.json` config loading, merging, and the worktree setup pipeline
  * (copy, symlink, commands).
  */
 
@@ -12,10 +12,10 @@ import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import {
   type BrowserPresetConfig,
-  defaultStagehandConfig,
+  defaultArgusConfig,
   type RelatedProject,
   type SetupConfig,
-  type StagehandConfig,
+  type ArgusConfig,
   type WorkspaceEnvConfig,
 } from "./models";
 
@@ -26,30 +26,30 @@ const execFileAsync = promisify(execFile);
 // ---------------------------------------------------------------------------
 
 /**
- * Load `.stagehand.json` from `repoRoot`, then merge `.stagehand.local.json`
+ * Load `.argus.json` from `repoRoot`, then merge `.argus.local.json`
  * on top if it exists. Returns a default (empty) config if neither file exists.
  */
-export function loadStagehandConfig(repoRoot: string): StagehandConfig {
-  const configPath = path.join(repoRoot, ".stagehand.json");
-  let config: StagehandConfig = defaultStagehandConfig();
+export function loadArgusConfig(repoRoot: string): ArgusConfig {
+  const configPath = path.join(repoRoot, ".argus.json");
+  let config: ArgusConfig = defaultArgusConfig();
 
   if (fs.existsSync(configPath)) {
     try {
       const raw = fs.readFileSync(configPath, "utf8");
-      config = parseStagehandConfig(raw);
+      config = parseArgusConfig(raw);
     } catch (e) {
-      throw `Failed to read/parse .stagehand.json: ${e}`;
+      throw `Failed to read/parse .argus.json: ${e}`;
     }
   }
 
-  const localPath = path.join(repoRoot, ".stagehand.local.json");
+  const localPath = path.join(repoRoot, ".argus.local.json");
   if (fs.existsSync(localPath)) {
     try {
       const raw = fs.readFileSync(localPath, "utf8");
-      const local = parseStagehandConfig(raw);
+      const local = parseArgusConfig(raw);
       config = mergeConfig(config, local);
     } catch (e) {
-      throw `Failed to read/parse .stagehand.local.json: ${e}`;
+      throw `Failed to read/parse .argus.local.json: ${e}`;
     }
   }
 
@@ -75,22 +75,22 @@ function normalizeWorkspaceEnv(raw: unknown): WorkspaceEnvConfig[] {
 }
 
 /**
- * Parse raw JSON into a `StagehandConfig`. Handles the `run` field's dual
+ * Parse raw JSON into a `ArgusConfig`. Handles the `run` field's dual
  * string/object form.
  */
-function parseStagehandConfig(raw: string): StagehandConfig {
+function parseArgusConfig(raw: string): ArgusConfig {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
 
   const setup = (parsed.setup as Partial<SetupConfig>) ?? {};
   const runRaw = parsed.run ?? parsed.workspace_port_env;
 
-  let run: StagehandConfig["run"];
+  let run: ArgusConfig["run"];
   if (runRaw == null) {
     run = null;
   } else if (typeof runRaw === "string") {
     run = { command: runRaw };
   } else {
-    run = runRaw as StagehandConfig["run"];
+    run = runRaw as ArgusConfig["run"];
   }
 
   return {
@@ -99,7 +99,7 @@ function parseStagehandConfig(raw: string): StagehandConfig {
       symlink: (setup.symlink as string[]) ?? [],
       commands: (setup.commands as string[]) ?? [],
     },
-    terminals: (parsed.terminals as StagehandConfig["terminals"]) ?? [],
+    terminals: (parsed.terminals as ArgusConfig["terminals"]) ?? [],
     workspace_env: normalizeWorkspaceEnv(
       parsed.workspace_env ?? parsed.workspace_port_env,
     ),
@@ -117,11 +117,11 @@ function parseStagehandConfig(raw: string): StagehandConfig {
 }
 
 /**
- * Normalise `platforms` from `.stagehand.json`. Accepts an array of the
+ * Normalise `platforms` from `.argus.json`. Accepts an array of the
  * strings "ios" | "android" | "web" (case-insensitive); returns null if
  * absent or unparseable so the prompt falls back to describing all three.
  */
-function normalizePlatforms(raw: unknown): StagehandConfig["platforms"] {
+function normalizePlatforms(raw: unknown): ArgusConfig["platforms"] {
   if (!Array.isArray(raw)) {
     return null;
   }
@@ -206,10 +206,7 @@ function normalizeBrowserPresets(raw: unknown): BrowserPresetConfig[] {
  * - `workspace_env` — local replaces base if present.
  * - `run` — local replaces base if present.
  */
-function mergeConfig(
-  base: StagehandConfig,
-  local: StagehandConfig,
-): StagehandConfig {
+function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
   function dedupExtend(target: string[], source: string[]): string[] {
     const result = [...target];
     for (const item of source) {
@@ -340,7 +337,7 @@ async function expandPatterns(
 export async function runSetupPipeline(
   repoRoot: string,
   worktreePath: string,
-  config: StagehandConfig,
+  config: ArgusConfig,
   setupSessionId: string,
 ): Promise<void> {
   const workspaceId = setupSessionId.startsWith("setup:")
@@ -375,10 +372,10 @@ export async function runSetupPipeline(
   info("Setup pipeline: expanding copy patterns");
   for (const rel of config.setup.copy) {
     emitProgressItem(`Matching: ${rel}`, 0, 0);
-    emit(`[stagehand] Matching pattern ${rel}...\r\n`);
+    emit(`[argus] Matching pattern ${rel}...\r\n`);
     const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
     if (expanded.length === 0) {
-      emit(`[stagehand] Warning: ${rel} matched nothing, skipping.\r\n`);
+      emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
     } else {
       allItems.push(...expanded);
     }
@@ -387,10 +384,10 @@ export async function runSetupPipeline(
   info("Setup pipeline: expanding symlink patterns");
   for (const rel of config.setup.symlink) {
     emitProgressItem(`Matching: ${rel}`, 0, 0);
-    emit(`[stagehand] Matching pattern ${rel}...\r\n`);
+    emit(`[argus] Matching pattern ${rel}...\r\n`);
     const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
     if (expanded.length === 0) {
-      emit(`[stagehand] Warning: ${rel} matched nothing, skipping.\r\n`);
+      emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
     } else {
       allItems.push(...expanded);
     }
@@ -421,7 +418,7 @@ export async function runSetupPipeline(
       idx += 1;
       info(`Setup pipeline: copying [${idx}/${total}] ${relPath}`);
       emitProgressItem(relPath, idx, total);
-      emit(`[stagehand] Copying ${relPath}...\r\n`);
+      emit(`[argus] Copying ${relPath}...\r\n`);
 
       try {
         const stat = await fs.promises.stat(src);
@@ -431,7 +428,7 @@ export async function runSetupPipeline(
           await fs.promises.mkdir(path.dirname(dst), { recursive: true });
           await fs.promises.copyFile(src, dst);
         } else {
-          emit(`[stagehand] Warning: ${relPath} not found, skipping.\r\n`);
+          emit(`[argus] Warning: ${relPath} not found, skipping.\r\n`);
         }
       } catch (e) {
         throw `Failed to copy '${relPath}': ${e}`;
@@ -444,7 +441,7 @@ export async function runSetupPipeline(
   for (const rel of config.setup.symlink) {
     const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
     if (expanded.length === 0) {
-      emit(`[stagehand] Warning: ${rel} matched nothing, skipping.\r\n`);
+      emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
       continue;
     }
 
@@ -454,7 +451,7 @@ export async function runSetupPipeline(
       idx += 1;
       info(`Setup pipeline: symlinking [${idx}/${total}] ${relPath}`);
       emitProgressItem(relPath, idx, total);
-      emit(`[stagehand] Symlinking ${relPath}...\r\n`);
+      emit(`[argus] Symlinking ${relPath}...\r\n`);
 
       fs.mkdirSync(path.dirname(dst), { recursive: true });
 
@@ -486,7 +483,7 @@ export async function runSetupPipeline(
     idx += 1;
     info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
     emitProgressItem(cmdStr, idx, total);
-    emit(`[stagehand] Running: ${cmdStr}\r\n`);
+    emit(`[argus] Running: ${cmdStr}\r\n`);
 
     let stdout = "";
     let stderr = "";
@@ -523,9 +520,7 @@ export async function runSetupPipeline(
     }
 
     if (failed) {
-      emit(
-        `[stagehand] Command failed (exit ${exitCode ?? "?"}): ${cmdStr}\r\n`,
-      );
+      emit(`[argus] Command failed (exit ${exitCode ?? "?"}): ${cmdStr}\r\n`);
       throw `Setup command failed: ${cmdStr}`;
     }
 
@@ -533,7 +528,7 @@ export async function runSetupPipeline(
   }
 
   info(`Setup pipeline: complete for workspace ${workspaceId}`);
-  emit("[stagehand] Setup complete.\r\n");
+  emit("[argus] Setup complete.\r\n");
 }
 
 // ---------------------------------------------------------------------------

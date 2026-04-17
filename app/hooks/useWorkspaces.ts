@@ -2,7 +2,6 @@ import type { Workspace } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { stopAgentListening } from "../lib/agentEventService";
 import { listen } from "../lib/events";
-import { getAgentState, removeAgent } from "../stores/agentStore";
 import {
   addRepoRoot as apiAddRepoRoot,
   createHeadWorkspace as apiCreateHeadWorkspace,
@@ -12,6 +11,7 @@ import {
   getRepoBranch,
   listWorkspaces,
 } from "../lib/ipc";
+import { getAgentState, removeAgent } from "../stores/agentStore";
 import {
   addOpenProject,
   addRecentProject,

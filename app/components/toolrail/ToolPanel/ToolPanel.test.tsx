@@ -26,7 +26,7 @@ import {
 // Import the hook after mocks are set up
 
 // ---------------------------------------------------------------------------
-// Mock window.stagehand — capture event subscriptions so we can fire them
+// Mock window.argus — capture event subscriptions so we can fire them
 // ---------------------------------------------------------------------------
 
 type EventHandler = (payload: unknown) => void;
@@ -42,7 +42,7 @@ function emitEvent(event: string, payload: unknown) {
 }
 
 // Attach to existing window (jsdom provides window/document)
-(window as unknown as Record<string, unknown>).stagehand = {
+(window as unknown as Record<string, unknown>).argus = {
   invoke: vi.fn().mockResolvedValue(undefined),
   on: (event: string, callback: EventHandler) => {
     if (!eventListeners.has(event)) {
@@ -216,7 +216,7 @@ describe("external branch switch → full pipeline", () => {
       id: "ws-worktree",
       kind: "worktree",
       branch: "feature/my-task",
-      path: "/home/user/.stagehand/worktrees/MyApp/feature-my-task",
+      path: "/home/user/.argus/worktrees/MyApp/feature-my-task",
     });
     addProject(REPO_ROOT);
     addWorkspace(repoWs);
@@ -255,7 +255,7 @@ describe("external branch switch → full pipeline", () => {
 
     // Track diff-changed events
     const diffHandler = vi.fn();
-    const unsubscribe = window.stagehand.on(
+    const unsubscribe = window.argus.on(
       "workspace:diff-changed:ws-root",
       diffHandler,
     );

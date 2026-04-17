@@ -28,18 +28,18 @@ import {
 } from "./services/browser/mjpegServer";
 import { installConductor } from "./services/cli/conductorInstaller";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
-import { appState } from "./state";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { refreshAllBranches } from "./services/workspace/watcher";
+import { appState } from "./state";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
-// and Stagehand connects via CDP to Conductor's Chromium instance.
+// and Argus connects via CDP to Conductor's Chromium instance.
 
 // Register custom protocols as privileged before app is ready.
 // This lets the renderer fetch extension files and workspace images via URL.
 protocol.registerSchemesAsPrivileged([
   {
-    scheme: "stagehand-ext",
+    scheme: "argus-ext",
     privileges: {
       standard: true,
       secure: true,
@@ -59,7 +59,7 @@ protocol.registerSchemesAsPrivileged([
     },
   },
   {
-    scheme: "stagehand-file",
+    scheme: "argus-file",
     privileges: {
       standard: true,
       secure: true,
@@ -80,14 +80,14 @@ let mainWindow: BrowserWindow | null = null;
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:1420";
 
-const logPath = path.join(os.homedir(), ".stagehand", "main.log");
+const logPath = path.join(os.homedir(), ".argus", "main.log");
 fs.mkdirSync(path.dirname(logPath), { recursive: true });
 const logStream = fs.createWriteStream(logPath, { flags: "a" });
 
 function log(msg: string, ...args: unknown[]): void {
   const line = `[${new Date().toISOString()}] ${msg} ${args.map((a) => String(a)).join(" ")}\n`;
   logStream.write(line);
-  emitLog(`[Stagehand] ${msg}`, ...args);
+  emitLog(`[Argus] ${msg}`, ...args);
 }
 
 function createWindow(): void {
@@ -215,7 +215,7 @@ app.whenReady().then(() => {
   const pathDiag = fixProcessPath();
   pathDiag.forEach((d) => log("[shellEnv] %s", d));
 
-  // Start the Stagehand MCP server so agents can orchestrate workspaces and
+  // Start the Argus MCP server so agents can orchestrate workspaces and
   // sibling agents via the Model Context Protocol.
   startMcpServer().catch((e) =>
     log("Failed to start MCP server: %s", String(e)),
@@ -226,7 +226,7 @@ app.whenReady().then(() => {
     log("Failed to start MJPEG server: %s", String(e)),
   );
 
-  // Install/update the conductor CLI to ~/.stagehand/bin/conductor.
+  // Install/update the conductor CLI to ~/.argus/bin/conductor.
   installConductor();
 
   // Sync system dark/light theme to all active Conductor-managed browsers.
@@ -243,7 +243,7 @@ app.whenReady().then(() => {
   const extensionRoots = [
     path.join(os.homedir(), ".vscode", "extensions"),
     path.join(os.homedir(), ".cursor", "extensions"),
-    path.join(os.homedir(), ".stagehand", "extensions"),
+    path.join(os.homedir(), ".argus", "extensions"),
   ];
 
   /** Validate that a file path falls within an allowed extension directory. */
@@ -255,9 +255,9 @@ app.whenReady().then(() => {
     );
   }
 
-  // Serve extension files via stagehand-ext:// protocol.
-  // URL format: stagehand-ext://ext/<absolute-path-to-file>
-  protocol.handle("stagehand-ext", (request) => {
+  // Serve extension files via argus-ext:// protocol.
+  // URL format: argus-ext://ext/<absolute-path-to-file>
+  protocol.handle("argus-ext", (request) => {
     const url = new URL(request.url);
     const filePath = decodeURIComponent(url.pathname);
     if (!isAllowedExtensionPath(filePath)) {
@@ -279,11 +279,11 @@ app.whenReady().then(() => {
     return net.fetch(`file://${filePath}`);
   });
 
-  // Serve local files via stagehand-file:// protocol.
+  // Serve local files via argus-file:// protocol.
   // Used by the renderer to load full-resolution images from disk (e.g. tool
   // result screenshots) instead of relying on base64 blobs.
-  // URL format: stagehand-file:///absolute/path/to/file
-  protocol.handle("stagehand-file", (request) => {
+  // URL format: argus-file:///absolute/path/to/file
+  protocol.handle("argus-file", (request) => {
     const url = new URL(request.url);
     const filePath = decodeURIComponent(url.pathname);
     if (!fs.existsSync(filePath)) {
@@ -310,15 +310,15 @@ app.whenReady().then(() => {
     // Apply CSP to top-level document responses only.
     if (details.resourceType === "mainFrame") {
       const csp = [
-        "default-src 'self' stagehand-ext:",
-        "script-src 'self' stagehand-ext:" +
+        "default-src 'self' argus-ext:",
+        "script-src 'self' argus-ext:" +
           (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
-        "style-src 'self' 'unsafe-inline' stagehand-ext:",
-        "font-src 'self' stagehand-ext: data:",
-        "img-src 'self' stagehand-ext: stagehand-file: extension-file: data: blob: https: http://127.0.0.1:*",
-        "connect-src 'self' stagehand-ext: https://open-vsx.org" +
+        "style-src 'self' 'unsafe-inline' argus-ext:",
+        "font-src 'self' argus-ext: data:",
+        "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
+        "connect-src 'self' argus-ext: https://open-vsx.org" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
-        "worker-src 'self' blob: stagehand-ext:",
+        "worker-src 'self' blob: argus-ext:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];
     }
@@ -342,4 +342,3 @@ app.whenReady().then(() => {
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
-

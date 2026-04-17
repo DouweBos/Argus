@@ -21,7 +21,7 @@ import {
   browserViewNavigate,
   browserViewReload,
   browserWheelEvent,
-  readStagehandConfig,
+  readArgusConfig,
 } from "../../../lib/ipc";
 import { normalizeUrl } from "../../../lib/webBrowserViewUtils";
 import {
@@ -84,7 +84,7 @@ export function useWebBrowserView(
           (entry) => entry.id === workspaceId,
         );
         if (workspace) {
-          const config = await readStagehandConfig(workspace.repo_root);
+          const config = await readArgusConfig(workspace.repo_root);
           if (config.browser_url) {
             chosenUrl = config.browser_url;
           }

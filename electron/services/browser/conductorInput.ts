@@ -1,13 +1,12 @@
 /**
  * HTTP client for forwarding UI input to Conductor's web-server endpoints.
  *
- * Each function maps a Stagehand IPC browser action to the corresponding
+ * Each function maps a Argus IPC browser action to the corresponding
  * Conductor REST endpoint, using the driver port from the browser reservation.
  */
 
-import http from "node:http";
-import { warn } from "../../../app/lib/logger";
 import type { WebBrowserReservation } from "../../state";
+import http from "node:http";
 
 export interface BrowserPreset {
   internalWidth: number;
@@ -60,7 +59,7 @@ function postJson(
 }
 
 // ---------------------------------------------------------------------------
-// Public API — each maps a Stagehand IPC call to a Conductor endpoint
+// Public API — each maps a Argus IPC call to a Conductor endpoint
 // ---------------------------------------------------------------------------
 
 export async function tap(
@@ -140,6 +139,7 @@ export async function navigate(
   url: string,
 ): Promise<NavState> {
   const result = await postJson(reservation.driverPort, "/navigate", { url });
+
   return extractNavState(result);
 }
 
@@ -147,6 +147,7 @@ export async function goBack(
   reservation: WebBrowserReservation,
 ): Promise<NavState> {
   const result = await postJson(reservation.driverPort, "/goBack", {});
+
   return extractNavState(result);
 }
 
@@ -154,6 +155,7 @@ export async function goForward(
   reservation: WebBrowserReservation,
 ): Promise<NavState> {
   const result = await postJson(reservation.driverPort, "/goForward", {});
+
   return extractNavState(result);
 }
 
@@ -161,6 +163,7 @@ export async function reload(
   reservation: WebBrowserReservation,
 ): Promise<NavState> {
   const result = await postJson(reservation.driverPort, "/reload", {});
+
   return extractNavState(result);
 }
 
@@ -179,11 +182,8 @@ export async function setViewport(
     colorScheme?: "dark" | "light";
   },
 ): Promise<string | null> {
-  const result = await postJson(
-    reservation.driverPort,
-    "/setViewport",
-    params,
-  );
+  const result = await postJson(reservation.driverPort, "/setViewport", params);
+
   return (result.cdpTargetId as string) ?? null;
 }
 

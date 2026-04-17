@@ -12,7 +12,7 @@ export function listen<T>(
   event: string,
   handler: (event: { payload: T }) => void,
 ): Promise<UnlistenFn> {
-  const unlisten = window.stagehand.on<T>(event, (payload) => {
+  const unlisten = window.argus.on<T>(event, (payload) => {
     handler({ payload });
   });
 

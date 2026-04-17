@@ -8,7 +8,6 @@
 
 import { dialog, ipcMain } from "electron";
 import { getMainWindow } from "./main";
-import { appState } from "./state";
 import {
   saveConversation,
   loadHistoryIndex,
@@ -128,8 +127,8 @@ import {
   unwatchWorkspace,
   pauseAllWatchers,
   resumeAllWatchers,
-  readStagehandConfig,
-  writeStagehandConfig,
+  readArgusConfig,
+  writeArgusConfig,
   setWorkspaceBaseBranch,
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
@@ -145,6 +144,7 @@ import {
   gitStashApply,
   gitStashDrop,
 } from "./services/workspace/workspaceOps";
+import { appState } from "./state";
 
 type Args = Record<string, unknown>;
 
@@ -260,11 +260,9 @@ export function registerIpcHandlers(): void {
   handle("unwatch_workspace", (a) => unwatchWorkspace(a.id as string));
   handle("pause_all_watchers", () => pauseAllWatchers());
   handle("resume_all_watchers", () => resumeAllWatchers());
-  handle("read_stagehand_config", (a) =>
-    readStagehandConfig(a.repoRoot as string),
-  );
-  handle("write_stagehand_config", (a) =>
-    writeStagehandConfig(a.repoRoot as string, a.content as string),
+  handle("read_argus_config", (a) => readArgusConfig(a.repoRoot as string));
+  handle("write_argus_config", (a) =>
+    writeArgusConfig(a.repoRoot as string, a.content as string),
   );
   handle("get_command_metrics", (a) =>
     loadCommandMetrics(a.repoRoot as string),
@@ -453,10 +451,15 @@ export function registerIpcHandlers(): void {
       url: "",
       webContentsId: null,
     });
-    await startScreencast(workspaceId, reservation.cdpPort, reservation.cdpTargetId, {
-      maxWidth: 1440,
-      maxHeight: 900,
-    });
+    await startScreencast(
+      workspaceId,
+      reservation.cdpPort,
+      reservation.cdpTargetId,
+      {
+        maxWidth: 1440,
+        maxHeight: 900,
+      },
+    );
     getMainWindow()?.webContents.send("browser:ensure_mounted", {
       sessionId: workspaceId,
     });
@@ -464,28 +467,36 @@ export function registerIpcHandlers(): void {
   handle("browser_view_navigate", async (a) => {
     const workspaceId = a.workspaceId as string;
     const reservation = webBrowserPool.getReservation(workspaceId);
-    if (!reservation) return;
+    if (!reservation) {
+      return;
+    }
     const nav = await conductorNavigate(reservation, a.url as string);
     emitNavState(workspaceId, nav);
   });
   handle("browser_view_back", async (a) => {
     const workspaceId = a.workspaceId as string;
     const reservation = webBrowserPool.getReservation(workspaceId);
-    if (!reservation) return;
+    if (!reservation) {
+      return;
+    }
     const nav = await conductorGoBack(reservation);
     emitNavState(workspaceId, nav);
   });
   handle("browser_view_forward", async (a) => {
     const workspaceId = a.workspaceId as string;
     const reservation = webBrowserPool.getReservation(workspaceId);
-    if (!reservation) return;
+    if (!reservation) {
+      return;
+    }
     const nav = await conductorGoForward(reservation);
     emitNavState(workspaceId, nav);
   });
   handle("browser_view_reload", async (a) => {
     const workspaceId = a.workspaceId as string;
     const reservation = webBrowserPool.getReservation(workspaceId);
-    if (!reservation) return;
+    if (!reservation) {
+      return;
+    }
     const nav = await conductorReload(reservation);
     emitNavState(workspaceId, nav);
   });
@@ -533,7 +544,9 @@ export function registerIpcHandlers(): void {
     const workspaceId = a.workspaceId as string;
     const preset = a.preset as BrowserPreset;
     const reservation = webBrowserPool.getReservation(workspaceId);
-    if (!reservation) return;
+    if (!reservation) {
+      return;
+    }
 
     const isMobile = preset.screenPosition === "mobile";
     const newTargetId = await conductorSetViewport(reservation, {

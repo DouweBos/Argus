@@ -573,6 +573,7 @@ export function AgentChat({
 
       {!readOnly && (
         <ChatInput
+          agentId={agentId}
           agentStatus={agentStatus}
           disabled={!isAlive}
           model={model}

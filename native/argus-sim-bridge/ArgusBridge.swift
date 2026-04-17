@@ -5,7 +5,7 @@ import AppKit
 // MARK: - Frame callback type
 typealias FrameCallback = @convention(c) (UnsafePointer<UInt8>, UInt) -> Void
 
-// MARK: - IOSurface Framebuffer Capture (via ObjC — see StagehandHID.m)
+// MARK: - IOSurface Framebuffer Capture (via ObjC — see ArgusHID.m)
 
 // ObjC functions that handle SimDeviceIOClient and IOSurface via XPC proxies.
 // Must be in ObjC because the IO port objects are ROCKRemoteProxy instances
@@ -52,7 +52,7 @@ private var indigoKeyboardLoaded = false
 private var hidClients: [String: AnyObject] = [:]
 
 // External ObjC function that calls IndigoHIDMessageForMouseNSEvent with correct
-// SIMD register setup and sends via the HID client. Defined in StagehandHID.m.
+// SIMD register setup and sends via the HID client. Defined in ArgusHID.m.
 @_silgen_name("SHSendTouch")
 func SHSendTouch(_ client: AnyObject, _ fnPtr: UnsafeMutableRawPointer,
                   _ udid: UnsafePointer<CChar>,

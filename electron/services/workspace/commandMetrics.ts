@@ -2,7 +2,7 @@
  * Per-project slash command usage metrics.
  *
  * Tracks how often each command is used so the autocomplete can sort by
- * popularity. Stored at `{worktreesRoot}/.stagehand-command-metrics.json`.
+ * popularity. Stored at `{worktreesRoot}/.argus-command-metrics.json`.
  *
  * The file is a simple `{ version, counts: { [commandName]: number } }` map.
  */
@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { worktreesRoot } from "./git";
 
-const METRICS_FILENAME = ".stagehand-command-metrics.json";
+const METRICS_FILENAME = ".argus-command-metrics.json";
 const SCHEMA_VERSION = 1;
 
 interface MetricsFile {

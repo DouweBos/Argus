@@ -4,7 +4,7 @@
  *
  * Each browser is a Conductor daemon running in standalone mode (no CDP
  * attachment). Conductor launches Chromium with `--remote-debugging-port` and
- * exposes that port via its `/status` endpoint. Stagehand connects to the CDP
+ * exposes that port via its `/status` endpoint. Argus connects to the CDP
  * port for screencast only; all input goes through Conductor's HTTP API.
  *
  * Modelled on `SimulatorPool` for iOS.
@@ -16,17 +16,12 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { info, warn } from "../../../app/lib/logger";
+import { info } from "../../../app/lib/logger";
 import { appState, type WebBrowserReservation } from "../../state";
 
 const execFileAsync = promisify(execFile);
 
-const CONDUCTOR_BIN = path.join(
-  os.homedir(),
-  ".stagehand",
-  "bin",
-  "conductor",
-);
+const CONDUCTOR_BIN = path.join(os.homedir(), ".argus", "bin", "conductor");
 const CONDUCTOR_DIR = path.join(os.homedir(), ".conductor");
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -98,7 +93,11 @@ async function pollDaemonStatus(deviceId: string): Promise<DaemonStatus> {
         `Conductor driver failed to start on ${deviceId}: ${data.driverStartError}`,
       );
     }
-    if (data?.chromiumCdpPort && data.chromiumCdpPort > 0 && data.pageTargetId) {
+    if (
+      data?.chromiumCdpPort &&
+      data.chromiumCdpPort > 0 &&
+      data.pageTargetId
+    ) {
       return data;
     }
 
@@ -172,17 +171,13 @@ class WebBrowserPool {
 
     info(`[web-browser-pool] Starting conductor daemon for ${deviceId}`);
 
-    await execFileAsync(
-      CONDUCTOR_BIN,
-      ["daemon-start", "--device", deviceId],
-      {
-        env: {
-          ...process.env,
-          CONDUCTOR_IDLE_TIMEOUT_MS: String(TWENTY_FOUR_HOURS_MS),
-          CONDUCTOR_HEADLESS: "1",
-        },
+    await execFileAsync(CONDUCTOR_BIN, ["daemon-start", "--device", deviceId], {
+      env: {
+        ...process.env,
+        CONDUCTOR_IDLE_TIMEOUT_MS: String(TWENTY_FOUR_HOURS_MS),
+        CONDUCTOR_HEADLESS: "1",
       },
-    );
+    });
 
     info(`[web-browser-pool] Polling daemon /status for ${deviceId}`);
     const status = await pollDaemonStatus(deviceId);
@@ -206,7 +201,9 @@ class WebBrowserPool {
 
   private async doRelease(agentId: string): Promise<void> {
     const reservation = appState.webBrowserReservations.get(agentId);
-    if (!reservation) return;
+    if (!reservation) {
+      return;
+    }
 
     info(
       `[web-browser-pool] Releasing ${reservation.deviceId} from agent ${agentId}`,

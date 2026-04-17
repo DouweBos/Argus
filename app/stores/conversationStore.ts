@@ -73,6 +73,8 @@ export interface AgentConversation {
 
 interface ConversationStoreData {
   conversations: Record<string, AgentConversation>;
+  /** Draft message text per agent, preserved across tab switches. */
+  drafts: Record<string, string>;
 }
 
 function emptyConversation(): AgentConversation {
@@ -81,6 +83,7 @@ function emptyConversation(): AgentConversation {
 
 const conversationStore = create<ConversationStoreData>(() => ({
   conversations: {},
+  drafts: {},
 }));
 
 const useConversationStore = conversationStore;
@@ -587,6 +590,35 @@ export function loadSavedMessages(
       },
     },
   }));
+}
+
+export function setDraft(agentId: string, text: string) {
+  conversationStore.setState((state) => {
+    const drafts = { ...state.drafts };
+    if (text) {
+      drafts[agentId] = text;
+    } else {
+      delete drafts[agentId];
+    }
+
+    return { drafts };
+  });
+}
+
+export function getDraft(agentId: string): string {
+  return conversationStore.getState().drafts[agentId] ?? "";
+}
+
+export function clearDraft(agentId: string) {
+  conversationStore.setState((state) => {
+    if (!(agentId in state.drafts)) {
+      return state;
+    }
+    const drafts = { ...state.drafts };
+    delete drafts[agentId];
+
+    return { drafts };
+  });
 }
 
 export const useConversation = (agentId: string | null | undefined) =>

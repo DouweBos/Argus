@@ -1,7 +1,7 @@
-// main.swift — JSON-over-stdio entry point for the stagehand-sim-bridge binary.
+// main.swift — JSON-over-stdio entry point for the argus-sim-bridge binary.
 //
 // Reads newline-delimited JSON commands from stdin, dispatches them to the
-// Swift/ObjC simulation layer (StagehandBridge.swift + StagehandHID.m), and
+// Swift/ObjC simulation layer (ArgusBridge.swift + ArgusHID.m), and
 // writes JSON responses back to stdout.
 //
 // Protocol:
@@ -22,7 +22,7 @@ import Foundation
 // ---------------------------------------------------------------------------
 
 // csStartFramebuffer, csStopFramebuffer, scIndigoTouch, scIndigoKeyboard
-// are defined in StagehandBridge.swift (compiled in the same module) and
+// are defined in ArgusBridge.swift (compiled in the same module) and
 // callable directly — no forward declarations needed.
 
 // ---------------------------------------------------------------------------
@@ -254,7 +254,7 @@ private func dispatch(_ obj: [String: Any]) {
             return
         }
 
-        // Call cs_start_framebuffer (StagehandBridge.swift)
+        // Call cs_start_framebuffer (ArgusBridge.swift)
         let rc = udid.withCString { udidPtr in
             csStartFramebuffer(udidPtr, frameCallback)
         }

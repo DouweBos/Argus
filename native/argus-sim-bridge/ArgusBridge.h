@@ -1,5 +1,5 @@
-#ifndef STAGEHAND_BRIDGE_H
-#define STAGEHAND_BRIDGE_H
+#ifndef ARGUS_BRIDGE_H
+#define ARGUS_BRIDGE_H
 
 #include <stdbool.h>
 #include <stdint.h>

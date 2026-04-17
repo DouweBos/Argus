@@ -18,7 +18,7 @@ import { bootSimulator, listSimulators } from "./ios";
 
 const execFileAsync = promisify(execFile);
 
-const CONDUCTOR_BIN = path.join(os.homedir(), ".stagehand", "bin", "conductor");
+const CONDUCTOR_BIN = path.join(os.homedir(), ".argus", "bin", "conductor");
 
 // ---------------------------------------------------------------------------
 // Internal helpers

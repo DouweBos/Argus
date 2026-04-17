@@ -444,7 +444,7 @@ export function RightSidebarIcon({ size = 14, className }: IconProps) {
   );
 }
 
-export function StagehandLogo({ size = 48, className }: IconProps) {
+export function ArgusLogo({ size = 48, className }: IconProps) {
   return (
     <svg
       className={className}
@@ -454,24 +454,24 @@ export function StagehandLogo({ size = 48, className }: IconProps) {
       width={size}
     >
       <defs>
-        <linearGradient id="stagehand-grad" x1="0" x2="1" y1="0" y2="1">
+        <linearGradient id="argus-grad" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor="#00d4aa" />
           <stop offset="100%" stopColor="#4d9fff" />
         </linearGradient>
-        <linearGradient id="stagehand-grad-bg" x1="0" x2="1" y1="0" y2="1">
+        <linearGradient id="argus-grad-bg" x1="0" x2="1" y1="0" y2="1">
           <stop offset="0%" stopColor="#00d4aa" stopOpacity="0.12" />
           <stop offset="100%" stopColor="#4d9fff" stopOpacity="0.12" />
         </linearGradient>
       </defs>
-      <rect fill="url(#stagehand-grad-bg)" height="48" rx="14" width="48" />
+      <rect fill="url(#argus-grad-bg)" height="48" rx="14" width="48" />
       <path
         d="M12 24 L24 12 L36 24 L24 36 Z"
         fill="none"
-        stroke="url(#stagehand-grad)"
+        stroke="url(#argus-grad)"
         strokeLinejoin="round"
         strokeWidth="2.5"
       />
-      <circle cx="24" cy="24" fill="url(#stagehand-grad)" r="4" />
+      <circle cx="24" cy="24" fill="url(#argus-grad)" r="4" />
     </svg>
   );
 }

@@ -2,6 +2,11 @@ import type { ImageAttachment } from "../../../lib/ipc";
 import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
+import {
+  clearDraft,
+  getDraft,
+  setDraft,
+} from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import {
   CloseIcon,
@@ -24,6 +29,8 @@ interface PendingImage {
 }
 
 interface ChatInputProps {
+  /** Agent ID — used to persist draft text across tab switches. */
+  agentId?: string | null;
   agentStatus?: "error" | "idle" | "running" | "stopped" | null;
   disabled?: boolean;
   disabledPlaceholder?: string;
@@ -61,6 +68,7 @@ function readFileAsBase64(file: File): Promise<string> {
 export function ChatInput({
   onSend,
   onInterrupt,
+  agentId,
   agentStatus,
   disabled = false,
   disabledPlaceholder,
@@ -112,6 +120,17 @@ export function ChatInput({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, []);
 
+  // Restore draft when the agent tab changes (textarea is uncontrolled so we
+  // seed its value directly).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) {
+      return;
+    }
+    el.value = agentId ? getDraft(agentId) : "";
+    adjustHeight();
+  }, [agentId, adjustHeight]);
+
   const updateSuggestions = useCallback(() => {
     const el = textareaRef.current;
     if (!el || !slashCommands?.length) {
@@ -138,7 +157,10 @@ export function ChatInput({
     adjustHeight();
     updateSuggestions();
     updateMentions(textareaRef.current);
-  }, [adjustHeight, updateSuggestions, updateMentions]);
+    if (agentId) {
+      setDraft(agentId, textareaRef.current?.value ?? "");
+    }
+  }, [adjustHeight, updateSuggestions, updateMentions, agentId]);
 
   const submit = useCallback(() => {
     const value = textareaRef.current?.value.trim() ?? "";
@@ -154,6 +176,9 @@ export function ChatInput({
       textareaRef.current.value = "";
       adjustHeight();
     }
+    if (agentId) {
+      clearDraft(agentId);
+    }
 
     // Revoke object URLs to free memory
     for (const img of pendingImages) {
@@ -163,7 +188,7 @@ export function ChatInput({
     setPendingImages([]);
     setSuggestions([]);
     dismissMention();
-  }, [onSend, disabled, adjustHeight, pendingImages, dismissMention]);
+  }, [onSend, disabled, adjustHeight, pendingImages, dismissMention, agentId]);
 
   const addImageFiles = useCallback(async (files: File[]) => {
     const newImages: PendingImage[] = [];
@@ -243,8 +268,11 @@ export function ChatInput({
       textareaRef.current.focus();
       setSuggestions([]);
       adjustHeight();
+      if (agentId) {
+        setDraft(agentId, textareaRef.current.value);
+      }
     },
-    [adjustHeight],
+    [adjustHeight, agentId],
   );
 
   const handleKeyDown = useCallback(

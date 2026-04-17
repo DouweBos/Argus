@@ -12,6 +12,7 @@ import { WorkspaceSidebar } from "../../sidebar/WorkspaceSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
 import { ToolRail } from "../../toolrail/ToolRail";
 import { ErrorBoundary } from "../ErrorBoundary";
+import { PermissionBanner } from "../PermissionBanner";
 import { ResizablePanel } from "../ResizablePanel";
 import { TitleBar } from "../TitleBar";
 import styles from "./AppShell.module.css";
@@ -92,6 +93,8 @@ export function AppShell() {
             <ToolRail />
           </>
         )}
+
+        <PermissionBanner />
       </div>
     </div>
   );

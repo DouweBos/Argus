@@ -1,4 +1,4 @@
-// StagehandHID.m — ObjC helpers for HID messaging and IOSurface framebuffer
+// ArgusHID.m — ObjC helpers for HID messaging and IOSurface framebuffer
 // capture. Lives in ObjC to avoid Swift ARC issues with objc_msgSend and to
 // properly work with CoreSimulator's XPC proxy objects.
 //
@@ -439,7 +439,7 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
     // IOClient — the surface port is bound at creation time, so a stale client
     // created before Simulator.app switched to this device will never get one.
     dispatch_queue_t timerQueue = dispatch_queue_create(
-        "com.stagehand.framebuffer", DISPATCH_QUEUE_SERIAL);
+        "com.argus.framebuffer", DISPATCH_QUEUE_SERIAL);
     g_captureTimer = dispatch_source_create(
         DISPATCH_SOURCE_TYPE_TIMER, 0, 0, timerQueue);
     dispatch_source_set_timer(g_captureTimer,

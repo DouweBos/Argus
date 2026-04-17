@@ -124,11 +124,11 @@ window.MonacoEnvironment = {
 };
 
 // ---------------------------------------------------------------------------
-// Stagehand theme — applied as user configuration before services initialize.
+// Argus theme — applied as user configuration before services initialize.
 //
-// Maps Stagehand's CSS palette (global.css :root vars) onto VS Code's
+// Maps Argus's CSS palette (global.css :root vars) onto VS Code's
 // workbench color tokens so the editor, explorer, status bar, etc. all
-// match the surrounding Stagehand shell.
+// match the surrounding Argus shell.
 //
 // Palette reference (keep in sync with global.css):
 //   --bg-primary:   #0a0a0f    --text-primary:   #f0f0f5
@@ -141,7 +141,7 @@ window.MonacoEnvironment = {
 // ---------------------------------------------------------------------------
 const BORDER = "#1c1c28"; // Solid approximation of rgba(255,255,255,0.08) on bg-primary
 
-const stagehandUserConfig = JSON.stringify({
+const argusUserConfig = JSON.stringify({
   // Force our base theme and disable theme picker
   "workbench.colorTheme": "Default Dark Modern",
   "workbench.preferredDarkColorTheme": "Default Dark Modern",
@@ -152,7 +152,7 @@ const stagehandUserConfig = JSON.stringify({
   // Hide the hamburger menu button
   "window.menuBarVisibility": "hidden",
 
-  // Hide accounts/manage buttons — Stagehand handles these outside the editor
+  // Hide accounts/manage buttons — Argus handles these outside the editor
   "workbench.activity.showAccounts": false,
 
   // Show open editors at top of explorer sidebar (Cursor-style)
@@ -163,7 +163,7 @@ const stagehandUserConfig = JSON.stringify({
   "workbench.editor.restoreViewState": false,
   "workbench.startupEditor": "none",
 
-  // Override every significant workbench color to match the Stagehand palette
+  // Override every significant workbench color to match the Argus palette
   "workbench.colorCustomizations": {
     // Editor
     "editor.background": "#0a0a0f",
@@ -360,8 +360,8 @@ const stagehandUserConfig = JSON.stringify({
  * component is rendered.
  */
 export const vscodeReady = (async () => {
-  // Inject Stagehand theme settings before the configuration service starts
-  await initUserConfiguration(stagehandUserConfig);
+  // Inject Argus theme settings before the configuration service starts
+  await initUserConfiguration(argusUserConfig);
 
   await initialize(
     {
@@ -430,8 +430,8 @@ export const vscodeReady = (async () => {
         workspace: undefined,
       },
       productConfiguration: {
-        nameShort: "Stagehand",
-        nameLong: "Stagehand IDE",
+        nameShort: "Argus",
+        nameLong: "Argus IDE",
         extensionsGallery: {
           serviceUrl: "https://open-vsx.org/vscode/gallery",
           controlUrl: "",
@@ -456,7 +456,7 @@ export const vscodeReady = (async () => {
   loadLocalExtensions();
 
   // After services are ready, disable "Open Folder" commands.
-  // Stagehand controls workspace switching via its own sidebar — users
+  // Argus controls workspace switching via its own sidebar — users
   // should not be able to change the open folder from within VS Code.
   try {
     const contextKeyService = await getService(IContextKeyService);

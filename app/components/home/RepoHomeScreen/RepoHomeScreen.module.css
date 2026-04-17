@@ -1,0 +1,109 @@
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: var(--bg-primary);
+  overflow-y: auto;
+  min-height: 0;
+  position: relative;
+}
+
+.content {
+  width: 100%;
+  max-width: 720px;
+  padding: 40px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+.startAgentBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border: 1px solid rgba(77, 159, 255, 0.3);
+  border-radius: var(--border-radius-pill);
+  background: rgba(77, 159, 255, 0.08);
+  color: var(--accent);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.startAgentBtn:hover:not(:disabled) {
+  background: rgba(77, 159, 255, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.startAgentBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.treeWrap {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  min-height: 120px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md, 8px);
+  overflow: hidden;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+}
+
+.historyWrap {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md, 8px);
+  overflow: hidden;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+}
