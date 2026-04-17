@@ -195,6 +195,15 @@ export class ControlHandler {
 
     const { tool_name, input, tool_use_id, permission_suggestions } = payload;
 
+    // Read is always auto-approved: filesystem reads are safe and prompting
+    // for every read is too noisy.
+    if (tool_name === "Read") {
+      return buildControlResponse(request.request_id, {
+        behavior: "allow",
+        updatedInput: input,
+      });
+    }
+
     // Check session allow-rules for auto-approval.
     const specifier = extractSpecifier(
       tool_name,
@@ -264,6 +273,7 @@ export class ControlHandler {
     decision: "allow" | "deny",
     allowRule?: string,
     allowAll?: boolean,
+    denyMessage?: string,
   ): string {
     const requestId = this.toolUseToRequestId.get(toolUseId);
     if (!requestId) {
@@ -286,7 +296,7 @@ export class ControlHandler {
     const body: PermissionDecision =
       decision === "allow"
         ? { behavior: "allow", updatedInput: toolInput }
-        : { behavior: "deny", message: "User denied" };
+        : { behavior: "deny", message: denyMessage ?? "User denied" };
 
     return buildControlResponse(requestId, body);
   }
@@ -348,6 +358,17 @@ export class ControlHandler {
     model: string,
   ): [string, Promise<Record<string, unknown> | undefined>] {
     return this.buildOutboundRequest({ subtype: "set_model", model });
+  }
+
+  /**
+   * Build a `control_request` with `subtype: "interrupt"` and track it for
+   * response matching. Returns `[jsonString, promise]`.
+   */
+  buildInterruptRequest(): [
+    string,
+    Promise<Record<string, unknown> | undefined>,
+  ] {
+    return this.buildOutboundRequest({ subtype: "interrupt" });
   }
 
   /**

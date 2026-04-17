@@ -338,6 +338,7 @@ export function registerIpcHandlers(): void {
       a.decision as "allow" | "deny",
       a.allowRule as string | undefined,
       a.allowAll as boolean | undefined,
+      a.denyMessage as string | undefined,
     ),
   );
   handle("set_agent_model", (a) =>

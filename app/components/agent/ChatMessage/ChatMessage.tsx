@@ -1,5 +1,6 @@
 import type { ConversationMessage } from "../../../stores/conversationStore";
 import { renderMarkdown } from "../../../lib/markdown";
+import { openImageViewer } from "../../../stores/imageViewerStore";
 import { FileLinkHandler } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
@@ -33,6 +34,8 @@ export function ChatMessage({
   }
 
   if (message.role === "user") {
+    const images = message.images ?? [];
+
     return (
       <div className={styles.userMsg}>
         {message.textBlocks.map((text, i) => (
@@ -40,6 +43,29 @@ export function ChatMessage({
             {text}
           </p>
         ))}
+        {images.length > 0 && (
+          <div className={styles.userAttachments}>
+            {images.map((img, i) => {
+              const src = `data:${img.media_type};base64,${img.data}`;
+
+              return (
+                <button
+                  key={i}
+                  className={styles.userAttachment}
+                  title={`Image ${i + 1}`}
+                  type="button"
+                  onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
+                >
+                  <img
+                    alt={`Attachment ${i + 1}`}
+                    className={styles.userAttachmentImg}
+                    src={src}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -47,9 +73,12 @@ export function ChatMessage({
   // assistant role
   const hasToolCalls = message.toolCalls.length > 0;
   const hasText = message.textBlocks.length > 0;
+  const toolOnly = hasToolCalls && !hasText;
 
   return (
-    <div className={styles.assistantMsg}>
+    <div
+      className={`${styles.assistantMsg} ${toolOnly ? styles.assistantMsgToolOnly : ""}`}
+    >
       {hasText && (
         <FileLinkHandler className={styles.textContent}>
           {message.textBlocks.map((text, i) => (

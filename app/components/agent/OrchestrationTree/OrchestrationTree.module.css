@@ -32,6 +32,60 @@
   font-weight: 400;
 }
 
+.filterSelect {
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.03));
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  max-width: 180px;
+}
+
+.filterSelect:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.workspaceGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.workspaceGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.workspaceGroupName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.workspaceGroupCount {
+  padding: 0 5px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--border-radius-sm);
+}
+
 .agentRow {
   display: flex;
   align-items: center;
@@ -112,6 +166,29 @@
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+.stopBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+  flex-shrink: 0;
+}
+
+.stopBtn:hover {
+  background: rgba(232, 93, 93, 0.15);
+  color: var(--color-danger, #e85d5d);
 }
 
 .orchestratorBadge {

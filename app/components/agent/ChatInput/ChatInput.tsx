@@ -2,6 +2,7 @@ import type { ImageAttachment } from "../../../lib/ipc";
 import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
+import { openImageViewer } from "../../../stores/imageViewerStore";
 import {
   CloseIcon,
   LinearIcon,
@@ -391,11 +392,24 @@ export function ChatInput({
           <div className={styles.attachments}>
             {pendingImages.map((img, i) => (
               <div key={img.name + i} className={styles.attachmentThumb}>
-                <img
-                  alt={img.name}
-                  className={styles.attachmentImg}
-                  src={img.previewUrl}
-                />
+                <button
+                  className={styles.attachmentPreviewBtn}
+                  title={img.name}
+                  type="button"
+                  onClick={() =>
+                    openImageViewer(
+                      `data:${img.attachment.media_type};base64,${img.attachment.data}`,
+                      img.name,
+                      img.previewUrl,
+                    )
+                  }
+                >
+                  <img
+                    alt={img.name}
+                    className={styles.attachmentImg}
+                    src={img.previewUrl}
+                  />
+                </button>
                 <button
                   aria-label={`Remove ${img.name}`}
                   className={styles.attachmentRemove}

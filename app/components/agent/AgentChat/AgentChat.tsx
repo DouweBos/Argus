@@ -29,6 +29,7 @@ import { ChevronDownIcon } from "../../shared/Icons";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
+import { TodoList, type TodoItem } from "../TodoList";
 import styles from "./AgentChat.module.css";
 
 /**
@@ -162,6 +163,26 @@ export function AgentChat({
 
   // Group consecutive tool-call-only assistant messages into collapsed segments
   const segments = useMemo(() => groupMessages(messages), [messages]);
+
+  // Find the most recent TodoWrite tool call's todo list (if any). Displayed
+  // above the chat input so users always see current progress.
+  const activeTodos = useMemo<TodoItem[] | null>(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      for (let j = msg.toolCalls.length - 1; j >= 0; j--) {
+        const tc = msg.toolCalls[j];
+        if (tc.name !== "TodoWrite") {
+          continue;
+        }
+        const todos = (tc.input as { todos?: unknown }).todos;
+        if (Array.isArray(todos) && todos.length > 0) {
+          return todos as TodoItem[];
+        }
+      }
+    }
+
+    return null;
+  }, [messages]);
 
   // Merge built-in commands with backend-reported commands, deduplicating by
   // name and preferring richer objects (ones with a description).
@@ -310,6 +331,7 @@ export function AgentChat({
       decision: "allow" | "deny",
       allowRule?: string,
       allowAll?: boolean,
+      denyMessage?: string,
     ) => {
       if (!agentId) {
         return;
@@ -322,6 +344,7 @@ export function AgentChat({
           decision,
           allowRule,
           allowAll,
+          denyMessage,
         );
       } catch {
         // Best-effort — the hook may have already timed out.
@@ -401,10 +424,7 @@ export function AgentChat({
       }
 
       // Agent is idle — send directly.
-      const label = images?.length
-        ? `${message} [${images.length} image${images.length > 1 ? "s" : ""}]`
-        : message;
-      addUserMessage(agentId, label);
+      addUserMessage(agentId, message, images);
       notifyMessageSent(agentId);
       updateAgent(agentId, { status: "running" });
       try {
@@ -545,6 +565,10 @@ export function AgentChat({
             Restart
           </button>
         </div>
+      )}
+
+      {activeTodos && activeTodos.length > 0 && (
+        <TodoList todos={activeTodos} />
       )}
 
       {!readOnly && (

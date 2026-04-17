@@ -25,6 +25,8 @@ import {
   sendAgentMessage,
   listAgents,
   waitForAgent,
+  ensureSimulatorForAgent,
+  ensureWebBrowserForAgent,
 } from "../agent/claude";
 import { createTerminal, startTerminal } from "../terminal/multiplexer";
 import {
@@ -82,6 +84,33 @@ function resolveWorkspace(idOrBranch: string) {
   }
 
   return null;
+}
+
+/**
+ * Read a JSON request body and parse it. Returns an empty object on empty
+ * bodies and throws on parse errors.
+ */
+function readJsonBody(
+  req: http.IncomingMessage,
+): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer) => chunks.push(c));
+    req.on("end", () => {
+      const text = Buffer.concat(chunks).toString("utf-8").trim();
+      if (!text) {
+        resolve({});
+
+        return;
+      }
+      try {
+        resolve(JSON.parse(text) as Record<string, unknown>);
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error(String(e)));
+      }
+    });
+    req.on("error", reject);
+  });
 }
 
 /** Resolve the repo_root for a workspace or fall back to the first repo root. */
@@ -382,9 +411,6 @@ export function createMcpServer(): McpServer {
       const wsName = ws.display_name ?? ws.branch;
       await deleteWorkspace(wsId, delete_branch ?? false);
 
-      // Notify the renderer so the sidebar removes the workspace.
-      getMainWindow()?.webContents.send("workspace:deleted", wsId);
-
       return {
         content: [
           {
@@ -431,7 +457,13 @@ export function createMcpServer(): McpServer {
           "Agent ID of the orchestrator/parent agent spawning this child. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
         ),
     },
-    async ({ workspace, prompt, permission_mode, platforms, parent_agent_id }) => {
+    async ({
+      workspace,
+      prompt,
+      permission_mode,
+      platforms,
+      parent_agent_id,
+    }) => {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
@@ -505,14 +537,14 @@ export function createMcpServer(): McpServer {
           z.object({
             name: z
               .string()
-              .describe("Display name for the workspace (slugified into a branch name)"),
+              .describe(
+                "Display name for the workspace (slugified into a branch name)",
+              ),
             description: z
               .string()
               .optional()
               .describe("What this agent/workspace is for"),
-            prompt: z
-              .string()
-              .describe("Initial instructions for the agent"),
+            prompt: z.string().describe("Initial instructions for the agent"),
             platforms: z
               .array(z.enum(["ios", "android", "web"]))
               .optional()
@@ -523,7 +555,9 @@ export function createMcpServer(): McpServer {
       permission_mode: z
         .string()
         .optional()
-        .describe("Permission mode for all agents (e.g. 'auto'). Defaults to app setting."),
+        .describe(
+          "Permission mode for all agents (e.g. 'auto'). Defaults to app setting.",
+        ),
       parent_agent_id: z
         .string()
         .optional()
@@ -533,7 +567,13 @@ export function createMcpServer(): McpServer {
         .optional()
         .describe("Branch to fork all workspaces from. Defaults to HEAD."),
     },
-    async ({ repo_root, agents: agentSpecs, permission_mode, parent_agent_id, base_branch }) => {
+    async ({
+      repo_root,
+      agents: agentSpecs,
+      permission_mode,
+      parent_agent_id,
+      base_branch,
+    }) => {
       const repoRoot = repo_root;
 
       const isNew = !appState.repoRoots.has(repoRoot);
@@ -572,14 +612,14 @@ export function createMcpServer(): McpServer {
       );
 
       // Spawn agents in the successfully created workspaces.
-      const results: Array<{
+      const results: {
         agent_id: string;
         workspace_id: string;
         branch: string;
         name: string;
         status: string;
         error?: string;
-      }> = [];
+      }[] = [];
 
       const spawnPromises = workspaceResults.map(async (wsResult, idx) => {
         const spec = agentSpecs[idx];
@@ -592,6 +632,7 @@ export function createMcpServer(): McpServer {
             status: "error",
             error: `Workspace creation failed: ${String(wsResult.reason)}`,
           });
+
           return;
         }
 
@@ -1091,6 +1132,62 @@ export async function startMcpServer(): Promise<number> {
 
   httpServer = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost`);
+
+    // Lazy device resolver — called by the conductor shim the first time an
+    // agent runs `conductor --device ios|web`. Acquires the device on demand
+    // so agents that never use a given runtime don't pay for one.
+    if (url.pathname === "/stagehand/acquire-device") {
+      if (req.method !== "POST") {
+        res.writeHead(405);
+        res.end("Method Not Allowed");
+
+        return;
+      }
+      try {
+        const body = await readJsonBody(req);
+        const agentId = String(body.agent_id ?? "");
+        const platform = String(body.platform ?? "");
+        if (!agentId || (platform !== "ios" && platform !== "web")) {
+          res.writeHead(400, { "content-type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "agent_id and platform (ios|web) required",
+            }),
+          );
+
+          return;
+        }
+        const session = appState.agents.get(agentId);
+        if (!session) {
+          res.writeHead(404, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: `Unknown agent: ${agentId}` }));
+
+          return;
+        }
+        const workspace = appState.workspaces.get(session.workspaceId);
+        if (!workspace) {
+          res.writeHead(404, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "Workspace not found for agent" }));
+
+          return;
+        }
+
+        const deviceId =
+          platform === "ios"
+            ? await ensureSimulatorForAgent(agentId, workspace.repo_root)
+            : await ensureWebBrowserForAgent(agentId);
+
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ device_id: deviceId }));
+      } catch (e) {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+        );
+      }
+
+      return;
+    }
 
     if (url.pathname !== "/mcp") {
       res.writeHead(404);

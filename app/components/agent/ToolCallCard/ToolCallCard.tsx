@@ -7,7 +7,10 @@ import { openImageViewer } from "../../../stores/imageViewerStore";
 import { EditDiffView } from "../EditDiffView";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
 import { alwaysAllowRule } from "../alwaysAllowRule";
+import { PlanApproval } from "./PlanApproval";
+import { QuestionForm } from "./QuestionForm";
 import styles from "./ToolCallCard.module.css";
+import { parseQuestions } from "./parseQuestions";
 
 interface ToolCallCardProps {
   /** Agent ID — needed to route permission responses. */
@@ -19,6 +22,8 @@ interface ToolCallCardProps {
     /** Rule string like `Bash(npm *)` or `Edit(**\/*.tsx)` for "always allow". */
     allowRule?: string,
     allowAll?: boolean,
+    /** Optional custom message for deny (used by AskUserQuestion answers). */
+    denyMessage?: string,
   ) => void;
   toolCall: ToolCallInfo;
 }
@@ -252,6 +257,45 @@ export function ToolCallCard({
     onPermissionRespond?.(toolCall.id, "deny");
   }, [onPermissionRespond, toolCall.id]);
 
+  const handleSubmitAnswers = useCallback(
+    (formattedAnswer: string) => {
+      // AskUserQuestion has no "accept" in the CLI's protocol — allowing would
+      // let the CLI execute its own (piped, non-interactive) question UI.
+      // We deny with a structured message that the model reads as the user's
+      // response to the question.
+      onPermissionRespond?.(toolCall.id, "deny", undefined, false, formattedAnswer);
+    },
+    [onPermissionRespond, toolCall.id],
+  );
+
+  const handleCancelQuestion = useCallback(() => {
+    onPermissionRespond?.(
+      toolCall.id,
+      "deny",
+      undefined,
+      false,
+      "The user cancelled the question prompt without answering. Proceed with reasonable assumptions and note them.",
+    );
+  }, [onPermissionRespond, toolCall.id]);
+
+  const handleRejectPlan = useCallback(() => {
+    onPermissionRespond?.(
+      toolCall.id,
+      "deny",
+      undefined,
+      false,
+      "The user rejected the plan and wants to keep refining it. Incorporate their feedback once provided.",
+    );
+  }, [onPermissionRespond, toolCall.id]);
+
+  const isExitPlanMode = toolCall.name === "ExitPlanMode";
+  const isAskUserQuestion = toolCall.name === "AskUserQuestion";
+  const planText =
+    isExitPlanMode && typeof toolCall.input.plan === "string"
+      ? (toolCall.input.plan as string)
+      : "";
+  const questions = isAskUserQuestion ? parseQuestions(toolCall.input) : [];
+
   let structuredInputPreview: ReactNode;
   if (isEdit) {
     structuredInputPreview = (
@@ -305,7 +349,25 @@ export function ToolCallCard({
 
       {expanded && (
         <div className={styles.body}>
-          {isAgent ? (
+          {isPending && isExitPlanMode && (
+            <PlanApproval
+              onApprove={handleAllow}
+              onReject={handleRejectPlan}
+              plan={planText}
+            />
+          )}
+          {isPending && isAskUserQuestion && questions.length > 0 && (
+            <QuestionForm
+              onCancel={handleCancelQuestion}
+              onSubmit={handleSubmitAnswers}
+              questions={questions}
+            />
+          )}
+          {!(
+            isPending &&
+            (isExitPlanMode || (isAskUserQuestion && questions.length > 0))
+          ) &&
+            (isAgent ? (
             <>
               {agentDesc && (
                 <div className={styles.section}>
@@ -351,21 +413,27 @@ export function ToolCallCard({
                 </div>
               )}
             </>
-          )}
+          ))}
 
-          {isPending && agentId && (
-            <div className={styles.permissionActions}>
-              <button className={styles.allowBtn} onClick={handleAllow}>
-                Allow
-              </button>
-              <button className={styles.allowAllBtn} onClick={handleAllowAll}>
-                Always Allow {allowRule}
-              </button>
-              <button className={styles.denyBtn} onClick={handleDeny}>
-                Deny
-              </button>
-            </div>
-          )}
+          {isPending &&
+            agentId &&
+            !isExitPlanMode &&
+            !(isAskUserQuestion && questions.length > 0) && (
+              <div className={styles.permissionActions}>
+                <button className={styles.allowBtn} onClick={handleAllow}>
+                  Allow
+                </button>
+                <button
+                  className={styles.allowAllBtn}
+                  onClick={handleAllowAll}
+                >
+                  Always Allow {allowRule}
+                </button>
+                <button className={styles.denyBtn} onClick={handleDeny}>
+                  Deny
+                </button>
+              </div>
+            )}
         </div>
       )}
     </FileLinkHandler>

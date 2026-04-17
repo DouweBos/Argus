@@ -315,7 +315,7 @@ app.whenReady().then(() => {
           (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
         "style-src 'self' 'unsafe-inline' stagehand-ext:",
         "font-src 'self' stagehand-ext: data:",
-        "img-src 'self' stagehand-ext: stagehand-file: extension-file: data: https: http://127.0.0.1:*",
+        "img-src 'self' stagehand-ext: stagehand-file: extension-file: data: blob: https: http://127.0.0.1:*",
         "connect-src 'self' stagehand-ext: https://open-vsx.org" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
         "worker-src 'self' blob: stagehand-ext:",

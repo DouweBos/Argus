@@ -6,12 +6,19 @@ import type {
   PermissionCancellation,
   PermissionRequest,
 } from "./types";
-import { addAgent, getAgentState, updateAgent } from "../stores/agentStore";
+import { error } from "@logger";
+import {
+  addAgent,
+  getAgentState,
+  removeAgent,
+  updateAgent,
+} from "../stores/agentStore";
 import {
   addUserMessage,
   appendEvent,
   appendSystemMessage,
   cancelPermission,
+  clearConversation,
   dequeueMessage,
   getConversationState,
   setCapabilities,
@@ -21,7 +28,11 @@ import {
 import { getWorkspaceState } from "../stores/workspaceStore";
 import { deriveTitle } from "./chatHistory";
 import { type UnlistenFn, listen } from "./events";
-import { saveChatHistory, sendAgentMessage } from "./ipc";
+import {
+  saveChatHistory,
+  sendAgentMessage,
+  stopAgent as apiStopAgent,
+} from "./ipc";
 
 /**
  * Singleton service that owns event subscriptions for agent stream events.
@@ -113,7 +124,31 @@ export function initExternalAgentStarted(): void {
       parent_agent_id: info.parent_agent_id,
     });
     startAgentListening(info.agent_id);
+    // MCP-spawned agents receive an initial prompt from the backend before
+    // the renderer gets a chance to subscribe. Mark the session as in-flight
+    // so early `system:init` / `session_state_changed(idle)` signals don't
+    // flip the agent to "idle" while it's actually still processing the
+    // initial prompt.
+    inflight.add(info.agent_id);
+    updateAgent(info.agent_id, { status: "running" });
   });
+}
+
+/**
+ * Stop an agent by ID — works for any agent (user-initiated or MCP-spawned).
+ * Saves the conversation, tears down listeners, calls the backend to kill
+ * the process, then removes the agent from the store.
+ */
+export async function stopAgentById(agentId: string): Promise<void> {
+  saveAgentConversation(agentId);
+  stopAgentListening(agentId);
+  try {
+    await apiStopAgent(agentId);
+  } catch (err) {
+    error(`Failed to stop agent ${agentId}:`, err);
+  }
+  clearConversation(agentId);
+  removeAgent(agentId);
 }
 
 const listeners = new Map<string, UnlistenFn>();
@@ -363,7 +398,7 @@ function trySendNextQueued(agentId: string): boolean {
   if (!next) {
     return false;
   }
-  addUserMessage(agentId, next.text);
+  addUserMessage(agentId, next.text, next.images);
   inflight.add(agentId);
   updateAgent(agentId, { status: "running" });
   sendAgentMessage(agentId, next.text, next.images).catch(() => {});

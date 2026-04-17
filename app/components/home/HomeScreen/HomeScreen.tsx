@@ -2,9 +2,18 @@ import { useEffect, useState } from "react";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { checkClaudeCli } from "../../../lib/ipc";
 import {
+  setActiveAgent,
+  useAgentsRecord,
+} from "../../../stores/agentStore";
+import {
   removeRecentProject,
   useRecentProjects,
 } from "../../../stores/recentProjectsStore";
+import {
+  selectWorkspace,
+  useWorkspaces,
+} from "../../../stores/workspaceStore";
+import { OrchestrationTree } from "../../agent/OrchestrationTree/OrchestrationTree";
 import { CloseIcon, FolderIcon, StagehandLogo } from "../../shared/Icons";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import styles from "./HomeScreen.module.css";
@@ -24,6 +33,24 @@ export function HomeScreen() {
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [claudeCliMissing, setClaudeCliMissing] = useState(false);
+  const [treeFilter, setTreeFilter] = useState<string>("all");
+
+  const agents = useAgentsRecord();
+  const workspaces = useWorkspaces();
+  const hasAnyAgents = Object.keys(agents).length > 0;
+
+  const handleSelectAgent = (agentId: string, workspaceId: string) => {
+    const ws = workspaces.find((w) => w.id === workspaceId);
+    if (!ws) return;
+    // Ensure the containing project is open, then select the workspace and
+    // make the clicked agent active.
+    openProject(ws.repo_root)
+      .then(() => {
+        selectWorkspace(workspaceId);
+        setActiveAgent(workspaceId, agentId);
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     checkClaudeCli()
@@ -79,6 +106,22 @@ export function HomeScreen() {
             Add repository
           </button>
         </div>
+
+        {hasAnyAgents && (
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Active Agents</h2>
+            <div className={styles.treeWrap}>
+              <OrchestrationTree
+                activeAgentId={null}
+                showFilter
+                title="All agents"
+                workspaceFilter={treeFilter}
+                onSelectAgent={handleSelectAgent}
+                onWorkspaceFilterChange={setTreeFilter}
+              />
+            </div>
+          </div>
+        )}
 
         {recentProjects.length > 0 ? (
           <div className={styles.section}>
