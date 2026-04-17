@@ -2,15 +2,25 @@ import { useCallback, useMemo, useState } from "react";
 import { useWorkspaceAgents } from "../../../hooks/useAgent";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
 import { isWorkspaceReady } from "../../../lib/types";
+import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
   clearConversation,
   loadSavedMessages,
 } from "../../../stores/conversationStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
-import { AgentStartIcon, HistoryIcon, PlusIcon } from "../../shared/Icons";
+import {
+  selectWorkspace,
+  useWorkspaces,
+} from "../../../stores/workspaceStore";
+import {
+  AgentStartIcon,
+  HistoryIcon,
+  OrchestrationIcon,
+  PlusIcon,
+} from "../../shared/Icons";
 import { AgentChat } from "../AgentChat";
 import { AgentTabBar } from "../AgentTabBar";
 import { ChatHistoryList } from "../ChatHistoryList";
+import { OrchestrationTree } from "../OrchestrationTree/OrchestrationTree";
 import styles from "./AgentView.module.css";
 
 interface AgentViewProps {
@@ -44,6 +54,25 @@ export function AgentView({ workspaceId }: AgentViewProps) {
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showOrchestration, setShowOrchestration] = useState(false);
+
+  // Check if any agents across the app have parent-child relationships.
+  const allAgentsRecord = useAgentsRecord();
+  const hasOrchestration = useMemo(
+    () => Object.values(allAgentsRecord).some((a) => a.parent_agent_id),
+    [allAgentsRecord],
+  );
+
+  const handleOrchestrationSelect = useCallback(
+    (agentId: string, agentWorkspaceId: string) => {
+      if (agentWorkspaceId !== workspaceId) {
+        selectWorkspace(agentWorkspaceId);
+      }
+      setActiveAgent(agentWorkspaceId, agentId);
+      setShowOrchestration(false);
+    },
+    [workspaceId],
+  );
 
   const historyAgentId = viewingHistoryId
     ? `history:${viewingHistoryId}`
@@ -154,11 +183,26 @@ export function AgentView({ workspaceId }: AgentViewProps) {
           >
             <PlusIcon />
           </button>
+          {hasOrchestration && (
+            <button
+              className={`${styles.agentBarAddBtn} ${showOrchestration ? styles.agentBarBtnActive : ""}`}
+              title="Agent orchestration tree"
+              onClick={() => {
+                setShowOrchestration((p) => !p);
+                setShowHistoryPanel(false);
+              }}
+            >
+              <OrchestrationIcon />
+            </button>
+          )}
           {repoRoot && (
             <button
               className={`${styles.agentBarAddBtn} ${showHistoryPanel ? styles.agentBarBtnActive : ""}`}
               title="Chat history"
-              onClick={() => setShowHistoryPanel((p) => !p)}
+              onClick={() => {
+                setShowHistoryPanel((p) => !p);
+                setShowOrchestration(false);
+              }}
             >
               <HistoryIcon />
             </button>
@@ -166,8 +210,16 @@ export function AgentView({ workspaceId }: AgentViewProps) {
         </div>
       )}
 
+      {/* Orchestration tree panel */}
+      {showOrchestration && hasOrchestration && (
+        <OrchestrationTree
+          activeAgentId={activeAgent?.agent_id ?? null}
+          onSelectAgent={handleOrchestrationSelect}
+        />
+      )}
+
       {/* History panel overlay when toggled from agent bar */}
-      {showHistoryPanel && repoRoot && (
+      {!showOrchestration && showHistoryPanel && repoRoot && (
         <ChatHistoryList
           repoRoot={repoRoot}
           onResume={handleResumeHistory}
@@ -176,7 +228,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
       )}
 
       {/* Empty state — no agents running */}
-      {!showHistoryPanel && !activeAgent && (
+      {!showHistoryPanel && !showOrchestration && !activeAgent && (
         <div className={styles.noAgentContent}>
           <div className={styles.emptyState}>
             <button
@@ -204,7 +256,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
       )}
 
       {/* Active agent chat */}
-      {!showHistoryPanel && activeAgent && (
+      {!showHistoryPanel && !showOrchestration && activeAgent && (
         <AgentChat
           agentId={activeAgent.agent_id}
           permissionMode={activeAgent.permission_mode}

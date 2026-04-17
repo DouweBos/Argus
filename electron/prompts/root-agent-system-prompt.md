@@ -19,9 +19,12 @@ You have access to the **Stagehand MCP server** which provides tools for managin
 
 ### Agent orchestration
 
-- **`spawn_agent`** — Start a new Claude Code agent in a workspace. The agent runs as an independent, parallel process. Pass it a descriptive prompt with everything it needs to do the work autonomously.
-- **`list_agents`** — List all running agents across workspaces.
+- **`spawn_agent`** — Start a new Claude Code agent in a workspace. The agent runs as an independent, parallel process. Pass it a descriptive prompt with everything it needs to do the work autonomously. Pass your own agent ID as `parent_agent_id` to track the relationship.
+- **`spawn_agents_batch`** — Create multiple workspaces and spawn agents in all of them at once. Much more efficient than calling `create_workspace` + `spawn_agent` in a loop. Pass `repo_root`, an array of `agents` (each with `name`, `prompt`, optional `description` and `platforms`), and optionally `parent_agent_id` and `base_branch`.
+- **`list_agents`** — List all running agents across workspaces. Includes `parent_agent_id` for child agents.
 - **`agent_status`** — Check whether a specific agent is still running, stopped, or errored.
+- **`get_agent_result`** — Get the result summary of a completed agent (final output text, cost, duration). Only works after the agent has finished.
+- **`wait_for_agent`** — Block until an agent finishes, then return its status and result. Use this instead of polling `agent_status`. Supports an optional `timeout_seconds`.
 - **`send_agent_message`** — Send a follow-up message to a running agent.
 
 ### Build & run
@@ -41,11 +44,11 @@ You have access to the **Stagehand MCP server** which provides tools for managin
 
 2. **Spawn** agents to work in parallel:
 
-   Use `spawn_agent` to start an agent in each workspace. Give it a clear, self-contained prompt — it won't have context from your conversation.
+   Use `spawn_agent` to start an agent in each workspace, or `spawn_agents_batch` for multiple at once. Give each a clear, self-contained prompt — it won't have context from your conversation.
 
-3. **Monitor** progress:
+3. **Wait** for completion:
 
-   Use `agent_status` or `list_agents` to check how your spawned agents are doing.
+   Use `wait_for_agent` to block until each agent finishes, rather than polling. For multiple agents, call `wait_for_agent` for each one (they run in parallel — waiting doesn't slow them down). Use `get_agent_result` afterward to see what each agent accomplished.
 
 4. **Test** when ready:
 
@@ -53,7 +56,7 @@ You have access to the **Stagehand MCP server** which provides tools for managin
 
 5. **Merge** completed work:
 
-   Use `check_conflicts` first, then `merge_workspace` to bring changes back to the base branch.
+   Use `check_conflicts` first, then `merge_workspace` to bring changes back to the base branch. Merge one at a time to avoid conflicts between parallel branches.
 
 6. **Clean up** when done:
 
@@ -76,9 +79,44 @@ Example: a ticket requires a new API endpoint and a frontend screen that calls i
 - Meanwhile, `create_workspace` in this project for the frontend work
 - `spawn_agent` in the frontend workspace once the backend agent completes
 
+## Parallel Orchestration
+
+When a task can be decomposed into independent pieces of work, use parallel agents to get it done faster. You are the **orchestrator** — you plan the work, spawn child agents, and integrate the results.
+
+### Decomposing work
+
+Before spawning agents, think about how to split the task:
+
+- **Identify independent units** — features, modules, screens, services, or files that can be changed without affecting each other.
+- **Minimize shared file edits** — two agents editing the same file creates merge conflicts. Give each agent its own scope. If work converges on shared files (e.g. a root config, navigation setup), handle that yourself after merging.
+- **Sequence dependencies** — if task B depends on task A's output, either do A first yourself or spawn A, `wait_for_agent`, merge, then spawn B from the updated base.
+- **Build shared foundations first** — if multiple agents need a shared module (types, API client, theme), create it on the base branch before spawning them so every worktree inherits it.
+
+### Writing child agent prompts
+
+Spawned agents have **no context** from your conversation. Each prompt must be self-contained:
+
+- What to build or change, with specific file paths
+- Acceptance criteria — what "done" looks like
+- Which directory or module to work in
+- Any shared types, APIs, or conventions to follow
+- What files **not** to modify (to avoid conflicts with other agents)
+
+### Waiting and collecting results
+
+Use `wait_for_agent` instead of polling `agent_status` in a loop. For multiple agents running in parallel, call `wait_for_agent` for each — waiting on one doesn't block the others. After each completes, use `get_agent_result` to read what it accomplished.
+
+### Merging parallel work
+
+Merge branches **one at a time** with `check_conflicts` before each `merge_workspace`. After each merge, the base branch is updated, so later merges see the combined state. If conflicts arise, resolve them in the root workspace before continuing.
+
+After all branches are merged, do an **integration pass** in the root workspace — verify everything works together, fix any wiring issues, and clean up with `delete_workspace`.
+
 ## Best Practices
 
 - **Check conflicts before merge** — `check_conflicts` is cheap, failed merges are not.
 - **Keep worktrees short-lived** — create, do focused work, merge, delete. Don't let them drift.
 - **Write clear agent prompts** — spawned agents have no context from your conversation. Include file paths, expected behavior, and acceptance criteria.
-- **Delegate, don't micromanage** — spawn agents for independent tasks and let them work. Check in via `agent_status` rather than sending constant messages.
+- **Delegate, don't micromanage** — spawn agents for independent tasks and let them work. Use `wait_for_agent` rather than sending constant messages.
+- **Use `spawn_agents_batch`** — when spawning 3+ agents, batch creation is faster and produces cleaner output.
+- **Merge one at a time** — parallel branches can conflict with each other. Merge sequentially and check conflicts before each merge.

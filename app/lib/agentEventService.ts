@@ -110,6 +110,7 @@ export function initExternalAgentStarted(): void {
       workspace_id: info.workspace_id,
       status: info.status,
       permission_mode: info.permission_mode,
+      parent_agent_id: info.parent_agent_id,
     });
     startAgentListening(info.agent_id);
   });

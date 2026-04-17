@@ -39,6 +39,8 @@ export interface TerminalSession {
 
 export interface AgentStatus {
   agent_id: string;
+  /** Agent that spawned this one (null for user-initiated agents). */
+  parent_agent_id?: string | null;
   /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */
   permission_mode?: string;
   status: "error" | "idle" | "running" | "stopped";

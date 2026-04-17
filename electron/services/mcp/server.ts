@@ -20,7 +20,12 @@ import { z } from "zod";
 import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
-import { startAgent, sendAgentMessage, listAgents } from "../agent/claude";
+import {
+  startAgent,
+  sendAgentMessage,
+  listAgents,
+  waitForAgent,
+} from "../agent/claude";
 import { createTerminal, startTerminal } from "../terminal/multiplexer";
 import {
   createWorkspace,
@@ -397,7 +402,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agent",
-    "Start a new Claude Code agent in a workspace. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree.",
+    "Start a new Claude Code agent in a workspace. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. Pass your own agent_id as parent_agent_id so the relationship is tracked.",
     {
       workspace: z
         .string()
@@ -419,8 +424,14 @@ export function createMcpServer(): McpServer {
         .describe(
           "Runtime platforms this child agent should target (e.g. ['ios']). Narrows the system prompt so the agent only sees iOS/Android/Web sections relevant to its task. Defaults to the project's `.stagehand.json` `platforms` field, or all three if unset.",
         ),
+      parent_agent_id: z
+        .string()
+        .optional()
+        .describe(
+          "Agent ID of the orchestrator/parent agent spawning this child. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
+        ),
     },
-    async ({ workspace, prompt, permission_mode, platforms }) => {
+    async ({ workspace, prompt, permission_mode, platforms, parent_agent_id }) => {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
@@ -441,6 +452,7 @@ export function createMcpServer(): McpServer {
         undefined, // resumeSessionId
         undefined, // appendSystemPrompt
         platforms, // platformsOverride
+        parent_agent_id, // parentAgentId
       );
 
       // Notify the renderer so the agent store and event listeners pick up
@@ -450,6 +462,7 @@ export function createMcpServer(): McpServer {
         workspace_id: agentInfo.workspace_id,
         status: agentInfo.status,
         permission_mode,
+        parent_agent_id: agentInfo.parent_agent_id,
       });
 
       // Send the initial prompt after startup.
@@ -465,6 +478,177 @@ export function createMcpServer(): McpServer {
                 workspace_id: ws.id,
                 branch: ws.branch,
                 status: agentInfo.status,
+                parent_agent_id: agentInfo.parent_agent_id,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // spawn_agents_batch
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "spawn_agents_batch",
+    "Create multiple workspaces and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Much more efficient than sequential create_workspace + spawn_agent calls. Returns all agent IDs at once.",
+    {
+      repo_root: z
+        .string()
+        .describe("Absolute path to the repository root for all workspaces."),
+      agents: z
+        .array(
+          z.object({
+            name: z
+              .string()
+              .describe("Display name for the workspace (slugified into a branch name)"),
+            description: z
+              .string()
+              .optional()
+              .describe("What this agent/workspace is for"),
+            prompt: z
+              .string()
+              .describe("Initial instructions for the agent"),
+            platforms: z
+              .array(z.enum(["ios", "android", "web"]))
+              .optional()
+              .describe("Runtime platforms this agent targets"),
+          }),
+        )
+        .describe("Array of agents to spawn, each in its own workspace"),
+      permission_mode: z
+        .string()
+        .optional()
+        .describe("Permission mode for all agents (e.g. 'auto'). Defaults to app setting."),
+      parent_agent_id: z
+        .string()
+        .optional()
+        .describe("Agent ID of the orchestrator spawning these agents."),
+      base_branch: z
+        .string()
+        .optional()
+        .describe("Branch to fork all workspaces from. Defaults to HEAD."),
+    },
+    async ({ repo_root, agents: agentSpecs, permission_mode, parent_agent_id, base_branch }) => {
+      const repoRoot = repo_root;
+
+      const isNew = !appState.repoRoots.has(repoRoot);
+      ensureRepoRegistered(repoRoot);
+      if (isNew) {
+        getMainWindow()?.webContents.send("project:added", repoRoot);
+      }
+
+      // Create all workspaces in parallel.
+      const workspaceResults = await Promise.allSettled(
+        agentSpecs.map(async (spec) => {
+          const suffix = crypto.randomUUID().slice(0, 6);
+          const uniqueName = `${spec.name}-${suffix}`;
+          const ws = await createWorkspace(
+            repoRoot,
+            uniqueName,
+            spec.description ?? "",
+            false,
+            base_branch,
+          );
+
+          getMainWindow()?.webContents.send("workspace:created", {
+            id: ws.id,
+            kind: ws.kind,
+            branch: ws.branch,
+            display_name: ws.display_name,
+            description: ws.description,
+            path: ws.path,
+            repo_root: ws.repo_root,
+            status: ws.status,
+            base_branch: ws.base_branch,
+          });
+
+          return { workspace: ws, spec };
+        }),
+      );
+
+      // Spawn agents in the successfully created workspaces.
+      const results: Array<{
+        agent_id: string;
+        workspace_id: string;
+        branch: string;
+        name: string;
+        status: string;
+        error?: string;
+      }> = [];
+
+      const spawnPromises = workspaceResults.map(async (wsResult, idx) => {
+        const spec = agentSpecs[idx];
+        if (wsResult.status === "rejected") {
+          results.push({
+            agent_id: "",
+            workspace_id: "",
+            branch: "",
+            name: spec.name,
+            status: "error",
+            error: `Workspace creation failed: ${String(wsResult.reason)}`,
+          });
+          return;
+        }
+
+        const { workspace: ws } = wsResult.value;
+
+        try {
+          const agentInfo = await startAgent(
+            ws.id,
+            undefined,
+            permission_mode,
+            undefined,
+            undefined,
+            spec.platforms,
+            parent_agent_id,
+          );
+
+          getMainWindow()?.webContents.send("agent:started", {
+            agent_id: agentInfo.agent_id,
+            workspace_id: agentInfo.workspace_id,
+            status: agentInfo.status,
+            permission_mode,
+            parent_agent_id: agentInfo.parent_agent_id,
+          });
+
+          sendAgentMessage(agentInfo.agent_id, spec.prompt);
+
+          results.push({
+            agent_id: agentInfo.agent_id,
+            workspace_id: ws.id,
+            branch: ws.branch,
+            name: spec.name,
+            status: "running",
+          });
+        } catch (e) {
+          results.push({
+            agent_id: "",
+            workspace_id: ws.id,
+            branch: ws.branch,
+            name: spec.name,
+            status: "error",
+            error: `Agent spawn failed: ${String(e)}`,
+          });
+        }
+      });
+
+      await Promise.allSettled(spawnPromises);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                total: agentSpecs.length,
+                spawned: results.filter((r) => r.status === "running").length,
+                failed: results.filter((r) => r.status === "error").length,
+                agents: results,
               },
               null,
               2,
@@ -524,6 +708,7 @@ export function createMcpServer(): McpServer {
           branch: ws?.branch,
           display_name: ws?.display_name,
           status: a.status,
+          parent_agent_id: a.parent_agent_id,
         };
       });
 
@@ -575,6 +760,7 @@ export function createMcpServer(): McpServer {
                 branch: ws?.branch,
                 display_name: ws?.display_name,
                 status: session.status,
+                parent_agent_id: session.parentAgentId,
               },
               null,
               2,
@@ -582,6 +768,117 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // get_agent_result
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "get_agent_result",
+    "Get the result summary of a completed agent. Returns the final output, cost, and duration from the agent's last conversation turn. Only available after the agent has finished (status: stopped or error).",
+    {
+      agent_id: z.string().describe("The agent ID returned by spawn_agent"),
+    },
+    async ({ agent_id }) => {
+      const session = appState.agents.get(agent_id);
+      if (!session) {
+        return {
+          content: [
+            { type: "text" as const, text: `Agent not found: ${agent_id}` },
+          ],
+          isError: true,
+        };
+      }
+
+      if (session.status !== "stopped" && session.status !== "error") {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Agent is still ${session.status}. Wait for it to finish before reading its result.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const ws = appState.workspaces.get(session.workspaceId);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                agent_id: session.agentId,
+                workspace_id: session.workspaceId,
+                branch: ws?.branch,
+                status: session.status,
+                result: session.resultSummary,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // wait_for_agent
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "wait_for_agent",
+    "Block until a spawned agent finishes (exits), then return its final status and result summary. Use this instead of polling agent_status in a loop. Returns immediately if the agent has already exited.",
+    {
+      agent_id: z.string().describe("The agent ID returned by spawn_agent"),
+      timeout_seconds: z
+        .number()
+        .optional()
+        .describe(
+          "Maximum seconds to wait before timing out. Defaults to no timeout (wait indefinitely).",
+        ),
+    },
+    async ({ agent_id, timeout_seconds }) => {
+      try {
+        const { status, result } = await waitForAgent(
+          agent_id,
+          timeout_seconds ? timeout_seconds * 1000 : undefined,
+        );
+
+        const session = appState.agents.get(agent_id);
+        const ws = session
+          ? appState.workspaces.get(session.workspaceId)
+          : undefined;
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  agent_id,
+                  workspace_id: session?.workspaceId,
+                  branch: ws?.branch,
+                  status,
+                  result,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
     },
   );
 

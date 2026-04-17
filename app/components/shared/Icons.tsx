@@ -787,3 +787,25 @@ export function FileTypeIcon({
     </svg>
   );
 }
+
+export function OrchestrationIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <circle cx="8" cy="3" r="2" />
+      <circle cx="4" cy="13" r="2" />
+      <circle cx="12" cy="13" r="2" />
+      <line x1="8" x2="4" y1="5" y2="11" />
+      <line x1="8" x2="12" y1="5" y2="11" />
+    </svg>
+  );
+}

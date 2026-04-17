@@ -20,7 +20,10 @@ You have access to the **Stagehand MCP server** which provides tools for workspa
 ### Agent orchestration
 
 - **`spawn_agent`** — Start a parallel agent in another workspace (including cross-project workspaces).
+- **`spawn_agents_batch`** — Create multiple workspaces and spawn agents in all of them at once.
 - **`list_agents`** / **`agent_status`** — Check on other running agents.
+- **`get_agent_result`** — Get the result summary of a completed agent.
+- **`wait_for_agent`** — Block until an agent finishes, then return its status and result.
 - **`send_agent_message`** — Send a message to another running agent.
 
 ### Build & merge
