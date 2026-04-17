@@ -29,7 +29,12 @@
  * Permission responses are written as `control_response` JSON lines.
  */
 
-import type { AgentInfo, AgentSession, AgentStatusValue } from "./models";
+import type {
+  AgentInfo,
+  AgentResult,
+  AgentSession,
+  AgentStatusValue,
+} from "./models";
 import type { ControlRequest, ControlResponse } from "./protocol";
 import type {
   AndroidDeviceSession,
@@ -215,6 +220,7 @@ export async function startAgent(
   resumeSessionId?: string,
   appendSystemPrompt?: string,
   platformsOverride?: RuntimePlatform[],
+  parentAgentId?: string,
 ): Promise<AgentInfo> {
   // Verify the workspace exists and grab its path.
   const workspace = appState.workspaces.get(workspaceId);
@@ -420,6 +426,33 @@ export async function startAgent(
       }
     }
 
+    // Capture the final result event so orchestrator agents can retrieve it
+    // via `get_agent_result` / `wait_for_agent` without parsing the stream.
+    if (line.includes('"result"') && line.includes('"type"')) {
+      try {
+        const parsed = JSON.parse(line) as {
+          type?: string;
+          subtype?: string;
+          result?: string;
+          total_cost_usd?: number;
+          duration_ms?: number;
+        };
+        if (parsed.type === "result") {
+          const sess = appState.agents.get(agentId);
+          if (sess) {
+            sess.resultSummary = {
+              subtype: (parsed.subtype as "error" | "success") ?? "success",
+              result: parsed.result,
+              total_cost_usd: parsed.total_cost_usd ?? 0,
+              duration_ms: parsed.duration_ms ?? 0,
+            };
+          }
+        }
+      } catch {
+        // Non-fatal — continue forwarding the line.
+      }
+    }
+
     // Forward everything else to renderer as raw JSON string.
     emit(eventChannel, line);
   });
@@ -431,6 +464,12 @@ export async function startAgent(
     const session = appState.agents.get(agentId);
     if (session) {
       session.status = exitCode === 0 ? "stopped" : "error";
+
+      // Notify anyone waiting on this agent (e.g. wait_for_agent callers).
+      for (const resolve of session.exitWaiters) {
+        resolve(exitCode);
+      }
+      session.exitWaiters.length = 0;
     }
 
     // Release device reservations (async, fire-and-forget).
@@ -452,6 +491,9 @@ export async function startAgent(
     child,
     status: "running",
     controlHandler,
+    parentAgentId: parentAgentId ?? null,
+    resultSummary: null,
+    exitWaiters: [],
   };
 
   appState.agents.set(agentId, session);
@@ -514,6 +556,7 @@ export async function startAgent(
     agent_id: agentId,
     workspace_id: workspaceId,
     status: "running",
+    parent_agent_id: parentAgentId ?? null,
   };
 }
 
@@ -583,6 +626,63 @@ export function interruptAgent(agentId: string): void {
   }
 
   info(`[agent:${agentId}] sent SIGINT (pid ${pid})`);
+}
+
+// ---------------------------------------------------------------------------
+// wait_for_agent
+// ---------------------------------------------------------------------------
+
+/**
+ * Wait for an agent to exit, with an optional timeout.
+ *
+ * If the agent has already exited, resolves immediately. Otherwise registers
+ * a callback on the session's `exitWaiters` list and returns a Promise.
+ *
+ * @returns The agent's final status and result summary.
+ * @throws string if the agent is not found or the timeout expires.
+ */
+export function waitForAgent(
+  agentId: string,
+  timeoutMs?: number,
+): Promise<{ status: AgentStatusValue; result: AgentResult | null }> {
+  const session = appState.agents.get(agentId);
+  if (!session) {
+    throw `No agent found: ${agentId}`;
+  }
+
+  if (session.status === "stopped" || session.status === "error") {
+    return Promise.resolve({
+      status: session.status,
+      result: session.resultSummary,
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const onExit = (exitCode: number) => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      const finalSession = appState.agents.get(agentId);
+      resolve({
+        status: exitCode === 0 ? "stopped" : "error",
+        result: finalSession?.resultSummary ?? null,
+      });
+    };
+
+    session.exitWaiters.push(onExit);
+
+    if (timeoutMs !== undefined && timeoutMs > 0) {
+      timer = setTimeout(() => {
+        const idx = session.exitWaiters.indexOf(onExit);
+        if (idx !== -1) {
+          session.exitWaiters.splice(idx, 1);
+        }
+        reject(`Timeout waiting for agent ${agentId} after ${timeoutMs}ms`);
+      }, timeoutMs);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -735,6 +835,7 @@ export function listAgents(workspaceId: string): AgentInfo[] {
         agent_id: session.agentId,
         workspace_id: session.workspaceId,
         status: session.status,
+        parent_agent_id: session.parentAgentId,
       });
     }
   }

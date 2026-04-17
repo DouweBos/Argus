@@ -56,6 +56,7 @@ vi.mock("../agent/claude", () => ({
   startAgent: vi.fn(),
   sendAgentMessage: vi.fn(),
   listAgents: vi.fn(),
+  waitForAgent: vi.fn(),
 }));
 
 vi.mock("../terminal/multiplexer", () => ({
@@ -474,6 +475,7 @@ describe("spawn_agent", () => {
       agent_id: "agent-42",
       workspace_id: "ws-1",
       status: "running",
+      parent_agent_id: null,
     });
 
     const result = await client.callTool({
@@ -486,6 +488,8 @@ describe("spawn_agent", () => {
 
     expect(mockStartAgent).toHaveBeenCalledWith(
       "ws-1",
+      undefined,
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -504,6 +508,7 @@ describe("spawn_agent", () => {
       agent_id: "agent-42",
       workspace_id: "ws-1",
       status: "running",
+      parent_agent_id: null,
     });
 
     await client.callTool({
@@ -518,6 +523,8 @@ describe("spawn_agent", () => {
       "ws-1",
       undefined,
       "auto",
+      undefined,
+      undefined,
       undefined,
       undefined,
     );
@@ -542,7 +549,7 @@ describe("list_agents", () => {
     const ws = mockWorkspace();
     appState.workspaces.set("ws-1", ws);
     mockListAgents.mockReturnValue([
-      { agent_id: "a-1", workspace_id: "ws-1", status: "running" },
+      { agent_id: "a-1", workspace_id: "ws-1", status: "running", parent_agent_id: null },
     ]);
 
     const result = await client.callTool({
@@ -564,12 +571,12 @@ describe("list_agents", () => {
     mockListAgents.mockImplementation((wsId: string) => {
       if (wsId === "ws-1") {
         return [
-          { agent_id: "a-1", workspace_id: "ws-1", status: "running" as const },
+          { agent_id: "a-1", workspace_id: "ws-1", status: "running" as const, parent_agent_id: null },
         ];
       }
       if (wsId === "ws-2") {
         return [
-          { agent_id: "a-2", workspace_id: "ws-2", status: "running" as const },
+          { agent_id: "a-2", workspace_id: "ws-2", status: "running" as const, parent_agent_id: null },
         ];
       }
 
@@ -622,6 +629,9 @@ describe("agent_status", () => {
       stdin: null as unknown as AgentSession["stdin"],
       child: null as unknown as AgentSession["child"],
       controlHandler: null,
+      parentAgentId: null,
+      resultSummary: null,
+      exitWaiters: [],
     });
 
     const result = await client.callTool({

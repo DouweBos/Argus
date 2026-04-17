@@ -17,6 +17,14 @@ export type AgentStatusValue = "error" | "idle" | "running" | "stopped";
 // AgentSession
 // ---------------------------------------------------------------------------
 
+/** Captured result from the final `type: "result"` stream-json event. */
+export interface AgentResult {
+  subtype: "error" | "success";
+  result?: string;
+  total_cost_usd: number;
+  duration_ms: number;
+}
+
 /**
  * A live session wrapping a `claude --output-format stream-json` subprocess.
  *
@@ -36,6 +44,15 @@ export interface AgentSession {
   status: AgentStatusValue;
   /** Handles the control protocol for interactive permission prompts. */
   controlHandler: ControlHandler | null;
+  /** Agent that spawned this one via MCP `spawn_agent` (null for user-initiated). */
+  parentAgentId: string | null;
+  /** Captured when the agent emits its final `type: "result"` event. */
+  resultSummary: AgentResult | null;
+  /**
+   * Resolvers for callers waiting on this agent to exit (e.g. `wait_for_agent`).
+   * Each entry is called with the exit code when the process closes.
+   */
+  exitWaiters: Array<(exitCode: number) => void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,4 +68,5 @@ export interface AgentInfo {
   agent_id: string;
   workspace_id: string;
   status: AgentStatusValue;
+  parent_agent_id: string | null;
 }
