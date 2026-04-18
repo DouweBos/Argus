@@ -18,8 +18,17 @@
 .userMsg {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   padding: 12px 20px;
+  position: relative;
+}
+
+.userTextWrap {
+  display: flex;
+  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .userText {
@@ -34,6 +43,8 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+  z-index: 2;
 }
 
 .userAttachments {
@@ -41,14 +52,17 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: -24px;
   max-width: 75%;
+  align-self: flex-end;
+  position: relative;
+  z-index: 1;
 }
 
 .userAttachment {
   display: block;
-  width: 72px;
-  height: 72px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border-radius: var(--border-radius-sm);
   overflow: hidden;

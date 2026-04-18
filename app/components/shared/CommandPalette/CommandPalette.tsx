@@ -22,6 +22,7 @@ import {
   closeCommandPalette,
   useCommandPaletteOpen,
 } from "../../../stores/commandPaletteStore";
+import { useConversations } from "../../../stores/conversationStore";
 import {
   showOpenProjectDialog,
   triggerNewWorkspace,
@@ -96,6 +97,7 @@ function CommandPaletteContent() {
   const selectedId = useSelectedWorkspaceId();
   // Subscribing keeps the agent-dependent actions in sync.
   const agentsRecord = useAgentsRecord();
+  const conversations = useConversations();
   const { openProject } = useProjects();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -302,11 +304,14 @@ function CommandPaletteContent() {
       }
 
       if (activeAgent) {
+        const activeTitle =
+          conversations[activeAgent.agent_id]?.title?.trim() ||
+          `Agent ${activeAgent.agent_id.slice(0, 6)}`;
         out.push({
           group: "workspace",
           id: "ws:interrupt-agent",
           title: "Interrupt active agent",
-          sublabel: activeAgent.agent_id.slice(0, 8),
+          sublabel: activeTitle,
           icon: <Icons.CloseIcon size={13} />,
           keywords: "stop interrupt cancel agent active",
           run: () => {
@@ -449,6 +454,7 @@ function CommandPaletteContent() {
     selectedWorkspace,
     openProject,
     agentsRecord,
+    conversations,
   ]);
 
   const filtered = useMemo(() => {
@@ -465,7 +471,10 @@ function CommandPaletteContent() {
     );
   }, [items, query]);
 
-  const safeIndex = Math.min(Math.max(activeIndex, 0), filtered.length - 1);
+  const groups = useMemo(() => groupItems(filtered), [filtered]);
+  const ordered = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+
+  const safeIndex = Math.min(Math.max(activeIndex, 0), ordered.length - 1);
 
   const onOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -480,20 +489,18 @@ function CommandPaletteContent() {
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex(Math.min(safeIndex + 1, filtered.length - 1));
+      setActiveIndex(Math.min(safeIndex + 1, ordered.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex(Math.max(safeIndex - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const pick = filtered[safeIndex];
+      const pick = ordered[safeIndex];
       if (pick) {
         runPick(pick);
       }
     }
   };
-
-  const groups = groupItems(filtered);
 
   return (
     <div
@@ -534,7 +541,7 @@ function CommandPaletteContent() {
             <div key={g.key} className={styles.group}>
               <div className={styles.groupHead}>{g.label}</div>
               {g.items.map((it) => {
-                const globalIdx = filtered.indexOf(it);
+                const globalIdx = ordered.indexOf(it);
                 const active = globalIdx === safeIndex;
 
                 return (

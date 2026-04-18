@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteChatHistory, listChatHistory } from "../lib/ipc";
 
 export interface UseChatHistoryResult {
+  clearAll: () => void;
   entries: ChatHistoryEntry[];
   loaded: boolean;
   refresh: () => void;
@@ -54,5 +55,16 @@ export function useChatHistory(repoRoot: string | null): UseChatHistoryResult {
     [repoRoot, refresh],
   );
 
-  return { entries, loaded, refresh, remove };
+  const clearAll = useCallback(() => {
+    if (!repoRoot || entries.length === 0) {
+      return;
+    }
+    Promise.all(
+      entries.map((entry) =>
+        deleteChatHistory(repoRoot, entry.id).catch(() => {}),
+      ),
+    ).then(refresh);
+  }, [repoRoot, entries, refresh]);
+
+  return { clearAll, entries, loaded, refresh, remove };
 }

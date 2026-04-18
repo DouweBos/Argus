@@ -2,7 +2,10 @@ import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Icons, StatusDot, ThinkingDots } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
-import { notifyMessageSent } from "../../../lib/agentEventService";
+import {
+  maybeGenerateTitle,
+  notifyMessageSent,
+} from "../../../lib/agentEventService";
 import {
   type ImageAttachment,
   getCommandMetrics,
@@ -25,6 +28,7 @@ import {
   queueMessage,
   useConversation,
 } from "../../../stores/conversationStore";
+import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
@@ -250,6 +254,13 @@ export function AgentChat({
     // The scroll handler will update isAtBottom from the new position.
   }, [agentId]);
 
+  useEffect(() => {
+    if (!agentId || readOnly) {
+      return;
+    }
+    chatInputRef.current?.focus();
+  }, [agentId, readOnly]);
+
   // Track whether any tool call is waiting for user permission.
   const hasPendingPermission = useMemo(
     () => messages.some((m) => m.toolCalls.some((tc) => tc.pendingPermission)),
@@ -437,6 +448,10 @@ export function AgentChat({
 
       const status = getAgent(agentId)?.status;
 
+      // Kick off background title generation on the first real user message.
+      // `maybeGenerateTitle` is a no-op for later messages.
+      maybeGenerateTitle(agentId, message);
+
       // If the agent is busy (running/starting), queue the message for later.
       if (status === "running") {
         queueMessage(agentId, message, images);
@@ -550,11 +565,40 @@ export function AgentChat({
         {!readOnly && queuedMessages.length > 0 && (
           <div className={styles.queuedSection}>
             <span className={styles.queuedLabel}>Queued</span>
-            {queuedMessages.map((qm) => (
-              <div key={qm.id} className={styles.queuedMessage}>
-                {qm.text}
-              </div>
-            ))}
+            {queuedMessages.map((qm) => {
+              const images = qm.images ?? [];
+
+              return (
+                <div key={qm.id} className={styles.queuedMessageWrap}>
+                  <div className={styles.queuedMessage}>{qm.text}</div>
+                  {images.length > 0 && (
+                    <div className={styles.queuedAttachments}>
+                      {images.map((img, i) => {
+                        const src = `data:${img.media_type};base64,${img.data}`;
+
+                        return (
+                          <button
+                            key={i}
+                            className={styles.queuedAttachment}
+                            title={`Image ${i + 1}`}
+                            type="button"
+                            onClick={() =>
+                              openImageViewer(src, `Attachment ${i + 1}`)
+                            }
+                          >
+                            <img
+                              alt={`Attachment ${i + 1}`}
+                              className={styles.queuedAttachmentImg}
+                              src={src}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -640,7 +684,7 @@ function isToolCallOnly(msg: ConversationMessage): boolean {
   return (
     msg.role === "assistant" &&
     msg.toolCalls.length > 0 &&
-    msg.textBlocks.length === 0 &&
+    msg.textBlocks.every((t) => t.trim().length === 0) &&
     !msg.toolCalls.some(
       (tc) =>
         tc.name === "Agent" ||

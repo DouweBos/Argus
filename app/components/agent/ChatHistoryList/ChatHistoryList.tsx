@@ -39,6 +39,7 @@ function formatCost(cost?: number): string | null {
 
 interface ChatHistoryListProps {
   entries: ChatHistoryEntry[];
+  onClearAll?: () => void;
   onDelete: (historyId: string) => void;
   onResume: (sessionId: string) => void;
   onView: (historyId: string) => void;
@@ -49,6 +50,7 @@ export function ChatHistoryList({
   onView,
   onResume,
   onDelete,
+  onClearAll,
 }: ChatHistoryListProps) {
   if (entries.length === 0) {
     return null;
@@ -58,6 +60,19 @@ export function ChatHistoryList({
     <div className={styles.container}>
       <div className={styles.header}>
         <Eyebrow>Recent Sessions</Eyebrow>
+        {onClearAll && (
+          <button
+            className={styles.clearAll}
+            title="Clear all chats"
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClearAll();
+            }}
+          >
+            <Icons.TrashIcon size={12} />
+          </button>
+        )}
       </div>
       {entries.map((entry) => {
         const cost = formatCost(entry.totalCost);

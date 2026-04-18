@@ -34,3 +34,4 @@ export * as Icons from "./icons/Icons";
 export * from "./icons/HomeIcons";
 export * from "./lib/agentStatus";
 export * from "./lib/modalStack";
+export * from "./lib/projectAccent";

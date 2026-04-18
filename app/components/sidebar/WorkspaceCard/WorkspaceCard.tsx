@@ -12,6 +12,7 @@ import {
   workspaceStatusLabel,
 } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import { useSetupProgressByWorkspaceId } from "../../../stores/workspaceStore";
 import { ContextMenu, type ContextMenuItem } from "../../shared/ContextMenu";
 import { BranchSwitcher } from "../BranchSwitcher";
@@ -66,6 +67,8 @@ export function WorkspaceCard({
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const setupProgressById = useSetupProgressByWorkspaceId();
   const setupProgress = setupProgressById[workspace.id];
+  const reviewQueue = useReviewQueueMap();
+  const commitsAhead = reviewQueue[workspace.id]?.commitsAhead ?? 0;
   const agents = useAgentsRecord();
   const runningCount = useMemo(
     () =>
@@ -142,6 +145,10 @@ export function WorkspaceCard({
     : workspace.branch;
   const statusLabel = workspaceStatusLabel(workspace.status);
   const showStatusBadge = statusLabel !== "ready";
+  const errorMessage =
+    typeof workspace.status === "object" && "error" in workspace.status
+      ? workspace.status.error
+      : null;
 
   return (
     <div
@@ -175,6 +182,18 @@ export function WorkspaceCard({
                 )}
               </span>
             )}
+            {commitsAhead > 0 && (
+              <span
+                className={styles.aheadBadge}
+                title={
+                  workspace.base_branch
+                    ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${workspace.base_branch}`
+                    : `${commitsAhead} unmerged commit${commitsAhead === 1 ? "" : "s"}`
+                }
+              >
+                ↑{commitsAhead}
+              </span>
+            )}
           </div>
           <div className={styles.branchSubtitle}>
             {branchName}
@@ -196,6 +215,7 @@ export function WorkspaceCard({
           {showStatusBadge && (
             <span
               className={`${styles.statusBadge} ${styles[`ws_${statusLabel}`]}`}
+              title={errorMessage ?? undefined}
             >
               {statusLabel}
             </span>
@@ -241,6 +261,21 @@ export function WorkspaceCard({
           )}
           <p className={styles.setupProgress} title={setupProgress.item}>
             {truncateStart(setupProgress.item, MAX_SUBTITLE_LEN)}
+          </p>
+        </div>
+      )}
+      {errorMessage && (
+        <div className={styles.errorWrap}>
+          {setupProgress?.item && (
+            <p
+              className={styles.errorStep}
+              title={`Failed at: ${setupProgress.item}`}
+            >
+              Failed at: {truncateStart(setupProgress.item, MAX_SUBTITLE_LEN)}
+            </p>
+          )}
+          <p className={styles.errorMessage} title={errorMessage}>
+            {errorMessage}
           </p>
         </div>
       )}

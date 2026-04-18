@@ -22,11 +22,18 @@ export function ChatMessage({
   onPermissionRespond,
 }: ChatMessageProps) {
   if (message.role === "system") {
+    const trimmed = message.textBlocks
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    if (trimmed.length === 0) {
+      return null;
+    }
+
     return (
       <div
         className={`${styles.systemMsg}${message.isError ? ` ${styles.systemMsgError}` : ""}`}
       >
-        {message.textBlocks.map((text, i) => (
+        {trimmed.map((text, i) => (
           <span key={i}>{text}</span>
         ))}
       </div>
@@ -35,11 +42,17 @@ export function ChatMessage({
 
   if (message.role === "user") {
     const images = message.images ?? [];
+    const trimmedUserBlocks = message.textBlocks
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    if (trimmedUserBlocks.length === 0 && images.length === 0) {
+      return null;
+    }
 
     return (
       <div className={styles.userMsg}>
-        <FileLinkHandler>
-          {message.textBlocks.map((text, i) => (
+        <FileLinkHandler className={styles.userTextWrap}>
+          {trimmedUserBlocks.map((text, i) => (
             <p key={i} className={styles.userText}>
               <MentionedText text={text} />
             </p>
@@ -74,8 +87,15 @@ export function ChatMessage({
 
   // assistant role
   const hasToolCalls = message.toolCalls.length > 0;
-  const hasText = message.textBlocks.length > 0;
+  const trimmedBlocks = message.textBlocks
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+  const hasText = trimmedBlocks.length > 0;
   const toolOnly = hasToolCalls && !hasText;
+
+  if (!hasText && !hasToolCalls) {
+    return null;
+  }
 
   return (
     <div
@@ -83,13 +103,13 @@ export function ChatMessage({
     >
       {hasText && (
         <FileLinkHandler className={styles.textContent}>
-          {message.textBlocks.map((text, i) => (
-            <div
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-              key={i}
-              className={styles.markdown}
-            />
-          ))}
+          {trimmedBlocks.map((text, i) => (
+              <div
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+                key={i}
+                className={styles.markdown}
+              />
+            ))}
         </FileLinkHandler>
       )}
 

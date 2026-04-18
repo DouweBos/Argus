@@ -54,7 +54,7 @@ function setupWorkspaceStatusListener(
       setSetupProgress(workspaceId, null);
     } else if (payload.startsWith("error:")) {
       status = { error: payload.slice(6) };
-      setSetupProgress(workspaceId, null);
+      // Keep the last setup progress so the UI can show which step failed.
     } else {
       status = "initializing";
     }

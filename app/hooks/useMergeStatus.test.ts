@@ -39,6 +39,7 @@ function emitEvent(event: string, payload: unknown = {}) {
 
 const mockGetWorkspaceConflicts = vi.fn().mockResolvedValue([]);
 const mockGetWorkspaceStagedDiff = vi.fn().mockResolvedValue("");
+const mockGetWorkspaceCommitsAhead = vi.fn().mockResolvedValue(0);
 const mockMergeWorkspaceIntoBase = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../lib/ipc", () => ({
@@ -46,6 +47,8 @@ vi.mock("../lib/ipc", () => ({
     mockGetWorkspaceConflicts(...args),
   getWorkspaceStagedDiff: (...args: unknown[]) =>
     mockGetWorkspaceStagedDiff(...args),
+  getWorkspaceCommitsAhead: (...args: unknown[]) =>
+    mockGetWorkspaceCommitsAhead(...args),
   mergeWorkspaceIntoBase: (...args: unknown[]) =>
     mockMergeWorkspaceIntoBase(...args),
 }));
@@ -59,6 +62,7 @@ describe("useMergeStatus", () => {
     eventListeners.clear();
     mockGetWorkspaceConflicts.mockResolvedValue([]);
     mockGetWorkspaceStagedDiff.mockResolvedValue("");
+    mockGetWorkspaceCommitsAhead.mockResolvedValue(0);
     mockMergeWorkspaceIntoBase.mockResolvedValue(undefined);
   });
 

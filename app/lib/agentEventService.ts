@@ -22,6 +22,7 @@ import {
   dequeueMessage,
   getConversationState,
   setCapabilities,
+  setConversationTitle,
   setModel,
   setPermissionPending,
 } from "../stores/conversationStore";
@@ -30,6 +31,7 @@ import { recordAgentLifecycle } from "./activityService";
 import { deriveTitle } from "./chatHistory";
 import { type UnlistenFn, listen } from "./events";
 import {
+  generateSessionTitle,
   saveChatHistory,
   sendAgentMessage,
   stopAgent as apiStopAgent,
@@ -45,6 +47,46 @@ import {
  * (the exit listener and stopAgent may both attempt to save).
  */
 const savedSessions = new Set<string>();
+
+/**
+ * Tracks agents that have already had (or are currently having) a title
+ * generated so we only fire the background `claude -p` call once per agent.
+ */
+const titleRequested = new Set<string>();
+
+/**
+ * Kick off a background title-generation call for the agent if we haven't
+ * already. Fire-and-forget — the promise resolves into the conversation
+ * store and updates the UI wherever `conv.title` is read.
+ */
+export function maybeGenerateTitle(agentId: string, firstMessage: string) {
+  if (titleRequested.has(agentId)) {
+    return;
+  }
+  const text = firstMessage.trim();
+  if (!text) {
+    return;
+  }
+  titleRequested.add(agentId);
+
+  generateSessionTitle(text)
+    .then((title) => {
+      if (!title) {
+        return;
+      }
+      // Only set if the agent still exists and hasn't been given one via
+      // a resumed conversation in the meantime.
+      const conv = getConversationState().conversations[agentId];
+      if (!conv || conv.title) {
+        return;
+      }
+      setConversationTitle(agentId, title);
+    })
+    .catch(() => {
+      // Allow a retry on the next user message if the CLI call failed.
+      titleRequested.delete(agentId);
+    });
+}
 
 /**
  * Build a SavedConversation from the current store state and persist it.
@@ -73,7 +115,7 @@ export function saveAgentConversation(agentId: string): void {
   const saved: SavedConversation = {
     id: crypto.randomUUID(),
     sessionId: conv.sessionId ?? "",
-    title: deriveTitle(conv.messages),
+    title: conv.title ?? deriveTitle(conv.messages),
     workspaceBranch: workspace.branch ?? "",
     workspaceDescription: workspace.description ?? "",
     model: conv.model,

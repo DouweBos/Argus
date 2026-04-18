@@ -137,6 +137,37 @@ export function createMcpServer(): McpServer {
     version: "1.0.0",
   });
 
+  // Wrap server.tool so every handler's thrown errors are logged before the
+  // MCP SDK converts them into isError tool results. Without this, backend
+  // failures (e.g. createWorkspace() throwing) are invisible in main.log and
+  // only surface as opaque error text in the agent's tool-call display.
+  const originalTool = server.tool.bind(server) as (
+    ...args: unknown[]
+  ) => unknown;
+  (server as unknown as { tool: typeof originalTool }).tool = (
+    ...args: unknown[]
+  ) => {
+    const handlerIndex = args.length - 1;
+    const handler = args[handlerIndex];
+    const name = typeof args[0] === "string" ? args[0] : "<unknown>";
+    if (typeof handler === "function") {
+      const wrapped = async (...handlerArgs: unknown[]) => {
+        try {
+          return await (handler as (...a: unknown[]) => unknown)(
+            ...handlerArgs,
+          );
+        } catch (err) {
+          // eslint-disable-next-line no-console -- central logging sink (tee'd to ~/.argus/main.log in main.ts)
+          console.error(`[mcp:${name}] tool handler threw:`, err);
+          throw err;
+        }
+      };
+      args[handlerIndex] = wrapped;
+    }
+
+    return originalTool(...args);
+  };
+
   // -------------------------------------------------------------------------
   // list_projects
   // -------------------------------------------------------------------------
@@ -874,7 +905,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "wait_for_agent",
-    "Block until a spawned agent finishes (exits), then return its final status and result summary. Use this instead of polling agent_status in a loop. Returns immediately if the agent has already exited.",
+    "Block until a spawned agent finishes its current turn (becomes idle) or exits, then return its status and latest result summary. Returns immediately if the agent is already idle, stopped, or errored. Use this instead of polling agent_status in a loop.",
     {
       agent_id: z.string().describe("The agent ID returned by spawn_agent"),
       timeout_seconds: z
@@ -1255,6 +1286,12 @@ export async function startMcpServer(): Promise<number> {
       res.end("Method Not Allowed");
     }
   });
+
+  // MCP tool calls can legitimately block for a long time (wait_for_agent,
+  // send_agent_message, etc.). Disable Node's default 5 min requestTimeout
+  // so long-polling responses don't get torn down mid-call.
+  httpServer.requestTimeout = 0;
+  httpServer.headersTimeout = 0;
 
   return new Promise((resolve, reject) => {
     httpServer!.listen(0, "127.0.0.1", () => {

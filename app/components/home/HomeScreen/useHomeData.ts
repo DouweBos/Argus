@@ -1,5 +1,6 @@
 import type { AgentStatus, DeviceInfo, Workspace } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
+import { projectAccent } from "@argus/peacock";
 import { useMemo } from "react";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useDevices } from "../../../stores/deviceStore";
@@ -41,16 +42,6 @@ export interface HomeData {
   projects: HomeProject[];
   stats: HomeStats;
 }
-
-/** Colors assigned to projects in order of recency, cycling if exhausted. */
-const PROJECT_ACCENTS = [
-  "#4d9fff",
-  "#7c5cfc",
-  "#00d4aa",
-  "#f5a623",
-  "#ff4466",
-  "#55556a",
-];
 
 function mapAgentStatus(status: AgentStatus["status"]): PeacockAgentStatus {
   switch (status) {
@@ -94,12 +85,12 @@ export function useHomeData(): HomeData & {
   return useMemo(() => {
     const projectsByPath = new Map<string, HomeProject>();
 
-    recent.forEach((rp: RecentProject, i) => {
+    recent.forEach((rp: RecentProject) => {
       projectsByPath.set(rp.path, {
         id: rp.path,
         name: rp.name,
         path: rp.path,
-        accent: PROJECT_ACCENTS[i % PROJECT_ACCENTS.length] ?? "#4d9fff",
+        accent: projectAccent(rp.path),
         workspaces: [],
         agents: [],
         lastOpened: rp.lastOpened,
@@ -114,9 +105,7 @@ export function useHomeData(): HomeData & {
           id: key,
           name: basename(key),
           path: key,
-          accent:
-            PROJECT_ACCENTS[projectsByPath.size % PROJECT_ACCENTS.length] ??
-            "#4d9fff",
+          accent: projectAccent(key),
           workspaces: [],
           agents: [],
           // Unknown — place at the top of the list by using a sentinel.

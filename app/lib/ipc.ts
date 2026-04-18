@@ -255,6 +255,14 @@ export const getWorkspaceConflicts = (id: string): Promise<string[]> =>
 export const getWorkspaceCommitsAhead = (id: string): Promise<number> =>
   invoke("get_workspace_commits_ahead", { id });
 
+export const getWorkspaceReviewState = (
+  id: string,
+): Promise<{
+  commitsAhead: number;
+  hasStaged: boolean;
+  hasUncommitted: boolean;
+}> => invoke("get_workspace_review_state", { id });
+
 export const mergeWorkspaceIntoBase = (id: string): Promise<void> =>
   invoke("merge_workspace_into_base", { id });
 
@@ -396,6 +404,11 @@ export const deleteChatHistory = (
   repoRoot: string,
   historyId: string,
 ): Promise<void> => invoke("delete_chat_history", { repoRoot, historyId });
+
+export const generateSessionTitle = (
+  firstMessage: string,
+): Promise<string | null> =>
+  invoke("generate_session_title", { firstMessage });
 
 // Terminal commands
 export const createTerminal = (

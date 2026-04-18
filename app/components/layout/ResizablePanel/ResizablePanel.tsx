@@ -73,7 +73,15 @@ export function ResizablePanel({
 
   const widthPercent = `${widthFraction * 100}%`;
   const marginProp = side === "left" ? "marginLeft" : "marginRight";
-  const translateDir = side === "left" ? "-100%" : "100%";
+  const hiddenOffset = side === "left" ? "-100%" : "100%";
+  const peekOffset = side === "left" ? "100%" : "-100%";
+
+  let transform = "none";
+  if (collapsed && peeking) {
+    transform = `translateX(${peekOffset})`;
+  } else if (collapsed) {
+    transform = `translateX(${hiddenOffset})`;
+  }
 
   return (
     <div
@@ -85,8 +93,7 @@ export function ResizablePanel({
       style={{
         width: widthPercent,
         [marginProp]: collapsed ? `-${widthFraction * 100}%` : "0",
-        transform:
-          collapsed && !peeking ? `translateX(${translateDir})` : "none",
+        transform,
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

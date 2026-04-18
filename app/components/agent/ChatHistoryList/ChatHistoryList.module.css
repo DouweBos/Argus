@@ -15,6 +15,32 @@
   padding: 0 4px 8px;
 }
 
+.clearAll {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--transition-base),
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.container:hover .clearAll {
+  opacity: 1;
+}
+
+.clearAll:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
 .entry {
   display: flex;
   flex-direction: column;
