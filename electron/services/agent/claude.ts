@@ -56,6 +56,7 @@ import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
 import { getConductorSkillPath } from "../cli/conductorInstaller";
 import { getMcpPort } from "../mcp/server";
+import { organizationsForRepo } from "../organization/manager";
 import { simulatorPool } from "../simulator/pool";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
 import { loadArgusConfig } from "../workspace/setup";
@@ -168,6 +169,43 @@ function getConductorSkill(): string {
   }
 
   return cachedPrompts.conductor ?? "";
+}
+
+/**
+ * Build the organization-context prompt section for agents spawned in
+ * `repoRoot`. Lists each organization this repo belongs to, the org's system
+ * prompt, and the roles of sibling member repos so the agent understands the
+ * wider product. Returns an empty string if the repo isn't part of any org.
+ */
+function buildOrganizationContext(repoRoot: string): string {
+  const orgs = organizationsForRepo(repoRoot);
+  if (orgs.length === 0) {
+    return "";
+  }
+
+  const sections = orgs.map((org) => {
+    const lines: string[] = [`### Organization: ${org.name}`];
+    if (org.description) {
+      lines.push(org.description);
+    }
+    if (org.system_prompt) {
+      lines.push("", org.system_prompt);
+    }
+    lines.push("", "**Member repos:**");
+    for (const m of org.members) {
+      const marker = m.repo_root === repoRoot ? " _(this repo)_" : "";
+      const role = m.role || "(no role described)";
+      lines.push(`- \`${m.repo_root}\` — ${role}${marker}`);
+    }
+    lines.push(
+      "",
+      "Use `spawn_agent` with a member's `repo_root` to delegate work to the repo responsible for that slice of the product.",
+    );
+
+    return lines.join("\n");
+  });
+
+  return `## Organization Context\n\n${sections.join("\n\n")}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -569,13 +607,15 @@ export async function startAgent(
     browserUrl,
   });
 
-  // Combine prompts: kind-specific → project context → conductor skill → project-level → runtime → caller-provided.
+  // Combine prompts: kind-specific → project context → org context → conductor skill → project-level → runtime → caller-provided.
   const systemPrompt = getSystemPromptForKind(workspace.kind);
   const conductorSkill = getConductorSkill();
   const projectContext = `## Current Project\n\nYou are working in **${workspace.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${workspace.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
+  const orgContext = buildOrganizationContext(workspace.repo_root);
   const combinedPrompt = [
     systemPrompt,
     projectContext,
+    orgContext,
     conductorSkill,
     projectPrompt,
     runtimeSection,

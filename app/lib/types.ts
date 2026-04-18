@@ -318,3 +318,23 @@ export interface AgentCapabilities {
   commands: SlashCommand[];
   models: ModelInfo[];
 }
+
+// ---------------------------------------------------------------------------
+// Organizations
+// ---------------------------------------------------------------------------
+
+export interface OrganizationMember {
+  repo_root: string;
+  role: string;
+}
+
+export interface Organization {
+  accent: string;
+  created_at: number;
+  description: string;
+  id: string;
+  members: OrganizationMember[];
+  name: string;
+  system_prompt: string;
+  updated_at: number;
+}

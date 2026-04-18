@@ -28,6 +28,7 @@ import {
 } from "./services/browser/mjpegServer";
 import { installConductor } from "./services/cli/conductorInstaller";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
+import { initOrganizations } from "./services/organization/manager";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { refreshAllBranches } from "./services/workspace/watcher";
 import { appState } from "./state";
@@ -246,6 +247,13 @@ app.whenReady().then(() => {
 
   // Install/update the conductor CLI to ~/.argus/bin/conductor.
   installConductor();
+
+  // Load persisted organizations and register their member repos.
+  try {
+    initOrganizations();
+  } catch (e) {
+    log("initOrganizations failed: %s", String(e));
+  }
 
   // Sync system dark/light theme to all active Conductor-managed browsers.
   nativeTheme.on("updated", () => {

@@ -13,6 +13,7 @@ import {
 import { setCenterView } from "../../../../../stores/centerViewStore";
 import { removeRecentProject } from "../../../../../stores/recentProjectsStore";
 import { selectWorkspace } from "../../../../../stores/workspaceStore";
+import { OrganizationsPanel } from "../../../OrganizationsPanel/OrganizationsPanel";
 import { HOME_SHORTCUTS, HOME_TIPS } from "../../homeContent";
 import styles from "./CommandCenter.module.css";
 
@@ -132,6 +133,8 @@ export function CommandCenter({
           }
         />
       </StatsStrip>
+
+      <OrganizationsPanel />
 
       <div className={styles.grid}>
         <div className={styles.col}>
