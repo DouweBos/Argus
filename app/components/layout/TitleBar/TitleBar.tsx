@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { listBranches, setWorkspaceBaseBranch } from "../../../lib/ipc";
 import {
   useActiveToolId,
@@ -63,21 +64,7 @@ export function TitleBar() {
     [selectedId],
   );
 
-  // Close picker when clicking outside
-  useEffect(() => {
-    if (!isEditingBase) {
-      return;
-    }
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setIsEditingBase(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handler);
-
-    return () => document.removeEventListener("mousedown", handler);
-  }, [isEditingBase]);
+  useOutsideClick(pickerRef, isEditingBase, () => setIsEditingBase(false));
 
   const canEditBase = workspace?.kind === "worktree";
 

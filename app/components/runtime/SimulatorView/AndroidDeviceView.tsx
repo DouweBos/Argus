@@ -16,7 +16,13 @@ import {
   stopAndroidCapture,
 } from "../../../lib/ipc";
 import { useAndroidDeviceSimulatorState } from "../../../stores/simulatorStore";
-import { BootIcon, DisconnectIcon } from "../../shared/Icons";
+import {
+  AndroidBackIcon,
+  AndroidHomeIcon,
+  AndroidRecentsIcon,
+  BootIcon,
+  DisconnectIcon,
+} from "../../shared/Icons";
 import chrome from "../RuntimeChrome.module.css";
 import { AndroidDeviceStreamView } from "./AndroidDeviceStreamView";
 import { RunButton } from "./RunButton";
@@ -329,7 +335,7 @@ export function AndroidDeviceView({
               type="button"
               onClick={() => handleNavButton("back")}
             >
-              <BackIcon size={12} />
+              <AndroidBackIcon size={12} />
             </button>
             <button
               className={chrome.titleBarButton}
@@ -337,7 +343,7 @@ export function AndroidDeviceView({
               type="button"
               onClick={() => handleNavButton("home")}
             >
-              <HomeCircleIcon size={12} />
+              <AndroidHomeIcon size={12} />
             </button>
             <button
               className={chrome.titleBarButton}
@@ -345,7 +351,7 @@ export function AndroidDeviceView({
               type="button"
               onClick={() => handleNavButton("recents")}
             >
-              <RecentsIcon size={12} />
+              <AndroidRecentsIcon size={12} />
             </button>
           </>
         )}
@@ -400,58 +406,5 @@ export function AndroidDeviceView({
     >
       {children}
     </AndroidDeviceStreamView>
-  );
-}
-
-// --- Inline SVG icons for Android nav ---
-
-function BackIcon({ size }: { size: number }) {
-  return (
-    <svg
-      fill="none"
-      height={size}
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width={size}
-    >
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
-function HomeCircleIcon({ size }: { size: number }) {
-  return (
-    <svg
-      fill="none"
-      height={size}
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width={size}
-    >
-      <circle cx="12" cy="12" r="9" />
-    </svg>
-  );
-}
-
-function RecentsIcon({ size }: { size: number }) {
-  return (
-    <svg
-      fill="none"
-      height={size}
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      viewBox="0 0 24 24"
-      width={size}
-    >
-      <rect height="12" rx="1" width="12" x="6" y="6" />
-    </svg>
   );
 }

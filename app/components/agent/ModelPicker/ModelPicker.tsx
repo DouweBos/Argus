@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import styles from "./ModelPicker.module.css";
 
 export interface ModelOption {
@@ -25,26 +26,17 @@ export function ModelPicker({
 }: ModelPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
-      }
-    }
+  useOutsideClick(ref, true, onClose);
 
+  useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") {
         onClose();
       }
     }
-
-    document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
   return (

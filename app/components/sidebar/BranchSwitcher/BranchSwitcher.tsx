@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { checkoutBranch, listBranches } from "../../../lib/ipc";
 import { BranchIcon, ChevronDownIcon } from "../../shared/Icons";
 import styles from "./BranchSwitcher.module.css";
@@ -66,24 +67,7 @@ export function BranchSwitcher({
     [repoRoot, currentBranch, close, onBranchChanged],
   );
 
-  // Close on outside click
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    const handleClick = (e: MouseEvent) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
-        close();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClick);
-
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen, close]);
+  useOutsideClick(wrapperRef, isOpen, close);
 
   // Close on Escape
   useEffect(() => {

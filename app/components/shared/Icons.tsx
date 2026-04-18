@@ -788,6 +788,265 @@ export function FileTypeIcon({
   );
 }
 
+export function SearchIcon({ size = 13, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+    </svg>
+  );
+}
+
+export function WebIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 0 1-.597-.933A9.268 9.268 0 0 1 4.09 12H2.255a7.024 7.024 0 0 0 3.072 2.472zM3.82 11a13.652 13.652 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0 0 13.745 12H11.91a9.27 9.27 0 0 1-.64 1.539 6.688 6.688 0 0 1-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 0 1-.312 2.5zm2.802-3.5a6.959 6.959 0 0 0-.656-2.5H12.18c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 0 0-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z" />
+    </svg>
+  );
+}
+
+export function AgentIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
+    </svg>
+  );
+}
+
+export function MinusIcon({ size = 12, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z" />
+    </svg>
+  );
+}
+
+export function FilterIcon({ size = 12, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" />
+    </svg>
+  );
+}
+
+export function FetchIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 2a.5.5 0 0 1 .5.5v6.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 1 1 .708-.708L7.5 9.293V2.5A.5.5 0 0 1 8 2z" />
+      <path d="M2 13.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z" />
+    </svg>
+  );
+}
+
+export function PullIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 1a.5.5 0 0 1 .5.5v9.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 .708-.708L7.5 11.293V1.5A.5.5 0 0 1 8 1z" />
+    </svg>
+  );
+}
+
+export function PushIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 15a.5.5 0 0 1-.5-.5V4.707L5.354 6.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 4.707V14.5A.5.5 0 0 1 8 15z" />
+    </svg>
+  );
+}
+
+export function ApplyStashIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v1A1.5 1.5 0 0 1 13.5 6h-11A1.5 1.5 0 0 1 1 4.5v-1zM2.5 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-11z" />
+      <path d="M8 7.5a.5.5 0 0 1 .5.5v2.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 10.793V8a.5.5 0 0 1 .5-.5z" />
+    </svg>
+  );
+}
+
+export function SaveStashIcon({ size = 15, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v1A1.5 1.5 0 0 1 13.5 6h-11A1.5 1.5 0 0 1 1 4.5v-1zM2.5 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-11z" />
+      <path d="M8 12.5a.5.5 0 0 1-.5-.5V9.207L6.354 10.354a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 9.207V12a.5.5 0 0 1-.5.5z" />
+    </svg>
+  );
+}
+
+export function StashIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v1A1.5 1.5 0 0 1 13.5 6h-11A1.5 1.5 0 0 1 1 4.5v-1zM2.5 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-11z" />
+      <path d="M3 7v7.5A1.5 1.5 0 0 0 4.5 16h7a1.5 1.5 0 0 0 1.5-1.5V7H3zm2 1.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z" />
+    </svg>
+  );
+}
+
+/** File with text lines, e.g. the "working copy" view. */
+export function WorkingCopyIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M4 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.414A2 2 0 0 0 13.414 3L11 .586A2 2 0 0 0 9.586 0H4zm5.586 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.414a1 1 0 0 0-.293-.707L9.586 1z" />
+      <path d="M6.5 7.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7a.5.5 0 0 1-.5-.5z" />
+    </svg>
+  );
+}
+
+/** Filled clock; solid counterpart to the stroke-based HistoryIcon. */
+export function ClockIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 3.5a.5.5 0 0 0-1 0V8a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 7.71V3.5z" />
+      <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
+    </svg>
+  );
+}
+
+/** Three-node branch icon; alternative glyph to BranchIcon. */
+export function BranchNodesIcon({ size = 14, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M11.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5zm-2.25.75a2.25 2.25 0 1 1 3 2.122V6.5a.5.5 0 0 1-.5.5H9.207l-1.854 1.854a.5.5 0 0 1-.353.146H5v2.628a2.25 2.25 0 1 1-1 0V4.372a2.25 2.25 0 1 1 1 0V8h1.793l1.854-1.854A.5.5 0 0 1 9 6h2.75V5.372A2.251 2.251 0 0 1 9.5 3.25zM4.5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0zM3.75 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z" />
+    </svg>
+  );
+}
+
+export function AndroidBackIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+export function AndroidHomeIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <circle cx="12" cy="12" r="9" />
+    </svg>
+  );
+}
+
+export function AndroidRecentsIcon({ size = 18, className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <rect height="12" rx="1" width="12" x="6" y="6" />
+    </svg>
+  );
+}
+
 export function OrchestrationIcon({ size = 14, className }: IconProps) {
   return (
     <svg

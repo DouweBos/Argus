@@ -1,5 +1,6 @@
 import type { GitStashEntry } from "../../../lib/ipc";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import {
   gitFetch,
   gitPull,
@@ -9,6 +10,14 @@ import {
   gitStashList,
   listBranches,
 } from "../../../lib/ipc";
+import {
+  ApplyStashIcon,
+  FetchIcon,
+  PullIcon,
+  PushIcon,
+  SaveStashIcon,
+  SearchIcon,
+} from "../../shared/Icons";
 import styles from "./ChangesToolbar.module.css";
 
 interface ChangesToolbarProps {
@@ -21,79 +30,12 @@ interface ChangesToolbarProps {
   workspaceId: string;
 }
 
-/* ── Icons ────────────────────────────────────────────────── */
-
-function FetchIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M8 2a.5.5 0 0 1 .5.5v6.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 1 1 .708-.708L7.5 9.293V2.5A.5.5 0 0 1 8 2z" />
-      <path d="M2 13.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z" />
-    </svg>
-  );
-}
-
-function PullIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M8 1a.5.5 0 0 1 .5.5v9.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 .708-.708L7.5 11.293V1.5A.5.5 0 0 1 8 1z" />
-    </svg>
-  );
-}
-
-function PushIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M8 15a.5.5 0 0 1-.5-.5V4.707L5.354 6.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 4.707V14.5A.5.5 0 0 1 8 15z" />
-    </svg>
-  );
-}
-
-function ApplyStashIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v1A1.5 1.5 0 0 1 13.5 6h-11A1.5 1.5 0 0 1 1 4.5v-1zM2.5 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-11z" />
-      <path d="M8 7.5a.5.5 0 0 1 .5.5v2.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 10.793V8a.5.5 0 0 1 .5-.5z" />
-    </svg>
-  );
-}
-
-function SaveStashIcon({ size = 15 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v1A1.5 1.5 0 0 1 13.5 6h-11A1.5 1.5 0 0 1 1 4.5v-1zM2.5 3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-11z" />
-      <path d="M8 12.5a.5.5 0 0 1-.5-.5V9.207L6.354 10.354a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 9.207V12a.5.5 0 0 1-.5.5z" />
-    </svg>
-  );
-}
-
-function SearchIcon({ size = 13 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-    </svg>
-  );
-}
-
 /* ── Dropdown wrapper ─────────────────────────────────────── */
 
 function useDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClick);
-
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  useOutsideClick(ref, open, () => setOpen(false));
 
   return { open, setOpen, ref };
 }
