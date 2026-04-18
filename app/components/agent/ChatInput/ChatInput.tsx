@@ -6,7 +6,11 @@ import { useCombinedRef } from "../../../hooks/useCombinedRef";
 import {
   clearDraft,
   getDraft,
+  getPendingImages,
+  type PendingImage,
   setDraft,
+  setPendingImages,
+  usePendingImages,
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { FileMentionPicker } from "../FileMentionPicker";
@@ -15,12 +19,6 @@ import styles from "./ChatInput.module.css";
 import { useMentionPicker } from "./useMentionPicker";
 
 const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/gif,image/webp";
-
-interface PendingImage {
-  attachment: ImageAttachment;
-  name: string;
-  previewUrl: string;
-}
 
 interface ChatInputProps {
   /** Agent ID — used to persist draft text across tab switches. */
@@ -86,7 +84,16 @@ export function ChatInput({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
-  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const pendingImages = usePendingImages(agentId);
+  const updatePendingImages = useCallback(
+    (updater: (prev: PendingImage[]) => PendingImage[]) => {
+      if (!agentId) {
+        return;
+      }
+      setPendingImages(agentId, updater(getPendingImages(agentId)));
+    },
+    [agentId],
+  );
   const {
     mentionContext,
     items: mentionItems,
@@ -179,29 +186,34 @@ export function ChatInput({
       URL.revokeObjectURL(img.previewUrl);
     }
 
-    setPendingImages([]);
+    if (agentId) {
+      setPendingImages(agentId, []);
+    }
     setSuggestions([]);
     dismissMention();
   }, [onSend, disabled, adjustHeight, pendingImages, dismissMention, agentId]);
 
-  const addImageFiles = useCallback(async (files: File[]) => {
-    const newImages: PendingImage[] = [];
-    for (const file of files) {
-      if (!file.type.startsWith("image/")) {
-        continue;
+  const addImageFiles = useCallback(
+    async (files: File[]) => {
+      const newImages: PendingImage[] = [];
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          continue;
+        }
+        const data = await readFileAsBase64(file);
+        newImages.push({
+          name: file.name || "pasted-image",
+          previewUrl: URL.createObjectURL(file),
+          attachment: { data, media_type: file.type },
+        });
       }
-      const data = await readFileAsBase64(file);
-      newImages.push({
-        name: file.name || "pasted-image",
-        previewUrl: URL.createObjectURL(file),
-        attachment: { data, media_type: file.type },
-      });
-    }
 
-    if (newImages.length > 0) {
-      setPendingImages((prev) => [...prev, ...newImages]);
-    }
-  }, []);
+      if (newImages.length > 0) {
+        updatePendingImages((prev) => [...prev, ...newImages]);
+      }
+    },
+    [updatePendingImages],
+  );
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,16 +254,19 @@ export function ChatInput({
     [addImageFiles],
   );
 
-  const removeImage = useCallback((index: number) => {
-    setPendingImages((prev) => {
-      const removed = prev[index];
-      if (removed) {
-        URL.revokeObjectURL(removed.previewUrl);
-      }
+  const removeImage = useCallback(
+    (index: number) => {
+      updatePendingImages((prev) => {
+        const removed = prev[index];
+        if (removed) {
+          URL.revokeObjectURL(removed.previewUrl);
+        }
 
-      return prev.filter((_, i) => i !== index);
-    });
-  }, []);
+        return prev.filter((_, i) => i !== index);
+      });
+    },
+    [updatePendingImages],
+  );
 
   const applySuggestion = useCallback(
     (cmd: SlashCommand) => {

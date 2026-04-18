@@ -10,7 +10,9 @@ import {
   StatsStrip,
   TipCard,
 } from "@argus/peacock";
+import { setCenterView } from "../../../../../stores/centerViewStore";
 import { removeRecentProject } from "../../../../../stores/recentProjectsStore";
+import { selectWorkspace } from "../../../../../stores/workspaceStore";
 import { HOME_SHORTCUTS, HOME_TIPS } from "../../homeContent";
 import styles from "./CommandCenter.module.css";
 
@@ -33,7 +35,11 @@ export interface CommandCenterProps {
   onAddRepository: () => void;
   onNewWorkspace: () => void;
   onOpenProject: (proj: HomeProject) => void;
-  onOpenWorkspace: (workspaceId: string, repoPath: string) => void;
+  onOpenWorkspace: (
+    workspaceId: string,
+    repoPath: string,
+    agentId?: string,
+  ) => void;
 }
 
 export function CommandCenter({
@@ -43,7 +49,18 @@ export function CommandCenter({
   onOpenProject,
   onOpenWorkspace,
 }: CommandCenterProps) {
-  const { projects, activeAgents, stats, formatLastOpened } = data;
+  const { projects, activeAgents, devices, stats, formatLastOpened } = data;
+  const runningDevices = devices.filter((d) => d.online);
+
+  const openDevices = () => {
+    selectWorkspace(null);
+    setCenterView("devices");
+  };
+
+  const openAgents = () => {
+    selectWorkspace(null);
+    setCenterView("agents");
+  };
 
   return (
     <div className={styles.wrap}>
@@ -92,6 +109,13 @@ export function CommandCenter({
           delta={`${projects.length} repos`}
         />
         <StatCell label="Repos" value={stats.projects} delta="in rotation" />
+        <StatCell
+          label="Devices"
+          value={stats.devicesRunning}
+          delta={`${stats.devicesTotal} total`}
+          deltaTone={stats.devicesRunning > 0 ? "positive" : "neutral"}
+          live={stats.devicesRunning > 0}
+        />
         <StatCell
           label="Total agents"
           value={activeAgents.length}
@@ -169,6 +193,19 @@ export function CommandCenter({
                 {activeAgents.length} across {stats.projects} repos
               </span>
               <div className={styles.panelSpacer} />
+              <button
+                type="button"
+                onClick={openAgents}
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                View all
+              </button>
             </div>
             <div className={styles.agentList}>
               {activeAgents.length === 0 ? (
@@ -187,10 +224,64 @@ export function CommandCenter({
                     tabIndex={0}
                     style={{ cursor: "pointer" }}
                     onClick={() =>
-                      onOpenWorkspace(a.workspace.id, a.workspace.repo_root)
+                      onOpenWorkspace(
+                        a.workspace.id,
+                        a.workspace.repo_root,
+                        a.id,
+                      )
                     }
                   />
                 ))
+              )}
+            </div>
+          </div>
+
+          <div className={styles.panel}>
+            <div className={styles.panelHead}>
+              <span className={styles.eyebrow}>Running devices</span>
+              <span className={styles.sub}>
+                {runningDevices.length} online · {devices.length} total
+              </span>
+              <div className={styles.panelSpacer} />
+              <button
+                type="button"
+                onClick={openDevices}
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                View all
+              </button>
+            </div>
+            <div className={styles.agentList}>
+              {runningDevices.length === 0 ? (
+                <div className={styles.emptyCell}>
+                  No devices online. Boot a simulator or start an agent.
+                </div>
+              ) : (
+                runningDevices
+                  .slice(0, 6)
+                  .map((d) => (
+                    <AgentRow
+                      key={`${d.platform}:${d.deviceKey}`}
+                      name={d.name}
+                      project={
+                        d.repoRoot
+                          ? basename(d.repoRoot)
+                          : d.platform.toUpperCase()
+                      }
+                      status={d.reserved ? "running" : "idle"}
+                      meta={d.reserved ? "reserved" : "available"}
+                      role="button"
+                      tabIndex={0}
+                      style={{ cursor: "pointer" }}
+                      onClick={openDevices}
+                    />
+                  ))
               )}
             </div>
           </div>

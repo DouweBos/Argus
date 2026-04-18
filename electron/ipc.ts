@@ -44,6 +44,8 @@ import {
 } from "./services/browser/conductorInput";
 import { getMjpegPort } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
+import { listDevices } from "./services/conductor/devices";
+import { conductorLogStore, execConductor } from "./services/conductor/logger";
 import { discoverExtensions } from "./services/extensions/loader";
 import {
   listDirectory,
@@ -130,6 +132,7 @@ import {
   readArgusConfig,
   writeArgusConfig,
   setWorkspaceBaseBranch,
+  getWorkspaceCommitsAhead,
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
   gitPull,
@@ -194,6 +197,11 @@ export function registerIpcHandlers(): void {
   handle("mkdir_path", (a) => mkdirPath(a.path as string));
   handle("delete_path", (a) => deletePath(a.path as string));
   handle("rename_path", (a) => renamePath(a.from as string, a.to as string));
+
+  // Window
+  handle("close_window", () => {
+    getMainWindow()?.close();
+  });
 
   // Workspace CRUD
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
@@ -272,6 +280,9 @@ export function registerIpcHandlers(): void {
   );
   handle("get_workspace_conflicts", (a) =>
     getWorkspaceConflicts(a.id as string),
+  );
+  handle("get_workspace_commits_ahead", (a) =>
+    getWorkspaceCommitsAhead(a.id as string),
   );
   handle("merge_workspace_into_base", (a) =>
     mergeWorkspaceIntoBase(a.id as string),
@@ -566,6 +577,19 @@ export function registerIpcHandlers(): void {
     }
   });
   handle("browser_get_mjpeg_port", () => getMjpegPort());
+
+  // Devices + conductor logs
+  handle("list_devices", () => listDevices());
+  handle("list_conductor_logs", (a) =>
+    conductorLogStore.list(a.deviceKey as string),
+  );
+  handle("run_conductor_command", async (a) => {
+    const deviceKey = a.deviceKey as string;
+    const args = a.args as string[];
+    const hasDeviceFlag = args.some((x) => x === "--device" || x === "-d");
+    const finalArgs = hasDeviceFlag ? args : [...args, "--device", deviceKey];
+    await execConductor(deviceKey, finalArgs);
+  });
 
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));

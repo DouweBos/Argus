@@ -54,6 +54,35 @@ export interface SimulatorDevice {
   udid: string;
 }
 
+export type DevicePlatform = "android" | "ios" | "web";
+
+export interface DeviceInfo {
+  agentId: string | null;
+  deviceKey: string;
+  name: string;
+  online: boolean;
+  platform: DevicePlatform;
+  repoRoot: string | null;
+  reservationKey: string;
+  reserved: boolean;
+  runtime?: string;
+  workspaceId: string | null;
+  workspacePath: string | null;
+}
+
+export interface ConductorLogEntry {
+  args: string;
+  command: string;
+  deviceKey: string;
+  durationMs: number;
+  error?: string;
+  id: number;
+  kind: "cli" | "http";
+  ok: boolean;
+  output?: string;
+  ts: number;
+}
+
 export interface AndroidDevice {
   /** AVD name (emulators only — used to boot). Null for physical devices. */
   avdName: string | null;

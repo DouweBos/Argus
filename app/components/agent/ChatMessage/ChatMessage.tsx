@@ -1,7 +1,7 @@
 import type { ConversationMessage } from "../../../stores/conversationStore";
 import { renderMarkdown } from "../../../lib/markdown";
 import { openImageViewer } from "../../../stores/imageViewerStore";
-import { FileLinkHandler } from "../FileLinkHandler";
+import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
 
@@ -38,11 +38,13 @@ export function ChatMessage({
 
     return (
       <div className={styles.userMsg}>
-        {message.textBlocks.map((text, i) => (
-          <p key={i} className={styles.userText}>
-            {text}
-          </p>
-        ))}
+        <FileLinkHandler>
+          {message.textBlocks.map((text, i) => (
+            <p key={i} className={styles.userText}>
+              <MentionedText text={text} />
+            </p>
+          ))}
+        </FileLinkHandler>
         {images.length > 0 && (
           <div className={styles.userAttachments}>
             {images.map((img, i) => {

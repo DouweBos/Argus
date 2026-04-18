@@ -7,6 +7,7 @@
 
 import type { WebBrowserReservation } from "../../state";
 import http from "node:http";
+import { logConductorHttp } from "../conductor/logger";
 
 export interface BrowserPreset {
   internalWidth: number;
@@ -19,11 +20,11 @@ export interface BrowserPreset {
 // Internal HTTP helper
 // ---------------------------------------------------------------------------
 
-function postJson(
+function postJsonRaw(
   port: number,
   path: string,
   body: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
+): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(body);
     const req = http.request(
@@ -41,11 +42,10 @@ function postJson(
         const chunks: Buffer[] = [];
         res.on("data", (c: Buffer) => chunks.push(c));
         res.on("end", () => {
-          try {
-            resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
-          } catch {
-            resolve({});
-          }
+          resolve({
+            status: res.statusCode ?? 0,
+            body: Buffer.concat(chunks).toString("utf-8"),
+          });
         });
       },
     );
@@ -58,6 +58,38 @@ function postJson(
   });
 }
 
+async function postJson(
+  reservation: WebBrowserReservation,
+  path: string,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const t0 = Date.now();
+  try {
+    const { status, body: raw } = await postJsonRaw(
+      reservation.driverPort,
+      path,
+      body,
+    );
+    const ok = status >= 200 && status < 300;
+    logConductorHttp(reservation.deviceId, "POST", path, body, t0, {
+      ok,
+      output: raw,
+      error: ok ? undefined : `HTTP ${status}`,
+    });
+    try {
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  } catch (e) {
+    logConductorHttp(reservation.deviceId, "POST", path, body, t0, {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    throw e;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API — each maps a Argus IPC call to a Conductor endpoint
 // ---------------------------------------------------------------------------
@@ -67,7 +99,7 @@ export async function tap(
   x: number,
   y: number,
 ): Promise<void> {
-  await postJson(reservation.driverPort, "/tap", { x, y });
+  await postJson(reservation, "/tap", { x, y });
 }
 
 export async function mouseEvent(
@@ -79,7 +111,7 @@ export async function mouseEvent(
 ): Promise<void> {
   switch (type) {
     case "click":
-      await postJson(reservation.driverPort, "/tap", { x, y });
+      await postJson(reservation, "/tap", { x, y });
       break;
     case "move":
       // Conductor has no mouse-move equivalent — skip
@@ -88,7 +120,7 @@ export async function mouseEvent(
     case "up":
       // Simplify down/up to a tap at the position
       if (type === "up") {
-        await postJson(reservation.driverPort, "/tap", { x, y });
+        await postJson(reservation, "/tap", { x, y });
       }
       break;
   }
@@ -100,7 +132,7 @@ export async function keyboardEvent(
   key: string,
 ): Promise<void> {
   // Simplify all key event types to a single press
-  await postJson(reservation.driverPort, "/pressKey", { key });
+  await postJson(reservation, "/pressKey", { key });
 }
 
 export async function wheelEvent(
@@ -112,7 +144,7 @@ export async function wheelEvent(
 ): Promise<void> {
   // The /swipe endpoint negates deltas internally (finger-path → wheel),
   // so we pre-negate here to preserve the original wheel direction.
-  await postJson(reservation.driverPort, "/swipe", {
+  await postJson(reservation, "/swipe", {
     startX: x,
     startY: y,
     endX: x - deltaX,
@@ -138,7 +170,7 @@ export async function navigate(
   reservation: WebBrowserReservation,
   url: string,
 ): Promise<NavState> {
-  const result = await postJson(reservation.driverPort, "/navigate", { url });
+  const result = await postJson(reservation, "/navigate", { url });
 
   return extractNavState(result);
 }
@@ -146,7 +178,7 @@ export async function navigate(
 export async function goBack(
   reservation: WebBrowserReservation,
 ): Promise<NavState> {
-  const result = await postJson(reservation.driverPort, "/goBack", {});
+  const result = await postJson(reservation, "/goBack", {});
 
   return extractNavState(result);
 }
@@ -154,7 +186,7 @@ export async function goBack(
 export async function goForward(
   reservation: WebBrowserReservation,
 ): Promise<NavState> {
-  const result = await postJson(reservation.driverPort, "/goForward", {});
+  const result = await postJson(reservation, "/goForward", {});
 
   return extractNavState(result);
 }
@@ -162,7 +194,7 @@ export async function goForward(
 export async function reload(
   reservation: WebBrowserReservation,
 ): Promise<NavState> {
-  const result = await postJson(reservation.driverPort, "/reload", {});
+  const result = await postJson(reservation, "/reload", {});
 
   return extractNavState(result);
 }
@@ -182,7 +214,7 @@ export async function setViewport(
     colorScheme?: "dark" | "light";
   },
 ): Promise<string | null> {
-  const result = await postJson(reservation.driverPort, "/setViewport", params);
+  const result = await postJson(reservation, "/setViewport", params);
 
   return (result.cdpTargetId as string) ?? null;
 }
@@ -194,5 +226,5 @@ export async function setColorScheme(
   reservation: WebBrowserReservation,
   colorScheme: "dark" | "light",
 ): Promise<void> {
-  await postJson(reservation.driverPort, "/setColorScheme", { colorScheme });
+  await postJson(reservation, "/setColorScheme", { colorScheme });
 }

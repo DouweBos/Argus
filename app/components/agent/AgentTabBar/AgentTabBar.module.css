@@ -12,6 +12,7 @@
 }
 
 .tab {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0;
@@ -23,9 +24,34 @@
   transition:
     background var(--transition-base),
     color var(--transition-base),
-    gap var(--transition-base);
+    gap var(--transition-base),
+    opacity var(--transition-base);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.tab.dragging {
+  opacity: 0.4;
+}
+
+.tab.dropBefore::before,
+.tab.dropAfter::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.tab.dropBefore::before {
+  left: -2px;
+}
+
+.tab.dropAfter::after {
+  right: -2px;
 }
 
 .tab:hover {
@@ -47,6 +73,10 @@
 
 .label {
   line-height: 1;
+}
+
+.statusDots {
+  margin-right: var(--space-2);
 }
 
 .parentBadge {

@@ -10,18 +10,14 @@
  * Modelled on `SimulatorPool` for iOS.
  */
 
-import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import { info } from "../../../app/lib/logger";
 import { appState, type WebBrowserReservation } from "../../state";
+import { execConductor } from "../conductor/logger";
 
-const execFileAsync = promisify(execFile);
-
-const CONDUCTOR_BIN = path.join(os.homedir(), ".argus", "bin", "conductor");
 const CONDUCTOR_DIR = path.join(os.homedir(), ".conductor");
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -171,7 +167,7 @@ class WebBrowserPool {
 
     info(`[web-browser-pool] Starting conductor daemon for ${deviceId}`);
 
-    await execFileAsync(CONDUCTOR_BIN, ["daemon-start", "--device", deviceId], {
+    await execConductor(deviceId, ["daemon-start", "--device", deviceId], {
       env: {
         ...process.env,
         CONDUCTOR_IDLE_TIMEOUT_MS: String(TWENTY_FOUR_HOURS_MS),
@@ -210,7 +206,7 @@ class WebBrowserPool {
     );
 
     try {
-      await execFileAsync(CONDUCTOR_BIN, [
+      await execConductor(reservation.deviceId, [
         "session",
         "--clear",
         "--device",
@@ -221,7 +217,7 @@ class WebBrowserPool {
     }
 
     try {
-      await execFileAsync(CONDUCTOR_BIN, [
+      await execConductor(reservation.deviceId, [
         "daemon-stop",
         "--device",
         reservation.deviceId,

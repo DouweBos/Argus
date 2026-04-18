@@ -1,0 +1,123 @@
+.screen {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 32px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.titleHeading {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-high, #fff);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 120ms ease;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted, rgba(255, 255, 255, 0.6));
+}
+
+.toneSuccess {
+  color: #00d4aa;
+  background: rgba(0, 212, 170, 0.08);
+}
+
+.toneError {
+  color: #ff6680;
+  background: rgba(255, 102, 128, 0.08);
+}
+
+.toneAccent {
+  color: var(--accent, #4d9fff);
+  background: rgba(77, 159, 255, 0.08);
+}
+
+.toneMuted {
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  gap: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.projectChip {
+  font-weight: 500;
+}
+
+.branchChip {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.title {
+  font-size: 13px;
+  color: var(--text-high, rgba(255, 255, 255, 0.88));
+}
+
+.detail {
+  font-size: 12px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  padding-top: 4px;
+  white-space: nowrap;
+}

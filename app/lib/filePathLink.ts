@@ -176,6 +176,57 @@ export type LinkSegment =
   | { label: string; line?: number; path: string; type: "link" }
   | { type: "text"; value: string };
 
+/**
+ * Split plain text on `@mention` tokens (user-typed file references from the
+ * chat input). A mention is `@` followed by non-whitespace, preceded by start
+ * of input or whitespace. Trailing punctuation (`.,;:!?)`]`) is excluded so
+ * `@foo/bar.ts.` links only `@foo/bar.ts`.
+ */
+const MENTION_REGEX = /(^|\s)@([^\s]+)/g;
+const MENTION_TRAILING = /[.,;:!?)\]}>'"]+$/;
+
+export function splitTextForMentions(text: string): LinkSegment[] {
+  const segments: LinkSegment[] = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(MENTION_REGEX)) {
+    const start = match.index ?? 0;
+    const leading = match[1];
+    let token = match[2];
+    const trailMatch = token.match(MENTION_TRAILING);
+    if (trailMatch) {
+      token = token.slice(0, token.length - trailMatch[0].length);
+    }
+    if (!token) {
+      continue;
+    }
+
+    const mentionStart = start + leading.length;
+    if (mentionStart > lastIndex) {
+      segments.push({
+        type: "text",
+        value: text.slice(lastIndex, mentionStart),
+      });
+    }
+
+    const ref = parseFileRef(token);
+    segments.push({
+      type: "link",
+      label: `@${token}`,
+      path: ref.path,
+      line: ref.line,
+    });
+
+    lastIndex = mentionStart + 1 + token.length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: "text", value: text.slice(lastIndex) });
+  }
+
+  return segments;
+}
+
 export function splitTextForLinks(text: string): LinkSegment[] {
   const segments: LinkSegment[] = [];
   let lastIndex = 0;

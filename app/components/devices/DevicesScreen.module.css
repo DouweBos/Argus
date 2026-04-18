@@ -1,0 +1,122 @@
+.screen {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 32px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-high, #fff);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  font-size: 13px;
+  border: 1px dashed var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.04));
+  transition: background 120ms ease;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.row td {
+  padding: 10px;
+  color: var(--text-high, rgba(255, 255, 255, 0.85));
+  vertical-align: middle;
+}
+
+.name {
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+}
+
+.link {
+  color: var(--accent, #4d9fff);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.dash {
+  color: var(--text-muted, rgba(255, 255, 255, 0.35));
+}
+
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: var(--text-muted, rgba(255, 255, 255, 0.3));
+}
+
+.statusDot.on {
+  background: #00d4aa;
+  box-shadow: 0 0 6px rgba(0, 212, 170, 0.7);
+}
+
+.platformBadge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-high, rgba(255, 255, 255, 0.8));
+}

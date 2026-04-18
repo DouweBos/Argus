@@ -1,1 +1,5 @@
-export { FileLinkHandler, LinkifiedText } from "./FileLinkHandler";
+export {
+  FileLinkHandler,
+  LinkifiedText,
+  MentionedText,
+} from "./FileLinkHandler";

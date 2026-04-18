@@ -71,10 +71,18 @@ export interface AgentConversation {
   totalDuration?: number;
 }
 
+export interface PendingImage {
+  attachment: ImageAttachment;
+  name: string;
+  previewUrl: string;
+}
+
 interface ConversationStoreData {
   conversations: Record<string, AgentConversation>;
   /** Draft message text per agent, preserved across tab switches. */
   drafts: Record<string, string>;
+  /** Pending image attachments per agent, preserved across tab switches. */
+  pendingImages: Record<string, PendingImage[]>;
 }
 
 function emptyConversation(): AgentConversation {
@@ -84,6 +92,7 @@ function emptyConversation(): AgentConversation {
 const conversationStore = create<ConversationStoreData>(() => ({
   conversations: {},
   drafts: {},
+  pendingImages: {},
 }));
 
 const useConversationStore = conversationStore;
@@ -367,10 +376,17 @@ export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
                 result = JSON.stringify(raw, null, 2);
               }
 
+              // AskUserQuestion and ExitPlanMode use a deny-with-message
+              // pattern to pass the user's answer back — the CLI marks the
+              // resulting tool_result as is_error, but from the user's POV it's
+              // a successful answer, not a failure.
+              const isDenyAnswerFlow =
+                tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
+
               return {
                 ...tc,
                 result,
-                isError: match.is_error ?? false,
+                isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
               };
             }),
           };
@@ -608,6 +624,34 @@ export function setDraft(agentId: string, text: string) {
 export function getDraft(agentId: string): string {
   return conversationStore.getState().drafts[agentId] ?? "";
 }
+
+const EMPTY_PENDING_IMAGES: PendingImage[] = [];
+
+export function getPendingImages(agentId: string): PendingImage[] {
+  return (
+    conversationStore.getState().pendingImages[agentId] ?? EMPTY_PENDING_IMAGES
+  );
+}
+
+export function setPendingImages(agentId: string, images: PendingImage[]) {
+  conversationStore.setState((state) => {
+    const next = { ...state.pendingImages };
+    if (images.length === 0) {
+      delete next[agentId];
+    } else {
+      next[agentId] = images;
+    }
+
+    return { pendingImages: next };
+  });
+}
+
+export const usePendingImages = (agentId: string | null | undefined) =>
+  useConversationStore((state) =>
+    agentId
+      ? (state.pendingImages[agentId] ?? EMPTY_PENDING_IMAGES)
+      : EMPTY_PENDING_IMAGES,
+  );
 
 export function clearDraft(agentId: string) {
   conversationStore.setState((state) => {

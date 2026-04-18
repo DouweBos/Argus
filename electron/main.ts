@@ -109,6 +109,24 @@ function createWindow(): void {
     },
   });
 
+  // Intercept Cmd+W before the OS menu accelerator fires so the renderer can
+  // close an open agent tab first and only fall through to window close when
+  // no agents remain. Calling preventDefault() on before-input-event cancels
+  // the menu shortcut as well as the in-page keydown.
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    if (
+      input.type === "keyDown" &&
+      input.key.toLowerCase() === "w" &&
+      input.meta &&
+      !input.shift &&
+      !input.alt &&
+      !input.control
+    ) {
+      event.preventDefault();
+      mainWindow?.webContents.send("menu:close-intent");
+    }
+  });
+
   // macOS: hide instead of close on Cmd+W / traffic light, but allow real quit.
   mainWindow.on("close", (e) => {
     log("window close event: isQuitting=%s", isQuitting);
@@ -316,7 +334,7 @@ app.whenReady().then(() => {
         "style-src 'self' 'unsafe-inline' argus-ext:",
         "font-src 'self' argus-ext: data:",
         "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
-        "connect-src 'self' argus-ext: https://open-vsx.org" +
+        "connect-src 'self' argus-ext: data: https://open-vsx.org" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
         "worker-src 'self' blob: argus-ext:",
       ].join("; ");

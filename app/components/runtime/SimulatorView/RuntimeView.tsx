@@ -2,7 +2,11 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
 import { Icons, PlatformChip } from "@argus/peacock";
 import { useActiveToolId } from "../../../stores/layoutStore";
-import { useRuntimeViewSimulatorState } from "../../../stores/simulatorStore";
+import {
+  useActiveDeviceKey,
+  useRuntimeViewSimulatorState,
+} from "../../../stores/simulatorStore";
+import { ConductorLogPanel } from "../../devices/DeviceDialog/ConductorLogPanel";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
 import { IosSimulatorView } from "./IosSimulatorView";
@@ -21,6 +25,7 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
   const { platform, setPlatform, runtimeDialogOpen, setRuntimeDialogOpen } =
     useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId();
+  const activeDeviceKey = useActiveDeviceKey(workspaceId, platform);
 
   useEffect(() => {
     if (activeToolId !== "simulator") {
@@ -79,6 +84,11 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
         className={
           runtimeDialogOpen ? styles.runtimeDialog : styles.runtimeEmbeddedShell
         }
+        style={
+          runtimeDialogOpen
+            ? { display: "flex", flexDirection: "row", gap: 8 }
+            : undefined
+        }
       >
         <div className={styles.runtimeRoot}>
           <button
@@ -113,6 +123,18 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
             </div>
           </div>
         </div>
+        {runtimeDialogOpen && activeDeviceKey && (
+          <div
+            style={{
+              width: 380,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+            }}
+          >
+            <ConductorLogPanel deviceKey={activeDeviceKey} />
+          </div>
+        )}
       </div>
     </>
   );

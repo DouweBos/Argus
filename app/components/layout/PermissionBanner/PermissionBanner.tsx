@@ -1,10 +1,11 @@
 import { useCallback, useMemo } from "react";
 import { respondToPermission } from "../../../lib/ipc";
-import { useAgentsRecord } from "../../../stores/agentStore";
+import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
   clearPermission,
   useConversations,
 } from "../../../stores/conversationStore";
+import { setActiveCenterView } from "../../../stores/editorStore";
 import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
 import { alwaysAllowRule } from "../../agent/alwaysAllowRule";
 import styles from "./PermissionBanner.module.css";
@@ -81,6 +82,12 @@ export function PermissionBanner() {
     return entries;
   }, [conversations, agents, workspaces]);
 
+  const reviewInChat = useCallback((entry: PendingEntry) => {
+    selectWorkspace(entry.workspaceId);
+    setActiveAgent(entry.workspaceId, entry.agentId);
+    setActiveCenterView("agents");
+  }, []);
+
   const respond = useCallback(
     async (
       entry: PendingEntry,
@@ -124,7 +131,7 @@ export function PermissionBanner() {
                 <span>Permission needed</span>
                 <button
                   className={styles.workspace}
-                  onClick={() => selectWorkspace(entry.workspaceId)}
+                  onClick={() => reviewInChat(entry)}
                   title="Open this agent's chat"
                   type="button"
                 >
@@ -161,7 +168,7 @@ export function PermissionBanner() {
               ) : (
                 <button
                   className={`${styles.btn} ${styles.allow}`}
-                  onClick={() => selectWorkspace(entry.workspaceId)}
+                  onClick={() => reviewInChat(entry)}
                   type="button"
                 >
                   Review in chat

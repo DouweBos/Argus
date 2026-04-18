@@ -15,7 +15,11 @@ export interface OrreryProps {
   onAddRepository: () => void;
   onNewWorkspace: () => void;
   onOpenProject: (proj: HomeProject) => void;
-  onOpenWorkspace: (workspaceId: string, repoPath: string) => void;
+  onOpenWorkspace: (
+    workspaceId: string,
+    repoPath: string,
+    agentId?: string,
+  ) => void;
 }
 
 export function Orrery({
@@ -154,7 +158,7 @@ export function Orrery({
                 key={a.id}
                 className={`${styles.tick} ${TICK_CLASSES[a.status] ?? ""}`}
                 onClick={() =>
-                  onOpenWorkspace(a.workspace.id, a.workspace.repo_root)
+                  onOpenWorkspace(a.workspace.id, a.workspace.repo_root, a.id)
                 }
               >
                 <span className={styles.t}>now</span>

@@ -6,12 +6,65 @@ interface AgentStoreData {
   activeAgentId: Record<string, string | null>;
   // All agents, keyed by agent_id
   agents: Record<string, AgentStatus>;
+  // Ordered agent ids per workspace (tab order)
+  order: Record<string, string[]>;
 }
 
 const agentStore = create<AgentStoreData>(() => ({
   agents: {},
   activeAgentId: {},
+  order: {},
 }));
+
+function appendOrder(
+  order: Record<string, string[]>,
+  workspaceId: string,
+  agentId: string,
+): Record<string, string[]> {
+  const existing = order[workspaceId] ?? [];
+  if (existing.includes(agentId)) {
+    return order;
+  }
+
+  return { ...order, [workspaceId]: [...existing, agentId] };
+}
+
+function removeFromOrder(
+  order: Record<string, string[]>,
+  workspaceId: string,
+  agentId: string,
+): Record<string, string[]> {
+  const existing = order[workspaceId];
+  if (!existing) {
+    return order;
+  }
+  const next = existing.filter((id) => id !== agentId);
+  if (next.length === existing.length) {
+    return order;
+  }
+
+  return { ...order, [workspaceId]: next };
+}
+
+function replaceInOrder(
+  order: Record<string, string[]>,
+  workspaceId: string,
+  oldId: string,
+  newId: string,
+): Record<string, string[]> {
+  const existing = order[workspaceId];
+  if (!existing) {
+    return { ...order, [workspaceId]: [newId] };
+  }
+  const idx = existing.indexOf(oldId);
+  if (idx === -1) {
+    return { ...order, [workspaceId]: [...existing, newId] };
+  }
+  const next = existing.slice();
+  next[idx] = newId;
+
+  return { ...order, [workspaceId]: next };
+}
 
 const useAgentStore = agentStore;
 
@@ -22,6 +75,7 @@ export const addAgent = (agent: AgentStatus) => {
       ...state.activeAgentId,
       [agent.workspace_id]: agent.agent_id,
     },
+    order: appendOrder(state.order, agent.workspace_id, agent.agent_id),
   }));
 };
 
@@ -56,8 +110,17 @@ export const removeAgent = (agentId: string) => {
       activeUpdate[agent.workspace_id] =
         remaining.length > 0 ? remaining[0].agent_id : null;
     }
+    const orderUpdate = removeFromOrder(
+      state.order,
+      agent.workspace_id,
+      agentId,
+    );
 
-    return { agents: next, activeAgentId: activeUpdate };
+    return {
+      agents: next,
+      activeAgentId: activeUpdate,
+      order: orderUpdate,
+    };
   });
 };
 
@@ -69,8 +132,53 @@ export const replaceAgent = (oldAgentId: string, newAgent: AgentStatus) => {
     if (activeUpdate[newAgent.workspace_id] === oldAgentId) {
       activeUpdate[newAgent.workspace_id] = newAgent.agent_id;
     }
+    const orderUpdate = replaceInOrder(
+      state.order,
+      newAgent.workspace_id,
+      oldAgentId,
+      newAgent.agent_id,
+    );
 
-    return { agents: next, activeAgentId: activeUpdate };
+    return {
+      agents: next,
+      activeAgentId: activeUpdate,
+      order: orderUpdate,
+    };
+  });
+};
+
+/**
+ * Reorder an agent tab within a workspace. Moves `agentId` so that it occupies
+ * the slot currently held by `targetAgentId`. `position` decides whether the
+ * agent lands immediately before or after the target when dropping.
+ */
+export const reorderAgent = (
+  workspaceId: string,
+  agentId: string,
+  targetAgentId: string,
+  position: "after" | "before" = "before",
+): void => {
+  if (agentId === targetAgentId) {
+    return;
+  }
+  agentStore.setState((state) => {
+    const current = state.order[workspaceId];
+    if (!current) {
+      return state;
+    }
+    const fromIdx = current.indexOf(agentId);
+    const toIdx = current.indexOf(targetAgentId);
+    if (fromIdx === -1 || toIdx === -1) {
+      return state;
+    }
+    const without = current.slice();
+    without.splice(fromIdx, 1);
+    const adjustedTargetIdx = without.indexOf(targetAgentId);
+    const insertIdx =
+      position === "after" ? adjustedTargetIdx + 1 : adjustedTargetIdx;
+    without.splice(insertIdx, 0, agentId);
+
+    return { order: { ...state.order, [workspaceId]: without } };
   });
 };
 
@@ -88,6 +196,33 @@ export const setActiveAgent = (workspaceId: string, agentId: string | null) => {
   }));
 };
 
+/**
+ * Rotate the active agent tab for a workspace. `direction` is +1 for next,
+ * -1 for previous; wraps around. No-op if there are 0 or 1 agents.
+ */
+export const cycleActiveAgent = (
+  workspaceId: string,
+  direction: -1 | 1,
+): void => {
+  const state = agentStore.getState();
+  const ids = Object.values(state.agents)
+    .filter((a) => a.workspace_id === workspaceId)
+    .map((a) => a.agent_id);
+  if (ids.length < 2) {
+    return;
+  }
+  const currentId = state.activeAgentId[workspaceId];
+  const currentIdx = currentId ? ids.indexOf(currentId) : -1;
+  const base = currentIdx === -1 ? 0 : currentIdx;
+  const nextIdx = (base + direction + ids.length) % ids.length;
+  const nextId = ids[nextIdx];
+  if (nextId) {
+    agentStore.setState((s) => ({
+      activeAgentId: { ...s.activeAgentId, [workspaceId]: nextId },
+    }));
+  }
+};
+
 export const getActiveAgent = (workspaceId: string): AgentStatus | null => {
   const state = agentStore.getState();
   const id = state.activeAgentId[workspaceId];
@@ -101,6 +236,13 @@ export const getActiveAgent = (workspaceId: string): AgentStatus | null => {
 export const useAgentsRecord = () => useAgentStore((s) => s.agents);
 
 export const useActiveAgentIds = () => useAgentStore((s) => s.activeAgentId);
+
+export const useAgentOrder = (workspaceId: string | null) =>
+  useAgentStore((s) =>
+    workspaceId ? (s.order[workspaceId] ?? EMPTY_ORDER) : EMPTY_ORDER,
+  );
+
+const EMPTY_ORDER: string[] = [];
 
 export const useAgentStatus = (agentId: string) =>
   useAgentStore((s) => s.agents[agentId]);

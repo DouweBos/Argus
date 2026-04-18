@@ -1,6 +1,7 @@
 import { useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import { CloseIcon } from "../../icons/Icons";
+import { useDismissOnEscape } from "../../lib/modalStack";
 import styles from "./Dialog.module.css";
 
 export interface DialogProps {
@@ -31,6 +32,7 @@ export function Dialog({
   titleExtra,
 }: DialogProps) {
   const mouseDownTarget = useRef<EventTarget | null>(null);
+  useDismissOnEscape(onClose);
 
   const onOverlayMouseDown = useCallback((e: React.MouseEvent) => {
     mouseDownTarget.current = e.target;

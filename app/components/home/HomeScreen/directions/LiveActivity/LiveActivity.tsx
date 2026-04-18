@@ -19,7 +19,11 @@ export interface LiveActivityProps {
   onAddRepository: () => void;
   onNewWorkspace: () => void;
   onOpenProject: (proj: HomeProject) => void;
-  onOpenWorkspace: (workspaceId: string, repoPath: string) => void;
+  onOpenWorkspace: (
+    workspaceId: string,
+    repoPath: string,
+    agentId?: string,
+  ) => void;
 }
 
 /**
@@ -183,7 +187,11 @@ function FeedSection({
   onOpenWorkspace,
 }: {
   agents: HomeAgent[];
-  onOpenWorkspace: (workspaceId: string, repoPath: string) => void;
+  onOpenWorkspace: (
+    workspaceId: string,
+    repoPath: string,
+    agentId?: string,
+  ) => void;
   title: string;
 }) {
   return (
@@ -207,7 +215,9 @@ function FeedSection({
           role="button"
           tabIndex={0}
           style={{ cursor: "pointer" }}
-          onClick={() => onOpenWorkspace(a.workspace.id, a.workspace.repo_root)}
+          onClick={() =>
+            onOpenWorkspace(a.workspace.id, a.workspace.repo_root, a.id)
+          }
         />
       ))}
     </div>
