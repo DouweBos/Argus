@@ -17,8 +17,10 @@ import {
   triggerNewWorkspace,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
+import { useOrganizationSync } from "../../../stores/organizationStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectWorkspace } from "../../../stores/workspaceStore";
+import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";
 import { DirectionPicker } from "./DirectionPicker/DirectionPicker";
 import styles from "./HomeScreen.module.css";
 import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
@@ -30,6 +32,7 @@ import { useHomeDirection } from "./useHomeDirection";
 
 export function HomeScreen() {
   useDevicePoller(5000);
+  useOrganizationSync();
   const data = useHomeData();
   const [direction, setDirection] = useHomeDirection();
   const { openProject } = useProjects();
@@ -170,6 +173,7 @@ export function HomeScreen() {
           </div>
         )}
       </div>
+      <OrganizationDialogHost />
     </div>
   );
 }

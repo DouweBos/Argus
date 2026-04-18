@@ -5,6 +5,7 @@
  */
 
 import type { AgentSession } from "./services/agent/models";
+import type { Organization } from "./services/organization/models";
 import type { TerminalSession } from "./services/terminal/multiplexer";
 import type { Workspace } from "./services/workspace/models";
 import type { WatcherHandle } from "./services/workspace/watcher";
@@ -59,6 +60,9 @@ class AppState {
 
   /** Live Claude Code agent sessions, keyed by agent UUID. */
   agents = new Map<string, AgentSession>();
+
+  /** User-defined organizations grouping related repos, keyed by org UUID. */
+  organizations = new Map<string, Organization>();
 
   /** Active iOS simulator capture session, if any. */
   simulator: SimulatorSession | null = null;
