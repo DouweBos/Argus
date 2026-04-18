@@ -1,3 +1,4 @@
+import { Icons } from "@argus/peacock";
 import {
   type ToolId,
   setToolPanelWidth,
@@ -7,7 +8,6 @@ import {
   useMountedToolIds,
 } from "../../../stores/layoutStore";
 import { ResizablePanel } from "../../layout/ResizablePanel";
-import { CloseIcon } from "../../shared/Icons";
 import { ChangesSummary } from "../tools/ChangesSummary";
 import { SimulatorTool } from "../tools/SimulatorTool";
 import { TerminalTool } from "../tools/TerminalTool";
@@ -67,7 +67,7 @@ export function ToolPanel({ workspaceId }: ToolPanelProps) {
             title="Close panel"
             onClick={() => activeToolId && toggleTool(activeToolId)}
           >
-            <CloseIcon size={10} />
+            <Icons.CloseIcon size={10} />
           </button>
         </div>
         <div className={styles.content}>

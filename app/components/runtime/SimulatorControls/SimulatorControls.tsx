@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Button, Icons } from "@argus/peacock";
 import { error } from "@logger";
 import {
   bootSimulator,
@@ -8,7 +9,6 @@ import {
   stopSimulatorCapture,
 } from "../../../lib/ipc";
 import { useSimulatorControlsState } from "../../../stores/simulatorStore";
-import { BootIcon, DisconnectIcon } from "../../shared/Icons";
 import styles from "./SimulatorControls.module.css";
 
 interface SimulatorControlsProps {
@@ -180,23 +180,25 @@ export function SimulatorControls({ workspaceId }: SimulatorControlsProps) {
       </div>
       <div className={styles.actions}>
         {!isBooted && !capturing ? (
-          <button
-            className={styles.actionBtn}
+          <Button
             disabled={!selectedUdid || booting}
+            leading={<Icons.BootIcon size={11} />}
+            size="sm"
+            variant="secondary"
             onClick={handleBoot}
           >
-            <BootIcon />
             {booting ? "Booting..." : "Boot"}
-          </button>
+          </Button>
         ) : (
-          <button
-            className={`${styles.actionBtn} ${styles.destructive}`}
+          <Button
             disabled={!selectedUdid}
+            leading={<Icons.DisconnectIcon size={11} />}
+            size="sm"
+            variant="danger"
             onClick={handleDisconnect}
           >
-            <DisconnectIcon />
             Disconnect
-          </button>
+          </Button>
         )}
       </div>
     </div>

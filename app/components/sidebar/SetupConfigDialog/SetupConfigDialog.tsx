@@ -5,9 +5,9 @@ import type {
   WorkspaceEnvConfig,
 } from "../../../lib/types";
 import { useEffect, useState } from "react";
+import { Button, Icons, Input, TextArea } from "@argus/peacock";
 import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
-import { ChevronRightIcon, CloseIcon } from "../../shared/Icons";
 
 interface SetupConfigDialogProps {
   onClose: () => void;
@@ -18,6 +18,17 @@ interface SetupConfigDialogProps {
 /* ------------------------------------------------------------------ */
 /*  Hooks                                                              */
 /* ------------------------------------------------------------------ */
+
+function platformLabel(p: string): string {
+  if (p === "ios") {
+    return "iOS";
+  }
+  if (p === "android") {
+    return "Android";
+  }
+
+  return "Web";
+}
 
 function useListState(initial: string[]) {
   const [items, setItems] = useState<string[]>(initial);
@@ -131,7 +142,7 @@ function ConfigSection({
         type="button"
         onClick={() => setOpen((p) => !p)}
       >
-        <ChevronRightIcon
+        <Icons.ChevronRightIcon
           className={`${styles.configSectionChevron} ${open ? styles.configSectionChevronExpanded : ""}`}
         />
         <span className={styles.configSectionTitle}>{title}</span>
@@ -177,8 +188,7 @@ function ListField({ label, placeholder, emptyLabel, list }: ListFieldProps) {
         <div className={styles.listEditor}>
           {list.items.map((item, i) => (
             <div key={i} className={styles.listRow}>
-              <input
-                className={styles.input}
+              <Input
                 placeholder={placeholder}
                 type="text"
                 value={item}
@@ -189,7 +199,7 @@ function ListField({ label, placeholder, emptyLabel, list }: ListFieldProps) {
                 className={styles.removeBtn}
                 onClick={() => list.remove(i)}
               >
-                <CloseIcon />
+                <Icons.CloseIcon size={12} />
               </button>
             </div>
           ))}
@@ -223,16 +233,14 @@ function TerminalField({ list }: TerminalFieldProps) {
         <div className={styles.listEditor}>
           {list.items.map((entry, i) => (
             <div key={i} className={styles.listRow}>
-              <input
-                className={styles.input}
+              <Input
                 placeholder="Name (e.g. Frontend)"
                 style={{ flex: 1 }}
                 type="text"
                 value={entry.name}
                 onChange={(e) => list.update(i, "name", e.target.value)}
               />
-              <input
-                className={styles.input}
+              <Input
                 placeholder="Dir (e.g. packages/web)"
                 style={{ flex: 1 }}
                 type="text"
@@ -244,7 +252,7 @@ function TerminalField({ list }: TerminalFieldProps) {
                 className={styles.removeBtn}
                 onClick={() => list.remove(i)}
               >
-                <CloseIcon />
+                <Icons.CloseIcon size={12} />
               </button>
             </div>
           ))}
@@ -281,8 +289,7 @@ function EnvField({ list }: EnvFieldProps) {
               <div className={styles.envGrid}>
                 <div className={styles.field}>
                   <label className={styles.label}>Env var name</label>
-                  <input
-                    className={styles.input}
+                  <Input
                     placeholder="e.g. ARGUS_PORT"
                     type="text"
                     value={entry.name}
@@ -310,14 +317,13 @@ function EnvField({ list }: EnvFieldProps) {
                       className={styles.removeBtn}
                       onClick={() => list.remove(i)}
                     >
-                      <CloseIcon />
+                      <Icons.CloseIcon size={12} />
                     </button>
                   </div>
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Base value</label>
-                  <input
-                    className={styles.input}
+                  <Input
                     placeholder="8081"
                     type="text"
                     value={entry.base_value}
@@ -328,8 +334,7 @@ function EnvField({ list }: EnvFieldProps) {
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Range</label>
-                  <input
-                    className={styles.input}
+                  <Input
                     placeholder="1000"
                     type="text"
                     value={entry.range}
@@ -385,8 +390,7 @@ function BrowserPresetField({ list }: BrowserPresetFieldProps) {
               <div className={styles.envGrid}>
                 <div className={styles.field}>
                   <label className={styles.label}>ID</label>
-                  <input
-                    className={styles.input}
+                  <Input
                     placeholder="e.g. iphone-15-pro"
                     type="text"
                     value={entry.id}
@@ -398,8 +402,7 @@ function BrowserPresetField({ list }: BrowserPresetFieldProps) {
                   <div
                     style={{ display: "flex", gap: 6, alignItems: "center" }}
                   >
-                    <input
-                      className={styles.input}
+                    <Input
                       placeholder="e.g. iPhone 15 Pro"
                       style={{ flex: 1 }}
                       type="text"
@@ -411,14 +414,13 @@ function BrowserPresetField({ list }: BrowserPresetFieldProps) {
                       className={styles.removeBtn}
                       onClick={() => list.remove(i)}
                     >
-                      <CloseIcon />
+                      <Icons.CloseIcon size={12} />
                     </button>
                   </div>
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Width</label>
-                  <input
-                    className={styles.input}
+                  <Input
                     placeholder="393"
                     type="text"
                     value={entry.width}
@@ -427,8 +429,7 @@ function BrowserPresetField({ list }: BrowserPresetFieldProps) {
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Height</label>
-                  <input
-                    className={styles.input}
+                  <Input
                     placeholder="852"
                     type="text"
                     value={entry.height}
@@ -438,8 +439,7 @@ function BrowserPresetField({ list }: BrowserPresetFieldProps) {
               </div>
               <div className={styles.field} style={{ marginTop: 4 }}>
                 <label className={styles.label}>User Agent (optional)</label>
-                <input
-                  className={styles.input}
+                <Input
                   placeholder="Defaults to desktop Chrome UA"
                   type="text"
                   value={entry.user_agent}
@@ -864,7 +864,7 @@ export function SetupConfigDialog({
                         )
                       }
                     />
-                    {p === "ios" ? "iOS" : p === "android" ? "Android" : "Web"}
+                    {platformLabel(p)}
                   </label>
                 ))}
               </div>
@@ -880,9 +880,8 @@ export function SetupConfigDialog({
               <label className={styles.label} htmlFor="setup-browser-url">
                 Default browser URL
               </label>
-              <input
+              <Input
                 autoComplete="url"
-                className={styles.input}
                 id="setup-browser-url"
                 placeholder="http://localhost:3000"
                 type="text"
@@ -900,16 +899,14 @@ export function SetupConfigDialog({
             <div className={styles.field}>
               <p className={styles.sectionTitle}>Run Command</p>
               <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  className={styles.input}
+                <Input
                   placeholder="npx expo start"
                   style={{ flex: 2 }}
                   type="text"
                   value={runCommand}
                   onChange={(e) => setRunCommand(e.target.value)}
                 />
-                <input
-                  className={styles.input}
+                <Input
                   placeholder="Directory (optional)"
                   style={{ flex: 1 }}
                   type="text"
@@ -937,8 +934,7 @@ export function SetupConfigDialog({
           >
             <div className={styles.field}>
               <p className={styles.sectionTitle}>System Prompt</p>
-              <textarea
-                className={styles.input}
+              <TextArea
                 placeholder="Additional instructions appended to every agent's system prompt..."
                 rows={4}
                 style={{ resize: "vertical", fontFamily: "inherit" }}
@@ -972,7 +968,7 @@ export function SetupConfigDialog({
             type="button"
             onClick={() => setShowPreview((p) => !p)}
           >
-            <ChevronRightIcon
+            <Icons.ChevronRightIcon
               className={`${styles.configSectionChevron} ${showPreview ? styles.configSectionChevronExpanded : ""}`}
             />
             {showPreview ? "Hide JSON" : "Show JSON"}
@@ -984,17 +980,17 @@ export function SetupConfigDialog({
       )}
 
       <div className={styles.stickyFooter}>
-        <button className={styles.cancelBtn} type="button" onClick={onClose}>
+        <Button variant="secondary" type="button" onClick={onClose}>
           Cancel
-        </button>
-        <button
-          className={styles.submitBtn}
+        </Button>
+        <Button
+          variant="primary"
           disabled={isSaving || isLoading || !repoRoot}
           type="button"
           onClick={handleSave}
         >
           {isSaving ? "Saving..." : "Save .argus.json"}
-        </button>
+        </Button>
       </div>
     </Dialog>
   );

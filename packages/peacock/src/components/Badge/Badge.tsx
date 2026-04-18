@@ -3,16 +3,16 @@ import styles from "./Badge.module.css";
 
 export type BadgeTone =
   | "accent"
-  | "success"
-  | "warning"
   | "error"
   | "neutral"
-  | "neutralFilled";
+  | "neutralFilled"
+  | "success"
+  | "warning";
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone;
   /** Taller pill used for status banners ("initializing", "error"). */
-  size?: "tag" | "pill";
+  size?: "pill" | "tag";
 }
 
 export function Badge({
@@ -30,6 +30,7 @@ export function Badge({
   ]
     .filter(Boolean)
     .join(" ");
+
   return (
     <span className={classes} {...rest}>
       {children}
@@ -37,7 +38,7 @@ export function Badge({
   );
 }
 
-export type StatusTone = "success" | "warning" | "accent" | "error" | "idle";
+export type StatusTone = "accent" | "error" | "idle" | "success" | "warning";
 
 export interface StatusDotProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: StatusTone;
@@ -52,15 +53,15 @@ export function StatusDot({
   className,
   ...rest
 }: StatusDotProps) {
-  const dotClass = [
-    styles.dotLight,
-    styles[tone],
-    pulse ? styles.pulse : "",
-  ]
+  const dotClass = [styles.dotLight, styles[tone], pulse ? styles.pulse : ""]
     .filter(Boolean)
     .join(" ");
+
   return (
-    <span className={[styles.dot, className].filter(Boolean).join(" ")} {...rest}>
+    <span
+      className={[styles.dot, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       <span className={dotClass} />
       {label}
     </span>

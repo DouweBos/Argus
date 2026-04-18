@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDownIcon } from "../../shared/Icons";
+import { Icons } from "@argus/peacock";
 import styles from "./TodoList.module.css";
 
 export interface TodoItem {
@@ -35,18 +35,18 @@ export function TodoList({ todos }: TodoListProps) {
           </span>
         </div>
         <span className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`}>
-          <ChevronDownIcon size={12} />
+          <Icons.ChevronDownIcon size={12} />
         </span>
       </button>
       {open && (
         <div className={styles.list}>
           {todos.map((todo, i) => {
-            const statusClass =
-              todo.status === "completed"
-                ? styles.completed
-                : todo.status === "in_progress"
-                  ? styles.inProgress
-                  : styles.pending;
+            let statusClass = styles.pending;
+            if (todo.status === "completed") {
+              statusClass = styles.completed;
+            } else if (todo.status === "in_progress") {
+              statusClass = styles.inProgress;
+            }
             const label =
               todo.status === "in_progress" && todo.activeForm
                 ? todo.activeForm

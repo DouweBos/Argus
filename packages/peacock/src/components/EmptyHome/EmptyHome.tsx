@@ -1,8 +1,11 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import styles from "./EmptyHome.module.css";
 import { ArgusLogo } from "../../icons/Icons";
+import styles from "./EmptyHome.module.css";
 
-export interface EmptyHomeProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
+export interface EmptyHomeProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "title"
+> {
   title?: ReactNode;
   tagline?: ReactNode;
   /** Primary/secondary CTAs, rendered in a row. */
@@ -26,7 +29,10 @@ export function EmptyHome({
   ...rest
 }: EmptyHomeProps) {
   return (
-    <div className={[styles.wrap, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.wrap, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {glow && <div className={styles.glow} aria-hidden />}
       <div className={styles.brand}>
         <div className={styles.logo}>

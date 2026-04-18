@@ -61,10 +61,11 @@
 }
 
 .chevron {
-  font-size: 9px;
   color: var(--text-muted);
   flex-shrink: 0;
   width: 9px;
+  display: flex;
+  align-items: center;
   opacity: 0;
   transition: opacity var(--transition-base);
 }
@@ -74,10 +75,9 @@
   opacity: 0.6;
 }
 
-/* Tool name — teal accent, monospace */
+/* Tool name — accent, monospace */
 .name {
-  font-size: var(--font-size-xs);
-  font-family: var(--font-mono);
+  font: var(--type-code);
   font-weight: 600;
   color: var(--accent);
   flex-shrink: 0;
@@ -85,49 +85,27 @@
 
 /* Summary text — the file path or command */
 .summary {
-  font-size: var(--font-size-xs);
+  font: var(--type-code);
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
   min-width: 0;
-  font-family: var(--font-mono);
 }
 
-/* Status tags — small, subtle, pill-shaped */
-.doneTag {
-  font-size: 10px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-pill);
-  background: transparent;
-  color: var(--text-muted);
+/* Status tag overrides — keep flex-shrink so they don't compress the summary */
+.doneTag,
+.pendingTag,
+.runningTag {
   flex-shrink: 0;
-  font-weight: 500;
-  line-height: 18px;
+}
+
+.doneTag {
   opacity: 0.55;
 }
 
-.errorTag {
-  font-size: 10px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-pill);
-  background: var(--error-bg);
-  color: var(--error);
-  flex-shrink: 0;
-  font-weight: 500;
-  line-height: 18px;
-}
-
 .pendingTag {
-  font-size: 10px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-pill);
-  background: rgba(245, 166, 35, 0.08);
-  color: var(--warning);
-  flex-shrink: 0;
-  font-weight: 500;
-  line-height: 18px;
   animation: pendingPulse 2s ease-in-out infinite;
 }
 
@@ -139,17 +117,6 @@
   50% {
     opacity: 0.6;
   }
-}
-
-.runningTag {
-  font-size: 10px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-pill);
-  background: rgba(77, 159, 255, 0.08);
-  color: var(--accent);
-  flex-shrink: 0;
-  font-weight: 500;
-  line-height: 18px;
 }
 
 /* Pending card gets a subtle left accent */
@@ -177,26 +144,23 @@
 }
 
 .sectionLabel {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font: var(--type-eyebrow);
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
 }
 
 .code {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
+  font: var(--type-code);
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: var(--border-radius-sm);
-  padding: 8px 10px;
+  padding: var(--space-4) var(--space-5);
   white-space: pre-wrap;
   word-break: break-all;
   color: var(--text-secondary);
   max-height: 200px;
   overflow-y: auto;
-  line-height: 1.6;
 }
 
 .bash {
@@ -233,55 +197,10 @@
   outline-color: var(--accent);
 }
 
-/* Permission action buttons — Air style */
+/* Permission action buttons row */
 .permissionActions {
   display: flex;
   gap: 8px;
   padding-top: 4px;
-}
-
-.allowBtn,
-.allowAllBtn,
-.denyBtn {
-  padding: 6px 18px;
-  border-radius: var(--border-radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background var(--transition-base),
-    box-shadow var(--transition-base),
-    opacity var(--transition-base);
-}
-
-.allowBtn {
-  background: var(--accent-gradient);
-  color: var(--accent-fg);
-}
-
-.allowBtn:hover {
-  box-shadow: 0 0 20px var(--accent-glow);
-}
-
-.allowAllBtn {
-  background: transparent;
-  color: var(--accent);
-  border: 1px solid rgba(77, 159, 255, 0.25);
-}
-
-.allowAllBtn:hover {
-  background: rgba(77, 159, 255, 0.08);
-  border-color: rgba(77, 159, 255, 0.4);
-}
-
-.denyBtn {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--glass-border);
-}
-
-.denyBtn:hover {
-  background: rgba(255, 68, 102, 0.08);
-  color: var(--error);
-  border-color: rgba(255, 68, 102, 0.25);
+  flex-wrap: wrap;
 }

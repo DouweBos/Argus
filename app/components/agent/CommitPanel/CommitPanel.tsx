@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { getGitAuthor, gitCommit } from "../../../lib/ipc";
 import { md5Hex } from "../../../lib/md5";
@@ -187,20 +188,22 @@ export function CommitPanel({
 
       {commitError && <div className={styles.commitError}>{commitError}</div>}
       <div className={styles.commitActions}>
-        <button
-          className={styles.stageAllBtn}
+        <Button
+          size="sm"
+          variant="ghost"
           onClick={() => onAction(allStaged ? onUnstageAll : onStageAll)}
         >
           {allStaged ? "Unstage All" : "Stage All"}
-        </button>
-        <button
-          className={styles.commitBtn}
+        </Button>
+        <Button
+          size="sm"
+          variant="primary"
           disabled={!anyStaged || !commitSubject.trim() || isCommitting}
           title={commitBtnTitle}
           onClick={handleCommit}
         >
           {isCommitting ? "Committing..." : "Commit"}
-        </button>
+        </Button>
       </div>
     </div>
   );

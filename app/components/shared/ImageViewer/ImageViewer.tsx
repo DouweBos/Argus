@@ -6,6 +6,7 @@ import {
   useImageViewerFallbackSrc,
   useImageViewerSrc,
 } from "../../../stores/imageViewerStore";
+import { CloseIcon } from "../Icons";
 import styles from "./ImageViewer.module.css";
 import { constrainPan, fitTransform, usePanZoom } from "./usePanZoom";
 
@@ -164,8 +165,9 @@ function ImageViewerOverlay({
           aria-label="Close"
           className={styles.closeBtn}
           onClick={closeImageViewer}
+          type="button"
         >
-          ✕
+          <CloseIcon size={12} />
         </button>
         <div
           ref={(el) => {

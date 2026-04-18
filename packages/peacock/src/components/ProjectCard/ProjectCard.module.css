@@ -132,7 +132,7 @@
   font-weight: 500;
 }
 .agentPill.warn {
-  background: rgba(245, 166, 35, 0.08);
+  background: rgba(255, 213, 74, 0.1);
   color: var(--warning);
 }
 .agentPill.err {

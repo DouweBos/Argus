@@ -115,6 +115,7 @@
     "@codingame/monaco-vscode-workspace-trust-service-override": "~28.3.0",
     "@codingame/monaco-vscode-xml-default-extension": "~28.3.0",
     "@codingame/monaco-vscode-yaml-default-extension": "~28.3.0",
+    "@argus/peacock": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-search": "^0.16.0",

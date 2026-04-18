@@ -1,14 +1,14 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
-import styles from "./Planet.module.css";
 import { FolderIcon, ArrowForwardIcon } from "../../icons/Icons";
-import { StatusDot } from "../Badge/Badge";
-import { DiffStat } from "../DiffStat/DiffStat";
 import {
   agentStatusPulse,
   agentStatusTone,
   type AgentStatus,
 } from "../../lib/agentStatus";
+import { StatusDot } from "../Badge/Badge";
+import { DiffStat } from "../DiffStat/DiffStat";
 import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
+import styles from "./Planet.module.css";
 
 export interface PlanetAgent {
   id?: string;
@@ -60,8 +60,7 @@ export function Planet({
     ...(accent ? { ["--planet-accent" as string]: accent } : {}),
     ...(accentGlow || accent
       ? {
-          ["--planet-glow" as string]:
-            accentGlow ?? `${accent}33`,
+          ["--planet-glow" as string]: accentGlow ?? `${accent}33`,
         }
       : {}),
     ["--px" as string]: facing === "left" ? "0%" : "100%",
@@ -77,7 +76,11 @@ export function Planet({
       {...rest}
     >
       <div className={styles.row}>
-        <div className={[styles.icon, hasLive ? styles.live : ""].filter(Boolean).join(" ")}>
+        <div
+          className={[styles.icon, hasLive ? styles.live : ""]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <FolderIcon size={14} />
         </div>
         <div className={styles.name}>{name}</div>

@@ -5,12 +5,14 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from "react";
-import styles from "./ChatInput.module.css";
-import { Button } from "../Button/Button";
 import { SendIcon } from "../../icons/Icons";
+import { Button } from "../Button/Button";
+import styles from "./ChatInput.module.css";
 
-export interface ChatInputProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "onChange" | "onSubmit"> {
+export interface ChatInputProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "onChange" | "onSubmit"
+> {
   value: string;
   placeholder?: string;
   disabled?: boolean;
@@ -45,7 +47,10 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     };
 
     return (
-      <div className={[styles.wrap, className].filter(Boolean).join(" ")} {...rest}>
+      <div
+        className={[styles.wrap, className].filter(Boolean).join(" ")}
+        {...rest}
+      >
         <textarea
           ref={ref}
           className={styles.textarea}

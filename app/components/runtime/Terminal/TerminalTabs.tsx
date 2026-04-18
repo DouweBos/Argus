@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, Icons } from "@argus/peacock";
 import {
   createTerminal,
   destroyTerminal,
@@ -20,7 +21,6 @@ import {
   useTerminalSessionsSlice,
 } from "../../../stores/terminalStore";
 import { getWorkspaceState } from "../../../stores/workspaceStore";
-import { CloseIcon, PlayIcon, TerminalIcon } from "../../shared/Icons";
 import { ShellTerminal } from "./ShellTerminal";
 import styles from "./TerminalTabs.module.css";
 
@@ -157,7 +157,11 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
                 className={`${styles.tab} ${session.id === activeId ? styles.activeTab : ""} ${isRun ? styles.runTab : ""}`}
                 onClick={() => setActiveSession(workspaceId, session.id)}
               >
-                {isRun ? <PlayIcon /> : <TerminalIcon />}
+                {isRun ? (
+                  <Icons.PlayIcon size={11} />
+                ) : (
+                  <Icons.TerminalIcon size={11} />
+                )}
                 <span className={styles.tabTitle}>{session.title}</span>
                 {!isRun && (
                   <span
@@ -171,7 +175,7 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
                       handleClose(e as unknown as React.MouseEvent, session.id)
                     }
                   >
-                    <CloseIcon size={10} />
+                    <Icons.CloseIcon size={10} />
                   </span>
                 )}
               </button>
@@ -185,7 +189,11 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
           title="New terminal"
           onClick={handleCreate}
         >
-          {isCreating ? "…" : "+"}
+          {isCreating ? (
+            <Icons.EllipsisIcon size={10} />
+          ) : (
+            <Icons.PlusIcon size={11} />
+          )}
         </button>
       </div>
 
@@ -194,9 +202,14 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
         {sessions.length === 0 ? (
           <div className={styles.empty}>
             <p className={styles.emptyText}>No terminals open.</p>
-            <button className={styles.newTermBtn} onClick={handleCreate}>
-              <TerminalIcon /> New Terminal
-            </button>
+            <Button
+              leading={<Icons.TerminalIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleCreate}
+            >
+              New Terminal
+            </Button>
           </div>
         ) : (
           sortedSessions.map((session) => {

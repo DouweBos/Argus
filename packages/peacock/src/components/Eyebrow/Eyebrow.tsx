@@ -7,7 +7,10 @@ export interface EyebrowProps extends HTMLAttributes<HTMLDivElement> {
 
 export function Eyebrow({ count, children, className, ...rest }: EyebrowProps) {
   return (
-    <div className={[styles.eyebrow, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.eyebrow, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       <span>{children}</span>
       {count != null && <span className={styles.count}>{count}</span>}
     </div>

@@ -3,6 +3,7 @@ import type {
   ToolResultBlock,
 } from "../../../stores/conversationStore";
 import { useCallback, useState, type ReactNode } from "react";
+import { Badge, Button, Icons } from "@argus/peacock";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { EditDiffView } from "../EditDiffView";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
@@ -334,7 +335,13 @@ export function ToolCallCard({
         className={styles.header}
         onClick={() => setUserExpanded((v) => !v)}
       >
-        <span className={styles.chevron}>{expanded ? "▾" : "▸"}</span>
+        <span className={styles.chevron}>
+          {expanded ? (
+            <Icons.ChevronDownIcon size={9} />
+          ) : (
+            <Icons.ChevronRightIcon size={9} />
+          )}
+        </span>
         <span className={styles.name}>
           {isAgent ? agentType : toolCall.name}
         </span>
@@ -342,15 +349,21 @@ export function ToolCallCard({
           {isAgent ? agentDesc : <LinkifiedText text={summary} />}
         </span>
         {isPending && (
-          <span className={styles.pendingTag}>awaiting permission</span>
+          <Badge tone="warning" className={styles.pendingTag}>
+            awaiting permission
+          </Badge>
         )}
         {hasResult && !toolCall.isError && !isPending && (
-          <span className={styles.doneTag}>done</span>
+          <Badge tone="neutral" className={styles.doneTag}>
+            done
+          </Badge>
         )}
         {isAgent && !hasResult && !toolCall.isError && !isPending && (
-          <span className={styles.runningTag}>running</span>
+          <Badge tone="accent" className={styles.runningTag}>
+            running
+          </Badge>
         )}
-        {toolCall.isError && <span className={styles.errorTag}>error</span>}
+        {toolCall.isError && <Badge tone="error">error</Badge>}
       </button>
 
       {expanded && (
@@ -426,15 +439,15 @@ export function ToolCallCard({
             !isExitPlanMode &&
             !(isAskUserQuestion && questions.length > 0) && (
               <div className={styles.permissionActions}>
-                <button className={styles.allowBtn} onClick={handleAllow}>
+                <Button variant="primary" size="sm" onClick={handleAllow}>
                   Allow
-                </button>
-                <button className={styles.allowAllBtn} onClick={handleAllowAll}>
+                </Button>
+                <Button variant="secondary" size="sm" onClick={handleAllowAll}>
                   Always Allow {allowRule}
-                </button>
-                <button className={styles.denyBtn} onClick={handleDeny}>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleDeny}>
                   Deny
-                </button>
+                </Button>
               </div>
             )}
         </div>

@@ -5,17 +5,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../hooks/useDiffFiles";
 import { gitIndexPath } from "../../../lib/diffParser";
 import { stageAll, stageFile, unstageAll, unstageFile } from "../../../lib/ipc";
 import { ResizablePanel } from "../../layout/ResizablePanel";
-import {
-  CheckIcon,
-  FileIcon,
-  FilterIcon,
-  MinusIcon,
-  PlusIcon,
-} from "../../shared/Icons";
 import { ChangesToolbar } from "../ChangesToolbar";
 import { CommitPanel } from "../CommitPanel";
 import { FileDiffView } from "../FileDiffView";
@@ -163,7 +157,7 @@ export function DiffViewer({
   if (noChanges) {
     diffDetailContent = (
       <div className={styles.emptyState}>
-        <CheckIcon size={24} />
+        <Icons.CheckIcon size={24} />
         <p>No changes</p>
       </div>
     );
@@ -196,7 +190,7 @@ export function DiffViewer({
   } else {
     diffDetailContent = (
       <div className={styles.emptyState}>
-        <FileIcon size={48} />
+        <Icons.FileIcon size={48} />
         <p>No file selected</p>
       </div>
     );
@@ -263,7 +257,7 @@ export function DiffViewer({
                 title="Stage selected files"
                 onClick={handleStageSelected}
               >
-                <PlusIcon size={12} />
+                <Icons.PlusIcon size={12} />
               </button>
               <button
                 className={styles.bottomBarBtn}
@@ -271,11 +265,11 @@ export function DiffViewer({
                 title="Unstage selected files"
                 onClick={handleUnstageSelected}
               >
-                <MinusIcon size={12} />
+                <Icons.MinusIcon size={12} />
               </button>
               <div className={styles.bottomBarSpacer} />
               <button className={styles.bottomBarBtn} disabled title="Filter">
-                <FilterIcon size={11} />
+                <Icons.FilterIcon size={11} />
               </button>
             </div>
           </div>

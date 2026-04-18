@@ -1,9 +1,11 @@
 import { forwardRef, type InputHTMLAttributes } from "react";
-import styles from "./PalettePill.module.css";
 import { Kbd } from "../Kbd/Kbd";
+import styles from "./PalettePill.module.css";
 
-export interface PalettePillProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
+export interface PalettePillProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "size"
+> {
   hotkey?: string[];
   /** Leading prefix. Defaults to a forward slash. */
   prefix?: string;

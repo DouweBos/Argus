@@ -139,8 +139,8 @@
 
 .metaValue {
   color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font: var(--type-mono-badge);
+  font-weight: 400;
   word-break: break-all;
 }
 

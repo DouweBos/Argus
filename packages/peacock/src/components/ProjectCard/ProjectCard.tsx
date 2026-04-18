@@ -1,16 +1,10 @@
 import type { CSSProperties, HTMLAttributes, MouseEventHandler } from "react";
-import styles from "./ProjectCard.module.css";
-import { FolderIcon } from "../../icons/Icons";
 import { StarIcon } from "../../icons/HomeIcons";
-import {
-  PlatformChip,
-  type Platform,
-} from "../PlatformChip/PlatformChip";
+import { FolderIcon } from "../../icons/Icons";
+import { agentStatusTone, type AgentStatus } from "../../lib/agentStatus";
 import { StatusDot } from "../Badge/Badge";
-import {
-  agentStatusTone,
-  type AgentStatus,
-} from "../../lib/agentStatus";
+import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
+import styles from "./ProjectCard.module.css";
 
 export interface ProjectCardAgent {
   status: AgentStatus;
@@ -29,11 +23,37 @@ export interface ProjectCardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 function pickPillStatus(agents: ProjectCardAgent[]): AgentStatus | "empty" {
-  if (!agents.length) return "empty";
-  if (agents.some((a) => a.status === "error")) return "error";
-  if (agents.some((a) => a.status === "pending")) return "pending";
-  if (agents.some((a) => a.status === "running")) return "running";
+  if (!agents.length) {
+    return "empty";
+  }
+  if (agents.some((a) => a.status === "error")) {
+    return "error";
+  }
+  if (agents.some((a) => a.status === "pending")) {
+    return "pending";
+  }
+  if (agents.some((a) => a.status === "running")) {
+    return "running";
+  }
+
   return "idle";
+}
+
+function pickPillClass(
+  pillStatus: AgentStatus | "empty",
+  s: Record<string, string>,
+): string {
+  if (pillStatus === "error") {
+    return s.err;
+  }
+  if (pillStatus === "pending") {
+    return s.warn;
+  }
+  if (pillStatus === "running") {
+    return "";
+  }
+
+  return s.muted;
 }
 
 export function ProjectCard({
@@ -50,14 +70,7 @@ export function ProjectCard({
   ...rest
 }: ProjectCardProps) {
   const pillStatus = pickPillStatus(agents);
-  const pillClass =
-    pillStatus === "error"
-      ? styles.err
-      : pillStatus === "pending"
-        ? styles.warn
-        : pillStatus === "running"
-          ? ""
-          : styles.muted;
+  const pillClass = pickPillClass(pillStatus, styles);
 
   const dotStatus: AgentStatus =
     pillStatus === "empty" ? "idle" : (pillStatus as AgentStatus);

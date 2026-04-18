@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { type DiffFile, gitIndexPath } from "../../../lib/diffParser";
 import { stageFile, unstageFile } from "../../../lib/ipc";
-import { StagedIcon } from "../../shared/Icons";
 import styles from "./FileList.module.css";
 
 export interface FileListProps {
@@ -408,7 +408,7 @@ export function FileList({
             }}
           >
             <span className={styles.fileItemStatus}>
-              <StagedIcon
+              <Icons.StagedIcon
                 className={stagedIconClassForFile(file.staged)}
                 staged={file.staged}
               />

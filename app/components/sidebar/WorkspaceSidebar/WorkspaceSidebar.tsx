@@ -1,11 +1,22 @@
 import { useState } from "react";
+import {
+  CommitIcon,
+  Icons,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarHeaderAction,
+  SidebarItem,
+  SidebarNav,
+  SidebarNavGroup,
+  SidebarScroll,
+  SidebarSection,
+} from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import {
   selectWorkspace,
   toggleProjectCollapsed,
   useSelectedWorkspaceId,
 } from "../../../stores/workspaceStore";
-import { HomeIcon, PlusIcon } from "../../shared/Icons";
 import { OpenProjectDialog } from "../OpenProjectDialog";
 import { ProjectSegment } from "../ProjectSegment";
 import styles from "./WorkspaceSidebar.module.css";
@@ -15,33 +26,60 @@ export function WorkspaceSidebar() {
   const selectedId = useSelectedWorkspaceId();
   const [showOpenProject, setShowOpenProject] = useState(false);
 
-  // Sort by addedAt ascending (oldest first, newest at bottom)
   const sorted = [...projects].sort((a, b) => a.addedAt - b.addedAt);
+  const totalWorkspaces = sorted.length;
+
+  const handleAdd = () => setShowOpenProject(true);
 
   return (
-    <div className={styles.sidebar}>
-      {error && <p className={styles.errorMsg}>{error}</p>}
+    <SidebarNav
+      framed
+      className={styles.sidebar}
+      style={{ width: "100%" }}
+      aria-label="Argus sidebar"
+    >
+      <SidebarHeader
+        brand={
+          <>
+            <Icons.ArgusLogo size={16} />
+            <span>Argus</span>
+          </>
+        }
+        actions={
+          <>
+            <SidebarHeaderAction title="New workspace" onClick={handleAdd}>
+              <Icons.PlusIcon size={12} />
+            </SidebarHeaderAction>
+            <SidebarHeaderAction title="Open repo" onClick={handleAdd}>
+              <Icons.FolderIcon size={12} />
+            </SidebarHeaderAction>
+          </>
+        }
+      />
 
-      {/* Home header */}
-      <div className={styles.homeRow}>
-        <button
-          className={`${styles.homeHeader} ${selectedId === null ? styles.homeHeaderActive : ""}`}
-          title="Home"
-          type="button"
+      <SidebarNavGroup>
+        <SidebarItem
+          active={selectedId === null}
+          leading={<Icons.HomeIcon size={12} />}
+          count="—"
           onClick={() => selectWorkspace(null)}
         >
-          <HomeIcon />
-          <span className={styles.homeLabel}>Home</span>
-        </button>
-      </div>
+          Home
+        </SidebarItem>
+        <SidebarItem leading={<Icons.MergeIcon size={12} />} count={0} disabled>
+          Review queue
+        </SidebarItem>
+        <SidebarItem leading={<CommitIcon size={12} />} count="∞" disabled>
+          Activity
+        </SidebarItem>
+      </SidebarNavGroup>
 
-      {/* Project segments */}
-      <div className={styles.projectList}>
+      <SidebarScroll>
+        {error && <p className={styles.errorMsg}>{error}</p>}
+
+        <SidebarSection count={totalWorkspaces}>Workspaces</SidebarSection>
         {sorted.length === 0 ? (
-          <div className={styles.empty}>
-            <p className={styles.emptyText}>No projects open.</p>
-            <p className={styles.emptyHint}>Add a repository to get started.</p>
-          </div>
+          <p className={styles.empty}>No active workspaces.</p>
         ) : (
           sorted.map((project) => (
             <ProjectSegment
@@ -53,18 +91,11 @@ export function WorkspaceSidebar() {
             />
           ))
         )}
-      </div>
+      </SidebarScroll>
 
-      {/* Add repository at the bottom */}
-      <div className={styles.bottomBar}>
-        <button
-          className={styles.addProjectBtn}
-          onClick={() => setShowOpenProject(true)}
-        >
-          <PlusIcon size={14} />
-          Add repository
-        </button>
-      </div>
+      <SidebarFooter leading={<Icons.PlusIcon size={11} />} onClick={handleAdd}>
+        Add repository
+      </SidebarFooter>
 
       {showOpenProject && (
         <OpenProjectDialog
@@ -72,6 +103,6 @@ export function WorkspaceSidebar() {
           onOpen={openProject}
         />
       )}
-    </div>
+    </SidebarNav>
   );
 }

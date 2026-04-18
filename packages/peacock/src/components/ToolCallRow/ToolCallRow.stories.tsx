@@ -22,7 +22,11 @@ export const Timeline: Story = {
         detail="pnpm install --frozen-lockfile"
         status="pending"
       />
-      <ToolCallRow tool="Edit" detail="app/styles/global.css" status="running" />
+      <ToolCallRow
+        tool="Edit"
+        detail="app/styles/global.css"
+        status="running"
+      />
     </div>
   ),
 };

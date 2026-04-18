@@ -17,9 +17,24 @@ export const Live: Story = {
     when: "2m ago",
     accent: "#4d9fff",
     agents: [
-      { id: "a1", name: "feat/workspace-card", status: "running", tool: "running" },
-      { id: "a2", name: "fix/diff-hunk-staging", status: "pending", tool: "perm" },
-      { id: "a3", name: "refactor/ipc-types", status: "running", tool: "running" },
+      {
+        id: "a1",
+        name: "feat/workspace-card",
+        status: "running",
+        tool: "running",
+      },
+      {
+        id: "a2",
+        name: "fix/diff-hunk-staging",
+        status: "pending",
+        tool: "perm",
+      },
+      {
+        id: "a3",
+        name: "refactor/ipc-types",
+        status: "running",
+        tool: "running",
+      },
     ],
     diff: { add: 128, del: 47, files: 12 },
   },

@@ -107,14 +107,14 @@ Drop this in any repo root to make it Argus-ready:
 }
 ```
 
-| Field            | Purpose                                                    |
-| ---------------- | ---------------------------------------------------------- |
-| `setup.copy`     | Dirs/files copied into each new worktree (supports globs)  |
-| `setup.symlink`  | Files symlinked from the main repo (supports globs)        |
-| `setup.commands` | Shell commands run after copy/symlink                      |
-| `terminals`      | Tabs auto-opened per workspace (name + working dir)        |
-| `workspace_env`  | Env var set per-workspace with a unique port/offset        |
-| `run`            | Command executed by the Run button                         |
+| Field            | Purpose                                                   |
+| ---------------- | --------------------------------------------------------- |
+| `setup.copy`     | Dirs/files copied into each new worktree (supports globs) |
+| `setup.symlink`  | Files symlinked from the main repo (supports globs)       |
+| `setup.commands` | Shell commands run after copy/symlink                     |
+| `terminals`      | Tabs auto-opened per workspace (name + working dir)       |
+| `workspace_env`  | Env var set per-workspace with a unique port/offset       |
+| `run`            | Command executed by the Run button                        |
 
 `.argus.local.json` (gitignored) overrides or extends the base config.
 
@@ -126,30 +126,30 @@ Three-panel desktop shell: sources/workspaces on the left, the agent + editor + 
 
 React 19 + TypeScript + Vite 7. Zustand for state, CSS Modules for styling. Typed IPC wrappers in `app/lib/ipc.ts`; shared types in `app/lib/types.ts`.
 
-| Area                     | What lives here                                                                |
-| ------------------------ | ------------------------------------------------------------------------------ |
-| `components/agent/`      | Chat, tool-call cards, orchestration tree, git views, diff viewer, model picker|
-| `components/editor/`     | Embedded Monaco / VS Code panel                                                |
-| `components/runtime/`    | Simulator view, web browser view, terminal tabs, merge bar                     |
-| `components/sidebar/`    | Workspace list, create/setup dialogs, branch switcher                          |
-| `components/toolrail/`   | Right-rail tools (simulator, terminal, changes summary)                        |
-| `stores/`                | Zustand stores — workspace, terminal, agent, conversation                      |
+| Area                   | What lives here                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `components/agent/`    | Chat, tool-call cards, orchestration tree, git views, diff viewer, model picker |
+| `components/editor/`   | Embedded Monaco / VS Code panel                                                 |
+| `components/runtime/`  | Simulator view, web browser view, terminal tabs, merge bar                      |
+| `components/sidebar/`  | Workspace list, create/setup dialogs, branch switcher                           |
+| `components/toolrail/` | Right-rail tools (simulator, terminal, changes summary)                         |
+| `stores/`              | Zustand stores — workspace, terminal, agent, conversation                       |
 
 ### Backend — `electron/`
 
 Electron main process in TypeScript. All services are single-threaded around an `AppState` singleton.
 
-| Service                 | Responsibility                                                          |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `services/agent/`       | Claude Code subprocess, stream-json parsing, permission broker, history |
-| `services/workspace/`   | Worktree CRUD, setup pipeline, file watcher, merge engine               |
-| `services/terminal/`    | `node-pty` multiplexer with environment fixup                           |
-| `services/simulator/`   | iOS (`simctl` + native bridge) and Android (scrcpy + H.264) pipelines   |
-| `services/browser/`     | CDP screencast + MJPEG pipe for the embedded web browser                |
-| `services/mcp/`         | MCP server exposing Argus primitives to external agents                 |
-| `services/extensions/`  | VS Code extension loading for the embedded editor                       |
-| `services/file/`        | Workspace file list/read/write                                          |
-| `services/shell/`       | One-shot shell operations                                               |
+| Service                | Responsibility                                                          |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `services/agent/`      | Claude Code subprocess, stream-json parsing, permission broker, history |
+| `services/workspace/`  | Worktree CRUD, setup pipeline, file watcher, merge engine               |
+| `services/terminal/`   | `node-pty` multiplexer with environment fixup                           |
+| `services/simulator/`  | iOS (`simctl` + native bridge) and Android (scrcpy + H.264) pipelines   |
+| `services/browser/`    | CDP screencast + MJPEG pipe for the embedded web browser                |
+| `services/mcp/`        | MCP server exposing Argus primitives to external agents                 |
+| `services/extensions/` | VS Code extension loading for the embedded editor                       |
+| `services/file/`       | Workspace file list/read/write                                          |
+| `services/shell/`      | One-shot shell operations                                               |
 
 ### Native — `native/argus-sim-bridge/`
 
@@ -170,16 +170,16 @@ Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wra
 
 ## Key technical decisions
 
-| Decision                                   | Why                                                                  |
-| ------------------------------------------ | -------------------------------------------------------------------- |
-| `node-pty` for terminals                   | Same as VS Code — fast spawn, reliable PTY                           |
-| Git CLI over libgit2                       | libgit2's worktree support is incomplete                             |
-| Claude Code as a `stream-json` subprocess  | Structured events over piped stdio, not a fragile interactive PTY    |
-| Native binary for the iOS simulator bridge | Private CoreSimulator frameworks are unreachable from Node.js        |
-| Worktrees outside the project directory    | Keeps the user's repo and git client clean                           |
-| Zustand over Redux/Context                 | Minimal boilerplate, no providers, clean async                       |
-| `@codingame/monaco-vscode-api`             | Real VS Code — editor, explorer, search — without forking VS Code    |
-| MCP server baked in                        | Any MCP-aware agent can drive Argus workspaces out of the box        |
+| Decision                                   | Why                                                               |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| `node-pty` for terminals                   | Same as VS Code — fast spawn, reliable PTY                        |
+| Git CLI over libgit2                       | libgit2's worktree support is incomplete                          |
+| Claude Code as a `stream-json` subprocess  | Structured events over piped stdio, not a fragile interactive PTY |
+| Native binary for the iOS simulator bridge | Private CoreSimulator frameworks are unreachable from Node.js     |
+| Worktrees outside the project directory    | Keeps the user's repo and git client clean                        |
+| Zustand over Redux/Context                 | Minimal boilerplate, no providers, clean async                    |
+| `@codingame/monaco-vscode-api`             | Real VS Code — editor, explorer, search — without forking VS Code |
+| MCP server baked in                        | Any MCP-aware agent can drive Argus workspaces out of the box     |
 
 ## License
 

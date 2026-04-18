@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
+import { Icons, PlatformChip } from "@argus/peacock";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import { useRuntimeViewSimulatorState } from "../../../stores/simulatorStore";
-import { EnlargeIcon, ShrinkIcon } from "../../shared/Icons";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
 import { IosSimulatorView } from "./IosSimulatorView";
@@ -34,24 +34,21 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
 
   const toggle = (
     <div className={styles.platformToggle}>
-      <PlatformButton
+      <PlatformChip
         active={platform === "ios"}
+        platform="ios"
         onClick={() => setPlatform("ios")}
-      >
-        iOS
-      </PlatformButton>
-      <PlatformButton
+      />
+      <PlatformChip
         active={platform === "android"}
+        platform="android"
         onClick={() => setPlatform("android")}
-      >
-        Android
-      </PlatformButton>
-      <PlatformButton
+      />
+      <PlatformChip
         active={platform === "web"}
+        platform="web"
         onClick={() => setPlatform("web")}
-      >
-        Web
-      </PlatformButton>
+      />
     </div>
   );
 
@@ -91,9 +88,9 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
             onClick={toggleRuntimeDialog}
           >
             {runtimeDialogOpen ? (
-              <ShrinkIcon size={11} />
+              <Icons.ShrinkIcon size={11} />
             ) : (
-              <EnlargeIcon size={11} />
+              <Icons.EnlargeIcon size={11} />
             )}
           </button>
           <div className={styles.layout}>
@@ -118,24 +115,5 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
         </div>
       </div>
     </>
-  );
-}
-
-function PlatformButton({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`${styles.platformBtn} ${active ? styles.platformBtnActive : ""}`}
-      onClick={onClick}
-    >
-      {children}
-    </button>
   );
 }

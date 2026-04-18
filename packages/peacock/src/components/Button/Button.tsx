@@ -2,12 +2,13 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import styles from "./Button.module.css";
 
 export type ButtonVariant =
+  | "danger"
+  | "ghost"
   | "primary"
   | "secondary"
-  | "ghost"
-  | "danger"
-  | "send";
-export type ButtonSize = "sm" | "md" | "lg";
+  | "send"
+  | "stop";
+export type ButtonSize = "lg" | "md" | "sm";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -32,7 +33,7 @@ export function Button({
   type = "button",
   ...rest
 }: ButtonProps) {
-  const showSize = variant !== "send";
+  const showSize = variant !== "send" && variant !== "stop";
   const classes = [
     styles.button,
     styles[variant],

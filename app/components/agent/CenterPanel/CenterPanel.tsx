@@ -1,11 +1,11 @@
 import { useMemo } from "react";
+import { Chip, EmptyHome, Icons } from "@argus/peacock";
 import {
   setActiveCenterView,
   useActiveCenterView,
 } from "../../../stores/editorStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { EditorPanel } from "../../editor/EditorPanel";
-import { ArgusLogo, HomeIcon } from "../../shared/Icons";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import { HomePanel } from "../HomePanel";
@@ -31,13 +31,10 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
   if (!workspaceId || !workspace) {
     return (
       <div className={styles.empty}>
-        <div className={styles.emptyContent}>
-          <ArgusLogo className={styles.logo} />
-          <h2 className={styles.emptyTitle}>Argus</h2>
-          <p className={styles.emptySubtitle}>
-            Select or create a workspace to begin.
-          </p>
-        </div>
+        <EmptyHome
+          title="Argus"
+          tagline="select or create a workspace to begin"
+        />
       </div>
     );
   }
@@ -47,32 +44,36 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
       {/* View switcher */}
       <div className={styles.navRow}>
         <div className={styles.viewSwitcher}>
-          <button
+          <Chip
+            interactive
             aria-label="Repo home"
-            className={`${styles.homeTab} ${activeView === "home" ? styles.viewTabActive : ""}`}
             title="Repo home"
+            className={activeView === "home" ? styles.chipActive : undefined}
             onClick={() => setActiveView("home")}
           >
-            <HomeIcon />
-          </button>
-          <button
-            className={`${styles.viewTab} ${activeView === "agents" ? styles.viewTabActive : ""}`}
+            <Icons.HomeIcon size={12} />
+          </Chip>
+          <Chip
+            interactive
+            className={activeView === "agents" ? styles.chipActive : undefined}
             onClick={() => setActiveView("agents")}
           >
             Agents
-          </button>
-          <button
-            className={`${styles.viewTab} ${activeView === "editor" ? styles.viewTabActive : ""}`}
+          </Chip>
+          <Chip
+            interactive
+            className={activeView === "editor" ? styles.chipActive : undefined}
             onClick={() => setActiveView("editor")}
           >
             Editor
-          </button>
-          <button
-            className={`${styles.viewTab} ${activeView === "git" ? styles.viewTabActive : ""}`}
+          </Chip>
+          <Chip
+            interactive
+            className={activeView === "git" ? styles.chipActive : undefined}
             onClick={() => setActiveView("git")}
           >
             Git
-          </button>
+          </Chip>
         </div>
       </div>
 

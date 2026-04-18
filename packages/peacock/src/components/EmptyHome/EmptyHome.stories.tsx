@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { EmptyHome } from "./EmptyHome";
-import { Button } from "../Button/Button";
-import { TipCard } from "../TipCard/TipCard";
-import { Kbd } from "../Kbd/Kbd";
-import { FolderIcon } from "../../icons/Icons";
 import { SparkleIcon } from "../../icons/HomeIcons";
+import { FolderIcon } from "../../icons/Icons";
+import { Button } from "../Button/Button";
+import { Kbd } from "../Kbd/Kbd";
+import { TipCard } from "../TipCard/TipCard";
+import { EmptyHome } from "./EmptyHome";
 
 const meta: Meta<typeof EmptyHome> = {
   title: "Composites/EmptyHome",
@@ -56,13 +56,37 @@ export const Default: Story = {
         }
         shortcuts={
           <>
-            <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11, color: "var(--text-muted)" }}>
+            <span
+              style={{
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
               <Kbd keys={["⌘", "O"]} /> Open repo
             </span>
-            <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11, color: "var(--text-muted)" }}>
+            <span
+              style={{
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
               <Kbd keys={["⌘", "N"]} /> New workspace
             </span>
-            <span style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11, color: "var(--text-muted)" }}>
+            <span
+              style={{
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+                fontSize: 11,
+                color: "var(--text-muted)",
+              }}
+            >
               <Kbd keys={["⌘", "K"]} /> Command palette
             </span>
           </>

@@ -5,7 +5,7 @@
 
 .cmdActive :global(.file-link) {
   cursor: pointer;
-  color: var(--color-accent, #4da3ff);
+  color: var(--accent);
 }
 
 .cmdActive :global(.file-link):hover {

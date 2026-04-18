@@ -128,8 +128,7 @@
 }
 
 .commitHash {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font: var(--type-mono-badge);
   color: var(--text-muted);
 }
 
@@ -194,12 +193,12 @@
 
 .metaValue {
   color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font: var(--type-mono-badge);
   word-break: break-all;
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
+  font-weight: 400;
 }
 
 .metaRefBadge {

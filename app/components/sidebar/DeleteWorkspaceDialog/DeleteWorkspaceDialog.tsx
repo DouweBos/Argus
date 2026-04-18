@@ -1,5 +1,6 @@
 import type { Workspace } from "../../../lib/types";
 import { useState } from "react";
+import { Button } from "@argus/peacock";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface DeleteWorkspaceDialogProps {
@@ -59,16 +60,12 @@ export function DeleteWorkspaceDialog({
         {error && <p className={styles.errorMsg}>{error}</p>}
 
         <div className={styles.footer}>
-          <button className={styles.cancelBtn} type="button" onClick={onClose}>
+          <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            className={styles.submitBtnDanger}
-            disabled={isDeleting}
-            type="submit"
-          >
+          </Button>
+          <Button variant="danger" disabled={isDeleting} type="submit">
             {isDeleting ? "Deleting..." : "Delete"}
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>

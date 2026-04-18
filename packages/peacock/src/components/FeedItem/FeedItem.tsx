@@ -1,14 +1,15 @@
-import type { HTMLAttributes, ReactNode } from "react";
-import styles from "./FeedItem.module.css";
-import { TerminalIcon, MergeIcon } from "../../icons/Icons";
-import {
-  CommitIcon,
-  SparkleIcon,
-  WarningIcon,
-} from "../../icons/HomeIcons";
 import type { AgentStatus } from "../../lib/agentStatus";
+import type { HTMLAttributes, ReactNode } from "react";
+import { CommitIcon, SparkleIcon, WarningIcon } from "../../icons/HomeIcons";
+import { TerminalIcon, MergeIcon } from "../../icons/Icons";
+import styles from "./FeedItem.module.css";
 
-export type FeedKind = "tool_call" | "permission" | "commit" | "build" | "merge";
+export type FeedKind =
+  | "build"
+  | "commit"
+  | "merge"
+  | "permission"
+  | "tool_call";
 
 export interface FeedItemProps extends HTMLAttributes<HTMLDivElement> {
   kind: FeedKind;
@@ -34,10 +35,19 @@ const KIND_ICON: Record<FeedKind, ReactNode> = {
 };
 
 function toneClass(kind: FeedKind, status?: AgentStatus): string {
-  if (status === "pending") return "pending";
-  if (status === "running") return "running";
-  if (status === "error") return "error";
-  if (kind === "merge") return "merge";
+  if (status === "pending") {
+    return "pending";
+  }
+  if (status === "running") {
+    return "running";
+  }
+  if (status === "error") {
+    return "error";
+  }
+  if (kind === "merge") {
+    return "merge";
+  }
+
   return "";
 }
 
@@ -54,6 +64,7 @@ export function FeedItem({
   ...rest
 }: FeedItemProps) {
   const tone = toneClass(kind, status);
+
   return (
     <div
       className={[styles.item, tone && styles[tone], className]
@@ -62,7 +73,9 @@ export function FeedItem({
       {...rest}
     >
       <div
-        className={[styles.icon, tone && styles[tone]].filter(Boolean).join(" ")}
+        className={[styles.icon, tone && styles[tone]]
+          .filter(Boolean)
+          .join(" ")}
       >
         {KIND_ICON[kind] ?? <SparkleIcon size={13} />}
       </div>
@@ -71,7 +84,11 @@ export function FeedItem({
           <span className={styles.projectChip}>{project}</span>
           <span className={styles.agentChip}>/ {agent}</span>
         </div>
-        <div className={[styles.text, mono ? styles.textMono : ""].filter(Boolean).join(" ")}>
+        <div
+          className={[styles.text, mono ? styles.textMono : ""]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {text}
         </div>
         {actions && <div className={styles.actions}>{actions}</div>}

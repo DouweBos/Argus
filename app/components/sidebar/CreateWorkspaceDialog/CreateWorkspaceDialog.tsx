@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Button, Input } from "@argus/peacock";
 import { useProjectWorkspaces } from "../../../hooks/useWorkspaces";
 import { listAllBranches } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
@@ -169,11 +170,10 @@ export function CreateWorkspaceDialog({
           <label className={styles.label} htmlFor="branch-input">
             Branch
           </label>
-          <input
+          <Input
             ref={inputRef}
             autoComplete="off"
             autoFocus
-            className={styles.input}
             id="branch-input"
             placeholder="Search or create branch…"
             type="text"
@@ -199,8 +199,7 @@ export function CreateWorkspaceDialog({
           <label className={styles.label} htmlFor="description-input">
             Description
           </label>
-          <input
-            className={styles.input}
+          <Input
             id="description-input"
             placeholder="What are you building?"
             type="text"
@@ -212,16 +211,16 @@ export function CreateWorkspaceDialog({
         {error && <p className={styles.errorMsg}>{error}</p>}
 
         <div className={styles.footer}>
-          <button className={styles.cancelBtn} type="button" onClick={onClose}>
+          <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            className={styles.submitBtn}
+          </Button>
+          <Button
+            variant="primary"
             disabled={isCreating || !trimmedBranch}
             type="submit"
           >
             {isCreating ? "Creating..." : "Create Workspace"}
-          </button>
+          </Button>
         </div>
       </form>
     </Dialog>

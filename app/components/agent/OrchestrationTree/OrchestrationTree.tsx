@@ -1,9 +1,9 @@
 import type { AgentStatus, Workspace } from "../../../lib/types";
 import { useMemo } from "react";
+import { Badge, Eyebrow, Icons, StatusDot } from "@argus/peacock";
 import { stopAgentById } from "../../../lib/agentEventService";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
-import { CloseIcon } from "../../shared/Icons";
 import styles from "./OrchestrationTree.module.css";
 
 interface OrchestrationTreeProps {
@@ -41,18 +41,31 @@ const STATUS_ORDER: Record<string, number> = {
   error: 3,
 };
 
-function statusClass(status: string): string {
+type PeacockAgentStatus = "done" | "error" | "idle" | "pending" | "running";
+
+function statusTone(status: string): "error" | "idle" | "success" {
+  if (status === "running") {
+    return "success";
+  }
+  if (status === "error") {
+    return "error";
+  }
+
+  return "idle";
+}
+
+function toPeacockStatus(status: string): PeacockAgentStatus {
   switch (status) {
     case "running":
-      return styles.statusRunning;
+      return "running";
     case "idle":
-      return styles.statusIdle;
+      return "idle";
     case "stopped":
-      return styles.statusStopped;
+      return "done";
     case "error":
-      return styles.statusError;
+      return "error";
     default:
-      return styles.statusStopped;
+      return "idle";
   }
 }
 
@@ -164,8 +177,7 @@ export function OrchestrationTree({
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <span className={styles.headerTitle}>{title}</span>
-        <span className={styles.headerCount}>{visibleAgents.length} total</span>
+        <Eyebrow count={visibleAgents.length}>{title}</Eyebrow>
         {showFilter && workspacesWithAgents.length > 0 && (
           <select
             aria-label="Filter by workspace"
@@ -195,9 +207,7 @@ export function OrchestrationTree({
             {group.showHeader && (
               <div className={styles.workspaceGroupHeader}>
                 <span className={styles.workspaceGroupName}>{group.label}</span>
-                <span className={styles.workspaceGroupCount}>
-                  {group.nodes.length}
-                </span>
+                <Badge tone="neutral">{group.nodes.length}</Badge>
               </div>
             )}
             {group.nodes.map((node) => (
@@ -220,25 +230,25 @@ export function OrchestrationTree({
         <div className={styles.summary}>
           {counts.running > 0 && (
             <div className={styles.summaryItem}>
-              <span className={`${styles.statusDot} ${styles.statusRunning}`} />
+              <StatusDot tone="success" pulse />
               {counts.running} running
             </div>
           )}
           {counts.idle > 0 && (
             <div className={styles.summaryItem}>
-              <span className={`${styles.statusDot} ${styles.statusIdle}`} />
+              <StatusDot tone="idle" />
               {counts.idle} idle
             </div>
           )}
           {counts.stopped > 0 && (
             <div className={styles.summaryItem}>
-              <span className={`${styles.statusDot} ${styles.statusStopped}`} />
+              <StatusDot tone="idle" />
               {counts.stopped} done
             </div>
           )}
           {counts.error > 0 && (
             <div className={styles.summaryItem}>
-              <span className={`${styles.statusDot} ${styles.statusError}`} />
+              <StatusDot tone="error" />
               {counts.error} error
             </div>
           )}
@@ -324,18 +334,23 @@ function AgentNodeRow({
         onClick={() => onSelect(node.agent.agent_id, node.agent.workspace_id)}
       >
         {depth > 0 && <span className={styles.connector} />}
-        <span
-          className={`${styles.statusDot} ${statusClass(node.agent.status)}`}
+        <StatusDot
+          tone={statusTone(node.agent.status)}
+          pulse={node.agent.status === "running"}
           title={node.agent.status}
         />
         <span className={styles.agentName}>{label}</span>
         {isOrchestrator && (
-          <span className={styles.orchestratorBadge}>orchestrator</span>
+          <Badge tone="accent" size="pill" className={styles.orchestratorBadge}>
+            orchestrator
+          </Badge>
         )}
         {node.branch && depth > 0 && (
           <span className={styles.agentBranch}>{node.branch}</span>
         )}
-        <span className={styles.statusLabel}>{node.agent.status}</span>
+        <span className={styles.statusLabel}>
+          {toPeacockStatus(node.agent.status)}
+        </span>
         {isAlive && (
           <button
             className={styles.stopBtn}
@@ -345,7 +360,7 @@ function AgentNodeRow({
               stopAgentById(node.agent.agent_id).catch(() => {});
             }}
           >
-            <CloseIcon size={10} />
+            <Icons.CloseIcon size={10} />
           </button>
         )}
       </div>

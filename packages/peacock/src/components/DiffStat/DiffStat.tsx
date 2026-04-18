@@ -15,7 +15,10 @@ export function DiffStat({
   ...rest
 }: DiffStatProps) {
   return (
-    <span className={[styles.stat, className].filter(Boolean).join(" ")} {...rest}>
+    <span
+      className={[styles.stat, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {added != null && <span className={styles.add}>+{added}</span>}
       {removed != null && <span className={styles.del}>−{removed}</span>}
       {files != null && <span className={styles.files}>{files}</span>}

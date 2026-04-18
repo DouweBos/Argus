@@ -1,8 +1,8 @@
 import type { HTMLAttributes } from "react";
-import styles from "./WorkspaceCard.module.css";
 import { BranchIcon } from "../../icons/Icons";
-import { DiffStat } from "../DiffStat/DiffStat";
 import { StatusDot, type StatusTone } from "../Badge/Badge";
+import { DiffStat } from "../DiffStat/DiffStat";
+import styles from "./WorkspaceCard.module.css";
 
 export interface WorkspaceCardProps extends HTMLAttributes<HTMLDivElement> {
   branch: string;
@@ -36,6 +36,7 @@ export function WorkspaceCard({
   ]
     .filter(Boolean)
     .join(" ");
+
   return (
     <div className={classes} {...rest}>
       <div className={styles.top}>

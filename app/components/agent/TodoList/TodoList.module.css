@@ -101,7 +101,7 @@
 
 .inProgress .checkbox {
   border-color: var(--accent);
-  background: rgba(77, 159, 255, 0.15);
+  background: rgba(245, 166, 35, 0.15);
   box-shadow: 0 0 6px var(--accent-glow);
 }
 

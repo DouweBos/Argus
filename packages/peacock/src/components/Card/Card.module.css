@@ -3,8 +3,10 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   padding: var(--space-8);
-  transition: background var(--transition-base),
-    transform var(--transition-base), box-shadow var(--transition-base),
+  transition:
+    background var(--transition-base),
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
     border-color var(--transition-base);
 }
 
@@ -19,7 +21,7 @@
   border-style: dashed;
 }
 .dashed:hover {
-  border-color: rgba(77, 159, 255, 0.3);
+  border-color: rgba(245, 166, 35, 0.3);
   box-shadow: 0 0 20px var(--accent-glow);
 }
 
@@ -33,7 +35,7 @@
 }
 
 .selected {
-  background: rgba(77, 159, 255, 0.06);
+  background: rgba(245, 166, 35, 0.06);
   box-shadow: inset 3px 0 0 var(--accent);
   border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
 }

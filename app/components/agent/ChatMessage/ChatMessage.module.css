@@ -24,8 +24,8 @@
 
 .userText {
   display: inline-block;
-  background: rgba(77, 159, 255, 0.06);
-  border: 1px solid rgba(77, 159, 255, 0.12);
+  background: rgba(245, 166, 35, 0.06);
+  border: 1px solid rgba(245, 166, 35, 0.12);
   border-radius: 16px 16px 4px 16px;
   padding: 10px 16px;
   font-size: var(--font-size-sm);
@@ -52,8 +52,8 @@
   padding: 0;
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(77, 159, 255, 0.18);
-  background: rgba(77, 159, 255, 0.04);
+  border: 1px solid rgba(245, 166, 35, 0.18);
+  background: rgba(245, 166, 35, 0.04);
   cursor: zoom-in;
   transition:
     border-color var(--transition-base),
@@ -61,7 +61,7 @@
 }
 
 .userAttachment:hover {
-  border-color: rgba(77, 159, 255, 0.4);
+  border-color: rgba(245, 166, 35, 0.4);
   transform: translateY(-1px);
 }
 
@@ -176,7 +176,7 @@
 }
 
 .markdown blockquote {
-  border-left: 3px solid rgba(77, 159, 255, 0.25);
+  border-left: 3px solid rgba(245, 166, 35, 0.25);
   padding-left: 14px;
   color: var(--text-muted);
   margin: 10px 0;
@@ -185,7 +185,7 @@
 .markdown a {
   color: var(--accent);
   text-decoration: none;
-  border-bottom: 1px solid rgba(77, 159, 255, 0.2);
+  border-bottom: 1px solid rgba(245, 166, 35, 0.2);
   transition: border-color var(--transition-base);
 }
 

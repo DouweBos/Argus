@@ -23,8 +23,12 @@ export const ToolCallTags: Story = {
 export const StatusPills: Story = {
   render: () => (
     <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-      <Badge tone="warning" size="tag">initializing</Badge>
-      <Badge tone="error" size="tag">error</Badge>
+      <Badge tone="warning" size="tag">
+        initializing
+      </Badge>
+      <Badge tone="error" size="tag">
+        error
+      </Badge>
     </div>
   ),
 };

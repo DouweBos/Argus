@@ -52,24 +52,7 @@
   flex-shrink: 0;
 }
 
-/* Discard button in file header */
-.actionBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--border-radius-sm);
-  color: var(--text-muted);
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.actionBtnDanger:hover {
-  background: color-mix(in srgb, var(--error) 20%, transparent);
-  color: var(--error);
-}
+/* Discard button is a Peacock Button variant="danger" — no extra styles needed. */
 
 /* Staged / Unstaged toggle */
 .stagedToggle {
@@ -112,6 +95,9 @@
 /* --- Stats subheader --- */
 
 .fileDiffStats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
   padding: 5px 14px;
   font-size: var(--font-size-xs);
   font-family: var(--font-mono);
@@ -119,6 +105,11 @@
   background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   flex-shrink: 0;
+}
+
+.chunkCount {
+  color: var(--text-muted);
+  font: var(--type-mono-badge);
 }
 
 /* --- Diff content --- */
@@ -138,21 +129,14 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: var(--space-4);
   padding: 4px 12px;
   background: transparent;
   border-top: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
-.footerStats {
-  font-size: var(--font-size-xs);
+.footerChunks {
+  font: var(--type-mono-badge);
   color: var(--text-muted);
-}
-
-.statAdd {
-  color: var(--success);
-}
-
-.statRemove {
-  color: var(--error);
 }

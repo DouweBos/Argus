@@ -6,7 +6,9 @@
    Mirrors app/styles/global.css from the Argus codebase.
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+/* Note: fonts are not loaded here. Consumers are responsible for providing
+   Inter and JetBrains Mono (see `@argus/peacock/fonts.css` for a Google Fonts
+   shim usable in web/Storybook contexts). */
 
 :root {
   /* ─── Backgrounds ─── deep, slightly blue-tinted blacks */
@@ -24,17 +26,18 @@
   --text-secondary: #a0a0b8;
   --text-muted: #55556a;
 
-  /* ─── Accent ─── blue system */
-  --accent: #4d9fff;
-  --accent-hover: #70b3ff;
-  --accent-secondary: #3a7edf;
+  /* ─── Accent ─── amber system */
+  --accent: #f5a623;
+  --accent-hover: #ffbe4d;
+  --accent-secondary: #c78519;
   --accent-fg: #0a0a0f;
-  --accent-glow: rgba(77, 159, 255, 0.15);
-  --accent-gradient: linear-gradient(135deg, #4d9fff, #7c5cfc);
+  --accent-glow: rgba(245, 166, 35, 0.2);
+  --accent-glow-strong: rgba(245, 166, 35, 0.1);
+  --accent-gradient: linear-gradient(135deg, #f5a623, #ff7a4d);
 
   /* ─── Semantic ─── */
   --success: #00d4aa;
-  --warning: #f5a623;
+  --warning: #ffd54a;
   --error: #ff4466;
   --error-bg: rgba(255, 68, 102, 0.08);
   --error-fg: #ffffff;
@@ -58,10 +61,10 @@
   --border-radius-pill: 999px;
 
   /* ─── Typography ─── */
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Menlo,
-    monospace;
+  --font-ui:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Menlo, monospace;
 
   --font-size-xs: 11px;
   --font-size-sm: 12px;
@@ -115,10 +118,34 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1 { font: var(--type-display); letter-spacing: -0.04em; }
-h2 { font: var(--type-h1); letter-spacing: -0.01em; }
-h3 { font: var(--type-h2); }
-p  { font: var(--type-body); color: var(--text-primary); }
-small, .caption { font: var(--type-caption); color: var(--text-muted); }
-.eyebrow { font: var(--type-eyebrow); text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
-code, pre, .mono { font: var(--type-code); }
+h1 {
+  font: var(--type-display);
+  letter-spacing: -0.04em;
+}
+h2 {
+  font: var(--type-h1);
+  letter-spacing: -0.01em;
+}
+h3 {
+  font: var(--type-h2);
+}
+p {
+  font: var(--type-body);
+  color: var(--text-primary);
+}
+small,
+.caption {
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+.eyebrow {
+  font: var(--type-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+code,
+pre,
+.mono {
+  font: var(--type-code);
+}

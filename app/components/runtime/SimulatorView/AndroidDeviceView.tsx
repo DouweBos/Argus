@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Icons } from "@argus/peacock";
 import { error } from "@logger";
 import {
   ANDROID_KEYCODE_MAP,
@@ -16,13 +17,6 @@ import {
   stopAndroidCapture,
 } from "../../../lib/ipc";
 import { useAndroidDeviceSimulatorState } from "../../../stores/simulatorStore";
-import {
-  AndroidBackIcon,
-  AndroidHomeIcon,
-  AndroidRecentsIcon,
-  BootIcon,
-  DisconnectIcon,
-} from "../../shared/Icons";
 import chrome from "../RuntimeChrome.module.css";
 import { AndroidDeviceStreamView } from "./AndroidDeviceStreamView";
 import { RunButton } from "./RunButton";
@@ -307,7 +301,7 @@ export function AndroidDeviceView({
             type="button"
             onClick={handleBoot}
           >
-            <BootIcon size={12} />
+            <Icons.BootIcon size={12} />
           </button>
         )}
       </div>
@@ -324,7 +318,7 @@ export function AndroidDeviceView({
             type="button"
             onClick={handleBoot}
           >
-            <BootIcon size={12} />
+            <Icons.BootIcon size={12} />
           </button>
         )}
         {androidCapturing && (
@@ -335,7 +329,7 @@ export function AndroidDeviceView({
               type="button"
               onClick={() => handleNavButton("back")}
             >
-              <AndroidBackIcon size={12} />
+              <Icons.AndroidBackIcon size={12} />
             </button>
             <button
               className={chrome.titleBarButton}
@@ -343,7 +337,7 @@ export function AndroidDeviceView({
               type="button"
               onClick={() => handleNavButton("home")}
             >
-              <AndroidHomeIcon size={12} />
+              <Icons.AndroidHomeIcon size={12} />
             </button>
             <button
               className={chrome.titleBarButton}
@@ -351,7 +345,7 @@ export function AndroidDeviceView({
               type="button"
               onClick={() => handleNavButton("recents")}
             >
-              <AndroidRecentsIcon size={12} />
+              <Icons.AndroidRecentsIcon size={12} />
             </button>
           </>
         )}
@@ -362,7 +356,7 @@ export function AndroidDeviceView({
             type="button"
             onClick={handleDisconnect}
           >
-            <DisconnectIcon size={12} />
+            <Icons.DisconnectIcon size={12} />
           </button>
         )}
       </div>

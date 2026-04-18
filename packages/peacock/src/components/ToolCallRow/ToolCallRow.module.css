@@ -18,7 +18,9 @@
   background: var(--text-muted);
   opacity: 0.35;
   transform: translateY(-50%);
-  transition: background var(--transition-fast), opacity var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
 .row:hover .dot {

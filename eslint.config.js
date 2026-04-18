@@ -173,7 +173,16 @@ const baseReactRules = {
 };
 
 export default tseslint.config(
-  { ignores: ["dist", "dist-electron", "vendor"] },
+  {
+    ignores: [
+      "dist",
+      "dist-electron",
+      "vendor",
+      "**/storybook-static/**",
+      "packages/peacock/vite.config.ts",
+      "packages/peacock/.storybook/**",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -188,6 +197,7 @@ export default tseslint.config(
             "./tsconfig.json",
             "./tsconfig.main.json",
             "./tsconfig.node.json",
+            "./packages/peacock/tsconfig.json",
           ],
         },
       },
@@ -201,6 +211,7 @@ export default tseslint.config(
           "./tsconfig.json",
           "./tsconfig.main.json",
           "./tsconfig.node.json",
+          "./packages/peacock/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },

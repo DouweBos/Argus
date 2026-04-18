@@ -7,7 +7,10 @@ export interface KbdProps extends HTMLAttributes<HTMLSpanElement> {
 
 export function Kbd({ keys, className, ...rest }: KbdProps) {
   return (
-    <span className={[styles.group, className].filter(Boolean).join(" ")} {...rest}>
+    <span
+      className={[styles.group, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {keys.map((k) => (
         <span key={k} className={styles.key}>
           {k}

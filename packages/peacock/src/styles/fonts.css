@@ -1,0 +1,4 @@
+/* Optional Google Fonts shim. Import this in web/Storybook contexts where
+   Inter and JetBrains Mono aren't otherwise available. In Electron or other
+   offline-first shells, bundle the fonts yourself instead. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");

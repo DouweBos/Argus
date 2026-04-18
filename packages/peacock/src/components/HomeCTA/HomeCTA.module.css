@@ -16,6 +16,6 @@
 
 .cta:hover {
   color: var(--text-primary);
-  border-color: rgba(77, 159, 255, 0.3);
+  border-color: rgba(245, 166, 35, 0.3);
   box-shadow: 0 0 20px var(--accent-glow);
 }

@@ -1,8 +1,8 @@
 import type { HTMLAttributes } from "react";
-import styles from "./ToolCallRow.module.css";
 import { Badge } from "../Badge/Badge";
+import styles from "./ToolCallRow.module.css";
 
-export type ToolCallStatus = "running" | "pending" | "done" | "error";
+export type ToolCallStatus = "done" | "error" | "pending" | "running";
 
 export interface ToolCallRowProps extends HTMLAttributes<HTMLDivElement> {
   tool: string;
@@ -32,6 +32,7 @@ export function ToolCallRow({
   ]
     .filter(Boolean)
     .join(" ");
+
   return (
     <div className={classes} {...rest}>
       <span className={styles.dot} />

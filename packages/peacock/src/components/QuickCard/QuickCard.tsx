@@ -12,7 +12,10 @@ export function QuickCard({
   ...rest
 }: QuickCardProps) {
   return (
-    <div className={[styles.card, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.card, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {heading && <h4 className={styles.heading}>{heading}</h4>}
       {children}
     </div>
@@ -33,9 +36,16 @@ export function MiniStat({
   ...rest
 }: MiniStatProps) {
   return (
-    <div className={[styles.miniStat, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.miniStat, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       <span className={styles.label}>{label}</span>
-      <span className={[styles.value, accent ? styles.accent : ""].filter(Boolean).join(" ")}>
+      <span
+        className={[styles.value, accent ? styles.accent : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {value}
       </span>
     </div>

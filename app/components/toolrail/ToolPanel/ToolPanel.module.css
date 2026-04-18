@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: rgba(17, 17, 24, 0.94);
+  background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: -2px 0 20px rgba(0, 0, 0, 0.3);
 }

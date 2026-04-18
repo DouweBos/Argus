@@ -1,8 +1,8 @@
 import type { HTMLAttributes } from "react";
 import styles from "./Card.module.css";
 
-export type CardVariant = "glass" | "dashed" | "tight";
-export type CardSize = "sm" | "md" | "lg";
+export type CardVariant = "dashed" | "glass" | "tight";
+export type CardSize = "lg" | "md" | "sm";
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: CardVariant;
@@ -32,6 +32,7 @@ export function Card({
   ]
     .filter(Boolean)
     .join(" ");
+
   return (
     <div className={classes} {...rest}>
       {children}

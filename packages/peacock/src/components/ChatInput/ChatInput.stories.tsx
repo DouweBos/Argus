@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
-import { ChatInput } from "./ChatInput";
 import { Chip } from "../Chip/Chip";
+import { ChatInput } from "./ChatInput";
 
 const meta: Meta<typeof ChatInput> = {
   title: "Composites/ChatInput",
@@ -16,6 +16,7 @@ export const Default: Story = {
     const [value, setValue] = useState(
       "Refactor the workspace card to use the new…",
     );
+
     return (
       <div style={{ width: 480 }}>
         <ChatInput

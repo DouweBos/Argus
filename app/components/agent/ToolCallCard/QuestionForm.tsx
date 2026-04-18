@@ -1,5 +1,6 @@
 import type { Question } from "./parseQuestions";
 import { useCallback, useMemo, useState } from "react";
+import { Button } from "@argus/peacock";
 import styles from "./QuestionForm.module.css";
 
 interface QuestionFormProps {
@@ -91,16 +92,17 @@ export function QuestionForm({
         </div>
       ))}
       <div className={styles.actions}>
-        <button
-          className={styles.submitBtn}
+        <Button
+          variant="primary"
+          size="sm"
           disabled={!allAnswered}
           onClick={handleSubmit}
         >
           Submit answers
-        </button>
-        <button className={styles.cancelBtn} onClick={onCancel}>
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

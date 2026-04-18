@@ -1,8 +1,12 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useSuppressSpacePageScroll } from "../../../hooks/useSuppressSpacePageScroll";
 import { useWindowFocus } from "../../../hooks/useWindowFocus";
+import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
   setLeftPanelWidth,
+  toggleLeftSidebar,
+  toggleRightPanel,
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
 import { useSelectedWorkspaceId } from "../../../stores/workspaceStore";
@@ -26,6 +30,16 @@ export function AppShell() {
   const setLeftWidth = setLeftPanelWidth;
   useWindowFocus();
   useSuppressSpacePageScroll();
+
+  const shortcuts = useMemo(
+    () => [
+      { meta: true, key: "k", handler: toggleCommandPalette },
+      { meta: true, key: "b", handler: toggleLeftSidebar },
+      { meta: true, alt: true, key: "b", handler: toggleRightPanel },
+    ],
+    [],
+  );
+  useGlobalShortcuts(shortcuts);
 
   // Left peek overlay state
   const [leftPeeking, setLeftPeeking] = useState(false);
