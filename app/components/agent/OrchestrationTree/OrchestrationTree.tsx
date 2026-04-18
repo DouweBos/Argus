@@ -3,8 +3,25 @@ import { useMemo } from "react";
 import { Badge, Eyebrow, Icons, StatusDot } from "@argus/peacock";
 import { stopAgentById } from "../../../lib/agentEventService";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useConversations } from "../../../stores/conversationStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import styles from "./OrchestrationTree.module.css";
+
+const MAX_TITLE_CHARS = 60;
+
+function agentTitle(
+  agentId: string,
+  conversationTitle: string | undefined,
+): string {
+  const trimmed = conversationTitle?.trim();
+  if (trimmed) {
+    return trimmed.length > MAX_TITLE_CHARS
+      ? trimmed.slice(0, MAX_TITLE_CHARS - 1) + "\u2026"
+      : trimmed;
+  }
+
+  return `Agent ${agentId.slice(0, 6)}`;
+}
 
 interface OrchestrationTreeProps {
   /** Currently focused agent (highlighted in the tree). */
@@ -79,6 +96,7 @@ export function OrchestrationTree({
 }: OrchestrationTreeProps) {
   const agents = useAgentsRecord();
   const workspaces = useWorkspaces();
+  const conversations = useConversations();
 
   const activeFilter = workspaceFilter ?? "all";
 
@@ -214,8 +232,10 @@ export function OrchestrationTree({
               <AgentNodeRow
                 key={node.agent.agent_id}
                 activeAgentId={activeAgentId}
+                conversations={conversations}
                 depth={0}
                 node={node}
+                showWorkspace={!group.showHeader}
                 onSelect={onSelectAgent}
               />
             ))}
@@ -313,17 +333,23 @@ function AgentNodeRow({
   node,
   depth,
   activeAgentId,
+  conversations,
+  showWorkspace,
   onSelect,
 }: {
   activeAgentId: string | null;
+  conversations: Record<string, { title?: string }>;
   depth: number;
   node: AgentNode;
   onSelect: (agentId: string, workspaceId: string) => void;
+  showWorkspace: boolean;
 }) {
   const isActive = node.agent.agent_id === activeAgentId;
   const isOrchestrator = node.children.length > 0;
-  const label =
-    node.displayName ?? node.branch ?? node.agent.agent_id.slice(0, 8);
+  const conv = conversations[node.agent.agent_id];
+  const label = agentTitle(node.agent.agent_id, conv?.title);
+  const workspaceLabel =
+    node.displayName ?? node.branch ?? node.agent.workspace_id.slice(0, 8);
   const isAlive =
     node.agent.status === "running" || node.agent.status === "idle";
 
@@ -345,8 +371,10 @@ function AgentNodeRow({
             orchestrator
           </Badge>
         )}
-        {node.branch && depth > 0 && (
-          <span className={styles.agentBranch}>{node.branch}</span>
+        {(showWorkspace || depth > 0) && (
+          <span className={styles.agentBranch} title={workspaceLabel}>
+            {workspaceLabel}
+          </span>
         )}
         <span className={styles.statusLabel}>
           {toPeacockStatus(node.agent.status)}
@@ -368,8 +396,10 @@ function AgentNodeRow({
         <AgentNodeRow
           key={child.agent.agent_id}
           activeAgentId={activeAgentId}
+          conversations={conversations}
           depth={depth + 1}
           node={child}
+          showWorkspace={showWorkspace}
           onSelect={onSelect}
         />
       ))}

@@ -83,6 +83,13 @@
   color: var(--text-muted);
 }
 
+.queuedMessageWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
 .queuedMessage {
   font: var(--type-body);
   color: var(--text-secondary);
@@ -92,6 +99,45 @@
   border-radius: var(--border-radius-sm);
   white-space: pre-wrap;
   word-break: break-word;
+  align-self: stretch;
+}
+
+.queuedAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: -24px;
+  max-width: 75%;
+  position: relative;
+  z-index: 1;
+}
+
+.queuedAttachment {
+  display: block;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  border: 1px dashed var(--glass-border);
+  background: var(--glass-bg);
+  cursor: zoom-in;
+  transition:
+    border-color var(--transition-base),
+    transform var(--transition-base);
+}
+
+.queuedAttachment:hover {
+  border-color: rgba(245, 166, 35, 0.4);
+  transform: translateY(-1px);
+}
+
+.queuedAttachmentImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Error / stopped banner — restart prompt above the input */

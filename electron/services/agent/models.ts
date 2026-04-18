@@ -53,6 +53,12 @@ export interface AgentSession {
    * Each entry is called with the exit code when the process closes.
    */
   exitWaiters: ((exitCode: number) => void)[];
+  /**
+   * Resolvers for callers waiting on the current turn to finish (status
+   * transitioning to `idle`). Fired when the CLI emits a
+   * `session_state_changed` event with `state: "idle"`.
+   */
+  turnWaiters: ((status: AgentStatusValue) => void)[];
 }
 
 // ---------------------------------------------------------------------------

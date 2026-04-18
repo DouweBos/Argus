@@ -209,6 +209,39 @@ function renderResult(
   );
 }
 
+/** Count additions/deletions for an Edit — mirrors EditDiffView's prefix/suffix logic. */
+function computeEditStats(
+  oldStr: string,
+  newStr: string,
+): { additions: number; deletions: number } {
+  const oldLines = oldStr.split("\n");
+  const newLines = newStr.split("\n");
+
+  let prefixLen = 0;
+  while (
+    prefixLen < oldLines.length &&
+    prefixLen < newLines.length &&
+    oldLines[prefixLen] === newLines[prefixLen]
+  ) {
+    prefixLen++;
+  }
+
+  let suffixLen = 0;
+  while (
+    suffixLen < oldLines.length - prefixLen &&
+    suffixLen < newLines.length - prefixLen &&
+    oldLines[oldLines.length - 1 - suffixLen] ===
+      newLines[newLines.length - 1 - suffixLen]
+  ) {
+    suffixLen++;
+  }
+
+  return {
+    additions: newLines.length - prefixLen - suffixLen,
+    deletions: oldLines.length - prefixLen - suffixLen,
+  };
+}
+
 /** Format input params for display. Bash commands get plain text, others get JSON. */
 function formatInput(name: string, input: Record<string, unknown>): string {
   if (name === "Bash" && input.command) {
@@ -247,6 +280,19 @@ export function ToolCallCard({
   // The chevron only hides the result payload.
   const alwaysShowInputPreview = isEdit || isWrite;
   const inputText = formatInput(toolCall.name, toolCall.input);
+  let editStats: { additions: number; deletions: number } | null = null;
+  if (isEdit) {
+    editStats = computeEditStats(
+      toolCall.input.old_string as string,
+      toolCall.input.new_string as string,
+    );
+  } else if (isWrite) {
+    const content = toolCall.input.content as string;
+    editStats = {
+      additions: content === "" ? 0 : content.split("\n").length,
+      deletions: 0,
+    };
+  }
   const isPending = toolCall.pendingPermission;
   const allowRule = alwaysAllowRule(toolCall.name, toolCall.input);
 
@@ -375,6 +421,17 @@ export function ToolCallCard({
         <span className={styles.summary}>
           {isAgent ? agentDesc : <LinkifiedText text={summary} />}
         </span>
+        {editStats &&
+          (editStats.additions > 0 || editStats.deletions > 0) && (
+            <span className={styles.editStats}>
+              {editStats.additions > 0 && (
+                <span className={styles.statsAdd}>+{editStats.additions}</span>
+              )}
+              {editStats.deletions > 0 && (
+                <span className={styles.statsDel}>-{editStats.deletions}</span>
+              )}
+            </span>
+          )}
         {isPending && (
           <Badge tone="warning" className={styles.pendingTag}>
             awaiting permission

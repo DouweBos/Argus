@@ -66,6 +66,8 @@ export interface AgentConversation {
   sessionId?: string;
   /** Slash commands — rich objects from initialize, or bare strings from init event. */
   slashCommands?: SlashCommand[];
+  /** Generated short title summarising the conversation (async). */
+  title?: string;
   tools?: string[];
   totalCost?: number;
   totalDuration?: number;
@@ -606,6 +608,22 @@ export function loadSavedMessages(
       },
     },
   }));
+}
+
+export function setConversationTitle(agentId: string, title: string) {
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId];
+    if (!existing) {
+      return state;
+    }
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: { ...existing, title },
+      },
+    };
+  });
 }
 
 export function setDraft(agentId: string, text: string) {

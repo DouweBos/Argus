@@ -90,6 +90,7 @@ export function RepoHomeScreen({
             <div className={styles.historyWrap}>
               <ChatHistoryList
                 entries={history.entries}
+                onClearAll={history.clearAll}
                 onDelete={history.remove}
                 onResume={onResumeHistory}
                 onView={onViewHistory}

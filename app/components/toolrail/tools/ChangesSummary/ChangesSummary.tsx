@@ -63,8 +63,14 @@ interface InnerProps {
 
 function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
   const { files, isLoading } = useDiffFiles(workspaceId);
-  const { conflicts, hasStaged, isMerging, mergeError, handleMerge } =
-    useMergeStatus(workspaceId);
+  const {
+    commitsAhead,
+    conflicts,
+    hasStaged,
+    isMerging,
+    mergeError,
+    handleMerge,
+  } = useMergeStatus(workspaceId);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const fileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -150,7 +156,22 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
 
   const showMerge = workspace?.kind === "worktree" && workspace.base_branch;
   const hasConflicts = conflicts.length > 0;
-  const canMerge = hasStaged && !hasConflicts && !isMerging;
+  const hasMergeableWork = hasStaged || commitsAhead > 0;
+  const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
+
+  const baseBranchLabel = workspace?.base_branch ?? "parent branch";
+  let mergeBtnTitle: string | undefined;
+  if (hasConflicts) {
+    mergeBtnTitle = `${conflicts.length} conflict${conflicts.length > 1 ? "s" : ""} — resolve before merging into ${baseBranchLabel}`;
+  } else if (!hasMergeableWork) {
+    mergeBtnTitle = `Stage changes in this workspace, then merge into ${baseBranchLabel}`;
+  } else if (hasStaged && commitsAhead > 0) {
+    mergeBtnTitle = `Commits staged changes on this branch, then merges into ${baseBranchLabel} (${commitsAhead} existing commit${commitsAhead === 1 ? "" : "s"} also included)`;
+  } else if (hasStaged) {
+    mergeBtnTitle = `Commits staged changes on this branch, then merges into ${baseBranchLabel}`;
+  } else {
+    mergeBtnTitle = `Merges ${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} from this branch into ${baseBranchLabel}`;
+  }
 
   if (isLoading && files.length === 0) {
     return (
@@ -174,6 +195,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
             <button
               className={styles.mergeBtn}
               disabled={!canMerge}
+              title={mergeBtnTitle}
               onClick={handleMerge}
             >
               <Icons.MergeIcon size={12} />
@@ -186,13 +208,6 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
   }
 
   const safeIndex = Math.min(currentFileIndex, files.length - 1);
-
-  let mergeBtnTitle: string | undefined;
-  if (hasConflicts) {
-    mergeBtnTitle = `${conflicts.length} conflict${conflicts.length > 1 ? "s" : ""}`;
-  } else if (!hasStaged) {
-    mergeBtnTitle = "Stage changes to merge";
-  }
 
   return (
     <div ref={containerRef} className={styles.container} tabIndex={-1}>

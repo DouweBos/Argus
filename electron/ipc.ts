@@ -25,6 +25,7 @@ import {
   setAgentModel,
   setAgentPermissionMode,
 } from "./services/agent/claude";
+import { generateSessionTitle } from "./services/agent/sessionTitle";
 import {
   startScreencast,
   stopScreencast,
@@ -133,6 +134,7 @@ import {
   writeArgusConfig,
   setWorkspaceBaseBranch,
   getWorkspaceCommitsAhead,
+  getWorkspaceWorkingTreeState,
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
   gitPull,
@@ -166,7 +168,15 @@ function handle(
   handler: (args: Args) => Promise<unknown> | unknown,
 ): void {
   ipcMain.handle(channel, async (_event, args: Args = {}) => {
-    return handler(args);
+    try {
+      return await handler(args);
+    } catch (err) {
+      // Log before rethrowing so the failure is visible in ~/.argus/main.log
+      // even though the renderer only sees the rejected promise.
+      // eslint-disable-next-line no-console -- central logging sink (tee'd to ~/.argus/main.log in main.ts)
+      console.error(`[ipc:${channel}] handler threw:`, err);
+      throw err;
+    }
   });
 }
 
@@ -284,6 +294,19 @@ export function registerIpcHandlers(): void {
   handle("get_workspace_commits_ahead", (a) =>
     getWorkspaceCommitsAhead(a.id as string),
   );
+  handle("get_workspace_review_state", async (a) => {
+    const id = a.id as string;
+    const [commitsAhead, treeState] = await Promise.all([
+      getWorkspaceCommitsAhead(id),
+      getWorkspaceWorkingTreeState(id),
+    ]);
+
+    return {
+      commitsAhead,
+      hasStaged: treeState.hasStaged,
+      hasUncommitted: treeState.hasUncommitted,
+    };
+  });
   handle("merge_workspace_into_base", (a) =>
     mergeWorkspaceIntoBase(a.id as string),
   );
@@ -370,6 +393,9 @@ export function registerIpcHandlers(): void {
   );
   handle("delete_chat_history", (a) =>
     deleteHistoryEntry(a.repoRoot as string, a.historyId as string),
+  );
+  handle("generate_session_title", (a) =>
+    generateSessionTitle(a.firstMessage as string),
   );
 
   // Terminal commands

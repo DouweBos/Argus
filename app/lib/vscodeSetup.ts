@@ -106,19 +106,57 @@ declare global {
 
 window.MonacoEnvironment = {
   getWorker: (_moduleId: string, label: string) => {
+    // [syntax-highlight-debug] Worker spawning is a prerequisite for TextMate
+    // tokenization — if textMateWorker or workerExtensionHost fails to start,
+    // grammars never register and the editor renders as plain text.
+    const mkWorker = (url: URL, name: string) => {
+      try {
+        const w = new Worker(url, { type: "module" });
+        console.log(
+          `[syntax-highlight-debug] spawned worker "${label}" (${name}) url=${url.href}`,
+        );
+        w.addEventListener("error", (e) => {
+          console.error(
+            `[syntax-highlight-debug] worker "${label}" (${name}) runtime error`,
+            e.message,
+            e.filename,
+            e.lineno,
+            e,
+          );
+        });
+        w.addEventListener("messageerror", (e) => {
+          console.error(
+            `[syntax-highlight-debug] worker "${label}" (${name}) messageerror`,
+            e,
+          );
+        });
+
+        return w;
+      } catch (err) {
+        console.error(
+          `[syntax-highlight-debug] FAILED to spawn worker "${label}" (${name}) url=${url.href}`,
+          err,
+        );
+        throw err;
+      }
+    };
     switch (label) {
       case "editorWorkerService":
-        return new Worker(editorWorkerUrl, { type: "module" });
+        return mkWorker(editorWorkerUrl, "editor");
       case "textMateWorker":
-        return new Worker(textMateWorkerUrl, { type: "module" });
+        return mkWorker(textMateWorkerUrl, "textmate");
       case "outputLinkDetection":
-        return new Worker(outputLinkDetectionWorkerUrl, { type: "module" });
+        return mkWorker(outputLinkDetectionWorkerUrl, "output-link");
       case "languageDetectionWorkerService":
-        return new Worker(languageDetectionWorkerUrl, { type: "module" });
+        return mkWorker(languageDetectionWorkerUrl, "language-detection");
       case "workerExtensionHost":
-        return new Worker(extensionHostWorkerUrl, { type: "module" });
+        return mkWorker(extensionHostWorkerUrl, "extension-host");
       default:
-        return new Worker(editorWorkerUrl, { type: "module" });
+        console.warn(
+          `[syntax-highlight-debug] unknown worker label "${label}" — falling back to editor worker`,
+        );
+
+        return mkWorker(editorWorkerUrl, "editor-fallback");
     }
   },
 };
@@ -454,6 +492,72 @@ export const vscodeReady = (async () => {
 
   // Load extensions from ~/.cursor/extensions/ and ~/.vscode/extensions/
   loadLocalExtensions();
+
+  // [syntax-highlight-debug] After init, dump the state of every subsystem
+  // that contributes to syntax highlighting. If any of these are missing
+  // or empty, tokens won't render and the editor appears as plain text.
+  //
+  // Common causes of no syntax highlighting:
+  //  1. No language registered for the file's extension → LanguageService
+  //     never assigns a language ID, so TextMate never runs.
+  //  2. Language registered but no grammar for its scope → TextMate loads
+  //     but produces no tokens.
+  //  3. Grammar loaded but theme has no `tokenColors` → tokens exist but
+  //     all map to the default foreground.
+  //  4. TextMate worker crashed on startup (see worker-spawn logs above).
+  //  5. Theme service still on a built-in theme while our Argus color
+  //     customizations only override workbench colors, not token colors.
+  try {
+    // Dynamic imports so a failure here never blocks the main init path.
+    const [{ ILanguageService }, { IThemeService }] = await Promise.all([
+      import("@codingame/monaco-vscode-api/services"),
+      import("@codingame/monaco-vscode-api/services"),
+    ]);
+
+    const languageService = (await getService(ILanguageService)) as unknown as {
+      getRegisteredLanguageIds?: () => string[];
+    };
+    const languageIds =
+      languageService.getRegisteredLanguageIds?.() ?? [];
+    console.log(
+      `[syntax-highlight-debug] registered languages (${languageIds.length}):`,
+      languageIds,
+    );
+    if (languageIds.length === 0) {
+      console.error(
+        "[syntax-highlight-debug] NO LANGUAGES REGISTERED — extensions didn't load. Check vscodeExtensions.ts imports and extension-host worker.",
+      );
+    }
+
+    const themeService = (await getService(IThemeService)) as unknown as {
+      getColorTheme?: () => {
+        id?: string;
+        label?: string;
+        tokenColors?: unknown[];
+        semanticHighlighting?: boolean;
+      };
+    };
+    const theme = themeService.getColorTheme?.();
+    const tokenColorCount = Array.isArray(theme?.tokenColors)
+      ? theme!.tokenColors!.length
+      : "unknown";
+    console.log("[syntax-highlight-debug] active theme:", {
+      id: theme?.id,
+      label: theme?.label,
+      tokenColorCount,
+      semanticHighlighting: theme?.semanticHighlighting,
+    });
+    if (tokenColorCount === 0 || tokenColorCount === "unknown") {
+      console.error(
+        "[syntax-highlight-debug] Theme has no tokenColors — syntax highlighting will render as plain foreground. Check that theme-defaults-default-extension loaded and workbench.colorTheme resolves to a real theme.",
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[syntax-highlight-debug] failed to introspect syntax highlighting state",
+      err,
+    );
+  }
 
   // After services are ready, disable "Open Folder" commands.
   // Argus controls workspace switching via its own sidebar — users

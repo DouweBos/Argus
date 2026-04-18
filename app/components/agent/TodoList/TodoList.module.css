@@ -90,25 +90,27 @@
 }
 
 .dismiss {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: var(--space-4) var(--space-6);
+  gap: 4px;
+  padding: 2px 8px;
   background: transparent;
-  border: none;
-  border-top: 1px solid var(--glass-border);
-  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
   font: var(--type-caption);
   cursor: pointer;
+  flex-shrink: 0;
   transition:
     background var(--transition-base),
-    color var(--transition-base);
+    color var(--transition-base),
+    border-color var(--transition-base);
 }
 
 .dismiss:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
+  border-color: var(--text-muted);
 }
 
 .item {

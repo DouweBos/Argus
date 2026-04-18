@@ -94,6 +94,23 @@
   min-width: 0;
 }
 
+/* Additions/deletions indicator — matches ChangesSummary styling */
+.editStats {
+  display: inline-flex;
+  gap: 6px;
+  font: var(--type-code);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.statsAdd {
+  color: var(--success);
+}
+
+.statsDel {
+  color: var(--error);
+}
+
 /* Status tag overrides — keep flex-shrink so they don't compress the summary */
 .doneTag,
 .pendingTag,
