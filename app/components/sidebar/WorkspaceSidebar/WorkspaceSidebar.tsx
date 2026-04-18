@@ -12,6 +12,11 @@ import {
   SidebarSection,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
+import { useActivityCount } from "../../../stores/activityStore";
+import { useAgentsRecord } from "../../../stores/agentStore";
+import { setCenterView, useCenterView } from "../../../stores/centerViewStore";
+import { useDevices } from "../../../stores/deviceStore";
+import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import {
   selectWorkspace,
   toggleProjectCollapsed,
@@ -24,7 +29,16 @@ import styles from "./WorkspaceSidebar.module.css";
 export function WorkspaceSidebar() {
   const { projects, openProject, closeProject, error } = useProjects();
   const selectedId = useSelectedWorkspaceId();
+  const centerView = useCenterView();
+  const devices = useDevices();
+  const agentsRecord = useAgentsRecord();
   const [showOpenProject, setShowOpenProject] = useState(false);
+  const runningDevices = devices.filter((d) => d.online).length;
+  const runningAgents = Object.values(agentsRecord).filter(
+    (a) => a.status === "running",
+  ).length;
+  const reviewQueueCount = useReviewQueueCount();
+  const activityCount = useActivityCount();
 
   const sorted = [...projects].sort((a, b) => a.addedAt - b.addedAt);
   const totalWorkspaces = sorted.length;
@@ -59,17 +73,58 @@ export function WorkspaceSidebar() {
 
       <SidebarNavGroup>
         <SidebarItem
-          active={selectedId === null}
+          active={selectedId === null && centerView === "home"}
           leading={<Icons.HomeIcon size={12} />}
           count="—"
-          onClick={() => selectWorkspace(null)}
+          onClick={() => {
+            setCenterView("home");
+            selectWorkspace(null);
+          }}
         >
           Home
         </SidebarItem>
-        <SidebarItem leading={<Icons.MergeIcon size={12} />} count={0} disabled>
+        <SidebarItem
+          active={selectedId === null && centerView === "agents"}
+          leading={<Icons.AgentIcon size={12} />}
+          count={runningAgents}
+          onClick={() => {
+            setCenterView("agents");
+            selectWorkspace(null);
+          }}
+        >
+          Agents
+        </SidebarItem>
+        <SidebarItem
+          active={selectedId === null && centerView === "devices"}
+          leading={<Icons.SimulatorIcon size={12} />}
+          count={runningDevices}
+          onClick={() => {
+            setCenterView("devices");
+            selectWorkspace(null);
+          }}
+        >
+          Devices
+        </SidebarItem>
+        <SidebarItem
+          active={selectedId === null && centerView === "review-queue"}
+          leading={<Icons.MergeIcon size={12} />}
+          count={reviewQueueCount}
+          onClick={() => {
+            setCenterView("review-queue");
+            selectWorkspace(null);
+          }}
+        >
           Review queue
         </SidebarItem>
-        <SidebarItem leading={<CommitIcon size={12} />} count="∞" disabled>
+        <SidebarItem
+          active={selectedId === null && centerView === "activity"}
+          leading={<CommitIcon size={12} />}
+          count={activityCount}
+          onClick={() => {
+            setCenterView("activity");
+            selectWorkspace(null);
+          }}
+        >
           Activity
         </SidebarItem>
       </SidebarNavGroup>

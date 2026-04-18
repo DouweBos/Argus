@@ -1,0 +1,58 @@
+.body {
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.label {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.caption {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.option {
+  display: flex;
+  gap: var(--space-5);
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 12px;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.option:hover {
+  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.04));
+}
+
+.optionActive {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.radio {
+  accent-color: var(--accent);
+}

@@ -1,7 +1,8 @@
-import type { AgentStatus, Workspace } from "../../../lib/types";
+import type { AgentStatus, DeviceInfo, Workspace } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useMemo } from "react";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useDevices } from "../../../stores/deviceStore";
 import {
   useRecentProjects,
   type RecentProject,
@@ -28,12 +29,15 @@ export interface HomeProject {
 export interface HomeStats {
   agentsIdle: number;
   agentsRunning: number;
+  devicesRunning: number;
+  devicesTotal: number;
   projects: number;
   workspaces: number;
 }
 
 export interface HomeData {
   activeAgents: HomeAgent[];
+  devices: DeviceInfo[];
   projects: HomeProject[];
   stats: HomeStats;
 }
@@ -85,6 +89,7 @@ export function useHomeData(): HomeData & {
   const recent = useRecentProjects();
   const workspaces = useWorkspaces();
   const agentsRecord = useAgentsRecord();
+  const devices = useDevices();
 
   return useMemo(() => {
     const projectsByPath = new Map<string, HomeProject>();
@@ -148,12 +153,14 @@ export function useHomeData(): HomeData & {
     const stats: HomeStats = {
       agentsRunning: activeAgents.filter((a) => a.status === "running").length,
       agentsIdle: activeAgents.filter((a) => a.status === "idle").length,
+      devicesRunning: devices.filter((d) => d.online).length,
+      devicesTotal: devices.length,
       workspaces: workspaces.length,
       projects: projects.length,
     };
 
-    return { projects, activeAgents, stats, formatLastOpened };
-  }, [recent, workspaces, agentsRecord]);
+    return { projects, activeAgents, devices, stats, formatLastOpened };
+  }, [recent, workspaces, agentsRecord, devices]);
 }
 
 function basename(p: string): string {

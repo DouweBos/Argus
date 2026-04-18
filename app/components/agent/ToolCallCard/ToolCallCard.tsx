@@ -4,6 +4,7 @@ import type {
 } from "../../../stores/conversationStore";
 import { useCallback, useState, type ReactNode } from "react";
 import { Badge, Button, Icons } from "@argus/peacock";
+import { renderMarkdown } from "../../../lib/markdown";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { EditDiffView } from "../EditDiffView";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
@@ -242,6 +243,9 @@ export function ToolCallCard({
     typeof toolCall.input.new_string === "string";
   const isWrite =
     toolCall.name === "Write" && typeof toolCall.input.content === "string";
+  // Edit/Write diffs are always visible so the user sees changes without a click.
+  // The chevron only hides the result payload.
+  const alwaysShowInputPreview = isEdit || isWrite;
   const inputText = formatInput(toolCall.name, toolCall.input);
   const isPending = toolCall.pendingPermission;
   const allowRule = alwaysAllowRule(toolCall.name, toolCall.input);
@@ -295,6 +299,19 @@ export function ToolCallCard({
     );
   }, [onPermissionRespond, toolCall.id]);
 
+  const handlePlanFeedback = useCallback(
+    (feedback: string) => {
+      onPermissionRespond?.(
+        toolCall.id,
+        "deny",
+        undefined,
+        false,
+        `The user wants to refine the plan before approving it. Their feedback:\n\n${feedback}\n\nIncorporate this feedback and propose an updated plan via ExitPlanMode.`,
+      );
+    },
+    [onPermissionRespond, toolCall.id],
+  );
+
   const isExitPlanMode = toolCall.name === "ExitPlanMode";
   const isAskUserQuestion = toolCall.name === "AskUserQuestion";
   const planText =
@@ -314,6 +331,16 @@ export function ToolCallCard({
   } else if (isWrite) {
     structuredInputPreview = (
       <EditDiffView newString={toolCall.input.content as string} />
+    );
+  } else if (isExitPlanMode && planText) {
+    structuredInputPreview = (
+      <div className={styles.section}>
+        <span className={styles.sectionLabel}>Plan</span>
+        <div
+          className={styles.planPreview}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(planText) }}
+        />
+      </div>
     );
   } else {
     structuredInputPreview = (
@@ -366,12 +393,17 @@ export function ToolCallCard({
         {toolCall.isError && <Badge tone="error">error</Badge>}
       </button>
 
+      {alwaysShowInputPreview && !expanded && (
+        <div className={styles.body}>{structuredInputPreview}</div>
+      )}
+
       {expanded && (
         <div className={styles.body}>
           {isPending && isExitPlanMode && (
             <PlanApproval
               onApprove={handleAllow}
               onReject={handleRejectPlan}
+              onSubmitFeedback={handlePlanFeedback}
               plan={planText}
             />
           )}

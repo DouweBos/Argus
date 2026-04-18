@@ -65,6 +65,20 @@ export const toggleTool = (id: ToolId) =>
     };
   });
 
+/** Unconditionally open a tool in the right panel (no-op if already open). */
+export const setActiveTool = (id: ToolId) =>
+  layoutStore.setState((s) => {
+    if (s.activeToolId === id) {
+      return s;
+    }
+
+    return {
+      activeToolId: id,
+      lastActiveToolId: id,
+      mountedToolIds: { ...s.mountedToolIds, [id]: true },
+    };
+  });
+
 export const setToolPanelWidth = (w: number) => {
   layoutStore.setState({ toolPanelWidth: w });
 };

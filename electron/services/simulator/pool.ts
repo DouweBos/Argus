@@ -9,16 +9,14 @@
  */
 
 import { execFile } from "node:child_process";
-import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { info } from "../../../app/lib/logger";
 import { appState, type SimulatorReservation } from "../../state";
+import { execConductor } from "../conductor/logger";
 import { bootSimulator, listSimulators } from "./ios";
 
 const execFileAsync = promisify(execFile);
-
-const CONDUCTOR_BIN = path.join(os.homedir(), ".argus", "bin", "conductor");
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -154,18 +152,13 @@ async function createSimulator(name: string): Promise<string> {
  */
 async function cleanupDevice(udid: string): Promise<void> {
   try {
-    await execFileAsync(CONDUCTOR_BIN, ["uninstall-app", "--device", udid]);
+    await execConductor(udid, ["uninstall-app", "--device", udid]);
   } catch {
     // No app installed, or conductor not available — that's fine.
   }
 
   try {
-    await execFileAsync(CONDUCTOR_BIN, [
-      "session",
-      "--clear",
-      "--device",
-      udid,
-    ]);
+    await execConductor(udid, ["session", "--clear", "--device", udid]);
   } catch {
     // Session might not exist — that's fine.
   }

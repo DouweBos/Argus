@@ -59,6 +59,7 @@ import { getMcpPort } from "../mcp/server";
 import { simulatorPool } from "../simulator/pool";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
 import { loadArgusConfig } from "../workspace/setup";
+import { emitReviewState } from "../workspace/workspaceOps";
 import { ControlHandler } from "./controlHandler";
 
 const execFileAsync = promisify(execFile);
@@ -300,6 +301,42 @@ export async function startAgent(
 
   const stdin = child.stdin;
 
+  // Attach error handlers to all stdio pipes. Without these, an EPIPE on a
+  // write after the child has been killed becomes an uncaughtException, which
+  // Electron surfaces as a JS error dialog in packaged builds. Logging is
+  // sufficient — the `close` handler below drives real lifecycle updates.
+  stdin.on("error", (err) => {
+    info(`[agent:${agentId}] stdin error: ${String(err)}`);
+  });
+  child.stdout.on("error", (err) => {
+    info(`[agent:${agentId}] stdout error: ${String(err)}`);
+  });
+  child.stderr.on("error", (err) => {
+    info(`[agent:${agentId}] stderr error: ${String(err)}`);
+  });
+  child.on("error", (err) => {
+    warn(`[agent:${agentId}] child process error: ${String(err)}`);
+  });
+
+  // Guarded write helper — silently drops writes once the session is stopped
+  // or the stdin pipe has been destroyed. Prevents race conditions where
+  // buffered stdout lines trigger control responses after `stopAgent` killed
+  // the process.
+  const safeWrite = (data: string): void => {
+    const current = appState.agents.get(agentId);
+    if (!current || current.status !== "running") {
+      return;
+    }
+    if (stdin.destroyed || stdin.writableEnded) {
+      return;
+    }
+    try {
+      stdin.write(data);
+    } catch (e) {
+      info(`[agent:${agentId}] stdin write failed: ${String(e)}`);
+    }
+  };
+
   // Drain stderr and log each line. Forward to the renderer so auth errors
   // and other CLI diagnostics are visible in the conversation.
   child.stderr.on("data", (chunk: Buffer) => {
@@ -395,7 +432,7 @@ export async function startAgent(
                 };
                 const resp = controlHandler.handleControlRequest(req, emit);
                 if (resp) {
-                  stdin.write(resp + "\n");
+                  safeWrite(resp + "\n");
                 }
               })
               .catch((e) => {
@@ -405,7 +442,7 @@ export async function startAgent(
                 // Fall through without injection.
                 const resp = controlHandler.handleControlRequest(req, emit);
                 if (resp) {
-                  stdin.write(resp + "\n");
+                  safeWrite(resp + "\n");
                 }
               });
 
@@ -415,7 +452,7 @@ export async function startAgent(
 
         const autoResponse = controlHandler.handleControlRequest(req, emit);
         if (autoResponse) {
-          stdin.write(autoResponse + "\n");
+          safeWrite(autoResponse + "\n");
         }
 
         return; // Don't forward control_requests to renderer.
@@ -484,6 +521,9 @@ export async function startAgent(
 
     getMainWindow()?.webContents.send(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
+
+    // Re-evaluate whether this workspace now has reviewable changes.
+    emitReviewState(workspaceId).catch(() => {});
   });
 
   const session: AgentSession = {
@@ -549,7 +589,7 @@ export async function startAgent(
   const initRequest = controlHandler.buildInitializeRequest(
     combinedPrompt || undefined,
   );
-  stdin.write(initRequest + "\n");
+  safeWrite(initRequest + "\n");
 
   emitAgentStatus(agentId, "running");
   info(`[agent:${agentId}] started for workspace ${workspaceId}`);

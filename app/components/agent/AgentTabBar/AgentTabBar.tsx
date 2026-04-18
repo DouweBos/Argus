@@ -1,7 +1,9 @@
 import type { AgentStatus } from "../../../lib/types";
-import { useMemo } from "react";
-import { Badge, Icons } from "@argus/peacock";
-import { useAgentsRecord } from "../../../stores/agentStore";
+import type { StatusDotsState } from "@argus/peacock";
+import type { DragEvent } from "react";
+import { useMemo, useState } from "react";
+import { Badge, Icons, StatusDots } from "@argus/peacock";
+import { reorderAgent, useAgentsRecord } from "../../../stores/agentStore";
 import { useConversation } from "../../../stores/conversationStore";
 import styles from "./AgentTabBar.module.css";
 
@@ -12,16 +14,42 @@ interface AgentTabBarProps {
   onSelect: (agentId: string) => void;
 }
 
-function useTabLabel(agentId: string, fallback: string): string {
+const DRAG_MIME = "application/x-argus-agent-id";
+
+type DropPosition = "after" | "before";
+
+interface DropIndicator {
+  position: DropPosition;
+  targetAgentId: string;
+}
+
+function useTabMeta(
+  agentId: string,
+  fallback: string,
+  status: AgentStatus["status"],
+): { label: string; state: StatusDotsState } {
   const conv = useConversation(agentId);
   const messages = conv?.messages ?? [];
-  const firstUser = messages.find((m) => m.role === "user");
-  if (!firstUser || firstUser.textBlocks.length === 0) {
-    return fallback;
-  }
-  const text = firstUser.textBlocks[0].trim();
 
-  return text.length > 20 ? text.slice(0, 20) + "\u2026" : text;
+  let label = fallback;
+  const firstUser = messages.find((m) => m.role === "user");
+  if (firstUser && firstUser.textBlocks.length > 0) {
+    const text = firstUser.textBlocks[0].trim();
+    label = text.length > 20 ? text.slice(0, 20) + "\u2026" : text;
+  }
+
+  const awaitingPermission = messages.some((m) =>
+    m.toolCalls.some((tc) => tc.pendingPermission),
+  );
+
+  let state: StatusDotsState = "idle";
+  if (awaitingPermission) {
+    state = "awaiting";
+  } else if (status === "running") {
+    state = "running";
+  }
+
+  return { label, state };
 }
 
 function AgentTab({
@@ -30,24 +58,59 @@ function AgentTab({
   isActive,
   childCount,
   hasParent,
+  isDragging,
+  dropIndicator,
   onSelect,
   onClose,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: {
   agent: AgentStatus;
   childCount: number;
+  dropIndicator: DropPosition | null;
   hasParent: boolean;
   index: number;
   isActive: boolean;
+  isDragging: boolean;
   onClose: (id: string) => void;
+  onDragEnd: () => void;
+  onDragLeave: (id: string) => void;
+  onDragOver: (e: DragEvent<HTMLDivElement>, id: string) => void;
+  onDragStart: (e: DragEvent<HTMLDivElement>, id: string) => void;
+  onDrop: (e: DragEvent<HTMLDivElement>, id: string) => void;
   onSelect: (id: string) => void;
 }) {
-  const label = useTabLabel(agent.agent_id, `Agent ${index + 1}`);
+  const { label, state } = useTabMeta(
+    agent.agent_id,
+    `Agent ${index + 1}`,
+    agent.status,
+  );
+
+  const classes = [
+    styles.tab,
+    isActive ? styles.active : null,
+    isDragging ? styles.dragging : null,
+    dropIndicator === "before" ? styles.dropBefore : null,
+    dropIndicator === "after" ? styles.dropAfter : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
-      className={`${styles.tab} ${isActive ? styles.active : ""}`}
+      className={classes}
+      draggable
       onClick={() => onSelect(agent.agent_id)}
+      onDragStart={(e) => onDragStart(e, agent.agent_id)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver(e, agent.agent_id)}
+      onDragLeave={() => onDragLeave(agent.agent_id)}
+      onDrop={(e) => onDrop(e, agent.agent_id)}
     >
+      <StatusDots state={state} className={styles.statusDots} />
       {hasParent && (
         <span className={styles.parentBadge} title="Spawned by another agent">
           &#8618;
@@ -84,6 +147,10 @@ export function AgentTabBar({
   onClose,
 }: AgentTabBarProps) {
   const allAgents = useAgentsRecord();
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(
+    null,
+  );
 
   const childCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -96,20 +163,90 @@ export function AgentTabBar({
     return counts;
   }, [allAgents]);
 
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, id: string) => {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(DRAG_MIME, id);
+    // Some browsers require data on the plain text type for drag to init.
+    e.dataTransfer.setData("text/plain", id);
+    setDraggingId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setDropIndicator(null);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, id: string) => {
+    if (!draggingId || draggingId === id) {
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isBefore = e.clientX < rect.left + rect.width / 2;
+    const position: DropPosition = isBefore ? "before" : "after";
+    setDropIndicator((prev) =>
+      prev && prev.targetAgentId === id && prev.position === position
+        ? prev
+        : { targetAgentId: id, position },
+    );
+  };
+
+  const handleDragLeave = (id: string) => {
+    setDropIndicator((prev) =>
+      prev && prev.targetAgentId === id ? null : prev,
+    );
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, targetId: string) => {
+    e.preventDefault();
+    const fromId =
+      e.dataTransfer.getData(DRAG_MIME) ||
+      e.dataTransfer.getData("text/plain") ||
+      draggingId;
+    setDraggingId(null);
+    const indicator = dropIndicator;
+    setDropIndicator(null);
+    if (!fromId || fromId === targetId) {
+      return;
+    }
+    const target = agents.find((a) => a.agent_id === targetId);
+    if (!target) {
+      return;
+    }
+    const position: DropPosition = indicator?.position ?? "before";
+    reorderAgent(target.workspace_id, fromId, targetId, position);
+  };
+
   return (
     <div className={styles.tabs}>
-      {agents.map((agent, index) => (
-        <AgentTab
-          key={agent.agent_id}
-          agent={agent}
-          childCount={childCounts[agent.agent_id] ?? 0}
-          hasParent={Boolean(agent.parent_agent_id)}
-          index={index}
-          isActive={agent.agent_id === activeAgentId}
-          onClose={onClose}
-          onSelect={onSelect}
-        />
-      ))}
+      {agents.map((agent, index) => {
+        const indicator =
+          dropIndicator && dropIndicator.targetAgentId === agent.agent_id
+            ? dropIndicator.position
+            : null;
+
+        return (
+          <AgentTab
+            key={agent.agent_id}
+            agent={agent}
+            childCount={childCounts[agent.agent_id] ?? 0}
+            dropIndicator={indicator}
+            hasParent={Boolean(agent.parent_agent_id)}
+            index={index}
+            isActive={agent.agent_id === activeAgentId}
+            isDragging={draggingId === agent.agent_id}
+            onClose={onClose}
+            onDragEnd={handleDragEnd}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDragStart={handleDragStart}
+            onDrop={handleDrop}
+            onSelect={onSelect}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -396,6 +396,27 @@ export function useWebBrowserSimulatorState() {
   };
 }
 
+/**
+ * Return the active device key for the given workspace + platform (the UDID
+ * for iOS, the serial for Android), or null. Used by the runtime live log to
+ * know which device's conductor events to show.
+ */
+export function useActiveDeviceKey(
+  workspaceId: string | null,
+  platform: Platform,
+): string | null {
+  return useSimulatorStore((s) => {
+    if (platform === "ios") {
+      return s.selectedUdidByWorkspace[workspaceId ?? "__global__"] ?? null;
+    }
+    if (platform === "android") {
+      return s.selectedAndroidByWorkspace[workspaceId ?? "__global__"] ?? null;
+    }
+
+    return null;
+  });
+}
+
 /** For tests */
 export const getSimulatorState = () => simulatorStore.getState();
 export const setSimulatorState = simulatorStore.setState.bind(simulatorStore);

@@ -1,0 +1,96 @@
+.grid {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 3px);
+  grid-template-rows: repeat(3, 3px);
+  gap: 2px;
+  align-items: center;
+  justify-items: center;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.55;
+  transition:
+    background var(--transition-base),
+    opacity var(--transition-base);
+}
+
+/* Diagonal wave — top-left to bottom-right.
+   Delays map to 3x3 positions: row + col (in children order). */
+.running .dot {
+  animation: statusDotPulse 1.2s ease-in-out infinite;
+  background: var(--text-primary, #fff);
+}
+
+.running .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+.running .dot:nth-child(2),
+.running .dot:nth-child(4) {
+  animation-delay: 0.1s;
+}
+.running .dot:nth-child(3),
+.running .dot:nth-child(5),
+.running .dot:nth-child(7) {
+  animation-delay: 0.2s;
+}
+.running .dot:nth-child(6),
+.running .dot:nth-child(8) {
+  animation-delay: 0.3s;
+}
+.running .dot:nth-child(9) {
+  animation-delay: 0.4s;
+}
+
+.awaiting .dot {
+  background: var(--accent, #ff9500);
+  opacity: 1;
+  animation: statusDotBreath 1.4s ease-in-out infinite;
+}
+
+.awaiting .dot:nth-child(2),
+.awaiting .dot:nth-child(4) {
+  animation-delay: 0.1s;
+}
+.awaiting .dot:nth-child(3),
+.awaiting .dot:nth-child(5),
+.awaiting .dot:nth-child(7) {
+  animation-delay: 0.2s;
+}
+.awaiting .dot:nth-child(6),
+.awaiting .dot:nth-child(8) {
+  animation-delay: 0.3s;
+}
+.awaiting .dot:nth-child(9) {
+  animation-delay: 0.4s;
+}
+
+@keyframes statusDotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-1.5px);
+  }
+  70% {
+    opacity: 0.6;
+    transform: translateY(0);
+  }
+}
+
+@keyframes statusDotBreath {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}

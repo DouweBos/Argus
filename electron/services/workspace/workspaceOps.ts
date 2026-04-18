@@ -9,6 +9,7 @@
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import { info } from "../../../app/lib/logger";
+import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { git, worktreesRoot } from "./git";
 import {
@@ -279,7 +280,28 @@ export async function gitCommit(
     args.push("--amend");
   }
 
-  return git(workspacePath(id), args);
+  const output = await git(workspacePath(id), args);
+
+  // Emit a commit-landed activity event. Best-effort — lookup failures should
+  // not abort the commit.
+  try {
+    const ws = appState.workspaces.get(id);
+    if (ws) {
+      const hash = (await git(ws.path, ["log", "-1", "--format=%h"])).trim();
+      const subject = (await git(ws.path, ["log", "-1", "--format=%s"])).trim();
+      getMainWindow()?.webContents.send("workspace:commit-landed", {
+        workspaceId: id,
+        branch: ws.branch,
+        hash,
+        subject,
+        amend,
+      });
+    }
+  } catch {
+    // Non-fatal.
+  }
+
+  return output;
 }
 
 /** Return the git author `[name, email]` configured for a workspace. */
@@ -647,4 +669,55 @@ export async function mergeWorkspaceIntoBase(id: string): Promise<void> {
   }
 
   await doMergeWorkspaceIntoBase(ws.repo_root, ws.branch, ws.base_branch);
+
+  getMainWindow()?.webContents.send("workspace:merged", {
+    workspaceId: id,
+    branch: ws.branch,
+    baseBranch: ws.base_branch,
+  });
+
+  emitReviewState(id).catch(() => {});
+}
+
+/**
+ * Count commits on the workspace branch that are not yet in its base branch.
+ * Returns 0 for workspaces without a base branch, for the repo_root workspace,
+ * or when the branches cannot be compared.
+ */
+export async function getWorkspaceCommitsAhead(id: string): Promise<number> {
+  const ws = appState.workspaces.get(id);
+  if (!ws) {
+    throw `Workspace not found: ${id}`;
+  }
+  if (ws.kind === "repo_root" || !ws.base_branch) {
+    return 0;
+  }
+  try {
+    const out = await git(ws.repo_root, [
+      "rev-list",
+      "--count",
+      `${ws.base_branch}..${ws.branch}`,
+    ]);
+    const n = parseInt(out.trim(), 10);
+
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Emit the current review-queue state for a workspace to the renderer.
+ * The frontend uses this to add/remove the workspace from the Review queue.
+ */
+export async function emitReviewState(id: string): Promise<void> {
+  const ws = appState.workspaces.get(id);
+  if (!ws) {
+    return;
+  }
+  const commitsAhead = await getWorkspaceCommitsAhead(id);
+  getMainWindow()?.webContents.send("workspace:review-state", {
+    workspaceId: id,
+    commitsAhead,
+  });
 }

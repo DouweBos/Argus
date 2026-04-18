@@ -20,6 +20,7 @@ import {
   setActiveAgent,
   updateAgent,
   useActiveAgentIds,
+  useAgentOrder,
   useAgentsRecord,
 } from "../stores/agentStore";
 import {
@@ -37,14 +38,31 @@ export function useWorkspaceAgents(
 
   const allAgents = useAgentsRecord();
   const activeAgentIds = useActiveAgentIds();
+  const agentOrder = useAgentOrder(workspaceId);
 
-  const agents = useMemo(
-    () =>
-      workspaceId
-        ? Object.values(allAgents).filter((a) => a.workspace_id === workspaceId)
-        : [],
-    [allAgents, workspaceId],
-  );
+  const agents = useMemo(() => {
+    if (!workspaceId) {
+      return [];
+    }
+    const workspaceAgents = Object.values(allAgents).filter(
+      (a) => a.workspace_id === workspaceId,
+    );
+    const byId = new Map(workspaceAgents.map((a) => [a.agent_id, a]));
+    const ordered: AgentStatus[] = [];
+    for (const id of agentOrder) {
+      const agent = byId.get(id);
+      if (agent) {
+        ordered.push(agent);
+        byId.delete(id);
+      }
+    }
+    // Append any agents not yet in the order list (shouldn't normally happen).
+    for (const agent of byId.values()) {
+      ordered.push(agent);
+    }
+
+    return ordered;
+  }, [allAgents, workspaceId, agentOrder]);
 
   const activeAgent = useMemo(() => {
     if (!workspaceId) {

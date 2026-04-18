@@ -83,6 +83,26 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
 ];
 const EMPTY_MESSAGES: ConversationMessage[] = [];
 
+function findLatestTodos(
+  messages: ConversationMessage[],
+): { id: string; todos: TodoItem[] } | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    for (let j = msg.toolCalls.length - 1; j >= 0; j--) {
+      const tc = msg.toolCalls[j];
+      if (tc.name !== "TodoWrite") {
+        continue;
+      }
+      const todos = (tc.input as { todos?: unknown }).todos;
+      if (Array.isArray(todos) && todos.length > 0) {
+        return { id: tc.id, todos: todos as TodoItem[] };
+      }
+    }
+  }
+
+  return null;
+}
+
 interface AgentChatProps {
   agentId: string | null;
   onClose?: () => void;
@@ -165,24 +185,24 @@ export function AgentChat({
   const segments = useMemo(() => groupMessages(messages), [messages]);
 
   // Find the most recent TodoWrite tool call's todo list (if any). Displayed
-  // above the chat input so users always see current progress.
-  const activeTodos = useMemo<TodoItem[] | null>(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      for (let j = msg.toolCalls.length - 1; j >= 0; j--) {
-        const tc = msg.toolCalls[j];
-        if (tc.name !== "TodoWrite") {
-          continue;
-        }
-        const todos = (tc.input as { todos?: unknown }).todos;
-        if (Array.isArray(todos) && todos.length > 0) {
-          return todos as TodoItem[];
-        }
-      }
-    }
+  // above the chat input so users always see current progress. React Compiler
+  // memoizes this for us.
+  const latestTodos = findLatestTodos(messages);
 
-    return null;
-  }, [messages]);
+  // Track the dismissed todo list per agent. Scoping by agentId means switching
+  // agents automatically re-surfaces the current list instead of carrying a
+  // stale dismissal across tabs. A new TodoWrite produces a new ID and
+  // re-surfaces the view within the same agent.
+  const [dismissedTodo, setDismissedTodo] = useState<{
+    agentId: string;
+    todoId: string;
+  } | null>(null);
+  const isDismissed =
+    dismissedTodo != null &&
+    dismissedTodo.agentId === agentId &&
+    latestTodos != null &&
+    dismissedTodo.todoId === latestTodos.id;
+  const activeTodos = latestTodos && !isDismissed ? latestTodos.todos : null;
 
   // Merge built-in commands with backend-reported commands, deduplicating by
   // name and preferring richer objects (ones with a description).
@@ -223,7 +243,8 @@ export function AgentChat({
     }
   }, [messages.length, queuedMessages.length, isAtBottom]);
 
-  // Scroll to bottom when switching to this agent tab
+  // Scroll to bottom when switching to this agent tab. Dismissal state is
+  // already scoped to agentId, so no cross-agent reset is needed here.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
     // The scroll handler will update isAtBottom from the new position.
@@ -565,7 +586,12 @@ export function AgentChat({
       )}
 
       {activeTodos && activeTodos.length > 0 && (
-        <TodoList todos={activeTodos} />
+        <TodoList
+          todos={activeTodos}
+          onDismiss={() =>
+            latestTodos && setDismissedTodo({ agentId, todoId: latestTodos.id })
+          }
+        />
       )}
 
       {!readOnly && (
@@ -615,7 +641,13 @@ function isToolCallOnly(msg: ConversationMessage): boolean {
     msg.role === "assistant" &&
     msg.toolCalls.length > 0 &&
     msg.textBlocks.length === 0 &&
-    !msg.toolCalls.some((tc) => tc.name === "Agent")
+    !msg.toolCalls.some(
+      (tc) =>
+        tc.name === "Agent" ||
+        tc.name === "Edit" ||
+        tc.name === "MultiEdit" ||
+        tc.name === "Write",
+    )
   );
 }
 

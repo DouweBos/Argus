@@ -11,6 +11,7 @@ import {
   getRepoBranch,
   listWorkspaces,
 } from "../lib/ipc";
+import { seedReviewStateForWorkspace } from "../lib/reviewQueueService";
 import { getAgentState, removeAgent } from "../stores/agentStore";
 import {
   addOpenProject,
@@ -110,6 +111,15 @@ export function useProjects() {
         const workspaces = await listWorkspaces(path);
         mergeWorkspacesForProject(path, workspaces);
 
+        // Seed the review queue with the current commits-ahead count for each
+        // worktree — worktrees may have accumulated changes in a previous
+        // session. repo_root workspaces are skipped upstream in the backend.
+        for (const ws of workspaces) {
+          if (ws.kind === "worktree") {
+            seedReviewStateForWorkspace(ws.id).catch(() => {});
+          }
+        }
+
         try {
           const branch = await getRepoBranch(path);
           setProjectBranch(path, branch);
@@ -200,6 +210,9 @@ export function useProjects() {
       const ws = event.payload;
       if (!getWorkspaceState().workspaces.some((w) => w.id === ws.id)) {
         addWorkspace(ws);
+      }
+      if (ws.kind === "worktree") {
+        seedReviewStateForWorkspace(ws.id).catch(() => {});
       }
     });
 

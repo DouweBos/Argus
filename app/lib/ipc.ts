@@ -10,6 +10,8 @@ import type {
   AgentStatus,
   AndroidDevice,
   BranchList,
+  ConductorLogEntry,
+  DeviceInfo,
   DirEntry,
   FileStat,
   MentionPathResult,
@@ -42,6 +44,9 @@ function invoke<T>(
 export function send(channel: string, args?: Record<string, unknown>): void {
   window.argus.send(channel, args);
 }
+
+// Window
+export const closeWindow = (): Promise<void> => invoke("close_window");
 
 // Workspace commands
 export const addRepoRoot = (path: string): Promise<void> =>
@@ -246,6 +251,9 @@ export const setWorkspaceBaseBranch = (
 
 export const getWorkspaceConflicts = (id: string): Promise<string[]> =>
   invoke("get_workspace_conflicts", { id });
+
+export const getWorkspaceCommitsAhead = (id: string): Promise<number> =>
+  invoke("get_workspace_commits_ahead", { id });
 
 export const mergeWorkspaceIntoBase = (id: string): Promise<void> =>
   invoke("merge_workspace_into_base", { id });
@@ -552,6 +560,18 @@ export const browserUpdatePreset = (
 
 export const browserGetMjpegPort = (): Promise<number> =>
   invoke("browser_get_mjpeg_port");
+
+// Devices + conductor logs
+export const listDevices = (): Promise<DeviceInfo[]> => invoke("list_devices");
+
+export const listConductorLogs = (
+  deviceKey: string,
+): Promise<ConductorLogEntry[]> => invoke("list_conductor_logs", { deviceKey });
+
+export const runConductorCommand = (
+  deviceKey: string,
+  args: string[],
+): Promise<void> => invoke("run_conductor_command", { deviceKey, args });
 
 // Shell commands
 export const revealInFinder = (path: string): Promise<void> =>

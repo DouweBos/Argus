@@ -10,13 +10,17 @@ import {
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { checkClaudeCli } from "../../../lib/ipc";
+import { setActiveAgent } from "../../../stores/agentStore";
+import { useDevicePoller } from "../../../stores/deviceStore";
+import {
+  showOpenProjectDialog,
+  triggerNewWorkspace,
+} from "../../../stores/dialogStore";
+import { setActiveCenterView } from "../../../stores/editorStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectWorkspace } from "../../../stores/workspaceStore";
-import { CreateWorkspaceDialog } from "../../sidebar/CreateWorkspaceDialog";
-import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import { DirectionPicker } from "./DirectionPicker/DirectionPicker";
 import styles from "./HomeScreen.module.css";
-import { NewWorkspacePicker } from "./NewWorkspacePicker";
 import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
 import { LiveActivity } from "./directions/LiveActivity/LiveActivity";
 import { Orrery } from "./directions/Orrery/Orrery";
@@ -25,15 +29,13 @@ import { useHomeData, type HomeProject } from "./useHomeData";
 import { useHomeDirection } from "./useHomeDirection";
 
 export function HomeScreen() {
+  useDevicePoller(5000);
   const data = useHomeData();
   const [direction, setDirection] = useHomeDirection();
   const { openProject } = useProjects();
-  const [showOpenProject, setShowOpenProject] = useState(false);
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [claudeCliMissing, setClaudeCliMissing] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
-  const [createRepoRoot, setCreateRepoRoot] = useState<string | null>(null);
 
   useEffect(() => {
     checkClaudeCli()
@@ -41,59 +43,48 @@ export function HomeScreen() {
       .catch(() => setClaudeCliMissing(true));
   }, []);
 
-  const handleOpenPath = async (path: string) => {
+  const handleOpenProject = async (p: HomeProject) => {
     setOpenError(null);
-    setOpeningPath(path);
+    setOpeningPath(p.path);
     try {
-      await openProject(path);
-      setShowOpenProject(false);
+      await openProject(p.path);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setOpenError(msg);
-      removeRecentProject(path);
+      removeRecentProject(p.path);
     } finally {
       setOpeningPath(null);
     }
   };
 
-  const handleOpenProject = (p: HomeProject) => {
-    handleOpenPath(p.path).catch(() => {});
-  };
-
-  const handleOpenWorkspace = async (workspaceId: string, repoPath: string) => {
+  const handleOpenWorkspace = async (
+    workspaceId: string,
+    repoPath: string,
+    agentId?: string,
+  ) => {
     try {
       await openProject(repoPath, { autoSelect: false });
       selectWorkspace(workspaceId);
+      if (agentId) {
+        setActiveAgent(workspaceId, agentId);
+        setActiveCenterView("agents");
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setOpenError(msg);
     }
   };
 
-  const handleAddRepository = () => setShowOpenProject(true);
-
-  const handleNewWorkspace = () => {
-    if (data.projects.length === 0) {
-      setShowOpenProject(true);
-
-      return;
-    }
-    if (data.projects.length === 1) {
-      const only = data.projects[0];
-      if (only) {
-        setCreateRepoRoot(only.path);
-      }
-
-      return;
-    }
-    setShowPicker(true);
-  };
+  const handleAddRepository = () => showOpenProjectDialog();
+  const handleNewWorkspace = () => triggerNewWorkspace();
 
   const directionProps = {
     data,
     onAddRepository: handleAddRepository,
     onNewWorkspace: handleNewWorkspace,
-    onOpenProject: handleOpenProject,
+    onOpenProject: (p: HomeProject) => {
+      handleOpenProject(p).catch(() => {});
+    },
     onOpenWorkspace: handleOpenWorkspace,
   };
 
@@ -179,34 +170,6 @@ export function HomeScreen() {
           </div>
         )}
       </div>
-
-      {showOpenProject && (
-        <OpenProjectDialog
-          onClose={() => {
-            setShowOpenProject(false);
-            setOpenError(null);
-          }}
-          onOpen={handleOpenPath}
-        />
-      )}
-
-      {showPicker && (
-        <NewWorkspacePicker
-          projects={data.projects}
-          onClose={() => setShowPicker(false)}
-          onPick={(p) => {
-            setShowPicker(false);
-            setCreateRepoRoot(p.path);
-          }}
-        />
-      )}
-
-      {createRepoRoot && (
-        <CreateWorkspaceDialog
-          repoRoot={createRepoRoot}
-          onClose={() => setCreateRepoRoot(null)}
-        />
-      )}
     </div>
   );
 }
