@@ -1,26 +1,26 @@
-import type { IconProps } from "../../shared/Icons";
+import type { SVGProps } from "react";
+import { Icons } from "@argus/peacock";
 import {
   type ToolId,
   toggleTool,
   useActiveToolId,
 } from "../../../stores/layoutStore";
-import {
-  GitChangesIcon,
-  SimulatorIcon,
-  TerminalToolIcon,
-} from "../../shared/Icons";
 import styles from "./ToolRail.module.css";
 
+type IconComponent = React.ComponentType<
+  SVGProps<SVGSVGElement> & { size?: number }
+>;
+
 interface ToolDef {
-  icon: React.ComponentType<IconProps>;
+  icon: IconComponent;
   id: ToolId;
   label: string;
 }
 
 const TOOLS: ToolDef[] = [
-  { id: "changes", label: "Changes", icon: GitChangesIcon },
-  { id: "terminal", label: "Terminal", icon: TerminalToolIcon },
-  { id: "simulator", label: "Simulator", icon: SimulatorIcon },
+  { id: "changes", label: "Changes", icon: Icons.GitChangesIcon },
+  { id: "terminal", label: "Terminal", icon: Icons.TerminalToolIcon },
+  { id: "simulator", label: "Simulator", icon: Icons.SimulatorIcon },
 ];
 
 export function ToolRail() {

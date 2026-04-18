@@ -1,16 +1,12 @@
 import type { DiffFile } from "../../../lib/diffParser";
 import type { GitCommit } from "../../../lib/ipc";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, DiffStat, Icons } from "@argus/peacock";
 import { parseDiff } from "../../../lib/diffParser";
 import { buildGraphLanes } from "../../../lib/gitGraph";
 import { gitLog, gitShowCommit } from "../../../lib/ipc";
 import { md5Hex } from "../../../lib/md5";
 import { ResizablePanel } from "../../layout/ResizablePanel";
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FileIcon,
-} from "../../shared/Icons";
 import { FileDiffView } from "../FileDiffView";
 import { GraphCell } from "../GraphCell";
 import styles from "../HistoryView/HistoryView.module.css";
@@ -358,20 +354,14 @@ export function CommitLogView({
             </div>
 
             <div className={styles.filesHeader}>
-              <button className={styles.expandAllBtn} onClick={expandAll}>
+              <Button size="sm" variant="ghost" onClick={expandAll}>
                 Expand All
-              </button>
+              </Button>
               <span className={styles.filesStats}>
-                Showing {diffFiles.length} changed file
-                {diffFiles.length !== 1 ? "s" : ""} with{" "}
-                <span className={styles.statAdd}>
-                  {totalAdds} addition{totalAdds !== 1 ? "s" : ""}
-                </span>
-                {" and "}
-                <span className={styles.statDel}>
-                  {totalDels} deletion{totalDels !== 1 ? "s" : ""}
-                </span>
+                {diffFiles.length} changed file
+                {diffFiles.length !== 1 ? "s" : ""}
               </span>
+              <DiffStat added={totalAdds} removed={totalDels} />
             </div>
 
             <div className={styles.filesList}>
@@ -387,9 +377,9 @@ export function CommitLogView({
                     >
                       <span className={styles.fileChevron}>
                         {isExpanded ? (
-                          <ChevronDownIcon size={10} />
+                          <Icons.ChevronDownIcon size={10} />
                         ) : (
-                          <ChevronRightIcon size={8} />
+                          <Icons.ChevronRightIcon size={8} />
                         )}
                       </span>
                       <span className={styles.fileStatusLabel}>
@@ -419,7 +409,7 @@ export function CommitLogView({
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <FileIcon size={48} />
+            <Icons.FileIcon size={48} />
             <p>Select a commit to view details</p>
           </div>
         )}

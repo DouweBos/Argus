@@ -1,10 +1,10 @@
 import { createPortal } from "react-dom";
+import { Button, Icons } from "@argus/peacock";
 import {
   removeRecentProject,
   useRecentProjects,
 } from "../../../stores/recentProjectsStore";
 import { Dialog } from "../../shared/Dialog";
-import { CloseIcon, FolderIcon } from "../../shared/Icons";
 import projectStyles from "./OpenProjectDialog.module.css";
 
 interface OpenProjectDialogProps {
@@ -37,10 +37,14 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
   return createPortal(
     <Dialog title="Open Project" titleId="open-project-title" onClose={onClose}>
       <div className={projectStyles.body}>
-        <button className={projectStyles.browseBtn} onClick={handleBrowse}>
-          <FolderIcon />
+        <Button
+          variant="ghost"
+          className={projectStyles.browseBtn}
+          leading={<Icons.FolderIcon size={13} />}
+          onClick={handleBrowse}
+        >
           Browse...
-        </button>
+        </Button>
 
         {projects.length > 0 && (
           <div className={projectStyles.recentsSection}>
@@ -53,7 +57,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
                     title={project.path}
                     onClick={() => handleSelectProject(project.path)}
                   >
-                    <FolderIcon />
+                    <Icons.FolderIcon size={14} />
                     <span className={projectStyles.recentsInfo}>
                       <span className={projectStyles.recentsName}>
                         {project.name}
@@ -71,7 +75,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
                       removeRecentProject(project.path);
                     }}
                   >
-                    <CloseIcon size={14} />
+                    <Icons.CloseIcon size={14} />
                   </button>
                 </li>
               ))}

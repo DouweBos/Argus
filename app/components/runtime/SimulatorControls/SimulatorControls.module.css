@@ -15,10 +15,10 @@
 }
 
 .label {
-  font-size: var(--font-size-xs);
+  font: var(--type-caption);
+  font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
-  font-weight: 500;
   letter-spacing: 0.02em;
 }
 
@@ -61,47 +61,5 @@
 
 .actions {
   display: flex;
-  gap: 6px;
-}
-
-/* Sleek action buttons — consistent height, subtle border */
-.actionBtn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition:
-    background var(--transition-base),
-    border-color var(--transition-base),
-    color var(--transition-base);
-}
-
-.actionBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: var(--text-primary);
-}
-
-.actionBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.destructive {
-  color: var(--error);
-}
-
-.destructive:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--error) 12%, var(--bg-tertiary));
-  border-color: color-mix(in srgb, var(--error) 30%, var(--border));
-  color: var(--error);
+  gap: var(--space-3);
 }

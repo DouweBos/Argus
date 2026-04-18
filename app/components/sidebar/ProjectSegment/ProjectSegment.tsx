@@ -1,17 +1,12 @@
 import type { Workspace } from "../../../lib/types";
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { Icons } from "@argus/peacock";
 import { useProjectWorkspaces } from "../../../hooks/useWorkspaces";
 import {
   selectWorkspace,
   useSelectedWorkspaceId,
 } from "../../../stores/workspaceStore";
-import {
-  ChevronDownIcon,
-  CloseIcon,
-  GearIcon,
-  PlusIcon,
-} from "../../shared/Icons";
 import { CreateWorkspaceDialog } from "../CreateWorkspaceDialog";
 import { DeleteWorkspaceDialog } from "../DeleteWorkspaceDialog";
 import { SetupConfigDialog } from "../SetupConfigDialog";
@@ -63,10 +58,11 @@ export function ProjectSegment({
         title={repoRoot}
         onClick={onToggleCollapsed}
       >
-        <ChevronDownIcon
+        <Icons.ChevronDownIcon
           className={`${styles.collapseIcon} ${isCollapsed ? styles.collapsed : ""}`}
           size={10}
         />
+        <Icons.FolderIcon size={11} className={styles.folderIcon} />
         <span className={styles.projectName}>{basename(repoRoot)}</span>
         <div
           className={styles.headerActions}
@@ -77,21 +73,21 @@ export function ProjectSegment({
             title="New workspace"
             onClick={() => setShowCreate(true)}
           >
-            <PlusIcon size={10} />
+            <Icons.PlusIcon size={10} />
           </button>
           <button
             className={styles.headerBtn}
             title="Project configuration"
             onClick={() => setShowConfig(true)}
           >
-            <GearIcon />
+            <Icons.GearIcon size={12} />
           </button>
           <button
             className={styles.headerBtn}
             title="Close project"
             onClick={onClose}
           >
-            <CloseIcon size={10} />
+            <Icons.CloseIcon size={10} />
           </button>
         </div>
       </div>
@@ -125,7 +121,7 @@ export function ProjectSegment({
             className={styles.newWorkspaceBtn}
             onClick={() => setShowCreate(true)}
           >
-            <PlusIcon size={10} />
+            <Icons.PlusIcon size={10} />
             <span>New workspace</span>
           </button>
         </div>

@@ -1,14 +1,10 @@
 import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
+import { Icons } from "@argus/peacock";
 import {
   BROWSER_PRESETS,
   BUILTIN_PRESET_IDS,
   type BrowserPresetConfig,
 } from "../../../lib/browserPresets";
-import {
-  ArrowBackIcon,
-  ArrowForwardIcon,
-  RefreshIcon,
-} from "../../shared/Icons";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
 import styles from "./WebBrowserView.module.css";
@@ -81,7 +77,7 @@ export function WebBrowserTitleBar({
           type="button"
           onClick={onBack}
         >
-          <ArrowBackIcon size={11} />
+          <Icons.ArrowBackIcon size={11} />
         </button>
         <button
           className={chrome.titleBarButton}
@@ -90,7 +86,7 @@ export function WebBrowserTitleBar({
           type="button"
           onClick={onForward}
         >
-          <ArrowForwardIcon size={11} />
+          <Icons.ArrowForwardIcon size={11} />
         </button>
       </div>
       <div className={styles.floatingNavUrlSlot}>
@@ -111,7 +107,7 @@ export function WebBrowserTitleBar({
         type="button"
         onClick={onReload}
       >
-        <RefreshIcon size={11} />
+        <Icons.RefreshIcon size={11} />
       </button>
     </>
   );

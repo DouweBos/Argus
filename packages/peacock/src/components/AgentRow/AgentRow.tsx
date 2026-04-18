@@ -1,11 +1,22 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import styles from "./AgentRow.module.css";
-import { StatusDot } from "../Badge/Badge";
 import {
   agentStatusPulse,
   agentStatusTone,
   type AgentStatus,
 } from "../../lib/agentStatus";
+import { StatusDot } from "../Badge/Badge";
+import styles from "./AgentRow.module.css";
+
+function defaultMeta(status: AgentStatus): string {
+  if (status === "pending") {
+    return "waiting";
+  }
+  if (status === "error") {
+    return "blocked";
+  }
+
+  return "idle";
+}
 
 export interface AgentRowProps extends HTMLAttributes<HTMLDivElement> {
   name: ReactNode;
@@ -35,15 +46,20 @@ export function AgentRow({
   ]
     .filter(Boolean)
     .join(" ");
-  const metaText =
-    meta ?? (status === "pending" ? "waiting" : status === "error" ? "blocked" : "idle");
+  const metaText = meta ?? defaultMeta(status);
+
   return (
     <div className={classes} {...rest}>
-      <StatusDot tone={agentStatusTone(status)} pulse={agentStatusPulse(status)} />
+      <StatusDot
+        tone={agentStatusTone(status)}
+        pulse={agentStatusPulse(status)}
+      />
       <div className={styles.info}>
         <div className={styles.top}>
           <span>{name}</span>
-          {project != null && <span className={styles.project}>· {project}</span>}
+          {project != null && (
+            <span className={styles.project}>· {project}</span>
+          )}
         </div>
         {tool != null && <div className={styles.tool}>{tool}</div>}
       </div>

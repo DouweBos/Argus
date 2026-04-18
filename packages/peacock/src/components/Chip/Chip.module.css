@@ -10,7 +10,8 @@
   border-radius: var(--border-radius-pill);
   padding: 2px 10px;
   cursor: default;
-  transition: background var(--transition-fast),
+  transition:
+    background var(--transition-fast),
     border-color var(--transition-fast);
 }
 .chip:hover {
@@ -21,7 +22,7 @@
   cursor: pointer;
 }
 .interactive:hover {
-  border-color: rgba(77, 159, 255, 0.25);
+  border-color: rgba(245, 166, 35, 0.25);
   color: var(--text-primary);
 }
 

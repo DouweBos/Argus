@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Button, DiffStat, Icons } from "@argus/peacock";
 import { buildPartialPatch } from "../../../lib/diffParser";
 import {
   discardFile,
@@ -14,7 +15,6 @@ import {
   stageHunk,
   unstageHunk,
 } from "../../../lib/ipc";
-import { FileIcon, TrashIcon } from "../../shared/Icons";
 import { HunkSection } from "../HunkSection";
 import styles from "./FileDiffView.module.css";
 
@@ -280,18 +280,19 @@ function FileDiffViewInner({
     >
       {/* File header bar */}
       <div className={styles.fileDiffHeader}>
-        <FileIcon className={styles.fileIcon} />
+        <Icons.FileIcon className={styles.fileIcon} />
         <span className={styles.fileDiffName}>{fileName}</span>
         <div className={styles.fileDiffActions}>
-          <button
-            className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+          <Button
+            size="sm"
+            variant="danger"
             title="Discard all changes to this file"
             onClick={() =>
               onAction(() => discardFile(workspaceId, displayPath))
             }
           >
-            <TrashIcon />
-          </button>
+            <Icons.TrashIcon size={11} />
+          </Button>
           <div className={styles.stagedToggle}>
             <button
               className={`${styles.stagedBtn} ${viewMode === "staged" ? styles.stagedBtnActive : ""}`}
@@ -313,9 +314,10 @@ function FileDiffViewInner({
 
       {/* Stats subheader */}
       <div className={styles.fileDiffStats}>
-        {stats.chunks} {stats.chunks === 1 ? "chunk" : "chunks"}, {stats.adds}{" "}
-        {stats.adds === 1 ? "insertion" : "insertions"}, {stats.removes}{" "}
-        {stats.removes === 1 ? "deletion" : "deletions"}
+        <span className={styles.chunkCount}>
+          {stats.chunks} {stats.chunks === 1 ? "chunk" : "chunks"}
+        </span>
+        <DiffStat added={stats.adds} removed={stats.removes} />
       </div>
 
       {/* Diff content */}
@@ -337,16 +339,10 @@ function FileDiffViewInner({
 
       {/* Bottom status bar */}
       <div className={styles.fileDiffFooter}>
-        <span className={styles.footerStats}>
-          {stats.chunks} {stats.chunks === 1 ? "chunk" : "chunks"},{" "}
-          <span className={styles.statAdd}>
-            {stats.adds} {stats.adds === 1 ? "insertion" : "insertions"}
-          </span>
-          ,{" "}
-          <span className={styles.statRemove}>
-            {stats.removes} {stats.removes === 1 ? "deletion" : "deletions"}
-          </span>
+        <span className={styles.footerChunks}>
+          {stats.chunks} {stats.chunks === 1 ? "chunk" : "chunks"}
         </span>
+        <DiffStat added={stats.adds} removed={stats.removes} />
       </div>
     </div>
   );

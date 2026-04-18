@@ -47,11 +47,13 @@
   font-family: var(--font-mono);
   min-width: 220px;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 .cmdk:hover {
   background: var(--glass-bg-hover);
-  border-color: rgba(77, 159, 255, 0.2);
+  border-color: rgba(245, 166, 35, 0.2);
 }
 .cmdkText {
   flex: 1;
@@ -68,7 +70,9 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 .iconBtn:hover {
   background: var(--glass-bg);

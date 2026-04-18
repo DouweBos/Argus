@@ -1,9 +1,9 @@
 import type { HTMLAttributes } from "react";
-import styles from "./PlatformChip.module.css";
-import { SimulatorIcon, TerminalIcon } from "../../icons/Icons";
 import { WebIcon } from "../../icons/HomeIcons";
+import { SimulatorIcon, TerminalIcon } from "../../icons/Icons";
+import styles from "./PlatformChip.module.css";
 
-export type Platform = "ios" | "android" | "web" | "desktop";
+export type Platform = "android" | "desktop" | "ios" | "web";
 
 const labels: Record<Platform, string> = {
   ios: "iOS",
@@ -12,26 +12,46 @@ const labels: Record<Platform, string> = {
   desktop: "Desktop",
 };
 
+function renderPlatformIcon(platform: Platform) {
+  if (platform === "web") {
+    return <WebIcon size={10} />;
+  }
+  if (platform === "desktop") {
+    return <TerminalIcon size={10} />;
+  }
+
+  return <SimulatorIcon size={10} />;
+}
+
 export interface PlatformChipProps extends HTMLAttributes<HTMLSpanElement> {
+  /** Whether this chip is the currently selected platform. */
+  active?: boolean;
   platform: Platform;
 }
 
 export function PlatformChip({
   platform,
+  active,
   className,
   ...rest
 }: PlatformChipProps) {
-  const icon =
-    platform === "web" ? (
-      <WebIcon size={10} />
-    ) : platform === "desktop" ? (
-      <TerminalIcon size={10} />
-    ) : (
-      <SimulatorIcon size={10} />
-    );
+  const icon = renderPlatformIcon(platform);
+
+  const classes = [
+    styles.chip,
+    active ? styles.chipActive : undefined,
+    rest.onClick ? styles.chipInteractive : undefined,
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <span
-      className={[styles.chip, className].filter(Boolean).join(" ")}
+      aria-pressed={rest.onClick ? active : undefined}
+      role={rest.onClick ? "button" : undefined}
+      tabIndex={rest.onClick ? 0 : undefined}
+      className={classes}
       {...rest}
     >
       {icon}

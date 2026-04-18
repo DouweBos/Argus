@@ -13,11 +13,11 @@
 }
 
 .selected {
-  background: rgba(77, 159, 255, 0.06);
+  background: rgba(245, 166, 35, 0.06);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .selected:hover {
-  background: rgba(77, 159, 255, 0.08);
+  background: rgba(245, 166, 35, 0.08);
 }
 
 .top {

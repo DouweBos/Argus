@@ -1,6 +1,6 @@
 import { Fragment, type HTMLAttributes } from "react";
-import styles from "./ShortcutsRail.module.css";
 import { Kbd } from "../Kbd/Kbd";
+import styles from "./ShortcutsRail.module.css";
 
 export interface Shortcut {
   keys: string[];
@@ -20,14 +20,19 @@ export function ShortcutsRail({
   ...rest
 }: ShortcutsRailProps) {
   return (
-    <div className={[styles.rail, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.rail, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {shortcuts.map((s, i) => (
         <Fragment key={`${s.label}-${i}`}>
           <div className={styles.item}>
             <Kbd keys={s.keys} />
             <span>{s.label}</span>
           </div>
-          {separated && i < shortcuts.length - 1 && <div className={styles.sep} />}
+          {separated && i < shortcuts.length - 1 && (
+            <div className={styles.sep} />
+          )}
         </Fragment>
       ))}
     </div>

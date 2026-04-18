@@ -1,52 +1,39 @@
 import { useEffect, useState } from "react";
+import {
+  Banner,
+  Button,
+  EmptyHome,
+  Icons,
+  Kbd,
+  SparkleIcon,
+  TipCard,
+} from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { checkClaudeCli } from "../../../lib/ipc";
-import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
-import {
-  removeRecentProject,
-  useRecentProjects,
-} from "../../../stores/recentProjectsStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
-import { OrchestrationTree } from "../../agent/OrchestrationTree/OrchestrationTree";
-import { CloseIcon, FolderIcon, ArgusLogo } from "../../shared/Icons";
+import { removeRecentProject } from "../../../stores/recentProjectsStore";
+import { selectWorkspace } from "../../../stores/workspaceStore";
+import { CreateWorkspaceDialog } from "../../sidebar/CreateWorkspaceDialog";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
+import { DirectionPicker } from "./DirectionPicker/DirectionPicker";
 import styles from "./HomeScreen.module.css";
-
-function truncatePath(path: string, maxLen: number): string {
-  if (path.length <= maxLen) {
-    return path;
-  }
-
-  return `…${path.slice(-(maxLen - 1))}`;
-}
+import { NewWorkspacePicker } from "./NewWorkspacePicker";
+import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
+import { LiveActivity } from "./directions/LiveActivity/LiveActivity";
+import { Orrery } from "./directions/Orrery/Orrery";
+import { HOME_SHORTCUTS, HOME_TIPS } from "./homeContent";
+import { useHomeData, type HomeProject } from "./useHomeData";
+import { useHomeDirection } from "./useHomeDirection";
 
 export function HomeScreen() {
-  const recentProjects = useRecentProjects();
+  const data = useHomeData();
+  const [direction, setDirection] = useHomeDirection();
   const { openProject } = useProjects();
   const [showOpenProject, setShowOpenProject] = useState(false);
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [claudeCliMissing, setClaudeCliMissing] = useState(false);
-  const [treeFilter, setTreeFilter] = useState<string>("all");
-
-  const agents = useAgentsRecord();
-  const workspaces = useWorkspaces();
-  const hasAnyAgents = Object.keys(agents).length > 0;
-
-  const handleSelectAgent = (agentId: string, workspaceId: string) => {
-    const ws = workspaces.find((w) => w.id === workspaceId);
-    if (!ws) {
-      return;
-    }
-    // Ensure the containing project is open, then select the workspace and
-    // make the clicked agent active.
-    openProject(ws.repo_root)
-      .then(() => {
-        selectWorkspace(workspaceId);
-        setActiveAgent(workspaceId, agentId);
-      })
-      .catch(() => {});
-  };
+  const [showPicker, setShowPicker] = useState(false);
+  const [createRepoRoot, setCreateRepoRoot] = useState<string | null>(null);
 
   useEffect(() => {
     checkClaudeCli()
@@ -54,7 +41,7 @@ export function HomeScreen() {
       .catch(() => setClaudeCliMissing(true));
   }, []);
 
-  const handleOpenProject = async (path: string) => {
+  const handleOpenPath = async (path: string) => {
     setOpenError(null);
     setOpeningPath(path);
     try {
@@ -69,75 +56,126 @@ export function HomeScreen() {
     }
   };
 
+  const handleOpenProject = (p: HomeProject) => {
+    handleOpenPath(p.path).catch(() => {});
+  };
+
+  const handleOpenWorkspace = async (workspaceId: string, repoPath: string) => {
+    try {
+      await openProject(repoPath, { autoSelect: false });
+      selectWorkspace(workspaceId);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setOpenError(msg);
+    }
+  };
+
+  const handleAddRepository = () => setShowOpenProject(true);
+
+  const handleNewWorkspace = () => {
+    if (data.projects.length === 0) {
+      setShowOpenProject(true);
+
+      return;
+    }
+    if (data.projects.length === 1) {
+      const only = data.projects[0];
+      if (only) {
+        setCreateRepoRoot(only.path);
+      }
+
+      return;
+    }
+    setShowPicker(true);
+  };
+
+  const directionProps = {
+    data,
+    onAddRepository: handleAddRepository,
+    onNewWorkspace: handleNewWorkspace,
+    onOpenProject: handleOpenProject,
+    onOpenWorkspace: handleOpenWorkspace,
+  };
+
+  const isEmpty = data.projects.length === 0;
+
   return (
     <div className={styles.screen}>
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <ArgusLogo className={styles.logo} />
-          <h1 className={styles.title}>Argus</h1>
-          <p className={styles.subtitle}>
-            Select a project to get started, or add a new repository.
-          </p>
-        </div>
-
+      <div className={styles.main}>
         {claudeCliMissing && (
-          <div className={styles.warningBanner} role="status">
+          <Banner tone="warning">
             Claude Code CLI not found on PATH. Agents will not work until it is
             installed.
-          </div>
+          </Banner>
         )}
-
         {openError && (
-          <div className={styles.errorBanner} role="alert">
+          <Banner tone="error">
             {openError}
-          </div>
+            {openingPath && `  (${openingPath})`}
+          </Banner>
         )}
 
-        <div className={styles.actions}>
-          <button
-            className={styles.addBtn}
-            onClick={() => setShowOpenProject(true)}
-          >
-            <FolderIcon />
-            Add repository
-          </button>
-        </div>
-
-        {hasAnyAgents && (
-          <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Active Agents</h2>
-            <div className={styles.treeWrap}>
-              <OrchestrationTree
-                activeAgentId={null}
-                showFilter
-                title="All agents"
-                workspaceFilter={treeFilter}
-                onSelectAgent={handleSelectAgent}
-                onWorkspaceFilterChange={setTreeFilter}
-              />
-            </div>
-          </div>
-        )}
-
-        {recentProjects.length > 0 ? (
-          <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Recent Projects</h2>
-            <div className={styles.grid}>
-              {recentProjects.map((project) => (
-                <ProjectCard
-                  key={project.path}
-                  isOpening={openingPath === project.path}
-                  project={project}
-                  onOpen={() => handleOpenProject(project.path)}
-                  onRemove={() => removeRecentProject(project.path)}
+        <div className={styles.body}>
+          {isEmpty ? (
+            <EmptyHome
+              actions={
+                <>
+                  <Button
+                    variant="primary"
+                    leading={<Icons.FolderIcon size={13} />}
+                    onClick={handleAddRepository}
+                  >
+                    Add repository
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    leading={<SparkleIcon size={13} />}
+                    onClick={handleAddRepository}
+                  >
+                    Try the tour
+                  </Button>
+                </>
+              }
+              tips={HOME_TIPS.map((t) => (
+                <TipCard
+                  key={t.title}
+                  icon={<SparkleIcon size={11} />}
+                  title={t.title}
+                  body={t.body}
                 />
               ))}
-            </div>
-          </div>
-        ) : (
-          <div className={styles.empty}>
-            <p className={styles.emptyText}>No recent projects yet.</p>
-            <p className={styles.emptyHint}>Add a repository to get started.</p>
+              shortcuts={HOME_SHORTCUTS.slice(0, 3).map((s) => (
+                <span
+                  key={s.label}
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    alignItems: "center",
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  <Kbd keys={s.keys} />
+                  {s.label}
+                </span>
+              ))}
+            />
+          ) : (
+            <>
+              {direction === "command-center" && (
+                <CommandCenter {...directionProps} />
+              )}
+              {direction === "live-activity" && (
+                <LiveActivity {...directionProps} />
+              )}
+              {direction === "orrery" && <Orrery {...directionProps} />}
+            </>
+          )}
+        </div>
+
+        {!isEmpty && (
+          <div className={styles.pickerBar}>
+            <DirectionPicker value={direction} onChange={setDirection} />
           </div>
         )}
       </div>
@@ -148,57 +186,27 @@ export function HomeScreen() {
             setShowOpenProject(false);
             setOpenError(null);
           }}
-          onOpen={handleOpenProject}
+          onOpen={handleOpenPath}
         />
       )}
-    </div>
-  );
-}
 
-interface ProjectCardProps {
-  isOpening: boolean;
-  onOpen: () => void;
-  onRemove: () => void;
-  project: { lastOpened: number; name: string; path: string };
-}
-
-function ProjectCard({
-  project,
-  isOpening,
-  onOpen,
-  onRemove,
-}: ProjectCardProps) {
-  return (
-    <div className={styles.card}>
-      <div className={styles.cardIcon}>
-        <FolderIcon />
-      </div>
-      <div className={styles.cardBody}>
-        <span className={styles.cardName}>{project.name}</span>
-        <span className={styles.cardPath} title={project.path}>
-          {truncatePath(project.path, 48)}
-        </span>
-      </div>
-      <div className={styles.cardActions}>
-        <button
-          className={styles.openBtn}
-          disabled={isOpening}
-          title={project.path}
-          onClick={onOpen}
-        >
-          {isOpening ? "Opening…" : "Open"}
-        </button>
-        <button
-          className={styles.removeBtn}
-          title="Remove from recents"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
+      {showPicker && (
+        <NewWorkspacePicker
+          projects={data.projects}
+          onClose={() => setShowPicker(false)}
+          onPick={(p) => {
+            setShowPicker(false);
+            setCreateRepoRoot(p.path);
           }}
-        >
-          <CloseIcon />
-        </button>
-      </div>
+        />
+      )}
+
+      {createRepoRoot && (
+        <CreateWorkspaceDialog
+          repoRoot={createRepoRoot}
+          onClose={() => setCreateRepoRoot(null)}
+        />
+      )}
     </div>
   );
 }

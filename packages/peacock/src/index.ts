@@ -1,12 +1,15 @@
 // Peacock — Argus design system component library
 export * from "./components/AgentRow/AgentRow";
 export * from "./components/Badge/Badge";
+export * from "./components/Banner/Banner";
+export * from "./components/Dialog/Dialog";
 export * from "./components/Button/Button";
 export * from "./components/Card/Card";
 export * from "./components/ChatInput/ChatInput";
 export * from "./components/Chip/Chip";
 export * from "./components/DiffStat/DiffStat";
 export * from "./components/EmptyHome/EmptyHome";
+export * from "./components/EmptyState/EmptyState";
 export * from "./components/Eyebrow/Eyebrow";
 export * from "./components/FeedItem/FeedItem";
 export * from "./components/HomeCTA/HomeCTA";

@@ -1,9 +1,9 @@
 import type { SVGProps } from "react";
 
-type IconProps = { size?: number; className?: string } & Omit<
-  SVGProps<SVGSVGElement>,
-  "ref"
->;
+type IconProps = Omit<SVGProps<SVGSVGElement>, "ref"> & {
+  size?: number;
+  className?: string;
+};
 
 export function SparkleIcon({ size = 12, className, ...rest }: IconProps) {
   return (

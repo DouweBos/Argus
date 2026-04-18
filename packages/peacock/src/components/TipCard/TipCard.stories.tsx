@@ -17,7 +17,14 @@ type Story = StoryObj<typeof TipCard>;
 
 export const Trio: Story = {
   render: () => (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, width: 720 }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 8,
+        width: 720,
+      }}
+    >
       <TipCard
         icon={<Star />}
         title="Spin up parallel ideas"
@@ -31,7 +38,7 @@ export const Trio: Story = {
       <TipCard
         icon={<Star />}
         title="Drive simulators from the agent"
-        body="The conductor CLI is pre-wired. Agents tap, scroll, type against an iOS simulator for real UI testing."
+        body="The conductor CLI is pre-wired. Agents tap, scroll, type in your simulators for real UI testing."
       />
     </div>
   ),

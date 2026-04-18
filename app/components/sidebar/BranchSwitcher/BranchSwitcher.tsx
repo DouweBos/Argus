@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { checkoutBranch, listBranches } from "../../../lib/ipc";
-import { BranchIcon, ChevronDownIcon } from "../../shared/Icons";
 import styles from "./BranchSwitcher.module.css";
 
 interface BranchSwitcherProps {
@@ -92,10 +92,10 @@ export function BranchSwitcher({
         className={`${styles.trigger} ${disabled ? styles.disabled : ""}`}
         onClick={disabled ? undefined : handleTriggerClick}
       >
-        <BranchIcon />
+        <Icons.BranchIcon size={11} />
         <span className={styles.triggerLabel}>{currentBranch}</span>
         <span className={styles.chevron}>
-          <ChevronDownIcon />
+          <Icons.ChevronDownIcon size={10} />
         </span>
       </button>
       {isOpen && (

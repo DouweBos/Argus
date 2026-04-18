@@ -66,9 +66,9 @@
   align-items: center;
   gap: 6px;
   padding: 10px 22px;
-  border: 1px solid rgba(77, 159, 255, 0.3);
+  border: 1px solid rgba(245, 166, 35, 0.3);
   border-radius: var(--border-radius-pill);
-  background: rgba(77, 159, 255, 0.08);
+  background: rgba(245, 166, 35, 0.08);
   color: var(--accent);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -80,7 +80,7 @@
 }
 
 .startAgentBtn:hover:not(:disabled) {
-  background: rgba(77, 159, 255, 0.15);
+  background: rgba(245, 166, 35, 0.15);
   border-color: var(--accent);
   box-shadow: 0 0 16px var(--accent-glow);
 }

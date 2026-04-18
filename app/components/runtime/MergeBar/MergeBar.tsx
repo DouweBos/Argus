@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, Icons } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   getWorkspaceConflicts,
@@ -6,7 +7,6 @@ import {
   mergeWorkspaceIntoBase,
 } from "../../../lib/ipc";
 import { useWorkspaces } from "../../../stores/workspaceStore";
-import { MergeIcon } from "../../shared/Icons";
 import styles from "./MergeBar.module.css";
 
 interface MergeBarProps {
@@ -96,9 +96,11 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
         <span className={`${styles.statusText} ${statusTextToneClass}`}>
           {statusLabel}
         </span>
-        <button
-          className={styles.mergeBtn}
+        <Button
           disabled={!canMerge}
+          leading={<Icons.MergeIcon size={11} />}
+          size="sm"
+          variant="primary"
           title={
             !hasStaged
               ? "No staged changes to merge"
@@ -106,9 +108,8 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
           }
           onClick={handleMerge}
         >
-          <MergeIcon />
           {isMerging ? "Merging..." : "Merge"}
-        </button>
+        </Button>
       </div>
       {mergeError && <div className={styles.error}>{mergeError}</div>}
     </>

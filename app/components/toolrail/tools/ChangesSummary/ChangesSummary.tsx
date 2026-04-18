@@ -1,14 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../../hooks/useDiffFiles";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";
 import { useWorkspaces } from "../../../../stores/workspaceStore";
-import {
-  CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  FileTypeIcon,
-  MergeIcon,
-} from "../../../shared/Icons";
+import { FileTypeIcon } from "../../../shared/Icons";
 import styles from "./ChangesSummary.module.css";
 
 type DiffLineType = "add" | "context" | "remove";
@@ -171,7 +166,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
     return (
       <div ref={containerRef} className={styles.container} tabIndex={-1}>
         <div className={styles.empty}>
-          <CheckIcon size={24} />
+          <Icons.CheckIcon size={24} />
           <span className={styles.emptyText}>No changes</span>
         </div>
         {showMerge && (
@@ -181,7 +176,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
               disabled={!canMerge}
               onClick={handleMerge}
             >
-              <MergeIcon />
+              <Icons.MergeIcon size={12} />
               {isMerging ? "Merging..." : "Apply Changes Locally"}
             </button>
           </div>
@@ -293,7 +288,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
             disabled={safeIndex <= 0}
             onClick={() => navigateToFile(safeIndex - 1)}
           >
-            <ChevronLeftIcon size={10} />
+            <Icons.ChevronLeftIcon size={10} />
           </button>
           <span className={styles.navLabel}>
             {safeIndex + 1}/{files.length} files
@@ -303,7 +298,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
             disabled={safeIndex >= files.length - 1}
             onClick={() => navigateToFile(safeIndex + 1)}
           >
-            <ChevronRightIcon size={10} />
+            <Icons.ChevronRightIcon size={10} />
           </button>
         </div>
         {showMerge && (
@@ -313,7 +308,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
             title={mergeBtnTitle}
             onClick={handleMerge}
           >
-            <MergeIcon />
+            <Icons.MergeIcon size={12} />
             {isMerging ? "Merging..." : "Apply Changes Locally"}
           </button>
         )}

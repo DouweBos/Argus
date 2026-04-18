@@ -6,8 +6,10 @@
   font-weight: 600;
   padding: 6px 16px;
   border-radius: var(--border-radius-pill);
-  transition: background var(--transition-fast),
-    box-shadow var(--transition-base), opacity var(--transition-fast),
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-base),
+    opacity var(--transition-fast),
     border-color var(--transition-fast);
   display: inline-flex;
   align-items: center;
@@ -44,11 +46,11 @@
 .secondary {
   background: transparent;
   color: var(--accent);
-  border: 1px solid rgba(77, 159, 255, 0.25);
+  border: 1px solid rgba(245, 166, 35, 0.25);
   padding: 6px 18px;
 }
 .secondary:hover:not(:disabled) {
-  border-color: rgba(77, 159, 255, 0.4);
+  border-color: rgba(245, 166, 35, 0.4);
   box-shadow: 0 0 16px var(--accent-glow);
 }
 
@@ -88,6 +90,19 @@
 .send:hover:not(:disabled) {
   opacity: 0.9;
   box-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* Stop — circular 28px error-colored, mirrors send geometry */
+.stop {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--error);
+  color: var(--error-fg);
+}
+.stop:hover:not(:disabled) {
+  opacity: 0.85;
 }
 
 .sizeSm {

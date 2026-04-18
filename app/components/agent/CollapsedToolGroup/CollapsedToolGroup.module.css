@@ -24,10 +24,11 @@
 }
 
 .chevron {
-  font-size: 10px;
   color: var(--text-muted);
   flex-shrink: 0;
   opacity: 0.5;
+  display: flex;
+  align-items: center;
 }
 
 .summary {

@@ -18,7 +18,7 @@
 }
 
 .accent {
-  background: rgba(77, 159, 255, 0.08);
+  background: rgba(245, 166, 35, 0.08);
   color: var(--accent);
 }
 .success {
@@ -26,7 +26,7 @@
   color: var(--success);
 }
 .warning {
-  background: rgba(245, 166, 35, 0.08);
+  background: rgba(255, 213, 74, 0.1);
   color: var(--warning);
 }
 .error {

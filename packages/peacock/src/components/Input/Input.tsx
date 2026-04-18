@@ -19,6 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ]
     .filter(Boolean)
     .join(" ");
+
   return <input ref={ref} className={classes} {...rest} />;
 });
 
@@ -38,6 +39,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     ]
       .filter(Boolean)
       .join(" ");
+
     return <textarea ref={ref} className={classes} {...rest} />;
   },
 );

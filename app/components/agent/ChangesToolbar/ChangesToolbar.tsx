@@ -1,5 +1,6 @@
 import type { GitStashEntry } from "../../../lib/ipc";
 import { useCallback, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import {
   gitFetch,
@@ -10,14 +11,6 @@ import {
   gitStashList,
   listBranches,
 } from "../../../lib/ipc";
-import {
-  ApplyStashIcon,
-  FetchIcon,
-  PullIcon,
-  PushIcon,
-  SaveStashIcon,
-  SearchIcon,
-} from "../../shared/Icons";
 import styles from "./ChangesToolbar.module.css";
 
 interface ChangesToolbarProps {
@@ -134,7 +127,7 @@ export function ChangesToolbar({
           title="Fetch"
           onClick={() => runAction("fetch", () => gitFetch(workspaceId))}
         >
-          <FetchIcon />
+          <Icons.FetchIcon />
         </button>
 
         {/* Pull (dropdown) */}
@@ -145,7 +138,7 @@ export function ChangesToolbar({
             title="Pull"
             onClick={openPullDropdown}
           >
-            <PullIcon />
+            <Icons.PullIcon />
           </button>
           {pullDrop.open && (
             <div className={styles.dropdown}>
@@ -192,7 +185,7 @@ export function ChangesToolbar({
           title="Push"
           onClick={() => runAction("push", () => gitPush(workspaceId))}
         >
-          <PushIcon />
+          <Icons.PushIcon />
         </button>
 
         <div className={styles.separator} />
@@ -205,7 +198,7 @@ export function ChangesToolbar({
             title="Apply Stash"
             onClick={openStashDropdown}
           >
-            <ApplyStashIcon />
+            <Icons.ApplyStashIcon />
           </button>
           {stashDrop.open && (
             <div className={styles.dropdown}>
@@ -243,13 +236,13 @@ export function ChangesToolbar({
           title="Save Stash"
           onClick={() => runAction("stash", () => gitStash(workspaceId))}
         >
-          <SaveStashIcon />
+          <Icons.SaveStashIcon />
         </button>
       </div>
 
       {/* Search */}
       <div className={styles.searchBox}>
-        <SearchIcon />
+        <Icons.SearchIcon />
         <input
           className={styles.searchInput}
           placeholder="Search for File"

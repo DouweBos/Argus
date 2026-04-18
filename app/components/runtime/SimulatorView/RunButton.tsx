@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Button, Icons } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   createTerminal,
@@ -20,8 +21,6 @@ import {
   useRunSessionId,
 } from "../../../stores/terminalStore";
 import { getWorkspaceState } from "../../../stores/workspaceStore";
-import { PlayIcon } from "../../shared/Icons";
-import styles from "./RunButton.module.css";
 
 interface RunButtonProps {
   workspaceId: string;
@@ -108,14 +107,15 @@ export function RunButton({ workspaceId }: RunButtonProps) {
   }
 
   return (
-    <button
-      className={styles.runBtn}
+    <Button
       disabled={runBusy}
-      title={runBusy ? "Running..." : runCommand}
+      leading={<Icons.PlayIcon size={10} />}
+      size="sm"
+      variant="primary"
+      title={runBusy ? "Running..." : (runCommand ?? undefined)}
       onClick={handleRun}
     >
-      <PlayIcon size={10} />
       Run
-    </button>
+    </Button>
   );
 }

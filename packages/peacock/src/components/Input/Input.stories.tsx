@@ -11,12 +11,20 @@ type Story = StoryObj<typeof Input>;
 
 export const Default: Story = {
   args: { placeholder: "Search files…" },
-  render: (args) => <div style={{ width: 280 }}><Input {...args} /></div>,
+  render: (args) => (
+    <div style={{ width: 280 }}>
+      <Input {...args} />
+    </div>
+  ),
 };
 
 export const Mono: Story = {
   args: { mono: true, placeholder: "branch/name" },
-  render: (args) => <div style={{ width: 280 }}><Input {...args} /></div>,
+  render: (args) => (
+    <div style={{ width: 280 }}>
+      <Input {...args} />
+    </div>
+  ),
 };
 
 export const Textarea: StoryObj<typeof TextArea> = {

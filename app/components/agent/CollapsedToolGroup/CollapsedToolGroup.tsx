@@ -1,13 +1,6 @@
 import type { ConversationMessage } from "../../../stores/conversationStore";
 import { useState } from "react";
-import {
-  AgentIcon,
-  FileIcon,
-  PencilIcon,
-  SearchIcon,
-  TerminalIcon,
-  WebIcon,
-} from "../../shared/Icons";
+import { Icons } from "@argus/peacock";
 import { ToolCallCard } from "../ToolCallCard";
 import { categorizeTools } from "../categorizeTools";
 import styles from "./CollapsedToolGroup.module.css";
@@ -49,7 +42,13 @@ export function CollapsedToolGroup({
         className={styles.toggle}
         onClick={() => setUserExpanded((v) => !v)}
       >
-        <span className={styles.chevron}>{expanded ? "\u25BE" : "\u25B8"}</span>
+        <span className={styles.chevron}>
+          {expanded ? (
+            <Icons.ChevronDownIcon size={10} />
+          ) : (
+            <Icons.ChevronRightIcon size={10} />
+          )}
+        </span>
         <span className={styles.summary}>
           {totalToolCalls} tool {totalToolCalls === 1 ? "call" : "calls"},{" "}
           {messageCount} {messageCount === 1 ? "message" : "messages"}
@@ -57,7 +56,7 @@ export function CollapsedToolGroup({
         <span className={styles.icons}>
           {categories.read > 0 && (
             <span className={styles.icon} title={`${categories.read} reads`}>
-              <FileIcon size={14} />
+              <Icons.FileIcon size={14} />
             </span>
           )}
           {categories.search > 0 && (
@@ -65,17 +64,17 @@ export function CollapsedToolGroup({
               className={styles.icon}
               title={`${categories.search} searches`}
             >
-              <SearchIcon size={14} />
+              <Icons.SearchIcon size={14} />
             </span>
           )}
           {categories.bash > 0 && (
             <span className={styles.icon} title={`${categories.bash} commands`}>
-              <TerminalIcon size={14} />
+              <Icons.TerminalIcon size={14} />
             </span>
           )}
           {categories.edit > 0 && (
             <span className={styles.icon} title={`${categories.edit} edits`}>
-              <PencilIcon size={14} />
+              <Icons.PencilIcon size={14} />
             </span>
           )}
           {categories.web > 0 && (
@@ -83,12 +82,12 @@ export function CollapsedToolGroup({
               className={styles.icon}
               title={`${categories.web} web requests`}
             >
-              <WebIcon size={14} />
+              <Icons.WebIcon size={14} />
             </span>
           )}
           {categories.agent > 0 && (
             <span className={styles.icon} title={`${categories.agent} agents`}>
-              <AgentIcon size={14} />
+              <Icons.AgentIcon size={14} />
             </span>
           )}
         </span>

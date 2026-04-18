@@ -14,7 +14,11 @@ export const Glass: Story = {
 };
 
 export const Dashed: Story = {
-  args: { variant: "dashed", children: "Open repository", style: { width: 260 } },
+  args: {
+    variant: "dashed",
+    children: "Open repository",
+    style: { width: 260 },
+  },
 };
 
 export const Tight: Story = {

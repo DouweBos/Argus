@@ -156,31 +156,6 @@
 }
 
 .emptyText {
-  font-size: var(--font-size-sm);
+  font: var(--type-caption);
   color: var(--text-muted);
-}
-
-.newTermBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition:
-    background var(--transition-base),
-    border-color var(--transition-base),
-    color var(--transition-base),
-    box-shadow var(--transition-base);
-}
-
-.newTermBtn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--accent);
-  color: var(--text-primary);
-  box-shadow: 0 0 16px var(--accent-glow);
 }

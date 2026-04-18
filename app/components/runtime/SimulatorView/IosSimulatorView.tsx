@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Icons } from "@argus/peacock";
 import { error } from "@logger";
 import {
   bootSimulator,
@@ -16,7 +17,6 @@ import {
   isTvOS,
   useIosSimulatorViewState,
 } from "../../../stores/simulatorStore";
-import { BootIcon, DisconnectIcon, HomeIcon } from "../../shared/Icons";
 import chrome from "../RuntimeChrome.module.css";
 import { AppleTVRemote } from "./AppleTVRemote";
 import { IosDeviceStreamView } from "./IosDeviceStreamView";
@@ -307,7 +307,7 @@ export function IosSimulatorView({
             type="button"
             onClick={handleBoot}
           >
-            <BootIcon size={12} />
+            <Icons.BootIcon size={12} />
           </button>
         )}
       </div>
@@ -323,7 +323,7 @@ export function IosSimulatorView({
             type="button"
             onClick={handleHomePress}
           >
-            <HomeIcon size={12} />
+            <Icons.HomeIcon size={12} />
           </button>
         )}
         {(isBooted || capturing) && selectedUdid && (
@@ -333,7 +333,7 @@ export function IosSimulatorView({
             type="button"
             onClick={handleDisconnect}
           >
-            <DisconnectIcon size={12} />
+            <Icons.DisconnectIcon size={12} />
           </button>
         )}
       </div>

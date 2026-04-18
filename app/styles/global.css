@@ -1,65 +1,16 @@
-/* CSS Custom Properties — Air-inspired premium dark theme */
+/* Design tokens are defined exclusively in @argus/peacock. */
+@import "@argus/peacock/tokens.css";
+
+/* App-only token additions — not appropriate for the design system (yet). */
 :root {
-  /* Backgrounds — deep, slightly blue-tinted blacks */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-tertiary: #1a1a24;
-  --bg-hover: #222233;
   --border: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-
-  /* Text */
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a0b8;
-  --text-muted: #55556a;
-
-  /* Accent — blue system */
-  --accent: #4d9fff;
+  --bg-hover: #222233;
   --accent-hover: #70b3ff;
   --accent-secondary: #3a7edf;
-  --accent-fg: #0a0a0f;
-  --accent-glow: rgba(77, 159, 255, 0.15);
-  --accent-gradient: linear-gradient(135deg, #4d9fff, #7c5cfc);
-
-  /* Semantic */
-  --success: #00d4aa;
-  --warning: #f5a623;
-  --error: #ff4466;
-  --error-bg: rgba(255, 68, 102, 0.08);
   --error-fg: #ffffff;
-
-  /* Glass morphism */
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-bg-hover: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 16px;
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-
-  /* Layout */
-  --titlebar-height: 38px;
+  --glass-shadow: var(--shadow-lg);
   --toolbar-height: 33px;
-  --sidebar-left-default: 260px;
-  --panel-min-width: 160px;
-
-  /* Radii — rounder, more modern */
-  --border-radius: 12px;
-  --border-radius-sm: 6px;
-  --border-radius-pill: 999px;
-
-  /* Typography */
-  --font-ui:
-    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono:
-    "JetBrains Mono", "SF Mono", "Fira Code", "Cascadia Code", Menlo, monospace;
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 13px;
-  --font-size-md: 14px;
-
-  /* Transitions */
-  --transition-fast: 120ms ease;
-  --transition-base: 200ms ease;
-  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Reset */

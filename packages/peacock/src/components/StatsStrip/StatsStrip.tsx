@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import styles from "./StatsStrip.module.css";
 import { StatusDot } from "../Badge/Badge";
+import styles from "./StatsStrip.module.css";
 
 export function StatsStrip({
   children,
@@ -8,13 +8,16 @@ export function StatsStrip({
   ...rest
 }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={[styles.strip, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.strip, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {children}
     </div>
   );
 }
 
-export type DeltaTone = "positive" | "negative" | "neutral";
+export type DeltaTone = "negative" | "neutral" | "positive";
 
 export interface StatCellProps extends HTMLAttributes<HTMLDivElement> {
   label: ReactNode;
@@ -44,6 +47,7 @@ export function StatCell({
   ]
     .filter(Boolean)
     .join(" ");
+
   return (
     <div className={classes} {...rest}>
       <div className={styles.label}>{label}</div>

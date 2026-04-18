@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@argus/peacock':
+        specifier: workspace:*
+        version: link:packages/peacock
       '@codingame/monaco-vscode-accessibility-service-override':
         specifier: ~28.3.0
         version: 28.3.0

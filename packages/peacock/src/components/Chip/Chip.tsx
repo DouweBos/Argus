@@ -1,6 +1,6 @@
 import type { HTMLAttributes, MouseEventHandler, ReactNode } from "react";
-import styles from "./Chip.module.css";
 import { CloseIcon } from "../../icons/Icons";
+import styles from "./Chip.module.css";
 
 export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
   leading?: ReactNode;
@@ -29,6 +29,7 @@ export function Chip({
   ]
     .filter(Boolean)
     .join(" ");
+
   return (
     <span className={classes} {...rest}>
       {leading}

@@ -4,8 +4,8 @@
   top: 100%;
   z-index: 100;
   min-width: 180px;
-  padding: 4px;
-  background: rgba(17, 17, 24, 0.92);
+  padding: var(--space-2);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--glass-shadow);
@@ -32,7 +32,7 @@
 }
 
 .item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--glass-bg-hover);
 }
 
 .item:disabled {

@@ -11,3 +11,23 @@
   border: 1px solid var(--border-subtle);
   white-space: nowrap;
 }
+
+.chipInteractive {
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.chipInteractive:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chipActive {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}

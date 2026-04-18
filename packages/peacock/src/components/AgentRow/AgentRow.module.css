@@ -16,8 +16,8 @@
 }
 
 .pending {
-  background: rgba(245, 166, 35, 0.04);
-  border-color: rgba(245, 166, 35, 0.15);
+  background: rgba(255, 213, 74, 0.05);
+  border-color: rgba(255, 213, 74, 0.18);
 }
 .error {
   background: rgba(255, 68, 102, 0.04);

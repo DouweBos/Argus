@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { listen } from "../../../lib/events";
 import {
   createTerminal,
@@ -13,15 +14,6 @@ import {
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useSetupProgressByWorkspaceId } from "../../../stores/workspaceStore";
 import { ContextMenu, type ContextMenuItem } from "../../shared/ContextMenu";
-import {
-  BranchIcon,
-  CopyIcon,
-  EllipsisIcon,
-  FolderIcon,
-  RepoIcon,
-  TerminalIcon,
-  TrashIcon,
-} from "../../shared/Icons";
 import { BranchSwitcher } from "../BranchSwitcher";
 import styles from "./WorkspaceCard.module.css";
 
@@ -165,9 +157,9 @@ export function WorkspaceCard({
         <div className={styles.left}>
           <div className={styles.titleRow}>
             {workspace.kind === "repo_root" ? (
-              <RepoIcon />
+              <Icons.RepoIcon size={11} />
             ) : (
-              <BranchIcon size={11} />
+              <Icons.BranchIcon size={11} />
             )}
             <span className={styles.projectName}>{projectName}</span>
             {diffStats && diffStats.files > 0 && (
@@ -260,36 +252,36 @@ export function WorkspaceCard({
           title="Workspace options"
           onClick={toggleMenu}
         >
-          <EllipsisIcon />
+          <Icons.EllipsisIcon size={12} />
         </button>
         {menuPosition && (
           <ContextMenu
             items={
               [
                 {
-                  icon: <CopyIcon />,
+                  icon: <Icons.CopyIcon size={12} />,
                   label: "Copy Absolute Path",
                   onClick: () => navigator.clipboard.writeText(workspace.path),
                 },
                 {
-                  icon: <CopyIcon />,
+                  icon: <Icons.CopyIcon size={12} />,
                   label: "Copy Relative Path",
                   onClick: () =>
                     navigator.clipboard.writeText(toTildePath(workspace.path)),
                 },
                 {
-                  icon: <BranchIcon size={12} />,
+                  icon: <Icons.BranchIcon size={12} />,
                   label: "Copy Branch Name",
                   onClick: () => navigator.clipboard.writeText(branchName),
                 },
                 { separator: true },
                 {
-                  icon: <FolderIcon size={12} />,
+                  icon: <Icons.FolderIcon size={12} />,
                   label: "Reveal in Finder",
                   onClick: () => revealInFinder(workspace.path),
                 },
                 {
-                  icon: <TerminalIcon size={12} />,
+                  icon: <Icons.TerminalIcon size={12} />,
                   label: "Open in Terminal",
                   onClick: () => {
                     createTerminal(workspace.id);
@@ -299,7 +291,7 @@ export function WorkspaceCard({
                   ? [
                       { separator: true as const },
                       {
-                        icon: <TrashIcon />,
+                        icon: <Icons.TrashIcon size={12} />,
                         label: isDeleting ? "Deleting..." : "Delete Workspace",
                         onClick: handleDelete,
                         danger: true,

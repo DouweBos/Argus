@@ -7,24 +7,22 @@
 
 .browseBtn {
   width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
   padding: 10px 14px;
   background: var(--bg-tertiary);
-  border: 1px dashed var(--border);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-secondary);
+  border: 1px dashed var(--border) !important;
+  border-radius: var(--border-radius-sm) !important;
+  color: var(--text-secondary) !important;
   font-size: var(--font-size-sm);
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast);
 }
 
-.browseBtn:hover {
+.browseBtn:hover:not(:disabled) {
   background: var(--bg-hover);
-  border-color: var(--accent);
-  color: var(--text-primary);
+  border-color: var(--accent) !important;
+  color: var(--text-primary) !important;
 }
 
 .recentsSection {

@@ -1,9 +1,12 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import styles from "./TitleBar.module.css";
-import { Kbd } from "../Kbd/Kbd";
 import { LeftSidebarIcon, RightSidebarIcon } from "../../icons/Icons";
+import { Kbd } from "../Kbd/Kbd";
+import styles from "./TitleBar.module.css";
 
-export interface TitleBarProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
+export interface TitleBarProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "title"
+> {
   title?: ReactNode;
   /** Show traffic-light dots for non-hiddenInset title bars (defaults to true). */
   showTraffic?: boolean;
@@ -24,7 +27,10 @@ export function TitleBar({
   ...rest
 }: TitleBarProps) {
   return (
-    <div className={[styles.bar, className].filter(Boolean).join(" ")} {...rest}>
+    <div
+      className={[styles.bar, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
       {showTraffic && (
         <div className={styles.traffic} aria-hidden>
           <span style={{ background: "#ff5f57" }} />

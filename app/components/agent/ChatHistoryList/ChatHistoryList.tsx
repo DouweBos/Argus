@@ -1,5 +1,5 @@
 import type { ChatHistoryEntry } from "../../../lib/chatHistory";
-import { CloseIcon } from "../../shared/Icons";
+import { Button, Eyebrow, Icons } from "@argus/peacock";
 import styles from "./ChatHistoryList.module.css";
 
 function formatRelativeDate(timestamp: number): string {
@@ -57,7 +57,7 @@ export function ChatHistoryList({
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <span className={styles.title}>Recent Sessions</span>
+        <Eyebrow>Recent Sessions</Eyebrow>
       </div>
       {entries.map((entry) => {
         const cost = formatCost(entry.totalCost);
@@ -91,8 +91,9 @@ export function ChatHistoryList({
               </span>
             </div>
             <div className={styles.actions}>
-              <button
-                className={styles.resumeBtn}
+              <Button
+                variant="secondary"
+                size="sm"
                 title="Resume this session"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -100,17 +101,18 @@ export function ChatHistoryList({
                 }}
               >
                 Resume
-              </button>
-              <button
-                className={styles.deleteBtn}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 title="Delete"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(entry.id);
                 }}
               >
-                <CloseIcon />
-              </button>
+                <Icons.CloseIcon size={10} />
+              </Button>
             </div>
           </div>
         );

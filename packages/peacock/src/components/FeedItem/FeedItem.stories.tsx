@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { FeedItem } from "./FeedItem";
 import { Button } from "../Button/Button";
+import { FeedItem } from "./FeedItem";
 
 const meta: Meta<typeof FeedItem> = {
   title: "Composites/FeedItem",

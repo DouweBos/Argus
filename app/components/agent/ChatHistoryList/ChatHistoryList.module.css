@@ -15,14 +15,6 @@
   padding: 0 4px 8px;
 }
 
-.title {
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
 .entry {
   display: flex;
   flex-direction: column;
@@ -39,19 +31,18 @@
 }
 
 .entryTitle {
-  font-size: var(--font-size-sm);
+  font: var(--type-ui);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
 }
 
 .entryMeta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--font-size-xs);
+  gap: var(--space-4);
+  font: var(--type-caption);
   color: var(--text-muted);
 }
 
@@ -82,46 +73,4 @@
 
 .entry:hover .actions {
   opacity: 1;
-}
-
-.resumeBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background var(--transition-base),
-    color var(--transition-base);
-  color: var(--accent);
-  background: rgba(77, 159, 255, 0.1);
-  border: 1px solid rgba(77, 159, 255, 0.2);
-}
-
-.resumeBtn:hover {
-  background: rgba(77, 159, 255, 0.2);
-}
-
-.deleteBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 8px;
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background var(--transition-base),
-    color var(--transition-base);
-  color: var(--text-muted);
-  background: transparent;
-}
-
-.deleteBtn:hover {
-  color: var(--error);
-  background: rgba(255, 68, 102, 0.1);
 }

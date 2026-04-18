@@ -73,13 +73,13 @@
 }
 
 .fileListItemActive {
-  background: rgba(77, 159, 255, 0.08);
+  background: rgba(245, 166, 35, 0.08);
   color: var(--text-primary);
   border-left-color: var(--accent);
 }
 
 .fileListItemActive:hover {
-  background: rgba(77, 159, 255, 0.1);
+  background: rgba(245, 166, 35, 0.1);
 }
 
 .fileItemStatus {

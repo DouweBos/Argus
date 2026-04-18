@@ -1,10 +1,5 @@
 import type { SourceView } from "../GitView";
-import {
-  BranchNodesIcon,
-  ClockIcon,
-  StashIcon,
-  WorkingCopyIcon,
-} from "../../shared/Icons";
+import { Icons, SidebarItem, SidebarNav, SidebarSection } from "@argus/peacock";
 import styles from "./SourceSidebar.module.css";
 
 interface SourceSidebarProps {
@@ -19,39 +14,37 @@ export function SourceSidebar({
   fileCount,
 }: SourceSidebarProps) {
   return (
-    <div className={styles.sidebar}>
-      <div className={styles.section}>
-        <div className={styles.sectionHeader}>Workspace</div>
-        <button
-          className={`${styles.navItem} ${activeView === "working-copy" ? styles.navItemActive : ""}`}
-          onClick={() => onViewChange("working-copy")}
-        >
-          <WorkingCopyIcon size={13} />
-          <span className={styles.navLabel}>Working Copy</span>
-          <span className={styles.badge}>{fileCount}</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeView === "branch" ? styles.navItemActive : ""}`}
-          onClick={() => onViewChange("branch")}
-        >
-          <BranchNodesIcon size={13} />
-          <span className={styles.navLabel}>Branch</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeView === "history" ? styles.navItemActive : ""}`}
-          onClick={() => onViewChange("history")}
-        >
-          <ClockIcon size={13} />
-          <span className={styles.navLabel}>History</span>
-        </button>
-        <button
-          className={`${styles.navItem} ${activeView === "stashes" ? styles.navItemActive : ""}`}
-          onClick={() => onViewChange("stashes")}
-        >
-          <StashIcon size={13} />
-          <span className={styles.navLabel}>Stashes</span>
-        </button>
-      </div>
-    </div>
+    <SidebarNav framed className={styles.sidebar}>
+      <SidebarSection>Workspace</SidebarSection>
+      <SidebarItem
+        active={activeView === "working-copy"}
+        count={fileCount > 0 ? fileCount : undefined}
+        leading={<Icons.WorkingCopyIcon size={13} />}
+        onClick={() => onViewChange("working-copy")}
+      >
+        Working Copy
+      </SidebarItem>
+      <SidebarItem
+        active={activeView === "branch"}
+        leading={<Icons.BranchNodesIcon size={13} />}
+        onClick={() => onViewChange("branch")}
+      >
+        Branch
+      </SidebarItem>
+      <SidebarItem
+        active={activeView === "history"}
+        leading={<Icons.ClockIcon size={13} />}
+        onClick={() => onViewChange("history")}
+      >
+        History
+      </SidebarItem>
+      <SidebarItem
+        active={activeView === "stashes"}
+        leading={<Icons.StashIcon size={13} />}
+        onClick={() => onViewChange("stashes")}
+      >
+        Stashes
+      </SidebarItem>
+    </SidebarNav>
   );
 }

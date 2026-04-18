@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import styles from "./HomeCTA.module.css";
 import { PlusIcon } from "../../icons/Icons";
+import styles from "./HomeCTA.module.css";
 
 export interface HomeCTAProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   leading?: ReactNode;

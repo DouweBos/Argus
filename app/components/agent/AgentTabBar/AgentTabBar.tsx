@@ -1,8 +1,8 @@
 import type { AgentStatus } from "../../../lib/types";
 import { useMemo } from "react";
+import { Badge, Icons } from "@argus/peacock";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversation } from "../../../stores/conversationStore";
-import { CloseIcon } from "../../shared/Icons";
 import styles from "./AgentTabBar.module.css";
 
 interface AgentTabBarProps {
@@ -50,17 +50,18 @@ function AgentTab({
     >
       {hasParent && (
         <span className={styles.parentBadge} title="Spawned by another agent">
-          ↳
+          &#8618;
         </span>
       )}
       <span className={styles.label}>{label}</span>
       {childCount > 0 && (
-        <span
-          className={styles.childBadge}
+        <Badge
+          tone="accent"
+          size="pill"
           title={`${childCount} child agent${childCount > 1 ? "s" : ""}`}
         >
           {childCount}
-        </span>
+        </Badge>
       )}
       <button
         className={styles.closeBtn}
@@ -70,7 +71,7 @@ function AgentTab({
           onClose(agent.agent_id);
         }}
       >
-        <CloseIcon size={10} />
+        <Icons.CloseIcon size={10} />
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, Icons, StatusDot, ThinkingDots } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
 import { notifyMessageSent } from "../../../lib/agentEventService";
 import {
@@ -25,7 +26,6 @@ import {
   useConversation,
 } from "../../../stores/conversationStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
-import { ChevronDownIcon } from "../../shared/Icons";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
@@ -458,14 +458,14 @@ export function AgentChat({
           <span className={styles.historyBannerText}>Saved conversation</span>
           <div className={styles.historyBannerActions}>
             {onResume && (
-              <button className={styles.historyResumeBtn} onClick={onResume}>
+              <Button variant="secondary" size="sm" onClick={onResume}>
                 Resume
-              </button>
+              </Button>
             )}
             {onClose && (
-              <button className={styles.historyCloseBtn} onClick={onClose}>
+              <Button variant="ghost" size="sm" onClick={onClose}>
                 Close
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -515,17 +515,14 @@ export function AgentChat({
                   : styles.activityBlocked
               }`}
             >
-              <span className={styles.activityDot} />
+              <StatusDot
+                tone={activity.state === "working" ? "accent" : "warning"}
+                pulse={activity.state === "working"}
+              />
               <span className={styles.activityText}>
                 {activity.description}
               </span>
-              {activity.state === "working" && (
-                <span className={styles.activityDots}>
-                  <span className={styles.thinkingDot} />
-                  <span className={styles.thinkingDot} />
-                  <span className={styles.thinkingDot} />
-                </span>
-              )}
+              {activity.state === "working" && <ThinkingDots />}
             </div>
           )}
 
@@ -549,7 +546,7 @@ export function AgentChat({
           className={styles.scrollToBottom}
           onClick={scrollToBottom}
         >
-          <ChevronDownIcon size={12} />
+          <Icons.ChevronDownIcon size={12} />
           Scroll to bottom
         </button>
       )}
@@ -561,9 +558,9 @@ export function AgentChat({
               ? "Agent process exited with an error."
               : "Agent has stopped."}
           </span>
-          <button className={styles.restartBtn} onClick={onRestart}>
+          <Button variant="danger" size="sm" onClick={onRestart}>
             Restart
-          </button>
+          </Button>
         </div>
       )}
 

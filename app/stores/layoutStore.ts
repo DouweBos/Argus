@@ -37,6 +37,21 @@ export const setLeftPanelWidth = (w: number) => {
   layoutStore.setState({ leftPanelWidth: w });
 };
 
+/** Toggle the right tool panel — closes if open, otherwise restores the last active tool. */
+export const toggleRightPanel = () =>
+  layoutStore.setState((s) => {
+    if (s.activeToolId) {
+      return { activeToolId: null };
+    }
+
+    const id = s.lastActiveToolId;
+
+    return {
+      activeToolId: id,
+      mountedToolIds: { ...s.mountedToolIds, [id]: true },
+    };
+  });
+
 export const toggleTool = (id: ToolId) =>
   layoutStore.setState((s) => {
     if (s.activeToolId === id) {

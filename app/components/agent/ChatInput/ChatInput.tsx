@@ -1,6 +1,7 @@
 import type { ImageAttachment } from "../../../lib/ipc";
 import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, Chip, Icons } from "@argus/peacock";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
 import {
   clearDraft,
@@ -8,13 +9,6 @@ import {
   setDraft,
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
-import {
-  CloseIcon,
-  LinearIcon,
-  PaperclipIcon,
-  SendIcon,
-  StopIcon,
-} from "../../shared/Icons";
 import { FileMentionPicker } from "../FileMentionPicker";
 import { type ModelOption, ModelPicker } from "../ModelPicker";
 import styles from "./ChatInput.module.css";
@@ -444,7 +438,7 @@ export function ChatInput({
                   title="Remove"
                   onClick={() => removeImage(i)}
                 >
-                  <CloseIcon size={8} />
+                  <Icons.CloseIcon size={8} />
                 </button>
               </div>
             ))}
@@ -500,13 +494,15 @@ export function ChatInput({
           <div className={styles.toolbarLeft}>
             {model && (
               <div className={styles.modelPickerAnchor}>
-                <button
-                  className={styles.modelBadge}
+                <Chip
+                  mono
+                  muted
+                  interactive
                   title="Switch model"
                   onClick={() => setModelPickerOpen(!modelPickerOpen)}
                 >
                   {model}
-                </button>
+                </Chip>
                 {modelPickerOpen &&
                   onModelSelect &&
                   models &&
@@ -524,9 +520,11 @@ export function ChatInput({
               </div>
             )}
             {onTogglePlanMode && (
-              <button
+              <Chip
+                interactive
+                muted={!planMode}
+                className={planMode ? styles.planModeActive : undefined}
                 aria-label="Toggle plan mode"
-                className={`${styles.planModeBtn} ${planMode ? styles.planModeActive : ""}`}
                 title={
                   planMode
                     ? "Plan mode on — click to disable (restarts agent)"
@@ -535,15 +533,17 @@ export function ChatInput({
                 onClick={onTogglePlanMode}
               >
                 Plan
-              </button>
+              </Chip>
             )}
-            <button
+            <Chip
+              interactive
+              muted
               aria-label="Link Linear issue"
-              className={styles.linkIssueBtn}
-              disabled={disabled}
               title="Link Linear issue"
+              leading={<Icons.LinearIcon size={11} />}
+              className={disabled ? styles.chipDisabled : undefined}
               onClick={() => {
-                if (!textareaRef.current) {
+                if (disabled || !textareaRef.current) {
                   return;
                 }
                 // Insert /linear command to trigger the slash command flow
@@ -553,9 +553,8 @@ export function ChatInput({
                 updateSuggestions();
               }}
             >
-              <LinearIcon />
-              <span>Link issue</span>
-            </button>
+              Link issue
+            </Chip>
           </div>
           <div className={styles.toolbarRight}>
             <button
@@ -565,27 +564,27 @@ export function ChatInput({
               title="Attach image"
               onClick={() => fileInputRef.current?.click()}
             >
-              <PaperclipIcon />
+              <Icons.PaperclipIcon />
             </button>
             {agentStatus === "running" && onInterrupt ? (
-              <button
+              <Button
+                variant="stop"
                 aria-label="Stop agent"
-                className={`${styles.sendBtn} ${styles.stopBtn}`}
                 title="Stop"
                 onClick={onInterrupt}
               >
-                <StopIcon />
-              </button>
+                <Icons.StopIcon />
+              </Button>
             ) : (
-              <button
+              <Button
+                variant="send"
                 aria-label="Send message"
-                className={styles.sendBtn}
                 disabled={disabled}
                 title="Send"
                 onClick={submit}
               >
-                <SendIcon />
-              </button>
+                <Icons.SendIcon />
+              </Button>
             )}
           </div>
         </div>
