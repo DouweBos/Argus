@@ -1,0 +1,18 @@
+.eyebrow {
+  font: var(--type-eyebrow);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.count {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 6px;
+  border-radius: var(--border-radius-pill);
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}

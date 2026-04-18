@@ -1,0 +1,40 @@
+.card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.miniStat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.miniStat .label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.miniStat .value {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+.miniStat .value.accent {
+  color: var(--accent);
+}

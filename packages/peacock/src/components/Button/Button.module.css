@@ -1,0 +1,103 @@
+.button {
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: var(--border-radius-pill);
+  transition: background var(--transition-fast),
+    box-shadow var(--transition-base), opacity var(--transition-fast),
+    border-color var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Primary — gradient CTA */
+.primary {
+  background: var(--accent-gradient);
+  color: var(--accent-fg);
+}
+.primary:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.primary:active:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+/* Secondary — accent outlined */
+.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(77, 159, 255, 0.25);
+  padding: 6px 18px;
+}
+.secondary:hover:not(:disabled) {
+  border-color: rgba(77, 159, 255, 0.4);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+/* Ghost — neutral outlined */
+.ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  padding: 6px 18px;
+}
+.ghost:hover:not(:disabled) {
+  color: var(--text-secondary);
+  background: var(--glass-bg);
+}
+
+/* Danger — hot pink-red */
+.danger {
+  background: rgba(255, 68, 102, 0.12);
+  border: 1px solid rgba(255, 68, 102, 0.25);
+  color: var(--error);
+  padding: 4px 14px;
+}
+.danger:hover:not(:disabled) {
+  background: rgba(255, 68, 102, 0.2);
+}
+
+/* Send — circular 28px gradient with glow */
+.send {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  color: var(--accent-fg);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.send:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.sizeSm {
+  padding: 4px 12px;
+  font-size: 10px;
+}
+.sizeMd {
+  padding: 6px 16px;
+}
+.sizeLg {
+  padding: 8px 20px;
+  font-size: var(--font-size-sm);
+}

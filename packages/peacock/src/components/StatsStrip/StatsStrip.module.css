@@ -1,0 +1,67 @@
+.strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1px;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.cell {
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.015);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.label,
+.delta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.delta {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.deltaPositive {
+  color: var(--success);
+}
+.deltaNegative {
+  color: var(--error);
+}
+
+.live .value {
+  color: var(--accent);
+}
+
+.liveDot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}

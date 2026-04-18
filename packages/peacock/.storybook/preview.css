@@ -1,0 +1,11 @@
+body,
+.sb-show-main {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+.docs-story,
+.sb-main-padded {
+  background: var(--bg-primary) !important;
+}

@@ -1,0 +1,17 @@
+.group {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.key {
+  padding: 0 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  line-height: 16px;
+  min-width: 14px;
+  text-align: center;
+}

@@ -49,3 +49,6 @@ native/conductor/
 coverage/
 *.profraw
 *.profdata
+
+# Storybook
+storybook-static/

@@ -1,0 +1,76 @@
+.bar {
+  height: var(--titlebar-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: 0 var(--space-6);
+  background: rgba(17, 17, 24, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.traffic {
+  display: flex;
+  gap: var(--space-4);
+}
+.traffic span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.cmdk {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 3px 8px 3px 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  min-width: 220px;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.cmdk:hover {
+  background: var(--glass-bg-hover);
+  border-color: rgba(77, 159, 255, 0.2);
+}
+.cmdkText {
+  flex: 1;
+}
+
+.iconBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--border-radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.iconBtn:hover {
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+}

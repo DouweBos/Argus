@@ -22,6 +22,7 @@
     "build": "tsc --noEmit && vite build && pnpm build:electron",
     "build:app": "pnpm build && electron-builder",
     "preview": "vite preview",
+    "storybook": "pnpm --filter @argus/peacock storybook",
     "lint": "tsc --noEmit && eslint . && prettier --check . && pnpm run lint:css-modules",
     "build:bridge": "make -C native/argus-sim-bridge",
     "lint:css-modules": "tsx scripts/check-css-module-usage.ts",

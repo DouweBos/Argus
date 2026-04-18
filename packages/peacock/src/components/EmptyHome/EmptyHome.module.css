@@ -1,0 +1,83 @@
+.wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 24px;
+  position: relative;
+  min-height: 480px;
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px 400px at 50% 40%,
+    var(--accent-glow),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.logo {
+  filter: drop-shadow(0 0 24px rgba(77, 159, 255, 0.35));
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.tagline {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+}
+
+.ctas {
+  display: flex;
+  gap: 10px;
+  position: relative;
+}
+
+.tips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 720px;
+  width: 100%;
+  margin-top: 16px;
+  position: relative;
+}
+
+.shortcuts {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
