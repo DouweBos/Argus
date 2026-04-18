@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { getGitAuthor, gitCommit } from "../../../lib/ipc";
 import { md5Hex } from "../../../lib/md5";
 import styles from "./CommitPanel.module.css";
@@ -52,26 +53,12 @@ export function CommitPanel({
     return `https://www.gravatar.com/avatar/${md5Hex(hash)}?s=64&d=identicon`;
   }, [authorEmail]);
 
-  // Collapse when clicking outside (but not on resize handles)
-  useEffect(() => {
-    if (!expanded) {
-      return;
-    }
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        const target = e.target as HTMLElement;
-        // Don't collapse when interacting with resize handles
-        if (target.closest('[role="separator"]')) {
-          return;
-        }
-        setExpanded(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClick);
-
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [expanded]);
+  useOutsideClick(
+    panelRef,
+    expanded,
+    () => setExpanded(false),
+    (target) => target.closest('[role="separator"]') !== null,
+  );
 
   const handleCommit = useCallback(async () => {
     if (!commitSubject.trim()) {

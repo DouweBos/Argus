@@ -9,7 +9,13 @@ import { useDiffFiles } from "../../../hooks/useDiffFiles";
 import { gitIndexPath } from "../../../lib/diffParser";
 import { stageAll, stageFile, unstageAll, unstageFile } from "../../../lib/ipc";
 import { ResizablePanel } from "../../layout/ResizablePanel";
-import { CheckIcon, FileIcon, PlusIcon } from "../../shared/Icons";
+import {
+  CheckIcon,
+  FileIcon,
+  FilterIcon,
+  MinusIcon,
+  PlusIcon,
+} from "../../shared/Icons";
 import { ChangesToolbar } from "../ChangesToolbar";
 import { CommitPanel } from "../CommitPanel";
 import { FileDiffView } from "../FileDiffView";
@@ -22,22 +28,6 @@ interface DiffViewerProps {
   onFileCountChange?: (count: number) => void;
   repoRoot: string;
   workspaceId: string;
-}
-
-function MinusIcon({ size = 12 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z" />
-    </svg>
-  );
-}
-
-function FilterIcon({ size = 12 }: { size?: number }) {
-  return (
-    <svg fill="currentColor" height={size} viewBox="0 0 16 16" width={size}>
-      <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" />
-    </svg>
-  );
 }
 
 const INITIAL_SELECTION = new Set([0]);

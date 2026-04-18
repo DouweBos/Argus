@@ -5,10 +5,9 @@ import type {
   WorkspaceEnvConfig,
 } from "../../../lib/types";
 import { useEffect, useState } from "react";
-import { useOverlayDismiss } from "../../../hooks/useOverlayDismiss";
 import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
+import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 import { ChevronRightIcon, CloseIcon } from "../../shared/Icons";
-import styles from "../Dialog/Dialog.module.css";
 
 interface SetupConfigDialogProps {
   onClose: () => void;
@@ -770,8 +769,6 @@ export function SetupConfigDialog({
     }
   };
 
-  const overlay = useOverlayDismiss(onClose);
-
   /* Compute whether sections have values (for default open state) */
   const hasSetup =
     copyList.items.length > 0 ||
@@ -787,237 +784,218 @@ export function SetupConfigDialog({
   const hasAgent = !!agentPrompt.trim() || !saveChatHistory;
 
   return (
-    <div className={styles.overlay} {...overlay}>
-      <div
-        aria-labelledby="setup-cfg-title"
-        aria-modal="true"
-        className={`${styles.dialog} ${styles.dialogConfig}`}
-        role="dialog"
-      >
-        <div className={styles.header}>
-          <h2 className={styles.title} id="setup-cfg-title">
-            Project Configuration
-          </h2>
-          <button
-            aria-label="Close"
-            className={styles.closeBtn}
-            onClick={onClose}
+    <Dialog
+      className={styles.dialogConfig}
+      title="Project Configuration"
+      titleId="setup-cfg-title"
+      onClose={onClose}
+    >
+      {isLoading ? (
+        <div className={styles.form}>
+          <p
+            style={{
+              color: "var(--text-muted)",
+              fontSize: "var(--font-size-sm)",
+            }}
           >
-            <CloseIcon />
-          </button>
+            Loading config...
+          </p>
         </div>
+      ) : (
+        <div className={styles.form}>
+          {/* ---- Workspace Setup ---- */}
+          <ConfigSection
+            defaultOpen={hasSetup}
+            description="Runs once when creating a new worktree workspace."
+            summary={setupSummary(
+              copyList.items,
+              symlinkList.items,
+              commandList.items,
+            )}
+            title="Workspace Setup"
+          >
+            <ListField
+              emptyLabel="No copy patterns"
+              label="Copy"
+              list={copyList}
+              placeholder="path/to/dir or *.env (glob)"
+            />
+            <ListField
+              emptyLabel="No symlink patterns"
+              label="Symlink"
+              list={symlinkList}
+              placeholder="path/to/file or **/.env.local (glob)"
+            />
+            <ListField
+              emptyLabel="No setup commands"
+              label="Commands"
+              list={commandList}
+              placeholder="npm install"
+            />
+          </ConfigSection>
 
-        {isLoading ? (
-          <div className={styles.form}>
-            <p
-              style={{
-                color: "var(--text-muted)",
-                fontSize: "var(--font-size-sm)",
-              }}
-            >
-              Loading config...
-            </p>
-          </div>
-        ) : (
-          <div className={styles.form}>
-            {/* ---- Workspace Setup ---- */}
-            <ConfigSection
-              defaultOpen={hasSetup}
-              description="Runs once when creating a new worktree workspace."
-              summary={setupSummary(
-                copyList.items,
-                symlinkList.items,
-                commandList.items,
-              )}
-              title="Workspace Setup"
-            >
-              <ListField
-                emptyLabel="No copy patterns"
-                label="Copy"
-                list={copyList}
-                placeholder="path/to/dir or *.env (glob)"
-              />
-              <ListField
-                emptyLabel="No symlink patterns"
-                label="Symlink"
-                list={symlinkList}
-                placeholder="path/to/file or **/.env.local (glob)"
-              />
-              <ListField
-                emptyLabel="No setup commands"
-                label="Commands"
-                list={commandList}
-                placeholder="npm install"
-              />
-            </ConfigSection>
-
-            {/* ---- Runtime ---- */}
-            <ConfigSection
-              defaultOpen={hasRuntime}
-              description="Controls how workspaces run, what URL the browser opens to, and what terminals open."
-              summary={runtimeSummary(
-                runCommand,
-                browserUrl,
-                terminalList.items,
-                envList.items,
-                browserPresetList.items,
-                platforms,
-              )}
-              title="Runtime"
-            >
-              <div className={styles.field}>
-                <p className={styles.sectionTitle}>Target Platforms</p>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                  {(["ios", "android", "web"] as const).map((p) => (
-                    <label key={p} className={styles.checkboxRow}>
-                      <input
-                        checked={platforms.includes(p)}
-                        type="checkbox"
-                        onChange={(e) =>
-                          setPlatforms((prev) =>
-                            e.target.checked
-                              ? [...prev, p]
-                              : prev.filter((x) => x !== p),
-                          )
-                        }
-                      />
-                      {p === "ios"
-                        ? "iOS"
-                        : p === "android"
-                          ? "Android"
-                          : "Web"}
-                    </label>
-                  ))}
-                </div>
-                <p className={styles.helpText}>
-                  Runtimes agents pre-allocate per workspace (iOS simulator,
-                  Android emulator, headless Chromium). Leave empty if this
-                  project doesn&apos;t need any of them — each unused runtime
-                  still consumes CPU and memory.
-                </p>
+          {/* ---- Runtime ---- */}
+          <ConfigSection
+            defaultOpen={hasRuntime}
+            description="Controls how workspaces run, what URL the browser opens to, and what terminals open."
+            summary={runtimeSummary(
+              runCommand,
+              browserUrl,
+              terminalList.items,
+              envList.items,
+              browserPresetList.items,
+              platforms,
+            )}
+            title="Runtime"
+          >
+            <div className={styles.field}>
+              <p className={styles.sectionTitle}>Target Platforms</p>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                {(["ios", "android", "web"] as const).map((p) => (
+                  <label key={p} className={styles.checkboxRow}>
+                    <input
+                      checked={platforms.includes(p)}
+                      type="checkbox"
+                      onChange={(e) =>
+                        setPlatforms((prev) =>
+                          e.target.checked
+                            ? [...prev, p]
+                            : prev.filter((x) => x !== p),
+                        )
+                      }
+                    />
+                    {p === "ios" ? "iOS" : p === "android" ? "Android" : "Web"}
+                  </label>
+                ))}
               </div>
+              <p className={styles.helpText}>
+                Runtimes agents pre-allocate per workspace (iOS simulator,
+                Android emulator, headless Chromium). Leave empty if this
+                project doesn&apos;t need any of them — each unused runtime
+                still consumes CPU and memory.
+              </p>
+            </div>
 
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="setup-browser-url">
-                  Default browser URL
-                </label>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="setup-browser-url">
+                Default browser URL
+              </label>
+              <input
+                autoComplete="url"
+                className={styles.input}
+                id="setup-browser-url"
+                placeholder="http://localhost:3000"
+                type="text"
+                value={browserUrl}
+                onChange={(e) => setBrowserUrl(e.target.value)}
+              />
+              <p className={styles.helpText}>
+                Default address for the web browser panel when a workspace has
+                not navigated elsewhere yet.
+              </p>
+            </div>
+
+            <BrowserPresetField list={browserPresetList} />
+
+            <div className={styles.field}>
+              <p className={styles.sectionTitle}>Run Command</p>
+              <div style={{ display: "flex", gap: 8 }}>
                 <input
-                  autoComplete="url"
                   className={styles.input}
-                  id="setup-browser-url"
-                  placeholder="http://localhost:3000"
+                  placeholder="npx expo start"
+                  style={{ flex: 2 }}
                   type="text"
-                  value={browserUrl}
-                  onChange={(e) => setBrowserUrl(e.target.value)}
+                  value={runCommand}
+                  onChange={(e) => setRunCommand(e.target.value)}
                 />
-                <p className={styles.helpText}>
-                  Default address for the web browser panel when a workspace has
-                  not navigated elsewhere yet.
-                </p>
-              </div>
-
-              <BrowserPresetField list={browserPresetList} />
-
-              <div className={styles.field}>
-                <p className={styles.sectionTitle}>Run Command</p>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    className={styles.input}
-                    placeholder="npx expo start"
-                    style={{ flex: 2 }}
-                    type="text"
-                    value={runCommand}
-                    onChange={(e) => setRunCommand(e.target.value)}
-                  />
-                  <input
-                    className={styles.input}
-                    placeholder="Directory (optional)"
-                    style={{ flex: 1 }}
-                    type="text"
-                    value={runDir}
-                    onChange={(e) => setRunDir(e.target.value)}
-                  />
-                </div>
-                <p className={styles.helpText}>
-                  Shell command for the &quot;Run&quot; button. Optionally
-                  specify a relative directory.
-                </p>
-              </div>
-
-              <TerminalField list={terminalList} />
-
-              <EnvField list={envList} />
-            </ConfigSection>
-
-            {/* ---- Agent ---- */}
-            <ConfigSection
-              defaultOpen={hasAgent}
-              description="Configuration for Claude agents working in this project."
-              summary={agentSummary(agentPrompt, saveChatHistory)}
-              title="Agent"
-            >
-              <div className={styles.field}>
-                <p className={styles.sectionTitle}>System Prompt</p>
-                <textarea
+                <input
                   className={styles.input}
-                  placeholder="Additional instructions appended to every agent's system prompt..."
-                  rows={4}
-                  style={{ resize: "vertical", fontFamily: "inherit" }}
-                  value={agentPrompt}
-                  onChange={(e) => setAgentPrompt(e.target.value)}
+                  placeholder="Directory (optional)"
+                  style={{ flex: 1 }}
+                  type="text"
+                  value={runDir}
+                  onChange={(e) => setRunDir(e.target.value)}
                 />
-                <p className={styles.helpText}>
-                  Extra context or instructions appended to every agent&apos;s
-                  system prompt.
-                </p>
               </div>
-              <div className={styles.field}>
-                <label className={styles.checkboxRow}>
-                  <input
-                    checked={saveChatHistory}
-                    type="checkbox"
-                    onChange={(e) => setSaveChatHistory(e.target.checked)}
-                  />
-                  Save chat history
-                </label>
-                <p className={styles.helpText}>
-                  Automatically save agent conversations when they end. Lets you
-                  review and resume previous sessions.
-                </p>
-              </div>
-            </ConfigSection>
+              <p className={styles.helpText}>
+                Shell command for the &quot;Run&quot; button. Optionally specify
+                a relative directory.
+              </p>
+            </div>
 
-            {/* ---- Preview toggle ---- */}
-            <button
-              className={styles.previewToggle}
-              type="button"
-              onClick={() => setShowPreview((p) => !p)}
-            >
-              <ChevronRightIcon
-                className={`${styles.configSectionChevron} ${showPreview ? styles.configSectionChevronExpanded : ""}`}
-              />
-              {showPreview ? "Hide JSON" : "Show JSON"}
-            </button>
-            {showPreview && <pre className={styles.preview}>{previewJson}</pre>}
+            <TerminalField list={terminalList} />
 
-            {error && <p className={styles.errorMsg}>{error}</p>}
-          </div>
-        )}
+            <EnvField list={envList} />
+          </ConfigSection>
 
-        <div className={styles.stickyFooter}>
-          <button className={styles.cancelBtn} type="button" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className={styles.submitBtn}
-            disabled={isSaving || isLoading || !repoRoot}
-            type="button"
-            onClick={handleSave}
+          {/* ---- Agent ---- */}
+          <ConfigSection
+            defaultOpen={hasAgent}
+            description="Configuration for Claude agents working in this project."
+            summary={agentSummary(agentPrompt, saveChatHistory)}
+            title="Agent"
           >
-            {isSaving ? "Saving..." : "Save .argus.json"}
+            <div className={styles.field}>
+              <p className={styles.sectionTitle}>System Prompt</p>
+              <textarea
+                className={styles.input}
+                placeholder="Additional instructions appended to every agent's system prompt..."
+                rows={4}
+                style={{ resize: "vertical", fontFamily: "inherit" }}
+                value={agentPrompt}
+                onChange={(e) => setAgentPrompt(e.target.value)}
+              />
+              <p className={styles.helpText}>
+                Extra context or instructions appended to every agent&apos;s
+                system prompt.
+              </p>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.checkboxRow}>
+                <input
+                  checked={saveChatHistory}
+                  type="checkbox"
+                  onChange={(e) => setSaveChatHistory(e.target.checked)}
+                />
+                Save chat history
+              </label>
+              <p className={styles.helpText}>
+                Automatically save agent conversations when they end. Lets you
+                review and resume previous sessions.
+              </p>
+            </div>
+          </ConfigSection>
+
+          {/* ---- Preview toggle ---- */}
+          <button
+            className={styles.previewToggle}
+            type="button"
+            onClick={() => setShowPreview((p) => !p)}
+          >
+            <ChevronRightIcon
+              className={`${styles.configSectionChevron} ${showPreview ? styles.configSectionChevronExpanded : ""}`}
+            />
+            {showPreview ? "Hide JSON" : "Show JSON"}
           </button>
+          {showPreview && <pre className={styles.preview}>{previewJson}</pre>}
+
+          {error && <p className={styles.errorMsg}>{error}</p>}
         </div>
+      )}
+
+      <div className={styles.stickyFooter}>
+        <button className={styles.cancelBtn} type="button" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className={styles.submitBtn}
+          disabled={isSaving || isLoading || !repoRoot}
+          type="button"
+          onClick={handleSave}
+        >
+          {isSaving ? "Saving..." : "Save .argus.json"}
+        </button>
       </div>
-    </div>
+    </Dialog>
   );
 }

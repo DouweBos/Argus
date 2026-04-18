@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import {
   type SidebarViewIcon,
   type SidebarViewInfo,
@@ -119,24 +120,7 @@ export function SidebarHeader() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(pinnedIds));
   }, [pinnedIds]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!dropdownOpen) {
-      return;
-    }
-    const handler = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handler);
-
-    return () => document.removeEventListener("mousedown", handler);
-  }, [dropdownOpen]);
+  useOutsideClick(containerRef, dropdownOpen, () => setDropdownOpen(false));
 
   // Refresh views when dropdown opens (picks up late-loaded extensions)
   useEffect(() => {

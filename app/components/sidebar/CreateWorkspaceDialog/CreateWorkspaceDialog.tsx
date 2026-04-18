@@ -5,11 +5,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useOverlayDismiss } from "../../../hooks/useOverlayDismiss";
 import { useProjectWorkspaces } from "../../../hooks/useWorkspaces";
 import { listAllBranches } from "../../../lib/ipc";
-import { CloseIcon } from "../../shared/Icons";
-import styles from "../Dialog/Dialog.module.css";
+import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface CreateWorkspaceDialogProps {
   onClose: () => void;
@@ -97,8 +95,6 @@ export function CreateWorkspaceDialog({
     }
   };
 
-  const overlay = useOverlayDismiss(onClose);
-
   const selectBranch = useCallback((b: string) => {
     setBranch(b);
     inputRef.current?.focus();
@@ -155,96 +151,79 @@ export function CreateWorkspaceDialog({
   }
 
   return (
-    <div className={styles.overlay} {...overlay}>
-      <div
-        aria-labelledby="create-ws-title"
-        aria-modal="true"
-        className={`${styles.dialog} ${styles.dialogLarge}`}
-        role="dialog"
-      >
-        <div className={styles.header}>
-          <h2 className={styles.title} id="create-ws-title">
-            New Workspace
-            {sourceWorkspace && (
-              <span className={styles.subtitle}>
-                from {sourceWorkspace.display_name ?? sourceWorkspace.branch}
-              </span>
-            )}
-          </h2>
-          <button
-            aria-label="Close"
-            className={styles.closeBtn}
-            onClick={onClose}
-          >
-            <CloseIcon size={14} />
-          </button>
+    <Dialog
+      className={styles.dialogLarge}
+      title="New Workspace"
+      titleExtra={
+        sourceWorkspace && (
+          <span className={styles.subtitle}>
+            from {sourceWorkspace.display_name ?? sourceWorkspace.branch}
+          </span>
+        )
+      }
+      titleId="create-ws-title"
+      onClose={onClose}
+    >
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="branch-input">
+            Branch
+          </label>
+          <input
+            ref={inputRef}
+            autoComplete="off"
+            autoFocus
+            className={styles.input}
+            id="branch-input"
+            placeholder="Search or create branch…"
+            type="text"
+            value={branch}
+            onChange={(e) => setBranch(e.target.value)}
+          />
+          {isExistingRemote && !isExistingLocal && (
+            <span className={styles.createNewHint}>
+              Will create workspace from remote branch:{" "}
+              <strong>{trimmedBranch}</strong>
+            </span>
+          )}
+          {willCreateNew && (
+            <span className={styles.createNewHint}>
+              Will create new branch: <strong>{trimmedBranch}</strong>
+            </span>
+          )}
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="branch-input">
-              Branch
-            </label>
-            <input
-              ref={inputRef}
-              autoComplete="off"
-              autoFocus
-              className={styles.input}
-              id="branch-input"
-              placeholder="Search or create branch…"
-              type="text"
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-            />
-            {isExistingRemote && !isExistingLocal && (
-              <span className={styles.createNewHint}>
-                Will create workspace from remote branch:{" "}
-                <strong>{trimmedBranch}</strong>
-              </span>
-            )}
-            {willCreateNew && (
-              <span className={styles.createNewHint}>
-                Will create new branch: <strong>{trimmedBranch}</strong>
-              </span>
-            )}
-          </div>
+        <div className={styles.branchList}>{branchListBody}</div>
 
-          <div className={styles.branchList}>{branchListBody}</div>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="description-input">
+            Description
+          </label>
+          <input
+            className={styles.input}
+            id="description-input"
+            placeholder="What are you building?"
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="description-input">
-              Description
-            </label>
-            <input
-              className={styles.input}
-              id="description-input"
-              placeholder="What are you building?"
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
+        {error && <p className={styles.errorMsg}>{error}</p>}
 
-          {error && <p className={styles.errorMsg}>{error}</p>}
-
-          <div className={styles.footer}>
-            <button
-              className={styles.cancelBtn}
-              type="button"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              className={styles.submitBtn}
-              disabled={isCreating || !trimmedBranch}
-              type="submit"
-            >
-              {isCreating ? "Creating..." : "Create Workspace"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className={styles.footer}>
+          <button className={styles.cancelBtn} type="button" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className={styles.submitBtn}
+            disabled={isCreating || !trimmedBranch}
+            type="submit"
+          >
+            {isCreating ? "Creating..." : "Create Workspace"}
+          </button>
+        </div>
+      </form>
+    </Dialog>
   );
 }
