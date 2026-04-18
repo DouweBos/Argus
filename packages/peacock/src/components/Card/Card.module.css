@@ -1,0 +1,47 @@
+.card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: var(--space-8);
+  transition: background var(--transition-base),
+    transform var(--transition-base), box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.hoverable:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.dashed {
+  background: var(--glass-bg);
+  border-style: dashed;
+}
+.dashed:hover {
+  border-color: rgba(77, 159, 255, 0.3);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.tight {
+  border: none;
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-3) var(--space-5);
+}
+.tight:hover {
+  background: var(--glass-bg-hover);
+}
+
+.selected {
+  background: rgba(77, 159, 255, 0.06);
+  box-shadow: inset 3px 0 0 var(--accent);
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+.sm {
+  padding: var(--space-5);
+}
+
+.lg {
+  padding: var(--space-12);
+}

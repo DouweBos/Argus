@@ -1,0 +1,124 @@
+.item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: 10px;
+  position: relative;
+  transition: var(--transition-fast);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.item:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--border-subtle);
+}
+.pending {
+  background: rgba(245, 166, 35, 0.04);
+  border-color: rgba(245, 166, 35, 0.2);
+}
+.running {
+  border-left: 2px solid var(--accent);
+}
+.error {
+  background: rgba(255, 68, 102, 0.04);
+  border-color: rgba(255, 68, 102, 0.18);
+}
+.merge {
+  background: rgba(0, 212, 170, 0.03);
+  border-color: rgba(0, 212, 170, 0.12);
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--border-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.icon.running {
+  color: var(--accent);
+  border-color: rgba(77, 159, 255, 0.2);
+  background: rgba(77, 159, 255, 0.05);
+}
+.icon.pending {
+  color: var(--warning);
+  border-color: rgba(245, 166, 35, 0.25);
+  background: rgba(245, 166, 35, 0.05);
+}
+.icon.error {
+  color: var(--error);
+  border-color: rgba(255, 68, 102, 0.25);
+  background: rgba(255, 68, 102, 0.05);
+}
+.icon.merge {
+  color: var(--success);
+  border-color: rgba(0, 212, 170, 0.25);
+  background: rgba(0, 212, 170, 0.05);
+}
+
+.body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  flex-wrap: wrap;
+}
+.projectChip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding: 1px 7px;
+  border-radius: var(--border-radius-pill);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+.agentChip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.textMono {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.meta {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-align: right;
+  padding-top: 2px;
+}
+.metaStatus {
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}

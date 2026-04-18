@@ -1,0 +1,39 @@
+{
+  "name": "@argus/peacock",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Argus design system — Peacock component library",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles": "./src/styles/tokens.css",
+    "./tokens.css": "./src/styles/tokens.css"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@storybook/addon-themes": "^10.3.5",
+    "@storybook/react": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "storybook": "^10.3.5",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}

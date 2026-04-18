@@ -1,0 +1,21 @@
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 12px 24px;
+  background: var(--glass-bg);
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  font-family: inherit;
+}
+
+.cta:hover {
+  color: var(--text-primary);
+  border-color: rgba(77, 159, 255, 0.3);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
