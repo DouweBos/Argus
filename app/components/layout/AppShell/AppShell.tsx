@@ -43,6 +43,7 @@ import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewWorkspacePicker } from "../../home/HomeScreen/NewWorkspacePicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
+import { OrganizationsScreen } from "../../organizations";
 import { OrgTaskOverlay } from "../../organizations/OrgTaskScreen";
 import { StartTaskDialogHost } from "../../organizations/StartTaskDialog";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
@@ -65,7 +66,13 @@ const PEEK_LEAVE_DELAY_MS = 1000;
 
 function renderCenter(
   selectedId: string | null,
-  centerView: "activity" | "agents" | "devices" | "home" | "review-queue",
+  centerView:
+    | "activity"
+    | "agents"
+    | "devices"
+    | "home"
+    | "organizations"
+    | "review-queue",
 ) {
   if (selectedId !== null) {
     return <CenterPanel workspaceId={selectedId} />;
@@ -75,6 +82,9 @@ function renderCenter(
   }
   if (centerView === "agents") {
     return <AgentsScreen />;
+  }
+  if (centerView === "organizations") {
+    return <OrganizationsScreen />;
   }
   if (centerView === "review-queue") {
     return <ReviewQueueScreen />;

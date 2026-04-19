@@ -109,6 +109,7 @@ export function WorkspaceCard({
     : workspace.branch;
   const statusLabel = workspaceStatusLabel(workspace.status);
   const showStatusBadge = statusLabel !== "ready";
+  const isDeletingStatus = workspace.status === "deleting";
   const errorMessage =
     typeof workspace.status === "object" && "error" in workspace.status
       ? workspace.status.error
@@ -176,7 +177,7 @@ export function WorkspaceCard({
           )}
         </span>
         <span className={styles.subtitleTrailing}>
-          {diffStats && diffStats.files > 0 && (
+          {!isDeletingStatus && diffStats && diffStats.files > 0 && (
             <span className={styles.diffStats}>
               <span className={styles.diffFileCount}>{diffStats.files}f</span>
               {diffStats.additions > 0 && (
@@ -189,7 +190,7 @@ export function WorkspaceCard({
               )}
             </span>
           )}
-          {commitsAhead > 0 && (
+          {!isDeletingStatus && commitsAhead > 0 && (
             <span
               className={styles.aheadBadge}
               title={

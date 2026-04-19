@@ -1162,3 +1162,22 @@ export function WarningIcon({ size = 14, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** A cluster of four rounded squares — used to represent an organization grouping multiple repos. */
+export function OrganizationIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect x="1.25" y="1.25" width="5.5" height="5.5" rx="1.25" />
+      <rect x="9.25" y="1.25" width="5.5" height="5.5" rx="1.25" opacity="0.65" />
+      <rect x="1.25" y="9.25" width="5.5" height="5.5" rx="1.25" opacity="0.65" />
+      <rect x="9.25" y="9.25" width="5.5" height="5.5" rx="1.25" />
+    </svg>
+  );
+}

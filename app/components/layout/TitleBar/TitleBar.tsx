@@ -105,11 +105,6 @@ export function TitleBar() {
           )}
         </div>
       )}
-      {workspace.description && (
-        <span className={styles.descriptionLabel}>
-          &mdash; {workspace.description}
-        </span>
-      )}
     </div>
   ) : (
     <span className={styles.homeTitle}>Argus · home</span>

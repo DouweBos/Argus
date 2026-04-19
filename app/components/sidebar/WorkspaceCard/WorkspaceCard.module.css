@@ -207,6 +207,11 @@
   color: var(--warning);
 }
 
+.ws_deleting {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
 .ws_error {
   background: var(--error-bg);
   color: var(--error);

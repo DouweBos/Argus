@@ -9,8 +9,14 @@ import {
   Icons,
   StatusDots,
 } from "@argus/peacock";
+import { interruptAgent, revealInFinder } from "../../../lib/ipc";
 import { reorderAgent, useAgentsRecord } from "../../../stores/agentStore";
-import { useConversation } from "../../../stores/conversationStore";
+import {
+  getConversationState,
+  useConversation,
+} from "../../../stores/conversationStore";
+import { getWorkspaceState } from "../../../stores/workspaceStore";
+import { RenameAgentDialog } from "../RenameAgentDialog/RenameAgentDialog";
 import styles from "./AgentTabBar.module.css";
 
 interface AgentTabBarProps {
@@ -177,6 +183,10 @@ export function AgentTabBar({
     agentId: string;
     position: { x: number; y: number };
   } | null>(null);
+  const [renameTarget, setRenameTarget] = useState<{
+    agentId: string;
+    currentTitle: string;
+  } | null>(null);
 
   const closeMenu = useCallback(() => setMenuState(null), []);
 
@@ -210,40 +220,74 @@ export function AgentTabBar({
       }
     };
 
+    const target = agents[targetIndex];
+    const conv = getConversationState().conversations[targetId];
+    const fallbackTitle = `Agent ${targetIndex + 1}`;
+    const firstUserText = conv?.messages.find((m) => m.role === "user")
+      ?.textBlocks[0];
+    const currentTitle =
+      conv?.title?.trim() || firstUserText?.trim() || fallbackTitle;
+    const workspace = getWorkspaceState().workspaces.find(
+      (w) => w.id === target.workspace_id,
+    );
+    const isRunning = target.status === "running";
+
     return [
       {
-        icon: <Icons.CloseIcon size={12} />,
+        label: "Rename Agent\u2026",
+        onClick: () => setRenameTarget({ agentId: targetId, currentTitle }),
+      },
+      {
+        label: "Copy Agent ID",
+        onClick: () => {
+          navigator.clipboard.writeText(targetId).catch(() => {});
+        },
+      },
+      { separator: true },
+      {
+        label: "Stop Agent",
+        disabled: !isRunning,
+        onClick: () => {
+          interruptAgent(targetId).catch(() => {});
+        },
+      },
+      {
+        label: "Reveal Workspace in Finder",
+        disabled: !workspace,
+        onClick: () => {
+          if (workspace) {
+            revealInFinder(workspace.path).catch(() => {});
+          }
+        },
+      },
+      { separator: true },
+      {
         label: "Close Agent",
         onClick: () => onClose(targetId),
       },
       {
-        icon: <Icons.CloseIcon size={12} />,
         label: "Close Other Agents",
         disabled: others.length === 0,
         onClick: () => closeMany(others.map((a) => a.agent_id)),
       },
       { separator: true },
       {
-        icon: <Icons.CloseIcon size={12} />,
         label: "Close Agents to the Left",
         disabled: toLeft.length === 0,
         onClick: () => closeMany(toLeft.map((a) => a.agent_id)),
       },
       {
-        icon: <Icons.CloseIcon size={12} />,
         label: "Close Agents to the Right",
         disabled: toRight.length === 0,
         onClick: () => closeMany(toRight.map((a) => a.agent_id)),
       },
       { separator: true },
       {
-        icon: <Icons.CloseIcon size={12} />,
         label: "Close Idle Agents",
         disabled: idle.length === 0,
         onClick: () => closeMany(idle.map((a) => a.agent_id)),
       },
       {
-        icon: <Icons.TrashIcon size={12} />,
         label: "Close All Agents",
         danger: true,
         disabled: agents.length === 0,
@@ -370,6 +414,13 @@ export function AgentTabBar({
           items={menuItems}
           position={menuState.position}
           onClose={closeMenu}
+        />
+      )}
+      {renameTarget && (
+        <RenameAgentDialog
+          agentId={renameTarget.agentId}
+          currentTitle={renameTarget.currentTitle}
+          onClose={() => setRenameTarget(null)}
         />
       )}
     </div>

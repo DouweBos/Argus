@@ -13,7 +13,11 @@ export type WorkspaceKind = "repo_root" | "worktree";
  *
  * Matches the frontend `WorkspaceStatus` type in `src/lib/types.ts`.
  */
-export type WorkspaceStatus = "initializing" | "ready" | { error: string };
+export type WorkspaceStatus =
+  | "deleting"
+  | "initializing"
+  | "ready"
+  | { error: string };
 
 /** A single workspace backed by a git worktree or the repo root. */
 export interface Workspace {
