@@ -15,10 +15,13 @@ import {
 import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
 import { setActiveCenterView } from "../stores/editorStore";
 import { getWorkspaceState } from "../stores/workspaceStore";
+import { createLogger } from "./logger";
 import {
   getActiveWorktreePath,
   updateWorkspaceFolder,
 } from "./vscodeFilesystem";
+
+const log = createLogger("syntax-highlight-debug");
 
 function getWorkspaceRoot(): string | null {
   // Prefer VS Code's current workspace path (already initialized) but fall
@@ -72,29 +75,21 @@ export async function openFileInEditor(
   // means the corresponding language extension didn't load — that's the most
   // common cause of "no syntax highlighting in the editor tab".
   try {
-    const languageService = (await getService(
-      ILanguageService,
-    )) as unknown as {
-      guessLanguageIdByFilepathOrFirstLine?: (uri: URI) => string | null;
+    const languageService = (await getService(ILanguageService)) as unknown as {
       getLanguageIdByMimeType?: (mime: string) => string | null;
+      guessLanguageIdByFilepathOrFirstLine?: (uri: URI) => string | null;
     };
     const guessed =
       languageService.guessLanguageIdByFilepathOrFirstLine?.(URI.file(abs)) ??
       null;
-    console.log(
-      `[syntax-highlight-debug] opening "${abs}" — guessed language="${guessed}"`,
-    );
+    log.info(`opening "${abs}" — guessed language="${guessed}"`);
     if (!guessed || guessed === "plaintext") {
-      console.warn(
-        `[syntax-highlight-debug] file "${abs}" resolved to "${guessed}". Extension may not be registered, or the language extension didn't load.`,
+      log.warn(
+        `file "${abs}" resolved to "${guessed}". Extension may not be registered, or the language extension didn't load.`,
       );
     }
   } catch (err) {
-    console.error(
-      "[syntax-highlight-debug] language guess failed for",
-      abs,
-      err,
-    );
+    log.error("language guess failed for", abs, err);
   }
 
   const editorService = await getService(IEditorService);

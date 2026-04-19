@@ -128,8 +128,7 @@ export const getBuffer = (sessionId: string): string | null =>
 
 export const clearBuffer = (sessionId: string) => {
   terminalStore.setState((state) => {
-    const next = { ...state.bufferCache };
-    delete next[sessionId];
+    const { [sessionId]: _removed, ...next } = state.bufferCache;
 
     return { bufferCache: next };
   });
@@ -145,17 +144,21 @@ export const migrateSessions = (fromId: string, toId: string) => {
       return state;
     }
     const existing = state.sessions[toId] ?? [];
-    const newSessions = { ...state.sessions };
-    delete newSessions[fromId];
-    newSessions[toId] = [
-      ...existing,
-      ...sessionsToMove.map((s) => ({ ...s, workspace_id: toId })),
-    ];
+    const { [fromId]: _removedSessions, ...restSessions } = state.sessions;
+    const newSessions = {
+      ...restSessions,
+      [toId]: [
+        ...existing,
+        ...sessionsToMove.map((s) => ({ ...s, workspace_id: toId })),
+      ],
+    };
     const fromActive = state.activeSessionId[fromId];
     const toActive = state.activeSessionId[toId];
-    const newActiveSessionId = { ...state.activeSessionId };
-    delete newActiveSessionId[fromId];
-    newActiveSessionId[toId] = toActive ?? fromActive ?? null;
+    const { [fromId]: _removedActive, ...restActive } = state.activeSessionId;
+    const newActiveSessionId = {
+      ...restActive,
+      [toId]: toActive ?? fromActive ?? null,
+    };
 
     return {
       sessions: newSessions,

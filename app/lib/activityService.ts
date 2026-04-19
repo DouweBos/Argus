@@ -137,12 +137,12 @@ export function recordAgentLifecycle(
   const workspaceId = agent?.workspace_id;
   const { repoRoot, branch } = workspaceContext(workspaceId);
 
-  const title =
-    kind === "agent_spawned"
-      ? "Agent started"
-      : kind === "agent_stopped"
-        ? "Agent stopped"
-        : "Agent errored";
+  const titles: Record<typeof kind, string> = {
+    agent_spawned: "Agent started",
+    agent_stopped: "Agent stopped",
+    agent_errored: "Agent errored",
+  };
+  const title = titles[kind];
 
   recordActivity({
     kind,

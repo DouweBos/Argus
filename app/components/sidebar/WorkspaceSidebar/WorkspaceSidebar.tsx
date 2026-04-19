@@ -107,7 +107,7 @@ export function WorkspaceSidebar() {
         </SidebarItem>
         <SidebarItem
           active={selectedId === null && centerView === "review-queue"}
-          leading={<Icons.MergeIcon size={12} />}
+          leading={<Icons.ReviewQueueIcon size={12} />}
           count={reviewQueueCount}
           onClick={() => {
             setCenterView("review-queue");

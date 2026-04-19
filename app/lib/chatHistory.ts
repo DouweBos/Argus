@@ -27,6 +27,22 @@ export interface SavedConversation extends ChatHistoryEntry {
   messages: ConversationMessage[];
 }
 
+/** A single snippet from a message that matched a search query. */
+export interface ChatHistoryMessageMatch {
+  matchEnd: number;
+  matchStart: number;
+  messageIndex: number;
+  role: "assistant" | "system" | "user";
+  snippet: string;
+}
+
+/** Entry + any matching message snippets for a search query. */
+export interface ChatHistorySearchResult {
+  entry: ChatHistoryEntry;
+  messageMatches: ChatHistoryMessageMatch[];
+  metaMatch: boolean;
+}
+
 /** Derive a short title from the first user message in a conversation. */
 export function deriveTitle(messages: ConversationMessage[]): string {
   const firstUser = messages.find((m) => m.role === "user");

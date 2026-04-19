@@ -70,8 +70,11 @@ import getWorkingCopyServiceOverride from "@codingame/monaco-vscode-working-copy
 import getWorkspaceTrustServiceOverride from "@codingame/monaco-vscode-workspace-trust-service-override";
 // Import language extensions (triggers TextMate grammar registration)
 import "./vscodeExtensions";
+import { createLogger } from "./logger";
 import { registerIpcFilesystem } from "./vscodeFilesystem";
 import { loadLocalExtensions } from "./vscodeLocalExtensions";
+
+const log = createLogger("syntax-highlight-debug");
 
 // Worker URL imports — Vite resolves these at build time via import.meta.url
 const editorWorkerUrl = new URL(
@@ -112,12 +115,10 @@ window.MonacoEnvironment = {
     const mkWorker = (url: URL, name: string) => {
       try {
         const w = new Worker(url, { type: "module" });
-        console.log(
-          `[syntax-highlight-debug] spawned worker "${label}" (${name}) url=${url.href}`,
-        );
+        log.info(`spawned worker "${label}" (${name}) url=${url.href}`);
         w.addEventListener("error", (e) => {
-          console.error(
-            `[syntax-highlight-debug] worker "${label}" (${name}) runtime error`,
+          log.error(
+            `worker "${label}" (${name}) runtime error`,
             e.message,
             e.filename,
             e.lineno,
@@ -125,16 +126,13 @@ window.MonacoEnvironment = {
           );
         });
         w.addEventListener("messageerror", (e) => {
-          console.error(
-            `[syntax-highlight-debug] worker "${label}" (${name}) messageerror`,
-            e,
-          );
+          log.error(`worker "${label}" (${name}) messageerror`, e);
         });
 
         return w;
       } catch (err) {
-        console.error(
-          `[syntax-highlight-debug] FAILED to spawn worker "${label}" (${name}) url=${url.href}`,
+        log.error(
+          `FAILED to spawn worker "${label}" (${name}) url=${url.href}`,
           err,
         );
         throw err;
@@ -152,8 +150,8 @@ window.MonacoEnvironment = {
       case "workerExtensionHost":
         return mkWorker(extensionHostWorkerUrl, "extension-host");
       default:
-        console.warn(
-          `[syntax-highlight-debug] unknown worker label "${label}" — falling back to editor worker`,
+        log.warn(
+          `unknown worker label "${label}" — falling back to editor worker`,
         );
 
         return mkWorker(editorWorkerUrl, "editor-fallback");
@@ -469,7 +467,7 @@ export const vscodeReady = (async () => {
       },
       productConfiguration: {
         nameShort: "Argus",
-        nameLong: "Argus IDE",
+        nameLong: "Argus",
         extensionsGallery: {
           serviceUrl: "https://open-vsx.org/vscode/gallery",
           controlUrl: "",
@@ -517,15 +515,11 @@ export const vscodeReady = (async () => {
     const languageService = (await getService(ILanguageService)) as unknown as {
       getRegisteredLanguageIds?: () => string[];
     };
-    const languageIds =
-      languageService.getRegisteredLanguageIds?.() ?? [];
-    console.log(
-      `[syntax-highlight-debug] registered languages (${languageIds.length}):`,
-      languageIds,
-    );
+    const languageIds = languageService.getRegisteredLanguageIds?.() ?? [];
+    log.info(`registered languages (${languageIds.length}):`, languageIds);
     if (languageIds.length === 0) {
-      console.error(
-        "[syntax-highlight-debug] NO LANGUAGES REGISTERED — extensions didn't load. Check vscodeExtensions.ts imports and extension-host worker.",
+      log.error(
+        "NO LANGUAGES REGISTERED — extensions didn't load. Check vscodeExtensions.ts imports and extension-host worker.",
       );
     }
 
@@ -533,30 +527,27 @@ export const vscodeReady = (async () => {
       getColorTheme?: () => {
         id?: string;
         label?: string;
-        tokenColors?: unknown[];
         semanticHighlighting?: boolean;
+        tokenColors?: unknown[];
       };
     };
     const theme = themeService.getColorTheme?.();
     const tokenColorCount = Array.isArray(theme?.tokenColors)
       ? theme!.tokenColors!.length
       : "unknown";
-    console.log("[syntax-highlight-debug] active theme:", {
+    log.info("active theme:", {
       id: theme?.id,
       label: theme?.label,
       tokenColorCount,
       semanticHighlighting: theme?.semanticHighlighting,
     });
     if (tokenColorCount === 0 || tokenColorCount === "unknown") {
-      console.error(
-        "[syntax-highlight-debug] Theme has no tokenColors — syntax highlighting will render as plain foreground. Check that theme-defaults-default-extension loaded and workbench.colorTheme resolves to a real theme.",
+      log.error(
+        "Theme has no tokenColors — syntax highlighting will render as plain foreground. Check that theme-defaults-default-extension loaded and workbench.colorTheme resolves to a real theme.",
       );
     }
   } catch (err) {
-    console.error(
-      "[syntax-highlight-debug] failed to introspect syntax highlighting state",
-      err,
-    );
+    log.error("failed to introspect syntax highlighting state", err);
   }
 
   // After services are ready, disable "Open Folder" commands.

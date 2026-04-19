@@ -17,7 +17,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { z } from "zod";
-import { info } from "../../../app/lib/logger";
+import { createLogger, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import {
@@ -157,8 +157,7 @@ export function createMcpServer(): McpServer {
             ...handlerArgs,
           );
         } catch (err) {
-          // eslint-disable-next-line no-console -- central logging sink (tee'd to ~/.argus/main.log in main.ts)
-          console.error(`[mcp:${name}] tool handler threw:`, err);
+          createLogger(`mcp:${name}`).error("tool handler threw:", err);
           throw err;
         }
       };

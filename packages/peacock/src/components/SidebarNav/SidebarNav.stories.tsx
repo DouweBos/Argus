@@ -3,10 +3,9 @@ import { CommitIcon } from "../../icons/HomeIcons";
 import {
   ArgusLogo,
   FolderIcon,
-  GitChangesIcon,
   HomeIcon,
-  MergeIcon,
   PlusIcon,
+  ReviewQueueIcon,
 } from "../../icons/Icons";
 import { WorkspaceCard } from "../WorkspaceCard/WorkspaceCard";
 import {
@@ -16,6 +15,7 @@ import {
   SidebarItem,
   SidebarNav,
   SidebarNavGroup,
+  SidebarRepoAction,
   SidebarRepoGroup,
   SidebarScroll,
   SidebarSection,
@@ -36,7 +36,7 @@ export const Default: Story = {
       <SidebarItem active leading={<HomeIcon size={12} />} count="—">
         Home
       </SidebarItem>
-      <SidebarItem leading={<GitChangesIcon size={12} />} count={4}>
+      <SidebarItem leading={<ReviewQueueIcon size={12} />} count={4}>
         Review queue
       </SidebarItem>
       <SidebarSection count={5}>Workspaces</SidebarSection>
@@ -79,7 +79,7 @@ export const FramedHome: Story = {
           <SidebarItem active leading={<HomeIcon size={12} />} count="—">
             Home
           </SidebarItem>
-          <SidebarItem leading={<MergeIcon size={12} />} count={4}>
+          <SidebarItem leading={<ReviewQueueIcon size={12} />} count={4}>
             Review queue
           </SidebarItem>
           <SidebarItem leading={<CommitIcon size={12} />} count="∞">
@@ -92,7 +92,15 @@ export const FramedHome: Story = {
             name="argus-core"
             color="#4d9fff"
             count={2}
+            active
             leading={<FolderIcon size={11} />}
+            actions={
+              <>
+                <SidebarRepoAction title="New workspace">
+                  <PlusIcon size={10} />
+                </SidebarRepoAction>
+              </>
+            }
           >
             <SidebarWorkspaceRow
               active
@@ -134,6 +142,63 @@ export const FramedHome: Story = {
         <SidebarFooter leading={<PlusIcon size={11} />}>
           Add repository
         </SidebarFooter>
+      </SidebarNav>
+      <div style={{ flex: 1 }} />
+    </div>
+  ),
+};
+
+export const FramedRepoAsHeader: Story = {
+  name: "Framed · Repo as unified header",
+  render: () => (
+    <div
+      style={{ height: 480, display: "flex", background: "var(--bg-primary)" }}
+    >
+      <SidebarNav framed aria-label="Unified repo header">
+        <SidebarScroll>
+          <SidebarSection count={1}>Workspaces</SidebarSection>
+          <SidebarRepoGroup
+            name="argus"
+            active
+            leading={<FolderIcon size={11} />}
+            meta={
+              <>
+                <span style={{ color: "var(--text-muted)" }}>123f</span>
+                <span style={{ color: "var(--success)" }}>+2771</span>
+                <span style={{ color: "var(--error)" }}>-1344</span>
+              </>
+            }
+            subtitle="douwe/peacock-implemenation"
+            endContent={
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "var(--success)",
+                }}
+              />
+            }
+            actions={
+              <>
+                <SidebarRepoAction title="New workspace">
+                  <PlusIcon size={10} />
+                </SidebarRepoAction>
+              </>
+            }
+            persistentAction={
+              <SidebarRepoAction title="Project options">…</SidebarRepoAction>
+            }
+          >
+            <SidebarWorkspaceRow
+              name="feat/workspace-card"
+              status="success"
+              pulse
+              added={128}
+              removed={47}
+            />
+          </SidebarRepoGroup>
+        </SidebarScroll>
       </SidebarNav>
       <div style={{ flex: 1 }} />
     </div>

@@ -18,6 +18,7 @@ vi.stubGlobal("localStorage", {
     mockStorage[key] = value;
   },
   removeItem: (key: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test-only mock storage reset
     delete mockStorage[key];
   },
 });
@@ -25,6 +26,7 @@ vi.stubGlobal("localStorage", {
 describe("recentProjectsStore", () => {
   beforeEach(() => {
     for (const key of Object.keys(mockStorage)) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test-only mock storage reset
       delete mockStorage[key];
     }
     setRecentProjectsState({ projects: [], openProjects: [] });

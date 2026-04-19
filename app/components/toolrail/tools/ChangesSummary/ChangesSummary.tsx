@@ -2,9 +2,35 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../../hooks/useDiffFiles";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";
+import { startAgentInWorkspace } from "../../../../lib/agentLifecycle";
+import { sendAgentMessage } from "../../../../lib/ipc";
 import { useWorkspaces } from "../../../../stores/workspaceStore";
 import { FileTypeIcon } from "../../../shared/Icons";
 import styles from "./ChangesSummary.module.css";
+
+function buildConflictResolutionPrompt(
+  baseBranch: string,
+  workspaceBranch: string,
+  conflictFiles: string[],
+): string {
+  const fileList = conflictFiles.length
+    ? conflictFiles.map((f) => `- ${f}`).join("\n")
+    : "(specific files could not be determined — git merge will report them)";
+
+  return `Resolve merge conflicts between this workspace's branch (\`${workspaceBranch}\`) and its base branch (\`${baseBranch}\`).
+
+Expected conflicting files:
+${fileList}
+
+Steps:
+1. Run \`git fetch\` then \`git merge ${baseBranch}\` in this workspace.
+2. For each conflicting file, read both sides and resolve the conflict so both intents are preserved. Prefer the behavior this branch intended; don't silently drop changes from either side.
+3. After resolving, run the project's type-check / build / tests to confirm nothing is broken.
+4. Stage the resolved files and commit the merge with a clear message (e.g. \`Merge ${baseBranch} into ${workspaceBranch}\`).
+5. Report which files you resolved and any decisions you had to make.
+
+Don't push. Don't merge back into \`${baseBranch}\` — the user will do that separately once you're done.`;
+}
 
 type DiffLineType = "add" | "context" | "remove";
 
@@ -56,13 +82,16 @@ export function ChangesSummary({ workspaceId }: ChangesSummaryProps) {
 interface InnerProps {
   workspace: {
     base_branch?: string | null;
+    branch?: string;
     kind: string;
   } | null;
   workspaceId: string;
 }
 
 function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
-  const { files, isLoading } = useDiffFiles(workspaceId);
+  const { files, isLoading } = useDiffFiles(workspaceId, {
+    baseBranch: workspace?.base_branch ?? null,
+  });
   const {
     commitsAhead,
     conflicts,
@@ -156,6 +185,37 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
 
   const showMerge = workspace?.kind === "worktree" && workspace.base_branch;
   const hasConflicts = conflicts.length > 0;
+  const [isDispatchingAgent, setIsDispatchingAgent] = useState(false);
+  const [dispatchError, setDispatchError] = useState<string | null>(null);
+
+  const handleFixConflictsInChat = useCallback(async () => {
+    if (!workspace?.base_branch || !workspace?.branch || isDispatchingAgent) {
+      return;
+    }
+    setIsDispatchingAgent(true);
+    setDispatchError(null);
+    try {
+      const info = await startAgentInWorkspace(workspaceId, { focus: true });
+      const prompt = buildConflictResolutionPrompt(
+        workspace.base_branch,
+        workspace.branch,
+        conflicts,
+      );
+      await sendAgentMessage(info.agent_id, prompt);
+    } catch (err) {
+      setDispatchError(
+        err instanceof Error ? err.message : "Failed to start agent",
+      );
+    } finally {
+      setIsDispatchingAgent(false);
+    }
+  }, [
+    workspaceId,
+    workspace?.base_branch,
+    workspace?.branch,
+    conflicts,
+    isDispatchingAgent,
+  ]);
   const hasMergeableWork = hasStaged || commitsAhead > 0;
   const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
 
@@ -172,6 +232,26 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
   } else {
     mergeBtnTitle = `Merges ${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} from this branch into ${baseBranchLabel}`;
   }
+
+  const showConflictFix =
+    showMerge && hasConflicts && workspace?.branch && !isMerging;
+  const conflictFixButton = showConflictFix ? (
+    <button
+      className={styles.conflictBtn}
+      disabled={isDispatchingAgent}
+      title={
+        isDispatchingAgent
+          ? "Starting agent..."
+          : `Start a Claude Code agent in this workspace to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranchLabel}`
+      }
+      onClick={handleFixConflictsInChat}
+    >
+      <Icons.AgentStartIcon size={12} />
+      {isDispatchingAgent
+        ? "Starting agent..."
+        : `Fix ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} in chat`}
+    </button>
+  ) : null;
 
   if (isLoading && files.length === 0) {
     return (
@@ -192,6 +272,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
         </div>
         {showMerge && (
           <div className={styles.bottomBar}>
+            {conflictFixButton}
             <button
               className={styles.mergeBtn}
               disabled={!canMerge}
@@ -199,8 +280,11 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
               onClick={handleMerge}
             >
               <Icons.MergeIcon size={12} />
-              {isMerging ? "Merging..." : "Apply Changes Locally"}
+              {isMerging ? "Merging..." : `Merge into ${baseBranchLabel}`}
             </button>
+            {dispatchError && (
+              <span className={styles.mergeError}>{dispatchError}</span>
+            )}
           </div>
         )}
       </div>
@@ -316,6 +400,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
             <Icons.ChevronRightIcon size={10} />
           </button>
         </div>
+        {conflictFixButton}
         {showMerge && (
           <button
             className={styles.mergeBtn}
@@ -324,10 +409,13 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
             onClick={handleMerge}
           >
             <Icons.MergeIcon size={12} />
-            {isMerging ? "Merging..." : "Apply Changes Locally"}
+            {isMerging ? "Merging..." : `Merge into ${baseBranchLabel}`}
           </button>
         )}
         {mergeError && <span className={styles.mergeError}>{mergeError}</span>}
+        {dispatchError && (
+          <span className={styles.mergeError}>{dispatchError}</span>
+        )}
       </div>
     </div>
   );

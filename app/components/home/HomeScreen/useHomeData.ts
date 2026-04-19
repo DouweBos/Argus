@@ -1,7 +1,7 @@
 import type { AgentStatus, DeviceInfo, Workspace } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
-import { projectAccent } from "@argus/peacock";
 import { useMemo } from "react";
+import { projectAccent } from "@argus/peacock";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
@@ -12,6 +12,7 @@ import { useWorkspaces } from "../../../stores/workspaceStore";
 
 export interface HomeAgent {
   branch: string;
+  displayName: string;
   id: string;
   status: PeacockAgentStatus;
   workspace: Workspace;
@@ -125,6 +126,7 @@ export function useHomeData(): HomeData & {
       const entry: HomeAgent = {
         id: a.agent_id,
         branch: ws.branch,
+        displayName: ws.display_name ?? ws.branch,
         status: mapAgentStatus(a.status),
         workspace: ws,
       };

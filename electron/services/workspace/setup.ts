@@ -543,11 +543,21 @@ export async function runSetupPipeline(
  * Symlinks are dereferenced to match the previous behaviour.
  */
 async function copyDirAll(src: string, dst: string): Promise<void> {
-  await fs.promises.cp(src, dst, {
-    recursive: true,
-    dereference: true,
-    force: true,
-  });
+  // Electron patches `fs` with asar support, which makes `.asar` files look
+  // like directories. That breaks `fs.cp` when copying trees that contain
+  // asar archives (e.g. node_modules/electron/dist/.../default_app.asar).
+  // Disable asar interception for the duration of the copy.
+  const prev = process.noAsar;
+  process.noAsar = true;
+  try {
+    await fs.promises.cp(src, dst, {
+      recursive: true,
+      dereference: true,
+      force: true,
+    });
+  } finally {
+    process.noAsar = prev;
+  }
 }
 
 /** Returns true if `p` is a symlink (without throwing on missing path). */

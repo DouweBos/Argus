@@ -1,4 +1,4 @@
-appId: com.argus.app
+appId: dev.houwert.argus
 productName: Argus
 directories:
   buildResources: build

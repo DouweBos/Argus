@@ -115,6 +115,35 @@ export async function getWorkspaceFullDiff(id: string): Promise<string> {
   return git(workspacePath(id), ["diff", "HEAD"]);
 }
 
+/**
+ * Return the diff of the entire workspace branch vs its base branch — covers
+ * committed, staged, and unstaged changes together. Uses the merge-base so
+ * changes that happened on the base branch after divergence don't appear
+ * inverted.
+ *
+ * Returns an empty string when the workspace has no base branch.
+ */
+export async function getWorkspaceBranchDiff(id: string): Promise<string> {
+  const ws = appState.workspaces.get(id);
+  if (!ws || ws.kind === "repo_root" || !ws.base_branch) {
+    return "";
+  }
+  const wtPath = workspacePath(id);
+  let mergeBase: string;
+  try {
+    mergeBase = (
+      await git(wtPath, ["merge-base", ws.base_branch, "HEAD"])
+    ).trim();
+  } catch {
+    return "";
+  }
+  if (!mergeBase) {
+    return "";
+  }
+
+  return git(wtPath, ["diff", mergeBase]);
+}
+
 /** Return `git diff --cached` output (staged only) for a workspace. */
 export async function getWorkspaceStagedDiff(id: string): Promise<string> {
   return git(workspacePath(id), ["diff", "--cached"]);
@@ -730,9 +759,7 @@ export async function getWorkspaceWorkingTreeState(
     ]);
     const hasStaged = stagedNumstat.trim().length > 0;
     const hasUncommitted =
-      hasStaged ||
-      fullNumstat.trim().length > 0 ||
-      untracked.trim().length > 0;
+      hasStaged || fullNumstat.trim().length > 0 || untracked.trim().length > 0;
 
     return { hasStaged, hasUncommitted };
   } catch {
@@ -762,9 +789,7 @@ export async function emitReviewState(
   }
   const [commitsAhead, treeState] = await Promise.all([
     getWorkspaceCommitsAhead(id),
-    stateHint
-      ? Promise.resolve(stateHint)
-      : getWorkspaceWorkingTreeState(id),
+    stateHint ? Promise.resolve(stateHint) : getWorkspaceWorkingTreeState(id),
   ]);
   getMainWindow()?.webContents.send("workspace:review-state", {
     workspaceId: id,

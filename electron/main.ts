@@ -20,12 +20,14 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { log as emitLog } from "../app/lib/logger";
 import { registerIpcHandlers } from "./ipc";
+import { writeLogLine } from "./lib/logFile";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import { setColorScheme } from "./services/browser/conductorInput";
 import {
   startMjpegServer,
   stopMjpegServer,
 } from "./services/browser/mjpegServer";
+import { webBrowserPool } from "./services/browser/pool";
 import { installConductor } from "./services/cli/conductorInstaller";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { fixProcessPath } from "./services/terminal/shellEnv";
@@ -80,32 +82,9 @@ let mainWindow: BrowserWindow | null = null;
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:1420";
 
-const logPath = path.join(os.homedir(), ".argus", "main.log");
-fs.mkdirSync(path.dirname(logPath), { recursive: true });
-const logStream = fs.createWriteStream(logPath, { flags: "a" });
-
-function formatArg(a: unknown): string {
-  if (a instanceof Error) {
-    return a.stack ?? `${a.name}: ${a.message}`;
-  }
-  if (typeof a === "string") {
-    return a;
-  }
-  try {
-    return JSON.stringify(a);
-  } catch {
-    return String(a);
-  }
-}
-
-function writeLogLine(level: string, args: unknown[]): void {
-  const line = `[${new Date().toISOString()}] [${level}] ${args.map(formatArg).join(" ")}\n`;
-  logStream.write(line);
-}
-
-// Tee main-process console.* to the log file. In a bundled .app there is no
-// attached terminal, so without this tee every console call across services
-// (info/warn/error from app/lib/logger.ts) vanishes silently.
+// Tee main-process console.* to the rotating log file. In a bundled .app there
+// is no attached terminal, so without this tee every console call across
+// services (info/warn/error from app/lib/logger.ts) vanishes silently.
 /* eslint-disable no-console -- this block is the central console tee for the main process */
 const originalConsole = {
   log: console.log.bind(console),
@@ -257,6 +236,9 @@ app.on("before-quit", (e) => {
   stopMcpServer();
   stopMjpegServer();
   stopAllScreencasts();
+  webBrowserPool.releaseAll().catch((err) => {
+    log("webBrowserPool.releaseAll failed: %s", err);
+  });
   // Give the renderer a moment to save active conversations before destroying
   // the window. The renderer listens for `app:will-quit` and persists chat
   // history synchronously via IPC.
@@ -399,7 +381,7 @@ app.whenReady().then(() => {
         "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
         "connect-src 'self' argus-ext: data: https://open-vsx.org" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
-        "worker-src 'self' blob: argus-ext:",
+        "worker-src 'self' blob: data: argus-ext:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];
     }

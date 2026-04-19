@@ -1,4 +1,5 @@
 import type { ConversationMessage } from "../../../stores/conversationStore";
+import { showImageContextMenu } from "../../../lib/ipc";
 import { renderMarkdown } from "../../../lib/markdown";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
@@ -70,6 +71,10 @@ export function ChatMessage({
                   title={`Image ${i + 1}`}
                   type="button"
                   onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    showImageContextMenu(src, `attachment-${i + 1}`);
+                  }}
                 >
                   <img
                     alt={`Attachment ${i + 1}`}
@@ -104,12 +109,12 @@ export function ChatMessage({
       {hasText && (
         <FileLinkHandler className={styles.textContent}>
           {trimmedBlocks.map((text, i) => (
-              <div
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-                key={i}
-                className={styles.markdown}
-              />
-            ))}
+            <div
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+              key={i}
+              className={styles.markdown}
+            />
+          ))}
         </FileLinkHandler>
       )}
 

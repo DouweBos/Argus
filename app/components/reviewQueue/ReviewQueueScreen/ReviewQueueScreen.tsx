@@ -167,16 +167,18 @@ export function ReviewQueueScreen() {
         />
       ) : (
         <div className={styles.list}>
-          {items.map(({ workspace, commitsAhead, hasStaged, hasUncommitted }) => (
-            <ReviewQueueRow
-              key={workspace.id}
-              workspace={workspace}
-              commitsAhead={commitsAhead}
-              hasStaged={hasStaged}
-              hasUncommitted={hasUncommitted}
-              onSelect={() => handleRowClick(workspace.id)}
-            />
-          ))}
+          {items.map(
+            ({ workspace, commitsAhead, hasStaged, hasUncommitted }) => (
+              <ReviewQueueRow
+                key={workspace.id}
+                workspace={workspace}
+                commitsAhead={commitsAhead}
+                hasStaged={hasStaged}
+                hasUncommitted={hasUncommitted}
+                onSelect={() => handleRowClick(workspace.id)}
+              />
+            ),
+          )}
         </div>
       )}
     </div>

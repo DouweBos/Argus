@@ -268,15 +268,10 @@ export function useTerminal({
 
           return true;
 
-        // Cmd+V — paste from clipboard
+        // Cmd+V — let xterm handle paste via its native paste event
+        // (manual handling here caused double-paste — see onData below)
         case "v":
-          navigator.clipboard.readText().then((text) => {
-            if (text && sessionId) {
-              terminalWrite(sessionId, btoa(text)).catch(() => {});
-            }
-          });
-
-          return false;
+          return true;
 
         // Cmd+A — select all
         case "a":

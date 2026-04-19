@@ -216,7 +216,7 @@ export function CommandCenter({
                 activeAgents.map((a) => (
                   <AgentRow
                     key={a.id}
-                    name={a.branch}
+                    name={a.displayName}
                     project={basename(a.workspace.repo_root)}
                     status={a.status}
                     meta={agentMeta(a.status)}

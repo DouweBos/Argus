@@ -7,13 +7,13 @@ import {
   stopAgentById,
   stopAgentListening,
 } from "../lib/agentEventService";
+import { startAgentInWorkspace } from "../lib/agentLifecycle";
 import {
   sendAgentMessage as apiSendAgentMessage,
   startAgent as apiStartAgent,
   stopAgent as apiStopAgent,
 } from "../lib/ipc";
 import {
-  addAgent,
   getAgentState,
   removeAgent,
   replaceAgent,
@@ -119,18 +119,11 @@ export function useWorkspaceAgents(
       }
       setIsStarting(true);
       try {
-        const agentInfo: AgentStatus = await apiStartAgent(
-          workspaceId,
+        const agentInfo = await startAgentInWorkspace(workspaceId, {
+          focus: false,
           model,
           permissionMode,
           resumeSessionId,
-        );
-        startAgentListening(agentInfo.agent_id);
-        addAgent({
-          agent_id: agentInfo.agent_id,
-          workspace_id: agentInfo.workspace_id,
-          status: "running",
-          permission_mode: permissionMode,
         });
 
         return agentInfo.agent_id;

@@ -151,8 +151,25 @@ export interface SidebarRepoGroupProps extends HTMLAttributes<HTMLDivElement> {
   count?: ReactNode;
   expanded?: boolean;
   dim?: boolean;
+  /** Highlights the header to indicate the repo home is the active view. */
+  active?: boolean;
   leading?: ReactNode;
+  /** Trailing hover-revealed action buttons (e.g. new workspace, settings, close). */
+  actions?: ReactNode;
+  /** Inline content rendered after the repo name (e.g. diff stats, ahead badge). */
+  meta?: ReactNode;
+  /** Content rendered between meta and actions, always visible (e.g. status badge, agent dot). */
+  endContent?: ReactNode;
+  /** Secondary line beneath the name, indented to align with it (e.g. branch name). */
+  subtitle?: ReactNode;
+  /** Always-visible persistent action button rendered after the hover actions (e.g. overflow menu). */
+  persistentAction?: ReactNode;
+  /** Content rendered inside the group, above the children list (e.g. branch switcher). */
+  headerFooter?: ReactNode;
+  title?: string;
   onHeaderClick?: () => void;
+  onHeaderContextMenu?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onToggleExpanded?: () => void;
 }
 
 export function SidebarRepoGroup({
@@ -161,48 +178,123 @@ export function SidebarRepoGroup({
   count,
   expanded = true,
   dim,
+  active,
   leading,
+  actions,
+  meta,
+  endContent,
+  subtitle,
+  persistentAction,
+  headerFooter,
+  title,
   onHeaderClick,
+  onHeaderContextMenu,
+  onToggleExpanded,
   children,
   className,
   ...rest
 }: SidebarRepoGroupProps) {
+  const toggle = onToggleExpanded ?? onHeaderClick;
+  const label = onHeaderClick ?? toggle;
+
   return (
     <div
       className={[styles.repoGroup, className].filter(Boolean).join(" ")}
       {...rest}
     >
-      <button type="button" className={styles.repoHead} onClick={onHeaderClick}>
-        <span
-          className={[
-            styles.repoChevron,
-            expanded ? "" : styles.repoChevronCollapsed,
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          <ChevronDownIcon size={10} />
-        </span>
-        {leading && (
-          <span
-            className={styles.repoLeading}
-            style={{ color, opacity: dim ? 0.6 : undefined }}
+      <div
+        className={[styles.repoHead, active ? styles.repoHeadActive : ""]
+          .filter(Boolean)
+          .join(" ")}
+        title={title}
+      >
+        <div className={styles.repoHeadRow}>
+          <button
+            type="button"
+            aria-label={expanded ? "Collapse" : "Expand"}
+            className={[
+              styles.repoChevron,
+              expanded ? "" : styles.repoChevronCollapsed,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={toggle}
           >
-            {leading}
-          </span>
+            <ChevronDownIcon size={10} />
+          </button>
+          <button
+            type="button"
+            className={styles.repoLabel}
+            onClick={label}
+            onContextMenu={onHeaderContextMenu}
+          >
+            {leading && (
+              <span
+                className={styles.repoLeading}
+                style={{ color, opacity: dim ? 0.6 : undefined }}
+              >
+                {leading}
+              </span>
+            )}
+            <span
+              className={styles.repoName}
+              style={{ opacity: dim ? 0.75 : undefined }}
+            >
+              {name}
+            </span>
+            {count != null && <span className={styles.repoCount}>{count}</span>}
+          </button>
+          {endContent && (
+            <div className={styles.repoEndContent}>{endContent}</div>
+          )}
+          {actions && <div className={styles.repoActions}>{actions}</div>}
+        </div>
+        {(subtitle || meta || persistentAction) && (
+          <div className={styles.repoSubtitleRow}>
+            <span className={styles.repoSubtitle}>{subtitle}</span>
+            <span className={styles.repoSubtitleTrailing}>
+              {meta && <span className={styles.repoMeta}>{meta}</span>}
+              {persistentAction && (
+                <span className={styles.repoPersistentAction}>
+                  {persistentAction}
+                </span>
+              )}
+            </span>
+          </div>
         )}
-        <span
-          className={styles.repoName}
-          style={{ opacity: dim ? 0.75 : undefined }}
-        >
-          {name}
-        </span>
-        {count != null && <span className={styles.repoCount}>{count}</span>}
-      </button>
-      {expanded && children && (
-        <div className={styles.workspaceList}>{children}</div>
+      </div>
+      {expanded && (headerFooter || children) && (
+        <div className={styles.workspaceList}>
+          {headerFooter}
+          {children}
+        </div>
       )}
     </div>
+  );
+}
+
+export interface SidebarRepoActionProps
+  extends ButtonHTMLAttributes<HTMLButtonElement> {
+  title: string;
+}
+
+export function SidebarRepoAction({
+  title,
+  children,
+  className,
+  type = "button",
+  ...rest
+}: SidebarRepoActionProps) {
+  return (
+    <button
+      type={type}
+      title={title}
+      aria-label={title}
+      className={[styles.repoActionBtn, className].filter(Boolean).join(" ")}
+      {...rest}
+    >
+      {children}
+    </button>
   );
 }
 

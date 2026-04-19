@@ -51,31 +51,29 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
-  margin-top: -24px;
+  gap: 4px;
+  margin-top: -8px;
+  margin-right: 6px;
   max-width: 75%;
   align-self: flex-end;
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .userAttachment {
   display: block;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(245, 166, 35, 0.18);
-  background: rgba(245, 166, 35, 0.04);
+  border: none;
+  background: transparent;
   cursor: zoom-in;
-  transition:
-    border-color var(--transition-base),
-    transform var(--transition-base);
+  transition: transform var(--transition-base);
 }
 
 .userAttachment:hover {
-  border-color: rgba(245, 166, 35, 0.4);
   transform: translateY(-1px);
 }
 

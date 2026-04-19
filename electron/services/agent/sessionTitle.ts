@@ -39,8 +39,7 @@ export async function generateSessionTitle(
       ? trimmed.slice(0, MAX_INPUT_CHARS)
       : trimmed;
 
-  const prompt =
-    `Produce a title (3-6 words, no trailing punctuation, no quotes, title case) that summarises this chat's topic based on the user's first message. Respond with ONLY the title text, nothing else.\n\nUser message:\n${snippet}`;
+  const prompt = `Produce a title (3-6 words, no trailing punctuation, no quotes, title case) that summarises this chat's topic based on the user's first message. Respond with ONLY the title text, nothing else.\n\nUser message:\n${snippet}`;
 
   try {
     const { stdout } = await execFileAsync(
