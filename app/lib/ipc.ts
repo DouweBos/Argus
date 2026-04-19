@@ -21,6 +21,7 @@ import type {
   DirEntry,
   FileStat,
   MentionPathResult,
+  OrgTask,
   Organization,
   OrganizationMember,
   SimulatorDevice,
@@ -675,3 +676,26 @@ export const removeRepoFromOrganization = (
   repoRoot: string,
 ): Promise<Organization> =>
   invoke("remove_repo_from_organization", { id, repoRoot });
+
+// Organization tasks
+export interface StartOrgTaskInput {
+  organizationId: string;
+  title: string;
+  prompt: string;
+  members: { repo_root: string; addendum?: string }[];
+}
+
+export const listOrgTasks = (organizationId?: string): Promise<OrgTask[]> =>
+  invoke("list_org_tasks", organizationId ? { organizationId } : {});
+
+export const getOrgTask = (id: string): Promise<OrgTask | null> =>
+  invoke("get_org_task", { id });
+
+export const startOrgTask = (input: StartOrgTaskInput): Promise<OrgTask> =>
+  invoke("start_org_task", { ...input });
+
+export const cancelOrgTask = (id: string): Promise<OrgTask> =>
+  invoke("cancel_org_task", { id });
+
+export const deleteOrgTaskIpc = (id: string): Promise<void> =>
+  invoke("delete_org_task", { id });

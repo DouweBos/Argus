@@ -5,6 +5,7 @@ import { useWorkspaceDiffStats } from "../../../hooks/useWorkspaceDiffStats";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
 import { type Workspace, workspaceStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { setActiveOrgTask, useOrgTasks } from "../../../stores/orgTaskStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import { useSetupProgressByWorkspaceId } from "../../../stores/workspaceStore";
 import { BranchSwitcher } from "../BranchSwitcher";
@@ -71,6 +72,10 @@ export function WorkspaceCard({
   );
 
   const diffStats = useWorkspaceDiffStats(workspace.id, workspace.status);
+  const orgTasks = useOrgTasks();
+  const orgTask = workspace.organization_task_id
+    ? orgTasks.find((t) => t.id === workspace.organization_task_id)
+    : null;
 
   const closeMenu = useCallback(() => setMenuPosition(null), []);
 
@@ -147,6 +152,19 @@ export function WorkspaceCard({
           )}
         </div>
       </div>
+      {orgTask && (
+        <button
+          type="button"
+          className={styles.orgTaskPill}
+          title={`Part of task: ${orgTask.title}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveOrgTask(orgTask.id);
+          }}
+        >
+          task: {orgTask.title}
+        </button>
+      )}
       <div className={styles.subtitleRow}>
         <span className={styles.branchSubtitle}>
           {branchName}
@@ -183,7 +201,10 @@ export function WorkspaceCard({
               ↑{commitsAhead}
             </span>
           )}
-          <span className={styles.menuAnchor} onClick={(e) => e.stopPropagation()}>
+          <span
+            className={styles.menuAnchor}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               ref={menuBtnRef}
               className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
@@ -213,8 +234,7 @@ export function WorkspaceCard({
                     {
                       icon: <Icons.BranchIcon size={12} />,
                       label: "Copy Branch Name",
-                      onClick: () =>
-                        navigator.clipboard.writeText(branchName),
+                      onClick: () => navigator.clipboard.writeText(branchName),
                     },
                     { separator: true },
                     {
@@ -309,7 +329,6 @@ export function WorkspaceCard({
           </p>
         </div>
       )}
-
     </div>
   );
 }

@@ -6,6 +6,7 @@
 
 import type { AgentSession } from "./services/agent/models";
 import type { Organization } from "./services/organization/models";
+import type { OrgTask } from "./services/organizationTask/models";
 import type { TerminalSession } from "./services/terminal/multiplexer";
 import type { Workspace } from "./services/workspace/models";
 import type { WatcherHandle } from "./services/workspace/watcher";
@@ -63,6 +64,9 @@ class AppState {
 
   /** User-defined organizations grouping related repos, keyed by org UUID. */
   organizations = new Map<string, Organization>();
+
+  /** Cross-repo tasks that fan out across org members, keyed by task UUID. */
+  organizationTasks = new Map<string, OrgTask>();
 
   /** Active iOS simulator capture session, if any. */
   simulator: SimulatorSession | null = null;

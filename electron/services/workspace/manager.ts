@@ -152,6 +152,7 @@ export async function listWorkspaces(repoRoot: string): Promise<Workspace[]> {
       ws.display_name = m.display_name;
       ws.description = m.description;
       ws.base_branch = m.base_branch;
+      ws.organization_task_id = m.organization_task_id ?? null;
     }
 
     if (!appState.workspaces.has(ws.id)) {
@@ -170,6 +171,7 @@ export async function listWorkspaces(repoRoot: string): Promise<Workspace[]> {
         display_name: w.display_name,
         description: w.description,
         base_branch: w.base_branch,
+        organization_task_id: w.organization_task_id ?? null,
       });
     }
   }

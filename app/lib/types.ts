@@ -7,6 +7,8 @@ export interface Workspace {
   display_name?: string | null;
   id: string;
   kind: "repo_root" | "worktree";
+  /** OrgTask that owns this workspace (if spawned from a cross-repo task). */
+  organization_task_id?: string | null;
   path: string;
   repo_root: string;
   status: "initializing" | "ready" | { error: string };
@@ -383,5 +385,37 @@ export interface Organization {
   members: OrganizationMember[];
   name: string;
   system_prompt: string;
+  updated_at: number;
+}
+
+// ---------------------------------------------------------------------------
+// Organization tasks
+// ---------------------------------------------------------------------------
+
+export type OrgTaskStatus = "running" | "completed" | "failed" | "cancelled";
+
+export type OrgTaskMemberStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed";
+
+export interface OrgTaskMember {
+  addendum: string;
+  agent_id: string | null;
+  repo_root: string;
+  role: string;
+  status: OrgTaskMemberStatus;
+  workspace_id: string | null;
+}
+
+export interface OrgTask {
+  created_at: number;
+  id: string;
+  members: OrgTaskMember[];
+  organization_id: string;
+  prompt: string;
+  status: OrgTaskStatus;
+  title: string;
   updated_at: number;
 }

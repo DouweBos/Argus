@@ -18,6 +18,7 @@ export interface WorkspaceMeta {
   display_name?: string | null;
   description: string;
   base_branch?: string | null;
+  organization_task_id?: string | null;
 }
 
 interface MetadataFile {

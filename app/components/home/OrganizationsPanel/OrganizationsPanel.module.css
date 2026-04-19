@@ -45,24 +45,44 @@
   gap: 6px;
 }
 
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
 .row {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
   background: transparent;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
+.rowMain {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
   color: inherit;
   cursor: pointer;
   text-align: left;
-  width: 100%;
-  transition:
-    background 120ms ease,
-    border-color 120ms ease;
+  padding: 0;
 }
-.row:hover {
-  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.04));
+.rowActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.card:hover {
   border-color: var(--accent);
 }
 
@@ -101,4 +121,104 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px 10px;
+}
+
+.noTasks {
+  padding: 0 12px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.taskRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1.4fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.taskRow:hover {
+  border-color: var(--accent);
+}
+
+.taskTitle {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskStatus {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+}
+.taskStatus[data-status="running"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.taskStatus[data-status="failed"] {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+.taskStatus[data-status="cancelled"] {
+  color: #aaa;
+}
+.taskStatus[data-status="completed"] {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.taskMembers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.memberChip {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.memberChip[data-status="running"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.memberChip[data-status="failed"] {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+}
+.memberChip[data-status="completed"] {
+  color: #4ade80;
+  border-color: #4ade80;
+}
+
+.taskTime {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
 }
