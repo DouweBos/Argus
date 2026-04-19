@@ -1,0 +1,14 @@
+.dialog {
+  width: min(92vw, 900px);
+  height: min(88vh, 780px);
+  max-width: 92vw;
+  max-height: 88vh;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

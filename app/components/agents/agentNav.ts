@@ -1,4 +1,5 @@
 import { useProjects } from "../../hooks/useWorkspaces";
+import { focusAgent } from "../../lib/agentLifecycle";
 import { setActiveAgent } from "../../stores/agentStore";
 import { setCenterView } from "../../stores/centerViewStore";
 import { setActiveCenterView } from "../../stores/editorStore";
@@ -25,14 +26,13 @@ export function useAgentNavigation() {
     if (kind === "workspace") {
       setCenterView("home");
       selectWorkspace(target.workspaceId);
-      setActiveCenterView("home");
+      setActiveAgent(target.workspaceId, null);
+      setActiveCenterView("agents");
     }
 
     if (kind === "agent" && target.agentId) {
       setCenterView("home");
-      selectWorkspace(target.workspaceId);
-      setActiveAgent(target.workspaceId, target.agentId);
-      setActiveCenterView("agents");
+      focusAgent(target.workspaceId, target.agentId);
     }
 
     if (kind === "project") {

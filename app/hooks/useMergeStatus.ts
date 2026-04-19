@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  getWorkspaceCommitsAhead,
   getWorkspaceConflicts,
   getWorkspaceStagedDiff,
   mergeWorkspaceIntoBase,
@@ -7,6 +8,7 @@ import {
 import { useIpcEvent } from "./useIpcEvent";
 
 interface UseMergeStatusResult {
+  commitsAhead: number;
   conflicts: string[];
   handleMerge: () => Promise<void>;
   hasStaged: boolean;
@@ -19,6 +21,7 @@ export function useMergeStatus(
 ): UseMergeStatusResult {
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
+  const [commitsAhead, setCommitsAhead] = useState(0);
   const [isMerging, setIsMerging] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
 
@@ -27,12 +30,14 @@ export function useMergeStatus(
       return;
     }
     try {
-      const [conflictResult, stagedDiff] = await Promise.all([
+      const [conflictResult, stagedDiff, ahead] = await Promise.all([
         getWorkspaceConflicts(workspaceId),
         getWorkspaceStagedDiff(workspaceId),
+        getWorkspaceCommitsAhead(workspaceId),
       ]);
       setConflicts(conflictResult);
       setHasStaged(stagedDiff.trim() !== "");
+      setCommitsAhead(ahead);
     } catch {
       // ignore
     }
@@ -46,6 +51,9 @@ export function useMergeStatus(
     workspaceId ? `workspace:diff-changed:${workspaceId}` : "",
     fetchStatus,
   );
+  // Re-fetch when the workspace's review-queue state updates (e.g. a new
+  // commit on the branch, or a sibling merge completion).
+  useIpcEvent("workspace:review-state", fetchStatus);
 
   const handleMerge = useCallback(async () => {
     if (!workspaceId) {
@@ -62,5 +70,12 @@ export function useMergeStatus(
     }
   }, [workspaceId]);
 
-  return { conflicts, hasStaged, isMerging, mergeError, handleMerge };
+  return {
+    commitsAhead,
+    conflicts,
+    hasStaged,
+    isMerging,
+    mergeError,
+    handleMerge,
+  };
 }

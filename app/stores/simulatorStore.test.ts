@@ -20,6 +20,7 @@ vi.stubGlobal("localStorage", {
     mockStorage[key] = value;
   },
   removeItem: (key: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test-only mock storage reset
     delete mockStorage[key];
   },
 });
@@ -75,6 +76,7 @@ describe("isTvOS", () => {
 describe("simulatorStore", () => {
   beforeEach(() => {
     for (const key of Object.keys(mockStorage)) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test-only mock storage reset
       delete mockStorage[key];
     }
     resetSimulatorStore();

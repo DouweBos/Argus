@@ -20,12 +20,14 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { log as emitLog } from "../app/lib/logger";
 import { registerIpcHandlers } from "./ipc";
+import { writeLogLine } from "./lib/logFile";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import { setColorScheme } from "./services/browser/conductorInput";
 import {
   startMjpegServer,
   stopMjpegServer,
 } from "./services/browser/mjpegServer";
+import { webBrowserPool } from "./services/browser/pool";
 import { installConductor } from "./services/cli/conductorInstaller";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
@@ -81,13 +83,53 @@ let mainWindow: BrowserWindow | null = null;
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:1420";
 
-const logPath = path.join(os.homedir(), ".argus", "main.log");
-fs.mkdirSync(path.dirname(logPath), { recursive: true });
-const logStream = fs.createWriteStream(logPath, { flags: "a" });
+// Tee main-process console.* to the rotating log file. In a bundled .app there
+// is no attached terminal, so without this tee every console call across
+// services (info/warn/error from app/lib/logger.ts) vanishes silently.
+/* eslint-disable no-console -- this block is the central console tee for the main process */
+const originalConsole = {
+  log: console.log.bind(console),
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.debug.bind(console),
+};
+console.log = (...args: unknown[]) => {
+  writeLogLine("log", args);
+  originalConsole.log(...args);
+};
+console.info = (...args: unknown[]) => {
+  writeLogLine("info", args);
+  originalConsole.info(...args);
+};
+console.warn = (...args: unknown[]) => {
+  writeLogLine("warn", args);
+  originalConsole.warn(...args);
+};
+console.error = (...args: unknown[]) => {
+  writeLogLine("error", args);
+  originalConsole.error(...args);
+};
+console.debug = (...args: unknown[]) => {
+  writeLogLine("debug", args);
+  originalConsole.debug(...args);
+};
+/* eslint-enable no-console */
+
+process.on("uncaughtException", (err, origin) => {
+  writeLogLine("fatal", [`uncaughtException (${origin})`, err]);
+});
+process.on("unhandledRejection", (reason) => {
+  writeLogLine("fatal", ["unhandledRejection", reason]);
+});
+
+/** Write a log line from the main module with structured formatting. */
+export function logToFile(level: string, ...args: unknown[]): void {
+  writeLogLine(level, args);
+}
 
 function log(msg: string, ...args: unknown[]): void {
-  const line = `[${new Date().toISOString()}] ${msg} ${args.map((a) => String(a)).join(" ")}\n`;
-  logStream.write(line);
+  // Goes through the patched console.log → tees to file and terminal once.
   emitLog(`[Argus] ${msg}`, ...args);
 }
 
@@ -195,6 +237,9 @@ app.on("before-quit", (e) => {
   stopMcpServer();
   stopMjpegServer();
   stopAllScreencasts();
+  webBrowserPool.releaseAll().catch((err) => {
+    log("webBrowserPool.releaseAll failed: %s", err);
+  });
   // Give the renderer a moment to save active conversations before destroying
   // the window. The renderer listens for `app:will-quit` and persists chat
   // history synchronously via IPC.
@@ -344,7 +389,7 @@ app.whenReady().then(() => {
         "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
         "connect-src 'self' argus-ext: data: https://open-vsx.org" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
-        "worker-src 'self' blob: argus-ext:",
+        "worker-src 'self' blob: data: argus-ext:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];
     }

@@ -50,7 +50,7 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
 
 ### File size
 
-- Keep files to 300–500 lines of code. When a file grows larger, architect a solution to split up responsibilities into smaller, focused modules.
+- Ideally, files stay under 500 lines of code. When a file approaches that size, split responsibilities into smaller, focused modules rather than letting it grow. Going over is acceptable only when a clean split genuinely isn't possible — the default answer is to split.
 
 ### Backend (Node.js/TypeScript)
 
@@ -82,7 +82,8 @@ When building a new UI:
 3. **If a component is app-specific** (wires up IPC, reads Zustand state, orchestrates a panel), keep it in `app/components/` — but compose it from Peacock primitives. The app-specific component wires data; Peacock provides the look.
 4. **Design tokens live in `@argus/peacock/tokens.css`.** Do not redefine `--accent`, `--bg-*`, `--glass-*`, spacing, radii, or type vars anywhere else. If you need a new token, add it to `packages/peacock/src/styles/tokens.css` and document it in the Tokens story.
 5. **Icons:** use `Icons` from `@argus/peacock` (43 hand-rolled SVGs + `ArgusLogo`). Do not introduce Lucide, Heroicons, or an icon font. If an icon is missing, add it to `packages/peacock/src/icons/Icons.tsx` at matching stroke weight (filled by default; 1.3–2px stroke for diagrammatic icons).
-6. **No emoji, no third-party UI kits, no Tailwind.** Peacock is the only UI layer.
+6. **No inline `<svg>` in `app/`.** This is non-negotiable and the most common violation. If you are about to write `<svg>`, `<path>`, `<circle>`, `<line>`, or any other SVG element inside an `app/components/` file, stop. That is a design-system responsibility and belongs in Peacock. This applies to every SVG — icons, badges, decorative shapes, data-visualization primitives (graphs, charts, sparklines, progress arcs), loading indicators, empty-state illustrations. All of it. The rule holds even when the SVG is data-driven: extract the pure rendering primitive to `packages/peacock/src/components/<Name>/` with a story, move any shared types/constants the primitive owns (palettes, row/data shapes) into that Peacock file, then compose it from the app with data you compute locally. Before adding a new SVG primitive to Peacock, `grep -r '<svg' packages/peacock/src` to check an existing one doesn't already cover it. If you catch yourself reaching for `<svg>` in `app/`, that is the signal to pause and add the primitive to Peacock first — do not ship the app change without it.
+7. **No emoji, no third-party UI kits, no Tailwind.** Peacock is the only UI layer.
 
 Every Peacock component must ship with a Storybook story covering its meaningful states (default, hover, selected, disabled, status variants, etc.) so designers and agents can review it in isolation.
 

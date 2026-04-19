@@ -320,6 +320,46 @@ export interface AgentCapabilities {
 }
 
 // ---------------------------------------------------------------------------
+// Claude Code usage — parsed from ~/.claude/projects session logs.
+// ---------------------------------------------------------------------------
+
+export interface ClaudeRateWindow {
+  resets_at: number | string | null;
+  used_percentage: number | null;
+}
+
+export interface ClaudeStatuslinePayload {
+  context_window?: { used_percentage?: number | null };
+  cost?: {
+    total_cost_usd?: number | null;
+    total_duration_ms?: number | null;
+  };
+  model?: { display_name?: string | null };
+  rate_limits?: {
+    five_hour?: ClaudeRateWindow;
+    seven_day?: ClaudeRateWindow;
+    seven_day_opus?: ClaudeRateWindow;
+  };
+  workspace?: { current_dir?: string | null };
+}
+
+export interface ClaudeUsage {
+  computed_at: number;
+  file_mtime_ms: number | null;
+  hook_installed: boolean;
+  hook_script_path: string;
+  payload: ClaudeStatuslinePayload | null;
+}
+
+export interface ClaudeStatuslineHookStatus {
+  chained_command: string | null;
+  hook_installed: boolean;
+  hook_script_path: string;
+  previous_command: string | null;
+  status_file_path: string;
+}
+
+// ---------------------------------------------------------------------------
 // Organizations
 // ---------------------------------------------------------------------------
 

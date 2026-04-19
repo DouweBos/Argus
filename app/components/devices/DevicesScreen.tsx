@@ -43,12 +43,13 @@ export function DevicesScreen() {
         </div>
       )}
 
-      {devices.length === 0 && !error ? (
+      {devices.length === 0 && !error && (
         <div className={styles.empty}>
           No devices found. Start an agent or boot a simulator to see devices
           here.
         </div>
-      ) : devices.length === 0 ? null : (
+      )}
+      {devices.length > 0 && (
         <table className={styles.table}>
           <thead>
             <tr>

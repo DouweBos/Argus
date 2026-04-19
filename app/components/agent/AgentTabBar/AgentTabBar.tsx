@@ -10,8 +10,10 @@ import styles from "./AgentTabBar.module.css";
 interface AgentTabBarProps {
   activeAgentId: string | null;
   agents: AgentStatus[];
+  isHomeActive: boolean;
   onClose: (agentId: string) => void;
   onSelect: (agentId: string) => void;
+  onSelectHome: () => void;
 }
 
 const DRAG_MIME = "application/x-argus-agent-id";
@@ -27,15 +29,23 @@ function useTabMeta(
   agentId: string,
   fallback: string,
   status: AgentStatus["status"],
-): { label: string; state: StatusDotsState } {
+): { fullLabel: string; label: string; state: StatusDotsState } {
   const conv = useConversation(agentId);
   const messages = conv?.messages ?? [];
 
   let label = fallback;
-  const firstUser = messages.find((m) => m.role === "user");
-  if (firstUser && firstUser.textBlocks.length > 0) {
-    const text = firstUser.textBlocks[0].trim();
-    label = text.length > 20 ? text.slice(0, 20) + "\u2026" : text;
+  let fullLabel = fallback;
+  if (conv?.title) {
+    const title = conv.title.trim();
+    fullLabel = title;
+    label = title.length > 24 ? title.slice(0, 24) + "\u2026" : title;
+  } else {
+    const firstUser = messages.find((m) => m.role === "user");
+    if (firstUser && firstUser.textBlocks.length > 0) {
+      const text = firstUser.textBlocks[0].trim();
+      fullLabel = text;
+      label = text.length > 20 ? text.slice(0, 20) + "\u2026" : text;
+    }
   }
 
   const awaitingPermission = messages.some((m) =>
@@ -49,7 +59,7 @@ function useTabMeta(
     state = "running";
   }
 
-  return { label, state };
+  return { fullLabel, label, state };
 }
 
 function AgentTab({
@@ -83,7 +93,7 @@ function AgentTab({
   onDrop: (e: DragEvent<HTMLDivElement>, id: string) => void;
   onSelect: (id: string) => void;
 }) {
-  const { label, state } = useTabMeta(
+  const { fullLabel, label, state } = useTabMeta(
     agent.agent_id,
     `Agent ${index + 1}`,
     agent.status,
@@ -103,6 +113,7 @@ function AgentTab({
     <div
       className={classes}
       draggable
+      title={fullLabel}
       onClick={() => onSelect(agent.agent_id)}
       onDragStart={(e) => onDragStart(e, agent.agent_id)}
       onDragEnd={onDragEnd}
@@ -143,7 +154,9 @@ function AgentTab({
 export function AgentTabBar({
   agents,
   activeAgentId,
+  isHomeActive,
   onSelect,
+  onSelectHome,
   onClose,
 }: AgentTabBarProps) {
   const allAgents = useAgentsRecord();
@@ -219,8 +232,25 @@ export function AgentTabBar({
     reorderAgent(target.workspace_id, fromId, targetId, position);
   };
 
+  const homeClasses = [
+    styles.tab,
+    styles.homeTab,
+    isHomeActive ? styles.active : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div className={styles.tabs}>
+      <div
+        className={homeClasses}
+        title="Home"
+        aria-label="Home"
+        onClick={onSelectHome}
+      >
+        <Icons.HomeIcon size={12} />
+        <span className={styles.label}>Home</span>
+      </div>
       {agents.map((agent, index) => {
         const indicator =
           dropIndicator && dropIndicator.targetAgentId === agent.agent_id

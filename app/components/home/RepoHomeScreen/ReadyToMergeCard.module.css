@@ -1,0 +1,117 @@
+.card {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-md, 8px);
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+  padding: 14px 14px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(80, 200, 120, 0.1);
+  color: #6ecf8a;
+  flex-shrink: 0;
+}
+
+.iconWrap[data-tone="warn"] {
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--accent);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font: var(--type-ui);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.target {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.branch {
+  color: var(--text-secondary, var(--text-primary));
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--type-caption);
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.sep {
+  opacity: 0.5;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.secondaryBtn,
+.mergeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font: var(--type-caption);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    border-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.secondaryBtn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary, var(--text-primary));
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.mergeBtn {
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  color: var(--accent);
+}
+
+.mergeBtn:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.18);
+  border-color: var(--accent);
+}
+
+.mergeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

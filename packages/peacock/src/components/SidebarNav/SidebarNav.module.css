@@ -187,41 +187,85 @@
 
 .repoHead {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 4px 6px;
   color: var(--text-secondary);
   font-size: 12px;
   border-radius: 6px;
-  cursor: pointer;
   transition: var(--transition-fast);
   background: transparent;
-  border: none;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
 }
 .repoHead:hover {
   background: var(--glass-bg);
-  color: var(--text-primary);
+}
+.repoHeadActive {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.repoHeadActive:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.repoHeadRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
 
 .repoChevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 10px;
-  height: 10px;
+  width: 18px;
+  height: 22px;
   color: var(--text-muted);
   transition: transform var(--transition-fast);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.repoChevron:hover {
+  color: var(--text-primary);
 }
 .repoChevronCollapsed {
   transform: rotate(-90deg);
 }
 
+.repoLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 3px 4px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.repoLabel:hover .repoName {
+  color: var(--text-primary);
+}
+.repoHeadActive .repoName {
+  color: var(--accent);
+}
+.repoHeadActive .repoLeading {
+  color: var(--accent);
+  opacity: 1 !important;
+}
+
 .repoLeading {
   display: inline-flex;
   align-items: center;
+  color: var(--text-muted);
 }
 
 .repoName {
@@ -231,12 +275,103 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--transition-fast);
 }
 
 .repoCount {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text-muted);
+}
+
+.repoActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+.repoHead:hover .repoActions,
+.repoHead:focus-within .repoActions {
+  opacity: 1;
+}
+
+.repoPersistentAction {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.repoHead:hover .repoPersistentAction,
+.repoHead:focus-within .repoPersistentAction {
+  opacity: 1;
+}
+
+.repoMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.repoEndContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.repoSubtitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 28px;
+  padding-right: 2px;
+  min-width: 0;
+  min-height: 18px;
+}
+
+.repoSubtitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.repoSubtitleTrailing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.repoActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transition-fast);
+}
+.repoActionBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
 }
 
 .workspaceList {

@@ -20,17 +20,18 @@ function isSeparator(item: ContextMenuItem): item is ContextMenuSeparator {
   return "separator" in item && item.separator;
 }
 
-interface ContextMenuProps {
+export type ContextMenuPosition = "anchor" | { x: number; y: number };
+
+export interface ContextMenuProps {
   items: ContextMenuItem[];
   onClose: () => void;
   /** "anchor" positions below parent element; {x,y} positions at fixed coords (right-click). */
-  position: "anchor" | { x: number; y: number };
+  position: ContextMenuPosition;
 }
 
 export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close on click-outside, Escape, and scroll
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -48,7 +49,6 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
 
     document.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("keydown", handleKeyDown);
-    // Capture scroll on any ancestor — not just window
     document.addEventListener("scroll", handleScroll, true);
     window.addEventListener("blur", onClose);
 
@@ -60,7 +60,6 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
     };
   }, [onClose]);
 
-  // Clamp fixed-position menus to the viewport after first render
   useEffect(() => {
     if (position === "anchor" || !menuRef.current) {
       return;
@@ -105,14 +104,13 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
             }}
           >
             {item.icon && <span className={styles.icon}>{item.icon}</span>}
-            {item.label}
+            <span className={styles.label}>{item.label}</span>
           </button>
         ),
       )}
     </div>
   );
 
-  // Fixed mode: portal to body. Anchor mode: render inline (caller positions).
   if (position !== "anchor") {
     return createPortal(menuContent, document.body);
   }

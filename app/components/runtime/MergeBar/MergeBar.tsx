@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
+  getWorkspaceCommitsAhead,
   getWorkspaceConflicts,
   getWorkspaceStagedDiff,
   mergeWorkspaceIntoBase,
@@ -25,6 +26,7 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
 
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
+  const [commitsAhead, setCommitsAhead] = useState(0);
   const [isMerging, setIsMerging] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
 
@@ -33,12 +35,14 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
       return;
     }
     try {
-      const [conflictResult, stagedDiff] = await Promise.all([
+      const [conflictResult, stagedDiff, ahead] = await Promise.all([
         getWorkspaceConflicts(workspaceId),
         getWorkspaceStagedDiff(workspaceId),
+        getWorkspaceCommitsAhead(workspaceId),
       ]);
       setConflicts(conflictResult);
       setHasStaged(stagedDiff.trim() !== "");
+      setCommitsAhead(ahead);
     } catch {
       // ignore
     }
@@ -73,7 +77,21 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
   }
 
   const hasConflicts = conflicts.length > 0;
-  const canMerge = hasStaged && !hasConflicts && !isMerging;
+  const hasMergeableWork = hasStaged || commitsAhead > 0;
+  const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
+
+  let mergeBtnTitle: string;
+  if (hasConflicts) {
+    mergeBtnTitle = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} — resolve before merging into ${workspace.base_branch}`;
+  } else if (!hasMergeableWork) {
+    mergeBtnTitle = `Stage changes in this workspace, then merge into ${workspace.base_branch}`;
+  } else if (hasStaged && commitsAhead > 0) {
+    mergeBtnTitle = `Commits staged changes on ${workspace.branch}, then merges into ${workspace.base_branch} (${commitsAhead} existing commit${commitsAhead === 1 ? "" : "s"} also included)`;
+  } else if (hasStaged) {
+    mergeBtnTitle = `Commits staged changes on ${workspace.branch}, then merges into ${workspace.base_branch}`;
+  } else {
+    mergeBtnTitle = `Merges ${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} from ${workspace.branch} into ${workspace.base_branch}`;
+  }
 
   let barToneClass = styles.barNoStaged;
   let statusTextToneClass = styles.statusTextNoStaged;
@@ -82,10 +100,13 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
     barToneClass = styles.barConflict;
     statusTextToneClass = styles.statusTextConflict;
     statusLabel = `${conflicts.length} conflict${conflicts.length > 1 ? "s" : ""}`;
-  } else if (hasStaged) {
+  } else if (hasMergeableWork) {
     barToneClass = styles.barReady;
     statusTextToneClass = styles.statusTextReady;
-    statusLabel = "Ready to merge";
+    statusLabel =
+      commitsAhead > 0 && !hasStaged
+        ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ready to merge`
+        : "Ready to merge";
   } else {
     statusLabel = "Stage changes to merge";
   }
@@ -101,11 +122,7 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
           leading={<Icons.MergeIcon size={11} />}
           size="sm"
           variant="primary"
-          title={
-            !hasStaged
-              ? "No staged changes to merge"
-              : `Merge ${workspace.branch} into ${workspace.base_branch}`
-          }
+          title={mergeBtnTitle}
           onClick={handleMerge}
         >
           {isMerging ? "Merging..." : "Merge"}

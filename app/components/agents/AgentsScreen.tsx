@@ -102,7 +102,10 @@ export function AgentsScreen() {
                     className={`${styles.statusDot} ${statusClass(a.status)}`}
                     aria-label={statusLabel(a.status)}
                   />
-                  {a.id.slice(0, 8)}
+                  {a.displayName}
+                  <span className={styles.muted} style={{ marginLeft: 8 }}>
+                    {a.id.slice(0, 8)}
+                  </span>
                 </td>
                 <td>
                   <span className={styles.statusBadge}>

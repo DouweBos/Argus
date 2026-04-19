@@ -32,19 +32,3 @@
 .agentBarSpacer {
   flex: 1;
 }
-
-.agentEmpty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  padding: var(--space-12);
-  min-height: 0;
-}
-
-/* Mono branch name inline within the empty-state body text. */
-.agentEmptyBranch {
-  font-family: var(--font-mono);
-  color: var(--text-secondary);
-}

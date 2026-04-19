@@ -18,8 +18,17 @@
 .userMsg {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   padding: 12px 20px;
+  position: relative;
+}
+
+.userTextWrap {
+  display: flex;
+  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .userText {
@@ -34,34 +43,37 @@
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+  z-index: 2;
 }
 
 .userAttachments {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 4px;
+  margin-top: -8px;
+  margin-right: 6px;
   max-width: 75%;
+  align-self: flex-end;
+  position: relative;
+  z-index: 3;
 }
 
 .userAttachment {
   display: block;
-  width: 72px;
-  height: 72px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  border: 1px solid rgba(245, 166, 35, 0.18);
-  background: rgba(245, 166, 35, 0.04);
+  border: none;
+  background: transparent;
   cursor: zoom-in;
-  transition:
-    border-color var(--transition-base),
-    transform var(--transition-base);
+  transition: transform var(--transition-base);
 }
 
 .userAttachment:hover {
-  border-color: rgba(245, 166, 35, 0.4);
   transform: translateY(-1px);
 }
 

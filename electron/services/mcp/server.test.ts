@@ -647,6 +647,7 @@ describe("agent_status", () => {
       parentAgentId: null,
       resultSummary: null,
       exitWaiters: [],
+      turnWaiters: [],
     });
 
     const result = await client.callTool({

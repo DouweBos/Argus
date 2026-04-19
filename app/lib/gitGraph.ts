@@ -1,20 +1,6 @@
-export interface GraphRow {
-  /** Color index for the commit node */
-  color: number;
-  column: number;
-  /** New lanes forking out from the commit column */
-  forks: { fromCol: number; toCol: number }[];
-  isMerge: boolean;
-  /** Color index for each lane column (column index → palette index) */
-  laneColorMap: Map<number, number>;
-  laneCount: number;
-  /** Lane indices with lines going down (active after this commit) */
-  lanesToBottom: number[];
-  /** Lane indices with lines going up (active before this commit) */
-  lanesToTop: number[];
-  /** Extra lanes merging into the commit column */
-  merges: { fromCol: number; toCol: number }[];
-}
+import { LANE_COLORS, type GraphRow } from "@argus/peacock";
+
+export { LANE_COLORS, type GraphRow };
 
 interface CommitLike {
   hash: string;
@@ -173,14 +159,3 @@ export function buildGraphLanes(commits: CommitLike[]): GraphRow[] {
 
   return rows;
 }
-
-export const LANE_COLORS = [
-  "#e06c75",
-  "#e5c07b",
-  "#98c379",
-  "#61afef",
-  "#c678dd",
-  "#56b6c2",
-  "#d19a66",
-  "#be5046",
-];

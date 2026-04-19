@@ -18,6 +18,7 @@ import { loadArgusConfig } from "../workspace/setup";
 const HISTORY_DIR_NAME = ".argus-chat-history";
 const INDEX_FILENAME = "index.json";
 const SCHEMA_VERSION = 1;
+const MAX_ENTRIES = 100;
 
 /** Lightweight summary stored in the index — enough for list rendering. */
 export interface ChatHistoryEntry {
@@ -152,6 +153,19 @@ export function saveConversation(
   };
 
   entries.unshift(entry);
+
+  // Enforce retention cap — drop oldest entries and their conversation files.
+  if (entries.length > MAX_ENTRIES) {
+    const evicted = entries.splice(MAX_ENTRIES);
+    for (const old of evicted) {
+      try {
+        fs.unlinkSync(conversationPath(repoRoot, old.id));
+      } catch {
+        // File may already be gone — ignore.
+      }
+    }
+  }
+
   saveIndex(repoRoot, entries);
 }
 
@@ -175,6 +189,149 @@ export function loadConversation(
   } catch {
     return null;
   }
+}
+
+export interface ChatHistoryMessageMatch {
+  /** Index of the match start within `snippet`. */
+  matchStart: number;
+  /** Index of the match end (exclusive) within `snippet`. */
+  matchEnd: number;
+  /** Position of the message in the conversation. */
+  messageIndex: number;
+  role: "assistant" | "system" | "user";
+  /** A short excerpt of the message text around the first match. */
+  snippet: string;
+}
+
+export interface ChatHistorySearchResult {
+  entry: ChatHistoryEntry;
+  /** Matches inside message text blocks (capped per entry). */
+  messageMatches: ChatHistoryMessageMatch[];
+  /** True when the query matches title / branch / model / description. */
+  metaMatch: boolean;
+}
+
+interface MessageLike {
+  role?: unknown;
+  textBlocks?: unknown;
+}
+
+const SNIPPET_WINDOW = 60;
+const MAX_MATCHES_PER_ENTRY = 3;
+
+function buildSnippet(
+  text: string,
+  matchStart: number,
+  matchEnd: number,
+): { matchEnd: number; matchStart: number; snippet: string } {
+  const start = Math.max(0, matchStart - SNIPPET_WINDOW);
+  const end = Math.min(text.length, matchEnd + SNIPPET_WINDOW);
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < text.length ? "…" : "";
+  const body = text.slice(start, end).replace(/\s+/g, " ").trim();
+  const rawSnippet = prefix + body + suffix;
+  const lowered = rawSnippet.toLowerCase();
+  const needle = text.slice(matchStart, matchEnd).toLowerCase();
+  const pos = lowered.indexOf(needle);
+
+  if (pos < 0) {
+    return { matchEnd: 0, matchStart: 0, snippet: rawSnippet };
+  }
+
+  return {
+    matchEnd: pos + needle.length,
+    matchStart: pos,
+    snippet: rawSnippet,
+  };
+}
+
+/**
+ * Search saved conversations for `query`. Matches against entry metadata
+ * (title, branch, model, description) and message text blocks. Returns
+ * newest-first, with up to a few snippets per entry.
+ */
+export function searchChatHistory(
+  repoRoot: string,
+  query: string,
+): ChatHistorySearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    return [];
+  }
+
+  const entries = loadHistoryIndex(repoRoot);
+  const results: ChatHistorySearchResult[] = [];
+
+  for (const entry of entries) {
+    const title = entry.title?.toLowerCase() ?? "";
+    const branch = entry.workspaceBranch?.toLowerCase() ?? "";
+    // Only match on fields that are rendered on the row. `entry.model` would
+    // match every entry for "claude"; `workspaceDescription` isn't shown, so
+    // a hit there looks like a phantom result.
+    const metaMatch = title.includes(q) || branch.includes(q);
+
+    const messageMatches: ChatHistoryMessageMatch[] = [];
+
+    let raw: string;
+    try {
+      raw = fs.readFileSync(conversationPath(repoRoot, entry.id), "utf8");
+    } catch {
+      if (metaMatch) {
+        results.push({ entry, messageMatches, metaMatch: true });
+      }
+      continue;
+    }
+
+    let saved: { messages?: MessageLike[] } | null = null;
+    try {
+      saved = JSON.parse(raw) as { messages?: MessageLike[] };
+    } catch {
+      saved = null;
+    }
+
+    const messages = saved?.messages ?? [];
+    for (let i = 0; i < messages.length; i++) {
+      if (messageMatches.length >= MAX_MATCHES_PER_ENTRY) {
+        break;
+      }
+      const msg = messages[i];
+      const blocks = Array.isArray(msg.textBlocks)
+        ? (msg.textBlocks as unknown[])
+        : [];
+      const role =
+        msg.role === "assistant" || msg.role === "user" || msg.role === "system"
+          ? msg.role
+          : "user";
+
+      for (const block of blocks) {
+        if (messageMatches.length >= MAX_MATCHES_PER_ENTRY) {
+          break;
+        }
+        if (typeof block !== "string") {
+          continue;
+        }
+        const lower = block.toLowerCase();
+        const idx = lower.indexOf(q);
+        if (idx < 0) {
+          continue;
+        }
+        const snippet = buildSnippet(block, idx, idx + q.length);
+        messageMatches.push({
+          matchEnd: snippet.matchEnd,
+          matchStart: snippet.matchStart,
+          messageIndex: i,
+          role,
+          snippet: snippet.snippet,
+        });
+      }
+    }
+
+    if (metaMatch || messageMatches.length > 0) {
+      results.push({ entry, messageMatches, metaMatch });
+    }
+  }
+
+  return results;
 }
 
 /**

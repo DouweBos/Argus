@@ -54,7 +54,7 @@ function setupWorkspaceStatusListener(
       setSetupProgress(workspaceId, null);
     } else if (payload.startsWith("error:")) {
       status = { error: payload.slice(6) };
-      setSetupProgress(workspaceId, null);
+      // Keep the last setup progress so the UI can show which step failed.
     } else {
       status = "initializing";
     }
@@ -136,7 +136,10 @@ export function useProjects() {
           projectWorkspaces.length > 0 &&
           getWorkspaceState().selectedId === null
         ) {
-          selectWorkspace(projectWorkspaces[0].id);
+          const repoRootWs = projectWorkspaces.find(
+            (w) => w.kind === "repo_root",
+          );
+          selectWorkspace((repoRootWs ?? projectWorkspaces[0]).id);
         }
 
         if (!options?.skipRecent) {
