@@ -228,7 +228,15 @@ export type ClaudeStreamEvent =
         model: string;
         usage: TokenUsage;
       };
+      /** Present when this assistant message is from a sub-agent (Task/Agent tool). */
+      parent_tool_use_id?: string | null;
       type: "assistant";
+    }
+  | {
+      message: { content: ClaudeToolResult[] };
+      /** Present when this tool_result is from a sub-agent (Task/Agent tool). */
+      parent_tool_use_id?: string | null;
+      type: "user";
     }
   | {
       model: string;
@@ -240,8 +248,7 @@ export type ClaudeStreamEvent =
       subtype: "init";
       tools: { name: string }[];
       type: "system";
-    }
-  | { message: { content: ClaudeToolResult[] }; type: "user" };
+    };
 
 export type ClaudeContentBlock =
   | {
