@@ -5,6 +5,7 @@ export type CenterView =
   | "agents"
   | "devices"
   | "home"
+  | "organizations"
   | "review-queue";
 
 interface CenterViewData {

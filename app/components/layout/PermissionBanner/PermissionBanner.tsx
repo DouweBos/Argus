@@ -1,3 +1,4 @@
+import { Badge, Button } from "@argus/peacock";
 import { useCallback, useMemo } from "react";
 import { respondToPermission } from "../../../lib/ipc";
 import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
@@ -19,28 +20,38 @@ interface PendingEntry {
   workspaceLabel: string;
 }
 
-function shortSummary(name: string, input: Record<string, unknown>): string {
+interface ToolSummary {
+  label: string;
+  detail?: string;
+  mono?: boolean;
+}
+
+function summarize(name: string, input: Record<string, unknown>): ToolSummary {
   const path = (input.file_path ?? input.path) as string | undefined;
   switch (name) {
     case "Bash":
-      return `Bash: ${((input.command ?? "") as string).slice(0, 80)}`;
+      return {
+        label: "Bash",
+        detail: (input.command ?? "") as string,
+        mono: true,
+      };
     case "Edit":
     case "MultiEdit":
-      return path ? `Edit ${path}` : "Edit";
+      return { label: "Edit", detail: path, mono: true };
     case "Write":
-      return path ? `Write ${path}` : "Write";
+      return { label: "Write", detail: path, mono: true };
     case "Read":
-      return path ? `Read ${path}` : "Read";
+      return { label: "Read", detail: path, mono: true };
     case "Glob":
-      return `Glob: ${(input.pattern ?? "") as string}`;
+      return { label: "Glob", detail: input.pattern as string, mono: true };
     case "Grep":
-      return `Grep: ${(input.pattern ?? "") as string}`;
+      return { label: "Grep", detail: input.pattern as string, mono: true };
     case "WebFetch":
-      return `WebFetch: ${((input.url ?? "") as string).slice(0, 80)}`;
+      return { label: "WebFetch", detail: input.url as string, mono: true };
     case "WebSearch":
-      return `WebSearch: ${((input.query ?? "") as string).slice(0, 80)}`;
+      return { label: "WebSearch", detail: input.query as string };
     default:
-      return name;
+      return { label: name };
   }
 }
 
@@ -118,7 +129,7 @@ export function PermissionBanner() {
   return (
     <div className={styles.container}>
       {pending.map((entry) => {
-        const summary = shortSummary(entry.toolName, entry.toolInput);
+        const summary = summarize(entry.toolName, entry.toolInput);
         const rule = alwaysAllowRule(entry.toolName, entry.toolInput);
         const isExitPlan = entry.toolName === "ExitPlanMode";
         const isAskQuestion = entry.toolName === "AskUserQuestion";
@@ -126,53 +137,68 @@ export function PermissionBanner() {
 
         return (
           <div className={styles.banner} key={entry.toolUseId}>
+            <div className={styles.rail} aria-hidden />
             <div className={styles.info}>
-              <div className={styles.label}>
-                <span>Permission needed</span>
+              <div className={styles.header}>
+                <span className={styles.label}>Permission needed</span>
                 <button
-                  className={styles.workspace}
+                  className={styles.workspaceBtn}
                   onClick={() => reviewInChat(entry)}
                   title="Open this agent's chat"
                   type="button"
                 >
-                  {entry.workspaceLabel}
+                  <Badge tone="neutral" size="tag">
+                    {entry.workspaceLabel}
+                  </Badge>
                 </button>
               </div>
-              <div className={styles.summary}>{summary}</div>
+              <div className={styles.summary}>
+                <span className={styles.summaryLabel}>{summary.label}</span>
+                {summary.detail && (
+                  <span
+                    className={`${styles.summaryDetail} ${
+                      summary.mono ? styles.mono : ""
+                    }`}
+                    title={summary.detail}
+                  >
+                    {summary.detail}
+                  </span>
+                )}
+              </div>
             </div>
             <div className={styles.actions}>
               {canRespondInline ? (
                 <>
-                  <button
-                    className={`${styles.btn} ${styles.allow}`}
-                    onClick={() => respond(entry, "allow")}
-                    type="button"
-                  >
-                    Allow
-                  </button>
-                  <button
-                    className={`${styles.btn} ${styles.allowAll}`}
-                    onClick={() => respond(entry, "allow", rule, true)}
-                    type="button"
-                  >
-                    Always {rule}
-                  </button>
-                  <button
-                    className={`${styles.btn} ${styles.deny}`}
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => respond(entry, "deny")}
-                    type="button"
                   >
                     Deny
-                  </button>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => respond(entry, "allow", rule, true)}
+                  >
+                    Always {rule}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => respond(entry, "allow")}
+                  >
+                    Allow
+                  </Button>
                 </>
               ) : (
-                <button
-                  className={`${styles.btn} ${styles.allow}`}
+                <Button
+                  size="sm"
+                  variant="primary"
                   onClick={() => reviewInChat(entry)}
-                  type="button"
                 >
                   Review in chat
-                </button>
+                </Button>
               )}
             </div>
           </div>

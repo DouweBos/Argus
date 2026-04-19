@@ -11,7 +11,7 @@ export interface Workspace {
   organization_task_id?: string | null;
   path: string;
   repo_root: string;
-  status: "initializing" | "ready" | { error: string };
+  status: "deleting" | "initializing" | "ready" | { error: string };
 }
 
 /** Normalise workspace status to a simple display string. */

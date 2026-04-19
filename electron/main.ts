@@ -8,6 +8,8 @@
 import {
   app,
   BrowserWindow,
+  Menu,
+  MenuItem,
   nativeTheme,
   net,
   protocol,
@@ -29,6 +31,10 @@ import {
 } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
 import { installConductor } from "./services/cli/conductorInstaller";
+import {
+  installHook as installClaudeStatuslineHook,
+  isHookInstalled as isClaudeStatuslineHookInstalled,
+} from "./services/claude/statuslineHook";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
@@ -201,6 +207,58 @@ function createWindow(): void {
     },
   );
 
+  // Spellcheck context menu — Electron enables the spellchecker by default but
+  // doesn't surface suggestions. Build a minimal context menu on right-click in
+  // editable fields with suggestions, Add to Dictionary, and the standard edit
+  // commands so misspellings can actually be corrected.
+  mainWindow.webContents.on("context-menu", (_e, params) => {
+    if (!params.isEditable) {
+      return;
+    }
+    const menu = new Menu();
+    if (params.misspelledWord) {
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(
+          new MenuItem({
+            label: suggestion,
+            click: () =>
+              mainWindow?.webContents.replaceMisspelling(suggestion),
+          }),
+        );
+      }
+      if (params.dictionarySuggestions.length === 0) {
+        menu.append(
+          new MenuItem({
+            label: "No suggestions",
+            enabled: false,
+          }),
+        );
+      }
+      menu.append(new MenuItem({ type: "separator" }));
+      menu.append(
+        new MenuItem({
+          label: "Add to Dictionary",
+          click: () =>
+            mainWindow?.webContents.session.addWordToSpellCheckerDictionary(
+              params.misspelledWord,
+            ),
+        }),
+      );
+      menu.append(new MenuItem({ type: "separator" }));
+    }
+    menu.append(new MenuItem({ role: "undo" }));
+    menu.append(new MenuItem({ role: "redo" }));
+    menu.append(new MenuItem({ type: "separator" }));
+    menu.append(new MenuItem({ role: "cut" }));
+    menu.append(new MenuItem({ role: "copy" }));
+    menu.append(new MenuItem({ role: "paste" }));
+    menu.append(new MenuItem({ type: "separator" }));
+    menu.append(new MenuItem({ role: "selectAll" }));
+    if (mainWindow) {
+      menu.popup({ window: mainWindow });
+    }
+  });
+
   // Open external links in the system browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -293,6 +351,17 @@ app.whenReady().then(() => {
 
   // Install/update the conductor CLI to ~/.argus/bin/conductor.
   installConductor();
+
+  // Install the Claude Code statusline tap so the usage indicator populates
+  // automatically. Chains to the user's existing statusline command if any.
+  try {
+    if (!isClaudeStatuslineHookInstalled()) {
+      installClaudeStatuslineHook();
+      log("claude statusline hook installed");
+    }
+  } catch (e) {
+    log("installClaudeStatuslineHook failed: %s", String(e));
+  }
 
   // Load persisted organizations and register their member repos.
   try {

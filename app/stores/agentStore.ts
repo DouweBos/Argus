@@ -103,18 +103,23 @@ export const removeAgent = (agentId: string) => {
     }
     const { [agentId]: _removed, ...next } = state.agents;
     const activeUpdate = { ...state.activeAgentId };
-    if (activeUpdate[agent.workspace_id] === agentId) {
-      const remaining = Object.values(next).filter(
-        (a) => a.workspace_id === agent.workspace_id,
-      );
-      activeUpdate[agent.workspace_id] =
-        remaining.length > 0 ? remaining[0].agent_id : null;
-    }
     const orderUpdate = removeFromOrder(
       state.order,
       agent.workspace_id,
       agentId,
     );
+    if (activeUpdate[agent.workspace_id] === agentId) {
+      const previousOrder = state.order[agent.workspace_id] ?? [];
+      const removedIdx = previousOrder.indexOf(agentId);
+      const nextOrder = orderUpdate[agent.workspace_id] ?? [];
+      let neighborId: string | null = null;
+      if (nextOrder.length > 0) {
+        const neighborIdx =
+          removedIdx > 0 ? removedIdx - 1 : 0;
+        neighborId = nextOrder[Math.min(neighborIdx, nextOrder.length - 1)];
+      }
+      activeUpdate[agent.workspace_id] = neighborId;
+    }
 
     return {
       agents: next,

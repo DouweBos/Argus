@@ -538,26 +538,24 @@ export async function runSetupPipeline(
 /**
  * Recursively copy a directory tree from `src` to `dst`.
  *
- * Async so the main process event loop stays responsive — sync fs calls
- * on large trees (e.g. `node_modules`) freeze IPC and the renderer.
- * Symlinks are dereferenced to match the previous behaviour.
+ * Uses the system `cp` binary rather than `fs.promises.cp` because Electron
+ * patches `fs` to treat `.asar` archives as directories, which makes `fs.cp`
+ * fail with "Invalid package" on trees containing asar files (e.g.
+ * node_modules/electron/dist/.../default_app.asar). The `process.noAsar`
+ * toggle isn't safe here: it's a global, and parallel setup pipelines (e.g.
+ * `spawn_agents_batch`) race on its value — one pipeline's `finally` block
+ * can reset the flag while another is still copying. Shelling out sidesteps
+ * the asar layer entirely. `-R` recurses; `-L` dereferences symlinks to match
+ * the previous `dereference: true` behaviour.
  */
 async function copyDirAll(src: string, dst: string): Promise<void> {
-  // Electron patches `fs` with asar support, which makes `.asar` files look
-  // like directories. That breaks `fs.cp` when copying trees that contain
-  // asar archives (e.g. node_modules/electron/dist/.../default_app.asar).
-  // Disable asar interception for the duration of the copy.
-  const prev = process.noAsar;
-  process.noAsar = true;
-  try {
-    await fs.promises.cp(src, dst, {
-      recursive: true,
-      dereference: true,
-      force: true,
-    });
-  } finally {
-    process.noAsar = prev;
+  await fs.promises.mkdir(path.dirname(dst), { recursive: true });
+  // If dst exists, remove it first so `cp` overwrites cleanly rather than
+  // copying src *inside* dst.
+  if (fs.existsSync(dst)) {
+    await fs.promises.rm(dst, { recursive: true, force: true });
   }
+  await execFileAsync("cp", ["-RL", src, dst]);
 }
 
 /** Returns true if `p` is a symlink (without throwing on missing path). */

@@ -416,69 +416,91 @@ export async function deleteWorkspace(
     appState.watchers.delete(id);
   }
 
-  // Remove from in-memory state immediately so the UI updates without delay.
-  appState.workspaces.delete(id);
-
-  // Notify the renderer: the workspace is gone, and so are its agents.
   const win = getMainWindow();
+
+  // Notify the renderer that agents were killed.
   if (win) {
     for (const agentId of killedAgentIds) {
       win.webContents.send(`agent:exit:${agentId}`, 0);
     }
-    win.webContents.send("workspace:deleted", id);
   }
 
-  if (workspace.kind !== "repo_root") {
-    const taskRepoRoot = repoRoot;
-    const taskWorkspacePath = workspace.path;
-    const taskBranch = workspace.branch;
-    const taskDeleteBranch = shouldDeleteBranch ?? false;
-    const taskId = id;
-
-    // Run the heavy work in the background.
-    (async () => {
-      try {
-        await git(taskRepoRoot, [
-          "worktree",
-          "remove",
-          "--force",
-          taskWorkspacePath,
-        ]);
-        await git(taskRepoRoot, ["worktree", "prune"]);
-      } catch (e) {
-        const errMsg = typeof e === "string" ? e : String(e);
-        error(`Background delete failed for workspace ${taskId}: ${errMsg}`);
-        getMainWindow()?.webContents.send("workspace:delete-failed", {
-          id: taskId,
-          error: errMsg,
-        });
-
-        return;
-      }
-
-      if (taskDeleteBranch) {
-        try {
-          await git(taskRepoRoot, ["branch", "-D", taskBranch]);
-        } catch (e) {
-          error(`Failed to delete branch '${taskBranch}':`, e);
-          // Not fatal — worktree is already removed.
-        }
-      }
-
-      const worktreesDir = worktreesRoot(taskRepoRoot);
-      const meta = loadMetadata(worktreesDir);
-      meta.delete(taskWorkspacePath);
-      try {
-        saveMetadata(worktreesDir, meta);
-      } catch {
-        // Non-fatal
-      }
-
-      info(`Deleted workspace ${taskId} (background)`);
-    })();
-  } else {
+  if (workspace.kind === "repo_root") {
+    // Repo-root workspaces don't have a worktree to remove on disk — delete
+    // immediately.
+    appState.workspaces.delete(id);
+    win?.webContents.send("workspace:deleted", id);
     info(`Deleted workspace ${id}`);
+
+    return;
   }
+
+  // Mark the workspace as "deleting" so the sidebar reflects the in-progress
+  // state instead of showing stale content (e.g. a spike of reported
+  // deletions from the file watcher) while the worktree is removed on disk.
+  workspace.status = "deleting";
+  appState.workspaces.set(id, workspace);
+  win?.webContents.send(`workspace:status:${id}`, "deleting");
+
+  const taskRepoRoot = repoRoot;
+  const taskWorkspacePath = workspace.path;
+  const taskBranch = workspace.branch;
+  const taskDeleteBranch = shouldDeleteBranch ?? false;
+  const taskId = id;
+
+  // Run the heavy work in the background.
+  (async () => {
+    try {
+      await git(taskRepoRoot, [
+        "worktree",
+        "remove",
+        "--force",
+        taskWorkspacePath,
+      ]);
+      await git(taskRepoRoot, ["worktree", "prune"]);
+    } catch (e) {
+      const errMsg = typeof e === "string" ? e : String(e);
+      error(`Background delete failed for workspace ${taskId}: ${errMsg}`);
+      // Restore the workspace's status so the user can retry.
+      const ws = appState.workspaces.get(taskId);
+      if (ws) {
+        ws.status = { error: errMsg };
+        appState.workspaces.set(taskId, ws);
+      }
+      getMainWindow()?.webContents.send(
+        `workspace:status:${taskId}`,
+        `error:${errMsg}`,
+      );
+      getMainWindow()?.webContents.send("workspace:delete-failed", {
+        id: taskId,
+        error: errMsg,
+      });
+
+      return;
+    }
+
+    if (taskDeleteBranch) {
+      try {
+        await git(taskRepoRoot, ["branch", "-D", taskBranch]);
+      } catch (e) {
+        error(`Failed to delete branch '${taskBranch}':`, e);
+        // Not fatal — worktree is already removed.
+      }
+    }
+
+    const worktreesDir = worktreesRoot(taskRepoRoot);
+    const meta = loadMetadata(worktreesDir);
+    meta.delete(taskWorkspacePath);
+    try {
+      saveMetadata(worktreesDir, meta);
+    } catch {
+      // Non-fatal
+    }
+
+    appState.workspaces.delete(taskId);
+    getMainWindow()?.webContents.send("workspace:deleted", taskId);
+    info(`Deleted workspace ${taskId} (background)`);
+  })();
 }
 
 // ---------------------------------------------------------------------------

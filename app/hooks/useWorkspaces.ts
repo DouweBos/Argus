@@ -48,9 +48,12 @@ function setupWorkspaceStatusListener(
 ): Promise<() => void> {
   return listen<string>(`workspace:status:${workspaceId}`, (event) => {
     const payload = event.payload;
-    let status: "initializing" | "ready" | { error: string };
+    let status: "deleting" | "initializing" | "ready" | { error: string };
     if (payload === "ready") {
       status = "ready";
+      setSetupProgress(workspaceId, null);
+    } else if (payload === "deleting") {
+      status = "deleting";
       setSetupProgress(workspaceId, null);
     } else if (payload.startsWith("error:")) {
       status = { error: payload.slice(6) };
@@ -420,15 +423,18 @@ export function useProjectWorkspaces(repoRoot: string) {
     async (id: string, deleteBranch?: boolean) => {
       setError(null);
       try {
+        // The backend marks the workspace as "deleting" and emits
+        // `workspace:deleted` once the worktree is fully removed. Don't
+        // remove locally or refresh here — doing so would either flash the
+        // workspace out-and-back-in (refresh sees it still on disk) or race
+        // ahead of the actual filesystem deletion.
         await apiDeleteWorkspace(id, deleteBranch);
-        removeWorkspace(id);
-        await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
         throw err;
       }
     },
-    [refresh],
+    [],
   );
 
   return {

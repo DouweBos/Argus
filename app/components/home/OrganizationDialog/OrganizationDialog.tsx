@@ -1,6 +1,13 @@
 import type { OrganizationMember } from "../../../lib/types";
 import { useMemo, useState } from "react";
-import { Button, Dialog, Icons, Input, TextArea } from "@argus/peacock";
+import {
+  Button,
+  Dialog,
+  Icons,
+  Input,
+  PROJECT_ACCENT_PALETTE,
+  TextArea,
+} from "@argus/peacock";
 import {
   hideOrganizationDialog,
   useOrganizationDialog,
@@ -40,7 +47,7 @@ const EMPTY_FORM: FormState = {
   name: "",
   description: "",
   systemPrompt: "",
-  accent: "#7c5cfc",
+  accent: PROJECT_ACCENT_PALETTE[1],
   members: [],
 };
 
@@ -187,12 +194,24 @@ function OrganizationDialog({ orgId }: { orgId: string | null }) {
         </Field>
 
         <Field label="Accent color">
-          <input
-            type="color"
-            value={form.accent}
-            onChange={(e) => update("accent", e.target.value)}
-            className={styles.colorInput}
-          />
+          <div className={styles.swatches} role="radiogroup">
+            {PROJECT_ACCENT_PALETTE.map((color) => {
+              const selected = form.accent === color;
+
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  aria-label={`Accent ${color}`}
+                  className={`${styles.swatch} ${selected ? styles.swatchSelected : ""}`}
+                  style={{ background: color }}
+                  onClick={() => update("accent", color)}
+                />
+              );
+            })}
+          </div>
         </Field>
 
         <Field
@@ -228,29 +247,28 @@ function OrganizationDialog({ orgId }: { orgId: string | null }) {
             ))}
 
             {recentOptions.length > 0 && (
-              <div className={styles.addRow}>
-                <select
-                  className={styles.select}
-                  defaultValue=""
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value) {
-                      addMember(value);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                >
-                  <option value="">Add repo from recent projects…</option>
+              <div className={styles.recentsGroup}>
+                <span className={styles.recentsLabel}>
+                  Add from recent projects
+                </span>
+                <div className={styles.pills}>
                   {recentOptions.map((r) => (
-                    <option key={r.path} value={r.path}>
-                      {r.name} — {r.path}
-                    </option>
+                    <button
+                      key={r.path}
+                      type="button"
+                      className={styles.pill}
+                      title={r.path}
+                      onClick={() => addMember(r.path)}
+                    >
+                      <Icons.PlusIcon size={10} />
+                      <span className={styles.pillName}>{r.name}</span>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             )}
 
-            <ManualAddRow onAdd={addMember} />
+            <BrowseAddRow onAdd={addMember} />
           </div>
         </Field>
 
@@ -302,36 +320,28 @@ function Field({
   );
 }
 
-function ManualAddRow({ onAdd }: { onAdd: (path: string) => void }) {
-  const [value, setValue] = useState("");
+function BrowseAddRow({ onAdd }: { onAdd: (path: string) => void }) {
+  const handleBrowse = async () => {
+    try {
+      const selected = await window.argus.invoke<string | null>(
+        "show_open_dialog",
+      );
+      if (selected && typeof selected === "string") {
+        onAdd(selected);
+      }
+    } catch {
+      // Dialog cancelled or failed — no-op
+    }
+  };
 
   return (
-    <div className={styles.addRow}>
-      <Input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="/absolute/path/to/repo"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (value.trim()) {
-              onAdd(value.trim());
-              setValue("");
-            }
-          }
-        }}
-      />
-      <Button
-        variant="ghost"
-        onClick={() => {
-          if (value.trim()) {
-            onAdd(value.trim());
-            setValue("");
-          }
-        }}
-      >
-        Add
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      className={styles.browseBtn}
+      leading={<Icons.FolderIcon size={12} />}
+      onClick={handleBrowse}
+    >
+      Browse for repo…
+    </Button>
   );
 }

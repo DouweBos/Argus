@@ -16,6 +16,7 @@ import { useActivityCount } from "../../../stores/activityStore";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { setCenterView, useCenterView } from "../../../stores/centerViewStore";
 import { useDevices } from "../../../stores/deviceStore";
+import { useOrganizations } from "../../../stores/organizationStore";
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import {
   selectWorkspace,
@@ -39,6 +40,7 @@ export function WorkspaceSidebar() {
   ).length;
   const reviewQueueCount = useReviewQueueCount();
   const activityCount = useActivityCount();
+  const organizationsCount = useOrganizations().length;
 
   const sorted = [...projects].sort((a, b) => a.addedAt - b.addedAt);
   const totalWorkspaces = sorted.length;
@@ -104,6 +106,17 @@ export function WorkspaceSidebar() {
           }}
         >
           Devices
+        </SidebarItem>
+        <SidebarItem
+          active={selectedId === null && centerView === "organizations"}
+          leading={<Icons.OrganizationIcon size={12} />}
+          count={organizationsCount}
+          onClick={() => {
+            setCenterView("organizations");
+            selectWorkspace(null);
+          }}
+        >
+          Organizations
         </SidebarItem>
         <SidebarItem
           active={selectedId === null && centerView === "review-queue"}
