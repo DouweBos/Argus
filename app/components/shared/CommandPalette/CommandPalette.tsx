@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Icons, Kbd, useDismissOnEscape } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
+import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
 import {
   gitFetch,
   gitPull,
@@ -9,10 +10,9 @@ import {
   interruptAgent,
   mergeWorkspaceIntoBase,
   revealInFinder,
-  startAgent,
 } from "../../../lib/ipc";
+import { shortcutKeys } from "../../../lib/shortcuts";
 import {
-  addAgent,
   cycleActiveAgent,
   getActiveAgent,
   useAgentsRecord,
@@ -22,6 +22,7 @@ import {
   closeCommandPalette,
   useCommandPaletteOpen,
 } from "../../../stores/commandPaletteStore";
+import { useConversations } from "../../../stores/conversationStore";
 import {
   showOpenProjectDialog,
   triggerNewWorkspace,
@@ -96,6 +97,7 @@ function CommandPaletteContent() {
   const selectedId = useSelectedWorkspaceId();
   // Subscribing keeps the agent-dependent actions in sync.
   const agentsRecord = useAgentsRecord();
+  const conversations = useConversations();
   const { openProject } = useProjects();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -118,7 +120,7 @@ function CommandPaletteContent() {
         sublabel: "Default permission mode and more",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "settings preferences config options",
-        hint: ["⌘", ","],
+        hint: shortcutKeys("settings"),
         run: () => {
           closeCommandPalette();
           showSettingsDialog();
@@ -131,7 +133,7 @@ function CommandPaletteContent() {
         sublabel: "Pick a folder on disk",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "open repo repository folder add",
-        hint: ["⌘", "O"],
+        hint: shortcutKeys("open-repo"),
         run: () => {
           closeCommandPalette();
           showOpenProjectDialog();
@@ -144,7 +146,7 @@ function CommandPaletteContent() {
         sublabel: "Create a worktree from a branch",
         icon: <Icons.PlusIcon size={13} />,
         keywords: "new workspace branch worktree create",
-        hint: ["⌘", "N"],
+        hint: shortcutKeys("new-workspace"),
         run: () => {
           closeCommandPalette();
           triggerNewWorkspace();
@@ -159,7 +161,7 @@ function CommandPaletteContent() {
         title: "Toggle left sidebar",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "toggle left sidebar panel workspace hide show",
-        hint: ["⌘", "B"],
+        hint: shortcutKeys("toggle-left-sidebar"),
         run: () => {
           closeCommandPalette();
           toggleLeftSidebar();
@@ -171,7 +173,7 @@ function CommandPaletteContent() {
         title: "Toggle right panel",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "toggle right panel tool terminal simulator hide show",
-        hint: ["⌘", "⌥", "B"],
+        hint: shortcutKeys("toggle-right-panel"),
         run: () => {
           closeCommandPalette();
           toggleRightPanel();
@@ -196,7 +198,7 @@ function CommandPaletteContent() {
           sublabel: "Deselect this workspace",
           icon: <Icons.ArgusLogo size={13} />,
           keywords: "home app deselect close exit workspace",
-          hint: ["⌘", "⇧", "H"],
+          hint: shortcutKeys("go-home"),
           run: () => {
             closeCommandPalette();
             selectWorkspace(null);
@@ -211,7 +213,7 @@ function CommandPaletteContent() {
                 sublabel: `${basename(selectedWorkspace.repo_root)} · ${projectHead.branch}`,
                 icon: <Icons.FolderIcon size={13} />,
                 keywords: "project home root repo head main master",
-                hint: ["⌘", "⌥", "H"],
+                hint: shortcutKeys("go-project-home"),
                 run: () => {
                   closeCommandPalette();
                   selectWorkspace(projectHead.id);
@@ -254,18 +256,10 @@ function CommandPaletteContent() {
         sublabel: `in ${selectedWorkspace.branch}`,
         icon: <Icons.PlusIcon size={13} />,
         keywords: "new agent claude start",
-        hint: ["⌘", "⇧", "A"],
+        hint: shortcutKeys("new-agent"),
         run: () => {
           closeCommandPalette();
-          startAgent(wsId)
-            .then((info) =>
-              addAgent({
-                agent_id: info.agent_id,
-                workspace_id: info.workspace_id,
-                status: "running",
-              }),
-            )
-            .catch(() => {});
+          startAgentInWorkspace(wsId).catch(() => {});
         },
       });
 
@@ -280,7 +274,7 @@ function CommandPaletteContent() {
             title: "Next agent tab",
             icon: <Icons.ArgusLogo size={13} />,
             keywords: "next agent tab cycle switch",
-            hint: ["⌘", "⇧", "]"],
+            hint: shortcutKeys("next-agent-tab"),
             run: () => {
               closeCommandPalette();
               cycleActiveAgent(wsId, 1);
@@ -292,7 +286,7 @@ function CommandPaletteContent() {
             title: "Previous agent tab",
             icon: <Icons.ArgusLogo size={13} />,
             keywords: "previous prev agent tab cycle switch",
-            hint: ["⌘", "⇧", "["],
+            hint: shortcutKeys("prev-agent-tab"),
             run: () => {
               closeCommandPalette();
               cycleActiveAgent(wsId, -1);
@@ -302,11 +296,14 @@ function CommandPaletteContent() {
       }
 
       if (activeAgent) {
+        const activeTitle =
+          conversations[activeAgent.agent_id]?.title?.trim() ||
+          `Agent ${activeAgent.agent_id.slice(0, 6)}`;
         out.push({
           group: "workspace",
           id: "ws:interrupt-agent",
           title: "Interrupt active agent",
-          sublabel: activeAgent.agent_id.slice(0, 8),
+          sublabel: activeTitle,
           icon: <Icons.CloseIcon size={13} />,
           keywords: "stop interrupt cancel agent active",
           run: () => {
@@ -449,6 +446,7 @@ function CommandPaletteContent() {
     selectedWorkspace,
     openProject,
     agentsRecord,
+    conversations,
   ]);
 
   const filtered = useMemo(() => {
@@ -465,7 +463,10 @@ function CommandPaletteContent() {
     );
   }, [items, query]);
 
-  const safeIndex = Math.min(Math.max(activeIndex, 0), filtered.length - 1);
+  const groups = useMemo(() => groupItems(filtered), [filtered]);
+  const ordered = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+
+  const safeIndex = Math.min(Math.max(activeIndex, 0), ordered.length - 1);
 
   const onOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -480,20 +481,18 @@ function CommandPaletteContent() {
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex(Math.min(safeIndex + 1, filtered.length - 1));
+      setActiveIndex(Math.min(safeIndex + 1, ordered.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex(Math.max(safeIndex - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const pick = filtered[safeIndex];
+      const pick = ordered[safeIndex];
       if (pick) {
         runPick(pick);
       }
     }
   };
-
-  const groups = groupItems(filtered);
 
   return (
     <div
@@ -534,7 +533,7 @@ function CommandPaletteContent() {
             <div key={g.key} className={styles.group}>
               <div className={styles.groupHead}>{g.label}</div>
               {g.items.map((it) => {
-                const globalIdx = filtered.indexOf(it);
+                const globalIdx = ordered.indexOf(it);
                 const active = globalIdx === safeIndex;
 
                 return (

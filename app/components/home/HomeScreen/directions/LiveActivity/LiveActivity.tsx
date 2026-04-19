@@ -209,7 +209,7 @@ function FeedSection({
           kind="tool_call"
           status={a.status}
           project={basename(a.workspace.repo_root)}
-          agent={a.branch}
+          agent={a.displayName}
           text={agentMeta(a.status)}
           mono
           role="button"

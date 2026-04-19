@@ -14,7 +14,7 @@ export interface PalettePillProps extends Omit<
 export const PalettePill = forwardRef<HTMLInputElement, PalettePillProps>(
   function PalettePill(
     {
-      hotkey = ["⌘", "K"],
+      hotkey = ["⌘", "⇧", "P"],
       prefix = "/",
       placeholder = "Open repo · switch workspace · run command",
       className,

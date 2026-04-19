@@ -5,12 +5,10 @@ import { useSuppressSpacePageScroll } from "../../../hooks/useSuppressSpacePageS
 import { useWindowFocus } from "../../../hooks/useWindowFocus";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { stopAgentById } from "../../../lib/agentEventService";
-import { closeWindow, startAgent } from "../../../lib/ipc";
-import {
-  addAgent,
-  cycleActiveAgent,
-  getAgentState,
-} from "../../../stores/agentStore";
+import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
+import { closeWindow } from "../../../lib/ipc";
+import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
+import { cycleActiveAgent, getAgentState } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
@@ -24,6 +22,7 @@ import {
   useNewWorkspacePickerOpen,
   useOpenProjectVisible,
 } from "../../../stores/dialogStore";
+import { setActiveCenterView } from "../../../stores/editorStore";
 import {
   setLeftPanelWidth,
   toggleLeftSidebar,
@@ -98,12 +97,7 @@ export function AppShell() {
       return;
     }
     try {
-      const info = await startAgent(id);
-      addAgent({
-        agent_id: info.agent_id,
-        workspace_id: info.workspace_id,
-        status: "running",
-      });
+      await startAgentInWorkspace(id);
     } catch {
       // Silent — agent errors surface via the normal agent UI.
     }
@@ -113,6 +107,7 @@ export function AppShell() {
     const { selectedId: id } = getWorkspaceState();
     if (id) {
       cycleActiveAgent(id, direction);
+      setActiveCenterView("agents");
     }
   }, []);
 
@@ -130,49 +125,28 @@ export function AppShell() {
     }
   }, []);
 
-  const shortcuts = useMemo(
-    () => [
-      { meta: true, key: "k", handler: toggleCommandPalette },
-      { meta: true, key: "b", handler: toggleLeftSidebar },
-      { meta: true, alt: true, key: "b", handler: toggleRightPanel },
-      { meta: true, key: "o", handler: showOpenProjectDialog },
-      { meta: true, key: "n", handler: triggerNewWorkspace },
-      {
-        meta: true,
-        shift: true,
-        key: "a",
-        handler: () => {
-          startNewAgentInCurrent().catch(() => {});
-        },
+  const shortcuts = useMemo(() => {
+    const handlers: Record<ShortcutId, () => void> = {
+      "command-palette": toggleCommandPalette,
+      "toggle-left-sidebar": toggleLeftSidebar,
+      "toggle-right-panel": toggleRightPanel,
+      "open-repo": showOpenProjectDialog,
+      "new-workspace": triggerNewWorkspace,
+      "new-agent": () => {
+        startNewAgentInCurrent().catch(() => {});
       },
-      { meta: true, key: ",", handler: showSettingsDialog },
-      {
-        meta: true,
-        shift: true,
-        key: "]",
-        handler: () => cycleAgentTab(1),
-      },
-      {
-        meta: true,
-        shift: true,
-        key: "[",
-        handler: () => cycleAgentTab(-1),
-      },
-      {
-        meta: true,
-        shift: true,
-        key: "h",
-        handler: () => selectWorkspace(null),
-      },
-      {
-        meta: true,
-        alt: true,
-        key: "h",
-        handler: goToProjectHome,
-      },
-    ],
-    [startNewAgentInCurrent, cycleAgentTab, goToProjectHome],
-  );
+      settings: showSettingsDialog,
+      "next-agent-tab": () => cycleAgentTab(1),
+      "prev-agent-tab": () => cycleAgentTab(-1),
+      "go-home": () => selectWorkspace(null),
+      "go-project-home": goToProjectHome,
+    };
+
+    return (Object.keys(handlers) as ShortcutId[]).map((id) => ({
+      ...SHORTCUTS[id],
+      handler: handlers[id],
+    }));
+  }, [startNewAgentInCurrent, cycleAgentTab, goToProjectHome]);
   useGlobalShortcuts(shortcuts);
 
   // Cmd+W: close the active agent tab in the selected workspace first. Only

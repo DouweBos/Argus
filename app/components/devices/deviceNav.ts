@@ -55,7 +55,8 @@ export function useDeviceNavigation() {
     if (kind === "workspace" && wsId) {
       setCenterView("home");
       selectWorkspace(wsId);
-      setActiveCenterView("home");
+      setActiveAgent(wsId, null);
+      setActiveCenterView("agents");
     }
 
     if (kind === "agent" && wsId && device.agentId) {

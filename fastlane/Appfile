@@ -1,0 +1,7 @@
+app_identifier "dev.houwert.argus"
+team_id "P3WX7QK8Q3"
+
+# Apple ID is resolved per-environment:
+#   - locally: set FASTLANE_APPLE_ID in your shell / .env
+#   - CI: ignored (we authenticate via App Store Connect API key)
+apple_id ENV["FASTLANE_APPLE_ID"] if ENV["FASTLANE_APPLE_ID"]

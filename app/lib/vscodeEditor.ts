@@ -8,14 +8,20 @@
  */
 
 import { getService } from "@codingame/monaco-vscode-api";
-import { IEditorService } from "@codingame/monaco-vscode-api/services";
+import {
+  IEditorService,
+  ILanguageService,
+} from "@codingame/monaco-vscode-api/services";
 import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
 import { setActiveCenterView } from "../stores/editorStore";
 import { getWorkspaceState } from "../stores/workspaceStore";
+import { createLogger } from "./logger";
 import {
   getActiveWorktreePath,
   updateWorkspaceFolder,
 } from "./vscodeFilesystem";
+
+const log = createLogger("syntax-highlight-debug");
 
 function getWorkspaceRoot(): string | null {
   // Prefer VS Code's current workspace path (already initialized) but fall
@@ -63,6 +69,28 @@ export async function openFileInEditor(
   // Make the Editor view visible in the center panel so the user can see
   // the tab that's about to open.
   setActiveCenterView("editor");
+
+  // [syntax-highlight-debug] Log the language that will be selected for this
+  // file. If this returns "plaintext" for a file with a known extension, it
+  // means the corresponding language extension didn't load — that's the most
+  // common cause of "no syntax highlighting in the editor tab".
+  try {
+    const languageService = (await getService(ILanguageService)) as unknown as {
+      getLanguageIdByMimeType?: (mime: string) => string | null;
+      guessLanguageIdByFilepathOrFirstLine?: (uri: URI) => string | null;
+    };
+    const guessed =
+      languageService.guessLanguageIdByFilepathOrFirstLine?.(URI.file(abs)) ??
+      null;
+    log.info(`opening "${abs}" — guessed language="${guessed}"`);
+    if (!guessed || guessed === "plaintext") {
+      log.warn(
+        `file "${abs}" resolved to "${guessed}". Extension may not be registered, or the language extension didn't load.`,
+      );
+    }
+  } catch (err) {
+    log.error("language guess failed for", abs, err);
+  }
 
   const editorService = await getService(IEditorService);
   await editorService.openEditor({

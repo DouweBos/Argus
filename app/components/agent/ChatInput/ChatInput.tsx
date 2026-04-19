@@ -229,6 +229,82 @@ export function ChatInput({
     [addImageFiles],
   );
 
+  const insertFilePathMentions = useCallback(
+    (paths: string[]) => {
+      const el = textareaRef.current;
+      if (!el || paths.length === 0) {
+        return;
+      }
+      const cursor = el.selectionStart ?? el.value.length;
+      const before = el.value.slice(0, cursor);
+      const after = el.value.slice(cursor);
+      const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
+      const mentions = paths.map((p) => `@${p}`).join(" ");
+      const insertion = `${needsLeadingSpace ? " " : ""}${mentions} `;
+      el.value = `${before}${insertion}${after}`;
+      const newCursor = before.length + insertion.length;
+      el.selectionStart = newCursor;
+      el.selectionEnd = newCursor;
+      el.focus();
+      adjustHeight();
+      if (agentId) {
+        setDraft(agentId, el.value);
+      }
+    },
+    [adjustHeight, agentId],
+  );
+
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
+      return;
+    }
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      const files = e.dataTransfer?.files;
+      if (!files || files.length === 0) {
+        return;
+      }
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setIsDragOver(false);
+
+      const paths: string[] = [];
+      for (const file of Array.from(files)) {
+        const p = window.argus.getFilePath?.(file) ?? "";
+        if (p) {
+          paths.push(p);
+        }
+      }
+      if (paths.length > 0) {
+        insertFilePathMentions(paths);
+      }
+    },
+    [insertFilePathMentions],
+  );
+
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -385,7 +461,11 @@ export function ChatInput({
   return (
     <div className={styles.wrapper}>
       <div
-        className={`${styles.container} ${disabled ? styles.containerDisabled : ""}`}
+        className={`${styles.container} ${disabled ? styles.containerDisabled : ""} ${isDragOver ? styles.containerDragOver : ""}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
       >
         {suggestions.length > 0 && (
           <div ref={suggestionsRef} className={styles.suggestions}>

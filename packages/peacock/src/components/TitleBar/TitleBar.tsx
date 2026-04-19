@@ -10,6 +10,8 @@ export interface TitleBarProps extends Omit<
   title?: ReactNode;
   /** Show traffic-light dots for non-hiddenInset title bars (defaults to true). */
   showTraffic?: boolean;
+  /** Hotkey shown on the "Jump to anything" pill. */
+  jumpHotkey?: string[];
   onJump?: () => void;
   onToggleLeft?: () => void;
   onToggleRight?: () => void;
@@ -19,6 +21,7 @@ export interface TitleBarProps extends Omit<
 export function TitleBar({
   title = "Argus",
   showTraffic = true,
+  jumpHotkey = ["⌘", "⇧", "P"],
   onJump,
   onToggleLeft,
   onToggleRight,
@@ -42,9 +45,8 @@ export function TitleBar({
       <div className={styles.right}>
         {right}
         <button className={styles.cmdk} onClick={onJump} type="button">
-          <SearchGlyph />
           <span className={styles.cmdkText}>Jump to anything</span>
-          <Kbd keys={["⌘", "K"]} />
+          <Kbd keys={jumpHotkey} />
         </button>
         {onToggleLeft && (
           <button
@@ -68,13 +70,5 @@ export function TitleBar({
         )}
       </div>
     </div>
-  );
-}
-
-function SearchGlyph() {
-  return (
-    <svg width={12} height={12} viewBox="0 0 16 16" fill="currentColor">
-      <path d="M11.5 7a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 1 1-1.06 1.06l-3.04-3.04Z" />
-    </svg>
   );
 }

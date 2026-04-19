@@ -221,6 +221,30 @@ export function MergeIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function ReviewQueueIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.3"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M2 3.25 L3.25 4.5 L5 2.5" />
+      <line x1="7" x2="14" y1="3.25" y2="3.25" />
+      <circle cx="3" cy="8" r="1" />
+      <line x1="7" x2="14" y1="8" y2="8" />
+      <circle cx="3" cy="12.75" r="1" />
+      <line x1="7" x2="14" y1="12.75" y2="12.75" />
+    </svg>
+  );
+}
+
 export function TerminalIcon({ size = 12, className, ...rest }: IconProps) {
   return (
     <svg

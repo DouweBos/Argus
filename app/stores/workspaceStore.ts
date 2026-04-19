@@ -168,14 +168,19 @@ export const setSetupProgress = (
   progress: { current: number; item: string; total: number } | null,
 ) => {
   workspaceStore.setState((state) => {
-    const next = { ...state.setupProgressByWorkspaceId };
     if (progress == null) {
-      delete next[workspaceId];
-    } else {
-      next[workspaceId] = progress;
+      const { [workspaceId]: _removed, ...next } =
+        state.setupProgressByWorkspaceId;
+
+      return { setupProgressByWorkspaceId: next };
     }
 
-    return { setupProgressByWorkspaceId: next };
+    return {
+      setupProgressByWorkspaceId: {
+        ...state.setupProgressByWorkspaceId,
+        [workspaceId]: progress,
+      },
+    };
   });
 };
 

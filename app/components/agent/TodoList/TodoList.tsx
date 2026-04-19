@@ -25,15 +25,36 @@ export function TodoList({ todos, onDismiss }: TodoListProps) {
     <div className={styles.section}>
       <span className={styles.label}>Todos</span>
       <div className={styles.card}>
-        <button
-          type="button"
+        <div
           className={`${styles.header} ${open ? styles.headerOpen : ""}`}
           onClick={() => setOpen((o) => !o)}
+          role="button"
+          tabIndex={0}
           aria-expanded={open}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setOpen((o) => !o);
+            }
+          }}
         >
           <div className={styles.headerLeft}>
             <span className={styles.progress}>{headerText}</span>
           </div>
+          {allDone && onDismiss && (
+            <button
+              type="button"
+              className={styles.dismiss}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismiss();
+              }}
+              aria-label="Clear completed todos"
+            >
+              <Icons.CloseIcon size={10} />
+              Clear
+            </button>
+          )}
           <span className={styles.count}>
             {completed}/{todos.length}
           </span>
@@ -42,18 +63,7 @@ export function TodoList({ todos, onDismiss }: TodoListProps) {
           >
             <Icons.ChevronDownIcon size={12} />
           </span>
-        </button>
-        {allDone && onDismiss && (
-          <button
-            type="button"
-            className={styles.dismiss}
-            onClick={onDismiss}
-            aria-label="Dismiss completed todos"
-          >
-            <Icons.CloseIcon size={10} />
-            Clear completed list
-          </button>
-        )}
+        </div>
         {open && (
           <div className={styles.list}>
             {todos.map((todo, i) => {

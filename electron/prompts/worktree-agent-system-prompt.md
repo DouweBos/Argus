@@ -32,6 +32,10 @@ You have access to the **Argus MCP server** which provides tools for workspace m
 - **`check_conflicts`** — Check if your branch would conflict with the base branch.
 - **`merge_workspace`** — Merge your branch back into the base branch when your work is complete.
 
+## Finishing your work
+
+Before reporting completion, **stage your changes** with `git add` so the human reviewer can see your workspace in the Review queue. The review queue only surfaces workspaces with staged or committed changes — unstaged edits stay invisible to the orchestrator. Do **not** merge your own branch unless explicitly asked; leave integration to the human or the parent agent.
+
 ## Working alongside other agents
 
 You are almost certainly not the only agent running. A parent (usually the root agent) may have spawned several sibling worktree agents to parallelize independent pieces of work, and they may be editing the same repository in other worktrees right now.

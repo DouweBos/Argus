@@ -52,3 +52,11 @@ coverage/
 
 # Storybook
 storybook-static/
+
+# Fastlane
+.fastlane-api-key.p8
+fastlane/report.xml
+fastlane/README.md
+vendor/bundle
+.bundle
+

@@ -45,7 +45,7 @@ import type { RuntimePlatform } from "../workspace/models";
 import { app } from "electron";
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -276,6 +276,13 @@ export async function startAgent(
   // Create the control handler for permission management.
   const controlHandler = new ControlHandler(agentId);
 
+  // Per-agent debug log — full Claude Code internal trace written to
+  // `~/.argus/agents/<agentId>.debug.log`. Used to diagnose filesystem
+  // access / TCC prompts triggered on agent spawn.
+  const agentLogsDir = path.join(os.homedir(), ".argus", "agents");
+  mkdirSync(agentLogsDir, { recursive: true });
+  const debugLogPath = path.join(agentLogsDir, `${agentId}.debug.log`);
+
   // Build CLI args.
   const args: string[] = [
     "--print",
@@ -284,6 +291,8 @@ export async function startAgent(
     "--input-format",
     "stream-json",
     "--verbose",
+    "--debug-file",
+    debugLogPath,
     "--permission-prompt-tool",
     "stdio",
   ];
@@ -331,6 +340,8 @@ export async function startAgent(
     // so PATH, HOME, and any API keys are available to the child.
     env,
   });
+
+  info(`[agent:${agentId}] debug log: ${debugLogPath}`);
 
   if (!child.stdin || !child.stdout || !child.stderr) {
     controlHandler.cleanup();
@@ -503,6 +514,46 @@ export async function startAgent(
       }
     }
 
+    // Track idle/running transitions from the CLI's authoritative
+    // `session_state_changed` event. The child process stays alive between
+    // turns, so process liveness is *not* a good signal for "agent finished
+    // its turn" — this event is.
+    if (line.includes('"session_state_changed"')) {
+      try {
+        const parsed = JSON.parse(line) as {
+          type?: string;
+          subtype?: string;
+          state?: string;
+        };
+        if (
+          parsed.type === "system" &&
+          parsed.subtype === "session_state_changed"
+        ) {
+          const sess = appState.agents.get(agentId);
+          if (
+            sess &&
+            sess.status !== "stopped" &&
+            sess.status !== "error" &&
+            (parsed.state === "idle" ||
+              parsed.state === "running" ||
+              parsed.state === "requires_action")
+          ) {
+            const prev = sess.status;
+            sess.status = parsed.state;
+            if (parsed.state === "idle" && prev !== "idle") {
+              // Notify anyone waiting on turn completion.
+              for (const resolve of sess.turnWaiters) {
+                resolve("idle");
+              }
+              sess.turnWaiters.length = 0;
+            }
+          }
+        }
+      } catch {
+        // Non-fatal — fall through to forward the line.
+      }
+    }
+
     // Capture the final result event so orchestrator agents can retrieve it
     // via `get_agent_result` / `wait_for_agent` without parsing the stream.
     if (line.includes('"result"') && line.includes('"type"')) {
@@ -547,6 +598,13 @@ export async function startAgent(
         resolve(exitCode);
       }
       session.exitWaiters.length = 0;
+
+      // Also unblock anyone waiting on turn completion — process exit
+      // implicitly ends any in-flight turn.
+      for (const resolve of session.turnWaiters) {
+        resolve(session.status);
+      }
+      session.turnWaiters.length = 0;
     }
 
     // Release device reservations (async, fire-and-forget).
@@ -574,6 +632,7 @@ export async function startAgent(
     parentAgentId: parentAgentId ?? null,
     resultSummary: null,
     exitWaiters: [],
+    turnWaiters: [],
   };
 
   appState.agents.set(agentId, session);
@@ -720,12 +779,15 @@ export async function interruptAgent(agentId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * Wait for an agent to exit, with an optional timeout.
+ * Wait for an agent's current turn to finish (status transitioning to
+ * `idle`), or for the process to exit. The CLI subprocess stays alive
+ * between turns, so waiting on `child.on("close")` alone would block
+ * indefinitely for the common "agent finished responding" case.
  *
- * If the agent has already exited, resolves immediately. Otherwise registers
- * a callback on the session's `exitWaiters` list and returns a Promise.
+ * Resolves immediately if the agent is already `idle`, `stopped`, or `error`.
  *
- * @returns The agent's final status and result summary.
+ * @returns The agent's status (`idle` | `stopped` | `error`) and result
+ *          summary if one has been captured.
  * @throws string if the agent is not found or the timeout expires.
  */
 export function waitForAgent(
@@ -737,7 +799,11 @@ export function waitForAgent(
     throw `No agent found: ${agentId}`;
   }
 
-  if (session.status === "stopped" || session.status === "error") {
+  if (
+    session.status === "idle" ||
+    session.status === "stopped" ||
+    session.status === "error"
+  ) {
     return Promise.resolve({
       status: session.status,
       result: session.resultSummary,
@@ -746,25 +812,55 @@ export function waitForAgent(
 
   return new Promise((resolve, reject) => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let settled = false;
 
-    const onExit = (exitCode: number) => {
+    const settle = (status: AgentStatusValue) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       if (timer) {
         clearTimeout(timer);
       }
+      // Detach both waiters regardless of which fired.
+      const exitIdx = session.exitWaiters.indexOf(onExit);
+      if (exitIdx !== -1) {
+        session.exitWaiters.splice(exitIdx, 1);
+      }
+      const turnIdx = session.turnWaiters.indexOf(onTurn);
+      if (turnIdx !== -1) {
+        session.turnWaiters.splice(turnIdx, 1);
+      }
       const finalSession = appState.agents.get(agentId);
       resolve({
-        status: exitCode === 0 ? "stopped" : "error",
+        status,
         result: finalSession?.resultSummary ?? null,
       });
     };
 
+    const onExit = (exitCode: number) => {
+      settle(exitCode === 0 ? "stopped" : "error");
+    };
+    const onTurn = (status: AgentStatusValue) => {
+      settle(status);
+    };
+
     session.exitWaiters.push(onExit);
+    session.turnWaiters.push(onTurn);
 
     if (timeoutMs !== undefined && timeoutMs > 0) {
       timer = setTimeout(() => {
-        const idx = session.exitWaiters.indexOf(onExit);
-        if (idx !== -1) {
-          session.exitWaiters.splice(idx, 1);
+        if (settled) {
+          return;
+        }
+        settled = true;
+        const exitIdx = session.exitWaiters.indexOf(onExit);
+        if (exitIdx !== -1) {
+          session.exitWaiters.splice(exitIdx, 1);
+        }
+        const turnIdx = session.turnWaiters.indexOf(onTurn);
+        if (turnIdx !== -1) {
+          session.turnWaiters.splice(turnIdx, 1);
         }
         reject(`Timeout waiting for agent ${agentId} after ${timeoutMs}ms`);
       }, timeoutMs);
