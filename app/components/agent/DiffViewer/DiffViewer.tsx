@@ -7,6 +7,7 @@ import {
 } from "react";
 import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../hooks/useDiffFiles";
+import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { gitIndexPath } from "../../../lib/diffParser";
 import { stageAll, stageFile, unstageAll, unstageFile } from "../../../lib/ipc";
 import { ResizablePanel } from "../../layout/ResizablePanel";
@@ -130,6 +131,41 @@ export function DiffViewer({
 
   const allStaged = files.length > 0 && files.every((f) => f.staged === "full");
   const anyStaged = files.length > 0 && files.some((f) => f.staged !== "none");
+
+  // Tower-style working-copy shortcuts. Mounted only while the working-copy
+  // sub-view is shown, so registration is implicitly gated.
+  const shortcuts = useMemo(
+    () => [
+      // Stage all: Shift+Cmd+E
+      {
+        key: "e",
+        meta: true,
+        shift: true,
+        handler: () => handleAction(handleStageAll),
+      },
+      // Unstage all: Shift+Opt+Cmd+E
+      {
+        key: "e",
+        meta: true,
+        shift: true,
+        alt: true,
+        handler: () => handleAction(handleUnstageAll),
+      },
+      // Refresh: Cmd+R
+      { key: "r", meta: true, handler: () => fetchDiff() },
+      // Focus commit subject: Shift+Cmd+C — hand off to CommitPanel via custom event.
+      {
+        key: "c",
+        meta: true,
+        shift: true,
+        handler: () => {
+          window.dispatchEvent(new CustomEvent("argus:git-focus-commit"));
+        },
+      },
+    ],
+    [handleAction, handleStageAll, handleUnstageAll, fetchDiff],
+  );
+  useGlobalShortcuts(shortcuts);
 
   if (isLoading && files.length === 0) {
     return (

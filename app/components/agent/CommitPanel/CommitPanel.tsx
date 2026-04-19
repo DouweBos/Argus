@@ -33,8 +33,27 @@ export function CommitPanel({
   const [expanded, setExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const subjectInputRef = useRef<HTMLInputElement>(null);
+
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
+
+  // Listen for the Shift+Cmd+C shortcut dispatched from the git shortcuts layer.
+  useEffect(() => {
+    const onFocusCommit = () => {
+      const input = subjectInputRef.current;
+      if (!input) {
+        return;
+      }
+      input.focus();
+      input.select();
+      setExpanded(true);
+    };
+    window.addEventListener("argus:git-focus-commit", onFocusCommit);
+
+    return () =>
+      window.removeEventListener("argus:git-focus-commit", onFocusCommit);
+  }, []);
 
   useEffect(() => {
     getGitAuthor(workspaceId)
@@ -109,6 +128,7 @@ export function CommitPanel({
   return (
     <div ref={panelRef} className={styles.commitPanel}>
       <input
+        ref={subjectInputRef}
         className={styles.commitSubject}
         placeholder="Commit Subject"
         type="text"
