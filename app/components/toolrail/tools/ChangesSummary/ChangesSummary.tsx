@@ -1,36 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../../hooks/useDiffFiles";
+import { useFixConflictsInChat } from "../../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";
-import { startAgentInWorkspace } from "../../../../lib/agentLifecycle";
-import { sendAgentMessage } from "../../../../lib/ipc";
 import { useWorkspaces } from "../../../../stores/workspaceStore";
 import { FileTypeIcon } from "../../../shared/Icons";
 import styles from "./ChangesSummary.module.css";
-
-function buildConflictResolutionPrompt(
-  baseBranch: string,
-  workspaceBranch: string,
-  conflictFiles: string[],
-): string {
-  const fileList = conflictFiles.length
-    ? conflictFiles.map((f) => `- ${f}`).join("\n")
-    : "(specific files could not be determined — git merge will report them)";
-
-  return `Resolve merge conflicts between this workspace's branch (\`${workspaceBranch}\`) and its base branch (\`${baseBranch}\`).
-
-Expected conflicting files:
-${fileList}
-
-Steps:
-1. Run \`git fetch\` then \`git merge ${baseBranch}\` in this workspace.
-2. For each conflicting file, read both sides and resolve the conflict so both intents are preserved. Prefer the behavior this branch intended; don't silently drop changes from either side.
-3. After resolving, run the project's type-check / build / tests to confirm nothing is broken.
-4. Stage the resolved files and commit the merge with a clear message (e.g. \`Merge ${baseBranch} into ${workspaceBranch}\`).
-5. Report which files you resolved and any decisions you had to make.
-
-Don't push. Don't merge back into \`${baseBranch}\` — the user will do that separately once you're done.`;
-}
 
 type DiffLineType = "add" | "context" | "remove";
 
@@ -185,37 +160,17 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
 
   const showMerge = workspace?.kind === "worktree" && workspace.base_branch;
   const hasConflicts = conflicts.length > 0;
-  const [isDispatchingAgent, setIsDispatchingAgent] = useState(false);
-  const [dispatchError, setDispatchError] = useState<string | null>(null);
-
-  const handleFixConflictsInChat = useCallback(async () => {
-    if (!workspace?.base_branch || !workspace?.branch || isDispatchingAgent) {
-      return;
-    }
-    setIsDispatchingAgent(true);
-    setDispatchError(null);
-    try {
-      const info = await startAgentInWorkspace(workspaceId, { focus: true });
-      const prompt = buildConflictResolutionPrompt(
-        workspace.base_branch,
-        workspace.branch,
-        conflicts,
-      );
-      await sendAgentMessage(info.agent_id, prompt);
-    } catch (err) {
-      setDispatchError(
-        err instanceof Error ? err.message : "Failed to start agent",
-      );
-    } finally {
-      setIsDispatchingAgent(false);
-    }
-  }, [
+  const conflictSet = useMemo(() => new Set(conflicts), [conflicts]);
+  const {
+    dispatch: handleFixConflictsInChat,
+    error: dispatchError,
+    isDispatching: isDispatchingAgent,
+  } = useFixConflictsInChat({
     workspaceId,
-    workspace?.base_branch,
-    workspace?.branch,
+    baseBranch: workspace?.base_branch ?? null,
+    workspaceBranch: workspace?.branch ?? null,
     conflicts,
-    isDispatchingAgent,
-  ]);
+  });
   const hasMergeableWork = hasStaged || commitsAhead > 0;
   const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
 
@@ -273,15 +228,17 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
         {showMerge && (
           <div className={styles.bottomBar}>
             {conflictFixButton}
-            <button
-              className={styles.mergeBtn}
-              disabled={!canMerge}
-              title={mergeBtnTitle}
-              onClick={handleMerge}
-            >
-              <Icons.MergeIcon size={12} />
-              {isMerging ? "Merging..." : `Merge into ${baseBranchLabel}`}
-            </button>
+            {!hasConflicts && (
+              <button
+                className={styles.mergeBtn}
+                disabled={!canMerge}
+                title={mergeBtnTitle}
+                onClick={handleMerge}
+              >
+                <Icons.MergeIcon size={12} />
+                {isMerging ? "Merging..." : `Merge into ${baseBranchLabel}`}
+              </button>
+            )}
             {dispatchError && (
               <span className={styles.mergeError}>{dispatchError}</span>
             )}
@@ -310,6 +267,10 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
       <div className={styles.diffContent}>
         {files.map((file, fileIndex) => {
           const stats = fileStats[fileIndex];
+          const isConflict = conflictSet.has(stats.path);
+          const sectionClass = isConflict
+            ? `${styles.fileSection} ${styles.fileSectionConflict}`
+            : styles.fileSection;
 
           return (
             <div
@@ -321,7 +282,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
                   fileRefs.current.delete(fileIndex);
                 }
               }}
-              className={styles.fileSection}
+              className={sectionClass}
             >
               {/* File header */}
               <div className={styles.fileHeader}>
@@ -335,6 +296,15 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
                   )}
                 </div>
                 <div className={styles.fileStats}>
+                  {isConflict && (
+                    <span
+                      className={styles.conflictBadge}
+                      title={`Merge conflict with ${baseBranchLabel}`}
+                    >
+                      <Icons.WarningIcon size={10} />
+                      Conflict
+                    </span>
+                  )}
                   {stats.additions > 0 && (
                     <span className={styles.statsAdd}>+{stats.additions}</span>
                   )}
@@ -401,7 +371,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
           </button>
         </div>
         {conflictFixButton}
-        {showMerge && (
+        {showMerge && !hasConflicts && (
           <button
             className={styles.mergeBtn}
             disabled={!canMerge}

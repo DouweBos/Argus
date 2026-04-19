@@ -88,6 +88,11 @@ export function RepoHomeScreen({
     [workspaces, repoRoot],
   );
 
+  const visibleWorkspaces = useMemo(
+    () => repoWorkspaces.filter((w) => w.kind !== "repo_root"),
+    [repoWorkspaces],
+  );
+
   const repoWorkspaceIds = useMemo(
     () => new Set(repoWorkspaces.map((w) => w.id)),
     [repoWorkspaces],
@@ -224,7 +229,7 @@ export function RepoHomeScreen({
               <div className={styles.panelHead}>
                 <span className={styles.eyebrow}>Workspaces</span>
                 <span className={styles.subMeta}>
-                  {repoWorkspaces.length} total
+                  {visibleWorkspaces.length} total
                 </span>
                 <div className={styles.panelSpacer} />
                 <button
@@ -236,13 +241,13 @@ export function RepoHomeScreen({
                 </button>
               </div>
               <div className={styles.panelScroll}>
-                {repoWorkspaces.length === 0 ? (
+                {visibleWorkspaces.length === 0 ? (
                   <div className={styles.emptyCell}>
                     No workspaces yet. Create one to start a branch.
                   </div>
                 ) : (
                   <div className={styles.wsGrid}>
-                    {repoWorkspaces.map((ws) => {
+                    {visibleWorkspaces.map((ws) => {
                       const wsAgents = repoAgents.filter(
                         (a) => a.workspace_id === ws.id,
                       );

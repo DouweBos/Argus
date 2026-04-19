@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DiffStat, Icons } from "@argus/peacock";
+import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { listen } from "../../../lib/events";
 import { watchWorkspace } from "../../../lib/ipc";
@@ -16,18 +17,29 @@ interface ReadyToMergeCardProps {
   baseBranch?: string | null;
   sectionClassName?: string;
   titleClassName?: string;
+  workspaceBranch?: string | null;
   workspaceId: string;
 }
 
 export function ReadyToMergeCard({
   workspaceId,
   baseBranch,
+  workspaceBranch,
   sectionClassName,
   titleClassName,
 }: ReadyToMergeCardProps) {
   const { commitsAhead, conflicts, hasStaged, isMerging, handleMerge } =
     useMergeStatus(workspaceId);
   const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
+  const {
+    dispatch: handleFixConflictsInChat,
+    isDispatching: isDispatchingAgent,
+  } = useFixConflictsInChat({
+    workspaceId,
+    baseBranch,
+    workspaceBranch,
+    conflicts,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -115,15 +127,29 @@ export function ReadyToMergeCard({
           >
             Review
           </button>
-          {baseBranch && (
+          {baseBranch && hasConflicts && (
+            <button
+              className={styles.conflictBtn}
+              disabled={isDispatchingAgent}
+              title={
+                isDispatchingAgent
+                  ? "Starting agent\u2026"
+                  : `Start an agent to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranch}`
+              }
+              type="button"
+              onClick={handleFixConflictsInChat}
+            >
+              <Icons.AgentStartIcon size={11} />
+              {isDispatchingAgent
+                ? "Starting\u2026"
+                : `Fix ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} in chat`}
+            </button>
+          )}
+          {baseBranch && !hasConflicts && (
             <button
               className={styles.mergeBtn}
               disabled={!canMerge}
-              title={
-                hasConflicts
-                  ? `Resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} first`
-                  : `Merge into ${baseBranch}`
-              }
+              title={`Merge into ${baseBranch}`}
               type="button"
               onClick={handleMerge}
             >

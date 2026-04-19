@@ -103,6 +103,27 @@
   font-variant-numeric: tabular-nums;
 }
 
+.conflictBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: color-mix(in srgb, var(--error) 14%, transparent);
+  color: var(--error);
+  border: 1px solid color-mix(in srgb, var(--error) 45%, transparent);
+  border-radius: var(--border-radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fileSectionConflict .fileHeader {
+  background: color-mix(in srgb, var(--error) 8%, var(--bg-secondary));
+  border-bottom-color: color-mix(in srgb, var(--error) 30%, transparent);
+}
+
 /* Diff lines */
 .diffLines {
   font-family: var(--font-mono);

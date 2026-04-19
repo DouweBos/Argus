@@ -1,8 +1,14 @@
 import type { AgentStatus } from "../../../lib/types";
 import type { StatusDotsState } from "@argus/peacock";
-import type { DragEvent } from "react";
-import { useMemo, useState } from "react";
-import { Badge, Icons, StatusDots } from "@argus/peacock";
+import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useMemo, useState } from "react";
+import {
+  Badge,
+  ContextMenu,
+  type ContextMenuItem,
+  Icons,
+  StatusDots,
+} from "@argus/peacock";
 import { reorderAgent, useAgentsRecord } from "../../../stores/agentStore";
 import { useConversation } from "../../../stores/conversationStore";
 import styles from "./AgentTabBar.module.css";
@@ -72,6 +78,7 @@ function AgentTab({
   dropIndicator,
   onSelect,
   onClose,
+  onContextMenu,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -86,6 +93,7 @@ function AgentTab({
   isActive: boolean;
   isDragging: boolean;
   onClose: (id: string) => void;
+  onContextMenu: (e: ReactMouseEvent, id: string) => void;
   onDragEnd: () => void;
   onDragLeave: (id: string) => void;
   onDragOver: (e: DragEvent<HTMLDivElement>, id: string) => void;
@@ -115,6 +123,7 @@ function AgentTab({
       draggable
       title={fullLabel}
       onClick={() => onSelect(agent.agent_id)}
+      onContextMenu={(e) => onContextMenu(e, agent.agent_id)}
       onDragStart={(e) => onDragStart(e, agent.agent_id)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => onDragOver(e, agent.agent_id)}
@@ -164,6 +173,84 @@ export function AgentTabBar({
   const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(
     null,
   );
+  const [menuState, setMenuState] = useState<{
+    agentId: string;
+    position: { x: number; y: number };
+  } | null>(null);
+
+  const closeMenu = useCallback(() => setMenuState(null), []);
+
+  const handleContextMenu = useCallback((e: ReactMouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuState({
+      agentId: id,
+      position: { x: e.clientX, y: e.clientY },
+    });
+  }, []);
+
+  const menuItems = useMemo<ContextMenuItem[]>(() => {
+    if (!menuState) {
+      return [];
+    }
+    const targetId = menuState.agentId;
+    const targetIndex = agents.findIndex((a) => a.agent_id === targetId);
+    if (targetIndex < 0) {
+      return [];
+    }
+    const others = agents.filter((a) => a.agent_id !== targetId);
+    const toLeft = agents.slice(0, targetIndex);
+    const toRight = agents.slice(targetIndex + 1);
+    const idle = agents.filter(
+      (a) => a.status === "idle" || a.status === "stopped",
+    );
+    const closeMany = (ids: string[]) => {
+      for (const id of ids) {
+        onClose(id);
+      }
+    };
+
+    return [
+      {
+        icon: <Icons.CloseIcon size={12} />,
+        label: "Close Agent",
+        onClick: () => onClose(targetId),
+      },
+      {
+        icon: <Icons.CloseIcon size={12} />,
+        label: "Close Other Agents",
+        disabled: others.length === 0,
+        onClick: () => closeMany(others.map((a) => a.agent_id)),
+      },
+      { separator: true },
+      {
+        icon: <Icons.CloseIcon size={12} />,
+        label: "Close Agents to the Left",
+        disabled: toLeft.length === 0,
+        onClick: () => closeMany(toLeft.map((a) => a.agent_id)),
+      },
+      {
+        icon: <Icons.CloseIcon size={12} />,
+        label: "Close Agents to the Right",
+        disabled: toRight.length === 0,
+        onClick: () => closeMany(toRight.map((a) => a.agent_id)),
+      },
+      { separator: true },
+      {
+        icon: <Icons.CloseIcon size={12} />,
+        label: "Close Idle Agents",
+        disabled: idle.length === 0,
+        onClick: () => closeMany(idle.map((a) => a.agent_id)),
+      },
+      {
+        icon: <Icons.TrashIcon size={12} />,
+        label: "Close All Agents",
+        danger: true,
+        disabled: agents.length === 0,
+        onClick: () => closeMany(agents.map((a) => a.agent_id)),
+      },
+    ];
+  }, [agents, menuState, onClose]);
 
   const childCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -268,6 +355,7 @@ export function AgentTabBar({
             isActive={agent.agent_id === activeAgentId}
             isDragging={draggingId === agent.agent_id}
             onClose={onClose}
+            onContextMenu={handleContextMenu}
             onDragEnd={handleDragEnd}
             onDragLeave={handleDragLeave}
             onDragOver={handleDragOver}
@@ -277,6 +365,13 @@ export function AgentTabBar({
           />
         );
       })}
+      {menuState && (
+        <ContextMenu
+          items={menuItems}
+          position={menuState.position}
+          onClose={closeMenu}
+        />
+      )}
     </div>
   );
 }

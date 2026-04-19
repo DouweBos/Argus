@@ -14,8 +14,9 @@ import { branchToDir, git, worktreesRoot } from "./git";
  * Returns a list of files that would conflict if `workspaceBranch` were merged
  * into `baseBranch`. Returns an empty array if no conflicts would occur.
  *
- * Uses `git merge-tree --write-tree` (git 2.38+) with a fallback to the
- * legacy three-way `git merge-tree` for older git versions.
+ * Uses `git merge-tree --write-tree` (git 2.38+). Parses the conflict info
+ * section (stage entries) which is always present when conflicts exist,
+ * regardless of whether informational CONFLICT messages are emitted.
  */
 export async function checkMergeConflicts(
   repoRoot: string,
@@ -32,69 +33,17 @@ export async function checkMergeConflicts(
   }
 
   // Use `git merge-tree` to detect conflicts without touching the working tree.
-  const conflicts: string[] = await new Promise((resolve) => {
+  // Note: exit code behavior varies across git versions — always parse stdout.
+  const stdout: string = await new Promise((resolve) => {
     execFile(
       "git",
-      [
-        "merge-tree",
-        "--write-tree",
-        "--no-messages",
-        workspaceBranch,
-        baseBranch,
-      ],
-      { cwd: repoRoot },
-      async (err: Error | null, stdout: string) => {
-        if (!err) {
-          // Exit code 0 = clean merge.
-          resolve([]);
-
-          return;
-        }
-
-        // Exit code 1 = conflicts. Parse conflicting file paths.
-        const parsed = parseConflictingFiles(stdout);
-
-        if (parsed.length > 0) {
-          resolve(parsed);
-
-          return;
-        }
-
-        // Fallback: legacy `git merge-tree <base> <b1> <b2>`.
-        let legacy = "";
-        try {
-          legacy = await git(repoRoot, [
-            "merge-tree",
-            mergeBase,
-            baseBranch,
-            workspaceBranch,
-          ]);
-        } catch {
-          // Ignore errors in the fallback.
-        }
-
-        const legacyConflicts: string[] = [];
-        for (const line of legacy.split("\n")) {
-          if (line.startsWith("+<<<<<<<") || line.includes("changed in both")) {
-            const rest = line.replace(/^changed in both/, "");
-            const filePath = rest.replace(/^:+/, "").trim();
-            if (filePath) {
-              legacyConflicts.push(filePath);
-            }
-          }
-        }
-
-        if (legacyConflicts.length > 0) {
-          resolve(legacyConflicts);
-        } else {
-          // Could not determine specific files but there are conflicts.
-          resolve(["(unable to determine specific conflicting files)"]);
-        }
-      },
+      ["merge-tree", "--write-tree", workspaceBranch, baseBranch],
+      { cwd: repoRoot, maxBuffer: 32 * 1024 * 1024 },
+      (_err: Error | null, out: string) => resolve(out || ""),
     );
   });
 
-  const unique = [...new Set(conflicts)].sort();
+  const unique = [...new Set(parseConflictingFiles(stdout))].sort();
 
   return unique;
 }
@@ -182,40 +131,52 @@ export async function mergeWorkspaceIntoBase(
 
 /**
  * Parse conflicting file paths from `git merge-tree --write-tree` stdout.
- * Lines of the form `CONFLICT (...): Merge conflict in <path>` are extracted.
+ *
+ * The output format is:
+ *   <tree-oid>\n
+ *   <mode> <hash> <stage>\t<path>\n   (one per stage per conflicted file,
+ *                                      stage 1/2/3 = base/ours/theirs)
+ *   ...
+ *   \n
+ *   <informational messages, e.g. "CONFLICT (content): Merge conflict in X">
+ *
+ * The stage entries are always present when conflicts exist, so we parse
+ * those. We also parse `CONFLICT ... Merge conflict in <path>` messages as
+ * a supplement (they cover non-content conflicts like modify/delete).
  */
 export function parseConflictingFiles(stdout: string): string[] {
   const conflicts: string[] = [];
-  let inInformational = false;
+  const lines = stdout.split("\n");
 
-  for (const line of stdout.split("\n")) {
-    // Skip the first line (tree hash — 40 hex chars).
-    if (!inInformational && /^[0-9a-f]{40}$/.test(line.trim())) {
-      inInformational = true;
+  // The first non-empty line should be the tree OID. Skip it.
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") {
+    i++;
+  }
+  if (i < lines.length && /^[0-9a-f]{40,}$/.test(lines[i].trim())) {
+    i++;
+  } else {
+    // No tree OID — nothing to parse.
+    return [];
+  }
+
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Stage entry: "<mode> <hash> <stage>\t<path>" — stage 1/2/3 means conflict.
+    const stageMatch = line.match(/^\d{6} [0-9a-f]+ ([1-3])\t(.+)$/);
+    if (stageMatch) {
+      conflicts.push(stageMatch[2]);
       continue;
     }
-    if (!inInformational) {
-      continue;
-    }
 
+    // Informational "Merge conflict in <path>" messages.
     const trimmed = line.trim();
-    if (!trimmed) {
-      continue;
-    }
-
     if (trimmed.startsWith("CONFLICT")) {
-      const rest = trimmed.slice("CONFLICT".length);
-      const marker1 = "Merge conflict in ";
-      const marker2 = "merge conflict in ";
-      const idx1 = rest.lastIndexOf(marker1);
-      const idx2 = rest.lastIndexOf(marker2);
-      if (idx1 !== -1) {
-        const filePath = rest.slice(idx1 + marker1.length).trim();
-        if (filePath) {
-          conflicts.push(filePath);
-        }
-      } else if (idx2 !== -1) {
-        const filePath = rest.slice(idx2 + marker2.length).trim();
+      const lower = trimmed.toLowerCase();
+      const idx = lower.lastIndexOf("merge conflict in ");
+      if (idx !== -1) {
+        const filePath = trimmed.slice(idx + "merge conflict in ".length).trim();
         if (filePath) {
           conflicts.push(filePath);
         }

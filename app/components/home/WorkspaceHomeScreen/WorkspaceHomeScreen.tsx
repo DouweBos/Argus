@@ -262,6 +262,7 @@ export function WorkspaceHomeScreen({
 
         <ReadyToMergeCard
           baseBranch={workspace?.base_branch}
+          workspaceBranch={workspace?.branch}
           workspaceId={workspaceId}
         />
 

@@ -65,10 +65,12 @@ export function useMergeStatus(
       await mergeWorkspaceIntoBase(workspaceId);
     } catch (err) {
       setMergeError(err instanceof Error ? err.message : String(err));
+      // Refresh conflict list so the UI can surface "Fix in chat".
+      await fetchStatus();
     } finally {
       setIsMerging(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, fetchStatus]);
 
   return {
     commitsAhead,

@@ -9,6 +9,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .iconWrap {
@@ -74,7 +75,8 @@
 }
 
 .secondaryBtn,
-.mergeBtn {
+.mergeBtn,
+.conflictBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -101,17 +103,33 @@
 }
 
 .mergeBtn {
-  background: rgba(245, 166, 35, 0.1);
-  border: 1px solid rgba(245, 166, 35, 0.35);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
+  color: var(--success);
 }
 
 .mergeBtn:hover:not(:disabled) {
-  background: rgba(245, 166, 35, 0.18);
-  border-color: var(--accent);
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+  border-color: var(--success);
 }
 
 .mergeBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.conflictBtn {
+  background: color-mix(in srgb, var(--error) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 45%, transparent);
+  color: var(--error);
+}
+
+.conflictBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error) 22%, transparent);
+  border-color: var(--error);
+}
+
+.conflictBtn:disabled {
+  opacity: 0.5;
+  cursor: progress;
 }
