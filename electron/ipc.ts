@@ -6,6 +6,7 @@
  * (errors are thrown as plain strings).
  */
 
+import type { OrganizationMember } from "./services/organization/models";
 import { Menu, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -73,6 +74,14 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
+import {
+  createOrganization,
+  updateOrganization,
+  deleteOrganization,
+  addRepoToOrganization,
+  removeRepoFromOrganization,
+  listOrganizations,
+} from "./services/organization/manager";
 import { openExternalUrl, revealInFinder } from "./services/shell/operations";
 import {
   checkAndroidTools,
@@ -299,6 +308,37 @@ export function registerIpcHandlers(): void {
       a.id as string,
       a.shouldDeleteBranch as boolean | undefined,
     ),
+  );
+
+  // Organizations
+  handle("list_organizations", () => listOrganizations());
+  handle("create_organization", (a) =>
+    createOrganization({
+      name: a.name as string,
+      description: a.description as string | undefined,
+      system_prompt: a.systemPrompt as string | undefined,
+      accent: a.accent as string | undefined,
+      members: a.members as OrganizationMember[] | undefined,
+    }),
+  );
+  handle("update_organization", (a) =>
+    updateOrganization(a.id as string, {
+      name: a.name as string | undefined,
+      description: a.description as string | undefined,
+      system_prompt: a.systemPrompt as string | undefined,
+      accent: a.accent as string | undefined,
+      members: a.members as OrganizationMember[] | undefined,
+    }),
+  );
+  handle("delete_organization", (a) => deleteOrganization(a.id as string));
+  handle("add_repo_to_organization", (a) =>
+    addRepoToOrganization(a.id as string, {
+      repo_root: a.repoRoot as string,
+      role: (a.role as string | undefined) ?? "",
+    }),
+  );
+  handle("remove_repo_from_organization", (a) =>
+    removeRepoFromOrganization(a.id as string, a.repoRoot as string),
   );
 
   // Workspace ops
