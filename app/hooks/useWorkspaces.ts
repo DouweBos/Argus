@@ -422,12 +422,13 @@ export function useProjectWorkspaces(repoRoot: string) {
       try {
         await apiDeleteWorkspace(id, deleteBranch);
         removeWorkspace(id);
+        await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
         throw err;
       }
     },
-    [],
+    [refresh],
   );
 
   return {

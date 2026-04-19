@@ -53,30 +53,31 @@ export async function checkMergeConflicts(
 // ---------------------------------------------------------------------------
 
 /**
- * Merge `workspaceBranch` into `baseBranch` using a temporary worktree.
+ * Rebase `workspaceBranch` onto `baseBranch`, then fast-forward `baseBranch`
+ * to the rebased tip. Keeps history linear — no merge commits.
  *
- * Commits any staged changes in the workspace before merging. Always cleans
- * up the temporary worktree even on failure.
+ * Commits any staged changes in the workspace before rebasing. Aborts a
+ * failed rebase so the workspace is left in a clean state.
  */
 export async function mergeWorkspaceIntoBase(
   repoRoot: string,
   workspaceBranch: string,
   baseBranch: string,
 ): Promise<void> {
-  // Commit any staged changes in the workspace worktree before merging.
   const wsPath = `${worktreesRoot(repoRoot)}/${branchToDir(workspaceBranch)}`;
-  if (fs.existsSync(wsPath)) {
-    try {
-      // `diff --cached --quiet` exits non-zero when there are staged changes.
-      await git(wsPath, ["diff", "--cached", "--quiet"]);
-      // No staged changes — nothing to commit.
-    } catch {
-      // There are staged changes — commit them.
-      await git(wsPath, ["commit", "-m", "Workspace changes"]);
-    }
+  if (!fs.existsSync(wsPath)) {
+    throw `Workspace worktree not found at ${wsPath}`;
   }
 
-  // Pre-check for conflicts.
+  // Commit any staged changes in the workspace worktree before rebasing.
+  try {
+    // `diff --cached --quiet` exits non-zero when there are staged changes.
+    await git(wsPath, ["diff", "--cached", "--quiet"]);
+  } catch {
+    await git(wsPath, ["commit", "-m", "Workspace changes"]);
+  }
+
+  // Pre-check for conflicts before touching the working tree.
   const conflicts = await checkMergeConflicts(
     repoRoot,
     workspaceBranch,
@@ -86,64 +87,109 @@ export async function mergeWorkspaceIntoBase(
     throw `Cannot merge: ${conflicts.length} conflicting file(s):\n${conflicts.join("\n")}`;
   }
 
-  // If the base branch is already checked out in an existing worktree, merge
-  // there directly — git refuses to check out the same branch in two worktrees.
-  const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
-
-  if (existingCheckout) {
-    const mergeMsg = `Merge ${workspaceBranch} into ${baseBranch}`;
-    await git(existingCheckout, [
-      "merge",
-      "--no-ff",
-      workspaceBranch,
-      "-m",
-      mergeMsg,
-    ]);
-    return;
-  }
-
-  // Create a temporary worktree for the base branch.
-  const tempName = `_merge-staging-${crypto.randomUUID()}`;
-  const tempPath = `${worktreesRoot(repoRoot)}/${tempName}`;
-
-  let mergeError: unknown = null;
-
+  // Rebase the workspace branch onto the base branch.
   try {
-    fs.mkdirSync(worktreesRoot(repoRoot), { recursive: true });
-
-    await git(repoRoot, ["worktree", "add", tempPath, baseBranch]);
-
-    const mergeMsg = `Merge ${workspaceBranch} into ${baseBranch}`;
-    await git(tempPath, ["merge", "--no-ff", workspaceBranch, "-m", mergeMsg]);
+    await git(wsPath, ["rebase", baseBranch]);
   } catch (e) {
-    mergeError = e;
-  } finally {
-    // Always clean up the temp worktree.
-    if (fs.existsSync(tempPath)) {
-      try {
-        await git(repoRoot, ["worktree", "remove", "--force", tempPath]);
-      } catch {
-        // If worktree remove failed, force-remove the directory.
-        if (fs.existsSync(tempPath)) {
-          fs.rmSync(tempPath, { recursive: true, force: true });
-        }
-      }
-      try {
-        await git(repoRoot, ["worktree", "prune"]);
-      } catch {
-        // Ignore prune failures.
-      }
+    // Leave the workspace in a clean state on failure.
+    try {
+      await git(wsPath, ["rebase", "--abort"]);
+    } catch {
+      // Ignore abort failures — surface the original error below.
     }
+    throw e;
   }
 
-  if (mergeError !== null) {
-    throw mergeError;
+  // Squash all workspace commits into a single conventional commit.
+  await squashWorkspaceCommits(wsPath, workspaceBranch, baseBranch);
+
+  // Fast-forward the base branch to the rebased tip. If the base branch is
+  // checked out in a worktree, update it there; otherwise update the ref
+  // directly (safe because the rebase guarantees a fast-forward).
+  const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
+  if (existingCheckout) {
+    await git(existingCheckout, ["merge", "--ff-only", workspaceBranch]);
+  } else {
+    await git(repoRoot, ["branch", "-f", baseBranch, workspaceBranch]);
   }
 }
 
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Collapse every commit ahead of `baseBranch` on the current workspace branch
+ * into a single commit. The subject uses a conventional-commit prefix derived
+ * from the original commit messages (fix > feat > chore, default feat) and a
+ * summary derived from the branch name. The body lists the original subjects.
+ *
+ * No-op when there are 0 or 1 commits ahead of the base.
+ */
+async function squashWorkspaceCommits(
+  wsPath: string,
+  workspaceBranch: string,
+  baseBranch: string,
+): Promise<void> {
+  const log = await git(wsPath, [
+    "log",
+    `${baseBranch}..HEAD`,
+    "--pretty=%s",
+  ]);
+  const subjects = log
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  if (subjects.length <= 1) {
+    return;
+  }
+
+  const type = deriveCommitType(subjects);
+  const summary = branchToSummary(workspaceBranch);
+  // Reverse so the body reads oldest → newest.
+  const body = subjects
+    .slice()
+    .reverse()
+    .map((s) => `- ${s}`)
+    .join("\n");
+  const message = `${type}: ${summary}\n\n${body}`;
+
+  await git(wsPath, ["reset", "--soft", baseBranch]);
+  await git(wsPath, ["commit", "-m", message]);
+}
+
+/**
+ * Pick a conventional-commit type from a list of commit subjects.
+ * Priority: fix > feat > chore. Defaults to "feat" when no subject carries a
+ * recognised prefix.
+ */
+function deriveCommitType(subjects: string[]): "fix" | "feat" | "chore" {
+  const has = (t: string) =>
+    subjects.some((s) => new RegExp(`^${t}(\\([^)]*\\))?!?:`, "i").test(s));
+
+  if (has("fix")) {
+    return "fix";
+  }
+  if (has("feat")) {
+    return "feat";
+  }
+  if (subjects.every((s) => /^chore(\([^)]*\))?!?:/i.test(s))) {
+    return "chore";
+  }
+
+  return "feat";
+}
+
+/**
+ * Convert a branch name into a human-readable summary for a commit subject.
+ * Takes the final path segment and replaces separators with spaces.
+ */
+function branchToSummary(branch: string): string {
+  const last = branch.split("/").pop() ?? branch;
+
+  return last.replace(/[-_]+/g, " ").trim() || branch;
+}
 
 /**
  * Return the path of an existing worktree that currently has `branch` checked

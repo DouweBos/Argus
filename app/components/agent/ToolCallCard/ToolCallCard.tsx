@@ -11,6 +11,10 @@ import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
 import { alwaysAllowRule } from "../alwaysAllowRule";
 import { PlanApproval } from "./PlanApproval";
 import { QuestionForm } from "./QuestionForm";
+import {
+  AnsweredQuestionView,
+  parseAnswerSelections,
+} from "./AnsweredQuestionView";
 import styles from "./ToolCallCard.module.css";
 import { parseQuestions } from "./parseQuestions";
 
@@ -276,9 +280,19 @@ export function ToolCallCard({
     typeof toolCall.input.new_string === "string";
   const isWrite =
     toolCall.name === "Write" && typeof toolCall.input.content === "string";
-  // Edit/Write diffs are always visible so the user sees changes without a click.
-  // The chevron only hides the result payload.
-  const alwaysShowInputPreview = isEdit || isWrite;
+  const isAskUserQuestion = toolCall.name === "AskUserQuestion";
+  const questions = isAskUserQuestion ? parseQuestions(toolCall.input) : [];
+  const isAnsweredQuestion =
+    isAskUserQuestion &&
+    questions.length > 0 &&
+    hasResult &&
+    !toolCall.pendingPermission;
+  const answeredSelections = isAnsweredQuestion
+    ? parseAnswerSelections(questions, safeResultText(toolCall.result))
+    : [];
+  // Edit/Write diffs and answered questions are always visible so the user sees
+  // the content without a click. The chevron only hides the result payload.
+  const alwaysShowInputPreview = isEdit || isWrite || isAnsweredQuestion;
   const inputText = formatInput(toolCall.name, toolCall.input);
   let editStats: { additions: number; deletions: number } | null = null;
   if (isEdit) {
@@ -359,12 +373,10 @@ export function ToolCallCard({
   );
 
   const isExitPlanMode = toolCall.name === "ExitPlanMode";
-  const isAskUserQuestion = toolCall.name === "AskUserQuestion";
   const planText =
     isExitPlanMode && typeof toolCall.input.plan === "string"
       ? (toolCall.input.plan as string)
       : "";
-  const questions = isAskUserQuestion ? parseQuestions(toolCall.input) : [];
 
   let structuredInputPreview: ReactNode;
   if (isEdit) {
@@ -377,6 +389,13 @@ export function ToolCallCard({
   } else if (isWrite) {
     structuredInputPreview = (
       <EditDiffView newString={toolCall.input.content as string} />
+    );
+  } else if (isAnsweredQuestion) {
+    structuredInputPreview = (
+      <AnsweredQuestionView
+        questions={questions}
+        selections={answeredSelections}
+      />
     );
   } else if (isExitPlanMode && planText) {
     structuredInputPreview = (
@@ -506,7 +525,7 @@ export function ToolCallCard({
               <>
                 {structuredInputPreview}
 
-                {hasResult && (
+                {hasResult && !isAnsweredQuestion && (
                   <div className={styles.section}>
                     <span className={styles.sectionLabel}>
                       {toolCall.isError ? "Error" : "Result"}
