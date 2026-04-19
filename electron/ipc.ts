@@ -56,7 +56,11 @@ import {
   uninstallHook as uninstallClaudeStatuslineHook,
 } from "./services/claude/statuslineHook";
 import { getClaudeUsage } from "./services/claude/usage";
-import { listDevices } from "./services/conductor/devices";
+import {
+  listDevices,
+  stopDevice,
+  type DevicePlatform,
+} from "./services/conductor/devices";
 import { conductorLogStore, execConductor } from "./services/conductor/logger";
 import { discoverExtensions } from "./services/extensions/loader";
 import {
@@ -742,6 +746,9 @@ export function registerIpcHandlers(): void {
 
   // Devices + conductor logs
   handle("list_devices", () => listDevices());
+  handle("stop_device", (a) =>
+    stopDevice(a.platform as DevicePlatform, a.deviceKey as string),
+  );
   handle("list_conductor_logs", (a) =>
     conductorLogStore.list(a.deviceKey as string),
   );

@@ -1,5 +1,8 @@
 import type { DeviceInfo } from "../../lib/types";
+import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
 import { useState } from "react";
+import { stopDevice } from "../../lib/ipc";
+import { refreshDevices } from "../../stores/deviceStore";
 import {
   useDevicePoller,
   useDevices,
@@ -13,12 +16,19 @@ function basename(p: string): string {
   return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
 }
 
+interface MenuState {
+  device: DeviceInfo;
+  x: number;
+  y: number;
+}
+
 export function DevicesScreen() {
   useDevicePoller(3000);
   const devices = useDevices();
   const error = useDevicesError();
   const { goto } = useDeviceNavigation();
   const [open, setOpen] = useState<DeviceInfo | null>(null);
+  const [menu, setMenu] = useState<MenuState | null>(null);
 
   const nav =
     (kind: "agent" | "project" | "workspace", d: DeviceInfo) =>
@@ -26,6 +36,34 @@ export function DevicesScreen() {
       e.stopPropagation();
       goto(d, kind).catch(() => {});
     };
+
+  const handleContextMenu = (d: DeviceInfo) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenu({ device: d, x: e.clientX, y: e.clientY });
+  };
+
+  const handleStop = async (d: DeviceInfo) => {
+    try {
+      await stopDevice(d.platform, d.deviceKey);
+      await refreshDevices();
+    } catch {
+      // Swallow — the next poll will show the device state either way.
+    }
+  };
+
+  const menuItems: ContextMenuItem[] = menu
+    ? [
+        {
+          label: "Stop device",
+          danger: true,
+          disabled: !menu.device.online,
+          onClick: () => {
+            handleStop(menu.device);
+          },
+        },
+      ]
+    : [];
 
   return (
     <div className={styles.screen}>
@@ -67,6 +105,7 @@ export function DevicesScreen() {
                 key={`${d.platform}:${d.deviceKey}`}
                 className={styles.row}
                 onClick={() => setOpen(d)}
+                onContextMenu={handleContextMenu(d)}
               >
                 <td className={styles.name}>
                   <span
@@ -116,6 +155,14 @@ export function DevicesScreen() {
       )}
 
       {open && <DeviceDialog device={open} onClose={() => setOpen(null)} />}
+
+      {menu && (
+        <ContextMenu
+          items={menuItems}
+          position={{ x: menu.x, y: menu.y }}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </div>
   );
 }
