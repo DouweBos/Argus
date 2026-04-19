@@ -74,6 +74,11 @@
   color: var(--text-primary);
 }
 
+.tab.secondary {
+  box-shadow: inset 0 -2px 0 var(--accent);
+  color: var(--text-primary);
+}
+
 /* Slight gap between label and Badge/close on active/hover */
 .tab:hover,
 .tab.active {

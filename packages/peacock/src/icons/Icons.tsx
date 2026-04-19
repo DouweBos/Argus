@@ -464,6 +464,37 @@ export function LeftSidebarIcon({ size = 14, className, ...rest }: IconProps) {
   );
 }
 
+export function SplitViewIcon({ size = 14, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect
+        height="12"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        width="14"
+        x="1"
+        y="2"
+      />
+      <line
+        stroke="currentColor"
+        strokeWidth="1.3"
+        x1="8"
+        x2="8"
+        y1="2"
+        y2="14"
+      />
+    </svg>
+  );
+}
+
 export function RightSidebarIcon({ size = 14, className, ...rest }: IconProps) {
   return (
     <svg
@@ -1175,8 +1206,22 @@ export function OrganizationIcon({ size = 12, className, ...rest }: IconProps) {
       width={size}
     >
       <rect x="1.25" y="1.25" width="5.5" height="5.5" rx="1.25" />
-      <rect x="9.25" y="1.25" width="5.5" height="5.5" rx="1.25" opacity="0.65" />
-      <rect x="1.25" y="9.25" width="5.5" height="5.5" rx="1.25" opacity="0.65" />
+      <rect
+        x="9.25"
+        y="1.25"
+        width="5.5"
+        height="5.5"
+        rx="1.25"
+        opacity="0.65"
+      />
+      <rect
+        x="1.25"
+        y="9.25"
+        width="5.5"
+        height="5.5"
+        rx="1.25"
+        opacity="0.65"
+      />
       <rect x="9.25" y="9.25" width="5.5" height="5.5" rx="1.25" />
     </svg>
   );

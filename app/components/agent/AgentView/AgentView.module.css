@@ -29,6 +29,11 @@
   color: var(--text-primary);
 }
 
+.agentBarAddBtn.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
 .agentBarSpacer {
   flex: 1;
 }

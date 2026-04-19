@@ -8,12 +8,17 @@ interface AgentStoreData {
   agents: Record<string, AgentStatus>;
   // Ordered agent ids per workspace (tab order)
   order: Record<string, string[]>;
+  // Split-view state per workspace
+  splitEnabled: Record<string, boolean>;
+  secondaryAgentId: Record<string, string | null>;
 }
 
 const agentStore = create<AgentStoreData>(() => ({
   agents: {},
   activeAgentId: {},
   order: {},
+  splitEnabled: {},
+  secondaryAgentId: {},
 }));
 
 function appendOrder(
@@ -103,6 +108,10 @@ export const removeAgent = (agentId: string) => {
     }
     const { [agentId]: _removed, ...next } = state.agents;
     const activeUpdate = { ...state.activeAgentId };
+    const secondaryUpdate = { ...state.secondaryAgentId };
+    if (secondaryUpdate[agent.workspace_id] === agentId) {
+      secondaryUpdate[agent.workspace_id] = null;
+    }
     const orderUpdate = removeFromOrder(
       state.order,
       agent.workspace_id,
@@ -114,8 +123,7 @@ export const removeAgent = (agentId: string) => {
       const nextOrder = orderUpdate[agent.workspace_id] ?? [];
       let neighborId: string | null = null;
       if (nextOrder.length > 0) {
-        const neighborIdx =
-          removedIdx > 0 ? removedIdx - 1 : 0;
+        const neighborIdx = removedIdx > 0 ? removedIdx - 1 : 0;
         neighborId = nextOrder[Math.min(neighborIdx, nextOrder.length - 1)];
       }
       activeUpdate[agent.workspace_id] = neighborId;
@@ -124,6 +132,7 @@ export const removeAgent = (agentId: string) => {
     return {
       agents: next,
       activeAgentId: activeUpdate,
+      secondaryAgentId: secondaryUpdate,
       order: orderUpdate,
     };
   });
@@ -251,6 +260,37 @@ const EMPTY_ORDER: string[] = [];
 
 export const useAgentStatus = (agentId: string) =>
   useAgentStore((s) => s.agents[agentId]);
+
+export const setSplitEnabled = (workspaceId: string, enabled: boolean) => {
+  agentStore.setState((state) => {
+    const splitEnabled = { ...state.splitEnabled, [workspaceId]: enabled };
+    const secondaryAgentId = enabled
+      ? state.secondaryAgentId
+      : { ...state.secondaryAgentId, [workspaceId]: null };
+
+    return { splitEnabled, secondaryAgentId };
+  });
+};
+
+export const setSecondaryAgent = (
+  workspaceId: string,
+  agentId: string | null,
+) => {
+  agentStore.setState((state) => ({
+    secondaryAgentId: { ...state.secondaryAgentId, [workspaceId]: agentId },
+  }));
+};
+
+export const useSplitState = (workspaceId: string | null) => {
+  const splitEnabled = useAgentStore((s) =>
+    workspaceId ? (s.splitEnabled[workspaceId] ?? false) : false,
+  );
+  const secondaryAgentId = useAgentStore((s) =>
+    workspaceId ? (s.secondaryAgentId[workspaceId] ?? null) : null,
+  );
+
+  return { splitEnabled, secondaryAgentId };
+};
 
 /** For tests and imperative access */
 export const getAgentState = () => agentStore.getState();
