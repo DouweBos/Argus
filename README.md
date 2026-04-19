@@ -1,58 +1,70 @@
-# Argus
+# Argus 👁️
 
-**An agentic IDE for mobile _and_ web development.** Orchestrate a fleet of Claude Code agents in parallel — each in its own isolated git worktree — with live iOS simulators, Android emulators, an embedded Chromium browser, a full VS Code editor, and a first-class git workflow, all in one desktop app.
+> _In the myth, Argus Panoptes had a hundred eyes — some always open, some always watching. When he was slain, the goddess Hera set his eyes into the tail of the peacock, where they glitter to this day._
+>
+> _This repo is those eyes. The [`@argus/peacock`](./packages/peacock) design system is where they live._
 
-Argus treats AI agents the way modern teams treat branches: spin one up for every idea, let them run side by side, review the diffs, and merge what works.
+**An agentic IDE for mobile _and_ web development.** 🦚 Orchestrate a flock of Claude Code agents in parallel — each in its own isolated git worktree — with live iOS simulators, Android emulators, an embedded Chromium browser, a full VS Code editor, and a first-class git workflow, all in one desktop app.
+
+Argus treats AI agents the way modern teams treat branches: **spin one up for every idea, let them run side by side, review the diffs, and merge what sings.** One developer. A hundred hands. A hundred eyes. Zero context-switching tax.
+
+---
+
+### 🎉 We just welcomed our first collaborator — Argus is officially a flock.
+
+Two pairs of eyes already. If you're into agentic tooling, mobile dev infra, or just want to help a weird and beautiful IDE grow more feathers — [come hack with us](#contributing). 🪶
+
+---
 
 ## Why Argus
 
-Coding agents are fast. What slows teams down is everything _around_ them — juggling branches, resetting state between attempts, manually testing on simulators, and waiting for one idea to finish before starting the next.
+Coding agents are fast. What slows us down is everything _around_ them — juggling branches, resetting state between attempts, manually poking at simulators, waiting for one idea to finish before the next can start. Death by a thousand context switches.
 
-Argus removes that friction:
+Argus opens another eye for every one of those problems:
 
-- **Parallel by default.** Every workspace is an isolated worktree with its own agent, its own simulator, its own terminals. Start five ideas at once; none of them step on each other.
-- **See what the agent sees.** Live simulator/emulator mirroring, an embedded Chromium browser with CDP screencast, and streaming tool-call cards show exactly what each agent is doing in real time.
-- **Review like a human.** A full git workflow (branches, commits, stashes, hunk-level staging, diff viewer) is built into the UI so you can accept, reject, or refine an agent's work without ever leaving the app.
-- **Edit like an engineer.** A real embedded VS Code (via `@codingame/monaco-vscode-api`) gives you extensions, search, intellisense, and multi-file editing — not a toy textarea.
+- **👁️ Parallel by default.** Every workspace is an isolated worktree with its own agent, its own simulator, its own terminals. Fan out five ideas at once — none of them step on each other's tails.
+- **👁️ See what the agent sees.** Live simulator/emulator mirroring, an embedded Chromium browser with CDP screencast, and streaming tool-call cards — the agent's every move, rendered in real time.
+- **👁️ Review like a human.** A full git workflow (branches, commits, stashes, hunk-level staging, diff viewer) is baked into the UI. Accept, reject, or refine without ever leaving the app.
+- **👁️ Edit like an engineer.** A real embedded VS Code (via `@codingame/monaco-vscode-api`) — extensions, search, intellisense, multi-file edits. Not a toy textarea. Not a chat box pretending.
 
 ## Highlights
 
-### Multi-agent orchestration
+### 🦚 Multi-agent orchestration
 
 - Spin up as many Claude Code agents as you have workspaces — each one scoped to its own worktree, chat history, model, and permissions.
 - **Orchestration tree** visualizes agent-spawned subagents and their tool calls as a live hierarchy.
 - Swap models per-agent on the fly (`ModelPicker`); resume long-running conversations from persisted chat history.
 - Granular **permission broker** — approve, deny, or "always allow" specific tool patterns without stopping the agent.
 
-### Isolated workspaces
+### 🪶 Isolated workspaces
 
 - Each workspace is a real `git worktree` under `~/.argus/worktrees/{Repo}-argus-worktrees/{branch}/` — outside your project directory to keep your primary checkout pristine.
 - Configurable **setup pipeline** (`.argus.json`): copy `node_modules`/`Pods`, symlink `.env` secrets, run install commands — all on worktree creation.
 - **Port isolation** assigns each worktree a unique value for a named env var (sequential or hashed), so multiple dev servers can run in parallel without conflict.
 - One-click **merge back** to the base branch when the work is approved.
 
-### Live device & browser runtime
+### 👁️ Live device & browser runtime
 
 - **iOS simulators** streamed into the app via a native Swift/ObjC bridge with HID injection (tap, scroll, type).
 - **Android emulators** via a bundled scrcpy-server pipeline with H.264 decoding and live input.
 - **Embedded web browser** with Chrome DevTools Protocol screencasting — perfect for agents that build and test web views.
 - The `conductor` CLI is pre-wired so agents can drive simulators/emulators programmatically for UI testing.
 
-### Built-in git workflow
+### 🌿 Built-in git workflow
 
 - Branch switcher, commit log, stashes, and a graph view — all backed by the git CLI, no libgit2 limitations.
 - **Hunk-level staging** in the diff viewer. Edit a diff by hand before committing.
 - Commit, merge, and stash from the UI; or drop into a shell terminal and do it yourself.
 
-### Real editor, real terminals
+### ⌨️ Real editor, real terminals
 
 - Embedded **VS Code** (Monaco + `@codingame/monaco-vscode-api`) with the explorer, search, file watchers, and language support you expect — no fork, no reinvention.
 - **xterm.js + node-pty** terminals per workspace, same stack as VS Code, with proper shell environment and PATH fixup.
 - Auto-opened terminal tabs per workspace, configurable in `.argus.json`.
 
-### MCP-ready
+### 🔌 MCP-ready
 
-- Built-in **Model Context Protocol** server exposes Argus primitives (workspaces, files, projects) to any MCP-aware agent or tool.
+- Built-in **Model Context Protocol** server exposes Argus primitives (workspaces, files, projects) to any MCP-aware agent or tool. Bring your own beak.
 
 ## Install
 
@@ -159,14 +171,14 @@ Standalone Swift/ObjC binary for iOS simulator screen capture and HID injection.
 
 Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wrappers; events follow `{domain}:{action}:{id}` (e.g. `terminal:data:{session_id}`, `agent:event:{workspace_id}`).
 
-## Workspace lifecycle
+## Workspace lifecycle — the life of a feather
 
-1. **Create** — `git worktree add` from the base branch.
-2. **Setup** — run the `.argus.json` pipeline: copy, symlink, commands.
-3. **Work** — the agent runs in the worktree; terminals, simulator, and browser attach automatically.
-4. **Review** — inspect the diff, stage hunks, commit, optionally stash.
-5. **Merge** — one-click merge back into the base branch.
-6. **Delete** — kills the agent + terminals and removes the worktree.
+1. **🥚 Create** — `git worktree add` from the base branch. A new eye opens.
+2. **🌱 Setup** — the `.argus.json` pipeline runs: copy, symlink, commands. The nest is built.
+3. **🦚 Work** — the agent does its thing in the worktree; terminals, simulator, and browser attach automatically.
+4. **🔍 Review** — inspect the diff, stage hunks, commit, optionally stash. The eye judges.
+5. **🌿 Merge** — one-click merge back into the base branch. The feather joins the tail.
+6. **🍂 Delete** — kills the agent + terminals and removes the worktree. The eye closes.
 
 ## Key technical decisions
 
@@ -180,6 +192,21 @@ Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wra
 | Zustand over Redux/Context                 | Minimal boilerplate, no providers, clean async                    |
 | `@codingame/monaco-vscode-api`             | Real VS Code — editor, explorer, search — without forking VS Code |
 | MCP server baked in                        | Any MCP-aware agent can drive Argus workspaces out of the box     |
+
+## Contributing 🪶
+
+Argus is small, opinionated, and moving fast — which is the best time to join. Hack on agent orchestration, polish the simulator pipeline, ship a new MCP primitive, draw an icon in Peacock, file a thoughtful bug report — **all of it counts. All of it is welcome.**
+
+A few ground rules (the full list nests in `CLAUDE.md`):
+
+- **🦚 Peacock first.** All UI primitives come from [`@argus/peacock`](./packages/peacock). No inline `<svg>` in `app/`, no Tailwind, no ad-hoc icon packs — the feathers live in one place.
+- **📏 Keep files focused.** ~500 LOC is the soft ceiling. If it's growing, split it. Small modules, many eyes.
+- **🔗 Typed IPC everywhere.** Backend handlers register in `electron/ipc.ts`; frontend wrappers live in `app/lib/ipc.ts`. Keep `types.ts` in sync — the two sides have to see each other.
+- **🌿 Worktrees are sacred.** Changes to the worktree lifecycle touch real user repos. Tread lightly. Test with `pnpm dev` before you PR.
+
+Open a PR. Drop into an issue. Poke around and tell us what's broken.
+
+> _The eyes of Argus are many — but there's always room for one more feather._
 
 ## License
 
