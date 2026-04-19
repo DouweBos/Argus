@@ -23,8 +23,13 @@ interface AgentTabBarProps {
   activeAgentId: string | null;
   agents: AgentStatus[];
   isHomeActive: boolean;
+  splitEnabled?: boolean;
+  secondaryAgentId?: string | null;
   onClose: (agentId: string) => void;
-  onSelect: (agentId: string) => void;
+  onSelect: (
+    agentId: string,
+    e?: { altKey?: boolean; metaKey?: boolean },
+  ) => void;
   onSelectHome: () => void;
 }
 
@@ -78,6 +83,8 @@ function AgentTab({
   agent,
   index,
   isActive,
+  isSecondary,
+  splitEnabled,
   childCount,
   hasParent,
   isDragging,
@@ -97,6 +104,8 @@ function AgentTab({
   hasParent: boolean;
   index: number;
   isActive: boolean;
+  isSecondary: boolean;
+  splitEnabled: boolean;
   isDragging: boolean;
   onClose: (id: string) => void;
   onContextMenu: (e: ReactMouseEvent, id: string) => void;
@@ -105,7 +114,7 @@ function AgentTab({
   onDragOver: (e: DragEvent<HTMLDivElement>, id: string) => void;
   onDragStart: (e: DragEvent<HTMLDivElement>, id: string) => void;
   onDrop: (e: DragEvent<HTMLDivElement>, id: string) => void;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, e: ReactMouseEvent) => void;
 }) {
   const { fullLabel, label, state } = useTabMeta(
     agent.agent_id,
@@ -116,6 +125,7 @@ function AgentTab({
   const classes = [
     styles.tab,
     isActive ? styles.active : null,
+    isSecondary ? styles.secondary : null,
     isDragging ? styles.dragging : null,
     dropIndicator === "before" ? styles.dropBefore : null,
     dropIndicator === "after" ? styles.dropAfter : null,
@@ -123,12 +133,16 @@ function AgentTab({
     .filter(Boolean)
     .join(" ");
 
+  const titleText = splitEnabled
+    ? `${fullLabel}\n(⌥-click to open on right)`
+    : fullLabel;
+
   return (
     <div
       className={classes}
       draggable
-      title={fullLabel}
-      onClick={() => onSelect(agent.agent_id)}
+      title={titleText}
+      onClick={(e) => onSelect(agent.agent_id, e)}
       onContextMenu={(e) => onContextMenu(e, agent.agent_id)}
       onDragStart={(e) => onDragStart(e, agent.agent_id)}
       onDragEnd={onDragEnd}
@@ -170,6 +184,8 @@ export function AgentTabBar({
   agents,
   activeAgentId,
   isHomeActive,
+  splitEnabled = false,
+  secondaryAgentId = null,
   onSelect,
   onSelectHome,
   onClose,
@@ -397,6 +413,8 @@ export function AgentTabBar({
             hasParent={Boolean(agent.parent_agent_id)}
             index={index}
             isActive={agent.agent_id === activeAgentId}
+            isSecondary={splitEnabled && agent.agent_id === secondaryAgentId}
+            splitEnabled={splitEnabled}
             isDragging={draggingId === agent.agent_id}
             onClose={onClose}
             onContextMenu={handleContextMenu}
