@@ -358,3 +358,23 @@ export interface ClaudeStatuslineHookStatus {
   previous_command: string | null;
   status_file_path: string;
 }
+
+// ---------------------------------------------------------------------------
+// Organizations
+// ---------------------------------------------------------------------------
+
+export interface OrganizationMember {
+  repo_root: string;
+  role: string;
+}
+
+export interface Organization {
+  accent: string;
+  created_at: number;
+  description: string;
+  id: string;
+  members: OrganizationMember[];
+  name: string;
+  system_prompt: string;
+  updated_at: number;
+}

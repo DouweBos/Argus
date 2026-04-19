@@ -28,6 +28,14 @@ import {
   ensureSimulatorForAgent,
   ensureWebBrowserForAgent,
 } from "../agent/claude";
+import {
+  addRepoToOrganization,
+  createOrganization,
+  listOrganizations,
+  removeRepoFromOrganization,
+  updateOrganization,
+  deleteOrganization,
+} from "../organization/manager";
 import { createTerminal, startTerminal } from "../terminal/multiplexer";
 import {
   createWorkspace,
@@ -1135,6 +1143,188 @@ export function createMcpServer(): McpServer {
             type: "text" as const,
             text: `Successfully merged '${ws.branch}' into '${ws.base_branch}'.`,
           },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // list_organizations
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "list_organizations",
+    "List all user-defined organizations. An organization groups several repos/projects that collaborate on the same product (e.g. backend + frontend + mobile). Each org has a system prompt describing the product and a list of member repos with their roles. Use this to discover which repos are part of the same product and how work should be divided between them.",
+    {},
+    async () => {
+      const orgs = listOrganizations();
+
+      return {
+        content: [
+          { type: "text" as const, text: JSON.stringify(orgs, null, 2) },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // create_organization
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "create_organization",
+    "Create a new organization grouping related repos. Organizations carry a system prompt shared by all member-repo agents and can host orchestrator agents that fan work out across repos. Returns the created organization including its generated id.",
+    {
+      name: z.string().describe("User-facing organization name."),
+      description: z
+        .string()
+        .optional()
+        .describe("Short description of the product/org."),
+      system_prompt: z
+        .string()
+        .optional()
+        .describe(
+          "System prompt describing the overall product and how each repo fits in. Injected into all member-repo agents.",
+        ),
+      accent: z
+        .string()
+        .optional()
+        .describe("Hex color used to visually group the org in the UI."),
+      members: z
+        .array(
+          z.object({
+            repo_root: z
+              .string()
+              .describe("Absolute path to the member repo root."),
+            role: z
+              .string()
+              .describe(
+                "What this repo implements within the org (e.g. 'Backend API', 'iOS app').",
+              ),
+          }),
+        )
+        .optional()
+        .describe("Member repos and their roles."),
+    },
+    async ({ name, description, system_prompt, accent, members }) => {
+      const org = createOrganization({
+        name,
+        description,
+        system_prompt,
+        accent,
+        members,
+      });
+
+      return {
+        content: [
+          { type: "text" as const, text: JSON.stringify(org, null, 2) },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // update_organization
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "update_organization",
+    "Update fields on an existing organization. Only provided fields are changed; omitted fields stay as-is. Pass `members` to fully replace the member list.",
+    {
+      id: z.string().describe("Organization id."),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      system_prompt: z.string().optional(),
+      accent: z.string().optional(),
+      members: z
+        .array(
+          z.object({
+            repo_root: z.string(),
+            role: z.string(),
+          }),
+        )
+        .optional(),
+    },
+    async ({ id, name, description, system_prompt, accent, members }) => {
+      const org = updateOrganization(id, {
+        name,
+        description,
+        system_prompt,
+        accent,
+        members,
+      });
+
+      return {
+        content: [
+          { type: "text" as const, text: JSON.stringify(org, null, 2) },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // delete_organization
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "delete_organization",
+    "Delete an organization. Member repos themselves are not removed — only the grouping is deleted.",
+    { id: z.string().describe("Organization id.") },
+    async ({ id }) => {
+      deleteOrganization(id);
+
+      return {
+        content: [
+          { type: "text" as const, text: `Deleted organization ${id}` },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // add_repo_to_organization
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "add_repo_to_organization",
+    "Add a repo as a member of an organization, or update its role if already a member. The repo is auto-registered as an open project.",
+    {
+      id: z.string().describe("Organization id."),
+      repo_root: z.string().describe("Absolute path to the repo root."),
+      role: z
+        .string()
+        .describe(
+          "What this repo implements within the org (e.g. 'Backend API').",
+        ),
+    },
+    async ({ id, repo_root, role }) => {
+      const org = addRepoToOrganization(id, { repo_root, role });
+
+      return {
+        content: [
+          { type: "text" as const, text: JSON.stringify(org, null, 2) },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // remove_repo_from_organization
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "remove_repo_from_organization",
+    "Remove a repo from an organization's member list. The repo itself is not deleted.",
+    {
+      id: z.string().describe("Organization id."),
+      repo_root: z.string().describe("Absolute path to the repo root."),
+    },
+    async ({ id, repo_root }) => {
+      const org = removeRepoFromOrganization(id, repo_root);
+
+      return {
+        content: [
+          { type: "text" as const, text: JSON.stringify(org, null, 2) },
         ],
       };
     },

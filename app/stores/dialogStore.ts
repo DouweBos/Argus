@@ -1,18 +1,29 @@
 import { create } from "zustand";
 import { getWorkspaceState } from "./workspaceStore";
 
+/**
+ * `null` → dialog hidden. `{ mode: "create" }` → create form. `{ mode: "edit", id }`
+ * → edit form pre-populated from the org with that id.
+ */
+export type OrganizationDialogState =
+  | { id: string; mode: "edit" }
+  | { mode: "create" }
+  | null;
+
 interface DialogState {
   /** Shows the CreateWorkspaceDialog rooted at this repo path when non-null. */
   createWorkspaceRepoRoot: string | null;
   /** Shows the NewWorkspacePicker (repo chooser) when true. */
   newWorkspacePickerOpen: boolean;
   openProjectVisible: boolean;
+  organizationDialog: OrganizationDialogState;
 }
 
 const store = create<DialogState>(() => ({
   openProjectVisible: false,
   newWorkspacePickerOpen: false,
   createWorkspaceRepoRoot: null,
+  organizationDialog: null,
 }));
 
 export const showOpenProjectDialog = () =>
@@ -58,3 +69,11 @@ export const useNewWorkspacePickerOpen = () =>
   store((s) => s.newWorkspacePickerOpen);
 export const useCreateWorkspaceRepoRoot = () =>
   store((s) => s.createWorkspaceRepoRoot);
+
+export const showCreateOrganizationDialog = () =>
+  store.setState({ organizationDialog: { mode: "create" } });
+export const showEditOrganizationDialog = (id: string) =>
+  store.setState({ organizationDialog: { mode: "edit", id } });
+export const hideOrganizationDialog = () =>
+  store.setState({ organizationDialog: null });
+export const useOrganizationDialog = () => store((s) => s.organizationDialog);
