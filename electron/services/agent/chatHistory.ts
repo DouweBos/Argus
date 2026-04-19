@@ -98,8 +98,11 @@ function saveIndex(repoRoot: string, entries: ChatHistoryEntry[]): void {
 
 /**
  * Save a conversation to disk. Checks the project's `save_chat_history`
- * setting (defaults to true). Deduplicates by sessionId — if a conversation
- * with the same sessionId already exists, this is a no-op.
+ * setting (defaults to true). Upserts by sessionId — if a conversation with
+ * the same sessionId already exists, its file is overwritten and the index
+ * entry is updated in place (preserving the original id and createdAt). This
+ * lets callers save incrementally during an ongoing chat without creating
+ * duplicates.
  */
 export function saveConversation(
   repoRoot: string,
@@ -117,9 +120,19 @@ export function saveConversation(
 
   const entries = loadHistoryIndex(repoRoot);
 
-  // Deduplicate by sessionId
-  if (entries.some((e) => e.sessionId === conversation.sessionId)) {
-    return;
+  // Upsert by sessionId — if an entry with the same sessionId already exists,
+  // reuse its id and createdAt so the on-disk file stays stable.
+  const existingIdx = conversation.sessionId
+    ? entries.findIndex((e) => e.sessionId === conversation.sessionId)
+    : -1;
+  if (existingIdx >= 0) {
+    const existing = entries[existingIdx];
+    conversation = {
+      ...conversation,
+      id: existing.id,
+      createdAt: existing.createdAt,
+    };
+    entries.splice(existingIdx, 1);
   }
 
   // Write the full conversation file

@@ -43,10 +43,13 @@ import {
  */
 
 /**
- * Tracks sessionIds that have already been saved to avoid double-saving
- * (the exit listener and stopAgent may both attempt to save).
+ * Tracks per-agent debounce timers for incremental saves during an active
+ * conversation. A window reload or crash would otherwise drop the chat —
+ * writing through to disk on each completed exchange means at most the
+ * in-flight turn is lost.
  */
-const savedSessions = new Set<string>();
+const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const SAVE_DEBOUNCE_MS = 500;
 
 /**
  * Tracks agents that have already had (or are currently having) a title
@@ -93,11 +96,20 @@ export function maybeGenerateTitle(agentId: string, firstMessage: string) {
  * No-op if the conversation has no messages or was already saved.
  */
 export function saveAgentConversation(agentId: string): void {
+  const timer = saveTimers.get(agentId);
+  if (timer) {
+    clearTimeout(timer);
+    saveTimers.delete(agentId);
+  }
+
   const conv = getConversationState().conversations[agentId];
   if (!conv || conv.messages.length === 0) {
     return;
   }
-  if (conv.sessionId && savedSessions.has(conv.sessionId)) {
+  // Upsert-by-sessionId on the backend requires a real sessionId. Skip if
+  // we haven't received the `system:init` event yet — the exit/quit/stop
+  // paths will catch it later.
+  if (!conv.sessionId) {
     return;
   }
 
@@ -114,7 +126,7 @@ export function saveAgentConversation(agentId: string): void {
 
   const saved: SavedConversation = {
     id: crypto.randomUUID(),
-    sessionId: conv.sessionId ?? "",
+    sessionId: conv.sessionId,
     title: conv.title ?? deriveTitle(conv.messages),
     workspaceBranch: workspace.branch ?? "",
     workspaceDescription: workspace.description ?? "",
@@ -127,12 +139,25 @@ export function saveAgentConversation(agentId: string): void {
     messages: conv.messages,
   };
 
-  if (conv.sessionId) {
-    savedSessions.add(conv.sessionId);
-  }
-
-  // Fire-and-forget — saving is best-effort
+  // Fire-and-forget — saving is best-effort. The backend upserts by sessionId
+  // so repeated calls during a live chat overwrite the on-disk record.
   saveChatHistory(workspace.repo_root, saved).catch(() => {});
+}
+
+/**
+ * Debounced incremental save — coalesces bursts of events into a single
+ * write. Called on every meaningful conversation change.
+ */
+export function scheduleAgentSave(agentId: string): void {
+  const existing = saveTimers.get(agentId);
+  if (existing) {
+    clearTimeout(existing);
+  }
+  const t = setTimeout(() => {
+    saveTimers.delete(agentId);
+    saveAgentConversation(agentId);
+  }, SAVE_DEBOUNCE_MS);
+  saveTimers.set(agentId, t);
 }
 
 /**
@@ -141,6 +166,15 @@ export function saveAgentConversation(agentId: string): void {
  */
 export function initAppQuitSave(): void {
   listen<undefined>("app:will-quit", () => {
+    const agents = getAgentState().agents;
+    for (const agentId of Object.keys(agents)) {
+      saveAgentConversation(agentId);
+    }
+  });
+
+  // Flush on window reload / close so a debounced save in flight is committed
+  // before the renderer tears down.
+  window.addEventListener("beforeunload", () => {
     const agents = getAgentState().agents;
     for (const agentId of Object.keys(agents)) {
       saveAgentConversation(agentId);
@@ -218,6 +252,7 @@ export function startAgentListening(agentId: string): void {
     try {
       const parsed: ClaudeStreamEvent = JSON.parse(event.payload);
       appendEvent(agentId, parsed);
+      scheduleAgentSave(agentId);
 
       // A "result" event means Claude finished processing the current prompt.
       // Clear the in-flight flag and drain queued messages. If nothing is
@@ -436,6 +471,7 @@ const inflight = new Set<string>();
  */
 export function notifyMessageSent(agentId: string): void {
   inflight.add(agentId);
+  scheduleAgentSave(agentId);
 }
 
 /**
@@ -451,6 +487,7 @@ function trySendNextQueued(agentId: string): boolean {
   inflight.add(agentId);
   updateAgent(agentId, { status: "running" });
   sendAgentMessage(agentId, next.text, next.images).catch(() => {});
+  scheduleAgentSave(agentId);
 
   return true;
 }
