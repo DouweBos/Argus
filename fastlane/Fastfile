@@ -1,0 +1,119 @@
+default_platform(:mac)
+
+TEAM_ID      = "P3WX7QK8Q3"
+SIGN_IDENTITY_DEV     = "Apple Development: Douwe Bos (#{TEAM_ID})"
+SIGN_IDENTITY_RELEASE = "Developer ID Application: Douwe Bos (#{TEAM_ID})"
+
+platform :mac do
+  desc "Sync the Developer ID Application cert from the match repo. Pass generate:true on first run to create and upload a new cert."
+  lane :certs do |options|
+    # In CI we always authenticate via API key (non-interactive).
+    # Locally, fall back to interactive Apple ID + 2FA when the API
+    # key env vars are not set — saves the "set up a key just to try
+    # it once" friction.
+    api_key = ENV["APP_STORE_CONNECT_API_KEY_ID"] ? load_app_store_connect_api_key : nil
+    UI.user_error!("CI must authenticate via APP_STORE_CONNECT_API_KEY_* env vars") if is_ci && api_key.nil?
+
+    match_options = {
+      type:     "developer_id",
+      readonly: !options.fetch(:generate, false),
+      platform: "macos",
+    }
+    match_options[:api_key] = api_key if api_key
+
+    match(**match_options)
+  end
+
+  desc "Local dev build. Apple Development cert, no notarization."
+  lane :dev do
+    sh("cd .. && pnpm install --frozen-lockfile")
+    ENV["CSC_NAME"] = SIGN_IDENTITY_DEV
+    sh("cd .. && pnpm build && pnpm exec electron-builder")
+    UI.success("Built release/mac-arm64/Argus.app")
+  end
+
+  desc "Release build: signed with Developer ID, notarized, stapled, uploaded to a GitHub release."
+  lane :release do |options|
+    publish = options.fetch(:publish, true)
+
+    ensure_git_status_clean unless options[:allow_dirty]
+    ensure_git_branch(branch: "main") unless options[:allow_any_branch]
+
+    api_key = load_app_store_connect_api_key
+    match(
+      type:     "developer_id",
+      readonly: true,
+      api_key:  api_key,
+      platform: "macos",
+    )
+
+    # Version + tag are driven by changesets. CI runs `changeset version`,
+    # commits, and pushes the tag before invoking this lane. Locally: run
+    # `pnpm exec changeset version`, commit, tag, and push before `dist:release`.
+    version = read_package_version
+    UI.success("Releasing v#{version}")
+
+    prepare_notarize_env
+
+    ENV["CSC_NAME"]        = SIGN_IDENTITY_RELEASE
+    ENV["CSC_IDENTITY_AUTO_DISCOVERY"] = "false"
+    ENV["GH_TOKEN"]        = ENV["GITHUB_TOKEN"] if ENV["GITHUB_TOKEN"] && ENV["GH_TOKEN"].nil?
+
+    sh("cd .. && pnpm install --frozen-lockfile")
+
+    notes_flag = ""
+    notes_file = ENV["ARGUS_RELEASE_NOTES_FILE"]
+    if notes_file && File.exist?(notes_file)
+      notes_flag = " --config.releaseInfo.releaseNotesFile=#{notes_file.shellescape}"
+    end
+
+    publish_flag = publish ? "--publish always" : "--publish never"
+    sh("cd .. && pnpm build && pnpm exec electron-builder --config electron-builder.release.yml #{publish_flag}#{notes_flag}")
+  end
+
+  # ---------------------------------------------------------------
+  # Helpers
+  # ---------------------------------------------------------------
+
+  # Build the in-memory `api_key` hash that match / notarize actions
+  # accept. Reads the `.p8` body, key id, and issuer id from env vars.
+  def load_app_store_connect_api_key
+    key_id    = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    issuer_id = ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"]
+    key_body  = ENV["APP_STORE_CONNECT_API_KEY_CONTENT"]
+
+    UI.user_error!("Missing APP_STORE_CONNECT_API_KEY_ID")        if key_id.nil? || key_id.empty?
+    UI.user_error!("Missing APP_STORE_CONNECT_API_KEY_ISSUER_ID") if issuer_id.nil? || issuer_id.empty?
+    UI.user_error!("Missing APP_STORE_CONNECT_API_KEY_CONTENT")   if key_body.nil? || key_body.empty?
+
+    app_store_connect_api_key(
+      key_id:      key_id,
+      issuer_id:   issuer_id,
+      key_content: key_body,
+      is_key_content_base64: false,
+      in_house:    false,
+    )
+  end
+
+  # Materialize the App Store Connect API key to disk and expose it to
+  # electron-builder via APPLE_API_KEY / _KEY_ID / _ISSUER. Called from
+  # the release lane right before invoking electron-builder.
+  def prepare_notarize_env
+    key_id    = ENV["APP_STORE_CONNECT_API_KEY_ID"]
+    issuer_id = ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"]
+    key_body  = ENV["APP_STORE_CONNECT_API_KEY_CONTENT"]
+
+    key_path = File.expand_path("../.fastlane-api-key.p8", __dir__)
+    File.write(key_path, key_body)
+    at_exit { File.delete(key_path) if File.exist?(key_path) }
+
+    ENV["APPLE_API_KEY"]    = key_path
+    ENV["APPLE_API_KEY_ID"] = key_id
+    ENV["APPLE_API_ISSUER"] = issuer_id
+  end
+
+  def read_package_version
+    pkg_path = File.expand_path("../package.json", __dir__)
+    JSON.parse(File.read(pkg_path))["version"]
+  end
+end

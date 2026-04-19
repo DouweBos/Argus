@@ -5,11 +5,17 @@
  * Components should never call `window.argus.invoke()` directly.
  */
 
-import type { ChatHistoryEntry, SavedConversation } from "./chatHistory";
+import type {
+  ChatHistoryEntry,
+  ChatHistorySearchResult,
+  SavedConversation,
+} from "./chatHistory";
 import type {
   AgentStatus,
   AndroidDevice,
   BranchList,
+  ClaudeStatuslineHookStatus,
+  ClaudeUsage,
   ConductorLogEntry,
   DeviceInfo,
   DirEntry,
@@ -23,6 +29,7 @@ import type {
 declare global {
   interface Window {
     argus: {
+      getFilePath: (file: File) => string;
       invoke: <T>(
         channel: string,
         args?: Record<string, unknown>,
@@ -47,6 +54,22 @@ export function send(channel: string, args?: Record<string, unknown>): void {
 
 // Window
 export const closeWindow = (): Promise<void> => invoke("close_window");
+
+// Claude usage (5h session block + rolling 7-day totals)
+export const getClaudeUsage = (): Promise<ClaudeUsage> =>
+  invoke("get_claude_usage");
+
+export const getClaudeStatuslineHookStatus =
+  (): Promise<ClaudeStatuslineHookStatus> =>
+    invoke("get_claude_statusline_hook_status");
+
+export const installClaudeStatuslineHook =
+  (): Promise<ClaudeStatuslineHookStatus> =>
+    invoke("install_claude_statusline_hook");
+
+export const uninstallClaudeStatuslineHook =
+  (): Promise<ClaudeStatuslineHookStatus> =>
+    invoke("uninstall_claude_statusline_hook");
 
 // Workspace commands
 export const addRepoRoot = (path: string): Promise<void> =>
@@ -107,6 +130,9 @@ export const getWorkspaceStatus = (id: string): Promise<string> =>
 
 export const getWorkspaceFullDiff = (id: string): Promise<string> =>
   invoke("get_workspace_full_diff", { id });
+
+export const getWorkspaceBranchDiff = (id: string): Promise<string> =>
+  invoke("get_workspace_branch_diff", { id });
 
 export const getWorkspaceStagedDiff = (id: string): Promise<string> =>
   invoke("get_workspace_staged_diff", { id });
@@ -394,6 +420,12 @@ export const listChatHistory = (
   repoRoot: string,
 ): Promise<ChatHistoryEntry[]> => invoke("list_chat_history", { repoRoot });
 
+export const searchChatHistory = (
+  repoRoot: string,
+  query: string,
+): Promise<ChatHistorySearchResult[]> =>
+  invoke("search_chat_history", { repoRoot, query });
+
 export const loadChatHistory = (
   repoRoot: string,
   historyId: string,
@@ -407,8 +439,7 @@ export const deleteChatHistory = (
 
 export const generateSessionTitle = (
   firstMessage: string,
-): Promise<string | null> =>
-  invoke("generate_session_title", { firstMessage });
+): Promise<string | null> => invoke("generate_session_title", { firstMessage });
 
 // Terminal commands
 export const createTerminal = (
@@ -589,3 +620,11 @@ export const runConductorCommand = (
 // Shell commands
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
+
+export const openExternalUrl = (url: string): Promise<void> =>
+  invoke("open_external_url", { url });
+
+export const showImageContextMenu = (
+  src: string,
+  suggestedName?: string,
+): Promise<void> => invoke("show_image_context_menu", { src, suggestedName });

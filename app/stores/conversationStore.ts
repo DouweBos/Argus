@@ -101,8 +101,7 @@ const useConversationStore = conversationStore;
 
 export function clearConversation(agentId: string) {
   conversationStore.setState((state) => {
-    const next = { ...state.conversations };
-    delete next[agentId];
+    const { [agentId]: _removed, ...next } = state.conversations;
 
     return { conversations: next };
   });
@@ -130,9 +129,8 @@ export function migrateConversation(oldAgentId: string, newAgentId: string) {
     if (!existing) {
       return state;
     }
-    const next = { ...state.conversations };
-    delete next[oldAgentId];
-    next[newAgentId] = { ...existing, resuming: true };
+    const { [oldAgentId]: _removed, ...rest } = state.conversations;
+    const next = { ...rest, [newAgentId]: { ...existing, resuming: true } };
 
     return { conversations: next };
   });
@@ -628,12 +626,10 @@ export function setConversationTitle(agentId: string, title: string) {
 
 export function setDraft(agentId: string, text: string) {
   conversationStore.setState((state) => {
-    const drafts = { ...state.drafts };
     if (text) {
-      drafts[agentId] = text;
-    } else {
-      delete drafts[agentId];
+      return { drafts: { ...state.drafts, [agentId]: text } };
     }
+    const { [agentId]: _removed, ...drafts } = state.drafts;
 
     return { drafts };
   });
@@ -653,14 +649,15 @@ export function getPendingImages(agentId: string): PendingImage[] {
 
 export function setPendingImages(agentId: string, images: PendingImage[]) {
   conversationStore.setState((state) => {
-    const next = { ...state.pendingImages };
     if (images.length === 0) {
-      delete next[agentId];
-    } else {
-      next[agentId] = images;
+      const { [agentId]: _removed, ...next } = state.pendingImages;
+
+      return { pendingImages: next };
     }
 
-    return { pendingImages: next };
+    return {
+      pendingImages: { ...state.pendingImages, [agentId]: images },
+    };
   });
 }
 
@@ -676,8 +673,7 @@ export function clearDraft(agentId: string) {
     if (!(agentId in state.drafts)) {
       return state;
     }
-    const drafts = { ...state.drafts };
-    delete drafts[agentId];
+    const { [agentId]: _removed, ...drafts } = state.drafts;
 
     return { drafts };
   });

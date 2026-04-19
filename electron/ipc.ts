@@ -6,13 +6,17 @@
  * (errors are thrown as plain strings).
  */
 
-import { dialog, ipcMain } from "electron";
+import { Menu, clipboard, dialog, ipcMain, nativeImage } from "electron";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { createLogger } from "../app/lib/logger";
 import { getMainWindow } from "./main";
 import {
   saveConversation,
   loadHistoryIndex,
   loadConversation,
   deleteHistoryEntry,
+  searchChatHistory,
 } from "./services/agent/chatHistory";
 import {
   checkClaudeCli,
@@ -45,6 +49,12 @@ import {
 } from "./services/browser/conductorInput";
 import { getMjpegPort } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
+import {
+  getHookStatus as getClaudeStatuslineHookStatus,
+  installHook as installClaudeStatuslineHook,
+  uninstallHook as uninstallClaudeStatuslineHook,
+} from "./services/claude/statuslineHook";
+import { getClaudeUsage } from "./services/claude/usage";
 import { listDevices } from "./services/conductor/devices";
 import { conductorLogStore, execConductor } from "./services/conductor/logger";
 import { discoverExtensions } from "./services/extensions/loader";
@@ -63,7 +73,7 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
-import { revealInFinder } from "./services/shell/operations";
+import { openExternalUrl, revealInFinder } from "./services/shell/operations";
 import {
   checkAndroidTools,
   listAndroidDevices,
@@ -111,6 +121,7 @@ import {
   checkoutBranch,
   getWorkspaceDiff,
   getWorkspaceFullDiff,
+  getWorkspaceBranchDiff,
   getWorkspaceStagedDiff,
   getWorkspaceUntrackedDiff,
   getWorkspaceStatus,
@@ -162,6 +173,53 @@ function emitNavState(workspaceId: string, nav: NavState): void {
   });
 }
 
+async function resolveNativeImage(
+  src: string,
+): Promise<Electron.NativeImage | null> {
+  if (src.startsWith("data:")) {
+    return nativeImage.createFromDataURL(src);
+  }
+  if (src.startsWith("file://")) {
+    const url = new URL(src);
+
+    return nativeImage.createFromPath(decodeURIComponent(url.pathname));
+  }
+  if (src.startsWith("/")) {
+    return nativeImage.createFromPath(src);
+  }
+  if (src.startsWith("http:") || src.startsWith("https:")) {
+    const res = await fetch(src);
+    const buf = Buffer.from(await res.arrayBuffer());
+
+    return nativeImage.createFromBuffer(buf);
+  }
+
+  return null;
+}
+
+function inferImageExt(src: string, fallbackName: string): string {
+  const m = src.match(/^data:image\/([a-zA-Z0-9+.-]+);/);
+  if (m) {
+    const t = m[1].toLowerCase();
+    if (t === "jpeg") {
+      return "jpg";
+    }
+
+    return t;
+  }
+  const ext = path.extname(fallbackName).replace(".", "").toLowerCase();
+
+  return ext || "png";
+}
+
+function ensureExt(name: string, ext: string): string {
+  if (path.extname(name)) {
+    return name;
+  }
+
+  return `${name}.${ext}`;
+}
+
 /** Helper: register a handler that unwraps args. */
 function handle(
   channel: string,
@@ -171,10 +229,7 @@ function handle(
     try {
       return await handler(args);
     } catch (err) {
-      // Log before rethrowing so the failure is visible in ~/.argus/main.log
-      // even though the renderer only sees the rejected promise.
-      // eslint-disable-next-line no-console -- central logging sink (tee'd to ~/.argus/main.log in main.ts)
-      console.error(`[ipc:${channel}] handler threw:`, err);
+      createLogger(`ipc:${channel}`).error("handler threw:", err);
       throw err;
     }
   });
@@ -213,6 +268,16 @@ export function registerIpcHandlers(): void {
     getMainWindow()?.close();
   });
 
+  // Claude usage (session + weekly token totals)
+  handle("get_claude_usage", () => getClaudeUsage());
+  handle("get_claude_statusline_hook_status", () =>
+    getClaudeStatuslineHookStatus(),
+  );
+  handle("install_claude_statusline_hook", () => installClaudeStatuslineHook());
+  handle("uninstall_claude_statusline_hook", () =>
+    uninstallClaudeStatuslineHook(),
+  );
+
   // Workspace CRUD
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
@@ -246,6 +311,9 @@ export function registerIpcHandlers(): void {
   handle("get_workspace_diff", (a) => getWorkspaceDiff(a.id as string));
   handle("get_workspace_full_diff", (a) =>
     getWorkspaceFullDiff(a.id as string),
+  );
+  handle("get_workspace_branch_diff", (a) =>
+    getWorkspaceBranchDiff(a.id as string),
   );
   handle("get_workspace_staged_diff", (a) =>
     getWorkspaceStagedDiff(a.id as string),
@@ -388,6 +456,9 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("list_chat_history", (a) => loadHistoryIndex(a.repoRoot as string));
+  handle("search_chat_history", (a) =>
+    searchChatHistory(a.repoRoot as string, a.query as string),
+  );
   handle("load_chat_history", (a) =>
     loadConversation(a.repoRoot as string, a.historyId as string),
   );
@@ -619,9 +690,57 @@ export function registerIpcHandlers(): void {
 
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));
+  handle("open_external_url", (a) => openExternalUrl(a.url as string));
 
   // Extensions
   handle("discover_extensions", () => discoverExtensions());
+
+  // Image context menu
+  handle("show_image_context_menu", async (a) => {
+    const win = getMainWindow();
+    if (!win) {
+      return;
+    }
+    const src = a.src as string;
+    const suggestedName = (a.suggestedName as string) || "image.png";
+    const image = await resolveNativeImage(src);
+    if (!image || image.isEmpty()) {
+      return;
+    }
+    const ext = inferImageExt(src, suggestedName);
+    const menu = Menu.buildFromTemplate([
+      {
+        label: "Copy Image",
+        click: () => {
+          clipboard.writeImage(image);
+        },
+      },
+      {
+        label: "Save Image As\u2026",
+        click: async () => {
+          const result = await dialog.showSaveDialog(win, {
+            defaultPath: ensureExt(suggestedName, ext),
+            filters: [
+              {
+                name: "Images",
+                extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp"],
+              },
+            ],
+          });
+          if (result.canceled || !result.filePath) {
+            return;
+          }
+          const outExt = path.extname(result.filePath).toLowerCase();
+          const buffer =
+            outExt === ".jpg" || outExt === ".jpeg"
+              ? image.toJPEG(95)
+              : image.toPNG();
+          await fs.writeFile(result.filePath, buffer);
+        },
+      },
+    ]);
+    menu.popup({ window: win });
+  });
 
   // Dialog
   handle("show_open_dialog", async () => {

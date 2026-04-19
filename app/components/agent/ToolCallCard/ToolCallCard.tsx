@@ -421,17 +421,16 @@ export function ToolCallCard({
         <span className={styles.summary}>
           {isAgent ? agentDesc : <LinkifiedText text={summary} />}
         </span>
-        {editStats &&
-          (editStats.additions > 0 || editStats.deletions > 0) && (
-            <span className={styles.editStats}>
-              {editStats.additions > 0 && (
-                <span className={styles.statsAdd}>+{editStats.additions}</span>
-              )}
-              {editStats.deletions > 0 && (
-                <span className={styles.statsDel}>-{editStats.deletions}</span>
-              )}
-            </span>
-          )}
+        {editStats && (editStats.additions > 0 || editStats.deletions > 0) && (
+          <span className={styles.editStats}>
+            {editStats.additions > 0 && (
+              <span className={styles.statsAdd}>+{editStats.additions}</span>
+            )}
+            {editStats.deletions > 0 && (
+              <span className={styles.statsDel}>-{editStats.deletions}</span>
+            )}
+          </span>
+        )}
         {isPending && (
           <Badge tone="warning" className={styles.pendingTag}>
             awaiting permission

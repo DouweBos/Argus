@@ -1,12 +1,22 @@
 import type { Shortcut } from "@argus/peacock";
+import {
+  shortcutKeys,
+  shortcutLabel,
+  type ShortcutId,
+} from "../../../lib/shortcuts";
 
-export const HOME_SHORTCUTS: Shortcut[] = [
-  { keys: ["⌘", "O"], label: "Open repo" },
-  { keys: ["⌘", "N"], label: "New workspace" },
-  { keys: ["⌘", "K"], label: "Command palette" },
-  { keys: ["⌘", "⇧", "A"], label: "New agent" },
-  { keys: ["⌘", ","], label: "Settings" },
+const HOME_SHORTCUT_IDS: ShortcutId[] = [
+  "open-repo",
+  "new-workspace",
+  "command-palette",
+  "new-agent",
+  "settings",
 ];
+
+export const HOME_SHORTCUTS: Shortcut[] = HOME_SHORTCUT_IDS.map((id) => ({
+  keys: shortcutKeys(id),
+  label: shortcutLabel(id),
+}));
 
 export const HOME_TIPS = [
   {

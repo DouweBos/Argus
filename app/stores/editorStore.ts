@@ -17,7 +17,7 @@ interface EditorStoreData {
 
 const editorStore = create<EditorStoreData>(() => ({
   activeWorkspaceId: null,
-  activeCenterView: "home",
+  activeCenterView: "agents",
 }));
 
 const useEditorStore = editorStore;

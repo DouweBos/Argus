@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DiffFile, mergeStaged, parseDiff } from "../lib/diffParser";
 import {
+  getWorkspaceBranchDiff,
   getWorkspaceConflicts,
   getWorkspaceFullDiff,
   getWorkspaceStagedDiff,
@@ -46,9 +47,15 @@ export function useDiffFiles(
     setIsLoading(true);
     setError(null);
     try {
+      // When a base branch is known, show the entire branch diff
+      // (committed + staged + unstaged vs base merge-base) so the user sees
+      // all work that will be merged — not just uncommitted changes.
+      const fullPromise = baseBranch
+        ? getWorkspaceBranchDiff(workspaceId)
+        : getWorkspaceFullDiff(workspaceId);
       const [full, staged, untracked] = await Promise.all([
-        getWorkspaceFullDiff(workspaceId),
-        getWorkspaceStagedDiff(workspaceId),
+        fullPromise,
+        baseBranch ? Promise.resolve("") : getWorkspaceStagedDiff(workspaceId),
         getWorkspaceUntrackedDiff(workspaceId),
       ]);
       if (isMounted.current) {

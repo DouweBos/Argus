@@ -45,7 +45,7 @@ import type { RuntimePlatform } from "../workspace/models";
 import { app } from "electron";
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -238,6 +238,13 @@ export async function startAgent(
   // Create the control handler for permission management.
   const controlHandler = new ControlHandler(agentId);
 
+  // Per-agent debug log — full Claude Code internal trace written to
+  // `~/.argus/agents/<agentId>.debug.log`. Used to diagnose filesystem
+  // access / TCC prompts triggered on agent spawn.
+  const agentLogsDir = path.join(os.homedir(), ".argus", "agents");
+  mkdirSync(agentLogsDir, { recursive: true });
+  const debugLogPath = path.join(agentLogsDir, `${agentId}.debug.log`);
+
   // Build CLI args.
   const args: string[] = [
     "--print",
@@ -246,6 +253,8 @@ export async function startAgent(
     "--input-format",
     "stream-json",
     "--verbose",
+    "--debug-file",
+    debugLogPath,
     "--permission-prompt-tool",
     "stdio",
   ];
@@ -293,6 +302,8 @@ export async function startAgent(
     // so PATH, HOME, and any API keys are available to the child.
     env,
   });
+
+  info(`[agent:${agentId}] debug log: ${debugLogPath}`);
 
   if (!child.stdin || !child.stdout || !child.stderr) {
     controlHandler.cleanup();

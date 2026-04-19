@@ -13,3 +13,15 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
+
+.container :global(.external-link) {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.container :global(.external-link):hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}

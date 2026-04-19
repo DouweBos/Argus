@@ -20,12 +20,15 @@ export const setReviewState = (
   entry: ReviewQueueEntry,
 ) => {
   reviewQueueStore.setState((state) => {
-    const next = { ...state.entriesByWorkspaceId };
     if (entry.commitsAhead > 0 || entry.hasUncommitted) {
-      next[workspaceId] = entry;
-    } else {
-      delete next[workspaceId];
+      return {
+        entriesByWorkspaceId: {
+          ...state.entriesByWorkspaceId,
+          [workspaceId]: entry,
+        },
+      };
     }
+    const { [workspaceId]: _removed, ...next } = state.entriesByWorkspaceId;
 
     return { entriesByWorkspaceId: next };
   });
@@ -36,8 +39,7 @@ export const clearReviewState = (workspaceId: string) => {
     if (!(workspaceId in state.entriesByWorkspaceId)) {
       return state;
     }
-    const next = { ...state.entriesByWorkspaceId };
-    delete next[workspaceId];
+    const { [workspaceId]: _removed, ...next } = state.entriesByWorkspaceId;
 
     return { entriesByWorkspaceId: next };
   });

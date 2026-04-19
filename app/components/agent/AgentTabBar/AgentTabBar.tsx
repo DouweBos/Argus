@@ -10,8 +10,10 @@ import styles from "./AgentTabBar.module.css";
 interface AgentTabBarProps {
   activeAgentId: string | null;
   agents: AgentStatus[];
+  isHomeActive: boolean;
   onClose: (agentId: string) => void;
   onSelect: (agentId: string) => void;
+  onSelectHome: () => void;
 }
 
 const DRAG_MIME = "application/x-argus-agent-id";
@@ -152,7 +154,9 @@ function AgentTab({
 export function AgentTabBar({
   agents,
   activeAgentId,
+  isHomeActive,
   onSelect,
+  onSelectHome,
   onClose,
 }: AgentTabBarProps) {
   const allAgents = useAgentsRecord();
@@ -228,8 +232,25 @@ export function AgentTabBar({
     reorderAgent(target.workspace_id, fromId, targetId, position);
   };
 
+  const homeClasses = [
+    styles.tab,
+    styles.homeTab,
+    isHomeActive ? styles.active : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div className={styles.tabs}>
+      <div
+        className={homeClasses}
+        title="Home"
+        aria-label="Home"
+        onClick={onSelectHome}
+      >
+        <Icons.HomeIcon size={12} />
+        <span className={styles.label}>Home</span>
+      </div>
       {agents.map((agent, index) => {
         const indicator =
           dropIndicator && dropIndicator.targetAgentId === agent.agent_id

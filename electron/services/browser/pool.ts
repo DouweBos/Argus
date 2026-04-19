@@ -157,6 +157,16 @@ class WebBrowserPool {
     return appState.webBrowserReservations.get(agentId) ?? null;
   }
 
+  /**
+   * Release every active reservation. Intended for app shutdown so we stop
+   * the conductor daemons (and their headless Chromiums) instead of leaving
+   * them running for the 24h idle timeout.
+   */
+  async releaseAll(): Promise<void> {
+    const agentIds = [...appState.webBrowserReservations.keys()];
+    await Promise.all(agentIds.map((id) => this.releaseBrowser(id)));
+  }
+
   // -------------------------------------------------------------------------
   // Internal
   // -------------------------------------------------------------------------
@@ -172,6 +182,10 @@ class WebBrowserPool {
         ...process.env,
         CONDUCTOR_IDLE_TIMEOUT_MS: String(TWENTY_FOUR_HOURS_MS),
         CONDUCTOR_HEADLESS: "1",
+        // Tell the detached daemon to self-terminate when this Electron
+        // process dies. Without this, a crash or force-quit leaves orphaned
+        // chrome-headless-shells running for 24h (the idle timeout above).
+        CONDUCTOR_PARENT_PID: String(process.pid),
       },
     });
 

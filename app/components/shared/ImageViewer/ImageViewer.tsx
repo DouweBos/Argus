@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { showImageContextMenu } from "../../../lib/ipc";
 import {
   closeImageViewer,
   useImageViewerAlt,
@@ -182,6 +183,10 @@ function ImageViewerOverlay({
             alt={alt}
             className={styles.image}
             draggable={false}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              showImageContextMenu(e.currentTarget.src, alt || "image");
+            }}
             onDoubleClick={fitToScreen}
             onError={(e) => {
               if (fallbackSrc && e.currentTarget.src !== fallbackSrc) {

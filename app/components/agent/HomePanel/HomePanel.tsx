@@ -1,16 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
+import { Dialog } from "@argus/peacock";
 import { useWorkspaceAgents } from "../../../hooks/useAgent";
+import { focusAgent } from "../../../lib/agentLifecycle";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
 import { isWorkspaceReady } from "../../../lib/types";
-import { setActiveAgent } from "../../../stores/agentStore";
 import {
   clearConversation,
   loadSavedMessages,
 } from "../../../stores/conversationStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
+import { useWorkspaces } from "../../../stores/workspaceStore";
 import { RepoHomeScreen } from "../../home/RepoHomeScreen";
+import { WorkspaceHomeScreen } from "../../home/WorkspaceHomeScreen";
 import { AgentChat } from "../AgentChat";
+import styles from "./HomePanel.module.css";
 
 interface HomePanelProps {
   workspaceId: string;
@@ -32,6 +35,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
 
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
+  const [viewingTitle, setViewingTitle] = useState<string>("Chat preview");
 
   const historyAgentId = viewingHistoryId
     ? `history:${viewingHistoryId}`
@@ -39,13 +43,9 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
 
   const handleOrchestrationSelect = useCallback(
     (agentId: string, agentWorkspaceId: string) => {
-      if (agentWorkspaceId !== workspaceId) {
-        selectWorkspace(agentWorkspaceId);
-      }
-      setActiveAgent(agentWorkspaceId, agentId);
-      setActiveCenterView("agents");
+      focusAgent(agentWorkspaceId, agentId);
     },
-    [workspaceId],
+    [],
   );
 
   const handleViewHistory = useCallback(
@@ -67,6 +67,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
           );
           setViewingHistoryId(historyId);
           setViewingSessionId(saved.sessionId);
+          setViewingTitle(saved.title || "Chat preview");
         })
         .catch(() => {});
     },
@@ -111,38 +112,61 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
     [handleCloseHistory, repoRoot, startNew],
   );
 
-  if (viewingHistoryId && historyAgentId) {
-    return (
-      <AgentChat
-        agentId={historyAgentId}
-        readOnly
-        workspaceId={workspaceId}
-        onClose={handleCloseHistory}
-        onResume={
-          viewingSessionId
-            ? () => handleResumeHistory(viewingSessionId)
-            : undefined
-        }
-      />
-    );
-  }
-
   const wsReady = workspace != null && isWorkspaceReady(workspace.status);
+  const isRepoHome = workspace?.kind === "repo_root";
+
+  const handleStart = () => {
+    setActiveCenterView("agents");
+    startNew();
+  };
 
   return (
-    <RepoHomeScreen
-      canStart={wsReady}
-      isStarting={isStarting}
-      repoRoot={repoRoot}
-      workspaceId={workspaceId}
-      workspaceLabel={workspace?.branch ?? null}
-      onResumeHistory={handleResumeHistory}
-      onSelectAgent={handleOrchestrationSelect}
-      onStart={() => {
-        setActiveCenterView("agents");
-        startNew();
-      }}
-      onViewHistory={handleViewHistory}
-    />
+    <>
+      {isRepoHome ? (
+        <RepoHomeScreen
+          canStart={wsReady}
+          isStarting={isStarting}
+          repoRoot={repoRoot}
+          workspaceId={workspaceId}
+          onResumeHistory={handleResumeHistory}
+          onSelectAgent={handleOrchestrationSelect}
+          onStart={handleStart}
+          onViewHistory={handleViewHistory}
+        />
+      ) : (
+        <WorkspaceHomeScreen
+          canStart={wsReady}
+          isStarting={isStarting}
+          repoRoot={repoRoot}
+          workspaceId={workspaceId}
+          onResumeHistory={handleResumeHistory}
+          onSelectAgent={handleOrchestrationSelect}
+          onStart={handleStart}
+          onViewHistory={handleViewHistory}
+        />
+      )}
+      {viewingHistoryId && historyAgentId && (
+        <Dialog
+          className={styles.dialog}
+          title={viewingTitle}
+          titleId="chat-history-preview-title"
+          onClose={handleCloseHistory}
+        >
+          <div className={styles.body}>
+            <AgentChat
+              agentId={historyAgentId}
+              readOnly
+              workspaceId={workspaceId}
+              onClose={handleCloseHistory}
+              onResume={
+                viewingSessionId
+                  ? () => handleResumeHistory(viewingSessionId)
+                  : undefined
+              }
+            />
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }

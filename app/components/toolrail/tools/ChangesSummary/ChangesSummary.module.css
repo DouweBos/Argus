@@ -245,6 +245,35 @@
   opacity: 0.35;
 }
 
+.conflictBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--error) 14%, transparent);
+  color: var(--error);
+  border: 1px solid color-mix(in srgb, var(--error) 45%, transparent);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    background var(--transition-fast),
+    box-shadow var(--transition-fast);
+  white-space: nowrap;
+}
+
+.conflictBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error) 22%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--error) 45%, transparent);
+}
+
+.conflictBtn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
 .mergeError {
   font-size: var(--font-size-xs);
   color: var(--error);

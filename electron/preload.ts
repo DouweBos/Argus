@@ -4,12 +4,18 @@
  * the main process (Node.js).
  */
 
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 
 export interface ArgusAPI {
   invoke: <T>(channel: string, args?: Record<string, unknown>) => Promise<T>;
   on: <T>(event: string, callback: (payload: T) => void) => () => void;
   send: (channel: string, args?: Record<string, unknown>) => void;
+  /**
+   * Returns the absolute filesystem path for a File object (from drag-and-drop
+   * or file input). Returns empty string for Files without a backing path
+   * (e.g. programmatically constructed Blobs).
+   */
+  getFilePath: (file: File) => string;
 }
 
 const api: ArgusAPI = {
@@ -34,6 +40,14 @@ const api: ArgusAPI = {
    * Subscribe to a push event from the main process.
    * Returns an unlisten function.
    */
+  getFilePath(file: File): string {
+    try {
+      return webUtils.getPathForFile(file);
+    } catch {
+      return "";
+    }
+  },
+
   on<T>(event: string, callback: (payload: T) => void): () => void {
     const handler = (_event: Electron.IpcRendererEvent, payload: T) => {
       callback(payload);

@@ -1,5 +1,5 @@
 .card {
-  padding: 6px 10px 6px 14px;
+  padding: 4px 4px 6px 14px;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition:
@@ -8,8 +8,9 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: 1px;
   margin: 0 4px;
+  position: relative;
 }
 
 .card:hover {
@@ -76,7 +77,6 @@
 .diffStats {
   display: inline-flex;
   gap: 4px;
-  margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
   flex-shrink: 0;
@@ -98,7 +98,6 @@
 .aheadBadge {
   display: inline-flex;
   align-items: center;
-  margin-left: 6px;
   font-size: 10px;
   font-weight: 600;
   font-family: var(--font-mono);
@@ -106,15 +105,33 @@
   flex-shrink: 0;
 }
 
+.subtitleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 22px;
+  padding-right: 2px;
+  min-height: 18px;
+  min-width: 0;
+}
+
 .branchSubtitle {
+  flex: 1;
+  min-width: 0;
   font-size: 10px;
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-left: 22px;
   line-height: 1.4;
   opacity: 0.7;
+}
+
+.subtitleTrailing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .descriptionInline {
@@ -260,7 +277,8 @@
 /* Context menu and actions */
 .menuAnchor {
   position: relative;
-  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
 }
 
 .actionBtn {

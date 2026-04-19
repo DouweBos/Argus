@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-14
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: jdx/mise-action@v2
+
+      - name: Install pnpm deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify pending changesets
+        run: |
+          shopt -s nullglob
+          files=(.changeset/*.md)
+          filtered=()
+          for f in "${files[@]}"; do
+            [[ "$(basename "$f")" == "README.md" ]] && continue
+            filtered+=("$f")
+          done
+          if [ ${#filtered[@]} -eq 0 ]; then
+            echo "No pending changesets — add one with 'pnpm changeset' before releasing." >&2
+            exit 1
+          fi
+
+      - name: Apply changesets (bump version + write CHANGELOG)
+        run: pnpm exec changeset version
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Pull the top section of CHANGELOG.md (everything between the first
+          # '## ' heading and the next one) into release-notes.md. Strip the
+          # heading itself — the GH release already shows the tag as the title.
+          awk '
+            /^## / { if (found) exit; found=1; next }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          echo "--- release notes ---"
+          cat release-notes.md
+
+      - name: Commit version bump and tag
+        env:
+          VERSION: ${{ steps.notes.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.md .changeset
+          git add packages/*/package.json packages/*/CHANGELOG.md 2>/dev/null || true
+          git commit -m "chore: release v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin HEAD:main
+          git push origin "v${VERSION}"
+
+      - name: Install fastlane
+        run: bundle install
+
+      - name: Run fastlane release
+        env:
+          # --- Signing (match) ---
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_KEYCHAIN_NAME: build.keychain
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+
+          # --- Notarization (App Store Connect API key) ---
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+
+          # --- GitHub release publisher ---
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Picked up by the Fastfile and forwarded to electron-builder so the
+          # GitHub release body reflects the CHANGELOG section for this version.
+          ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
+
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_HIDE_CHANGELOG: "1"
+          CI: "true"
+        run: bundle exec fastlane mac release allow_dirty:true allow_any_branch:true

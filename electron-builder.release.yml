@@ -1,0 +1,49 @@
+appId: dev.houwert.argus
+productName: Argus
+directories:
+  buildResources: build
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - "!node_modules/**/*"
+  - node_modules/node-pty/**/*
+extraResources:
+  - from: native/argus-sim-bridge/argus-sim-bridge
+    to: argus-sim-bridge
+    filter:
+      - "**/*"
+  - from: native/scrcpy-server/scrcpy-server.jar
+    to: scrcpy-server.jar
+  - from: electron/prompts/worktree-agent-system-prompt.md
+    to: worktree-agent-system-prompt.md
+  - from: electron/prompts/root-agent-system-prompt.md
+    to: root-agent-system-prompt.md
+  - from: native/conductor
+    to: conductor
+    filter:
+      - "**/*"
+mac:
+  # Distribution build — signed with Developer ID, notarized, stapled.
+  # Driven by `fastlane release`, which exports the signing +
+  # notarization env vars before invoking electron-builder.
+  identity: "Developer ID Application: Douwe Bos (P3WX7QK8Q3)"
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  category: public.app-category.developer-tools
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  notarize: true
+publish:
+  - provider: github
+    owner: DouweBos
+    repo: Argus
+    releaseType: release
+dmg:
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+asar: true

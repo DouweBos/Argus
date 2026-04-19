@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { TitleBar as PeacockTitleBar } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { listBranches, setWorkspaceBaseBranch } from "../../../lib/ipc";
+import { shortcutKeys } from "../../../lib/shortcuts";
 import { openCommandPalette } from "../../../stores/commandPaletteStore";
 import {
   toggleLeftSidebar,
@@ -13,6 +14,7 @@ import {
   useWorkspaces,
 } from "../../../stores/workspaceStore";
 import { PencilIcon } from "../../shared/Icons";
+import { ClaudeUsageIndicator } from "../ClaudeUsageIndicator/ClaudeUsageIndicator";
 import styles from "./TitleBar.module.css";
 
 export function TitleBar() {
@@ -118,9 +120,11 @@ export function TitleBar() {
       className={styles.bar}
       showTraffic={false}
       title={title}
+      jumpHotkey={shortcutKeys("command-palette")}
       onJump={openCommandPalette}
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={workspace ? toggleRightPanel : undefined}
+      right={<ClaudeUsageIndicator />}
     />
   );
 }

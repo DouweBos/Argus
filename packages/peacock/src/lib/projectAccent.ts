@@ -21,8 +21,16 @@ function fnv1a(input: string): number {
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i++) {
     hash ^= input.charCodeAt(i);
-    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+    hash =
+      (hash +
+        ((hash << 1) +
+          (hash << 4) +
+          (hash << 7) +
+          (hash << 8) +
+          (hash << 24))) >>>
+      0;
   }
+
   return hash >>> 0;
 }
 
@@ -35,5 +43,6 @@ export function projectAccent(path: string): string {
     return PROJECT_ACCENT_PALETTE[0];
   }
   const idx = fnv1a(path) % PROJECT_ACCENT_PALETTE.length;
+
   return PROJECT_ACCENT_PALETTE[idx];
 }

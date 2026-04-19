@@ -174,7 +174,13 @@ function linkifyTextRun(text: string): string {
  */
 export type LinkSegment =
   | { label: string; line?: number; path: string; type: "link" }
+  | { label: string; type: "url"; url: string }
   | { type: "text"; value: string };
+
+// http(s) URL matcher. Stops before whitespace or trailing punctuation that is
+// usually sentence punctuation rather than part of the URL.
+const URL_REGEX = /https?:\/\/[^\s<>"']+/gi;
+const URL_TRAILING = /[.,;:!?)\]}>'"]+$/;
 
 /**
  * Split plain text on `@mention` tokens (user-typed file references from the
@@ -186,8 +192,13 @@ const MENTION_REGEX = /(^|\s)@([^\s]+)/g;
 const MENTION_TRAILING = /[.,;:!?)\]}>'"]+$/;
 
 export function splitTextForMentions(text: string): LinkSegment[] {
-  const segments: LinkSegment[] = [];
-  let lastIndex = 0;
+  interface Marker {
+    end: number;
+    segment: Extract<LinkSegment, { type: "link" | "url" }>;
+    start: number;
+  }
+
+  const markers: Marker[] = [];
 
   for (const match of text.matchAll(MENTION_REGEX)) {
     const start = match.index ?? 0;
@@ -200,51 +211,105 @@ export function splitTextForMentions(text: string): LinkSegment[] {
     if (!token) {
       continue;
     }
-
     const mentionStart = start + leading.length;
-    if (mentionStart > lastIndex) {
-      segments.push({
-        type: "text",
-        value: text.slice(lastIndex, mentionStart),
-      });
-    }
-
     const ref = parseFileRef(token);
-    segments.push({
-      type: "link",
-      label: `@${token}`,
-      path: ref.path,
-      line: ref.line,
+    markers.push({
+      start: mentionStart,
+      end: mentionStart + 1 + token.length,
+      segment: {
+        type: "link",
+        label: `@${token}`,
+        path: ref.path,
+        line: ref.line,
+      },
     });
-
-    lastIndex = mentionStart + 1 + token.length;
   }
 
-  if (lastIndex < text.length) {
-    segments.push({ type: "text", value: text.slice(lastIndex) });
+  for (const range of findUrlRanges(text)) {
+    markers.push({
+      start: range.start,
+      end: range.end,
+      segment: { type: "url", url: range.url, label: range.url },
+    });
+  }
+
+  markers.sort((a, b) => a.start - b.start);
+
+  const segments: LinkSegment[] = [];
+  let cursor = 0;
+  for (const m of markers) {
+    if (m.start < cursor) {
+      continue;
+    }
+    if (m.start > cursor) {
+      segments.push({ type: "text", value: text.slice(cursor, m.start) });
+    }
+    segments.push(m.segment);
+    cursor = m.end;
+  }
+  if (cursor < text.length) {
+    segments.push({ type: "text", value: text.slice(cursor) });
   }
 
   return segments;
 }
 
+interface UrlRange {
+  end: number;
+  start: number;
+  url: string;
+}
+
+function findUrlRanges(text: string): UrlRange[] {
+  const ranges: UrlRange[] = [];
+  for (const match of text.matchAll(URL_REGEX)) {
+    const start = match.index ?? 0;
+    let url = match[0];
+    const trail = url.match(URL_TRAILING);
+    if (trail) {
+      url = url.slice(0, url.length - trail[0].length);
+    }
+    if (!url) {
+      continue;
+    }
+    ranges.push({ start, end: start + url.length, url });
+  }
+
+  return ranges;
+}
+
 export function splitTextForLinks(text: string): LinkSegment[] {
   const segments: LinkSegment[] = [];
-  let lastIndex = 0;
-  // `replace` with a regex that has the `g` flag would also work; using
-  // matchAll keeps indices accessible cleanly.
-  for (const match of text.matchAll(FILE_PATH_REGEX)) {
-    const start = match.index ?? 0;
-    if (start > lastIndex) {
-      segments.push({ type: "text", value: text.slice(lastIndex, start) });
+  const urlRanges = findUrlRanges(text);
+  let cursor = 0;
+
+  const emitFilePathsIn = (slice: string) => {
+    let last = 0;
+    for (const match of slice.matchAll(FILE_PATH_REGEX)) {
+      const start = match.index ?? 0;
+      if (start > last) {
+        segments.push({ type: "text", value: slice.slice(last, start) });
+      }
+      const full = match[0];
+      const corePath = match[1];
+      const line = match[2] ? Number(match[2]) : undefined;
+      segments.push({ type: "link", label: full, path: corePath, line });
+      last = start + full.length;
     }
-    const full = match[0];
-    const corePath = match[1];
-    const line = match[2] ? Number(match[2]) : undefined;
-    segments.push({ type: "link", label: full, path: corePath, line });
-    lastIndex = start + full.length;
+    if (last < slice.length) {
+      segments.push({ type: "text", value: slice.slice(last) });
+    }
+  };
+
+  for (const range of urlRanges) {
+    if (range.start > cursor) {
+      emitFilePathsIn(text.slice(cursor, range.start));
+    }
+    segments.push({ type: "url", url: range.url, label: range.url });
+    cursor = range.end;
   }
-  if (lastIndex < text.length) {
-    segments.push({ type: "text", value: text.slice(lastIndex) });
+  if (cursor < text.length) {
+    emitFilePathsIn(text.slice(cursor));
   }
 
   return segments;

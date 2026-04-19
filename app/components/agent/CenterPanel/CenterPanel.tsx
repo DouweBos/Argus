@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Chip, EmptyHome, Icons } from "@argus/peacock";
+import { Chip, EmptyHome } from "@argus/peacock";
 import {
   setActiveCenterView,
   useActiveCenterView,
@@ -8,7 +8,6 @@ import { useWorkspaces } from "../../../stores/workspaceStore";
 import { EditorPanel } from "../../editor/EditorPanel";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
-import { HomePanel } from "../HomePanel";
 import styles from "./CenterPanel.module.css";
 
 interface CenterPanelProps {
@@ -46,16 +45,11 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
         <div className={styles.viewSwitcher}>
           <Chip
             interactive
-            aria-label="Repo home"
-            title="Repo home"
-            className={activeView === "home" ? styles.chipActive : undefined}
-            onClick={() => setActiveView("home")}
-          >
-            <Icons.HomeIcon size={12} />
-          </Chip>
-          <Chip
-            interactive
-            className={activeView === "agents" ? styles.chipActive : undefined}
+            className={
+              activeView === "agents" || activeView === "home"
+                ? styles.chipActive
+                : undefined
+            }
             onClick={() => setActiveView("agents")}
           >
             Agents
@@ -78,9 +72,9 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
       </div>
 
       {/* Content area */}
-      {activeView === "home" && <HomePanel workspaceId={workspaceId} />}
-
-      {activeView === "agents" && <AgentView workspaceId={workspaceId} />}
+      {(activeView === "agents" || activeView === "home") && (
+        <AgentView workspaceId={workspaceId} />
+      )}
 
       {activeView === "editor" && <EditorPanel workspaceId={workspaceId} />}
 

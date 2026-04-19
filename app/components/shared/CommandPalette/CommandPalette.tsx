@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Icons, Kbd, useDismissOnEscape } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
+import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
 import {
   gitFetch,
   gitPull,
@@ -9,10 +10,9 @@ import {
   interruptAgent,
   mergeWorkspaceIntoBase,
   revealInFinder,
-  startAgent,
 } from "../../../lib/ipc";
+import { shortcutKeys } from "../../../lib/shortcuts";
 import {
-  addAgent,
   cycleActiveAgent,
   getActiveAgent,
   useAgentsRecord,
@@ -120,7 +120,7 @@ function CommandPaletteContent() {
         sublabel: "Default permission mode and more",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "settings preferences config options",
-        hint: ["⌘", ","],
+        hint: shortcutKeys("settings"),
         run: () => {
           closeCommandPalette();
           showSettingsDialog();
@@ -133,7 +133,7 @@ function CommandPaletteContent() {
         sublabel: "Pick a folder on disk",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "open repo repository folder add",
-        hint: ["⌘", "O"],
+        hint: shortcutKeys("open-repo"),
         run: () => {
           closeCommandPalette();
           showOpenProjectDialog();
@@ -146,7 +146,7 @@ function CommandPaletteContent() {
         sublabel: "Create a worktree from a branch",
         icon: <Icons.PlusIcon size={13} />,
         keywords: "new workspace branch worktree create",
-        hint: ["⌘", "N"],
+        hint: shortcutKeys("new-workspace"),
         run: () => {
           closeCommandPalette();
           triggerNewWorkspace();
@@ -161,7 +161,7 @@ function CommandPaletteContent() {
         title: "Toggle left sidebar",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "toggle left sidebar panel workspace hide show",
-        hint: ["⌘", "B"],
+        hint: shortcutKeys("toggle-left-sidebar"),
         run: () => {
           closeCommandPalette();
           toggleLeftSidebar();
@@ -173,7 +173,7 @@ function CommandPaletteContent() {
         title: "Toggle right panel",
         icon: <Icons.FolderIcon size={13} />,
         keywords: "toggle right panel tool terminal simulator hide show",
-        hint: ["⌘", "⌥", "B"],
+        hint: shortcutKeys("toggle-right-panel"),
         run: () => {
           closeCommandPalette();
           toggleRightPanel();
@@ -198,7 +198,7 @@ function CommandPaletteContent() {
           sublabel: "Deselect this workspace",
           icon: <Icons.ArgusLogo size={13} />,
           keywords: "home app deselect close exit workspace",
-          hint: ["⌘", "⇧", "H"],
+          hint: shortcutKeys("go-home"),
           run: () => {
             closeCommandPalette();
             selectWorkspace(null);
@@ -213,7 +213,7 @@ function CommandPaletteContent() {
                 sublabel: `${basename(selectedWorkspace.repo_root)} · ${projectHead.branch}`,
                 icon: <Icons.FolderIcon size={13} />,
                 keywords: "project home root repo head main master",
-                hint: ["⌘", "⌥", "H"],
+                hint: shortcutKeys("go-project-home"),
                 run: () => {
                   closeCommandPalette();
                   selectWorkspace(projectHead.id);
@@ -256,18 +256,10 @@ function CommandPaletteContent() {
         sublabel: `in ${selectedWorkspace.branch}`,
         icon: <Icons.PlusIcon size={13} />,
         keywords: "new agent claude start",
-        hint: ["⌘", "⇧", "A"],
+        hint: shortcutKeys("new-agent"),
         run: () => {
           closeCommandPalette();
-          startAgent(wsId)
-            .then((info) =>
-              addAgent({
-                agent_id: info.agent_id,
-                workspace_id: info.workspace_id,
-                status: "running",
-              }),
-            )
-            .catch(() => {});
+          startAgentInWorkspace(wsId).catch(() => {});
         },
       });
 
@@ -282,7 +274,7 @@ function CommandPaletteContent() {
             title: "Next agent tab",
             icon: <Icons.ArgusLogo size={13} />,
             keywords: "next agent tab cycle switch",
-            hint: ["⌘", "⇧", "]"],
+            hint: shortcutKeys("next-agent-tab"),
             run: () => {
               closeCommandPalette();
               cycleActiveAgent(wsId, 1);
@@ -294,7 +286,7 @@ function CommandPaletteContent() {
             title: "Previous agent tab",
             icon: <Icons.ArgusLogo size={13} />,
             keywords: "previous prev agent tab cycle switch",
-            hint: ["⌘", "⇧", "["],
+            hint: shortcutKeys("prev-agent-tab"),
             run: () => {
               closeCommandPalette();
               cycleActiveAgent(wsId, -1);
