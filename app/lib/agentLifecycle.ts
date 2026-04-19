@@ -1,9 +1,25 @@
 import type { AgentStatus } from "./types";
-import { addAgent, setActiveAgent } from "../stores/agentStore";
+import {
+  addAgent,
+  getAgent,
+  setActiveAgent,
+  updateAgent,
+} from "../stores/agentStore";
+import {
+  addUserMessage,
+  queueMessage,
+} from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { selectWorkspace } from "../stores/workspaceStore";
-import { startAgentListening } from "./agentEventService";
-import { startAgent as apiStartAgent } from "./ipc";
+import {
+  notifyMessageSent,
+  startAgentListening,
+} from "./agentEventService";
+import {
+  type ImageAttachment,
+  sendAgentMessage,
+  startAgent as apiStartAgent,
+} from "./ipc";
 
 interface StartAgentOptions {
   focus?: boolean;
@@ -53,4 +69,38 @@ export function focusAgent(workspaceId: string, agentId: string): void {
   selectWorkspace(workspaceId);
   setActiveAgent(workspaceId, agentId);
   setActiveCenterView("agents");
+}
+
+/**
+ * Send a user-authored message to an agent, matching the behavior of the
+ * chat input: optimistically adds the message to the transcript, marks the
+ * agent as running, and either sends immediately or queues if the agent is
+ * already processing a prior turn.
+ *
+ * Use this from every call site that programmatically messages an agent
+ * (chat input, conflict-fix dispatch, command palette, etc.) so the
+ * transcript and status stay consistent.
+ *
+ * Pass `assumeIdle: true` immediately after `startAgentInWorkspace` — the
+ * freshly-spawned agent is marked "running" before any turn has begun, so
+ * we want to send directly instead of queueing.
+ */
+export async function sendUserMessageToAgent(
+  agentId: string,
+  text: string,
+  images?: ImageAttachment[],
+  options: { assumeIdle?: boolean } = {},
+): Promise<void> {
+  const status = getAgent(agentId)?.status;
+
+  if (!options.assumeIdle && status === "running") {
+    queueMessage(agentId, text, images);
+
+    return;
+  }
+
+  addUserMessage(agentId, text, images);
+  notifyMessageSent(agentId);
+  updateAgent(agentId, { status: "running" });
+  await sendAgentMessage(agentId, text, images);
 }
