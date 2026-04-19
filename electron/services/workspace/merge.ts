@@ -86,6 +86,22 @@ export async function mergeWorkspaceIntoBase(
     throw `Cannot merge: ${conflicts.length} conflicting file(s):\n${conflicts.join("\n")}`;
   }
 
+  // If the base branch is already checked out in an existing worktree, merge
+  // there directly — git refuses to check out the same branch in two worktrees.
+  const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
+
+  if (existingCheckout) {
+    const mergeMsg = `Merge ${workspaceBranch} into ${baseBranch}`;
+    await git(existingCheckout, [
+      "merge",
+      "--no-ff",
+      workspaceBranch,
+      "-m",
+      mergeMsg,
+    ]);
+    return;
+  }
+
   // Create a temporary worktree for the base branch.
   const tempName = `_merge-staging-${crypto.randomUUID()}`;
   const tempPath = `${worktreesRoot(repoRoot)}/${tempName}`;
@@ -128,6 +144,34 @@ export async function mergeWorkspaceIntoBase(
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Return the path of an existing worktree that currently has `branch` checked
+ * out, or `null` if none does. Parses `git worktree list --porcelain`.
+ */
+async function findWorktreeForBranch(
+  repoRoot: string,
+  branch: string,
+): Promise<string | null> {
+  const raw = await git(repoRoot, ["worktree", "list", "--porcelain"]);
+  const fullRef = `refs/heads/${branch}`;
+  let currentPath: string | null = null;
+
+  for (const line of raw.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      currentPath = line.slice("worktree ".length).trim();
+    } else if (line.startsWith("branch ")) {
+      const ref = line.slice("branch ".length).trim();
+      if (ref === fullRef && currentPath) {
+        return currentPath;
+      }
+    } else if (line === "") {
+      currentPath = null;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Parse conflicting file paths from `git merge-tree --write-tree` stdout.
