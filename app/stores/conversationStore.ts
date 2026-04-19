@@ -23,7 +23,17 @@ export type ToolResultBlock =
     }
   | { text: string; type: "text" };
 
+export type ToolCallChild =
+  | { kind: "text"; text: string }
+  | { kind: "tool_use"; toolCall: ToolCallInfo };
+
 export interface ToolCallInfo {
+  /**
+   * Nested events streamed by a sub-agent (Task/Agent). Only populated on
+   * parent Task/Agent tool calls whose sub-agent emitted text or tool_use
+   * blocks with `parent_tool_use_id === this.id`.
+   */
+  children?: ToolCallChild[];
   id: string;
   input: Record<string, unknown>;
   isError?: boolean;
@@ -89,6 +99,72 @@ interface ConversationStoreData {
 
 function emptyConversation(): AgentConversation {
   return { messages: [], queuedMessages: [] };
+}
+
+/**
+ * Walk a tool call tree and apply `updater` to the call whose id matches.
+ * Returns a new tool call with updated descendants, or null if not found.
+ */
+function updateToolCallTree(
+  tc: ToolCallInfo,
+  id: string,
+  updater: (tc: ToolCallInfo) => ToolCallInfo,
+): ToolCallInfo | null {
+  if (tc.id === id) {
+    return updater(tc);
+  }
+  if (!tc.children || tc.children.length === 0) {
+    return null;
+  }
+  let changed = false;
+  const nextChildren = tc.children.map((child) => {
+    if (child.kind !== "tool_use") {
+      return child;
+    }
+    const updated = updateToolCallTree(child.toolCall, id, updater);
+    if (updated) {
+      changed = true;
+
+      return { kind: "tool_use" as const, toolCall: updated };
+    }
+
+    return child;
+  });
+
+  return changed ? { ...tc, children: nextChildren } : null;
+}
+
+/**
+ * Scan all messages for the tool call with `id`, applying `updater`. Returns
+ * new messages array if found (with that tool call updated), or null.
+ */
+function updateToolCallInMessages(
+  messages: ConversationMessage[],
+  id: string,
+  updater: (tc: ToolCallInfo) => ToolCallInfo,
+): ConversationMessage[] | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    let changed = false;
+    const nextCalls = msg.toolCalls.map((tc) => {
+      const updated = updateToolCallTree(tc, id, updater);
+      if (updated) {
+        changed = true;
+
+        return updated;
+      }
+
+      return tc;
+    });
+    if (changed) {
+      const next = [...messages];
+      next[i] = { ...msg, toolCalls: nextCalls };
+
+      return next;
+    }
+  }
+
+  return null;
 }
 
 const conversationStore = create<ConversationStoreData>(() => ({
@@ -308,6 +384,48 @@ export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
 
     if (event.type === "assistant") {
       const content: ClaudeContentBlock[] = event.message.content ?? [];
+
+      // Sub-agent messages: nest under the parent Task/Agent tool call.
+      if (event.parent_tool_use_id) {
+        const parentId = event.parent_tool_use_id;
+        const newChildren: ToolCallChild[] = content.map((block) => {
+          if (block.type === "text") {
+            return { kind: "text", text: block.text };
+          }
+
+          return {
+            kind: "tool_use",
+            toolCall: {
+              id: block.id,
+              name: block.name,
+              input: block.input,
+            },
+          };
+        });
+        const nextMessages = updateToolCallInMessages(
+          existing.messages,
+          parentId,
+          (tc) => ({
+            ...tc,
+            children: [...(tc.children ?? []), ...newChildren],
+          }),
+        );
+        if (!nextMessages) {
+          return state;
+        }
+
+        return {
+          conversations: {
+            ...state.conversations,
+            [agentId]: {
+              ...existing,
+              lastEventType: event.type,
+              messages: nextMessages,
+            },
+          },
+        };
+      }
+
       const textBlocks: string[] = [];
       const toolCalls: ToolCallInfo[] = [];
 
@@ -354,6 +472,53 @@ export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
       const results = event.message.content ?? [];
       if (results.length === 0) {
         return state;
+      }
+
+      // Sub-agent tool_results: attach to matching children within the parent.
+      if (event.parent_tool_use_id) {
+        let messages = existing.messages;
+        for (const match of results) {
+          const next = updateToolCallInMessages(
+            messages,
+            match.tool_use_id,
+            (tc) => {
+              const raw = match.content;
+              let result: ToolResultBlock[] | string;
+              if (typeof raw === "string") {
+                result = raw;
+              } else if (Array.isArray(raw)) {
+                result = raw as ToolResultBlock[];
+              } else {
+                result = JSON.stringify(raw, null, 2);
+              }
+              const isDenyAnswerFlow =
+                tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
+
+              return {
+                ...tc,
+                result,
+                isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
+              };
+            },
+          );
+          if (next) {
+            messages = next;
+          }
+        }
+        if (messages === existing.messages) {
+          return state;
+        }
+
+        return {
+          conversations: {
+            ...state.conversations,
+            [agentId]: {
+              ...existing,
+              lastEventType: event.type,
+              messages,
+            },
+          },
+        };
       }
 
       const messages = [...existing.messages];

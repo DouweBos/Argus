@@ -118,6 +118,154 @@ describe("conversationStore", () => {
     expect(conv.totalDuration).toBe(1500);
   });
 
+  it("nests sub-agent text under parent tool call via parent_tool_use_id", () => {
+    // Top-level Task tool call
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "task-1",
+            name: "Task",
+            input: { description: "do stuff" },
+          },
+        ],
+        model: "claude-sonnet-4-20250514",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    // Sub-agent text response
+    appendEvent("agent-1", {
+      type: "assistant",
+      parent_tool_use_id: "task-1",
+      message: {
+        content: [{ type: "text", text: "exploring..." }],
+        model: "claude-sonnet-4-20250514",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+
+    const conv = getConversationState().conversations["agent-1"];
+    expect(conv.messages).toHaveLength(1);
+    const parent = conv.messages[0].toolCalls[0];
+    expect(parent.children).toHaveLength(1);
+    expect(parent.children![0]).toEqual({ kind: "text", text: "exploring..." });
+  });
+
+  it("nests sub-agent tool_use inside parent Task tool call", () => {
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "task-1",
+            name: "Task",
+            input: {},
+          },
+        ],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    appendEvent("agent-1", {
+      type: "assistant",
+      parent_tool_use_id: "task-1",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "read-1",
+            name: "Read",
+            input: { file_path: "/a" },
+          },
+        ],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+
+    const conv = getConversationState().conversations["agent-1"];
+    const parent = conv.messages[0].toolCalls[0];
+    expect(parent.children).toHaveLength(1);
+    const child = parent.children![0];
+    expect(child).toEqual({
+      kind: "tool_use",
+      toolCall: {
+        id: "read-1",
+        name: "Read",
+        input: { file_path: "/a" },
+      },
+    });
+  });
+
+  it("matches sub-agent tool_result to nested child by tool_use_id", () => {
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [{ type: "tool_use", id: "task-1", name: "Task", input: {} }],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    appendEvent("agent-1", {
+      type: "assistant",
+      parent_tool_use_id: "task-1",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "read-1",
+            name: "Read",
+            input: { file_path: "/a" },
+          },
+        ],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    appendEvent("agent-1", {
+      type: "user",
+      parent_tool_use_id: "task-1",
+      message: {
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "read-1",
+            content: "file contents",
+          },
+        ],
+      },
+    });
+
+    const conv = getConversationState().conversations["agent-1"];
+    const parent = conv.messages[0].toolCalls[0];
+    const child = parent.children![0];
+    expect(child).toMatchObject({
+      kind: "tool_use",
+      toolCall: {
+        id: "read-1",
+        result: "file contents",
+        isError: false,
+      },
+    });
+  });
+
+  it("still produces top-level messages when parent_tool_use_id is absent", () => {
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [{ type: "text", text: "hi" }],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    const conv = getConversationState().conversations["agent-1"];
+    expect(conv.messages).toHaveLength(1);
+    expect(conv.messages[0].textBlocks).toEqual(["hi"]);
+  });
+
   it("stores capabilities from initialize response", () => {
     const capabilities = {
       commands: [

@@ -265,6 +265,9 @@ export function ToolCallCard({
   const expanded = !!toolCall.pendingPermission || userExpanded;
 
   const isAgent = toolCall.name === "Agent";
+  const isSubAgentParent =
+    toolCall.name === "Agent" || toolCall.name === "Task";
+  const children = toolCall.children ?? [];
   const agentType = isAgent
     ? ((toolCall.input.subagent_type ?? "") as string) || "Agent"
     : "";
@@ -540,6 +543,27 @@ export function ToolCallCard({
                 )}
               </>
             ))}
+
+          {isSubAgentParent && children.length > 0 && (
+            <div className={styles.section}>
+              <span className={styles.sectionLabel}>Sub-agent activity</span>
+              <div className={styles.children}>
+                {children.map((child, i) =>
+                  child.kind === "text" ? (
+                    <div className={styles.childText} key={i}>
+                      <LinkifiedText text={child.text} />
+                    </div>
+                  ) : (
+                    <ToolCallCard
+                      agentId={agentId}
+                      key={child.toolCall.id}
+                      toolCall={child.toolCall}
+                    />
+                  ),
+                )}
+              </div>
+            </div>
+          )}
 
           {isPending &&
             agentId &&

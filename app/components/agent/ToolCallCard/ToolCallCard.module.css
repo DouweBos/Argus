@@ -252,6 +252,24 @@
   outline-color: var(--accent);
 }
 
+/* Nested sub-agent children — indented vertical stream. */
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 4px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.childText {
+  font: var(--type-body);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 2px 0;
+}
+
 /* Permission action buttons row */
 .permissionActions {
   display: flex;
