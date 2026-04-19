@@ -1,6 +1,7 @@
 import type { GitStashEntry } from "../../../lib/ipc";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
+import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import {
   gitFetch,
@@ -110,6 +111,63 @@ export function ChangesToolbar({
       setLoadingStashes(false);
     }
   }, [stashDrop, workspaceId]);
+
+  // Tower-style remote and stash shortcuts. Mounted only on the working-copy
+  // sub-view, so registration is implicitly gated to the relevant context.
+  const shortcuts = useMemo(
+    () => [
+      // Fetch: Shift+Cmd+F
+      {
+        key: "f",
+        meta: true,
+        shift: true,
+        handler: () => runAction("fetch", () => gitFetch(workspaceId)),
+      },
+      // Pull (tracked branch, no rebase): Shift+Cmd+P
+      {
+        key: "p",
+        meta: true,
+        shift: true,
+        handler: () => runAction("pull", () => gitPull(workspaceId)),
+      },
+      // Push: Shift+Cmd+U
+      {
+        key: "u",
+        meta: true,
+        shift: true,
+        handler: () => runAction("push", () => gitPush(workspaceId)),
+      },
+      // Save stash: Shift+Cmd+S
+      {
+        key: "s",
+        meta: true,
+        shift: true,
+        handler: () => runAction("stash", () => gitStash(workspaceId)),
+      },
+      // Apply most recent stash: Shift+Opt+Cmd+S
+      {
+        key: "s",
+        meta: true,
+        shift: true,
+        alt: true,
+        handler: async () => {
+          try {
+            const list = await gitStashList(workspaceId);
+            if (list.length === 0) {
+              return;
+            }
+            await runAction("stash-apply", () =>
+              gitStashApply(workspaceId, list[0]!.index),
+            );
+          } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+          }
+        },
+      },
+    ],
+    [runAction, workspaceId],
+  );
+  useGlobalShortcuts(shortcuts);
 
   const subtitle = `Working Copy (${branchName ?? "unknown"} – ${fileCount} Changed File${fileCount !== 1 ? "s" : ""})`;
 

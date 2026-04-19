@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { BranchView } from "../BranchView";
 import { DiffViewer } from "../DiffViewer";
 import { HistoryView } from "../HistoryView";
@@ -30,6 +31,19 @@ export function GitView({
     setPrevWorkspaceId(workspaceId);
     setFileCount(0);
   }
+
+  // Tower-style Cmd+1..4 sub-view switching. Active whenever GitView is mounted
+  // (i.e. the center panel's git view is selected).
+  const shortcuts = useMemo(
+    () => [
+      { key: "1", meta: true, handler: () => setActiveView("working-copy") },
+      { key: "2", meta: true, handler: () => setActiveView("branch") },
+      { key: "3", meta: true, handler: () => setActiveView("history") },
+      { key: "4", meta: true, handler: () => setActiveView("stashes") },
+    ],
+    [],
+  );
+  useGlobalShortcuts(shortcuts);
 
   return (
     <div className={styles.container}>
