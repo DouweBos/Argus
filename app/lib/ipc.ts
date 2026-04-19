@@ -18,6 +18,7 @@ import type {
   ClaudeUsage,
   ConductorLogEntry,
   DeviceInfo,
+  DevicePlatform,
   DirEntry,
   FileStat,
   MentionPathResult,
@@ -610,6 +611,11 @@ export const browserGetMjpegPort = (): Promise<number> =>
 
 // Devices + conductor logs
 export const listDevices = (): Promise<DeviceInfo[]> => invoke("list_devices");
+
+export const stopDevice = (
+  platform: DevicePlatform,
+  deviceKey: string,
+): Promise<void> => invoke("stop_device", { platform, deviceKey });
 
 export const listConductorLogs = (
   deviceKey: string,

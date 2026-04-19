@@ -4,9 +4,17 @@
  * agent / workspace / project.
  */
 
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { appState } from "../../state";
-import { listAndroidDevices } from "../simulator/android";
-import { listSimulators } from "../simulator/ios";
+import { webBrowserPool } from "../browser/pool";
+import {
+  disconnectAndroidDevice,
+  listAndroidDevices,
+} from "../simulator/android";
+import { disconnectSimulator, listSimulators } from "../simulator/ios";
+
+const execFileAsync = promisify(execFile);
 
 export type DevicePlatform = "android" | "ios" | "web";
 
@@ -134,4 +142,54 @@ export async function listDevices(): Promise<DeviceInfo[]> {
   }
 
   return out;
+}
+
+/**
+ * Stop (shutdown / kill) a running device.
+ *
+ * - iOS: `xcrun simctl shutdown <udid>`, then clear any capture state.
+ * - Android: `adb -s <serial> emu kill` (emulators only; no-op for physical).
+ * - Web: release the browser reservation by its pool key.
+ */
+export async function stopDevice(
+  platform: DevicePlatform,
+  deviceKey: string,
+): Promise<void> {
+  if (platform === "ios") {
+    try {
+      await execFileAsync("xcrun", ["simctl", "shutdown", deviceKey]);
+    } catch (e) {
+      const msg = String(e);
+      // Already shut down is not a real error.
+      if (!msg.includes("Shutdown") && !msg.includes("current state")) {
+        throw `Failed to shutdown simulator: ${msg}`;
+      }
+    }
+    disconnectSimulator(deviceKey);
+
+    return;
+  }
+
+  if (platform === "android") {
+    try {
+      await execFileAsync("adb", ["-s", deviceKey, "emu", "kill"]);
+    } catch (e) {
+      throw `Failed to stop Android device: ${String(e)}`;
+    }
+    disconnectAndroidDevice(deviceKey);
+
+    return;
+  }
+
+  if (platform === "web") {
+    // `deviceKey` here is the conductor deviceId; reservations are keyed by
+    // agent/workspace id, so look up the reservation by matching deviceId.
+    for (const [key, r] of appState.webBrowserReservations.entries()) {
+      if (r.deviceId === deviceKey) {
+        await webBrowserPool.releaseBrowser(key);
+
+        return;
+      }
+    }
+  }
 }
