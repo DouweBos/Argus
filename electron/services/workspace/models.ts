@@ -40,6 +40,8 @@ export interface Workspace {
   env_index?: number | null;
   /** The branch this workspace was created from (e.g. "main"). */
   base_branch?: string | null;
+  /** OrgTask that owns this workspace (if spawned from a cross-repo task). */
+  organization_task_id?: string | null;
 }
 
 /** A terminal to auto-open when loading a workspace. */

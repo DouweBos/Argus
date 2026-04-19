@@ -57,6 +57,7 @@ import { webBrowserPool } from "../browser/pool";
 import { getConductorSkillPath } from "../cli/conductorInstaller";
 import { getMcpPort } from "../mcp/server";
 import { organizationsForRepo } from "../organization/manager";
+import { findOrgTaskForWorkspace } from "../organizationTask/manager";
 import { simulatorPool } from "../simulator/pool";
 import { incrementCommandMetric } from "../workspace/commandMetrics";
 import { loadArgusConfig } from "../workspace/setup";
@@ -177,7 +178,10 @@ function getConductorSkill(): string {
  * prompt, and the roles of sibling member repos so the agent understands the
  * wider product. Returns an empty string if the repo isn't part of any org.
  */
-function buildOrganizationContext(repoRoot: string): string {
+function buildOrganizationContext(
+  repoRoot: string,
+  workspaceId: string,
+): string {
   const orgs = organizationsForRepo(repoRoot);
   if (orgs.length === 0) {
     return "";
@@ -205,7 +209,53 @@ function buildOrganizationContext(repoRoot: string): string {
     return lines.join("\n");
   });
 
-  return `## Organization Context\n\n${sections.join("\n\n")}`;
+  let base = `## Organization Context\n\n${sections.join("\n\n")}`;
+
+  // If this workspace belongs to a cross-repo OrgTask, surface the task and
+  // the live worktree paths of sibling agents so this agent can coordinate.
+  const task = findOrgTaskForWorkspace(workspaceId);
+  if (task) {
+    const taskLines: string[] = [
+      "",
+      "## Current Cross-Repo Task",
+      "",
+      `**Task:** ${task.title}`,
+      "",
+      "**Shared prompt:**",
+      "",
+      task.prompt,
+      "",
+      "**Sibling agents running in parallel:**",
+    ];
+    let siblingCount = 0;
+    for (const m of task.members) {
+      if (m.workspace_id === workspaceId) {
+        continue;
+      }
+      const siblingWs = m.workspace_id
+        ? appState.workspaces.get(m.workspace_id)
+        : null;
+      const pathLabel = siblingWs?.path ?? "(workspace pending)";
+      const role = m.role || "(no role described)";
+      taskLines.push(`- \`${pathLabel}\` — ${role} (${m.repo_root})`);
+      siblingCount += 1;
+    }
+    if (siblingCount > 0) {
+      taskLines.push(
+        "",
+        "These sibling worktrees are checked out on disk alongside yours — you can read their files directly via the absolute paths above to understand what they're building. Use `spawn_agent` / `wait_for_agent` / `send_agent_message` via the Argus MCP tools when you need to coordinate with those agents (hand off state, ask for an API shape, etc.). Stay in your own repo; let siblings handle theirs.",
+      );
+    } else {
+      taskLines.push(
+        "",
+        "No sibling agents are running — you are the only agent working on this task.",
+      );
+    }
+
+    base += "\n" + taskLines.join("\n");
+  }
+
+  return base;
 }
 
 // ---------------------------------------------------------------------------
@@ -670,7 +720,10 @@ export async function startAgent(
   const systemPrompt = getSystemPromptForKind(workspace.kind);
   const conductorSkill = getConductorSkill();
   const projectContext = `## Current Project\n\nYou are working in **${workspace.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${workspace.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
-  const orgContext = buildOrganizationContext(workspace.repo_root);
+  const orgContext = buildOrganizationContext(
+    workspace.repo_root,
+    workspace.id,
+  );
   const combinedPrompt = [
     systemPrompt,
     projectContext,

@@ -82,6 +82,15 @@ import {
   removeRepoFromOrganization,
   listOrganizations,
 } from "./services/organization/manager";
+import {
+  deleteOrgTask,
+  getOrgTask,
+  listOrgTasks,
+} from "./services/organizationTask/manager";
+import {
+  cancelOrgTask,
+  startOrgTask,
+} from "./services/organizationTask/orchestrator";
 import { openExternalUrl, revealInFinder } from "./services/shell/operations";
 import {
   checkAndroidTools,
@@ -340,6 +349,22 @@ export function registerIpcHandlers(): void {
   handle("remove_repo_from_organization", (a) =>
     removeRepoFromOrganization(a.id as string, a.repoRoot as string),
   );
+
+  // Organization tasks — cross-repo feature work that fans out to members.
+  handle("list_org_tasks", (a) =>
+    listOrgTasks(a.organizationId as string | undefined),
+  );
+  handle("get_org_task", (a) => getOrgTask(a.id as string));
+  handle("start_org_task", (a) =>
+    startOrgTask({
+      organizationId: a.organizationId as string,
+      title: a.title as string,
+      prompt: a.prompt as string,
+      members: a.members as { repo_root: string; addendum?: string }[],
+    }),
+  );
+  handle("cancel_org_task", (a) => cancelOrgTask(a.id as string));
+  handle("delete_org_task", (a) => deleteOrgTask(a.id as string));
 
   // Workspace ops
   handle("get_repo_branch", (a) => getRepoBranch(a.repoRoot as string));

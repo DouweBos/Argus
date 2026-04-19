@@ -23,6 +23,7 @@ import {
   useOpenProjectVisible,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
+import { useOrgTaskSync } from "../../../stores/orgTaskStore";
 import {
   setLeftPanelWidth,
   toggleLeftSidebar,
@@ -42,6 +43,8 @@ import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewWorkspacePicker } from "../../home/HomeScreen/NewWorkspacePicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
+import { OrgTaskOverlay } from "../../organizations/OrgTaskScreen";
+import { StartTaskDialogHost } from "../../organizations/StartTaskDialog";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
@@ -90,6 +93,7 @@ export function AppShell() {
   const setLeftWidth = setLeftPanelWidth;
   useWindowFocus();
   useSuppressSpacePageScroll();
+  useOrgTaskSync();
 
   const startNewAgentInCurrent = useCallback(async () => {
     const { selectedId: id } = getWorkspaceState();
@@ -229,6 +233,7 @@ export function AppShell() {
 
         <main className={styles.center}>
           <ErrorBoundary>{renderCenter(selectedId, centerView)}</ErrorBoundary>
+          <OrgTaskOverlay />
           <PermissionBanner />
         </main>
 
@@ -268,6 +273,8 @@ export function AppShell() {
           onClose={hideCreateWorkspaceDialog}
         />
       )}
+
+      <StartTaskDialogHost />
     </div>
   );
 }
