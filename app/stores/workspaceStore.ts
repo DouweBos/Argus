@@ -13,7 +13,6 @@ export interface Project {
 }
 
 interface WorkspaceStoreData {
-  error: string | null;
   isLoading: boolean;
   projects: Project[];
   selectedId: string | null;
@@ -30,7 +29,6 @@ const workspaceStore = create<WorkspaceStoreData>(() => ({
   workspaces: [],
   selectedId: null,
   isLoading: false,
-  error: null,
   setupProgressByWorkspaceId: {},
 }));
 
@@ -172,10 +170,6 @@ export const setLoading = (isLoading: boolean) => {
   workspaceStore.setState({ isLoading });
 };
 
-export const setError = (error: string | null) => {
-  workspaceStore.setState({ error });
-};
-
 export const setSetupProgress = (
   workspaceId: string,
   progress: { current: number; item: string; total: number } | null,
@@ -201,8 +195,6 @@ export const useWorkspaceProjects = () => useWorkspaceStore((s) => s.projects);
 
 export const useSelectedWorkspaceId = () =>
   useWorkspaceStore((s) => s.selectedId);
-
-export const useWorkspaceError = () => useWorkspaceStore((s) => s.error);
 
 export const useWorkspaceLoading = () => useWorkspaceStore((s) => s.isLoading);
 

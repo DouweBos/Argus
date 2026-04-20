@@ -1,10 +1,19 @@
 import type { SVGProps } from "react";
 import { Icons } from "@argus/peacock";
 import {
+  setCenterView,
+  useCenterView,
+} from "../../../stores/centerViewStore";
+import {
   type ToolId,
   toggleTool,
   useActiveToolId,
 } from "../../../stores/layoutStore";
+import {
+  useNotifications,
+  useUnseenNotificationCount,
+} from "../../../stores/notificationsStore";
+import { selectWorkspace, useSelectedWorkspaceId } from "../../../stores/workspaceStore";
 import styles from "./ToolRail.module.css";
 
 type IconComponent = React.ComponentType<
@@ -25,20 +34,56 @@ const TOOLS: ToolDef[] = [
 
 export function ToolRail() {
   const activeToolId = useActiveToolId();
+  const selectedWorkspaceId = useSelectedWorkspaceId();
+  const centerView = useCenterView();
+  const notifications = useNotifications();
+  const unseen = useUnseenNotificationCount();
+
+  const notificationsActive = centerView === "notifications";
+  const hasEntries = notifications.length > 0;
+  const hasError = notifications.some((n) => n.level === "error");
+
+  const openNotifications = () => {
+    if (notificationsActive) {
+      return;
+    }
+    selectWorkspace(null);
+    setCenterView("notifications");
+  };
 
   return (
     <div className={styles.rail}>
-      {TOOLS.map(({ id, label, icon: Icon }) => (
-        <button
-          key={id}
-          aria-label={label}
-          className={`${styles.tool} ${activeToolId === id ? styles.active : ""}`}
-          title={label}
-          onClick={() => toggleTool(id)}
-        >
-          <Icon size={18} />
-        </button>
-      ))}
+      {selectedWorkspaceId !== null &&
+        TOOLS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            aria-label={label}
+            className={`${styles.tool} ${activeToolId === id ? styles.active : ""}`}
+            title={label}
+            onClick={() => toggleTool(id)}
+          >
+            <Icon size={18} />
+          </button>
+        ))}
+
+      <div className={styles.spacer} />
+
+      <button
+        aria-label="Warnings and errors"
+        className={`${styles.tool} ${notificationsActive ? styles.active : ""}`}
+        title="Warnings & errors"
+        onClick={openNotifications}
+      >
+        <Icons.WarningIcon size={18} />
+        {hasEntries && (
+          <span
+            className={`${styles.badge} ${hasError ? styles.badgeError : styles.badgeWarning}`}
+            data-unseen={unseen > 0 ? "true" : "false"}
+          >
+            {notifications.length > 99 ? "99+" : notifications.length}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

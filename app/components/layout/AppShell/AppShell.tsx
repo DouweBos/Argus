@@ -43,6 +43,7 @@ import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewWorkspacePicker } from "../../home/HomeScreen/NewWorkspacePicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
+import { NotificationsScreen } from "../../notifications";
 import { OrganizationsScreen } from "../../organizations";
 import { OrgTaskOverlay } from "../../organizations/OrgTaskScreen";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
@@ -70,9 +71,13 @@ function renderCenter(
     | "agents"
     | "devices"
     | "home"
+    | "notifications"
     | "organizations"
     | "review-queue",
 ) {
+  if (centerView === "notifications") {
+    return <NotificationsScreen />;
+  }
   if (selectedId !== null) {
     return <CenterPanel workspaceId={selectedId} />;
   }
@@ -242,12 +247,8 @@ export function AppShell() {
           <PermissionBanner />
         </main>
 
-        {selectedId !== null && (
-          <>
-            <ToolPanel workspaceId={selectedId} />
-            <ToolRail />
-          </>
-        )}
+        {selectedId !== null && <ToolPanel workspaceId={selectedId} />}
+        <ToolRail />
       </div>
 
       <CommandPalette />

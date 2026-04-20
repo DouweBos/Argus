@@ -13,6 +13,7 @@ import {
 } from "../lib/ipc";
 import { seedReviewStateForWorkspace } from "../lib/reviewQueueService";
 import { getAgentState, removeAgent } from "../stores/agentStore";
+import { pushError } from "../stores/notificationsStore";
 import {
   addOpenProject,
   addRecentProject,
@@ -27,12 +28,10 @@ import {
   removeProject,
   removeWorkspace,
   selectWorkspace,
-  setError,
   setProjectBranch,
   setSetupProgress,
   updateWorkspace,
   useSelectedWorkspaceId,
-  useWorkspaceError,
   useWorkspaceLoading,
   useWorkspaceProjects,
   useWorkspaces,
@@ -96,7 +95,6 @@ function setupWorkspaceProgressListener(
 export function useProjects() {
   const projects = useWorkspaceProjects();
   const selectedId = useSelectedWorkspaceId();
-  const error = useWorkspaceError();
   const isLoading = useWorkspaceLoading();
 
   const openProject = useCallback(
@@ -104,7 +102,6 @@ export function useProjects() {
       path: string,
       options?: { autoSelect?: boolean; skipRecent?: boolean },
     ) => {
-      setError(null);
       try {
         await apiAddRepoRoot(path);
         addProject(path);
@@ -150,7 +147,10 @@ export function useProjects() {
         }
         addOpenProject(path);
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        pushError(
+          err instanceof Error ? err.message : String(err),
+          "open_project",
+        );
         throw err;
       }
     },
@@ -158,13 +158,15 @@ export function useProjects() {
   );
 
   const closeProject = useCallback(async (repoRoot: string) => {
-    setError(null);
     try {
       await apiRemoveRepoRoot(repoRoot);
       removeProject(repoRoot);
       removeOpenProject(repoRoot);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      pushError(
+        err instanceof Error ? err.message : String(err),
+        "close_project",
+      );
     }
   }, []);
 
@@ -189,7 +191,7 @@ export function useProjects() {
       "workspace:delete-failed",
       (event) => {
         const { error: message } = event.payload;
-        setError(`Failed to delete workspace: ${message}`);
+        pushError(`Failed to delete workspace: ${message}`, "delete_workspace");
       },
     );
 
@@ -273,7 +275,6 @@ export function useProjects() {
     selectWorkspace,
     openProject,
     closeProject,
-    error,
     isLoading,
   };
 }
@@ -406,7 +407,6 @@ export function useProjectWorkspaces(repoRoot: string) {
       useExistingBranch?: boolean,
       baseBranch?: string,
     ) => {
-      setError(null);
       try {
         const workspace = await apiCreateWorkspace(
           repoRoot,
@@ -429,7 +429,10 @@ export function useProjectWorkspaces(repoRoot: string) {
 
         return workspace;
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        pushError(
+          err instanceof Error ? err.message : String(err),
+          "create_workspace",
+        );
         throw err;
       }
     },
@@ -438,7 +441,6 @@ export function useProjectWorkspaces(repoRoot: string) {
 
   const deleteWorkspace = useCallback(
     async (id: string, deleteBranch?: boolean) => {
-      setError(null);
       try {
         // The backend marks the workspace as "deleting" and emits
         // `workspace:deleted` once the worktree is fully removed. Don't
@@ -447,7 +449,10 @@ export function useProjectWorkspaces(repoRoot: string) {
         // ahead of the actual filesystem deletion.
         await apiDeleteWorkspace(id, deleteBranch);
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        pushError(
+          err instanceof Error ? err.message : String(err),
+          "delete_workspace",
+        );
         throw err;
       }
     },

@@ -28,6 +28,10 @@ import {
 } from "../stores/conversationStore";
 import { getWorkspaceState } from "../stores/workspaceStore";
 import { recordAgentLifecycle } from "./activityService";
+import {
+  notifyAgentFinished,
+  notifyPermissionRequested,
+} from "./agentNotifications";
 import { deriveTitle } from "./chatHistory";
 import { type UnlistenFn, listen } from "./events";
 import {
@@ -276,8 +280,14 @@ export function startAgentListening(agentId: string): void {
       // arrive at all for text-only responses.
       if (parsed.type === "result") {
         inflight.delete(agentId);
-        if (!trySendNextQueued(agentId)) {
+        const drained = trySendNextQueued(agentId);
+        if (!drained) {
           trySetIdle(agentId);
+          notifyAgentFinished(
+            agentId,
+            parsed.duration_ms,
+            parsed.subtype === "error" ? "error" : "success",
+          );
         }
       }
 
@@ -350,6 +360,7 @@ export function startAgentListening(agentId: string): void {
 
   listen<PermissionRequest>(`agent:permission:${agentId}`, (event) => {
     const request = event.payload;
+    notifyPermissionRequested(agentId, request);
     const found = setPermissionPending(agentId, request);
     if (!found) {
       // Fallback: if the tool call hasn't been processed yet (unlikely but
