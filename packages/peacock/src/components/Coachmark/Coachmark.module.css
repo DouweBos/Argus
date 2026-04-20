@@ -1,0 +1,74 @@
+.coachmark {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 320px;
+  padding: 16px;
+  border-radius: var(--border-radius-medium);
+  background: var(--bg-elevated, rgba(20, 20, 24, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+.progress {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.skip {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.skip:hover {
+  color: var(--text-primary);
+}
+
+.next {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+}
+
+/* Placement hooks — consumers can position .coachmark absolutely; these
+   only tweak arrow-like accents in the future if needed. */
+.top,
+.bottom,
+.left,
+.right {
+  /* reserved for future arrow styling */
+}

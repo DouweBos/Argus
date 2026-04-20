@@ -1,0 +1,35 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-pill);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.pass {
+  background: rgba(0, 212, 170, 0.12);
+  color: var(--success);
+}
+.warn {
+  background: rgba(255, 213, 74, 0.12);
+  color: var(--warning);
+}
+.fail {
+  background: rgba(255, 68, 102, 0.12);
+  color: var(--error);
+}
+.skipped {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+.running {
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--accent);
+}

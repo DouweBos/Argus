@@ -13,19 +13,26 @@ import type {
 import type {
   AgentStatus,
   AndroidDevice,
+  ArgusConfig,
+  ArgusConfigSuggestion,
   BranchList,
   ConductorLogEntry,
   DependencyReport,
   DeviceInfo,
   DevicePlatform,
   DirEntry,
+  ExampleProject,
   FileStat,
   MentionPathResult,
+  OnboardingConfigFile,
+  OnboardingDefaults,
+  OnboardingStep,
   OrgTask,
   Organization,
   OrganizationMember,
+  PrereqId,
+  PrereqResult,
   SimulatorDevice,
-  ArgusConfig,
   Workspace,
 } from "./types";
 
@@ -741,3 +748,64 @@ export const getUiState = (key: string): Promise<string | null> =>
 
 export const setUiState = (key: string, value: string): Promise<void> =>
   invoke("ui_state_set", { key, value });
+
+// Onboarding
+export const getOnboardingState = (): Promise<OnboardingConfigFile> =>
+  invoke("onboarding_get_state");
+
+export const ensureArgusDir = (): Promise<{ path: string }> =>
+  invoke("onboarding_ensure_argus_dir");
+
+export const setOnboardingLastStep = (step: OnboardingStep): Promise<void> =>
+  invoke("onboarding_set_last_step", { step });
+
+export const addOnboardingSkipped = (id: string): Promise<void> =>
+  invoke("onboarding_add_skipped", { id });
+
+export const checkPrereqs = (ids?: PrereqId[]): Promise<PrereqResult[]> =>
+  invoke("onboarding_check_prereqs", ids ? { ids } : {});
+
+export const runPrereqFixer = (
+  id: PrereqId,
+  args?: { gitEmail?: string; gitName?: string },
+): Promise<{ error?: string; ok: boolean }> =>
+  invoke("onboarding_run_fixer", { id, ...(args ?? {}) });
+
+export const claudePing = (): Promise<{ error?: string; ok: boolean }> =>
+  invoke("onboarding_claude_ping");
+
+export const saveOnboardingDefaults = (
+  updates: Partial<OnboardingDefaults>,
+): Promise<OnboardingDefaults> =>
+  invoke("onboarding_save_defaults", updates as Record<string, unknown>);
+
+export const listOnboardingExamples = (): Promise<ExampleProject[]> =>
+  invoke("onboarding_list_examples");
+
+export const cloneOnboardingExample = (
+  slug: string,
+): Promise<{ path: string }> => invoke("onboarding_clone_example", { slug });
+
+export const registerOnboardingProject = (repoPath: string): Promise<void> =>
+  invoke("onboarding_register_project", { path: repoPath });
+
+export const suggestArgusJson = (
+  repoPath: string,
+): Promise<ArgusConfigSuggestion> =>
+  invoke("onboarding_suggest_argus_json", { path: repoPath });
+
+export const readExistingArgusJson = (
+  repoPath: string,
+): Promise<Record<string, unknown> | null> =>
+  invoke("onboarding_read_existing_argus_json", { path: repoPath });
+
+export const writeOnboardingArgusJson = (
+  repoPath: string,
+  config: Record<string, unknown>,
+): Promise<void> =>
+  invoke("onboarding_write_argus_json", { path: repoPath, config });
+
+export const completeOnboarding = (): Promise<void> =>
+  invoke("onboarding_complete");
+
+export const resetOnboarding = (): Promise<void> => invoke("onboarding_reset");
