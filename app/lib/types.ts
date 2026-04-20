@@ -403,7 +403,6 @@ export const ONBOARDING_STEPS = [
   "defaults",
   "project",
   "argus_config",
-  "layout_tour",
   "first_workspace",
   "first_agent",
   "completion",

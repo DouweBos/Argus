@@ -47,7 +47,7 @@ export function ArgusConfigStep() {
     setError(null);
     try {
       await writeOnboardingArgusJson(projectPath, config);
-      await advance("layout_tour");
+      await advance("first_workspace");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -56,10 +56,17 @@ export function ArgusConfigStep() {
   };
 
   const skip = async () => {
-    await advance("layout_tour");
+    await advance("first_workspace");
   };
 
   const configJson = config ? JSON.stringify(config, null, 2) : "";
+
+  let footerRight = "Write .argus.json";
+  if (busy) {
+    footerRight = "Saving…";
+  } else if (existing) {
+    footerRight = "Keep as-is";
+  }
 
   return (
     <OnboardingLayout
@@ -88,7 +95,7 @@ export function ArgusConfigStep() {
             save().catch(() => {});
           }}
         >
-          {busy ? "Saving…" : existing ? "Keep as-is" : "Write .argus.json"}
+          {footerRight}
         </Button>
       }
     >
