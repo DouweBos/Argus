@@ -1,39 +1,34 @@
 import { useState } from "react";
 import { Button, ChecklistRow } from "@argus/peacock";
 import { useOnboarding } from "../../hooks/useOnboarding";
-import { ensureArgusDir } from "../../lib/ipc";
 import { OnboardingLayout } from "./OnboardingLayout";
 
 export function PermissionsStep() {
   const { advance } = useOnboarding();
-  const [fsGranted, setFsGranted] = useState(false);
-  const [fsError, setFsError] = useState<string | null>(null);
   const [notifAsked, setNotifAsked] = useState(false);
   const [notifGranted, setNotifGranted] = useState<boolean | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const grantFs = async () => {
-    setBusy(true);
-    setFsError(null);
-    try {
-      await ensureArgusDir();
-      setFsGranted(true);
-    } catch (err) {
-      setFsError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const askNotifications = async () => {
     setNotifAsked(true);
     try {
-      if ("Notification" in window) {
-        const r = await Notification.requestPermission();
-        setNotifGranted(r === "granted");
-      } else {
+      if (!("Notification" in window)) {
         setNotifGranted(false);
+
+        return;
       }
+      // `Notification.requestPermission()` is a no-op in Electron on macOS —
+      // the OS permission prompt only fires when a real notification is
+      // constructed. Fire a test one so macOS asks the user, then read the
+      // permission state back.
+      await Notification.requestPermission();
+      const n = new Notification("Notifications enabled", {
+        body: "Argus will ping you when agents need your attention.",
+      });
+      // Close it shortly after so it doesn't sit in Notification Center.
+      setTimeout(() => {
+        n.close();
+      }, 2500);
+      setNotifGranted(Notification.permission === "granted");
     } catch {
       setNotifGranted(false);
     }
@@ -42,12 +37,11 @@ export function PermissionsStep() {
   return (
     <OnboardingLayout
       currentStep="permissions"
-      title="Grant a couple of permissions"
-      subtitle="Argus writes workspace state to ~/.argus/ and can send a notification when an agent finishes. Both are on-device — nothing leaves your Mac."
+      title="Enable notifications"
+      subtitle="Argus can ping you when an agent finishes a turn or needs permission while the app is in the background. On-device only — nothing leaves your Mac."
       footerRight={
         <Button
           variant="primary"
-          disabled={!fsGranted}
           onClick={() => {
             advance("preflight").catch(() => {});
           }}
@@ -57,40 +51,18 @@ export function PermissionsStep() {
       }
     >
       <ChecklistRow
-        title="File access for ~/.argus/"
-        message={
-          fsGranted
-            ? "Ready"
-            : (fsError ??
-              "Argus stores worktrees, logs, and cached state under your home directory.")
-        }
-        tone={fsGranted ? "pass" : fsError ? "fail" : "warn"}
-        action={
-          <Button
-            variant={fsGranted ? "ghost" : "primary"}
-            size="sm"
-            disabled={busy || fsGranted}
-            onClick={() => {
-              grantFs().catch(() => {});
-            }}
-          >
-            {fsGranted ? "Granted" : "Grant"}
-          </Button>
-        }
-      />
-      <ChecklistRow
         title="Notifications (optional)"
         message={
           notifAsked
             ? notifGranted
               ? "Enabled"
               : "Denied — you can enable later in System Settings"
-            : "Get a ping when an agent finishes a long task."
+            : "Get a ping when an agent finishes a turn or requests permission while the app is in the background."
         }
         tone={notifGranted === true ? "pass" : notifAsked ? "skipped" : "warn"}
         action={
           <Button
-            variant={notifAsked ? "ghost" : "secondary"}
+            variant={notifAsked ? "ghost" : "primary"}
             size="sm"
             onClick={() => {
               askNotifications().catch(() => {});

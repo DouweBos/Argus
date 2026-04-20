@@ -805,6 +805,15 @@ export const writeOnboardingArgusJson = (
 ): Promise<void> =>
   invoke("onboarding_write_argus_json", { path: repoPath, config });
 
+export const refineArgusJsonWithClaude = (
+  repoPath: string,
+  config: Record<string, unknown>,
+): Promise<Record<string, unknown>> =>
+  invoke("onboarding_refine_argus_json_with_claude", {
+    path: repoPath,
+    config,
+  });
+
 export const completeOnboarding = (): Promise<void> =>
   invoke("onboarding_complete");
 

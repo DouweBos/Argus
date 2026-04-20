@@ -453,9 +453,24 @@ export interface PrereqResult {
   status: PrereqStatus;
 }
 
+export type DetectedSignalKind =
+  | "framework"
+  | "monorepo"
+  | "native"
+  | "platform"
+  | "project"
+  | "tooling";
+
+export interface DetectedSignal {
+  detail?: string;
+  kind: DetectedSignalKind;
+  label: string;
+}
+
 export interface ArgusConfigSuggestion {
   config: Record<string, unknown>;
   inferredFrom: string[];
+  signals: DetectedSignal[];
 }
 
 export interface ExampleProject {
