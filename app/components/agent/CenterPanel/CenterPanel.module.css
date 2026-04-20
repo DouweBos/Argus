@@ -5,14 +5,6 @@
   overflow: hidden;
 }
 
-.empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-}
-
 .navRow {
   display: flex;
   align-items: center;
