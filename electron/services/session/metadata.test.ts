@@ -2,13 +2,13 @@ import fs from "node:fs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { getMeta, loadMetadata, type SessionMeta } from "./metadata";
 
-vi.mock("node:fs", () => {
-  const actual = vi.importActual("node:fs");
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof fs>("node:fs");
 
   return {
     ...actual,
     default: {
-      ...(actual as typeof fs),
+      ...actual,
       existsSync: vi.fn(),
       readFileSync: vi.fn(),
       writeFileSync: vi.fn(),

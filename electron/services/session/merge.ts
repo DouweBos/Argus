@@ -124,6 +124,43 @@ export async function mergeSessionIntoBase(
 }
 
 // ---------------------------------------------------------------------------
+// rebase_session_on_base
+// ---------------------------------------------------------------------------
+
+/**
+ * Rebase the session branch onto `baseBranch`, in place. Unlike
+ * {@link mergeSessionIntoBase}, this does not fast-forward the base branch —
+ * it only updates the session so it sits on top of the latest base.
+ *
+ * Aborts a failed rebase so the worktree is left clean. Does nothing when
+ * the base branch is already reachable from HEAD.
+ */
+export async function rebaseSessionOnBase(
+  wsPath: string,
+  baseBranch: string,
+): Promise<void> {
+  if (!fs.existsSync(wsPath)) {
+    throw `Session worktree not found at ${wsPath}`;
+  }
+
+  const baseAlreadyInHistory = await isAncestor(wsPath, baseBranch, "HEAD");
+  if (baseAlreadyInHistory) {
+    return;
+  }
+
+  try {
+    await git(wsPath, ["rebase", baseBranch]);
+  } catch (e) {
+    try {
+      await git(wsPath, ["rebase", "--abort"]);
+    } catch {
+      // Ignore abort failures — surface the original error below.
+    }
+    throw e;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 

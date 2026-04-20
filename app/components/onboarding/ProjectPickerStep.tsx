@@ -91,18 +91,20 @@ export function ProjectPickerStep() {
       }
     >
       <div style={{ display: "flex", gap: 8 }}>
-        {(["existing", "clone", "example"] as const).map((t) => (
+        {(
+          [
+            { id: "existing", label: "Open existing" },
+            { id: "clone", label: "Clone from Git" },
+            { id: "example", label: "Try an example" },
+          ] as const
+        ).map(({ id, label }) => (
           <Button
-            key={t}
-            variant={tab === t ? "primary" : "ghost"}
+            key={id}
+            variant={tab === id ? "primary" : "ghost"}
             size="sm"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(id)}
           >
-            {t === "existing"
-              ? "Open existing"
-              : t === "clone"
-                ? "Clone from Git"
-                : "Try an example"}
+            {label}
           </Button>
         ))}
       </div>

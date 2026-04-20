@@ -70,5 +70,3 @@ export function OnboardingLayout({
     </div>
   );
 }
-
-export { styles as layoutStyles };

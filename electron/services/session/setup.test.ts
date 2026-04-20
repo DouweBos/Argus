@@ -3,13 +3,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { loadArgusConfig } from "./setup";
 
 // Mock fs so we don't hit the real filesystem
-vi.mock("node:fs", () => {
-  const actual = vi.importActual("node:fs");
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof fs>("node:fs");
 
   return {
     ...actual,
     default: {
-      ...(actual as typeof fs),
+      ...actual,
       existsSync: vi.fn(),
       readFileSync: vi.fn(),
     },
@@ -108,7 +108,7 @@ describe("loadArgusConfig", () => {
 
   it("merges local config on top of base", () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
       if (String(p).includes("local")) {
         return JSON.stringify({
           setup: {
@@ -142,7 +142,7 @@ describe("loadArgusConfig", () => {
 
   it("local workspace_env overrides base", () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
       if (String(p).includes("local")) {
         return JSON.stringify({
           setup: {},
@@ -244,7 +244,7 @@ describe("loadArgusConfig", () => {
 
   it("deduplicates related_projects when merging local config", () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
       if (String(p).includes("local")) {
         return JSON.stringify({
           setup: {},
@@ -275,7 +275,7 @@ describe("loadArgusConfig", () => {
 
   it("local browser_url overrides base when merging", () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
       if (String(p).includes("local")) {
         return JSON.stringify({
           setup: {},
@@ -295,7 +295,7 @@ describe("loadArgusConfig", () => {
 
   it("keeps base browser_url when local omits it", () => {
     mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
       if (String(p).includes("local")) {
         return JSON.stringify({ setup: {} });
       }

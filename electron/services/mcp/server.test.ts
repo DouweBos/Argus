@@ -20,13 +20,13 @@ import { appState } from "../../state";
 // Mocks — hoisted before any imports from server.ts
 // ---------------------------------------------------------------------------
 
-vi.mock("node:fs", () => {
-  const actual = vi.importActual("node:fs");
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof fs>("node:fs");
 
   return {
     ...actual,
     default: {
-      ...(actual as typeof fs),
+      ...actual,
       existsSync: vi.fn(),
     },
     existsSync: vi.fn(),
@@ -116,7 +116,8 @@ const mockCollectAllProjects = vi.mocked(collectAllProjects);
 // ---------------------------------------------------------------------------
 
 function textOf(result: Awaited<ReturnType<Client["callTool"]>>): string {
-  const block = result.content[0];
+  const content = result.content as unknown[];
+  const block = content[0];
   if (block && typeof block === "object" && "text" in block) {
     return block.text as string;
   }
@@ -246,6 +247,9 @@ describe("add_related_project", () => {
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
       workspace_env: [],
+      run: [],
+      browser_presets: [],
+      protected_branches: [],
       related_projects: [{ path: "../backend", description: "Backend" }],
     });
 
@@ -269,6 +273,9 @@ describe("add_related_project", () => {
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
       workspace_env: [],
+      run: [],
+      browser_presets: [],
+      protected_branches: [],
       related_projects: [],
     });
 
@@ -693,6 +700,7 @@ describe("agent_status", () => {
     const parsed = jsonOf(result) as {
       agent_id: string;
       branch: string;
+      display_name: string;
       status: string;
     };
     expect(parsed.agent_id).toBe("agent-1");

@@ -312,7 +312,7 @@ function createWindow(): void {
       return;
     }
     const menu = new Menu();
-    if (params.misspelledWord) {
+    if (params.misspelledWord && mainWindow) {
       const wc = mainWindow.webContents;
       for (const suggestion of params.dictionarySuggestions) {
         menu.append(

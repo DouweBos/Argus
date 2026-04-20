@@ -11,7 +11,12 @@ import type { Writable } from "node:stream";
 // ---------------------------------------------------------------------------
 
 /** Lifecycle state of a Claude Code agent process. */
-export type AgentStatusValue = "error" | "idle" | "running" | "stopped";
+export type AgentStatusValue =
+  | "error"
+  | "idle"
+  | "requires_action"
+  | "running"
+  | "stopped";
 
 // ---------------------------------------------------------------------------
 // AgentSession

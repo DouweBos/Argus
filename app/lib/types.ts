@@ -53,7 +53,7 @@ export interface AgentStatus {
   /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */
   permission_mode?: string;
   session_id: string;
-  status: "error" | "idle" | "running" | "stopped";
+  status: "error" | "idle" | "requires_action" | "running" | "stopped";
 }
 
 export interface SimulatorDevice {

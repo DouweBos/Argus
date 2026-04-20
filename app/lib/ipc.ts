@@ -295,6 +295,12 @@ export const getSessionReviewState = (
 export const mergeSessionIntoBase = (id: string): Promise<void> =>
   invoke("merge_session_into_base", { id });
 
+export const getSessionCommitsBehind = (id: string): Promise<number> =>
+  invoke("get_session_commits_behind", { id });
+
+export const rebaseSessionOnBase = (id: string): Promise<void> =>
+  invoke("rebase_session_on_base", { id });
+
 export const pushSessionBranch = (
   id: string,
 ): Promise<{ branch: string; prUrl: string | null; remoteName: string }> =>

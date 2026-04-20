@@ -23,12 +23,12 @@ export function Stepper({
       {...rest}
     >
       {steps.map((step, i) => {
-        const state =
-          i < currentIndex
-            ? "complete"
-            : i === currentIndex
-              ? "current"
-              : "upcoming";
+        let state: "complete" | "current" | "upcoming" = "upcoming";
+        if (i < currentIndex) {
+          state = "complete";
+        } else if (i === currentIndex) {
+          state = "current";
+        }
 
         return (
           <li key={step.id} className={`${styles.item} ${styles[state]}`}>

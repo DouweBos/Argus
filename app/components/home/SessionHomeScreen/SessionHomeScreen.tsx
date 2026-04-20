@@ -47,9 +47,9 @@ function basename(p: string): string {
 }
 
 function mapAgentStatus(
-  status: "error" | "idle" | "running" | "stopped",
+  status: "error" | "idle" | "requires_action" | "running" | "stopped",
 ): "done" | "error" | "idle" | "running" {
-  if (status === "running") {
+  if (status === "running" || status === "requires_action") {
     return "running";
   }
   if (status === "error") {
