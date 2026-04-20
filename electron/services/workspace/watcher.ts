@@ -1,11 +1,13 @@
 /**
  * File system watcher for workspace directories.
  *
- * Polls `git diff HEAD --numstat` (working tree vs last commit) so sidebar
- * stats include **staged** changes as well as unstaged. Plain `git diff
- * --numstat` would only cover unstaged vs index and would miss fully staged
- * files. Uses polling instead of recursive fs watches, which hit macOS
- * EMFILE limits on large monorepos (60K+ dirs).
+ * Polls both `git diff <base>...HEAD --numstat` (committed diff vs the base
+ * branch) and `git diff HEAD --numstat` (working tree vs last commit, which
+ * covers both staged and unstaged changes) so sidebar stats reflect the
+ * **total** delta introduced by the workspace — not just uncommitted edits.
+ * Plain `git diff --numstat` would only show unstaged vs index and would miss
+ * fully staged files. Uses polling instead of recursive fs watches, which hit
+ * macOS EMFILE limits on large monorepos (60K+ dirs).
  */
 
 import fs from "node:fs";
@@ -73,26 +75,42 @@ export class WatcherHandle {
     }
 
     try {
-      // Compare to HEAD so counts match the Git view (`git diff HEAD`) and include
-      // staged changes (plain `git diff` only shows unstaged vs index).
-      const [numstat, untrackedRaw] = await Promise.all([
-        git(this.worktreePath, ["diff", "HEAD", "--numstat"]),
-        git(this.worktreePath, ["ls-files", "--others", "--exclude-standard"]),
-      ]);
+      // Resolve base branch so we can include the committed diff (branch vs
+      // base) alongside the working-tree diff. Workspaces without a base
+      // branch (repo_root, brand-new branches) fall back to working tree only.
+      const ws = appState.workspaces.get(this.workspaceId);
+      const baseBranch =
+        ws && ws.kind !== "repo_root" ? (ws.base_branch ?? null) : null;
 
-      const untrackedCount = untrackedRaw.trim()
-        ? untrackedRaw.trim().split("\n").length
-        : 0;
+      const [workingNumstat, untrackedRaw, committedNumstat] =
+        await Promise.all([
+          git(this.worktreePath, ["diff", "HEAD", "--numstat"]),
+          git(this.worktreePath, ["ls-files", "--others", "--exclude-standard"]),
+          baseBranch
+            ? git(this.worktreePath, [
+                "diff",
+                `${baseBranch}...HEAD`,
+                "--numstat",
+              ]).catch(() => "")
+            : Promise.resolve(""),
+        ]);
+
+      const untrackedPaths = untrackedRaw.trim()
+        ? untrackedRaw.trim().split("\n")
+        : [];
 
       // Build a fingerprint to avoid emitting duplicate events.
-      const fingerprint = `${numstat}::${untrackedCount}`;
+      const fingerprint = `${committedNumstat}::${workingNumstat}::${untrackedPaths.length}`;
       if (fingerprint === this.lastFingerprint) {
         return;
       }
       this.lastFingerprint = fingerprint;
 
-      const stats = parseDiffStats(numstat);
-      stats.files += untrackedCount;
+      const stats = combineDiffStats(
+        committedNumstat,
+        workingNumstat,
+        untrackedPaths,
+      );
 
       getMainWindow()?.webContents.send(
         `workspace:diff-changed:${this.workspaceId}`,
@@ -119,12 +137,15 @@ export function startWatcher(
 // Branch watcher — monitors .git/HEAD for external branch switches
 // ---------------------------------------------------------------------------
 
-/** Parse `git diff HEAD --numstat` output into DiffStats. */
-function parseDiffStats(numstatOutput: string): DiffStats {
-  let files = 0;
-  let additions = 0;
-  let deletions = 0;
-
+/**
+ * Parse one `git diff --numstat` output and fold each entry into `acc`.
+ * Binary files (shown as `-\t-`) contribute 0 additions / 0 deletions but
+ * still count as a changed file.
+ */
+function foldNumstat(
+  numstatOutput: string,
+  acc: { additions: number; deletions: number; paths: Set<string> },
+): void {
   for (const line of numstatOutput.trim().split("\n")) {
     if (!line) {
       continue;
@@ -133,19 +154,44 @@ function parseDiffStats(numstatOutput: string): DiffStats {
     if (parts.length < 3) {
       continue;
     }
-    // Binary files show "-" for additions/deletions.
     const added = parseInt(parts[0], 10);
     const removed = parseInt(parts[1], 10);
-    files += 1;
+    // Path may itself contain tabs — join everything after the two counts.
+    const filePath = parts.slice(2).join("\t");
+    acc.paths.add(filePath);
     if (!Number.isNaN(added)) {
-      additions += added;
+      acc.additions += added;
     }
     if (!Number.isNaN(removed)) {
-      deletions += removed;
+      acc.deletions += removed;
     }
   }
+}
 
-  return { additions, deletions, files };
+/**
+ * Combine the committed diff (branch vs base), the working-tree diff
+ * (`git diff HEAD`), and any untracked files into a single `DiffStats`.
+ *
+ * Additions and deletions are summed across both diffs; the file count is the
+ * deduped union of paths across all three sources.
+ */
+function combineDiffStats(
+  committedNumstat: string,
+  workingNumstat: string,
+  untrackedPaths: string[],
+): DiffStats {
+  const acc = { additions: 0, deletions: 0, paths: new Set<string>() };
+  foldNumstat(committedNumstat, acc);
+  foldNumstat(workingNumstat, acc);
+  for (const p of untrackedPaths) {
+    acc.paths.add(p);
+  }
+
+  return {
+    additions: acc.additions,
+    deletions: acc.deletions,
+    files: acc.paths.size,
+  };
 }
 
 /** Emit branch-changed and diff-changed events for a workspace. */
@@ -159,8 +205,10 @@ async function emitBranchAndDiff(
   });
 
   try {
+    // Repo-root workspaces have no base branch, so the committed-diff portion
+    // is empty; stats are just the working-tree view.
     const numstat = await git(repoRoot, ["diff", "HEAD", "--numstat"]);
-    const stats = parseDiffStats(numstat);
+    const stats = combineDiffStats("", numstat, []);
     getMainWindow()?.webContents.send(
       `workspace:diff-changed:${workspaceId}`,
       stats,
