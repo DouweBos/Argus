@@ -1,6 +1,6 @@
-import { Icons, PlatformChip } from "@argus/peacock";
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
+import { Icons, PlatformChip } from "@argus/peacock";
 import { closeSimulatorPopout, openSimulatorPopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {

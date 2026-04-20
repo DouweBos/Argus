@@ -1,5 +1,5 @@
-import { Button } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { getGitAuthor, gitCommit } from "../../../lib/ipc";
 import { md5Hex } from "../../../lib/md5";

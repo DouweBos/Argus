@@ -1,4 +1,5 @@
 import type { DependencyStatus } from "../../../lib/types";
+import { useEffect, useState } from "react";
 import {
   Banner,
   Button,
@@ -8,7 +9,6 @@ import {
   SparkleIcon,
   TipCard,
 } from "@argus/peacock";
-import { useEffect, useState } from "react";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { checkDependencies } from "../../../lib/ipc";
 import { setActiveAgent } from "../../../stores/agentStore";

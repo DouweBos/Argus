@@ -1,5 +1,5 @@
-import { Icons } from "@argus/peacock";
 import { type ReactNode, useCallback } from "react";
+import { Icons } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   useRuntimeViewSimulatorState,

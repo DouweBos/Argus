@@ -1,4 +1,5 @@
 import type { HomeData, HomeProject } from "../useHomeData";
+import { useMemo, useState } from "react";
 import {
   CommitIcon,
   Icons,
@@ -15,7 +16,6 @@ import {
   agentStatusPulse,
   agentStatusTone,
 } from "@argus/peacock";
-import { useMemo, useState } from "react";
 
 export type HomeSidebarView = "activity" | "home" | "review";
 

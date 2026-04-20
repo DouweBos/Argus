@@ -1,5 +1,5 @@
-import { DiffStat, Icons } from "@argus/peacock";
 import { useEffect, useState } from "react";
+import { DiffStat, Icons } from "@argus/peacock";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { listen } from "../../../lib/events";

@@ -1,5 +1,5 @@
-import { Button, Icons } from "@argus/peacock";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, Icons } from "@argus/peacock";
 import {
   createTerminal,
   destroyTerminal,

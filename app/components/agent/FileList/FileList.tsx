@@ -1,5 +1,5 @@
-import { Icons } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { type DiffFile, gitIndexPath } from "../../../lib/diffParser";
 import { stageFile, unstageFile } from "../../../lib/ipc";
 import styles from "./FileList.module.css";

@@ -1,4 +1,5 @@
 import type { OrganizationMember } from "../../../lib/types";
+import { useMemo, useState } from "react";
 import {
   Button,
   Dialog,
@@ -7,7 +8,6 @@ import {
   PROJECT_ACCENT_PALETTE,
   TextArea,
 } from "@argus/peacock";
-import { useMemo, useState } from "react";
 import {
   hideOrganizationDialog,
   useOrganizationDialog,

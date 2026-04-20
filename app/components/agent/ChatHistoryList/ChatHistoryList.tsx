@@ -3,8 +3,8 @@ import type {
   ChatHistoryMessageMatch,
   ChatHistorySearchResult,
 } from "../../../lib/chatHistory";
-import { Button, Eyebrow, Icons, Input } from "@argus/peacock";
 import { useEffect, useMemo, useState } from "react";
+import { Button, Eyebrow, Icons, Input } from "@argus/peacock";
 import { searchChatHistory } from "../../../lib/ipc";
 import styles from "./ChatHistoryList.module.css";
 

@@ -1,6 +1,6 @@
-import { ConfirmDialog } from "@argus/peacock";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { ConfirmDialog } from "@argus/peacock";
 import { stopAgentById } from "../../../lib/agentEventService";
 import { getAgentState } from "../../../stores/agentStore";
 

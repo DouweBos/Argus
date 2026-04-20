@@ -4,8 +4,8 @@ import type {
   ArgusConfig,
   WorkspaceEnvConfig,
 } from "../../../lib/types";
-import { Button, Icons, Input, TextArea } from "@argus/peacock";
 import { useEffect, useState } from "react";
+import { Button, Icons, Input, TextArea } from "@argus/peacock";
 import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 

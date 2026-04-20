@@ -1,6 +1,6 @@
 import type { ActivityEvent, ActivityKind } from "../../../lib/activityTypes";
-import { CommitIcon, EmptyState, Icons, WarningIcon } from "@argus/peacock";
 import type { ReactNode } from "react";
+import { CommitIcon, EmptyState, Icons, WarningIcon } from "@argus/peacock";
 import { useActivityEvents } from "../../../stores/activityStore";
 import styles from "./ActivityScreen.module.css";
 

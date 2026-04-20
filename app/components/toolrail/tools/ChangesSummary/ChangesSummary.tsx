@@ -1,5 +1,5 @@
-import { Icons } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../../hooks/useDiffFiles";
 import { useFixConflictsInChat } from "../../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";

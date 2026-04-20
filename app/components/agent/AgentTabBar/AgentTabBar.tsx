@@ -1,6 +1,8 @@
 import type { AgentStatus } from "../../../lib/types";
 import type { SplitPair } from "../../../stores/agentStore";
 import type { StatusDotsState } from "@argus/peacock";
+import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   ContextMenu,
@@ -8,8 +10,6 @@ import {
   Icons,
   StatusDots,
 } from "@argus/peacock";
-import type { DragEvent, MouseEvent as ReactMouseEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { interruptAgent, revealInFinder } from "../../../lib/ipc";
 import { reorderAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {

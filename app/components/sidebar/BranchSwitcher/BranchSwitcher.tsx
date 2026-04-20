@@ -1,4 +1,3 @@
-import { Icons } from "@argus/peacock";
 import {
   useCallback,
   useEffect,
@@ -7,6 +6,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Icons } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { checkoutBranch, listBranches } from "../../../lib/ipc";
 import styles from "./BranchSwitcher.module.css";

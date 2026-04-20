@@ -1,5 +1,5 @@
-import { Icons } from "@argus/peacock";
 import { useState } from "react";
+import { Icons } from "@argus/peacock";
 import styles from "./TodoList.module.css";
 
 export interface TodoItem {

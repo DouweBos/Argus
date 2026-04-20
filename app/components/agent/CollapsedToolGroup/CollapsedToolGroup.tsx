@@ -1,6 +1,6 @@
 import type { ConversationMessage } from "../../../stores/conversationStore";
-import { Icons } from "@argus/peacock";
 import { useState } from "react";
+import { Icons } from "@argus/peacock";
 import { ToolCallCard } from "../ToolCallCard";
 import { categorizeTools } from "../categorizeTools";
 import styles from "./CollapsedToolGroup.module.css";

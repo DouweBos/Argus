@@ -1,6 +1,6 @@
 import type { Workspace } from "../../../lib/types";
-import { EmptyState, Icons, WorkspaceCard } from "@argus/peacock";
 import { useEffect, useMemo, useState } from "react";
+import { EmptyState, Icons, WorkspaceCard } from "@argus/peacock";
 import { listen } from "../../../lib/events";
 import { watchWorkspace } from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";

@@ -1,6 +1,6 @@
 import type { SlashCommand } from "../../../lib/types";
-import { Button, Icons, StatusDot, ThinkingDots } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, Icons, StatusDot, ThinkingDots } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
 import {
   maybeGenerateTitle,
