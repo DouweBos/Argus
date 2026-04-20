@@ -38,13 +38,12 @@ import {
   updateOrganization,
   deleteOrganization,
 } from "../organization/manager";
-import { createTerminal, startTerminal } from "../terminal/multiplexer";
+import { createRunTerminal, startTerminal } from "../terminal/multiplexer";
 import {
   createWorkspace,
   deleteWorkspace,
   listWorkspaces,
 } from "../workspace/manager";
-import { loadArgusConfig } from "../workspace/setup";
 import {
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
@@ -593,9 +592,7 @@ export function createMcpServer(): McpServer {
         images = resolveAttachments(attachments);
       } catch (e) {
         return {
-          content: [
-            { type: "text" as const, text: (e as Error).message },
-          ],
+          content: [{ type: "text" as const, text: (e as Error).message }],
           isError: true,
         };
       }
@@ -1141,13 +1138,19 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "trigger_run",
-    "Trigger the configured 'run' command (from .argus.json) in a workspace's terminal. This starts the app's dev server, test runner, or whatever the project has configured as its run command. The command runs in a visible UI terminal.",
+    "Trigger one of the configured run commands (from .argus.json) in a workspace's terminal. This starts the app's dev server, test runner, or whatever the project has configured as a run command. The command runs in a visible UI terminal. Pass `title` to pick a specific entry; omit to run the first configured command.",
     {
       workspace: z
         .string()
         .describe("Workspace ID, branch name, or display name"),
+      title: z
+        .string()
+        .optional()
+        .describe(
+          "Title of the run command from .argus.json. Defaults to the first entry.",
+        ),
     },
-    async ({ workspace }) => {
+    async ({ workspace, title }) => {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
         return {
@@ -1161,50 +1164,34 @@ export function createMcpServer(): McpServer {
         };
       }
 
-      let runConfig;
       try {
-        const config = loadArgusConfig(ws.repo_root);
-        runConfig = config.run;
-      } catch {
-        // No config
-      }
+        const result = createRunTerminal(ws.id, title);
+        startTerminal(result.sessionId, 120, 40);
 
-      if (!runConfig) {
         return {
           content: [
             {
               type: "text" as const,
-              text: "No 'run' command configured in .argus.json",
+              text: JSON.stringify(
+                {
+                  terminal_session_id: result.sessionId,
+                  started: result.started,
+                  title: result.title,
+                  workspace_id: ws.id,
+                  branch: ws.branch,
+                },
+                null,
+                2,
+              ),
             },
           ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
           isError: true,
         };
       }
-
-      const command =
-        typeof runConfig === "string" ? runConfig : runConfig.command;
-      const dir = typeof runConfig === "string" ? undefined : runConfig.dir;
-
-      const sessionId = createTerminal(ws.id, dir, command);
-      startTerminal(sessionId, 120, 40);
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: JSON.stringify(
-              {
-                terminal_session_id: sessionId,
-                command,
-                workspace_id: ws.id,
-                branch: ws.branch,
-              },
-              null,
-              2,
-            ),
-          },
-        ],
-      };
     },
   );
 

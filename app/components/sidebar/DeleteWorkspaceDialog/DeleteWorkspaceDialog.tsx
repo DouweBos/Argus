@@ -1,6 +1,6 @@
 import type { Workspace } from "../../../lib/types";
-import { useState } from "react";
 import { Button } from "@argus/peacock";
+import { useState } from "react";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface DeleteWorkspaceDialogProps {

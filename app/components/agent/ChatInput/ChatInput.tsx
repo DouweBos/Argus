@@ -1,7 +1,7 @@
 import type { ImageAttachment } from "../../../lib/ipc";
 import type { SlashCommand } from "../../../lib/types";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Chip, Icons } from "@argus/peacock";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
 import {
   clearDraft,

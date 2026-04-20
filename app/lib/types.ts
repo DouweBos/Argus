@@ -176,8 +176,13 @@ export interface FileStat {
   size: number;
 }
 
-/** Run button configuration — either a plain command string or object with dir. */
-export type RunConfig = string | { command: string; dir?: string };
+/** A single entry in `.argus.json` `run` — a labelled shell command. */
+export interface RunCommand {
+  command: string;
+  cwd?: string;
+  restartOnRerun: boolean;
+  title: string;
+}
 
 /** JSON-facing shape for custom browser device presets in `.argus.json`. */
 export interface BrowserPresetConfig {
@@ -203,8 +208,8 @@ export interface ArgusConfig {
    * platforms listed here. Omitted or empty → no runtimes pre-allocated.
    */
   platforms?: RuntimePlatform[];
-  /** Shell command to run via the "Run" button (e.g. `npx expo start`). */
-  run?: RunConfig;
+  /** Ordered list of run commands shown in the app's run menu. */
+  run?: RunCommand[];
   /** Whether to save chat history when agents stop. Defaults to true. */
   save_chat_history?: boolean;
   setup?: {

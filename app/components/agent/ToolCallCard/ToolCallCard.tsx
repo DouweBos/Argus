@@ -2,8 +2,8 @@ import type {
   ToolCallInfo,
   ToolResultBlock,
 } from "../../../stores/conversationStore";
-import { useCallback, useState, type ReactNode } from "react";
 import { Badge, Button, Icons } from "@argus/peacock";
+import { useCallback, useState, type ReactNode } from "react";
 import { renderMarkdown } from "../../../lib/markdown";
 import { updateAgent } from "../../../stores/agentStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";

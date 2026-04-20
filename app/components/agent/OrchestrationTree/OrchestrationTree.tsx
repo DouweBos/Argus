@@ -1,6 +1,6 @@
 import type { AgentStatus, Workspace } from "../../../lib/types";
-import { useMemo } from "react";
 import { Badge, Eyebrow, Icons, StatusDot } from "@argus/peacock";
+import { useMemo } from "react";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";

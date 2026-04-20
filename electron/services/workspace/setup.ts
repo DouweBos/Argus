@@ -14,6 +14,7 @@ import {
   type BrowserPresetConfig,
   defaultArgusConfig,
   type RelatedProject,
+  type RunCommand,
   type SetupConfig,
   type ArgusConfig,
   type WorkspaceEnvConfig,
@@ -36,7 +37,7 @@ export function loadArgusConfig(repoRoot: string): ArgusConfig {
   if (fs.existsSync(configPath)) {
     try {
       const raw = fs.readFileSync(configPath, "utf8");
-      config = parseArgusConfig(raw);
+      config = parseArgusConfig(raw, repoRoot);
     } catch (e) {
       throw `Failed to read/parse .argus.json: ${e}`;
     }
@@ -46,7 +47,7 @@ export function loadArgusConfig(repoRoot: string): ArgusConfig {
   if (fs.existsSync(localPath)) {
     try {
       const raw = fs.readFileSync(localPath, "utf8");
-      const local = parseArgusConfig(raw);
+      const local = parseArgusConfig(raw, repoRoot);
       config = mergeConfig(config, local);
     } catch (e) {
       throw `Failed to read/parse .argus.local.json: ${e}`;
@@ -75,23 +76,14 @@ function normalizeWorkspaceEnv(raw: unknown): WorkspaceEnvConfig[] {
 }
 
 /**
- * Parse raw JSON into a `ArgusConfig`. Handles the `run` field's dual
- * string/object form.
+ * Parse raw JSON into a `ArgusConfig`. The `run` field must be an array of
+ * `RunCommand` objects — the old string / single-object form is rejected.
  */
-function parseArgusConfig(raw: string): ArgusConfig {
+function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
 
   const setup = (parsed.setup as Partial<SetupConfig>) ?? {};
-  const runRaw = parsed.run ?? parsed.workspace_port_env;
-
-  let run: ArgusConfig["run"];
-  if (runRaw == null) {
-    run = null;
-  } else if (typeof runRaw === "string") {
-    run = { command: runRaw };
-  } else {
-    run = runRaw as ArgusConfig["run"];
-  }
+  const run = normalizeRunCommands(parsed.run, repoRoot);
 
   return {
     setup: {
@@ -114,6 +106,46 @@ function parseArgusConfig(raw: string): ArgusConfig {
         : true,
     platforms: normalizePlatforms(parsed.platforms),
   };
+}
+
+/**
+ * Normalise the `run` field. Must be an array of objects shaped like
+ * `RunCommand`. Throws a descriptive error for the legacy string / single
+ * object forms so users migrate explicitly.
+ */
+function normalizeRunCommands(raw: unknown, repoRoot: string): RunCommand[] {
+  if (raw == null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw (
+      `\`run\` in .argus.json at ${repoRoot} must be an array of ` +
+      `{ title, command, cwd?, restartOnRerun } objects. ` +
+      `The old single-string / single-object form is no longer supported.`
+    );
+  }
+
+  return raw.map((entry, i) => {
+    if (typeof entry !== "object" || entry === null) {
+      throw `run[${i}] in ${repoRoot}/.argus.json must be an object.`;
+    }
+    const obj = entry as Record<string, unknown>;
+    const title = obj.title;
+    const command = obj.command;
+    if (typeof title !== "string" || !title) {
+      throw `run[${i}].title in ${repoRoot}/.argus.json must be a non-empty string.`;
+    }
+    if (typeof command !== "string" || !command) {
+      throw `run[${i}].command in ${repoRoot}/.argus.json must be a non-empty string.`;
+    }
+
+    return {
+      title,
+      command,
+      cwd: typeof obj.cwd === "string" && obj.cwd ? obj.cwd : undefined,
+      restartOnRerun: Boolean(obj.restartOnRerun),
+    };
+  });
 }
 
 /**
@@ -227,7 +259,7 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     terminals: [...base.terminals, ...local.terminals],
     workspace_env:
       local.workspace_env.length > 0 ? local.workspace_env : base.workspace_env,
-    run: local.run ?? base.run,
+    run: local.run.length > 0 ? local.run : base.run,
     agent_prompt: local.agent_prompt ?? base.agent_prompt,
     related_projects: dedupRelatedProjects(
       base.related_projects ?? [],

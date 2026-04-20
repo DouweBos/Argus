@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
 import { Icons } from "@argus/peacock";
+import { useCallback, useEffect, useRef } from "react";
 import { error } from "@logger";
 import {
   bootSimulator,
@@ -20,7 +20,6 @@ import {
 import chrome from "../RuntimeChrome.module.css";
 import { AppleTVRemote } from "./AppleTVRemote";
 import { IosDeviceStreamView } from "./IosDeviceStreamView";
-import { RunButton } from "./RunButton";
 import styles from "./RuntimeView.module.css";
 
 interface IosSimulatorViewProps {
@@ -314,31 +313,28 @@ export function IosSimulatorView({
     ) : null;
 
   const actionButtons = (
-    <>
-      <div className={styles.floatingNavPrimary}>
-        {capturing && (
-          <button
-            className={chrome.titleBarButton}
-            title="Home (Cmd+Shift+H)"
-            type="button"
-            onClick={handleHomePress}
-          >
-            <Icons.HomeIcon size={12} />
-          </button>
-        )}
-        {(isBooted || capturing) && selectedUdid && (
-          <button
-            className={`${chrome.titleBarButton} ${chrome.titleBarButtonDestructive}`}
-            title="Disconnect simulator"
-            type="button"
-            onClick={handleDisconnect}
-          >
-            <Icons.DisconnectIcon size={12} />
-          </button>
-        )}
-      </div>
-      {workspaceId && <RunButton workspaceId={workspaceId} />}
-    </>
+    <div className={styles.floatingNavPrimary}>
+      {capturing && (
+        <button
+          className={chrome.titleBarButton}
+          title="Home (Cmd+Shift+H)"
+          type="button"
+          onClick={handleHomePress}
+        >
+          <Icons.HomeIcon size={12} />
+        </button>
+      )}
+      {(isBooted || capturing) && selectedUdid && (
+        <button
+          className={`${chrome.titleBarButton} ${chrome.titleBarButtonDestructive}`}
+          title="Disconnect simulator"
+          type="button"
+          onClick={handleDisconnect}
+        >
+          <Icons.DisconnectIcon size={12} />
+        </button>
+      )}
+    </div>
   );
 
   // --- Placeholder ---

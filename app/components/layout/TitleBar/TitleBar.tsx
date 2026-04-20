@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from "react";
 import { TitleBar as PeacockTitleBar } from "@argus/peacock";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { listBranches, setWorkspaceBaseBranch } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";
@@ -15,6 +15,7 @@ import {
 } from "../../../stores/workspaceStore";
 import { PencilIcon } from "../../shared/Icons";
 import { NavigationButtons } from "../NavigationButtons";
+import { RunControl } from "../RunControl";
 import styles from "./TitleBar.module.css";
 
 export function TitleBar() {
@@ -119,7 +120,12 @@ export function TitleBar() {
       onJump={openCommandPalette}
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={workspace ? toggleRightPanel : undefined}
-      right={<NavigationButtons />}
+      right={
+        <>
+          <NavigationButtons />
+          {workspace && <RunControl workspaceId={workspace.id} />}
+        </>
+      }
     />
   );
 }

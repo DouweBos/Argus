@@ -10,6 +10,7 @@ import type { OrgTask } from "./services/organizationTask/models";
 import type { TerminalSession } from "./services/terminal/multiplexer";
 import type { Workspace } from "./services/workspace/models";
 import type { WatcherHandle } from "./services/workspace/watcher";
+import type { BrowserWindow } from "electron";
 
 export interface BrowserSession {
   id: string;
@@ -85,6 +86,12 @@ class AppState {
 
   /** Web browser reservations for agents, keyed by agent UUID. */
   webBrowserReservations = new Map<string, WebBrowserReservation>();
+
+  /**
+   * Floating always-on-top simulator popout windows, keyed by the simulator
+   * UDID they mirror.
+   */
+  simulatorPopouts = new Map<string, BrowserWindow>();
 }
 
 /** Singleton instance. */

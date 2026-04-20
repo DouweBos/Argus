@@ -603,3 +603,77 @@ app.whenReady().then(() => {
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
 }
+
+/**
+ * Open a floating, always-on-top simulator popout window mirroring the
+ * capture stream for the given `udid`. The popout renders its own React tree
+ * (see `app/main.tsx` — the query string `?popout=simulator&...` short-
+ * circuits the full app shell) and subscribes to the same MJPEG port served
+ * by the bridge binary, so both main and popout windows share one capture
+ * session.
+ *
+ * Idempotent: reusing the same udid focuses the existing popout.
+ */
+export function createFloatingSimulatorWindow(options: {
+  udid: string;
+  mjpegPort: number | null;
+  deviceName: string;
+}): BrowserWindow {
+  const { udid, mjpegPort, deviceName } = options;
+  const existing = appState.simulatorPopouts.get(udid);
+  if (existing && !existing.isDestroyed()) {
+    existing.show();
+    existing.focus();
+
+    return existing;
+  }
+
+  const win = new BrowserWindow({
+    width: 320,
+    height: 680,
+    minWidth: 220,
+    minHeight: 420,
+    show: false,
+    alwaysOnTop: true,
+    backgroundColor: "#000000",
+    title: `Argus · ${deviceName}`,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  const params = new URLSearchParams({
+    popout: "simulator",
+    udid,
+    name: deviceName,
+    ...(mjpegPort != null ? { port: String(mjpegPort) } : {}),
+  });
+
+  if (isDev) {
+    win.loadURL(`${VITE_DEV_URL}?${params.toString()}`);
+  } else {
+    const indexPath = path.join(__dirname, "../dist/index.html");
+    win.loadFile(indexPath, { search: `?${params.toString()}` });
+  }
+
+  win.once("ready-to-show", () => win.show());
+  win.on("closed", () => {
+    appState.simulatorPopouts.delete(udid);
+  });
+
+  appState.simulatorPopouts.set(udid, win);
+
+  return win;
+}
+
+/** Close the popout window for a given udid, if any. */
+export function closeFloatingSimulatorWindow(udid: string): void {
+  const win = appState.simulatorPopouts.get(udid);
+  if (win && !win.isDestroyed()) {
+    win.close();
+  }
+  appState.simulatorPopouts.delete(udid);
+}

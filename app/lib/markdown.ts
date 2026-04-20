@@ -42,7 +42,10 @@ const SANITIZE_CONFIG: DOMPurifyConfig = {
 /** Parse markdown text to a sanitized HTML string (synchronous). */
 export function renderMarkdown(text: string): string {
   const rawHtml = marked.parse(text, { async: false }) as string;
-  const safeHtml = DOMPurify.sanitize(rawHtml, SANITIZE_CONFIG) as unknown as string;
+  const safeHtml = DOMPurify.sanitize(
+    rawHtml,
+    SANITIZE_CONFIG,
+  ) as unknown as string;
 
   return linkifyFilePaths(safeHtml);
 }

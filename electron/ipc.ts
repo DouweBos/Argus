@@ -11,7 +11,12 @@ import { Menu, app, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createLogger } from "../app/lib/logger";
-import { getMainWindow, markQuitConfirmedDespiteAgents } from "./main";
+import {
+  closeFloatingSimulatorWindow,
+  createFloatingSimulatorWindow,
+  getMainWindow,
+  markQuitConfirmedDespiteAgents,
+} from "./main";
 import {
   saveConversation,
   loadHistoryIndex,
@@ -590,7 +595,7 @@ export function registerIpcHandlers(): void {
     createTerminal(a.workspaceId as string, a.subDir as string | undefined),
   );
   handle("create_run_terminal", (a) =>
-    createRunTerminal(a.workspaceId as string),
+    createRunTerminal(a.workspaceId as string, a.title as string | undefined),
   );
   handle("start_terminal", (a) =>
     startTerminal(a.sessionId as string, a.cols as number, a.rows as number),
@@ -630,6 +635,20 @@ export function registerIpcHandlers(): void {
       a.isDown as boolean,
     ),
   );
+  handle("open_simulator_popout", (a) => {
+    const udid = a.udid as string;
+    const sim = appState.simulator;
+    const mjpegPort = sim && sim.udid === udid ? (sim.mjpegPort ?? null) : null;
+    const deviceName = sim && sim.udid === udid ? sim.deviceName : "Simulator";
+    createFloatingSimulatorWindow({ udid, mjpegPort, deviceName });
+
+    return Promise.resolve();
+  });
+  handle("close_simulator_popout", (a) => {
+    closeFloatingSimulatorWindow(a.udid as string);
+
+    return Promise.resolve();
+  });
 
   // Android device commands
   handle("check_android_tools", () => checkAndroidTools());

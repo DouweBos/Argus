@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useWorkspaceDiffStats } from "../../../hooks/useWorkspaceDiffStats";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
 import { type Workspace, workspaceStatusLabel } from "../../../lib/types";

@@ -1,6 +1,4 @@
 import type { Workspace } from "../../../lib/types";
-import { useCallback, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   ContextMenu,
   type ContextMenuItem,
@@ -8,6 +6,8 @@ import {
   SidebarRepoAction,
   SidebarRepoGroup,
 } from "@argus/peacock";
+import { useCallback, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useWorkspaceDiffStats } from "../../../hooks/useWorkspaceDiffStats";
 import { useProjectWorkspaces } from "../../../hooks/useWorkspaces";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";

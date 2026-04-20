@@ -94,12 +94,23 @@ export interface RelatedProject {
   description: string;
 }
 
-/** Configuration for the "Run" button. */
-export interface RunConfig {
+/** A single entry in the `.argus.json` `run` array. */
+export interface RunCommand {
+  /** User-visible label for the command (also used as its identifier). */
+  title: string;
   /** Shell command to execute (e.g. `npx expo start`). */
   command: string;
-  /** Optional relative directory (from the workspace root) to run the command in. */
-  dir?: string;
+  /**
+   * Optional relative directory (from the workspace root) to run the command
+   * in. Defaults to the workspace root.
+   */
+  cwd?: string;
+  /**
+   * If true, running the command again kills any existing session with the
+   * same title first. If false, re-running while a session is already alive
+   * is a no-op.
+   */
+  restartOnRerun: boolean;
 }
 
 /** The `setup` block inside `.argus.json`. */
@@ -133,8 +144,8 @@ export interface ArgusConfig {
   terminals: TerminalConfig[];
   /** Env vars with a unique integer per workspace (e.g. for port allocation). */
   workspace_env: WorkspaceEnvConfig[];
-  /** Optional run config for the "Run" button. */
-  run?: RunConfig | null;
+  /** Ordered list of run commands shown in the app's run menu. */
+  run: RunCommand[];
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string | null;
   /** Related projects that agents can create worktrees in and work on. */
@@ -165,7 +176,7 @@ export function defaultArgusConfig(): ArgusConfig {
     setup: defaultSetupConfig(),
     terminals: [],
     workspace_env: [],
-    run: null,
+    run: [],
     agent_prompt: null,
     related_projects: [],
     browser_url: null,

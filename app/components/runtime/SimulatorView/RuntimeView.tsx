@@ -1,6 +1,7 @@
+import { Icons, PlatformChip } from "@argus/peacock";
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
-import { Icons, PlatformChip } from "@argus/peacock";
+import { closeSimulatorPopout, openSimulatorPopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {
   useActiveDeviceKey,
@@ -36,6 +37,27 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
   const toggleRuntimeDialog = useCallback(() => {
     setRuntimeDialogOpen(!runtimeDialogOpen);
   }, [runtimeDialogOpen, setRuntimeDialogOpen]);
+
+  const canPopout = platform === "ios" && !!activeDeviceKey;
+
+  const handlePopout = useCallback(() => {
+    if (!activeDeviceKey) {
+      return;
+    }
+    openSimulatorPopout(activeDeviceKey).catch(() => {
+      // best-effort — the backend already logs failures
+    });
+  }, [activeDeviceKey]);
+
+  // Close any lingering popout for this device when unmounting the runtime
+  // view, so we don't leave orphaned always-on-top windows behind.
+  useEffect(() => {
+    return () => {
+      if (activeDeviceKey) {
+        closeSimulatorPopout(activeDeviceKey).catch(() => {});
+      }
+    };
+  }, [activeDeviceKey]);
 
   const toggle = (
     <div className={styles.platformToggle}>
@@ -103,6 +125,16 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
               <Icons.EnlargeIcon size={11} />
             )}
           </button>
+          {canPopout && (
+            <button
+              className={styles.runtimePopoutToggle}
+              title="Open simulator in floating window"
+              type="button"
+              onClick={handlePopout}
+            >
+              <Icons.PopoutIcon size={11} />
+            </button>
+          )}
           <div className={styles.layout}>
             {nativeSimulator !== null && (
               <div className={styles.nativeSimulatorLayer}>
