@@ -163,6 +163,12 @@ export interface ArgusConfig {
    * described (backward compatible).
    */
   platforms?: RuntimePlatform[] | null;
+  /**
+   * Branches that must be updated through a pull request instead of a direct
+   * merge (e.g. `["main", "master"]`). Workspaces whose base branch is
+   * protected surface a "Push & open PR" flow instead of "Merge".
+   */
+  protected_branches: string[];
 }
 
 /** Default/empty `SetupConfig`. */
@@ -183,5 +189,6 @@ export function defaultArgusConfig(): ArgusConfig {
     browser_presets: [],
     save_chat_history: true,
     platforms: null,
+    protected_branches: [],
   };
 }

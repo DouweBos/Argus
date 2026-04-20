@@ -198,6 +198,7 @@ import {
   getWorkspaceWorkingTreeState,
   getWorkspaceConflicts,
   mergeWorkspaceIntoBase,
+  pushWorkspaceBranch,
   gitPull,
   gitPush,
   gitFetch,
@@ -210,6 +211,11 @@ import {
   gitStashApply,
   gitStashDrop,
 } from "./services/workspace/workspaceOps";
+import {
+  loadUserProjectSettings,
+  saveUserProjectSettings,
+  type UserProjectSettings,
+} from "./services/userProjectSettings/store";
 import { appState } from "./state";
 
 type Args = Record<string, unknown>;
@@ -477,6 +483,15 @@ export function registerIpcHandlers(): void {
   handle("write_argus_config", (a) =>
     writeArgusConfig(a.repoRoot as string, a.content as string),
   );
+  handle("get_user_project_settings", (a) =>
+    loadUserProjectSettings(a.repoRoot as string),
+  );
+  handle("set_user_project_settings", (a) =>
+    saveUserProjectSettings(
+      a.repoRoot as string,
+      a.settings as UserProjectSettings,
+    ),
+  );
   handle("get_command_metrics", (a) =>
     loadCommandMetrics(a.repoRoot as string),
   );
@@ -504,6 +519,9 @@ export function registerIpcHandlers(): void {
   });
   handle("merge_workspace_into_base", (a) =>
     mergeWorkspaceIntoBase(a.id as string),
+  );
+  handle("push_workspace_branch", (a) =>
+    pushWorkspaceBranch(a.id as string),
   );
   handle("git_pull", (a) =>
     gitPull(

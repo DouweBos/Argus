@@ -105,7 +105,30 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
         ? Boolean(parsed.save_chat_history)
         : true,
     platforms: normalizePlatforms(parsed.platforms),
+    protected_branches: normalizeProtectedBranches(parsed.protected_branches),
   };
+}
+
+/**
+ * Normalise `protected_branches` from `.argus.json`. Accepts a string array
+ * of branch names that cannot be merged into directly from the app. Empty /
+ * missing / malformed values return `[]` (no protection).
+ */
+function normalizeProtectedBranches(raw: unknown): string[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  const out: string[] = [];
+  for (const entry of raw) {
+    if (typeof entry === "string") {
+      const trimmed = entry.trim();
+      if (trimmed && !out.includes(trimmed)) {
+        out.push(trimmed);
+      }
+    }
+  }
+
+  return out;
 }
 
 /**
@@ -272,7 +295,31 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     ),
     save_chat_history: local.save_chat_history ?? base.save_chat_history,
     platforms: local.platforms ?? base.platforms ?? null,
+    protected_branches:
+      local.protected_branches.length > 0
+        ? local.protected_branches
+        : base.protected_branches,
   };
+}
+
+/**
+ * Return true when `branch` is listed as a protected branch in the project's
+ * `.argus.json`. Used to gate the direct merge flow.
+ */
+export function isBranchProtected(
+  repoRoot: string,
+  branch: string | null | undefined,
+): boolean {
+  if (!branch) {
+    return false;
+  }
+  try {
+    const config = loadArgusConfig(repoRoot);
+
+    return config.protected_branches.includes(branch);
+  } catch {
+    return false;
+  }
 }
 
 /** Merge related project lists, deduplicating by path. */
