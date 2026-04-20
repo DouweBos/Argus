@@ -40,7 +40,9 @@ function emitEvent(event: string, payload: unknown = {}) {
 const mockGetSessionConflicts = vi.fn().mockResolvedValue([]);
 const mockGetSessionStagedDiff = vi.fn().mockResolvedValue("");
 const mockGetSessionCommitsAhead = vi.fn().mockResolvedValue(0);
+const mockGetSessionCommitsBehind = vi.fn().mockResolvedValue(0);
 const mockMergeSessionIntoBase = vi.fn().mockResolvedValue(undefined);
+const mockRebaseSessionOnBase = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../lib/ipc", () => ({
   getSessionConflicts: (...args: unknown[]) => mockGetSessionConflicts(...args),
@@ -48,8 +50,11 @@ vi.mock("../lib/ipc", () => ({
     mockGetSessionStagedDiff(...args),
   getSessionCommitsAhead: (...args: unknown[]) =>
     mockGetSessionCommitsAhead(...args),
+  getSessionCommitsBehind: (...args: unknown[]) =>
+    mockGetSessionCommitsBehind(...args),
   mergeSessionIntoBase: (...args: unknown[]) =>
     mockMergeSessionIntoBase(...args),
+  rebaseSessionOnBase: (...args: unknown[]) => mockRebaseSessionOnBase(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -62,7 +67,9 @@ describe("useMergeStatus", () => {
     mockGetSessionConflicts.mockResolvedValue([]);
     mockGetSessionStagedDiff.mockResolvedValue("");
     mockGetSessionCommitsAhead.mockResolvedValue(0);
+    mockGetSessionCommitsBehind.mockResolvedValue(0);
     mockMergeSessionIntoBase.mockResolvedValue(undefined);
+    mockRebaseSessionOnBase.mockResolvedValue(undefined);
   });
 
   afterEach(() => {

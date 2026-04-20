@@ -3,6 +3,34 @@ import { Button, ChecklistRow } from "@argus/peacock";
 import { useOnboarding } from "../../hooks/useOnboarding";
 import { OnboardingLayout } from "./OnboardingLayout";
 
+function notifMessage(
+  notifAsked: boolean,
+  notifGranted: boolean | null,
+): string {
+  if (!notifAsked) {
+    return "Get a ping when an agent finishes a turn or requests permission while the app is in the background.";
+  }
+  if (notifGranted) {
+    return "Enabled";
+  }
+
+  return "Denied — you can enable later in System Settings";
+}
+
+function notifTone(
+  notifAsked: boolean,
+  notifGranted: boolean | null,
+): "pass" | "skipped" | "warn" {
+  if (notifGranted === true) {
+    return "pass";
+  }
+  if (notifAsked) {
+    return "skipped";
+  }
+
+  return "warn";
+}
+
 export function PermissionsStep() {
   const { advance } = useOnboarding();
   const [notifAsked, setNotifAsked] = useState(false);
@@ -52,14 +80,8 @@ export function PermissionsStep() {
     >
       <ChecklistRow
         title="Notifications (optional)"
-        message={
-          notifAsked
-            ? notifGranted
-              ? "Enabled"
-              : "Denied — you can enable later in System Settings"
-            : "Get a ping when an agent finishes a turn or requests permission while the app is in the background."
-        }
-        tone={notifGranted === true ? "pass" : notifAsked ? "skipped" : "warn"}
+        message={notifMessage(notifAsked, notifGranted)}
+        tone={notifTone(notifAsked, notifGranted)}
         action={
           <Button
             variant={notifAsked ? "ghost" : "primary"}

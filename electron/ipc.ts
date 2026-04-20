@@ -160,9 +160,11 @@ import {
   writeArgusConfig,
   setSessionBaseBranch,
   getSessionCommitsAhead,
+  getSessionCommitsBehind,
   getSessionWorkingTreeState,
   getSessionConflicts,
   mergeSessionIntoBase,
+  rebaseSessionOnBase,
   pushSessionBranch,
   gitPull,
   gitPush,
@@ -513,6 +515,10 @@ export function registerIpcHandlers(): void {
   handle("merge_session_into_base", (a) =>
     mergeSessionIntoBase(a.id as string),
   );
+  handle("get_session_commits_behind", (a) =>
+    getSessionCommitsBehind(a.id as string),
+  );
+  handle("rebase_session_on_base", (a) => rebaseSessionOnBase(a.id as string));
   handle("push_session_branch", (a) => pushSessionBranch(a.id as string));
   handle("git_pull", (a) =>
     gitPull(

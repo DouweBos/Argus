@@ -22,11 +22,8 @@ export function FormField({
         {label}
       </label>
       {children}
-      {error ? (
-        <span className={styles.error}>{error}</span>
-      ) : helper ? (
-        <span className={styles.helper}>{helper}</span>
-      ) : null}
+      {error && <span className={styles.error}>{error}</span>}
+      {!error && helper && <span className={styles.helper}>{helper}</span>}
     </div>
   );
 }

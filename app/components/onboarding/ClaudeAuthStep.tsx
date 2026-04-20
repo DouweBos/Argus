@@ -7,6 +7,31 @@ import { OnboardingLayout } from "./OnboardingLayout";
 
 type PingState = "checking" | "failed" | "idle" | "ok";
 
+function pingMessage(state: PingState, error: string | null): string {
+  if (state === "ok") {
+    return "Authenticated";
+  }
+  if (state === "failed") {
+    return error ?? "ping failed";
+  }
+
+  return "Not yet verified";
+}
+
+function pingTone(state: PingState): "fail" | "pass" | "running" | "warn" {
+  if (state === "ok") {
+    return "pass";
+  }
+  if (state === "failed") {
+    return "fail";
+  }
+  if (state === "checking") {
+    return "running";
+  }
+
+  return "warn";
+}
+
 export function ClaudeAuthStep() {
   const { advance, skipStep } = useOnboarding();
   const preflightPassed = useOnboardingStore(
@@ -70,22 +95,8 @@ export function ClaudeAuthStep() {
       <CodeBlock code="claude login" language="bash" />
       <ChecklistRow
         title="Claude CLI ping"
-        message={
-          state === "ok"
-            ? "Authenticated"
-            : state === "failed"
-              ? (error ?? "ping failed")
-              : "Not yet verified"
-        }
-        tone={
-          state === "ok"
-            ? "pass"
-            : state === "failed"
-              ? "fail"
-              : state === "checking"
-                ? "running"
-                : "warn"
-        }
+        message={pingMessage(state, error)}
+        tone={pingTone(state)}
         action={
           <Button
             variant="secondary"

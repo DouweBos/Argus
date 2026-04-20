@@ -80,7 +80,7 @@ export function setPrereqs(results: PrereqResult[]): void {
 export function clearPrereq(id: PrereqId): void {
   onboardingStore.setState((s) => {
     const next = { ...s.prereqs };
-    delete next[id];
+    Reflect.deleteProperty(next, id);
 
     return { prereqs: next };
   });

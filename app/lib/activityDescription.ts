@@ -133,7 +133,14 @@ export interface Activity {
  * @param hasPendingPermission - Whether any tool call has pendingPermission = true.
  */
 export function deriveActivity(
-  agentStatus: "error" | "idle" | "running" | "stopped" | null | undefined,
+  agentStatus:
+    | "error"
+    | "idle"
+    | "requires_action"
+    | "running"
+    | "stopped"
+    | null
+    | undefined,
   lastEventType: string | undefined,
   pendingToolName: string | null,
   pendingToolInput: Record<string, unknown> | null,

@@ -95,7 +95,10 @@ export async function execConductor(
 ): Promise<{ stdout: string; stderr: string }> {
   const t0 = Date.now();
   try {
-    const result = await execFileAsync(getConductorBin(), args, options);
+    const result = await execFileAsync(getConductorBin(), args, {
+      ...options,
+      encoding: "utf8",
+    });
     conductorLogStore.push({
       ts: t0,
       deviceKey,

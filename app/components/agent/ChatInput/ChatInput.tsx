@@ -23,7 +23,13 @@ const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/gif,image/webp";
 interface ChatInputProps {
   /** Agent ID — used to persist draft text across tab switches. */
   agentId?: string | null;
-  agentStatus?: "error" | "idle" | "running" | "stopped" | null;
+  agentStatus?:
+    | "error"
+    | "idle"
+    | "requires_action"
+    | "running"
+    | "stopped"
+    | null;
   disabled?: boolean;
   disabledPlaceholder?: string;
   model?: string;

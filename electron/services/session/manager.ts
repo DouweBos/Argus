@@ -844,7 +844,7 @@ async function listWorktrees(repoRoot: string): Promise<Session[]> {
  */
 function resolveDetachedBranch(
   worktreePath: string,
-  meta: Map<string, WorkspaceMeta>,
+  meta: Map<string, SessionMeta>,
 ): string | null {
   // 1. rebase-merge/head-name records the original branch when a rebase is
   //    in progress. Format: `refs/heads/<branch>\n`.
@@ -875,7 +875,7 @@ function resolveDetachedBranch(
   // 2. Last known branch from in-memory state or persisted metadata. We don't
   //    record the branch in metadata today, so fall back to whatever the
   //    in-memory workspace reports for this path.
-  for (const ws of appState.workspaces.values()) {
+  for (const ws of appState.sessions.values()) {
     if (ws.path === worktreePath && ws.branch) {
       return ws.branch;
     }

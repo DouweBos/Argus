@@ -3,7 +3,7 @@ import { DiffStat, Icons } from "@argus/peacock";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { listen } from "../../../lib/events";
-import { watchSession } from "../../../lib/ipc";
+import { deleteSession, watchSession } from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
 import styles from "./ReadyToMergeCard.module.css";
 
@@ -28,9 +28,20 @@ export function ReadyToMergeCard({
   sectionClassName,
   titleClassName,
 }: ReadyToMergeCardProps) {
-  const { commitsAhead, conflicts, hasStaged, isMerging, handleMerge } =
-    useMergeStatus(sessionId);
+  const {
+    commitsAhead,
+    commitsBehind,
+    conflicts,
+    hasStaged,
+    isMerging,
+    isRebasing,
+    rebaseError,
+    handleMerge: performMerge,
+    handleRebase,
+  } = useMergeStatus(sessionId);
   const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
+  const [justMerged, setJustMerged] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     dispatch: handleFixConflictsInChat,
     isDispatching: isDispatchingAgent,
@@ -59,9 +70,26 @@ export function ReadyToMergeCard({
     };
   }, [sessionId]);
 
+  const handleMerge = async () => {
+    await performMerge();
+    setJustMerged(true);
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      // After a successful merge the session branch is squashed into the
+      // base — safe to delete along with the worktree.
+      await deleteSession(sessionId, true);
+    } catch {
+      setIsDeleting(false);
+    }
+  };
+
   const hasUncommitted = (diffStats?.files ?? 0) > 0;
   const hasWork = commitsAhead > 0 || hasStaged || hasUncommitted;
-  if (!hasWork) {
+  const needsRebase = commitsBehind > 0 && conflicts.length === 0;
+  if (!hasWork && !needsRebase && !justMerged) {
     return null;
   }
 
@@ -72,12 +100,20 @@ export function ReadyToMergeCard({
   const baseLabel = baseBranch ?? "parent";
 
   let statusLine: string;
-  if (hasConflicts) {
+  if (justMerged) {
+    statusLine = baseBranch ? `Merged into ${baseBranch}` : "Merged";
+  } else if (hasConflicts) {
     statusLine = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseLabel}`;
+  } else if (rebaseError) {
+    statusLine = `Rebase failed: ${rebaseError}`;
+  } else if (commitsAhead > 0 && commitsBehind > 0) {
+    statusLine = `${commitsAhead} ahead · ${commitsBehind} behind ${baseLabel}`;
   } else if (commitsAhead > 0 && hasUncommitted) {
     statusLine = `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead · uncommitted changes`;
   } else if (commitsAhead > 0) {
     statusLine = `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${baseLabel}`;
+  } else if (commitsBehind > 0) {
+    statusLine = `${commitsBehind} commit${commitsBehind === 1 ? "" : "s"} behind ${baseLabel}`;
   } else if (hasStaged) {
     statusLine = "Staged changes ready to commit";
   } else {
@@ -86,19 +122,29 @@ export function ReadyToMergeCard({
 
   const handleReview = () => setActiveTool("changes");
 
+  let title: string;
+  let tone: "ok" | "warn" = "ok";
+  if (justMerged) {
+    title = "Merged";
+  } else if (hasConflicts) {
+    title = "Merge blocked";
+    tone = "warn";
+  } else if (!hasWork && needsRebase) {
+    title = "Update available";
+  } else {
+    title = "Ready to merge";
+  }
+
   const content = (
     <div className={styles.card}>
       <div className={styles.row}>
-        <div
-          className={styles.iconWrap}
-          data-tone={hasConflicts ? "warn" : "ok"}
-        >
+        <div className={styles.iconWrap} data-tone={tone}>
           <Icons.MergeIcon size={14} />
         </div>
         <div className={styles.body}>
           <div className={styles.title}>
-            {hasConflicts ? "Merge blocked" : "Ready to merge"}
-            {baseBranch && !hasConflicts && (
+            {title}
+            {baseBranch && !hasConflicts && !justMerged && hasWork && (
               <span className={styles.target}>
                 {" into "}
                 <span className={styles.branch}>{baseBranch}</span>
@@ -107,7 +153,7 @@ export function ReadyToMergeCard({
           </div>
           <div className={styles.meta}>
             <span>{statusLine}</span>
-            {diffStats && diffStats.files > 0 && (
+            {diffStats && diffStats.files > 0 && !justMerged && (
               <>
                 <span className={styles.sep}>·</span>
                 <DiffStat
@@ -120,42 +166,69 @@ export function ReadyToMergeCard({
           </div>
         </div>
         <div className={styles.actions}>
-          <button
-            className={styles.secondaryBtn}
-            type="button"
-            onClick={handleReview}
-          >
-            Review
-          </button>
-          {baseBranch && hasConflicts && (
+          {justMerged ? (
             <button
-              className={styles.conflictBtn}
-              disabled={isDispatchingAgent}
-              title={
-                isDispatchingAgent
-                  ? "Starting agent\u2026"
-                  : `Start an agent to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranch}`
-              }
+              className={styles.deleteBtn}
+              disabled={isDeleting}
+              title="Delete this session and its branch"
               type="button"
-              onClick={handleFixConflictsInChat}
+              onClick={handleDelete}
             >
-              <Icons.AgentStartIcon size={11} />
-              {isDispatchingAgent
-                ? "Starting\u2026"
-                : `Fix ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} in chat`}
+              <Icons.TrashIcon size={11} />
+              {isDeleting ? "Deleting\u2026" : "Delete session"}
             </button>
-          )}
-          {baseBranch && !hasConflicts && (
-            <button
-              className={styles.mergeBtn}
-              disabled={!canMerge}
-              title={`Merge into ${baseBranch}`}
-              type="button"
-              onClick={handleMerge}
-            >
-              <Icons.MergeIcon size={11} />
-              {isMerging ? "Merging\u2026" : "Merge"}
-            </button>
+          ) : (
+            <>
+              <button
+                className={styles.secondaryBtn}
+                type="button"
+                onClick={handleReview}
+              >
+                Review
+              </button>
+              {baseBranch && hasConflicts && (
+                <button
+                  className={styles.conflictBtn}
+                  disabled={isDispatchingAgent}
+                  title={
+                    isDispatchingAgent
+                      ? "Starting agent\u2026"
+                      : `Start an agent to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranch}`
+                  }
+                  type="button"
+                  onClick={handleFixConflictsInChat}
+                >
+                  <Icons.AgentStartIcon size={11} />
+                  {isDispatchingAgent
+                    ? "Starting\u2026"
+                    : `Fix ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} in chat`}
+                </button>
+              )}
+              {baseBranch && !hasConflicts && needsRebase && (
+                <button
+                  className={styles.rebaseBtn}
+                  disabled={isRebasing}
+                  title={`Rebase ${sessionBranch ?? "this branch"} onto ${baseBranch}`}
+                  type="button"
+                  onClick={handleRebase}
+                >
+                  <Icons.BranchIcon size={11} />
+                  {isRebasing ? "Rebasing\u2026" : `Rebase onto ${baseBranch}`}
+                </button>
+              )}
+              {baseBranch && !hasConflicts && hasWork && (
+                <button
+                  className={styles.mergeBtn}
+                  disabled={!canMerge}
+                  title={`Merge into ${baseBranch}`}
+                  type="button"
+                  onClick={handleMerge}
+                >
+                  <Icons.MergeIcon size={11} />
+                  {isMerging ? "Merging\u2026" : "Merge"}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

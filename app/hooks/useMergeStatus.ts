@@ -1,41 +1,52 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   getSessionCommitsAhead,
+  getSessionCommitsBehind,
   getSessionConflicts,
   getSessionStagedDiff,
   mergeSessionIntoBase,
+  rebaseSessionOnBase,
 } from "../lib/ipc";
 import { useIpcEvent } from "./useIpcEvent";
 
 interface UseMergeStatusResult {
   commitsAhead: number;
+  commitsBehind: number;
   conflicts: string[];
   handleMerge: () => Promise<void>;
+  handleRebase: () => Promise<void>;
   hasStaged: boolean;
   isMerging: boolean;
+  isRebasing: boolean;
   mergeError: string | null;
+  rebaseError: string | null;
 }
 
 export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
   const [commitsAhead, setCommitsAhead] = useState(0);
+  const [commitsBehind, setCommitsBehind] = useState(0);
   const [isMerging, setIsMerging] = useState(false);
+  const [isRebasing, setIsRebasing] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const [rebaseError, setRebaseError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
     if (!sessionId) {
       return;
     }
     try {
-      const [conflictResult, stagedDiff, ahead] = await Promise.all([
+      const [conflictResult, stagedDiff, ahead, behind] = await Promise.all([
         getSessionConflicts(sessionId),
         getSessionStagedDiff(sessionId),
         getSessionCommitsAhead(sessionId),
+        getSessionCommitsBehind(sessionId),
       ]);
       setConflicts(conflictResult);
       setHasStaged(stagedDiff.trim() !== "");
       setCommitsAhead(ahead);
+      setCommitsBehind(behind);
     } catch {
       // ignore
     }
@@ -70,12 +81,32 @@ export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
     }
   }, [sessionId, fetchStatus]);
 
+  const handleRebase = useCallback(async () => {
+    if (!sessionId) {
+      return;
+    }
+    setIsRebasing(true);
+    setRebaseError(null);
+    try {
+      await rebaseSessionOnBase(sessionId);
+    } catch (err) {
+      setRebaseError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsRebasing(false);
+      await fetchStatus();
+    }
+  }, [sessionId, fetchStatus]);
+
   return {
     commitsAhead,
+    commitsBehind,
     conflicts,
     hasStaged,
     isMerging,
+    isRebasing,
     mergeError,
+    rebaseError,
     handleMerge,
+    handleRebase,
   };
 }

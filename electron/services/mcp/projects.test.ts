@@ -9,13 +9,13 @@ import {
 } from "./projects";
 
 // Mock fs so we don't hit the real filesystem.
-vi.mock("node:fs", () => {
-  const actual = vi.importActual("node:fs");
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof fs>("node:fs");
 
   return {
     ...actual,
     default: {
-      ...(actual as typeof fs),
+      ...actual,
       existsSync: vi.fn(),
       readFileSync: vi.fn(),
     },
@@ -168,7 +168,7 @@ describe("projects service", () => {
 
         return s.endsWith(".argus.json") && !s.includes("local");
       });
-      mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
         if (String(p).startsWith("/projects/frontend")) {
           return JSON.stringify({
             related_projects: [
@@ -201,7 +201,7 @@ describe("projects service", () => {
 
         return s.endsWith(".argus.json") && !s.includes("local");
       });
-      mockReadFileSync.mockImplementation((p: fs.PathLike) => {
+      mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
         if (String(p).startsWith("/projects/frontend")) {
           return JSON.stringify({
             related_projects: [

@@ -985,7 +985,7 @@ export function sendAgentMessage(
   const payload = buildUserMessagePayload(message, images ?? []);
 
   try {
-    session.stdin.write(payload + "\n");
+    agentEntry.stdin.write(payload + "\n");
   } catch (e) {
     throw `Failed to write to agent stdin: ${String(e)}`;
   }

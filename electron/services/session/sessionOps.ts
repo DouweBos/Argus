@@ -15,6 +15,7 @@ import { git, worktreesRoot } from "./git";
 import {
   checkMergeConflicts,
   mergeSessionIntoBase as doMergeSessionIntoBase,
+  rebaseSessionOnBase as doRebaseSessionOnBase,
 } from "./merge";
 import { loadMetadata, saveMetadata } from "./metadata";
 import { defaultArgusConfig, type ArgusConfig } from "./models";
@@ -742,6 +743,53 @@ export async function getSessionCommitsAhead(id: string): Promise<number> {
 }
 
 /**
+ * Count commits on the base branch that are not yet in the session branch.
+ * Returns 0 for sessions without a base branch, for the repo_root session,
+ * or when the branches cannot be compared. > 0 means the session is out of
+ * date and would benefit from a rebase onto the base.
+ */
+export async function getSessionCommitsBehind(id: string): Promise<number> {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  if (ws.kind === "project_root" || !ws.base_branch) {
+    return 0;
+  }
+  try {
+    const out = await git(ws.repo_root, [
+      "rev-list",
+      "--count",
+      `${ws.branch}..${ws.base_branch}`,
+    ]);
+    const n = parseInt(out.trim(), 10);
+
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Rebase the session branch onto its base branch, pulling in any new commits
+ * from the base without merging session commits back. Useful to keep a
+ * long-running session up to date.
+ */
+export async function rebaseSessionOnBase(id: string): Promise<void> {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  if (ws.kind === "project_root" || !ws.base_branch) {
+    throw "No base branch set for this session";
+  }
+
+  await doRebaseSessionOnBase(ws.path, ws.base_branch);
+
+  emitReviewState(id).catch(() => {});
+}
+
+/**
  * Return `{ hasStaged, hasUncommitted }` for a session.
  *
  * - `hasStaged` is true when there are index-vs-HEAD changes (ready for the
@@ -823,12 +871,12 @@ export async function pushSessionBranch(id: string): Promise<{
   prUrl: string | null;
   remoteName: string;
 }> {
-  const ws = appState.workspaces.get(id);
+  const ws = appState.sessions.get(id);
   if (!ws) {
-    throw `Workspace not found: ${id}`;
+    throw `Session not found: ${id}`;
   }
-  if (ws.kind === "repo_root") {
-    throw "Cannot push a repo-root workspace";
+  if (ws.kind !== "worktree") {
+    throw `Cannot push a ${ws.kind} session`;
   }
 
   // Commit staged changes first, so the push is meaningful.

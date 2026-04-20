@@ -4,7 +4,7 @@ import { Badge, Eyebrow, Icons, StatusDot } from "@argus/peacock";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useSessions } from "../../../stores/sessionStore";
-import { requestStopAgent } from "../../shared/ConfirmStopAgent/stopAgentGuard";
+import { requestStopAgent } from "../../shared/ConfirmStopAgent/stopAgentRequest";
 import styles from "./OrchestrationTree.module.css";
 
 const MAX_TITLE_CHARS = 60;

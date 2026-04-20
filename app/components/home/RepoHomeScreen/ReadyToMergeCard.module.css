@@ -76,7 +76,9 @@
 
 .secondaryBtn,
 .mergeBtn,
-.conflictBtn {
+.conflictBtn,
+.rebaseBtn,
+.deleteBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -130,6 +132,38 @@
 }
 
 .conflictBtn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.rebaseBtn {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+}
+
+.rebaseBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+}
+
+.rebaseBtn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.deleteBtn {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
+  color: var(--error);
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--error) 22%, transparent);
+  border-color: var(--error);
+}
+
+.deleteBtn:disabled {
   opacity: 0.5;
   cursor: progress;
 }

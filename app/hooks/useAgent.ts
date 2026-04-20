@@ -1,6 +1,6 @@
 import type { AgentStatus } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { requestStopAgent } from "../components/shared/ConfirmStopAgent/stopAgentGuard";
+import { requestStopAgent } from "../components/shared/ConfirmStopAgent/stopAgentRequest";
 import {
   notifyMessageSent,
   saveAgentConversation,
