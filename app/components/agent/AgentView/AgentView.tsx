@@ -1,15 +1,16 @@
 import { useCallback, useMemo } from "react";
 import { Icons } from "@argus/peacock";
 import { useWorkspaceAgents } from "../../../hooks/useAgent";
+import { useCloseIntent } from "../../../hooks/useCloseIntent";
 import { isWorkspaceReady } from "../../../lib/types";
 import {
   setActiveAgent,
-  setSecondaryAgent,
-  setSplitEnabled,
-  useSplitState,
+  setSplitPair,
+  useSplitPair,
 } from "../../../stores/agentStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { AgentChat } from "../AgentChat";
+import { AgentSplitDropZone } from "../AgentChatDropZone";
 import { AgentTabBar } from "../AgentTabBar";
 import { HomePanel } from "../HomePanel";
 import { SplitAgentPanes } from "../SplitAgentPanes";
@@ -33,33 +34,55 @@ export function AgentView({ workspaceId }: AgentViewProps) {
     });
 
   const isHomeActive = !activeAgent;
-  const { splitEnabled, secondaryAgentId } = useSplitState(workspaceId);
+  const splitPair = useSplitPair(workspaceId);
 
-  const toggleSplit = useCallback(() => {
-    setSplitEnabled(workspaceId, !splitEnabled);
-  }, [workspaceId, splitEnabled]);
-
-  const handleSelect = useCallback(
-    (agentId: string, e?: { altKey?: boolean; metaKey?: boolean }) => {
-      if (splitEnabled && (e?.altKey || e?.metaKey)) {
-        if (activeAgent && agentId !== activeAgent.agent_id) {
-          setSecondaryAgent(workspaceId, agentId);
-        }
+  const openOnRight = useCallback(
+    (agentId: string) => {
+      if (!activeAgent) {
+        setActive(agentId);
 
         return;
       }
-      setActive(agentId);
+      if (agentId === activeAgent.agent_id) {
+        return;
+      }
+      setSplitPair(workspaceId, { left: activeAgent.agent_id, right: agentId });
     },
-    [splitEnabled, activeAgent, workspaceId, setActive],
+    [activeAgent, workspaceId, setActive],
   );
 
-  const showSplit = splitEnabled && !!activeAgent;
-  const toggleClasses = [
-    styles.agentBarAddBtn,
-    splitEnabled ? styles.active : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const activeIsPaired =
+    !!activeAgent &&
+    !!splitPair &&
+    (activeAgent.agent_id === splitPair.left ||
+      activeAgent.agent_id === splitPair.right);
+
+  // Resolve both pair members exist in this workspace's agents; otherwise the
+  // pair is stale and we fall back to single-agent view.
+  const resolvedPair = useMemo(() => {
+    if (!splitPair) {
+      return null;
+    }
+    const left = agents.find((a) => a.agent_id === splitPair.left);
+    const right = agents.find((a) => a.agent_id === splitPair.right);
+    if (!left || !right) {
+      return null;
+    }
+
+    return { left, right };
+  }, [agents, splitPair]);
+
+  const showSplit = activeIsPaired && !!resolvedPair;
+
+  // Cmd+W closes the active agent tab when one is open in this view.
+  useCloseIntent(() => {
+    if (!activeAgent) {
+      return false;
+    }
+    stopAgent(activeAgent.agent_id);
+
+    return true;
+  });
 
   return (
     <>
@@ -68,11 +91,11 @@ export function AgentView({ workspaceId }: AgentViewProps) {
           activeAgentId={activeAgent?.agent_id ?? null}
           agents={agents}
           isHomeActive={isHomeActive}
-          splitEnabled={splitEnabled}
-          secondaryAgentId={secondaryAgentId}
+          splitPair={splitPair}
           onClose={(agentId) => stopAgent(agentId)}
-          onSelect={handleSelect}
+          onSelect={(agentId) => setActive(agentId)}
           onSelectHome={() => setActiveAgent(workspaceId, null)}
+          onUnpair={() => setSplitPair(workspaceId, null)}
         />
         <button
           className={styles.agentBarAddBtn}
@@ -81,40 +104,32 @@ export function AgentView({ workspaceId }: AgentViewProps) {
         >
           <Icons.PlusIcon size={12} />
         </button>
-        <button
-          className={toggleClasses}
-          title={
-            splitEnabled
-              ? "Disable split view"
-              : "Enable split view (⌥-click a tab to open it on the right)"
-          }
-          aria-pressed={splitEnabled}
-          onClick={toggleSplit}
-        >
-          <Icons.SplitViewIcon size={14} />
-        </button>
         <div className={styles.agentBarSpacer} />
       </div>
 
-      {activeAgent ? (
-        showSplit ? (
-          <SplitAgentPanes
-            agents={agents}
-            primary={activeAgent}
-            secondaryAgentId={secondaryAgentId}
-            workspaceId={workspaceId}
-            onRestart={(id) => restartAgent(id)}
-          />
-        ) : (
+      {!activeAgent && <HomePanel workspaceId={workspaceId} />}
+      {activeAgent && showSplit && resolvedPair && (
+        <SplitAgentPanes
+          agents={agents}
+          left={resolvedPair.left}
+          right={resolvedPair.right}
+          workspaceId={workspaceId}
+          onRestart={(id) => restartAgent(id)}
+        />
+      )}
+      {activeAgent && !showSplit && (
+        <AgentSplitDropZone
+          ignoreIds={[activeAgent.agent_id]}
+          onDropLeft={(id) => setActive(id)}
+          onDropRight={openOnRight}
+        >
           <AgentChat
             agentId={activeAgent.agent_id}
             permissionMode={activeAgent.permission_mode}
             workspaceId={workspaceId}
             onRestart={() => restartAgent(activeAgent.agent_id)}
           />
-        )
-      ) : (
-        <HomePanel workspaceId={workspaceId} />
+        </AgentSplitDropZone>
       )}
     </>
   );

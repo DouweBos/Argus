@@ -312,11 +312,11 @@ function Field({
   label: string;
 }) {
   return (
-    <label className={styles.field}>
+    <div className={styles.field}>
       <span className={styles.label}>{label}</span>
       {children}
       {hint && <span className={styles.hint}>{hint}</span>}
-    </label>
+    </div>
   );
 }
 

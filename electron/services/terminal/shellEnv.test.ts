@@ -24,16 +24,43 @@ const mockExecFileSync = vi.mocked(execFileSync);
 describe("fixProcessPath", () => {
   let originalPath: string | undefined;
   let originalShell: string | undefined;
+  let originalAndroidHome: string | undefined;
+  let originalAndroidSdkRoot: string | undefined;
+  let originalJavaHome: string | undefined;
 
   beforeEach(() => {
     originalPath = process.env.PATH;
     originalShell = process.env.SHELL;
+    originalAndroidHome = process.env.ANDROID_HOME;
+    originalAndroidSdkRoot = process.env.ANDROID_SDK_ROOT;
+    originalJavaHome = process.env.JAVA_HOME;
+    // Pre-populate env vars that `fixProcessPath` imports from the login
+    // shell so importShellEnvVars bails out early and doesn't add extra
+    // execFileSync calls that would throw off the assertions below.
+    process.env.ANDROID_HOME = "/prefilled";
+    process.env.ANDROID_SDK_ROOT = "/prefilled";
+    process.env.JAVA_HOME = "/prefilled";
     vi.clearAllMocks();
   });
 
   afterEach(() => {
     process.env.PATH = originalPath;
     process.env.SHELL = originalShell;
+    if (originalAndroidHome === undefined) {
+      delete process.env.ANDROID_HOME;
+    } else {
+      process.env.ANDROID_HOME = originalAndroidHome;
+    }
+    if (originalAndroidSdkRoot === undefined) {
+      delete process.env.ANDROID_SDK_ROOT;
+    } else {
+      process.env.ANDROID_SDK_ROOT = originalAndroidSdkRoot;
+    }
+    if (originalJavaHome === undefined) {
+      delete process.env.JAVA_HOME;
+    } else {
+      process.env.JAVA_HOME = originalJavaHome;
+    }
   });
 
   it("updates PATH when login shell returns a different value", () => {
@@ -91,6 +118,35 @@ describe("fixProcessPath", () => {
 
     expect(mockExecFileSync).toHaveBeenCalledTimes(2);
     expect(process.env.PATH).toBe("/opt/homebrew/bin:/usr/bin:/bin");
+  });
+
+  it("imports ANDROID_HOME from the login shell when unset", () => {
+    process.env.PATH = "/usr/bin:/bin";
+    process.env.SHELL = "/bin/zsh";
+    delete process.env.ANDROID_HOME;
+    delete process.env.ANDROID_SDK_ROOT;
+    delete process.env.JAVA_HOME;
+
+    mockExecFileSync.mockImplementation(((_shell: string, args: string[]) => {
+      const script = args[1] ?? "";
+      if (script.includes("$PATH")) {
+        return "/usr/bin:/bin" as never;
+      }
+
+      // The env-import script asks for ANDROID_HOME, ANDROID_SDK_ROOT, JAVA_HOME.
+      return [
+        "ANDROID_HOME=/Users/me/Library/Android/sdk",
+        "ANDROID_SDK_ROOT=",
+        "JAVA_HOME=/opt/java",
+      ].join("\n") as never;
+    }) as unknown as typeof execFileSync);
+
+    fixProcessPath();
+
+    expect(process.env.ANDROID_HOME).toBe("/Users/me/Library/Android/sdk");
+    expect(process.env.JAVA_HOME).toBe("/opt/java");
+    // Empty values should not clobber — ANDROID_SDK_ROOT stays unset.
+    expect(process.env.ANDROID_SDK_ROOT).toBeUndefined();
   });
 
   it("no-ops when PATH is undefined", () => {

@@ -1,5 +1,6 @@
 import type { Workspace } from "../lib/types";
 import { create } from "zustand";
+import { clearSelectedOrganization } from "./centerViewStore";
 import { migrateSessions } from "./terminalStore";
 
 export interface Project {
@@ -153,6 +154,9 @@ export const updateWorkspace = (id: string, patch: Partial<Workspace>) => {
 
 export const selectWorkspace = (id: string | null) => {
   workspaceStore.setState({ selectedId: id });
+  if (id !== null) {
+    clearSelectedOrganization();
+  }
 };
 
 export const setLoading = (isLoading: boolean) => {

@@ -5,8 +5,9 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
-/** Whether this workspace is backed by a git worktree or the repo root itself. */
-export type WorkspaceKind = "repo_root" | "worktree";
+/** Whether this workspace is backed by a git worktree, the repo root itself,
+ * or a neutral directory hosting a cross-repo org task agent. */
+export type WorkspaceKind = "org_host" | "repo_root" | "worktree";
 
 /**
  * Lifecycle state of a workspace.

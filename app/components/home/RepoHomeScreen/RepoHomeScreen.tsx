@@ -12,6 +12,7 @@ import {
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
 import { triggerNewWorkspace } from "../../../stores/dialogStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
@@ -78,10 +79,13 @@ export function RepoHomeScreen({
   onResumeHistory,
 }: RepoHomeScreenProps) {
   const agentsRecord = useAgentsRecord();
+  const conversations = useConversations();
   const workspaces = useWorkspaces();
   const devices = useDevices();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
+  const handleClearAllHistory = history.clearAll;
+  const handleDeleteHistoryEntry = history.remove;
 
   const repoWorkspaces = useMemo(
     () => (repoRoot ? workspaces.filter((w) => w.repo_root === repoRoot) : []),
@@ -255,11 +259,12 @@ export function RepoHomeScreen({
                       const hasRun = wsAgents.some(
                         (a) => a.status === "running",
                       );
-                      const statusTone: "error" | "idle" | "success" = hasErr
-                        ? "error"
-                        : hasRun
-                          ? "success"
-                          : "idle";
+                      let statusTone: "error" | "idle" | "success" = "idle";
+                      if (hasErr) {
+                        statusTone = "error";
+                      } else if (hasRun) {
+                        statusTone = "success";
+                      }
 
                       return (
                         <WorkspaceCard
@@ -293,8 +298,8 @@ export function RepoHomeScreen({
                   <ChatHistoryList
                     entries={history.entries}
                     repoRoot={repoRoot}
-                    onClearAll={history.clearAll}
-                    onDelete={history.remove}
+                    onClearAll={handleClearAllHistory}
+                    onDelete={handleDeleteHistoryEntry}
                     onResume={onResumeHistory}
                     onView={onViewHistory}
                   />
@@ -321,7 +326,17 @@ export function RepoHomeScreen({
                     const ws = repoWorkspaces.find(
                       (w) => w.id === a.workspace_id,
                     );
-                    const name = ws?.display_name ?? ws?.branch ?? a.agent_id;
+                    const conv = conversations[a.agent_id];
+                    const convTitle = conv?.title?.trim();
+                    const firstUserText = conv?.messages
+                      ?.find((m) => m.role === "user")
+                      ?.textBlocks?.[0]?.trim();
+                    const name =
+                      convTitle ||
+                      firstUserText ||
+                      ws?.display_name ||
+                      ws?.branch ||
+                      a.agent_id;
                     const mapped = mapAgentStatus(a.status);
 
                     return (
@@ -358,25 +373,22 @@ export function RepoHomeScreen({
                     No devices bound to this repo.
                   </div>
                 ) : (
-                  repoDevices
-                    .slice(0, 6)
-                    .map((d) => (
+                  repoDevices.slice(0, 6).map((d) => {
+                    let meta = "offline";
+                    if (d.online) {
+                      meta = d.reserved ? "reserved" : "available";
+                    }
+
+                    return (
                       <AgentRow
                         key={`${d.platform}:${d.deviceKey}`}
                         name={d.name}
                         project={d.platform.toUpperCase()}
-                        status={
-                          d.online ? (d.reserved ? "running" : "idle") : "idle"
-                        }
-                        meta={
-                          d.online
-                            ? d.reserved
-                              ? "reserved"
-                              : "available"
-                            : "offline"
-                        }
+                        status={d.online && d.reserved ? "running" : "idle"}
+                        meta={meta}
                       />
-                    ))
+                    );
+                  })
                 )}
               </div>
             </div>

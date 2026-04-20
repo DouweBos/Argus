@@ -1,5 +1,5 @@
-import { Badge, Button } from "@argus/peacock";
 import { useCallback, useMemo } from "react";
+import { Badge, Button } from "@argus/peacock";
 import { respondToPermission } from "../../../lib/ipc";
 import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
@@ -21,8 +21,8 @@ interface PendingEntry {
 }
 
 interface ToolSummary {
-  label: string;
   detail?: string;
+  label: string;
   mono?: boolean;
 }
 
@@ -137,7 +137,6 @@ export function PermissionBanner() {
 
         return (
           <div className={styles.banner} key={entry.toolUseId}>
-            <div className={styles.rail} aria-hidden />
             <div className={styles.info}>
               <div className={styles.header}>
                 <span className={styles.label}>Permission needed</span>

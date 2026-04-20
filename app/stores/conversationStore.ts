@@ -758,6 +758,7 @@ export function loadSavedMessages(
   model?: string,
   sessionId?: string,
   resuming?: boolean,
+  title?: string,
 ) {
   conversationStore.setState((state) => ({
     conversations: {
@@ -768,6 +769,7 @@ export function loadSavedMessages(
         model,
         sessionId,
         resuming,
+        title,
       },
     },
   }));

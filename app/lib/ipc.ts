@@ -14,9 +14,8 @@ import type {
   AgentStatus,
   AndroidDevice,
   BranchList,
-  ClaudeStatuslineHookStatus,
-  ClaudeUsage,
   ConductorLogEntry,
+  DependencyReport,
   DeviceInfo,
   DevicePlatform,
   DirEntry,
@@ -58,22 +57,6 @@ export function send(channel: string, args?: Record<string, unknown>): void {
 
 // Window
 export const closeWindow = (): Promise<void> => invoke("close_window");
-
-// Claude usage (5h session block + rolling 7-day totals)
-export const getClaudeUsage = (): Promise<ClaudeUsage> =>
-  invoke("get_claude_usage");
-
-export const getClaudeStatuslineHookStatus =
-  (): Promise<ClaudeStatuslineHookStatus> =>
-    invoke("get_claude_statusline_hook_status");
-
-export const installClaudeStatuslineHook =
-  (): Promise<ClaudeStatuslineHookStatus> =>
-    invoke("install_claude_statusline_hook");
-
-export const uninstallClaudeStatuslineHook =
-  (): Promise<ClaudeStatuslineHookStatus> =>
-    invoke("uninstall_claude_statusline_hook");
 
 // Workspace commands
 export const addRepoRoot = (path: string): Promise<void> =>
@@ -321,6 +304,10 @@ export const writeFile = (
 
 export const statFile = (id: string, relativePath: string): Promise<FileStat> =>
   invoke("stat_file", { id, relativePath });
+
+// System / peer-dependency probes
+export const checkDependencies = (): Promise<DependencyReport> =>
+  invoke("check_dependencies");
 
 // Agent commands
 export const checkClaudeCli = (): Promise<string> => invoke("check_claude_cli");
@@ -686,9 +673,9 @@ export const removeRepoFromOrganization = (
 // Organization tasks
 export interface StartOrgTaskInput {
   organizationId: string;
-  title: string;
   prompt: string;
-  members: { repo_root: string; addendum?: string }[];
+  scope: { repo_root: string }[];
+  title: string;
 }
 
 export const listOrgTasks = (organizationId?: string): Promise<OrgTask[]> =>

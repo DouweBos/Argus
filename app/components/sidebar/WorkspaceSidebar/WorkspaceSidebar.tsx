@@ -14,9 +14,16 @@ import {
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { useActivityCount } from "../../../stores/activityStore";
 import { useAgentsRecord } from "../../../stores/agentStore";
-import { setCenterView, useCenterView } from "../../../stores/centerViewStore";
+import {
+  setCenterView,
+  useCenterView,
+  useSelectedOrganizationId,
+} from "../../../stores/centerViewStore";
 import { useDevices } from "../../../stores/deviceStore";
-import { useOrganizations } from "../../../stores/organizationStore";
+import {
+  useOrganizations,
+  useOrganizationSync,
+} from "../../../stores/organizationStore";
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import {
   selectWorkspace,
@@ -24,6 +31,7 @@ import {
   useSelectedWorkspaceId,
 } from "../../../stores/workspaceStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
+import { OrganizationSegment } from "../OrganizationSegment";
 import { ProjectSegment } from "../ProjectSegment";
 import styles from "./WorkspaceSidebar.module.css";
 
@@ -31,6 +39,7 @@ export function WorkspaceSidebar() {
   const { projects, openProject, closeProject, error } = useProjects();
   const selectedId = useSelectedWorkspaceId();
   const centerView = useCenterView();
+  const selectedOrgId = useSelectedOrganizationId();
   const devices = useDevices();
   const agentsRecord = useAgentsRecord();
   const [showOpenProject, setShowOpenProject] = useState(false);
@@ -40,7 +49,12 @@ export function WorkspaceSidebar() {
   ).length;
   const reviewQueueCount = useReviewQueueCount();
   const activityCount = useActivityCount();
-  const organizationsCount = useOrganizations().length;
+  useOrganizationSync();
+  const organizations = useOrganizations();
+  const organizationsCount = organizations.length;
+  const sortedOrgs = [...organizations].sort(
+    (a, b) => a.created_at - b.created_at,
+  );
 
   const sorted = [...projects].sort((a, b) => a.addedAt - b.addedAt);
   const totalWorkspaces = sorted.length;
@@ -108,7 +122,11 @@ export function WorkspaceSidebar() {
           Devices
         </SidebarItem>
         <SidebarItem
-          active={selectedId === null && centerView === "organizations"}
+          active={
+            selectedId === null &&
+            centerView === "organizations" &&
+            selectedOrgId === null
+          }
           leading={<Icons.OrganizationIcon size={12} />}
           count={organizationsCount}
           onClick={() => {
@@ -144,6 +162,17 @@ export function WorkspaceSidebar() {
 
       <SidebarScroll>
         {error && <p className={styles.errorMsg}>{error}</p>}
+
+        <SidebarSection count={organizationsCount}>
+          Organizations
+        </SidebarSection>
+        {sortedOrgs.length === 0 ? (
+          <p className={styles.empty}>No organizations yet.</p>
+        ) : (
+          sortedOrgs.map((org) => (
+            <OrganizationSegment key={org.id} org={org} />
+          ))
+        )}
 
         <SidebarSection count={totalWorkspaces}>Workspaces</SidebarSection>
         {sorted.length === 0 ? (

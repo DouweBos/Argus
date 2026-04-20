@@ -14,5 +14,5 @@ export function openExternalUrl(url: string): void {
   if (!/^https?:\/\//i.test(url)) {
     throw `Refusing to open non-http(s) URL: ${url}`;
   }
-  void shell.openExternal(url);
+  shell.openExternal(url).catch(() => undefined);
 }

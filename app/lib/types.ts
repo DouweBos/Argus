@@ -6,7 +6,7 @@ export interface Workspace {
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
   id: string;
-  kind: "repo_root" | "worktree";
+  kind: "org_host" | "repo_root" | "worktree";
   /** OrgTask that owns this workspace (if spawned from a cross-repo task). */
   organization_task_id?: string | null;
   path: string;
@@ -125,6 +125,26 @@ export interface WorkspaceEnvConfig {
   range?: number;
   /** How to compute the per-workspace offset (default: hash). */
   strategy?: WorkspaceEnvStrategy;
+}
+
+export type DependencySeverity = "optional" | "required";
+
+export interface DependencyStatus {
+  hint: string;
+  id: string;
+  installed: boolean;
+  name: string;
+  platforms: string[];
+  purpose: string;
+  resolvedPath?: string;
+  severity: DependencySeverity;
+}
+
+export interface DependencyReport {
+  dependencies: DependencyStatus[];
+  missingOptional: number;
+  missingRequired: number;
+  platform: string;
 }
 
 export interface DirEntry {
@@ -329,46 +349,6 @@ export interface AgentCapabilities {
 }
 
 // ---------------------------------------------------------------------------
-// Claude Code usage — parsed from ~/.claude/projects session logs.
-// ---------------------------------------------------------------------------
-
-export interface ClaudeRateWindow {
-  resets_at: number | string | null;
-  used_percentage: number | null;
-}
-
-export interface ClaudeStatuslinePayload {
-  context_window?: { used_percentage?: number | null };
-  cost?: {
-    total_cost_usd?: number | null;
-    total_duration_ms?: number | null;
-  };
-  model?: { display_name?: string | null };
-  rate_limits?: {
-    five_hour?: ClaudeRateWindow;
-    seven_day?: ClaudeRateWindow;
-    seven_day_opus?: ClaudeRateWindow;
-  };
-  workspace?: { current_dir?: string | null };
-}
-
-export interface ClaudeUsage {
-  computed_at: number;
-  file_mtime_ms: number | null;
-  hook_installed: boolean;
-  hook_script_path: string;
-  payload: ClaudeStatuslinePayload | null;
-}
-
-export interface ClaudeStatuslineHookStatus {
-  chained_command: string | null;
-  hook_installed: boolean;
-  hook_script_path: string;
-  previous_command: string | null;
-  status_file_path: string;
-}
-
-// ---------------------------------------------------------------------------
 // Organizations
 // ---------------------------------------------------------------------------
 
@@ -392,29 +372,21 @@ export interface Organization {
 // Organization tasks
 // ---------------------------------------------------------------------------
 
-export type OrgTaskStatus = "running" | "completed" | "failed" | "cancelled";
+export type OrgTaskStatus = "cancelled" | "completed" | "failed" | "running";
 
-export type OrgTaskMemberStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed";
-
-export interface OrgTaskMember {
-  addendum: string;
-  agent_id: string | null;
+export interface OrgTaskScopeEntry {
   repo_root: string;
   role: string;
-  status: OrgTaskMemberStatus;
-  workspace_id: string | null;
 }
 
 export interface OrgTask {
   created_at: number;
+  host_agent_id: string | null;
+  host_workspace_id: string | null;
   id: string;
-  members: OrgTaskMember[];
   organization_id: string;
   prompt: string;
+  scope: OrgTaskScopeEntry[];
   status: OrgTaskStatus;
   title: string;
   updated_at: number;

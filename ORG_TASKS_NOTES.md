@@ -17,8 +17,8 @@
 - **Org context extension.** `buildOrganizationContext` (in
   `electron/services/agent/claude.ts`) now detects when a workspace is part of
   a running OrgTask and appends a "Current Cross-Repo Task" section to the
-  system prompt with the task title, shared prompt, and the *absolute worktree
-  paths* of sibling agents so the agent can read sibling files directly or
+  system prompt with the task title, shared prompt, and the _absolute worktree
+  paths_ of sibling agents so the agent can read sibling files directly or
   coordinate via `spawn_agent` / `wait_for_agent` / `send_agent_message`.
 - **Workspace ↔ task linkage.** `Workspace.organization_task_id` added to both
   backend and renderer models, persisted in `WorkspaceMeta`

@@ -1,3 +1,4 @@
+import type { DependencyStatus } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import {
   Banner,
@@ -9,7 +10,7 @@ import {
   TipCard,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
-import { checkClaudeCli } from "../../../lib/ipc";
+import { checkDependencies } from "../../../lib/ipc";
 import { setActiveAgent } from "../../../stores/agentStore";
 import { useDevicePoller } from "../../../stores/deviceStore";
 import {
@@ -21,30 +22,30 @@ import { useOrganizationSync } from "../../../stores/organizationStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectWorkspace } from "../../../stores/workspaceStore";
 import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";
-import { DirectionPicker } from "./DirectionPicker/DirectionPicker";
 import styles from "./HomeScreen.module.css";
 import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
-import { LiveActivity } from "./directions/LiveActivity/LiveActivity";
-import { Orrery } from "./directions/Orrery/Orrery";
 import { HOME_SHORTCUTS, HOME_TIPS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
-import { useHomeDirection } from "./useHomeDirection";
 
 export function HomeScreen() {
   useDevicePoller(5000);
   useOrganizationSync();
   const data = useHomeData();
-  const [direction, setDirection] = useHomeDirection();
   const { openProject } = useProjects();
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
-  const [claudeCliMissing, setClaudeCliMissing] = useState(false);
+  const [missingDeps, setMissingDeps] = useState<DependencyStatus[]>([]);
 
   useEffect(() => {
-    checkClaudeCli()
-      .then(() => setClaudeCliMissing(false))
-      .catch(() => setClaudeCliMissing(true));
+    checkDependencies()
+      .then((report) =>
+        setMissingDeps(report.dependencies.filter((d) => !d.installed)),
+      )
+      .catch(() => setMissingDeps([]));
   }, []);
+
+  const missingRequired = missingDeps.filter((d) => d.severity === "required");
+  const missingOptional = missingDeps.filter((d) => d.severity === "optional");
 
   const handleOpenProject = async (p: HomeProject) => {
     setOpenError(null);
@@ -96,12 +97,16 @@ export function HomeScreen() {
   return (
     <div className={styles.screen}>
       <div className={styles.main}>
-        {claudeCliMissing && (
-          <Banner tone="warning">
-            Claude Code CLI not found on PATH. Agents will not work until it is
-            installed.
+        {missingRequired.map((dep) => (
+          <Banner key={dep.id} tone="error">
+            <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}
           </Banner>
-        )}
+        ))}
+        {missingOptional.map((dep) => (
+          <Banner key={dep.id} tone="warning">
+            <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}
+          </Banner>
+        ))}
         {openError && (
           <Banner tone="error">
             {openError}
@@ -155,23 +160,9 @@ export function HomeScreen() {
               ))}
             />
           ) : (
-            <>
-              {direction === "command-center" && (
-                <CommandCenter {...directionProps} />
-              )}
-              {direction === "live-activity" && (
-                <LiveActivity {...directionProps} />
-              )}
-              {direction === "orrery" && <Orrery {...directionProps} />}
-            </>
+            <CommandCenter {...directionProps} />
           )}
         </div>
-
-        {!isEmpty && (
-          <div className={styles.pickerBar}>
-            <DirectionPicker value={direction} onChange={setDirection} />
-          </div>
-        )}
       </div>
       <OrganizationDialogHost />
     </div>

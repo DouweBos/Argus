@@ -1,22 +1,27 @@
 import type { Organization, OrgTask } from "../../lib/types";
 import { useState } from "react";
-import { Button, Icons } from "@argus/peacock";
+import { Button, Icons, StatCell, StatsStrip } from "@argus/peacock";
+import {
+  openOrganization,
+  useSelectedOrganizationId,
+} from "../../stores/centerViewStore";
 import {
   showCreateOrganizationDialog,
   showEditOrganizationDialog,
-  showStartTaskDialog,
 } from "../../stores/dialogStore";
-import {
-  useOrganizationSync,
-  useOrganizations,
-} from "../../stores/organizationStore";
 import {
   setActiveOrgTask,
   useOrgTaskSync,
   useOrgTasks,
 } from "../../stores/orgTaskStore";
+import {
+  useOrganizationSync,
+  useOrganizations,
+} from "../../stores/organizationStore";
 import { OrganizationDialogHost } from "../home/OrganizationDialog/OrganizationDialog";
+import homeStyles from "../home/homeLayout.module.css";
 import styles from "./OrganizationsScreen.module.css";
+import { StartTaskComposer } from "./StartTaskComposer";
 
 function basename(p: string): string {
   return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
@@ -27,7 +32,23 @@ export function OrganizationsScreen() {
   useOrgTaskSync();
   const orgs = useOrganizations();
   const tasks = useOrgTasks();
+  const selectedOrgId = useSelectedOrganizationId();
   const runningTasks = tasks.filter((t) => t.status === "running").length;
+
+  const selectedOrg = selectedOrgId
+    ? (orgs.find((o) => o.id === selectedOrgId) ?? null)
+    : null;
+
+  if (selectedOrg) {
+    const orgTasks = tasks.filter((t) => t.organization_id === selectedOrg.id);
+
+    return (
+      <>
+        <OrganizationHome org={selectedOrg} tasks={orgTasks} />
+        <OrganizationDialogHost />
+      </>
+    );
+  }
 
   return (
     <div className={styles.screen}>
@@ -88,6 +109,175 @@ export function OrganizationsScreen() {
   );
 }
 
+function OrganizationHome({
+  org,
+  tasks,
+}: {
+  org: Organization;
+  tasks: OrgTask[];
+}) {
+  const running = tasks.filter((t) => t.status === "running").length;
+  const completed = tasks.filter((t) => t.status === "completed").length;
+  const failed = tasks.filter((t) => t.status === "failed").length;
+  const sortedTasks = [...tasks].sort((a, b) => b.created_at - a.created_at);
+
+  return (
+    <div className={homeStyles.screen}>
+      <div className={homeStyles.wrap}>
+        <div className={homeStyles.hero}>
+          <div
+            className={homeStyles.brandMark}
+            style={{ ["--hero-accent" as string]: org.accent }}
+          >
+            <div className={homeStyles.heroBadge}>
+              <Icons.OrganizationIcon size={18} />
+            </div>
+            <div>
+              <h1 className={homeStyles.title}>{org.name}</h1>
+              <div className={homeStyles.sub}>
+                {org.members.length} repo{org.members.length === 1 ? "" : "s"}
+                {tasks.length > 0 && (
+                  <>
+                    <span className={homeStyles.dot}>·</span>
+                    {tasks.length} task{tasks.length === 1 ? "" : "s"}
+                  </>
+                )}
+                {running > 0 && (
+                  <>
+                    <span className={homeStyles.dot}>·</span>
+                    {running} running
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className={homeStyles.heroSpacer} />
+          <div className={homeStyles.ctas}>
+            <Button
+              variant="ghost"
+              leading={<Icons.PencilIcon size={12} />}
+              onClick={() => showEditOrganizationDialog(org.id)}
+            >
+              Edit
+            </Button>
+          </div>
+        </div>
+
+        {org.description && (
+          <div className={homeStyles.repoPath}>{org.description}</div>
+        )}
+
+        <StatsStrip>
+          <StatCell
+            label="Tasks running"
+            value={running}
+            delta={running > 0 ? "in progress" : `${tasks.length} total`}
+            deltaTone={running > 0 ? "positive" : "neutral"}
+            live={running > 0}
+          />
+          <StatCell
+            label="Member repos"
+            value={org.members.length}
+            delta={org.members.length > 0 ? "ready" : "add repos"}
+            deltaTone={org.members.length > 0 ? "neutral" : "negative"}
+          />
+          <StatCell
+            label="Completed"
+            value={completed}
+            delta="across all tasks"
+          />
+          <StatCell
+            label="Failed"
+            value={failed}
+            delta={failed > 0 ? "needs attention" : "none"}
+            deltaTone={failed > 0 ? "negative" : "neutral"}
+          />
+        </StatsStrip>
+
+        <div className={homeStyles.grid}>
+          <div className={homeStyles.col}>
+            <div className={homeStyles.panel}>
+              <div className={homeStyles.panelHead}>
+                <span className={homeStyles.eyebrow}>New task</span>
+                <span className={homeStyles.subMeta}>
+                  prompt · implement across selected repos
+                </span>
+              </div>
+              <div className={styles.composerWrap}>
+                <StartTaskComposer org={org} />
+              </div>
+            </div>
+
+            <div className={homeStyles.panel}>
+              <div className={homeStyles.panelHead}>
+                <span className={homeStyles.eyebrow}>Tasks</span>
+                <span className={homeStyles.subMeta}>{tasks.length} total</span>
+              </div>
+              <div className={homeStyles.panelScroll}>
+                {sortedTasks.length === 0 ? (
+                  <div className={homeStyles.emptyCell}>
+                    No tasks yet. Send a prompt above to fan work out across
+                    every selected repo.
+                  </div>
+                ) : (
+                  <div className={styles.tasks}>
+                    {sortedTasks.map((t) => (
+                      <TaskRow key={t.id} task={t} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className={homeStyles.col}>
+            <div className={homeStyles.panel}>
+              <div className={homeStyles.panelHead}>
+                <span className={homeStyles.eyebrow}>Member repos</span>
+                <span className={homeStyles.subMeta}>
+                  {org.members.length} bound
+                </span>
+                <div className={homeStyles.panelSpacer} />
+                <button
+                  type="button"
+                  className={homeStyles.linkBtn}
+                  onClick={() => showEditOrganizationDialog(org.id)}
+                >
+                  Edit
+                </button>
+              </div>
+              <div className={styles.memberList}>
+                {org.members.length === 0 ? (
+                  <div className={homeStyles.emptyCell}>
+                    No member repos yet.
+                  </div>
+                ) : (
+                  org.members.map((m) => (
+                    <div key={m.repo_root} className={styles.memberRow}>
+                      <span className={styles.memberIcon}>
+                        <Icons.RepoIcon size={12} />
+                      </span>
+                      <div className={styles.memberBody}>
+                        <span className={styles.memberName}>
+                          {basename(m.repo_root)}
+                        </span>
+                        {m.role && (
+                          <span className={styles.memberRole}>{m.role}</span>
+                        )}
+                        <span className={styles.memberPath}>{m.repo_root}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OrganizationCard({
   org,
   tasks,
@@ -132,7 +322,7 @@ function OrganizationCard({
           <Button
             variant="primary"
             leading={<Icons.PlayIcon size={11} />}
-            onClick={() => showStartTaskDialog(org.id)}
+            onClick={() => openOrganization(org.id)}
             disabled={!canStart}
             title={canStart ? undefined : "Add member repos first"}
           >
@@ -175,7 +365,7 @@ function OrganizationCard({
       )}
       {expanded && sortedTasks.length === 0 && canStart && (
         <div className={styles.noTasks}>
-          Click “Start task” to fan a prompt out across every member repo in
+          Open this organization to send a prompt across every member repo in
           parallel.
         </div>
       )}
@@ -200,14 +390,13 @@ function TaskRow({ task }: { task: OrgTask }) {
         {task.status}
       </span>
       <span className={styles.taskMembers}>
-        {task.members.map((m) => (
+        {task.scope.map((s) => (
           <span
-            key={m.repo_root}
+            key={s.repo_root}
             className={styles.memberChip}
-            data-status={m.status}
-            title={`${basename(m.repo_root)} — ${m.status}`}
+            title={basename(s.repo_root)}
           >
-            {basename(m.repo_root)}
+            {basename(s.repo_root)}
           </span>
         ))}
       </span>

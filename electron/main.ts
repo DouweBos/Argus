@@ -31,10 +31,6 @@ import {
 } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
 import { installConductor } from "./services/cli/conductorInstaller";
-import {
-  installHook as installClaudeStatuslineHook,
-  isHookInstalled as isClaudeStatuslineHookInstalled,
-} from "./services/claude/statuslineHook";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
@@ -217,12 +213,12 @@ function createWindow(): void {
     }
     const menu = new Menu();
     if (params.misspelledWord) {
+      const wc = mainWindow.webContents;
       for (const suggestion of params.dictionarySuggestions) {
         menu.append(
           new MenuItem({
             label: suggestion,
-            click: () =>
-              mainWindow?.webContents.replaceMisspelling(suggestion),
+            click: () => wc.replaceMisspelling(suggestion),
           }),
         );
       }
@@ -351,17 +347,6 @@ app.whenReady().then(() => {
 
   // Install/update the conductor CLI to ~/.argus/bin/conductor.
   installConductor();
-
-  // Install the Claude Code statusline tap so the usage indicator populates
-  // automatically. Chains to the user's existing statusline command if any.
-  try {
-    if (!isClaudeStatuslineHookInstalled()) {
-      installClaudeStatuslineHook();
-      log("claude statusline hook installed");
-    }
-  } catch (e) {
-    log("installClaudeStatuslineHook failed: %s", String(e));
-  }
 
   // Load persisted organizations and register their member repos.
   try {

@@ -922,7 +922,27 @@ export function createMcpServer(): McpServer {
           "Maximum seconds to wait before timing out. Defaults to no timeout (wait indefinitely).",
         ),
     },
-    async ({ agent_id, timeout_seconds }) => {
+    async ({ agent_id, timeout_seconds }, extra) => {
+      // Emit progress notifications periodically so the transport sees traffic
+      // while the wait blocks. Protects against intermediate idle timeouts
+      // even when the per-tool call timeout is disabled on the client.
+      const progressToken = extra?._meta?.progressToken;
+      let ticks = 0;
+      const keepalive = progressToken
+        ? setInterval(() => {
+            ticks += 1;
+            extra
+              .sendNotification({
+                method: "notifications/progress",
+                params: {
+                  progressToken,
+                  progress: ticks,
+                  message: `waiting for agent ${agent_id}`,
+                },
+              })
+              .catch(() => {});
+          }, 30_000)
+        : null;
       try {
         const { status, result } = await waitForAgent(
           agent_id,
@@ -957,6 +977,10 @@ export function createMcpServer(): McpServer {
           content: [{ type: "text" as const, text: String(e) }],
           isError: true,
         };
+      } finally {
+        if (keepalive) {
+          clearInterval(keepalive);
+        }
       }
     },
   );

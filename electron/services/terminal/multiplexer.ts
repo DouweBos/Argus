@@ -95,14 +95,15 @@ export function workspaceEnvValue(
  */
 function buildWorkspaceEnv(
   workspaceId: string,
-  workspaceKind: "repo_root" | "worktree",
+  workspaceKind: "org_host" | "repo_root" | "worktree",
   envIndex: number | undefined,
   repoRoot: string,
 ): Record<string, string> {
   const extra: Record<string, string> = {};
 
-  // workspace_env only applies to worktree workspaces, not the repo root.
-  if (workspaceKind === "repo_root") {
+  // workspace_env only applies to worktree workspaces, not the repo root or
+  // neutral org-host workspaces.
+  if (workspaceKind === "repo_root" || workspaceKind === "org_host") {
     return extra;
   }
 

@@ -5,16 +5,10 @@ import {
   setActiveAgent,
   updateAgent,
 } from "../stores/agentStore";
-import {
-  addUserMessage,
-  queueMessage,
-} from "../stores/conversationStore";
+import { addUserMessage, queueMessage } from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { selectWorkspace } from "../stores/workspaceStore";
-import {
-  notifyMessageSent,
-  startAgentListening,
-} from "./agentEventService";
+import { notifyMessageSent, startAgentListening } from "./agentEventService";
 import {
   type ImageAttachment,
   sendAgentMessage,

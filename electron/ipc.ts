@@ -51,17 +51,12 @@ import {
 import { getMjpegPort } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
 import {
-  getHookStatus as getClaudeStatuslineHookStatus,
-  installHook as installClaudeStatuslineHook,
-  uninstallHook as uninstallClaudeStatuslineHook,
-} from "./services/claude/statuslineHook";
-import { getClaudeUsage } from "./services/claude/usage";
-import {
   listDevices,
   stopDevice,
   type DevicePlatform,
 } from "./services/conductor/devices";
 import { conductorLogStore, execConductor } from "./services/conductor/logger";
+import { checkDependencies } from "./services/dependencies/check";
 import { discoverExtensions } from "./services/extensions/loader";
 import {
   listDirectory,
@@ -290,16 +285,6 @@ export function registerIpcHandlers(): void {
     getMainWindow()?.close();
   });
 
-  // Claude usage (session + weekly token totals)
-  handle("get_claude_usage", () => getClaudeUsage());
-  handle("get_claude_statusline_hook_status", () =>
-    getClaudeStatuslineHookStatus(),
-  );
-  handle("install_claude_statusline_hook", () => installClaudeStatuslineHook());
-  handle("uninstall_claude_statusline_hook", () =>
-    uninstallClaudeStatuslineHook(),
-  );
-
   // Workspace CRUD
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
@@ -364,7 +349,7 @@ export function registerIpcHandlers(): void {
       organizationId: a.organizationId as string,
       title: a.title as string,
       prompt: a.prompt as string,
-      members: a.members as { repo_root: string; addendum?: string }[],
+      scope: a.scope as { repo_root: string }[],
     }),
   );
   handle("cancel_org_task", (a) => cancelOrgTask(a.id as string));
@@ -478,6 +463,9 @@ export function registerIpcHandlers(): void {
   handle("git_stash_drop", (a) =>
     gitStashDrop(a.id as string, a.stashIndex as number),
   );
+
+  // Dependency / system probes
+  handle("check_dependencies", () => checkDependencies());
 
   // Agent commands
   handle("check_claude_cli", () => checkClaudeCli());

@@ -105,6 +105,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
             saved.model,
             saved.sessionId,
             true,
+            saved.title,
           );
         }
       }

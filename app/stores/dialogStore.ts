@@ -17,8 +17,6 @@ interface DialogState {
   newWorkspacePickerOpen: boolean;
   openProjectVisible: boolean;
   organizationDialog: OrganizationDialogState;
-  /** Shows the StartTaskDialog for the given organization id when non-null. */
-  startTaskDialogOrgId: string | null;
 }
 
 const store = create<DialogState>(() => ({
@@ -26,7 +24,6 @@ const store = create<DialogState>(() => ({
   newWorkspacePickerOpen: false,
   createWorkspaceRepoRoot: null,
   organizationDialog: null,
-  startTaskDialogOrgId: null,
 }));
 
 export const showOpenProjectDialog = () =>
@@ -80,10 +77,3 @@ export const showEditOrganizationDialog = (id: string) =>
 export const hideOrganizationDialog = () =>
   store.setState({ organizationDialog: null });
 export const useOrganizationDialog = () => store((s) => s.organizationDialog);
-
-export const showStartTaskDialog = (orgId: string) =>
-  store.setState({ startTaskDialogOrgId: orgId });
-export const hideStartTaskDialog = () =>
-  store.setState({ startTaskDialogOrgId: null });
-export const useStartTaskDialogOrgId = () =>
-  store((s) => s.startTaskDialogOrgId);

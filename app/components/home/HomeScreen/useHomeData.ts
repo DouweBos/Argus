@@ -3,6 +3,7 @@ import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useMemo } from "react";
 import { projectAccent } from "@argus/peacock";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
   useRecentProjects,
@@ -81,6 +82,7 @@ export function useHomeData(): HomeData & {
   const recent = useRecentProjects();
   const workspaces = useWorkspaces();
   const agentsRecord = useAgentsRecord();
+  const conversations = useConversations();
   const devices = useDevices();
 
   return useMemo(() => {
@@ -123,10 +125,17 @@ export function useHomeData(): HomeData & {
       if (!ws) {
         return;
       }
+      const conv = conversations[a.agent_id];
+      const convTitle = conv?.title?.trim();
+      const firstUserText = conv?.messages
+        ?.find((m) => m.role === "user")
+        ?.textBlocks?.[0]?.trim();
+      const displayName =
+        convTitle || firstUserText || ws.display_name || ws.branch;
       const entry: HomeAgent = {
         id: a.agent_id,
         branch: ws.branch,
-        displayName: ws.display_name ?? ws.branch,
+        displayName,
         status: mapAgentStatus(a.status),
         workspace: ws,
       };
@@ -151,7 +160,7 @@ export function useHomeData(): HomeData & {
     };
 
     return { projects, activeAgents, devices, stats, formatLastOpened };
-  }, [recent, workspaces, agentsRecord, devices]);
+  }, [recent, workspaces, agentsRecord, conversations, devices]);
 }
 
 function basename(p: string): string {

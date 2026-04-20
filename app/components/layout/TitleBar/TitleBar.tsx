@@ -14,7 +14,6 @@ import {
   useWorkspaces,
 } from "../../../stores/workspaceStore";
 import { PencilIcon } from "../../shared/Icons";
-import { ClaudeUsageIndicator } from "../ClaudeUsageIndicator/ClaudeUsageIndicator";
 import styles from "./TitleBar.module.css";
 
 export function TitleBar() {
@@ -119,7 +118,6 @@ export function TitleBar() {
       onJump={openCommandPalette}
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={workspace ? toggleRightPanel : undefined}
-      right={<ClaudeUsageIndicator />}
     />
   );
 }

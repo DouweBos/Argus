@@ -70,7 +70,58 @@ export function fixProcessPath(): string[] {
     }
   }
 
+  // Import additional env vars (not just PATH) from the login shell. These
+  // aren't on PATH but affect tool discovery — e.g. Argus needs ANDROID_HOME
+  // to find adb/emulator when the user has it set in their shell rc.
+  importShellEnvVars(
+    ["ANDROID_HOME", "ANDROID_SDK_ROOT", "JAVA_HOME"],
+    diagnostics,
+  );
+
   return diagnostics;
+}
+
+/**
+ * Capture named env vars from the user's login shell and apply them to the
+ * current process env if they aren't already set. Skips any that fail to
+ * resolve. No-op if the shell invocation fails entirely.
+ */
+function importShellEnvVars(names: string[], diagnostics: string[]): void {
+  const missing = names.filter((n) => !process.env[n]);
+  if (missing.length === 0) {
+    return;
+  }
+  const shell = process.env.SHELL ?? "/bin/zsh";
+  // Print each requested var as NAME=value on its own line. Missing vars
+  // print as empty values, which we filter out.
+  const script = missing.map((n) => `printf '%s=%s\\n' ${n} "$${n}"`).join(";");
+
+  for (const flag of ["-ilc", "-lc"]) {
+    try {
+      const stdout = execFileSync(shell, [flag, script], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: 10_000,
+      });
+      for (const line of stdout.split(/\r?\n/)) {
+        const eq = line.indexOf("=");
+        if (eq <= 0) {
+          continue;
+        }
+        const name = line.slice(0, eq);
+        const value = line.slice(eq + 1).trim();
+        if (value && missing.includes(name) && !process.env[name]) {
+          process.env[name] = value;
+          diagnostics.push(`imported ${name} from login shell`);
+        }
+      }
+
+      return;
+    } catch {
+      // Try next flag.
+    }
+  }
+  diagnostics.push(`failed to import env vars: ${missing.join(", ")}`);
 }
 
 // ---------------------------------------------------------------------------

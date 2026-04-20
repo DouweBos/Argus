@@ -545,17 +545,26 @@ export async function runSetupPipeline(
  * toggle isn't safe here: it's a global, and parallel setup pipelines (e.g.
  * `spawn_agents_batch`) race on its value — one pipeline's `finally` block
  * can reset the flag while another is still copying. Shelling out sidesteps
- * the asar layer entirely. `-R` recurses; `-L` dereferences symlinks to match
- * the previous `dereference: true` behaviour.
+ * the asar layer entirely.
+ *
+ * We use rsync with `--copy-unsafe-links`: internal relative symlinks are
+ * preserved (pnpm's `node_modules/.pnpm` store depends on them, and they
+ * resolve correctly inside the worktree because all targets are relative and
+ * stay within the copied tree or the worktree's repo checkout). Only symlinks
+ * pointing *outside* the source tree are materialized as file copies. This
+ * avoids the recursive dereference failures that `cp -RL` hits when chasing
+ * long chains of pnpm symlinks.
  */
 async function copyDirAll(src: string, dst: string): Promise<void> {
   await fs.promises.mkdir(path.dirname(dst), { recursive: true });
-  // If dst exists, remove it first so `cp` overwrites cleanly rather than
-  // copying src *inside* dst.
+  // If dst exists, remove it first so the copy overwrites cleanly rather than
+  // landing src *inside* dst.
   if (fs.existsSync(dst)) {
     await fs.promises.rm(dst, { recursive: true, force: true });
   }
-  await execFileAsync("cp", ["-RL", src, dst]);
+  // Trailing slash on src tells rsync to copy the contents of src into dst
+  // (matching `cp -R src dst` semantics where dst doesn't yet exist).
+  await execFileAsync("rsync", ["-a", "--copy-unsafe-links", `${src}/`, dst]);
 }
 
 /** Returns true if `p` is a symlink (without throwing on missing path). */

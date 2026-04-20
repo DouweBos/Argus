@@ -86,6 +86,8 @@ export function WorkspaceHomeScreen({
   const devices = useDevices();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
+  const handleClearAllHistory = history.clearAll;
+  const handleDeleteHistoryEntry = history.remove;
 
   const workspace = useMemo(
     () => workspaces.find((w) => w.id === workspaceId) ?? null,
@@ -164,6 +166,20 @@ export function WorkspaceHomeScreen({
     (a) => a.status === "error",
   ).length;
 
+  let commitsAheadDelta = "";
+  if (hasConflicts) {
+    commitsAheadDelta = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"}`;
+  } else if (baseBranch) {
+    commitsAheadDelta = `of ${baseBranch}`;
+  }
+
+  let agentsDelta = "none active";
+  if (runningAgents > 0) {
+    agentsDelta = `${runningAgents} running`;
+  } else if (idleAgents > 0) {
+    agentsDelta = `${idleAgents} idle`;
+  }
+
   return (
     <div className={styles.screen}>
       <div className={styles.wrap}>
@@ -218,13 +234,7 @@ export function WorkspaceHomeScreen({
           <StatCell
             label="Commits ahead"
             value={commitsAhead}
-            delta={
-              hasConflicts
-                ? `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"}`
-                : baseBranch
-                  ? `of ${baseBranch}`
-                  : ""
-            }
+            delta={commitsAheadDelta}
             deltaTone={hasConflicts ? "negative" : "neutral"}
           />
           <StatCell
@@ -242,13 +252,7 @@ export function WorkspaceHomeScreen({
           <StatCell
             label="Agents"
             value={workspaceAgents.length}
-            delta={
-              runningAgents > 0
-                ? `${runningAgents} running`
-                : idleAgents > 0
-                  ? `${idleAgents} idle`
-                  : "none active"
-            }
+            delta={agentsDelta}
             deltaTone={runningAgents > 0 ? "positive" : "neutral"}
             live={runningAgents > 0}
           />
@@ -315,8 +319,8 @@ export function WorkspaceHomeScreen({
                     <ChatHistoryList
                       entries={workspaceHistoryEntries}
                       repoRoot={repoRoot}
-                      onClearAll={history.clearAll}
-                      onDelete={history.remove}
+                      onClearAll={handleClearAllHistory}
+                      onDelete={handleDeleteHistoryEntry}
                       onResume={onResumeHistory}
                       onView={onViewHistory}
                     />
@@ -373,23 +377,22 @@ export function WorkspaceHomeScreen({
                     No devices bound to this workspace.
                   </div>
                 ) : (
-                  workspaceDevices
-                    .slice(0, 6)
-                    .map((d) => (
+                  workspaceDevices.slice(0, 6).map((d) => {
+                    let meta = "offline";
+                    if (d.online) {
+                      meta = d.reserved ? "reserved" : "available";
+                    }
+
+                    return (
                       <AgentRow
                         key={`${d.platform}:${d.deviceKey}`}
                         name={d.name}
                         project={d.platform.toUpperCase()}
                         status={d.online && d.reserved ? "running" : "idle"}
-                        meta={
-                          d.online
-                            ? d.reserved
-                              ? "reserved"
-                              : "available"
-                            : "offline"
-                        }
+                        meta={meta}
                       />
-                    ))
+                    );
+                  })
                 )}
               </div>
             </div>

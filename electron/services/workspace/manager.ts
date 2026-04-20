@@ -7,6 +7,7 @@ import fs from "node:fs";
 import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import { orgHostDir } from "../organizationTask/paths";
 import {
   branchToDir,
   git,
@@ -308,6 +309,49 @@ export async function createWorkspace(
 }
 
 // ---------------------------------------------------------------------------
+// create_org_host_workspace
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a neutral "org host" workspace for a cross-repo OrgTask.
+ *
+ * Unlike worktree workspaces, this workspace is not tied to any git repo —
+ * it's a plain directory at `~/.argus/org-hosts/{orgId}/{taskId}/` where a
+ * single agent runs with access to every scope repo via MCP tools.
+ *
+ * No git operations, no setup pipeline, no file watchers. Returns the
+ * workspace in `ready` status.
+ */
+export async function createOrgHostWorkspace(options: {
+  organizationId: string;
+  taskId: string;
+  displayName: string;
+}): Promise<Workspace> {
+  const dir = orgHostDir(options.organizationId, options.taskId);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const ws: Workspace = {
+    id: crypto.randomUUID(),
+    kind: "org_host",
+    branch: "",
+    display_name: options.displayName,
+    description: "",
+    path: dir,
+    repo_root: dir,
+    status: "ready",
+    env_index: null,
+    base_branch: null,
+    organization_task_id: null,
+  };
+
+  appState.workspaces.set(ws.id, ws);
+  getMainWindow()?.webContents.send("workspace:created", { ...ws });
+  info(`Created org-host workspace ${ws.id} at ${dir}`);
+
+  return { ...ws };
+}
+
+// ---------------------------------------------------------------------------
 // create_head_workspace
 // ---------------------------------------------------------------------------
 
@@ -431,6 +475,20 @@ export async function deleteWorkspace(
     appState.workspaces.delete(id);
     win?.webContents.send("workspace:deleted", id);
     info(`Deleted workspace ${id}`);
+
+    return;
+  }
+
+  if (workspace.kind === "org_host") {
+    // Neutral org-host workspace — just remove the directory.
+    try {
+      fs.rmSync(workspace.path, { force: true, recursive: true });
+    } catch (e) {
+      info(`deleteWorkspace: rm org-host dir failed: ${String(e)}`);
+    }
+    appState.workspaces.delete(id);
+    win?.webContents.send("workspace:deleted", id);
+    info(`Deleted org-host workspace ${id}`);
 
     return;
   }

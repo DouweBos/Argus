@@ -92,9 +92,7 @@ export function ProjectSegment({
         setMenuPosition({ x: e.clientX, y: e.clientY });
       }}
       meta={
-        repoRootWorkspace && (
-          <RepoHeaderMeta workspace={repoRootWorkspace} />
-        )
+        repoRootWorkspace && <RepoHeaderMeta workspace={repoRootWorkspace} />
       }
       subtitle={
         isRepoHomeSelected && repoBranch ? (
