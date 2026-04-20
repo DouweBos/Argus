@@ -14,7 +14,8 @@
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently -n vite,electron \"vite\" \"pnpm build:electron && electron .\"",
+    "dev": "pnpm ensure:bridge && concurrently -n vite,electron \"vite\" \"pnpm build:electron && electron .\"",
+    "ensure:bridge": "test -x native/argus-sim-bridge/argus-sim-bridge || pnpm build:bridge",
     "dev:vite": "vite",
     "dev:electron": "pnpm build:electron && electron .",
     "typecheck:electron": "tsc -p tsconfig.main.json --noEmit",

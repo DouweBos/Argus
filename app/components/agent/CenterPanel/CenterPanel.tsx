@@ -1,11 +1,12 @@
 import { useMemo } from "react";
-import { Chip, EmptyHome } from "@argus/peacock";
+import { Chip } from "@argus/peacock";
 import {
   setActiveCenterView,
   useActiveCenterView,
 } from "../../../stores/editorStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { EditorPanel } from "../../editor/EditorPanel";
+import { HomeScreen } from "../../home/HomeScreen";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import styles from "./CenterPanel.module.css";
@@ -28,14 +29,7 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
   const setActiveView = setActiveCenterView;
 
   if (!workspaceId || !workspace) {
-    return (
-      <div className={styles.empty}>
-        <EmptyHome
-          title="Argus"
-          tagline="select or create a workspace to begin"
-        />
-      </div>
-    );
+    return <HomeScreen />;
   }
 
   return (
