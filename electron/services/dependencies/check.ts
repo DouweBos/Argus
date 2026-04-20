@@ -12,7 +12,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { CONDUCTOR_BIN } from "../conductor/logger";
+import { getConductorBin } from "../conductor/logger";
 
 const execFileAsync = promisify(execFile);
 
@@ -185,7 +185,11 @@ const SPECS: DependencySpec[] = [
     severity: "optional",
     platforms: ALL_PLATFORMS,
     hint: "Reinstall Argus dependencies with `pnpm install` to restore it.",
-    probe: async () => (fs.existsSync(CONDUCTOR_BIN) ? CONDUCTOR_BIN : null),
+    probe: async () => {
+      const bin = getConductorBin();
+
+      return fs.existsSync(bin) ? bin : null;
+    },
   },
 ];
 

@@ -21,10 +21,7 @@ extraResources:
     to: root-agent-system-prompt.md
   - from: electron/prompts/org-host-agent-system-prompt.md
     to: org-host-agent-system-prompt.md
-  - from: native/conductor
-    to: conductor
-    filter:
-      - "**/*"
+afterPack: scripts/electron-after-pack.cjs
 mac:
   identity: null
   target:

@@ -30,7 +30,6 @@ import {
   stopMjpegServer,
 } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
-import { installConductor } from "./services/cli/conductorInstaller";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
@@ -447,9 +446,6 @@ app.whenReady().then(() => {
   startMjpegServer().catch((e) =>
     log("Failed to start MJPEG server: %s", String(e)),
   );
-
-  // Install/update the conductor CLI to ~/.argus/bin/conductor.
-  installConductor();
 
   // Load persisted organizations and register their member repos.
   try {

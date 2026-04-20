@@ -4,7 +4,7 @@
 
 import { execFile } from "node:child_process";
 import fs from "node:fs";
-import { branchToDir, git, worktreesRoot } from "./git";
+import { git } from "./git";
 
 // ---------------------------------------------------------------------------
 // check_merge_conflicts
@@ -61,10 +61,10 @@ export async function checkMergeConflicts(
  */
 export async function mergeWorkspaceIntoBase(
   repoRoot: string,
+  wsPath: string,
   workspaceBranch: string,
   baseBranch: string,
 ): Promise<void> {
-  const wsPath = `${worktreesRoot(repoRoot)}/${branchToDir(workspaceBranch)}`;
   if (!fs.existsSync(wsPath)) {
     throw `Workspace worktree not found at ${wsPath}`;
   }
