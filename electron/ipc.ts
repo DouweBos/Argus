@@ -120,6 +120,7 @@ import {
   createRunTerminal,
   startTerminal,
   destroyTerminal,
+  stopTerminal,
   terminalWrite,
   terminalResize,
 } from "./services/terminal/multiplexer";
@@ -595,6 +596,7 @@ export function registerIpcHandlers(): void {
     startTerminal(a.sessionId as string, a.cols as number, a.rows as number),
   );
   handle("destroy_terminal", (a) => destroyTerminal(a.sessionId as string));
+  handle("stop_terminal", (a) => stopTerminal(a.sessionId as string));
   handle("terminal_write", (a) =>
     terminalWrite(a.sessionId as string, a.data as string),
   );

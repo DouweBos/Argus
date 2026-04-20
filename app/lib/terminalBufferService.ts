@@ -1,4 +1,5 @@
 import { type UnlistenFn, listen } from "../lib/events";
+import { markSessionExited } from "../stores/terminalStore";
 
 /**
  * Singleton service that owns event subscriptions for terminal data.
@@ -10,6 +11,9 @@ type WriteFn = (data: Uint8Array) => void;
 
 /** Active event listeners keyed by sessionId */
 const listeners = new Map<string, UnlistenFn>();
+
+/** Active exit listeners keyed by sessionId */
+const exitListeners = new Map<string, UnlistenFn>();
 
 /** Callbacks into mounted xterm instances */
 const liveWriters = new Map<string, WriteFn>();
@@ -62,6 +66,19 @@ export function startListening(sessionId: string): void {
 
   // Store a placeholder so we know we're listening
   listeners.set(sessionId, () => {});
+
+  // Track liveness via the exit event so UI (e.g. Stop button) can react.
+  listen<number>(`terminal:exit:${sessionId}`, () => {
+    markSessionExited(sessionId);
+  }).then((unlisten) => {
+    if (!exitListeners.has(sessionId)) {
+      unlisten();
+
+      return;
+    }
+    exitListeners.set(sessionId, unlisten);
+  });
+  exitListeners.set(sessionId, () => {});
 }
 
 /** Unsubscribe and clean up all state for a session (called on session destroy). */
@@ -73,6 +90,12 @@ export function stopListening(sessionId: string): void {
   listeners.delete(sessionId);
   liveWriters.delete(sessionId);
   pendingChunks.delete(sessionId);
+
+  const unlistenExit = exitListeners.get(sessionId);
+  if (unlistenExit) {
+    unlistenExit();
+  }
+  exitListeners.delete(sessionId);
 }
 
 /** Register a live write callback (called when terminal mounts). */

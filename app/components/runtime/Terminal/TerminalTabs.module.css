@@ -105,6 +105,25 @@
   background: var(--success);
 }
 
+/* Stop button — visible only when the active session's pty is alive. */
+.stopBtn {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-left: 1px solid var(--glass-border);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.stopBtn:hover {
+  background: rgba(160, 80, 80, 0.12);
+  color: var(--danger, #a05050);
+}
+
 /* Add tab button */
 .addTabBtn {
   padding: 0 10px;

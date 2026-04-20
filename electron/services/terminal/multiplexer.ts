@@ -307,6 +307,53 @@ export function destroyTerminal(sessionId: string): void {
 }
 
 /**
+ * Gracefully stop a PTY session by escalating signals: SIGINT → SIGTERM →
+ * SIGKILL, with ~1.5s between each step. Returns immediately; the escalation
+ * runs in the background and stops as soon as the process exits (the
+ * `onExit` handler removes the session from the registry).
+ *
+ * Unlike {@link destroyTerminal}, this gives well-behaved processes a chance
+ * to clean up. Use this for user-triggered stop actions (e.g. a Stop button);
+ * use {@link destroyTerminal} for hard teardown when the renderer is closing
+ * a tab.
+ *
+ * @throws A plain string if the session is not found.
+ */
+export function stopTerminal(sessionId: string): void {
+  const session = appState.terminals.get(sessionId);
+  if (!session) {
+    throw `Terminal session not found: ${sessionId}`;
+  }
+
+  const escalate = (signal: "SIGINT" | "SIGKILL" | "SIGTERM"): boolean => {
+    if (!appState.terminals.has(sessionId)) {
+      return false;
+    }
+    try {
+      session.pty.kill(signal);
+    } catch {
+      // Process may have already exited between checks; treat as done.
+      return false;
+    }
+
+    return true;
+  };
+
+  if (!escalate("SIGINT")) {
+    return;
+  }
+
+  setTimeout(() => {
+    if (!escalate("SIGTERM")) {
+      return;
+    }
+    setTimeout(() => {
+      escalate("SIGKILL");
+    }, 1500);
+  }, 1500);
+}
+
+/**
  * Write raw bytes (base64-encoded) to a PTY session's stdin.
  *
  * `data` is base64-encoded so that arbitrary binary sequences (escape codes,

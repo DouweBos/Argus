@@ -468,6 +468,14 @@ export const startTerminal = (
 export const destroyTerminal = (sessionId: string): Promise<void> =>
   invoke("destroy_terminal", { sessionId });
 
+/**
+ * Gracefully stop the process running in a terminal session by escalating
+ * SIGINT → SIGTERM → SIGKILL. Returns immediately; the renderer will receive
+ * a `terminal:exit:{sessionId}` event when the process actually exits.
+ */
+export const stopTerminal = (sessionId: string): Promise<void> =>
+  invoke("stop_terminal", { sessionId });
+
 export const terminalWrite = (sessionId: string, data: string): Promise<void> =>
   invoke("terminal_write", { sessionId, data });
 
