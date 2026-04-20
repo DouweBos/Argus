@@ -245,6 +245,11 @@ select.input {
   box-shadow: 0 0 20px rgba(255, 68, 102, 0.2);
 }
 
+.modeToggle {
+  display: flex;
+  gap: 8px;
+}
+
 .checkboxRow {
   display: flex;
   align-items: center;

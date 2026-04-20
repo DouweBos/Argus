@@ -7,6 +7,10 @@ import fs from "node:fs";
 import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import {
+  generateSessionTitle,
+  humanizeBranchName,
+} from "../llm/titleGenerator";
 import { orgHostDir } from "../organizationTask/paths";
 import {
   branchToDir,
@@ -218,6 +222,20 @@ export async function createWorkspace(
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
 ): Promise<Workspace> {
+  // Enforce one-session-per-branch: a given branch in a given repo may only be
+  // claimed by a single worktree-kind workspace.
+  const branchSlug = useExistingBranch === true ? branch : titleToBranchSlug(branch);
+  for (const existing of appState.workspaces.values()) {
+    if (
+      existing.kind === "worktree" &&
+      existing.repo_root === repoRoot &&
+      existing.branch === branchSlug
+    ) {
+      const label = existing.display_name ?? existing.branch;
+      throw `Branch "${branchSlug}" is already used by session "${label}". Each branch can only be used by one session.`;
+    }
+  }
+
   // Use the explicit base branch if provided (e.g. when creating a child
   // worktree from another worktree), otherwise fall back to the repo root HEAD.
   let baseBranch: string | undefined = explicitBaseBranch;
@@ -248,6 +266,12 @@ export async function createWorkspace(
     (w) => w.kind !== "repo_root",
   ).length;
   workspace.env_index = nextIndex;
+
+  // Set a humanized placeholder title so the row renders something readable
+  // before the LLM-generated title comes back.
+  if (!workspace.display_name || workspace.display_name === branch) {
+    workspace.display_name = humanizeBranchName(workspace.branch);
+  }
   appState.workspaces.set(workspace.id, { ...workspace });
 
   // Persist display name and base_branch so it survives app restarts.
@@ -264,6 +288,48 @@ export async function createWorkspace(
   } catch {
     // Non-fatal
   }
+
+  // Fire-and-forget: ask Claude for a nicer title. On success, update state,
+  // persist, and notify the renderer so the row re-renders.
+  const titleWorkspaceId = workspace.id;
+  const titleWorkspacePath = workspace.path;
+  generateSessionTitle({
+    branch: workspace.branch,
+    description: workspace.description,
+    repoRoot,
+  })
+    .then((title) => {
+      if (!title) {
+        return;
+      }
+      const ws = appState.workspaces.get(titleWorkspaceId);
+      if (!ws) {
+        return;
+      }
+      ws.display_name = title;
+      appState.workspaces.set(titleWorkspaceId, ws);
+
+      try {
+        const metaNow = loadMetadata(worktreesDir);
+        const entry = metaNow.get(titleWorkspacePath) ?? {
+          id: ws.id,
+          description: ws.description,
+          base_branch: ws.base_branch,
+        };
+        metaNow.set(titleWorkspacePath, { ...entry, display_name: title });
+        saveMetadata(worktreesDir, metaNow);
+      } catch {
+        // Non-fatal
+      }
+
+      getMainWindow()?.webContents.send("workspace:updated", {
+        id: titleWorkspaceId,
+        display_name: title,
+      });
+    })
+    .catch((e: unknown) => {
+      info(`Title generation skipped for workspace ${titleWorkspaceId}:`, e);
+    });
 
   const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();
   const setupSessionId = `setup:${workspace.id}`;
