@@ -56,20 +56,13 @@ export function loadConfig(): OnboardingConfigFile {
   try {
     raw = fs.readFileSync(filePath, "utf8");
   } catch {
-    // Fresh install OR upgrade from pre-onboarding Argus.
-    // If `~/.argus/` already has other content (e.g. organizations.json),
-    // treat as an upgrade: seed completed so we don't interrupt existing users.
-    const hasPriorState = detectPriorArgusState();
-
+    // Missing config.json — always start at welcome. The onboarding flow is
+    // skippable end-to-end, so there's no reason to gate it on prior state;
+    // doing so (as we used to, via detectPriorArgusState) meant anyone with
+    // `organizations.json`/`extensions`/`bin` silently jumped past the flow
+    // and never saw it.
     return {
-      onboarding: hasPriorState
-        ? {
-            ...DEFAULT_STATE,
-            completed: true,
-            version: 0,
-            completedAt: Date.now(),
-          }
-        : { ...DEFAULT_STATE },
+      onboarding: { ...DEFAULT_STATE },
       defaults: { ...DEFAULT_DEFAULTS },
       recentProjects: [],
     };
@@ -156,17 +149,3 @@ export function resetOnboarding(): void {
   saveConfig(cfg);
 }
 
-/** True if `~/.argus/` already holds state from a pre-onboarding install. */
-function detectPriorArgusState(): boolean {
-  const dir = argusDirPath();
-  try {
-    const entries = fs.readdirSync(dir);
-    const meaningful = entries.filter(
-      (e) => e === "organizations.json" || e === "extensions" || e === "bin",
-    );
-
-    return meaningful.length > 0;
-  } catch {
-    return false;
-  }
-}
