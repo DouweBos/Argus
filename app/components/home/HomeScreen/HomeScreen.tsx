@@ -7,7 +7,6 @@ import {
   Icons,
   Kbd,
   SparkleIcon,
-  TipCard,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { checkDependencies } from "../../../lib/ipc";
@@ -24,7 +23,7 @@ import { selectWorkspace } from "../../../stores/workspaceStore";
 import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";
 import styles from "./HomeScreen.module.css";
 import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
-import { HOME_SHORTCUTS, HOME_TIPS } from "./homeContent";
+import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
 
 export function HomeScreen() {
@@ -135,14 +134,6 @@ export function HomeScreen() {
                   </Button>
                 </>
               }
-              tips={HOME_TIPS.map((t) => (
-                <TipCard
-                  key={t.title}
-                  icon={<SparkleIcon size={11} />}
-                  title={t.title}
-                  body={t.body}
-                />
-              ))}
               shortcuts={HOME_SHORTCUTS.slice(0, 3).map((s) => (
                 <span
                   key={s.label}

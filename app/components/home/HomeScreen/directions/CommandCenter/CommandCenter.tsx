@@ -5,16 +5,14 @@ import {
   Icons,
   ProjectCard,
   ShortcutsRail,
-  SparkleIcon,
   StatCell,
   StatsStrip,
-  TipCard,
 } from "@argus/peacock";
 import { setCenterView } from "../../../../../stores/centerViewStore";
 import { removeRecentProject } from "../../../../../stores/recentProjectsStore";
 import { selectWorkspace } from "../../../../../stores/workspaceStore";
 import { OrganizationsPanel } from "../../../OrganizationsPanel/OrganizationsPanel";
-import { HOME_SHORTCUTS, HOME_TIPS } from "../../homeContent";
+import { HOME_SHORTCUTS } from "../../homeContent";
 import styles from "./CommandCenter.module.css";
 
 function agentMeta(status: string): string {
@@ -175,16 +173,6 @@ export function CommandCenter({
                 </div>
               )}
             </div>
-          </div>
-          <div className={styles.tipsStrip}>
-            {HOME_TIPS.map((t) => (
-              <TipCard
-                key={t.title}
-                icon={<SparkleIcon size={11} />}
-                title={t.title}
-                body={t.body}
-              />
-            ))}
           </div>
         </div>
 
