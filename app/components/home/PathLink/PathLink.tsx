@@ -3,8 +3,8 @@ import { revealInFinder } from "../../../lib/ipc";
 import styles from "./PathLink.module.css";
 
 interface PathLinkProps {
-  path: string;
   className?: string;
+  path: string;
 }
 
 export function PathLink({ path, className }: PathLinkProps) {

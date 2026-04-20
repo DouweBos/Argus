@@ -54,8 +54,7 @@ export const clearNotifications = () =>
 export const markNotificationsSeen = () =>
   notificationsStore.setState({ lastSeenAt: Date.now() });
 
-export const useNotifications = () =>
-  notificationsStore((s) => s.entries);
+export const useNotifications = () => notificationsStore((s) => s.entries);
 
 export const useUnseenNotificationCount = () =>
   notificationsStore((s) =>

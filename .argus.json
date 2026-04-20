@@ -1,9 +1,6 @@
 {
   "setup": {
-    "copy": [
-      ".claude",
-      "node_modules"
-    ]
+    "copy": [".claude", "node_modules"]
   },
   "terminals": [
     {

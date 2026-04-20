@@ -18,6 +18,4 @@ export const hideBranchPicker = () =>
   store.setState({ repoRoot: null, sessionId: null });
 
 export const useBranchPickerTarget = () =>
-  store(
-    useShallow((s) => ({ repoRoot: s.repoRoot, sessionId: s.sessionId })),
-  );
+  store(useShallow((s) => ({ repoRoot: s.repoRoot, sessionId: s.sessionId })));

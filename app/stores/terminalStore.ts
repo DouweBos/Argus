@@ -91,9 +91,8 @@ export const setActiveSession = (
   }));
 };
 
-export const getSessionsForSession = (
-  sessionId: string,
-): TerminalSession[] => terminalStore.getState().sessions[sessionId] ?? [];
+export const getSessionsForSession = (sessionId: string): TerminalSession[] =>
+  terminalStore.getState().sessions[sessionId] ?? [];
 
 export const getActiveSessionId = (sessionId: string): string | null =>
   terminalStore.getState().activeSessionId[sessionId] ?? null;
@@ -114,10 +113,7 @@ export const updateSession = (
   });
 };
 
-export const setRunSession = (
-  sessionId: string,
-  terminalId: string | null,
-) => {
+export const setRunSession = (sessionId: string, terminalId: string | null) => {
   terminalStore.setState((state) => ({
     runSessionId: { ...state.runSessionId, [sessionId]: terminalId },
   }));

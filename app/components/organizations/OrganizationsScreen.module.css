@@ -13,6 +13,12 @@
   padding: 12px 14px 14px;
 }
 
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 .head {
   display: flex;
   align-items: flex-end;

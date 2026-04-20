@@ -151,14 +151,7 @@ export function useSessionAgents(
     startNew().catch(() => {
       autoStartAttemptedRef.current.delete(sessionId);
     });
-  }, [
-    autoStart,
-    sessionId,
-    sessionReady,
-    agents.length,
-    isStarting,
-    startNew,
-  ]);
+  }, [autoStart, sessionId, sessionReady, agents.length, isStarting, startNew]);
 
   const prevSessionId = useRef<string | null>(null);
   useEffect(() => {

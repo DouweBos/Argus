@@ -162,11 +162,7 @@ export function useMentionPicker(sessionId: string | undefined) {
 
   // Fetch directory entries for browse mode (async only — no sync setState)
   useEffect(() => {
-    if (
-      !mentionContext ||
-      !sessionId ||
-      !isBrowseQuery(mentionContext.query)
-    ) {
+    if (!mentionContext || !sessionId || !isBrowseQuery(mentionContext.query)) {
       return;
     }
 

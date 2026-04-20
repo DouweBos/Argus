@@ -124,8 +124,8 @@ Drop this in any repo root to make it Argus-ready:
 | `setup.copy`     | Dirs/files copied into each new worktree (supports globs) |
 | `setup.symlink`  | Files symlinked from the main repo (supports globs)       |
 | `setup.commands` | Shell commands run after copy/symlink                     |
-| `terminals`      | Tabs auto-opened per session (name + working dir)       |
-| `workspace_env`  | Env var set per-session with a unique port/offset       |
+| `terminals`      | Tabs auto-opened per session (name + working dir)         |
+| `workspace_env`  | Env var set per-session with a unique port/offset         |
 | `run`            | Command executed by the Run button                        |
 
 `.argus.local.json` (gitignored) overrides or extends the base config.
@@ -143,9 +143,9 @@ React 19 + TypeScript + Vite 7. Zustand for state, CSS Modules for styling. Type
 | `components/agent/`    | Chat, tool-call cards, orchestration tree, git views, diff viewer, model picker |
 | `components/editor/`   | Embedded Monaco / VS Code panel                                                 |
 | `components/runtime/`  | Simulator view, web browser view, terminal tabs, merge bar                      |
-| `components/sidebar/`  | Session list, create/setup dialogs, branch switcher                           |
+| `components/sidebar/`  | Session list, create/setup dialogs, branch switcher                             |
 | `components/toolrail/` | Right-rail tools (simulator, terminal, changes summary)                         |
-| `stores/`              | Zustand stores — session, terminal, agent, conversation                       |
+| `stores/`              | Zustand stores — session, terminal, agent, conversation                         |
 
 ### Backend — `electron/`
 
@@ -154,13 +154,13 @@ Electron main process in TypeScript. All services are single-threaded around an 
 | Service                | Responsibility                                                          |
 | ---------------------- | ----------------------------------------------------------------------- |
 | `services/agent/`      | Claude Code subprocess, stream-json parsing, permission broker, history |
-| `services/session/`  | Worktree CRUD, setup pipeline, file watcher, merge engine               |
+| `services/session/`    | Worktree CRUD, setup pipeline, file watcher, merge engine               |
 | `services/terminal/`   | `node-pty` multiplexer with environment fixup                           |
 | `services/simulator/`  | iOS (`simctl` + native bridge) and Android (scrcpy + H.264) pipelines   |
 | `services/browser/`    | CDP screencast + MJPEG pipe for the embedded web browser                |
 | `services/mcp/`        | MCP server exposing Argus primitives to external agents                 |
 | `services/extensions/` | VS Code extension loading for the embedded editor                       |
-| `services/file/`       | Session file list/read/write                                          |
+| `services/file/`       | Session file list/read/write                                            |
 | `services/shell/`      | One-shot shell operations                                               |
 
 ### Native — `native/argus-sim-bridge/`
@@ -191,7 +191,7 @@ Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wra
 | Worktrees outside the project directory    | Keeps the user's repo and git client clean                        |
 | Zustand over Redux/Context                 | Minimal boilerplate, no providers, clean async                    |
 | `@codingame/monaco-vscode-api`             | Real VS Code — editor, explorer, search — without forking VS Code |
-| MCP server baked in                        | Any MCP-aware agent can drive Argus sessions out of the box     |
+| MCP server baked in                        | Any MCP-aware agent can drive Argus sessions out of the box       |
 
 ## Contributing 🪶
 

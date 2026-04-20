@@ -42,7 +42,10 @@ function exists(repoRoot: string, rel: string): boolean {
   return fs.existsSync(path.join(repoRoot, rel));
 }
 
-function firstMatchingDir(repoRoot: string, candidates: string[]): string | null {
+function firstMatchingDir(
+  repoRoot: string,
+  candidates: string[],
+): string | null {
   for (const c of candidates) {
     if (exists(repoRoot, c)) {
       return c;
@@ -103,15 +106,27 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     signals.push({ label: "Expo", detail: deps.expo, kind: "framework" });
     inferred.push("expo");
     if (scripts.start) {
-      run.push({ title: "Expo", command: `${pickRunner(repoRoot)} start`, restartOnRerun: true });
+      run.push({
+        title: "Expo",
+        command: `${pickRunner(repoRoot)} start`,
+        restartOnRerun: true,
+      });
     }
   } else if (deps["react-native"]) {
     platforms.add("ios");
     platforms.add("android");
-    signals.push({ label: "React Native", detail: deps["react-native"], kind: "framework" });
+    signals.push({
+      label: "React Native",
+      detail: deps["react-native"],
+      kind: "framework",
+    });
     inferred.push("react-native");
     if (scripts.start) {
-      run.push({ title: "Metro", command: `${pickRunner(repoRoot)} start`, restartOnRerun: true });
+      run.push({
+        title: "Metro",
+        command: `${pickRunner(repoRoot)} start`,
+        restartOnRerun: true,
+      });
     }
     workspaceEnv.push({
       name: "RCT_METRO_PORT",
@@ -124,13 +139,27 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     signals.push({ label: "Next.js", detail: deps.next, kind: "framework" });
     inferred.push("next.js");
     browserUrl = "http://localhost:3000";
-    workspaceEnv.push({ name: "PORT", base_value: 3000, range: 100, strategy: "sequential" });
+    workspaceEnv.push({
+      name: "PORT",
+      base_value: 3000,
+      range: 100,
+      strategy: "sequential",
+    });
   } else if (deps.vite || deps["@vitejs/plugin-react"]) {
     platforms.add("web");
-    signals.push({ label: "Vite", detail: deps.vite ?? "react", kind: "framework" });
+    signals.push({
+      label: "Vite",
+      detail: deps.vite ?? "react",
+      kind: "framework",
+    });
     inferred.push("vite");
     browserUrl = "http://localhost:5173";
-    workspaceEnv.push({ name: "VITE_PORT", base_value: 5173, range: 100, strategy: "sequential" });
+    workspaceEnv.push({
+      name: "VITE_PORT",
+      base_value: 5173,
+      range: 100,
+      strategy: "sequential",
+    });
   } else if (deps.nuxt) {
     platforms.add("web");
     signals.push({ label: "Nuxt", detail: deps.nuxt, kind: "framework" });
@@ -172,10 +201,18 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
       signals.push({ label: "Xcode", detail: xcworkspace, kind: "native" });
     }
   }
-  const androidDir = firstMatchingDir(repoRoot, ["android", "apps/android", "mobile/android"]);
+  const androidDir = firstMatchingDir(repoRoot, [
+    "android",
+    "apps/android",
+    "mobile/android",
+  ]);
   if (androidDir) {
     platforms.add("android");
-    signals.push({ label: "Android project", detail: androidDir, kind: "platform" });
+    signals.push({
+      label: "Android project",
+      detail: androidDir,
+      kind: "platform",
+    });
     if (exists(repoRoot, path.join(androidDir, "gradlew"))) {
       signals.push({ label: "Gradle", kind: "native" });
     }
@@ -196,7 +233,11 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     inferred.push("yarn.lock");
   } else if (exists(repoRoot, "package-lock.json")) {
     setupCommands.push("npm install");
-    signals.push({ label: "npm", detail: "package-lock.json", kind: "tooling" });
+    signals.push({
+      label: "npm",
+      detail: "package-lock.json",
+      kind: "tooling",
+    });
     inferred.push("package-lock.json");
   } else if (exists(repoRoot, "bun.lockb") || exists(repoRoot, "bun.lock")) {
     setupCommands.push("bun install");
@@ -207,7 +248,11 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
   // node_modules — worth copying so the worktree is usable before `install`
   if (exists(repoRoot, "node_modules")) {
     copy.add("node_modules");
-    signals.push({ label: "node_modules", detail: "will be copied", kind: "tooling" });
+    signals.push({
+      label: "node_modules",
+      detail: "will be copied",
+      kind: "tooling",
+    });
   }
   // Copy .claude to preserve agent context
   if (exists(repoRoot, ".claude")) {
@@ -243,7 +288,11 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     }
   }
   if (run.length === 0 && scripts.dev) {
-    run.push({ title: "Dev", command: `${runner} run dev`, restartOnRerun: true });
+    run.push({
+      title: "Dev",
+      command: `${runner} run dev`,
+      restartOnRerun: true,
+    });
   }
 
   // Web workspace_env port allocation when nothing framework-specific added

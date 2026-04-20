@@ -93,9 +93,7 @@ function setupDefaults(
 
   mockUseMergeStatus.mockReturnValue(mergeStatus);
 
-  mockUseSessions.mockReturnValue(
-    session ? [{ id: "ws-1", ...session }] : [],
-  );
+  mockUseSessions.mockReturnValue(session ? [{ id: "ws-1", ...session }] : []);
 }
 
 // ---------------------------------------------------------------------------
@@ -224,7 +222,7 @@ describe("changesSummary", () => {
     });
     render(<ChangesSummary sessionId="ws-1" />);
 
-    expect(screen.getByText("Apply Changes Locally")).toBeTruthy();
+    expect(screen.getByText("Merge into main")).toBeTruthy();
   });
 
   it("hides merge section for repo_root sessions", () => {
@@ -234,7 +232,7 @@ describe("changesSummary", () => {
     });
     render(<ChangesSummary sessionId="ws-1" />);
 
-    expect(screen.queryByText("Apply Changes Locally")).toBeNull();
+    expect(screen.queryByText("Merge into main")).toBeNull();
   });
 
   it("merge button is disabled when nothing staged", () => {
@@ -252,12 +250,12 @@ describe("changesSummary", () => {
     render(<ChangesSummary sessionId="ws-1" />);
 
     const mergeBtn = screen
-      .getByText("Apply Changes Locally")
+      .getByText("Merge into main")
       .closest("button") as HTMLButtonElement;
     expect(mergeBtn.disabled).toBe(true);
   });
 
-  it("merge button is disabled when conflicts exist", () => {
+  it("merge button is hidden when conflicts exist", () => {
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
       session: { kind: "worktree", base_branch: "main" },
@@ -271,10 +269,7 @@ describe("changesSummary", () => {
     });
     render(<ChangesSummary sessionId="ws-1" />);
 
-    const mergeBtn = screen
-      .getByText("Apply Changes Locally")
-      .closest("button") as HTMLButtonElement;
-    expect(mergeBtn.disabled).toBe(true);
+    expect(screen.queryByText("Merge into main")).toBeNull();
   });
 
   it("merge button calls handleMerge on click", () => {
@@ -292,7 +287,7 @@ describe("changesSummary", () => {
     });
     render(<ChangesSummary sessionId="ws-1" />);
 
-    fireEvent.click(screen.getByText("Apply Changes Locally"));
+    fireEvent.click(screen.getByText("Merge into main"));
     expect(handleMerge).toHaveBeenCalledTimes(1);
   });
 });

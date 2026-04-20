@@ -15,10 +15,7 @@ const reviewQueueStore = create<ReviewQueueData>(() => ({
   entriesBySessionId: {},
 }));
 
-export const setReviewState = (
-  sessionId: string,
-  entry: ReviewQueueEntry,
-) => {
+export const setReviewState = (sessionId: string, entry: ReviewQueueEntry) => {
   reviewQueueStore.setState((state) => {
     if (entry.commitsAhead > 0 || entry.hasUncommitted) {
       return {

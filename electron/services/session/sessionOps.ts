@@ -492,12 +492,7 @@ export async function gitStashShow(
   id: string,
   stashIndex: number,
 ): Promise<string> {
-  return git(sessionPath(id), [
-    "stash",
-    "show",
-    "-p",
-    `stash@{${stashIndex}}`,
-  ]);
+  return git(sessionPath(id), ["stash", "show", "-p", `stash@{${stashIndex}}`]);
 }
 
 // ---------------------------------------------------------------------------

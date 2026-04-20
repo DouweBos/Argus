@@ -164,7 +164,7 @@ function OrganizationHome({
         </div>
 
         {org.description && (
-          <div className={homeStyles.repoPath}>{org.description}</div>
+          <div className={styles.description}>{org.description}</div>
         )}
 
         <StatsStrip>

@@ -89,9 +89,8 @@ const {
 } = await import("../session/sessionOps");
 const { startAgent, sendAgentMessage, listAgents } =
   await import("../agent/claude");
-const { createTerminal, startTerminal } =
+const { createRunTerminal, startTerminal } =
   await import("../terminal/multiplexer");
-const { loadArgusConfig } = await import("../session/setup");
 const { isGitRepo, ensureRepoRegistered, collectAllProjects } =
   await import("./projects");
 
@@ -106,9 +105,8 @@ const mockWriteArgusConfig = vi.mocked(writeArgusConfig);
 const mockStartAgent = vi.mocked(startAgent);
 const mockSendAgentMessage = vi.mocked(sendAgentMessage);
 const mockListAgents = vi.mocked(listAgents);
-const mockCreateTerminal = vi.mocked(createTerminal);
+const mockCreateRunTerminal = vi.mocked(createRunTerminal);
 const mockStartTerminal = vi.mocked(startTerminal);
-const mockLoadArgusConfig = vi.mocked(loadArgusConfig);
 const mockIsGitRepo = vi.mocked(isGitRepo);
 const mockEnsureRepoRegistered = vi.mocked(ensureRepoRegistered);
 const mockCollectAllProjects = vi.mocked(collectAllProjects);
@@ -499,6 +497,7 @@ describe("spawn_agent", () => {
     expect(mockSendAgentMessage).toHaveBeenCalledWith(
       "agent-42",
       "Build the thing",
+      [],
     );
   });
 
@@ -714,7 +713,7 @@ describe("send_agent_message", () => {
       arguments: { agent_id: "a-1", message: "Hello agent" },
     });
     expect(textOf(result)).toContain("Message sent to agent a-1");
-    expect(mockSendAgentMessage).toHaveBeenCalledWith("a-1", "Hello agent");
+    expect(mockSendAgentMessage).toHaveBeenCalledWith("a-1", "Hello agent", []);
   });
 });
 
@@ -735,11 +734,8 @@ describe("trigger_run", () => {
   it("returns error when no run command configured", async () => {
     const ws = mockSession();
     appState.sessions.set("ws-1", ws);
-    mockLoadArgusConfig.mockReturnValue({
-      setup: { copy: [], symlink: [], commands: [] },
-      terminals: [],
-      workspace_env: [],
-      run: null,
+    mockCreateRunTerminal.mockImplementation(() => {
+      throw "No 'run' command configured";
     });
 
     const result = await client.callTool({
@@ -750,39 +746,33 @@ describe("trigger_run", () => {
     expect(textOf(result)).toContain("No 'run' command configured");
   });
 
-  it("handles run config as object with command and dir", async () => {
+  it("starts the configured run terminal", async () => {
     const ws = mockSession();
     appState.sessions.set("ws-1", ws);
-    mockLoadArgusConfig.mockReturnValue({
-      setup: { copy: [], symlink: [], commands: [] },
-      terminals: [],
-      workspace_env: [],
-      run: { command: "pnpm dev", dir: "packages/app" },
+    mockCreateRunTerminal.mockReturnValue({
+      sessionId: "term-1",
+      started: true,
+      title: "dev",
     });
-    mockCreateTerminal.mockReturnValue("term-1");
 
     const result = await client.callTool({
       name: "trigger_run",
       arguments: { session: "ws-1" },
     });
     const parsed = jsonOf(result) as {
-      command: string;
       terminal_session_id: string;
+      title: string;
     };
-    expect(parsed.command).toBe("pnpm dev");
     expect(parsed.terminal_session_id).toBe("term-1");
-    expect(mockCreateTerminal).toHaveBeenCalledWith(
-      "ws-1",
-      "packages/app",
-      "pnpm dev",
-    );
+    expect(parsed.title).toBe("dev");
+    expect(mockCreateRunTerminal).toHaveBeenCalledWith("ws-1", undefined);
     expect(mockStartTerminal).toHaveBeenCalledWith("term-1", 120, 40);
   });
 
-  it("handles config load failure gracefully", async () => {
+  it("handles run terminal creation failure gracefully", async () => {
     const ws = mockSession();
     appState.sessions.set("ws-1", ws);
-    mockLoadArgusConfig.mockImplementation(() => {
+    mockCreateRunTerminal.mockImplementation(() => {
       throw new Error("bad config");
     });
 
@@ -790,9 +780,8 @@ describe("trigger_run", () => {
       name: "trigger_run",
       arguments: { session: "ws-1" },
     });
-    // Falls through to "no run command" since config load threw.
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("No 'run' command configured");
+    expect(textOf(result)).toContain("bad config");
   });
 });
 

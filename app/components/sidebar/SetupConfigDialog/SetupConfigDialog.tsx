@@ -468,8 +468,8 @@ function EnvField({ list }: EnvFieldProps) {
         </div>
       )}
       <p className={styles.helpText}>
-        Unique integer per session for port allocation. Hash: base_value +
-        hash % range. Sequential: base_value + index.
+        Unique integer per session for port allocation. Hash: base_value + hash
+        % range. Sequential: base_value + index.
       </p>
     </div>
   );
@@ -988,10 +988,10 @@ export function SetupConfigDialog({
                 ))}
               </div>
               <p className={styles.helpText}>
-                Runtimes agents pre-allocate per session (iOS simulator,
-                Android emulator, headless Chromium). Leave empty if this
-                project doesn&apos;t need any of them — each unused runtime
-                still consumes CPU and memory.
+                Runtimes agents pre-allocate per session (iOS simulator, Android
+                emulator, headless Chromium). Leave empty if this project
+                doesn&apos;t need any of them — each unused runtime still
+                consumes CPU and memory.
               </p>
             </div>
 
@@ -1008,8 +1008,8 @@ export function SetupConfigDialog({
                 onChange={(e) => setBrowserUrl(e.target.value)}
               />
               <p className={styles.helpText}>
-                Default address for the web browser panel when a session has
-                not navigated elsewhere yet.
+                Default address for the web browser panel when a session has not
+                navigated elsewhere yet.
               </p>
             </div>
 

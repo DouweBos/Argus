@@ -53,10 +53,7 @@ describe("agentStore", () => {
 
   it("replaces an agent ID preserving the active slot", () => {
     addAgent(agent());
-    replaceAgent(
-      "agent-1",
-      agent({ agent_id: "agent-2", session_id: "ws-1" }),
-    );
+    replaceAgent("agent-1", agent({ agent_id: "agent-2", session_id: "ws-1" }));
     expect(getAgentState().agents["agent-1"]).toBeUndefined();
     expect(getAgentState().agents["agent-2"]).toBeDefined();
     expect(getAgentState().activeAgentId["ws-1"]).toBe("agent-2");

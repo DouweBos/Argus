@@ -146,9 +146,7 @@ export const removeSession = (id: string) => {
 
 export const updateSession = (id: string, patch: Partial<Session>) => {
   sessionStore.setState((state) => ({
-    sessions: state.sessions.map((w) =>
-      w.id === id ? { ...w, ...patch } : w,
-    ),
+    sessions: state.sessions.map((w) => (w.id === id ? { ...w, ...patch } : w)),
   }));
 };
 
@@ -176,8 +174,7 @@ export const setSetupProgress = (
 ) => {
   sessionStore.setState((state) => {
     if (progress == null) {
-      const { [sessionId]: _removed, ...next } =
-        state.setupProgressBySessionId;
+      const { [sessionId]: _removed, ...next } = state.setupProgressBySessionId;
 
       return { setupProgressBySessionId: next };
     }
@@ -193,8 +190,7 @@ export const setSetupProgress = (
 
 export const useSessionProjects = () => useSessionStore((s) => s.projects);
 
-export const useSelectedSessionId = () =>
-  useSessionStore((s) => s.selectedId);
+export const useSelectedSessionId = () => useSessionStore((s) => s.selectedId);
 
 export const useSessionLoading = () => useSessionStore((s) => s.isLoading);
 

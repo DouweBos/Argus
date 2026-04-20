@@ -63,14 +63,12 @@ const mockGetSessionConflicts = vi.fn().mockResolvedValue([]);
 const mockWatchSession = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../lib/ipc", () => ({
-  getSessionFullDiff: (...args: unknown[]) =>
-    mockGetSessionFullDiff(...args),
+  getSessionFullDiff: (...args: unknown[]) => mockGetSessionFullDiff(...args),
   getSessionStagedDiff: (...args: unknown[]) =>
     mockGetSessionStagedDiff(...args),
   getSessionUntrackedDiff: (...args: unknown[]) =>
     mockGetSessionUntrackedDiff(...args),
-  getSessionConflicts: (...args: unknown[]) =>
-    mockGetSessionConflicts(...args),
+  getSessionConflicts: (...args: unknown[]) => mockGetSessionConflicts(...args),
   watchSession: (...args: unknown[]) => mockWatchSession(...args),
 }));
 

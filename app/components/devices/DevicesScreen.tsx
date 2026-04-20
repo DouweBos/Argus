@@ -129,10 +129,7 @@ export function DevicesScreen() {
                 </td>
                 <td>
                   {d.sessionId ? (
-                    <button
-                      className={styles.link}
-                      onClick={nav("session", d)}
-                    >
+                    <button className={styles.link} onClick={nav("session", d)}>
                       {d.sessionId.slice(0, 8)}
                     </button>
                   ) : (

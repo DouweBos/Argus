@@ -19,18 +19,27 @@ export type McpServers = Record<string, McpServerConfig>;
 
 function readJson<T>(file: string): T | null {
   try {
-    if (!existsSync(file)) return null;
+    if (!existsSync(file)) {
+      return null;
+    }
+
     return JSON.parse(readFileSync(file, "utf-8")) as T;
   } catch (err) {
     warn(`[mcp] failed to read ${file}: ${(err as Error).message}`);
+
     return null;
   }
 }
 
 function extractMcpServers(obj: unknown): McpServers {
-  if (!obj || typeof obj !== "object") return {};
+  if (!obj || typeof obj !== "object") {
+    return {};
+  }
   const servers = (obj as { mcpServers?: unknown }).mcpServers;
-  if (!servers || typeof servers !== "object") return {};
+  if (!servers || typeof servers !== "object") {
+    return {};
+  }
+
   return servers as McpServers;
 }
 
@@ -43,12 +52,15 @@ function collectFromUserClaudeJson(worktreePath: string): McpServers {
     mcpServers?: McpServers;
     projects?: Record<string, { mcpServers?: McpServers }>;
   }>(path.join(os.homedir(), ".claude.json"));
-  if (!data) return {};
+  if (!data) {
+    return {};
+  }
   const merged: McpServers = { ...(data.mcpServers ?? {}) };
   const projectEntry = data.projects?.[worktreePath];
   if (projectEntry?.mcpServers) {
     Object.assign(merged, projectEntry.mcpServers);
   }
+
   return merged;
 }
 
@@ -64,24 +76,33 @@ function collectFromEnabledPlugins(): McpServers {
   );
   const enabled = settings?.enabledPlugins ?? {};
   const enabledNames = Object.keys(enabled).filter((k) => enabled[k]);
-  if (enabledNames.length === 0) return {};
+  if (enabledNames.length === 0) {
+    return {};
+  }
 
   const installed = readJson<{
-    plugins?: Record<string, Array<{ installPath?: string }>>;
+    plugins?: Record<string, { installPath?: string }[]>;
   }>(path.join(home, ".claude", "plugins", "installed_plugins.json"));
   const pluginMap = installed?.plugins ?? {};
 
   const merged: McpServers = {};
   for (const name of enabledNames) {
     const entries = pluginMap[name];
-    if (!entries || entries.length === 0) continue;
+    if (!entries || entries.length === 0) {
+      continue;
+    }
     const installPath = entries[entries.length - 1].installPath;
-    if (!installPath) continue;
+    if (!installPath) {
+      continue;
+    }
     const pluginMcp = readJson<{ mcpServers?: McpServers }>(
       path.join(installPath, ".mcp.json"),
     );
-    if (pluginMcp?.mcpServers) Object.assign(merged, pluginMcp.mcpServers);
+    if (pluginMcp?.mcpServers) {
+      Object.assign(merged, pluginMcp.mcpServers);
+    }
   }
+
   return merged;
 }
 
@@ -90,6 +111,7 @@ function collectFromWorktree(worktreePath: string): McpServers {
   const data = readJson<{ mcpServers?: McpServers }>(
     path.join(worktreePath, ".mcp.json"),
   );
+
   return extractMcpServers(data);
 }
 

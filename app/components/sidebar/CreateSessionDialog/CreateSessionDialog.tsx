@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button, Icons, Input, SegmentedCard } from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
 import {
@@ -370,8 +364,8 @@ export function CreateSessionDialog({
     if (branchCollision) {
       branchHint = (
         <span className={styles.errorMsg}>
-          Branch &quot;{effectiveSlug}&quot; already exists. Use &ldquo;Local branch&rdquo;
-          instead.
+          Branch &quot;{effectiveSlug}&quot; already exists. Use &ldquo;Local
+          branch&rdquo; instead.
         </span>
       );
     } else if (effectiveSlug) {
@@ -577,7 +571,10 @@ export function CreateSessionDialog({
           />
           {adoptBranch && (
             <span className={styles.createNewHint}>
-              Selected: <strong>{isRemote ? `origin/${adoptBranch}` : adoptBranch}</strong>
+              Selected:{" "}
+              <strong>
+                {isRemote ? `origin/${adoptBranch}` : adoptBranch}
+              </strong>
             </span>
           )}
           <div className={styles.branchList}>{adoptListBody}</div>
@@ -585,8 +582,7 @@ export function CreateSessionDialog({
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="adopt-description-input">
-            Description{" "}
-            <span className={styles.labelHint}>(optional)</span>
+            Description <span className={styles.labelHint}>(optional)</span>
           </label>
           <Input
             id="adopt-description-input"

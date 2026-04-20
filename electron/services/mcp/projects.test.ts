@@ -37,8 +37,7 @@ vi.mock("../../main", () => ({
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
-const { addRepoRoot, createHeadSession } =
-  await import("../session/manager");
+const { addRepoRoot, createHeadSession } = await import("../session/manager");
 const mockAddRepoRoot = vi.mocked(addRepoRoot);
 const mockCreateHeadSession = vi.mocked(createHeadSession);
 

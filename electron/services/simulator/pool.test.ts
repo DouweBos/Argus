@@ -53,17 +53,17 @@ function fakeDevice(
  * invocation — callers can narrow with mockImplementation if needed.
  */
 function stubExecFile(stdout: string): void {
-  mockExecFile.mockImplementation(
-    (_cmd: unknown, _args: unknown, cb: unknown) => {
-      if (typeof cb === "function") {
-        (cb as (err: null, result: { stdout: string }) => void)(null, {
-          stdout,
-        });
-      }
+  mockExecFile.mockImplementation((...args: unknown[]) => {
+    const cb = args.find((a) => typeof a === "function");
+    if (typeof cb === "function") {
+      (cb as (err: null, result: { stdout: string; stderr: string }) => void)(
+        null,
+        { stdout, stderr: "" },
+      );
+    }
 
-      return undefined as never;
-    },
-  );
+    return undefined as never;
+  });
 }
 
 /**
@@ -435,15 +435,14 @@ describe("simulatorPool", () => {
         repoRoot: "/Users/dev/MyApp",
       });
 
-      mockExecFile.mockImplementation(
-        (_cmd: unknown, _args: unknown, cb: unknown) => {
-          if (typeof cb === "function") {
-            (cb as (err: Error) => void)(new Error("conductor not found"));
-          }
+      mockExecFile.mockImplementation((...args: unknown[]) => {
+        const cb = args.find((a) => typeof a === "function");
+        if (typeof cb === "function") {
+          (cb as (err: Error) => void)(new Error("conductor not found"));
+        }
 
-          return undefined as never;
-        },
-      );
+        return undefined as never;
+      });
 
       // Should not throw.
       await simulatorPool.releaseSimulator("agent-1");

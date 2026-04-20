@@ -110,12 +110,6 @@
   min-height: 0;
 }
 
-.tipsStrip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
-}
-
 .emptyCell {
   padding: 24px;
   text-align: center;

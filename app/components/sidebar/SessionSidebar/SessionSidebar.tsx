@@ -23,8 +23,8 @@ import { toggleProjectCollapsed } from "../../../stores/sessionStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
 import { OrganizationSegment } from "../OrganizationSegment";
 import { ProjectSegment } from "../ProjectSegment";
-import { SidebarNavItem } from "./SidebarNavItem";
 import styles from "./SessionSidebar.module.css";
+import { SidebarNavItem } from "./SidebarNavItem";
 
 export function SessionSidebar() {
   const { projects, openProject, closeProject } = useProjects();

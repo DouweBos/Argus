@@ -66,9 +66,7 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
 
     (async () => {
       try {
-        const ws = getSessionState().sessions.find(
-          (w) => w.id === sessionId,
-        );
+        const ws = getSessionState().sessions.find((w) => w.id === sessionId);
         if (!ws) {
           return;
         }
