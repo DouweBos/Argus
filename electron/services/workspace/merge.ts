@@ -88,17 +88,25 @@ export async function mergeWorkspaceIntoBase(
     throw `Cannot merge: ${conflicts.length} conflicting file(s):\n${conflicts.join("\n")}`;
   }
 
-  // Rebase the workspace branch onto the base branch.
-  try {
-    await git(wsPath, ["rebase", baseBranch]);
-  } catch (e) {
-    // Leave the workspace in a clean state on failure.
+  // Rebase the workspace branch onto the base branch — unless the base is
+  // already reachable from HEAD (the workspace merged base in locally to
+  // resolve conflicts). In that case rebase would replay the pre-merge commits
+  // against the new base and re-hit conflicts the merge commit already
+  // resolved, which is also why the conflict pre-check (merge semantics)
+  // disagrees with the operation (rebase semantics).
+  const baseAlreadyInHistory = await isAncestor(wsPath, baseBranch, "HEAD");
+  if (!baseAlreadyInHistory) {
     try {
-      await git(wsPath, ["rebase", "--abort"]);
-    } catch {
-      // Ignore abort failures — surface the original error below.
+      await git(wsPath, ["rebase", baseBranch]);
+    } catch (e) {
+      // Leave the workspace in a clean state on failure.
+      try {
+        await git(wsPath, ["rebase", "--abort"]);
+      } catch {
+        // Ignore abort failures — surface the original error below.
+      }
+      throw e;
     }
-    throw e;
   }
 
   // Squash all workspace commits into a single conventional commit.
@@ -296,6 +304,26 @@ async function findWorktreeForBranch(
   }
 
   return null;
+}
+
+/**
+ * Returns true when `ancestor` is reachable from `descendant` (i.e. descendant
+ * has ancestor in its history). Wraps `git merge-base --is-ancestor`, which
+ * communicates the answer via exit code.
+ */
+async function isAncestor(
+  wsPath: string,
+  ancestor: string,
+  descendant: string,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      ["merge-base", "--is-ancestor", ancestor, descendant],
+      { cwd: wsPath },
+      (err) => resolve(!err),
+    );
+  });
 }
 
 /**
