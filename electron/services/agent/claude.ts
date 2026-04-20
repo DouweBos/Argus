@@ -54,7 +54,10 @@ import { info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
-import { getConductorSkillPath } from "../cli/conductorInstaller";
+import {
+  getConductorBinDir,
+  getConductorSkillPath,
+} from "../cli/conductor";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { organizationsForRepo } from "../organization/manager";
 import { findOrgTaskForWorkspace } from "../organizationTask/manager";
@@ -369,10 +372,10 @@ export async function startAgent(
     args.push("--mcp-config", mcpConfig);
   }
 
-  // Prepend ~/.argus/bin to PATH so the `conductor` CLI is available.
+  // Prepend the bundled conductor shim dir to PATH so agents can run
+  // `conductor` directly and it routes through our Argus-aware wrapper.
   const env = { ...process.env };
-  const argusBin = path.join(os.homedir(), ".argus", "bin");
-  env.PATH = `${argusBin}:${env.PATH ?? ""}`;
+  env.PATH = `${getConductorBinDir()}:${env.PATH ?? ""}`;
 
   // Devices (iOS simulator, headless Chromium) are acquired **lazily** by the
   // conductor shim the first time the agent runs `conductor --device ios|web`.
@@ -520,9 +523,9 @@ export async function startAgent(
         const payload = req.request;
 
         // Intercept conductor bash commands to transparently inject an
-        // iOS/Android device UDID. (Web CDP injection lives in the conductor
-        // shim at `~/.argus/bin/conductor` — it runs regardless of
-        // permission mode, which matters because `bypassPermissions` skips
+        // iOS/Android device UDID. (Web CDP injection lives in the bundled
+        // conductor shim — it runs regardless of permission mode, which
+        // matters because `bypassPermissions` skips
         // `can_use_tool` for auto-approved tools.)
         if (
           payload.subtype === "can_use_tool" &&

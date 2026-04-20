@@ -697,7 +697,12 @@ export async function mergeWorkspaceIntoBase(id: string): Promise<void> {
     throw "No base branch set for this workspace";
   }
 
-  await doMergeWorkspaceIntoBase(ws.repo_root, ws.branch, ws.base_branch);
+  await doMergeWorkspaceIntoBase(
+    ws.repo_root,
+    ws.path,
+    ws.branch,
+    ws.base_branch,
+  );
 
   getMainWindow()?.webContents.send("workspace:merged", {
     workspaceId: id,

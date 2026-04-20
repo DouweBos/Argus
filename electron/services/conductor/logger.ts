@@ -7,19 +7,20 @@
  */
 
 import { execFile } from "node:child_process";
-import os from "node:os";
-import path from "node:path";
 import { promisify } from "node:util";
 import { getMainWindow } from "../../main";
+import { getConductorBinPath } from "../cli/conductor";
 
 const execFileAsync = promisify(execFile);
 
-export const CONDUCTOR_BIN = path.join(
-  os.homedir(),
-  ".argus",
-  "bin",
-  "conductor",
-);
+/**
+ * Absolute path to the bundled conductor shim. Lazily computed so tests can
+ * mock `../cli/conductor` (which depends on Electron's `app`) without
+ * Electron being loaded at import time.
+ */
+export function getConductorBin(): string {
+  return getConductorBinPath();
+}
 
 const MAX_ENTRIES_PER_DEVICE = 500;
 
@@ -94,7 +95,7 @@ export async function execConductor(
 ): Promise<{ stdout: string; stderr: string }> {
   const t0 = Date.now();
   try {
-    const result = await execFileAsync(CONDUCTOR_BIN, args, options);
+    const result = await execFileAsync(getConductorBin(), args, options);
     conductorLogStore.push({
       ts: t0,
       deviceKey,

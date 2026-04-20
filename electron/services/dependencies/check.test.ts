@@ -12,7 +12,7 @@ import {
 
 // Mock the conductor logger so importing it doesn't pull Electron in.
 vi.mock("../conductor/logger", () => ({
-  CONDUCTOR_BIN: "/tmp/fake-conductor-bin",
+  getConductorBin: () => "/tmp/fake-conductor-bin",
 }));
 
 // Mock child_process.execFile — we drive it per test. The real execFile has
