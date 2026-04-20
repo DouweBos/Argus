@@ -5,7 +5,6 @@ import { CompletionStep } from "./CompletionStep";
 import { DefaultsFormStep } from "./DefaultsFormStep";
 import { FirstAgentStep } from "./FirstAgentStep";
 import { FirstWorkspaceStep } from "./FirstWorkspaceStep";
-import { LayoutTourStep } from "./LayoutTourStep";
 import { PermissionsStep } from "./PermissionsStep";
 import { PreflightStep } from "./PreflightStep";
 import { ProjectPickerStep } from "./ProjectPickerStep";
@@ -33,8 +32,6 @@ export function OnboardingRoot() {
       return <ProjectPickerStep />;
     case "argus_config":
       return <ArgusConfigStep />;
-    case "layout_tour":
-      return <LayoutTourStep />;
     case "first_workspace":
       return <FirstWorkspaceStep />;
     case "first_agent":
