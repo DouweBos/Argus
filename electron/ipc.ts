@@ -6,6 +6,11 @@
  * (errors are thrown as plain strings).
  */
 
+import type {
+  OnboardingStep,
+  PrereqId,
+  PrereqResult,
+} from "./services/onboarding/types";
 import type { OrganizationMember } from "./services/organization/models";
 import { Menu, app, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
@@ -78,6 +83,25 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
+import {
+  addSkipped as onboardingAddSkipped,
+  argusDirPath,
+  claudePing as onboardingClaudePing,
+  cloneExample as onboardingCloneExample,
+  completeOnboarding as onboardingComplete,
+  ensureArgusDir as onboardingEnsureDir,
+  getOnboardingState,
+  listExamples as onboardingListExamples,
+  readExistingArgusJson,
+  registerProject as onboardingRegisterProject,
+  resetOnboarding,
+  runPrereqChecks,
+  runPrereqFixer,
+  saveDefaults as onboardingSaveDefaults,
+  setLastStep,
+  suggestArgusJson as onboardingSuggestArgusJson,
+  writeArgusJson as onboardingWriteArgusJson,
+} from "./services/onboarding";
 import {
   createOrganization,
   updateOrganization,
@@ -896,4 +920,63 @@ export function registerIpcHandlers(): void {
 
     return result.filePaths[0];
   });
+
+  // Onboarding
+  handle("onboarding_get_state", () => getOnboardingState());
+  handle("onboarding_ensure_argus_dir", () => ({
+    path: onboardingEnsureDir(),
+  }));
+  handle("onboarding_set_last_step", (a) => {
+    setLastStep(a.step as OnboardingStep);
+  });
+  handle("onboarding_add_skipped", (a) => {
+    onboardingAddSkipped(a.id as string);
+  });
+  handle("onboarding_check_prereqs", async (a) => {
+    const ids = a.ids as PrereqId[] | undefined;
+
+    return runPrereqChecks((update: PrereqResult) => {
+      getMainWindow()?.webContents.send("onboarding:prereq_update", update);
+    }, ids);
+  });
+  handle("onboarding_run_fixer", (a) =>
+    runPrereqFixer(a.id as PrereqId, {
+      gitName: a.gitName as string | undefined,
+      gitEmail: a.gitEmail as string | undefined,
+    }),
+  );
+  handle("onboarding_claude_ping", () => onboardingClaudePing());
+  handle("onboarding_save_defaults", (a) =>
+    onboardingSaveDefaults({
+      model: a.model as string | undefined,
+      permissionMode: a.permissionMode as string | undefined,
+      worktreeRoot: a.worktreeRoot as string | undefined,
+    }),
+  );
+  handle("onboarding_list_examples", () => onboardingListExamples());
+  handle("onboarding_clone_example", (a) =>
+    onboardingCloneExample(a.slug as string),
+  );
+  handle("onboarding_register_project", (a) => {
+    onboardingRegisterProject(a.path as string);
+  });
+  handle("onboarding_suggest_argus_json", (a) =>
+    onboardingSuggestArgusJson(a.path as string),
+  );
+  handle("onboarding_read_existing_argus_json", (a) =>
+    readExistingArgusJson(a.path as string),
+  );
+  handle("onboarding_write_argus_json", (a) => {
+    onboardingWriteArgusJson(
+      a.path as string,
+      a.config as Record<string, unknown>,
+    );
+  });
+  handle("onboarding_complete", () => {
+    onboardingComplete();
+  });
+  handle("onboarding_reset", () => {
+    resetOnboarding();
+  });
+  handle("onboarding_argus_dir_path", () => argusDirPath());
 }

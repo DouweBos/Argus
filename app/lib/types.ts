@@ -391,6 +391,82 @@ export interface OrgTaskScopeEntry {
   role: string;
 }
 
+// ---------------------------------------------------------------------------
+// Onboarding
+// ---------------------------------------------------------------------------
+
+export const ONBOARDING_STEPS = [
+  "welcome",
+  "permissions",
+  "preflight",
+  "claude_auth",
+  "defaults",
+  "project",
+  "argus_config",
+  "layout_tour",
+  "first_workspace",
+  "first_agent",
+  "completion",
+] as const;
+
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+
+export interface OnboardingDefaults {
+  model: string;
+  permissionMode: string;
+  worktreeRoot: string;
+}
+
+export interface OnboardingStateData {
+  completed: boolean;
+  completedAt: number | null;
+  lastStep: OnboardingStep;
+  skipped: string[];
+  version: number;
+}
+
+export interface OnboardingConfigFile {
+  defaults: OnboardingDefaults;
+  onboarding: OnboardingStateData;
+  recentProjects: string[];
+}
+
+export type PrereqId =
+  | "android_avd"
+  | "android_sdk"
+  | "claude_auth"
+  | "claude_cli"
+  | "git_cli"
+  | "git_identity"
+  | "ios_runtimes"
+  | "native_bridge"
+  | "playwright"
+  | "xcode";
+
+export type PrereqStatus = "fail" | "pass" | "running" | "skipped" | "warn";
+
+export interface PrereqResult {
+  detail?: string;
+  fixable?: boolean;
+  id: PrereqId;
+  message?: string;
+  mobileOnly?: boolean;
+  status: PrereqStatus;
+}
+
+export interface ArgusConfigSuggestion {
+  config: Record<string, unknown>;
+  inferredFrom: string[];
+}
+
+export interface ExampleProject {
+  description: string;
+  name: string;
+  platform: "android" | "ios" | "web";
+  repo: string;
+  slug: string;
+}
+
 export interface OrgTask {
   created_at: number;
   host_agent_id: string | null;

@@ -3,9 +3,11 @@ import { MemoryRouter } from "react-router-dom";
 import "./styles/global.css";
 import { AppShell } from "./components/layout/AppShell";
 import { NavigationDeepLinkBridge } from "./components/layout/NavigationDeepLinkBridge";
+import { OnboardingRoot } from "./components/onboarding/OnboardingRoot";
 import { QuitGuard } from "./components/shared/ConfirmStopAgent/QuitGuard";
 import { StopAgentGuard } from "./components/shared/ConfirmStopAgent/stopAgentGuard";
 import { ImageViewer } from "./components/shared/ImageViewer/ImageViewer";
+import { useOnboarding } from "./hooks/useOnboarding";
 import { getPersistedRoute } from "./lib/routePersistence";
 import { useRegisterNavigator, useRouteSync } from "./lib/router";
 
@@ -17,6 +19,7 @@ function RouterGlue() {
 }
 
 export default function App() {
+  const { config, loading } = useOnboarding();
   const [initialPath, setInitialPath] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,8 +28,14 @@ export default function App() {
       .catch(() => setInitialPath("/"));
   }, []);
 
-  if (initialPath === null) {
+  if (loading || initialPath === null) {
     return null;
+  }
+
+  const completed = config?.onboarding.completed ?? false;
+
+  if (!completed) {
+    return <OnboardingRoot />;
   }
 
   return (
