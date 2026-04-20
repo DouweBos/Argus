@@ -1,0 +1,29 @@
+.group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.btn {
+  width: 26px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted, #9ba3af);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--glass-hover, rgba(255, 255, 255, 0.06));
+  color: var(--text, #e7e9ee);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}

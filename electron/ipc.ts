@@ -123,6 +123,7 @@ import {
   terminalWrite,
   terminalResize,
 } from "./services/terminal/multiplexer";
+import { getUiState, setUiState } from "./services/uiState";
 import { loadCommandMetrics } from "./services/workspace/commandMetrics";
 import {
   addRepoRoot,
@@ -507,6 +508,14 @@ export function registerIpcHandlers(): void {
 
   // Dependency / system probes
   handle("check_dependencies", () => checkDependencies());
+
+  // UI state
+  handle("ui_state_get", (a) => getUiState(a.key as string));
+  handle("ui_state_set", (a) => {
+    setUiState(a.key as string, a.value as string);
+
+    return null;
+  });
 
   // Agent commands
   handle("check_claude_cli", () => checkClaudeCli());

@@ -14,6 +14,7 @@ import {
   useWorkspaces,
 } from "../../../stores/workspaceStore";
 import { PencilIcon } from "../../shared/Icons";
+import { NavigationButtons } from "../NavigationButtons";
 import styles from "./TitleBar.module.css";
 
 export function TitleBar() {
@@ -118,6 +119,7 @@ export function TitleBar() {
       onJump={openCommandPalette}
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={workspace ? toggleRightPanel : undefined}
+      right={<NavigationButtons />}
     />
   );
 }
