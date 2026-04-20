@@ -9,6 +9,8 @@ files:
   - "!node_modules/**/*"
   - node_modules/node-pty/**/*
 extraResources:
+  - from: build/icon.png
+    to: icon.png
   - from: native/argus-sim-bridge/argus-sim-bridge
     to: argus-sim-bridge
     filter:

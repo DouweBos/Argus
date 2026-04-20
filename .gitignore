@@ -60,3 +60,6 @@ fastlane/README.md
 vendor/bundle
 .bundle
 
+
+# Generated macOS iconset (built from build/icon.svg)
+build/icon.iconset/

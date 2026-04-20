@@ -10,6 +10,7 @@ import {
   BrowserWindow,
   Menu,
   MenuItem,
+  nativeImage,
   nativeTheme,
   net,
   protocol,
@@ -80,10 +81,38 @@ if (process.platform === "win32") {
   app.setAppUserModelId(app.getName());
 }
 
+// In dev, isolate userData from the installed Argus.app so the two can run
+// side-by-side. The single-instance lock lives under userData, so sharing it
+// makes `pnpm dev` silently quit (exit 0) whenever the packaged app is open.
+if (!app.isPackaged) {
+  const devUserData = path.join(app.getPath("appData"), "argus-dev");
+  app.setPath("userData", devUserData);
+}
+
 let mainWindow: BrowserWindow | null = null;
 let pendingDeepLink: string | null = null;
 
 const isDev = !app.isPackaged;
+
+/** Resolve the app icon file for the current environment. */
+function resolveAppIconPath(): string | null {
+  const candidates = isDev
+    ? [
+        path.join(__dirname, "..", "build", "icon.png"),
+        path.join(__dirname, "..", "..", "build", "icon.png"),
+      ]
+    : [
+        path.join(process.resourcesPath, "icon.png"),
+        path.join(app.getAppPath(), "build", "icon.png"),
+      ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+
+  return null;
+}
 
 // `argus://workspaces/<id>/git` — register as this app's protocol handler so
 // external callers (MCP, Slack previews, custom URL openers) can jump straight
@@ -196,6 +225,7 @@ function log(msg: string, ...args: unknown[]): void {
 
 function createWindow(): void {
   log("createWindow: isDev=%s, __dirname=%s", isDev, __dirname);
+  const iconPath = resolveAppIconPath();
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -205,6 +235,7 @@ function createWindow(): void {
     backgroundColor: "#1e1e1e",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 12, y: 12 },
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -431,6 +462,16 @@ app.whenReady().then(() => {
     app.isPackaged,
     process.resourcesPath,
   );
+
+  if (process.platform === "darwin" && app.dock) {
+    const iconPath = resolveAppIconPath();
+    if (iconPath) {
+      const image = nativeImage.createFromPath(iconPath);
+      if (!image.isEmpty()) {
+        app.dock.setIcon(image);
+      }
+    }
+  }
 
   // Fix PATH for bundled .app builds — ensures PATH includes Homebrew, mise, etc.
   const pathDiag = fixProcessPath();
