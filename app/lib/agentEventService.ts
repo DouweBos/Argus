@@ -208,6 +208,13 @@ export function initExternalAgentStarted(): void {
       parent_agent_id: info.parent_agent_id,
     });
     startAgentListening(info.agent_id);
+    // Derive a human-readable title from the prompt the MCP tool sent.
+    // Without this, the Agents overview falls back to the branch name for
+    // MCP-spawned agents, since the renderer never sees the first user
+    // message (it is written to stdin by the backend).
+    if (info.initial_prompt) {
+      maybeGenerateTitle(info.agent_id, info.initial_prompt);
+    }
     // MCP-spawned agents receive an initial prompt from the backend before
     // the renderer gets a chance to subscribe. Mark the session as in-flight
     // so early `system:init` / `session_state_changed(idle)` signals don't
