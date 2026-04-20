@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { Badge, Button } from "@argus/peacock";
 import { respondToPermission } from "../../../lib/ipc";
+import { formatToolName } from "../../../lib/toolLabels";
 import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
   clearPermission,
@@ -28,30 +29,28 @@ interface ToolSummary {
 
 function summarize(name: string, input: Record<string, unknown>): ToolSummary {
   const path = (input.file_path ?? input.path) as string | undefined;
+  const label = formatToolName(name);
   switch (name) {
     case "Bash":
       return {
-        label: "Bash",
+        label,
         detail: (input.command ?? "") as string,
         mono: true,
       };
     case "Edit":
     case "MultiEdit":
-      return { label: "Edit", detail: path, mono: true };
     case "Write":
-      return { label: "Write", detail: path, mono: true };
     case "Read":
-      return { label: "Read", detail: path, mono: true };
+      return { label, detail: path, mono: true };
     case "Glob":
-      return { label: "Glob", detail: input.pattern as string, mono: true };
     case "Grep":
-      return { label: "Grep", detail: input.pattern as string, mono: true };
+      return { label, detail: input.pattern as string, mono: true };
     case "WebFetch":
-      return { label: "WebFetch", detail: input.url as string, mono: true };
+      return { label, detail: input.url as string, mono: true };
     case "WebSearch":
-      return { label: "WebSearch", detail: input.query as string };
+      return { label, detail: input.query as string };
     default:
-      return { label: name };
+      return { label };
   }
 }
 
