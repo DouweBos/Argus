@@ -228,6 +228,23 @@ export function useProjects() {
   }, []);
 
   useEffect(() => {
+    const unlisten = listen<{ display_name?: string | null; id: string }>(
+      "workspace:updated",
+      (event) => {
+        const { id, display_name } = event.payload;
+        if (!getWorkspaceState().workspaces.some((w) => w.id === id)) {
+          return;
+        }
+        updateWorkspace(id, { display_name: display_name ?? null });
+      },
+    );
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  useEffect(() => {
     const unlisten = listen<string>("workspace:deleted", (event) => {
       const wsId = event.payload;
       // Purge any agents tracked for this workspace — the backend has
