@@ -62,11 +62,7 @@
   min-height: 0;
 }
 
-.runtimeExpandToggle {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  z-index: 2;
+.runtimeToggleButton {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,38 +74,13 @@
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  flex-shrink: 0;
   transition:
     background var(--transition-fast),
     color var(--transition-fast);
 }
 
-.runtimeExpandToggle:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary);
-}
-
-.runtimePopoutToggle {
-  position: absolute;
-  top: 6px;
-  right: 34px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.runtimePopoutToggle:hover {
+.runtimeToggleButton:hover {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
 }

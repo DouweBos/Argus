@@ -17,6 +17,14 @@
 
 import Foundation
 
+// Ignore SIGPIPE — macOS sends this when we write to a socket the client has
+// closed (e.g. a popout window mirroring the MJPEG stream is closed). The
+// default disposition terminates the process, which would tear down the
+// bridge and kill all remaining clients (including the main window's stream).
+// writeAll already handles the EPIPE return value and closes the broken
+// client cleanly.
+signal(SIGPIPE, SIG_IGN)
+
 // ---------------------------------------------------------------------------
 // MARK: - Bridge functions
 // ---------------------------------------------------------------------------

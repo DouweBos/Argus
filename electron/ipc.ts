@@ -670,7 +670,9 @@ export function registerIpcHandlers(): void {
   handle("start_simulator_capture", (a) =>
     startSimulatorCapture(a.udid as string),
   );
-  handle("stop_simulator_capture", () => stopSimulatorCapture());
+  handle("stop_simulator_capture", (a) =>
+    Promise.resolve(stopSimulatorCapture(a.udid as string)),
+  );
   handle("simulator_touch", (a) =>
     simulatorTouch(
       a.udid as string,
@@ -679,22 +681,55 @@ export function registerIpcHandlers(): void {
       a.eventType as number,
     ),
   );
-  handle("simulator_button", (a) => simulatorButton(a.button as string));
+  handle("simulator_button", (a) =>
+    simulatorButton(a.udid as string, a.button as string),
+  );
   handle("simulator_keyboard", (a) =>
     simulatorKeyboard(
+      a.udid as string,
       a.keyCode as number,
       a.modifierFlags as number,
       a.isDown as boolean,
     ),
   );
-  handle("open_simulator_popout", (a) => {
+  handle("open_simulator_popout", async (a) => {
     const udid = a.udid as string;
-    const sim = appState.simulator;
-    const mjpegPort = sim && sim.udid === udid ? (sim.mjpegPort ?? null) : null;
-    const deviceName = sim && sim.udid === udid ? sim.deviceName : "Simulator";
-    createFloatingSimulatorWindow({ udid, mjpegPort, deviceName });
+    const existing = appState.simulatorPopouts.get(udid);
+    if (existing && !existing.isDestroyed()) {
+      existing.show();
+      existing.focus();
 
-    return Promise.resolve();
+      return;
+    }
+
+    const devices = await listSimulators().catch(() => []);
+    const device = devices.find((d) => d.udid === udid);
+    const active = appState.simulators.get(udid);
+    const deviceName = active?.deviceName ?? device?.name ?? "Simulator";
+    const booted = device?.booted ?? false;
+
+    // Only acquire a capture reference when the device is actually booted.
+    // Starting capture on a shutdown simulator can return a misleading port
+    // that makes the popout think it's streaming and hides the Boot button —
+    // leaving the user with an empty frame and no way to boot. For shutdown
+    // devices, open the popout in placeholder mode; its own Boot flow will
+    // start capture once the user boots.
+    let mjpegPort: number | null = null;
+    if (booted) {
+      try {
+        mjpegPort = await startSimulatorCapture(udid);
+      } catch {
+        // Fall back to no stream — popout will show the placeholder.
+      }
+    }
+
+    createFloatingSimulatorWindow({
+      udid,
+      mjpegPort,
+      deviceName,
+      runtime: device?.runtime ?? "",
+      booted,
+    });
   });
   handle("close_simulator_popout", (a) => {
     closeFloatingSimulatorWindow(a.udid as string);

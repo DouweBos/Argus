@@ -36,29 +36,28 @@ export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
   const selectedDevice = devices.find((d) => d.udid === selectedUdid);
   const prevSessionIdRef = useRef<string | null>(null);
 
-  // When session (storeKey) changes: stop current capture so we switch to
-  // the new session's simulator. This also handles switching from home → session
-  // or session → home.
+  // When session (storeKey) changes: release this view's ref on the
+  // previously-selected UDID. Other holders keep their streams alive because
+  // capture is ref-counted per UDID.
+  const prevUdidRef = useRef<string | null>(null);
   useEffect(() => {
     if (
       storeKey !== prevSessionIdRef.current &&
       prevSessionIdRef.current !== null
     ) {
-      stopSimulatorCapture()
-        .then(() => {
-          setCapturing(false);
-          setMjpegPort(null);
-          setDisconnected(false);
-        })
-        .catch(() => {
-          setCapturing(false);
-          setMjpegPort(null);
-          setDisconnected(false);
-        });
+      const prevUdid = prevUdidRef.current;
+      if (prevUdid) {
+        stopSimulatorCapture(prevUdid).catch(() => {});
+      }
+      setCapturing(false);
+      setDisconnected(false);
     }
 
     prevSessionIdRef.current = storeKey;
-  }, [storeKey, setCapturing, setMjpegPort, setDisconnected]);
+  }, [storeKey, setCapturing, setDisconnected]);
+  useEffect(() => {
+    prevUdidRef.current = selectedUdid;
+  }, [selectedUdid]);
   const isBooted = selectedDevice?.booted ?? false;
 
   const refreshDevices = useCallback(() => {
@@ -78,7 +77,7 @@ export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
   const startCapture = useCallback(
     async (udid: string) => {
       const port = await startSimulatorCapture(udid);
-      setMjpegPort(port);
+      setMjpegPort(udid, port);
       setCapturing(true);
     },
     [setMjpegPort, setCapturing],
@@ -126,7 +125,7 @@ export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
     try {
       await disconnectSimulator(selectedUdid);
       setCapturing(false);
-      setMjpegPort(null);
+      setMjpegPort(selectedUdid, null);
       setDisconnected(true);
     } catch (err) {
       error("Disconnect failed:", err);
@@ -143,15 +142,16 @@ export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
           value={selectedUdid ?? ""}
           onChange={async (e) => {
             const udid = e.target.value || null;
-            if (capturing) {
+            const prev = selectedUdid;
+            if (capturing && prev) {
               try {
-                await stopSimulatorCapture();
+                await stopSimulatorCapture(prev);
               } catch {
                 // Capture may already be stopped — continue with selection
               }
 
               setCapturing(false);
-              setMjpegPort(null);
+              setMjpegPort(prev, null);
             }
 
             selectDevice(storeKey, udid);

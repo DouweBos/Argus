@@ -7,7 +7,7 @@
   gap: 8px;
   height: var(--toolbar-height);
   min-width: 0;
-  padding: 0 36px 0 10px;
+  padding: 0 10px;
   flex-shrink: 0;
   background: transparent;
   border-bottom: 1px solid var(--glass-border);
@@ -17,6 +17,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Right-aligned toggle cluster (expand / popout / etc.) */
+.titleBarToggles {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   margin-left: auto;
   flex-shrink: 0;
 }

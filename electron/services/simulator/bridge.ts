@@ -63,11 +63,11 @@ interface PendingRequest {
  * The protocol is strictly sequential: one command is in flight at a time.
  * Responses are matched to requests by FIFO order — the bridge guarantees
  * one response per command before accepting the next.
+ *
+ * One bridge process is spawned per UDID so multiple simulators can be
+ * captured concurrently. Lifetime is owned by ios.ts via a per-UDID registry.
  */
 export class SimBridge {
-  /** Singleton instance, managed by ios.ts. */
-  static instance: SimBridge | null = null;
-
   private proc: ChildProcessWithoutNullStreams | null = null;
   private rl: readline.Interface | null = null;
 
@@ -210,9 +210,5 @@ export class SimBridge {
     this.rl?.close();
     this.rl = null;
     this.proc = null;
-
-    if (SimBridge.instance === this) {
-      SimBridge.instance = null;
-    }
   }
 }

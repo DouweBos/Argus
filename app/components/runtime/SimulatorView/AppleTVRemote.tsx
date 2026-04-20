@@ -39,16 +39,26 @@ function resolveClickpadButton(e: React.PointerEvent<HTMLDivElement>): Button {
   return "left";
 }
 
-export function AppleTVRemote() {
-  const [activeButton, setActiveButton] = useState<Button | null>(null);
+type ClickpadZone = Exclude<Button, "menu" | "playpause">;
 
-  const press = useCallback((button: Button) => {
-    setActiveButton(button);
-    setTimeout(() => setActiveButton(null), 150);
-    simulatorButton(button).catch((err) =>
-      error("[Remote] button failed:", err),
-    );
-  }, []);
+interface AppleTVRemoteProps {
+  udid: string;
+}
+
+export function AppleTVRemote({ udid }: AppleTVRemoteProps) {
+  const [activeButton, setActiveButton] = useState<Button | null>(null);
+  const [hoveredZone, setHoveredZone] = useState<ClickpadZone | null>(null);
+
+  const press = useCallback(
+    (button: Button) => {
+      setActiveButton(button);
+      setTimeout(() => setActiveButton(null), 150);
+      simulatorButton(udid, button).catch((err) =>
+        error("[Remote] button failed:", err),
+      );
+    },
+    [udid],
+  );
 
   const handleClickpad = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -56,6 +66,28 @@ export function AppleTVRemote() {
     },
     [press],
   );
+
+  const handleClickpadMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      setHoveredZone(resolveClickpadButton(e) as ClickpadZone);
+    },
+    [],
+  );
+
+  const handleClickpadLeave = useCallback(() => {
+    setHoveredZone(null);
+  }, []);
+
+  const zoneClass = (zone: ClickpadZone, variant: string) => {
+    const classes = [styles.zone, variant];
+    if (activeButton === zone) {
+      classes.push(styles.active);
+    } else if (hoveredZone === zone) {
+      classes.push(styles.hovered);
+    }
+
+    return classes.join(" ");
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -98,22 +130,17 @@ export function AppleTVRemote() {
 
   return (
     <div className={styles.remote}>
-      <div className={styles.clickpad} onPointerDown={handleClickpad}>
-        <div
-          className={`${styles.zone} ${styles.zoneUp} ${activeButton === "up" ? styles.active : ""}`}
-        />
-        <div
-          className={`${styles.zone} ${styles.zoneDown} ${activeButton === "down" ? styles.active : ""}`}
-        />
-        <div
-          className={`${styles.zone} ${styles.zoneLeft} ${activeButton === "left" ? styles.active : ""}`}
-        />
-        <div
-          className={`${styles.zone} ${styles.zoneRight} ${activeButton === "right" ? styles.active : ""}`}
-        />
-        <div
-          className={`${styles.zone} ${styles.zoneSelect} ${activeButton === "select" ? styles.active : ""}`}
-        />
+      <div
+        className={styles.clickpad}
+        onPointerDown={handleClickpad}
+        onPointerLeave={handleClickpadLeave}
+        onPointerMove={handleClickpadMove}
+      >
+        <div className={zoneClass("up", styles.zoneUp)} />
+        <div className={zoneClass("down", styles.zoneDown)} />
+        <div className={zoneClass("left", styles.zoneLeft)} />
+        <div className={zoneClass("right", styles.zoneRight)} />
+        <div className={zoneClass("select", styles.zoneSelect)} />
         <span className={`${styles.arrow} ${styles.arrowUp}`}>▲</span>
         <span className={`${styles.arrow} ${styles.arrowDown}`}>▼</span>
         <span className={`${styles.arrow} ${styles.arrowLeft}`}>◀</span>

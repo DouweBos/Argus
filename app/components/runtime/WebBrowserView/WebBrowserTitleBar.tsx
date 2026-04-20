@@ -23,6 +23,7 @@ export interface WebBrowserTitleBarProps {
   onPresetChange: (event: ChangeEvent<HTMLSelectElement>) => void;
   onReload: () => void;
   onUrlKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  titleBarToggles?: ReactNode;
 }
 
 export function WebBrowserTitleBar({
@@ -39,6 +40,7 @@ export function WebBrowserTitleBar({
   onPresetChange,
   onReload,
   onUrlKeyDown,
+  titleBarToggles,
 }: WebBrowserTitleBarProps) {
   const filteredCustomPresets = customPresets.filter(
     (p) => !BUILTIN_PRESET_IDS.includes(p.id),
@@ -113,7 +115,12 @@ export function WebBrowserTitleBar({
   );
 
   return (
-    <RuntimeTitleBar actionBar={actionBar} picker={picker} showActionBar>
+    <RuntimeTitleBar
+      actionBar={actionBar}
+      picker={picker}
+      showActionBar
+      toggles={titleBarToggles}
+    >
       {children}
     </RuntimeTitleBar>
   );

@@ -596,8 +596,8 @@ export const disconnectSimulator = (udid: string): Promise<void> =>
 export const startSimulatorCapture = (udid: string): Promise<number> =>
   invoke("start_simulator_capture", { udid });
 
-export const stopSimulatorCapture = (): Promise<void> =>
-  invoke("stop_simulator_capture");
+export const stopSimulatorCapture = (udid: string): Promise<void> =>
+  invoke("stop_simulator_capture", { udid });
 
 export const simulatorTouch = (
   udid: string,
@@ -606,15 +606,16 @@ export const simulatorTouch = (
   eventType: number,
 ): Promise<void> => invoke("simulator_touch", { udid, x, y, eventType });
 
-export const simulatorButton = (button: string): Promise<void> =>
-  invoke("simulator_button", { button });
+export const simulatorButton = (udid: string, button: string): Promise<void> =>
+  invoke("simulator_button", { udid, button });
 
 export const simulatorKeyboard = (
+  udid: string,
   keyCode: number,
   modifierFlags: number,
   isDown: boolean,
 ): Promise<void> =>
-  invoke("simulator_keyboard", { keyCode, modifierFlags, isDown });
+  invoke("simulator_keyboard", { udid, keyCode, modifierFlags, isDown });
 
 // Android device commands
 export const checkAndroidTools = (): Promise<void> =>

@@ -35,6 +35,7 @@ import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
 import { refreshAllBranches } from "./services/session/watcher";
+import { stopSimulatorCapture } from "./services/simulator/ios";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { appState } from "./state";
 
@@ -651,6 +652,49 @@ export function getMainWindow(): BrowserWindow | null {
 }
 
 /**
+ * Pick a popout window size that matches the selected device's native aspect.
+ * We don't have the actual framebuffer resolution here, so we infer from the
+ * runtime / name: tvOS is 16:9 landscape, iPads are ~4:3 portrait, and every
+ * iPhone is a tall portrait rectangle (~9:19.5).
+ */
+function popoutDimensionsForDevice(
+  runtime: string,
+  deviceName: string,
+): { width: number; height: number; minWidth: number; minHeight: number } {
+  // The popout has ~28px of title-bar chrome above the stream and a ~60px
+  // floating action bar below it. Add that vertical slack on top of the
+  // framebuffer aspect so the stream itself still fits the device's native
+  // ratio after the chrome is subtracted.
+  const CHROME_V = 100;
+
+  if (runtime.startsWith("tvOS")) {
+    // tvOS: 16:9 landscape, plus ~150px width for the Apple TV remote column.
+    return {
+      width: 820,
+      height: 420 + CHROME_V,
+      minWidth: 520,
+      minHeight: 280 + CHROME_V,
+    };
+  }
+  if (/ipad/i.test(deviceName) || runtime.startsWith("iPadOS")) {
+    return {
+      width: 520,
+      height: 700 + CHROME_V,
+      minWidth: 340,
+      minHeight: 460 + CHROME_V,
+    };
+  }
+
+  // iPhone portrait default.
+  return {
+    width: 320,
+    height: 680 + CHROME_V,
+    minWidth: 220,
+    minHeight: 420 + CHROME_V,
+  };
+}
+
+/**
  * Open a floating, always-on-top simulator popout window mirroring the
  * capture stream for the given `udid`. The popout renders its own React tree
  * (see `app/main.tsx` — the query string `?popout=simulator&...` short-
@@ -664,8 +708,10 @@ export function createFloatingSimulatorWindow(options: {
   udid: string;
   mjpegPort: number | null;
   deviceName: string;
+  runtime: string;
+  booted: boolean;
 }): BrowserWindow {
-  const { udid, mjpegPort, deviceName } = options;
+  const { udid, mjpegPort, deviceName, runtime, booted } = options;
   const existing = appState.simulatorPopouts.get(udid);
   if (existing && !existing.isDestroyed()) {
     existing.show();
@@ -674,15 +720,22 @@ export function createFloatingSimulatorWindow(options: {
     return existing;
   }
 
+  const { width, height, minWidth, minHeight } = popoutDimensionsForDevice(
+    runtime,
+    deviceName,
+  );
+
   const win = new BrowserWindow({
-    width: 320,
-    height: 680,
-    minWidth: 220,
-    minHeight: 420,
+    width,
+    height,
+    minWidth,
+    minHeight,
     show: false,
     alwaysOnTop: true,
     backgroundColor: "#000000",
     title: `Argus · ${deviceName}`,
+    titleBarStyle: "hidden",
+    trafficLightPosition: { x: 8, y: 8 },
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -695,6 +748,8 @@ export function createFloatingSimulatorWindow(options: {
     popout: "simulator",
     udid,
     name: deviceName,
+    runtime,
+    booted: booted ? "1" : "0",
     ...(mjpegPort != null ? { port: String(mjpegPort) } : {}),
   });
 
@@ -708,6 +763,10 @@ export function createFloatingSimulatorWindow(options: {
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
     appState.simulatorPopouts.delete(udid);
+    // Release the capture reference this popout acquired at open_simulator_popout.
+    // If the main window still holds a ref for this UDID, the bridge keeps
+    // running; other UDIDs' bridges are unaffected.
+    stopSimulatorCapture(udid);
   });
 
   appState.simulatorPopouts.set(udid, win);

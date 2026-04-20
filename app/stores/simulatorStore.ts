@@ -95,7 +95,12 @@ interface SimulatorStoreData {
   disconnected: boolean;
   iosToolsAvailable: boolean | null;
   iosToolsError: string | null;
-  mjpegPort: number | null;
+  /**
+   * Active MJPEG stream ports keyed by simulator UDID. Each captured
+   * simulator runs its own bridge process with its own port, so multiple
+   * popouts can stream in parallel.
+   */
+  mjpegPortByUdid: Record<string, number>;
   /**
    * Set of session IDs whose web `<webview>` is mounted in the stack.
    * A session is added to this set the first time it is needed — either
@@ -121,7 +126,7 @@ const simulatorStore = create<SimulatorStoreData>(() => ({
   capturing: false,
   booting: false,
   disconnected: false,
-  mjpegPort: null,
+  mjpegPortByUdid: {},
   androidToolsAvailable: null,
   androidToolsError: null,
   androidDevices: [],
@@ -192,8 +197,26 @@ export const setDisconnected = (disconnected: boolean) => {
   simulatorStore.setState({ disconnected });
 };
 
-export const setMjpegPort = (port: number | null) => {
-  simulatorStore.setState({ mjpegPort: port });
+export const setMjpegPort = (udid: string, port: number | null) => {
+  simulatorStore.setState((state) => {
+    if (port == null) {
+      if (!(udid in state.mjpegPortByUdid)) {
+        return state;
+      }
+      const next: Record<string, number> = {};
+      for (const [k, v] of Object.entries(state.mjpegPortByUdid)) {
+        if (k !== udid) {
+          next[k] = v;
+        }
+      }
+
+      return { mjpegPortByUdid: next };
+    }
+
+    return {
+      mjpegPortByUdid: { ...state.mjpegPortByUdid, [udid]: port },
+    };
+  });
 };
 
 export const setAndroidToolsStatus = (
@@ -323,7 +346,7 @@ export function useIosSimulatorViewState() {
       devices: s.devices,
       selectedUdidBySession: s.selectedUdidBySession,
       capturing: s.capturing,
-      mjpegPort: s.mjpegPort,
+      mjpegPortByUdid: s.mjpegPortByUdid,
       booting: s.booting,
       disconnected: s.disconnected,
     })),

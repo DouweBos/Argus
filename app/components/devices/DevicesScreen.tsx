@@ -1,7 +1,7 @@
 import type { DeviceInfo } from "../../lib/types";
 import { useState } from "react";
-import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
-import { stopDevice } from "../../lib/ipc";
+import { ContextMenu, type ContextMenuItem, Icons } from "@argus/peacock";
+import { bootSimulator, openSimulatorPopout, stopDevice } from "../../lib/ipc";
 import { refreshDevices } from "../../stores/deviceStore";
 import {
   useDevicePoller,
@@ -42,6 +42,38 @@ export function DevicesScreen() {
     e.stopPropagation();
     setMenu({ device: d, x: e.clientX, y: e.clientY });
   };
+
+  const handlePopout =
+    (d: DeviceInfo) => (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      openSimulatorPopout(d.deviceKey).catch(() => {
+        // best-effort — the backend logs failures
+      });
+    };
+
+  const [booting, setBooting] = useState<Set<string>>(new Set());
+
+  const handleBoot =
+    (d: DeviceInfo) => async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (d.platform !== "ios" || booting.has(d.deviceKey)) {
+        return;
+      }
+      setBooting((prev) => new Set(prev).add(d.deviceKey));
+      try {
+        await bootSimulator(d.deviceKey);
+        await refreshDevices();
+      } catch {
+        // Next poll will reflect whatever state the simulator ended up in.
+      } finally {
+        setBooting((prev) => {
+          const next = new Set(prev);
+          next.delete(d.deviceKey);
+
+          return next;
+        });
+      }
+    };
 
   const handleStop = async (d: DeviceInfo) => {
     try {
@@ -97,6 +129,7 @@ export function DevicesScreen() {
               <th>Agent</th>
               <th>Session</th>
               <th>Project</th>
+              <th className={styles.actionCell} aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -143,6 +176,48 @@ export function DevicesScreen() {
                     </button>
                   ) : (
                     <span className={styles.dash}>—</span>
+                  )}
+                </td>
+                <td className={styles.actionCell}>
+                  {d.platform === "ios" && (
+                    <>
+                      {!d.online && (
+                        <button
+                          className={styles.iconBtn}
+                          disabled={booting.has(d.deviceKey)}
+                          title={
+                            booting.has(d.deviceKey)
+                              ? "Booting..."
+                              : "Boot simulator"
+                          }
+                          type="button"
+                          onClick={handleBoot(d)}
+                        >
+                          <Icons.BootIcon size={11} />
+                        </button>
+                      )}
+                      {d.online && (
+                        <button
+                          className={styles.iconBtn}
+                          title="Shut down simulator"
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStop(d).catch(() => {});
+                          }}
+                        >
+                          <Icons.DisconnectIcon size={11} />
+                        </button>
+                      )}
+                      <button
+                        className={styles.iconBtn}
+                        title="Open in floating window"
+                        type="button"
+                        onClick={handlePopout(d)}
+                      >
+                        <Icons.PopoutIcon size={11} />
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

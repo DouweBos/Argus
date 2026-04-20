@@ -36,6 +36,8 @@ export interface IosDeviceStreamViewProps {
   streamAlt?: string;
   /** Trailing controls on the title row (e.g. boot when idle). */
   titleBarExtra?: React.ReactNode;
+  /** Toggles pinned to the far right of the title bar (e.g. expand, popout). */
+  titleBarToggles?: React.ReactNode;
   toolsAvailable: boolean | null;
   toolsMissing: { body: React.ReactNode; title: string };
 }
@@ -49,6 +51,7 @@ export function IosDeviceStreamView({
   placeholder,
   showFloatingActionBar = true,
   titleBarExtra,
+  titleBarToggles,
   toolsAvailable,
   toolsMissing,
   renderStream,
@@ -166,6 +169,7 @@ export function IosDeviceStreamView({
       picker={devicePicker}
       showActionBar={showFloatingActionBar}
       spacedActionBar
+      toggles={titleBarToggles}
       trailing={titleBarExtra}
     >
       {children}
@@ -196,7 +200,7 @@ export function IosDeviceStreamView({
   if (toolsAvailable === false) {
     return (
       <>
-        <RuntimeTitleBar>{children}</RuntimeTitleBar>
+        <RuntimeTitleBar toggles={titleBarToggles}>{children}</RuntimeTitleBar>
         <div className={chrome.placeholder}>
           <div className={styles.toolsMissingHint}>
             <p className={styles.toolsMissingTitle}>{toolsMissing.title}</p>
