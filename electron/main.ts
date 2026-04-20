@@ -415,14 +415,44 @@ app.whenReady().then(() => {
   // Used by the renderer to load full-resolution images from disk (e.g. tool
   // result screenshots) instead of relying on base64 blobs.
   // URL format: argus-file:///absolute/path/to/file
-  protocol.handle("argus-file", (request) => {
+  //
+  // The protocol is registered with `bypassCSP: true` and `corsEnabled: true`,
+  // so any same-origin script in the renderer can `fetch()` it. Without
+  // path-containment, this would be an arbitrary-file-read primitive
+  // (e.g. `fetch('argus-file:///Users/me/.ssh/id_rsa')`). We restrict it to
+  // canonical paths under a registered workspace and resolve symlinks before
+  // comparing, so symlinked escapes inside `node_modules` etc. are rejected.
+  protocol.handle("argus-file", async (request) => {
     const url = new URL(request.url);
     const filePath = decodeURIComponent(url.pathname);
-    if (!fs.existsSync(filePath)) {
+    let canonical: string;
+    try {
+      canonical = await fs.promises.realpath(filePath);
+    } catch {
       return new Response("Not found", { status: 404 });
     }
 
-    return net.fetch(pathToFileURL(filePath).href);
+    let allowed = false;
+    for (const ws of appState.workspaces.values()) {
+      let canonicalRoot: string;
+      try {
+        canonicalRoot = await fs.promises.realpath(ws.path);
+      } catch {
+        continue;
+      }
+      if (
+        canonical === canonicalRoot ||
+        canonical.startsWith(canonicalRoot + path.sep)
+      ) {
+        allowed = true;
+        break;
+      }
+    }
+    if (!allowed) {
+      return new Response("Forbidden", { status: 403 });
+    }
+
+    return net.fetch(pathToFileURL(canonical).href);
   });
 
   // Set Content-Security-Policy and inject CORP headers for external images.

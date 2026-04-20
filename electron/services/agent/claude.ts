@@ -55,7 +55,7 @@ import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
 import { getConductorSkillPath } from "../cli/conductorInstaller";
-import { getMcpPort } from "../mcp/server";
+import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { organizationsForRepo } from "../organization/manager";
 import { findOrgTaskForWorkspace } from "../organizationTask/manager";
 import { simulatorPool } from "../simulator/pool";
@@ -352,11 +352,18 @@ export async function startAgent(
 
   // Connect the agent to the Argus MCP server for workspace/agent
   // orchestration tools (create_workspace, spawn_agent, trigger_run, etc.).
+  // The per-launch bearer token is required on every request — only spawned
+  // children learn it, so other local processes can't reach the server.
   const mcpPort = getMcpPort();
-  if (mcpPort) {
+  const mcpToken = getMcpAuthToken();
+  if (mcpPort && mcpToken) {
     const mcpConfig = JSON.stringify({
       mcpServers: {
-        argus: { type: "http", url: `http://127.0.0.1:${mcpPort}/mcp` },
+        argus: {
+          type: "http",
+          url: `http://127.0.0.1:${mcpPort}/mcp`,
+          headers: { Authorization: `Bearer ${mcpToken}` },
+        },
       },
     });
     args.push("--mcp-config", mcpConfig);
@@ -372,8 +379,9 @@ export async function startAgent(
   // The shim resolves the device ID via an HTTP call to the Argus MCP
   // server using these env vars.
   env.ARGUS_AGENT_ID = agentId;
-  if (mcpPort) {
+  if (mcpPort && mcpToken) {
     env.ARGUS_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/argus/acquire-device`;
+    env.ARGUS_RESOLVER_TOKEN = mcpToken;
   }
 
   // Disable the Claude CLI's default per-tool MCP call timeout (~60s). Argus

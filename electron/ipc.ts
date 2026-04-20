@@ -117,6 +117,7 @@ import {
 } from "./services/simulator/ios";
 import {
   createTerminal,
+  createRunTerminal,
   startTerminal,
   destroyTerminal,
   terminalWrite,
@@ -526,13 +527,20 @@ export function registerIpcHandlers(): void {
     generateSessionTitle(a.firstMessage as string),
   );
 
-  // Terminal commands
+  // Terminal commands.
+  //
+  // `create_terminal` deliberately does NOT accept a free-form `command`
+  // parameter. Allowing the renderer (or any caller transitively reaching this
+  // IPC) to inject an arbitrary `sh -c <command>` would turn any renderer
+  // compromise (XSS via agent/file/MCP-controlled markdown) into full RCE.
+  // Callers that need to start the workspace's configured run command must
+  // use `create_run_terminal`, which resolves the command server-side from
+  // `.argus.json`.
   handle("create_terminal", (a) =>
-    createTerminal(
-      a.workspaceId as string,
-      a.subDir as string | undefined,
-      a.command as string | undefined,
-    ),
+    createTerminal(a.workspaceId as string, a.subDir as string | undefined),
+  );
+  handle("create_run_terminal", (a) =>
+    createRunTerminal(a.workspaceId as string),
   );
   handle("start_terminal", (a) =>
     startTerminal(a.sessionId as string, a.cols as number, a.rows as number),

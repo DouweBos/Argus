@@ -222,6 +222,44 @@ export function createTerminal(
 }
 
 /**
+ * Spawn a terminal running the workspace's configured `run` command from
+ * `.argus.json`. The command is resolved entirely server-side — the renderer
+ * (and any code reaching this IPC) cannot supply an arbitrary shell command,
+ * which closes the XSS-to-RCE chain via `create_terminal`.
+ *
+ * @throws A plain string if the workspace is unknown or no run command is set.
+ */
+export function createRunTerminal(workspaceId: string): string {
+  const ws = appState.workspaces.get(workspaceId);
+  if (!ws) {
+    throw `Workspace not found: ${workspaceId}`;
+  }
+
+  let runConfig: unknown = null;
+  try {
+    const config = loadArgusConfig(ws.repo_root);
+    runConfig = config.run;
+  } catch {
+    // No config — handled below.
+  }
+
+  if (!runConfig) {
+    throw "No 'run' command configured in .argus.json";
+  }
+
+  const command =
+    typeof runConfig === "string"
+      ? runConfig
+      : (runConfig as { command: string }).command;
+  const dir =
+    typeof runConfig === "string"
+      ? undefined
+      : ((runConfig as { dir?: string }).dir ?? undefined);
+
+  return createTerminal(workspaceId, dir, command);
+}
+
+/**
  * Resize the PTY to the real terminal dimensions reported by xterm.js.
  *
  * Call this once after xterm.js has mounted and measured its container.

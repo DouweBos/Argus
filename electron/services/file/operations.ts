@@ -213,25 +213,100 @@ export async function writeFile(
 // ---------------------------------------------------------------------------
 
 /**
- * Assert that an absolute path is inside a registered workspace.
- * @throws string if the path is not inside any workspace.
+ * Resolve the canonical (symlink-followed) paths of every registered
+ * workspace. Cached per call site — workspaces are added/removed rarely and
+ * the cost of `realpath` is dwarfed by the I/O these handlers do anyway.
  */
-function assertInsideWorkspace(absPath: string): void {
-  const normalized = path.normalize(absPath);
+async function canonicalWorkspaceRoots(): Promise<string[]> {
+  const roots: string[] = [];
   for (const ws of appState.workspaces.values()) {
-    const wsPath = path.normalize(ws.path);
-    if (normalized === wsPath || normalized.startsWith(wsPath + path.sep)) {
+    try {
+      roots.push(await fs.promises.realpath(ws.path));
+    } catch {
+      // Workspace path is missing on disk; skip it.
+    }
+  }
+
+  return roots;
+}
+
+/**
+ * Assert that an absolute path resolves (after following symlinks) to a
+ * location inside a registered workspace.
+ *
+ * String-prefix containment is not enough on its own: symlinks inside a
+ * workspace (commonplace in pnpm `node_modules`, the setup pipeline's
+ * `setup.symlink` step, and user-created links) would otherwise let any
+ * caller of these IPC handlers escape the workspace and read/write arbitrary
+ * paths on disk (e.g. `<ws>/node_modules/x` → `~/.ssh`). We canonicalize
+ * both sides before comparing.
+ *
+ * For paths that don't yet exist (write/mkdir/rename targets), pass
+ * `mustExist: false` — we then canonicalize the deepest existing ancestor
+ * and append the unresolved tail.
+ *
+ * @throws string if the canonical path is not inside any workspace.
+ */
+async function assertInsideWorkspace(
+  absPath: string,
+  options: { mustExist?: boolean } = {},
+): Promise<void> {
+  const mustExist = options.mustExist ?? true;
+  const canonical = await canonicalize(absPath, mustExist);
+  const roots = await canonicalWorkspaceRoots();
+  for (const root of roots) {
+    if (canonical === root || canonical.startsWith(root + path.sep)) {
       return;
     }
   }
   throw `Path is not inside any workspace: ${absPath}`;
 }
 
+/**
+ * Resolve symlinks for whatever portion of `absPath` exists on disk and
+ * return the canonical absolute path. When the leaf does not exist we walk
+ * up until we find an existing ancestor, canonicalize that, then re-append
+ * the unresolved tail.
+ */
+async function canonicalize(
+  absPath: string,
+  mustExist: boolean,
+): Promise<string> {
+  const normalized = path.resolve(absPath);
+  try {
+    return await fs.promises.realpath(normalized);
+  } catch (e) {
+    if (mustExist) {
+      throw `Failed to resolve path: ${String(e)}`;
+    }
+  }
+
+  // Walk up to the deepest existing ancestor, then re-attach the tail.
+  const segments: string[] = [];
+  let cursor = normalized;
+  while (true) {
+    const parent = path.dirname(cursor);
+    if (parent === cursor) {
+      // Reached filesystem root without finding an existing ancestor.
+      throw `Failed to resolve path: ${absPath}`;
+    }
+    segments.unshift(path.basename(cursor));
+    cursor = parent;
+    try {
+      const realParent = await fs.promises.realpath(cursor);
+
+      return path.join(realParent, ...segments);
+    } catch {
+      // Keep walking up.
+    }
+  }
+}
+
 /** Stat an absolute path. */
 export async function statPath(
   absPath: string,
 ): Promise<{ is_dir: boolean; size: number; mtime: number }> {
-  assertInsideWorkspace(absPath);
+  await assertInsideWorkspace(absPath);
   const stat = await fs.promises.stat(absPath);
 
   return { is_dir: stat.isDirectory(), size: stat.size, mtime: stat.mtimeMs };
@@ -239,7 +314,7 @@ export async function statPath(
 
 /** Read a text file at an absolute path. */
 export async function readPath(absPath: string): Promise<string> {
-  assertInsideWorkspace(absPath);
+  await assertInsideWorkspace(absPath);
 
   return fs.promises.readFile(absPath, "utf8");
 }
@@ -249,14 +324,14 @@ export async function writePath(
   absPath: string,
   content: string,
 ): Promise<void> {
-  assertInsideWorkspace(absPath);
+  await assertInsideWorkspace(absPath, { mustExist: false });
   await fs.promises.mkdir(path.dirname(absPath), { recursive: true });
   await fs.promises.writeFile(absPath, content, "utf8");
 }
 
 /** List directory contents at an absolute path. */
 export async function listPath(absPath: string): Promise<DirEntry[]> {
-  assertInsideWorkspace(absPath);
+  await assertInsideWorkspace(absPath);
   const rawEntries = await fs.promises.readdir(absPath, {
     withFileTypes: true,
   });
@@ -287,14 +362,21 @@ export async function listPath(absPath: string): Promise<DirEntry[]> {
 
 /** Create a directory at an absolute path (recursive). */
 export async function mkdirPath(absPath: string): Promise<void> {
-  assertInsideWorkspace(absPath);
+  await assertInsideWorkspace(absPath, { mustExist: false });
   await fs.promises.mkdir(absPath, { recursive: true });
 }
 
-/** Delete a file or directory at an absolute path. */
+/**
+ * Delete a file or directory at an absolute path.
+ *
+ * `lstat` (not `stat`) is used so we operate on the symlink itself rather
+ * than its target — combined with `assertInsideWorkspace` this prevents
+ * deleting files outside the workspace via a symlink whose canonical path
+ * happens to live elsewhere.
+ */
 export async function deletePath(absPath: string): Promise<void> {
-  assertInsideWorkspace(absPath);
-  const stat = await fs.promises.stat(absPath);
+  await assertInsideWorkspace(absPath);
+  const stat = await fs.promises.lstat(absPath);
   if (stat.isDirectory()) {
     await fs.promises.rm(absPath, { recursive: true });
   } else {
@@ -304,8 +386,8 @@ export async function deletePath(absPath: string): Promise<void> {
 
 /** Rename/move a file at an absolute path. */
 export async function renamePath(from: string, to: string): Promise<void> {
-  assertInsideWorkspace(from);
-  assertInsideWorkspace(to);
+  await assertInsideWorkspace(from);
+  await assertInsideWorkspace(to, { mustExist: false });
   await fs.promises.mkdir(path.dirname(to), { recursive: true });
   await fs.promises.rename(from, to);
 }

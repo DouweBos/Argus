@@ -85,9 +85,10 @@ function classifyDevice(value) {
 function resolveDevice(platform) {
   const url = process.env.ARGUS_RESOLVER_URL;
   const agentId = process.env.ARGUS_AGENT_ID;
-  if (!url || !agentId) {
+  const token = process.env.ARGUS_RESOLVER_TOKEN;
+  if (!url || !agentId || !token) {
     throw new Error(
-      'Argus resolver not configured (ARGUS_RESOLVER_URL / ARGUS_AGENT_ID missing)'
+      'Argus resolver not configured (ARGUS_RESOLVER_URL / ARGUS_AGENT_ID / ARGUS_RESOLVER_TOKEN missing)'
     );
   }
   return new Promise((resolve, reject) => {
@@ -102,6 +103,7 @@ function resolveDevice(platform) {
         headers: {
           'content-type': 'application/json',
           'content-length': Buffer.byteLength(body),
+          'authorization': 'Bearer ' + token,
         },
       },
       (res) => {
