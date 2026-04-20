@@ -10,7 +10,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { startTerminal, terminalResize, terminalWrite } from "../lib/ipc";
+import {
+  openExternalUrl,
+  startTerminal,
+  terminalResize,
+  terminalWrite,
+} from "../lib/ipc";
 import {
   attachWriter,
   detachWriter,
@@ -202,7 +207,10 @@ export function useTerminal({
     });
 
     const fitAddon = new FitAddon();
-    const webLinksAddon = new WebLinksAddon();
+    const webLinksAddon = new WebLinksAddon((event, uri) => {
+      event.preventDefault();
+      openExternalUrl(uri).catch(() => {});
+    });
     const serializeAddon = new SerializeAddon();
     const searchAddon = new SearchAddon();
     term.loadAddon(fitAddon);

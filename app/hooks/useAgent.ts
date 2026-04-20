@@ -88,7 +88,13 @@ export function useSessionAgents(
       if (!activeAgent) {
         return;
       }
-      const validStatuses = ["idle", "running", "stopped", "error"] as const;
+      const validStatuses = [
+        "idle",
+        "running",
+        "requires_action",
+        "stopped",
+        "error",
+      ] as const;
       type StatusType = (typeof validStatuses)[number];
       const status: StatusType = validStatuses.includes(payload as StatusType)
         ? (payload as StatusType)

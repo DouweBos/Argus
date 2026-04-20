@@ -45,7 +45,7 @@ export function SessionSidebar() {
   );
 
   const sorted = [...projects].sort((a, b) => a.addedAt - b.addedAt);
-  const totalWorkspaces = sorted.length;
+  const totalProjects = sorted.length;
 
   const handleAdd = () => setShowOpenProject(true);
 
@@ -65,7 +65,7 @@ export function SessionSidebar() {
         }
         actions={
           <>
-            <SidebarHeaderAction title="New workspace" onClick={handleAdd}>
+            <SidebarHeaderAction title="New project" onClick={handleAdd}>
               <Icons.PlusIcon size={12} />
             </SidebarHeaderAction>
             <SidebarHeaderAction title="Open repo" onClick={handleAdd}>
@@ -132,9 +132,9 @@ export function SessionSidebar() {
           ))
         )}
 
-        <SidebarSection count={totalWorkspaces}>Workspaces</SidebarSection>
+        <SidebarSection count={totalProjects}>Projects</SidebarSection>
         {sorted.length === 0 ? (
-          <p className={styles.empty}>No active workspaces.</p>
+          <p className={styles.empty}>No active projects.</p>
         ) : (
           sorted.map((project) => (
             <ProjectSegment

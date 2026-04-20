@@ -208,12 +208,22 @@ export function ReadyToMergeCard({
                 <button
                   className={styles.rebaseBtn}
                   disabled={isRebasing}
-                  title={`Rebase ${sessionBranch ?? "this branch"} onto ${baseBranch}`}
+                  title={
+                    hasWork
+                      ? `Rebase ${sessionBranch ?? "this branch"} onto ${baseBranch}`
+                      : `Update ${sessionBranch ?? "this branch"} from ${baseBranch}`
+                  }
                   type="button"
                   onClick={handleRebase}
                 >
                   <Icons.BranchIcon size={11} />
-                  {isRebasing ? "Rebasing\u2026" : `Rebase onto ${baseBranch}`}
+                  {isRebasing
+                    ? hasWork
+                      ? "Rebasing\u2026"
+                      : "Updating\u2026"
+                    : hasWork
+                      ? `Rebase onto ${baseBranch}`
+                      : `Update from ${baseBranch}`}
                 </button>
               )}
               {baseBranch && !hasConflicts && hasWork && (

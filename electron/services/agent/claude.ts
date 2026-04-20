@@ -599,6 +599,9 @@ export async function startAgent(
           ) {
             const prev = sess.status;
             sess.status = parsed.state;
+            if (prev !== parsed.state) {
+              emitAgentStatus(agentId, parsed.state);
+            }
             if (parsed.state === "idle" && prev !== "idle") {
               // Notify anyone waiting on turn completion.
               for (const resolve of sess.turnWaiters) {
@@ -821,7 +824,7 @@ export async function interruptAgent(agentId: string): Promise<void> {
   if (!session) {
     throw `No agent found: ${agentId}`;
   }
-  if (session.status !== "running") {
+  if (session.status === "stopped" || session.status === "error") {
     return;
   }
 

@@ -129,9 +129,9 @@ export function SessionCard({
         <div className={styles.left}>
           <div className={styles.titleRow}>
             {session.kind === "project_root" ? (
-              <Icons.RepoIcon size={11} />
+              <Icons.RepoIcon size={13} />
             ) : (
-              <Icons.BranchIcon size={11} />
+              <Icons.BranchIcon size={13} />
             )}
             <span className={styles.projectName}>{projectName}</span>
           </div>
@@ -151,6 +151,103 @@ export function SessionCard({
               {statusLabel}
             </span>
           )}
+          {!isRepoRoot && (
+            <span className={styles.subtitleTrailing}>
+              {!isDeletingStatus && diffStats && diffStats.files > 0 && (
+                <span className={styles.diffStats}>
+                  <span className={styles.diffFileCount}>
+                    {diffStats.files}f
+                  </span>
+                  {diffStats.additions > 0 && (
+                    <span className={styles.diffAdd}>
+                      +{diffStats.additions}
+                    </span>
+                  )}
+                  {diffStats.deletions > 0 && (
+                    <span className={styles.diffRemove}>
+                      -{diffStats.deletions}
+                    </span>
+                  )}
+                </span>
+              )}
+              {!isDeletingStatus && commitsAhead > 0 && (
+                <span
+                  className={styles.aheadBadge}
+                  title={
+                    session.base_branch
+                      ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${session.base_branch}`
+                      : `${commitsAhead} unmerged commit${commitsAhead === 1 ? "" : "s"}`
+                  }
+                >
+                  ↑{commitsAhead}
+                </span>
+              )}
+              <span
+                className={styles.menuAnchor}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  ref={menuBtnRef}
+                  className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
+                  title="Session options"
+                  onClick={toggleMenu}
+                >
+                  <Icons.EllipsisIcon size={12} />
+                </button>
+                {menuPosition && (
+                  <ContextMenu
+                    items={
+                      [
+                        {
+                          icon: <Icons.CopyIcon size={12} />,
+                          label: "Copy Absolute Path",
+                          onClick: () =>
+                            navigator.clipboard.writeText(session.path),
+                        },
+                        {
+                          icon: <Icons.CopyIcon size={12} />,
+                          label: "Copy Relative Path",
+                          onClick: () =>
+                            navigator.clipboard.writeText(
+                              toTildePath(session.path),
+                            ),
+                        },
+                        {
+                          icon: <Icons.BranchIcon size={12} />,
+                          label: "Copy Branch Name",
+                          onClick: () =>
+                            navigator.clipboard.writeText(branchName),
+                        },
+                        { separator: true },
+                        {
+                          icon: <Icons.FolderIcon size={12} />,
+                          label: "Reveal in Finder",
+                          onClick: () => revealInFinder(session.path),
+                        },
+                        {
+                          icon: <Icons.TerminalIcon size={12} />,
+                          label: "Open in Terminal",
+                          onClick: () => {
+                            createTerminal(session.id);
+                          },
+                        },
+                        { separator: true as const },
+                        {
+                          icon: <Icons.TrashIcon size={12} />,
+                          label: isDeleting ? "Deleting..." : "Delete Session",
+                          onClick: handleDelete,
+                          danger: true,
+                          disabled: isDeleting,
+                        },
+                      ] satisfies ContextMenuItem[]
+                    }
+                    position={menuPosition}
+                    onClose={closeMenu}
+                  />
+                )}
+              </span>
+            </span>
+          )}
         </div>
       </div>
       {orgTask && (
@@ -166,113 +263,77 @@ export function SessionCard({
           task: {orgTask.title}
         </button>
       )}
-      <div className={styles.subtitleRow}>
-        <span className={styles.branchSubtitle}>
-          {branchName}
-          {session.description && (
-            <span className={styles.descriptionInline}>
-              {" "}
-              &mdash; {session.description}
-            </span>
-          )}
-        </span>
-        <span className={styles.subtitleTrailing}>
-          {!isDeletingStatus && diffStats && diffStats.files > 0 && (
-            <span className={styles.diffStats}>
-              <span className={styles.diffFileCount}>{diffStats.files}f</span>
-              {diffStats.additions > 0 && (
-                <span className={styles.diffAdd}>+{diffStats.additions}</span>
-              )}
-              {diffStats.deletions > 0 && (
-                <span className={styles.diffRemove}>
-                  -{diffStats.deletions}
-                </span>
-              )}
-            </span>
-          )}
-          {!isDeletingStatus && commitsAhead > 0 && (
-            <span
-              className={styles.aheadBadge}
-              title={
-                session.base_branch
-                  ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${session.base_branch}`
-                  : `${commitsAhead} unmerged commit${commitsAhead === 1 ? "" : "s"}`
-              }
-            >
-              ↑{commitsAhead}
-            </span>
-          )}
-          <span
-            className={styles.menuAnchor}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              ref={menuBtnRef}
-              className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
-              title="Session options"
-              onClick={toggleMenu}
-            >
-              <Icons.EllipsisIcon size={12} />
-            </button>
-            {menuPosition && (
-              <ContextMenu
-                items={
-                  [
-                    {
-                      icon: <Icons.CopyIcon size={12} />,
-                      label: "Copy Absolute Path",
-                      onClick: () =>
-                        navigator.clipboard.writeText(session.path),
-                    },
-                    {
-                      icon: <Icons.CopyIcon size={12} />,
-                      label: "Copy Relative Path",
-                      onClick: () =>
-                        navigator.clipboard.writeText(
-                          toTildePath(session.path),
-                        ),
-                    },
-                    {
-                      icon: <Icons.BranchIcon size={12} />,
-                      label: "Copy Branch Name",
-                      onClick: () => navigator.clipboard.writeText(branchName),
-                    },
-                    { separator: true },
-                    {
-                      icon: <Icons.FolderIcon size={12} />,
-                      label: "Reveal in Finder",
-                      onClick: () => revealInFinder(session.path),
-                    },
-                    {
-                      icon: <Icons.TerminalIcon size={12} />,
-                      label: "Open in Terminal",
-                      onClick: () => {
-                        createTerminal(session.id);
-                      },
-                    },
-                    ...(!isRepoRoot
-                      ? [
-                          { separator: true as const },
-                          {
-                            icon: <Icons.TrashIcon size={12} />,
-                            label: isDeleting
-                              ? "Deleting..."
-                              : "Delete Session",
-                            onClick: handleDelete,
-                            danger: true,
-                            disabled: isDeleting,
-                          },
-                        ]
-                      : []),
-                  ] satisfies ContextMenuItem[]
-                }
-                position={menuPosition}
-                onClose={closeMenu}
-              />
+      {isRepoRoot && (
+        <div className={styles.subtitleRow}>
+          <span className={styles.branchSubtitle}>
+            {branchName}
+            {session.description && (
+              <span className={styles.descriptionInline}>
+                {" "}
+                &mdash; {session.description}
+              </span>
             )}
           </span>
-        </span>
-      </div>
+          <span className={styles.subtitleTrailing}>
+            <span
+              className={styles.menuAnchor}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                ref={menuBtnRef}
+                className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
+                title="Session options"
+                onClick={toggleMenu}
+              >
+                <Icons.EllipsisIcon size={12} />
+              </button>
+              {menuPosition && (
+                <ContextMenu
+                  items={
+                    [
+                      {
+                        icon: <Icons.CopyIcon size={12} />,
+                        label: "Copy Absolute Path",
+                        onClick: () =>
+                          navigator.clipboard.writeText(session.path),
+                      },
+                      {
+                        icon: <Icons.CopyIcon size={12} />,
+                        label: "Copy Relative Path",
+                        onClick: () =>
+                          navigator.clipboard.writeText(
+                            toTildePath(session.path),
+                          ),
+                      },
+                      {
+                        icon: <Icons.BranchIcon size={12} />,
+                        label: "Copy Branch Name",
+                        onClick: () =>
+                          navigator.clipboard.writeText(branchName),
+                      },
+                      { separator: true },
+                      {
+                        icon: <Icons.FolderIcon size={12} />,
+                        label: "Reveal in Finder",
+                        onClick: () => revealInFinder(session.path),
+                      },
+                      {
+                        icon: <Icons.TerminalIcon size={12} />,
+                        label: "Open in Terminal",
+                        onClick: () => {
+                          createTerminal(session.id);
+                        },
+                      },
+                    ] satisfies ContextMenuItem[]
+                  }
+                  position={menuPosition}
+                  onClose={closeMenu}
+                />
+              )}
+            </span>
+          </span>
+        </div>
+      )}
       {isRepoRoot &&
         repoRoot &&
         repoBranch &&

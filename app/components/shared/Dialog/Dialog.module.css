@@ -496,3 +496,86 @@ select.input {
 .linkButton:hover {
   color: var(--accent-hover);
 }
+
+/* Branch dropdown combobox */
+.branchDropdownWrapper {
+  position: relative;
+}
+
+.branchDropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: border-color var(--transition-base);
+  gap: 8px;
+}
+
+.branchDropdownTrigger:hover {
+  border-color: var(--border-hover, var(--accent));
+}
+
+.branchDropdownTrigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.branchDropdownValue {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+
+.branchDropdownPlaceholder {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+
+.branchDropdownChevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform var(--transition-base);
+}
+
+.branchDropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+.branchDropdownPopover {
+  position: fixed;
+  z-index: 2000;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.branchDropdownSearch {
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.branchDropdownList {
+  max-height: 200px;
+  overflow-y: auto;
+}

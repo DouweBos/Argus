@@ -1,5 +1,5 @@
 .card {
-  padding: 4px 4px 6px 14px;
+  padding: 4px 4px 6px 6px;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition:
@@ -9,7 +9,7 @@
   flex-direction: column;
   align-items: stretch;
   gap: 1px;
-  margin: 0 4px;
+  margin: 0;
   position: relative;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .projectName {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-secondary);
   overflow: hidden;
