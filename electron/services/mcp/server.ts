@@ -21,6 +21,7 @@ import { z } from "zod";
 import { createLogger, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import { resolveAttachments, mcpAttachmentSchema } from "../agent/attachments";
 import {
   startAgent,
   sendAgentMessage,
@@ -559,6 +560,12 @@ export function createMcpServer(): McpServer {
         .describe(
           "Agent ID of the orchestrator/parent agent spawning this child. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
         ),
+      attachments: z
+        .array(mcpAttachmentSchema)
+        .optional()
+        .describe(
+          "Optional attachments (images/screenshots) to forward to the child agent's initial message. When the user sends you an image, include its absolute path here so the child agent sees the actual image, not just a text description. Use { path: '/abs/path/to/file.png' } for files on disk, or { data: '<base64>', mime_type: 'image/png' } for inline bytes.",
+        ),
     },
     async ({
       workspace,
@@ -566,6 +573,7 @@ export function createMcpServer(): McpServer {
       permission_mode,
       platforms,
       parent_agent_id,
+      attachments,
     }) => {
       const ws = resolveWorkspace(workspace);
       if (!ws) {
@@ -575,6 +583,18 @@ export function createMcpServer(): McpServer {
               type: "text" as const,
               text: `Workspace not found: ${workspace}`,
             },
+          ],
+          isError: true,
+        };
+      }
+
+      let images;
+      try {
+        images = resolveAttachments(attachments);
+      } catch (e) {
+        return {
+          content: [
+            { type: "text" as const, text: (e as Error).message },
           ],
           isError: true,
         };
@@ -602,7 +622,7 @@ export function createMcpServer(): McpServer {
       });
 
       // Send the initial prompt after startup.
-      sendAgentMessage(agentInfo.agent_id, prompt);
+      sendAgentMessage(agentInfo.agent_id, prompt, images);
 
       return {
         content: [
@@ -653,6 +673,12 @@ export function createMcpServer(): McpServer {
               .array(z.enum(["ios", "android", "web"]))
               .optional()
               .describe("Runtime platforms this agent targets"),
+            attachments: z
+              .array(mcpAttachmentSchema)
+              .optional()
+              .describe(
+                "Optional attachments (images) to forward to this agent's initial message. Same shape as spawn_agent.attachments.",
+              ),
           }),
         )
         .describe("Array of agents to spawn, each in its own workspace"),
@@ -742,6 +768,22 @@ export function createMcpServer(): McpServer {
 
         const { workspace: ws } = wsResult.value;
 
+        let images;
+        try {
+          images = resolveAttachments(spec.attachments);
+        } catch (e) {
+          results.push({
+            agent_id: "",
+            workspace_id: ws.id,
+            branch: ws.branch,
+            name: spec.name,
+            status: "error",
+            error: `Attachment error: ${(e as Error).message}`,
+          });
+
+          return;
+        }
+
         try {
           const agentInfo = await startAgent(
             ws.id,
@@ -762,7 +804,7 @@ export function createMcpServer(): McpServer {
             initial_prompt: spec.prompt,
           });
 
-          sendAgentMessage(agentInfo.agent_id, spec.prompt);
+          sendAgentMessage(agentInfo.agent_id, spec.prompt, images);
 
           results.push({
             agent_id: agentInfo.agent_id,
@@ -1058,13 +1100,29 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "send_agent_message",
-    "Send a follow-up message to a running agent. Use this to provide additional instructions or context to an agent you previously spawned.",
+    "Send a follow-up message to a running agent. Use this to provide additional instructions or context to an agent you previously spawned. When the user sends you an image that the child agent should see, pass its absolute path in `attachments`.",
     {
       agent_id: z.string().describe("The agent ID returned by spawn_agent"),
       message: z.string().describe("The message to send to the agent"),
+      attachments: z
+        .array(mcpAttachmentSchema)
+        .optional()
+        .describe(
+          "Optional attachments (images/screenshots) to attach to this message. Use { path: '/abs/path/to/file.png' } for files on disk, or { data: '<base64>', mime_type: 'image/png' } for inline bytes. Only image types are supported (image/png, image/jpeg, image/gif, image/webp).",
+        ),
     },
-    async ({ agent_id, message }) => {
-      sendAgentMessage(agent_id, message);
+    async ({ agent_id, message, attachments }) => {
+      let images;
+      try {
+        images = resolveAttachments(attachments);
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: (e as Error).message }],
+          isError: true,
+        };
+      }
+
+      sendAgentMessage(agent_id, message, images);
 
       return {
         content: [

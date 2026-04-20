@@ -40,7 +40,7 @@ export function DiffViewer({
     isLoading,
     error: fetchError,
     refetch: fetchDiff,
-  } = useDiffFiles(workspaceId, { baseBranch });
+  } = useDiffFiles(workspaceId);
   const [selectedIndices, setSelectedIndices] =
     useState<Set<number>>(INITIAL_SELECTION);
   const [searchQuery, setSearchQuery] = useState("");
