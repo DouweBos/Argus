@@ -59,6 +59,7 @@ import {
   getConductorSkillPath,
 } from "../cli/conductor";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
+import { buildMergedMcpServers } from "../mcp/userConfig";
 import { organizationsForRepo } from "../organization/manager";
 import { findOrgTaskForWorkspace } from "../organizationTask/manager";
 import { simulatorPool } from "../simulator/pool";
@@ -360,16 +361,14 @@ export async function startAgent(
   const mcpPort = getMcpPort();
   const mcpToken = getMcpAuthToken();
   if (mcpPort && mcpToken) {
-    const mcpConfig = JSON.stringify({
-      mcpServers: {
-        argus: {
-          type: "http",
-          url: `http://127.0.0.1:${mcpPort}/mcp`,
-          headers: { Authorization: `Bearer ${mcpToken}` },
-        },
+    const mcpServers = buildMergedMcpServers(worktreePath, {
+      argus: {
+        type: "http",
+        url: `http://127.0.0.1:${mcpPort}/mcp`,
+        headers: { Authorization: `Bearer ${mcpToken}` },
       },
     });
-    args.push("--mcp-config", mcpConfig);
+    args.push("--mcp-config", JSON.stringify({ mcpServers }));
   }
 
   // Prepend the bundled conductor shim dir to PATH so agents can run
