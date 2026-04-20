@@ -8,12 +8,14 @@ interface WebBrowserViewProps {
   children?: ReactNode;
   isActive: boolean;
   sessionId: string | null;
+  titleBarToggles?: ReactNode;
 }
 
 export function WebBrowserView({
   children,
   isActive,
   sessionId,
+  titleBarToggles,
 }: WebBrowserViewProps) {
   const {
     browserPreset,
@@ -49,6 +51,7 @@ export function WebBrowserView({
       onInputUrlChange={setInputUrl}
       onPresetChange={handlePresetChange}
       onReload={handleReload}
+      titleBarToggles={titleBarToggles}
       onUrlKeyDown={handleUrlSubmit}
     >
       {children}

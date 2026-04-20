@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { SimulatorPopout } from "./components/popout/SimulatorPopout";
+import { seedPopoutStore } from "./components/popout/seedPopoutStore";
 import { initActivityService } from "./lib/activityService";
 import {
   initAppQuitSave,
@@ -22,14 +23,20 @@ if (popoutMode === "simulator") {
   const portRaw = params.get("port");
   const port = portRaw ? Number.parseInt(portRaw, 10) : NaN;
   const name = params.get("name") ?? "Simulator";
+  const runtime = params.get("runtime") ?? "";
+  const booted = params.get("booted") === "1";
+
+  seedPopoutStore({
+    udid,
+    deviceName: name,
+    mjpegPort: Number.isFinite(port) ? port : null,
+    runtime,
+    booted,
+  });
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
-      <SimulatorPopout
-        udid={udid}
-        deviceName={name}
-        mjpegPort={Number.isFinite(port) ? port : null}
-      />
+      <SimulatorPopout />
     </React.StrictMode>,
   );
 } else {

@@ -1,5 +1,12 @@
 import type { DeviceInfo } from "../../../lib/types";
-import { Button, Dialog } from "@argus/peacock";
+import { useState } from "react";
+import { Button, Dialog, Icons } from "@argus/peacock";
+import {
+  bootSimulator,
+  openSimulatorPopout,
+  stopDevice,
+} from "../../../lib/ipc";
+import { refreshDevices } from "../../../stores/deviceStore";
 import { useDeviceNavigation } from "../deviceNav";
 import { ConductorLogPanel } from "./ConductorLogPanel";
 import styles from "./DeviceDialog.module.css";
@@ -22,6 +29,46 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
   ): Promise<void> => {
     await goto(device, kind);
     onClose();
+  };
+
+  const canPopout = device.platform === "ios";
+  const canBoot = device.platform === "ios" && !device.online;
+  const canShutdown = device.platform === "ios" && device.online;
+  const [booting, setBooting] = useState(false);
+  const [shuttingDown, setShuttingDown] = useState(false);
+
+  const handlePopout = () => {
+    openSimulatorPopout(device.deviceKey).catch(() => {});
+  };
+
+  const handleBoot = async () => {
+    if (!canBoot || booting) {
+      return;
+    }
+    setBooting(true);
+    try {
+      await bootSimulator(device.deviceKey);
+      await refreshDevices();
+    } catch {
+      // Next poll will reflect the result.
+    } finally {
+      setBooting(false);
+    }
+  };
+
+  const handleShutdown = async () => {
+    if (!canShutdown || shuttingDown) {
+      return;
+    }
+    setShuttingDown(true);
+    try {
+      await stopDevice(device.platform, device.deviceKey);
+      await refreshDevices();
+    } catch {
+      // Next poll will reflect the result.
+    } finally {
+      setShuttingDown(false);
+    }
   };
 
   return (
@@ -105,6 +152,35 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
         <div className={styles.col}>
           <ConductorLogPanel deviceKey={device.deviceKey} />
           <div className={styles.actions}>
+            {canBoot && (
+              <Button
+                disabled={booting}
+                leading={<Icons.BootIcon size={11} />}
+                variant="secondary"
+                onClick={handleBoot}
+              >
+                {booting ? "Booting..." : "Boot"}
+              </Button>
+            )}
+            {canShutdown && (
+              <Button
+                disabled={shuttingDown}
+                leading={<Icons.DisconnectIcon size={11} />}
+                variant="danger"
+                onClick={handleShutdown}
+              >
+                {shuttingDown ? "Shutting down..." : "Shut down"}
+              </Button>
+            )}
+            {canPopout && (
+              <Button
+                leading={<Icons.PopoutIcon size={11} />}
+                variant="secondary"
+                onClick={handlePopout}
+              >
+                Open floating window
+              </Button>
+            )}
             <Button variant="ghost" onClick={onClose}>
               Close
             </Button>

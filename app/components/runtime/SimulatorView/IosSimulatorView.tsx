@@ -25,11 +25,13 @@ import styles from "./RuntimeView.module.css";
 interface IosSimulatorViewProps {
   children?: React.ReactNode;
   sessionId: string | null;
+  titleBarToggles?: React.ReactNode;
 }
 
 export function IosSimulatorView({
   children,
   sessionId,
+  titleBarToggles,
 }: IosSimulatorViewProps) {
   const {
     iosToolsAvailable,
@@ -37,7 +39,7 @@ export function IosSimulatorView({
     devices,
     selectedUdidBySession,
     capturing,
-    mjpegPort,
+    mjpegPortByUdid,
     booting,
     disconnected,
     setDevices,
@@ -50,6 +52,9 @@ export function IosSimulatorView({
 
   const storeKey = sessionId ?? "__global__";
   const selectedUdid = selectedUdidBySession[storeKey] ?? null;
+  const mjpegPort = selectedUdid
+    ? (mjpegPortByUdid[selectedUdid] ?? null)
+    : null;
 
   const selectedDevice = devices.find((d) => d.udid === selectedUdid);
   const isTv = isTvOS(selectedDevice);
@@ -95,32 +100,34 @@ export function IosSimulatorView({
     return () => clearInterval(interval);
   }, [refreshDevices, iosToolsAvailable]);
 
-  // When session changes: stop current capture
+  // When session changes: release this view's capture reference for the
+  // previously-selected UDID. Other holders (popouts, other sessions) keep
+  // their streams alive because capture is ref-counted per UDID.
+  const prevUdidRef = useRef<string | null>(null);
   useEffect(() => {
     if (
       storeKey !== prevSessionIdRef.current &&
       prevSessionIdRef.current !== null
     ) {
-      stopSimulatorCapture()
-        .then(() => {
-          setCapturing(false);
-          setMjpegPort(null);
-          setDisconnected(false);
-        })
-        .catch(() => {
-          setCapturing(false);
-          setMjpegPort(null);
-          setDisconnected(false);
-        });
+      const prevUdid = prevUdidRef.current;
+      if (prevUdid) {
+        stopSimulatorCapture(prevUdid).catch(() => {});
+      }
+      setCapturing(false);
+      setDisconnected(false);
     }
 
     prevSessionIdRef.current = storeKey;
-  }, [storeKey, setCapturing, setMjpegPort, setDisconnected]);
+  }, [storeKey, setCapturing, setDisconnected]);
+
+  useEffect(() => {
+    prevUdidRef.current = selectedUdid;
+  }, [selectedUdid]);
 
   const startCapture = useCallback(
     async (udid: string) => {
       const port = await startSimulatorCapture(udid);
-      setMjpegPort(port);
+      setMjpegPort(udid, port);
       setCapturing(true);
     },
     [setMjpegPort, setCapturing],
@@ -157,20 +164,28 @@ export function IosSimulatorView({
 
   const handleDeviceChange = useCallback(
     async (udid: string | null) => {
-      if (capturing) {
+      const prev = selectedUdid;
+      if (capturing && prev) {
         try {
-          await stopSimulatorCapture();
+          await stopSimulatorCapture(prev);
         } catch {
           // Capture may already be stopped
         }
 
         setCapturing(false);
-        setMjpegPort(null);
+        setMjpegPort(prev, null);
       }
 
       selectDevice(storeKey, udid);
     },
-    [capturing, storeKey, selectDevice, setCapturing, setMjpegPort],
+    [
+      capturing,
+      selectedUdid,
+      storeKey,
+      selectDevice,
+      setCapturing,
+      setMjpegPort,
+    ],
   );
 
   const handleBoot = useCallback(async () => {
@@ -205,7 +220,7 @@ export function IosSimulatorView({
     try {
       await disconnectSimulator(selectedUdid);
       setCapturing(false);
-      setMjpegPort(null);
+      setMjpegPort(selectedUdid, null);
       setDisconnected(false);
       selectDevice(storeKey, null);
     } catch (err) {
@@ -221,12 +236,15 @@ export function IosSimulatorView({
   ]);
 
   const handleHomePress = useCallback(async () => {
+    if (!selectedUdid) {
+      return;
+    }
     try {
-      await simulatorButton("ios_home");
+      await simulatorButton(selectedUdid, "ios_home");
     } catch (err) {
       error("[Home] failed:", err);
     }
-  }, []);
+  }, [selectedUdid]);
 
   // --- Touch / keyboard callbacks ---
 
@@ -244,7 +262,7 @@ export function IosSimulatorView({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.repeat) {
+      if (e.repeat || !selectedUdid) {
         return;
       }
       const isCmdShiftH = e.metaKey && e.shiftKey && e.code === "KeyH";
@@ -261,28 +279,44 @@ export function IosSimulatorView({
         return;
       }
       e.preventDefault();
-      simulatorKeyboard(keyCode, modifierFlagsFromEvent(e.nativeEvent), true);
+      simulatorKeyboard(
+        selectedUdid,
+        keyCode,
+        modifierFlagsFromEvent(e.nativeEvent),
+        true,
+      );
     },
-    [],
+    [selectedUdid],
   );
 
-  const handleKeyUp = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const isCmdShiftH = e.metaKey && e.shiftKey && e.code === "KeyH";
-    if (
-      e.metaKey &&
-      e.code !== "MetaLeft" &&
-      e.code !== "MetaRight" &&
-      !isCmdShiftH
-    ) {
-      return;
-    }
-    const keyCode = KEYCODE_MAP[e.code];
-    if (keyCode === undefined) {
-      return;
-    }
-    e.preventDefault();
-    simulatorKeyboard(keyCode, modifierFlagsFromEvent(e.nativeEvent), false);
-  }, []);
+  const handleKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!selectedUdid) {
+        return;
+      }
+      const isCmdShiftH = e.metaKey && e.shiftKey && e.code === "KeyH";
+      if (
+        e.metaKey &&
+        e.code !== "MetaLeft" &&
+        e.code !== "MetaRight" &&
+        !isCmdShiftH
+      ) {
+        return;
+      }
+      const keyCode = KEYCODE_MAP[e.code];
+      if (keyCode === undefined) {
+        return;
+      }
+      e.preventDefault();
+      simulatorKeyboard(
+        selectedUdid,
+        keyCode,
+        modifierFlagsFromEvent(e.nativeEvent),
+        false,
+      );
+    },
+    [selectedUdid],
+  );
 
   // --- Device picker ---
 
@@ -378,7 +412,7 @@ export function IosSimulatorView({
 
   // --- tvOS custom stream layout (canvas + remote side by side) ---
 
-  const renderTvStream = isTv
+  const renderTvStream = isTv && selectedUdid
     ? ({
         imgRef,
         streamUrl,
@@ -405,7 +439,7 @@ export function IosSimulatorView({
               </div>
             )}
           </div>
-          <AppleTVRemote />
+          <AppleTVRemote udid={selectedUdid} />
         </div>
       )
     : undefined;
@@ -419,6 +453,7 @@ export function IosSimulatorView({
       placeholder={placeholderContent}
       showFloatingActionBar={deviceSessionActive}
       titleBarExtra={titleBarExtra}
+      titleBarToggles={titleBarToggles}
       toolsAvailable={iosToolsAvailable}
       toolsMissing={{
         title: "Xcode Command Line Tools Required",

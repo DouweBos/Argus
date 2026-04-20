@@ -69,8 +69,8 @@ class AppState {
   /** Cross-repo tasks that fan out across org members, keyed by task UUID. */
   organizationTasks = new Map<string, OrgTask>();
 
-  /** Active iOS simulator capture session, if any. */
-  simulator: SimulatorSession | null = null;
+  /** Active iOS simulator capture sessions, keyed by UDID. */
+  simulators = new Map<string, SimulatorSession>();
 
   /** Active Android device capture session, if any. */
   androidDevice: AndroidDeviceSession | null = null;

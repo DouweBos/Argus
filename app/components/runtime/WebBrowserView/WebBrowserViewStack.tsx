@@ -13,6 +13,7 @@ import styles from "./WebBrowserViewStack.module.css";
 interface WebBrowserViewStackProps {
   activeSessionId: string | null;
   children?: ReactNode;
+  titleBarToggles?: ReactNode;
 }
 
 /**
@@ -31,6 +32,7 @@ interface WebBrowserViewStackProps {
 export function WebBrowserViewStack({
   activeSessionId,
   children,
+  titleBarToggles,
 }: WebBrowserViewStackProps) {
   const { mountedSessionIds, ensureBrowserMounted } =
     useWebBrowserSimulatorState();
@@ -65,7 +67,11 @@ export function WebBrowserViewStack({
             aria-hidden={!isActive}
             className={isActive ? styles.layerVisible : styles.layerHidden}
           >
-            <WebBrowserView isActive={isActive} sessionId={wsId}>
+            <WebBrowserView
+              isActive={isActive}
+              sessionId={wsId}
+              titleBarToggles={isActive ? titleBarToggles : undefined}
+            >
               {isActive ? children : undefined}
             </WebBrowserView>
           </div>
@@ -75,6 +81,7 @@ export function WebBrowserViewStack({
         <div className={styles.layerVisible}>
           <div className={styles.placeholderShell}>
             <RuntimeTitleBar
+              toggles={titleBarToggles}
               trailing={
                 <div className={chrome.titleBarTrailing}>
                   <button

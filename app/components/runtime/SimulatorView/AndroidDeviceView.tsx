@@ -24,11 +24,13 @@ import styles from "./RuntimeView.module.css";
 interface AndroidDeviceViewProps {
   children?: React.ReactNode;
   sessionId: string | null;
+  titleBarToggles?: React.ReactNode;
 }
 
 export function AndroidDeviceView({
   children,
   sessionId,
+  titleBarToggles,
 }: AndroidDeviceViewProps) {
   const {
     androidToolsAvailable,
@@ -380,6 +382,7 @@ export function AndroidDeviceView({
       placeholder={placeholderContent}
       showFloatingActionBar={deviceSessionActive}
       titleBarExtra={titleBarExtra}
+      titleBarToggles={titleBarToggles}
       toolsAvailable={androidToolsAvailable}
       toolsMissing={{
         title: "Android SDK Required",

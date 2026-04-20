@@ -59,9 +59,11 @@ function IosPreview({ device }: { device: DeviceInfo }) {
   const { imgRef, streamUrl, isReceiving } = useSimulatorCapture(port);
   const stageRef = useRef<HTMLDivElement>(null);
 
+  const udid = device.reservationKey;
+
   useEffect(() => {
     let cancelled = false;
-    startSimulatorCapture(device.reservationKey)
+    startSimulatorCapture(udid)
       .then((p) => {
         if (!cancelled) {
           setPort(p);
@@ -71,11 +73,9 @@ function IosPreview({ device }: { device: DeviceInfo }) {
 
     return () => {
       cancelled = true;
-      stopSimulatorCapture().catch(() => {});
+      stopSimulatorCapture(udid).catch(() => {});
     };
-  }, [device.reservationKey]);
-
-  const udid = device.reservationKey;
+  }, [udid]);
 
   const onTouch = useCallback(
     (x: number, y: number, type: 0 | 1 | 2) => {
@@ -96,39 +96,51 @@ function IosPreview({ device }: { device: DeviceInfo }) {
     onTouch,
   });
 
-  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.repeat) {
-      return;
-    }
-    const isCmdShiftH = e.metaKey && e.shiftKey && e.code === "KeyH";
-    if (
-      e.metaKey &&
-      e.code !== "MetaLeft" &&
-      e.code !== "MetaRight" &&
-      !isCmdShiftH
-    ) {
-      return;
-    }
-    const code = KEYCODE_MAP[e.code];
-    if (code === undefined) {
-      return;
-    }
-    e.preventDefault();
-    simulatorKeyboard(code, modifierFlagsFromEvent(e.nativeEvent), true).catch(
-      () => {},
-    );
-  }, []);
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.repeat) {
+        return;
+      }
+      const isCmdShiftH = e.metaKey && e.shiftKey && e.code === "KeyH";
+      if (
+        e.metaKey &&
+        e.code !== "MetaLeft" &&
+        e.code !== "MetaRight" &&
+        !isCmdShiftH
+      ) {
+        return;
+      }
+      const code = KEYCODE_MAP[e.code];
+      if (code === undefined) {
+        return;
+      }
+      e.preventDefault();
+      simulatorKeyboard(
+        udid,
+        code,
+        modifierFlagsFromEvent(e.nativeEvent),
+        true,
+      ).catch(() => {});
+    },
+    [udid],
+  );
 
-  const onKeyUp = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const code = KEYCODE_MAP[e.code];
-    if (code === undefined) {
-      return;
-    }
-    e.preventDefault();
-    simulatorKeyboard(code, modifierFlagsFromEvent(e.nativeEvent), false).catch(
-      () => {},
-    );
-  }, []);
+  const onKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const code = KEYCODE_MAP[e.code];
+      if (code === undefined) {
+        return;
+      }
+      e.preventDefault();
+      simulatorKeyboard(
+        udid,
+        code,
+        modifierFlagsFromEvent(e.nativeEvent),
+        false,
+      ).catch(() => {});
+    },
+    [udid],
+  );
 
   return (
     <>
@@ -158,7 +170,7 @@ function IosPreview({ device }: { device: DeviceInfo }) {
           type="button"
           className={styles.controlBtn}
           onClick={() => {
-            simulatorButton("ios_home").catch(() => {});
+            simulatorButton(udid, "ios_home").catch(() => {});
           }}
         >
           Home
@@ -167,7 +179,7 @@ function IosPreview({ device }: { device: DeviceInfo }) {
           type="button"
           className={styles.controlBtn}
           onClick={() => {
-            simulatorButton("ios_lock").catch(() => {});
+            simulatorButton(udid, "ios_lock").catch(() => {});
           }}
         >
           Lock
@@ -176,7 +188,7 @@ function IosPreview({ device }: { device: DeviceInfo }) {
           type="button"
           className={styles.controlBtn}
           onClick={() => {
-            simulatorButton("ios_siri").catch(() => {});
+            simulatorButton(udid, "ios_siri").catch(() => {});
           }}
         >
           Siri

@@ -45,7 +45,7 @@ function resetSimulatorStore() {
     capturing: false,
     booting: false,
     disconnected: false,
-    mjpegPort: null,
+    mjpegPortByUdid: {},
     androidToolsAvailable: null,
     androidToolsError: null,
     androidDevices: [],
@@ -120,9 +120,17 @@ describe("simulatorStore", () => {
     expect(getSimulatorState().booting).toBe(true);
   });
 
-  it("sets MJPEG port", () => {
-    setMjpegPort(8080);
-    expect(getSimulatorState().mjpegPort).toBe(8080);
+  it("sets MJPEG port per UDID", () => {
+    setMjpegPort("AAAA-BBBB", 8080);
+    setMjpegPort("CCCC-DDDD", 9090);
+    expect(getSimulatorState().mjpegPortByUdid).toEqual({
+      "AAAA-BBBB": 8080,
+      "CCCC-DDDD": 9090,
+    });
+    setMjpegPort("AAAA-BBBB", null);
+    expect(getSimulatorState().mjpegPortByUdid).toEqual({
+      "CCCC-DDDD": 9090,
+    });
   });
 
   it("persists selection to localStorage", () => {

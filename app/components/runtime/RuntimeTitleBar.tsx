@@ -12,6 +12,8 @@ interface RuntimeTitleBarProps {
   showActionBar?: boolean;
   /** Use `justify-content: space-between` on the floating bar (native sim style). */
   spacedActionBar?: boolean;
+  /** Toggles pinned to the far right of the title row (e.g. expand, popout). */
+  toggles?: ReactNode;
   /** Trailing controls on the title row (e.g. boot button). */
   trailing?: ReactNode;
 }
@@ -20,6 +22,7 @@ export function RuntimeTitleBar({
   children,
   picker,
   trailing,
+  toggles,
   actionBar,
   showActionBar = false,
   spacedActionBar = false,
@@ -30,6 +33,7 @@ export function RuntimeTitleBar({
         {children}
         {picker}
         {trailing}
+        {toggles && <div className={chrome.titleBarToggles}>{toggles}</div>}
       </div>
       {showActionBar && actionBar && (
         <div

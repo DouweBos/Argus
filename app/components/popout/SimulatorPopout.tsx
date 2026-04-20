@@ -1,55 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { RuntimeView } from "../runtime/SimulatorView/RuntimeView";
 import styles from "./SimulatorPopout.module.css";
-
-interface SimulatorPopoutProps {
-  deviceName: string;
-  mjpegPort: number | null;
-  udid: string;
-}
+import { POPOUT_SESSION_ID } from "./seedPopoutStore";
 
 /**
- * Minimal simulator view rendered inside the floating always-on-top popout
- * window. Subscribes to the same MJPEG stream (port served by the bridge
- * binary) as the main window, so no additional capture session is started.
+ * Floating always-on-top simulator window. Renders the shared RuntimeView so
+ * the popout gets the full platform toggle (iOS / Android / Web), the device
+ * picker, and the platform-specific simulator chrome (including the Apple TV
+ * remote for tvOS). The popout variant hides the expand / popout toggles
+ * since the window itself is already the floating view.
  */
-export function SimulatorPopout({
-  mjpegPort,
-  deviceName,
-}: SimulatorPopoutProps) {
-  const [cacheBust, setCacheBust] = useState(0);
-
-  // If the main window tears down and re-creates the MJPEG session, the
-  // existing stream URL may 404. Refresh once per second when the port is
-  // missing so the popout recovers instead of staying blank forever.
+export function SimulatorPopout() {
   useEffect(() => {
-    if (mjpegPort != null) {
-      return;
-    }
-    const id = window.setInterval(() => setCacheBust((n) => n + 1), 1000);
+    document.body.classList.add("argus-popout");
 
-    return () => window.clearInterval(id);
-  }, [mjpegPort]);
+    return () => {
+      document.body.classList.remove("argus-popout");
+    };
+  }, []);
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <span className={styles.name}>{deviceName}</span>
-      </div>
-      <div className={styles.body}>
-        {mjpegPort != null ? (
-          <img
-            key={cacheBust}
-            alt={deviceName}
-            className={styles.canvas}
-            draggable={false}
-            src={`http://127.0.0.1:${mjpegPort}/stream.mjpg`}
-          />
-        ) : (
-          <div className={styles.placeholder}>
-            <p>No active capture for this simulator.</p>
-          </div>
-        )}
-      </div>
+      <div className={styles.dragRegion} />
+      <RuntimeView sessionId={POPOUT_SESSION_ID} variant="popout" />
     </div>
   );
 }

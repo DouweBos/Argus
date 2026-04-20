@@ -27,10 +27,6 @@
   transition: border-color var(--transition-fast);
 }
 
-.clickpad:hover {
-  border-color: color-mix(in srgb, var(--border) 50%, var(--text-muted));
-}
-
 /* Inner select ring indicator */
 .clickpad::after {
   content: "";
@@ -51,6 +47,10 @@
   opacity: 0;
   transition: opacity var(--transition-fast);
   pointer-events: none;
+}
+
+.zone.hovered {
+  opacity: 0.5;
 }
 
 .zone.active {

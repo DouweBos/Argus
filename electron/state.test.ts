@@ -7,7 +7,7 @@ describe("appState", () => {
     expect(appState.sessions.size).toBe(0);
     expect(appState.terminals.size).toBe(0);
     expect(appState.agents.size).toBe(0);
-    expect(appState.simulator).toBeNull();
+    expect(appState.simulators.size).toBe(0);
     expect(appState.watchers.size).toBe(0);
   });
 
@@ -34,15 +34,15 @@ describe("appState", () => {
     expect(appState.sessions.has("ws-1")).toBe(false);
   });
 
-  it("can set and clear simulator session", () => {
-    appState.simulator = {
+  it("supports Map operations on simulators", () => {
+    appState.simulators.set("test-udid", {
       udid: "test-udid",
       deviceName: "iPhone 16",
       captureActive: true,
       mjpegPort: 8080,
-    };
-    expect(appState.simulator?.udid).toBe("test-udid");
-    appState.simulator = null;
-    expect(appState.simulator).toBeNull();
+    });
+    expect(appState.simulators.get("test-udid")?.udid).toBe("test-udid");
+    appState.simulators.delete("test-udid");
+    expect(appState.simulators.has("test-udid")).toBe(false);
   });
 });

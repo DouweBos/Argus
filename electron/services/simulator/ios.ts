@@ -202,13 +202,19 @@ function activateSimulatorWindow(udid: string): void {
 }
 
 /**
- * Stop capture for the given UDID if it is the active session, then clear the
- * simulator state.
+ * Stop capture for the given UDID if a session is active, then clear the
+ * simulator state for that UDID. Also closes any floating popout window
+ * mirroring this device — once the simulator is gone there's nothing for
+ * the popout to show.
  */
 export function disconnectSimulator(udid: string): void {
-  if (appState.simulator?.udid === udid) {
-    stopSimulatorCapture();
-    appState.simulator = null;
+  if (appState.simulators.has(udid)) {
+    forceStopSimulatorCapture(udid);
+  }
+
+  const popout = appState.simulatorPopouts.get(udid);
+  if (popout && !popout.isDestroyed()) {
+    popout.close();
   }
 }
 
@@ -222,13 +228,48 @@ export async function activeSimulator(): Promise<string | null> {
 }
 
 /**
- * Start capturing the simulator framebuffer and serving MJPEG.
+ * Per-UDID bridge registry. Each captured simulator runs its own native
+ * bridge process with its own MJPEG server, so N simulators can be streamed
+ * concurrently (one popout per device, independent of the main window).
+ */
+const bridgesByUdid = new Map<string, SimBridge>();
+
+/**
+ * Per-UDID reference counts — the main window's runtime view plus any popout
+ * windows each hold one ref. The bridge for a UDID is torn down only when
+ * its count hits zero, so closing one popout doesn't kill streams for other
+ * devices.
+ */
+const captureRefsByUdid = new Map<string, number>();
+
+/**
+ * Return the bridge handling the given UDID, or null if none is running.
  *
- * Activates the simulator window, spawns the bridge binary (if not already
- * running), sends a `start_capture` command, stores the session in appState,
- * and returns the MJPEG port.
+ * Exposed so HID commands (touch/button/keyboard) can route their requests
+ * to the bridge process that owns the capture session for a specific device.
+ */
+export function getBridgeForUdid(udid: string): SimBridge | null {
+  return bridgesByUdid.get(udid) ?? null;
+}
+
+/**
+ * Acquire a capture session for the given UDID and return the MJPEG port.
+ *
+ * If a session is already active for this UDID, just increments its ref
+ * count and returns the existing port. Otherwise spawns a new bridge
+ * process dedicated to this UDID — other simulators keep streaming
+ * unaffected.
  */
 export async function startSimulatorCapture(udid: string): Promise<number> {
+  // Fast path: reuse existing capture for the same device.
+  const existing = appState.simulators.get(udid);
+  const existingBridge = bridgesByUdid.get(udid);
+  if (existing?.mjpegPort != null && existingBridge) {
+    captureRefsByUdid.set(udid, (captureRefsByUdid.get(udid) ?? 0) + 1);
+
+    return existing.mjpegPort;
+  }
+
   // Resolve the human-readable device name for the session record
   const devices = await listSimulators();
   const device = devices.find((d) => d.udid === udid);
@@ -239,44 +280,70 @@ export async function startSimulatorCapture(udid: string): Promise<number> {
   // Ensure Simulator.app is showing this device before capture
   activateSimulatorWindow(udid);
 
-  // Spawn the bridge binary if it is not already running
-  const bridge = SimBridge.instance ?? new SimBridge();
-  SimBridge.instance = bridge;
+  // Spawn a new bridge binary dedicated to this UDID.
+  const bridge = new SimBridge();
+  bridgesByUdid.set(udid, bridge);
   bridge.spawn();
 
-  const response = await bridge.sendCommand({ cmd: "start_capture", udid });
+  let response: Record<string, unknown>;
+  try {
+    response = await bridge.sendCommand({ cmd: "start_capture", udid });
+  } catch (err) {
+    bridge.kill();
+    bridgesByUdid.delete(udid);
+    throw `Bridge start_capture failed: ${String(err)}`;
+  }
   if (!response.ok) {
+    bridge.kill();
+    bridgesByUdid.delete(udid);
     throw `Bridge start_capture failed: ${String(response.error ?? "unknown error")}`;
   }
 
   const port = response.port as number;
 
-  appState.simulator = {
+  appState.simulators.set(udid, {
     udid,
     deviceName: device.name,
     captureActive: true,
     mjpegPort: port,
-  };
+  });
+  captureRefsByUdid.set(udid, 1);
 
   return port;
 }
 
 /**
- * Stop the active simulator capture session.
- *
- * Sends `stop_capture` to the bridge and clears appState.simulator.
- * No-ops if no session is active.
+ * Release one reference to the capture session for the given UDID. If this
+ * was the last holder, tear down that UDID's bridge and clear its state.
+ * No-ops if nothing is active for this UDID.
  */
-export function stopSimulatorCapture(): void {
-  const bridge = SimBridge.instance;
+export function stopSimulatorCapture(udid: string): void {
+  const refs = captureRefsByUdid.get(udid) ?? 0;
+  if (refs > 1) {
+    captureRefsByUdid.set(udid, refs - 1);
+
+    return;
+  }
+
+  forceStopSimulatorCapture(udid);
+}
+
+/**
+ * Unconditionally stop the capture session for the given UDID, regardless
+ * of outstanding references. Used for hard-disconnect flows (user clicks
+ * Disconnect, device switch) where we want the stream down immediately.
+ */
+export function forceStopSimulatorCapture(udid: string): void {
+  const bridge = bridgesByUdid.get(udid);
   if (bridge) {
     // Best-effort — ignore errors on teardown
     bridge.sendCommand({ cmd: "stop_capture" }).catch(() => {});
     bridge.kill();
-    SimBridge.instance = null;
+    bridgesByUdid.delete(udid);
   }
 
-  appState.simulator = null;
+  appState.simulators.delete(udid);
+  captureRefsByUdid.delete(udid);
 }
 
 /**
@@ -294,11 +361,11 @@ export async function simulatorTouch(
   y: number,
   eventType: number,
 ): Promise<void> {
-  if (!appState.simulator || appState.simulator.udid !== udid) {
+  if (!appState.simulators.has(udid)) {
     throw "No active simulator session";
   }
 
-  const bridge = SimBridge.instance;
+  const bridge = bridgesByUdid.get(udid);
   if (!bridge) {
     throw "Simulator bridge is not running";
   }
@@ -316,20 +383,24 @@ export async function simulatorTouch(
 }
 
 /**
- * Send a named button press (e.g. "home", "menu") to the active simulator.
+ * Send a named button press (e.g. "home", "menu") to the simulator with the
+ * given UDID.
  *
  * The bridge maps button names to macOS virtual keycodes and issues a
  * down+up pair.
  *
- * @throws string if there is no active session, or the bridge returns an error.
+ * @throws string if there is no active session for this UDID, or the bridge
+ *   returns an error.
  */
-export async function simulatorButton(button: string): Promise<void> {
-  const udid = appState.simulator?.udid;
-  if (!udid) {
+export async function simulatorButton(
+  udid: string,
+  button: string,
+): Promise<void> {
+  if (!appState.simulators.has(udid)) {
     throw "No active simulator session";
   }
 
-  const bridge = SimBridge.instance;
+  const bridge = bridgesByUdid.get(udid);
   if (!bridge) {
     throw "Simulator bridge is not running";
   }
@@ -350,16 +421,16 @@ export async function simulatorButton(button: string): Promise<void> {
  * @throws string if there is no active session, or the bridge returns an error.
  */
 export async function simulatorKeyboard(
+  udid: string,
   keyCode: number,
   modifierFlags: number,
   isDown: boolean,
 ): Promise<void> {
-  const udid = appState.simulator?.udid;
-  if (!udid) {
+  if (!appState.simulators.has(udid)) {
     throw "No active simulator session";
   }
 
-  const bridge = SimBridge.instance;
+  const bridge = bridgesByUdid.get(udid);
   if (!bridge) {
     throw "Simulator bridge is not running";
   }

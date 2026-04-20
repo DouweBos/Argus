@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
 import { Icons, PlatformChip } from "@argus/peacock";
-import { closeSimulatorPopout, openSimulatorPopout } from "../../../lib/ipc";
+import { openSimulatorPopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {
   useActiveDeviceKey,
@@ -15,6 +15,12 @@ import styles from "./RuntimeView.module.css";
 
 interface RuntimeViewProps {
   sessionId: string | null;
+  /**
+   * When "popout", hide the expand/popout toggles and skip the unmount
+   * cleanup that closes popout windows — the popout itself is already the
+   * floating window.
+   */
+  variant?: "embedded" | "popout";
 }
 
 /**
@@ -22,7 +28,11 @@ interface RuntimeViewProps {
  * whole surface can be shown embedded in the tool panel or in a modal dialog
  * (see `runtimeDialogOpen` in the simulator store).
  */
-export function RuntimeView({ sessionId }: RuntimeViewProps) {
+export function RuntimeView({
+  sessionId,
+  variant = "embedded",
+}: RuntimeViewProps) {
+  const isPopout = variant === "popout";
   const { platform, setPlatform, runtimeDialogOpen, setRuntimeDialogOpen } =
     useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId();
@@ -38,7 +48,7 @@ export function RuntimeView({ sessionId }: RuntimeViewProps) {
     setRuntimeDialogOpen(!runtimeDialogOpen);
   }, [runtimeDialogOpen, setRuntimeDialogOpen]);
 
-  const canPopout = platform === "ios" && !!activeDeviceKey;
+  const canPopout = !isPopout && platform === "ios" && !!activeDeviceKey;
 
   const handlePopout = useCallback(() => {
     if (!activeDeviceKey) {
@@ -47,16 +57,6 @@ export function RuntimeView({ sessionId }: RuntimeViewProps) {
     openSimulatorPopout(activeDeviceKey).catch(() => {
       // best-effort — the backend already logs failures
     });
-  }, [activeDeviceKey]);
-
-  // Close any lingering popout for this device when unmounting the runtime
-  // view, so we don't leave orphaned always-on-top windows behind.
-  useEffect(() => {
-    return () => {
-      if (activeDeviceKey) {
-        closeSimulatorPopout(activeDeviceKey).catch(() => {});
-      }
-    };
   }, [activeDeviceKey]);
 
   const toggle = (
@@ -79,14 +79,50 @@ export function RuntimeView({ sessionId }: RuntimeViewProps) {
     </div>
   );
 
+  const titleBarToggles = (
+    <>
+      {canPopout && (
+        <button
+          className={styles.runtimeToggleButton}
+          title="Open simulator in floating window"
+          type="button"
+          onClick={handlePopout}
+        >
+          <Icons.PopoutIcon size={11} />
+        </button>
+      )}
+      {!isPopout && (
+        <button
+          className={styles.runtimeToggleButton}
+          title={runtimeDialogOpen ? "Dock in sidebar" : "Open in dialog"}
+          type="button"
+          onClick={toggleRuntimeDialog}
+        >
+          {runtimeDialogOpen ? (
+            <Icons.ShrinkIcon size={11} />
+          ) : (
+            <Icons.EnlargeIcon size={11} />
+          )}
+        </button>
+      )}
+    </>
+  );
+
   let nativeSimulator: ReactNode = null;
   if (platform === "ios") {
     nativeSimulator = (
-      <IosSimulatorView sessionId={sessionId}>{toggle}</IosSimulatorView>
+      <IosSimulatorView sessionId={sessionId} titleBarToggles={titleBarToggles}>
+        {toggle}
+      </IosSimulatorView>
     );
   } else if (platform === "android") {
     nativeSimulator = (
-      <AndroidDeviceView sessionId={sessionId}>{toggle}</AndroidDeviceView>
+      <AndroidDeviceView
+        sessionId={sessionId}
+        titleBarToggles={titleBarToggles}
+      >
+        {toggle}
+      </AndroidDeviceView>
     );
   }
 
@@ -113,28 +149,6 @@ export function RuntimeView({ sessionId }: RuntimeViewProps) {
         }
       >
         <div className={styles.runtimeRoot}>
-          <button
-            className={styles.runtimeExpandToggle}
-            title={runtimeDialogOpen ? "Dock in sidebar" : "Open in dialog"}
-            type="button"
-            onClick={toggleRuntimeDialog}
-          >
-            {runtimeDialogOpen ? (
-              <Icons.ShrinkIcon size={11} />
-            ) : (
-              <Icons.EnlargeIcon size={11} />
-            )}
-          </button>
-          {canPopout && (
-            <button
-              className={styles.runtimePopoutToggle}
-              title="Open simulator in floating window"
-              type="button"
-              onClick={handlePopout}
-            >
-              <Icons.PopoutIcon size={11} />
-            </button>
-          )}
           <div className={styles.layout}>
             {nativeSimulator !== null && (
               <div className={styles.nativeSimulatorLayer}>
@@ -149,7 +163,10 @@ export function RuntimeView({ sessionId }: RuntimeViewProps) {
                   : `${styles.webPersistentShell} ${styles.webPersistentShellHidden}`
               }
             >
-              <WebBrowserViewStack activeSessionId={sessionId}>
+              <WebBrowserViewStack
+                activeSessionId={sessionId}
+                titleBarToggles={titleBarToggles}
+              >
                 {toggle}
               </WebBrowserViewStack>
             </div>
