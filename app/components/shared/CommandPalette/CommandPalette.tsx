@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Icons, Kbd, useDismissOnEscape } from "@argus/peacock";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
 import {

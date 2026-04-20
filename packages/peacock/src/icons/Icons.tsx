@@ -854,6 +854,27 @@ export function EnlargeIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function PopoutIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M9.5 2.5h4v4" />
+      <path d="M13.5 2.5 8 8" />
+      <path d="M12.5 9.5v3a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3" />
+    </svg>
+  );
+}
+
 export function ShrinkIcon({ size = 12, className, ...rest }: IconProps) {
   return (
     <svg

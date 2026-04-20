@@ -1,6 +1,6 @@
 import type { Organization, OrgTask } from "../../lib/types";
-import { useState } from "react";
 import { Button, Icons, StatCell, StatsStrip } from "@argus/peacock";
+import { useState } from "react";
 import {
   openOrganization,
   useSelectedOrganizationId,

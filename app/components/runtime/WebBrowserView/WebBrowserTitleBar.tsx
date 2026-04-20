@@ -1,5 +1,5 @@
-import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import { Icons } from "@argus/peacock";
+import type { ChangeEvent, KeyboardEvent, ReactNode } from "react";
 import {
   BROWSER_PRESETS,
   BUILTIN_PRESET_IDS,

@@ -39,7 +39,7 @@ describe("loadArgusConfig", () => {
     expect(config.setup.commands).toEqual([]);
     expect(config.terminals).toEqual([]);
     expect(config.workspace_env).toEqual([]);
-    expect(config.run).toBeNull();
+    expect(config.run).toEqual([]);
   });
 
   it("parses .argus.json with setup block", () => {
@@ -62,26 +62,48 @@ describe("loadArgusConfig", () => {
     expect(config.setup.commands).toEqual(["pnpm install"]);
   });
 
-  it("handles run as a plain string", () => {
+  it("parses run as an array of RunCommand entries", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        run: [
+          {
+            title: "Dev",
+            command: "pnpm dev",
+            cwd: "packages/app",
+            restartOnRerun: true,
+          },
+          { title: "Tests", command: "pnpm test", restartOnRerun: false },
+        ],
+      }),
+    );
+
+    const config = loadArgusConfig("/repo");
+    expect(config.run).toEqual([
+      {
+        title: "Dev",
+        command: "pnpm dev",
+        cwd: "packages/app",
+        restartOnRerun: true,
+      },
+      {
+        title: "Tests",
+        command: "pnpm test",
+        cwd: undefined,
+        restartOnRerun: false,
+      },
+    ]);
+  });
+
+  it("rejects the legacy string form of run", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
       return String(p).endsWith(".argus.json") && !String(p).includes("local");
     });
     mockReadFileSync.mockReturnValue(JSON.stringify({ run: "pnpm start" }));
 
-    const config = loadArgusConfig("/repo");
-    expect(config.run).toEqual({ command: "pnpm start" });
-  });
-
-  it("handles run as an object", () => {
-    mockExistsSync.mockImplementation((p: fs.PathLike) => {
-      return String(p).endsWith(".argus.json") && !String(p).includes("local");
-    });
-    mockReadFileSync.mockReturnValue(
-      JSON.stringify({ run: { command: "npm start", dir: "packages/app" } }),
-    );
-
-    const config = loadArgusConfig("/repo");
-    expect(config.run).toEqual({ command: "npm start", dir: "packages/app" });
+    expect(() => loadArgusConfig("/repo")).toThrow(/must be an array/);
   });
 
   it("merges local config on top of base", () => {

@@ -1,7 +1,7 @@
 import type { AgentStatus, DeviceInfo, Workspace } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
-import { useMemo } from "react";
 import { projectAccent } from "@argus/peacock";
+import { useMemo } from "react";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";

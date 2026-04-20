@@ -1,4 +1,5 @@
 import type { DiffFile, DiffHunk } from "../../../lib/diffParser";
+import { Button, DiffStat, Icons } from "@argus/peacock";
 import {
   type ReactElement,
   useCallback,
@@ -7,7 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { Button, DiffStat, Icons } from "@argus/peacock";
 import { buildPartialPatch } from "../../../lib/diffParser";
 import {
   discardFile,

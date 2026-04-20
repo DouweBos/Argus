@@ -21,7 +21,7 @@
  * | `terminal:exit:{session_id}`  | Exit code (`number`)     |
  */
 
-import type { WorkspaceEnvConfig } from "../workspace/models";
+import type { RunCommand, WorkspaceEnvConfig } from "../workspace/models";
 import type { IPty } from "node-pty";
 import type * as NodePty from "node-pty";
 import fs from "node:fs";
@@ -45,6 +45,11 @@ export interface TerminalSession {
   pty: IPty;
   /** UUID of the workspace this session belongs to. */
   workspaceId: string;
+  /**
+   * Optional label identifying the `run` command this session is executing.
+   * Used by {@link createRunTerminal} to match restart-on-rerun semantics.
+   */
+  runTitle?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,41 +227,94 @@ export function createTerminal(
 }
 
 /**
- * Spawn a terminal running the workspace's configured `run` command from
- * `.argus.json`. The command is resolved entirely server-side — the renderer
- * (and any code reaching this IPC) cannot supply an arbitrary shell command,
- * which closes the XSS-to-RCE chain via `create_terminal`.
- *
- * @throws A plain string if the workspace is unknown or no run command is set.
+ * Resolve a `RunCommand` from a workspace's `.argus.json`. If `title` is
+ * supplied, matches by title; otherwise returns the first command. Throws a
+ * plain string if no run commands are configured or the requested title
+ * isn't found.
  */
-export function createRunTerminal(workspaceId: string): string {
+export function resolveRunCommand(
+  workspaceId: string,
+  title?: string,
+): RunCommand {
   const ws = appState.workspaces.get(workspaceId);
   if (!ws) {
     throw `Workspace not found: ${workspaceId}`;
   }
 
-  let runConfig: unknown = null;
-  try {
-    const config = loadArgusConfig(ws.repo_root);
-    runConfig = config.run;
-  } catch {
-    // No config — handled below.
+  const config = loadArgusConfig(ws.repo_root);
+  if (!config.run || config.run.length === 0) {
+    throw "No 'run' commands configured in .argus.json";
   }
 
-  if (!runConfig) {
-    throw "No 'run' command configured in .argus.json";
+  if (!title) {
+    return config.run[0];
+  }
+  const match = config.run.find((r) => r.title === title);
+  if (!match) {
+    throw `No run command with title '${title}' in .argus.json`;
   }
 
-  const command =
-    typeof runConfig === "string"
-      ? runConfig
-      : (runConfig as { command: string }).command;
-  const dir =
-    typeof runConfig === "string"
-      ? undefined
-      : ((runConfig as { dir?: string }).dir ?? undefined);
+  return match;
+}
 
-  return createTerminal(workspaceId, dir, command);
+/**
+ * Spawn a terminal running one of the workspace's configured `run` commands
+ * from `.argus.json`. The command is resolved entirely server-side — the
+ * renderer (and any code reaching this IPC) cannot supply an arbitrary shell
+ * command, which closes the XSS-to-RCE chain via `create_terminal`.
+ *
+ * If `title` is supplied, the matching entry is used; otherwise the first
+ * entry runs. When the selected entry has `restartOnRerun: true`, any live
+ * session with the same title in the same workspace is killed first. When
+ * `restartOnRerun` is false and a matching live session exists, its ID is
+ * returned as-is without spawning a new one.
+ *
+ * @returns An object with the session id and whether a new session was
+ *          actually started (vs. reusing an existing one).
+ *
+ * TODO: once the new graceful `stopTerminal` / signal-escalation work from the
+ * terminal-stop branch lands, swap the `destroyTerminal` call below for it so
+ * restart kills are not SIGKILL-hammered.
+ */
+export function createRunTerminal(
+  workspaceId: string,
+  title?: string,
+): { sessionId: string; started: boolean; title: string } {
+  const runCmd = resolveRunCommand(workspaceId, title);
+
+  const existing = findRunSession(workspaceId, runCmd.title);
+  if (existing) {
+    if (!runCmd.restartOnRerun) {
+      return { sessionId: existing.id, started: false, title: runCmd.title };
+    }
+    try {
+      destroyTerminal(existing.id);
+    } catch {
+      // non-fatal; the session may have exited between the lookup and kill.
+    }
+  }
+
+  const sessionId = createTerminal(workspaceId, runCmd.cwd, runCmd.command);
+  const session = appState.terminals.get(sessionId);
+  if (session) {
+    session.runTitle = runCmd.title;
+  }
+
+  return { sessionId, started: true, title: runCmd.title };
+}
+
+/** Look up an alive run-terminal session for this workspace + title. */
+function findRunSession(
+  workspaceId: string,
+  title: string,
+): TerminalSession | null {
+  for (const session of appState.terminals.values()) {
+    if (session.workspaceId === workspaceId && session.runTitle === title) {
+      return session;
+    }
+  }
+
+  return null;
 }
 
 /**

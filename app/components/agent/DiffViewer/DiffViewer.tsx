@@ -1,3 +1,4 @@
+import { Icons } from "@argus/peacock";
 import {
   useCallback,
   useEffect,
@@ -5,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../hooks/useDiffFiles";
 import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { gitIndexPath } from "../../../lib/diffParser";

@@ -1,3 +1,4 @@
+import { Button, Input } from "@argus/peacock";
 import {
   useCallback,
   useEffect,
@@ -5,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Button, Input } from "@argus/peacock";
 import { useProjectWorkspaces } from "../../../hooks/useWorkspaces";
 import { listAllBranches } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";

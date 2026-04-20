@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { Input } from "@argus/peacock";
+import { useEffect, useRef, useState } from "react";
 import { runConductorCommand } from "../../../lib/ipc";
 import {
   useConductorLogs,

@@ -1,5 +1,5 @@
-import { createPortal } from "react-dom";
 import { Button, Icons } from "@argus/peacock";
+import { createPortal } from "react-dom";
 import {
   removeRecentProject,
   useRecentProjects,

@@ -24,7 +24,7 @@ describe("defaultArgusConfig", () => {
     expect(config.setup.copy).toEqual([]);
     expect(config.terminals).toEqual([]);
     expect(config.workspace_env).toEqual([]);
-    expect(config.run).toBeNull();
+    expect(config.run).toEqual([]);
   });
 
   it("returns empty related_projects array", () => {

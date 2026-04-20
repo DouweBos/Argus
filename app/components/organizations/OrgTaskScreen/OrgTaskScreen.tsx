@@ -3,8 +3,8 @@ import type {
   OrgTask,
   OrgTaskScopeEntry,
 } from "../../../lib/types";
-import { useMemo, useState } from "react";
 import { Button, TextArea } from "@argus/peacock";
+import { useMemo, useState } from "react";
 import { sendAgentMessage } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import {

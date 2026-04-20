@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
 import { Icons } from "@argus/peacock";
+import { useCallback, useEffect, useRef } from "react";
 import { error } from "@logger";
 import {
   ANDROID_KEYCODE_MAP,
@@ -19,7 +19,6 @@ import {
 import { useAndroidDeviceSimulatorState } from "../../../stores/simulatorStore";
 import chrome from "../RuntimeChrome.module.css";
 import { AndroidDeviceStreamView } from "./AndroidDeviceStreamView";
-import { RunButton } from "./RunButton";
 import styles from "./RuntimeView.module.css";
 
 interface AndroidDeviceViewProps {
@@ -308,60 +307,57 @@ export function AndroidDeviceView({
     ) : null;
 
   const actionButtons = (
-    <>
-      <div className={styles.floatingNavPrimary}>
-        {!androidCapturing && selectedSerial && deviceSessionActive && (
+    <div className={styles.floatingNavPrimary}>
+      {!androidCapturing && selectedSerial && deviceSessionActive && (
+        <button
+          className={chrome.titleBarButton}
+          disabled={androidBooting}
+          title={bootActionTitle}
+          type="button"
+          onClick={handleBoot}
+        >
+          <Icons.BootIcon size={12} />
+        </button>
+      )}
+      {androidCapturing && (
+        <>
           <button
             className={chrome.titleBarButton}
-            disabled={androidBooting}
-            title={bootActionTitle}
+            title="Back"
             type="button"
-            onClick={handleBoot}
+            onClick={() => handleNavButton("back")}
           >
-            <Icons.BootIcon size={12} />
+            <Icons.AndroidBackIcon size={12} />
           </button>
-        )}
-        {androidCapturing && (
-          <>
-            <button
-              className={chrome.titleBarButton}
-              title="Back"
-              type="button"
-              onClick={() => handleNavButton("back")}
-            >
-              <Icons.AndroidBackIcon size={12} />
-            </button>
-            <button
-              className={chrome.titleBarButton}
-              title="Home"
-              type="button"
-              onClick={() => handleNavButton("home")}
-            >
-              <Icons.AndroidHomeIcon size={12} />
-            </button>
-            <button
-              className={chrome.titleBarButton}
-              title="Recents"
-              type="button"
-              onClick={() => handleNavButton("recents")}
-            >
-              <Icons.AndroidRecentsIcon size={12} />
-            </button>
-          </>
-        )}
-        {(isOnline || androidCapturing) && selectedSerial && (
           <button
-            className={`${chrome.titleBarButton} ${chrome.titleBarButtonDestructive}`}
-            title="Disconnect"
+            className={chrome.titleBarButton}
+            title="Home"
             type="button"
-            onClick={handleDisconnect}
+            onClick={() => handleNavButton("home")}
           >
-            <Icons.DisconnectIcon size={12} />
+            <Icons.AndroidHomeIcon size={12} />
           </button>
-        )}
-      </div>
-      {workspaceId && <RunButton workspaceId={workspaceId} />}
-    </>
+          <button
+            className={chrome.titleBarButton}
+            title="Recents"
+            type="button"
+            onClick={() => handleNavButton("recents")}
+          >
+            <Icons.AndroidRecentsIcon size={12} />
+          </button>
+        </>
+      )}
+      {(isOnline || androidCapturing) && selectedSerial && (
+        <button
+          className={`${chrome.titleBarButton} ${chrome.titleBarButtonDestructive}`}
+          title="Disconnect"
+          type="button"
+          onClick={handleDisconnect}
+        >
+          <Icons.DisconnectIcon size={12} />
+        </button>
+      )}
+    </div>
   );
 
   // --- Placeholder ---

@@ -85,7 +85,11 @@ export class WatcherHandle {
       const [workingNumstat, untrackedRaw, committedNumstat] =
         await Promise.all([
           git(this.worktreePath, ["diff", "HEAD", "--numstat"]),
-          git(this.worktreePath, ["ls-files", "--others", "--exclude-standard"]),
+          git(this.worktreePath, [
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+          ]),
           baseBranch
             ? git(this.worktreePath, [
                 "diff",

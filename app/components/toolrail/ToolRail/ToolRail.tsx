@@ -1,5 +1,5 @@
-import type { SVGProps } from "react";
 import { Icons } from "@argus/peacock";
+import type { SVGProps } from "react";
 import {
   type ToolId,
   toggleTool,

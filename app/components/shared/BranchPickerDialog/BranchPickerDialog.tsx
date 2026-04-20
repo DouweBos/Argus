@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { Dialog, Input } from "@argus/peacock";
+import { useEffect, useMemo, useState } from "react";
 import { checkoutBranch, listBranches } from "../../../lib/ipc";
 import {
   hideBranchPicker,

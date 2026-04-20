@@ -456,8 +456,27 @@ export const createTerminal = (
     ...(subDir != null && subDir !== "" && { subDir }),
   });
 
-export const createRunTerminal = (workspaceId: string): Promise<string> =>
-  invoke("create_run_terminal", { workspaceId });
+export interface CreateRunTerminalResult {
+  sessionId: string;
+  started: boolean;
+  title: string;
+}
+
+export const createRunTerminal = (
+  workspaceId: string,
+  title?: string,
+): Promise<CreateRunTerminalResult> =>
+  invoke("create_run_terminal", {
+    workspaceId,
+    ...(title != null && title !== "" && { title }),
+  });
+
+// Simulator popout — opens the simulator view in a separate always-on-top window.
+export const openSimulatorPopout = (udid: string): Promise<void> =>
+  invoke("open_simulator_popout", { udid });
+
+export const closeSimulatorPopout = (udid: string): Promise<void> =>
+  invoke("close_simulator_popout", { udid });
 
 export const startTerminal = (
   sessionId: string,

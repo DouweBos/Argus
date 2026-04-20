@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
 import {
   AgentRow,
   Button,
@@ -9,6 +8,7 @@ import {
   StatCell,
   StatsStrip,
 } from "@argus/peacock";
+import { useEffect, useMemo, useState } from "react";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { focusAgent } from "../../../lib/agentLifecycle";

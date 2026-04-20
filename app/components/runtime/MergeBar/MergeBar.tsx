@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   getWorkspaceCommitsAhead,

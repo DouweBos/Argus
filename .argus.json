@@ -8,7 +8,13 @@
       "dir": "."
     }
   ],
-  "run": "pnpm dev",
+  "run": [
+    {
+      "title": "Dev",
+      "command": "pnpm dev",
+      "restartOnRerun": true
+    }
+  ],
   "workspace_env": [
     {
       "name": "ARGUS_PORT",

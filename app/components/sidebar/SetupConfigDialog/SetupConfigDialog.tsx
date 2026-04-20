@@ -4,8 +4,8 @@ import type {
   ArgusConfig,
   WorkspaceEnvConfig,
 } from "../../../lib/types";
-import { useEffect, useState } from "react";
 import { Button, Icons, Input, TextArea } from "@argus/peacock";
+import { useEffect, useState } from "react";
 import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -76,6 +76,36 @@ function useEnvListState(initial: EnvEntry[]) {
       { name: "", base_value: "", range: "", strategy: "hash" },
     ]);
   const update = (i: number, field: keyof EnvEntry, val: string) =>
+    setItems((prev) =>
+      prev.map((entry, idx) =>
+        idx === i ? { ...entry, [field]: val } : entry,
+      ),
+    );
+  const remove = (i: number) =>
+    setItems((prev) => prev.filter((_, idx) => idx !== i));
+
+  return { items, setItems, add, update, remove };
+}
+
+interface RunEntry {
+  command: string;
+  cwd: string;
+  restartOnRerun: boolean;
+  title: string;
+}
+
+function useRunListState(initial: RunEntry[]) {
+  const [items, setItems] = useState<RunEntry[]>(initial);
+  const add = () =>
+    setItems((prev) => [
+      ...prev,
+      { title: "", command: "", cwd: "", restartOnRerun: false },
+    ]);
+  const update = <K extends keyof RunEntry>(
+    i: number,
+    field: K,
+    val: RunEntry[K],
+  ) =>
     setItems((prev) =>
       prev.map((entry, idx) =>
         idx === i ? { ...entry, [field]: val } : entry,
@@ -261,6 +291,85 @@ function TerminalField({ list }: TerminalFieldProps) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+interface RunCommandsFieldProps {
+  list: ReturnType<typeof useRunListState>;
+}
+
+function RunCommandsField({ list }: RunCommandsFieldProps) {
+  const handleAdd = list.add;
+
+  return (
+    <div className={styles.field}>
+      <p className={styles.sectionTitle}>Run Commands</p>
+      {list.items.length === 0 ? (
+        <div className={styles.emptyState}>
+          <span>No run commands configured</span>
+          <button className={styles.addRowBtn} onClick={handleAdd}>
+            + Add
+          </button>
+        </div>
+      ) : (
+        <div className={styles.listEditor}>
+          {list.items.map((entry, i) => (
+            <div
+              key={i}
+              className={styles.listRow}
+              style={{ flexWrap: "wrap" }}
+            >
+              <Input
+                placeholder="Title (e.g. Dev)"
+                style={{ flex: 1, minWidth: 100 }}
+                type="text"
+                value={entry.title}
+                onChange={(e) => list.update(i, "title", e.target.value)}
+              />
+              <Input
+                placeholder="Command (e.g. pnpm dev)"
+                style={{ flex: 2, minWidth: 160 }}
+                type="text"
+                value={entry.command}
+                onChange={(e) => list.update(i, "command", e.target.value)}
+              />
+              <Input
+                placeholder="cwd (optional)"
+                style={{ flex: 1, minWidth: 100 }}
+                type="text"
+                value={entry.cwd}
+                onChange={(e) => list.update(i, "cwd", e.target.value)}
+              />
+              <label className={styles.checkboxRow}>
+                <input
+                  checked={entry.restartOnRerun}
+                  type="checkbox"
+                  onChange={(e) =>
+                    list.update(i, "restartOnRerun", e.target.checked)
+                  }
+                />
+                Restart on rerun
+              </label>
+              <button
+                aria-label="Remove"
+                className={styles.removeBtn}
+                onClick={() => list.remove(i)}
+              >
+                <Icons.CloseIcon size={12} />
+              </button>
+            </div>
+          ))}
+          <button className={styles.addRowBtn} onClick={handleAdd}>
+            + Add
+          </button>
+        </div>
+      )}
+      <p className={styles.helpText}>
+        Shown in the app&apos;s run menu. Title identifies each entry; enable
+        &quot;Restart on rerun&quot; to kill an existing session before starting
+        a new one.
+      </p>
     </div>
   );
 }
@@ -497,7 +606,7 @@ function setupSummary(
 }
 
 function runtimeSummary(
-  runCommand: string,
+  runs: RunEntry[],
   browserUrl: string,
   terminals: TerminalEntry[],
   envEntries: EnvEntry[],
@@ -508,8 +617,11 @@ function runtimeSummary(
   if (platforms.length) {
     parts.push(platforms.join("+"));
   }
-  if (runCommand.trim()) {
-    parts.push(runCommand.trim());
+  const runCount = runs.filter(
+    (r) => r.title.trim() && r.command.trim(),
+  ).length;
+  if (runCount) {
+    parts.push(`${runCount} run`);
   }
   const bu = browserUrl.trim();
   if (bu) {
@@ -559,8 +671,7 @@ export function SetupConfigDialog({
   const terminalList = useTerminalListState([]);
   const envList = useEnvListState([]);
   const browserPresetList = useBrowserPresetListState([]);
-  const [runCommand, setRunCommand] = useState("");
-  const [runDir, setRunDir] = useState("");
+  const runList = useRunListState([]);
   const [browserUrl, setBrowserUrl] = useState("");
   const [platforms, setPlatforms] = useState<RuntimePlatform[]>([]);
   const [agentPrompt, setAgentPrompt] = useState("");
@@ -576,6 +687,7 @@ export function SetupConfigDialog({
   const setTerminals = terminalList.setItems;
   const setEnvs = envList.setItems;
   const setBrowserPresets = browserPresetList.setItems;
+  const setRuns = runList.setItems;
 
   useEffect(() => {
     let cancelled = false;
@@ -603,15 +715,15 @@ export function SetupConfigDialog({
           );
         }
 
-        if (config.run) {
-          if (typeof config.run === "string") {
-            setRunCommand(config.run);
-          } else {
-            setRunCommand(config.run.command);
-            if (config.run.dir) {
-              setRunDir(config.run.dir);
-            }
-          }
+        if (config.run?.length) {
+          setRuns(
+            config.run.map((r) => ({
+              title: r.title ?? "",
+              command: r.command ?? "",
+              cwd: r.cwd ?? "",
+              restartOnRerun: Boolean(r.restartOnRerun),
+            })),
+          );
         }
 
         if (config.agent_prompt) {
@@ -672,6 +784,7 @@ export function SetupConfigDialog({
     setTerminals,
     setEnvs,
     setBrowserPresets,
+    setRuns,
   ]);
 
   const buildConfig = (): ArgusConfig => {
@@ -692,10 +805,16 @@ export function SetupConfigDialog({
     if (terminals.length) {
       config.terminals = terminals;
     }
-    const run = runCommand.trim();
-    const runDirVal = runDir.trim();
-    if (run) {
-      config.run = runDirVal ? { command: run, dir: runDirVal } : run;
+    const runs = runList.items
+      .filter((r) => r.title.trim() && r.command.trim())
+      .map((r) => ({
+        title: r.title.trim(),
+        command: r.command.trim(),
+        ...(r.cwd.trim() ? { cwd: r.cwd.trim() } : {}),
+        restartOnRerun: r.restartOnRerun,
+      }));
+    if (runs.length) {
+      config.run = runs;
     }
 
     const agentPromptVal = agentPrompt.trim();
@@ -775,7 +894,7 @@ export function SetupConfigDialog({
     symlinkList.items.length > 0 ||
     commandList.items.length > 0;
   const hasRuntime =
-    !!runCommand.trim() ||
+    runList.items.length > 0 ||
     !!browserUrl.trim() ||
     browserPresetList.items.length > 0 ||
     terminalList.items.length > 0 ||
@@ -839,7 +958,7 @@ export function SetupConfigDialog({
             defaultOpen={hasRuntime}
             description="Controls how workspaces run, what URL the browser opens to, and what terminals open."
             summary={runtimeSummary(
-              runCommand,
+              runList.items,
               browserUrl,
               terminalList.items,
               envList.items,
@@ -896,29 +1015,7 @@ export function SetupConfigDialog({
 
             <BrowserPresetField list={browserPresetList} />
 
-            <div className={styles.field}>
-              <p className={styles.sectionTitle}>Run Command</p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <Input
-                  placeholder="npx expo start"
-                  style={{ flex: 2 }}
-                  type="text"
-                  value={runCommand}
-                  onChange={(e) => setRunCommand(e.target.value)}
-                />
-                <Input
-                  placeholder="Directory (optional)"
-                  style={{ flex: 1 }}
-                  type="text"
-                  value={runDir}
-                  onChange={(e) => setRunDir(e.target.value)}
-                />
-              </div>
-              <p className={styles.helpText}>
-                Shell command for the &quot;Run&quot; button. Optionally specify
-                a relative directory.
-              </p>
-            </div>
+            <RunCommandsField list={runList} />
 
             <TerminalField list={terminalList} />
 

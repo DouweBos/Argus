@@ -62,7 +62,9 @@ export const mcpAttachmentSchema = z
     name: z
       .string()
       .optional()
-      .describe("Optional display name — currently used for error messages only."),
+      .describe(
+        "Optional display name — currently used for error messages only.",
+      ),
   })
   .describe(
     "Attachment entry. Provide either `path` OR `data`+`mime_type`. Only image mime types are supported today (image/png, image/jpeg, image/gif, image/webp).",
