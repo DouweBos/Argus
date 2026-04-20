@@ -55,6 +55,10 @@ export function IosSimulatorView({
   const isTv = isTvOS(selectedDevice);
   const isBooted = selectedDevice?.booted ?? false;
   const prevWorkspaceIdRef = useRef<string | null>(null);
+  // Guards against double auto-start while a previous startCapture() is
+  // mid-flight — `capturing` only flips to true after the await resolves, so
+  // rapid re-renders can otherwise enter the effect twice.
+  const autoStartingRef = useRef<string | null>(null);
 
   // --- Tool availability check ---
 
@@ -122,13 +126,31 @@ export function IosSimulatorView({
     [setMjpegPort, setCapturing],
   );
 
-  // Auto-start capture if selected device is already booted externally
+  // Auto-start capture when a simulator is booted (either because the user
+  // just booted it, because it was booted externally before Argus opened, or
+  // because a simctl poll observed the transition). Applies uniformly to iOS
+  // and tvOS simulators — both render through this component.
   useEffect(() => {
-    if (isBooted && !capturing && !booting && !disconnected && selectedUdid) {
-      startCapture(selectedUdid).catch((err) =>
-        error("Auto-capture failed:", err),
-      );
+    if (
+      !isBooted ||
+      capturing ||
+      booting ||
+      disconnected ||
+      !selectedUdid ||
+      autoStartingRef.current === selectedUdid
+    ) {
+      return;
     }
+    autoStartingRef.current = selectedUdid;
+    startCapture(selectedUdid)
+      .catch((err) => {
+        // Surface but don't wedge — user can retry via the boot button or by
+        // reselecting the device.
+        error("Auto-capture failed:", err);
+      })
+      .finally(() => {
+        autoStartingRef.current = null;
+      });
   }, [isBooted, capturing, booting, disconnected, selectedUdid, startCapture]);
 
   // --- Title bar handlers ---

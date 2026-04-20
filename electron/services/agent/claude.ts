@@ -435,7 +435,7 @@ export async function startAgent(
   // the process.
   const safeWrite = (data: string): void => {
     const current = appState.agents.get(agentId);
-    if (!current || current.status !== "running") {
+    if (!current || current.status === "stopped" || current.status === "error") {
       return;
     }
     if (stdin.destroyed || stdin.writableEnded) {
@@ -684,12 +684,17 @@ export async function startAgent(
     emitReviewState(workspaceId).catch(() => {});
   });
 
+  // Start as idle — the process is alive but hasn't been given work yet.
+  // The CLI will emit `session_state_changed` → `running` when the initialize
+  // request or any user message triggers a turn, and flip back to idle when
+  // it finishes. Tracking idle/running accurately matters for the quit
+  // confirmation dialog, which should only block on agents doing real work.
   const session: AgentSession = {
     agentId,
     workspaceId,
     stdin,
     child,
-    status: "running",
+    status: "idle",
     controlHandler,
     parentAgentId: parentAgentId ?? null,
     resultSummary: null,
@@ -755,13 +760,13 @@ export async function startAgent(
   );
   safeWrite(initRequest + "\n");
 
-  emitAgentStatus(agentId, "running");
+  emitAgentStatus(agentId, session.status);
   info(`[agent:${agentId}] started for workspace ${workspaceId}`);
 
   return {
     agent_id: agentId,
     workspace_id: workspaceId,
-    status: "running",
+    status: session.status,
     parent_agent_id: parentAgentId ?? null,
   };
 }
@@ -964,7 +969,7 @@ export function sendAgentMessage(
   if (!session) {
     throw `No agent found: ${agentId}`;
   }
-  if (session.status !== "running") {
+  if (session.status === "stopped" || session.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
 
@@ -1010,7 +1015,7 @@ export async function setAgentModel(
   if (!session) {
     throw `No agent found: ${agentId}`;
   }
-  if (session.status !== "running") {
+  if (session.status === "stopped" || session.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
 
@@ -1048,7 +1053,7 @@ export async function setAgentPermissionMode(
   if (!session) {
     throw `No agent found: ${agentId}`;
   }
-  if (session.status !== "running") {
+  if (session.status === "stopped" || session.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
 
