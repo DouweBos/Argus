@@ -93,6 +93,7 @@ import {
   getOnboardingState,
   listExamples as onboardingListExamples,
   readExistingArgusJson,
+  refineArgusJsonWithClaude,
   registerProject as onboardingRegisterProject,
   resetOnboarding,
   runPrereqChecks,
@@ -965,6 +966,12 @@ export function registerIpcHandlers(): void {
   );
   handle("onboarding_read_existing_argus_json", (a) =>
     readExistingArgusJson(a.path as string),
+  );
+  handle("onboarding_refine_argus_json_with_claude", (a) =>
+    refineArgusJsonWithClaude(
+      a.path as string,
+      a.config as Record<string, unknown>,
+    ),
   );
   handle("onboarding_write_argus_json", (a) => {
     onboardingWriteArgusJson(

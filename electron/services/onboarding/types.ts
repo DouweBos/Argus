@@ -70,7 +70,22 @@ export interface PrereqUpdateEvent {
   mobileOnly?: boolean;
 }
 
+export type DetectedSignalKind =
+  | "framework"
+  | "monorepo"
+  | "native"
+  | "platform"
+  | "project"
+  | "tooling";
+
+export interface DetectedSignal {
+  detail?: string;
+  kind: DetectedSignalKind;
+  label: string;
+}
+
 export interface ArgusConfigSuggestion {
   config: Record<string, unknown>;
   inferredFrom: string[];
+  signals: DetectedSignal[];
 }

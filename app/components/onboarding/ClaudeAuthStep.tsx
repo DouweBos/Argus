@@ -1,15 +1,27 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, ChecklistRow, CodeBlock } from "@argus/peacock";
 import { useOnboarding } from "../../hooks/useOnboarding";
 import { claudePing } from "../../lib/ipc";
+import { useOnboardingStore } from "../../stores/onboardingStore";
 import { OnboardingLayout } from "./OnboardingLayout";
 
 type PingState = "checking" | "failed" | "idle" | "ok";
 
 export function ClaudeAuthStep() {
   const { advance, skipStep } = useOnboarding();
+  const preflightPassed = useOnboardingStore(
+    (s) => s.prereqs.claude_auth?.status === "pass",
+  );
   const [state, setState] = useState<PingState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const autoAdvanced = useRef(false);
+
+  useEffect(() => {
+    if (preflightPassed && !autoAdvanced.current) {
+      autoAdvanced.current = true;
+      advance("defaults").catch(() => {});
+    }
+  }, [preflightPassed, advance]);
 
   const ping = async () => {
     setState("checking");
