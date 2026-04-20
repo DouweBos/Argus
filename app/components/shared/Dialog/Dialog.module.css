@@ -250,6 +250,20 @@ select.input {
   gap: 8px;
 }
 
+.flowPicker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.labelHint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
 .checkboxRow {
   display: flex;
   align-items: center;
@@ -459,4 +473,26 @@ select.input {
   padding: 14px 20px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.prefixRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: var(--font-size-xs);
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.linkButton:hover {
+  color: var(--accent-hover);
 }

@@ -6,6 +6,9 @@ import {
   getWorkspaceConflicts,
   getWorkspaceStagedDiff,
   mergeWorkspaceIntoBase,
+  openExternalUrl,
+  pushWorkspaceBranch,
+  readArgusConfig,
 } from "../../../lib/ipc";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import styles from "./MergeBar.module.css";
@@ -29,6 +32,8 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
   const [commitsAhead, setCommitsAhead] = useState(0);
   const [isMerging, setIsMerging] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
+  const [isProtectedBase, setIsProtectedBase] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     if (!workspaceId) {
@@ -52,10 +57,61 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
     fetchStatus();
   }, [fetchStatus]);
 
+  // Watch whether the workspace's base branch is listed as protected in
+  // `.argus.json`. Protected branches can't be merged into from the app —
+  // the UI flips to a "Push & open PR" flow instead.
+  useEffect(() => {
+    if (!workspace?.repo_root || !workspace.base_branch) {
+      setIsProtectedBase(false);
+
+      return;
+    }
+    let cancelled = false;
+    readArgusConfig(workspace.repo_root)
+      .then((config) => {
+        if (cancelled) {
+          return;
+        }
+        const protectedList = config.protected_branches ?? [];
+        setIsProtectedBase(
+          workspace.base_branch
+            ? protectedList.includes(workspace.base_branch)
+            : false,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsProtectedBase(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace?.repo_root, workspace?.base_branch]);
+
   useIpcEvent(
     workspaceId ? `workspace:diff-changed:${workspaceId}` : "",
     fetchStatus,
   );
+
+  const handlePushAndOpenPr = useCallback(async () => {
+    if (!workspaceId) {
+      return;
+    }
+    setIsPushing(true);
+    setMergeError(null);
+    try {
+      const { prUrl } = await pushWorkspaceBranch(workspaceId);
+      if (prUrl) {
+        await openExternalUrl(prUrl);
+      }
+    } catch (err) {
+      setMergeError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsPushing(false);
+    }
+  }, [workspaceId]);
 
   const handleMerge = useCallback(async () => {
     if (!workspaceId) {
@@ -79,6 +135,41 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
   const hasConflicts = conflicts.length > 0;
   const hasMergeableWork = hasStaged || commitsAhead > 0;
   const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
+
+  if (isProtectedBase) {
+    const canPush = hasMergeableWork && !isPushing;
+    const pushBtnTitle = hasMergeableWork
+      ? `Push ${workspace.branch} to origin and open a pull request against ${workspace.base_branch}`
+      : `Stage or commit changes in this workspace, then push ${workspace.branch} and open a pull request`;
+    const statusLabel = hasMergeableWork
+      ? `${workspace.base_branch} is protected — open a PR`
+      : `Stage changes to open a PR into ${workspace.base_branch}`;
+    const toneClass = hasMergeableWork ? styles.barReady : styles.barNoStaged;
+    const textToneClass = hasMergeableWork
+      ? styles.statusTextReady
+      : styles.statusTextNoStaged;
+
+    return (
+      <>
+        <div className={`${styles.bar} ${toneClass}`}>
+          <span className={`${styles.statusText} ${textToneClass}`}>
+            {statusLabel}
+          </span>
+          <Button
+            disabled={!canPush}
+            leading={<Icons.PushIcon size={11} />}
+            size="sm"
+            variant="primary"
+            title={pushBtnTitle}
+            onClick={handlePushAndOpenPr}
+          >
+            {isPushing ? "Pushing..." : "Push & open PR"}
+          </Button>
+        </div>
+        {mergeError && <div className={styles.error}>{mergeError}</div>}
+      </>
+    );
+  }
 
   let mergeBtnTitle: string;
   if (hasConflicts) {

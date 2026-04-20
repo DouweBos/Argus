@@ -33,6 +33,7 @@ import type {
   PrereqId,
   PrereqResult,
   SimulatorDevice,
+  UserProjectSettings,
   Workspace,
 } from "./types";
 
@@ -294,6 +295,11 @@ export const getWorkspaceReviewState = (
 export const mergeWorkspaceIntoBase = (id: string): Promise<void> =>
   invoke("merge_workspace_into_base", { id });
 
+export const pushWorkspaceBranch = (
+  id: string,
+): Promise<{ branch: string; prUrl: string | null; remoteName: string }> =>
+  invoke("push_workspace_branch", { id });
+
 // File commands
 export const listDirectory = (
   id: string,
@@ -405,6 +411,18 @@ export const writeArgusConfig = (
 // Config read command
 export const readArgusConfig = (repoRoot: string): Promise<ArgusConfig> =>
   invoke("read_argus_config", { repoRoot });
+
+// Per-developer, per-project personal settings (stored outside the repo).
+export const getUserProjectSettings = (
+  repoRoot: string,
+): Promise<UserProjectSettings> =>
+  invoke("get_user_project_settings", { repoRoot });
+
+export const setUserProjectSettings = (
+  repoRoot: string,
+  settings: UserProjectSettings,
+): Promise<UserProjectSettings> =>
+  invoke("set_user_project_settings", { repoRoot, settings });
 
 // Command metrics (per-project slash command popularity)
 export const getCommandMetrics = (

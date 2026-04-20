@@ -34,6 +34,10 @@ import {
 } from "./models";
 import { loadArgusConfig, runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
+import {
+  applyBranchPrefix,
+  loadUserProjectSettings,
+} from "../userProjectSettings/store";
 
 // ---------------------------------------------------------------------------
 // add_repo_root / remove_repo_root
@@ -125,15 +129,25 @@ export async function listWorkspaces(repoRoot: string): Promise<Workspace[]> {
   const rawMeta = loadMetadata(worktreesDir);
   const [meta] = migrateOrphaned(worktreesDir, rawMeta);
 
-  // Remove from in-memory state any workspaces whose paths no longer exist on disk.
+  // Remove from in-memory state any workspaces whose paths no longer exist on
+  // disk. We only drop a workspace if the directory is genuinely gone — if git
+  // is mid-operation (e.g. a rebase that briefly makes a worktree invisible),
+  // `livePaths` may not contain it even though the directory still exists. In
+  // that case we keep the in-memory entry and re-merge it below as a synthetic
+  // disk entry so it survives the refresh.
   const livePaths = new Set(diskWorkspaces.map((w) => w.path));
-  for (const [id, ws] of appState.workspaces.entries()) {
+  for (const [id, ws] of [...appState.workspaces.entries()]) {
     if (
       ws.repo_root === repoRoot &&
       ws.kind !== "repo_root" &&
       !livePaths.has(ws.path)
     ) {
-      appState.workspaces.delete(id);
+      if (isValidWorktree(ws.path)) {
+        diskWorkspaces.push({ ...ws });
+        livePaths.add(ws.path);
+      } else {
+        appState.workspaces.delete(id);
+      }
     }
   }
 
@@ -222,9 +236,18 @@ export async function createWorkspace(
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
 ): Promise<Workspace> {
+  // Apply the developer's personal required branch prefix (if configured) to
+  // new branches. Existing branches are adopted as-is.
+  let branchInput = branch;
+  if (useExistingBranch !== true) {
+    const prefix = loadUserProjectSettings(repoRoot).branch_prefix ?? "";
+    branchInput = applyBranchPrefix(branch, prefix);
+  }
+
   // Enforce one-session-per-branch: a given branch in a given repo may only be
   // claimed by a single worktree-kind workspace.
-  const branchSlug = useExistingBranch === true ? branch : titleToBranchSlug(branch);
+  const branchSlug =
+    useExistingBranch === true ? branchInput : titleToBranchSlug(branchInput);
   for (const existing of appState.workspaces.values()) {
     if (
       existing.kind === "worktree" &&
@@ -253,12 +276,17 @@ export async function createWorkspace(
   if (useExistingBranch === true) {
     workspace = await createWorktreeFromExisting(
       repoRoot,
-      branch,
+      branchInput,
       description,
       baseBranch,
     );
   } else {
-    workspace = await createWorktree(repoRoot, branch, description, baseBranch);
+    workspace = await createWorktree(
+      repoRoot,
+      branchInput,
+      description,
+      baseBranch,
+    );
   }
 
   // Assign sequential env_index.
@@ -269,7 +297,11 @@ export async function createWorkspace(
 
   // Set a humanized placeholder title so the row renders something readable
   // before the LLM-generated title comes back.
-  if (!workspace.display_name || workspace.display_name === branch) {
+  if (
+    !workspace.display_name ||
+    workspace.display_name === branch ||
+    workspace.display_name === branchInput
+  ) {
     workspace.display_name = humanizeBranchName(workspace.branch);
   }
   appState.workspaces.set(workspace.id, { ...workspace });
@@ -740,12 +772,23 @@ async function createWorktreeFromExisting(
 /**
  * Return all existing worktrees for `repoRoot` as `Workspace` values by
  * parsing `git worktree list --porcelain`.
+ *
+ * Worktrees in a detached-HEAD state (e.g. mid-rebase, mid-checkout) still
+ * need to show up in the sidebar — otherwise an agent rebase that briefly
+ * detaches HEAD makes the session vanish from the UI. When the `branch` line
+ * is absent, fall back to:
+ *   1. `rebase-merge/head-name` in the worktree's gitdir (populated during a
+ *      rebase with the original branch's ref).
+ *   2. The in-memory workspace or persisted metadata (previous known branch).
+ *   3. The resolved `HEAD` symbolic ref (handles detached checkouts that still
+ *      have a symbolic ref on disk).
  */
 async function listWorktrees(repoRoot: string): Promise<Workspace[]> {
   await repairOrphanedWorktrees(repoRoot);
 
   const raw = await git(repoRoot, ["worktree", "list", "--porcelain"]);
   const root = worktreesRoot(repoRoot);
+  const meta = loadMetadata(worktreesRoot(repoRoot));
 
   const workspaces: Workspace[] = [];
   let currentPath: string | null = null;
@@ -757,6 +800,31 @@ async function listWorktrees(repoRoot: string): Promise<Workspace[]> {
     lines.push("");
   }
 
+  const flushBlock = () => {
+    if (!currentPath) {
+      return;
+    }
+    if (!currentPath.startsWith(root) || !isValidWorktree(currentPath)) {
+      return;
+    }
+    const branch = currentBranch ?? resolveDetachedBranch(currentPath, meta);
+    if (!branch) {
+      return;
+    }
+    workspaces.push({
+      id: crypto.randomUUID(),
+      kind: "worktree",
+      branch,
+      display_name: null,
+      description: "",
+      path: currentPath,
+      repo_root: repoRoot,
+      status: "ready",
+      env_index: null,
+      base_branch: null,
+    });
+  };
+
   for (const line of lines) {
     if (line.startsWith("worktree ")) {
       currentPath = line.slice("worktree ".length).trim();
@@ -767,26 +835,59 @@ async function listWorktrees(repoRoot: string): Promise<Workspace[]> {
         .trim()
         .replace(/^refs\/heads\//, "");
     } else if (line.trim() === "") {
-      if (currentPath && currentBranch) {
-        if (currentPath.startsWith(root) && isValidWorktree(currentPath)) {
-          workspaces.push({
-            id: crypto.randomUUID(),
-            kind: "worktree",
-            branch: currentBranch,
-            display_name: null,
-            description: "",
-            path: currentPath,
-            repo_root: repoRoot,
-            status: "ready",
-            env_index: null,
-            base_branch: null,
-          });
-        }
-      }
+      flushBlock();
       currentPath = null;
       currentBranch = null;
     }
   }
 
   return workspaces;
+}
+
+/**
+ * Figure out the branch for a worktree that `git worktree list --porcelain`
+ * reported without a `branch` line (detached HEAD — usually mid-rebase).
+ */
+function resolveDetachedBranch(
+  worktreePath: string,
+  meta: Map<string, WorkspaceMeta>,
+): string | null {
+  // 1. rebase-merge/head-name records the original branch when a rebase is
+  //    in progress. Format: `refs/heads/<branch>\n`.
+  try {
+    const gitFile = fs.readFileSync(`${worktreePath}/.git`, "utf8");
+    if (gitFile.startsWith("gitdir: ")) {
+      const gitdir = gitFile.slice("gitdir: ".length).trim();
+      const rebaseHead = `${gitdir}/rebase-merge/head-name`;
+      if (fs.existsSync(rebaseHead)) {
+        const ref = fs.readFileSync(rebaseHead, "utf8").trim();
+        if (ref) {
+          return ref.replace(/^refs\/heads\//, "");
+        }
+      }
+      // 3. Symbolic HEAD ref inside the worktree's gitdir.
+      const headFile = `${gitdir}/HEAD`;
+      if (fs.existsSync(headFile)) {
+        const head = fs.readFileSync(headFile, "utf8").trim();
+        if (head.startsWith("ref: ")) {
+          return head.slice("ref: ".length).replace(/^refs\/heads\//, "");
+        }
+      }
+    }
+  } catch {
+    // Fall through to metadata / in-memory lookup.
+  }
+
+  // 2. Last known branch from in-memory state or persisted metadata. We don't
+  //    record the branch in metadata today, so fall back to whatever the
+  //    in-memory workspace reports for this path.
+  for (const ws of appState.workspaces.values()) {
+    if (ws.path === worktreePath && ws.branch) {
+      return ws.branch;
+    }
+  }
+  // Silence unused-param lint — kept for future metadata-based lookup.
+  void meta;
+
+  return null;
 }

@@ -208,6 +208,11 @@ export interface ArgusConfig {
    * platforms listed here. Omitted or empty → no runtimes pre-allocated.
    */
   platforms?: RuntimePlatform[];
+  /**
+   * Branch names that cannot be merged into directly from the app — the UI
+   * shows a "Push & open PR" flow instead. Typical values: `["main"]`.
+   */
+  protected_branches?: string[];
   /** Ordered list of run commands shown in the app's run menu. */
   run?: RunCommand[];
   /** Whether to save chat history when agents stop. Defaults to true. */
@@ -220,6 +225,18 @@ export interface ArgusConfig {
   terminals?: TerminalConfigEntry[];
   /** Env vars set in each workspace's terminals with a unique integer per workspace. */
   workspace_env?: WorkspaceEnvConfig[];
+}
+
+/**
+ * Per-developer, per-project preferences. Stored in the user's home directory
+ * (not the repo), so every developer keeps their own values.
+ */
+export interface UserProjectSettings {
+  /**
+   * Required prefix prepended to newly created branches (e.g. "douwe/"). Empty
+   * or undefined disables the prefix.
+   */
+  branch_prefix?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -18,7 +18,7 @@ import {
 } from "./merge";
 import { loadMetadata, saveMetadata } from "./metadata";
 import { defaultArgusConfig, type ArgusConfig } from "./models";
-import { loadArgusConfig } from "./setup";
+import { isBranchProtected, loadArgusConfig } from "./setup";
 import { startWatcher, type WatcherHandle } from "./watcher";
 
 // ---------------------------------------------------------------------------
@@ -696,6 +696,12 @@ export async function mergeWorkspaceIntoBase(id: string): Promise<void> {
   if (!ws.base_branch) {
     throw "No base branch set for this workspace";
   }
+  if (isBranchProtected(ws.repo_root, ws.base_branch)) {
+    throw (
+      `'${ws.base_branch}' is a protected branch. ` +
+      `Push this workspace's branch and open a pull request instead.`
+    );
+  }
 
   await doMergeWorkspaceIntoBase(
     ws.repo_root,
@@ -802,4 +808,88 @@ export async function emitReviewState(
     hasStaged: treeState.hasStaged,
     hasUncommitted: treeState.hasUncommitted,
   });
+}
+
+// ---------------------------------------------------------------------------
+// push_workspace_branch
+// ---------------------------------------------------------------------------
+
+/**
+ * Push the workspace's feature branch to its remote and return a URL that
+ * opens a pull-request compare page against the base branch. Supports GitHub
+ * remotes (SSH and HTTPS); for other hosts, returns `null` for `prUrl` and
+ * the caller can fall back to opening the plain repo URL.
+ *
+ * Commits any staged changes in the workspace first, so the pushed branch
+ * reflects the latest agent-staged work. Uses `-u` to track the remote.
+ */
+export async function pushWorkspaceBranch(id: string): Promise<{
+  branch: string;
+  prUrl: string | null;
+  remoteName: string;
+}> {
+  const ws = appState.workspaces.get(id);
+  if (!ws) {
+    throw `Workspace not found: ${id}`;
+  }
+  if (ws.kind === "repo_root") {
+    throw "Cannot push a repo-root workspace";
+  }
+
+  // Commit staged changes first, so the push is meaningful.
+  try {
+    await git(ws.path, ["diff", "--cached", "--quiet"]);
+  } catch {
+    await git(ws.path, ["commit", "-m", `chore: wip on ${ws.branch}`]);
+  }
+
+  // Prefer `origin`; fall back to the first configured remote.
+  const remoteList = (await git(ws.repo_root, ["remote"]))
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (remoteList.length === 0) {
+    throw "No git remote configured for this repository";
+  }
+  const remoteName = remoteList.includes("origin") ? "origin" : remoteList[0];
+
+  await git(ws.path, ["push", "-u", remoteName, ws.branch]);
+
+  const remoteUrl = (
+    await git(ws.repo_root, ["remote", "get-url", remoteName])
+  ).trim();
+  const prUrl = buildPullRequestUrl(
+    remoteUrl,
+    ws.branch,
+    ws.base_branch ?? null,
+  );
+
+  return { branch: ws.branch, prUrl, remoteName };
+}
+
+/**
+ * Convert a git remote URL into a GitHub "open PR" URL. Returns `null` for
+ * non-GitHub hosts so callers can decide how to handle (e.g. just open the
+ * remote URL, or show the branch name so the user can file the PR manually).
+ */
+export function buildPullRequestUrl(
+  remoteUrl: string,
+  branch: string,
+  baseBranch: string | null,
+): string | null {
+  // ssh: git@github.com:owner/repo(.git)   |  https://github.com/owner/repo(.git)
+  const match =
+    remoteUrl.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/i) ?? null;
+  if (!match) {
+    return null;
+  }
+  const [, owner, repo] = match;
+  const encBranch = encodeURIComponent(branch);
+  if (baseBranch) {
+    const encBase = encodeURIComponent(baseBranch);
+
+    return `https://github.com/${owner}/${repo}/compare/${encBase}...${encBranch}?expand=1`;
+  }
+
+  return `https://github.com/${owner}/${repo}/pull/new/${encBranch}`;
 }

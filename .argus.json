@@ -1,6 +1,9 @@
 {
   "setup": {
-    "copy": [".claude", "node_modules"]
+    "copy": [
+      ".claude",
+      "node_modules"
+    ]
   },
   "terminals": [
     {
@@ -22,5 +25,6 @@
       "range": 100,
       "strategy": "sequential"
     }
-  ]
+  ],
+  "protected_branches": ["main"]
 }
