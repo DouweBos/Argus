@@ -96,16 +96,12 @@ describe("simulatorStore", () => {
   it("preserves selected UDID when device still exists", () => {
     selectDevice("ws-1", "AAAA-BBBB");
     setDevices([device()]);
-    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBe(
-      "AAAA-BBBB",
-    );
+    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBe("AAAA-BBBB");
   });
 
   it("selects a device for a session", () => {
     selectDevice("ws-1", "AAAA-BBBB");
-    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBe(
-      "AAAA-BBBB",
-    );
+    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBe("AAAA-BBBB");
   });
 
   it("clears disconnected flag when selecting a device", () => {
@@ -131,9 +127,7 @@ describe("simulatorStore", () => {
 
   it("persists selection to localStorage", () => {
     selectDevice("ws-1", "AAAA-BBBB");
-    const stored = JSON.parse(
-      mockStorage["argus:simulatorBySession"] ?? "{}",
-    );
+    const stored = JSON.parse(mockStorage["argus:simulatorBySession"] ?? "{}");
     expect(stored["ws-1"]).toBe("AAAA-BBBB");
   });
 });

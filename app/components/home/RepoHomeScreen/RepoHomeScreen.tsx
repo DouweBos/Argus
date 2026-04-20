@@ -346,9 +346,7 @@ export function RepoHomeScreen({
                   </div>
                 ) : (
                   repoAgents.map((a) => {
-                    const ws = repoSessions.find(
-                      (w) => w.id === a.session_id,
-                    );
+                    const ws = repoSessions.find((w) => w.id === a.session_id);
                     const conv = conversations[a.agent_id];
                     const convTitle = conv?.title?.trim();
                     const firstUserText = conv?.messages

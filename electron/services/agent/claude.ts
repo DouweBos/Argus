@@ -54,10 +54,7 @@ import { info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
-import {
-  getConductorBinDir,
-  getConductorSkillPath,
-} from "../cli/conductor";
+import { getConductorBinDir, getConductorSkillPath } from "../cli/conductor";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { buildMergedMcpServers } from "../mcp/userConfig";
 import { organizationsForRepo } from "../organization/manager";
@@ -188,10 +185,7 @@ function getConductorSkill(): string {
  * prompt, and the roles of sibling member repos so the agent understands the
  * wider product. Returns an empty string if the repo isn't part of any org.
  */
-function buildOrganizationContext(
-  repoRoot: string,
-  sessionId: string,
-): string {
+function buildOrganizationContext(repoRoot: string, sessionId: string): string {
   const task = findOrgTaskForSession(sessionId);
   // For org_host sessions repo_root is the neutral dir, so look up the org
   // via the task itself. For normal sessions, fall back to repo membership.
@@ -434,7 +428,11 @@ export async function startAgent(
   // the process.
   const safeWrite = (data: string): void => {
     const current = appState.agents.get(agentId);
-    if (!current || current.status === "stopped" || current.status === "error") {
+    if (
+      !current ||
+      current.status === "stopped" ||
+      current.status === "error"
+    ) {
       return;
     }
     if (stdin.destroyed || stdin.writableEnded) {

@@ -381,10 +381,7 @@ export function registerIpcHandlers(): void {
     createHeadSession(a.repoRoot as string),
   );
   handle("delete_session", (a) =>
-    deleteSession(
-      a.id as string,
-      a.shouldDeleteBranch as boolean | undefined,
-    ),
+    deleteSession(a.id as string, a.shouldDeleteBranch as boolean | undefined),
   );
 
   // Organizations
@@ -442,9 +439,7 @@ export function registerIpcHandlers(): void {
     checkoutBranch(a.repoRoot as string, a.branch as string),
   );
   handle("get_session_diff", (a) => getSessionDiff(a.id as string));
-  handle("get_session_full_diff", (a) =>
-    getSessionFullDiff(a.id as string),
-  );
+  handle("get_session_full_diff", (a) => getSessionFullDiff(a.id as string));
   handle("get_session_branch_diff", (a) =>
     getSessionBranchDiff(a.id as string),
   );
@@ -498,9 +493,7 @@ export function registerIpcHandlers(): void {
   handle("set_session_base_branch", (a) =>
     setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
-  handle("get_session_conflicts", (a) =>
-    getSessionConflicts(a.id as string),
-  );
+  handle("get_session_conflicts", (a) => getSessionConflicts(a.id as string));
   handle("get_session_commits_ahead", (a) =>
     getSessionCommitsAhead(a.id as string),
   );
@@ -520,9 +513,7 @@ export function registerIpcHandlers(): void {
   handle("merge_session_into_base", (a) =>
     mergeSessionIntoBase(a.id as string),
   );
-  handle("push_session_branch", (a) =>
-    pushSessionBranch(a.id as string),
-  );
+  handle("push_session_branch", (a) => pushSessionBranch(a.id as string));
   handle("git_pull", (a) =>
     gitPull(
       a.id as string,

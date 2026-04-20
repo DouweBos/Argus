@@ -54,9 +54,7 @@ export function ProjectSegment({
   const selectedId = useSelectedSessionId();
   const [showCreate, setShowCreate] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(
-    null,
-  );
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
   const [menuPosition, setMenuPosition] = useState<
     "anchor" | { x: number; y: number } | null
   >(null);
@@ -91,9 +89,7 @@ export function ProjectSegment({
         e.stopPropagation();
         setMenuPosition({ x: e.clientX, y: e.clientY });
       }}
-      meta={
-        repoRootSession && <RepoHeaderMeta session={repoRootSession} />
-      }
+      meta={repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
       subtitle={
         isRepoHomeSelected && repoBranch ? (
           <div

@@ -122,11 +122,7 @@ export const removeAgent = (agentId: string) => {
     ) {
       splitPairUpdate[agent.session_id] = null;
     }
-    const orderUpdate = removeFromOrder(
-      state.order,
-      agent.session_id,
-      agentId,
-    );
+    const orderUpdate = removeFromOrder(state.order, agent.session_id, agentId);
     if (activeUpdate[agent.session_id] === agentId) {
       const previousOrder = state.order[agent.session_id] ?? [];
       const removedIdx = previousOrder.indexOf(agentId);
@@ -278,9 +274,7 @@ export const setSplitPair = (sessionId: string, pair: SplitPair | null) => {
 };
 
 export const useSplitPair = (sessionId: string | null): SplitPair | null =>
-  useAgentStore((s) =>
-    sessionId ? (s.splitPair[sessionId] ?? null) : null,
-  );
+  useAgentStore((s) => (sessionId ? (s.splitPair[sessionId] ?? null) : null));
 
 /** For tests and imperative access */
 export const getAgentState = () => agentStore.getState();

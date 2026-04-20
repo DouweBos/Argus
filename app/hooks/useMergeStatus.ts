@@ -16,9 +16,7 @@ interface UseMergeStatusResult {
   mergeError: string | null;
 }
 
-export function useMergeStatus(
-  sessionId: string | null,
-): UseMergeStatusResult {
+export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
   const [commitsAhead, setCommitsAhead] = useState(0);

@@ -215,11 +215,7 @@ export function CommandCenter({
                     tabIndex={0}
                     style={{ cursor: "pointer" }}
                     onClick={() =>
-                      onOpenSession(
-                        a.session.id,
-                        a.session.repo_root,
-                        a.id,
-                      )
+                      onOpenSession(a.session.id, a.session.repo_root, a.id)
                     }
                   />
                 ))

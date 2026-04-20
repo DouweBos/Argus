@@ -295,11 +295,14 @@ export default tseslint.config(
     },
   },
   {
-    files: ["scripts/**/*.{ts,mts,js,mjs}"],
+    files: ["scripts/**/*.{ts,mts,js,mjs,cjs}"],
     languageOptions: {
       globals: globals.node,
+      sourceType: "commonjs",
     },
-    rules: {},
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
   },
   {
     files: ["**/*.{test,spec}.{ts,tsx}"],

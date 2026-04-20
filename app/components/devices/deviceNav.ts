@@ -3,10 +3,7 @@ import { useProjects } from "../../hooks/useSessions";
 import { addAgent, getAgent, setActiveAgent } from "../../stores/agentStore";
 import { setCenterView } from "../../stores/centerViewStore";
 import { setActiveCenterView } from "../../stores/editorStore";
-import {
-  getSessionState,
-  selectSession,
-} from "../../stores/sessionStore";
+import { getSessionState, selectSession } from "../../stores/sessionStore";
 
 function normalizePath(p: string): string {
   return p.replace(/\\/g, "/").replace(/\/+$/, "").replace(/\/+/g, "/");

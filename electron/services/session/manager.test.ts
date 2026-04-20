@@ -34,7 +34,8 @@ function makeSession(partial: Partial<Session>): Session {
     id: partial.id ?? crypto.randomUUID(),
     kind: "worktree",
     branch: partial.branch ?? "feature",
-    display_name: partial.display_name === undefined ? "Feature" : partial.display_name,
+    display_name:
+      partial.display_name === undefined ? "Feature" : partial.display_name,
     description: partial.description ?? "",
     path: partial.path ?? "/tmp/feature",
     repo_root: partial.repo_root ?? "/repo",

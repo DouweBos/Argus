@@ -110,10 +110,7 @@ export const FramedHome: Story = {
               added={128}
               removed={47}
             />
-            <SidebarSessionRow
-              name="fix/diff-hunk-staging"
-              status="warning"
-            />
+            <SidebarSessionRow name="fix/diff-hunk-staging" status="warning" />
           </SidebarRepoGroup>
           <SidebarRepoGroup
             name="peacock"

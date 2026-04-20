@@ -1,3 +1,4 @@
+import type { DetectedSignal } from "../../lib/types";
 import { useEffect, useMemo, useState } from "react";
 import { Button, Chip, TextArea } from "@argus/peacock";
 import { useOnboarding } from "../../hooks/useOnboarding";
@@ -7,7 +8,6 @@ import {
   suggestArgusJson,
   writeOnboardingArgusJson,
 } from "../../lib/ipc";
-import type { DetectedSignal } from "../../lib/types";
 import { useOnboardingStore } from "../../stores/onboardingStore";
 import styles from "./ArgusConfigStep.module.css";
 import { OnboardingLayout } from "./OnboardingLayout";
@@ -38,9 +38,7 @@ export function ArgusConfigStep() {
           suggestArgusJson(projectPath),
         ]);
         setExisting(existingConfig);
-        setEditor(
-          JSON.stringify(existingConfig ?? suggestion.config, null, 2),
-        );
+        setEditor(JSON.stringify(existingConfig ?? suggestion.config, null, 2));
         setInferredFrom(suggestion.inferredFrom);
         setSignals(suggestion.signals);
       } catch (e) {
@@ -154,9 +152,7 @@ export function ArgusConfigStep() {
         </Button>
       }
     >
-      {loading ? (
-        <div className={styles.muted}>Inspecting project…</div>
-      ) : null}
+      {loading ? <div className={styles.muted}>Inspecting project…</div> : null}
 
       {signals.length > 0 ? (
         <div className={styles.signalsRow}>

@@ -1,14 +1,14 @@
-import type { ReactNode } from "react";
-import { SidebarItem } from "@argus/peacock";
-import { useLocation } from "react-router-dom";
 import type { AppView } from "../../../lib/router";
+import type { ReactNode } from "react";
+import { useLocation } from "react-router-dom";
+import { SidebarItem } from "@argus/peacock";
 import { parseRoute, pushRoute } from "../../../lib/router";
 
 interface SidebarNavItemProps {
-  view: Exclude<AppView, "session" | "notifications">;
-  leading?: ReactNode;
-  count?: ReactNode;
   children: ReactNode;
+  count?: ReactNode;
+  leading?: ReactNode;
+  view: Exclude<AppView, "notifications" | "session">;
 }
 
 export function SidebarNavItem({

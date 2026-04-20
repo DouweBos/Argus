@@ -38,11 +38,7 @@ import {
   updateOrganization,
   deleteOrganization,
 } from "../organization/manager";
-import {
-  createSession,
-  deleteSession,
-  listSessions,
-} from "../session/manager";
+import { createSession, deleteSession, listSessions } from "../session/manager";
 import {
   getSessionConflicts,
   mergeSessionIntoBase,
@@ -489,9 +485,7 @@ export function createMcpServer(): McpServer {
     "delete_session",
     "Delete a session (git worktree). Kills any running agent and terminals, removes the worktree from disk.",
     {
-      session: z
-        .string()
-        .describe("Session ID, branch name, or display name"),
+      session: z.string().describe("Session ID, branch name, or display name"),
       delete_branch: z
         .boolean()
         .optional()
@@ -1165,9 +1159,7 @@ export function createMcpServer(): McpServer {
     "trigger_run",
     "Trigger one of the configured run commands (from .argus.json) in a session's terminal. This starts the app's dev server, test runner, or whatever the project has configured as a run command. The command runs in a visible UI terminal. Pass `title` to pick a specific entry; omit to run the first configured command.",
     {
-      session: z
-        .string()
-        .describe("Session ID, branch name, or display name"),
+      session: z.string().describe("Session ID, branch name, or display name"),
       title: z
         .string()
         .optional()
@@ -1228,9 +1220,7 @@ export function createMcpServer(): McpServer {
     "check_conflicts",
     "Check whether a session's branch would conflict if merged into its base branch. Returns a list of conflicting files, or an empty list if the merge would be clean.",
     {
-      session: z
-        .string()
-        .describe("Session ID, branch name, or display name"),
+      session: z.string().describe("Session ID, branch name, or display name"),
     },
     async ({ session }) => {
       const ws = resolveSession(session);
@@ -1278,9 +1268,7 @@ export function createMcpServer(): McpServer {
     "merge_session",
     "Merge a session's branch into its base branch. Commits any staged changes first, checks for conflicts, then performs a --no-ff merge. The session's base branch was set when the worktree was created.",
     {
-      session: z
-        .string()
-        .describe("Session ID, branch name, or display name"),
+      session: z.string().describe("Session ID, branch name, or display name"),
     },
     async ({ session }) => {
       const ws = resolveSession(session);

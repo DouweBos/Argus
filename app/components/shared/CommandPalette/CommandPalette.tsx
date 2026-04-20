@@ -43,7 +43,13 @@ import { showSettingsDialog } from "../../../stores/settingsStore";
 import styles from "./CommandPalette.module.css";
 
 type PaletteGroup =
-  "action" | "git" | "navigation" | "project" | "session" | "sessions" | "view";
+  | "action"
+  | "git"
+  | "navigation"
+  | "project"
+  | "session"
+  | "sessions"
+  | "view";
 
 interface PaletteItem {
   group: PaletteGroup;
@@ -181,7 +187,8 @@ function CommandPaletteContent() {
 
       const projectHead = sessions.find(
         (w) =>
-          w.repo_root === selectedSession.repo_root && w.kind === "project_root",
+          w.repo_root === selectedSession.repo_root &&
+          w.kind === "project_root",
       );
 
       out.push(
@@ -329,9 +336,7 @@ function CommandPaletteContent() {
           keywords: "copy path clipboard worktree",
           run: () => {
             closeCommandPalette();
-            navigator.clipboard
-              .writeText(selectedSession.path)
-              .catch(() => {});
+            navigator.clipboard.writeText(selectedSession.path).catch(() => {});
           },
         },
       );

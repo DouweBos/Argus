@@ -43,8 +43,7 @@ const mockGetSessionCommitsAhead = vi.fn().mockResolvedValue(0);
 const mockMergeSessionIntoBase = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../lib/ipc", () => ({
-  getSessionConflicts: (...args: unknown[]) =>
-    mockGetSessionConflicts(...args),
+  getSessionConflicts: (...args: unknown[]) => mockGetSessionConflicts(...args),
   getSessionStagedDiff: (...args: unknown[]) =>
     mockGetSessionStagedDiff(...args),
   getSessionCommitsAhead: (...args: unknown[]) =>

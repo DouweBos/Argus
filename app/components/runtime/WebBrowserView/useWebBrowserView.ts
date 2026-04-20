@@ -93,8 +93,7 @@ export function useWebBrowserView(
       } catch {
         // ignore read errors — fall back to the chosen default
       } finally {
-        const latest =
-          getSimulatorState().browserUrlBySession[storeKey] ?? "";
+        const latest = getSimulatorState().browserUrlBySession[storeKey] ?? "";
         if (!latest) {
           const url = normalizeUrl(chosenUrl);
           setBrowserUrl(storeKey, url);

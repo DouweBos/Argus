@@ -636,8 +636,7 @@ export const browserKeyboardEvent = (
   sessionId: string,
   type: "down" | "press" | "up",
   key: string,
-): Promise<void> =>
-  invoke("browser_keyboard_event", { sessionId, type, key });
+): Promise<void> => invoke("browser_keyboard_event", { sessionId, type, key });
 
 export const browserWheelEvent = (
   sessionId: string,

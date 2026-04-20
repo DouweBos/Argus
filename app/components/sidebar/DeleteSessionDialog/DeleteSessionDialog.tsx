@@ -28,20 +28,14 @@ export function DeleteSessionDialog({
       await onConfirm(deleteBranch);
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete session",
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete session");
     } finally {
       setIsDeleting(false);
     }
   };
 
   return (
-    <Dialog
-      title="Delete Session"
-      titleId="delete-ws-title"
-      onClose={onClose}
-    >
+    <Dialog title="Delete Session" titleId="delete-ws-title" onClose={onClose}>
       <form className={styles.form} onSubmit={handleSubmit}>
         <p className={styles.bodyText}>
           Are you sure you want to delete <strong>{displayName}</strong>? This

@@ -11,7 +11,10 @@ import {
   useNotifications,
   useUnseenNotificationCount,
 } from "../../../stores/notificationsStore";
-import { selectSession, useSelectedSessionId } from "../../../stores/sessionStore";
+import {
+  selectSession,
+  useSelectedSessionId,
+} from "../../../stores/sessionStore";
 import styles from "./ToolRail.module.css";
 
 type IconComponent = React.ComponentType<

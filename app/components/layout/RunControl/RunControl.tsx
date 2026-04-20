@@ -36,9 +36,7 @@ export function RunControl({ sessionId }: RunControlProps) {
     let cancelled = false;
     (async () => {
       try {
-        const ws = getSessionState().sessions.find(
-          (w) => w.id === sessionId,
-        );
+        const ws = getSessionState().sessions.find((w) => w.id === sessionId);
         if (!ws) {
           return;
         }

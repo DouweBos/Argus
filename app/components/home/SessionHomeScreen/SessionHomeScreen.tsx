@@ -106,8 +106,7 @@ export function SessionHomeScreen({
   );
 
   const sessionAgents = useMemo(
-    () =>
-      Object.values(agentsRecord).filter((a) => a.session_id === sessionId),
+    () => Object.values(agentsRecord).filter((a) => a.session_id === sessionId),
     [agentsRecord, sessionId],
   );
 
@@ -151,8 +150,7 @@ export function SessionHomeScreen({
     [repoRoot],
   );
 
-  const displayName =
-    session?.display_name ?? session?.branch ?? "Session";
+  const displayName = session?.display_name ?? session?.branch ?? "Session";
   const branch = session?.branch ?? "";
   const baseBranch = session?.base_branch ?? null;
   const additions = diffStats?.additions ?? 0;
@@ -165,9 +163,7 @@ export function SessionHomeScreen({
     (a) => a.status === "running",
   ).length;
   const idleAgents = sessionAgents.filter((a) => a.status === "idle").length;
-  const errorAgents = sessionAgents.filter(
-    (a) => a.status === "error",
-  ).length;
+  const errorAgents = sessionAgents.filter((a) => a.status === "error").length;
 
   let commitsAheadDelta = "";
   if (hasConflicts) {
@@ -315,28 +311,26 @@ export function SessionHomeScreen({
               )}
             </div>
 
-            {repoRoot &&
-              history.loaded &&
-              sessionHistoryEntries.length > 0 && (
-                <div className={styles.panel}>
-                  <div className={styles.panelHead}>
-                    <span className={styles.eyebrow}>Chat history</span>
-                    <span className={styles.subMeta}>
-                      {sessionHistoryEntries.length} in this session
-                    </span>
-                  </div>
-                  <div className={styles.historyWrap}>
-                    <ChatHistoryList
-                      entries={sessionHistoryEntries}
-                      repoRoot={repoRoot}
-                      onClearAll={handleClearAllHistory}
-                      onDelete={handleDeleteHistoryEntry}
-                      onResume={onResumeHistory}
-                      onView={onViewHistory}
-                    />
-                  </div>
+            {repoRoot && history.loaded && sessionHistoryEntries.length > 0 && (
+              <div className={styles.panel}>
+                <div className={styles.panelHead}>
+                  <span className={styles.eyebrow}>Chat history</span>
+                  <span className={styles.subMeta}>
+                    {sessionHistoryEntries.length} in this session
+                  </span>
                 </div>
-              )}
+                <div className={styles.historyWrap}>
+                  <ChatHistoryList
+                    entries={sessionHistoryEntries}
+                    repoRoot={repoRoot}
+                    onClearAll={handleClearAllHistory}
+                    onDelete={handleDeleteHistoryEntry}
+                    onResume={onResumeHistory}
+                    onView={onViewHistory}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={styles.col}>
@@ -377,8 +371,7 @@ export function SessionHomeScreen({
               <div className={styles.panelHead}>
                 <span className={styles.eyebrow}>Devices</span>
                 <span className={styles.subMeta}>
-                  {runningDevices.length} online · {sessionDevices.length}{" "}
-                  bound
+                  {runningDevices.length} online · {sessionDevices.length} bound
                 </span>
               </div>
               <div className={styles.agentList}>

@@ -42,9 +42,7 @@ import { isWindowFocused } from "./useWindowFocus";
 // Shared event-listener helpers
 // ---------------------------------------------------------------------------
 
-function setupSessionStatusListener(
-  sessionId: string,
-): Promise<() => void> {
+function setupSessionStatusListener(sessionId: string): Promise<() => void> {
   return listen<string>(`session:status:${sessionId}`, (event) => {
     const payload = event.payload;
     let status: "deleting" | "initializing" | "ready" | { error: string };
@@ -65,9 +63,7 @@ function setupSessionStatusListener(
   });
 }
 
-function setupSessionProgressListener(
-  sessionId: string,
-): Promise<() => void> {
+function setupSessionProgressListener(sessionId: string): Promise<() => void> {
   return listen<string>(`session:setup_progress:${sessionId}`, (event) => {
     try {
       const data = JSON.parse(event.payload) as {

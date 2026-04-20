@@ -148,4 +148,3 @@ export function resetOnboarding(): void {
   cfg.onboarding = { ...DEFAULT_STATE };
   saveConfig(cfg);
 }
-

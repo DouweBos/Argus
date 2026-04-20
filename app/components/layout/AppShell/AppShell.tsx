@@ -106,7 +106,8 @@ export function AppShell() {
   const selectedId = useSelectedSessionId();
   const centerView = useCenterView();
   const location = useLocation();
-  const isNotificationsRoute = location.pathname.replace(/\/+$/, "") === "/notifications";
+  const isNotificationsRoute =
+    location.pathname.replace(/\/+$/, "") === "/notifications";
   const leftVisible = useLeftSidebarVisible();
   const setLeftWidth = setLeftPanelWidth;
   useWindowFocus();

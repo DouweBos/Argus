@@ -44,10 +44,7 @@ export function ShellTerminal({
   }, [terminal, isActive]);
 
   return (
-    <div
-      className={styles.wrapper}
-      onMouseDown={() => terminal?.focus()}
-    >
+    <div className={styles.wrapper} onMouseDown={() => terminal?.focus()}>
       {searchVisible && (
         <TerminalSearchBar
           resultCount={searchState.resultCount}

@@ -39,9 +39,7 @@ export function ChangesSummary({ sessionId }: ChangesSummaryProps) {
   const sessions = useSessions();
   const session = useMemo(
     () =>
-      sessionId
-        ? (sessions.find((w) => w.id === sessionId) ?? null)
-        : null,
+      sessionId ? (sessions.find((w) => w.id === sessionId) ?? null) : null,
     [sessionId, sessions],
   );
 
@@ -49,9 +47,7 @@ export function ChangesSummary({ sessionId }: ChangesSummaryProps) {
     return null;
   }
 
-  return (
-    <ChangesSummaryInner session={session} sessionId={sessionId} />
-  );
+  return <ChangesSummaryInner session={session} sessionId={sessionId} />;
 }
 
 interface InnerProps {

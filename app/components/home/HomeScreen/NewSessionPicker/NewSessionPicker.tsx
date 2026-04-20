@@ -22,9 +22,7 @@ export function NewSessionPicker({
       titleId="new-session-picker-title"
     >
       <div className={styles.container}>
-        <p className={styles.caption}>
-          Pick a repository for the new session.
-        </p>
+        <p className={styles.caption}>Pick a repository for the new session.</p>
         <div className={styles.list}>
           {projects.map((p) => (
             <button

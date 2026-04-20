@@ -31,11 +31,7 @@ import {
   saveMetadata,
   type SessionMeta,
 } from "./metadata";
-import {
-  defaultArgusConfig,
-  type Session,
-  type SessionStatus,
-} from "./models";
+import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
 import { loadArgusConfig, runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
 
@@ -388,9 +384,7 @@ export async function createSession(
     })
     .catch((e: unknown) => {
       const errMsg = typeof e === "string" ? e : String(e);
-      error(
-        `Setup pipeline failed for session ${taskSessionId}: ${errMsg}`,
-      );
+      error(`Setup pipeline failed for session ${taskSessionId}: ${errMsg}`);
       const finalStatus: SessionStatus = { error: errMsg };
       const ws = appState.sessions.get(taskSessionId);
       if (ws) {
@@ -887,7 +881,9 @@ function resolveDetachedBranch(
     }
   }
   // Silence unused-param lint — kept for future metadata-based lookup.
-  void meta;
+  if (meta) {
+    // no-op
+  }
 
   return null;
 }

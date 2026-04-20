@@ -33,10 +33,7 @@ interface GenerateOptions {
 export function humanizeBranchName(branch: string): string {
   const segments = branch.split("/").filter(Boolean);
   const tail = segments[segments.length - 1] ?? branch;
-  const words = tail
-    .replace(/[-_]+/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
+  const words = tail.replace(/[-_]+/g, " ").split(/\s+/).filter(Boolean);
   if (words.length === 0) {
     return branch;
   }
@@ -88,7 +85,10 @@ function normaliseTitle(raw: string): string | null {
   ) {
     title = title.slice(1, -1).trim();
   }
-  title = title.replace(/\s+/g, " ").replace(/[.!?]+$/, "").trim();
+  title = title
+    .replace(/\s+/g, " ")
+    .replace(/[.!?]+$/, "")
+    .trim();
 
   if (!title) {
     return null;

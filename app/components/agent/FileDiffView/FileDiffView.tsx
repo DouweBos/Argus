@@ -287,9 +287,7 @@ function FileDiffViewInner({
             size="sm"
             variant="danger"
             title="Discard all changes to this file"
-            onClick={() =>
-              onAction(() => discardFile(sessionId, displayPath))
-            }
+            onClick={() => onAction(() => discardFile(sessionId, displayPath))}
           >
             <Icons.TrashIcon size={11} />
           </Button>
