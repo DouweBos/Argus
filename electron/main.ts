@@ -82,8 +82,67 @@ if (process.platform === "win32") {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let pendingDeepLink: string | null = null;
 
 const isDev = !app.isPackaged;
+
+// `argus://workspaces/<id>/git` — register as this app's protocol handler so
+// external callers (MCP, Slack previews, custom URL openers) can jump straight
+// into a screen. Uses setAsDefaultProtocolClient; the actual URL is received
+// via `open-url` (macOS) or the `second-instance` argv on Linux/Windows.
+if (!app.isDefaultProtocolClient("argus")) {
+  app.setAsDefaultProtocolClient("argus");
+}
+
+/** Turn an `argus://...` URL into an in-app pathname. */
+function deepLinkToPath(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "argus:") {
+      return null;
+    }
+    // argus://workspaces/abc/git → /workspaces/abc/git
+    const host = u.hostname ? `/${u.hostname}` : "";
+    const pathname = u.pathname || "";
+
+    return `${host}${pathname}` || "/";
+  } catch {
+    return null;
+  }
+}
+
+function deliverDeepLink(url: string): void {
+  const target = deepLinkToPath(url);
+  if (!target) {
+    return;
+  }
+  if (mainWindow && mainWindow.webContents.isLoading() === false) {
+    mainWindow.webContents.send("navigation:goto", { path: target });
+    mainWindow.show();
+    mainWindow.focus();
+  } else {
+    pendingDeepLink = target;
+  }
+}
+
+app.on("open-url", (e, url) => {
+  e.preventDefault();
+  deliverDeepLink(url);
+});
+
+const singleInstanceOk = app.requestSingleInstanceLock();
+if (!singleInstanceOk) {
+  app.quit();
+}
+app.on("second-instance", (_e, argv) => {
+  const urlArg = argv.find((a) => a.startsWith("argus://"));
+  if (urlArg) {
+    deliverDeepLink(urlArg);
+  } else if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
 const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:1420";
 
 // Tee main-process console.* to the rotating log file. In a bundled .app there
@@ -190,6 +249,12 @@ function createWindow(): void {
 
   mainWindow.webContents.on("did-finish-load", () => {
     log("did-finish-load: %s", mainWindow?.webContents.getURL());
+    if (pendingDeepLink && mainWindow) {
+      mainWindow.webContents.send("navigation:goto", {
+        path: pendingDeepLink,
+      });
+      pendingDeepLink = null;
+    }
   });
 
   mainWindow.webContents.on("did-fail-load", (_e, code, desc, url) => {

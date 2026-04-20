@@ -1,6 +1,8 @@
 import type { Workspace } from "../lib/types";
 import { create } from "zustand";
+import { pushRoute } from "../lib/router";
 import { clearSelectedOrganization } from "./centerViewStore";
+import { getEditorState } from "./editorStore";
 import { migrateSessions } from "./terminalStore";
 
 export interface Project {
@@ -156,6 +158,13 @@ export const selectWorkspace = (id: string | null) => {
   workspaceStore.setState({ selectedId: id });
   if (id !== null) {
     clearSelectedOrganization();
+    pushRoute({
+      view: "workspace",
+      workspaceId: id,
+      panel: getEditorState().activeCenterView,
+    });
+  } else {
+    pushRoute({ view: "home" });
   }
 };
 

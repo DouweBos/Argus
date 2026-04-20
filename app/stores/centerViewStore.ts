@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { pushRoute } from "../lib/router";
 
 export type CenterView =
   | "activity"
@@ -20,6 +21,7 @@ const centerViewStore = create<CenterViewData>(() => ({
 
 export const setCenterView = (view: CenterView): void => {
   centerViewStore.setState({ view, selectedOrganizationId: null });
+  pushRoute({ view });
 };
 
 export const clearSelectedOrganization = (): void => {
@@ -31,6 +33,7 @@ export const openOrganization = (organizationId: string): void => {
     view: "organizations",
     selectedOrganizationId: organizationId,
   });
+  pushRoute({ view: "organizations", organizationId });
 };
 
 export const useCenterView = (): CenterView => centerViewStore((s) => s.view);

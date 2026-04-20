@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { pushRoute } from "../lib/router";
+import { getWorkspaceState } from "./workspaceStore";
 
 export type CenterView = "agents" | "editor" | "git" | "home";
 
@@ -32,6 +34,10 @@ export const clearWorkspace = () => {
 
 export const setActiveCenterView = (view: CenterView) => {
   editorStore.setState({ activeCenterView: view });
+  const { selectedId } = getWorkspaceState();
+  if (selectedId) {
+    pushRoute({ view: "workspace", workspaceId: selectedId, panel: view });
+  }
 };
 
 export const useActiveWorkspaceId = () =>

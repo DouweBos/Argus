@@ -707,3 +707,10 @@ export const cancelOrgTask = (id: string): Promise<OrgTask> =>
 
 export const deleteOrgTaskIpc = (id: string): Promise<void> =>
   invoke("delete_org_task", { id });
+
+// UI state — lightweight persisted key/value blobs (e.g. last route).
+export const getUiState = (key: string): Promise<string | null> =>
+  invoke("ui_state_get", { key });
+
+export const setUiState = (key: string, value: string): Promise<void> =>
+  invoke("ui_state_set", { key, value });
