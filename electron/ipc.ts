@@ -7,11 +7,11 @@
  */
 
 import type { OrganizationMember } from "./services/organization/models";
-import { Menu, clipboard, dialog, ipcMain, nativeImage } from "electron";
+import { Menu, app, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createLogger } from "../app/lib/logger";
-import { getMainWindow } from "./main";
+import { getMainWindow, markQuitConfirmedDespiteAgents } from "./main";
 import {
   saveConversation,
   loadHistoryIndex,
@@ -284,6 +284,46 @@ export function registerIpcHandlers(): void {
   // Window
   handle("close_window", () => {
     getMainWindow()?.close();
+  });
+
+  // Quit-with-running-agents flow. Invoked by the renderer after the user
+  // accepts the confirm dialog surfaced via `app:quit-request`. Stops each
+  // running agent (best-effort, bounded by a short timeout) and then calls
+  // app.quit(), which re-enters `before-quit` with the guard flag set.
+  handle("app_confirm_quit", async () => {
+    const runningIds: string[] = [];
+    for (const [id, session] of appState.agents) {
+      if (session.status === "running") {
+        runningIds.push(id);
+      }
+    }
+
+    const logger = createLogger("ipc:app_confirm_quit");
+    logger.info(`stopping ${runningIds.length} running agents before quit`);
+
+    // Run all stops with a short per-call timeout so a stuck agent can't hang
+    // the quit. Failures are logged and ignored — we proceed with quit.
+    await Promise.allSettled(
+      runningIds.map(async (id) => {
+        try {
+          await Promise.race([
+            stopAgent(id),
+            new Promise<void>((resolve) => setTimeout(resolve, 1500)),
+          ]);
+        } catch (err) {
+          logger.error(`stopAgent(${id}) threw during quit:`, err);
+        }
+      }),
+    );
+
+    markQuitConfirmedDespiteAgents();
+    app.quit();
+  });
+
+  // Renderer cancelled the quit prompt — nothing to do server-side; the
+  // `before-quit` handler already called `event.preventDefault()`.
+  handle("app_cancel_quit", () => {
+    createLogger("ipc:app_cancel_quit").info("user cancelled quit");
   });
 
   // Workspace CRUD

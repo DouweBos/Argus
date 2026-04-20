@@ -58,6 +58,14 @@ export function send(channel: string, args?: Record<string, unknown>): void {
 // Window
 export const closeWindow = (): Promise<void> => invoke("close_window");
 
+// Quit-with-running-agents flow.
+export const appConfirmQuit = (): Promise<void> => invoke("app_confirm_quit");
+export const appCancelQuit = (): Promise<void> => invoke("app_cancel_quit");
+
+export interface QuitRequestPayload {
+  runningCount: number;
+}
+
 // Workspace commands
 export const addRepoRoot = (path: string): Promise<void> =>
   invoke("add_repo_root", { path });

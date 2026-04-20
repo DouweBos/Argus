@@ -8,6 +8,7 @@ export * from "./components/Button/Button";
 export * from "./components/Card/Card";
 export * from "./components/ChatInput/ChatInput";
 export * from "./components/Chip/Chip";
+export * from "./components/ConfirmDialog/ConfirmDialog";
 export * from "./components/ContextMenu/ContextMenu";
 export * from "./components/DiffStat/DiffStat";
 export * from "./components/EmptyHome/EmptyHome";

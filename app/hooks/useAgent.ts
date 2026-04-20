@@ -1,10 +1,10 @@
 import type { AgentStatus } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { requestStopAgent } from "../components/shared/ConfirmStopAgent/stopAgentGuard";
 import {
   notifyMessageSent,
   saveAgentConversation,
   startAgentListening,
-  stopAgentById,
   stopAgentListening,
 } from "../lib/agentEventService";
 import { startAgentInWorkspace } from "../lib/agentLifecycle";
@@ -170,8 +170,8 @@ export function useWorkspaceAgents(
     prevWorkspaceId.current = workspaceId;
   }, [workspaceId]);
 
-  const stopAgent = useCallback(async (agentId: string) => {
-    await stopAgentById(agentId);
+  const stopAgent = useCallback((agentId: string) => {
+    requestStopAgent(agentId);
   }, []);
 
   const stopAll = useCallback(async () => {
