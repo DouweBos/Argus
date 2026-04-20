@@ -5,7 +5,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarHeaderAction,
-  SidebarItem,
   SidebarNav,
   SidebarNavGroup,
   SidebarScroll,
@@ -14,32 +13,21 @@ import {
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { useActivityCount } from "../../../stores/activityStore";
 import { useAgentsRecord } from "../../../stores/agentStore";
-import {
-  setCenterView,
-  useCenterView,
-  useSelectedOrganizationId,
-} from "../../../stores/centerViewStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
   useOrganizations,
   useOrganizationSync,
 } from "../../../stores/organizationStore";
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
-import {
-  selectWorkspace,
-  toggleProjectCollapsed,
-  useSelectedWorkspaceId,
-} from "../../../stores/workspaceStore";
+import { toggleProjectCollapsed } from "../../../stores/workspaceStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
 import { OrganizationSegment } from "../OrganizationSegment";
 import { ProjectSegment } from "../ProjectSegment";
+import { SidebarNavItem } from "./SidebarNavItem";
 import styles from "./WorkspaceSidebar.module.css";
 
 export function WorkspaceSidebar() {
-  const { projects, openProject, closeProject, error } = useProjects();
-  const selectedId = useSelectedWorkspaceId();
-  const centerView = useCenterView();
-  const selectedOrgId = useSelectedOrganizationId();
+  const { projects, openProject, closeProject } = useProjects();
   const devices = useDevices();
   const agentsRecord = useAgentsRecord();
   const [showOpenProject, setShowOpenProject] = useState(false);
@@ -88,81 +76,51 @@ export function WorkspaceSidebar() {
       />
 
       <SidebarNavGroup>
-        <SidebarItem
-          active={selectedId === null && centerView === "home"}
+        <SidebarNavItem
+          view="home"
           leading={<Icons.HomeIcon size={12} />}
           count="—"
-          onClick={() => {
-            setCenterView("home");
-            selectWorkspace(null);
-          }}
         >
           Home
-        </SidebarItem>
-        <SidebarItem
-          active={selectedId === null && centerView === "agents"}
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="agents"
           leading={<Icons.AgentIcon size={12} />}
           count={runningAgents}
-          onClick={() => {
-            setCenterView("agents");
-            selectWorkspace(null);
-          }}
         >
           Agents
-        </SidebarItem>
-        <SidebarItem
-          active={selectedId === null && centerView === "devices"}
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="devices"
           leading={<Icons.SimulatorIcon size={12} />}
           count={runningDevices}
-          onClick={() => {
-            setCenterView("devices");
-            selectWorkspace(null);
-          }}
         >
           Devices
-        </SidebarItem>
-        <SidebarItem
-          active={
-            selectedId === null &&
-            centerView === "organizations" &&
-            selectedOrgId === null
-          }
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="organizations"
           leading={<Icons.OrganizationIcon size={12} />}
           count={organizationsCount}
-          onClick={() => {
-            setCenterView("organizations");
-            selectWorkspace(null);
-          }}
         >
           Organizations
-        </SidebarItem>
-        <SidebarItem
-          active={selectedId === null && centerView === "review-queue"}
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="review-queue"
           leading={<Icons.ReviewQueueIcon size={12} />}
           count={reviewQueueCount}
-          onClick={() => {
-            setCenterView("review-queue");
-            selectWorkspace(null);
-          }}
         >
           Review queue
-        </SidebarItem>
-        <SidebarItem
-          active={selectedId === null && centerView === "activity"}
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="activity"
           leading={<CommitIcon size={12} />}
           count={activityCount}
-          onClick={() => {
-            setCenterView("activity");
-            selectWorkspace(null);
-          }}
         >
           Activity
-        </SidebarItem>
+        </SidebarNavItem>
       </SidebarNavGroup>
 
       <SidebarScroll>
-        {error && <p className={styles.errorMsg}>{error}</p>}
-
         <SidebarSection count={organizationsCount}>
           Organizations
         </SidebarSection>
