@@ -283,10 +283,48 @@ app.on("window-all-closed", () => {
 // macOS: Cmd+Q triggers before-quit before closing windows. Track it so
 // window-all-closed (which fires after) knows not to keep the app alive.
 let isQuitting = false;
+/**
+ * Set by `app_confirm_quit` IPC so the next `before-quit` bypasses the
+ * running-agents guard. Cleared on `before-quit` entry.
+ */
+let bypassRunningAgentsGuard = false;
+
+/** Called by ipc.ts once the renderer has confirmed quit-with-running-agents. */
+export function markQuitConfirmedDespiteAgents(): void {
+  bypassRunningAgentsGuard = true;
+}
+
 app.on("before-quit", (e) => {
   if (isQuitting) {
     return;
   }
+
+  const runningAgentIds: string[] = [];
+  for (const [id, agentSession] of appState.agents) {
+    if (agentSession.status === "running") {
+      runningAgentIds.push(id);
+    }
+  }
+
+  if (runningAgentIds.length > 0 && !bypassRunningAgentsGuard) {
+    log(
+      "before-quit: %d running agents, asking renderer",
+      runningAgentIds.length,
+    );
+    e.preventDefault();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+      mainWindow.webContents.send("app:quit-request", {
+        runningCount: runningAgentIds.length,
+      });
+    }
+
+    return;
+  }
+
+  // Past the guard — reset so a subsequent aborted quit is re-guarded.
+  bypassRunningAgentsGuard = false;
   log("before-quit fired, setting isQuitting=true");
   isQuitting = true;
   stopMcpServer();

@@ -1,10 +1,10 @@
 import type { AgentStatus, Workspace } from "../../../lib/types";
 import { useMemo } from "react";
 import { Badge, Eyebrow, Icons, StatusDot } from "@argus/peacock";
-import { stopAgentById } from "../../../lib/agentEventService";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
+import { requestStopAgent } from "../../shared/ConfirmStopAgent/stopAgentGuard";
 import styles from "./OrchestrationTree.module.css";
 
 const MAX_TITLE_CHARS = 60;
@@ -385,7 +385,7 @@ function AgentNodeRow({
             title="Stop agent"
             onClick={(e) => {
               e.stopPropagation();
-              stopAgentById(node.agent.agent_id).catch(() => {});
+              requestStopAgent(node.agent.agent_id);
             }}
           >
             <Icons.CloseIcon size={10} />
