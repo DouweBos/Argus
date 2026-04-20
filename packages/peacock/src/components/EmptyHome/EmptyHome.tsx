@@ -10,8 +10,6 @@ export interface EmptyHomeProps extends Omit<
   tagline?: ReactNode;
   /** Primary/secondary CTAs, rendered in a row. */
   actions?: ReactNode;
-  /** Tip card row (typically 3 TipCards). */
-  tips?: ReactNode;
   /** Shortcuts footer — free-form content (e.g., inline Kbd rows). */
   shortcuts?: ReactNode;
   /** Show the radial accent glow backdrop. Defaults to true. */
@@ -22,7 +20,6 @@ export function EmptyHome({
   title = "Argus",
   tagline = "parallel agentic mobile & web dev",
   actions,
-  tips,
   shortcuts,
   glow = true,
   className,
@@ -42,7 +39,6 @@ export function EmptyHome({
         <p className={styles.tagline}>{tagline}</p>
       </div>
       {actions && <div className={styles.ctas}>{actions}</div>}
-      {tips && <div className={styles.tips}>{tips}</div>}
       {shortcuts && <div className={styles.shortcuts}>{shortcuts}</div>}
     </div>
   );

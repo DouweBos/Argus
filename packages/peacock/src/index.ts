@@ -38,7 +38,6 @@ export * from "./components/StatusDots/StatusDots";
 export * from "./components/StatusPill/StatusPill";
 export * from "./components/Stepper/Stepper";
 export * from "./components/ThinkingDots/ThinkingDots";
-export * from "./components/TipCard/TipCard";
 export * from "./components/TitleBar/TitleBar";
 export * from "./components/ToolCallRow/ToolCallRow";
 export * from "./components/UsageMeter/UsageMeter";

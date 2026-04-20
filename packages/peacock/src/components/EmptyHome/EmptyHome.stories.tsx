@@ -3,7 +3,6 @@ import { SparkleIcon } from "../../icons/HomeIcons";
 import { FolderIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { Kbd } from "../Kbd/Kbd";
-import { TipCard } from "../TipCard/TipCard";
 import { EmptyHome } from "./EmptyHome";
 
 const meta: Meta<typeof EmptyHome> = {
@@ -33,25 +32,6 @@ export const Default: Story = {
             <Button variant="ghost" leading={<SparkleIcon size={13} />}>
               Try the tour
             </Button>
-          </>
-        }
-        tips={
-          <>
-            <TipCard
-              icon={<SparkleIcon size={11} />}
-              title="Spin up parallel ideas"
-              body="Every workspace is an isolated git worktree. Run five attempts side-by-side — none step on each other."
-            />
-            <TipCard
-              icon={<SparkleIcon size={11} />}
-              title="Approve only what you need"
-              body="The permission broker lets you allow a single tool call, or always-allow a pattern."
-            />
-            <TipCard
-              icon={<SparkleIcon size={11} />}
-              title="Drive simulators from the agent"
-              body="Agents tap, scroll, and type against a real iOS simulator through the conductor CLI."
-            />
           </>
         }
         shortcuts={
