@@ -121,6 +121,11 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
     startNew();
   };
 
+  const handleStartPlan = () => {
+    setActiveCenterView("agents");
+    startNew(undefined, "plan");
+  };
+
   return (
     <>
       {isRepoHome ? (
@@ -132,6 +137,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
           onResumeHistory={handleResumeHistory}
           onSelectAgent={handleOrchestrationSelect}
           onStart={handleStart}
+          onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
         />
       ) : (
@@ -143,6 +149,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
           onResumeHistory={handleResumeHistory}
           onSelectAgent={handleOrchestrationSelect}
           onStart={handleStart}
+          onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
         />
       )}
