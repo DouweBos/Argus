@@ -1,7 +1,7 @@
 /**
  * Device registry — aggregates the current iOS simulators, Android devices,
  * and reserved web browsers into a single list with links to the owning
- * agent / workspace / project.
+ * agent / session / project.
  */
 
 import { execFile } from "node:child_process";
@@ -31,41 +31,41 @@ export interface DeviceInfo {
   reserved: boolean;
   /** Agent that owns this device, if any. */
   agentId: string | null;
-  /** Workspace the owning agent belongs to (derived via `appState.agents`). */
-  workspaceId: string | null;
-  /** Absolute path of the owning workspace. Used by the UI to match against
-   * the frontend's workspace store (whose ids may differ from the backend's
+  /** Session the owning agent belongs to (derived via `appState.agents`). */
+  sessionId: string | null;
+  /** Absolute path of the owning session. Used by the UI to match against
+   * the frontend's session store (whose ids may differ from the backend's
    * after a merge). */
-  workspacePath: string | null;
-  /** Repo root of the owning workspace. */
+  sessionPath: string | null;
+  /** Repo root of the owning session. */
   repoRoot: string | null;
   /**
    * Key used when talking to pool/stream APIs for this device.
    * - iOS: UDID
    * - Android: serial
    * - Web: the map key of `webBrowserReservations` (equals whichever
-   *   identifier was passed to `acquireBrowser` — agent id or workspace id).
+   *   identifier was passed to `acquireBrowser` — agent id or session id).
    */
   reservationKey: string;
 }
 
 function resolveAgentOwner(agentId: string | null): {
-  workspaceId: string | null;
-  workspacePath: string | null;
+  sessionId: string | null;
+  sessionPath: string | null;
   repoRoot: string | null;
 } {
   if (!agentId) {
-    return { workspaceId: null, workspacePath: null, repoRoot: null };
+    return { sessionId: null, sessionPath: null, repoRoot: null };
   }
   const agent = appState.agents.get(agentId);
   if (!agent) {
-    return { workspaceId: null, workspacePath: null, repoRoot: null };
+    return { sessionId: null, sessionPath: null, repoRoot: null };
   }
-  const ws = appState.workspaces.get(agent.workspaceId);
+  const ws = appState.sessions.get(agent.sessionId);
 
   return {
-    workspaceId: agent.workspaceId,
-    workspacePath: ws?.path ?? null,
+    sessionId: agent.sessionId,
+    sessionPath: ws?.path ?? null,
     repoRoot: ws?.repo_root ?? null,
   };
 }
@@ -93,8 +93,8 @@ export async function listDevices(): Promise<DeviceInfo[]> {
         online: d.booted,
         reserved: agentId !== null,
         agentId,
-        workspaceId: owner.workspaceId,
-        workspacePath: owner.workspacePath,
+        sessionId: owner.sessionId,
+        sessionPath: owner.sessionPath,
         repoRoot: owner.repoRoot,
         reservationKey: d.udid,
       });
@@ -114,8 +114,8 @@ export async function listDevices(): Promise<DeviceInfo[]> {
         online: d.online,
         reserved: false,
         agentId: null,
-        workspaceId: null,
-        workspacePath: null,
+        sessionId: null,
+        sessionPath: null,
         repoRoot: null,
         reservationKey: d.serial,
       });
@@ -134,8 +134,8 @@ export async function listDevices(): Promise<DeviceInfo[]> {
       online: true,
       reserved: true,
       agentId: r.agentId,
-      workspaceId: owner.workspaceId,
-      workspacePath: owner.workspacePath,
+      sessionId: owner.sessionId,
+      sessionPath: owner.sessionPath,
       repoRoot: owner.repoRoot,
       reservationKey: key,
     });
@@ -183,7 +183,7 @@ export async function stopDevice(
 
   if (platform === "web") {
     // `deviceKey` here is the conductor deviceId; reservations are keyed by
-    // agent/workspace id, so look up the reservation by matching deviceId.
+    // agent/session id, so look up the reservation by matching deviceId.
     for (const [key, r] of appState.webBrowserReservations.entries()) {
       if (r.deviceId === deviceKey) {
         await webBrowserPool.releaseBrowser(key);

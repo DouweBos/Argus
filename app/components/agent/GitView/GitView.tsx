@@ -13,22 +13,22 @@ interface GitViewProps {
   baseBranch?: string | null;
   branchName?: string;
   repoRoot: string;
-  workspaceId: string;
+  sessionId: string;
 }
 
 export function GitView({
-  workspaceId,
+  sessionId,
   baseBranch,
   branchName,
   repoRoot,
 }: GitViewProps) {
   const [activeView, setActiveView] = useState<SourceView>("working-copy");
   const [fileCount, setFileCount] = useState(0);
-  const [prevWorkspaceId, setPrevWorkspaceId] = useState(workspaceId);
+  const [prevSessionId, setPrevSessionId] = useState(sessionId);
 
-  // Reset file count when workspace changes so stale counts don't linger.
-  if (workspaceId !== prevWorkspaceId) {
-    setPrevWorkspaceId(workspaceId);
+  // Reset file count when session changes so stale counts don't linger.
+  if (sessionId !== prevSessionId) {
+    setPrevSessionId(sessionId);
     setFileCount(0);
   }
 
@@ -58,18 +58,18 @@ export function GitView({
           baseBranch={baseBranch}
           branchName={branchName}
           repoRoot={repoRoot}
-          workspaceId={workspaceId}
+          sessionId={sessionId}
           onFileCountChange={setFileCount}
         />
       )}
 
-      {activeView === "branch" && <BranchView workspaceId={workspaceId} />}
+      {activeView === "branch" && <BranchView sessionId={sessionId} />}
 
-      {activeView === "history" && <HistoryView workspaceId={workspaceId} />}
+      {activeView === "history" && <HistoryView sessionId={sessionId} />}
 
       {activeView === "stashes" && (
         <StashesView
-          workspaceId={workspaceId}
+          sessionId={sessionId}
           onRefresh={() => setActiveView("working-copy")}
         />
       )}

@@ -37,9 +37,9 @@ interface ChatInputProps {
   onSend: (message: string, images?: ImageAttachment[]) => void;
   onTogglePlanMode?: () => void;
   planMode?: boolean;
+  sessionId?: string;
   slashCommands?: SlashCommand[];
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-  workspaceId?: string;
 }
 
 /** Read a File as base64 (without the data-URL prefix). */
@@ -74,7 +74,7 @@ export function ChatInput({
   planMode = false,
   onTogglePlanMode,
   textareaRef: externalTextareaRef,
-  workspaceId,
+  sessionId,
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const combinedRef = useCombinedRef(textareaRef, externalTextareaRef);
@@ -103,7 +103,7 @@ export function ChatInput({
     selectItem: selectMentionItem,
     dismissMention,
     headerText: mentionHeaderText,
-  } = useMentionPicker(workspaceId);
+  } = useMentionPicker(sessionId);
 
   // Model picker: controlled from parent if props provided, otherwise internal.
   const modelPickerOpen = controlledPickerOpen ?? internalPickerOpen;

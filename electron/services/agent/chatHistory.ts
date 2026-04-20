@@ -2,7 +2,7 @@
  * Chat history persistence service.
  *
  * Saves and loads agent conversations to disk. Stored per project (repo root)
- * alongside workspace metadata in:
+ * alongside session metadata in:
  * `~/.argus/worktrees/{RepoName}-argus-worktrees/.argus-chat-history/`
  *
  * Each conversation is an individual JSON file ({id}.json). A lightweight
@@ -12,8 +12,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
-import { worktreesRoot } from "../workspace/git";
-import { loadArgusConfig } from "../workspace/setup";
+import { worktreesRoot } from "../session/git";
+import { loadArgusConfig } from "../session/setup";
 
 const HISTORY_DIR_NAME = ".argus-chat-history";
 const INDEX_FILENAME = "index.json";
@@ -25,8 +25,8 @@ export interface ChatHistoryEntry {
   id: string;
   sessionId: string;
   title: string;
-  workspaceBranch: string;
-  workspaceDescription: string;
+  sessionBranch: string;
+  sessionDescription: string;
   model?: string;
   totalCost?: number;
   totalDuration?: number;
@@ -155,8 +155,8 @@ export function saveConversation(
     id: conversation.id,
     sessionId: conversation.sessionId,
     title: conversation.title,
-    workspaceBranch: conversation.workspaceBranch,
-    workspaceDescription: conversation.workspaceDescription,
+    sessionBranch: conversation.sessionBranch,
+    sessionDescription: conversation.sessionDescription,
     model: conversation.model,
     totalCost: conversation.totalCost,
     totalDuration: conversation.totalDuration,
@@ -277,9 +277,9 @@ export function searchChatHistory(
 
   for (const entry of entries) {
     const title = entry.title?.toLowerCase() ?? "";
-    const branch = entry.workspaceBranch?.toLowerCase() ?? "";
+    const branch = entry.sessionBranch?.toLowerCase() ?? "";
     // Only match on fields that are rendered on the row. `entry.model` would
-    // match every entry for "claude"; `workspaceDescription` isn't shown, so
+    // match every entry for "claude"; `sessionDescription` isn't shown, so
     // a hit there looks like a phantom result.
     const metaMatch = title.includes(q) || branch.includes(q);
 

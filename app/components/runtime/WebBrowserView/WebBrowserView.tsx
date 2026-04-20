@@ -7,13 +7,13 @@ import { useWebBrowserView } from "./useWebBrowserView";
 interface WebBrowserViewProps {
   children?: ReactNode;
   isActive: boolean;
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
 export function WebBrowserView({
   children,
   isActive,
-  workspaceId,
+  sessionId,
 }: WebBrowserViewProps) {
   const {
     browserPreset,
@@ -34,7 +34,7 @@ export function WebBrowserView({
     internalWidth,
     mjpegPort,
     setInputUrl,
-  } = useWebBrowserView(workspaceId, isActive);
+  } = useWebBrowserView(sessionId, isActive);
 
   const titleBar = (
     <WebBrowserTitleBar
@@ -66,7 +66,7 @@ export function WebBrowserView({
           onKeyboardEvent={handleKeyboardEvent}
           onMouseEvent={handleMouseEvent}
           onWheelEvent={handleWheelEvent}
-          workspaceId={workspaceId ?? "__global__"}
+          sessionId={sessionId ?? "__global__"}
         />
       </div>
     </div>

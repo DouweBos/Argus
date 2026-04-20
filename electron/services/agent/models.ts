@@ -34,8 +34,8 @@ export interface AgentResult {
 export interface AgentSession {
   /** Unique identifier for this agent instance. */
   agentId: string;
-  /** Workspace this agent is attached to. */
-  workspaceId: string;
+  /** Session this agent is attached to. */
+  sessionId: string;
   /** Write end of the child's stdin pipe. */
   stdin: Writable;
   /** The child process; used for `kill()` on stop. */
@@ -72,7 +72,7 @@ export interface AgentSession {
  */
 export interface AgentInfo {
   agent_id: string;
-  workspace_id: string;
+  session_id: string;
   status: AgentStatusValue;
   parent_agent_id: string | null;
 }

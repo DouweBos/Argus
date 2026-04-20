@@ -7,16 +7,19 @@ import {
   ShortcutsRail,
   StatCell,
   StatsStrip,
-  WorkspaceCard,
+  SessionCard,
 } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
-import { triggerNewWorkspace } from "../../../stores/dialogStore";
+import {
+  showCreateSessionDialog,
+  triggerNewSession,
+} from "../../../stores/dialogStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
+import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { HOME_SHORTCUTS } from "../HomeScreen/homeContent";
 import { PathLink } from "../PathLink/PathLink";
@@ -26,14 +29,14 @@ interface RepoHomeScreenProps {
   canStart: boolean;
   isStarting: boolean;
   onResumeHistory: (sessionId: string) => void;
-  onSelectAgent: (agentId: string, workspaceId: string) => void;
+  onSelectAgent: (agentId: string, sessionId: string) => void;
   onStart: () => void;
   onStartPlan: () => void;
   onViewHistory: (historyId: string) => void;
   /** Repo root path — used to scope orchestration and chat history. */
   repoRoot: string | null;
-  /** Current workspace ID (drives orchestration filter). */
-  workspaceId: string;
+  /** Current session ID (drives orchestration filter). */
+  sessionId: string;
 }
 
 function basename(p: string): string {
@@ -71,7 +74,7 @@ function agentMeta(status: string): string {
 }
 
 export function RepoHomeScreen({
-  workspaceId,
+  sessionId,
   repoRoot,
   isStarting,
   canStart,
@@ -83,34 +86,34 @@ export function RepoHomeScreen({
 }: RepoHomeScreenProps) {
   const agentsRecord = useAgentsRecord();
   const conversations = useConversations();
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
   const devices = useDevices();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
   const handleClearAllHistory = history.clearAll;
   const handleDeleteHistoryEntry = history.remove;
 
-  const repoWorkspaces = useMemo(
-    () => (repoRoot ? workspaces.filter((w) => w.repo_root === repoRoot) : []),
-    [workspaces, repoRoot],
+  const repoSessions = useMemo(
+    () => (repoRoot ? sessions.filter((w) => w.repo_root === repoRoot) : []),
+    [sessions, repoRoot],
   );
 
-  const visibleWorkspaces = useMemo(
-    () => repoWorkspaces.filter((w) => w.kind !== "repo_root"),
-    [repoWorkspaces],
+  const visibleSessions = useMemo(
+    () => repoSessions.filter((w) => w.kind !== "project_root"),
+    [repoSessions],
   );
 
-  const repoWorkspaceIds = useMemo(
-    () => new Set(repoWorkspaces.map((w) => w.id)),
-    [repoWorkspaces],
+  const repoSessionIds = useMemo(
+    () => new Set(repoSessions.map((w) => w.id)),
+    [repoSessions],
   );
 
   const repoAgents = useMemo(
     () =>
       Object.values(agentsRecord).filter((a) =>
-        repoWorkspaceIds.has(a.workspace_id),
+        repoSessionIds.has(a.session_id),
       ),
-    [agentsRecord, repoWorkspaceIds],
+    [agentsRecord, repoSessionIds],
   );
 
   const repoDevices = useMemo(
@@ -121,7 +124,7 @@ export function RepoHomeScreen({
 
   const projectName = useMemo(() => {
     if (!repoRoot) {
-      return "Workspace";
+      return "Session";
     }
     const rp = recent.find((r) => r.path === repoRoot);
 
@@ -143,14 +146,22 @@ export function RepoHomeScreen({
       agentsIdle: idle,
       agentsTotal: repoAgents.length,
       errors,
-      workspaces: repoWorkspaces.length,
+      sessions: repoSessions.length,
       devicesOnline: runningDevices.length,
       devicesTotal: repoDevices.length,
     };
-  }, [repoAgents, repoWorkspaces, runningDevices.length, repoDevices.length]);
+  }, [repoAgents, repoSessions, runningDevices.length, repoDevices.length]);
 
-  const handleSelectWorkspace = (id: string) => {
-    selectWorkspace(id);
+  const handleSelectSession = (id: string) => {
+    selectSession(id);
+  };
+
+  const handleNewSession = () => {
+    if (repoRoot) {
+      showCreateSessionDialog(repoRoot);
+    } else {
+      triggerNewSession();
+    }
   };
 
   return (
@@ -167,7 +178,7 @@ export function RepoHomeScreen({
             <div>
               <h1 className={styles.title}>{projectName}</h1>
               <div className={styles.sub}>
-                {stats.agentsRunning} agents · {stats.workspaces} workspaces
+                {stats.agentsRunning} agents · {stats.sessions} sessions
               </div>
             </div>
           </div>
@@ -176,9 +187,9 @@ export function RepoHomeScreen({
             <Button
               variant="ghost"
               leading={<Icons.PlusIcon size={12} />}
-              onClick={triggerNewWorkspace}
+              onClick={handleNewSession}
             >
-              New workspace
+              New session
             </Button>
             <Button
               variant="ghost"
@@ -215,14 +226,14 @@ export function RepoHomeScreen({
             live={stats.agentsRunning > 0}
           />
           <StatCell
-            label="Workspaces"
-            value={stats.workspaces}
+            label="Sessions"
+            value={stats.sessions}
             delta="in this repo"
           />
           <StatCell
             label="Total agents"
             value={stats.agentsTotal}
-            delta="across workspaces"
+            delta="across sessions"
           />
           <StatCell
             label="Devices"
@@ -243,29 +254,29 @@ export function RepoHomeScreen({
           <div className={styles.col}>
             <div className={styles.panel}>
               <div className={styles.panelHead}>
-                <span className={styles.eyebrow}>Workspaces</span>
+                <span className={styles.eyebrow}>Sessions</span>
                 <span className={styles.subMeta}>
-                  {visibleWorkspaces.length} total
+                  {visibleSessions.length} total
                 </span>
                 <div className={styles.panelSpacer} />
                 <button
                   type="button"
                   className={styles.linkBtn}
-                  onClick={triggerNewWorkspace}
+                  onClick={handleNewSession}
                 >
                   New
                 </button>
               </div>
               <div className={styles.panelScroll}>
-                {visibleWorkspaces.length === 0 ? (
+                {visibleSessions.length === 0 ? (
                   <div className={styles.emptyCell}>
-                    No workspaces yet. Create one to start a branch.
+                    No sessions yet. Create one to start a branch.
                   </div>
                 ) : (
                   <div className={styles.wsGrid}>
-                    {visibleWorkspaces.map((ws) => {
+                    {visibleSessions.map((ws) => {
                       const wsAgents = repoAgents.filter(
-                        (a) => a.workspace_id === ws.id,
+                        (a) => a.session_id === ws.id,
                       );
                       const hasErr = wsAgents.some((a) => a.status === "error");
                       const hasRun = wsAgents.some(
@@ -279,17 +290,17 @@ export function RepoHomeScreen({
                       }
 
                       return (
-                        <WorkspaceCard
+                        <SessionCard
                           key={ws.id}
                           branch={ws.display_name ?? ws.branch}
                           parentBranch={ws.base_branch ?? undefined}
-                          selected={ws.id === workspaceId}
+                          selected={ws.id === sessionId}
                           status={statusTone}
                           pulse={hasRun}
                           role="button"
                           tabIndex={0}
                           style={{ cursor: "pointer" }}
-                          onClick={() => handleSelectWorkspace(ws.id)}
+                          onClick={() => handleSelectSession(ws.id)}
                         />
                       );
                     })}
@@ -331,12 +342,12 @@ export function RepoHomeScreen({
               <div className={styles.agentList}>
                 {repoAgents.length === 0 ? (
                   <div className={styles.emptyCell}>
-                    No agents in this repo. Start one from a workspace.
+                    No agents in this repo. Start one from a session.
                   </div>
                 ) : (
                   repoAgents.map((a) => {
-                    const ws = repoWorkspaces.find(
-                      (w) => w.id === a.workspace_id,
+                    const ws = repoSessions.find(
+                      (w) => w.id === a.session_id,
                     );
                     const conv = conversations[a.agent_id];
                     const convTitle = conv?.title?.trim();
@@ -362,8 +373,8 @@ export function RepoHomeScreen({
                         tabIndex={0}
                         style={{ cursor: "pointer" }}
                         onClick={() => {
-                          onSelectAgent(a.agent_id, a.workspace_id);
-                          focusAgent(a.workspace_id, a.agent_id);
+                          onSelectAgent(a.agent_id, a.session_id);
+                          focusAgent(a.session_id, a.agent_id);
                         }}
                       />
                     );

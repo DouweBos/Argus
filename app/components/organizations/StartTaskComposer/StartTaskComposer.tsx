@@ -122,7 +122,7 @@ export function StartTaskComposer({ org }: Props) {
           ? "Starting…"
           : `${selectedRoots.length} of ${org.members.length} repo${
               org.members.length === 1 ? "" : "s"
-            } in scope · 1 agent in a neutral workspace`}
+            } in scope · 1 agent in a neutral session`}
       </div>
 
       {error && <div className={styles.error}>{error}</div>}

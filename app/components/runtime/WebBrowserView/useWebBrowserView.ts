@@ -24,32 +24,32 @@ import {
   readArgusConfig,
 } from "../../../lib/ipc";
 import { normalizeUrl } from "../../../lib/webBrowserViewUtils";
+import { getSessionState } from "../../../stores/sessionStore";
 import {
   getSimulatorState,
   useWebBrowserSimulatorState,
 } from "../../../stores/simulatorStore";
-import { getWorkspaceState } from "../../../stores/workspaceStore";
 
 interface BrowserNavEvent {
   canGoBack: boolean;
   canGoForward: boolean;
+  sessionId: string;
   url: string;
-  workspaceId: string;
 }
 
 export function useWebBrowserView(
-  workspaceId: string | null,
+  sessionId: string | null,
   _isActive: boolean,
 ) {
   const {
     browserPreset,
-    browserUrlByWorkspace,
+    browserUrlBySession,
     setBrowserPreset,
     setBrowserUrl,
   } = useWebBrowserSimulatorState();
 
-  const storeKey = workspaceId ?? "__global__";
-  const currentUrl = browserUrlByWorkspace[storeKey] ?? "";
+  const storeKey = sessionId ?? "__global__";
+  const currentUrl = browserUrlBySession[storeKey] ?? "";
 
   const [inputUrl, setInputUrl] = useState(currentUrl);
   const [canGoBack, setCanGoBack] = useState(false);
@@ -72,7 +72,7 @@ export function useWebBrowserView(
       .catch(() => {});
   }, []);
 
-  // Pick the default URL once per workspace, and push it to the backend.
+  // Pick the default URL once per session, and push it to the backend.
   useEffect(() => {
     if (hasLoadedDefault || currentUrl) {
       return;
@@ -80,11 +80,11 @@ export function useWebBrowserView(
     (async () => {
       let chosenUrl = "https://houwert.dev";
       try {
-        const workspace = getWorkspaceState().workspaces.find(
-          (entry) => entry.id === workspaceId,
+        const session = getSessionState().sessions.find(
+          (entry) => entry.id === sessionId,
         );
-        if (workspace) {
-          const config = await readArgusConfig(workspace.repo_root);
+        if (session) {
+          const config = await readArgusConfig(session.repo_root);
           if (config.browser_url) {
             chosenUrl = config.browser_url;
           }
@@ -94,7 +94,7 @@ export function useWebBrowserView(
         // ignore read errors — fall back to the chosen default
       } finally {
         const latest =
-          getSimulatorState().browserUrlByWorkspace[storeKey] ?? "";
+          getSimulatorState().browserUrlBySession[storeKey] ?? "";
         if (!latest) {
           const url = normalizeUrl(chosenUrl);
           setBrowserUrl(storeKey, url);
@@ -103,18 +103,18 @@ export function useWebBrowserView(
         setHasLoadedDefault(true);
       }
     })();
-  }, [workspaceId, storeKey, currentUrl, hasLoadedDefault, setBrowserUrl]);
+  }, [sessionId, storeKey, currentUrl, hasLoadedDefault, setBrowserUrl]);
 
   useEffect(() => {
     setHasLoadedDefault(false);
-  }, [workspaceId]);
+  }, [sessionId]);
 
   useEffect(() => {
     setInputUrl(currentUrl);
   }, [currentUrl]);
 
   // One-shot: ensure the browser exists and load the default URL for this
-  // workspace. Subsequent navigations are driven imperatively by the user
+  // session. Subsequent navigations are driven imperatively by the user
   // (URL bar, back/forward/reload) — not by watching `currentUrl`, which
   // diverges from the real page URL after in-page link clicks or redirects.
   const [hasInitialNavigated, setHasInitialNavigated] = useState(false);
@@ -150,7 +150,7 @@ export function useWebBrowserView(
   // Receive nav push-events from the backend. Mirror the real page URL into
   // both the local input and the store so persisted state stays consistent.
   useIpcEvent<BrowserNavEvent>("browser_view:nav", (payload) => {
-    if (payload?.workspaceId !== storeKey) {
+    if (payload?.sessionId !== storeKey) {
       return;
     }
     if (payload.url) {

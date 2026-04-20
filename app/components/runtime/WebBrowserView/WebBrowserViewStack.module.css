@@ -8,7 +8,7 @@
   min-height: 0;
 }
 
-/* Active workspace webview — visible and interactive. */
+/* Active session webview — visible and interactive. */
 .layerVisible {
   display: flex;
   flex-direction: column;
@@ -17,7 +17,7 @@
   min-height: 0;
 }
 
-/* Inactive workspace webviews — keep mounted but hidden.
+/* Inactive session webviews — keep mounted but hidden.
    Avoid display:none — it tears down the Electron guest webview process
    and forces a reload when returning. Instead use visibility:hidden +
    position:absolute so the element stays in the DOM, the guest process
@@ -33,7 +33,7 @@
   visibility: hidden;
 }
 
-/* Placeholder shown when no browser has been booted for the active workspace. */
+/* Placeholder shown when no browser has been booted for the active session. */
 .placeholderShell {
   display: flex;
   flex-direction: column;

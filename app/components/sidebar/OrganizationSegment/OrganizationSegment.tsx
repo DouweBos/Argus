@@ -6,7 +6,7 @@ import {
   useSelectedOrganizationId,
 } from "../../../stores/centerViewStore";
 import { showEditOrganizationDialog } from "../../../stores/dialogStore";
-import { selectWorkspace } from "../../../stores/workspaceStore";
+import { selectSession } from "../../../stores/sessionStore";
 
 interface OrganizationSegmentProps {
   org: Organization;
@@ -18,7 +18,7 @@ export function OrganizationSegment({ org }: OrganizationSegmentProps) {
   const isActive = centerView === "organizations" && selectedOrgId === org.id;
 
   const openOrganizations = () => {
-    selectWorkspace(null);
+    selectSession(null);
     openOrganization(org.id);
   };
 

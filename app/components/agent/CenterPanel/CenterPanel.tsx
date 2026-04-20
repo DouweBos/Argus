@@ -4,7 +4,7 @@ import {
   setActiveCenterView,
   useActiveCenterView,
 } from "../../../stores/editorStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { EditorPanel } from "../../editor/EditorPanel";
 import { HomeScreen } from "../../home/HomeScreen";
 import { AgentView } from "../AgentView";
@@ -12,23 +12,23 @@ import { GitView } from "../GitView";
 import styles from "./CenterPanel.module.css";
 
 interface CenterPanelProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function CenterPanel({ workspaceId }: CenterPanelProps) {
-  const workspaces = useWorkspaces();
-  const workspace = useMemo(
+export function CenterPanel({ sessionId }: CenterPanelProps) {
+  const sessions = useSessions();
+  const session = useMemo(
     () =>
-      workspaceId
-        ? (workspaces.find((w) => w.id === workspaceId) ?? null)
+      sessionId
+        ? (sessions.find((w) => w.id === sessionId) ?? null)
         : null,
-    [workspaceId, workspaces],
+    [sessionId, sessions],
   );
 
   const activeView = useActiveCenterView();
   const setActiveView = setActiveCenterView;
 
-  if (!workspaceId || !workspace) {
+  if (!sessionId || !session) {
     return <HomeScreen />;
   }
 
@@ -67,17 +67,17 @@ export function CenterPanel({ workspaceId }: CenterPanelProps) {
 
       {/* Content area */}
       {(activeView === "agents" || activeView === "home") && (
-        <AgentView workspaceId={workspaceId} />
+        <AgentView sessionId={sessionId} />
       )}
 
-      {activeView === "editor" && <EditorPanel workspaceId={workspaceId} />}
+      {activeView === "editor" && <EditorPanel sessionId={sessionId} />}
 
       {activeView === "git" && (
         <GitView
-          baseBranch={workspace?.base_branch}
-          branchName={workspace?.branch}
-          repoRoot={workspace?.repo_root ?? ""}
-          workspaceId={workspaceId}
+          baseBranch={session?.base_branch}
+          branchName={session?.branch}
+          repoRoot={session?.repo_root ?? ""}
+          sessionId={sessionId}
         />
       )}
     </div>

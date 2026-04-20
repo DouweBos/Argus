@@ -12,7 +12,7 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   defaults: "Defaults",
   project: "Project",
   argus_config: "Config",
-  first_workspace: "Workspace",
+  first_session: "Session",
   first_agent: "Agent",
   completion: "Done",
 };

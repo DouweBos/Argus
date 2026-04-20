@@ -1,4 +1,4 @@
-import type { AgentStatus, DeviceInfo, Workspace } from "../../../lib/types";
+import type { AgentStatus, DeviceInfo, Session } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useMemo } from "react";
 import { projectAccent } from "@argus/peacock";
@@ -9,14 +9,14 @@ import {
   useRecentProjects,
   type RecentProject,
 } from "../../../stores/recentProjectsStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 
 export interface HomeAgent {
   branch: string;
   displayName: string;
   id: string;
+  session: Session;
   status: PeacockAgentStatus;
-  workspace: Workspace;
 }
 
 export interface HomeProject {
@@ -26,7 +26,7 @@ export interface HomeProject {
   lastOpened: number;
   name: string;
   path: string;
-  workspaces: Workspace[];
+  sessions: Session[];
 }
 
 export interface HomeStats {
@@ -35,7 +35,7 @@ export interface HomeStats {
   devicesRunning: number;
   devicesTotal: number;
   projects: number;
-  workspaces: number;
+  sessions: number;
 }
 
 export interface HomeData {
@@ -80,7 +80,7 @@ export function useHomeData(): HomeData & {
   formatLastOpened: typeof formatLastOpened;
 } {
   const recent = useRecentProjects();
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
   const agentsRecord = useAgentsRecord();
   const conversations = useConversations();
   const devices = useDevices();
@@ -94,13 +94,13 @@ export function useHomeData(): HomeData & {
         name: rp.name,
         path: rp.path,
         accent: projectAccent(rp.path),
-        workspaces: [],
+        sessions: [],
         agents: [],
         lastOpened: rp.lastOpened,
       });
     });
 
-    workspaces.forEach((ws) => {
+    sessions.forEach((ws) => {
       const key = ws.repo_root;
       let proj = projectsByPath.get(key);
       if (!proj) {
@@ -109,19 +109,19 @@ export function useHomeData(): HomeData & {
           name: basename(key),
           path: key,
           accent: projectAccent(key),
-          workspaces: [],
+          sessions: [],
           agents: [],
           // Unknown — place at the top of the list by using a sentinel.
           lastOpened: 0,
         };
         projectsByPath.set(key, proj);
       }
-      proj.workspaces.push(ws);
+      proj.sessions.push(ws);
     });
 
     const activeAgents: HomeAgent[] = [];
     Object.values(agentsRecord).forEach((a) => {
-      const ws = workspaces.find((w) => w.id === a.workspace_id);
+      const ws = sessions.find((w) => w.id === a.session_id);
       if (!ws) {
         return;
       }
@@ -137,7 +137,7 @@ export function useHomeData(): HomeData & {
         branch: ws.branch,
         displayName,
         status: mapAgentStatus(a.status),
-        workspace: ws,
+        session: ws,
       };
       const proj = projectsByPath.get(ws.repo_root);
       if (proj) {
@@ -155,12 +155,12 @@ export function useHomeData(): HomeData & {
       agentsIdle: activeAgents.filter((a) => a.status === "idle").length,
       devicesRunning: devices.filter((d) => d.online).length,
       devicesTotal: devices.length,
-      workspaces: workspaces.length,
+      sessions: sessions.length,
       projects: projects.length,
     };
 
     return { projects, activeAgents, devices, stats, formatLastOpened };
-  }, [recent, workspaces, agentsRecord, conversations, devices]);
+  }, [recent, sessions, agentsRecord, conversations, devices]);
 }
 
 function basename(p: string): string {

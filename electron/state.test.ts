@@ -4,7 +4,7 @@ import { appState } from "./state";
 describe("appState", () => {
   it("has empty collections by default", () => {
     expect(appState.repoRoots.size).toBe(0);
-    expect(appState.workspaces.size).toBe(0);
+    expect(appState.sessions.size).toBe(0);
     expect(appState.terminals.size).toBe(0);
     expect(appState.agents.size).toBe(0);
     expect(appState.simulator).toBeNull();
@@ -18,7 +18,7 @@ describe("appState", () => {
     expect(appState.repoRoots.has("/test/repo")).toBe(false);
   });
 
-  it("supports Map operations on workspaces", () => {
+  it("supports Map operations on sessions", () => {
     const ws = {
       id: "ws-1",
       kind: "worktree" as const,
@@ -28,10 +28,10 @@ describe("appState", () => {
       repo_root: "/tmp/repo",
       status: "ready" as const,
     };
-    appState.workspaces.set("ws-1", ws);
-    expect(appState.workspaces.get("ws-1")).toBe(ws);
-    appState.workspaces.delete("ws-1");
-    expect(appState.workspaces.has("ws-1")).toBe(false);
+    appState.sessions.set("ws-1", ws);
+    expect(appState.sessions.get("ws-1")).toBe(ws);
+    appState.sessions.delete("ws-1");
+    expect(appState.sessions.has("ws-1")).toBe(false);
   });
 
   it("can set and clear simulator session", () => {

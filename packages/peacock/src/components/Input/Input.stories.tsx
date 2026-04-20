@@ -30,7 +30,7 @@ export const Mono: Story = {
 export const Textarea: StoryObj<typeof TextArea> = {
   render: () => (
     <div style={{ width: 380 }}>
-      <TextArea placeholder="Refactor the workspace card to use the new…" />
+      <TextArea placeholder="Refactor the session card to use the new…" />
     </div>
   ),
 };

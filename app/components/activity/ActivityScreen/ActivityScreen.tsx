@@ -42,11 +42,11 @@ function kindIcon(kind: ActivityKind): ReactNode {
       return <Icons.StopIcon size={13} />;
     case "agent_errored":
       return <WarningIcon size={13} />;
-    case "workspace_created":
+    case "session_created":
       return <Icons.PlusIcon size={13} />;
-    case "workspace_merged":
+    case "session_merged":
       return <Icons.MergeIcon size={13} />;
-    case "workspace_deleted":
+    case "session_deleted":
       return <Icons.TrashIcon size={13} />;
     case "commit_landed":
       return <CommitIcon size={13} />;
@@ -62,14 +62,14 @@ function kindToneClass(kind: ActivityKind): string {
     case "agent_errored":
       return styles.toneError;
     case "agent_spawned":
-    case "workspace_created":
+    case "session_created":
     case "device_online":
       return styles.toneSuccess;
-    case "workspace_merged":
+    case "session_merged":
     case "commit_landed":
       return styles.toneAccent;
     case "agent_stopped":
-    case "workspace_deleted":
+    case "session_deleted":
     case "device_offline":
       return styles.toneMuted;
   }

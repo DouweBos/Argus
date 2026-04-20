@@ -56,7 +56,7 @@ export const Default: Story = {
                 color: "var(--text-muted)",
               }}
             >
-              <Kbd keys={["⌘", "N"]} /> New workspace
+              <Kbd keys={["⌘", "N"]} /> New session
             </span>
             <span
               style={{

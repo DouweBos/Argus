@@ -37,20 +37,20 @@ function emitEvent(event: string, payload: unknown = {}) {
 // Mock IPC
 // ---------------------------------------------------------------------------
 
-const mockGetWorkspaceConflicts = vi.fn().mockResolvedValue([]);
-const mockGetWorkspaceStagedDiff = vi.fn().mockResolvedValue("");
-const mockGetWorkspaceCommitsAhead = vi.fn().mockResolvedValue(0);
-const mockMergeWorkspaceIntoBase = vi.fn().mockResolvedValue(undefined);
+const mockGetSessionConflicts = vi.fn().mockResolvedValue([]);
+const mockGetSessionStagedDiff = vi.fn().mockResolvedValue("");
+const mockGetSessionCommitsAhead = vi.fn().mockResolvedValue(0);
+const mockMergeSessionIntoBase = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../lib/ipc", () => ({
-  getWorkspaceConflicts: (...args: unknown[]) =>
-    mockGetWorkspaceConflicts(...args),
-  getWorkspaceStagedDiff: (...args: unknown[]) =>
-    mockGetWorkspaceStagedDiff(...args),
-  getWorkspaceCommitsAhead: (...args: unknown[]) =>
-    mockGetWorkspaceCommitsAhead(...args),
-  mergeWorkspaceIntoBase: (...args: unknown[]) =>
-    mockMergeWorkspaceIntoBase(...args),
+  getSessionConflicts: (...args: unknown[]) =>
+    mockGetSessionConflicts(...args),
+  getSessionStagedDiff: (...args: unknown[]) =>
+    mockGetSessionStagedDiff(...args),
+  getSessionCommitsAhead: (...args: unknown[]) =>
+    mockGetSessionCommitsAhead(...args),
+  mergeSessionIntoBase: (...args: unknown[]) =>
+    mockMergeSessionIntoBase(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -60,10 +60,10 @@ vi.mock("../lib/ipc", () => ({
 describe("useMergeStatus", () => {
   beforeEach(() => {
     eventListeners.clear();
-    mockGetWorkspaceConflicts.mockResolvedValue([]);
-    mockGetWorkspaceStagedDiff.mockResolvedValue("");
-    mockGetWorkspaceCommitsAhead.mockResolvedValue(0);
-    mockMergeWorkspaceIntoBase.mockResolvedValue(undefined);
+    mockGetSessionConflicts.mockResolvedValue([]);
+    mockGetSessionStagedDiff.mockResolvedValue("");
+    mockGetSessionCommitsAhead.mockResolvedValue(0);
+    mockMergeSessionIntoBase.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -71,7 +71,7 @@ describe("useMergeStatus", () => {
   });
 
   it("returns hasStaged true when staged diff is non-empty", async () => {
-    mockGetWorkspaceStagedDiff.mockResolvedValue("diff --git a/f.ts b/f.ts\n");
+    mockGetSessionStagedDiff.mockResolvedValue("diff --git a/f.ts b/f.ts\n");
 
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
@@ -81,19 +81,19 @@ describe("useMergeStatus", () => {
   });
 
   it("returns hasStaged false when staged diff is empty", async () => {
-    mockGetWorkspaceStagedDiff.mockResolvedValue("");
+    mockGetSessionStagedDiff.mockResolvedValue("");
 
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
     await waitFor(() => {
-      expect(mockGetWorkspaceStagedDiff).toHaveBeenCalled();
+      expect(mockGetSessionStagedDiff).toHaveBeenCalled();
     });
 
     expect(result.current.hasStaged).toBe(false);
   });
 
-  it("returns conflict list from getWorkspaceConflicts", async () => {
-    mockGetWorkspaceConflicts.mockResolvedValue(["a.ts", "b.ts"]);
+  it("returns conflict list from getSessionConflicts", async () => {
+    mockGetSessionConflicts.mockResolvedValue(["a.ts", "b.ts"]);
 
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
@@ -102,30 +102,30 @@ describe("useMergeStatus", () => {
     });
   });
 
-  it("handleMerge calls mergeWorkspaceIntoBase", async () => {
+  it("handleMerge calls mergeSessionIntoBase", async () => {
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
     await waitFor(() => {
-      expect(mockGetWorkspaceConflicts).toHaveBeenCalled();
+      expect(mockGetSessionConflicts).toHaveBeenCalled();
     });
 
     await act(async () => {
       await result.current.handleMerge();
     });
 
-    expect(mockMergeWorkspaceIntoBase).toHaveBeenCalledWith("ws-1");
+    expect(mockMergeSessionIntoBase).toHaveBeenCalledWith("ws-1");
     expect(result.current.isMerging).toBe(false);
   });
 
   it("handleMerge captures error in mergeError on failure", async () => {
-    mockMergeWorkspaceIntoBase.mockRejectedValue(
+    mockMergeSessionIntoBase.mockRejectedValue(
       new Error("merge conflict detected"),
     );
 
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
     await waitFor(() => {
-      expect(mockGetWorkspaceConflicts).toHaveBeenCalled();
+      expect(mockGetSessionConflicts).toHaveBeenCalled();
     });
 
     await act(async () => {
@@ -136,32 +136,32 @@ describe("useMergeStatus", () => {
     expect(result.current.isMerging).toBe(false);
   });
 
-  it("no-ops when workspaceId is null", async () => {
+  it("no-ops when sessionId is null", async () => {
     const { result } = renderHook(() => useMergeStatus(null));
 
     // Give it a tick to settle
     await act(async () => {});
 
-    expect(mockGetWorkspaceConflicts).not.toHaveBeenCalled();
-    expect(mockGetWorkspaceStagedDiff).not.toHaveBeenCalled();
+    expect(mockGetSessionConflicts).not.toHaveBeenCalled();
+    expect(mockGetSessionStagedDiff).not.toHaveBeenCalled();
     expect(result.current.conflicts).toEqual([]);
     expect(result.current.hasStaged).toBe(false);
   });
 
-  it("re-fetches status on workspace:diff-changed event", async () => {
-    mockGetWorkspaceStagedDiff.mockResolvedValue("");
+  it("re-fetches status on session:diff-changed event", async () => {
+    mockGetSessionStagedDiff.mockResolvedValue("");
 
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
     await waitFor(() => {
-      expect(mockGetWorkspaceStagedDiff).toHaveBeenCalledTimes(1);
+      expect(mockGetSessionStagedDiff).toHaveBeenCalledTimes(1);
     });
 
     // Now staged changes appear
-    mockGetWorkspaceStagedDiff.mockResolvedValue("some staged diff\n");
+    mockGetSessionStagedDiff.mockResolvedValue("some staged diff\n");
 
     act(() => {
-      emitEvent("workspace:diff-changed:ws-1");
+      emitEvent("session:diff-changed:ws-1");
     });
 
     await waitFor(() => {

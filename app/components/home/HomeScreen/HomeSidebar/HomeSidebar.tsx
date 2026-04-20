@@ -12,7 +12,7 @@ import {
   SidebarRepoGroup,
   SidebarScroll,
   SidebarSection,
-  SidebarWorkspaceRow,
+  SidebarSessionRow,
   agentStatusPulse,
   agentStatusTone,
 } from "@argus/peacock";
@@ -22,9 +22,9 @@ export type HomeSidebarView = "activity" | "home" | "review";
 export interface HomeSidebarProps {
   data: HomeData;
   onAddRepository: () => void;
-  onNewWorkspace: () => void;
+  onNewSession: () => void;
   onOpenProject: (proj: HomeProject) => void;
-  onOpenWorkspace: (workspaceId: string, repoPath: string) => void;
+  onOpenSession: (sessionId: string, repoPath: string) => void;
   onViewChange?: (view: HomeSidebarView) => void;
   view?: HomeSidebarView;
 }
@@ -34,9 +34,9 @@ export function HomeSidebar({
   view = "home",
   onViewChange,
   onAddRepository,
-  onNewWorkspace,
+  onNewSession,
   onOpenProject,
-  onOpenWorkspace,
+  onOpenSession,
 }: HomeSidebarProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -64,7 +64,7 @@ export function HomeSidebar({
         }
         actions={
           <>
-            <SidebarHeaderAction title="New workspace" onClick={onNewWorkspace}>
+            <SidebarHeaderAction title="New session" onClick={onNewSession}>
               <Icons.PlusIcon size={12} />
             </SidebarHeaderAction>
             <SidebarHeaderAction title="Open repo" onClick={onAddRepository}>
@@ -102,7 +102,7 @@ export function HomeSidebar({
       </SidebarNavGroup>
 
       <SidebarScroll>
-        <SidebarSection count={totalAgents}>Workspaces</SidebarSection>
+        <SidebarSection count={totalAgents}>Sessions</SidebarSection>
         {activeProjects.length === 0 && (
           <div
             style={{
@@ -111,7 +111,7 @@ export function HomeSidebar({
               color: "var(--text-muted)",
             }}
           >
-            No active workspaces.
+            No active sessions.
           </div>
         )}
         {activeProjects.map((p) => {
@@ -128,13 +128,13 @@ export function HomeSidebar({
               onHeaderClick={() => toggle(p.id)}
             >
               {p.agents.map((a) => (
-                <SidebarWorkspaceRow
+                <SidebarSessionRow
                   key={a.id}
                   name={a.branch}
                   status={agentStatusTone(a.status)}
                   pulse={agentStatusPulse(a.status)}
                   onClick={() =>
-                    onOpenWorkspace(a.workspace.id, a.workspace.repo_root)
+                    onOpenSession(a.session.id, a.session.repo_root)
                   }
                 />
               ))}

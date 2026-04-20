@@ -41,7 +41,7 @@ export * from "./components/ThinkingDots/ThinkingDots";
 export * from "./components/TitleBar/TitleBar";
 export * from "./components/ToolCallRow/ToolCallRow";
 export * from "./components/UsageMeter/UsageMeter";
-export * from "./components/WorkspaceCard/WorkspaceCard";
+export * from "./components/SessionCard/SessionCard";
 
 export * as Icons from "./icons/Icons";
 export * from "./icons/HomeIcons";

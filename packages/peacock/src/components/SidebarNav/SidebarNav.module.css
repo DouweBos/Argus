@@ -374,16 +374,30 @@
   color: var(--text-primary);
 }
 
-.workspaceList {
+.sessionList {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 1px 0 3px 2px;
+  padding: 2px 0 4px 16px;
+  margin-left: 12px;
 }
 
-/* ─── Workspace row ──────────────────────────────────────────────────── */
+/* Tree rail — vertical line tying child sessions to their parent project */
+.sessionList::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 6px;
+  left: 0;
+  width: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
 
-.workspaceRow {
+/* ─── Session row ──────────────────────────────────────────────────── */
+
+.sessionRow {
   position: relative;
   padding: 5px 10px 5px 16px;
   border-radius: 0 6px 6px 0;
@@ -399,18 +413,18 @@
   text-align: left;
   font-family: inherit;
 }
-.workspaceRow:hover {
+.sessionRow:hover {
   background: var(--glass-bg);
   color: var(--text-primary);
 }
 
-.workspaceRowActive {
+.sessionRowActive {
   background: var(--accent-glow);
   box-shadow: inset 3px 0 0 var(--accent);
   color: var(--text-primary);
 }
 
-.workspaceNameRow {
+.sessionNameRow {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -418,7 +432,7 @@
   width: 100%;
 }
 
-.workspaceName {
+.sessionName {
   font-size: 11px;
   font-weight: 600;
   font-family: var(--font-mono);
@@ -429,7 +443,7 @@
   min-width: 0;
 }
 
-.workspaceDiff {
+.sessionDiff {
   font-family: var(--font-mono);
   font-size: 9px;
   display: flex;
@@ -443,7 +457,7 @@
   color: var(--error);
 }
 
-.workspaceMeta {
+.sessionMeta {
   font-size: 10px;
   color: var(--text-muted);
   padding-left: 13px;

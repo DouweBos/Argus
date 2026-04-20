@@ -8,7 +8,7 @@ const meta: Meta<typeof EmptyState> = {
   parameters: { layout: "centered" },
   args: {
     title: "No agent running",
-    body: "Spin up a Claude Code agent to start working on this workspace.",
+    body: "Spin up a Claude Code agent to start working on this session.",
   },
 };
 export default meta;
@@ -36,7 +36,7 @@ export const WithIcon: Story = {
 
 export const MessageOnly: Story = {
   args: {
-    title: "No agents in this workspace.",
+    title: "No agents in this session.",
     body: undefined,
   },
 };

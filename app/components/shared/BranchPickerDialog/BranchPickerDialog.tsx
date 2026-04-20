@@ -8,22 +8,22 @@ import {
 import styles from "./BranchPickerDialog.module.css";
 
 export function BranchPickerDialog() {
-  const { repoRoot, workspaceId } = useBranchPickerTarget();
-  if (!repoRoot || !workspaceId) {
+  const { repoRoot, sessionId } = useBranchPickerTarget();
+  if (!repoRoot || !sessionId) {
     return null;
   }
 
   return (
-    <BranchPickerDialogContent repoRoot={repoRoot} workspaceId={workspaceId} />
+    <BranchPickerDialogContent repoRoot={repoRoot} sessionId={sessionId} />
   );
 }
 
 function BranchPickerDialogContent({
   repoRoot,
-  workspaceId,
+  sessionId,
 }: {
   repoRoot: string;
-  workspaceId: string;
+  sessionId: string;
 }) {
   const [branches, setBranches] = useState<string[]>([]);
   const [query, setQuery] = useState("");
@@ -113,10 +113,10 @@ function BranchPickerDialogContent({
 
         <div className={styles.footer}>
           <span className={styles.caption}>
-            Changes the HEAD of this workspace&apos;s worktree.
+            Changes the HEAD of this session&apos;s worktree.
           </span>
           <span className={styles.caption} data-muted>
-            {workspaceId.slice(0, 8)}
+            {sessionId.slice(0, 8)}
           </span>
         </div>
       </div>

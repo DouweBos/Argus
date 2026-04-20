@@ -1,4 +1,4 @@
-import type { WorkspaceEnvConfig } from "../workspace/models";
+import type { WorkspaceEnvConfig } from "../session/models";
 import { describe, expect, it, vi } from "vitest";
 import { workspaceEnvValue, defaultShell } from "./multiplexer";
 
@@ -6,7 +6,7 @@ import { workspaceEnvValue, defaultShell } from "./multiplexer";
 vi.mock("node-pty", () => ({ spawn: vi.fn() }));
 vi.mock("../../main", () => ({ getMainWindow: () => null }));
 vi.mock("../../state", () => ({
-  appState: { workspaces: new Map(), terminals: new Map() },
+  appState: { sessions: new Map(), terminals: new Map() },
 }));
 
 describe("workspaceEnvValue", () => {
@@ -38,7 +38,7 @@ describe("workspaceEnvValue", () => {
       range: 1000,
       strategy: "hash",
     };
-    const val = workspaceEnvValue("workspace-abc", undefined, config);
+    const val = workspaceEnvValue("session-abc", undefined, config);
     expect(val).toBeGreaterThanOrEqual(8081);
     expect(val).toBeLessThan(9081);
   });
@@ -55,15 +55,15 @@ describe("workspaceEnvValue", () => {
     expect(a).toBe(b);
   });
 
-  it("produces different values for different workspace IDs", () => {
+  it("produces different values for different session IDs", () => {
     const config: WorkspaceEnvConfig = {
       name: "PORT",
       base_value: 8081,
       range: 1000,
       strategy: "hash",
     };
-    const a = workspaceEnvValue("workspace-a", undefined, config);
-    const b = workspaceEnvValue("workspace-b", undefined, config);
+    const a = workspaceEnvValue("session-a", undefined, config);
+    const b = workspaceEnvValue("session-b", undefined, config);
     // Technically could collide, but extremely unlikely for different inputs
     expect(a).not.toBe(b);
   });

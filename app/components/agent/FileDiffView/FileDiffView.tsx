@@ -23,7 +23,7 @@ export interface FileDiffViewProps {
   /** When true, renders inline (no flex:1, no overflow hidden) for stacking multiple views. */
   inline?: boolean;
   onAction: (action: () => Promise<void>) => Promise<void>;
-  workspaceId: string;
+  sessionId: string;
 }
 
 // Map from hunkIndex -> Set of line indices within that hunk
@@ -41,7 +41,7 @@ export function FileDiffView(props: FileDiffViewProps): ReactElement {
 
 function FileDiffViewInner({
   file,
-  workspaceId,
+  sessionId,
   onAction,
   inline,
 }: FileDiffViewProps) {
@@ -259,11 +259,11 @@ function FileDiffViewInner({
       const patch = buildPartialPatch(file, hunk, indices);
       const action = async () => {
         if (mode === "stage") {
-          await stageHunk(workspaceId, patch);
+          await stageHunk(sessionId, patch);
         } else if (mode === "unstage") {
-          await unstageHunk(workspaceId, patch);
+          await unstageHunk(sessionId, patch);
         } else {
-          await discardHunk(workspaceId, patch);
+          await discardHunk(sessionId, patch);
         }
 
         clearSelection();
@@ -271,7 +271,7 @@ function FileDiffViewInner({
 
       onAction(action);
     },
-    [file, workspaceId, onAction, clearSelection],
+    [file, sessionId, onAction, clearSelection],
   );
 
   return (
@@ -288,7 +288,7 @@ function FileDiffViewInner({
             variant="danger"
             title="Discard all changes to this file"
             onClick={() =>
-              onAction(() => discardFile(workspaceId, displayPath))
+              onAction(() => discardFile(sessionId, displayPath))
             }
           >
             <Icons.TrashIcon size={11} />
@@ -328,7 +328,7 @@ function FileDiffViewInner({
             hunk={hunk}
             hunkIndex={hi}
             selectedLines={selection.get(hi)}
-            workspaceId={workspaceId}
+            sessionId={sessionId}
             onAction={onAction}
             onGutterMouseDown={handleGutterMouseDown}
             onGutterMouseEnter={handleGutterMouseEnter}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { listWorkspaceFiles, resolveMentionPath } from "../../../lib/ipc";
+import { listSessionFiles, resolveMentionPath } from "../../../lib/ipc";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -112,8 +112,8 @@ function fileDirname(filePath: string): string {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useMentionPicker(workspaceId: string | undefined) {
-  const [workspaceFiles, setWorkspaceFiles] = useState<string[]>([]);
+export function useMentionPicker(sessionId: string | undefined) {
+  const [sessionFiles, setSessionFiles] = useState<string[]>([]);
   const [mentionContext, setMentionContext] = useState<MentionContext | null>(
     null,
   );
@@ -127,9 +127,9 @@ export function useMentionPicker(workspaceId: string | undefined) {
   const browseRequestRef = useRef(0);
 
   // Derive unique directory paths from the file list (for search mode)
-  const workspaceDirs = useMemo(() => {
+  const sessionDirs = useMemo(() => {
     const dirs = new Set<string>();
-    for (const file of workspaceFiles) {
+    for (const file of sessionFiles) {
       let p = file;
       while (true) {
         const slash = p.lastIndexOf("/");
@@ -147,24 +147,24 @@ export function useMentionPicker(workspaceId: string | undefined) {
     }
 
     return Array.from(dirs).sort();
-  }, [workspaceFiles]);
+  }, [sessionFiles]);
 
-  // Load workspace files when workspace changes
+  // Load session files when session changes
   useEffect(() => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
 
-    listWorkspaceFiles(workspaceId)
-      .then(setWorkspaceFiles)
-      .catch(() => setWorkspaceFiles([]));
-  }, [workspaceId]);
+    listSessionFiles(sessionId)
+      .then(setSessionFiles)
+      .catch(() => setSessionFiles([]));
+  }, [sessionId]);
 
   // Fetch directory entries for browse mode (async only — no sync setState)
   useEffect(() => {
     if (
       !mentionContext ||
-      !workspaceId ||
+      !sessionId ||
       !isBrowseQuery(mentionContext.query)
     ) {
       return;
@@ -179,7 +179,7 @@ export function useMentionPicker(workspaceId: string | undefined) {
 
     const requestId = ++browseRequestRef.current;
 
-    resolveMentionPath(workspaceId, dirPath)
+    resolveMentionPath(sessionId, dirPath)
       .then((result) => {
         if (requestId !== browseRequestRef.current) {
           return;
@@ -203,7 +203,7 @@ export function useMentionPicker(workspaceId: string | undefined) {
           setBrowseState({ dirPath, entries: [] });
         }
       });
-  }, [mentionContext, workspaceId, browseState.dirPath]);
+  }, [mentionContext, sessionId, browseState.dirPath]);
 
   // Derive final items list (no setState — pure computation)
   const items = useMemo((): MentionPickerItem[] => {
@@ -228,9 +228,9 @@ export function useMentionPicker(workspaceId: string | undefined) {
       );
     }
 
-    // Search mode: filter workspace files + directories
+    // Search mode: filter session files + directories
     const q = mentionContext.query.toLowerCase();
-    const matchedDirs: MentionPickerItem[] = workspaceDirs
+    const matchedDirs: MentionPickerItem[] = sessionDirs
       .filter((d) => d.toLowerCase().includes(q))
       .slice(0, 6)
       .map((d) => ({
@@ -239,7 +239,7 @@ export function useMentionPicker(workspaceId: string | undefined) {
         isDir: true,
       }));
 
-    const matchedFiles: MentionPickerItem[] = workspaceFiles
+    const matchedFiles: MentionPickerItem[] = sessionFiles
       .filter((f) => f.toLowerCase().includes(q))
       .slice(0, MAX_RESULTS - matchedDirs.length)
       .map((f) => ({
@@ -249,7 +249,7 @@ export function useMentionPicker(workspaceId: string | undefined) {
       }));
 
     return [...matchedDirs, ...matchedFiles];
-  }, [mentionContext, browseState, workspaceFiles, workspaceDirs]);
+  }, [mentionContext, browseState, sessionFiles, sessionDirs]);
 
   const updateMentions = useCallback((textarea: HTMLTextAreaElement | null) => {
     if (!textarea) {

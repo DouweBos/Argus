@@ -1,14 +1,14 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Icons, Kbd, useDismissOnEscape } from "@argus/peacock";
-import { useProjects } from "../../../hooks/useWorkspaces";
-import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
+import { useProjects } from "../../../hooks/useSessions";
+import { startAgentInSession } from "../../../lib/agentLifecycle";
 import {
   gitFetch,
   gitPull,
   gitPush,
   gitStash,
   interruptAgent,
-  mergeWorkspaceIntoBase,
+  mergeSessionIntoBase,
   revealInFinder,
 } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";
@@ -25,7 +25,7 @@ import {
 import { useConversations } from "../../../stores/conversationStore";
 import {
   showOpenProjectDialog,
-  triggerNewWorkspace,
+  triggerNewSession,
 } from "../../../stores/dialogStore";
 import {
   toggleLeftSidebar,
@@ -34,22 +34,16 @@ import {
   type ToolId,
 } from "../../../stores/layoutStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
-import { showSettingsDialog } from "../../../stores/settingsStore";
 import {
-  selectWorkspace,
-  useSelectedWorkspaceId,
-  useWorkspaces,
-} from "../../../stores/workspaceStore";
+  selectSession,
+  useSelectedSessionId,
+  useSessions,
+} from "../../../stores/sessionStore";
+import { showSettingsDialog } from "../../../stores/settingsStore";
 import styles from "./CommandPalette.module.css";
 
 type PaletteGroup =
-  | "action"
-  | "git"
-  | "navigation"
-  | "project"
-  | "view"
-  | "workspace"
-  | "workspaces";
+  "action" | "git" | "navigation" | "project" | "session" | "sessions" | "view";
 
 interface PaletteItem {
   group: PaletteGroup;
@@ -66,20 +60,20 @@ const GROUP_LABELS: Record<PaletteGroup, string> = {
   action: "Actions",
   navigation: "Navigation",
   view: "View",
-  workspace: "Workspace",
+  session: "Session",
   git: "Git",
   project: "Recent projects",
-  workspaces: "Workspaces",
+  sessions: "Sessions",
 };
 
 const GROUP_ORDER: PaletteGroup[] = [
   "action",
   "navigation",
   "view",
-  "workspace",
+  "session",
   "git",
   "project",
-  "workspaces",
+  "sessions",
 ];
 
 export function CommandPalette() {
@@ -93,8 +87,8 @@ export function CommandPalette() {
 
 function CommandPaletteContent() {
   const recent = useRecentProjects();
-  const workspaces = useWorkspaces();
-  const selectedId = useSelectedWorkspaceId();
+  const sessions = useSessions();
+  const selectedId = useSelectedSessionId();
   // Subscribing keeps the agent-dependent actions in sync.
   const agentsRecord = useAgentsRecord();
   const conversations = useConversations();
@@ -104,9 +98,9 @@ function CommandPaletteContent() {
   const inputRef = useRef<HTMLInputElement>(null);
   useDismissOnEscape(closeCommandPalette);
 
-  const selectedWorkspace = useMemo(
-    () => workspaces.find((w) => w.id === selectedId) ?? null,
-    [workspaces, selectedId],
+  const selectedSession = useMemo(
+    () => sessions.find((w) => w.id === selectedId) ?? null,
+    [sessions, selectedId],
   );
 
   const items = useMemo<PaletteItem[]>(() => {
@@ -141,15 +135,15 @@ function CommandPaletteContent() {
       },
       {
         group: "action",
-        id: "action:new-workspace",
-        title: "New workspace…",
+        id: "action:new-session",
+        title: "New session…",
         sublabel: "Create a worktree from a branch",
         icon: <Icons.PlusIcon size={13} />,
-        keywords: "new workspace branch worktree create",
-        hint: shortcutKeys("new-workspace"),
+        keywords: "new session branch worktree create",
+        hint: shortcutKeys("new-session"),
         run: () => {
           closeCommandPalette();
-          triggerNewWorkspace();
+          triggerNewSession();
         },
       },
     );
@@ -160,7 +154,7 @@ function CommandPaletteContent() {
         id: "view:toggle-left",
         title: "Toggle left sidebar",
         icon: <Icons.FolderIcon size={13} />,
-        keywords: "toggle left sidebar panel workspace hide show",
+        keywords: "toggle left sidebar panel session hide show",
         hint: shortcutKeys("toggle-left-sidebar"),
         run: () => {
           closeCommandPalette();
@@ -181,13 +175,13 @@ function CommandPaletteContent() {
       },
     );
 
-    if (selectedWorkspace) {
-      const wsId = selectedWorkspace.id;
+    if (selectedSession) {
+      const wsId = selectedSession.id;
       const activeAgent = getActiveAgent(wsId);
 
-      const projectHead = workspaces.find(
+      const projectHead = sessions.find(
         (w) =>
-          w.repo_root === selectedWorkspace.repo_root && w.kind === "repo_root",
+          w.repo_root === selectedSession.repo_root && w.kind === "project_root",
       );
 
       out.push(
@@ -195,13 +189,13 @@ function CommandPaletteContent() {
           group: "navigation",
           id: "nav:home",
           title: "Go to app home",
-          sublabel: "Deselect this workspace",
+          sublabel: "Deselect this session",
           icon: <Icons.ArgusLogo size={13} />,
-          keywords: "home app deselect close exit workspace",
+          keywords: "home app deselect close exit session",
           hint: shortcutKeys("go-home"),
           run: () => {
             closeCommandPalette();
-            selectWorkspace(null);
+            selectSession(null);
           },
         },
         ...(projectHead && projectHead.id !== wsId
@@ -210,13 +204,13 @@ function CommandPaletteContent() {
                 group: "navigation" as const,
                 id: "nav:project-home",
                 title: "Go to project home",
-                sublabel: `${basename(selectedWorkspace.repo_root)} · ${projectHead.branch}`,
+                sublabel: `${basename(selectedSession.repo_root)} · ${projectHead.branch}`,
                 icon: <Icons.FolderIcon size={13} />,
                 keywords: "project home root repo head main master",
                 hint: shortcutKeys("go-project-home"),
                 run: () => {
                   closeCommandPalette();
-                  selectWorkspace(projectHead.id);
+                  selectSession(projectHead.id);
                 },
               } satisfies PaletteItem,
             ]
@@ -237,34 +231,34 @@ function CommandPaletteContent() {
       );
 
       out.push({
-        group: "workspace",
+        group: "session",
         id: "ws:switch-branch",
         title: "Switch branch…",
-        sublabel: `current: ${selectedWorkspace.branch}`,
+        sublabel: `current: ${selectedSession.branch}`,
         icon: <Icons.ArgusLogo size={13} />,
         keywords: "switch checkout branch change head",
         run: () => {
           closeCommandPalette();
-          showBranchPicker(selectedWorkspace.repo_root, wsId);
+          showBranchPicker(selectedSession.repo_root, wsId);
         },
       });
 
       out.push({
-        group: "workspace",
+        group: "session",
         id: "ws:new-agent",
         title: "Start new agent",
-        sublabel: `in ${selectedWorkspace.branch}`,
+        sublabel: `in ${selectedSession.branch}`,
         icon: <Icons.PlusIcon size={13} />,
         keywords: "new agent claude start",
         hint: shortcutKeys("new-agent"),
         run: () => {
           closeCommandPalette();
-          startAgentInWorkspace(wsId).catch(() => {});
+          startAgentInSession(wsId).catch(() => {});
         },
       });
 
       const wsAgentCount = Object.values(agentsRecord).filter(
-        (a) => a.workspace_id === wsId,
+        (a) => a.session_id === wsId,
       ).length;
       if (wsAgentCount >= 2) {
         out.push(
@@ -300,7 +294,7 @@ function CommandPaletteContent() {
           conversations[activeAgent.agent_id]?.title?.trim() ||
           `Agent ${activeAgent.agent_id.slice(0, 6)}`;
         out.push({
-          group: "workspace",
+          group: "session",
           id: "ws:interrupt-agent",
           title: "Interrupt active agent",
           sublabel: activeTitle,
@@ -315,44 +309,44 @@ function CommandPaletteContent() {
 
       out.push(
         {
-          group: "workspace",
+          group: "session",
           id: "ws:reveal",
           title: "Reveal worktree in Finder",
-          sublabel: selectedWorkspace.path,
+          sublabel: selectedSession.path,
           icon: <Icons.FolderIcon size={13} />,
           keywords: "reveal finder open folder worktree path",
           run: () => {
             closeCommandPalette();
-            revealInFinder(selectedWorkspace.path).catch(() => {});
+            revealInFinder(selectedSession.path).catch(() => {});
           },
         },
         {
-          group: "workspace",
+          group: "session",
           id: "ws:copy-path",
           title: "Copy worktree path",
-          sublabel: selectedWorkspace.path,
+          sublabel: selectedSession.path,
           icon: <Icons.FolderIcon size={13} />,
           keywords: "copy path clipboard worktree",
           run: () => {
             closeCommandPalette();
             navigator.clipboard
-              .writeText(selectedWorkspace.path)
+              .writeText(selectedSession.path)
               .catch(() => {});
           },
         },
       );
 
-      if (selectedWorkspace.kind === "worktree") {
+      if (selectedSession.kind === "worktree") {
         out.push({
-          group: "workspace",
+          group: "session",
           id: "ws:merge",
           title: "Merge into base branch",
-          sublabel: `${selectedWorkspace.branch} → ${selectedWorkspace.base_branch ?? "base"}`,
+          sublabel: `${selectedSession.branch} → ${selectedSession.base_branch ?? "base"}`,
           icon: <Icons.ArgusLogo size={13} />,
           keywords: "merge base branch worktree",
           run: () => {
             closeCommandPalette();
-            mergeWorkspaceIntoBase(wsId).catch(() => {});
+            mergeSessionIntoBase(wsId).catch(() => {});
           },
         });
       }
@@ -420,20 +414,20 @@ function CommandPaletteContent() {
       });
     });
 
-    workspaces.forEach((w) => {
+    sessions.forEach((w) => {
       if (w.id === selectedId) {
         return;
       }
       out.push({
-        group: "workspaces",
-        id: `workspace:${w.id}`,
+        group: "sessions",
+        id: `session:${w.id}`,
         title: w.branch,
         sublabel: basename(w.repo_root),
         icon: <Icons.ArgusLogo size={13} />,
-        keywords: `${w.branch} ${w.repo_root} workspace switch`,
+        keywords: `${w.branch} ${w.repo_root} session switch`,
         run: () => {
           closeCommandPalette();
-          selectWorkspace(w.id);
+          selectSession(w.id);
         },
       });
     });
@@ -441,9 +435,9 @@ function CommandPaletteContent() {
     return out;
   }, [
     recent,
-    workspaces,
+    sessions,
     selectedId,
-    selectedWorkspace,
+    selectedSession,
     openProject,
     agentsRecord,
     conversations,
@@ -514,7 +508,7 @@ function CommandPaletteContent() {
             autoComplete="off"
             autoFocus
             className={styles.input}
-            placeholder="Open repo · switch workspace · run command"
+            placeholder="Open repo · switch session · run command"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);

@@ -7,7 +7,7 @@ import {
   startAgentListening,
   stopAgentListening,
 } from "../lib/agentEventService";
-import { startAgentInWorkspace } from "../lib/agentLifecycle";
+import { startAgentInSession } from "../lib/agentLifecycle";
 import {
   sendAgentMessage as apiSendAgentMessage,
   startAgent as apiStartAgent,
@@ -30,24 +30,24 @@ import {
 } from "../stores/conversationStore";
 import { useIpcEvent } from "./useIpcEvent";
 
-export function useWorkspaceAgents(
-  workspaceId: string | null,
-  options?: { autoStart?: boolean; workspaceReady?: boolean },
+export function useSessionAgents(
+  sessionId: string | null,
+  options?: { autoStart?: boolean; sessionReady?: boolean },
 ) {
-  const { autoStart = true, workspaceReady = false } = options ?? {};
+  const { autoStart = true, sessionReady = false } = options ?? {};
 
   const allAgents = useAgentsRecord();
   const activeAgentIds = useActiveAgentIds();
-  const agentOrder = useAgentOrder(workspaceId);
+  const agentOrder = useAgentOrder(sessionId);
 
   const agents = useMemo(() => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return [];
     }
-    const workspaceAgents = Object.values(allAgents).filter(
-      (a) => a.workspace_id === workspaceId,
+    const sessionAgents = Object.values(allAgents).filter(
+      (a) => a.session_id === sessionId,
     );
-    const byId = new Map(workspaceAgents.map((a) => [a.agent_id, a]));
+    const byId = new Map(sessionAgents.map((a) => [a.agent_id, a]));
     const ordered: AgentStatus[] = [];
     for (const id of agentOrder) {
       const agent = byId.get(id);
@@ -62,19 +62,19 @@ export function useWorkspaceAgents(
     }
 
     return ordered;
-  }, [allAgents, workspaceId, agentOrder]);
+  }, [allAgents, sessionId, agentOrder]);
 
   const activeAgent = useMemo(() => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return null;
     }
-    const agentId = activeAgentIds[workspaceId];
+    const agentId = activeAgentIds[sessionId];
     if (!agentId) {
       return null;
     }
 
     return allAgents[agentId] ?? null;
-  }, [allAgents, activeAgentIds, workspaceId]);
+  }, [allAgents, activeAgentIds, sessionId]);
 
   const [isStarting, setIsStarting] = useState(false);
   const autoStartAttemptedRef = useRef<Set<string>>(new Set());
@@ -111,7 +111,7 @@ export function useWorkspaceAgents(
       permissionMode?: string,
       resumeSessionId?: string,
     ): Promise<string | null> => {
-      if (!workspaceId) {
+      if (!sessionId) {
         return null;
       }
       if (isStarting) {
@@ -119,7 +119,7 @@ export function useWorkspaceAgents(
       }
       setIsStarting(true);
       try {
-        const agentInfo = await startAgentInWorkspace(workspaceId, {
+        const agentInfo = await startAgentInSession(sessionId, {
           focus: false,
           model,
           permissionMode,
@@ -131,55 +131,55 @@ export function useWorkspaceAgents(
         setIsStarting(false);
       }
     },
-    [workspaceId, isStarting],
+    [sessionId, isStarting],
   );
 
   useEffect(() => {
     if (
       !autoStart ||
-      !workspaceId ||
-      !workspaceReady ||
+      !sessionId ||
+      !sessionReady ||
       agents.length > 0 ||
       isStarting
     ) {
       return;
     }
-    if (autoStartAttemptedRef.current.has(workspaceId)) {
+    if (autoStartAttemptedRef.current.has(sessionId)) {
       return;
     }
-    autoStartAttemptedRef.current.add(workspaceId);
+    autoStartAttemptedRef.current.add(sessionId);
     startNew().catch(() => {
-      autoStartAttemptedRef.current.delete(workspaceId);
+      autoStartAttemptedRef.current.delete(sessionId);
     });
   }, [
     autoStart,
-    workspaceId,
-    workspaceReady,
+    sessionId,
+    sessionReady,
     agents.length,
     isStarting,
     startNew,
   ]);
 
-  const prevWorkspaceId = useRef<string | null>(null);
+  const prevSessionId = useRef<string | null>(null);
   useEffect(() => {
-    const prev = prevWorkspaceId.current;
-    if (prev && prev !== workspaceId) {
+    const prev = prevSessionId.current;
+    if (prev && prev !== sessionId) {
       autoStartAttemptedRef.current.delete(prev);
     }
 
-    prevWorkspaceId.current = workspaceId;
-  }, [workspaceId]);
+    prevSessionId.current = sessionId;
+  }, [sessionId]);
 
   const stopAgent = useCallback((agentId: string) => {
     requestStopAgent(agentId);
   }, []);
 
   const stopAll = useCallback(async () => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
     const currentAgents = Object.values(getAgentState().agents).filter(
-      (a) => a.workspace_id === workspaceId,
+      (a) => a.session_id === sessionId,
     );
     // Save all conversations before cleanup
     currentAgents.forEach((a) => saveAgentConversation(a.agent_id));
@@ -191,18 +191,18 @@ export function useWorkspaceAgents(
       clearConversation(a.agent_id);
       removeAgent(a.agent_id);
     });
-  }, [workspaceId]);
+  }, [sessionId]);
 
   const restartAgent = useCallback(
     async (
       agentId: string,
       opts?: { model?: string; permissionMode?: string },
     ) => {
-      if (!workspaceId) {
+      if (!sessionId) {
         return;
       }
       const conv = getConversationState().conversations[agentId];
-      const sessionId = conv?.sessionId;
+      const claudeSessionId = conv?.sessionId;
       const currentAgent = getAgentState().agents[agentId];
       const newPermissionMode =
         opts?.permissionMode !== undefined
@@ -211,21 +211,21 @@ export function useWorkspaceAgents(
       stopAgentListening(agentId);
       apiStopAgent(agentId).catch(() => {});
       const agentInfo: AgentStatus = await apiStartAgent(
-        workspaceId,
+        sessionId,
         opts?.model,
         newPermissionMode,
-        sessionId,
+        claudeSessionId,
       );
       migrateConversation(agentId, agentInfo.agent_id);
       replaceAgent(agentId, {
         agent_id: agentInfo.agent_id,
-        workspace_id: agentInfo.workspace_id,
+        session_id: agentInfo.session_id,
         status: "running",
         permission_mode: newPermissionMode,
       });
       startAgentListening(agentInfo.agent_id);
     },
-    [workspaceId],
+    [sessionId],
   );
 
   const sendMessage = useCallback(
@@ -242,12 +242,12 @@ export function useWorkspaceAgents(
 
   const setActive = useCallback(
     (agentId: string) => {
-      if (!workspaceId) {
+      if (!sessionId) {
         return;
       }
-      setActiveAgent(workspaceId, agentId);
+      setActiveAgent(sessionId, agentId);
     },
-    [workspaceId],
+    [sessionId],
   );
 
   return {

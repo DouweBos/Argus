@@ -72,7 +72,7 @@ export function ArgusConfigStep() {
     setError(null);
     try {
       await writeOnboardingArgusJson(projectPath, parsed.obj);
-      await advance("first_workspace");
+      await advance("first_session");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -113,7 +113,7 @@ export function ArgusConfigStep() {
   };
 
   const skip = async () => {
-    await advance("first_workspace");
+    await advance("first_session");
   };
 
   let primaryLabel = "Write .argus.json";

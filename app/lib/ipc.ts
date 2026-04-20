@@ -33,8 +33,8 @@ import type {
   PrereqId,
   PrereqResult,
   SimulatorDevice,
+  Session,
   UserProjectSettings,
-  Workspace,
 } from "./types";
 
 declare global {
@@ -74,7 +74,7 @@ export interface QuitRequestPayload {
   runningCount: number;
 }
 
-// Workspace commands
+// Session commands
 export const addRepoRoot = (path: string): Promise<void> =>
   invoke("add_repo_root", { path });
 
@@ -95,17 +95,17 @@ export const checkoutBranch = (
   branch: string,
 ): Promise<void> => invoke("checkout_branch", { repoRoot, branch });
 
-export const listWorkspaces = (repoRoot: string): Promise<Workspace[]> =>
-  invoke("list_workspaces", { repoRoot });
+export const listSessions = (repoRoot: string): Promise<Session[]> =>
+  invoke("list_sessions", { repoRoot });
 
-export const createWorkspace = (
+export const createSession = (
   repoRoot: string,
   branch: string,
   description: string,
   useExistingBranch?: boolean,
   baseBranch?: string,
-): Promise<Workspace> =>
-  invoke("create_workspace", {
+): Promise<Session> =>
+  invoke("create_session", {
     repoRoot,
     branch,
     description,
@@ -113,35 +113,35 @@ export const createWorkspace = (
     baseBranch,
   });
 
-export const createHeadWorkspace = (repoRoot: string): Promise<Workspace> =>
-  invoke("create_head_workspace", { repoRoot });
+export const createHeadSession = (repoRoot: string): Promise<Session> =>
+  invoke("create_project_root_session", { repoRoot });
 
-export const deleteWorkspace = (
+export const deleteSession = (
   id: string,
   deleteBranch?: boolean,
 ): Promise<void> =>
-  invoke("delete_workspace", {
+  invoke("delete_session", {
     id,
     shouldDeleteBranch: deleteBranch ?? false,
   });
 
-export const getWorkspaceDiff = (id: string): Promise<string> =>
-  invoke("get_workspace_diff", { id });
+export const getSessionDiff = (id: string): Promise<string> =>
+  invoke("get_session_diff", { id });
 
-export const getWorkspaceStatus = (id: string): Promise<string> =>
-  invoke("get_workspace_status", { id });
+export const getSessionStatus = (id: string): Promise<string> =>
+  invoke("get_session_status", { id });
 
-export const getWorkspaceFullDiff = (id: string): Promise<string> =>
-  invoke("get_workspace_full_diff", { id });
+export const getSessionFullDiff = (id: string): Promise<string> =>
+  invoke("get_session_full_diff", { id });
 
-export const getWorkspaceBranchDiff = (id: string): Promise<string> =>
-  invoke("get_workspace_branch_diff", { id });
+export const getSessionBranchDiff = (id: string): Promise<string> =>
+  invoke("get_session_branch_diff", { id });
 
-export const getWorkspaceStagedDiff = (id: string): Promise<string> =>
-  invoke("get_workspace_staged_diff", { id });
+export const getSessionStagedDiff = (id: string): Promise<string> =>
+  invoke("get_session_staged_diff", { id });
 
-export const getWorkspaceUntrackedDiff = (id: string): Promise<string> =>
-  invoke("get_workspace_untracked_diff", { id });
+export const getSessionUntrackedDiff = (id: string): Promise<string> =>
+  invoke("get_session_untracked_diff", { id });
 
 export const stageFile = (id: string, filePath: string): Promise<void> =>
   invoke("stage_file", { id, filePath });
@@ -260,11 +260,11 @@ export const gitStashApply = (
 export const gitStashDrop = (id: string, stashIndex: number): Promise<string> =>
   invoke("git_stash_drop", { id, stashIndex });
 
-export const watchWorkspace = (id: string): Promise<void> =>
-  invoke("watch_workspace", { id });
+export const watchSession = (id: string): Promise<void> =>
+  invoke("watch_session", { id });
 
-export const unwatchWorkspace = (id: string): Promise<void> =>
-  invoke("unwatch_workspace", { id });
+export const unwatchSession = (id: string): Promise<void> =>
+  invoke("unwatch_session", { id });
 
 export const pauseAllWatchers = (): Promise<void> =>
   invoke("pause_all_watchers");
@@ -273,32 +273,32 @@ export const resumeAllWatchers = (): Promise<void> =>
   invoke("resume_all_watchers");
 
 // Base branch / merge commands
-export const setWorkspaceBaseBranch = (
+export const setSessionBaseBranch = (
   id: string,
   baseBranch: string,
-): Promise<void> => invoke("set_workspace_base_branch", { id, baseBranch });
+): Promise<void> => invoke("set_session_base_branch", { id, baseBranch });
 
-export const getWorkspaceConflicts = (id: string): Promise<string[]> =>
-  invoke("get_workspace_conflicts", { id });
+export const getSessionConflicts = (id: string): Promise<string[]> =>
+  invoke("get_session_conflicts", { id });
 
-export const getWorkspaceCommitsAhead = (id: string): Promise<number> =>
-  invoke("get_workspace_commits_ahead", { id });
+export const getSessionCommitsAhead = (id: string): Promise<number> =>
+  invoke("get_session_commits_ahead", { id });
 
-export const getWorkspaceReviewState = (
+export const getSessionReviewState = (
   id: string,
 ): Promise<{
   commitsAhead: number;
   hasStaged: boolean;
   hasUncommitted: boolean;
-}> => invoke("get_workspace_review_state", { id });
+}> => invoke("get_session_review_state", { id });
 
-export const mergeWorkspaceIntoBase = (id: string): Promise<void> =>
-  invoke("merge_workspace_into_base", { id });
+export const mergeSessionIntoBase = (id: string): Promise<void> =>
+  invoke("merge_session_into_base", { id });
 
-export const pushWorkspaceBranch = (
+export const pushSessionBranch = (
   id: string,
 ): Promise<{ branch: string; prUrl: string | null; remoteName: string }> =>
-  invoke("push_workspace_branch", { id });
+  invoke("push_session_branch", { id });
 
 // File commands
 export const listDirectory = (
@@ -306,8 +306,8 @@ export const listDirectory = (
   relativePath: string,
 ): Promise<DirEntry[]> => invoke("list_directory", { id, relativePath });
 
-export const listWorkspaceFiles = (id: string): Promise<string[]> =>
-  invoke("list_workspace_files", { id });
+export const listSessionFiles = (id: string): Promise<string[]> =>
+  invoke("list_session_files", { id });
 
 export const resolveMentionPath = (
   id: string,
@@ -334,14 +334,14 @@ export const checkDependencies = (): Promise<DependencyReport> =>
 export const checkClaudeCli = (): Promise<string> => invoke("check_claude_cli");
 
 export const startAgent = (
-  workspaceId: string,
+  sessionId: string,
   model?: string,
   permissionMode?: string,
   resumeSessionId?: string,
   appendSystemPrompt?: string,
 ): Promise<AgentStatus> =>
   invoke("start_agent", {
-    workspaceId,
+    sessionId,
     ...(model != null && model !== "" && { model }),
     ...(permissionMode != null && permissionMode !== "" && { permissionMode }),
     ...(resumeSessionId != null &&
@@ -374,8 +374,8 @@ export const sendAgentMessage = (
     images: images?.length ? images : null,
   });
 
-export const listAgents = (workspaceId: string): Promise<AgentStatus[]> =>
-  invoke("list_agents", { workspaceId });
+export const listAgents = (sessionId: string): Promise<AgentStatus[]> =>
+  invoke("list_agents", { sessionId });
 
 export const setAgentModel = (agentId: string, model: string): Promise<void> =>
   invoke("set_agent_model", { agentId, model });
@@ -469,15 +469,15 @@ export const generateSessionTitle = (
 //
 // `createTerminal` only spawns the user's interactive login shell — it
 // intentionally cannot accept a command string. Use `createRunTerminal` to
-// start the workspace's configured `run` command from `.argus.json`; the
+// start the session's configured `run` command from `.argus.json`; the
 // command is resolved server-side so the renderer never gets to choose what
 // runs in `sh -c`.
 export const createTerminal = (
-  workspaceId: string,
+  sessionId: string,
   subDir?: string,
 ): Promise<string> =>
   invoke("create_terminal", {
-    workspaceId,
+    sessionId,
     ...(subDir != null && subDir !== "" && { subDir }),
   });
 
@@ -488,11 +488,11 @@ export interface CreateRunTerminalResult {
 }
 
 export const createRunTerminal = (
-  workspaceId: string,
+  sessionId: string,
   title?: string,
 ): Promise<CreateRunTerminalResult> =>
   invoke("create_run_terminal", {
-    workspaceId,
+    sessionId,
     ...(title != null && title !== "" && { title }),
   });
 
@@ -601,52 +601,52 @@ export const androidKeyboard = (
 export const androidButton = (button: string): Promise<void> =>
   invoke("android_button", { button });
 
-// Browser commands — Playwright Chromium-backed embedded browser per workspace.
+// Browser commands — Playwright Chromium-backed embedded browser per session.
 
-export const browserViewEnsure = (workspaceId: string): Promise<void> =>
-  invoke("browser_view_ensure", { workspaceId });
+export const browserViewEnsure = (sessionId: string): Promise<void> =>
+  invoke("browser_view_ensure", { sessionId });
 
 export const browserViewNavigate = (
-  workspaceId: string,
+  sessionId: string,
   url: string,
-): Promise<void> => invoke("browser_view_navigate", { workspaceId, url });
+): Promise<void> => invoke("browser_view_navigate", { sessionId, url });
 
-export const browserViewBack = (workspaceId: string): Promise<void> =>
-  invoke("browser_view_back", { workspaceId });
+export const browserViewBack = (sessionId: string): Promise<void> =>
+  invoke("browser_view_back", { sessionId });
 
-export const browserViewForward = (workspaceId: string): Promise<void> =>
-  invoke("browser_view_forward", { workspaceId });
+export const browserViewForward = (sessionId: string): Promise<void> =>
+  invoke("browser_view_forward", { sessionId });
 
-export const browserViewReload = (workspaceId: string): Promise<void> =>
-  invoke("browser_view_reload", { workspaceId });
+export const browserViewReload = (sessionId: string): Promise<void> =>
+  invoke("browser_view_reload", { sessionId });
 
-export const browserViewDestroy = (workspaceId: string): Promise<void> =>
-  invoke("browser_view_destroy", { workspaceId });
+export const browserViewDestroy = (sessionId: string): Promise<void> =>
+  invoke("browser_view_destroy", { sessionId });
 
 export const browserMouseEvent = (
-  workspaceId: string,
+  sessionId: string,
   type: "click" | "down" | "move" | "up",
   x: number,
   y: number,
   button?: "left" | "middle" | "right",
 ): Promise<void> =>
-  invoke("browser_mouse_event", { workspaceId, type, x, y, button });
+  invoke("browser_mouse_event", { sessionId, type, x, y, button });
 
 export const browserKeyboardEvent = (
-  workspaceId: string,
+  sessionId: string,
   type: "down" | "press" | "up",
   key: string,
 ): Promise<void> =>
-  invoke("browser_keyboard_event", { workspaceId, type, key });
+  invoke("browser_keyboard_event", { sessionId, type, key });
 
 export const browserWheelEvent = (
-  workspaceId: string,
+  sessionId: string,
   x: number,
   y: number,
   deltaX: number,
   deltaY: number,
 ): Promise<void> =>
-  invoke("browser_wheel_event", { workspaceId, x, y, deltaX, deltaY });
+  invoke("browser_wheel_event", { sessionId, x, y, deltaX, deltaY });
 
 export interface BrowserPresetConfig {
   internalHeight: number;
@@ -656,9 +656,9 @@ export interface BrowserPresetConfig {
 }
 
 export const browserUpdatePreset = (
-  workspaceId: string,
+  sessionId: string,
   preset: BrowserPresetConfig,
-): Promise<void> => invoke("browser_update_preset", { workspaceId, preset });
+): Promise<void> => invoke("browser_update_preset", { sessionId, preset });
 
 export const browserGetMjpegPort = (): Promise<number> =>
   invoke("browser_get_mjpeg_port");

@@ -24,8 +24,8 @@ export const Feed: Story = {
         kind="tool_call"
         status="running"
         project="Argus"
-        agent="feat/workspace-card"
-        text="Edit WorkspaceCard.tsx"
+        agent="feat/session-card"
+        text="Edit SessionCard.tsx"
         time="just now"
         mono
       />

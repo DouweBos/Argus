@@ -1,7 +1,7 @@
 /**
- * File operations service — list, read, and write files inside a workspace.
+ * File operations service — list, read, and write files inside a session.
  *
- * All functions resolve paths relative to the workspace root and reject any
+ * All functions resolve paths relative to the session root and reject any
  * path that escapes it.
  *
  * Errors are thrown as plain strings to match IPC error handling.
@@ -11,7 +11,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { appState } from "../../state";
-import { git } from "../workspace/git";
+import { git } from "../session/git";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -29,19 +29,19 @@ export interface DirEntry {
 // ---------------------------------------------------------------------------
 
 /**
- * List the contents of a directory inside a workspace.
+ * List the contents of a directory inside a session.
  *
  * Returns entries sorted directories-first, then alphabetical
  * (case-insensitive). The `.git` directory is filtered out at the root level.
  *
- * @throws string if the workspace is not found, the path escapes the root, or
+ * @throws string if the session is not found, the path escapes the root, or
  *   the directory cannot be read.
  */
 export async function listDirectory(
   id: string,
   relativePath: string,
 ): Promise<DirEntry[]> {
-  const root = workspacePath(id);
+  const root = sessionPath(id);
   const target = await resolveSafePath(root, relativePath);
 
   let rawEntries: fs.Dirent[];
@@ -54,7 +54,7 @@ export async function listDirectory(
   const entries: DirEntry[] = [];
 
   for (const dirent of rawEntries) {
-    // Filter .git at the workspace root level only
+    // Filter .git at the session root level only
     if (relativePath === "" && dirent.name === ".git") {
       continue;
     }
@@ -87,19 +87,19 @@ export async function listDirectory(
 }
 
 /**
- * Read a text file from a workspace.
+ * Read a text file from a session.
  *
  * Rejects binary files (null bytes in the first 8 KB) and files larger than
  * 5 MB.
  *
- * @throws string if the workspace is not found, the path escapes the root,
+ * @throws string if the session is not found, the path escapes the root,
  *   the file is binary, the file is too large, or the file cannot be read.
  */
 export async function readFile(
   id: string,
   relativePath: string,
 ): Promise<string> {
-  const root = workspacePath(id);
+  const root = sessionPath(id);
   const target = await resolveSafePath(root, relativePath);
 
   let stat: fs.Stats;
@@ -139,26 +139,26 @@ export async function readFile(
 }
 
 /**
- * Write a text file to a workspace.
+ * Write a text file to a session.
  *
  * Creates parent directories if they do not already exist.
  *
- * @throws string if the workspace is not found, the path escapes the root, or
+ * @throws string if the session is not found, the path escapes the root, or
  *   the file cannot be written.
  */
 /**
- * Stat a file or directory inside a workspace.
+ * Stat a file or directory inside a session.
  *
  * Returns type (file/directory), size, and mtime.
  *
- * @throws string if the workspace is not found, the path escapes the root,
+ * @throws string if the session is not found, the path escapes the root,
  *   or the file cannot be stat'd.
  */
 export async function statFile(
   id: string,
   relativePath: string,
 ): Promise<{ is_dir: boolean; size: number; mtime: number }> {
-  const root = workspacePath(id);
+  const root = sessionPath(id);
   const target = await resolveSafePath(root, relativePath);
 
   let stat: fs.Stats;
@@ -180,7 +180,7 @@ export async function writeFile(
   relativePath: string,
   content: string,
 ): Promise<void> {
-  const root = workspacePath(id);
+  const root = sessionPath(id);
 
   // Resolve the target path. For new files the final path component will not
   // exist yet, so we resolve only the parent to validate containment and then
@@ -209,21 +209,21 @@ export async function writeFile(
 // Absolute-path operations (used by the VS Code filesystem provider)
 //
 // These accept raw absolute paths and validate that they fall inside a
-// known workspace before performing any I/O.
+// known session before performing any I/O.
 // ---------------------------------------------------------------------------
 
 /**
  * Resolve the canonical (symlink-followed) paths of every registered
- * workspace. Cached per call site — workspaces are added/removed rarely and
+ * session. Cached per call site — sessions are added/removed rarely and
  * the cost of `realpath` is dwarfed by the I/O these handlers do anyway.
  */
-async function canonicalWorkspaceRoots(): Promise<string[]> {
+async function canonicalSessionRoots(): Promise<string[]> {
   const roots: string[] = [];
-  for (const ws of appState.workspaces.values()) {
+  for (const ws of appState.sessions.values()) {
     try {
       roots.push(await fs.promises.realpath(ws.path));
     } catch {
-      // Workspace path is missing on disk; skip it.
+      // Session path is missing on disk; skip it.
     }
   }
 
@@ -232,12 +232,12 @@ async function canonicalWorkspaceRoots(): Promise<string[]> {
 
 /**
  * Assert that an absolute path resolves (after following symlinks) to a
- * location inside a registered workspace.
+ * location inside a registered session.
  *
  * String-prefix containment is not enough on its own: symlinks inside a
- * workspace (commonplace in pnpm `node_modules`, the setup pipeline's
+ * session (commonplace in pnpm `node_modules`, the setup pipeline's
  * `setup.symlink` step, and user-created links) would otherwise let any
- * caller of these IPC handlers escape the workspace and read/write arbitrary
+ * caller of these IPC handlers escape the session and read/write arbitrary
  * paths on disk (e.g. `<ws>/node_modules/x` → `~/.ssh`). We canonicalize
  * both sides before comparing.
  *
@@ -245,21 +245,21 @@ async function canonicalWorkspaceRoots(): Promise<string[]> {
  * `mustExist: false` — we then canonicalize the deepest existing ancestor
  * and append the unresolved tail.
  *
- * @throws string if the canonical path is not inside any workspace.
+ * @throws string if the canonical path is not inside any session.
  */
-async function assertInsideWorkspace(
+async function assertInsideSession(
   absPath: string,
   options: { mustExist?: boolean } = {},
 ): Promise<void> {
   const mustExist = options.mustExist ?? true;
   const canonical = await canonicalize(absPath, mustExist);
-  const roots = await canonicalWorkspaceRoots();
+  const roots = await canonicalSessionRoots();
   for (const root of roots) {
     if (canonical === root || canonical.startsWith(root + path.sep)) {
       return;
     }
   }
-  throw `Path is not inside any workspace: ${absPath}`;
+  throw `Path is not inside any session: ${absPath}`;
 }
 
 /**
@@ -306,7 +306,7 @@ async function canonicalize(
 export async function statPath(
   absPath: string,
 ): Promise<{ is_dir: boolean; size: number; mtime: number }> {
-  await assertInsideWorkspace(absPath);
+  await assertInsideSession(absPath);
   const stat = await fs.promises.stat(absPath);
 
   return { is_dir: stat.isDirectory(), size: stat.size, mtime: stat.mtimeMs };
@@ -314,7 +314,7 @@ export async function statPath(
 
 /** Read a text file at an absolute path. */
 export async function readPath(absPath: string): Promise<string> {
-  await assertInsideWorkspace(absPath);
+  await assertInsideSession(absPath);
 
   return fs.promises.readFile(absPath, "utf8");
 }
@@ -324,14 +324,14 @@ export async function writePath(
   absPath: string,
   content: string,
 ): Promise<void> {
-  await assertInsideWorkspace(absPath, { mustExist: false });
+  await assertInsideSession(absPath, { mustExist: false });
   await fs.promises.mkdir(path.dirname(absPath), { recursive: true });
   await fs.promises.writeFile(absPath, content, "utf8");
 }
 
 /** List directory contents at an absolute path. */
 export async function listPath(absPath: string): Promise<DirEntry[]> {
-  await assertInsideWorkspace(absPath);
+  await assertInsideSession(absPath);
   const rawEntries = await fs.promises.readdir(absPath, {
     withFileTypes: true,
   });
@@ -362,7 +362,7 @@ export async function listPath(absPath: string): Promise<DirEntry[]> {
 
 /** Create a directory at an absolute path (recursive). */
 export async function mkdirPath(absPath: string): Promise<void> {
-  await assertInsideWorkspace(absPath, { mustExist: false });
+  await assertInsideSession(absPath, { mustExist: false });
   await fs.promises.mkdir(absPath, { recursive: true });
 }
 
@@ -370,12 +370,12 @@ export async function mkdirPath(absPath: string): Promise<void> {
  * Delete a file or directory at an absolute path.
  *
  * `lstat` (not `stat`) is used so we operate on the symlink itself rather
- * than its target — combined with `assertInsideWorkspace` this prevents
- * deleting files outside the workspace via a symlink whose canonical path
+ * than its target — combined with `assertInsideSession` this prevents
+ * deleting files outside the session via a symlink whose canonical path
  * happens to live elsewhere.
  */
 export async function deletePath(absPath: string): Promise<void> {
-  await assertInsideWorkspace(absPath);
+  await assertInsideSession(absPath);
   const stat = await fs.promises.lstat(absPath);
   if (stat.isDirectory()) {
     await fs.promises.rm(absPath, { recursive: true });
@@ -386,20 +386,20 @@ export async function deletePath(absPath: string): Promise<void> {
 
 /** Rename/move a file at an absolute path. */
 export async function renamePath(from: string, to: string): Promise<void> {
-  await assertInsideWorkspace(from);
-  await assertInsideWorkspace(to, { mustExist: false });
+  await assertInsideSession(from);
+  await assertInsideSession(to, { mustExist: false });
   await fs.promises.mkdir(path.dirname(to), { recursive: true });
   await fs.promises.rename(from, to);
 }
 
 /**
- * List all files in a workspace using `git ls-files`.
+ * List all files in a session using `git ls-files`.
  *
  * Returns tracked files plus untracked non-ignored files, sorted
  * alphabetically. Falls back to an empty array if the git command fails.
  */
-export async function listWorkspaceFiles(id: string): Promise<string[]> {
-  const root = workspacePath(id);
+export async function listSessionFiles(id: string): Promise<string[]> {
+  const root = sessionPath(id);
 
   const [tracked, untracked] = await Promise.all([
     git(root, ["ls-files"]).catch(() => ""),
@@ -423,7 +423,7 @@ export interface MentionDirEntry {
 /**
  * Resolve a mention path query and list the target directory contents.
  *
- * Handles `~` (home directory), absolute paths, and workspace-relative paths.
+ * Handles `~` (home directory), absolute paths, and session-relative paths.
  * The `query` should be the directory portion of the mention (e.g. `src/`,
  * `~/Work/`, `/Users/douwe/`).
  *
@@ -435,7 +435,7 @@ export async function resolveMentionPath(
   id: string,
   query: string,
 ): Promise<{ resolvedPath: string; entries: MentionDirEntry[] }> {
-  const root = workspacePath(id);
+  const root = sessionPath(id);
 
   let resolved: string;
   if (query.startsWith("~/") || query === "~") {
@@ -486,24 +486,24 @@ export async function resolveMentionPath(
 // ---------------------------------------------------------------------------
 
 /**
- * Look up the absolute workspace path for the given workspace ID.
+ * Look up the absolute session path for the given session ID.
  *
- * @throws string if no workspace with that ID is registered in appState.
+ * @throws string if no session with that ID is registered in appState.
  */
-function workspacePath(id: string): string {
-  const workspace = appState.workspaces.get(id);
-  if (!workspace) {
-    throw `Workspace not found: ${id}`;
+function sessionPath(id: string): string {
+  const session = appState.sessions.get(id);
+  if (!session) {
+    throw `Session not found: ${id}`;
   }
 
-  return workspace.path;
+  return session.path;
 }
 
 /**
  * Resolve `relative` within `root` and assert the canonical result stays
  * inside `root`. Used for paths that must already exist on disk.
  *
- * @throws string if the path cannot be resolved or escapes the workspace root.
+ * @throws string if the path cannot be resolved or escapes the session root.
  */
 async function resolveSafePath(
   root: string,
@@ -513,7 +513,7 @@ async function resolveSafePath(
   try {
     canonicalRoot = await fs.promises.realpath(root);
   } catch (e) {
-    throw `Failed to resolve workspace root: ${String(e)}`;
+    throw `Failed to resolve session root: ${String(e)}`;
   }
 
   const joined = path.join(root, relative);
@@ -528,7 +528,7 @@ async function resolveSafePath(
     !canonicalTarget.startsWith(canonicalRoot + path.sep) &&
     canonicalTarget !== canonicalRoot
   ) {
-    throw "Path escapes workspace root";
+    throw "Path escapes session root";
   }
 
   return canonicalTarget;
@@ -540,14 +540,14 @@ async function resolveSafePath(
  * Resolves as many path components as do exist, then verifies containment
  * using string prefix matching on the normalized path.
  *
- * @throws string if the resolved directory escapes the workspace root.
+ * @throws string if the resolved directory escapes the session root.
  */
 async function resolveSafeDir(root: string, dir: string): Promise<string> {
   let canonicalRoot: string;
   try {
     canonicalRoot = await fs.promises.realpath(root);
   } catch (e) {
-    throw `Failed to resolve workspace root: ${String(e)}`;
+    throw `Failed to resolve session root: ${String(e)}`;
   }
 
   // Normalise without requiring the path to exist
@@ -557,7 +557,7 @@ async function resolveSafeDir(root: string, dir: string): Promise<string> {
     normalised !== canonicalRoot &&
     !normalised.startsWith(canonicalRoot + path.sep)
   ) {
-    throw "Path escapes workspace root";
+    throw "Path escapes session root";
   }
 
   return normalised;

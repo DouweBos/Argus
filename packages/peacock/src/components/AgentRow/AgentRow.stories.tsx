@@ -20,9 +20,9 @@ export const List: Story = {
       }}
     >
       <AgentRow
-        name="feat/workspace-card"
+        name="feat/session-card"
         project="Argus"
-        tool="Edit WorkspaceCard.tsx"
+        tool="Edit SessionCard.tsx"
         status="running"
         meta="~2m"
         model="sonnet-4.5"

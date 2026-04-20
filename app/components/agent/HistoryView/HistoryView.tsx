@@ -2,13 +2,13 @@ import { CommitLogView } from "../CommitLogView";
 import styles from "./HistoryView.module.css";
 
 interface HistoryViewProps {
-  workspaceId: string;
+  sessionId: string;
 }
 
-export function HistoryView({ workspaceId }: HistoryViewProps) {
+export function HistoryView({ sessionId }: HistoryViewProps) {
   return (
     <div className={styles.container}>
-      <CommitLogView allBranches showGraph workspaceId={workspaceId} />
+      <CommitLogView allBranches showGraph sessionId={sessionId} />
     </div>
   );
 }

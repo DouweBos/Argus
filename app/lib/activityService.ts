@@ -1,8 +1,8 @@
-import type { DeviceInfo, Workspace } from "./types";
+import type { DeviceInfo, Session } from "./types";
 import { recordActivity } from "../stores/activityStore";
 import { getAgentState } from "../stores/agentStore";
 import { getDevices, subscribeDevices } from "../stores/deviceStore";
-import { getWorkspaceState } from "../stores/workspaceStore";
+import { getSessionState } from "../stores/sessionStore";
 import { listen } from "./events";
 
 let initialized = false;
@@ -11,24 +11,24 @@ interface CommitLandedPayload {
   amend: boolean;
   branch: string;
   hash: string;
+  sessionId: string;
   subject: string;
-  workspaceId: string;
 }
 
 interface MergedPayload {
   baseBranch: string;
   branch: string;
-  workspaceId: string;
+  sessionId: string;
 }
 
-function workspaceContext(workspaceId: string | undefined): {
+function sessionContext(sessionId: string | undefined): {
   branch?: string;
   repoRoot?: string;
 } {
-  if (!workspaceId) {
+  if (!sessionId) {
     return {};
   }
-  const ws = getWorkspaceState().workspaces.find((w) => w.id === workspaceId);
+  const ws = getSessionState().sessions.find((w) => w.id === sessionId);
 
   return { repoRoot: ws?.repo_root, branch: ws?.branch };
 }
@@ -43,39 +43,39 @@ export function initActivityService(): void {
   }
   initialized = true;
 
-  // Workspace lifecycle ------------------------------------------------------
+  // Session lifecycle ------------------------------------------------------
 
-  listen<Workspace>("workspace:created", (event) => {
+  listen<Session>("session:created", (event) => {
     const ws = event.payload;
     recordActivity({
-      kind: "workspace_created",
-      workspaceId: ws.id,
+      kind: "session_created",
+      sessionId: ws.id,
       repoRoot: ws.repo_root,
       branch: ws.branch,
-      title: "Workspace created",
+      title: "Session created",
       detail: ws.display_name ?? ws.branch,
     });
   });
 
-  listen<string>("workspace:deleted", (event) => {
-    const workspaceId = event.payload;
-    const ws = getWorkspaceState().workspaces.find((w) => w.id === workspaceId);
+  listen<string>("session:deleted", (event) => {
+    const sessionId = event.payload;
+    const ws = getSessionState().sessions.find((w) => w.id === sessionId);
     recordActivity({
-      kind: "workspace_deleted",
-      workspaceId,
+      kind: "session_deleted",
+      sessionId,
       repoRoot: ws?.repo_root,
       branch: ws?.branch,
-      title: "Workspace deleted",
+      title: "Session deleted",
       detail: ws?.display_name ?? ws?.branch,
     });
   });
 
-  listen<MergedPayload>("workspace:merged", (event) => {
-    const { workspaceId, branch, baseBranch } = event.payload;
-    const { repoRoot } = workspaceContext(workspaceId);
+  listen<MergedPayload>("session:merged", (event) => {
+    const { sessionId, branch, baseBranch } = event.payload;
+    const { repoRoot } = sessionContext(sessionId);
     recordActivity({
-      kind: "workspace_merged",
-      workspaceId,
+      kind: "session_merged",
+      sessionId,
       repoRoot,
       branch,
       title: `Merged into ${baseBranch}`,
@@ -85,12 +85,12 @@ export function initActivityService(): void {
 
   // Commit landed ------------------------------------------------------------
 
-  listen<CommitLandedPayload>("workspace:commit-landed", (event) => {
-    const { workspaceId, branch, hash, subject, amend } = event.payload;
-    const { repoRoot } = workspaceContext(workspaceId);
+  listen<CommitLandedPayload>("session:commit-landed", (event) => {
+    const { sessionId, branch, hash, subject, amend } = event.payload;
+    const { repoRoot } = sessionContext(sessionId);
     recordActivity({
       kind: "commit_landed",
-      workspaceId,
+      sessionId,
       repoRoot,
       branch,
       title: amend ? `Commit amended (${hash})` : `Commit ${hash}`,
@@ -115,7 +115,7 @@ export function initActivityService(): void {
       recordActivity({
         kind: d.online ? "device_online" : "device_offline",
         repoRoot: d.repoRoot ?? undefined,
-        workspaceId: d.workspaceId ?? undefined,
+        sessionId: d.sessionId ?? undefined,
         title: d.online ? "Device online" : "Device went offline",
         detail: `${d.name} · ${d.platform}`,
       });
@@ -134,8 +134,8 @@ export function recordAgentLifecycle(
   kind: "agent_errored" | "agent_spawned" | "agent_stopped",
 ): void {
   const agent = getAgentState().agents[agentId];
-  const workspaceId = agent?.workspace_id;
-  const { repoRoot, branch } = workspaceContext(workspaceId);
+  const sessionId = agent?.session_id;
+  const { repoRoot, branch } = sessionContext(sessionId);
 
   const titles: Record<typeof kind, string> = {
     agent_spawned: "Agent started",
@@ -147,7 +147,7 @@ export function recordAgentLifecycle(
   recordActivity({
     kind,
     agentId,
-    workspaceId,
+    sessionId,
     repoRoot,
     branch,
     title,

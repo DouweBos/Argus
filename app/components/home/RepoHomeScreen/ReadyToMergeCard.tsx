@@ -3,7 +3,7 @@ import { DiffStat, Icons } from "@argus/peacock";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { listen } from "../../../lib/events";
-import { watchWorkspace } from "../../../lib/ipc";
+import { watchSession } from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
 import styles from "./ReadyToMergeCard.module.css";
 
@@ -16,48 +16,48 @@ interface DiffStats {
 interface ReadyToMergeCardProps {
   baseBranch?: string | null;
   sectionClassName?: string;
+  sessionBranch?: string | null;
+  sessionId: string;
   titleClassName?: string;
-  workspaceBranch?: string | null;
-  workspaceId: string;
 }
 
 export function ReadyToMergeCard({
-  workspaceId,
+  sessionId,
   baseBranch,
-  workspaceBranch,
+  sessionBranch,
   sectionClassName,
   titleClassName,
 }: ReadyToMergeCardProps) {
   const { commitsAhead, conflicts, hasStaged, isMerging, handleMerge } =
-    useMergeStatus(workspaceId);
+    useMergeStatus(sessionId);
   const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
   const {
     dispatch: handleFixConflictsInChat,
     isDispatching: isDispatchingAgent,
   } = useFixConflictsInChat({
-    workspaceId,
+    sessionId,
     baseBranch,
-    workspaceBranch,
+    sessionBranch,
     conflicts,
   });
 
   useEffect(() => {
     let cancelled = false;
     const unlistenPromise = listen<DiffStats>(
-      `workspace:diff-changed:${workspaceId}`,
+      `session:diff-changed:${sessionId}`,
       (event) => {
         if (!cancelled) {
           setDiffStats(event.payload);
         }
       },
     );
-    watchWorkspace(workspaceId).catch(() => {});
+    watchSession(sessionId).catch(() => {});
 
     return () => {
       cancelled = true;
       unlistenPromise.then((fn) => fn());
     };
-  }, [workspaceId]);
+  }, [sessionId]);
 
   const hasUncommitted = (diffStats?.files ?? 0) > 0;
   const hasWork = commitsAhead > 0 || hasStaged || hasUncommitted;

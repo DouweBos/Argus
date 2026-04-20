@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { TitleBar as PeacockTitleBar } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
-import { listBranches, setWorkspaceBaseBranch } from "../../../lib/ipc";
+import { listBranches, setSessionBaseBranch } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";
 import { openCommandPalette } from "../../../stores/commandPaletteStore";
 import {
@@ -9,22 +9,22 @@ import {
   toggleRightPanel,
 } from "../../../stores/layoutStore";
 import {
-  updateWorkspace,
-  useSelectedWorkspaceId,
-  useWorkspaces,
-} from "../../../stores/workspaceStore";
+  updateSession,
+  useSelectedSessionId,
+  useSessions,
+} from "../../../stores/sessionStore";
 import { PencilIcon } from "../../shared/Icons";
 import { NavigationButtons } from "../NavigationButtons";
 import { RunControl } from "../RunControl";
 import styles from "./TitleBar.module.css";
 
 export function TitleBar() {
-  const selectedId = useSelectedWorkspaceId();
-  const workspaces = useWorkspaces();
-  const workspace = useMemo(
+  const selectedId = useSelectedSessionId();
+  const sessions = useSessions();
+  const session = useMemo(
     () =>
-      selectedId ? (workspaces.find((w) => w.id === selectedId) ?? null) : null,
-    [selectedId, workspaces],
+      selectedId ? (sessions.find((w) => w.id === selectedId) ?? null) : null,
+    [selectedId, sessions],
   );
 
   const [isEditingBase, setIsEditingBase] = useState(false);
@@ -32,17 +32,17 @@ export function TitleBar() {
   const pickerRef = useRef<HTMLDivElement>(null);
 
   const openBaseBranchPicker = useCallback(async () => {
-    if (!workspace) {
+    if (!session) {
       return;
     }
     try {
-      const branches = await listBranches(workspace.repo_root);
+      const branches = await listBranches(session.repo_root);
       setBranchOptions(branches);
       setIsEditingBase(true);
     } catch {
       // ignore
     }
-  }, [workspace]);
+  }, [session]);
 
   const selectBaseBranch = useCallback(
     async (branch: string) => {
@@ -51,8 +51,8 @@ export function TitleBar() {
       }
       setIsEditingBase(false);
       try {
-        await setWorkspaceBaseBranch(selectedId, branch);
-        updateWorkspace(selectedId, { base_branch: branch });
+        await setSessionBaseBranch(selectedId, branch);
+        updateSession(selectedId, { base_branch: branch });
       } catch {
         // ignore
       }
@@ -62,13 +62,13 @@ export function TitleBar() {
 
   useOutsideClick(pickerRef, isEditingBase, () => setIsEditingBase(false));
 
-  const canEditBase = workspace?.kind === "worktree";
+  const canEditBase = session?.kind === "worktree";
 
-  const projectName = workspace?.repo_root
-    ? (workspace.repo_root.split("/").filter(Boolean).pop() ?? null)
+  const projectName = session?.repo_root
+    ? (session.repo_root.split("/").filter(Boolean).pop() ?? null)
     : null;
 
-  const title = workspace ? (
+  const title = session ? (
     <div className={styles.branchInfo}>
       {projectName && (
         <>
@@ -76,15 +76,15 @@ export function TitleBar() {
           <span className={styles.separator}>/</span>
         </>
       )}
-      <span className={styles.branchLabel}>{workspace.branch}</span>
-      {workspace.base_branch && (
+      <span className={styles.branchLabel}>{session.branch}</span>
+      {session.base_branch && (
         <div ref={pickerRef} className={styles.baseBranchGroup}>
           <button
             className={`${styles.baseBranchLabel} ${canEditBase ? styles.baseBranchEditable : ""}`}
             title={canEditBase ? "Change base branch" : undefined}
             onClick={canEditBase ? openBaseBranchPicker : undefined}
           >
-            &rarr; {workspace.base_branch}
+            &rarr; {session.base_branch}
             {canEditBase && (
               <span className={styles.editIcon}>
                 <PencilIcon />
@@ -96,7 +96,7 @@ export function TitleBar() {
               {branchOptions.map((b) => (
                 <button
                   key={b}
-                  className={`${styles.branchItem} ${b === workspace.base_branch ? styles.branchItemActive : ""}`}
+                  className={`${styles.branchItem} ${b === session.base_branch ? styles.branchItemActive : ""}`}
                   onClick={() => selectBaseBranch(b)}
                 >
                   {b}
@@ -119,9 +119,9 @@ export function TitleBar() {
       jumpHotkey={shortcutKeys("command-palette")}
       onJump={openCommandPalette}
       onToggleLeft={toggleLeftSidebar}
-      onToggleRight={workspace ? toggleRightPanel : undefined}
+      onToggleRight={session ? toggleRightPanel : undefined}
       left={<NavigationButtons />}
-      right={workspace ? <RunControl workspaceId={workspace.id} /> : undefined}
+      right={session ? <RunControl sessionId={session.id} /> : undefined}
     />
   );
 }

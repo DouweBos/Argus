@@ -26,7 +26,7 @@ import {
   setModel,
   setPermissionPending,
 } from "../stores/conversationStore";
-import { getWorkspaceState } from "../stores/workspaceStore";
+import { getSessionState } from "../stores/sessionStore";
 import { recordAgentLifecycle } from "./activityService";
 import {
   notifyAgentFinished,
@@ -129,9 +129,9 @@ export function saveAgentConversation(agentId: string): void {
     return;
   }
 
-  const wsState = getWorkspaceState();
-  const workspace = wsState.workspaces.find((w) => w.id === agent.workspace_id);
-  if (!workspace) {
+  const wsState = getSessionState();
+  const session = wsState.sessions.find((w) => w.id === agent.session_id);
+  if (!session) {
     return;
   }
 
@@ -139,8 +139,8 @@ export function saveAgentConversation(agentId: string): void {
     id: crypto.randomUUID(),
     sessionId: conv.sessionId,
     title: conv.title ?? deriveTitle(conv.messages),
-    workspaceBranch: workspace.branch ?? "",
-    workspaceDescription: workspace.description ?? "",
+    sessionBranch: session.branch ?? "",
+    sessionDescription: session.description ?? "",
     model: conv.model,
     totalCost: conv.totalCost,
     totalDuration: conv.totalDuration,
@@ -152,7 +152,7 @@ export function saveAgentConversation(agentId: string): void {
 
   // Fire-and-forget — saving is best-effort. The backend upserts by sessionId
   // so repeated calls during a live chat overwrite the on-disk record.
-  saveChatHistory(workspace.repo_root, saved).catch(() => {});
+  saveChatHistory(session.repo_root, saved).catch(() => {});
 }
 
 /**
@@ -206,7 +206,7 @@ export function initExternalAgentStarted(): void {
     }
     addAgent({
       agent_id: info.agent_id,
-      workspace_id: info.workspace_id,
+      session_id: info.session_id,
       status: info.status,
       permission_mode: info.permission_mode,
       parent_agent_id: info.parent_agent_id,

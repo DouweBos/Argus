@@ -4,7 +4,7 @@ import { ClaudeAuthStep } from "./ClaudeAuthStep";
 import { CompletionStep } from "./CompletionStep";
 import { DefaultsFormStep } from "./DefaultsFormStep";
 import { FirstAgentStep } from "./FirstAgentStep";
-import { FirstWorkspaceStep } from "./FirstWorkspaceStep";
+import { FirstSessionStep } from "./FirstSessionStep";
 import { PermissionsStep } from "./PermissionsStep";
 import { PreflightStep } from "./PreflightStep";
 import { ProjectPickerStep } from "./ProjectPickerStep";
@@ -32,8 +32,8 @@ export function OnboardingRoot() {
       return <ProjectPickerStep />;
     case "argus_config":
       return <ArgusConfigStep />;
-    case "first_workspace":
-      return <FirstWorkspaceStep />;
+    case "first_session":
+      return <FirstSessionStep />;
     case "first_agent":
       return <FirstAgentStep />;
     case "completion":

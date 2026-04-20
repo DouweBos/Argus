@@ -10,11 +10,12 @@ import {
   startListening,
   stopListening,
 } from "../../../lib/terminalBufferService";
+import { getSessionState } from "../../../stores/sessionStore";
 import {
   addSession,
   clearBuffer,
   getRunSessionId,
-  getSessionsForWorkspace,
+  getSessionsForSession,
   removeSession,
   setActiveSession,
   useActiveSessionId,
@@ -22,18 +23,17 @@ import {
   useSessionAlive,
   useTerminalSessionsSlice,
 } from "../../../stores/terminalStore";
-import { getWorkspaceState } from "../../../stores/workspaceStore";
 import { ShellTerminal } from "./ShellTerminal";
 import styles from "./TerminalTabs.module.css";
 
 interface TerminalTabsProps {
-  workspaceId: string;
+  sessionId: string;
 }
 
-export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
-  const sessions = useTerminalSessionsSlice(workspaceId);
-  const activeId = useActiveSessionId(workspaceId);
-  const runSessionId = useRunSessionId(workspaceId);
+export function TerminalTabs({ sessionId }: TerminalTabsProps) {
+  const sessions = useTerminalSessionsSlice(sessionId);
+  const activeId = useActiveSessionId(sessionId);
+  const runSessionId = useRunSessionId(sessionId);
   const activeAlive = useSessionAlive(activeId);
   const [isCreating, setIsCreating] = useState(false);
   const autoOpenedRef = useRef<Set<string>>(new Set());
@@ -50,24 +50,24 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
     return 0;
   });
 
-  // Auto-open terminals from config when workspace is first selected
+  // Auto-open terminals from config when session is first selected
   useEffect(() => {
-    if (autoOpenedRef.current.has(workspaceId)) {
+    if (autoOpenedRef.current.has(sessionId)) {
       return;
     }
-    const existingSessions = getSessionsForWorkspace(workspaceId);
+    const existingSessions = getSessionsForSession(sessionId);
     if (existingSessions.length > 0) {
-      autoOpenedRef.current.add(workspaceId);
+      autoOpenedRef.current.add(sessionId);
 
       return;
     }
 
-    autoOpenedRef.current.add(workspaceId);
+    autoOpenedRef.current.add(sessionId);
 
     (async () => {
       try {
-        const ws = getWorkspaceState().workspaces.find(
-          (w) => w.id === workspaceId,
+        const ws = getSessionState().sessions.find(
+          (w) => w.id === sessionId,
         );
         if (!ws) {
           return;
@@ -79,14 +79,14 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
 
         for (const entry of config.terminals) {
           try {
-            const sessionId = await createTerminal(
-              workspaceId,
+            const terminalId = await createTerminal(
+              sessionId,
               entry.dir || undefined,
             );
-            startListening(sessionId);
+            startListening(terminalId);
             addSession({
-              id: sessionId,
-              workspace_id: workspaceId,
+              id: terminalId,
+              session_id: sessionId,
               title: entry.name || entry.dir || "Shell",
             });
           } catch {
@@ -97,7 +97,7 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
         // no config or read failed — silently ignore
       }
     })();
-  }, [workspaceId]);
+  }, [sessionId]);
 
   const handleCreate = useCallback(async () => {
     if (isCreating) {
@@ -105,11 +105,11 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
     }
     setIsCreating(true);
     try {
-      const sessionId = await createTerminal(workspaceId);
-      startListening(sessionId);
+      const terminalId = await createTerminal(sessionId);
+      startListening(terminalId);
       addSession({
-        id: sessionId,
-        workspace_id: workspaceId,
+        id: terminalId,
+        session_id: sessionId,
         title: `Shell ${sessions.length + 1}`,
       });
     } catch {
@@ -117,21 +117,21 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
     } finally {
       setIsCreating(false);
     }
-  }, [workspaceId, sessions.length, isCreating]);
+  }, [sessionId, sessions.length, isCreating]);
 
   const handleClose = useCallback(
-    async (e: React.MouseEvent, sessionId: string) => {
+    async (e: React.MouseEvent, terminalId: string) => {
       e.stopPropagation();
-      stopListening(sessionId);
-      clearBuffer(sessionId);
-      removeSession(workspaceId, sessionId);
+      stopListening(terminalId);
+      clearBuffer(terminalId);
+      removeSession(sessionId, terminalId);
       try {
-        await destroyTerminal(sessionId);
+        await destroyTerminal(terminalId);
       } catch {
         // best-effort cleanup
       }
     },
-    [workspaceId],
+    [sessionId],
   );
 
   const handleStop = useCallback(async () => {
@@ -146,15 +146,15 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
   }, [activeId]);
 
   const handleExit = useCallback(
-    (sessionId: string) => {
+    (terminalId: string) => {
       // Don't auto-remove the run terminal on exit — keep output visible
-      const currentRunId = getRunSessionId(workspaceId);
-      if (sessionId === currentRunId) {
+      const currentRunId = getRunSessionId(sessionId);
+      if (terminalId === currentRunId) {
         return;
       }
-      removeSession(workspaceId, sessionId);
+      removeSession(sessionId, terminalId);
     },
-    [workspaceId],
+    [sessionId],
   );
 
   return (
@@ -169,7 +169,7 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
               <button
                 key={session.id}
                 className={`${styles.tab} ${session.id === activeId ? styles.activeTab : ""} ${isRun ? styles.runTab : ""}`}
-                onClick={() => setActiveSession(workspaceId, session.id)}
+                onClick={() => setActiveSession(sessionId, session.id)}
               >
                 {isRun ? (
                   <Icons.PlayIcon size={11} />

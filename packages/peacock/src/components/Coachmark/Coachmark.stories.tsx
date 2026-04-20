@@ -11,7 +11,7 @@ type Story = StoryObj<typeof Coachmark>;
 
 export const Default: Story = {
   args: {
-    title: "Your workspaces live here",
+    title: "Your sessions live here",
     description:
       "Each row is an isolated git worktree. Create one per parallel task.",
     progress: "1 / 3",

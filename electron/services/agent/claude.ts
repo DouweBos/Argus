@@ -41,7 +41,7 @@ import type {
   BrowserSession,
   SimulatorReservation,
 } from "../../state";
-import type { RuntimePlatform } from "../workspace/models";
+import type { RuntimePlatform } from "../session/models";
 import { app } from "electron";
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
@@ -61,11 +61,11 @@ import {
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { buildMergedMcpServers } from "../mcp/userConfig";
 import { organizationsForRepo } from "../organization/manager";
-import { findOrgTaskForWorkspace } from "../organizationTask/manager";
+import { findOrgTaskForSession } from "../organizationTask/manager";
+import { incrementCommandMetric } from "../session/commandMetrics";
+import { emitReviewState } from "../session/sessionOps";
+import { loadArgusConfig } from "../session/setup";
 import { simulatorPool } from "../simulator/pool";
-import { incrementCommandMetric } from "../workspace/commandMetrics";
-import { loadArgusConfig } from "../workspace/setup";
-import { emitReviewState } from "../workspace/workspaceOps";
 import { ControlHandler } from "./controlHandler";
 
 const execFileAsync = promisify(execFile);
@@ -123,7 +123,7 @@ function injectDeviceFlag(command: string, udid: string): string {
 }
 
 /**
- * Lazily-loaded system prompts, one per workspace kind.
+ * Lazily-loaded system prompts, one per session kind.
  * - Worktree agents: `worktree-agent-system-prompt.md`
  * - Root agents: `root-agent-system-prompt.md`
  */
@@ -149,10 +149,10 @@ function loadPromptFile(filename: string): string {
 }
 
 function getSystemPromptForKind(
-  kind: "org_host" | "repo_root" | "worktree",
+  kind: "org_host" | "project_root" | "worktree",
 ): string {
   if (cachedPrompts[kind] === null) {
-    if (kind === "repo_root") {
+    if (kind === "project_root") {
       cachedPrompts[kind] = loadPromptFile("root-agent-system-prompt.md");
     } else if (kind === "org_host") {
       cachedPrompts[kind] = loadPromptFile("org-host-agent-system-prompt.md");
@@ -190,11 +190,11 @@ function getConductorSkill(): string {
  */
 function buildOrganizationContext(
   repoRoot: string,
-  workspaceId: string,
+  sessionId: string,
 ): string {
-  const task = findOrgTaskForWorkspace(workspaceId);
-  // For org_host workspaces repo_root is the neutral dir, so look up the org
-  // via the task itself. For normal workspaces, fall back to repo membership.
+  const task = findOrgTaskForSession(sessionId);
+  // For org_host sessions repo_root is the neutral dir, so look up the org
+  // via the task itself. For normal sessions, fall back to repo membership.
   const taskOrg = task
     ? (appState.organizations.get(task.organization_id) ?? null)
     : null;
@@ -227,7 +227,7 @@ function buildOrganizationContext(
 
   let base = `## Organization Context\n\n${sections.join("\n\n")}`;
 
-  // If this workspace is the host of a cross-repo OrgTask, surface the task
+  // If this session is the host of a cross-repo OrgTask, surface the task
   // so the agent has it in context after restarts. Host-only — child worktrees
   // inherit context from their parent's spawn prompt.
   if (task) {
@@ -289,7 +289,7 @@ export async function checkClaudeCli(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 /**
- * Spawn a new `claude` CLI process for the given workspace.
+ * Spawn a new `claude` CLI process for the given session.
  *
  * Claude is started in `--output-format stream-json` mode so that the
  * renderer receives structured JSON events. Permission prompts are handled
@@ -299,11 +299,11 @@ export async function checkClaudeCli(): Promise<string> {
  *
  * Returns an {@link AgentInfo} containing the generated `agentId`.
  *
- * @throws string if the workspace is not found or the process cannot be
+ * @throws string if the session is not found or the process cannot be
  *   spawned.
  */
 export async function startAgent(
-  workspaceId: string,
+  sessionId: string,
   model?: string,
   permissionMode?: string,
   resumeSessionId?: string,
@@ -311,12 +311,12 @@ export async function startAgent(
   platformsOverride?: RuntimePlatform[],
   parentAgentId?: string,
 ): Promise<AgentInfo> {
-  // Verify the workspace exists and grab its path.
-  const workspace = appState.workspaces.get(workspaceId);
-  if (!workspace) {
-    throw `Workspace not found: ${workspaceId}`;
+  // Verify the session exists and grab its path.
+  const argusSession = appState.sessions.get(sessionId);
+  if (!argusSession) {
+    throw `Session not found: ${sessionId}`;
   }
-  const worktreePath = workspace.path;
+  const worktreePath = argusSession.path;
 
   const agentId = crypto.randomUUID();
 
@@ -354,8 +354,8 @@ export async function startAgent(
     args.push("--resume", resumeSessionId);
   }
 
-  // Connect the agent to the Argus MCP server for workspace/agent
-  // orchestration tools (create_workspace, spawn_agent, trigger_run, etc.).
+  // Connect the agent to the Argus MCP server for session/agent
+  // orchestration tools (create_session, spawn_agent, trigger_run, etc.).
   // The per-launch bearer token is required on every request — only spawned
   // children learn it, so other local processes can't reach the server.
   const mcpPort = getMcpPort();
@@ -534,7 +534,7 @@ export async function startAgent(
 
           // iOS/Android: lazy simulator acquisition — inject --device {UDID}.
           if (cmd.includes("conductor") && !cmd.includes("--device")) {
-            ensureSimulatorForAgent(agentId, workspace.repo_root)
+            ensureSimulatorForAgent(agentId, argusSession.repo_root)
               .then((udid) => {
                 payload.input = {
                   ...payload.input,
@@ -650,22 +650,22 @@ export async function startAgent(
   child.on("close", (code) => {
     const exitCode = code ?? 0;
 
-    const session = appState.agents.get(agentId);
-    if (session) {
-      session.status = exitCode === 0 ? "stopped" : "error";
+    const agentEntry = appState.agents.get(agentId);
+    if (agentEntry) {
+      agentEntry.status = exitCode === 0 ? "stopped" : "error";
 
       // Notify anyone waiting on this agent (e.g. wait_for_agent callers).
-      for (const resolve of session.exitWaiters) {
+      for (const resolve of agentEntry.exitWaiters) {
         resolve(exitCode);
       }
-      session.exitWaiters.length = 0;
+      agentEntry.exitWaiters.length = 0;
 
       // Also unblock anyone waiting on turn completion — process exit
       // implicitly ends any in-flight turn.
-      for (const resolve of session.turnWaiters) {
-        resolve(session.status);
+      for (const resolve of agentEntry.turnWaiters) {
+        resolve(agentEntry.status);
       }
-      session.turnWaiters.length = 0;
+      agentEntry.turnWaiters.length = 0;
     }
 
     // Release device reservations (async, fire-and-forget).
@@ -679,8 +679,8 @@ export async function startAgent(
     getMainWindow()?.webContents.send(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
 
-    // Re-evaluate whether this workspace now has reviewable changes.
-    emitReviewState(workspaceId).catch(() => {});
+    // Re-evaluate whether this session now has reviewable changes.
+    emitReviewState(sessionId).catch(() => {});
   });
 
   // Start as idle — the process is alive but hasn't been given work yet.
@@ -688,9 +688,9 @@ export async function startAgent(
   // request or any user message triggers a turn, and flip back to idle when
   // it finishes. Tracking idle/running accurately matters for the quit
   // confirmation dialog, which should only block on agents doing real work.
-  const session: AgentSession = {
+  const agentSession: AgentSession = {
     agentId,
-    workspaceId,
+    sessionId,
     stdin,
     child,
     status: "idle",
@@ -701,14 +701,14 @@ export async function startAgent(
     turnWaiters: [],
   };
 
-  appState.agents.set(agentId, session);
+  appState.agents.set(agentId, agentSession);
 
   // Load project-level config from .argus.json (if present).
   let projectPrompt: string | null = null;
   let browserUrl: string | null = null;
   let configPlatforms: RuntimePlatform[] | null = null;
   try {
-    const config = loadArgusConfig(workspace.repo_root);
+    const config = loadArgusConfig(argusSession.repo_root);
     projectPrompt = config.agent_prompt ?? null;
     browserUrl = config.browser_url ?? null;
     configPlatforms = config.platforms ?? null;
@@ -728,17 +728,17 @@ export async function startAgent(
     platforms: new Set(resolvedPlatforms),
     iosReservation: appState.simulatorReservations.get(agentId) ?? null,
     androidDevice: appState.androidDevice,
-    browserSession: appState.browserSessions.get(workspaceId) ?? null,
+    browserSession: appState.browserSessions.get(sessionId) ?? null,
     browserUrl,
   });
 
   // Combine prompts: kind-specific → project context → org context → conductor skill → project-level → runtime → caller-provided.
-  const systemPrompt = getSystemPromptForKind(workspace.kind);
+  const systemPrompt = getSystemPromptForKind(argusSession.kind);
   const conductorSkill = getConductorSkill();
-  const projectContext = `## Current Project\n\nYou are working in **${workspace.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${workspace.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
+  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
   const orgContext = buildOrganizationContext(
-    workspace.repo_root,
-    workspace.id,
+    argusSession.repo_root,
+    argusSession.id,
   );
   const combinedPrompt = [
     systemPrompt,
@@ -759,13 +759,13 @@ export async function startAgent(
   );
   safeWrite(initRequest + "\n");
 
-  emitAgentStatus(agentId, session.status);
-  info(`[agent:${agentId}] started for workspace ${workspaceId}`);
+  emitAgentStatus(agentId, agentSession.status);
+  info(`[agent:${agentId}] started for session ${sessionId}`);
 
   return {
     agent_id: agentId,
-    workspace_id: workspaceId,
-    status: session.status,
+    session_id: sessionId,
+    status: agentSession.status,
     parent_agent_id: parentAgentId ?? null,
   };
 }
@@ -964,11 +964,11 @@ export function sendAgentMessage(
   message: string,
   images?: ImageAttachment[],
 ): void {
-  const session = appState.agents.get(agentId);
-  if (!session) {
+  const agentEntry = appState.agents.get(agentId);
+  if (!agentEntry) {
     throw `No agent found: ${agentId}`;
   }
-  if (session.status === "stopped" || session.status === "error") {
+  if (agentEntry.status === "stopped" || agentEntry.status === "error") {
     throw `Agent is not running: ${agentId}`;
   }
 
@@ -977,9 +977,9 @@ export function sendAgentMessage(
   if (trimmed.startsWith("/")) {
     const cmdName = trimmed.slice(1).split(/\s+/)[0];
     if (cmdName) {
-      const workspace = appState.workspaces.get(session.workspaceId);
-      if (workspace?.repo_root) {
-        incrementCommandMetric(workspace.repo_root, cmdName);
+      const session = appState.sessions.get(agentEntry.sessionId);
+      if (session?.repo_root) {
+        incrementCommandMetric(session.repo_root, cmdName);
       }
     }
   }
@@ -1077,15 +1077,15 @@ export async function setAgentPermissionMode(
 // ---------------------------------------------------------------------------
 
 /**
- * Return all agents for a given workspace.
+ * Return all agents for a given session.
  */
-export function listAgents(workspaceId: string): AgentInfo[] {
+export function listAgents(sessionId: string): AgentInfo[] {
   const result: AgentInfo[] = [];
   for (const session of appState.agents.values()) {
-    if (session.workspaceId === workspaceId) {
+    if (session.sessionId === sessionId) {
       result.push({
         agent_id: session.agentId,
-        workspace_id: session.workspaceId,
+        session_id: session.sessionId,
         status: session.status,
         parent_agent_id: session.parentAgentId,
       });
@@ -1162,7 +1162,7 @@ interface RuntimeContext {
 
 /**
  * Build the "Runtime Environment" system prompt section, tailored to the
- * platforms this workspace actually targets and whatever devices are already
+ * platforms this session actually targets and whatever devices are already
  * attached/reserved at agent start. Falls back to the full triple when
  * `.argus.json` does not declare `platforms`.
  */
@@ -1196,7 +1196,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       );
     } else {
       lines.push(
-        "An iOS simulator is attached to your workspace. It will be provisioned automatically the first time you run a `conductor` command — do **not** call `conductor start-device` yourself.",
+        "An iOS simulator is attached to your session. It will be provisioned automatically the first time you run a `conductor` command — do **not** call `conductor start-device` yourself.",
       );
     }
   }
@@ -1219,13 +1219,13 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       ? `, currently loaded at **${browserUrl}**`
       : "";
     const cdpNote = browserSession
-      ? " A live CDP session is already wired to this workspace's webview."
+      ? " A live CDP session is already wired to this session's webview."
       : "";
     lines.push(
       "",
       "### Web Browser",
       "",
-      `A web browser view is attached to your workspace${browserDefault}.${cdpNote} The user can see this browser view in the runtime panel. When the user asks about "the website", "the page", or "what site we're on", they are referring to this web browser view.`,
+      `A web browser view is attached to your session${browserDefault}.${cdpNote} The user can see this browser view in the runtime panel. When the user asks about "the website", "the page", or "what site we're on", they are referring to this web browser view.`,
       "",
       "To interact with the web browser view, use `conductor` with `--device web`:",
       "- `conductor inspect --device web` — see what's on the web page (ARIA tree, element names)",
@@ -1234,7 +1234,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       '- `conductor input-text "text" --device web` — type text into the focused field',
       "- `conductor open-link <url> --device web` — navigate the web browser to a URL",
       "",
-      "Argus wires `--device web` directly to this workspace's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
+      "Argus wires `--device web` directly to this session's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
     );
   }
 

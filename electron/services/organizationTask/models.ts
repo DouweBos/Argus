@@ -1,6 +1,6 @@
 /**
  * OrgTask — one user-initiated cross-repo task. A single "host" agent runs in
- * a neutral workspace (not a worktree of any scope repo) and orchestrates
+ * a neutral session (not a worktree of any scope repo) and orchestrates
  * child agents into per-repo worktrees on demand via the Argus MCP tools.
  */
 
@@ -22,9 +22,9 @@ export interface OrgTask {
   created_at: number;
   updated_at: number;
 
-  /** Neutral workspace (kind: "org_host") hosting the lone agent. Null until created. */
-  host_workspace_id: string | null;
-  /** Agent running in the host workspace. Null until spawned. */
+  /** Neutral session (kind: "org_host") hosting the lone agent. Null until created. */
+  host_session_id: string | null;
+  /** Agent running in the host session. Null until spawned. */
   host_agent_id: string | null;
   /** All in-scope repos (information for the agent; not a fan-out list). */
   scope: OrgTaskScopeEntry[];

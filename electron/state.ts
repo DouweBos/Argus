@@ -7,9 +7,9 @@
 import type { AgentSession } from "./services/agent/models";
 import type { Organization } from "./services/organization/models";
 import type { OrgTask } from "./services/organizationTask/models";
+import type { Session } from "./services/session/models";
+import type { WatcherHandle } from "./services/session/watcher";
 import type { TerminalSession } from "./services/terminal/multiplexer";
-import type { Workspace } from "./services/workspace/models";
-import type { WatcherHandle } from "./services/workspace/watcher";
 import type { BrowserWindow } from "electron";
 
 export interface BrowserSession {
@@ -54,8 +54,8 @@ class AppState {
   /** Set of absolute paths to all open repository roots. */
   repoRoots = new Set<string>();
 
-  /** All managed workspaces, keyed by their UUID. */
-  workspaces = new Map<string, Workspace>();
+  /** All managed sessions, keyed by their UUID. */
+  sessions = new Map<string, Session>();
 
   /** Active PTY sessions, keyed by session ID. */
   terminals = new Map<string, TerminalSession>();
@@ -75,13 +75,13 @@ class AppState {
   /** Active Android device capture session, if any. */
   androidDevice: AndroidDeviceSession | null = null;
 
-  /** Active file system watchers, keyed by workspace UUID. */
+  /** Active file system watchers, keyed by session UUID. */
   watchers = new Map<string, WatcherHandle>();
 
   /** Simulator reservations for agents, keyed by agent UUID. */
   simulatorReservations = new Map<string, SimulatorReservation>();
 
-  /** Web browser sessions, keyed by workspace ID (storeKey). */
+  /** Web browser sessions, keyed by session ID (storeKey). */
   browserSessions = new Map<string, BrowserSession>();
 
   /** Web browser reservations for agents, keyed by agent UUID. */

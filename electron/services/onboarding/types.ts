@@ -6,7 +6,7 @@ export const ONBOARDING_STEPS = [
   "defaults",
   "project",
   "argus_config",
-  "first_workspace",
+  "first_session",
   "first_agent",
   "completion",
 ] as const;

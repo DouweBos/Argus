@@ -1,34 +1,34 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  clearWorkspace,
+  clearSession,
   getEditorState,
-  setActiveWorkspace,
+  setActiveSession,
   setEditorState,
 } from "./editorStore";
 
 describe("editorStore", () => {
   beforeEach(() => {
-    setEditorState({ activeWorkspaceId: null });
+    setEditorState({ activeSessionId: null });
   });
 
-  it("starts with null workspace", () => {
-    expect(getEditorState().activeWorkspaceId).toBeNull();
+  it("starts with null session", () => {
+    expect(getEditorState().activeSessionId).toBeNull();
   });
 
-  it("sets active workspace", () => {
-    setActiveWorkspace("ws-1");
-    expect(getEditorState().activeWorkspaceId).toBe("ws-1");
+  it("sets active session", () => {
+    setActiveSession("ws-1");
+    expect(getEditorState().activeSessionId).toBe("ws-1");
   });
 
-  it("clears workspace", () => {
-    setActiveWorkspace("ws-1");
-    clearWorkspace();
-    expect(getEditorState().activeWorkspaceId).toBeNull();
+  it("clears session", () => {
+    setActiveSession("ws-1");
+    clearSession();
+    expect(getEditorState().activeSessionId).toBeNull();
   });
 
-  it("overwrites previous workspace", () => {
-    setActiveWorkspace("ws-1");
-    setActiveWorkspace("ws-2");
-    expect(getEditorState().activeWorkspaceId).toBe("ws-2");
+  it("overwrites previous session", () => {
+    setActiveSession("ws-1");
+    setActiveSession("ws-2");
+    expect(getEditorState().activeSessionId).toBe("ws-2");
   });
 });

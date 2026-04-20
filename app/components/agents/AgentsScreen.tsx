@@ -43,14 +43,14 @@ export function AgentsScreen() {
   const idle = activeAgents.filter((a) => a.status === "idle").length;
 
   const nav =
-    (kind: "agent" | "project" | "workspace", a: HomeAgent) =>
+    (kind: "agent" | "project" | "session", a: HomeAgent) =>
     (e: React.MouseEvent) => {
       e.stopPropagation();
       goto(
         {
           agentId: a.id,
-          repoRoot: a.workspace.repo_root,
-          workspaceId: a.workspace.id,
+          repoRoot: a.session.repo_root,
+          sessionId: a.session.id,
         },
         kind,
       ).catch(() => {});
@@ -68,7 +68,7 @@ export function AgentsScreen() {
 
       {activeAgents.length === 0 ? (
         <div className={styles.empty}>
-          No agents running. Start one from a workspace to see it here.
+          No agents running. Start one from a session to see it here.
         </div>
       ) : (
         <table className={styles.table}>
@@ -77,7 +77,7 @@ export function AgentsScreen() {
               <th>Agent</th>
               <th>Status</th>
               <th>Branch</th>
-              <th>Workspace</th>
+              <th>Session</th>
               <th>Project</th>
             </tr>
           </thead>
@@ -90,8 +90,8 @@ export function AgentsScreen() {
                   goto(
                     {
                       agentId: a.id,
-                      repoRoot: a.workspace.repo_root,
-                      workspaceId: a.workspace.id,
+                      repoRoot: a.session.repo_root,
+                      sessionId: a.session.id,
                     },
                     "agent",
                   ).catch(() => {})
@@ -114,13 +114,13 @@ export function AgentsScreen() {
                 </td>
                 <td className={styles.muted}>{a.branch}</td>
                 <td>
-                  <button className={styles.link} onClick={nav("workspace", a)}>
-                    {a.workspace.id.slice(0, 8)}
+                  <button className={styles.link} onClick={nav("session", a)}>
+                    {a.session.id.slice(0, 8)}
                   </button>
                 </td>
                 <td>
                   <button className={styles.link} onClick={nav("project", a)}>
-                    {basename(a.workspace.repo_root)}
+                    {basename(a.session.repo_root)}
                   </button>
                 </td>
               </tr>

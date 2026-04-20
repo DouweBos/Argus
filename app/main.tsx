@@ -42,9 +42,9 @@ if (popoutMode === "simulator") {
   // Poll the device list so the sidebar count updates even before the
   // Devices screen has been opened.
   initDevicePolling();
-  // Maintain the Review queue from backend `workspace:review-state` events.
+  // Maintain the Review queue from backend `session:review-state` events.
   initReviewQueueListener();
-  // Subscribe to agent/workspace/commit/device signals and populate Activity.
+  // Subscribe to agent/session/commit/device signals and populate Activity.
   initActivityService();
 
   // VS Code services must be initialized before any editor component renders

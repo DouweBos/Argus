@@ -15,7 +15,7 @@ export function SourceSidebar({
 }: SourceSidebarProps) {
   return (
     <SidebarNav framed className={styles.sidebar}>
-      <SidebarSection>Workspace</SidebarSection>
+      <SidebarSection>Session</SidebarSection>
       <SidebarItem
         active={activeView === "working-copy"}
         count={fileCount > 0 ? fileCount : undefined}

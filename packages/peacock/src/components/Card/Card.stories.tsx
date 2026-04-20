@@ -24,7 +24,7 @@ export const Dashed: Story = {
 export const Tight: Story = {
   args: {
     variant: "tight",
-    children: "Workspace item",
+    children: "Session item",
     selected: true,
     style: { width: 260 },
   },

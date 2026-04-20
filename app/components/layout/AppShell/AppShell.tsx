@@ -2,10 +2,10 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
+import { useProjects } from "../../../hooks/useSessions";
 import { useSuppressSpacePageScroll } from "../../../hooks/useSuppressSpacePageScroll";
 import { useWindowFocus } from "../../../hooks/useWindowFocus";
-import { useProjects } from "../../../hooks/useWorkspaces";
-import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
+import { startAgentInSession } from "../../../lib/agentLifecycle";
 import { runCloseIntent } from "../../../lib/closeIntent";
 import { closeWindow } from "../../../lib/ipc";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
@@ -13,14 +13,14 @@ import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
-  hideCreateWorkspaceDialog,
-  hideNewWorkspacePicker,
+  hideCreateSessionDialog,
+  hideNewSessionPicker,
   hideOpenProjectDialog,
-  showCreateWorkspaceDialog,
+  showCreateSessionDialog,
   showOpenProjectDialog,
-  triggerNewWorkspace,
-  useCreateWorkspaceRepoRoot,
-  useNewWorkspacePickerOpen,
+  triggerNewSession,
+  useCreateSessionRepoRoot,
+  useNewSessionPickerOpen,
   useOpenProjectVisible,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
@@ -31,18 +31,18 @@ import {
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
 import { useOrgTaskSync } from "../../../stores/orgTaskStore";
-import { showSettingsDialog } from "../../../stores/settingsStore";
 import {
-  getWorkspaceState,
-  selectWorkspace,
-  useSelectedWorkspaceId,
-} from "../../../stores/workspaceStore";
+  getSessionState,
+  selectSession,
+  useSelectedSessionId,
+} from "../../../stores/sessionStore";
+import { showSettingsDialog } from "../../../stores/settingsStore";
 import { ActivityScreen } from "../../activity/ActivityScreen";
 import { CenterPanel } from "../../agent/CenterPanel";
 import { AgentsScreen } from "../../agents/AgentsScreen";
 import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
-import { NewWorkspacePicker } from "../../home/HomeScreen/NewWorkspacePicker";
+import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
 import { NotificationsScreen } from "../../notifications";
 import { OrganizationsScreen } from "../../organizations";
@@ -51,9 +51,9 @@ import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
 import { SettingsDialog } from "../../shared/SettingsDialog";
-import { CreateWorkspaceDialog } from "../../sidebar/CreateWorkspaceDialog";
+import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
-import { WorkspaceSidebar } from "../../sidebar/WorkspaceSidebar";
+import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
 import { ToolRail } from "../../toolrail/ToolRail";
 import { ErrorBoundary } from "../ErrorBoundary";
@@ -81,7 +81,7 @@ function renderCenter(
     return <NotificationsScreen />;
   }
   if (selectedId !== null) {
-    return <CenterPanel workspaceId={selectedId} />;
+    return <CenterPanel sessionId={selectedId} />;
   }
   if (centerView === "devices") {
     return <DevicesScreen />;
@@ -103,7 +103,7 @@ function renderCenter(
 }
 
 export function AppShell() {
-  const selectedId = useSelectedWorkspaceId();
+  const selectedId = useSelectedSessionId();
   const centerView = useCenterView();
   const location = useLocation();
   const isNotificationsRoute = location.pathname.replace(/\/+$/, "") === "/notifications";
@@ -114,19 +114,19 @@ export function AppShell() {
   useOrgTaskSync();
 
   const startNewAgentInCurrent = useCallback(async () => {
-    const { selectedId: id } = getWorkspaceState();
+    const { selectedId: id } = getSessionState();
     if (!id) {
       return;
     }
     try {
-      await startAgentInWorkspace(id);
+      await startAgentInSession(id);
     } catch {
       // Silent — agent errors surface via the normal agent UI.
     }
   }, []);
 
   const cycleAgentTab = useCallback((direction: -1 | 1) => {
-    const { selectedId: id } = getWorkspaceState();
+    const { selectedId: id } = getSessionState();
     if (id) {
       cycleActiveAgent(id, direction);
       setActiveCenterView("agents");
@@ -134,16 +134,16 @@ export function AppShell() {
   }, []);
 
   const goToProjectHome = useCallback(() => {
-    const { selectedId: id, workspaces } = getWorkspaceState();
-    const current = workspaces.find((w) => w.id === id);
+    const { selectedId: id, sessions } = getSessionState();
+    const current = sessions.find((w) => w.id === id);
     if (!current) {
       return;
     }
-    const head = workspaces.find(
-      (w) => w.repo_root === current.repo_root && w.kind === "repo_root",
+    const head = sessions.find(
+      (w) => w.repo_root === current.repo_root && w.kind === "project_root",
     );
     if (head && head.id !== id) {
-      selectWorkspace(head.id);
+      selectSession(head.id);
     }
   }, []);
 
@@ -153,14 +153,14 @@ export function AppShell() {
       "toggle-left-sidebar": toggleLeftSidebar,
       "toggle-right-panel": toggleRightPanel,
       "open-repo": showOpenProjectDialog,
-      "new-workspace": triggerNewWorkspace,
+      "new-session": triggerNewSession,
       "new-agent": () => {
         startNewAgentInCurrent().catch(() => {});
       },
       settings: showSettingsDialog,
       "next-agent-tab": () => cycleAgentTab(1),
       "prev-agent-tab": () => cycleAgentTab(-1),
-      "go-home": () => selectWorkspace(null),
+      "go-home": () => selectSession(null),
       "go-project-home": goToProjectHome,
     };
 
@@ -182,8 +182,8 @@ export function AppShell() {
   });
 
   const openProjectVisible = useOpenProjectVisible();
-  const newWorkspacePickerOpen = useNewWorkspacePickerOpen();
-  const createWorkspaceRepoRoot = useCreateWorkspaceRepoRoot();
+  const newSessionPickerOpen = useNewSessionPickerOpen();
+  const createSessionRepoRoot = useCreateSessionRepoRoot();
   const homeData = useHomeData();
   const { openProject } = useProjects();
 
@@ -234,7 +234,7 @@ export function AppShell() {
           onMouseLeave={!leftVisible ? handleLeftPeekLeave : undefined}
           onResize={setLeftWidth}
         >
-          <WorkspaceSidebar />
+          <SessionSidebar />
         </ResizablePanel>
 
         {!leftVisible && (
@@ -253,7 +253,7 @@ export function AppShell() {
           <PermissionBanner />
         </main>
 
-        {selectedId !== null && <ToolPanel workspaceId={selectedId} />}
+        {selectedId !== null && <ToolPanel sessionId={selectedId} />}
         <ToolRail />
       </div>
 
@@ -268,21 +268,21 @@ export function AppShell() {
         />
       )}
 
-      {newWorkspacePickerOpen && (
-        <NewWorkspacePicker
+      {newSessionPickerOpen && (
+        <NewSessionPicker
           projects={homeData.projects}
-          onClose={hideNewWorkspacePicker}
+          onClose={hideNewSessionPicker}
           onPick={(p) => {
-            hideNewWorkspacePicker();
-            showCreateWorkspaceDialog(p.path);
+            hideNewSessionPicker();
+            showCreateSessionDialog(p.path);
           }}
         />
       )}
 
-      {createWorkspaceRepoRoot && (
-        <CreateWorkspaceDialog
-          repoRoot={createWorkspaceRepoRoot}
-          onClose={hideCreateWorkspaceDialog}
+      {createSessionRepoRoot && (
+        <CreateSessionDialog
+          repoRoot={createSessionRepoRoot}
+          onClose={hideCreateSessionDialog}
         />
       )}
     </div>

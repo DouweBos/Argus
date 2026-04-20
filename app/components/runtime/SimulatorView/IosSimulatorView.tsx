@@ -24,18 +24,18 @@ import styles from "./RuntimeView.module.css";
 
 interface IosSimulatorViewProps {
   children?: React.ReactNode;
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
 export function IosSimulatorView({
   children,
-  workspaceId,
+  sessionId,
 }: IosSimulatorViewProps) {
   const {
     iosToolsAvailable,
     setIosToolsStatus,
     devices,
-    selectedUdidByWorkspace,
+    selectedUdidBySession,
     capturing,
     mjpegPort,
     booting,
@@ -48,13 +48,13 @@ export function IosSimulatorView({
     setDisconnected,
   } = useIosSimulatorViewState();
 
-  const storeKey = workspaceId ?? "__global__";
-  const selectedUdid = selectedUdidByWorkspace[storeKey] ?? null;
+  const storeKey = sessionId ?? "__global__";
+  const selectedUdid = selectedUdidBySession[storeKey] ?? null;
 
   const selectedDevice = devices.find((d) => d.udid === selectedUdid);
   const isTv = isTvOS(selectedDevice);
   const isBooted = selectedDevice?.booted ?? false;
-  const prevWorkspaceIdRef = useRef<string | null>(null);
+  const prevSessionIdRef = useRef<string | null>(null);
   // Guards against double auto-start while a previous startCapture() is
   // mid-flight — `capturing` only flips to true after the await resolves, so
   // rapid re-renders can otherwise enter the effect twice.
@@ -95,11 +95,11 @@ export function IosSimulatorView({
     return () => clearInterval(interval);
   }, [refreshDevices, iosToolsAvailable]);
 
-  // When workspace changes: stop current capture
+  // When session changes: stop current capture
   useEffect(() => {
     if (
-      storeKey !== prevWorkspaceIdRef.current &&
-      prevWorkspaceIdRef.current !== null
+      storeKey !== prevSessionIdRef.current &&
+      prevSessionIdRef.current !== null
     ) {
       stopSimulatorCapture()
         .then(() => {
@@ -114,7 +114,7 @@ export function IosSimulatorView({
         });
     }
 
-    prevWorkspaceIdRef.current = storeKey;
+    prevSessionIdRef.current = storeKey;
   }, [storeKey, setCapturing, setMjpegPort, setDisconnected]);
 
   const startCapture = useCallback(
@@ -318,7 +318,7 @@ export function IosSimulatorView({
   const deviceSessionActive = isBooted || capturing;
 
   const titleBarExtra =
-    !deviceSessionActive && (selectedUdid || workspaceId) ? (
+    !deviceSessionActive && (selectedUdid || sessionId) ? (
       <div className={chrome.titleBarTrailing}>
         {!isBooted && !capturing && selectedUdid && (
           <button

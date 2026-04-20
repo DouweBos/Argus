@@ -9,7 +9,7 @@
  *   3. Page.screencastFrame event → JPEG frame data
  *   4. Page.screencastFrameAck → acknowledge receipt
  *
- * One active screencast per workspaceId.
+ * One active screencast per sessionId.
  */
 
 import http from "node:http";
@@ -238,18 +238,18 @@ export interface ScreencastOptions {
 }
 
 /**
- * Start a CDP screencast for a workspace. Connects to the Chromium instance
+ * Start a CDP screencast for a session. Connects to the Chromium instance
  * at `cdpPort`, attaches to the given target, and pushes JPEG frames to the
  * MJPEG server.
  */
 export async function startScreencast(
-  workspaceId: string,
+  sessionId: string,
   cdpPort: number,
   targetId: string,
   viewport: ScreencastOptions,
 ): Promise<void> {
-  // Stop any existing screencast for this workspace.
-  await stopScreencast(workspaceId);
+  // Stop any existing screencast for this session.
+  await stopScreencast(sessionId);
 
   const wsUrl = await resolveWsUrl(cdpPort, targetId);
   const ws = await connectCdpWebSocket(wsUrl);
@@ -259,7 +259,7 @@ export async function startScreencast(
     sessionId: null,
     closed: false,
   };
-  screencasts.set(workspaceId, state);
+  screencasts.set(sessionId, state);
 
   ws.onMessage((data) => {
     if (state.closed) {
@@ -270,7 +270,7 @@ export async function startScreencast(
 
       if (msg.method === "Page.screencastFrame") {
         const jpeg = Buffer.from(msg.params.data, "base64");
-        pushFrame(workspaceId, jpeg);
+        pushFrame(sessionId, jpeg);
         ws.send(
           JSON.stringify({
             id: nextId++,
@@ -312,16 +312,16 @@ export async function startScreencast(
   };
 
   info(
-    `[cdp-screencast] Started for workspace ${workspaceId} ` +
+    `[cdp-screencast] Started for session ${sessionId} ` +
       `(port=${cdpPort}, target=${targetId})`,
   );
 }
 
 /**
- * Stop the screencast for a workspace and close the WebSocket connection.
+ * Stop the screencast for a session and close the WebSocket connection.
  */
-export async function stopScreencast(workspaceId: string): Promise<void> {
-  const state = screencasts.get(workspaceId);
+export async function stopScreencast(sessionId: string): Promise<void> {
+  const state = screencasts.get(sessionId);
   if (!state) {
     return;
   }
@@ -334,8 +334,8 @@ export async function stopScreencast(workspaceId: string): Promise<void> {
     // Already closed
   }
 
-  screencasts.delete(workspaceId);
-  info(`[cdp-screencast] Stopped for workspace ${workspaceId}`);
+  screencasts.delete(sessionId);
+  info(`[cdp-screencast] Stopped for session ${sessionId}`);
 }
 
 /**
@@ -343,13 +343,13 @@ export async function stopScreencast(workspaceId: string): Promise<void> {
  * to context recreation in Conductor).
  */
 export async function restartScreencast(
-  workspaceId: string,
+  sessionId: string,
   cdpPort: number,
   newTargetId: string,
   viewport: ScreencastOptions,
 ): Promise<void> {
-  await stopScreencast(workspaceId);
-  await startScreencast(workspaceId, cdpPort, newTargetId, viewport);
+  await stopScreencast(sessionId);
+  await startScreencast(sessionId, cdpPort, newTargetId, viewport);
 }
 
 /**

@@ -19,7 +19,7 @@ export const Live: Story = {
     agents: [
       {
         id: "a1",
-        name: "feat/workspace-card",
+        name: "feat/session-card",
         status: "running",
         tool: "running",
       },

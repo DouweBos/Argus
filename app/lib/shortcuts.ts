@@ -10,7 +10,7 @@ export type ShortcutId =
   | "go-home"
   | "go-project-home"
   | "new-agent"
-  | "new-workspace"
+  | "new-session"
   | "next-agent-tab"
   | "open-repo"
   | "prev-agent-tab"
@@ -47,7 +47,7 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
     label: "Toggle right panel",
   },
   "open-repo": { meta: true, key: "o", label: "Open repo" },
-  "new-workspace": { meta: true, key: "n", label: "New workspace" },
+  "new-session": { meta: true, key: "n", label: "New session" },
   "new-agent": { meta: true, shift: true, key: "a", label: "New agent" },
   settings: { meta: true, key: ",", label: "Settings" },
   "next-agent-tab": {

@@ -1,14 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { Icons } from "@argus/peacock";
-import { useWorkspaceAgents } from "../../../hooks/useAgent";
+import { useSessionAgents } from "../../../hooks/useAgent";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
-import { isWorkspaceReady } from "../../../lib/types";
+import { isSessionReady } from "../../../lib/types";
 import {
   setActiveAgent,
   setSplitPair,
   useSplitPair,
 } from "../../../stores/agentStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { AgentChat } from "../AgentChat";
 import { AgentSplitDropZone } from "../AgentChatDropZone";
 import { AgentTabBar } from "../AgentTabBar";
@@ -17,24 +17,24 @@ import { SplitAgentPanes } from "../SplitAgentPanes";
 import styles from "./AgentView.module.css";
 
 interface AgentViewProps {
-  workspaceId: string;
+  sessionId: string;
 }
 
-export function AgentView({ workspaceId }: AgentViewProps) {
-  const workspaces = useWorkspaces();
-  const workspace = useMemo(
-    () => workspaces.find((w) => w.id === workspaceId) ?? null,
-    [workspaces, workspaceId],
+export function AgentView({ sessionId }: AgentViewProps) {
+  const sessions = useSessions();
+  const session = useMemo(
+    () => sessions.find((w) => w.id === sessionId) ?? null,
+    [sessions, sessionId],
   );
 
   const { agents, activeAgent, startNew, stopAgent, restartAgent, setActive } =
-    useWorkspaceAgents(workspaceId, {
+    useSessionAgents(sessionId, {
       autoStart: false,
-      workspaceReady: workspace ? isWorkspaceReady(workspace.status) : false,
+      sessionReady: session ? isSessionReady(session.status) : false,
     });
 
   const isHomeActive = !activeAgent;
-  const splitPair = useSplitPair(workspaceId);
+  const splitPair = useSplitPair(sessionId);
 
   const openOnRight = useCallback(
     (agentId: string) => {
@@ -46,9 +46,9 @@ export function AgentView({ workspaceId }: AgentViewProps) {
       if (agentId === activeAgent.agent_id) {
         return;
       }
-      setSplitPair(workspaceId, { left: activeAgent.agent_id, right: agentId });
+      setSplitPair(sessionId, { left: activeAgent.agent_id, right: agentId });
     },
-    [activeAgent, workspaceId, setActive],
+    [activeAgent, sessionId, setActive],
   );
 
   const activeIsPaired =
@@ -57,7 +57,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
     (activeAgent.agent_id === splitPair.left ||
       activeAgent.agent_id === splitPair.right);
 
-  // Resolve both pair members exist in this workspace's agents; otherwise the
+  // Resolve both pair members exist in this session's agents; otherwise the
   // pair is stale and we fall back to single-agent view.
   const resolvedPair = useMemo(() => {
     if (!splitPair) {
@@ -94,8 +94,8 @@ export function AgentView({ workspaceId }: AgentViewProps) {
           splitPair={splitPair}
           onClose={(agentId) => stopAgent(agentId)}
           onSelect={(agentId) => setActive(agentId)}
-          onSelectHome={() => setActiveAgent(workspaceId, null)}
-          onUnpair={() => setSplitPair(workspaceId, null)}
+          onSelectHome={() => setActiveAgent(sessionId, null)}
+          onUnpair={() => setSplitPair(sessionId, null)}
         />
         <button
           className={styles.agentBarAddBtn}
@@ -107,13 +107,13 @@ export function AgentView({ workspaceId }: AgentViewProps) {
         <div className={styles.agentBarSpacer} />
       </div>
 
-      {!activeAgent && <HomePanel workspaceId={workspaceId} />}
+      {!activeAgent && <HomePanel sessionId={sessionId} />}
       {activeAgent && showSplit && resolvedPair && (
         <SplitAgentPanes
           agents={agents}
           left={resolvedPair.left}
           right={resolvedPair.right}
-          workspaceId={workspaceId}
+          sessionId={sessionId}
           onRestart={(id) => restartAgent(id)}
         />
       )}
@@ -126,7 +126,7 @@ export function AgentView({ workspaceId }: AgentViewProps) {
           <AgentChat
             agentId={activeAgent.agent_id}
             permissionMode={activeAgent.permission_mode}
-            workspaceId={workspaceId}
+            sessionId={sessionId}
             onRestart={() => restartAgent(activeAgent.agent_id)}
           />
         </AgentSplitDropZone>

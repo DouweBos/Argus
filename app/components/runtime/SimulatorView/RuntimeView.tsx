@@ -14,7 +14,7 @@ import { IosSimulatorView } from "./IosSimulatorView";
 import styles from "./RuntimeView.module.css";
 
 interface RuntimeViewProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
 /**
@@ -22,11 +22,11 @@ interface RuntimeViewProps {
  * whole surface can be shown embedded in the tool panel or in a modal dialog
  * (see `runtimeDialogOpen` in the simulator store).
  */
-export function RuntimeView({ workspaceId }: RuntimeViewProps) {
+export function RuntimeView({ sessionId }: RuntimeViewProps) {
   const { platform, setPlatform, runtimeDialogOpen, setRuntimeDialogOpen } =
     useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId();
-  const activeDeviceKey = useActiveDeviceKey(workspaceId, platform);
+  const activeDeviceKey = useActiveDeviceKey(sessionId, platform);
 
   useEffect(() => {
     if (activeToolId !== "simulator") {
@@ -82,11 +82,11 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
   let nativeSimulator: ReactNode = null;
   if (platform === "ios") {
     nativeSimulator = (
-      <IosSimulatorView workspaceId={workspaceId}>{toggle}</IosSimulatorView>
+      <IosSimulatorView sessionId={sessionId}>{toggle}</IosSimulatorView>
     );
   } else if (platform === "android") {
     nativeSimulator = (
-      <AndroidDeviceView workspaceId={workspaceId}>{toggle}</AndroidDeviceView>
+      <AndroidDeviceView sessionId={sessionId}>{toggle}</AndroidDeviceView>
     );
   }
 
@@ -149,7 +149,7 @@ export function RuntimeView({ workspaceId }: RuntimeViewProps) {
                   : `${styles.webPersistentShell} ${styles.webPersistentShellHidden}`
               }
             >
-              <WebBrowserViewStack activeWorkspaceId={workspaceId}>
+              <WebBrowserViewStack activeSessionId={sessionId}>
                 {toggle}
               </WebBrowserViewStack>
             </div>

@@ -7,48 +7,48 @@ export interface ReviewQueueEntry {
 }
 
 interface ReviewQueueData {
-  /** workspace_id → review state. Only entries with commitsAhead > 0 or hasStaged are kept. */
-  entriesByWorkspaceId: Record<string, ReviewQueueEntry>;
+  /** session_id → review state. Only entries with commitsAhead > 0 or hasStaged are kept. */
+  entriesBySessionId: Record<string, ReviewQueueEntry>;
 }
 
 const reviewQueueStore = create<ReviewQueueData>(() => ({
-  entriesByWorkspaceId: {},
+  entriesBySessionId: {},
 }));
 
 export const setReviewState = (
-  workspaceId: string,
+  sessionId: string,
   entry: ReviewQueueEntry,
 ) => {
   reviewQueueStore.setState((state) => {
     if (entry.commitsAhead > 0 || entry.hasUncommitted) {
       return {
-        entriesByWorkspaceId: {
-          ...state.entriesByWorkspaceId,
-          [workspaceId]: entry,
+        entriesBySessionId: {
+          ...state.entriesBySessionId,
+          [sessionId]: entry,
         },
       };
     }
-    const { [workspaceId]: _removed, ...next } = state.entriesByWorkspaceId;
+    const { [sessionId]: _removed, ...next } = state.entriesBySessionId;
 
-    return { entriesByWorkspaceId: next };
+    return { entriesBySessionId: next };
   });
 };
 
-export const clearReviewState = (workspaceId: string) => {
+export const clearReviewState = (sessionId: string) => {
   reviewQueueStore.setState((state) => {
-    if (!(workspaceId in state.entriesByWorkspaceId)) {
+    if (!(sessionId in state.entriesBySessionId)) {
       return state;
     }
-    const { [workspaceId]: _removed, ...next } = state.entriesByWorkspaceId;
+    const { [sessionId]: _removed, ...next } = state.entriesBySessionId;
 
-    return { entriesByWorkspaceId: next };
+    return { entriesBySessionId: next };
   });
 };
 
 export const useReviewQueueMap = () =>
-  reviewQueueStore((s) => s.entriesByWorkspaceId);
+  reviewQueueStore((s) => s.entriesBySessionId);
 
 export const useReviewQueueCount = () =>
-  reviewQueueStore((s) => Object.keys(s.entriesByWorkspaceId).length);
+  reviewQueueStore((s) => Object.keys(s.entriesBySessionId).length);
 
 export const getReviewQueueState = () => reviewQueueStore.getState();

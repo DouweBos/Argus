@@ -34,7 +34,7 @@ export const WithLeading: Story = {
   args: {
     variant: "secondary",
     leading: <PlusIcon size={12} />,
-    children: "New workspace",
+    children: "New session",
   },
 };
 

@@ -16,7 +16,7 @@ import {
   getConversationState,
   useConversation,
 } from "../../../stores/conversationStore";
-import { getWorkspaceState } from "../../../stores/workspaceStore";
+import { getSessionState } from "../../../stores/sessionStore";
 import { RenameAgentDialog } from "../RenameAgentDialog/RenameAgentDialog";
 import {
   AGENT_DRAG_MIME,
@@ -375,8 +375,8 @@ export function AgentTabBar({
       ?.textBlocks[0];
     const currentTitle =
       conv?.title?.trim() || firstUserText?.trim() || fallbackTitle;
-    const workspace = getWorkspaceState().workspaces.find(
-      (w) => w.id === target.workspace_id,
+    const session = getSessionState().sessions.find(
+      (w) => w.id === target.session_id,
     );
     const isRunning = target.status === "running";
 
@@ -400,11 +400,11 @@ export function AgentTabBar({
         },
       },
       {
-        label: "Reveal Workspace in Finder",
-        disabled: !workspace,
+        label: "Reveal Session in Finder",
+        disabled: !session,
         onClick: () => {
-          if (workspace) {
-            revealInFinder(workspace.path).catch(() => {});
+          if (session) {
+            revealInFinder(session.path).catch(() => {});
           }
         },
       },
@@ -525,7 +525,7 @@ export function AgentTabBar({
       return;
     }
     const position: DropPosition = indicator?.position ?? "before";
-    reorderAgent(target.workspace_id, fromId, targetId, position);
+    reorderAgent(target.session_id, fromId, targetId, position);
   };
 
   const homeClasses = [

@@ -22,7 +22,7 @@ Coding agents are fast. What slows us down is everything _around_ them — juggl
 
 Argus opens another eye for every one of those problems:
 
-- **👁️ Parallel by default.** Every workspace is an isolated worktree with its own agent, its own simulator, its own terminals. Fan out five ideas at once — none of them step on each other's tails.
+- **👁️ Parallel by default.** Every session is an isolated worktree with its own agent, its own simulator, its own terminals. Fan out five ideas at once — none of them step on each other's tails.
 - **👁️ See what the agent sees.** Live simulator/emulator mirroring, an embedded Chromium browser with CDP screencast, and streaming tool-call cards — the agent's every move, rendered in real time.
 - **👁️ Review like a human.** A full git workflow (branches, commits, stashes, hunk-level staging, diff viewer) is baked into the UI. Accept, reject, or refine without ever leaving the app.
 - **👁️ Edit like an engineer.** A real embedded VS Code (via `@codingame/monaco-vscode-api`) — extensions, search, intellisense, multi-file edits. Not a toy textarea. Not a chat box pretending.
@@ -31,14 +31,14 @@ Argus opens another eye for every one of those problems:
 
 ### 🦚 Multi-agent orchestration
 
-- Spin up as many Claude Code agents as you have workspaces — each one scoped to its own worktree, chat history, model, and permissions.
+- Spin up as many Claude Code agents as you have sessions — each one scoped to its own worktree, chat history, model, and permissions.
 - **Orchestration tree** visualizes agent-spawned subagents and their tool calls as a live hierarchy.
 - Swap models per-agent on the fly (`ModelPicker`); resume long-running conversations from persisted chat history.
 - Granular **permission broker** — approve, deny, or "always allow" specific tool patterns without stopping the agent.
 
-### 🪶 Isolated workspaces
+### 🪶 Isolated sessions
 
-- Each workspace is a real `git worktree` under `~/.argus/worktrees/{Repo}-argus-worktrees/{branch}/` — outside your project directory to keep your primary checkout pristine.
+- Each session is a real `git worktree` under `~/.argus/worktrees/{Repo}-argus-worktrees/{branch}/` — outside your project directory to keep your primary checkout pristine.
 - Configurable **setup pipeline** (`.argus.json`): copy `node_modules`/`Pods`, symlink `.env` secrets, run install commands — all on worktree creation.
 - **Port isolation** assigns each worktree a unique value for a named env var (sequential or hashed), so multiple dev servers can run in parallel without conflict.
 - One-click **merge back** to the base branch when the work is approved.
@@ -59,12 +59,12 @@ Argus opens another eye for every one of those problems:
 ### ⌨️ Real editor, real terminals
 
 - Embedded **VS Code** (Monaco + `@codingame/monaco-vscode-api`) with the explorer, search, file watchers, and language support you expect — no fork, no reinvention.
-- **xterm.js + node-pty** terminals per workspace, same stack as VS Code, with proper shell environment and PATH fixup.
-- Auto-opened terminal tabs per workspace, configurable in `.argus.json`.
+- **xterm.js + node-pty** terminals per session, same stack as VS Code, with proper shell environment and PATH fixup.
+- Auto-opened terminal tabs per session, configurable in `.argus.json`.
 
 ### 🔌 MCP-ready
 
-- Built-in **Model Context Protocol** server exposes Argus primitives (workspaces, files, projects) to any MCP-aware agent or tool. Bring your own beak.
+- Built-in **Model Context Protocol** server exposes Argus primitives (sessions, files, projects) to any MCP-aware agent or tool. Bring your own beak.
 
 ## Install
 
@@ -124,15 +124,15 @@ Drop this in any repo root to make it Argus-ready:
 | `setup.copy`     | Dirs/files copied into each new worktree (supports globs) |
 | `setup.symlink`  | Files symlinked from the main repo (supports globs)       |
 | `setup.commands` | Shell commands run after copy/symlink                     |
-| `terminals`      | Tabs auto-opened per workspace (name + working dir)       |
-| `workspace_env`  | Env var set per-workspace with a unique port/offset       |
+| `terminals`      | Tabs auto-opened per session (name + working dir)       |
+| `workspace_env`  | Env var set per-session with a unique port/offset       |
 | `run`            | Command executed by the Run button                        |
 
 `.argus.local.json` (gitignored) overrides or extends the base config.
 
 ## Architecture
 
-Three-panel desktop shell: sources/workspaces on the left, the agent + editor + git UI in the center, and the live runtime (simulator, browser, terminals) on the right.
+Three-panel desktop shell: sources/sessions on the left, the agent + editor + git UI in the center, and the live runtime (simulator, browser, terminals) on the right.
 
 ### Frontend — `app/`
 
@@ -143,9 +143,9 @@ React 19 + TypeScript + Vite 7. Zustand for state, CSS Modules for styling. Type
 | `components/agent/`    | Chat, tool-call cards, orchestration tree, git views, diff viewer, model picker |
 | `components/editor/`   | Embedded Monaco / VS Code panel                                                 |
 | `components/runtime/`  | Simulator view, web browser view, terminal tabs, merge bar                      |
-| `components/sidebar/`  | Workspace list, create/setup dialogs, branch switcher                           |
+| `components/sidebar/`  | Session list, create/setup dialogs, branch switcher                           |
 | `components/toolrail/` | Right-rail tools (simulator, terminal, changes summary)                         |
-| `stores/`              | Zustand stores — workspace, terminal, agent, conversation                       |
+| `stores/`              | Zustand stores — session, terminal, agent, conversation                       |
 
 ### Backend — `electron/`
 
@@ -154,13 +154,13 @@ Electron main process in TypeScript. All services are single-threaded around an 
 | Service                | Responsibility                                                          |
 | ---------------------- | ----------------------------------------------------------------------- |
 | `services/agent/`      | Claude Code subprocess, stream-json parsing, permission broker, history |
-| `services/workspace/`  | Worktree CRUD, setup pipeline, file watcher, merge engine               |
+| `services/session/`  | Worktree CRUD, setup pipeline, file watcher, merge engine               |
 | `services/terminal/`   | `node-pty` multiplexer with environment fixup                           |
 | `services/simulator/`  | iOS (`simctl` + native bridge) and Android (scrcpy + H.264) pipelines   |
 | `services/browser/`    | CDP screencast + MJPEG pipe for the embedded web browser                |
 | `services/mcp/`        | MCP server exposing Argus primitives to external agents                 |
 | `services/extensions/` | VS Code extension loading for the embedded editor                       |
-| `services/file/`       | Workspace file list/read/write                                          |
+| `services/file/`       | Session file list/read/write                                          |
 | `services/shell/`      | One-shot shell operations                                               |
 
 ### Native — `native/argus-sim-bridge/`
@@ -169,9 +169,9 @@ Standalone Swift/ObjC binary for iOS simulator screen capture and HID injection.
 
 ### IPC
 
-Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wrappers; events follow `{domain}:{action}:{id}` (e.g. `terminal:data:{session_id}`, `agent:event:{workspace_id}`).
+Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wrappers; events follow `{domain}:{action}:{id}` (e.g. `terminal:data:{session_id}`, `agent:event:{session_id}`).
 
-## Workspace lifecycle — the life of a feather
+## Session lifecycle — the life of a feather
 
 1. **🥚 Create** — `git worktree add` from the base branch. A new eye opens.
 2. **🌱 Setup** — the `.argus.json` pipeline runs: copy, symlink, commands. The nest is built.
@@ -191,7 +191,7 @@ Frontend ↔ backend over Electron IPC. Commands go through `app/lib/ipc.ts` wra
 | Worktrees outside the project directory    | Keeps the user's repo and git client clean                        |
 | Zustand over Redux/Context                 | Minimal boilerplate, no providers, clean async                    |
 | `@codingame/monaco-vscode-api`             | Real VS Code — editor, explorer, search — without forking VS Code |
-| MCP server baked in                        | Any MCP-aware agent can drive Argus workspaces out of the box     |
+| MCP server baked in                        | Any MCP-aware agent can drive Argus sessions out of the box     |
 
 ## Contributing 🪶
 

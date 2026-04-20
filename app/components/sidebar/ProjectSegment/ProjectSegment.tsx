@@ -1,4 +1,4 @@
-import type { Workspace } from "../../../lib/types";
+import type { Session } from "../../../lib/types";
 import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -8,22 +8,22 @@ import {
   SidebarRepoAction,
   SidebarRepoGroup,
 } from "@argus/peacock";
-import { useWorkspaceDiffStats } from "../../../hooks/useWorkspaceDiffStats";
-import { useProjectWorkspaces } from "../../../hooks/useWorkspaces";
+import { useSessionDiffStats } from "../../../hooks/useSessionDiffStats";
+import { useProjectSessions } from "../../../hooks/useSessions";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
-import { workspaceStatusLabel } from "../../../lib/types";
+import { sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import {
-  selectWorkspace,
-  useSelectedWorkspaceId,
-  useSetupProgressByWorkspaceId,
-} from "../../../stores/workspaceStore";
+  selectSession,
+  useSelectedSessionId,
+  useSetupProgressBySessionId,
+} from "../../../stores/sessionStore";
 import { BranchSwitcher } from "../BranchSwitcher";
-import { CreateWorkspaceDialog } from "../CreateWorkspaceDialog";
-import { DeleteWorkspaceDialog } from "../DeleteWorkspaceDialog";
+import { CreateSessionDialog } from "../CreateSessionDialog";
+import { DeleteSessionDialog } from "../DeleteSessionDialog";
+import { SessionCard } from "../SessionCard";
 import { SetupConfigDialog } from "../SetupConfigDialog";
-import { WorkspaceCard } from "../WorkspaceCard";
 import styles from "./ProjectSegment.module.css";
 
 interface ProjectSegmentProps {
@@ -49,26 +49,26 @@ export function ProjectSegment({
   onToggleCollapsed,
   onClose,
 }: ProjectSegmentProps) {
-  const { workspaces, repoBranch, deleteWorkspace, refresh } =
-    useProjectWorkspaces(repoRoot);
-  const selectedId = useSelectedWorkspaceId();
+  const { sessions, repoBranch, deleteSession, refresh } =
+    useProjectSessions(repoRoot);
+  const selectedId = useSelectedSessionId();
   const [showCreate, setShowCreate] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
-  const [workspaceToDelete, setWorkspaceToDelete] = useState<Workspace | null>(
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(
     null,
   );
   const [menuPosition, setMenuPosition] = useState<
     "anchor" | { x: number; y: number } | null
   >(null);
 
-  const repoRootWorkspace = workspaces.find((w) => w.kind === "repo_root");
-  const worktrees = workspaces.filter((w) => w.kind !== "repo_root");
+  const repoRootSession = sessions.find((w) => w.kind === "project_root");
+  const worktrees = sessions.filter((w) => w.kind !== "project_root");
   const isRepoHomeSelected =
-    repoRootWorkspace != null && repoRootWorkspace.id === selectedId;
+    repoRootSession != null && repoRootSession.id === selectedId;
 
   const openProjectHome = () => {
-    if (repoRootWorkspace) {
-      selectWorkspace(repoRootWorkspace.id);
+    if (repoRootSession) {
+      selectSession(repoRootSession.id);
     }
   };
 
@@ -92,7 +92,7 @@ export function ProjectSegment({
         setMenuPosition({ x: e.clientX, y: e.clientY });
       }}
       meta={
-        repoRootWorkspace && <RepoHeaderMeta workspace={repoRootWorkspace} />
+        repoRootSession && <RepoHeaderMeta session={repoRootSession} />
       }
       subtitle={
         isRepoHomeSelected && repoBranch ? (
@@ -107,14 +107,14 @@ export function ProjectSegment({
             />
           </div>
         ) : (
-          (repoBranch ?? repoRootWorkspace?.branch)
+          (repoBranch ?? repoRootSession?.branch)
         )
       }
       endContent={
-        repoRootWorkspace && <RepoHeaderStatus workspace={repoRootWorkspace} />
+        repoRootSession && <RepoHeaderStatus session={repoRootSession} />
       }
       persistentAction={
-        repoRootWorkspace && (
+        repoRootSession && (
           <div
             className={styles.menuAnchor}
             onClick={(e) => e.stopPropagation()}
@@ -136,14 +136,14 @@ export function ProjectSegment({
                       icon: <Icons.CopyIcon size={12} />,
                       label: "Copy Absolute Path",
                       onClick: () =>
-                        navigator.clipboard.writeText(repoRootWorkspace.path),
+                        navigator.clipboard.writeText(repoRootSession.path),
                     },
                     {
                       icon: <Icons.CopyIcon size={12} />,
                       label: "Copy Relative Path",
                       onClick: () =>
                         navigator.clipboard.writeText(
-                          toTildePath(repoRootWorkspace.path),
+                          toTildePath(repoRootSession.path),
                         ),
                     },
                     {
@@ -151,20 +151,20 @@ export function ProjectSegment({
                       label: "Copy Branch Name",
                       onClick: () =>
                         navigator.clipboard.writeText(
-                          repoBranch ?? repoRootWorkspace.branch,
+                          repoBranch ?? repoRootSession.branch,
                         ),
                     },
                     { separator: true },
                     {
                       icon: <Icons.FolderIcon size={12} />,
                       label: "Reveal in Finder",
-                      onClick: () => revealInFinder(repoRootWorkspace.path),
+                      onClick: () => revealInFinder(repoRootSession.path),
                     },
                     {
                       icon: <Icons.TerminalIcon size={12} />,
                       label: "Open in Terminal",
                       onClick: () => {
-                        createTerminal(repoRootWorkspace.id);
+                        createTerminal(repoRootSession.id);
                       },
                     },
                   ] satisfies ContextMenuItem[]
@@ -179,7 +179,7 @@ export function ProjectSegment({
       actions={
         <>
           <SidebarRepoAction
-            title="New workspace"
+            title="New session"
             onClick={(e) => {
               stop(e);
               setShowCreate(true);
@@ -208,32 +208,40 @@ export function ProjectSegment({
         </>
       }
     >
-      <div aria-label="Workspaces" className={styles.list} role="listbox">
-        {worktrees.map((workspace) => (
-          <WorkspaceCard
-            key={workspace.id}
-            isSelected={workspace.id === selectedId}
-            workspace={workspace}
-            onDelete={async () => setWorkspaceToDelete(workspace)}
-            onSelect={() => selectWorkspace(workspace.id)}
-          />
-        ))}
+      <div className={styles.sessionsGroupLabel}>
+        <span>Sessions</span>
+        <span className={styles.sessionsCount}>{worktrees.length}</span>
+      </div>
+      <div aria-label="Sessions" className={styles.list} role="listbox">
+        {worktrees.length === 0 ? (
+          <p className={styles.emptyHint}>No sessions yet.</p>
+        ) : (
+          worktrees.map((session) => (
+            <SessionCard
+              key={session.id}
+              isSelected={session.id === selectedId}
+              session={session}
+              onDelete={async () => setSessionToDelete(session)}
+              onSelect={() => selectSession(session.id)}
+            />
+          ))
+        )}
       </div>
       <button
-        className={styles.newWorkspaceBtn}
+        className={styles.newSessionBtn}
         onClick={() => setShowCreate(true)}
       >
         <Icons.PlusIcon size={10} />
-        <span>New workspace</span>
+        <span>New session</span>
       </button>
 
       {showCreate &&
         createPortal(
-          <CreateWorkspaceDialog
+          <CreateSessionDialog
             repoRoot={repoRoot}
-            sourceWorkspace={
+            sourceSession={
               selectedId
-                ? (workspaces.find(
+                ? (sessions.find(
                     (w) => w.id === selectedId && w.kind === "worktree",
                   ) ?? null)
                 : null
@@ -252,13 +260,13 @@ export function ProjectSegment({
           document.body,
         )}
 
-      {workspaceToDelete &&
+      {sessionToDelete &&
         createPortal(
-          <DeleteWorkspaceDialog
-            workspace={workspaceToDelete}
-            onClose={() => setWorkspaceToDelete(null)}
+          <DeleteSessionDialog
+            session={sessionToDelete}
+            onClose={() => setSessionToDelete(null)}
             onConfirm={async (deleteBranch) => {
-              await deleteWorkspace(workspaceToDelete.id, deleteBranch);
+              await deleteSession(sessionToDelete.id, deleteBranch);
             }}
           />,
           document.body,
@@ -267,10 +275,10 @@ export function ProjectSegment({
   );
 }
 
-function RepoHeaderMeta({ workspace }: { workspace: Workspace }) {
-  const diffStats = useWorkspaceDiffStats(workspace.id, workspace.status);
+function RepoHeaderMeta({ session }: { session: Session }) {
+  const diffStats = useSessionDiffStats(session.id, session.status);
   const reviewQueue = useReviewQueueMap();
-  const commitsAhead = reviewQueue[workspace.id]?.commitsAhead ?? 0;
+  const commitsAhead = reviewQueue[session.id]?.commitsAhead ?? 0;
 
   if ((!diffStats || diffStats.files === 0) && commitsAhead === 0) {
     return null;
@@ -293,8 +301,8 @@ function RepoHeaderMeta({ workspace }: { workspace: Workspace }) {
         <span
           className={styles.aheadBadge}
           title={
-            workspace.base_branch
-              ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${workspace.base_branch}`
+            session.base_branch
+              ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${session.base_branch}`
               : `${commitsAhead} unmerged commit${commitsAhead === 1 ? "" : "s"}`
           }
         >
@@ -305,22 +313,22 @@ function RepoHeaderMeta({ workspace }: { workspace: Workspace }) {
   );
 }
 
-function RepoHeaderStatus({ workspace }: { workspace: Workspace }) {
+function RepoHeaderStatus({ session }: { session: Session }) {
   const agents = useAgentsRecord();
   const runningCount = useMemo(
     () =>
       Object.values(agents).filter(
-        (a) => a.workspace_id === workspace.id && a.status === "running",
+        (a) => a.session_id === session.id && a.status === "running",
       ).length,
-    [agents, workspace.id],
+    [agents, session.id],
   );
-  const setupProgressById = useSetupProgressByWorkspaceId();
-  const setupProgress = setupProgressById[workspace.id];
-  const statusLabel = workspaceStatusLabel(workspace.status);
+  const setupProgressById = useSetupProgressBySessionId();
+  const setupProgress = setupProgressById[session.id];
+  const statusLabel = sessionStatusLabel(session.status);
   const showStatusBadge = statusLabel !== "ready";
   const errorMessage =
-    typeof workspace.status === "object" && "error" in workspace.status
-      ? workspace.status.error
+    typeof session.status === "object" && "error" in session.status
+      ? session.status.error
       : null;
   const title =
     errorMessage ??

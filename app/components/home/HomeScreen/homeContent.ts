@@ -7,7 +7,7 @@ import {
 
 const HOME_SHORTCUT_IDS: ShortcutId[] = [
   "open-repo",
-  "new-workspace",
+  "new-session",
   "command-palette",
   "new-agent",
   "settings",

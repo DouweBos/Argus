@@ -12,13 +12,13 @@ import { useSimulatorControlsState } from "../../../stores/simulatorStore";
 import styles from "./SimulatorControls.module.css";
 
 interface SimulatorControlsProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function SimulatorControls({ workspaceId }: SimulatorControlsProps) {
+export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
   const {
     devices,
-    selectedUdidByWorkspace,
+    selectedUdidBySession,
     capturing,
     booting,
     disconnected,
@@ -30,19 +30,19 @@ export function SimulatorControls({ workspaceId }: SimulatorControlsProps) {
     setMjpegPort,
   } = useSimulatorControlsState();
 
-  // Use a global key when no workspace is selected so the simulator works from the home screen.
-  const storeKey = workspaceId ?? "__global__";
-  const selectedUdid = selectedUdidByWorkspace[storeKey] ?? null;
+  // Use a global key when no session is selected so the simulator works from the home screen.
+  const storeKey = sessionId ?? "__global__";
+  const selectedUdid = selectedUdidBySession[storeKey] ?? null;
   const selectedDevice = devices.find((d) => d.udid === selectedUdid);
-  const prevWorkspaceIdRef = useRef<string | null>(null);
+  const prevSessionIdRef = useRef<string | null>(null);
 
-  // When workspace (storeKey) changes: stop current capture so we switch to
-  // the new workspace's simulator. This also handles switching from home → workspace
-  // or workspace → home.
+  // When session (storeKey) changes: stop current capture so we switch to
+  // the new session's simulator. This also handles switching from home → session
+  // or session → home.
   useEffect(() => {
     if (
-      storeKey !== prevWorkspaceIdRef.current &&
-      prevWorkspaceIdRef.current !== null
+      storeKey !== prevSessionIdRef.current &&
+      prevSessionIdRef.current !== null
     ) {
       stopSimulatorCapture()
         .then(() => {
@@ -57,7 +57,7 @@ export function SimulatorControls({ workspaceId }: SimulatorControlsProps) {
         });
     }
 
-    prevWorkspaceIdRef.current = storeKey;
+    prevSessionIdRef.current = storeKey;
   }, [storeKey, setCapturing, setMjpegPort, setDisconnected]);
   const isBooted = selectedDevice?.booted ?? false;
 

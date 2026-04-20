@@ -1,9 +1,9 @@
-import type { AgentStatus, Workspace } from "../../../lib/types";
+import type { AgentStatus, Session } from "../../../lib/types";
 import { useMemo } from "react";
 import { Badge, Eyebrow, Icons, StatusDot } from "@argus/peacock";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { requestStopAgent } from "../../shared/ConfirmStopAgent/stopAgentGuard";
 import styles from "./OrchestrationTree.module.css";
 
@@ -27,20 +27,20 @@ interface OrchestrationTreeProps {
   /** Currently focused agent (highlighted in the tree). */
   activeAgentId: string | null;
   /** Called when the user clicks a child agent row. */
-  onSelectAgent: (agentId: string, workspaceId: string) => void;
-  /** Called when the user changes the workspace filter dropdown. */
-  onWorkspaceFilterChange?: (workspaceId: string) => void;
-  /** Whether to show the workspace filter dropdown in the header. */
+  onSelectAgent: (agentId: string, sessionId: string) => void;
+  /** Called when the user changes the session filter dropdown. */
+  onSessionFilterChange?: (sessionId: string) => void;
+  /**
+   * Restrict the view to agents whose session_id matches this value, or
+   * `"all"` / undefined to show every agent. Children of a matching
+   * orchestrator are always shown so the relationship stays visible even
+   * if those children live in a different session.
+   */
+  sessionFilter?: string;
+  /** Whether to show the session filter dropdown in the header. */
   showFilter?: boolean;
   /** Override the header title (defaults to "Agents"). */
   title?: string;
-  /**
-   * Restrict the view to agents whose workspace_id matches this value, or
-   * `"all"` / undefined to show every agent. Children of a matching
-   * orchestrator are always shown so the relationship stays visible even
-   * if those children live in a different workspace.
-   */
-  workspaceFilter?: string;
 }
 
 interface AgentNode {
@@ -48,7 +48,7 @@ interface AgentNode {
   branch: string | null;
   children: AgentNode[];
   displayName: string | null;
-  workspace: Workspace | null;
+  session: Session | null;
 }
 
 const STATUS_ORDER: Record<string, number> = {
@@ -89,16 +89,16 @@ function toPeacockStatus(status: string): PeacockAgentStatus {
 export function OrchestrationTree({
   activeAgentId,
   onSelectAgent,
-  workspaceFilter,
-  onWorkspaceFilterChange,
+  sessionFilter,
+  onSessionFilterChange,
   showFilter = false,
   title = "Agents",
 }: OrchestrationTreeProps) {
   const agents = useAgentsRecord();
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
   const conversations = useConversations();
 
-  const activeFilter = workspaceFilter ?? "all";
+  const activeFilter = sessionFilter ?? "all";
 
   const tree = useMemo(() => {
     const allAgents = Object.values(agents);
@@ -106,10 +106,10 @@ export function OrchestrationTree({
       return [];
     }
 
-    const wsMap = new Map(workspaces.map((w) => [w.id, w]));
+    const wsMap = new Map(sessions.map((w) => [w.id, w]));
 
     function buildNode(agent: AgentStatus): AgentNode {
-      const ws = wsMap.get(agent.workspace_id);
+      const ws = wsMap.get(agent.session_id);
       const children = allAgents
         .filter((a) => a.parent_agent_id === agent.agent_id)
         .sort(
@@ -122,7 +122,7 @@ export function OrchestrationTree({
         agent,
         branch: ws?.branch ?? null,
         displayName: ws?.display_name ?? null,
-        workspace: ws ?? null,
+        session: ws ?? null,
         children,
       };
     }
@@ -155,10 +155,10 @@ export function OrchestrationTree({
     }
 
     // Keep any tree whose root or any descendant lives in the filtered
-    // workspace — this way orchestrators stay visible when their children
-    // span workspaces.
+    // session — this way orchestrators stay visible when their children
+    // span sessions.
     function matches(node: AgentNode): boolean {
-      if (node.agent.workspace_id === activeFilter) {
+      if (node.agent.session_id === activeFilter) {
         return true;
       }
 
@@ -166,15 +166,15 @@ export function OrchestrationTree({
     }
 
     return combined.filter(matches);
-  }, [agents, workspaces, activeFilter]);
+  }, [agents, sessions, activeFilter]);
 
-  // Build the set of workspace IDs that actually have at least one agent, so
+  // Build the set of session IDs that actually have at least one agent, so
   // the dropdown only lists useful choices.
-  const workspacesWithAgents = useMemo(() => {
-    const ids = new Set(Object.values(agents).map((a) => a.workspace_id));
+  const sessionsWithAgents = useMemo(() => {
+    const ids = new Set(Object.values(agents).map((a) => a.session_id));
 
-    return workspaces.filter((w) => ids.has(w.id));
-  }, [agents, workspaces]);
+    return sessions.filter((w) => ids.has(w.id));
+  }, [agents, sessions]);
 
   const allAgents = Object.values(agents);
   const visibleAgents = useMemo(() => {
@@ -182,7 +182,7 @@ export function OrchestrationTree({
       return allAgents;
     }
 
-    return allAgents.filter((a) => a.workspace_id === activeFilter);
+    return allAgents.filter((a) => a.session_id === activeFilter);
   }, [allAgents, activeFilter]);
 
   const counts = {
@@ -196,15 +196,15 @@ export function OrchestrationTree({
     <div className={styles.container}>
       <div className={styles.header}>
         <Eyebrow count={visibleAgents.length}>{title}</Eyebrow>
-        {showFilter && workspacesWithAgents.length > 0 && (
+        {showFilter && sessionsWithAgents.length > 0 && (
           <select
-            aria-label="Filter by workspace"
+            aria-label="Filter by session"
             className={styles.filterSelect}
             value={activeFilter}
-            onChange={(e) => onWorkspaceFilterChange?.(e.target.value)}
+            onChange={(e) => onSessionFilterChange?.(e.target.value)}
           >
-            <option value="all">All workspaces</option>
-            {workspacesWithAgents.map((w) => (
+            <option value="all">All sessions</option>
+            {sessionsWithAgents.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.display_name ?? w.branch ?? w.id.slice(0, 8)}
               </option>
@@ -217,14 +217,14 @@ export function OrchestrationTree({
         <div className={styles.emptyState}>
           {allAgents.length === 0
             ? "No agents running."
-            : "No agents in this workspace."}
+            : "No agents in this session."}
         </div>
       ) : (
-        groupNodesByWorkspace(tree, workspaces).map((group) => (
-          <div key={group.key} className={styles.workspaceGroup}>
+        groupNodesBySession(tree, sessions).map((group) => (
+          <div key={group.key} className={styles.sessionGroup}>
             {group.showHeader && (
-              <div className={styles.workspaceGroupHeader}>
-                <span className={styles.workspaceGroupName}>{group.label}</span>
+              <div className={styles.sessionGroupHeader}>
+                <span className={styles.sessionGroupName}>{group.label}</span>
                 <Badge tone="neutral">{group.nodes.length}</Badge>
               </div>
             )}
@@ -235,7 +235,7 @@ export function OrchestrationTree({
                 conversations={conversations}
                 depth={0}
                 node={node}
-                showWorkspace={!group.showHeader}
+                showSession={!group.showHeader}
                 onSelect={onSelectAgent}
               />
             ))}
@@ -278,7 +278,7 @@ export function OrchestrationTree({
   );
 }
 
-interface WorkspaceGroup {
+interface SessionGroup {
   key: string;
   label: string;
   nodes: AgentNode[];
@@ -286,19 +286,19 @@ interface WorkspaceGroup {
 }
 
 /**
- * Group root nodes by their workspace. A header is only rendered when there
- * are multiple distinct workspaces in the list — otherwise we flatten the
- * output so a single-workspace view stays clean.
+ * Group root nodes by their session. A header is only rendered when there
+ * are multiple distinct sessions in the list — otherwise we flatten the
+ * output so a single-session view stays clean.
  */
-function groupNodesByWorkspace(
+function groupNodesBySession(
   nodes: AgentNode[],
-  workspaces: Workspace[],
-): WorkspaceGroup[] {
-  const wsMap = new Map(workspaces.map((w) => [w.id, w]));
-  const groups = new Map<string, WorkspaceGroup>();
+  sessions: Session[],
+): SessionGroup[] {
+  const wsMap = new Map(sessions.map((w) => [w.id, w]));
+  const groups = new Map<string, SessionGroup>();
 
   for (const node of nodes) {
-    const wsId = node.agent.workspace_id;
+    const wsId = node.agent.session_id;
     const ws = wsMap.get(wsId);
     const key = wsId || "__orphan";
     let group = groups.get(key);
@@ -308,7 +308,7 @@ function groupNodesByWorkspace(
         label:
           ws?.display_name ??
           ws?.branch ??
-          (wsId ? `${wsId.slice(0, 8)} (deleted)` : "No workspace"),
+          (wsId ? `${wsId.slice(0, 8)} (deleted)` : "No session"),
         nodes: [],
         showHeader: true,
       };
@@ -318,7 +318,7 @@ function groupNodesByWorkspace(
   }
 
   const list = Array.from(groups.values());
-  // Hide the workspace header when every root belongs to the same workspace
+  // Hide the session header when every root belongs to the same session
   // — the header would be redundant in that case.
   if (list.length <= 1) {
     list.forEach((g) => {
@@ -334,22 +334,22 @@ function AgentNodeRow({
   depth,
   activeAgentId,
   conversations,
-  showWorkspace,
+  showSession,
   onSelect,
 }: {
   activeAgentId: string | null;
   conversations: Record<string, { title?: string }>;
   depth: number;
   node: AgentNode;
-  onSelect: (agentId: string, workspaceId: string) => void;
-  showWorkspace: boolean;
+  onSelect: (agentId: string, sessionId: string) => void;
+  showSession: boolean;
 }) {
   const isActive = node.agent.agent_id === activeAgentId;
   const isOrchestrator = node.children.length > 0;
   const conv = conversations[node.agent.agent_id];
   const label = agentTitle(node.agent.agent_id, conv?.title);
-  const workspaceLabel =
-    node.displayName ?? node.branch ?? node.agent.workspace_id.slice(0, 8);
+  const sessionLabel =
+    node.displayName ?? node.branch ?? node.agent.session_id.slice(0, 8);
   const isAlive =
     node.agent.status === "running" || node.agent.status === "idle";
 
@@ -357,7 +357,7 @@ function AgentNodeRow({
     <>
       <div
         className={`${styles.agentRow} ${isActive ? styles.agentRowActive : ""} ${depth > 0 ? styles.childRow : ""}`}
-        onClick={() => onSelect(node.agent.agent_id, node.agent.workspace_id)}
+        onClick={() => onSelect(node.agent.agent_id, node.agent.session_id)}
       >
         {depth > 0 && <span className={styles.connector} />}
         <StatusDot
@@ -371,9 +371,9 @@ function AgentNodeRow({
             orchestrator
           </Badge>
         )}
-        {(showWorkspace || depth > 0) && (
-          <span className={styles.agentBranch} title={workspaceLabel}>
-            {workspaceLabel}
+        {(showSession || depth > 0) && (
+          <span className={styles.agentBranch} title={sessionLabel}>
+            {sessionLabel}
           </span>
         )}
         <span className={styles.statusLabel}>
@@ -399,7 +399,7 @@ function AgentNodeRow({
           conversations={conversations}
           depth={depth + 1}
           node={child}
-          showWorkspace={showWorkspace}
+          showSession={showSession}
           onSelect={onSelect}
         />
       ))}

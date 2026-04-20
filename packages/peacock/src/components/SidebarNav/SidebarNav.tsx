@@ -132,7 +132,7 @@ export function SidebarNavGroup({
   );
 }
 
-/** Scroll region housing workspaces + recent sections. */
+/** Scroll region housing sessions + recent sections. */
 export function SidebarScroll({
   className,
   ...rest
@@ -156,7 +156,7 @@ export interface SidebarRepoGroupProps extends HTMLAttributes<HTMLDivElement> {
   /** Highlights the header to indicate the repo home is the active view. */
   active?: boolean;
   leading?: ReactNode;
-  /** Trailing hover-revealed action buttons (e.g. new workspace, settings, close). */
+  /** Trailing hover-revealed action buttons (e.g. new session, settings, close). */
   actions?: ReactNode;
   /** Inline content rendered after the repo name (e.g. diff stats, ahead badge). */
   meta?: ReactNode;
@@ -275,7 +275,7 @@ export function SidebarRepoGroup({
         )}
       </div>
       {expanded && (headerFooter || children) && (
-        <div className={styles.workspaceList}>
+        <div className={styles.sessionList}>
           {headerFooter}
           {children}
         </div>
@@ -308,7 +308,7 @@ export function SidebarRepoAction({
   );
 }
 
-export interface SidebarWorkspaceRowProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SidebarSessionRowProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   name: string;
   status?: StatusTone;
   pulse?: boolean;
@@ -318,7 +318,7 @@ export interface SidebarWorkspaceRowProps extends ButtonHTMLAttributes<HTMLButto
   meta?: ReactNode;
 }
 
-export function SidebarWorkspaceRow({
+export function SidebarSessionRow({
   name,
   status = "success",
   pulse,
@@ -329,10 +329,10 @@ export function SidebarWorkspaceRow({
   className,
   type = "button",
   ...rest
-}: SidebarWorkspaceRowProps) {
+}: SidebarSessionRowProps) {
   const classes = [
-    styles.workspaceRow,
-    active ? styles.workspaceRowActive : "",
+    styles.sessionRow,
+    active ? styles.sessionRowActive : "",
     className,
   ]
     .filter(Boolean)
@@ -340,11 +340,11 @@ export function SidebarWorkspaceRow({
 
   return (
     <button type={type} className={classes} {...rest}>
-      <span className={styles.workspaceNameRow}>
+      <span className={styles.sessionNameRow}>
         <StatusDot tone={status} pulse={pulse} />
-        <span className={styles.workspaceName}>{name}</span>
+        <span className={styles.sessionName}>{name}</span>
         {(added != null || removed != null) && (
-          <span className={styles.workspaceDiff}>
+          <span className={styles.sessionDiff}>
             {added != null && <span className={styles.diffAdd}>+{added}</span>}
             {removed != null && (
               <span className={styles.diffDel}>−{removed}</span>
@@ -352,7 +352,7 @@ export function SidebarWorkspaceRow({
           </span>
         )}
       </span>
-      {meta && <span className={styles.workspaceMeta}>{meta}</span>}
+      {meta && <span className={styles.sessionMeta}>{meta}</span>}
     </button>
   );
 }

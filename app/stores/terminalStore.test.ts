@@ -7,7 +7,7 @@ import {
   getActiveSessionId,
   getBuffer,
   getRunSessionId,
-  getSessionsForWorkspace,
+  getSessionsForSession,
   isRunBusy,
   migrateSessions,
   removeSession,
@@ -22,7 +22,7 @@ function session(overrides: Partial<TerminalSession> = {}): TerminalSession {
   return {
     id: "sess-1",
     title: "Shell",
-    workspace_id: "ws-1",
+    session_id: "ws-1",
     ...overrides,
   };
 }
@@ -41,15 +41,15 @@ describe("terminalStore", () => {
   describe("sessions", () => {
     it("adds a session and sets it as active", () => {
       addSession(session());
-      const sessions = getSessionsForWorkspace("ws-1");
+      const sessions = getSessionsForSession("ws-1");
       expect(sessions).toHaveLength(1);
       expect(getActiveSessionId("ws-1")).toBe("sess-1");
     });
 
-    it("adds multiple sessions to the same workspace", () => {
+    it("adds multiple sessions to the same session", () => {
       addSession(session());
       addSession(session({ id: "sess-2", title: "Build" }));
-      const sessions = getSessionsForWorkspace("ws-1");
+      const sessions = getSessionsForSession("ws-1");
       expect(sessions).toHaveLength(2);
       expect(getActiveSessionId("ws-1")).toBe("sess-2");
     });
@@ -60,7 +60,7 @@ describe("terminalStore", () => {
       setActiveSession("ws-1", "sess-2");
       removeSession("ws-1", "sess-2");
 
-      const sessions = getSessionsForWorkspace("ws-1");
+      const sessions = getSessionsForSession("ws-1");
       expect(sessions).toHaveLength(1);
       expect(getActiveSessionId("ws-1")).toBe("sess-1");
     });
@@ -76,12 +76,12 @@ describe("terminalStore", () => {
     it("updates session fields", () => {
       addSession(session());
       updateSession("sess-1", { title: "Renamed" });
-      const sessions = getSessionsForWorkspace("ws-1");
+      const sessions = getSessionsForSession("ws-1");
       expect(sessions[0].title).toBe("Renamed");
     });
 
-    it("returns empty array for unknown workspace", () => {
-      expect(getSessionsForWorkspace("nope")).toEqual([]);
+    it("returns empty array for unknown session", () => {
+      expect(getSessionsForSession("nope")).toEqual([]);
     });
 
     it("returns null for unknown active session", () => {
@@ -120,29 +120,29 @@ describe("terminalStore", () => {
   });
 
   describe("migrateSessions", () => {
-    it("moves sessions from one workspace to another", () => {
+    it("moves sessions from one session to another", () => {
       addSession(session());
       migrateSessions("ws-1", "ws-2");
 
-      expect(getSessionsForWorkspace("ws-1")).toHaveLength(0);
-      const migrated = getSessionsForWorkspace("ws-2");
+      expect(getSessionsForSession("ws-1")).toHaveLength(0);
+      const migrated = getSessionsForSession("ws-2");
       expect(migrated).toHaveLength(1);
-      expect(migrated[0].workspace_id).toBe("ws-2");
+      expect(migrated[0].session_id).toBe("ws-2");
     });
 
     it("is a no-op when from === to", () => {
       addSession(session());
       migrateSessions("ws-1", "ws-1");
-      expect(getSessionsForWorkspace("ws-1")).toHaveLength(1);
+      expect(getSessionsForSession("ws-1")).toHaveLength(1);
     });
 
     it("preserves existing sessions at destination", () => {
       addSession(session());
       addSession(
-        session({ id: "sess-dst", workspace_id: "ws-2", title: "Existing" }),
+        session({ id: "sess-dst", session_id: "ws-2", title: "Existing" }),
       );
       migrateSessions("ws-1", "ws-2");
-      expect(getSessionsForWorkspace("ws-2")).toHaveLength(2);
+      expect(getSessionsForSession("ws-2")).toHaveLength(2);
     });
   });
 });

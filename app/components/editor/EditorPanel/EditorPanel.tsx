@@ -6,12 +6,12 @@ import {
   isPartVisibile,
   onPartVisibilityChange,
 } from "../../../lib/vscodeSetup";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { SidebarHeader } from "../SidebarHeader";
 import styles from "./EditorPanel.module.css";
 
 interface EditorPanelProps {
-  workspaceId: string;
+  sessionId: string;
 }
 
 /**
@@ -41,7 +41,7 @@ const SIDEBAR_DEFAULT_WIDTH = 250;
 const SIDEBAR_MIN_WIDTH = 170;
 const SIDEBAR_MAX_WIDTH = 500;
 
-export function EditorPanel({ workspaceId }: EditorPanelProps) {
+export function EditorPanel({ sessionId }: EditorPanelProps) {
   const activityBarRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -93,18 +93,18 @@ export function EditorPanel({ workspaceId }: EditorPanelProps) {
     };
   }, []);
 
-  const workspaces = useWorkspaces();
-  const workspacePath = useMemo(
-    () => workspaces.find((w) => w.id === workspaceId)?.path ?? null,
-    [workspaces, workspaceId],
+  const sessions = useSessions();
+  const sessionPath = useMemo(
+    () => sessions.find((w) => w.id === sessionId)?.path ?? null,
+    [sessions, sessionId],
   );
 
-  // Point VS Code at the worktree directory when workspace changes
+  // Point VS Code at the worktree directory when session changes
   useEffect(() => {
-    if (workspacePath) {
-      updateWorkspaceFolder(workspacePath);
+    if (sessionPath) {
+      updateWorkspaceFolder(sessionPath);
     }
-  }, [workspacePath]);
+  }, [sessionPath]);
 
   // Mount VS Code parts into our DOM containers (once)
   useEffect(() => {

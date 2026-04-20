@@ -10,7 +10,7 @@ export interface FileListProps {
   onSelectionChange: (indices: Set<number>) => void;
   searchFilter?: string;
   selectedIndices: Set<number>;
-  workspaceId: string;
+  sessionId: string;
 }
 
 type SortField = "filename" | "status";
@@ -28,7 +28,7 @@ function stagedIconClassForFile(staged: DiffFile["staged"]): string {
 
 export function FileList({
   files,
-  workspaceId,
+  sessionId,
   selectedIndices,
   onSelectionChange,
   onAction,
@@ -47,7 +47,7 @@ export function FileList({
    * Shift+arrow selection = base ∪ sorted list range(pivot, head) when pivot !== head.
    */
   const baseSelectionRef = useRef<Set<number>>(new Set());
-  const prevWorkspaceIdRef = useRef<string | null>(null);
+  const prevSessionIdRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const toggleSort = useCallback(
@@ -274,11 +274,11 @@ export function FileList({
   }, [sortedEntries, onSelectionChange]);
 
   useEffect(() => {
-    if (prevWorkspaceIdRef.current !== workspaceId) {
-      prevWorkspaceIdRef.current = workspaceId;
+    if (prevSessionIdRef.current !== sessionId) {
+      prevSessionIdRef.current = sessionId;
       baseSelectionRef.current = new Set(selectedIndices);
     }
-  }, [selectedIndices, workspaceId]);
+  }, [selectedIndices, sessionId]);
 
   useEffect(() => {
     const max = sortedEntries.length - 1;
@@ -345,12 +345,12 @@ export function FileList({
 
                   if (allFullyStaged) {
                     for (const f of selectedFiles) {
-                      await unstageFile(workspaceId, gitIndexPath(f));
+                      await unstageFile(sessionId, gitIndexPath(f));
                     }
                   } else {
                     for (const f of selectedFiles) {
                       if (f.staged !== "full") {
-                        await stageFile(workspaceId, gitIndexPath(f));
+                        await stageFile(sessionId, gitIndexPath(f));
                       }
                     }
                   }

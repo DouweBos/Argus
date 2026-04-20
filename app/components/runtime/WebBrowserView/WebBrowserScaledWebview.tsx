@@ -16,7 +16,7 @@ interface Props {
     button?: "left" | "middle" | "right",
   ) => void;
   onWheelEvent: (x: number, y: number, deltaX: number, deltaY: number) => void;
-  workspaceId: string;
+  sessionId: string;
 }
 
 /**
@@ -34,11 +34,11 @@ export function WebBrowserScaledWebview({
   onKeyboardEvent,
   onMouseEvent,
   onWheelEvent,
-  workspaceId,
+  sessionId,
 }: Props) {
   const streamUrl =
-    mjpegPort && workspaceId
-      ? `http://127.0.0.1:${mjpegPort}/stream/${encodeURIComponent(workspaceId)}`
+    mjpegPort && sessionId
+      ? `http://127.0.0.1:${mjpegPort}/stream/${encodeURIComponent(sessionId)}`
       : null;
 
   const { imgRef, isReceiving } = useSimulatorCapture(streamUrl);

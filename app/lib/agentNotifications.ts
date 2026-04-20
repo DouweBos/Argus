@@ -1,6 +1,6 @@
 import type { PermissionRequest } from "./types";
 import { getAgentState, setActiveAgent } from "../stores/agentStore";
-import { getWorkspaceState, selectWorkspace } from "../stores/workspaceStore";
+import { getSessionState, selectSession } from "../stores/sessionStore";
 
 const MIN_TURN_DURATION_MS = 10_000;
 
@@ -12,19 +12,19 @@ function canNotify(): boolean {
   return true;
 }
 
-function workspaceLabel(workspaceId: string | undefined): string {
-  if (!workspaceId) return "workspace";
-  const ws = getWorkspaceState().workspaces.find((w) => w.id === workspaceId);
+function sessionLabel(sessionId: string | undefined): string {
+  if (!sessionId) return "session";
+  const ws = getSessionState().sessions.find((w) => w.id === sessionId);
 
-  return ws?.display_name ?? ws?.branch ?? "workspace";
+  return ws?.display_name ?? ws?.branch ?? "session";
 }
 
 function focusAgent(agentId: string): void {
   window.focus();
   const agent = getAgentState().agents[agentId];
   if (!agent) return;
-  selectWorkspace(agent.workspace_id);
-  setActiveAgent(agent.workspace_id, agentId);
+  selectSession(agent.session_id);
+  setActiveAgent(agent.session_id, agentId);
 }
 
 export function notifyAgentFinished(
@@ -36,7 +36,7 @@ export function notifyAgentFinished(
   if (subtype === "success" && durationMs < MIN_TURN_DURATION_MS) return;
 
   const agent = getAgentState().agents[agentId];
-  const label = workspaceLabel(agent?.workspace_id);
+  const label = sessionLabel(agent?.session_id);
   const seconds = Math.max(1, Math.round(durationMs / 1000));
 
   const title =
@@ -60,7 +60,7 @@ export function notifyPermissionRequested(
   if (!canNotify()) return;
 
   const agent = getAgentState().agents[agentId];
-  const label = workspaceLabel(agent?.workspace_id);
+  const label = sessionLabel(agent?.session_id);
   const title = `Permission requested · ${label}`;
   const body = `${request.tool_name} needs your approval`;
 

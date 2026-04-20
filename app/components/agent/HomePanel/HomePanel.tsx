@@ -1,36 +1,36 @@
 import { useCallback, useMemo, useState } from "react";
 import { Dialog } from "@argus/peacock";
-import { useWorkspaceAgents } from "../../../hooks/useAgent";
+import { useSessionAgents } from "../../../hooks/useAgent";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
-import { isWorkspaceReady } from "../../../lib/types";
+import { isSessionReady } from "../../../lib/types";
 import {
   clearConversation,
   loadSavedMessages,
 } from "../../../stores/conversationStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { RepoHomeScreen } from "../../home/RepoHomeScreen";
-import { WorkspaceHomeScreen } from "../../home/WorkspaceHomeScreen";
+import { SessionHomeScreen } from "../../home/SessionHomeScreen";
 import { AgentChat } from "../AgentChat";
 import styles from "./HomePanel.module.css";
 
 interface HomePanelProps {
-  workspaceId: string;
+  sessionId: string;
 }
 
-export function HomePanel({ workspaceId }: HomePanelProps) {
-  const workspaces = useWorkspaces();
-  const workspace = useMemo(
-    () => workspaces.find((w) => w.id === workspaceId) ?? null,
-    [workspaces, workspaceId],
+export function HomePanel({ sessionId }: HomePanelProps) {
+  const sessions = useSessions();
+  const session = useMemo(
+    () => sessions.find((w) => w.id === sessionId) ?? null,
+    [sessions, sessionId],
   );
 
-  const repoRoot = workspace?.repo_root ?? null;
+  const repoRoot = session?.repo_root ?? null;
 
-  const { startNew, isStarting } = useWorkspaceAgents(workspaceId, {
+  const { startNew, isStarting } = useSessionAgents(sessionId, {
     autoStart: false,
-    workspaceReady: workspace ? isWorkspaceReady(workspace.status) : false,
+    sessionReady: session ? isSessionReady(session.status) : false,
   });
 
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
@@ -42,8 +42,8 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
     : null;
 
   const handleOrchestrationSelect = useCallback(
-    (agentId: string, agentWorkspaceId: string) => {
-      focusAgent(agentWorkspaceId, agentId);
+    (agentId: string, agentSessionId: string) => {
+      focusAgent(agentSessionId, agentId);
     },
     [],
   );
@@ -83,17 +83,17 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
   }, [historyAgentId]);
 
   const handleResumeHistory = useCallback(
-    async (sessionId: string) => {
+    async (claudeSessionId: string) => {
       handleCloseHistory();
       setActiveCenterView("agents");
 
-      const newAgentId = await startNew(undefined, undefined, sessionId);
+      const newAgentId = await startNew(undefined, undefined, claudeSessionId);
       if (!newAgentId || !repoRoot) {
         return;
       }
 
       const entries = await listChatHistory(repoRoot).catch(() => []);
-      const entry = entries.find((e) => e.sessionId === sessionId);
+      const entry = entries.find((e) => e.sessionId === claudeSessionId);
       if (entry) {
         const saved = await loadChatHistory(repoRoot, entry.id).catch(
           () => null,
@@ -113,8 +113,8 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
     [handleCloseHistory, repoRoot, startNew],
   );
 
-  const wsReady = workspace != null && isWorkspaceReady(workspace.status);
-  const isRepoHome = workspace?.kind === "repo_root";
+  const wsReady = session != null && isSessionReady(session.status);
+  const isRepoHome = session?.kind === "project_root";
 
   const handleStart = () => {
     setActiveCenterView("agents");
@@ -133,7 +133,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
           canStart={wsReady}
           isStarting={isStarting}
           repoRoot={repoRoot}
-          workspaceId={workspaceId}
+          sessionId={sessionId}
           onResumeHistory={handleResumeHistory}
           onSelectAgent={handleOrchestrationSelect}
           onStart={handleStart}
@@ -141,11 +141,11 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
           onViewHistory={handleViewHistory}
         />
       ) : (
-        <WorkspaceHomeScreen
+        <SessionHomeScreen
           canStart={wsReady}
           isStarting={isStarting}
           repoRoot={repoRoot}
-          workspaceId={workspaceId}
+          sessionId={sessionId}
           onResumeHistory={handleResumeHistory}
           onSelectAgent={handleOrchestrationSelect}
           onStart={handleStart}
@@ -164,7 +164,7 @@ export function HomePanel({ workspaceId }: HomePanelProps) {
             <AgentChat
               agentId={historyAgentId}
               readOnly
-              workspaceId={workspaceId}
+              sessionId={sessionId}
               onClose={handleCloseHistory}
               onResume={
                 viewingSessionId

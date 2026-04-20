@@ -41,7 +41,7 @@ function resetSimulatorStore() {
     iosToolsAvailable: null,
     iosToolsError: null,
     devices: [],
-    selectedUdidByWorkspace: {},
+    selectedUdidBySession: {},
     capturing: false,
     booting: false,
     disconnected: false,
@@ -49,12 +49,12 @@ function resetSimulatorStore() {
     androidToolsAvailable: null,
     androidToolsError: null,
     androidDevices: [],
-    selectedAndroidByWorkspace: {},
+    selectedAndroidBySession: {},
     androidCapturing: false,
     androidBooting: false,
     androidDisconnected: false,
     browserPreset: "desktop",
-    browserUrlByWorkspace: {},
+    browserUrlBySession: {},
     runtimeDialogOpen: false,
   });
 }
@@ -90,20 +90,20 @@ describe("simulatorStore", () => {
   it("clears selected UDID when device disappears", () => {
     selectDevice("ws-1", "AAAA-BBBB");
     setDevices([device({ udid: "CCCC-DDDD" })]);
-    expect(getSimulatorState().selectedUdidByWorkspace["ws-1"]).toBeNull();
+    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBeNull();
   });
 
   it("preserves selected UDID when device still exists", () => {
     selectDevice("ws-1", "AAAA-BBBB");
     setDevices([device()]);
-    expect(getSimulatorState().selectedUdidByWorkspace["ws-1"]).toBe(
+    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBe(
       "AAAA-BBBB",
     );
   });
 
-  it("selects a device for a workspace", () => {
+  it("selects a device for a session", () => {
     selectDevice("ws-1", "AAAA-BBBB");
-    expect(getSimulatorState().selectedUdidByWorkspace["ws-1"]).toBe(
+    expect(getSimulatorState().selectedUdidBySession["ws-1"]).toBe(
       "AAAA-BBBB",
     );
   });
@@ -132,7 +132,7 @@ describe("simulatorStore", () => {
   it("persists selection to localStorage", () => {
     selectDevice("ws-1", "AAAA-BBBB");
     const stored = JSON.parse(
-      mockStorage["argus:simulatorByWorkspace"] ?? "{}",
+      mockStorage["argus:simulatorBySession"] ?? "{}",
     );
     expect(stored["ws-1"]).toBe("AAAA-BBBB");
   });

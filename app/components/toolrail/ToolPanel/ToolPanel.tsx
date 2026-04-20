@@ -21,14 +21,14 @@ const TOOL_LABELS: Record<ToolId, string> = {
 
 const ALL_TOOL_IDS: ToolId[] = ["changes", "terminal", "simulator"];
 
-function renderToolContent(id: ToolId, workspaceId: string | null) {
+function renderToolContent(id: ToolId, sessionId: string | null) {
   switch (id) {
     case "changes":
-      return <ChangesSummary workspaceId={workspaceId} />;
+      return <ChangesSummary sessionId={sessionId} />;
     case "terminal":
-      return <TerminalTool workspaceId={workspaceId} />;
+      return <TerminalTool sessionId={sessionId} />;
     case "simulator":
-      return <SimulatorTool workspaceId={workspaceId} />;
+      return <SimulatorTool sessionId={sessionId} />;
     default: {
       const _exhaustive: never = id;
 
@@ -38,10 +38,10 @@ function renderToolContent(id: ToolId, workspaceId: string | null) {
 }
 
 interface ToolPanelProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function ToolPanel({ workspaceId }: ToolPanelProps) {
+export function ToolPanel({ sessionId }: ToolPanelProps) {
   const activeToolId = useActiveToolId();
   const setWidth = setToolPanelWidth;
   const mountedToolIds = useMountedToolIds();
@@ -77,7 +77,7 @@ export function ToolPanel({ workspaceId }: ToolPanelProps) {
               className={styles.toolSlot}
               data-visible={id === displayToolId}
             >
-              {mountedToolIds[id] && renderToolContent(id, workspaceId)}
+              {mountedToolIds[id] && renderToolContent(id, sessionId)}
             </div>
           ))}
         </div>

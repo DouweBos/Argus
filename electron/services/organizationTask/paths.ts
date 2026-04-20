@@ -1,10 +1,10 @@
 /**
- * Filesystem layout for org-task host workspaces:
+ * Filesystem layout for org-task host sessions:
  *
  * ```
  * ~/.argus/org-hosts/
  *   {organizationId}/
- *     {taskId}/      <-- neutral host workspace, a plain directory
+ *     {taskId}/      <-- neutral host session, a plain directory
  * ```
  */
 

@@ -11,7 +11,7 @@ import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { isGitRepo } from "../mcp/projects";
 import { deleteOrgTasksForOrganization } from "../organizationTask/manager";
-import { addRepoRoot, createHeadWorkspace } from "../workspace/manager";
+import { addRepoRoot, createHeadSession } from "../session/manager";
 import { ORGANIZATION_ACCENTS } from "./models";
 import { loadOrganizations, saveOrganizations } from "./store";
 
@@ -34,7 +34,7 @@ export function initOrganizations(): void {
         !appState.repoRoots.has(member.repo_root)
       ) {
         addRepoRoot(member.repo_root);
-        createHeadWorkspace(member.repo_root);
+        createHeadSession(member.repo_root);
       }
     }
   }
@@ -170,7 +170,7 @@ export function deleteOrganization(id: string): void {
     throw `Organization not found: ${id}`;
   }
   // Cascade: remove every org task belonging to this organization along with
-  // their host workspace directories.
+  // their host session directories.
   deleteOrgTasksForOrganization(id);
   persist();
 }
@@ -234,6 +234,6 @@ function registerMemberRepos(members: OrganizationMember[]): void {
       continue;
     }
     addRepoRoot(m.repo_root);
-    createHeadWorkspace(m.repo_root);
+    createHeadSession(m.repo_root);
   }
 }
