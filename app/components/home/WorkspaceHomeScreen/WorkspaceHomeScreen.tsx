@@ -13,13 +13,14 @@ import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { listen } from "../../../lib/events";
-import { revealInFinder, watchWorkspace } from "../../../lib/ipc";
+import { watchWorkspace } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useDevices } from "../../../stores/deviceStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useWorkspaces } from "../../../stores/workspaceStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { HOME_SHORTCUTS } from "../HomeScreen/homeContent";
+import { PathLink } from "../PathLink/PathLink";
 import { ReadyToMergeCard } from "../RepoHomeScreen/ReadyToMergeCard";
 import styles from "../homeLayout.module.css";
 
@@ -237,19 +238,7 @@ export function WorkspaceHomeScreen({
           </div>
         </div>
 
-        {workspace?.path && (
-          <div
-            className={styles.repoPath}
-            title="⌘-click to reveal in Finder"
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey) {
-                revealInFinder(workspace.path).catch(() => {});
-              }
-            }}
-          >
-            {workspace.path}
-          </div>
-        )}
+        {workspace?.path && <PathLink path={workspace.path} />}
 
         <StatsStrip>
           <StatCell

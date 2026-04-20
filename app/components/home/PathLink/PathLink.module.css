@@ -1,0 +1,29 @@
+.path {
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  opacity: 0.7;
+  margin-top: -6px;
+  user-select: text;
+  width: fit-content;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease;
+}
+
+.path:hover {
+  opacity: 1;
+}
+
+.armed {
+  cursor: pointer;
+  user-select: none;
+  color: var(--accent);
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.armed:hover {
+  color: var(--accent);
+}
