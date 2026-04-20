@@ -1,5 +1,5 @@
 /**
- * Argus MCP server — exposes workspace and agent orchestration tools to
+ * Argus MCP server — exposes session and agent orchestration tools to
  * Claude Code agents via the Model Context Protocol (streamable HTTP).
  *
  * Runs an HTTP server on a random localhost port. The port is passed to agents
@@ -18,7 +18,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { z } from "zod";
-import { createLogger, info } from "../../../app/lib/logger";
+import { createLogger, info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { resolveAttachments, mcpAttachmentSchema } from "../agent/attachments";
@@ -38,18 +38,18 @@ import {
   updateOrganization,
   deleteOrganization,
 } from "../organization/manager";
-import { createRunTerminal, startTerminal } from "../terminal/multiplexer";
 import {
-  createWorkspace,
-  deleteWorkspace,
-  listWorkspaces,
-} from "../workspace/manager";
+  createSession,
+  deleteSession,
+  listSessions,
+} from "../session/manager";
 import {
-  getWorkspaceConflicts,
-  mergeWorkspaceIntoBase,
+  getSessionConflicts,
+  mergeSessionIntoBase,
   readArgusConfig,
   writeArgusConfig,
-} from "../workspace/workspaceOps";
+} from "../session/sessionOps";
+import { createRunTerminal, startTerminal } from "../terminal/multiplexer";
 import {
   isGitRepo,
   ensureRepoRegistered,
@@ -132,25 +132,25 @@ function authorizeRequest(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a workspace by ID or branch name. Agents typically know the branch
+ * Resolve a session by ID or branch name. Agents typically know the branch
  * name, not the UUID, so we search both.
  */
-function resolveWorkspace(idOrBranch: string) {
+function resolveSession(idOrBranch: string) {
   // Try by ID first.
-  const byId = appState.workspaces.get(idOrBranch);
+  const byId = appState.sessions.get(idOrBranch);
   if (byId) {
     return byId;
   }
 
   // Search by branch name.
-  for (const ws of appState.workspaces.values()) {
+  for (const ws of appState.sessions.values()) {
     if (ws.branch === idOrBranch) {
       return ws;
     }
   }
 
   // Search by display_name.
-  for (const ws of appState.workspaces.values()) {
+  for (const ws of appState.sessions.values()) {
     if (ws.display_name === idOrBranch) {
       return ws;
     }
@@ -186,7 +186,7 @@ function readJsonBody(
   });
 }
 
-/** Resolve the repo_root for a workspace or fall back to the first repo root. */
+/** Resolve the repo_root for a session or fall back to the first repo root. */
 function resolveRepoRoot(repoRoot?: string): string {
   if (repoRoot) {
     return repoRoot;
@@ -212,7 +212,7 @@ export function createMcpServer(): McpServer {
 
   // Wrap server.tool so every handler's thrown errors are logged before the
   // MCP SDK converts them into isError tool results. Without this, backend
-  // failures (e.g. createWorkspace() throwing) are invisible in main.log and
+  // failures (e.g. createSession() throwing) are invisible in main.log and
   // only surface as opaque error text in the agent's tool-call display.
   const originalTool = server.tool.bind(server) as (
     ...args: unknown[]
@@ -246,7 +246,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_projects",
-    "List all known projects: currently registered projects and related projects declared in .argus.json configs. Use this to discover other projects you can create workspaces in and work on.",
+    "List all known projects: currently registered projects and related projects declared in .argus.json configs. Use this to discover other projects you can create sessions in and work on.",
     {},
     async () => {
       const projects = collectAllProjects();
@@ -356,22 +356,22 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
-  // create_workspace
+  // create_session
   // -------------------------------------------------------------------------
 
   server.tool(
-    "create_workspace",
-    "Create a new isolated git worktree workspace. Returns the workspace ID and branch name. The workspace will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Requires repo_root — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
+    "create_session",
+    "Create a new isolated git worktree session. Returns the session ID and branch name. The session will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Requires repo_root — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
     {
       name: z
         .string()
         .describe(
-          "Display name for the workspace (will be slugified into a branch name)",
+          "Display name for the session (will be slugified into a branch name)",
         ),
       description: z
         .string()
         .optional()
-        .describe("Human-readable description of what this workspace is for"),
+        .describe("Human-readable description of what this session is for"),
       repo_root: z
         .string()
         .describe(
@@ -387,7 +387,7 @@ export function createMcpServer(): McpServer {
     async ({ name, description, repo_root, base_branch }) => {
       const repoRoot = repo_root;
 
-      // Auto-register the repo root if targeting a cross-project workspace.
+      // Auto-register the repo root if targeting a cross-project session.
       const isNew = !appState.repoRoots.has(repoRoot);
       ensureRepoRegistered(repoRoot);
       if (isNew) {
@@ -395,11 +395,11 @@ export function createMcpServer(): McpServer {
       }
 
       // Append a short unique suffix to prevent branch name collisions when
-      // multiple agents create workspaces with the same display name.
+      // multiple agents create sessions with the same display name.
       const suffix = crypto.randomUUID().slice(0, 6);
       const uniqueName = `${name}-${suffix}`;
 
-      const ws = await createWorkspace(
+      const ws = await createSession(
         repoRoot,
         uniqueName,
         description ?? "",
@@ -408,7 +408,7 @@ export function createMcpServer(): McpServer {
       );
 
       // Notify the renderer so the sidebar updates immediately.
-      getMainWindow()?.webContents.send("workspace:created", {
+      getMainWindow()?.webContents.send("session:created", {
         id: ws.id,
         kind: ws.kind,
         branch: ws.branch,
@@ -426,7 +426,7 @@ export function createMcpServer(): McpServer {
             type: "text" as const,
             text: JSON.stringify(
               {
-                workspace_id: ws.id,
+                session_id: ws.id,
                 branch: ws.branch,
                 path: ws.path,
                 status: ws.status,
@@ -442,12 +442,12 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
-  // list_workspaces
+  // list_sessions
   // -------------------------------------------------------------------------
 
   server.tool(
-    "list_workspaces",
-    "List all workspaces (worktrees and repo root) for a repository. Returns workspace IDs, branches, paths, and statuses.",
+    "list_sessions",
+    "List all sessions (worktrees and repo root) for a repository. Returns session IDs, branches, paths, and statuses.",
     {
       repo_root: z
         .string()
@@ -458,9 +458,9 @@ export function createMcpServer(): McpServer {
     },
     async ({ repo_root }) => {
       const repoRoot = resolveRepoRoot(repo_root);
-      const workspaces = await listWorkspaces(repoRoot);
-      const summary = workspaces.map((ws) => ({
-        workspace_id: ws.id,
+      const sessions = await listSessions(repoRoot);
+      const summary = sessions.map((ws) => ({
+        session_id: ws.id,
         kind: ws.kind,
         branch: ws.branch,
         display_name: ws.display_name,
@@ -482,29 +482,29 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
-  // delete_workspace
+  // delete_session
   // -------------------------------------------------------------------------
 
   server.tool(
-    "delete_workspace",
-    "Delete a workspace (git worktree). Kills any running agent and terminals, removes the worktree from disk.",
+    "delete_session",
+    "Delete a session (git worktree). Kills any running agent and terminals, removes the worktree from disk.",
     {
-      workspace: z
+      session: z
         .string()
-        .describe("Workspace ID, branch name, or display name"),
+        .describe("Session ID, branch name, or display name"),
       delete_branch: z
         .boolean()
         .optional()
         .describe("Also delete the git branch (default: false)"),
     },
-    async ({ workspace, delete_branch }) => {
-      const ws = resolveWorkspace(workspace);
+    async ({ session, delete_branch }) => {
+      const ws = resolveSession(session);
       if (!ws) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Workspace not found: ${workspace}`,
+              text: `Session not found: ${session}`,
             },
           ],
           isError: true,
@@ -512,13 +512,13 @@ export function createMcpServer(): McpServer {
       }
       const wsId = ws.id;
       const wsName = ws.display_name ?? ws.branch;
-      await deleteWorkspace(wsId, delete_branch ?? false);
+      await deleteSession(wsId, delete_branch ?? false);
 
       return {
         content: [
           {
             type: "text" as const,
-            text: `Deleted workspace '${wsName}' (${wsId})`,
+            text: `Deleted session '${wsName}' (${wsId})`,
           },
         ],
       };
@@ -531,12 +531,19 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agent",
-    "Start a new Claude Code agent in a workspace. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. Pass your own agent_id as parent_agent_id so the relationship is tracked.",
+    "Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. Pass your own agent_id as parent_agent_id so the relationship is tracked.",
     {
+      session: z
+        .string()
+        .optional()
+        .describe(
+          "Session ID, branch name, or display name to run the agent in",
+        ),
       workspace: z
         .string()
+        .optional()
         .describe(
-          "Workspace ID, branch name, or display name to run the agent in",
+          "Deprecated alias for `session`. Kept for back-compat with older orchestrators; prefer `session`.",
         ),
       prompt: z
         .string()
@@ -567,6 +574,7 @@ export function createMcpServer(): McpServer {
         ),
     },
     async ({
+      session,
       workspace,
       prompt,
       permission_mode,
@@ -574,13 +582,30 @@ export function createMcpServer(): McpServer {
       parent_agent_id,
       attachments,
     }) => {
-      const ws = resolveWorkspace(workspace);
+      const sessionArg = session ?? workspace;
+      if (!sessionArg) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Either `session` or `workspace` must be provided.",
+            },
+          ],
+          isError: true,
+        };
+      }
+      if (workspace && !session) {
+        warn(
+          "[mcp:spawn_agent] `workspace` parameter is deprecated — use `session` instead",
+        );
+      }
+      const ws = resolveSession(sessionArg);
       if (!ws) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Workspace not found: ${workspace}`,
+              text: `Session not found: ${sessionArg}`,
             },
           ],
           isError: true,
@@ -611,7 +636,7 @@ export function createMcpServer(): McpServer {
       // the new agent — normally done by the UI-initiated start_agent path.
       getMainWindow()?.webContents.send("agent:started", {
         agent_id: agentInfo.agent_id,
-        workspace_id: agentInfo.workspace_id,
+        session_id: agentInfo.session_id,
         status: agentInfo.status,
         permission_mode,
         parent_agent_id: agentInfo.parent_agent_id,
@@ -628,7 +653,7 @@ export function createMcpServer(): McpServer {
             text: JSON.stringify(
               {
                 agent_id: agentInfo.agent_id,
-                workspace_id: ws.id,
+                session_id: ws.id,
                 branch: ws.branch,
                 status: agentInfo.status,
                 parent_agent_id: agentInfo.parent_agent_id,
@@ -648,23 +673,23 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agents_batch",
-    "Create multiple workspaces and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Much more efficient than sequential create_workspace + spawn_agent calls. Returns all agent IDs at once.",
+    "Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once.",
     {
       repo_root: z
         .string()
-        .describe("Absolute path to the repository root for all workspaces."),
+        .describe("Absolute path to the repository root for all sessions."),
       agents: z
         .array(
           z.object({
             name: z
               .string()
               .describe(
-                "Display name for the workspace (slugified into a branch name)",
+                "Display name for the session (slugified into a branch name)",
               ),
             description: z
               .string()
               .optional()
-              .describe("What this agent/workspace is for"),
+              .describe("What this agent/session is for"),
             prompt: z.string().describe("Initial instructions for the agent"),
             platforms: z
               .array(z.enum(["ios", "android", "web"]))
@@ -678,7 +703,7 @@ export function createMcpServer(): McpServer {
               ),
           }),
         )
-        .describe("Array of agents to spawn, each in its own workspace"),
+        .describe("Array of agents to spawn, each in its own session"),
       permission_mode: z
         .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
         .optional()
@@ -692,7 +717,7 @@ export function createMcpServer(): McpServer {
       base_branch: z
         .string()
         .optional()
-        .describe("Branch to fork all workspaces from. Defaults to HEAD."),
+        .describe("Branch to fork all sessions from. Defaults to HEAD."),
     },
     async ({
       repo_root,
@@ -709,12 +734,12 @@ export function createMcpServer(): McpServer {
         getMainWindow()?.webContents.send("project:added", repoRoot);
       }
 
-      // Create all workspaces in parallel.
-      const workspaceResults = await Promise.allSettled(
+      // Create all sessions in parallel.
+      const sessionResults = await Promise.allSettled(
         agentSpecs.map(async (spec) => {
           const suffix = crypto.randomUUID().slice(0, 6);
           const uniqueName = `${spec.name}-${suffix}`;
-          const ws = await createWorkspace(
+          const ws = await createSession(
             repoRoot,
             uniqueName,
             spec.description ?? "",
@@ -722,7 +747,7 @@ export function createMcpServer(): McpServer {
             base_branch,
           );
 
-          getMainWindow()?.webContents.send("workspace:created", {
+          getMainWindow()?.webContents.send("session:created", {
             id: ws.id,
             kind: ws.kind,
             branch: ws.branch,
@@ -734,36 +759,36 @@ export function createMcpServer(): McpServer {
             base_branch: ws.base_branch,
           });
 
-          return { workspace: ws, spec };
+          return { session: ws, spec };
         }),
       );
 
-      // Spawn agents in the successfully created workspaces.
+      // Spawn agents in the successfully created sessions.
       const results: {
         agent_id: string;
-        workspace_id: string;
+        session_id: string;
         branch: string;
         name: string;
         status: string;
         error?: string;
       }[] = [];
 
-      const spawnPromises = workspaceResults.map(async (wsResult, idx) => {
+      const spawnPromises = sessionResults.map(async (wsResult, idx) => {
         const spec = agentSpecs[idx];
         if (wsResult.status === "rejected") {
           results.push({
             agent_id: "",
-            workspace_id: "",
+            session_id: "",
             branch: "",
             name: spec.name,
             status: "error",
-            error: `Workspace creation failed: ${String(wsResult.reason)}`,
+            error: `Session creation failed: ${String(wsResult.reason)}`,
           });
 
           return;
         }
 
-        const { workspace: ws } = wsResult.value;
+        const { session: ws } = wsResult.value;
 
         let images;
         try {
@@ -771,7 +796,7 @@ export function createMcpServer(): McpServer {
         } catch (e) {
           results.push({
             agent_id: "",
-            workspace_id: ws.id,
+            session_id: ws.id,
             branch: ws.branch,
             name: spec.name,
             status: "error",
@@ -794,7 +819,7 @@ export function createMcpServer(): McpServer {
 
           getMainWindow()?.webContents.send("agent:started", {
             agent_id: agentInfo.agent_id,
-            workspace_id: agentInfo.workspace_id,
+            session_id: agentInfo.session_id,
             status: agentInfo.status,
             permission_mode,
             parent_agent_id: agentInfo.parent_agent_id,
@@ -805,7 +830,7 @@ export function createMcpServer(): McpServer {
 
           results.push({
             agent_id: agentInfo.agent_id,
-            workspace_id: ws.id,
+            session_id: ws.id,
             branch: ws.branch,
             name: spec.name,
             status: "running",
@@ -813,7 +838,7 @@ export function createMcpServer(): McpServer {
         } catch (e) {
           results.push({
             agent_id: "",
-            workspace_id: ws.id,
+            session_id: ws.id,
             branch: ws.branch,
             name: spec.name,
             status: "error",
@@ -850,25 +875,25 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_agents",
-    "List all running agents across all workspaces, or for a specific workspace.",
+    "List all running agents across all sessions, or for a specific session.",
     {
-      workspace: z
+      session: z
         .string()
         .optional()
         .describe(
-          "Optional workspace ID, branch name, or display name to filter by",
+          "Optional session ID, branch name, or display name to filter by",
         ),
     },
-    async ({ workspace }) => {
+    async ({ session }) => {
       let agents;
-      if (workspace) {
-        const ws = resolveWorkspace(workspace);
+      if (session) {
+        const ws = resolveSession(session);
         if (!ws) {
           return {
             content: [
               {
                 type: "text" as const,
-                text: `Workspace not found: ${workspace}`,
+                text: `Session not found: ${session}`,
               },
             ],
             isError: true,
@@ -876,20 +901,20 @@ export function createMcpServer(): McpServer {
         }
         agents = listAgents(ws.id);
       } else {
-        // Collect agents across all workspaces.
+        // Collect agents across all sessions.
         agents = [];
-        for (const ws of appState.workspaces.values()) {
+        for (const ws of appState.sessions.values()) {
           agents.push(...listAgents(ws.id));
         }
       }
 
-      // Enrich with workspace info.
+      // Enrich with session info.
       const enriched = agents.map((a) => {
-        const ws = appState.workspaces.get(a.workspace_id);
+        const ws = appState.sessions.get(a.session_id);
 
         return {
           agent_id: a.agent_id,
-          workspace_id: a.workspace_id,
+          session_id: a.session_id,
           branch: ws?.branch,
           display_name: ws?.display_name,
           status: a.status,
@@ -932,7 +957,7 @@ export function createMcpServer(): McpServer {
         };
       }
 
-      const ws = appState.workspaces.get(session.workspaceId);
+      const ws = appState.sessions.get(session.sessionId);
 
       return {
         content: [
@@ -941,7 +966,7 @@ export function createMcpServer(): McpServer {
             text: JSON.stringify(
               {
                 agent_id: session.agentId,
-                workspace_id: session.workspaceId,
+                session_id: session.sessionId,
                 branch: ws?.branch,
                 display_name: ws?.display_name,
                 status: session.status,
@@ -989,7 +1014,7 @@ export function createMcpServer(): McpServer {
         };
       }
 
-      const ws = appState.workspaces.get(session.workspaceId);
+      const ws = appState.sessions.get(session.sessionId);
 
       return {
         content: [
@@ -998,7 +1023,7 @@ export function createMcpServer(): McpServer {
             text: JSON.stringify(
               {
                 agent_id: session.agentId,
-                workspace_id: session.workspaceId,
+                session_id: session.sessionId,
                 branch: ws?.branch,
                 status: session.status,
                 result: session.resultSummary,
@@ -1057,7 +1082,7 @@ export function createMcpServer(): McpServer {
 
         const session = appState.agents.get(agent_id);
         const ws = session
-          ? appState.workspaces.get(session.workspaceId)
+          ? appState.sessions.get(session.sessionId)
           : undefined;
 
         return {
@@ -1067,7 +1092,7 @@ export function createMcpServer(): McpServer {
               text: JSON.stringify(
                 {
                   agent_id,
-                  workspace_id: session?.workspaceId,
+                  session_id: session?.sessionId,
                   branch: ws?.branch,
                   status,
                   result,
@@ -1138,11 +1163,11 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "trigger_run",
-    "Trigger one of the configured run commands (from .argus.json) in a workspace's terminal. This starts the app's dev server, test runner, or whatever the project has configured as a run command. The command runs in a visible UI terminal. Pass `title` to pick a specific entry; omit to run the first configured command.",
+    "Trigger one of the configured run commands (from .argus.json) in a session's terminal. This starts the app's dev server, test runner, or whatever the project has configured as a run command. The command runs in a visible UI terminal. Pass `title` to pick a specific entry; omit to run the first configured command.",
     {
-      workspace: z
+      session: z
         .string()
-        .describe("Workspace ID, branch name, or display name"),
+        .describe("Session ID, branch name, or display name"),
       title: z
         .string()
         .optional()
@@ -1150,14 +1175,14 @@ export function createMcpServer(): McpServer {
           "Title of the run command from .argus.json. Defaults to the first entry.",
         ),
     },
-    async ({ workspace, title }) => {
-      const ws = resolveWorkspace(workspace);
+    async ({ session, title }) => {
+      const ws = resolveSession(session);
       if (!ws) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Workspace not found: ${workspace}`,
+              text: `Session not found: ${session}`,
             },
           ],
           isError: true,
@@ -1177,7 +1202,7 @@ export function createMcpServer(): McpServer {
                   terminal_session_id: result.sessionId,
                   started: result.started,
                   title: result.title,
-                  workspace_id: ws.id,
+                  session_id: ws.id,
                   branch: ws.branch,
                 },
                 null,
@@ -1201,27 +1226,27 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "check_conflicts",
-    "Check whether a workspace's branch would conflict if merged into its base branch. Returns a list of conflicting files, or an empty list if the merge would be clean.",
+    "Check whether a session's branch would conflict if merged into its base branch. Returns a list of conflicting files, or an empty list if the merge would be clean.",
     {
-      workspace: z
+      session: z
         .string()
-        .describe("Workspace ID, branch name, or display name"),
+        .describe("Session ID, branch name, or display name"),
     },
-    async ({ workspace }) => {
-      const ws = resolveWorkspace(workspace);
+    async ({ session }) => {
+      const ws = resolveSession(session);
       if (!ws) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Workspace not found: ${workspace}`,
+              text: `Session not found: ${session}`,
             },
           ],
           isError: true,
         };
       }
 
-      const conflicts = await getWorkspaceConflicts(ws.id);
+      const conflicts = await getSessionConflicts(ws.id);
 
       return {
         content: [
@@ -1233,7 +1258,7 @@ export function createMcpServer(): McpServer {
                 : JSON.stringify(
                     {
                       conflicting_files: conflicts,
-                      workspace_branch: ws.branch,
+                      session_branch: ws.branch,
                       base_branch: ws.base_branch,
                     },
                     null,
@@ -1246,32 +1271,32 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
-  // merge_workspace
+  // merge_session
   // -------------------------------------------------------------------------
 
   server.tool(
-    "merge_workspace",
-    "Merge a workspace's branch into its base branch. Commits any staged changes first, checks for conflicts, then performs a --no-ff merge. The workspace's base branch was set when the worktree was created.",
+    "merge_session",
+    "Merge a session's branch into its base branch. Commits any staged changes first, checks for conflicts, then performs a --no-ff merge. The session's base branch was set when the worktree was created.",
     {
-      workspace: z
+      session: z
         .string()
-        .describe("Workspace ID, branch name, or display name"),
+        .describe("Session ID, branch name, or display name"),
     },
-    async ({ workspace }) => {
-      const ws = resolveWorkspace(workspace);
+    async ({ session }) => {
+      const ws = resolveSession(session);
       if (!ws) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Workspace not found: ${workspace}`,
+              text: `Session not found: ${session}`,
             },
           ],
           isError: true,
         };
       }
 
-      await mergeWorkspaceIntoBase(ws.id);
+      await mergeSessionIntoBase(ws.id);
 
       return {
         content: [
@@ -1524,24 +1549,24 @@ export async function startMcpServer(): Promise<number> {
 
           return;
         }
-        const session = appState.agents.get(agentId);
-        if (!session) {
+        const agentEntry = appState.agents.get(agentId);
+        if (!agentEntry) {
           res.writeHead(404, { "content-type": "application/json" });
           res.end(JSON.stringify({ error: `Unknown agent: ${agentId}` }));
 
           return;
         }
-        const workspace = appState.workspaces.get(session.workspaceId);
-        if (!workspace) {
+        const session = appState.sessions.get(agentEntry.sessionId);
+        if (!session) {
           res.writeHead(404, { "content-type": "application/json" });
-          res.end(JSON.stringify({ error: "Workspace not found for agent" }));
+          res.end(JSON.stringify({ error: "Session not found for agent" }));
 
           return;
         }
 
         const deviceId =
           platform === "ios"
-            ? await ensureSimulatorForAgent(agentId, workspace.repo_root)
+            ? await ensureSimulatorForAgent(agentId, session.repo_root)
             : await ensureWebBrowserForAgent(agentId);
 
         res.writeHead(200, { "content-type": "application/json" });

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  getWorkspaceCommitsAhead,
-  getWorkspaceConflicts,
-  getWorkspaceStagedDiff,
-  mergeWorkspaceIntoBase,
+  getSessionCommitsAhead,
+  getSessionConflicts,
+  getSessionStagedDiff,
+  mergeSessionIntoBase,
 } from "../lib/ipc";
 import { useIpcEvent } from "./useIpcEvent";
 
@@ -17,7 +17,7 @@ interface UseMergeStatusResult {
 }
 
 export function useMergeStatus(
-  workspaceId: string | null,
+  sessionId: string | null,
 ): UseMergeStatusResult {
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
@@ -26,14 +26,14 @@ export function useMergeStatus(
   const [mergeError, setMergeError] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
     try {
       const [conflictResult, stagedDiff, ahead] = await Promise.all([
-        getWorkspaceConflicts(workspaceId),
-        getWorkspaceStagedDiff(workspaceId),
-        getWorkspaceCommitsAhead(workspaceId),
+        getSessionConflicts(sessionId),
+        getSessionStagedDiff(sessionId),
+        getSessionCommitsAhead(sessionId),
       ]);
       setConflicts(conflictResult);
       setHasStaged(stagedDiff.trim() !== "");
@@ -41,28 +41,28 @@ export function useMergeStatus(
     } catch {
       // ignore
     }
-  }, [workspaceId]);
+  }, [sessionId]);
 
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
 
   useIpcEvent(
-    workspaceId ? `workspace:diff-changed:${workspaceId}` : "",
+    sessionId ? `session:diff-changed:${sessionId}` : "",
     fetchStatus,
   );
-  // Re-fetch when the workspace's review-queue state updates (e.g. a new
+  // Re-fetch when the session's review-queue state updates (e.g. a new
   // commit on the branch, or a sibling merge completion).
-  useIpcEvent("workspace:review-state", fetchStatus);
+  useIpcEvent("session:review-state", fetchStatus);
 
   const handleMerge = useCallback(async () => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
     setIsMerging(true);
     setMergeError(null);
     try {
-      await mergeWorkspaceIntoBase(workspaceId);
+      await mergeSessionIntoBase(sessionId);
     } catch (err) {
       setMergeError(err instanceof Error ? err.message : String(err));
       // Refresh conflict list so the UI can surface "Fix in chat".
@@ -70,7 +70,7 @@ export function useMergeStatus(
     } finally {
       setIsMerging(false);
     }
-  }, [workspaceId, fetchStatus]);
+  }, [sessionId, fetchStatus]);
 
   return {
     commitsAhead,

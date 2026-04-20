@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getWorkspaceState } from "./workspaceStore";
+import { getSessionState } from "./sessionStore";
 
 /**
  * `null` → dialog hidden. `{ mode: "create" }` → create form. `{ mode: "edit", id }`
@@ -11,18 +11,18 @@ export type OrganizationDialogState =
   | null;
 
 interface DialogState {
-  /** Shows the CreateWorkspaceDialog rooted at this repo path when non-null. */
-  createWorkspaceRepoRoot: string | null;
-  /** Shows the NewWorkspacePicker (repo chooser) when true. */
-  newWorkspacePickerOpen: boolean;
+  /** Shows the CreateSessionDialog rooted at this repo path when non-null. */
+  createSessionRepoRoot: string | null;
+  /** Shows the NewSessionPicker (repo chooser) when true. */
+  newSessionPickerOpen: boolean;
   openProjectVisible: boolean;
   organizationDialog: OrganizationDialogState;
 }
 
 const store = create<DialogState>(() => ({
   openProjectVisible: false,
-  newWorkspacePickerOpen: false,
-  createWorkspaceRepoRoot: null,
+  newSessionPickerOpen: false,
+  createSessionRepoRoot: null,
   organizationDialog: null,
 }));
 
@@ -31,23 +31,23 @@ export const showOpenProjectDialog = () =>
 export const hideOpenProjectDialog = () =>
   store.setState({ openProjectVisible: false });
 
-export const showNewWorkspacePicker = () =>
-  store.setState({ newWorkspacePickerOpen: true });
-export const hideNewWorkspacePicker = () =>
-  store.setState({ newWorkspacePickerOpen: false });
+export const showNewSessionPicker = () =>
+  store.setState({ newSessionPickerOpen: true });
+export const hideNewSessionPicker = () =>
+  store.setState({ newSessionPickerOpen: false });
 
-export const showCreateWorkspaceDialog = (repoRoot: string) =>
-  store.setState({ createWorkspaceRepoRoot: repoRoot });
-export const hideCreateWorkspaceDialog = () =>
-  store.setState({ createWorkspaceRepoRoot: null });
+export const showCreateSessionDialog = (repoRoot: string) =>
+  store.setState({ createSessionRepoRoot: repoRoot });
+export const hideCreateSessionDialog = () =>
+  store.setState({ createSessionRepoRoot: null });
 
 /**
- * Smart "new workspace" trigger: routes to the right dialog based on how many
+ * Smart "new session" trigger: routes to the right dialog based on how many
  * projects are open. With 0 projects we need a repo first; with 1 we skip the
  * picker; with 2+ we show the picker.
  */
-export const triggerNewWorkspace = () => {
-  const { projects } = getWorkspaceState();
+export const triggerNewSession = () => {
+  const { projects } = getSessionState();
   if (projects.length === 0) {
     store.setState({ openProjectVisible: true });
 
@@ -56,19 +56,19 @@ export const triggerNewWorkspace = () => {
   if (projects.length === 1) {
     const only = projects[0];
     if (only) {
-      store.setState({ createWorkspaceRepoRoot: only.repoRoot });
+      store.setState({ createSessionRepoRoot: only.repoRoot });
     }
 
     return;
   }
-  store.setState({ newWorkspacePickerOpen: true });
+  store.setState({ newSessionPickerOpen: true });
 };
 
 export const useOpenProjectVisible = () => store((s) => s.openProjectVisible);
-export const useNewWorkspacePickerOpen = () =>
-  store((s) => s.newWorkspacePickerOpen);
-export const useCreateWorkspaceRepoRoot = () =>
-  store((s) => s.createWorkspaceRepoRoot);
+export const useNewSessionPickerOpen = () =>
+  store((s) => s.newSessionPickerOpen);
+export const useCreateSessionRepoRoot = () =>
+  store((s) => s.createSessionRepoRoot);
 
 export const showCreateOrganizationDialog = () =>
   store.setState({ organizationDialog: { mode: "create" } });

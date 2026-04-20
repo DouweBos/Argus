@@ -33,7 +33,7 @@ export function initOrgTasks(): void {
   const tasks = loadOrgTasks();
   for (const t of tasks) {
     // Running tasks can't survive a restart — the host agent process is
-    // gone and the neutral workspace won't be re-registered automatically.
+    // gone and the neutral session won't be re-registered automatically.
     // Mark them as failed so the UI reflects reality.
     if (t.status === "running") {
       t.status = "failed";
@@ -123,10 +123,10 @@ export function getOrgTask(id: string): OrgTask | null {
   return appState.organizationTasks.get(id) ?? null;
 }
 
-/** Find the OrgTask (if any) whose host workspace matches `workspaceId`. */
-export function findOrgTaskForWorkspace(workspaceId: string): OrgTask | null {
+/** Find the OrgTask (if any) whose host session matches `sessionId`. */
+export function findOrgTaskForSession(sessionId: string): OrgTask | null {
   for (const t of appState.organizationTasks.values()) {
-    if (t.host_workspace_id === workspaceId) {
+    if (t.host_session_id === sessionId) {
       return t;
     }
   }
@@ -155,7 +155,7 @@ export function createOrgTask(input: CreateOrgTaskInput): OrgTask {
     status: "running",
     created_at: now,
     updated_at: now,
-    host_workspace_id: null,
+    host_session_id: null,
     host_agent_id: null,
     scope: input.scope.map((s) => ({
       repo_root: s.repo_root,

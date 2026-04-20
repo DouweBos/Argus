@@ -56,22 +56,22 @@ new file mode 100644
 +world
 `;
 
-const mockGetWorkspaceFullDiff = vi.fn().mockResolvedValue(SIMPLE_DIFF);
-const mockGetWorkspaceStagedDiff = vi.fn().mockResolvedValue("");
-const mockGetWorkspaceUntrackedDiff = vi.fn().mockResolvedValue("");
-const mockGetWorkspaceConflicts = vi.fn().mockResolvedValue([]);
-const mockWatchWorkspace = vi.fn().mockResolvedValue(undefined);
+const mockGetSessionFullDiff = vi.fn().mockResolvedValue(SIMPLE_DIFF);
+const mockGetSessionStagedDiff = vi.fn().mockResolvedValue("");
+const mockGetSessionUntrackedDiff = vi.fn().mockResolvedValue("");
+const mockGetSessionConflicts = vi.fn().mockResolvedValue([]);
+const mockWatchSession = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../lib/ipc", () => ({
-  getWorkspaceFullDiff: (...args: unknown[]) =>
-    mockGetWorkspaceFullDiff(...args),
-  getWorkspaceStagedDiff: (...args: unknown[]) =>
-    mockGetWorkspaceStagedDiff(...args),
-  getWorkspaceUntrackedDiff: (...args: unknown[]) =>
-    mockGetWorkspaceUntrackedDiff(...args),
-  getWorkspaceConflicts: (...args: unknown[]) =>
-    mockGetWorkspaceConflicts(...args),
-  watchWorkspace: (...args: unknown[]) => mockWatchWorkspace(...args),
+  getSessionFullDiff: (...args: unknown[]) =>
+    mockGetSessionFullDiff(...args),
+  getSessionStagedDiff: (...args: unknown[]) =>
+    mockGetSessionStagedDiff(...args),
+  getSessionUntrackedDiff: (...args: unknown[]) =>
+    mockGetSessionUntrackedDiff(...args),
+  getSessionConflicts: (...args: unknown[]) =>
+    mockGetSessionConflicts(...args),
+  watchSession: (...args: unknown[]) => mockWatchSession(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -81,11 +81,11 @@ vi.mock("../lib/ipc", () => ({
 describe("useDiffFiles", () => {
   beforeEach(() => {
     eventListeners.clear();
-    mockGetWorkspaceFullDiff.mockResolvedValue(SIMPLE_DIFF);
-    mockGetWorkspaceStagedDiff.mockResolvedValue("");
-    mockGetWorkspaceUntrackedDiff.mockResolvedValue("");
-    mockGetWorkspaceConflicts.mockResolvedValue([]);
-    mockWatchWorkspace.mockResolvedValue(undefined);
+    mockGetSessionFullDiff.mockResolvedValue(SIMPLE_DIFF);
+    mockGetSessionStagedDiff.mockResolvedValue("");
+    mockGetSessionUntrackedDiff.mockResolvedValue("");
+    mockGetSessionConflicts.mockResolvedValue([]);
+    mockWatchSession.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -104,7 +104,7 @@ describe("useDiffFiles", () => {
   });
 
   it("merges staged info into files", async () => {
-    mockGetWorkspaceStagedDiff.mockResolvedValue(SIMPLE_DIFF);
+    mockGetSessionStagedDiff.mockResolvedValue(SIMPLE_DIFF);
 
     const { result } = renderHook(() => useDiffFiles("ws-1"));
 
@@ -116,8 +116,8 @@ describe("useDiffFiles", () => {
   });
 
   it("appends untracked files as status A with staged none", async () => {
-    mockGetWorkspaceFullDiff.mockResolvedValue("");
-    mockGetWorkspaceUntrackedDiff.mockResolvedValue(UNTRACKED_DIFF);
+    mockGetSessionFullDiff.mockResolvedValue("");
+    mockGetSessionUntrackedDiff.mockResolvedValue(UNTRACKED_DIFF);
 
     const { result } = renderHook(() => useDiffFiles("ws-1"));
 
@@ -131,7 +131,7 @@ describe("useDiffFiles", () => {
   });
 
   it("returns conflictFiles when baseBranch is provided", async () => {
-    mockGetWorkspaceConflicts.mockResolvedValue(["file1.ts", "file2.ts"]);
+    mockGetSessionConflicts.mockResolvedValue(["file1.ts", "file2.ts"]);
 
     const { result } = renderHook(() =>
       useDiffFiles("ws-1", { baseBranch: "main" }),
@@ -152,7 +152,7 @@ describe("useDiffFiles", () => {
     });
 
     expect(result.current.conflictFiles).toEqual([]);
-    expect(mockGetWorkspaceConflicts).not.toHaveBeenCalled();
+    expect(mockGetSessionConflicts).not.toHaveBeenCalled();
   });
 
   it("sets isLoading during fetch and clears when done", async () => {
@@ -167,7 +167,7 @@ describe("useDiffFiles", () => {
   });
 
   it("sets error on fetch failure", async () => {
-    mockGetWorkspaceFullDiff.mockRejectedValue(new Error("git failed"));
+    mockGetSessionFullDiff.mockRejectedValue(new Error("git failed"));
 
     const { result } = renderHook(() => useDiffFiles("ws-1"));
 
@@ -178,17 +178,17 @@ describe("useDiffFiles", () => {
     expect(result.current.files).toEqual([]);
   });
 
-  it("calls watchWorkspace on mount", async () => {
+  it("calls watchSession on mount", async () => {
     const { unmount } = renderHook(() => useDiffFiles("ws-1"));
 
     await waitFor(() => {
-      expect(mockWatchWorkspace).toHaveBeenCalledWith("ws-1");
+      expect(mockWatchSession).toHaveBeenCalledWith("ws-1");
     });
 
     unmount();
   });
 
-  it("re-fetches when workspace:diff-changed event fires", async () => {
+  it("re-fetches when session:diff-changed event fires", async () => {
     const { result } = renderHook(() => useDiffFiles("ws-1"));
 
     await waitFor(() => {
@@ -196,11 +196,11 @@ describe("useDiffFiles", () => {
     });
 
     // Change what the mock returns
-    mockGetWorkspaceFullDiff.mockResolvedValue("");
-    mockGetWorkspaceUntrackedDiff.mockResolvedValue("");
+    mockGetSessionFullDiff.mockResolvedValue("");
+    mockGetSessionUntrackedDiff.mockResolvedValue("");
 
     act(() => {
-      emitEvent("workspace:diff-changed:ws-1");
+      emitEvent("session:diff-changed:ws-1");
     });
 
     await waitFor(() => {
@@ -215,12 +215,12 @@ describe("useDiffFiles", () => {
       expect(result.current.files).toHaveLength(1);
     });
 
-    expect(mockGetWorkspaceFullDiff).toHaveBeenCalledTimes(1);
+    expect(mockGetSessionFullDiff).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       await result.current.refetch();
     });
 
-    expect(mockGetWorkspaceFullDiff).toHaveBeenCalledTimes(2);
+    expect(mockGetSessionFullDiff).toHaveBeenCalledTimes(2);
   });
 });

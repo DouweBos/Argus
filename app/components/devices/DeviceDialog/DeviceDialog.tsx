@@ -18,7 +18,7 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
   const { goto } = useDeviceNavigation();
 
   const handleGoto = async (
-    kind: "agent" | "project" | "workspace",
+    kind: "agent" | "project" | "session",
   ): Promise<void> => {
     await goto(device, kind);
     onClose();
@@ -69,14 +69,14 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
                 "—"
               )}
             </span>
-            <span className={styles.metaLabel}>Workspace</span>
+            <span className={styles.metaLabel}>Session</span>
             <span className={styles.metaValue}>
-              {device.workspaceId ? (
+              {device.sessionId ? (
                 <button
                   className={styles.link}
-                  onClick={() => handleGoto("workspace")}
+                  onClick={() => handleGoto("session")}
                 >
-                  {device.workspaceId}
+                  {device.sessionId}
                 </button>
               ) : (
                 "—"

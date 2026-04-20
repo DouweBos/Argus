@@ -3,21 +3,21 @@ import { useShallow } from "zustand/react/shallow";
 
 interface BranchPickerState {
   repoRoot: string | null;
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
 const store = create<BranchPickerState>(() => ({
   repoRoot: null,
-  workspaceId: null,
+  sessionId: null,
 }));
 
-export const showBranchPicker = (repoRoot: string, workspaceId: string) =>
-  store.setState({ repoRoot, workspaceId });
+export const showBranchPicker = (repoRoot: string, sessionId: string) =>
+  store.setState({ repoRoot, sessionId });
 
 export const hideBranchPicker = () =>
-  store.setState({ repoRoot: null, workspaceId: null });
+  store.setState({ repoRoot: null, sessionId: null });
 
 export const useBranchPickerTarget = () =>
   store(
-    useShallow((s) => ({ repoRoot: s.repoRoot, workspaceId: s.workspaceId })),
+    useShallow((s) => ({ repoRoot: s.repoRoot, sessionId: s.sessionId })),
   );

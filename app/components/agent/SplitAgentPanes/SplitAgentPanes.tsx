@@ -11,7 +11,7 @@ interface SplitAgentPanesProps {
   left: AgentStatus;
   onRestart: (agentId: string) => void;
   right: AgentStatus;
-  workspaceId: string;
+  sessionId: string;
 }
 
 function PaneHeader({
@@ -83,14 +83,14 @@ export function SplitAgentPanes({
   agents,
   left,
   right,
-  workspaceId,
+  sessionId,
   onRestart,
 }: SplitAgentPanesProps) {
   const leftDisabled = new Set<string>([right.agent_id]);
   const rightDisabled = new Set<string>([left.agent_id]);
 
   const closeSplit = () => {
-    setSplitPair(workspaceId, null);
+    setSplitPair(sessionId, null);
   };
 
   const changeLeft = (id: string) => {
@@ -99,13 +99,13 @@ export function SplitAgentPanes({
     }
     if (id === right.agent_id) {
       // Swap
-      setSplitPair(workspaceId, { left: id, right: left.agent_id });
-      setActiveAgent(workspaceId, id);
+      setSplitPair(sessionId, { left: id, right: left.agent_id });
+      setActiveAgent(sessionId, id);
 
       return;
     }
-    setSplitPair(workspaceId, { left: id, right: right.agent_id });
-    setActiveAgent(workspaceId, id);
+    setSplitPair(sessionId, { left: id, right: right.agent_id });
+    setActiveAgent(sessionId, id);
   };
 
   const changeRight = (id: string) => {
@@ -113,12 +113,12 @@ export function SplitAgentPanes({
       return;
     }
     if (id === left.agent_id) {
-      setSplitPair(workspaceId, { left: right.agent_id, right: id });
-      setActiveAgent(workspaceId, right.agent_id);
+      setSplitPair(sessionId, { left: right.agent_id, right: id });
+      setActiveAgent(sessionId, right.agent_id);
 
       return;
     }
-    setSplitPair(workspaceId, { left: left.agent_id, right: id });
+    setSplitPair(sessionId, { left: left.agent_id, right: id });
   };
 
   const dropOnLeft = (id: string) => {
@@ -154,7 +154,7 @@ export function SplitAgentPanes({
             <AgentChat
               agentId={left.agent_id}
               permissionMode={left.permission_mode}
-              workspaceId={workspaceId}
+              sessionId={sessionId}
               onRestart={() => onRestart(left.agent_id)}
             />
           </div>
@@ -178,7 +178,7 @@ export function SplitAgentPanes({
             <AgentChat
               agentId={right.agent_id}
               permissionMode={right.permission_mode}
-              workspaceId={workspaceId}
+              sessionId={sessionId}
               onRestart={() => onRestart(right.agent_id)}
             />
           </div>

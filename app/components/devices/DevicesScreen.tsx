@@ -31,7 +31,7 @@ export function DevicesScreen() {
   const [menu, setMenu] = useState<MenuState | null>(null);
 
   const nav =
-    (kind: "agent" | "project" | "workspace", d: DeviceInfo) =>
+    (kind: "agent" | "project" | "session", d: DeviceInfo) =>
     (e: React.MouseEvent) => {
       e.stopPropagation();
       goto(d, kind).catch(() => {});
@@ -95,7 +95,7 @@ export function DevicesScreen() {
               <th>Platform</th>
               <th>Runtime</th>
               <th>Agent</th>
-              <th>Workspace</th>
+              <th>Session</th>
               <th>Project</th>
             </tr>
           </thead>
@@ -128,12 +128,12 @@ export function DevicesScreen() {
                   )}
                 </td>
                 <td>
-                  {d.workspaceId ? (
+                  {d.sessionId ? (
                     <button
                       className={styles.link}
-                      onClick={nav("workspace", d)}
+                      onClick={nav("session", d)}
                     >
-                      {d.workspaceId.slice(0, 8)}
+                      {d.sessionId.slice(0, 8)}
                     </button>
                   ) : (
                     <span className={styles.dash}>—</span>

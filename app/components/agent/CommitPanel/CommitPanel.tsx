@@ -12,11 +12,11 @@ export interface CommitPanelProps {
   onCommitted: () => void;
   onStageAll: () => Promise<void>;
   onUnstageAll: () => Promise<void>;
-  workspaceId: string;
+  sessionId: string;
 }
 
 export function CommitPanel({
-  workspaceId,
+  sessionId,
   allStaged,
   anyStaged,
   onStageAll,
@@ -56,13 +56,13 @@ export function CommitPanel({
   }, []);
 
   useEffect(() => {
-    getGitAuthor(workspaceId)
+    getGitAuthor(sessionId)
       .then(([name, email]) => {
         setAuthorName(name);
         setAuthorEmail(email);
       })
       .catch(() => {});
-  }, [workspaceId]);
+  }, [sessionId]);
 
   const gravatarUrl = useMemo(() => {
     if (!authorEmail) {
@@ -96,7 +96,7 @@ export function CommitPanel({
         message += `\n\nSigned-off-by: ${authorName} <${authorEmail}>`;
       }
 
-      await gitCommit(workspaceId, message, amend);
+      await gitCommit(sessionId, message, amend);
       setCommitSubject("");
       setCommitBody("");
       setAmend(false);
@@ -108,7 +108,7 @@ export function CommitPanel({
       setIsCommitting(false);
     }
   }, [
-    workspaceId,
+    sessionId,
     commitSubject,
     commitBody,
     amend,

@@ -7,12 +7,12 @@ export function isTvOS(device: SimulatorDevice | undefined): boolean {
   return device?.runtime.startsWith("tvOS") ?? false;
 }
 
-const STORAGE_KEY = "argus:simulatorByWorkspace";
-const ANDROID_STORAGE_KEY = "argus:androidByWorkspace";
+const STORAGE_KEY = "argus:simulatorBySession";
+const ANDROID_STORAGE_KEY = "argus:androidBySession";
 const PLATFORM_STORAGE_KEY = "argus:platform";
 const BROWSER_PRESET_STORAGE_KEY = "argus:browserPreset";
 
-function loadSelectedByWorkspace(key: string): Record<string, string> {
+function loadSelectedBySession(key: string): Record<string, string> {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) {
@@ -35,7 +35,7 @@ function loadSelectedByWorkspace(key: string): Record<string, string> {
   }
 }
 
-function saveSelectedByWorkspace(
+function saveSelectedBySession(
   key: string,
   map: Record<string, string | null>,
 ) {
@@ -89,7 +89,7 @@ interface SimulatorStoreData {
   androidToolsError: string | null;
   booting: boolean;
   browserPreset: string;
-  browserUrlByWorkspace: Record<string, string>;
+  browserUrlBySession: Record<string, string>;
   capturing: boolean;
   devices: SimulatorDevice[];
   disconnected: boolean;
@@ -97,19 +97,19 @@ interface SimulatorStoreData {
   iosToolsError: string | null;
   mjpegPort: number | null;
   /**
-   * Set of workspace IDs whose web `<webview>` is mounted in the stack.
-   * A workspace is added to this set the first time it is needed — either
+   * Set of session IDs whose web `<webview>` is mounted in the stack.
+   * A session is added to this set the first time it is needed — either
    * when the user opens its Web runtime tab, or when an agent issues a
    * Conductor web command and the backend asks us to mount it via the
    * `browser:ensure_mounted` event. Once mounted we keep the webview alive
    * for the rest of the session so Conductor stays attached.
    */
-  mountedWorkspaceIds: Record<string, true>;
+  mountedSessionIds: Record<string, true>;
   platform: Platform;
   /** Simulator runtime (iOS / Android / Web) shown in the tool panel or in a fullscreen-style dialog */
   runtimeDialogOpen: boolean;
-  selectedAndroidByWorkspace: Record<string, string | null>;
-  selectedUdidByWorkspace: Record<string, string | null>;
+  selectedAndroidBySession: Record<string, string | null>;
+  selectedUdidBySession: Record<string, string | null>;
 }
 
 const simulatorStore = create<SimulatorStoreData>(() => ({
@@ -117,7 +117,7 @@ const simulatorStore = create<SimulatorStoreData>(() => ({
   iosToolsAvailable: null,
   iosToolsError: null,
   devices: [],
-  selectedUdidByWorkspace: loadSelectedByWorkspace(STORAGE_KEY),
+  selectedUdidBySession: loadSelectedBySession(STORAGE_KEY),
   capturing: false,
   booting: false,
   disconnected: false,
@@ -125,13 +125,13 @@ const simulatorStore = create<SimulatorStoreData>(() => ({
   androidToolsAvailable: null,
   androidToolsError: null,
   androidDevices: [],
-  selectedAndroidByWorkspace: loadSelectedByWorkspace(ANDROID_STORAGE_KEY),
+  selectedAndroidBySession: loadSelectedBySession(ANDROID_STORAGE_KEY),
   androidCapturing: false,
   androidBooting: false,
   androidDisconnected: false,
   browserPreset: loadBrowserPreset(),
-  browserUrlByWorkspace: {},
-  mountedWorkspaceIds: {},
+  browserUrlBySession: {},
+  mountedSessionIds: {},
   runtimeDialogOpen: false,
 }));
 
@@ -154,7 +154,7 @@ export const setDevices = (devices: SimulatorDevice[]) => {
     const deviceUdids = new Set(devices.map((d) => d.udid));
     let changed = false;
     const next: Record<string, string | null> = {};
-    for (const [wsId, udid] of Object.entries(state.selectedUdidByWorkspace)) {
+    for (const [wsId, udid] of Object.entries(state.selectedUdidBySession)) {
       if (udid && !deviceUdids.has(udid)) {
         next[wsId] = null;
         changed = true;
@@ -164,19 +164,19 @@ export const setDevices = (devices: SimulatorDevice[]) => {
     }
 
     if (changed) {
-      saveSelectedByWorkspace(STORAGE_KEY, next);
+      saveSelectedBySession(STORAGE_KEY, next);
     }
 
-    return { devices, ...(changed ? { selectedUdidByWorkspace: next } : {}) };
+    return { devices, ...(changed ? { selectedUdidBySession: next } : {}) };
   });
 };
 
-export const selectDevice = (workspaceId: string, udid: string | null) => {
+export const selectDevice = (sessionId: string, udid: string | null) => {
   simulatorStore.setState((state) => {
-    const next = { ...state.selectedUdidByWorkspace, [workspaceId]: udid };
-    saveSelectedByWorkspace(STORAGE_KEY, next);
+    const next = { ...state.selectedUdidBySession, [sessionId]: udid };
+    saveSelectedBySession(STORAGE_KEY, next);
 
-    return { selectedUdidByWorkspace: next, disconnected: false };
+    return { selectedUdidBySession: next, disconnected: false };
   });
 };
 
@@ -212,7 +212,7 @@ export const setAndroidDevices = (devices: AndroidDevice[]) => {
     let changed = false;
     const next: Record<string, string | null> = {};
     for (const [wsId, serial] of Object.entries(
-      state.selectedAndroidByWorkspace,
+      state.selectedAndroidBySession,
     )) {
       if (serial && !serials.has(serial)) {
         next[wsId] = null;
@@ -223,28 +223,28 @@ export const setAndroidDevices = (devices: AndroidDevice[]) => {
     }
 
     if (changed) {
-      saveSelectedByWorkspace(ANDROID_STORAGE_KEY, next);
+      saveSelectedBySession(ANDROID_STORAGE_KEY, next);
     }
 
     return {
       androidDevices: devices,
-      ...(changed ? { selectedAndroidByWorkspace: next } : {}),
+      ...(changed ? { selectedAndroidBySession: next } : {}),
     };
   });
 };
 
 export const selectAndroidDevice = (
-  workspaceId: string,
+  sessionId: string,
   serial: string | null,
 ) => {
   simulatorStore.setState((state) => {
     const next = {
-      ...state.selectedAndroidByWorkspace,
-      [workspaceId]: serial,
+      ...state.selectedAndroidBySession,
+      [sessionId]: serial,
     };
-    saveSelectedByWorkspace(ANDROID_STORAGE_KEY, next);
+    saveSelectedBySession(ANDROID_STORAGE_KEY, next);
 
-    return { selectedAndroidByWorkspace: next, androidDisconnected: false };
+    return { selectedAndroidBySession: next, androidDisconnected: false };
   });
 };
 
@@ -269,25 +269,25 @@ export const setRuntimeDialogOpen = (open: boolean) => {
   simulatorStore.setState({ runtimeDialogOpen: open });
 };
 
-export const setBrowserUrl = (workspaceId: string, url: string) => {
+export const setBrowserUrl = (sessionId: string, url: string) => {
   simulatorStore.setState((state) => ({
-    browserUrlByWorkspace: {
-      ...state.browserUrlByWorkspace,
-      [workspaceId]: url,
+    browserUrlBySession: {
+      ...state.browserUrlBySession,
+      [sessionId]: url,
     },
   }));
 };
 
-export const ensureBrowserMounted = (workspaceId: string) => {
+export const ensureBrowserMounted = (sessionId: string) => {
   simulatorStore.setState((state) => {
-    if (state.mountedWorkspaceIds[workspaceId]) {
+    if (state.mountedSessionIds[sessionId]) {
       return state;
     }
 
     return {
-      mountedWorkspaceIds: {
-        ...state.mountedWorkspaceIds,
-        [workspaceId]: true,
+      mountedSessionIds: {
+        ...state.mountedSessionIds,
+        [sessionId]: true,
       },
     };
   });
@@ -298,7 +298,7 @@ export function useAndroidDeviceSimulatorState() {
     useShallow((s) => ({
       androidToolsAvailable: s.androidToolsAvailable,
       androidDevices: s.androidDevices,
-      selectedAndroidByWorkspace: s.selectedAndroidByWorkspace,
+      selectedAndroidBySession: s.selectedAndroidBySession,
       androidCapturing: s.androidCapturing,
       androidBooting: s.androidBooting,
       androidDisconnected: s.androidDisconnected,
@@ -321,7 +321,7 @@ export function useIosSimulatorViewState() {
     useShallow((s) => ({
       iosToolsAvailable: s.iosToolsAvailable,
       devices: s.devices,
-      selectedUdidByWorkspace: s.selectedUdidByWorkspace,
+      selectedUdidBySession: s.selectedUdidBySession,
       capturing: s.capturing,
       mjpegPort: s.mjpegPort,
       booting: s.booting,
@@ -345,7 +345,7 @@ export function useSimulatorControlsState() {
   const data = useSimulatorStore(
     useShallow((s) => ({
       devices: s.devices,
-      selectedUdidByWorkspace: s.selectedUdidByWorkspace,
+      selectedUdidBySession: s.selectedUdidBySession,
       capturing: s.capturing,
       booting: s.booting,
       disconnected: s.disconnected,
@@ -382,8 +382,8 @@ export function useWebBrowserSimulatorState() {
   const data = useSimulatorStore(
     useShallow((s) => ({
       browserPreset: s.browserPreset,
-      browserUrlByWorkspace: s.browserUrlByWorkspace,
-      mountedWorkspaceIds: s.mountedWorkspaceIds,
+      browserUrlBySession: s.browserUrlBySession,
+      mountedSessionIds: s.mountedSessionIds,
       runtimeDialogOpen: s.runtimeDialogOpen,
     })),
   );
@@ -397,20 +397,20 @@ export function useWebBrowserSimulatorState() {
 }
 
 /**
- * Return the active device key for the given workspace + platform (the UDID
+ * Return the active device key for the given session + platform (the UDID
  * for iOS, the serial for Android), or null. Used by the runtime live log to
  * know which device's conductor events to show.
  */
 export function useActiveDeviceKey(
-  workspaceId: string | null,
+  sessionId: string | null,
   platform: Platform,
 ): string | null {
   return useSimulatorStore((s) => {
     if (platform === "ios") {
-      return s.selectedUdidByWorkspace[workspaceId ?? "__global__"] ?? null;
+      return s.selectedUdidBySession[sessionId ?? "__global__"] ?? null;
     }
     if (platform === "android") {
-      return s.selectedAndroidByWorkspace[workspaceId ?? "__global__"] ?? null;
+      return s.selectedAndroidBySession[sessionId ?? "__global__"] ?? null;
     }
 
     return null;

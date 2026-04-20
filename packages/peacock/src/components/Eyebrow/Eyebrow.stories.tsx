@@ -10,4 +10,4 @@ export default meta;
 type Story = StoryObj<typeof Eyebrow>;
 
 export const Section: Story = { args: { children: "Recent projects" } };
-export const WithCount: Story = { args: { children: "Workspaces", count: 5 } };
+export const WithCount: Story = { args: { children: "Sessions", count: 5 } };

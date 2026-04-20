@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   addAgent,
   getActiveAgent,
-  getAgentsByWorkspace,
+  getAgentsBySession,
   getAgentState,
   removeAgent,
   replaceAgent,
@@ -14,7 +14,7 @@ import {
 function agent(overrides: Partial<AgentStatus> = {}): AgentStatus {
   return {
     agent_id: "agent-1",
-    workspace_id: "ws-1",
+    session_id: "ws-1",
     status: "idle",
     ...overrides,
   };
@@ -55,7 +55,7 @@ describe("agentStore", () => {
     addAgent(agent());
     replaceAgent(
       "agent-1",
-      agent({ agent_id: "agent-2", workspace_id: "ws-1" }),
+      agent({ agent_id: "agent-2", session_id: "ws-1" }),
     );
     expect(getAgentState().agents["agent-1"]).toBeUndefined();
     expect(getAgentState().agents["agent-2"]).toBeDefined();
@@ -72,10 +72,10 @@ describe("agentStore", () => {
     expect(active?.agent_id).toBe("agent-1");
   });
 
-  it("getAgentsByWorkspace filters correctly", () => {
+  it("getAgentsBySession filters correctly", () => {
     addAgent(agent());
-    addAgent(agent({ agent_id: "agent-2", workspace_id: "ws-2" }));
-    const ws1 = getAgentsByWorkspace("ws-1");
+    addAgent(agent({ agent_id: "agent-2", session_id: "ws-2" }));
+    const ws1 = getAgentsBySession("ws-1");
     expect(ws1).toHaveLength(1);
     expect(ws1[0].agent_id).toBe("agent-1");
   });

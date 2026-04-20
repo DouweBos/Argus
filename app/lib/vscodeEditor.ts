@@ -1,7 +1,7 @@
 /**
  * Open files in the embedded VS Code editor.
  *
- * Resolves relative paths against the selected workspace, switches the
+ * Resolves relative paths against the selected session, switches the
  * center panel to the Editor view so the result is visible, then defers
  * to IEditorService.openEditor — which natively reuses an existing tab
  * for the same file or creates a new one alongside others.
@@ -14,7 +14,7 @@ import {
 } from "@codingame/monaco-vscode-api/services";
 import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
 import { setActiveCenterView } from "../stores/editorStore";
-import { getWorkspaceState } from "../stores/workspaceStore";
+import { getSessionState } from "../stores/sessionStore";
 import { createLogger } from "./logger";
 import {
   getActiveWorktreePath,
@@ -23,16 +23,16 @@ import {
 
 const log = createLogger("syntax-highlight-debug");
 
-function getWorkspaceRoot(): string | null {
-  // Prefer VS Code's current workspace path (already initialized) but fall
-  // back to the selected workspace from the store when the Editor tab has
+function getSessionRoot(): string | null {
+  // Prefer VS Code's current session path (already initialized) but fall
+  // back to the selected session from the store when the Editor tab has
   // never been opened yet.
   const active = getActiveWorktreePath();
   if (active) {
     return active;
   }
-  const { selectedId, workspaces } = getWorkspaceState();
-  const ws = workspaces.find((w) => w.id === selectedId);
+  const { selectedId, sessions } = getSessionState();
+  const ws = sessions.find((w) => w.id === selectedId);
 
   return ws?.path ?? null;
 }
@@ -41,7 +41,7 @@ function resolveAbsolute(pathOrRelative: string): string | null {
   if (pathOrRelative.startsWith("/")) {
     return pathOrRelative;
   }
-  const root = getWorkspaceRoot();
+  const root = getSessionRoot();
   if (!root) {
     return null;
   }
@@ -58,10 +58,10 @@ export async function openFileInEditor(
     return;
   }
 
-  // Ensure VS Code has a workspace folder set — required for features like
+  // Ensure VS Code has a session folder set — required for features like
   // the file explorer and language services to treat the opened file
   // correctly. No-op if already set to this path.
-  const root = getWorkspaceRoot();
+  const root = getSessionRoot();
   if (root) {
     await updateWorkspaceFolder(root);
   }

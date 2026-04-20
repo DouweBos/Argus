@@ -7,7 +7,7 @@
   `organization_tasks:changed`). Wired into `AppState.organizationTasks` and
   bootstrapped in `electron/main.ts` via `initOrgTasks`.
 - **Orchestrator (`orchestrator.ts`).** `startOrgTask` validates the org + members,
-  creates one workspace per member in parallel on branch
+  creates one session per member in parallel on branch
   `org-task/<slug>-<shortId>`, spawns a Claude agent in each and delivers the
   shared prompt (+ optional per-member addendum) as the first user message.
   `cancelOrgTask` stops running child agents and marks the task `cancelled`.
@@ -15,14 +15,14 @@
   `cancel_org_task`, `delete_org_task`. Frontend wrappers in `app/lib/ipc.ts`
   with matching types in `app/lib/types.ts`.
 - **Org context extension.** `buildOrganizationContext` (in
-  `electron/services/agent/claude.ts`) now detects when a workspace is part of
+  `electron/services/agent/claude.ts`) now detects when a session is part of
   a running OrgTask and appends a "Current Cross-Repo Task" section to the
   system prompt with the task title, shared prompt, and the _absolute worktree
   paths_ of sibling agents so the agent can read sibling files directly or
   coordinate via `spawn_agent` / `wait_for_agent` / `send_agent_message`.
-- **Workspace ↔ task linkage.** `Workspace.organization_task_id` added to both
-  backend and renderer models, persisted in `WorkspaceMeta`
-  (`.argus-workspaces.json`) and reloaded on `listWorkspaces`.
+- **Session ↔ task linkage.** `Session.organization_task_id` added to both
+  backend and renderer models, persisted in `SessionMeta`
+  (`.argus-sessions.json`) and reloaded on `listSessions`.
 - **Frontend:**
   - `StartTaskDialog` (Peacock `Dialog` + `Input` + `TextArea`) — title/prompt/
     checkbox-per-member with collapsible per-member addendum.
@@ -31,10 +31,10 @@
     chips, and total/running counts.
   - `OrgTaskScreen` (mounted as a full-cover overlay inside the center panel,
     controlled by `activeOrgTaskStore` on `orgTaskStore`). Shows header, shared
-    prompt, per-member cards with "Open workspace" / "Follow-up" buttons, a
+    prompt, per-member cards with "Open session" / "Follow-up" buttons, a
     bulk "Send follow-up to all" bar, and a "Cancel task" action.
-  - Sidebar `WorkspaceCard` now renders a subtle accent-bordered "task: {title}"
-    pill on workspaces that belong to an OrgTask; clicking it opens the
+  - Sidebar `SessionCard` now renders a subtle accent-bordered "task: {title}"
+    pill on sessions that belong to an OrgTask; clicking it opens the
     OrgTaskScreen.
 - **Store + sync.** `app/stores/orgTaskStore.ts` with `useOrgTasks`,
   `useActiveOrgTask`, `setActiveOrgTask`, `startOrgTask`, `cancelOrgTask`,
@@ -70,9 +70,9 @@
 
 ## Follow-ups for the user
 
-1. Verify the orchestrator's workspace-creation path in your environment:
-   `createWorkspace` is async and kicks off a setup pipeline that completes in
-   the background. The agent is spawned immediately after `createWorkspace`
+1. Verify the orchestrator's session-creation path in your environment:
+   `createSession` is async and kicks off a setup pipeline that completes in
+   the background. The agent is spawned immediately after `createSession`
    resolves, so if your setup pipeline blocks on `pnpm install` the agent will
    already be running while deps install. That matches existing Argus
    behavior, but worth sanity-checking on a real org.
@@ -80,7 +80,7 @@
    "OrganizationsScreen" going forward, or whether to promote it to its own
    sidebar view. The spec used both names; I extended the existing panel.
 3. Consider how delete interacts with running tasks — `delete_org_task` does
-   **not** clean up workspaces. That's intentional (the user may want to keep
+   **not** clean up sessions. That's intentional (the user may want to keep
    the branches) but you may want a "delete task + cleanup" variant.
 4. The shared prompt is delivered as the first user message rather than being
    appended to the system prompt; this gives the agent a proper turn and

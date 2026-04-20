@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fileExtLabel, fileIconColor } from "./fileIcons";
 import { md5Hex } from "./md5";
-import { isWorkspaceReady, workspaceStatusLabel } from "./types";
+import { isSessionReady, sessionStatusLabel } from "./types";
 
 describe("fileIconColor", () => {
   it("returns TypeScript blue for .ts", () => {
@@ -49,28 +49,28 @@ describe("fileExtLabel", () => {
   });
 });
 
-describe("workspaceStatusLabel", () => {
+describe("sessionStatusLabel", () => {
   it("returns string status as-is", () => {
-    expect(workspaceStatusLabel("ready")).toBe("ready");
-    expect(workspaceStatusLabel("initializing")).toBe("initializing");
+    expect(sessionStatusLabel("ready")).toBe("ready");
+    expect(sessionStatusLabel("initializing")).toBe("initializing");
   });
 
   it("returns 'error' for error objects", () => {
-    expect(workspaceStatusLabel({ error: "something broke" })).toBe("error");
+    expect(sessionStatusLabel({ error: "something broke" })).toBe("error");
   });
 });
 
-describe("isWorkspaceReady", () => {
+describe("isSessionReady", () => {
   it("returns true for 'ready'", () => {
-    expect(isWorkspaceReady("ready")).toBe(true);
+    expect(isSessionReady("ready")).toBe(true);
   });
 
   it("returns false for 'initializing'", () => {
-    expect(isWorkspaceReady("initializing")).toBe(false);
+    expect(isSessionReady("initializing")).toBe(false);
   });
 
   it("returns false for error status", () => {
-    expect(isWorkspaceReady({ error: "fail" })).toBe(false);
+    expect(isSessionReady({ error: "fail" })).toBe(false);
   });
 });
 

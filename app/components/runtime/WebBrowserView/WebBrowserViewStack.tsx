@@ -11,36 +11,36 @@ import { WebBrowserView } from "./WebBrowserView";
 import styles from "./WebBrowserViewStack.module.css";
 
 interface WebBrowserViewStackProps {
-  activeWorkspaceId: string | null;
+  activeSessionId: string | null;
   children?: ReactNode;
 }
 
 /**
- * Renders one `<WebBrowserView>` per workspace that has been "mounted",
- * stacked with CSS visibility toggling. Only the active workspace's webview
+ * Renders one `<WebBrowserView>` per session that has been "mounted",
+ * stacked with CSS visibility toggling. Only the active session's webview
  * is visible; the rest are hidden but stay mounted so they keep their page
  * state and the Electron guest process stays alive — and so Conductor stays
  * attached over CDP.
  *
- * Mounting is explicit: a workspace is only added to the pool when the user
+ * Mounting is explicit: a session is only added to the pool when the user
  * clicks Boot or the backend asks us to mount it in response to an agent
  * issuing a conductor web command. This mirrors how iOS/Android require an
  * explicit boot before a device spins up, and avoids spawning a guest
  * process every time the user opens the simulator panel.
  */
 export function WebBrowserViewStack({
-  activeWorkspaceId,
+  activeSessionId,
   children,
 }: WebBrowserViewStackProps) {
-  const { mountedWorkspaceIds, ensureBrowserMounted } =
+  const { mountedSessionIds, ensureBrowserMounted } =
     useWebBrowserSimulatorState();
   const { platform } = useRuntimeViewSimulatorState();
 
-  const activeKey = activeWorkspaceId ?? "__global__";
-  const activeMounted = Boolean(mountedWorkspaceIds[activeKey]);
+  const activeKey = activeSessionId ?? "__global__";
+  const activeMounted = Boolean(mountedSessionIds[activeKey]);
 
   // Backend push: an agent's conductor web command needs a webview for the
-  // given workspace. Adding it to the mount set renders the webview, which
+  // given session. Adding it to the mount set renders the webview, which
   // registers its webContents back with the browser service.
   useIpcEvent<{ sessionId: string }>("browser:ensure_mounted", (payload) => {
     if (payload?.sessionId) {
@@ -52,11 +52,11 @@ export function WebBrowserViewStack({
     ensureBrowserMounted(activeKey);
   }, [activeKey, ensureBrowserMounted]);
 
-  const workspaceIds = Object.keys(mountedWorkspaceIds);
+  const sessionIds = Object.keys(mountedSessionIds);
 
   return (
     <div className={styles.stack}>
-      {workspaceIds.map((wsId) => {
+      {sessionIds.map((wsId) => {
         const isActive = wsId === activeKey && platform === "web";
 
         return (
@@ -65,7 +65,7 @@ export function WebBrowserViewStack({
             aria-hidden={!isActive}
             className={isActive ? styles.layerVisible : styles.layerHidden}
           >
-            <WebBrowserView isActive={isActive} workspaceId={wsId}>
+            <WebBrowserView isActive={isActive} sessionId={wsId}>
               {isActive ? children : undefined}
             </WebBrowserView>
           </div>

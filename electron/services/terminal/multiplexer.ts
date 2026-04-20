@@ -21,14 +21,14 @@
  * | `terminal:exit:{session_id}`  | Exit code (`number`)     |
  */
 
-import type { RunCommand, WorkspaceEnvConfig } from "../workspace/models";
+import type { RunCommand, WorkspaceEnvConfig } from "../session/models";
 import type { IPty } from "node-pty";
 import type * as NodePty from "node-pty";
 import fs from "node:fs";
 import path from "node:path";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
-import { loadArgusConfig } from "../workspace/setup";
+import { loadArgusConfig } from "../session/setup";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty") as typeof NodePty;
@@ -43,8 +43,8 @@ export interface TerminalSession {
   id: string;
   /** The underlying node-pty instance. */
   pty: IPty;
-  /** UUID of the workspace this session belongs to. */
-  workspaceId: string;
+  /** UUID of the session this session belongs to. */
+  sessionId: string;
   /**
    * Optional label identifying the `run` command this session is executing.
    * Used by {@link createRunTerminal} to match restart-on-rerun semantics.
@@ -64,12 +64,12 @@ export function defaultShell(): string {
 }
 
 /**
- * Compute a deterministic per-workspace integer from `workspaceId` using a
+ * Compute a deterministic per-session integer from `sessionId` using a
  * simple djb2-style hash, bounded by `range`.
  *
  */
 export function workspaceEnvValue(
-  workspaceId: string,
+  sessionId: string,
   envIndex: number | undefined,
   config: WorkspaceEnvConfig,
 ): number {
@@ -81,11 +81,11 @@ export function workspaceEnvValue(
     return baseValue + (envIndex ?? 0);
   }
 
-  // Hash strategy: djb2 over the UTF-8 bytes of workspaceId, mod range.
+  // Hash strategy: djb2 over the UTF-8 bytes of sessionId, mod range.
   let hash = 5381;
-  for (let i = 0; i < workspaceId.length; i++) {
+  for (let i = 0; i < sessionId.length; i++) {
     // Equivalent to: hash = ((hash << 5) + hash) + charCode
-    hash = Math.imul(hash, 33) ^ workspaceId.charCodeAt(i);
+    hash = Math.imul(hash, 33) ^ sessionId.charCodeAt(i);
   }
   // Ensure non-negative before modulo.
   const offset = Math.abs(hash) % range;
@@ -95,20 +95,20 @@ export function workspaceEnvValue(
 
 /**
  * Build any extra environment variables that should be injected into a
- * workspace terminal.
+ * session terminal.
  *
  */
 function buildWorkspaceEnv(
-  workspaceId: string,
-  workspaceKind: "org_host" | "repo_root" | "worktree",
+  sessionId: string,
+  sessionKind: "org_host" | "project_root" | "worktree",
   envIndex: number | undefined,
   repoRoot: string,
 ): Record<string, string> {
   const extra: Record<string, string> = {};
 
-  // workspace_env only applies to worktree workspaces, not the repo root or
-  // neutral org-host workspaces.
-  if (workspaceKind === "repo_root" || workspaceKind === "org_host") {
+  // workspace_env only applies to worktree sessions, not the repo root or
+  // neutral org-host sessions.
+  if (sessionKind === "project_root" || sessionKind === "org_host") {
     return extra;
   }
 
@@ -116,7 +116,7 @@ function buildWorkspaceEnv(
     const config = loadArgusConfig(repoRoot);
     for (const we of config.workspace_env) {
       if (we.name) {
-        const value = workspaceEnvValue(workspaceId, envIndex, we);
+        const value = workspaceEnvValue(sessionId, envIndex, we);
         extra[we.name] = String(value);
       }
     }
@@ -132,29 +132,29 @@ function buildWorkspaceEnv(
 // ---------------------------------------------------------------------------
 
 /**
- * Spawn a PTY running the workspace's shell (or a one-shot command), register
+ * Spawn a PTY running the session's shell (or a one-shot command), register
  * data and exit event handlers, and store the session in {@link appState}.
  *
  * The PTY is spawned at 80×24; call {@link startTerminal} once xterm.js has
  * measured its container to resize it to the real dimensions.
  *
- * @param workspaceId - UUID of the owning workspace.
- * @param subDir      - Optional subdirectory (relative to the workspace root)
+ * @param sessionId - UUID of the owning session.
+ * @param subDir      - Optional subdirectory (relative to the session root)
  *                      to use as the working directory.
  * @param command     - Optional one-shot command; if omitted, the user's login
  *                      shell is spawned interactively.
  * @returns The new session ID.
- * @throws A plain string if the workspace is not found or the PTY fails to
+ * @throws A plain string if the session is not found or the PTY fails to
  *         spawn.
  */
 export function createTerminal(
-  workspaceId: string,
+  sessionId: string,
   subDir?: string,
   command?: string,
 ): string {
-  const ws = appState.workspaces.get(workspaceId);
+  const ws = appState.sessions.get(sessionId);
   if (!ws) {
-    throw `Workspace not found: ${workspaceId}`;
+    throw `Session not found: ${sessionId}`;
   }
 
   // Resolve working directory.
@@ -167,9 +167,9 @@ export function createTerminal(
     cwd = joined;
   }
 
-  // Build workspace-specific environment extras.
+  // Build session-specific environment extras.
   const extraEnv = buildWorkspaceEnv(
-    workspaceId,
+    sessionId,
     ws.kind,
     ws.env_index ?? undefined,
     ws.repo_root,
@@ -180,7 +180,7 @@ export function createTerminal(
     ? ["sh", ["-c", command]]
     : [defaultShell(), []];
 
-  const sessionId = crypto.randomUUID();
+  const terminalId = crypto.randomUUID();
 
   // node-pty requires all env values to be defined strings — filter out any
   // undefined entries from process.env to avoid posix_spawnp failures.
@@ -203,42 +203,42 @@ export function createTerminal(
   // Forward PTY output to the renderer as base64-encoded chunks.
   ptyProcess.onData((data: string) => {
     getMainWindow()?.webContents.send(
-      `terminal:data:${sessionId}`,
+      `terminal:data:${terminalId}`,
       Buffer.from(data).toString("base64"),
     );
   });
 
   // Forward exit notification to the renderer.
   ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
-    getMainWindow()?.webContents.send(`terminal:exit:${sessionId}`, exitCode);
+    getMainWindow()?.webContents.send(`terminal:exit:${terminalId}`, exitCode);
     // Clean up state when the process exits on its own.
-    appState.terminals.delete(sessionId);
+    appState.terminals.delete(terminalId);
   });
 
-  const session: TerminalSession = {
-    id: sessionId,
+  const terminal: TerminalSession = {
+    id: terminalId,
     pty: ptyProcess,
-    workspaceId,
+    sessionId,
   };
 
-  appState.terminals.set(sessionId, session);
+  appState.terminals.set(terminalId, terminal);
 
-  return sessionId;
+  return terminalId;
 }
 
 /**
- * Resolve a `RunCommand` from a workspace's `.argus.json`. If `title` is
+ * Resolve a `RunCommand` from a session's `.argus.json`. If `title` is
  * supplied, matches by title; otherwise returns the first command. Throws a
  * plain string if no run commands are configured or the requested title
  * isn't found.
  */
 export function resolveRunCommand(
-  workspaceId: string,
+  sessionId: string,
   title?: string,
 ): RunCommand {
-  const ws = appState.workspaces.get(workspaceId);
+  const ws = appState.sessions.get(sessionId);
   if (!ws) {
-    throw `Workspace not found: ${workspaceId}`;
+    throw `Session not found: ${sessionId}`;
   }
 
   const config = loadArgusConfig(ws.repo_root);
@@ -258,14 +258,14 @@ export function resolveRunCommand(
 }
 
 /**
- * Spawn a terminal running one of the workspace's configured `run` commands
+ * Spawn a terminal running one of the session's configured `run` commands
  * from `.argus.json`. The command is resolved entirely server-side — the
  * renderer (and any code reaching this IPC) cannot supply an arbitrary shell
  * command, which closes the XSS-to-RCE chain via `create_terminal`.
  *
  * If `title` is supplied, the matching entry is used; otherwise the first
  * entry runs. When the selected entry has `restartOnRerun: true`, any live
- * session with the same title in the same workspace is killed first. When
+ * session with the same title in the same session is killed first. When
  * `restartOnRerun` is false and a matching live session exists, its ID is
  * returned as-is without spawning a new one.
  *
@@ -277,12 +277,12 @@ export function resolveRunCommand(
  * restart kills are not SIGKILL-hammered.
  */
 export function createRunTerminal(
-  workspaceId: string,
+  sessionId: string,
   title?: string,
 ): { sessionId: string; started: boolean; title: string } {
-  const runCmd = resolveRunCommand(workspaceId, title);
+  const runCmd = resolveRunCommand(sessionId, title);
 
-  const existing = findRunSession(workspaceId, runCmd.title);
+  const existing = findRunSession(sessionId, runCmd.title);
   if (existing) {
     if (!runCmd.restartOnRerun) {
       return { sessionId: existing.id, started: false, title: runCmd.title };
@@ -294,22 +294,22 @@ export function createRunTerminal(
     }
   }
 
-  const sessionId = createTerminal(workspaceId, runCmd.cwd, runCmd.command);
-  const session = appState.terminals.get(sessionId);
-  if (session) {
-    session.runTitle = runCmd.title;
+  const terminalId = createTerminal(sessionId, runCmd.cwd, runCmd.command);
+  const terminal = appState.terminals.get(terminalId);
+  if (terminal) {
+    terminal.runTitle = runCmd.title;
   }
 
-  return { sessionId, started: true, title: runCmd.title };
+  return { sessionId: terminalId, started: true, title: runCmd.title };
 }
 
-/** Look up an alive run-terminal session for this workspace + title. */
+/** Look up an alive run-terminal session for this session + title. */
 function findRunSession(
-  workspaceId: string,
+  sessionId: string,
   title: string,
 ): TerminalSession | null {
   for (const session of appState.terminals.values()) {
-    if (session.workspaceId === workspaceId && session.runTitle === title) {
+    if (session.sessionId === sessionId && session.runTitle === title) {
       return session;
     }
   }

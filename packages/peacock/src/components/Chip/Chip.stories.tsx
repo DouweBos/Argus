@@ -16,7 +16,7 @@ export const PlanMode: Story = { args: { muted: true, children: "Plan mode" } };
 export const Dismissible: Story = {
   args: {
     mono: true,
-    children: "feat/workspace-card",
+    children: "feat/session-card",
     onDismiss: () => {},
   },
 };

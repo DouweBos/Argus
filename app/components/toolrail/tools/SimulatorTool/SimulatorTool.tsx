@@ -1,9 +1,9 @@
 import { RuntimeView } from "../../../runtime/SimulatorView";
 
 interface SimulatorToolProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function SimulatorTool({ workspaceId }: SimulatorToolProps) {
-  return <RuntimeView workspaceId={workspaceId} />;
+export function SimulatorTool({ sessionId }: SimulatorToolProps) {
+  return <RuntimeView sessionId={sessionId} />;
 }

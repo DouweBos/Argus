@@ -13,7 +13,7 @@ export const Default: Story = {
   args: {
     shortcuts: [
       { keys: ["⌘", "O"], label: "Open repo" },
-      { keys: ["⌘", "N"], label: "New workspace" },
+      { keys: ["⌘", "N"], label: "New session" },
       { keys: ["⌘", "K"], label: "Command palette" },
       { keys: ["⌘", "⇧", "A"], label: "New agent" },
     ],

@@ -4,12 +4,41 @@
   gap: 1px;
 }
 
-.newWorkspaceBtn {
+.sessionsGroupLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 6px 2px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.sessionsCount {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.emptyHint {
+  margin: 0;
+  padding: 2px 8px 4px 4px;
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.newSessionBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 4px 8px;
-  margin: 4px 0 0 14px;
+  margin: 2px 0 0 4px;
   font-size: 10px;
   color: var(--text-muted);
   opacity: 0.4;
@@ -22,12 +51,12 @@
     opacity var(--transition-base);
 }
 
-.newWorkspaceBtn:hover {
+.newSessionBtn:hover {
   color: var(--accent);
   opacity: 1;
 }
 
-.newWorkspaceBtn svg {
+.newSessionBtn svg {
   flex-shrink: 0;
   width: 8px;
   height: 8px;

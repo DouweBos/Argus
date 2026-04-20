@@ -1,47 +1,47 @@
 import { create } from "zustand";
 import { pushRoute } from "../lib/router";
-import { getWorkspaceState } from "./workspaceStore";
+import { getSessionState } from "./sessionStore";
 
 export type CenterView = "agents" | "editor" | "git" | "home";
 
 /**
  * Simplified editor store for the monaco-vscode-api migration.
  *
- * VS Code manages tabs, models, file content, and the workspace folder
- * internally. The EditorPanel drives workspace switching directly via
+ * VS Code manages tabs, models, file content, and the session folder
+ * internally. The EditorPanel drives session switching directly via
  * updateWorkspaceFolder(). This store exists only for any remaining
  * cross-component coordination that isn't covered by VS Code services.
  */
 interface EditorStoreData {
   activeCenterView: CenterView;
-  activeWorkspaceId: string | null;
+  activeSessionId: string | null;
 }
 
 const editorStore = create<EditorStoreData>(() => ({
-  activeWorkspaceId: null,
+  activeSessionId: null,
   activeCenterView: "agents",
 }));
 
 const useEditorStore = editorStore;
 
-export const setActiveWorkspace = (workspaceId: string) => {
-  editorStore.setState({ activeWorkspaceId: workspaceId });
+export const setActiveSession = (sessionId: string) => {
+  editorStore.setState({ activeSessionId: sessionId });
 };
 
-export const clearWorkspace = () => {
-  editorStore.setState({ activeWorkspaceId: null });
+export const clearSession = () => {
+  editorStore.setState({ activeSessionId: null });
 };
 
 export const setActiveCenterView = (view: CenterView) => {
   editorStore.setState({ activeCenterView: view });
-  const { selectedId } = getWorkspaceState();
+  const { selectedId } = getSessionState();
   if (selectedId) {
-    pushRoute({ view: "workspace", workspaceId: selectedId, panel: view });
+    pushRoute({ view: "session", sessionId: selectedId, panel: view });
   }
 };
 
-export const useActiveWorkspaceId = () =>
-  useEditorStore((s) => s.activeWorkspaceId);
+export const useActiveSessionId = () =>
+  useEditorStore((s) => s.activeSessionId);
 
 export const useActiveCenterView = () =>
   useEditorStore((s) => s.activeCenterView);

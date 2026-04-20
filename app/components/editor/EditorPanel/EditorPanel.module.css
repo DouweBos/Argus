@@ -31,9 +31,9 @@
   overflow: hidden;
 }
 
-/* Hide VS Code's Explorer folder pane header (shows the workspace folder
+/* Hide VS Code's Explorer folder pane header (shows the session folder
    basename, which reflects VS Code's persisted state rather than the
-   Argus-selected workspace). */
+   Argus-selected session). */
 .sidebar :global(.explorer-folders-view > .pane-header) {
   display: none;
 }

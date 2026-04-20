@@ -1,5 +1,5 @@
 import type { AgentSession } from "../agent/models";
-import type { Workspace } from "../workspace/models";
+import type { Session } from "../session/models";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import fs from "node:fs";
@@ -37,17 +37,17 @@ vi.mock("../../main", () => ({
   getMainWindow: () => null,
 }));
 
-vi.mock("../workspace/manager", () => ({
+vi.mock("../session/manager", () => ({
   addRepoRoot: vi.fn(),
-  createWorkspace: vi.fn(),
-  createHeadWorkspace: vi.fn(),
-  deleteWorkspace: vi.fn(),
-  listWorkspaces: vi.fn(),
+  createSession: vi.fn(),
+  createHeadSession: vi.fn(),
+  deleteSession: vi.fn(),
+  listSessions: vi.fn(),
 }));
 
-vi.mock("../workspace/workspaceOps", () => ({
-  getWorkspaceConflicts: vi.fn(),
-  mergeWorkspaceIntoBase: vi.fn(),
+vi.mock("../session/sessionOps", () => ({
+  getSessionConflicts: vi.fn(),
+  mergeSessionIntoBase: vi.fn(),
   readArgusConfig: vi.fn(),
   writeArgusConfig: vi.fn(),
 }));
@@ -61,10 +61,11 @@ vi.mock("../agent/claude", () => ({
 
 vi.mock("../terminal/multiplexer", () => ({
   createTerminal: vi.fn(),
+  createRunTerminal: vi.fn(),
   startTerminal: vi.fn(),
 }));
 
-vi.mock("../workspace/setup", () => ({
+vi.mock("../session/setup", () => ({
   loadArgusConfig: vi.fn(),
 }));
 
@@ -78,28 +79,28 @@ vi.mock("./projects", () => ({
 // Import mocked modules + server factory
 // ---------------------------------------------------------------------------
 
-const { createWorkspace, deleteWorkspace, listWorkspaces } =
-  await import("../workspace/manager");
+const { createSession, deleteSession, listSessions } =
+  await import("../session/manager");
 const {
-  getWorkspaceConflicts,
-  mergeWorkspaceIntoBase,
+  getSessionConflicts,
+  mergeSessionIntoBase,
   readArgusConfig,
   writeArgusConfig,
-} = await import("../workspace/workspaceOps");
+} = await import("../session/sessionOps");
 const { startAgent, sendAgentMessage, listAgents } =
   await import("../agent/claude");
 const { createTerminal, startTerminal } =
   await import("../terminal/multiplexer");
-const { loadArgusConfig } = await import("../workspace/setup");
+const { loadArgusConfig } = await import("../session/setup");
 const { isGitRepo, ensureRepoRegistered, collectAllProjects } =
   await import("./projects");
 
 const mockExistsSync = vi.mocked(fs.existsSync);
-const mockCreateWorkspace = vi.mocked(createWorkspace);
-const mockDeleteWorkspace = vi.mocked(deleteWorkspace);
-const mockListWorkspaces = vi.mocked(listWorkspaces);
-const mockGetWorkspaceConflicts = vi.mocked(getWorkspaceConflicts);
-const mockMergeWorkspaceIntoBase = vi.mocked(mergeWorkspaceIntoBase);
+const mockCreateSession = vi.mocked(createSession);
+const mockDeleteSession = vi.mocked(deleteSession);
+const mockListSessions = vi.mocked(listSessions);
+const mockGetSessionConflicts = vi.mocked(getSessionConflicts);
+const mockMergeSessionIntoBase = vi.mocked(mergeSessionIntoBase);
 const mockReadArgusConfig = vi.mocked(readArgusConfig);
 const mockWriteArgusConfig = vi.mocked(writeArgusConfig);
 const mockStartAgent = vi.mocked(startAgent);
@@ -129,10 +130,10 @@ function jsonOf(result: Awaited<ReturnType<Client["callTool"]>>): unknown {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: create a mock workspace
+// Helper: create a mock session
 // ---------------------------------------------------------------------------
 
-function mockWorkspace(overrides: Partial<Workspace> = {}): Workspace {
+function mockSession(overrides: Partial<Session> = {}): Session {
   return {
     id: "ws-1",
     kind: "worktree",
@@ -168,7 +169,7 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.clearAllMocks();
   appState.repoRoots.clear();
-  appState.workspaces.clear();
+  appState.sessions.clear();
   appState.agents.clear();
   appState.terminals.clear();
 });
@@ -294,31 +295,31 @@ describe("add_related_project", () => {
 });
 
 // ===========================================================================
-// create_workspace
+// create_session
 // ===========================================================================
 
-describe("create_workspace", () => {
+describe("create_session", () => {
   beforeEach(() => {
     appState.repoRoots.add("/projects/frontend");
   });
 
-  it("creates workspace and returns formatted response", async () => {
-    const ws = mockWorkspace();
-    mockCreateWorkspace.mockResolvedValue(ws);
+  it("creates session and returns formatted response", async () => {
+    const ws = mockSession();
+    mockCreateSession.mockResolvedValue(ws);
 
     const result = await client.callTool({
-      name: "create_workspace",
+      name: "create_session",
       arguments: {
         name: "Cool Thing",
         description: "A cool feature",
         repo_root: "/projects/frontend",
       },
     });
-    const parsed = jsonOf(result) as { workspace_id: string; branch: string };
-    expect(parsed.workspace_id).toBe("ws-1");
+    const parsed = jsonOf(result) as { session_id: string; branch: string };
+    expect(parsed.session_id).toBe("ws-1");
     expect(parsed.branch).toBe("feat/cool-thing");
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/frontend");
-    expect(mockCreateWorkspace).toHaveBeenCalledWith(
+    expect(mockCreateSession).toHaveBeenCalledWith(
       "/projects/frontend",
       expect.stringContaining("Cool Thing"),
       "A cool feature",
@@ -328,12 +329,12 @@ describe("create_workspace", () => {
   });
 
   it("passes explicit repo_root and base_branch through", async () => {
-    mockCreateWorkspace.mockResolvedValue(
-      mockWorkspace({ repo_root: "/projects/backend" }),
+    mockCreateSession.mockResolvedValue(
+      mockSession({ repo_root: "/projects/backend" }),
     );
 
     await client.callTool({
-      name: "create_workspace",
+      name: "create_session",
       arguments: {
         name: "API fix",
         repo_root: "/projects/backend",
@@ -341,7 +342,7 @@ describe("create_workspace", () => {
       },
     });
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/backend");
-    expect(mockCreateWorkspace).toHaveBeenCalledWith(
+    expect(mockCreateSession).toHaveBeenCalledWith(
       "/projects/backend",
       expect.stringContaining("API fix"),
       "",
@@ -352,34 +353,34 @@ describe("create_workspace", () => {
 });
 
 // ===========================================================================
-// list_workspaces
+// list_sessions
 // ===========================================================================
 
-describe("list_workspaces", () => {
+describe("list_sessions", () => {
   beforeEach(() => {
     appState.repoRoots.add("/projects/frontend");
   });
 
-  it("returns formatted workspace list", async () => {
-    const ws = mockWorkspace();
-    mockListWorkspaces.mockResolvedValue([ws]);
+  it("returns formatted session list", async () => {
+    const ws = mockSession();
+    mockListSessions.mockResolvedValue([ws]);
 
     const result = await client.callTool({
-      name: "list_workspaces",
+      name: "list_sessions",
       arguments: {},
     });
-    const parsed = jsonOf(result) as { workspace_id: string }[];
+    const parsed = jsonOf(result) as { session_id: string }[];
     expect(parsed).toHaveLength(1);
-    expect(parsed[0].workspace_id).toBe("ws-1");
+    expect(parsed[0].session_id).toBe("ws-1");
     expect(parsed[0]).toHaveProperty("branch", "feat/cool-thing");
     expect(parsed[0]).toHaveProperty("display_name", "Cool Thing");
   });
 
-  it("returns empty array when no workspaces exist", async () => {
-    mockListWorkspaces.mockResolvedValue([]);
+  it("returns empty array when no sessions exist", async () => {
+    mockListSessions.mockResolvedValue([]);
 
     const result = await client.callTool({
-      name: "list_workspaces",
+      name: "list_sessions",
       arguments: {},
     });
     expect(jsonOf(result)).toEqual([]);
@@ -387,70 +388,70 @@ describe("list_workspaces", () => {
 });
 
 // ===========================================================================
-// delete_workspace
+// delete_session
 // ===========================================================================
 
-describe("delete_workspace", () => {
-  it("returns error when workspace not found", async () => {
+describe("delete_session", () => {
+  it("returns error when session not found", async () => {
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "nonexistent" },
+      name: "delete_session",
+      arguments: { session: "nonexistent" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Workspace not found");
+    expect(textOf(result)).toContain("Session not found");
   });
 
-  it("resolves workspace by ID and deletes", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+  it("resolves session by ID and deletes", async () => {
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "ws-1" },
+      name: "delete_session",
+      arguments: { session: "ws-1" },
     });
     expect(result.isError).toBeFalsy();
-    expect(textOf(result)).toContain("Deleted workspace");
+    expect(textOf(result)).toContain("Deleted session");
     expect(textOf(result)).toContain("Cool Thing");
-    expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-1", false);
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", false);
   });
 
-  it("resolves workspace by branch name", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+  it("resolves session by branch name", async () => {
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "feat/cool-thing" },
+      name: "delete_session",
+      arguments: { session: "feat/cool-thing" },
     });
     expect(result.isError).toBeFalsy();
-    expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-1", false);
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", false);
   });
 
-  it("resolves workspace by display name", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+  it("resolves session by display name", async () => {
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "Cool Thing" },
+      name: "delete_session",
+      arguments: { session: "Cool Thing" },
     });
     expect(result.isError).toBeFalsy();
-    expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-1", false);
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", false);
   });
 
   it("passes delete_branch flag through", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockDeleteSession.mockResolvedValue(undefined);
 
     await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "ws-1", delete_branch: true },
+      name: "delete_session",
+      arguments: { session: "ws-1", delete_branch: true },
     });
-    expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-1", true);
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", true);
   });
 });
 
@@ -459,28 +460,28 @@ describe("delete_workspace", () => {
 // ===========================================================================
 
 describe("spawn_agent", () => {
-  it("returns error when workspace not found", async () => {
+  it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "spawn_agent",
-      arguments: { workspace: "ghost", prompt: "do stuff" },
+      arguments: { session: "ghost", prompt: "do stuff" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Workspace not found");
+    expect(textOf(result)).toContain("Session not found");
   });
 
   it("starts agent and sends initial prompt", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockStartAgent.mockResolvedValue({
       agent_id: "agent-42",
-      workspace_id: "ws-1",
+      session_id: "ws-1",
       status: "running",
       parent_agent_id: null,
     });
 
     const result = await client.callTool({
       name: "spawn_agent",
-      arguments: { workspace: "ws-1", prompt: "Build the thing" },
+      arguments: { session: "ws-1", prompt: "Build the thing" },
     });
     const parsed = jsonOf(result) as { agent_id: string; status: string };
     expect(parsed.agent_id).toBe("agent-42");
@@ -502,11 +503,11 @@ describe("spawn_agent", () => {
   });
 
   it("passes permission_mode through", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockStartAgent.mockResolvedValue({
       agent_id: "agent-42",
-      workspace_id: "ws-1",
+      session_id: "ws-1",
       status: "running",
       parent_agent_id: null,
     });
@@ -514,7 +515,7 @@ describe("spawn_agent", () => {
     await client.callTool({
       name: "spawn_agent",
       arguments: {
-        workspace: "ws-1",
+        session: "ws-1",
         prompt: "test",
         permission_mode: "auto",
       },
@@ -529,6 +530,42 @@ describe("spawn_agent", () => {
       undefined,
     );
   });
+
+  it("accepts the legacy `workspace` param as a back-compat alias", async () => {
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockStartAgent.mockResolvedValue({
+      agent_id: "agent-legacy",
+      session_id: "ws-1",
+      status: "running",
+      parent_agent_id: null,
+    });
+
+    const result = await client.callTool({
+      name: "spawn_agent",
+      arguments: { workspace: "ws-1", prompt: "from old caller" },
+    });
+    const parsed = jsonOf(result) as { agent_id: string };
+    expect(parsed.agent_id).toBe("agent-legacy");
+    expect(mockStartAgent).toHaveBeenCalledWith(
+      "ws-1",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    );
+  });
+
+  it("requires either `session` or `workspace` to be present", async () => {
+    const result = await client.callTool({
+      name: "spawn_agent",
+      arguments: { prompt: "no target" },
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("session");
+  });
 });
 
 // ===========================================================================
@@ -536,22 +573,22 @@ describe("spawn_agent", () => {
 // ===========================================================================
 
 describe("list_agents", () => {
-  it("returns error when workspace filter is not found", async () => {
+  it("returns error when session filter is not found", async () => {
     const result = await client.callTool({
       name: "list_agents",
-      arguments: { workspace: "nope" },
+      arguments: { session: "nope" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Workspace not found");
+    expect(textOf(result)).toContain("Session not found");
   });
 
-  it("returns agents for a specific workspace", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+  it("returns agents for a specific session", async () => {
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockListAgents.mockReturnValue([
       {
         agent_id: "a-1",
-        workspace_id: "ws-1",
+        session_id: "ws-1",
         status: "running",
         parent_agent_id: null,
       },
@@ -559,7 +596,7 @@ describe("list_agents", () => {
 
     const result = await client.callTool({
       name: "list_agents",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     const parsed = jsonOf(result) as { agent_id: string }[];
     expect(parsed).toHaveLength(1);
@@ -568,17 +605,17 @@ describe("list_agents", () => {
     expect(mockListAgents).toHaveBeenCalledWith("ws-1");
   });
 
-  it("returns agents across all workspaces when no filter", async () => {
-    const ws1 = mockWorkspace({ id: "ws-1" });
-    const ws2 = mockWorkspace({ id: "ws-2", branch: "feat/other" });
-    appState.workspaces.set("ws-1", ws1);
-    appState.workspaces.set("ws-2", ws2);
+  it("returns agents across all sessions when no filter", async () => {
+    const ws1 = mockSession({ id: "ws-1" });
+    const ws2 = mockSession({ id: "ws-2", branch: "feat/other" });
+    appState.sessions.set("ws-1", ws1);
+    appState.sessions.set("ws-2", ws2);
     mockListAgents.mockImplementation((wsId: string) => {
       if (wsId === "ws-1") {
         return [
           {
             agent_id: "a-1",
-            workspace_id: "ws-1",
+            session_id: "ws-1",
             status: "running" as const,
             parent_agent_id: null,
           },
@@ -588,7 +625,7 @@ describe("list_agents", () => {
         return [
           {
             agent_id: "a-2",
-            workspace_id: "ws-2",
+            session_id: "ws-2",
             status: "running" as const,
             parent_agent_id: null,
           },
@@ -608,13 +645,13 @@ describe("list_agents", () => {
   });
 
   it("returns 'No agents running.' when none exist", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockListAgents.mockReturnValue([]);
 
     const result = await client.callTool({
       name: "list_agents",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     expect(textOf(result)).toBe("No agents running.");
   });
@@ -634,12 +671,12 @@ describe("agent_status", () => {
     expect(textOf(result)).toContain("Agent not found");
   });
 
-  it("returns agent info with workspace context", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+  it("returns agent info with session context", async () => {
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     appState.agents.set("agent-1", {
       agentId: "agent-1",
-      workspaceId: "ws-1",
+      sessionId: "ws-1",
       status: "running",
       stdin: null as unknown as AgentSession["stdin"],
       child: null as unknown as AgentSession["child"],
@@ -686,18 +723,18 @@ describe("send_agent_message", () => {
 // ===========================================================================
 
 describe("trigger_run", () => {
-  it("returns error when workspace not found", async () => {
+  it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { workspace: "ghost" },
+      arguments: { session: "ghost" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Workspace not found");
+    expect(textOf(result)).toContain("Session not found");
   });
 
   it("returns error when no run command configured", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockLoadArgusConfig.mockReturnValue({
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
@@ -707,15 +744,15 @@ describe("trigger_run", () => {
 
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("No 'run' command configured");
   });
 
   it("handles run config as object with command and dir", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockLoadArgusConfig.mockReturnValue({
       setup: { copy: [], symlink: [], commands: [] },
       terminals: [],
@@ -726,7 +763,7 @@ describe("trigger_run", () => {
 
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     const parsed = jsonOf(result) as {
       command: string;
@@ -743,15 +780,15 @@ describe("trigger_run", () => {
   });
 
   it("handles config load failure gracefully", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
     mockLoadArgusConfig.mockImplementation(() => {
       throw new Error("bad config");
     });
 
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     // Falls through to "no run command" since config load threw.
     expect(result.isError).toBe(true);
@@ -764,23 +801,23 @@ describe("trigger_run", () => {
 // ===========================================================================
 
 describe("check_conflicts", () => {
-  it("returns error when workspace not found", async () => {
+  it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "check_conflicts",
-      arguments: { workspace: "nope" },
+      arguments: { session: "nope" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Workspace not found");
+    expect(textOf(result)).toContain("Session not found");
   });
 
   it("reports clean merge when no conflicts", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockGetWorkspaceConflicts.mockResolvedValue([]);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockGetSessionConflicts.mockResolvedValue([]);
 
     const result = await client.callTool({
       name: "check_conflicts",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("No conflicts");
@@ -789,51 +826,51 @@ describe("check_conflicts", () => {
   });
 
   it("returns conflicting file list", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockGetWorkspaceConflicts.mockResolvedValue(["src/app.ts", "README.md"]);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockGetSessionConflicts.mockResolvedValue(["src/app.ts", "README.md"]);
 
     const result = await client.callTool({
       name: "check_conflicts",
-      arguments: { workspace: "ws-1" },
+      arguments: { session: "ws-1" },
     });
     const parsed = jsonOf(result) as {
       conflicting_files: string[];
-      workspace_branch: string;
+      session_branch: string;
     };
     expect(parsed.conflicting_files).toEqual(["src/app.ts", "README.md"]);
-    expect(parsed.workspace_branch).toBe("feat/cool-thing");
+    expect(parsed.session_branch).toBe("feat/cool-thing");
   });
 });
 
 // ===========================================================================
-// merge_workspace
+// merge_session
 // ===========================================================================
 
-describe("merge_workspace", () => {
-  it("returns error when workspace not found", async () => {
+describe("merge_session", () => {
+  it("returns error when session not found", async () => {
     const result = await client.callTool({
-      name: "merge_workspace",
-      arguments: { workspace: "gone" },
+      name: "merge_session",
+      arguments: { session: "gone" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("Workspace not found");
+    expect(textOf(result)).toContain("Session not found");
   });
 
   it("merges and returns success message", async () => {
-    const ws = mockWorkspace();
-    appState.workspaces.set("ws-1", ws);
-    mockMergeWorkspaceIntoBase.mockResolvedValue(undefined);
+    const ws = mockSession();
+    appState.sessions.set("ws-1", ws);
+    mockMergeSessionIntoBase.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "merge_workspace",
-      arguments: { workspace: "ws-1" },
+      name: "merge_session",
+      arguments: { session: "ws-1" },
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("Successfully merged");
     expect(textOf(result)).toContain("feat/cool-thing");
     expect(textOf(result)).toContain("main");
-    expect(mockMergeWorkspaceIntoBase).toHaveBeenCalledWith("ws-1");
+    expect(mockMergeSessionIntoBase).toHaveBeenCalledWith("ws-1");
   });
 });
 
@@ -841,12 +878,12 @@ describe("merge_workspace", () => {
 // resolveRepoRoot (tested indirectly)
 // ===========================================================================
 
-describe("create_workspace repo_root handling", () => {
+describe("create_session repo_root handling", () => {
   it("requires repo_root — omitting it returns an error", async () => {
     appState.repoRoots.add("/first/repo");
 
     const result = await client.callTool({
-      name: "create_workspace",
+      name: "create_session",
       arguments: { name: "test" },
     });
     // Zod validation should reject the missing required field.
@@ -855,12 +892,12 @@ describe("create_workspace repo_root handling", () => {
 
   it("uses explicit repo_root when provided", async () => {
     appState.repoRoots.add("/default/repo");
-    mockCreateWorkspace.mockResolvedValue(
-      mockWorkspace({ repo_root: "/other/repo" }),
+    mockCreateSession.mockResolvedValue(
+      mockSession({ repo_root: "/other/repo" }),
     );
 
     await client.callTool({
-      name: "create_workspace",
+      name: "create_session",
       arguments: { name: "test", repo_root: "/other/repo" },
     });
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/other/repo");
@@ -868,61 +905,61 @@ describe("create_workspace repo_root handling", () => {
 });
 
 // ===========================================================================
-// resolveWorkspace (tested indirectly via delete_workspace)
+// resolveSession (tested indirectly via delete_session)
 // ===========================================================================
 
-describe("resolveWorkspace (via delete_workspace)", () => {
+describe("resolveSession (via delete_session)", () => {
   it("resolves by UUID", async () => {
-    appState.workspaces.set("uuid-abc", mockWorkspace({ id: "uuid-abc" }));
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+    appState.sessions.set("uuid-abc", mockSession({ id: "uuid-abc" }));
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "uuid-abc" },
+      name: "delete_session",
+      arguments: { session: "uuid-abc" },
     });
     expect(result.isError).toBeFalsy();
   });
 
   it("resolves by branch name when ID doesn't match", async () => {
-    appState.workspaces.set(
+    appState.sessions.set(
       "ws-x",
-      mockWorkspace({ id: "ws-x", branch: "fix/bug-123" }),
+      mockSession({ id: "ws-x", branch: "fix/bug-123" }),
     );
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "fix/bug-123" },
+      name: "delete_session",
+      arguments: { session: "fix/bug-123" },
     });
     expect(result.isError).toBeFalsy();
-    expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-x", false);
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-x", false);
   });
 
   it("resolves by display_name as last resort", async () => {
-    appState.workspaces.set(
+    appState.sessions.set(
       "ws-y",
-      mockWorkspace({
+      mockSession({
         id: "ws-y",
         branch: "feat/xyz",
         display_name: "My Feature",
       }),
     );
-    mockDeleteWorkspace.mockResolvedValue(undefined);
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "My Feature" },
+      name: "delete_session",
+      arguments: { session: "My Feature" },
     });
     expect(result.isError).toBeFalsy();
-    expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-y", false);
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-y", false);
   });
 
   it("returns null (error) when nothing matches", async () => {
-    appState.workspaces.set("ws-z", mockWorkspace({ id: "ws-z" }));
+    appState.sessions.set("ws-z", mockSession({ id: "ws-z" }));
 
     const result = await client.callTool({
-      name: "delete_workspace",
-      arguments: { workspace: "completely-unknown" },
+      name: "delete_session",
+      arguments: { session: "completely-unknown" },
     });
     expect(result.isError).toBe(true);
   });

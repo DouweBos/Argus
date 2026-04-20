@@ -14,7 +14,7 @@ export const Timeline: Story = {
     <div style={{ width: 480, display: "flex", flexDirection: "column" }}>
       <ToolCallRow
         tool="Read"
-        detail="app/components/sidebar/WorkspaceCard.tsx"
+        detail="app/components/sidebar/SessionCard.tsx"
         status="done"
       />
       <ToolCallRow

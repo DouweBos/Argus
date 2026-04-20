@@ -24,10 +24,10 @@ vi.mock("node:fs", () => {
   };
 });
 
-// Mock workspace manager to prevent real git/fs operations.
-vi.mock("../workspace/manager", () => ({
+// Mock session manager to prevent real git/fs operations.
+vi.mock("../session/manager", () => ({
   addRepoRoot: vi.fn(),
-  createHeadWorkspace: vi.fn(),
+  createHeadSession: vi.fn(),
 }));
 
 // Mock main.ts to avoid Electron imports.
@@ -37,16 +37,16 @@ vi.mock("../../main", () => ({
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockReadFileSync = vi.mocked(fs.readFileSync);
-const { addRepoRoot, createHeadWorkspace } =
-  await import("../workspace/manager");
+const { addRepoRoot, createHeadSession } =
+  await import("../session/manager");
 const mockAddRepoRoot = vi.mocked(addRepoRoot);
-const mockCreateHeadWorkspace = vi.mocked(createHeadWorkspace);
+const mockCreateHeadSession = vi.mocked(createHeadSession);
 
 describe("projects service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     appState.repoRoots.clear();
-    appState.workspaces.clear();
+    appState.sessions.clear();
   });
 
   // ---------------------------------------------------------------------------
@@ -84,14 +84,14 @@ describe("projects service", () => {
       appState.repoRoots.add("/already/here");
       ensureRepoRegistered("/already/here");
       expect(mockAddRepoRoot).not.toHaveBeenCalled();
-      expect(mockCreateHeadWorkspace).not.toHaveBeenCalled();
+      expect(mockCreateHeadSession).not.toHaveBeenCalled();
     });
 
-    it("registers and creates head workspace for a valid git repo", () => {
+    it("registers and creates head session for a valid git repo", () => {
       mockExistsSync.mockReturnValue(true); // .git exists
       ensureRepoRegistered("/new/repo");
       expect(mockAddRepoRoot).toHaveBeenCalledWith("/new/repo");
-      expect(mockCreateHeadWorkspace).toHaveBeenCalledWith("/new/repo");
+      expect(mockCreateHeadSession).toHaveBeenCalledWith("/new/repo");
     });
 
     it("throws when the path is not a git repo", () => {

@@ -70,7 +70,7 @@ import { checkDependencies } from "./services/dependencies/check";
 import { discoverExtensions } from "./services/extensions/loader";
 import {
   listDirectory,
-  listWorkspaceFiles,
+  listSessionFiles,
   resolveMentionPath,
   readFile,
   writeFile,
@@ -120,6 +120,62 @@ import {
   cancelOrgTask,
   startOrgTask,
 } from "./services/organizationTask/orchestrator";
+import { loadCommandMetrics } from "./services/session/commandMetrics";
+import {
+  addRepoRoot,
+  removeRepoRoot,
+  listSessions,
+  createSession,
+  createHeadSession,
+  deleteSession,
+} from "./services/session/manager";
+import {
+  getRepoBranch,
+  listBranches,
+  listAllBranches,
+  checkoutBranch,
+  getSessionDiff,
+  getSessionFullDiff,
+  getSessionBranchDiff,
+  getSessionStagedDiff,
+  getSessionUntrackedDiff,
+  getSessionStatus,
+  stageFile,
+  stageAll,
+  unstageFile,
+  unstageAll,
+  discardFile,
+  stageHunk,
+  unstageHunk,
+  discardHunk,
+  gitCommit,
+  getGitAuthor,
+  getLastCommitMessage,
+  getLastCommitHash,
+  watchSession,
+  unwatchSession,
+  pauseAllWatchers,
+  resumeAllWatchers,
+  readArgusConfig,
+  writeArgusConfig,
+  setSessionBaseBranch,
+  getSessionCommitsAhead,
+  getSessionWorkingTreeState,
+  getSessionConflicts,
+  mergeSessionIntoBase,
+  pushSessionBranch,
+  gitPull,
+  gitPush,
+  gitFetch,
+  gitStash,
+  gitStashPop,
+  gitLog,
+  gitShowCommit,
+  gitStashList,
+  gitStashShow,
+  gitStashApply,
+  gitStashDrop,
+} from "./services/session/sessionOps";
 import { openExternalUrl, revealInFinder } from "./services/shell/operations";
 import {
   checkAndroidTools,
@@ -155,62 +211,6 @@ import {
   terminalResize,
 } from "./services/terminal/multiplexer";
 import { getUiState, setUiState } from "./services/uiState";
-import { loadCommandMetrics } from "./services/workspace/commandMetrics";
-import {
-  addRepoRoot,
-  removeRepoRoot,
-  listWorkspaces,
-  createWorkspace,
-  createHeadWorkspace,
-  deleteWorkspace,
-} from "./services/workspace/manager";
-import {
-  getRepoBranch,
-  listBranches,
-  listAllBranches,
-  checkoutBranch,
-  getWorkspaceDiff,
-  getWorkspaceFullDiff,
-  getWorkspaceBranchDiff,
-  getWorkspaceStagedDiff,
-  getWorkspaceUntrackedDiff,
-  getWorkspaceStatus,
-  stageFile,
-  stageAll,
-  unstageFile,
-  unstageAll,
-  discardFile,
-  stageHunk,
-  unstageHunk,
-  discardHunk,
-  gitCommit,
-  getGitAuthor,
-  getLastCommitMessage,
-  getLastCommitHash,
-  watchWorkspace,
-  unwatchWorkspace,
-  pauseAllWatchers,
-  resumeAllWatchers,
-  readArgusConfig,
-  writeArgusConfig,
-  setWorkspaceBaseBranch,
-  getWorkspaceCommitsAhead,
-  getWorkspaceWorkingTreeState,
-  getWorkspaceConflicts,
-  mergeWorkspaceIntoBase,
-  pushWorkspaceBranch,
-  gitPull,
-  gitPush,
-  gitFetch,
-  gitStash,
-  gitStashPop,
-  gitLog,
-  gitShowCommit,
-  gitStashList,
-  gitStashShow,
-  gitStashApply,
-  gitStashDrop,
-} from "./services/workspace/workspaceOps";
 import {
   loadUserProjectSettings,
   saveUserProjectSettings,
@@ -220,9 +220,9 @@ import { appState } from "./state";
 
 type Args = Record<string, unknown>;
 
-function emitNavState(workspaceId: string, nav: NavState): void {
+function emitNavState(sessionId: string, nav: NavState): void {
   getMainWindow()?.webContents.send("browser_view:nav", {
-    workspaceId,
+    sessionId,
     url: nav.url,
     canGoBack: nav.canGoBack,
     canGoForward: nav.canGoForward,
@@ -305,7 +305,7 @@ export function registerIpcHandlers(): void {
   handle("stat_file", (a) =>
     statFile(a.id as string, a.relativePath as string),
   );
-  handle("list_workspace_files", (a) => listWorkspaceFiles(a.id as string));
+  handle("list_session_files", (a) => listSessionFiles(a.id as string));
   handle("resolve_mention_path", (a) =>
     resolveMentionPath(a.id as string, a.query as string),
   );
@@ -364,12 +364,12 @@ export function registerIpcHandlers(): void {
     createLogger("ipc:app_cancel_quit").info("user cancelled quit");
   });
 
-  // Workspace CRUD
+  // Session CRUD
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
-  handle("list_workspaces", (a) => listWorkspaces(a.repoRoot as string));
-  handle("create_workspace", (a) =>
-    createWorkspace(
+  handle("list_sessions", (a) => listSessions(a.repoRoot as string));
+  handle("create_session", (a) =>
+    createSession(
       a.repoRoot as string,
       a.branch as string,
       a.description as string,
@@ -377,11 +377,11 @@ export function registerIpcHandlers(): void {
       a.baseBranch as string | undefined,
     ),
   );
-  handle("create_head_workspace", (a) =>
-    createHeadWorkspace(a.repoRoot as string),
+  handle("create_project_root_session", (a) =>
+    createHeadSession(a.repoRoot as string),
   );
-  handle("delete_workspace", (a) =>
-    deleteWorkspace(
+  handle("delete_session", (a) =>
+    deleteSession(
       a.id as string,
       a.shouldDeleteBranch as boolean | undefined,
     ),
@@ -434,27 +434,27 @@ export function registerIpcHandlers(): void {
   handle("cancel_org_task", (a) => cancelOrgTask(a.id as string));
   handle("delete_org_task", (a) => deleteOrgTask(a.id as string));
 
-  // Workspace ops
+  // Session ops
   handle("get_repo_branch", (a) => getRepoBranch(a.repoRoot as string));
   handle("list_branches", (a) => listBranches(a.repoRoot as string));
   handle("list_all_branches", (a) => listAllBranches(a.repoRoot as string));
   handle("checkout_branch", (a) =>
     checkoutBranch(a.repoRoot as string, a.branch as string),
   );
-  handle("get_workspace_diff", (a) => getWorkspaceDiff(a.id as string));
-  handle("get_workspace_full_diff", (a) =>
-    getWorkspaceFullDiff(a.id as string),
+  handle("get_session_diff", (a) => getSessionDiff(a.id as string));
+  handle("get_session_full_diff", (a) =>
+    getSessionFullDiff(a.id as string),
   );
-  handle("get_workspace_branch_diff", (a) =>
-    getWorkspaceBranchDiff(a.id as string),
+  handle("get_session_branch_diff", (a) =>
+    getSessionBranchDiff(a.id as string),
   );
-  handle("get_workspace_staged_diff", (a) =>
-    getWorkspaceStagedDiff(a.id as string),
+  handle("get_session_staged_diff", (a) =>
+    getSessionStagedDiff(a.id as string),
   );
-  handle("get_workspace_untracked_diff", (a) =>
-    getWorkspaceUntrackedDiff(a.id as string),
+  handle("get_session_untracked_diff", (a) =>
+    getSessionUntrackedDiff(a.id as string),
   );
-  handle("get_workspace_status", (a) => getWorkspaceStatus(a.id as string));
+  handle("get_session_status", (a) => getSessionStatus(a.id as string));
   handle("stage_file", (a) => stageFile(a.id as string, a.filePath as string));
   handle("stage_all", (a) => stageAll(a.id as string));
   handle("unstage_file", (a) =>
@@ -475,8 +475,8 @@ export function registerIpcHandlers(): void {
     getLastCommitMessage(a.id as string),
   );
   handle("get_last_commit_hash", (a) => getLastCommitHash(a.id as string));
-  handle("watch_workspace", (a) => watchWorkspace(a.id as string));
-  handle("unwatch_workspace", (a) => unwatchWorkspace(a.id as string));
+  handle("watch_session", (a) => watchSession(a.id as string));
+  handle("unwatch_session", (a) => unwatchSession(a.id as string));
   handle("pause_all_watchers", () => pauseAllWatchers());
   handle("resume_all_watchers", () => resumeAllWatchers());
   handle("read_argus_config", (a) => readArgusConfig(a.repoRoot as string));
@@ -495,20 +495,20 @@ export function registerIpcHandlers(): void {
   handle("get_command_metrics", (a) =>
     loadCommandMetrics(a.repoRoot as string),
   );
-  handle("set_workspace_base_branch", (a) =>
-    setWorkspaceBaseBranch(a.id as string, a.baseBranch as string),
+  handle("set_session_base_branch", (a) =>
+    setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
-  handle("get_workspace_conflicts", (a) =>
-    getWorkspaceConflicts(a.id as string),
+  handle("get_session_conflicts", (a) =>
+    getSessionConflicts(a.id as string),
   );
-  handle("get_workspace_commits_ahead", (a) =>
-    getWorkspaceCommitsAhead(a.id as string),
+  handle("get_session_commits_ahead", (a) =>
+    getSessionCommitsAhead(a.id as string),
   );
-  handle("get_workspace_review_state", async (a) => {
+  handle("get_session_review_state", async (a) => {
     const id = a.id as string;
     const [commitsAhead, treeState] = await Promise.all([
-      getWorkspaceCommitsAhead(id),
-      getWorkspaceWorkingTreeState(id),
+      getSessionCommitsAhead(id),
+      getSessionWorkingTreeState(id),
     ]);
 
     return {
@@ -517,11 +517,11 @@ export function registerIpcHandlers(): void {
       hasUncommitted: treeState.hasUncommitted,
     };
   });
-  handle("merge_workspace_into_base", (a) =>
-    mergeWorkspaceIntoBase(a.id as string),
+  handle("merge_session_into_base", (a) =>
+    mergeSessionIntoBase(a.id as string),
   );
-  handle("push_workspace_branch", (a) =>
-    pushWorkspaceBranch(a.id as string),
+  handle("push_session_branch", (a) =>
+    pushSessionBranch(a.id as string),
   );
   handle("git_pull", (a) =>
     gitPull(
@@ -570,7 +570,7 @@ export function registerIpcHandlers(): void {
   handle("check_claude_cli", () => checkClaudeCli());
   handle("start_agent", (a) =>
     startAgent(
-      a.workspaceId as string,
+      a.sessionId as string,
       a.model as string | undefined,
       a.permissionMode as string | undefined,
       a.resumeSessionId as string | undefined,
@@ -586,7 +586,7 @@ export function registerIpcHandlers(): void {
       a.images as { data: string; media_type: string }[] | undefined,
     ),
   );
-  handle("list_agents", (a) => listAgents(a.workspaceId as string));
+  handle("list_agents", (a) => listAgents(a.sessionId as string));
   handle("respond_to_permission", (a) =>
     respondToPermission(
       a.agentId as string,
@@ -631,14 +631,14 @@ export function registerIpcHandlers(): void {
   // parameter. Allowing the renderer (or any caller transitively reaching this
   // IPC) to inject an arbitrary `sh -c <command>` would turn any renderer
   // compromise (XSS via agent/file/MCP-controlled markdown) into full RCE.
-  // Callers that need to start the workspace's configured run command must
+  // Callers that need to start the session's configured run command must
   // use `create_run_terminal`, which resolves the command server-side from
   // `.argus.json`.
   handle("create_terminal", (a) =>
-    createTerminal(a.workspaceId as string, a.subDir as string | undefined),
+    createTerminal(a.sessionId as string, a.subDir as string | undefined),
   );
   handle("create_run_terminal", (a) =>
-    createRunTerminal(a.workspaceId as string, a.title as string | undefined),
+    createRunTerminal(a.sessionId as string, a.title as string | undefined),
   );
   handle("start_terminal", (a) =>
     startTerminal(a.sessionId as string, a.cols as number, a.rows as number),
@@ -724,21 +724,21 @@ export function registerIpcHandlers(): void {
   );
   handle("android_button", (a) => androidButton(a.button as string));
 
-  // Browser — Conductor-backed Chromium per workspace. Pool manages daemons;
+  // Browser — Conductor-backed Chromium per session. Pool manages daemons;
   // screencast via raw CDP WebSocket; input forwarded through Conductor HTTP.
   handle("browser_view_ensure", async (a) => {
-    const workspaceId = a.workspaceId as string;
-    let reservation = webBrowserPool.getReservation(workspaceId);
+    const sessionId = a.sessionId as string;
+    let reservation = webBrowserPool.getReservation(sessionId);
     if (!reservation) {
-      reservation = await webBrowserPool.acquireBrowser(workspaceId);
+      reservation = await webBrowserPool.acquireBrowser(sessionId);
     }
-    appState.browserSessions.set(workspaceId, {
-      id: workspaceId,
+    appState.browserSessions.set(sessionId, {
+      id: sessionId,
       url: "",
       webContentsId: null,
     });
     await startScreencast(
-      workspaceId,
+      sessionId,
       reservation.cdpPort,
       reservation.cdpTargetId,
       {
@@ -747,53 +747,53 @@ export function registerIpcHandlers(): void {
       },
     );
     getMainWindow()?.webContents.send("browser:ensure_mounted", {
-      sessionId: workspaceId,
+      sessionId,
     });
   });
   handle("browser_view_navigate", async (a) => {
-    const workspaceId = a.workspaceId as string;
-    const reservation = webBrowserPool.getReservation(workspaceId);
+    const sessionId = a.sessionId as string;
+    const reservation = webBrowserPool.getReservation(sessionId);
     if (!reservation) {
       return;
     }
     const nav = await conductorNavigate(reservation, a.url as string);
-    emitNavState(workspaceId, nav);
+    emitNavState(sessionId, nav);
   });
   handle("browser_view_back", async (a) => {
-    const workspaceId = a.workspaceId as string;
-    const reservation = webBrowserPool.getReservation(workspaceId);
+    const sessionId = a.sessionId as string;
+    const reservation = webBrowserPool.getReservation(sessionId);
     if (!reservation) {
       return;
     }
     const nav = await conductorGoBack(reservation);
-    emitNavState(workspaceId, nav);
+    emitNavState(sessionId, nav);
   });
   handle("browser_view_forward", async (a) => {
-    const workspaceId = a.workspaceId as string;
-    const reservation = webBrowserPool.getReservation(workspaceId);
+    const sessionId = a.sessionId as string;
+    const reservation = webBrowserPool.getReservation(sessionId);
     if (!reservation) {
       return;
     }
     const nav = await conductorGoForward(reservation);
-    emitNavState(workspaceId, nav);
+    emitNavState(sessionId, nav);
   });
   handle("browser_view_reload", async (a) => {
-    const workspaceId = a.workspaceId as string;
-    const reservation = webBrowserPool.getReservation(workspaceId);
+    const sessionId = a.sessionId as string;
+    const reservation = webBrowserPool.getReservation(sessionId);
     if (!reservation) {
       return;
     }
     const nav = await conductorReload(reservation);
-    emitNavState(workspaceId, nav);
+    emitNavState(sessionId, nav);
   });
   handle("browser_view_destroy", async (a) => {
-    const workspaceId = a.workspaceId as string;
-    await stopScreencast(workspaceId);
-    appState.browserSessions.delete(workspaceId);
-    await webBrowserPool.releaseBrowser(workspaceId);
+    const sessionId = a.sessionId as string;
+    await stopScreencast(sessionId);
+    appState.browserSessions.delete(sessionId);
+    await webBrowserPool.releaseBrowser(sessionId);
   });
   handle("browser_mouse_event", async (a) => {
-    const reservation = webBrowserPool.getReservation(a.workspaceId as string);
+    const reservation = webBrowserPool.getReservation(a.sessionId as string);
     if (reservation) {
       await conductorMouseEvent(
         reservation,
@@ -805,7 +805,7 @@ export function registerIpcHandlers(): void {
     }
   });
   handle("browser_keyboard_event", async (a) => {
-    const reservation = webBrowserPool.getReservation(a.workspaceId as string);
+    const reservation = webBrowserPool.getReservation(a.sessionId as string);
     if (reservation) {
       await conductorKeyboardEvent(
         reservation,
@@ -815,7 +815,7 @@ export function registerIpcHandlers(): void {
     }
   });
   handle("browser_wheel_event", async (a) => {
-    const reservation = webBrowserPool.getReservation(a.workspaceId as string);
+    const reservation = webBrowserPool.getReservation(a.sessionId as string);
     if (reservation) {
       await conductorWheelEvent(
         reservation,
@@ -827,9 +827,9 @@ export function registerIpcHandlers(): void {
     }
   });
   handle("browser_update_preset", async (a) => {
-    const workspaceId = a.workspaceId as string;
+    const sessionId = a.sessionId as string;
     const preset = a.preset as BrowserPreset;
-    const reservation = webBrowserPool.getReservation(workspaceId);
+    const reservation = webBrowserPool.getReservation(sessionId);
     if (!reservation) {
       return;
     }
@@ -845,7 +845,7 @@ export function registerIpcHandlers(): void {
 
     if (newTargetId) {
       reservation.cdpTargetId = newTargetId;
-      await restartScreencast(workspaceId, reservation.cdpPort, newTargetId, {
+      await restartScreencast(sessionId, reservation.cdpPort, newTargetId, {
         maxWidth: preset.internalWidth,
         maxHeight: preset.internalHeight,
       });

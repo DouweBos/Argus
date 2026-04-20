@@ -1,7 +1,7 @@
 /**
  * Orchestration layer for cross-repo OrgTasks.
  *
- * Spawns a single "host" agent in a neutral workspace (a plain directory at
+ * Spawns a single "host" agent in a neutral session (a plain directory at
  * `~/.argus/org-hosts/{orgId}/{taskId}/`). The host agent has access to every
  * scope repo via the Argus MCP tools and can spawn per-repo child agents on
  * demand when work is genuinely parallel.
@@ -13,13 +13,13 @@ import { error, info } from "../../../app/lib/logger";
 import { appState } from "../../state";
 import { sendAgentMessage, startAgent, stopAgent } from "../agent/claude";
 import { ensureRepoRegistered } from "../mcp/projects";
-import { createOrgHostWorkspace } from "../workspace/manager";
+import { createOrgHostSession } from "../session/manager";
 import { createOrgTask, updateOrgTask } from "./manager";
 import { orgHostDir } from "./paths";
 
 /**
- * Start a new OrgTask. Creates one neutral host workspace + agent. Returns
- * immediately once the task record exists; workspace/agent creation happens
+ * Start a new OrgTask. Creates one neutral host session + agent. Returns
+ * immediately once the task record exists; session/agent creation happens
  * asynchronously and state updates are emitted via the
  * `organization_tasks:changed` event.
  */
@@ -60,7 +60,7 @@ export async function startOrgTask(input: StartOrgTaskInput): Promise<OrgTask> {
   });
 
   // Spawn the host asynchronously — the UI can show "initializing" state
-  // while the workspace + agent come up.
+  // while the session + agent come up.
   spawnHost(task.id).catch((e: unknown) => {
     const msg = typeof e === "string" ? e : String(e);
     error(`org-task ${task.id}: host spawn failed: ${msg}`);
@@ -87,23 +87,23 @@ async function spawnHost(taskId: string): Promise<void> {
     }
   }
 
-  // Create the neutral host workspace.
-  const workspace = await createOrgHostWorkspace({
+  // Create the neutral host session.
+  const session = await createOrgHostSession({
     organizationId: task.organization_id,
     taskId,
     displayName: task.title,
   });
 
-  const ws = appState.workspaces.get(workspace.id);
+  const ws = appState.sessions.get(session.id);
   if (ws) {
     ws.organization_task_id = taskId;
-    appState.workspaces.set(workspace.id, ws);
+    appState.sessions.set(session.id, ws);
   }
 
-  updateOrgTask(taskId, { host_workspace_id: workspace.id });
+  updateOrgTask(taskId, { host_session_id: session.id });
 
   // Spawn the agent.
-  const agentInfo = await startAgent(workspace.id);
+  const agentInfo = await startAgent(session.id);
   updateOrgTask(taskId, { host_agent_id: agentInfo.agent_id });
 
   // Deliver the shared prompt + org context as the first user message.
@@ -125,7 +125,7 @@ async function spawnHost(taskId: string): Promise<void> {
     "",
     scopeLines,
     "",
-    "You are running in a neutral workspace that is not a worktree of any scope repo. The repos above are available via the Argus MCP tools — you can read and edit their files directly at their absolute paths for simple or sequential work. When a change is genuinely parallelizable, call `spawn_agent` or `spawn_agents_batch` with the target `repo_root` to do the work in an isolated worktree.",
+    "You are running in a neutral session that is not a worktree of any scope repo. The repos above are available via the Argus MCP tools — you can read and edit their files directly at their absolute paths for simple or sequential work. When a change is genuinely parallelizable, call `spawn_agent` or `spawn_agents_batch` with the target `repo_root` to do the work in an isolated worktree.",
   ].join("\n");
 
   try {
@@ -138,7 +138,7 @@ async function spawnHost(taskId: string): Promise<void> {
 /**
  * Cancel an OrgTask: stop the host agent and mark the task `cancelled`.
  * Child agents spawned via MCP are independent — users cancel those via the
- * normal workspace UI.
+ * normal session UI.
  */
 export async function cancelOrgTask(taskId: string): Promise<OrgTask> {
   const task = appState.organizationTasks.get(taskId);

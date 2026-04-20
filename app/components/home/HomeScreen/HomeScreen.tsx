@@ -8,18 +8,18 @@ import {
   Kbd,
   SparkleIcon,
 } from "@argus/peacock";
-import { useProjects } from "../../../hooks/useWorkspaces";
+import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
 import { setActiveAgent } from "../../../stores/agentStore";
 import { useDevicePoller } from "../../../stores/deviceStore";
 import {
   showOpenProjectDialog,
-  triggerNewWorkspace,
+  triggerNewSession,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
 import { useOrganizationSync } from "../../../stores/organizationStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
-import { selectWorkspace } from "../../../stores/workspaceStore";
+import { selectSession } from "../../../stores/sessionStore";
 import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";
 import styles from "./HomeScreen.module.css";
 import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
@@ -60,16 +60,16 @@ export function HomeScreen() {
     }
   };
 
-  const handleOpenWorkspace = async (
-    workspaceId: string,
+  const handleOpenSession = async (
+    sessionId: string,
     repoPath: string,
     agentId?: string,
   ) => {
     try {
       await openProject(repoPath, { autoSelect: false });
-      selectWorkspace(workspaceId);
+      selectSession(sessionId);
       if (agentId) {
-        setActiveAgent(workspaceId, agentId);
+        setActiveAgent(sessionId, agentId);
         setActiveCenterView("agents");
       }
     } catch (err) {
@@ -79,16 +79,16 @@ export function HomeScreen() {
   };
 
   const handleAddRepository = () => showOpenProjectDialog();
-  const handleNewWorkspace = () => triggerNewWorkspace();
+  const handleNewSession = () => triggerNewSession();
 
   const directionProps = {
     data,
     onAddRepository: handleAddRepository,
-    onNewWorkspace: handleNewWorkspace,
+    onNewSession: handleNewSession,
     onOpenProject: (p: HomeProject) => {
       handleOpenProject(p).catch(() => {});
     },
-    onOpenWorkspace: handleOpenWorkspace,
+    onOpenSession: handleOpenSession,
   };
 
   const isEmpty = data.projects.length === 0;

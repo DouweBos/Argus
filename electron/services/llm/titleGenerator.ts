@@ -1,6 +1,6 @@
 /**
  * Generate a short session title from branch + description using the Claude
- * Code CLI. Fire-and-forget: callers invoke this after creating a workspace
+ * Code CLI. Fire-and-forget: callers invoke this after creating a session
  * and update the row if a title comes back. Returns null on any failure, so
  * the caller keeps whatever placeholder it already set.
  */

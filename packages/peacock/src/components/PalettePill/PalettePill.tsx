@@ -16,7 +16,7 @@ export const PalettePill = forwardRef<HTMLInputElement, PalettePillProps>(
     {
       hotkey = ["⌘", "⇧", "P"],
       prefix = "/",
-      placeholder = "Open repo · switch workspace · run command",
+      placeholder = "Open repo · switch session · run command",
       className,
       ...rest
     },

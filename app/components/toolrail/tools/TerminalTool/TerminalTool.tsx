@@ -2,17 +2,17 @@ import { TerminalTabs } from "../../../runtime/Terminal";
 import styles from "./TerminalTool.module.css";
 
 interface TerminalToolProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function TerminalTool({ workspaceId }: TerminalToolProps) {
-  if (!workspaceId) {
+export function TerminalTool({ sessionId }: TerminalToolProps) {
+  if (!sessionId) {
     return (
       <div className={styles.empty}>
-        <p>Select a workspace to open terminals.</p>
+        <p>Select a session to open terminals.</p>
       </div>
     );
   }
 
-  return <TerminalTabs workspaceId={workspaceId} />;
+  return <TerminalTabs sessionId={sessionId} />;
 }

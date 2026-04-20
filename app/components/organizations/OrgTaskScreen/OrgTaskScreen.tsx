@@ -13,7 +13,7 @@ import {
   useActiveOrgTask,
 } from "../../../stores/orgTaskStore";
 import { useOrganizations } from "../../../stores/organizationStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
+import { selectSession, useSessions } from "../../../stores/sessionStore";
 import styles from "./OrgTaskScreen.module.css";
 
 export function OrgTaskOverlay() {
@@ -32,7 +32,7 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
   const [busy, setBusy] = useState(false);
 
   const agents = useAgentsRecord();
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
 
   const elapsedMs = Date.now() - task.created_at;
 
@@ -67,10 +67,10 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
   };
 
   const handleOpenHost = () => {
-    if (!task.host_workspace_id) {
+    if (!task.host_session_id) {
       return;
     }
-    selectWorkspace(task.host_workspace_id);
+    selectSession(task.host_session_id);
     setActiveOrgTask(null);
   };
 
@@ -90,7 +90,7 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
     }
   };
 
-  const hostWorkspaceReady = Boolean(task.host_workspace_id);
+  const hostSessionReady = Boolean(task.host_session_id);
 
   return (
     <div className={styles.overlay}>
@@ -110,9 +110,9 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
           <Button
             variant="ghost"
             onClick={handleOpenHost}
-            disabled={!hostWorkspaceReady}
+            disabled={!hostSessionReady}
           >
-            Open host workspace
+            Open host session
           </Button>
           <Button variant="ghost" onClick={() => setActiveOrgTask(null)}>
             Close
@@ -170,7 +170,7 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
           ) : (
             <div className={styles.memberList}>
               {children.map((c) => {
-                const ws = workspaces.find((w) => w.id === c.workspace_id);
+                const ws = sessions.find((w) => w.id === c.session_id);
                 const repoRoot = ws?.repo_root ?? "(unknown)";
                 const label = basename(repoRoot);
 
@@ -191,11 +191,11 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
                         <Button
                           variant="ghost"
                           onClick={() => {
-                            selectWorkspace(c.workspace_id);
+                            selectSession(c.session_id);
                             setActiveOrgTask(null);
                           }}
                         >
-                          Open workspace
+                          Open session
                         </Button>
                       </div>
                     </div>

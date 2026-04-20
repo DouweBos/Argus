@@ -18,7 +18,7 @@ export interface AndroidDeviceStreamViewProps {
   placeholder: React.ReactNode;
   /**
    * When false, the floating bar is hidden. When true but the device session is
-   * idle, the bar can still show workspace actions such as Run (see simulator
+   * idle, the bar can still show session actions such as Run (see simulator
    * views). Use `titleBarExtra` for boot controls on the title row when idle.
    */
   showFloatingActionBar?: boolean;

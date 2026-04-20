@@ -7,7 +7,7 @@ import {
   PlusIcon,
   ReviewQueueIcon,
 } from "../../icons/Icons";
-import { WorkspaceCard } from "../WorkspaceCard/WorkspaceCard";
+import { SessionCard } from "../SessionCard/SessionCard";
 import {
   SidebarFooter,
   SidebarHeader,
@@ -19,7 +19,7 @@ import {
   SidebarRepoGroup,
   SidebarScroll,
   SidebarSection,
-  SidebarWorkspaceRow,
+  SidebarSessionRow,
 } from "./SidebarNav";
 
 const meta: Meta<typeof SidebarNav> = {
@@ -39,14 +39,14 @@ export const Default: Story = {
       <SidebarItem leading={<ReviewQueueIcon size={12} />} count={4}>
         Review queue
       </SidebarItem>
-      <SidebarSection count={5}>Workspaces</SidebarSection>
-      <WorkspaceCard
-        branch="feat/workspace-card"
+      <SidebarSection count={5}>Sessions</SidebarSection>
+      <SessionCard
+        branch="feat/session-card"
         selected
         added={128}
         removed={47}
       />
-      <WorkspaceCard branch="fix/diff-hunk-staging" status="warning" />
+      <SessionCard branch="fix/diff-hunk-staging" status="warning" />
     </SidebarNav>
   ),
 };
@@ -66,7 +66,7 @@ export const FramedHome: Story = {
           }
           actions={
             <>
-              <SidebarHeaderAction title="New workspace">
+              <SidebarHeaderAction title="New session">
                 <PlusIcon size={12} />
               </SidebarHeaderAction>
               <SidebarHeaderAction title="Open repo">
@@ -87,7 +87,7 @@ export const FramedHome: Story = {
           </SidebarItem>
         </SidebarNavGroup>
         <SidebarScroll>
-          <SidebarSection count={3}>Workspaces</SidebarSection>
+          <SidebarSection count={3}>Sessions</SidebarSection>
           <SidebarRepoGroup
             name="argus-core"
             color="#4d9fff"
@@ -96,21 +96,21 @@ export const FramedHome: Story = {
             leading={<FolderIcon size={11} />}
             actions={
               <>
-                <SidebarRepoAction title="New workspace">
+                <SidebarRepoAction title="New session">
                   <PlusIcon size={10} />
                 </SidebarRepoAction>
               </>
             }
           >
-            <SidebarWorkspaceRow
+            <SidebarSessionRow
               active
-              name="feat/workspace-card"
+              name="feat/session-card"
               status="success"
               pulse
               added={128}
               removed={47}
             />
-            <SidebarWorkspaceRow
+            <SidebarSessionRow
               name="fix/diff-hunk-staging"
               status="warning"
             />
@@ -121,7 +121,7 @@ export const FramedHome: Story = {
             count={1}
             leading={<FolderIcon size={11} />}
           >
-            <SidebarWorkspaceRow name="chore/tokens-cleanup" status="idle" />
+            <SidebarSessionRow name="chore/tokens-cleanup" status="idle" />
           </SidebarRepoGroup>
           <SidebarSection count={2}>Recent</SidebarSection>
           <SidebarRepoGroup
@@ -156,7 +156,7 @@ export const FramedRepoAsHeader: Story = {
     >
       <SidebarNav framed aria-label="Unified repo header">
         <SidebarScroll>
-          <SidebarSection count={1}>Workspaces</SidebarSection>
+          <SidebarSection count={1}>Sessions</SidebarSection>
           <SidebarRepoGroup
             name="argus"
             active
@@ -181,7 +181,7 @@ export const FramedRepoAsHeader: Story = {
             }
             actions={
               <>
-                <SidebarRepoAction title="New workspace">
+                <SidebarRepoAction title="New session">
                   <PlusIcon size={10} />
                 </SidebarRepoAction>
               </>
@@ -190,8 +190,8 @@ export const FramedRepoAsHeader: Story = {
               <SidebarRepoAction title="Project options">…</SidebarRepoAction>
             }
           >
-            <SidebarWorkspaceRow
-              name="feat/workspace-card"
+            <SidebarSessionRow
+              name="feat/session-card"
               status="success"
               pulse
               added={128}

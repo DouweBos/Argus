@@ -2,9 +2,9 @@
  * MJPEG streaming server for embedded browser frames.
  *
  * Receives JPEG frames from CDP screencast and serves them as MJPEG streams
- * over HTTP. Each workspace gets its own stream endpoint. Mirrors the iOS
+ * over HTTP. Each session gets its own stream endpoint. Mirrors the iOS
  * simulator bridge's MJPEG server pattern — the frontend consumes via
- * `<img src="http://127.0.0.1:{port}/stream/{workspaceId}">`.
+ * `<img src="http://127.0.0.1:{port}/stream/{sessionId}">`.
  */
 
 import http from "node:http";
@@ -12,18 +12,18 @@ import { info } from "../../../app/lib/logger";
 
 const BOUNDARY = "argus-frame";
 
-/** Connected MJPEG clients per workspace. */
+/** Connected MJPEG clients per session. */
 const clients = new Map<string, Set<http.ServerResponse>>();
 
 let server: http.Server | null = null;
 let serverPort = 0;
 
 /**
- * Push a JPEG frame to all connected clients for a workspace.
+ * Push a JPEG frame to all connected clients for a session.
  * Called by the screencast handler in cdpScreencast.
  */
-export function pushFrame(workspaceId: string, jpeg: Buffer): void {
-  const set = clients.get(workspaceId);
+export function pushFrame(sessionId: string, jpeg: Buffer): void {
+  const set = clients.get(sessionId);
   if (!set || set.size === 0) {
     return;
   }
@@ -56,16 +56,16 @@ export async function startMjpegServer(): Promise<number> {
   }
 
   server = http.createServer((req, res) => {
-    // Parse /stream/{workspaceId}
+    // Parse /stream/{sessionId}
     const match = req.url?.match(/^\/stream\/([^/?]+)/);
     if (!match) {
       res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Not found — use /stream/{workspaceId}");
+      res.end("Not found — use /stream/{sessionId}");
 
       return;
     }
 
-    const workspaceId = decodeURIComponent(match[1]);
+    const sessionId = decodeURIComponent(match[1]);
 
     res.writeHead(200, {
       "Content-Type": `multipart/x-mixed-replace; boundary=${BOUNDARY}`,
@@ -74,17 +74,17 @@ export async function startMjpegServer(): Promise<number> {
       "Cross-Origin-Resource-Policy": "cross-origin",
     });
 
-    let set = clients.get(workspaceId);
+    let set = clients.get(sessionId);
     if (!set) {
       set = new Set();
-      clients.set(workspaceId, set);
+      clients.set(sessionId, set);
     }
     set.add(res);
 
     req.on("close", () => {
       set!.delete(res);
       if (set!.size === 0) {
-        clients.delete(workspaceId);
+        clients.delete(sessionId);
       }
     });
   });

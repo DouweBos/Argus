@@ -1,12 +1,12 @@
 import { clearReviewState, setReviewState } from "../stores/reviewQueueStore";
 import { listen } from "./events";
-import { getWorkspaceReviewState } from "./ipc";
+import { getSessionReviewState } from "./ipc";
 
 let initialized = false;
 
 /**
- * Subscribe to backend `workspace:review-state` events. The backend emits this
- * whenever a workspace's reviewable state may have changed (agent exit, merge
+ * Subscribe to backend `session:review-state` events. The backend emits this
+ * whenever a session's reviewable state may have changed (agent exit, merge
  * completion, watcher-detected staged-state change). Safe to call multiple
  * times — only the first call takes effect.
  */
@@ -20,30 +20,30 @@ export function initReviewQueueListener(): void {
     commitsAhead: number;
     hasStaged: boolean;
     hasUncommitted: boolean;
-    workspaceId: string;
-  }>("workspace:review-state", (event) => {
-    const { workspaceId, commitsAhead, hasStaged, hasUncommitted } =
+    sessionId: string;
+  }>("session:review-state", (event) => {
+    const { sessionId, commitsAhead, hasStaged, hasUncommitted } =
       event.payload;
-    setReviewState(workspaceId, { commitsAhead, hasStaged, hasUncommitted });
+    setReviewState(sessionId, { commitsAhead, hasStaged, hasUncommitted });
   });
 
-  listen<string>("workspace:deleted", (event) => {
+  listen<string>("session:deleted", (event) => {
     clearReviewState(event.payload);
   });
 }
 
 /**
- * One-shot seed: fetch the current review state for a workspace and populate
+ * One-shot seed: fetch the current review state for a session and populate
  * the store. Used when a project is first opened so existing worktrees show
  * up without needing an agent run or watcher tick.
  */
-export async function seedReviewStateForWorkspace(
-  workspaceId: string,
+export async function seedReviewStateForSession(
+  sessionId: string,
 ): Promise<void> {
   try {
-    const state = await getWorkspaceReviewState(workspaceId);
-    setReviewState(workspaceId, state);
+    const state = await getSessionReviewState(sessionId);
+    setReviewState(sessionId, state);
   } catch {
-    // Ignore — workspace may have been removed before seed completed.
+    // Ignore — session may have been removed before seed completed.
   }
 }

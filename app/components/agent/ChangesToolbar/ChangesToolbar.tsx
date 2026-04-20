@@ -21,7 +21,7 @@ interface ChangesToolbarProps {
   onSearchChange: (query: string) => void;
   repoRoot: string;
   searchQuery: string;
-  workspaceId: string;
+  sessionId: string;
 }
 
 /* ── Dropdown wrapper ─────────────────────────────────────── */
@@ -39,7 +39,7 @@ function useDropdown() {
 export function ChangesToolbar({
   branchName,
   fileCount,
-  workspaceId,
+  sessionId,
   repoRoot,
   onRefresh,
   searchQuery,
@@ -103,14 +103,14 @@ export function ChangesToolbar({
     stashDrop.setOpen(true);
     setLoadingStashes(true);
     try {
-      const s = await gitStashList(workspaceId);
+      const s = await gitStashList(sessionId);
       setStashes(s);
     } catch {
       setStashes([]);
     } finally {
       setLoadingStashes(false);
     }
-  }, [stashDrop, workspaceId]);
+  }, [stashDrop, sessionId]);
 
   // Tower-style remote and stash shortcuts. Mounted only on the working-copy
   // sub-view, so registration is implicitly gated to the relevant context.
@@ -121,28 +121,28 @@ export function ChangesToolbar({
         key: "f",
         meta: true,
         shift: true,
-        handler: () => runAction("fetch", () => gitFetch(workspaceId)),
+        handler: () => runAction("fetch", () => gitFetch(sessionId)),
       },
       // Pull (tracked branch, no rebase): Shift+Cmd+P
       {
         key: "p",
         meta: true,
         shift: true,
-        handler: () => runAction("pull", () => gitPull(workspaceId)),
+        handler: () => runAction("pull", () => gitPull(sessionId)),
       },
       // Push: Shift+Cmd+U
       {
         key: "u",
         meta: true,
         shift: true,
-        handler: () => runAction("push", () => gitPush(workspaceId)),
+        handler: () => runAction("push", () => gitPush(sessionId)),
       },
       // Save stash: Shift+Cmd+S
       {
         key: "s",
         meta: true,
         shift: true,
-        handler: () => runAction("stash", () => gitStash(workspaceId)),
+        handler: () => runAction("stash", () => gitStash(sessionId)),
       },
       // Apply most recent stash: Shift+Opt+Cmd+S
       {
@@ -152,12 +152,12 @@ export function ChangesToolbar({
         alt: true,
         handler: async () => {
           try {
-            const list = await gitStashList(workspaceId);
+            const list = await gitStashList(sessionId);
             if (list.length === 0) {
               return;
             }
             await runAction("stash-apply", () =>
-              gitStashApply(workspaceId, list[0]!.index),
+              gitStashApply(sessionId, list[0]!.index),
             );
           } catch (err) {
             setError(err instanceof Error ? err.message : String(err));
@@ -165,7 +165,7 @@ export function ChangesToolbar({
         },
       },
     ],
-    [runAction, workspaceId],
+    [runAction, sessionId],
   );
   useGlobalShortcuts(shortcuts);
 
@@ -183,7 +183,7 @@ export function ChangesToolbar({
           className={styles.toolbarBtn}
           disabled={busy !== null}
           title="Fetch"
-          onClick={() => runAction("fetch", () => gitFetch(workspaceId))}
+          onClick={() => runAction("fetch", () => gitFetch(sessionId))}
         >
           <Icons.FetchIcon />
         </button>
@@ -216,7 +216,7 @@ export function ChangesToolbar({
                       className={styles.dropdownAction}
                       onClick={() => {
                         pullDrop.setOpen(false);
-                        runAction("pull", () => gitPull(workspaceId, b, false));
+                        runAction("pull", () => gitPull(sessionId, b, false));
                       }}
                     >
                       Merge
@@ -225,7 +225,7 @@ export function ChangesToolbar({
                       className={styles.dropdownAction}
                       onClick={() => {
                         pullDrop.setOpen(false);
-                        runAction("pull", () => gitPull(workspaceId, b, true));
+                        runAction("pull", () => gitPull(sessionId, b, true));
                       }}
                     >
                       Rebase
@@ -241,7 +241,7 @@ export function ChangesToolbar({
           className={styles.toolbarBtn}
           disabled={busy !== null}
           title="Push"
-          onClick={() => runAction("push", () => gitPush(workspaceId))}
+          onClick={() => runAction("push", () => gitPush(sessionId))}
         >
           <Icons.PushIcon />
         </button>
@@ -276,7 +276,7 @@ export function ChangesToolbar({
                     onClick={() => {
                       stashDrop.setOpen(false);
                       runAction("stash-apply", () =>
-                        gitStashApply(workspaceId, s.index),
+                        gitStashApply(sessionId, s.index),
                       );
                     }}
                   >
@@ -292,7 +292,7 @@ export function ChangesToolbar({
           className={styles.toolbarBtn}
           disabled={busy !== null}
           title="Save Stash"
-          onClick={() => runAction("stash", () => gitStash(workspaceId))}
+          onClick={() => runAction("stash", () => gitStash(sessionId))}
         >
           <Icons.SaveStashIcon />
         </button>

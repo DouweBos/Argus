@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DiffFile, mergeStaged, parseDiff } from "../lib/diffParser";
 import {
-  getWorkspaceBranchDiff,
-  getWorkspaceConflicts,
-  getWorkspaceFullDiff,
-  getWorkspaceStagedDiff,
-  getWorkspaceUntrackedDiff,
-  watchWorkspace,
+  getSessionBranchDiff,
+  getSessionConflicts,
+  getSessionFullDiff,
+  getSessionStagedDiff,
+  getSessionUntrackedDiff,
+  watchSession,
 } from "../lib/ipc";
 import { useIpcEvent } from "./useIpcEvent";
 
@@ -23,7 +23,7 @@ interface UseDiffFilesResult {
 }
 
 export function useDiffFiles(
-  workspaceId: string,
+  sessionId: string,
   options?: UseDiffFilesOptions,
 ): UseDiffFilesResult {
   const baseBranch = options?.baseBranch;
@@ -51,12 +51,12 @@ export function useDiffFiles(
       // (committed + staged + unstaged vs base merge-base) so the user sees
       // all work that will be merged — not just uncommitted changes.
       const fullPromise = baseBranch
-        ? getWorkspaceBranchDiff(workspaceId)
-        : getWorkspaceFullDiff(workspaceId);
+        ? getSessionBranchDiff(sessionId)
+        : getSessionFullDiff(sessionId);
       const [full, staged, untracked] = await Promise.all([
         fullPromise,
-        baseBranch ? Promise.resolve("") : getWorkspaceStagedDiff(workspaceId),
-        getWorkspaceUntrackedDiff(workspaceId),
+        baseBranch ? Promise.resolve("") : getSessionStagedDiff(sessionId),
+        getSessionUntrackedDiff(sessionId),
       ]);
       if (isMounted.current) {
         setFullDiff(full);
@@ -78,7 +78,7 @@ export function useDiffFiles(
       setConflictFiles([]);
     } else {
       try {
-        const conflicts = await getWorkspaceConflicts(workspaceId);
+        const conflicts = await getSessionConflicts(sessionId);
         if (isMounted.current) {
           setConflictFiles(conflicts);
         }
@@ -88,7 +88,7 @@ export function useDiffFiles(
         }
       }
     }
-  }, [workspaceId, baseBranch]);
+  }, [sessionId, baseBranch]);
 
   useEffect(() => {
     fetchAll();
@@ -96,10 +96,10 @@ export function useDiffFiles(
 
   // Ensure the backend file watcher is running.
   useEffect(() => {
-    watchWorkspace(workspaceId).catch(() => {});
-  }, [workspaceId]);
+    watchSession(sessionId).catch(() => {});
+  }, [sessionId]);
 
-  useIpcEvent(`workspace:diff-changed:${workspaceId}`, () => {
+  useIpcEvent(`session:diff-changed:${sessionId}`, () => {
     fetchAll();
   });
 

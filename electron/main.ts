@@ -34,15 +34,15 @@ import { webBrowserPool } from "./services/browser/pool";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
+import { refreshAllBranches } from "./services/session/watcher";
 import { fixProcessPath } from "./services/terminal/shellEnv";
-import { refreshAllBranches } from "./services/workspace/watcher";
 import { appState } from "./state";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
 // and Argus connects via CDP to Conductor's Chromium instance.
 
 // Register custom protocols as privileged before app is ready.
-// This lets the renderer fetch extension files and workspace images via URL.
+// This lets the renderer fetch extension files and session images via URL.
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "argus-ext",
@@ -114,7 +114,7 @@ function resolveAppIconPath(): string | null {
   return null;
 }
 
-// `argus://workspaces/<id>/git` — register as this app's protocol handler so
+// `argus://sessions/<id>/git` — register as this app's protocol handler so
 // external callers (MCP, Slack previews, custom URL openers) can jump straight
 // into a screen. Uses setAsDefaultProtocolClient; the actual URL is received
 // via `open-url` (macOS) or the `second-instance` argv on Linux/Windows.
@@ -129,7 +129,7 @@ function deepLinkToPath(url: string): string | null {
     if (u.protocol !== "argus:") {
       return null;
     }
-    // argus://workspaces/abc/git → /workspaces/abc/git
+    // argus://sessions/abc/git → /sessions/abc/git
     const host = u.hostname ? `/${u.hostname}` : "";
     const pathname = u.pathname || "";
 
@@ -171,7 +171,12 @@ app.on("second-instance", (_e, argv) => {
     mainWindow.focus();
   }
 });
-const VITE_DEV_URL = process.env.VITE_DEV_SERVER_URL ?? "http://localhost:1420";
+// Prefer an explicit VITE_DEV_SERVER_URL, otherwise compose from ARGUS_PORT
+// (set by the per-session `workspace_env` config so sibling worktrees don't
+// all try to bind the same port). Fall back to Vite's default.
+const VITE_DEV_URL =
+  process.env.VITE_DEV_SERVER_URL ??
+  `http://localhost:${process.env.ARGUS_PORT ?? "1420"}`;
 
 // Tee main-process console.* to the rotating log file. In a bundled .app there
 // is no attached terminal, so without this tee every console call across
@@ -477,7 +482,7 @@ app.whenReady().then(() => {
   const pathDiag = fixProcessPath();
   pathDiag.forEach((d) => log("[shellEnv] %s", d));
 
-  // Start the Argus MCP server so agents can orchestrate workspaces and
+  // Start the Argus MCP server so agents can orchestrate sessions and
   // sibling agents via the Model Context Protocol.
   startMcpServer().catch((e) =>
     log("Failed to start MCP server: %s", String(e)),
@@ -560,7 +565,7 @@ app.whenReady().then(() => {
   // so any same-origin script in the renderer can `fetch()` it. Without
   // path-containment, this would be an arbitrary-file-read primitive
   // (e.g. `fetch('argus-file:///Users/me/.ssh/id_rsa')`). We restrict it to
-  // canonical paths under a registered workspace and resolve symlinks before
+  // canonical paths under a registered session and resolve symlinks before
   // comparing, so symlinked escapes inside `node_modules` etc. are rejected.
   protocol.handle("argus-file", async (request) => {
     const url = new URL(request.url);
@@ -573,7 +578,7 @@ app.whenReady().then(() => {
     }
 
     let allowed = false;
-    for (const ws of appState.workspaces.values()) {
+    for (const ws of appState.sessions.values()) {
       let canonicalRoot: string;
       try {
         canonicalRoot = await fs.promises.realpath(ws.path);

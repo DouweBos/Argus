@@ -23,18 +23,18 @@ import styles from "./RuntimeView.module.css";
 
 interface AndroidDeviceViewProps {
   children?: React.ReactNode;
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
 export function AndroidDeviceView({
   children,
-  workspaceId,
+  sessionId,
 }: AndroidDeviceViewProps) {
   const {
     androidToolsAvailable,
     setAndroidToolsStatus,
     androidDevices,
-    selectedAndroidByWorkspace,
+    selectedAndroidBySession,
     androidCapturing,
     androidBooting,
     androidDisconnected,
@@ -45,14 +45,14 @@ export function AndroidDeviceView({
     setAndroidDisconnected,
   } = useAndroidDeviceSimulatorState();
 
-  const storeKey = workspaceId ?? "__global__";
-  const selectedSerial = selectedAndroidByWorkspace[storeKey] ?? null;
+  const storeKey = sessionId ?? "__global__";
+  const selectedSerial = selectedAndroidBySession[storeKey] ?? null;
 
   const selectedDevice = androidDevices.find(
     (d) => d.serial === selectedSerial,
   );
   const isOnline = selectedDevice?.online ?? false;
-  const prevWorkspaceIdRef = useRef<string | null>(null);
+  const prevSessionIdRef = useRef<string | null>(null);
 
   // --- Tool availability check ---
 
@@ -89,11 +89,11 @@ export function AndroidDeviceView({
     return () => clearInterval(interval);
   }, [refreshDevices, androidToolsAvailable]);
 
-  // When workspace changes: stop current capture
+  // When session changes: stop current capture
   useEffect(() => {
     if (
-      storeKey !== prevWorkspaceIdRef.current &&
-      prevWorkspaceIdRef.current !== null
+      storeKey !== prevSessionIdRef.current &&
+      prevSessionIdRef.current !== null
     ) {
       stopAndroidCapture()
         .then(() => {
@@ -106,7 +106,7 @@ export function AndroidDeviceView({
         });
     }
 
-    prevWorkspaceIdRef.current = storeKey;
+    prevSessionIdRef.current = storeKey;
   }, [storeKey, setAndroidCapturing, setAndroidDisconnected]);
 
   const startCapture = useCallback(
@@ -290,7 +290,7 @@ export function AndroidDeviceView({
   }
 
   const titleBarExtra =
-    !deviceSessionActive && (selectedSerial || workspaceId) ? (
+    !deviceSessionActive && (selectedSerial || sessionId) ? (
       <div className={chrome.titleBarTrailing}>
         {selectedSerial && (
           <button

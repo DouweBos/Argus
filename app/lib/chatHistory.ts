@@ -14,12 +14,12 @@ export interface ChatHistoryEntry {
   id: string;
   messageCount: number;
   model?: string;
+  sessionBranch: string;
+  sessionDescription: string;
   sessionId: string;
   title: string;
   totalCost?: number;
   totalDuration?: number;
-  workspaceBranch: string;
-  workspaceDescription: string;
 }
 
 /** Full saved conversation — index entry + all messages. */

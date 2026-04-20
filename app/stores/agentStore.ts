@@ -7,15 +7,15 @@ export interface SplitPair {
 }
 
 interface AgentStoreData {
-  // Which agent is active per workspace: workspace_id -> agent_id
+  // Which agent is active per session: session_id -> agent_id
   activeAgentId: Record<string, string | null>;
   // All agents, keyed by agent_id
   agents: Record<string, AgentStatus>;
-  // Ordered agent ids per workspace (tab order)
+  // Ordered agent ids per session (tab order)
   order: Record<string, string[]>;
-  // A paired (merged) tab per workspace. When the active agent is one of the
+  // A paired (merged) tab per session. When the active agent is one of the
   // pair members, the UI renders a split view; otherwise it renders a single
-  // agent. Only one pair per workspace — dropping a third agent on the right
+  // agent. Only one pair per session — dropping a third agent on the right
   // replaces the previous pairing.
   splitPair: Record<string, SplitPair | null>;
 }
@@ -29,23 +29,23 @@ const agentStore = create<AgentStoreData>(() => ({
 
 function appendOrder(
   order: Record<string, string[]>,
-  workspaceId: string,
+  sessionId: string,
   agentId: string,
 ): Record<string, string[]> {
-  const existing = order[workspaceId] ?? [];
+  const existing = order[sessionId] ?? [];
   if (existing.includes(agentId)) {
     return order;
   }
 
-  return { ...order, [workspaceId]: [...existing, agentId] };
+  return { ...order, [sessionId]: [...existing, agentId] };
 }
 
 function removeFromOrder(
   order: Record<string, string[]>,
-  workspaceId: string,
+  sessionId: string,
   agentId: string,
 ): Record<string, string[]> {
-  const existing = order[workspaceId];
+  const existing = order[sessionId];
   if (!existing) {
     return order;
   }
@@ -54,27 +54,27 @@ function removeFromOrder(
     return order;
   }
 
-  return { ...order, [workspaceId]: next };
+  return { ...order, [sessionId]: next };
 }
 
 function replaceInOrder(
   order: Record<string, string[]>,
-  workspaceId: string,
+  sessionId: string,
   oldId: string,
   newId: string,
 ): Record<string, string[]> {
-  const existing = order[workspaceId];
+  const existing = order[sessionId];
   if (!existing) {
-    return { ...order, [workspaceId]: [newId] };
+    return { ...order, [sessionId]: [newId] };
   }
   const idx = existing.indexOf(oldId);
   if (idx === -1) {
-    return { ...order, [workspaceId]: [...existing, newId] };
+    return { ...order, [sessionId]: [...existing, newId] };
   }
   const next = existing.slice();
   next[idx] = newId;
 
-  return { ...order, [workspaceId]: next };
+  return { ...order, [sessionId]: next };
 }
 
 const useAgentStore = agentStore;
@@ -84,9 +84,9 @@ export const addAgent = (agent: AgentStatus) => {
     agents: { ...state.agents, [agent.agent_id]: agent },
     activeAgentId: {
       ...state.activeAgentId,
-      [agent.workspace_id]: agent.agent_id,
+      [agent.session_id]: agent.agent_id,
     },
-    order: appendOrder(state.order, agent.workspace_id, agent.agent_id),
+    order: appendOrder(state.order, agent.session_id, agent.agent_id),
   }));
 };
 
@@ -115,28 +115,28 @@ export const removeAgent = (agentId: string) => {
     const { [agentId]: _removed, ...next } = state.agents;
     const activeUpdate = { ...state.activeAgentId };
     const splitPairUpdate = { ...state.splitPair };
-    const existingPair = splitPairUpdate[agent.workspace_id];
+    const existingPair = splitPairUpdate[agent.session_id];
     if (
       existingPair &&
       (existingPair.left === agentId || existingPair.right === agentId)
     ) {
-      splitPairUpdate[agent.workspace_id] = null;
+      splitPairUpdate[agent.session_id] = null;
     }
     const orderUpdate = removeFromOrder(
       state.order,
-      agent.workspace_id,
+      agent.session_id,
       agentId,
     );
-    if (activeUpdate[agent.workspace_id] === agentId) {
-      const previousOrder = state.order[agent.workspace_id] ?? [];
+    if (activeUpdate[agent.session_id] === agentId) {
+      const previousOrder = state.order[agent.session_id] ?? [];
       const removedIdx = previousOrder.indexOf(agentId);
-      const nextOrder = orderUpdate[agent.workspace_id] ?? [];
+      const nextOrder = orderUpdate[agent.session_id] ?? [];
       let neighborId: string | null = null;
       if (nextOrder.length > 0) {
         const neighborIdx = removedIdx > 0 ? removedIdx - 1 : 0;
         neighborId = nextOrder[Math.min(neighborIdx, nextOrder.length - 1)];
       }
-      activeUpdate[agent.workspace_id] = neighborId;
+      activeUpdate[agent.session_id] = neighborId;
     }
 
     return {
@@ -153,12 +153,12 @@ export const replaceAgent = (oldAgentId: string, newAgent: AgentStatus) => {
     const { [oldAgentId]: _old, ...rest } = state.agents;
     const next = { ...rest, [newAgent.agent_id]: newAgent };
     const activeUpdate = { ...state.activeAgentId };
-    if (activeUpdate[newAgent.workspace_id] === oldAgentId) {
-      activeUpdate[newAgent.workspace_id] = newAgent.agent_id;
+    if (activeUpdate[newAgent.session_id] === oldAgentId) {
+      activeUpdate[newAgent.session_id] = newAgent.agent_id;
     }
     const orderUpdate = replaceInOrder(
       state.order,
-      newAgent.workspace_id,
+      newAgent.session_id,
       oldAgentId,
       newAgent.agent_id,
     );
@@ -172,12 +172,12 @@ export const replaceAgent = (oldAgentId: string, newAgent: AgentStatus) => {
 };
 
 /**
- * Reorder an agent tab within a workspace. Moves `agentId` so that it occupies
+ * Reorder an agent tab within a session. Moves `agentId` so that it occupies
  * the slot currently held by `targetAgentId`. `position` decides whether the
  * agent lands immediately before or after the target when dropping.
  */
 export const reorderAgent = (
-  workspaceId: string,
+  sessionId: string,
   agentId: string,
   targetAgentId: string,
   position: "after" | "before" = "before",
@@ -186,7 +186,7 @@ export const reorderAgent = (
     return;
   }
   agentStore.setState((state) => {
-    const current = state.order[workspaceId];
+    const current = state.order[sessionId];
     if (!current) {
       return state;
     }
@@ -202,54 +202,54 @@ export const reorderAgent = (
       position === "after" ? adjustedTargetIdx + 1 : adjustedTargetIdx;
     without.splice(insertIdx, 0, agentId);
 
-    return { order: { ...state.order, [workspaceId]: without } };
+    return { order: { ...state.order, [sessionId]: without } };
   });
 };
 
 export const getAgent = (agentId: string): AgentStatus | undefined =>
   agentStore.getState().agents[agentId];
 
-export const getAgentsByWorkspace = (workspaceId: string): AgentStatus[] =>
+export const getAgentsBySession = (sessionId: string): AgentStatus[] =>
   Object.values(agentStore.getState().agents).filter(
-    (a) => a.workspace_id === workspaceId,
+    (a) => a.session_id === sessionId,
   );
 
-export const setActiveAgent = (workspaceId: string, agentId: string | null) => {
+export const setActiveAgent = (sessionId: string, agentId: string | null) => {
   agentStore.setState((state) => ({
-    activeAgentId: { ...state.activeAgentId, [workspaceId]: agentId },
+    activeAgentId: { ...state.activeAgentId, [sessionId]: agentId },
   }));
 };
 
 /**
- * Rotate the active agent tab for a workspace. `direction` is +1 for next,
+ * Rotate the active agent tab for a session. `direction` is +1 for next,
  * -1 for previous; wraps around. No-op if there are 0 or 1 agents.
  */
 export const cycleActiveAgent = (
-  workspaceId: string,
+  sessionId: string,
   direction: -1 | 1,
 ): void => {
   const state = agentStore.getState();
   const ids = Object.values(state.agents)
-    .filter((a) => a.workspace_id === workspaceId)
+    .filter((a) => a.session_id === sessionId)
     .map((a) => a.agent_id);
   if (ids.length < 2) {
     return;
   }
-  const currentId = state.activeAgentId[workspaceId];
+  const currentId = state.activeAgentId[sessionId];
   const currentIdx = currentId ? ids.indexOf(currentId) : -1;
   const base = currentIdx === -1 ? 0 : currentIdx;
   const nextIdx = (base + direction + ids.length) % ids.length;
   const nextId = ids[nextIdx];
   if (nextId) {
     agentStore.setState((s) => ({
-      activeAgentId: { ...s.activeAgentId, [workspaceId]: nextId },
+      activeAgentId: { ...s.activeAgentId, [sessionId]: nextId },
     }));
   }
 };
 
-export const getActiveAgent = (workspaceId: string): AgentStatus | null => {
+export const getActiveAgent = (sessionId: string): AgentStatus | null => {
   const state = agentStore.getState();
-  const id = state.activeAgentId[workspaceId];
+  const id = state.activeAgentId[sessionId];
   if (!id) {
     return null;
   }
@@ -261,9 +261,9 @@ export const useAgentsRecord = () => useAgentStore((s) => s.agents);
 
 export const useActiveAgentIds = () => useAgentStore((s) => s.activeAgentId);
 
-export const useAgentOrder = (workspaceId: string | null) =>
+export const useAgentOrder = (sessionId: string | null) =>
   useAgentStore((s) =>
-    workspaceId ? (s.order[workspaceId] ?? EMPTY_ORDER) : EMPTY_ORDER,
+    sessionId ? (s.order[sessionId] ?? EMPTY_ORDER) : EMPTY_ORDER,
   );
 
 const EMPTY_ORDER: string[] = [];
@@ -271,15 +271,15 @@ const EMPTY_ORDER: string[] = [];
 export const useAgentStatus = (agentId: string) =>
   useAgentStore((s) => s.agents[agentId]);
 
-export const setSplitPair = (workspaceId: string, pair: SplitPair | null) => {
+export const setSplitPair = (sessionId: string, pair: SplitPair | null) => {
   agentStore.setState((state) => ({
-    splitPair: { ...state.splitPair, [workspaceId]: pair },
+    splitPair: { ...state.splitPair, [sessionId]: pair },
   }));
 };
 
-export const useSplitPair = (workspaceId: string | null): SplitPair | null =>
+export const useSplitPair = (sessionId: string | null): SplitPair | null =>
   useAgentStore((s) =>
-    workspaceId ? (s.splitPair[workspaceId] ?? null) : null,
+    sessionId ? (s.splitPair[sessionId] ?? null) : null,
   );
 
 /** For tests and imperative access */

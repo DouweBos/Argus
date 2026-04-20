@@ -22,13 +22,13 @@ interface DiffViewerProps {
   branchName?: string;
   onFileCountChange?: (count: number) => void;
   repoRoot: string;
-  workspaceId: string;
+  sessionId: string;
 }
 
 const INITIAL_SELECTION = new Set([0]);
 
 export function DiffViewer({
-  workspaceId,
+  sessionId,
   baseBranch,
   branchName,
   repoRoot,
@@ -40,7 +40,7 @@ export function DiffViewer({
     isLoading,
     error: fetchError,
     refetch: fetchDiff,
-  } = useDiffFiles(workspaceId);
+  } = useDiffFiles(sessionId);
   const [selectedIndices, setSelectedIndices] =
     useState<Set<number>>(INITIAL_SELECTION);
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,34 +100,34 @@ export function DiffViewer({
   );
 
   const handleStageAll = useCallback(async () => {
-    await stageAll(workspaceId);
-  }, [workspaceId]);
+    await stageAll(sessionId);
+  }, [sessionId]);
 
   const handleUnstageAll = useCallback(async () => {
-    await unstageAll(workspaceId);
-  }, [workspaceId]);
+    await unstageAll(sessionId);
+  }, [sessionId]);
 
   const handleStageSelected = useCallback(async () => {
     for (const f of selectedFiles) {
       const path = gitIndexPath(f);
       if (f.staged !== "full") {
-        await stageFile(workspaceId, path);
+        await stageFile(sessionId, path);
       }
     }
 
     await fetchDiff();
-  }, [selectedFiles, workspaceId, fetchDiff]);
+  }, [selectedFiles, sessionId, fetchDiff]);
 
   const handleUnstageSelected = useCallback(async () => {
     for (const f of selectedFiles) {
       const path = gitIndexPath(f);
       if (f.staged !== "none") {
-        await unstageFile(workspaceId, path);
+        await unstageFile(sessionId, path);
       }
     }
 
     await fetchDiff();
-  }, [selectedFiles, workspaceId, fetchDiff]);
+  }, [selectedFiles, sessionId, fetchDiff]);
 
   const allStaged = files.length > 0 && files.every((f) => f.staged === "full");
   const anyStaged = files.length > 0 && files.some((f) => f.staged !== "none");
@@ -201,7 +201,7 @@ export function DiffViewer({
     diffDetailContent = (
       <FileDiffView
         file={selectedFiles[0]}
-        workspaceId={workspaceId}
+        sessionId={sessionId}
         onAction={handleAction}
       />
     );
@@ -216,7 +216,7 @@ export function DiffViewer({
             <FileDiffView
               file={file}
               inline
-              workspaceId={workspaceId}
+              sessionId={sessionId}
               onAction={handleAction}
             />
           </div>
@@ -240,7 +240,7 @@ export function DiffViewer({
         fileCount={files.length}
         repoRoot={repoRoot}
         searchQuery={searchQuery}
-        workspaceId={workspaceId}
+        sessionId={sessionId}
         onRefresh={fetchDiff}
         onSearchChange={setSearchQuery}
       />
@@ -265,7 +265,7 @@ export function DiffViewer({
             <CommitPanel
               allStaged={allStaged}
               anyStaged={anyStaged}
-              workspaceId={workspaceId}
+              sessionId={sessionId}
               onAction={handleAction}
               onCommitted={fetchDiff}
               onStageAll={handleStageAll}
@@ -282,7 +282,7 @@ export function DiffViewer({
               files={files}
               searchFilter={searchQuery}
               selectedIndices={selectedIndices}
-              workspaceId={workspaceId}
+              sessionId={sessionId}
               onAction={handleAction}
               onSelectionChange={setSelectedIndices}
             />

@@ -18,13 +18,13 @@ export interface HunkSectionProps {
     indices: Set<number>,
   ) => void;
   selectedLines: Set<number> | undefined;
-  workspaceId: string;
+  sessionId: string;
 }
 
 export function HunkSection({
   hunk,
   hunkIndex,
-  workspaceId,
+  sessionId,
   selectedLines,
   onGutterMouseDown,
   onGutterMouseEnter,
@@ -76,7 +76,7 @@ export function HunkSection({
               <button
                 className={styles.hunkBtn}
                 onClick={() =>
-                  onAction(() => discardHunk(workspaceId, hunk.patch))
+                  onAction(() => discardHunk(sessionId, hunk.patch))
                 }
               >
                 Discard Chunk
@@ -85,7 +85,7 @@ export function HunkSection({
                 <button
                   className={styles.hunkBtn}
                   onClick={() =>
-                    onAction(() => unstageHunk(workspaceId, hunk.patch))
+                    onAction(() => unstageHunk(sessionId, hunk.patch))
                   }
                 >
                   Unstage Chunk
@@ -94,7 +94,7 @@ export function HunkSection({
                 <button
                   className={styles.hunkBtn}
                   onClick={() =>
-                    onAction(() => stageHunk(workspaceId, hunk.patch))
+                    onAction(() => stageHunk(sessionId, hunk.patch))
                   }
                 >
                   Stage Chunk

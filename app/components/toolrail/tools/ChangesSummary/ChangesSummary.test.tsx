@@ -20,13 +20,13 @@ vi.mock("../../../../hooks/useMergeStatus", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Mock workspace store
+// Mock session store
 // ---------------------------------------------------------------------------
 
-const mockUseWorkspaces = vi.fn();
+const mockUseSessions = vi.fn();
 
-vi.mock("../../../../stores/workspaceStore", () => ({
-  useWorkspaces: () => mockUseWorkspaces(),
+vi.mock("../../../../stores/sessionStore", () => ({
+  useSessions: () => mockUseSessions(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -70,11 +70,11 @@ function setupDefaults(
   overrides: {
     files?: DiffFile[];
     mergeStatus?: Record<string, unknown>;
-    workspace?: Record<string, unknown> | null;
+    session?: Record<string, unknown> | null;
   } = {},
 ) {
   const files = overrides.files ?? [];
-  const workspace = overrides.workspace ?? null;
+  const session = overrides.session ?? null;
   const mergeStatus = overrides.mergeStatus ?? {
     conflicts: [],
     hasStaged: false,
@@ -93,8 +93,8 @@ function setupDefaults(
 
   mockUseMergeStatus.mockReturnValue(mergeStatus);
 
-  mockUseWorkspaces.mockReturnValue(
-    workspace ? [{ id: "ws-1", ...workspace }] : [],
+  mockUseSessions.mockReturnValue(
+    session ? [{ id: "ws-1", ...session }] : [],
   );
 }
 
@@ -111,17 +111,17 @@ describe("changesSummary", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders nothing when workspaceId is null", () => {
+  it("renders nothing when sessionId is null", () => {
     setupDefaults();
-    const { container } = render(<ChangesSummary workspaceId={null} />);
+    const { container } = render(<ChangesSummary sessionId={null} />);
     expect(container.innerHTML).toBe("");
   });
 
   it("shows empty state when no files changed", () => {
     setupDefaults({
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
     expect(screen.getByText("No changes")).toBeTruthy();
   });
 
@@ -131,9 +131,9 @@ describe("changesSummary", () => {
         makeFile("src/pages/api/search.ts", 10, 2),
         makeFile("src/components/Box.tsx", 5, 0),
       ],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     expect(screen.getByText("search.ts")).toBeTruthy();
     expect(screen.getByText("src/pages/api")).toBeTruthy();
@@ -144,9 +144,9 @@ describe("changesSummary", () => {
   it("shows per-file addition and deletion stats", () => {
     setupDefaults({
       files: [makeFile("file.ts", 10, 3)],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     // +10 and -3 appear in both the header and the file row
     expect(screen.getAllByText("+10")).toHaveLength(2);
@@ -156,9 +156,9 @@ describe("changesSummary", () => {
   it("shows total additions/deletions in stats header", () => {
     setupDefaults({
       files: [makeFile("a.ts", 10, 2), makeFile("b.ts", 5, 3)],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     expect(screen.getByText("+15")).toBeTruthy();
     expect(screen.getByText("-5")).toBeTruthy();
@@ -172,9 +172,9 @@ describe("changesSummary", () => {
         makeFile("b.ts", 2, 0),
         makeFile("c.ts", 3, 0),
       ],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     expect(screen.getByText("1/3 files")).toBeTruthy();
 
@@ -187,9 +187,9 @@ describe("changesSummary", () => {
   it("prev button is disabled at first file", () => {
     setupDefaults({
       files: [makeFile("a.ts", 1, 0), makeFile("b.ts", 2, 0)],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     // The prev button (before "1/2 files" label) should be disabled
     const label = screen.getByText("1/2 files");
@@ -200,20 +200,20 @@ describe("changesSummary", () => {
   it("next button is disabled at last file", () => {
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     const label = screen.getByText("1/1 files");
     const nextBtn = label.nextElementSibling as HTMLButtonElement;
     expect(nextBtn.disabled).toBe(true);
   });
 
-  it("shows merge section only for worktree workspaces with base_branch", () => {
+  it("shows merge section only for worktree sessions with base_branch", () => {
     const handleMerge = vi.fn();
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
-      workspace: { kind: "worktree", base_branch: "main" },
+      session: { kind: "worktree", base_branch: "main" },
       mergeStatus: {
         conflicts: [],
         hasStaged: true,
@@ -222,17 +222,17 @@ describe("changesSummary", () => {
         handleMerge,
       },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     expect(screen.getByText("Apply Changes Locally")).toBeTruthy();
   });
 
-  it("hides merge section for repo_root workspaces", () => {
+  it("hides merge section for repo_root sessions", () => {
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
-      workspace: { kind: "repo_root" },
+      session: { kind: "project_root" },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     expect(screen.queryByText("Apply Changes Locally")).toBeNull();
   });
@@ -240,7 +240,7 @@ describe("changesSummary", () => {
   it("merge button is disabled when nothing staged", () => {
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
-      workspace: { kind: "worktree", base_branch: "main" },
+      session: { kind: "worktree", base_branch: "main" },
       mergeStatus: {
         conflicts: [],
         hasStaged: false,
@@ -249,7 +249,7 @@ describe("changesSummary", () => {
         handleMerge: vi.fn(),
       },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     const mergeBtn = screen
       .getByText("Apply Changes Locally")
@@ -260,7 +260,7 @@ describe("changesSummary", () => {
   it("merge button is disabled when conflicts exist", () => {
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
-      workspace: { kind: "worktree", base_branch: "main" },
+      session: { kind: "worktree", base_branch: "main" },
       mergeStatus: {
         conflicts: ["file.ts"],
         hasStaged: true,
@@ -269,7 +269,7 @@ describe("changesSummary", () => {
         handleMerge: vi.fn(),
       },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     const mergeBtn = screen
       .getByText("Apply Changes Locally")
@@ -281,7 +281,7 @@ describe("changesSummary", () => {
     const handleMerge = vi.fn();
     setupDefaults({
       files: [makeFile("a.ts", 1, 0)],
-      workspace: { kind: "worktree", base_branch: "main" },
+      session: { kind: "worktree", base_branch: "main" },
       mergeStatus: {
         conflicts: [],
         hasStaged: true,
@@ -290,7 +290,7 @@ describe("changesSummary", () => {
         handleMerge,
       },
     });
-    render(<ChangesSummary workspaceId="ws-1" />);
+    render(<ChangesSummary sessionId="ws-1" />);
 
     fireEvent.click(screen.getByText("Apply Changes Locally"));
     expect(handleMerge).toHaveBeenCalledTimes(1);

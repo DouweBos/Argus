@@ -16,8 +16,8 @@ const PAGE_SIZE = 100;
 
 interface CommitLogViewProps {
   allBranches: boolean;
+  sessionId: string;
   showGraph?: boolean;
-  workspaceId: string;
 }
 
 function formatDate(iso: string): string {
@@ -59,7 +59,7 @@ function statusLabel(status: string): string {
 }
 
 export function CommitLogView({
-  workspaceId,
+  sessionId,
   allBranches,
   showGraph = true,
 }: CommitLogViewProps) {
@@ -73,14 +73,14 @@ export function CommitLogView({
   const [expandedFiles, setExpandedFiles] = useState(() => new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const [prevDeps, setPrevDeps] = useState({ allBranches, workspaceId });
+  const [prevDeps, setPrevDeps] = useState({ allBranches, sessionId });
 
-  // Reset state when workspace or branch filter changes
+  // Reset state when session or branch filter changes
   if (
-    workspaceId !== prevDeps.workspaceId ||
+    sessionId !== prevDeps.sessionId ||
     allBranches !== prevDeps.allBranches
   ) {
-    setPrevDeps({ allBranches, workspaceId });
+    setPrevDeps({ allBranches, sessionId });
     setCommits([]);
     setIsLoading(true);
     setError(null);
@@ -90,7 +90,7 @@ export function CommitLogView({
 
   // Initial load
   useEffect(() => {
-    gitLog(workspaceId, PAGE_SIZE, allBranches)
+    gitLog(sessionId, PAGE_SIZE, allBranches)
       .then((c) => {
         setCommits(c);
         setHasMore(c.length >= PAGE_SIZE);
@@ -100,7 +100,7 @@ export function CommitLogView({
         setError(err instanceof Error ? err.message : String(err));
         setIsLoading(false);
       });
-  }, [workspaceId, allBranches]);
+  }, [sessionId, allBranches]);
 
   // Load more when sentinel becomes visible
   const loadMore = useCallback(() => {
@@ -111,7 +111,7 @@ export function CommitLogView({
     // Fetch next page by requesting PAGE_SIZE more than current total,
     // then slice off what we already have
     const nextCount = commits.length + PAGE_SIZE;
-    gitLog(workspaceId, nextCount, allBranches)
+    gitLog(sessionId, nextCount, allBranches)
       .then((c) => {
         setHasMore(c.length >= nextCount);
         setCommits(c);
@@ -120,7 +120,7 @@ export function CommitLogView({
       .catch(() => {
         setIsLoadingMore(false);
       });
-  }, [workspaceId, allBranches, commits.length, isLoadingMore, hasMore]);
+  }, [sessionId, allBranches, commits.length, isLoadingMore, hasMore]);
 
   // IntersectionObserver on sentinel
   useEffect(() => {
@@ -153,13 +153,13 @@ export function CommitLogView({
         return;
       }
       try {
-        const diff = await gitShowCommit(workspaceId, commit.hash);
+        const diff = await gitShowCommit(sessionId, commit.hash);
         setDiffFiles(diff ? parseDiff(diff) : []);
       } catch {
         setDiffFiles([]);
       }
     },
-    [commits, workspaceId],
+    [commits, sessionId],
   );
 
   const toggleFile = useCallback((i: number) => {
@@ -397,7 +397,7 @@ export function CommitLogView({
                         <FileDiffView
                           file={file}
                           inline
-                          workspaceId={workspaceId}
+                          sessionId={sessionId}
                           onAction={async () => {}}
                         />
                       </div>

@@ -16,7 +16,7 @@ import styles from "./StashesView.module.css";
 
 interface StashesViewProps {
   onRefresh: () => void;
-  workspaceId: string;
+  sessionId: string;
 }
 
 function formatDate(iso: string): string {
@@ -48,7 +48,7 @@ function statusLabel(status: string): string {
   }
 }
 
-export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
+export function StashesView({ sessionId, onRefresh }: StashesViewProps) {
   const [stashes, setStashes] = useState<GitStashEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,14 +61,14 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
     setIsLoading(true);
     setError(null);
     try {
-      const list = await gitStashList(workspaceId);
+      const list = await gitStashList(sessionId);
       setStashes(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
-  }, [workspaceId]);
+  }, [sessionId]);
 
   useEffect(() => {
     fetchStashes();
@@ -84,13 +84,13 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
         return;
       }
       try {
-        const diff = await gitStashShow(workspaceId, stash.index);
+        const diff = await gitStashShow(sessionId, stash.index);
         setDiffFiles(diff ? parseDiff(diff) : []);
       } catch {
         setDiffFiles([]);
       }
     },
-    [stashes, workspaceId],
+    [stashes, sessionId],
   );
 
   const selected = selectedIdx >= 0 ? stashes[selectedIdx] : null;
@@ -112,14 +112,14 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
     setApplying(true);
     setError(null);
     try {
-      await gitStashApply(workspaceId, stash.index);
+      await gitStashApply(sessionId, stash.index);
       onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setApplying(false);
     }
-  }, [workspaceId, stashes, selectedIdx, onRefresh]);
+  }, [sessionId, stashes, selectedIdx, onRefresh]);
 
   const handleDelete = useCallback(async () => {
     const stash = stashes[selectedIdx];
@@ -129,7 +129,7 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
     setApplying(true);
     setError(null);
     try {
-      await gitStashDrop(workspaceId, stash.index);
+      await gitStashDrop(sessionId, stash.index);
       setSelectedIdx(-1);
       setDiffFiles([]);
       await fetchStashes();
@@ -138,7 +138,7 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
     } finally {
       setApplying(false);
     }
-  }, [workspaceId, stashes, selectedIdx, fetchStashes]);
+  }, [sessionId, stashes, selectedIdx, fetchStashes]);
 
   const toggleFile = useCallback((i: number) => {
     setExpandedFiles((prev) => {
@@ -329,7 +329,7 @@ export function StashesView({ workspaceId, onRefresh }: StashesViewProps) {
                         <FileDiffView
                           file={file}
                           inline
-                          workspaceId={workspaceId}
+                          sessionId={sessionId}
                           onAction={async () => {}}
                         />
                       </div>

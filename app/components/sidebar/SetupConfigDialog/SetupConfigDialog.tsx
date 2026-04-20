@@ -383,7 +383,7 @@ function EnvField({ list }: EnvFieldProps) {
 
   return (
     <div className={styles.field}>
-      <p className={styles.sectionTitle}>Workspace Environment Variables</p>
+      <p className={styles.sectionTitle}>Session Environment Variables</p>
       {list.items.length === 0 ? (
         <div className={styles.emptyState}>
           <span>No env variables configured</span>
@@ -468,7 +468,7 @@ function EnvField({ list }: EnvFieldProps) {
         </div>
       )}
       <p className={styles.helpText}>
-        Unique integer per workspace for port allocation. Hash: base_value +
+        Unique integer per session for port allocation. Hash: base_value +
         hash % range. Sequential: base_value + index.
       </p>
     </div>
@@ -922,16 +922,16 @@ export function SetupConfigDialog({
         </div>
       ) : (
         <div className={styles.form}>
-          {/* ---- Workspace Setup ---- */}
+          {/* ---- Session Setup ---- */}
           <ConfigSection
             defaultOpen={hasSetup}
-            description="Runs once when creating a new worktree workspace."
+            description="Runs once when creating a new worktree session."
             summary={setupSummary(
               copyList.items,
               symlinkList.items,
               commandList.items,
             )}
-            title="Workspace Setup"
+            title="Session Setup"
           >
             <ListField
               emptyLabel="No copy patterns"
@@ -956,7 +956,7 @@ export function SetupConfigDialog({
           {/* ---- Runtime ---- */}
           <ConfigSection
             defaultOpen={hasRuntime}
-            description="Controls how workspaces run, what URL the browser opens to, and what terminals open."
+            description="Controls how sessions run, what URL the browser opens to, and what terminals open."
             summary={runtimeSummary(
               runList.items,
               browserUrl,
@@ -988,7 +988,7 @@ export function SetupConfigDialog({
                 ))}
               </div>
               <p className={styles.helpText}>
-                Runtimes agents pre-allocate per workspace (iOS simulator,
+                Runtimes agents pre-allocate per session (iOS simulator,
                 Android emulator, headless Chromium). Leave empty if this
                 project doesn&apos;t need any of them — each unused runtime
                 still consumes CPU and memory.
@@ -1008,7 +1008,7 @@ export function SetupConfigDialog({
                 onChange={(e) => setBrowserUrl(e.target.value)}
               />
               <p className={styles.helpText}>
-                Default address for the web browser panel when a workspace has
+                Default address for the web browser panel when a session has
                 not navigated elsewhere yet.
               </p>
             </div>

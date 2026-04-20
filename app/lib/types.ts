@@ -1,21 +1,21 @@
-export interface Workspace {
-  /** The branch this workspace was created from (e.g. "main"). */
+export interface Session {
+  /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
   branch: string;
   description: string;
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
   id: string;
-  kind: "org_host" | "repo_root" | "worktree";
-  /** OrgTask that owns this workspace (if spawned from a cross-repo task). */
+  kind: "org_host" | "project_root" | "worktree";
+  /** OrgTask that owns this session (if spawned from a cross-repo task). */
   organization_task_id?: string | null;
   path: string;
   repo_root: string;
   status: "deleting" | "initializing" | "ready" | { error: string };
 }
 
-/** Normalise workspace status to a simple display string. */
-export function workspaceStatusLabel(status: Workspace["status"]): string {
+/** Normalise session status to a simple display string. */
+export function sessionStatusLabel(status: Session["status"]): string {
   if (typeof status === "string") {
     return status;
   }
@@ -28,15 +28,15 @@ export interface BranchList {
   remote: string[];
 }
 
-/** Check if workspace is ready. */
-export function isWorkspaceReady(status: Workspace["status"]): boolean {
+/** Check if session is ready. */
+export function isSessionReady(status: Session["status"]): boolean {
   return status === "ready";
 }
 
 export interface TerminalSession {
   id: string;
+  session_id: string;
   title: string;
-  workspace_id: string;
 }
 
 export interface AgentStatus {
@@ -52,8 +52,8 @@ export interface AgentStatus {
   parent_agent_id?: string | null;
   /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */
   permission_mode?: string;
+  session_id: string;
   status: "error" | "idle" | "running" | "stopped";
-  workspace_id: string;
 }
 
 export interface SimulatorDevice {
@@ -75,8 +75,8 @@ export interface DeviceInfo {
   reservationKey: string;
   reserved: boolean;
   runtime?: string;
-  workspaceId: string | null;
-  workspacePath: string | null;
+  sessionId: string | null;
+  sessionPath: string | null;
 }
 
 export interface ConductorLogEntry {
@@ -130,7 +130,7 @@ export interface WorkspaceEnvConfig {
   name: string;
   /** Modulus for the hash strategy (default 1000). */
   range?: number;
-  /** How to compute the per-workspace offset (default: hash). */
+  /** How to compute the per-session offset (default: hash). */
   strategy?: WorkspaceEnvStrategy;
 }
 
@@ -223,7 +223,7 @@ export interface ArgusConfig {
     symlink?: string[];
   };
   terminals?: TerminalConfigEntry[];
-  /** Env vars set in each workspace's terminals with a unique integer per workspace. */
+  /** Env vars set in each session's terminals with a unique integer per session. */
   workspace_env?: WorkspaceEnvConfig[];
 }
 
@@ -420,7 +420,7 @@ export const ONBOARDING_STEPS = [
   "defaults",
   "project",
   "argus_config",
-  "first_workspace",
+  "first_session",
   "first_agent",
   "completion",
 ] as const;
@@ -501,7 +501,7 @@ export interface ExampleProject {
 export interface OrgTask {
   created_at: number;
   host_agent_id: string | null;
-  host_workspace_id: string | null;
+  host_session_id: string | null;
   id: string;
   organization_id: string;
   prompt: string;

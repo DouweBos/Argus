@@ -38,7 +38,7 @@ function SettingsDialogContent() {
         <section className={styles.section}>
           <div className={styles.label}>Default permission mode</div>
           <div className={styles.caption}>
-            Applied to new agents unless overridden per-workspace.
+            Applied to new agents unless overridden per-session.
           </div>
           <div className={styles.options}>
             {MODES.map((m) => (

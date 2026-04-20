@@ -29,7 +29,7 @@ import {
   useConversation,
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
@@ -114,7 +114,7 @@ interface AgentChatProps {
   onResume?: () => void;
   permissionMode?: string;
   readOnly?: boolean;
-  workspaceId: string;
+  sessionId: string;
 }
 
 export function AgentChat({
@@ -124,7 +124,7 @@ export function AgentChat({
   onResume,
   permissionMode,
   readOnly,
-  workspaceId,
+  sessionId,
 }: AgentChatProps) {
   const conversation = useConversation(agentId);
   const agentSnapshot = useAgentStatus(agentId ?? "");
@@ -171,10 +171,10 @@ export function AgentChat({
   }, [capabilitiesModels]);
 
   // Fetch per-project command metrics for popularity sorting.
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
   const repoRoot = useMemo(
-    () => workspaces.find((w) => w.id === workspaceId)?.repo_root ?? null,
-    [workspaces, workspaceId],
+    () => sessions.find((w) => w.id === sessionId)?.repo_root ?? null,
+    [sessions, sessionId],
   );
   useEffect(() => {
     if (!repoRoot) {
@@ -644,7 +644,7 @@ export function AgentChat({
           agentStatus={agentStatus}
           disabled={!isAlive}
           model={model}
-          workspaceId={workspaceId}
+          sessionId={sessionId}
           modelPickerOpen={modelPickerOpen}
           modelValue={modelValue}
           models={modelOptions}

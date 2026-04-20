@@ -3,8 +3,8 @@
  *
  * Uses react-router-dom's MemoryRouter so the in-renderer URL is the source of
  * truth for "which screen am I on" — Zustand stores continue to own data state
- * (workspace list, agents, terminals), but the current view and the selected
- * workspace id are reflected in the URL so back/forward history and deep links
+ * (session list, agents, terminals), but the current view and the selected
+ * session id are reflected in the URL so back/forward history and deep links
  * work.
  *
  * ## Route inventory
@@ -17,12 +17,12 @@
  * - `/organizations/:organizationId`             → single organization detail
  * - `/review-queue`                              → review queue
  * - `/settings`                                  → settings (opened as dialog)
- * - `/workspaces/:workspaceId`                   → workspace (default agent tab)
- * - `/workspaces/:workspaceId/agents`            → workspace agents view
- * - `/workspaces/:workspaceId/editor`            → workspace editor view
- * - `/workspaces/:workspaceId/git`               → workspace git view
+ * - `/sessions/:sessionId`                   → session (default agent tab)
+ * - `/sessions/:sessionId/agents`            → session agents view
+ * - `/sessions/:sessionId/editor`            → session editor view
+ * - `/sessions/:sessionId/git`               → session git view
  *
- * `parseRoute` turns any incoming URL into a normalised `{ view, workspaceId,
+ * `parseRoute` turns any incoming URL into a normalised `{ view, sessionId,
  * organizationId, panel }` descriptor; `syncRouteToStores` reflects that
  * descriptor into the Zustand stores that still drive rendering. This keeps
  * the migration pragmatic — new routes are first-class but existing components
@@ -40,7 +40,7 @@ import {
   clearSelectedOrganization,
 } from "../stores/centerViewStore";
 import { setActiveCenterView, getEditorState } from "../stores/editorStore";
-import { getWorkspaceState, selectWorkspace } from "../stores/workspaceStore";
+import { getSessionState, selectSession } from "../stores/sessionStore";
 import { persistRoute } from "./routePersistence";
 
 export type AppView =
@@ -51,18 +51,18 @@ export type AppView =
   | "notifications"
   | "organizations"
   | "review-queue"
-  | "workspace";
+  | "session";
 
 export interface ParsedRoute {
   organizationId: string | null;
-  /** Workspace panel (agents/editor/git). Only meaningful when view=workspace. */
+  /** Session panel (agents/editor/git). Only meaningful when view=session. */
   panel: EditorCenterView;
+  sessionId: string | null;
   view: AppView;
-  workspaceId: string | null;
 }
 
 /**
- * Parse a pathname (e.g. `/workspaces/abc/git`) into a normalised route
+ * Parse a pathname (e.g. `/sessions/abc/git`) into a normalised route
  * descriptor. Unknown paths fall back to the home route.
  */
 export function parseRoute(pathname: string): ParsedRoute {
@@ -73,13 +73,13 @@ export function parseRoute(pathname: string): ParsedRoute {
     return emptyRoute("home");
   }
 
-  if (segments[0] === "workspaces" && segments[1]) {
+  if (segments[0] === "sessions" && segments[1]) {
     const panel = (segments[2] ?? "agents") as EditorCenterView;
     const valid: EditorCenterView[] = ["agents", "editor", "git", "home"];
 
     return {
-      view: "workspace",
-      workspaceId: segments[1],
+      view: "session",
+      sessionId: segments[1],
       organizationId: null,
       panel: valid.includes(panel) ? panel : "agents",
     };
@@ -88,7 +88,7 @@ export function parseRoute(pathname: string): ParsedRoute {
   if (segments[0] === "organizations") {
     return {
       view: "organizations",
-      workspaceId: null,
+      sessionId: null,
       organizationId: segments[1] ?? null,
       panel: "agents",
     };
@@ -108,16 +108,16 @@ export function parseRoute(pathname: string): ParsedRoute {
 }
 
 function emptyRoute(view: AppView): ParsedRoute {
-  return { view, workspaceId: null, organizationId: null, panel: "agents" };
+  return { view, sessionId: null, organizationId: null, panel: "agents" };
 }
 
 /** Build a pathname for a given route descriptor. */
 export function routeToPath(route: Partial<ParsedRoute>): string {
-  if (route.view === "workspace" && route.workspaceId) {
+  if (route.view === "session" && route.sessionId) {
     const panel =
       route.panel && route.panel !== "agents" ? `/${route.panel}` : "";
 
-    return `/workspaces/${route.workspaceId}${panel}`;
+    return `/sessions/${route.sessionId}${panel}`;
   }
   if (route.view === "organizations") {
     return route.organizationId
@@ -137,11 +137,11 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
   return "/";
 }
 
-/** Map the non-workspace views to the legacy CenterView enum. */
+/** Map the non-session views to the legacy CenterView enum. */
 function toCenterView(view: AppView): CenterView {
-  if (view === "workspace") {
-    // Workspace-view routes don't drive centerView; the store value is
-    // ignored while a workspace is selected.
+  if (view === "session") {
+    // Session-view routes don't drive centerView; the store value is
+    // ignored while a session is selected.
     return "home";
   }
 
@@ -153,11 +153,11 @@ function toCenterView(view: AppView): CenterView {
  * decisions. Called from `useRouteSync` on every location change.
  */
 export function syncRouteToStores(route: ParsedRoute): void {
-  const { selectedId } = getWorkspaceState();
+  const { selectedId } = getSessionState();
 
-  if (route.view === "workspace") {
-    if (selectedId !== route.workspaceId) {
-      selectWorkspace(route.workspaceId);
+  if (route.view === "session") {
+    if (selectedId !== route.sessionId) {
+      selectSession(route.sessionId);
     }
     if (getEditorState().activeCenterView !== route.panel) {
       setActiveCenterView(route.panel);
@@ -167,7 +167,7 @@ export function syncRouteToStores(route: ParsedRoute): void {
   }
 
   if (selectedId !== null) {
-    selectWorkspace(null);
+    selectSession(null);
   }
 
   if (route.view === "organizations" && route.organizationId) {

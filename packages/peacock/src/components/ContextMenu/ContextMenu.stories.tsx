@@ -73,7 +73,7 @@ export const WithDanger: Story = {
       { separator: true },
       {
         icon: <Icons.TrashIcon size={12} />,
-        label: "Delete Workspace",
+        label: "Delete Session",
         onClick: noop,
         danger: true,
       },

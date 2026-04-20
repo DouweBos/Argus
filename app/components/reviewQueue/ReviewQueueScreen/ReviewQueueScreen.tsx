@@ -1,11 +1,11 @@
-import type { Workspace } from "../../../lib/types";
+import type { Session } from "../../../lib/types";
 import { useEffect, useMemo, useState } from "react";
-import { EmptyState, Icons, WorkspaceCard } from "@argus/peacock";
+import { EmptyState, Icons, SessionCard } from "@argus/peacock";
 import { listen } from "../../../lib/events";
-import { watchWorkspace } from "../../../lib/ipc";
+import { watchSession } from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
+import { selectSession, useSessions } from "../../../stores/sessionStore";
 import styles from "./ReviewQueueScreen.module.css";
 
 function projectName(repoRoot: string): string {
@@ -46,11 +46,11 @@ interface ReviewQueueRowProps {
   hasStaged: boolean;
   hasUncommitted: boolean;
   onSelect: () => void;
-  workspace: Workspace;
+  session: Session;
 }
 
 function ReviewQueueRow({
-  workspace,
+  session,
   commitsAhead,
   hasStaged,
   hasUncommitted,
@@ -61,7 +61,7 @@ function ReviewQueueRow({
   useEffect(() => {
     let cancelled = false;
     const unlistenPromise = listen<DiffStats>(
-      `workspace:diff-changed:${workspace.id}`,
+      `session:diff-changed:${session.id}`,
       (event) => {
         if (!cancelled) {
           setDiffStats(event.payload);
@@ -69,13 +69,13 @@ function ReviewQueueRow({
       },
     );
     // Idempotent — re-emits current stats if already watching.
-    watchWorkspace(workspace.id).catch(() => {});
+    watchSession(session.id).catch(() => {});
 
     return () => {
       cancelled = true;
       unlistenPromise.then((fn) => fn());
     };
-  }, [workspace.id]);
+  }, [session.id]);
 
   let status: "accent" | "success" | "warning";
   if (commitsAhead > 0) {
@@ -87,14 +87,14 @@ function ReviewQueueRow({
   }
 
   return (
-    <WorkspaceCard
-      branch={workspace.display_name ?? workspace.branch}
-      repo={projectName(workspace.repo_root)}
+    <SessionCard
+      branch={session.display_name ?? session.branch}
+      repo={projectName(session.repo_root)}
       parentBranch={describeReviewState(
         commitsAhead,
         hasStaged,
         hasUncommitted,
-        workspace.base_branch,
+        session.base_branch,
       )}
       status={status}
       files={diffStats?.files}
@@ -116,19 +116,19 @@ function ReviewQueueRow({
 
 export function ReviewQueueScreen() {
   const entries = useReviewQueueMap();
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
 
   const items = useMemo(() => {
-    const byId = new Map(workspaces.map((w) => [w.id, w]));
+    const byId = new Map(sessions.map((w) => [w.id, w]));
 
     return Object.entries(entries)
-      .map(([workspaceId, entry]) => {
-        const ws = byId.get(workspaceId);
+      .map(([sessionId, entry]) => {
+        const ws = byId.get(sessionId);
         if (!ws) {
           return null;
         }
 
-        return { workspace: ws, ...entry };
+        return { session: ws, ...entry };
       })
       .filter(
         (
@@ -137,14 +137,14 @@ export function ReviewQueueScreen() {
           commitsAhead: number;
           hasStaged: boolean;
           hasUncommitted: boolean;
-          workspace: (typeof workspaces)[0];
+          session: (typeof sessions)[0];
         } => x !== null,
       )
       .sort((a, b) => b.commitsAhead - a.commitsAhead);
-  }, [entries, workspaces]);
+  }, [entries, sessions]);
 
-  const handleRowClick = (workspaceId: string) => {
-    selectWorkspace(workspaceId);
+  const handleRowClick = (sessionId: string) => {
+    selectSession(sessionId);
     setActiveTool("changes");
   };
 
@@ -155,27 +155,27 @@ export function ReviewQueueScreen() {
         <span className={styles.sub}>
           {items.length === 0
             ? "Nothing ready to review"
-            : `${items.length} workspace${items.length === 1 ? "" : "s"} with unmerged changes`}
+            : `${items.length} session${items.length === 1 ? "" : "s"} with unmerged changes`}
         </span>
       </div>
 
       {items.length === 0 ? (
         <EmptyState
           icon={<Icons.MergeIcon size={20} />}
-          title="No workspaces awaiting review"
+          title="No sessions awaiting review"
           body="When an agent completes changes on a branch, it appears here ready to merge into its parent."
         />
       ) : (
         <div className={styles.list}>
           {items.map(
-            ({ workspace, commitsAhead, hasStaged, hasUncommitted }) => (
+            ({ session, commitsAhead, hasStaged, hasUncommitted }) => (
               <ReviewQueueRow
-                key={workspace.id}
-                workspace={workspace}
+                key={session.id}
+                session={session}
                 commitsAhead={commitsAhead}
                 hasStaged={hasStaged}
                 hasUncommitted={hasUncommitted}
-                onSelect={() => handleRowClick(workspace.id)}
+                onSelect={() => handleRowClick(session.id)}
               />
             ),
           )}

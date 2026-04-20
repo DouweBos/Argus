@@ -1,38 +1,38 @@
 import type { DeviceInfo } from "../../lib/types";
-import { useProjects } from "../../hooks/useWorkspaces";
+import { useProjects } from "../../hooks/useSessions";
 import { addAgent, getAgent, setActiveAgent } from "../../stores/agentStore";
 import { setCenterView } from "../../stores/centerViewStore";
 import { setActiveCenterView } from "../../stores/editorStore";
 import {
-  getWorkspaceState,
-  selectWorkspace,
-} from "../../stores/workspaceStore";
+  getSessionState,
+  selectSession,
+} from "../../stores/sessionStore";
 
 function normalizePath(p: string): string {
   return p.replace(/\\/g, "/").replace(/\/+$/, "").replace(/\/+/g, "/");
 }
 
 /**
- * Resolve the frontend workspace id for a device — the backend's id may have
+ * Resolve the frontend session id for a device — the backend's id may have
  * been remapped when the project was first merged into the frontend store, so
  * we match by absolute path instead of id when available.
  */
-function resolveFrontendWorkspaceId(device: DeviceInfo): string | null {
-  if (!device.workspaceId) {
+function resolveFrontendSessionId(device: DeviceInfo): string | null {
+  if (!device.sessionId) {
     return null;
   }
-  if (!device.workspacePath) {
-    return device.workspaceId;
+  if (!device.sessionPath) {
+    return device.sessionId;
   }
-  const target = normalizePath(device.workspacePath);
-  const match = getWorkspaceState().workspaces.find(
+  const target = normalizePath(device.sessionPath);
+  const match = getSessionState().sessions.find(
     (w) => normalizePath(w.path) === target,
   );
 
-  return match?.id ?? device.workspaceId;
+  return match?.id ?? device.sessionId;
 }
 
-type GotoKind = "agent" | "project" | "workspace";
+type GotoKind = "agent" | "project" | "session";
 
 /**
  * Navigation helpers for the Devices screen and DeviceDialog. Keeps the
@@ -50,11 +50,11 @@ export function useDeviceNavigation() {
       skipRecent: true,
     });
 
-    const wsId = resolveFrontendWorkspaceId(device);
+    const wsId = resolveFrontendSessionId(device);
 
-    if (kind === "workspace" && wsId) {
+    if (kind === "session" && wsId) {
       setCenterView("home");
-      selectWorkspace(wsId);
+      selectSession(wsId);
       setActiveAgent(wsId, null);
       setActiveCenterView("agents");
     }
@@ -65,12 +65,12 @@ export function useDeviceNavigation() {
       if (!getAgent(device.agentId)) {
         addAgent({
           agent_id: device.agentId,
-          workspace_id: wsId,
+          session_id: wsId,
           status: "running",
         });
       }
       setCenterView("home");
-      selectWorkspace(wsId);
+      selectSession(wsId);
       setActiveAgent(wsId, device.agentId);
       setActiveCenterView("agents");
     }

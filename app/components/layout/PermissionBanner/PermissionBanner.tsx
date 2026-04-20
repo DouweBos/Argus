@@ -8,17 +8,17 @@ import {
   useConversations,
 } from "../../../stores/conversationStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
-import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
+import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { alwaysAllowRule } from "../../agent/alwaysAllowRule";
 import styles from "./PermissionBanner.module.css";
 
 interface PendingEntry {
   agentId: string;
+  sessionId: string;
+  sessionLabel: string;
   toolInput: Record<string, unknown>;
   toolName: string;
   toolUseId: string;
-  workspaceId: string;
-  workspaceLabel: string;
 }
 
 interface ToolSummary {
@@ -57,7 +57,7 @@ function summarize(name: string, input: Record<string, unknown>): ToolSummary {
 export function PermissionBanner() {
   const conversations = useConversations();
   const agents = useAgentsRecord();
-  const workspaces = useWorkspaces();
+  const sessions = useSessions();
 
   const pending = useMemo<PendingEntry[]>(() => {
     const entries: PendingEntry[] = [];
@@ -66,9 +66,9 @@ export function PermissionBanner() {
       if (!agent) {
         continue;
       }
-      const workspace = workspaces.find((w) => w.id === agent.workspace_id);
-      const workspaceLabel =
-        workspace?.display_name || workspace?.branch || agent.workspace_id;
+      const session = sessions.find((w) => w.id === agent.session_id);
+      const sessionLabel =
+        session?.display_name || session?.branch || agent.session_id;
 
       for (const msg of conv.messages) {
         if (msg.role !== "assistant") {
@@ -78,8 +78,8 @@ export function PermissionBanner() {
           if (tc.pendingPermission) {
             entries.push({
               agentId,
-              workspaceId: agent.workspace_id,
-              workspaceLabel,
+              sessionId: agent.session_id,
+              sessionLabel,
               toolUseId: tc.id,
               toolName: tc.name,
               toolInput: tc.input,
@@ -90,11 +90,11 @@ export function PermissionBanner() {
     }
 
     return entries;
-  }, [conversations, agents, workspaces]);
+  }, [conversations, agents, sessions]);
 
   const reviewInChat = useCallback((entry: PendingEntry) => {
-    selectWorkspace(entry.workspaceId);
-    setActiveAgent(entry.workspaceId, entry.agentId);
+    selectSession(entry.sessionId);
+    setActiveAgent(entry.sessionId, entry.agentId);
     setActiveCenterView("agents");
   }, []);
 
@@ -140,13 +140,13 @@ export function PermissionBanner() {
               <div className={styles.header}>
                 <span className={styles.label}>Permission needed</span>
                 <button
-                  className={styles.workspaceBtn}
+                  className={styles.sessionBtn}
                   onClick={() => reviewInChat(entry)}
                   title="Open this agent's chat"
                   type="button"
                 >
                   <Badge tone="neutral" size="tag">
-                    {entry.workspaceLabel}
+                    {entry.sessionLabel}
                   </Badge>
                 </button>
               </div>

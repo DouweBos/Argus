@@ -4,12 +4,12 @@
  * Extracted from the MCP server so the logic is independently testable.
  */
 
-import type { ArgusConfig } from "../workspace/models";
+import type { ArgusConfig } from "../session/models";
 import fs from "node:fs";
 import path from "node:path";
 import { appState } from "../../state";
-import { addRepoRoot, createHeadWorkspace } from "../workspace/manager";
-import { loadArgusConfig } from "../workspace/setup";
+import { addRepoRoot, createHeadSession } from "../session/manager";
+import { loadArgusConfig } from "../session/setup";
 
 /** Check if a directory is a git repository. */
 export function isGitRepo(dirPath: string): boolean {
@@ -22,7 +22,7 @@ export function isGitRepo(dirPath: string): boolean {
 
 /**
  * Ensure a repo root is registered in appState. If not, register it and create
- * its head workspace so the UI shows it.
+ * its head session so the UI shows it.
  */
 export function ensureRepoRegistered(repoRoot: string): void {
   if (appState.repoRoots.has(repoRoot)) {
@@ -32,7 +32,7 @@ export function ensureRepoRegistered(repoRoot: string): void {
     throw new Error(`Not a git repository: ${repoRoot}`);
   }
   addRepoRoot(repoRoot);
-  createHeadWorkspace(repoRoot);
+  createHeadSession(repoRoot);
 }
 
 /** Shape returned by `collectAllProjects`. */

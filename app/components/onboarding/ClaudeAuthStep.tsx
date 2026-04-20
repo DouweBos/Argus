@@ -44,7 +44,7 @@ export function ClaudeAuthStep() {
     <OnboardingLayout
       currentStep="claude_auth"
       title="Connect Claude"
-      subtitle="Argus spawns Claude Code agents for every workspace. Run `claude login` in a terminal to authenticate, then click Re-check."
+      subtitle="Argus spawns Claude Code agents for every session. Run `claude login` in a terminal to authenticate, then click Re-check."
       footerLeft={
         <Button
           variant="ghost"

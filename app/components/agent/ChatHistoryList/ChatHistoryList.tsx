@@ -97,7 +97,7 @@ function EntryRow({
       <div className={styles.entryMeta}>
         <span>{formatRelativeDate(entry.endedAt)}</span>
         <span className={styles.dot} />
-        <span>{entry.workspaceBranch}</span>
+        <span>{entry.sessionBranch}</span>
         {entry.model && (
           <>
             <span className={styles.dot} />

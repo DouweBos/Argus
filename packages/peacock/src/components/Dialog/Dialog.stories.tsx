@@ -81,7 +81,7 @@ export const WithTitleExtra: Story = {
         {open && (
           <Dialog
             onClose={() => setOpen(false)}
-            title="Create workspace"
+            title="Create session"
             titleExtra={
               <span
                 style={{

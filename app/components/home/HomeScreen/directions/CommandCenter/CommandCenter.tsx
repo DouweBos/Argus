@@ -10,7 +10,7 @@ import {
 } from "@argus/peacock";
 import { setCenterView } from "../../../../../stores/centerViewStore";
 import { removeRecentProject } from "../../../../../stores/recentProjectsStore";
-import { selectWorkspace } from "../../../../../stores/workspaceStore";
+import { selectSession } from "../../../../../stores/sessionStore";
 import { OrganizationsPanel } from "../../../OrganizationsPanel/OrganizationsPanel";
 import { HOME_SHORTCUTS } from "../../homeContent";
 import styles from "./CommandCenter.module.css";
@@ -32,10 +32,10 @@ function agentMeta(status: string): string {
 export interface CommandCenterProps {
   data: HomeData & { formatLastOpened: (ms: number) => string };
   onAddRepository: () => void;
-  onNewWorkspace: () => void;
+  onNewSession: () => void;
   onOpenProject: (proj: HomeProject) => void;
-  onOpenWorkspace: (
-    workspaceId: string,
+  onOpenSession: (
+    sessionId: string,
     repoPath: string,
     agentId?: string,
   ) => void;
@@ -44,20 +44,20 @@ export interface CommandCenterProps {
 export function CommandCenter({
   data,
   onAddRepository,
-  onNewWorkspace,
+  onNewSession,
   onOpenProject,
-  onOpenWorkspace,
+  onOpenSession,
 }: CommandCenterProps) {
   const { projects, activeAgents, devices, stats, formatLastOpened } = data;
   const runningDevices = devices.filter((d) => d.online);
 
   const openDevices = () => {
-    selectWorkspace(null);
+    selectSession(null);
     setCenterView("devices");
   };
 
   const openAgents = () => {
-    selectWorkspace(null);
+    selectSession(null);
     setCenterView("agents");
   };
 
@@ -85,9 +85,9 @@ export function CommandCenter({
           <Button
             variant="primary"
             leading={<Icons.PlusIcon size={12} />}
-            onClick={onNewWorkspace}
+            onClick={onNewSession}
           >
-            New workspace
+            New session
           </Button>
         </div>
       </div>
@@ -103,8 +103,8 @@ export function CommandCenter({
           live={stats.agentsRunning > 0}
         />
         <StatCell
-          label="Workspaces"
-          value={stats.workspaces}
+          label="Sessions"
+          value={stats.sessions}
           delta={`${projects.length} repos`}
         />
         <StatCell label="Repos" value={stats.projects} delta="in rotation" />
@@ -118,7 +118,7 @@ export function CommandCenter({
         <StatCell
           label="Total agents"
           value={activeAgents.length}
-          delta="across all workspaces"
+          delta="across all sessions"
         />
         <StatCell
           label="Errors"
@@ -201,23 +201,23 @@ export function CommandCenter({
             <div className={styles.agentList}>
               {activeAgents.length === 0 ? (
                 <div className={styles.emptyCell}>
-                  No agents running. Start one from a workspace.
+                  No agents running. Start one from a session.
                 </div>
               ) : (
                 activeAgents.map((a) => (
                   <AgentRow
                     key={a.id}
                     name={a.displayName}
-                    project={basename(a.workspace.repo_root)}
+                    project={basename(a.session.repo_root)}
                     status={a.status}
                     meta={agentMeta(a.status)}
                     role="button"
                     tabIndex={0}
                     style={{ cursor: "pointer" }}
                     onClick={() =>
-                      onOpenWorkspace(
-                        a.workspace.id,
-                        a.workspace.repo_root,
+                      onOpenSession(
+                        a.session.id,
+                        a.session.repo_root,
                         a.id,
                       )
                     }

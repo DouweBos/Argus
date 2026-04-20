@@ -2,29 +2,29 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
-  getWorkspaceCommitsAhead,
-  getWorkspaceConflicts,
-  getWorkspaceStagedDiff,
-  mergeWorkspaceIntoBase,
+  getSessionCommitsAhead,
+  getSessionConflicts,
+  getSessionStagedDiff,
+  mergeSessionIntoBase,
   openExternalUrl,
-  pushWorkspaceBranch,
+  pushSessionBranch,
   readArgusConfig,
 } from "../../../lib/ipc";
-import { useWorkspaces } from "../../../stores/workspaceStore";
+import { useSessions } from "../../../stores/sessionStore";
 import styles from "./MergeBar.module.css";
 
 interface MergeBarProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function MergeBar({ workspaceId }: MergeBarProps) {
-  const workspaces = useWorkspaces();
-  const workspace = useMemo(
+export function MergeBar({ sessionId }: MergeBarProps) {
+  const sessions = useSessions();
+  const session = useMemo(
     () =>
-      workspaceId
-        ? (workspaces.find((w) => w.id === workspaceId) ?? null)
+      sessionId
+        ? (sessions.find((w) => w.id === sessionId) ?? null)
         : null,
-    [workspaceId, workspaces],
+    [sessionId, sessions],
   );
 
   const [conflicts, setConflicts] = useState<string[]>([]);
@@ -36,14 +36,14 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
   const [isPushing, setIsPushing] = useState(false);
 
   const fetchStatus = useCallback(async () => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
     try {
       const [conflictResult, stagedDiff, ahead] = await Promise.all([
-        getWorkspaceConflicts(workspaceId),
-        getWorkspaceStagedDiff(workspaceId),
-        getWorkspaceCommitsAhead(workspaceId),
+        getSessionConflicts(sessionId),
+        getSessionStagedDiff(sessionId),
+        getSessionCommitsAhead(sessionId),
       ]);
       setConflicts(conflictResult);
       setHasStaged(stagedDiff.trim() !== "");
@@ -51,31 +51,31 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
     } catch {
       // ignore
     }
-  }, [workspaceId]);
+  }, [sessionId]);
 
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Watch whether the workspace's base branch is listed as protected in
+  // Watch whether the session's base branch is listed as protected in
   // `.argus.json`. Protected branches can't be merged into from the app —
   // the UI flips to a "Push & open PR" flow instead.
   useEffect(() => {
-    if (!workspace?.repo_root || !workspace.base_branch) {
+    if (!session?.repo_root || !session.base_branch) {
       setIsProtectedBase(false);
 
       return;
     }
     let cancelled = false;
-    readArgusConfig(workspace.repo_root)
+    readArgusConfig(session.repo_root)
       .then((config) => {
         if (cancelled) {
           return;
         }
         const protectedList = config.protected_branches ?? [];
         setIsProtectedBase(
-          workspace.base_branch
-            ? protectedList.includes(workspace.base_branch)
+          session.base_branch
+            ? protectedList.includes(session.base_branch)
             : false,
         );
       })
@@ -88,21 +88,21 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
     return () => {
       cancelled = true;
     };
-  }, [workspace?.repo_root, workspace?.base_branch]);
+  }, [session?.repo_root, session?.base_branch]);
 
   useIpcEvent(
-    workspaceId ? `workspace:diff-changed:${workspaceId}` : "",
+    sessionId ? `session:diff-changed:${sessionId}` : "",
     fetchStatus,
   );
 
   const handlePushAndOpenPr = useCallback(async () => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
     setIsPushing(true);
     setMergeError(null);
     try {
-      const { prUrl } = await pushWorkspaceBranch(workspaceId);
+      const { prUrl } = await pushSessionBranch(sessionId);
       if (prUrl) {
         await openExternalUrl(prUrl);
       }
@@ -111,24 +111,24 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
     } finally {
       setIsPushing(false);
     }
-  }, [workspaceId]);
+  }, [sessionId]);
 
   const handleMerge = useCallback(async () => {
-    if (!workspaceId) {
+    if (!sessionId) {
       return;
     }
     setIsMerging(true);
     setMergeError(null);
     try {
-      await mergeWorkspaceIntoBase(workspaceId);
+      await mergeSessionIntoBase(sessionId);
     } catch (err) {
       setMergeError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsMerging(false);
     }
-  }, [workspaceId]);
+  }, [sessionId]);
 
-  if (!workspace || workspace.kind !== "worktree" || !workspace.base_branch) {
+  if (!session || session.kind !== "worktree" || !session.base_branch) {
     return null;
   }
 
@@ -139,11 +139,11 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
   if (isProtectedBase) {
     const canPush = hasMergeableWork && !isPushing;
     const pushBtnTitle = hasMergeableWork
-      ? `Push ${workspace.branch} to origin and open a pull request against ${workspace.base_branch}`
-      : `Stage or commit changes in this workspace, then push ${workspace.branch} and open a pull request`;
+      ? `Push ${session.branch} to origin and open a pull request against ${session.base_branch}`
+      : `Stage or commit changes in this session, then push ${session.branch} and open a pull request`;
     const statusLabel = hasMergeableWork
-      ? `${workspace.base_branch} is protected — open a PR`
-      : `Stage changes to open a PR into ${workspace.base_branch}`;
+      ? `${session.base_branch} is protected — open a PR`
+      : `Stage changes to open a PR into ${session.base_branch}`;
     const toneClass = hasMergeableWork ? styles.barReady : styles.barNoStaged;
     const textToneClass = hasMergeableWork
       ? styles.statusTextReady
@@ -173,15 +173,15 @@ export function MergeBar({ workspaceId }: MergeBarProps) {
 
   let mergeBtnTitle: string;
   if (hasConflicts) {
-    mergeBtnTitle = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} — resolve before merging into ${workspace.base_branch}`;
+    mergeBtnTitle = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} — resolve before merging into ${session.base_branch}`;
   } else if (!hasMergeableWork) {
-    mergeBtnTitle = `Stage changes in this workspace, then merge into ${workspace.base_branch}`;
+    mergeBtnTitle = `Stage changes in this session, then merge into ${session.base_branch}`;
   } else if (hasStaged && commitsAhead > 0) {
-    mergeBtnTitle = `Commits staged changes on ${workspace.branch}, then merges into ${workspace.base_branch} (${commitsAhead} existing commit${commitsAhead === 1 ? "" : "s"} also included)`;
+    mergeBtnTitle = `Commits staged changes on ${session.branch}, then merges into ${session.base_branch} (${commitsAhead} existing commit${commitsAhead === 1 ? "" : "s"} also included)`;
   } else if (hasStaged) {
-    mergeBtnTitle = `Commits staged changes on ${workspace.branch}, then merges into ${workspace.base_branch}`;
+    mergeBtnTitle = `Commits staged changes on ${session.branch}, then merges into ${session.base_branch}`;
   } else {
-    mergeBtnTitle = `Merges ${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} from ${workspace.branch} into ${workspace.base_branch}`;
+    mergeBtnTitle = `Merges ${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} from ${session.branch} into ${session.base_branch}`;
   }
 
   let barToneClass = styles.barNoStaged;

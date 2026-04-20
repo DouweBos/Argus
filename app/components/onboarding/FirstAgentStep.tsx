@@ -9,7 +9,7 @@ export function FirstAgentStep() {
     <OnboardingLayout
       currentStep="first_agent"
       title="Ready for your first agent"
-      subtitle="Once you land in the main window, your workspace is pre-selected. Paste a prompt into the chat — Argus spawns the agent in plan mode for safety."
+      subtitle="Once you land in the main window, your session is pre-selected. Paste a prompt into the chat — Argus spawns the agent in plan mode for safety."
       footerLeft={
         <Button
           variant="ghost"

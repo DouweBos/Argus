@@ -8,25 +8,25 @@ import {
   stopListening,
 } from "../../../lib/terminalBufferService";
 import { setActiveTool } from "../../../stores/layoutStore";
+import { getSessionState } from "../../../stores/sessionStore";
 import {
   addSession,
-  getSessionsForWorkspace,
+  getSessionsForSession,
   setActiveSession,
 } from "../../../stores/terminalStore";
-import { getWorkspaceState } from "../../../stores/workspaceStore";
 import styles from "./RunControl.module.css";
 
 interface RunControlProps {
-  workspaceId: string;
+  sessionId: string;
 }
 
 /**
  * Standalone run button that sits in the app TitleBar, replacing the old
- * in-simulator run button. Reads the workspace's `run` array from
+ * in-simulator run button. Reads the session's `run` array from
  * `.argus.json` and either shows a single play button or a split-button
  * menu when more than one command is configured.
  */
-export function RunControl({ workspaceId }: RunControlProps) {
+export function RunControl({ sessionId }: RunControlProps) {
   const [runs, setRuns] = useState<RunCommand[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
@@ -36,8 +36,8 @@ export function RunControl({ workspaceId }: RunControlProps) {
     let cancelled = false;
     (async () => {
       try {
-        const ws = getWorkspaceState().workspaces.find(
-          (w) => w.id === workspaceId,
+        const ws = getSessionState().sessions.find(
+          (w) => w.id === sessionId,
         );
         if (!ws) {
           return;
@@ -57,31 +57,31 @@ export function RunControl({ workspaceId }: RunControlProps) {
     return () => {
       cancelled = true;
     };
-  }, [workspaceId]);
+  }, [sessionId]);
 
   const runTitle = useCallback(
     async (title: string) => {
       try {
         setBusyTitles((prev) => new Set(prev).add(title));
-        const result = await createRunTerminal(workspaceId, title);
+        const result = await createRunTerminal(sessionId, title);
 
         // Register the session in the terminal store if it isn't already
         // present. When the backend reuses an existing session the same id
         // is returned — addSession would duplicate, so we dedupe here.
-        const existing = getSessionsForWorkspace(workspaceId).some(
+        const existing = getSessionsForSession(sessionId).some(
           (s) => s.id === result.sessionId,
         );
         if (!existing) {
           startListening(result.sessionId);
           addSession({
             id: result.sessionId,
-            workspace_id: workspaceId,
+            session_id: sessionId,
             title,
           });
         } else {
           startListening(result.sessionId);
         }
-        setActiveSession(workspaceId, result.sessionId);
+        setActiveSession(sessionId, result.sessionId);
         setActiveTool("terminal");
 
         // Best-effort listen-for-exit so the UI can drop the busy indicator.
@@ -124,7 +124,7 @@ export function RunControl({ workspaceId }: RunControlProps) {
         });
       }
     },
-    [workspaceId],
+    [sessionId],
   );
 
   if (runs.length === 0) {

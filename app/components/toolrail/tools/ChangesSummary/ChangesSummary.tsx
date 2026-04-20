@@ -3,7 +3,7 @@ import { Icons } from "@argus/peacock";
 import { useDiffFiles } from "../../../../hooks/useDiffFiles";
 import { useFixConflictsInChat } from "../../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../../hooks/useMergeStatus";
-import { useWorkspaces } from "../../../../stores/workspaceStore";
+import { useSessions } from "../../../../stores/sessionStore";
 import { FileTypeIcon } from "../../../shared/Icons";
 import styles from "./ChangesSummary.module.css";
 
@@ -32,40 +32,40 @@ function diffLineGutterPrefix(type: DiffLineType): string {
 }
 
 interface ChangesSummaryProps {
-  workspaceId: string | null;
+  sessionId: string | null;
 }
 
-export function ChangesSummary({ workspaceId }: ChangesSummaryProps) {
-  const workspaces = useWorkspaces();
-  const workspace = useMemo(
+export function ChangesSummary({ sessionId }: ChangesSummaryProps) {
+  const sessions = useSessions();
+  const session = useMemo(
     () =>
-      workspaceId
-        ? (workspaces.find((w) => w.id === workspaceId) ?? null)
+      sessionId
+        ? (sessions.find((w) => w.id === sessionId) ?? null)
         : null,
-    [workspaceId, workspaces],
+    [sessionId, sessions],
   );
 
-  if (!workspaceId) {
+  if (!sessionId) {
     return null;
   }
 
   return (
-    <ChangesSummaryInner workspace={workspace} workspaceId={workspaceId} />
+    <ChangesSummaryInner session={session} sessionId={sessionId} />
   );
 }
 
 interface InnerProps {
-  workspace: {
+  session: {
     base_branch?: string | null;
     branch?: string;
     kind: string;
   } | null;
-  workspaceId: string;
+  sessionId: string;
 }
 
-function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
-  const { files, isLoading } = useDiffFiles(workspaceId, {
-    baseBranch: workspace?.base_branch ?? null,
+function ChangesSummaryInner({ sessionId, session }: InnerProps) {
+  const { files, isLoading } = useDiffFiles(sessionId, {
+    baseBranch: session?.base_branch ?? null,
   });
   const {
     commitsAhead,
@@ -74,7 +74,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
     isMerging,
     mergeError,
     handleMerge,
-  } = useMergeStatus(workspaceId);
+  } = useMergeStatus(sessionId);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const fileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -158,7 +158,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
     return () => container.removeEventListener("keydown", handleKeyDown);
   }, [files.length, currentFileIndex, navigateToFile]);
 
-  const showMerge = workspace?.kind === "worktree" && workspace.base_branch;
+  const showMerge = session?.kind === "worktree" && session.base_branch;
   const hasConflicts = conflicts.length > 0;
   const conflictSet = useMemo(() => new Set(conflicts), [conflicts]);
   const {
@@ -166,20 +166,20 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
     error: dispatchError,
     isDispatching: isDispatchingAgent,
   } = useFixConflictsInChat({
-    workspaceId,
-    baseBranch: workspace?.base_branch ?? null,
-    workspaceBranch: workspace?.branch ?? null,
+    sessionId,
+    baseBranch: session?.base_branch ?? null,
+    sessionBranch: session?.branch ?? null,
     conflicts,
   });
   const hasMergeableWork = hasStaged || commitsAhead > 0;
   const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
 
-  const baseBranchLabel = workspace?.base_branch ?? "parent branch";
+  const baseBranchLabel = session?.base_branch ?? "parent branch";
   let mergeBtnTitle: string | undefined;
   if (hasConflicts) {
     mergeBtnTitle = `${conflicts.length} conflict${conflicts.length > 1 ? "s" : ""} — resolve before merging into ${baseBranchLabel}`;
   } else if (!hasMergeableWork) {
-    mergeBtnTitle = `Stage changes in this workspace, then merge into ${baseBranchLabel}`;
+    mergeBtnTitle = `Stage changes in this session, then merge into ${baseBranchLabel}`;
   } else if (hasStaged && commitsAhead > 0) {
     mergeBtnTitle = `Commits staged changes on this branch, then merges into ${baseBranchLabel} (${commitsAhead} existing commit${commitsAhead === 1 ? "" : "s"} also included)`;
   } else if (hasStaged) {
@@ -189,7 +189,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
   }
 
   const showConflictFix =
-    showMerge && hasConflicts && workspace?.branch && !isMerging;
+    showMerge && hasConflicts && session?.branch && !isMerging;
   const conflictFixButton = showConflictFix ? (
     <button
       className={styles.conflictBtn}
@@ -197,7 +197,7 @@ function ChangesSummaryInner({ workspaceId, workspace }: InnerProps) {
       title={
         isDispatchingAgent
           ? "Starting agent..."
-          : `Start a Claude Code agent in this workspace to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranchLabel}`
+          : `Start a Claude Code agent in this session to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranchLabel}`
       }
       onClick={handleFixConflictsInChat}
     >

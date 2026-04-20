@@ -11,7 +11,7 @@ import {
   useNotifications,
   useUnseenNotificationCount,
 } from "../../../stores/notificationsStore";
-import { selectWorkspace, useSelectedWorkspaceId } from "../../../stores/workspaceStore";
+import { selectSession, useSelectedSessionId } from "../../../stores/sessionStore";
 import styles from "./ToolRail.module.css";
 
 type IconComponent = React.ComponentType<
@@ -32,7 +32,7 @@ const TOOLS: ToolDef[] = [
 
 export function ToolRail() {
   const activeToolId = useActiveToolId();
-  const selectedWorkspaceId = useSelectedWorkspaceId();
+  const selectedSessionId = useSelectedSessionId();
   const location = useLocation();
   const notifications = useNotifications();
   const unseen = useUnseenNotificationCount();
@@ -46,13 +46,13 @@ export function ToolRail() {
     if (notificationsActive) {
       return;
     }
-    selectWorkspace(null);
+    selectSession(null);
     setCenterView("notifications");
   };
 
   return (
     <div className={styles.rail}>
-      {selectedWorkspaceId !== null &&
+      {selectedSessionId !== null &&
         TOOLS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
