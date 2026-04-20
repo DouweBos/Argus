@@ -5,6 +5,7 @@ import {
   ContextMenu,
   type ContextMenuItem,
   Icons,
+  projectAccent,
   SidebarRepoAction,
   SidebarRepoGroup,
 } from "@argus/peacock";
@@ -74,6 +75,7 @@ export function ProjectSegment({
   const closeMenu = useCallback(() => setMenuPosition(null), []);
 
   const projectName = basename(repoRoot);
+  const accent = projectAccent(repoRoot);
 
   return (
     <SidebarRepoGroup
@@ -81,7 +83,7 @@ export function ProjectSegment({
       title={repoRoot}
       expanded={!isCollapsed}
       active={isRepoHomeSelected}
-      leading={<Icons.FolderIcon size={11} />}
+      leading={<Icons.FolderIcon size={11} style={{ color: accent }} />}
       onToggleExpanded={onToggleCollapsed}
       onHeaderClick={openProjectHome}
       onHeaderContextMenu={(e) => {
