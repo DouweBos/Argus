@@ -3,7 +3,13 @@ import type {
   ToolResultBlock,
 } from "../../../stores/conversationStore";
 import { useCallback, useState, type ReactNode } from "react";
-import { Badge, Button, Icons } from "@argus/peacock";
+import {
+  Badge,
+  Button,
+  HoverActionBar,
+  HoverActionButton,
+  Icons,
+} from "@argus/peacock";
 import { renderMarkdown } from "../../../lib/markdown";
 import { updateAgent } from "../../../stores/agentStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
@@ -20,6 +26,11 @@ import { parseQuestions } from "./parseQuestions";
 interface ToolCallCardProps {
   /** Agent ID — needed to route permission responses. */
   agentId?: string;
+  /**
+   * Fork the conversation and workspace at this tool call. Only rendered
+   * (as a hover action) for file-mutating tools (Write / Edit / MultiEdit).
+   */
+  onFork?: () => void;
   /** Called when the user clicks Allow, Always Allow, or Deny. */
   onPermissionRespond?: (
     toolUseId: string,
@@ -225,11 +236,29 @@ function formatInput(name: string, input: Record<string, unknown>): string {
   return JSON.stringify(input, null, 2);
 }
 
+function ForkAction({ onFork }: { onFork: () => void }) {
+  return (
+    <HoverActionBar className={styles.forkActions} placement="top-right">
+      <HoverActionButton
+        icon={<Icons.BranchIcon size={12} />}
+        label="Fork workspace and chat from here"
+        onClick={onFork}
+      />
+    </HoverActionBar>
+  );
+}
+
 export function ToolCallCard({
   agentId,
+  onFork,
   onPermissionRespond,
   toolCall,
 }: ToolCallCardProps) {
+  const canFork =
+    onFork != null &&
+    (toolCall.name === "Write" ||
+      toolCall.name === "Edit" ||
+      toolCall.name === "MultiEdit");
   const [userExpanded, setUserExpanded] = useState(false);
   // Auto-expand when a permission request is pending; user toggle applies otherwise.
   const expanded = !!toolCall.pendingPermission || userExpanded;
@@ -407,6 +436,7 @@ export function ToolCallCard({
     <FileLinkHandler
       className={`${styles.card} ${toolCall.isError ? styles.cardError : ""} ${isPending ? styles.cardPending : ""}`}
     >
+      {canFork && onFork && <ForkAction onFork={onFork} />}
       <button
         aria-expanded={expanded}
         className={styles.header}

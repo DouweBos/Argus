@@ -23,6 +23,7 @@ export * from "./components/FormField/FormField";
 export * from "./components/FileTypeBadge/FileTypeBadge";
 export * from "./components/GitGraphCell/GitGraphCell";
 export * from "./components/HomeCTA/HomeCTA";
+export * from "./components/HoverActionBar/HoverActionBar";
 export * from "./components/Input/Input";
 export * from "./components/Kbd/Kbd";
 export * from "./components/PalettePill/PalettePill";

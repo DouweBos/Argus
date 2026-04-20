@@ -8,6 +8,24 @@
   position: relative;
 }
 
+/* Reveal the shared Peacock HoverActionBar when the card is hovered, and
+   fade out the trailing status badges so the top-right corner belongs to the
+   action cluster alone. Error badges stay visible — the user needs to see
+   failures even while hovering. */
+.card:hover .forkActions,
+.forkActions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.card:has(.forkActions):hover .doneTag,
+.card:has(.forkActions):hover .pendingTag,
+.card:has(.forkActions):hover .runningTag,
+.card:has(.forkActions):hover .editStats {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
 .cardError {
   background: rgba(255, 68, 102, 0.04);
 }

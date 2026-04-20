@@ -4,6 +4,8 @@
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
@@ -398,6 +400,422 @@ export async function createSession(
     });
 
   return session;
+}
+
+// ---------------------------------------------------------------------------
+// fork_session
+// ---------------------------------------------------------------------------
+
+export type ForkReplayOp =
+  | {
+      content: string;
+      filePath: string;
+      timestampMs: number;
+      type: "write";
+    }
+  | {
+      edits: { newString: string; oldString: string; replaceAll?: boolean }[];
+      filePath: string;
+      timestampMs: number;
+      type: "multiEdit";
+    }
+  | {
+      filePath: string;
+      newString: string;
+      oldString: string;
+      replaceAll?: boolean;
+      timestampMs: number;
+      type: "edit";
+    };
+
+export interface ForkSessionResult {
+  /** New Claude CLI session id for `--resume` (null when no source JSONL was truncated). */
+  claude_session_id: string | null;
+  session: Session;
+}
+
+/**
+ * Fork an existing worktree session into a new worktree *as it was at a
+ * specific message*.
+ *
+ * - The new worktree checks out the newest commit on the source branch whose
+ *   committer time is at or before `forkTimestampMs`. Anything committed
+ *   after the fork point is intentionally excluded. Uncommitted changes are
+ *   never carried over — we cannot reliably reconstruct the working tree's
+ *   state at an arbitrary past message, so we only fork from immutable
+ *   commit points.
+ * - If `sourceClaudeSessionId` is provided, the source session's Claude Code
+ *   JSONL is copied into the new worktree's Claude project directory,
+ *   truncated at the fork turn, and rewritten with a fresh sessionId/cwd/
+ *   branch so the forked agent can `--resume` into a real continuation of
+ *   the prior conversation.
+ *
+ * The source session is left completely untouched.
+ */
+export async function forkSession(
+  sourceSessionId: string,
+  newBranch: string,
+  description: string,
+  forkTimestampMs: number,
+  forkTurnNumber: number,
+  sourceClaudeSessionId?: string | null,
+  replayOps?: ForkReplayOp[] | null,
+): Promise<ForkSessionResult> {
+  const source = appState.sessions.get(sourceSessionId);
+  if (!source) {
+    throw `Session not found: ${sourceSessionId}`;
+  }
+  if (source.kind !== "worktree" && source.kind !== "project_root") {
+    throw `Cannot fork a session of kind "${source.kind}"`;
+  }
+  const srcPath = source.path;
+  const srcBranch = source.branch;
+  const repoRoot = source.repo_root;
+
+  // Find the most recent commit on the source branch at or before the fork
+  // message's timestamp. `git rev-list --before` is inclusive of the given
+  // instant. Fall back to the branch's root commit if nothing predates the
+  // fork point (e.g. the fork message is older than any commit on the branch).
+  const cutoffIso = new Date(forkTimestampMs).toISOString();
+  let forkCommit = "";
+  try {
+    forkCommit = (
+      await git(srcPath, [
+        "rev-list",
+        "-n",
+        "1",
+        `--before=${cutoffIso}`,
+        srcBranch,
+      ])
+    ).trim();
+  } catch {
+    forkCommit = "";
+  }
+  if (!forkCommit) {
+    try {
+      forkCommit = (
+        await git(srcPath, ["rev-list", "--max-parents=0", srcBranch])
+      )
+        .trim()
+        .split("\n")[0];
+    } catch {
+      forkCommit = "";
+    }
+  }
+
+  const session = await createSession(
+    repoRoot,
+    newBranch,
+    description,
+    false,
+    srcBranch,
+  );
+
+  if (forkCommit) {
+    try {
+      await git(session.path, ["reset", "--hard", forkCommit]);
+    } catch (e) {
+      info(`forkSession: reset to fork commit failed: ${String(e)}`);
+    }
+  }
+
+  // Replay Edit/Write/MultiEdit tool calls between the fork commit and the
+  // fork message to reconstruct uncommitted working-tree state.
+  if (replayOps && replayOps.length > 0) {
+    let commitTimeMs = 0;
+    if (forkCommit) {
+      try {
+        const ct = (
+          await git(session.path, ["show", "-s", "--format=%ct", forkCommit])
+        ).trim();
+        const secs = Number.parseInt(ct, 10);
+        if (!Number.isNaN(secs)) {
+          commitTimeMs = secs * 1000;
+        }
+      } catch {
+        commitTimeMs = 0;
+      }
+    }
+    applyReplayOps(
+      replayOps,
+      srcPath,
+      session.path,
+      commitTimeMs,
+      forkTimestampMs,
+    );
+  }
+
+  let newClaudeSessionId: string | null = null;
+  if (sourceClaudeSessionId) {
+    try {
+      newClaudeSessionId = await forkClaudeSessionFile({
+        sourceCwd: srcPath,
+        sourceSessionId: sourceClaudeSessionId,
+        destCwd: session.path,
+        destBranch: session.branch,
+        forkTimestampMs,
+        forkTurnNumber,
+      });
+    } catch (e) {
+      info(`forkSession: JSONL truncation failed: ${String(e)}`);
+      newClaudeSessionId = null;
+    }
+  }
+
+  info(
+    `Forked session ${sourceSessionId} → ${session.id} (branch ${session.branch}, commit ${forkCommit || "<none>"}, claude ${newClaudeSessionId ?? "<none>"})`,
+  );
+
+  return { session, claude_session_id: newClaudeSessionId };
+}
+
+/**
+ * Rebase a file path captured against the source worktree onto the new
+ * worktree. Leaves paths pointing outside the source worktree untouched —
+ * those are filtered out by the caller.
+ */
+function rebaseForkPath(
+  p: string,
+  srcCwd: string,
+  destCwd: string,
+): string | null {
+  const src = srcCwd.replace(/\/+$/, "");
+  const dest = destCwd.replace(/\/+$/, "");
+  if (p === src) {
+    return dest;
+  }
+  if (p.startsWith(src + "/")) {
+    return dest + p.slice(src.length);
+  }
+
+  return null;
+}
+
+function applyEditString(
+  content: string,
+  oldString: string,
+  newString: string,
+  replaceAll: boolean,
+): string {
+  if (replaceAll) {
+    return content.split(oldString).join(newString);
+  }
+  const idx = content.indexOf(oldString);
+  if (idx < 0) {
+    // No match — nothing to apply. The post-commit state may already reflect
+    // this edit (idempotent replay), or it predates a later overwrite.
+    return content;
+  }
+
+  return (
+    content.slice(0, idx) + newString + content.slice(idx + oldString.length)
+  );
+}
+
+/**
+ * Replay Edit/Write/MultiEdit tool calls against the new worktree. We skip
+ * anything whose timestamp falls outside (commitTimeMs, forkTimestampMs] —
+ * earlier ops are captured by the commit we just reset to, later ops would
+ * cross the fork boundary.
+ */
+function applyReplayOps(
+  ops: ForkReplayOp[],
+  srcCwd: string,
+  destCwd: string,
+  commitTimeMs: number,
+  forkTimestampMs: number,
+): void {
+  for (const op of ops) {
+    if (op.timestampMs <= commitTimeMs || op.timestampMs > forkTimestampMs) {
+      continue;
+    }
+    const target = rebaseForkPath(op.filePath, srcCwd, destCwd);
+    if (!target) {
+      continue;
+    }
+    try {
+      if (op.type === "write") {
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        fs.writeFileSync(target, op.content, "utf8");
+      } else if (op.type === "edit") {
+        let current = "";
+        try {
+          current = fs.readFileSync(target, "utf8");
+        } catch {
+          // File may not exist yet if the commit predates its creation — treat
+          // as empty and let the edit either materialise it or no-op.
+          current = "";
+        }
+        const updated = applyEditString(
+          current,
+          op.oldString,
+          op.newString,
+          op.replaceAll === true,
+        );
+        if (updated !== current) {
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, updated, "utf8");
+        }
+      } else if (op.type === "multiEdit") {
+        let current = "";
+        try {
+          current = fs.readFileSync(target, "utf8");
+        } catch {
+          current = "";
+        }
+        let next = current;
+        for (const e of op.edits) {
+          next = applyEditString(
+            next,
+            e.oldString,
+            e.newString,
+            e.replaceAll === true,
+          );
+        }
+        if (next !== current) {
+          fs.mkdirSync(path.dirname(target), { recursive: true });
+          fs.writeFileSync(target, next, "utf8");
+        }
+      }
+    } catch (e) {
+      info(`forkSession: replay op on ${op.filePath} failed: ${String(e)}`);
+    }
+  }
+}
+
+/** Slug rule used by the Claude Code CLI for `~/.claude/projects/<slug>/`. */
+function claudeProjectSlug(cwd: string): string {
+  return cwd.replace(/[^a-zA-Z0-9]/g, "-");
+}
+
+/**
+ * Copy a Claude Code session JSONL into a new project directory, truncated at
+ * the Nth user turn (inclusive) and rewritten so `sessionId` / `cwd` /
+ * `gitBranch` all reflect the fork.
+ *
+ * We count "real" user turns by looking for user-role entries whose content
+ * starts with a text block — tool_result entries are encoded as user-role in
+ * JSONL but belong to the prior turn and must NOT trigger the cutoff.
+ */
+async function forkClaudeSessionFile(args: {
+  destBranch: string;
+  destCwd: string;
+  forkTimestampMs: number;
+  forkTurnNumber: number;
+  sourceCwd: string;
+  sourceSessionId: string;
+}): Promise<string | null> {
+  const {
+    destBranch,
+    destCwd,
+    forkTimestampMs,
+    forkTurnNumber,
+    sourceCwd,
+    sourceSessionId,
+  } = args;
+
+  const srcFile = path.join(
+    os.homedir(),
+    ".claude",
+    "projects",
+    claudeProjectSlug(sourceCwd),
+    `${sourceSessionId}.jsonl`,
+  );
+  if (!fs.existsSync(srcFile)) {
+    return null;
+  }
+
+  const destDir = path.join(
+    os.homedir(),
+    ".claude",
+    "projects",
+    claudeProjectSlug(destCwd),
+  );
+  fs.mkdirSync(destDir, { recursive: true });
+
+  const newSessionId = crypto.randomUUID();
+  const destFile = path.join(destDir, `${newSessionId}.jsonl`);
+
+  const raw = fs.readFileSync(srcFile, "utf8");
+  const lines = raw.split("\n");
+  const kept: string[] = [];
+
+  let userTurnsSeen = 0;
+  let afterCutoff = false;
+  const cutoffMs = forkTimestampMs;
+  // Small buffer: frontend timestamps are set at event-receipt time and may
+  // lead the JSONL timestamp by a few hundred ms. 2s is more than enough.
+  const buffer = 2000;
+
+  for (const line of lines) {
+    if (!line.trim()) {
+      continue;
+    }
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(line) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+
+    const type = parsed.type;
+    const isRealUser =
+      type === "user" &&
+      (() => {
+        const message = parsed.message as { content?: unknown } | undefined;
+        const content = Array.isArray(message?.content)
+          ? (message.content as unknown[])
+          : [];
+        const first = content[0] as { type?: string } | undefined;
+
+        return first?.type === "text";
+      })();
+
+    if (isRealUser) {
+      userTurnsSeen += 1;
+      if (userTurnsSeen > forkTurnNumber) {
+        break;
+      }
+    }
+
+    // Timestamp safety-net: once we've passed the cutoff and we're between
+    // turns, stop. Keeps us from including events that trail the fork turn
+    // when the turn counter alone can't tell.
+    const ts = typeof parsed.timestamp === "string" ? parsed.timestamp : null;
+    if (ts) {
+      const entryMs = Date.parse(ts);
+      if (!Number.isNaN(entryMs) && entryMs > cutoffMs + buffer) {
+        if (userTurnsSeen >= forkTurnNumber) {
+          afterCutoff = true;
+        }
+      }
+    }
+    if (afterCutoff && isRealUser) {
+      break;
+    }
+
+    // Rewrite identity fields so the new JSONL stands alone as a resumable
+    // session tied to the forked worktree.
+    if ("sessionId" in parsed) {
+      parsed.sessionId = newSessionId;
+    }
+    if ("cwd" in parsed) {
+      parsed.cwd = destCwd;
+    }
+    if ("gitBranch" in parsed) {
+      parsed.gitBranch = destBranch;
+    }
+
+    kept.push(JSON.stringify(parsed));
+  }
+
+  if (kept.length === 0) {
+    return null;
+  }
+
+  fs.writeFileSync(destFile, kept.join("\n") + "\n", "utf8");
+
+  return newSessionId;
 }
 
 // ---------------------------------------------------------------------------
