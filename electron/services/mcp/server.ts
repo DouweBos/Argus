@@ -13,6 +13,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -61,6 +62,70 @@ import {
 
 let httpServer: http.Server | null = null;
 let mcpPort: number | null = null;
+let mcpAuthToken: string | null = null;
+
+/**
+ * Constant-time comparison of two strings to avoid timing oracles when
+ * checking the bearer token.
+ */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(ab, bb);
+}
+
+/**
+ * Validate an incoming HTTP request against the MCP auth token and an
+ * Origin/Host whitelist. Returns true if authorized; on failure, writes a
+ * 401/403 response and returns false (caller should `return`).
+ */
+function authorizeRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+): boolean {
+  // Reject any cross-origin request (browser DNS-rebinding defense). The MCP
+  // server is only ever contacted by spawned agent subprocesses, never by a
+  // browser document, so legitimate requests have no Origin header.
+  const origin = req.headers.origin;
+  if (origin) {
+    res.writeHead(403, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "cross-origin requests not allowed" }));
+
+    return false;
+  }
+
+  // Require a Host header pointing at loopback. The HTTP/1.1 default Host is
+  // `127.0.0.1:<port>`; anything else (e.g. a rebound DNS name) is rejected.
+  const host = (req.headers.host ?? "").toLowerCase().split(":")[0];
+  if (host !== "127.0.0.1" && host !== "localhost" && host !== "[::1]") {
+    res.writeHead(403, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "host not allowed" }));
+
+    return false;
+  }
+
+  if (!mcpAuthToken) {
+    res.writeHead(503, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "MCP server not initialized" }));
+
+    return false;
+  }
+
+  const auth = req.headers.authorization ?? "";
+  const m = /^Bearer\s+(.+)$/i.exec(auth);
+  if (!m || !timingSafeEqualStr(m[1].trim(), mcpAuthToken)) {
+    res.writeHead(401, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "unauthorized" }));
+
+    return false;
+  }
+
+  return true;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1371,11 +1436,22 @@ export async function startMcpServer(): Promise<number> {
     throw new Error("MCP server is already running");
   }
 
+  // Generate a fresh per-launch bearer token. Only spawned subprocesses learn
+  // it (via env vars and --mcp-config headers); other local processes cannot.
+  mcpAuthToken = crypto.randomBytes(32).toString("hex");
+
   // Track transports per session for proper lifecycle management.
   const transports = new Map<string, StreamableHTTPServerTransport>();
 
   httpServer = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://localhost`);
+
+    // All endpoints require the per-launch bearer token. This blocks any
+    // unauthenticated local process (malicious npm postinstall, drive-by
+    // browser fetch, etc.) from invoking MCP tools or the device resolver.
+    if (!authorizeRequest(req, res)) {
+      return;
+    }
 
     // Lazy device resolver — called by the conductor shim the first time an
     // agent runs `conductor --device ios|web`. Acquires the device on demand
@@ -1528,6 +1604,7 @@ export function stopMcpServer(): void {
     httpServer.close();
     httpServer = null;
     mcpPort = null;
+    mcpAuthToken = null;
     info("[mcp] Argus MCP server stopped");
   }
 }
@@ -1535,4 +1612,12 @@ export function stopMcpServer(): void {
 /** Get the port the MCP server is listening on, or null if not running. */
 export function getMcpPort(): number | null {
   return mcpPort;
+}
+
+/**
+ * Get the per-launch bearer token required for MCP requests, or null if the
+ * server is not running. Pass this to spawned agent subprocesses only.
+ */
+export function getMcpAuthToken(): string | null {
+  return mcpAuthToken;
 }

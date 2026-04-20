@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
-  createTerminal,
+  createRunTerminal,
   destroyTerminal,
   readArgusConfig,
 } from "../../../lib/ipc";
@@ -28,11 +28,12 @@ interface RunButtonProps {
 
 export function RunButton({ workspaceId }: RunButtonProps) {
   const [runCommand, setRunCommand] = useState<string | null>(null);
-  const [runDir, setRunDir] = useState<string | undefined>(undefined);
   const runSessionId = useRunSessionId(workspaceId);
   const runBusy = useRunBusy(workspaceId);
 
-  // Load config to get the run command
+  // Load config to display the run command in the button title. The command
+  // itself is resolved server-side by createRunTerminal — we only need the
+  // string here for the tooltip.
   useEffect(() => {
     (async () => {
       try {
@@ -45,17 +46,13 @@ export function RunButton({ workspaceId }: RunButtonProps) {
         const config = await readArgusConfig(ws.repo_root);
         if (!config.run) {
           setRunCommand(null);
-          setRunDir(undefined);
         } else if (typeof config.run === "string") {
           setRunCommand(config.run);
-          setRunDir(undefined);
         } else {
           setRunCommand(config.run.command);
-          setRunDir(config.run.dir ?? undefined);
         }
       } catch {
         setRunCommand(null);
-        setRunDir(undefined);
       }
     })();
   }, [workspaceId]);
@@ -87,7 +84,7 @@ export function RunButton({ workspaceId }: RunButtonProps) {
     }
 
     try {
-      const sessionId = await createTerminal(workspaceId, runDir, runCommand);
+      const sessionId = await createRunTerminal(workspaceId);
       startListening(sessionId);
       addSession({
         id: sessionId,
@@ -100,7 +97,7 @@ export function RunButton({ workspaceId }: RunButtonProps) {
     } catch {
       // backend not ready
     }
-  }, [workspaceId, runCommand, runDir]);
+  }, [workspaceId, runCommand]);
 
   if (!runCommand) {
     return null;

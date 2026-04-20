@@ -432,17 +432,24 @@ export const generateSessionTitle = (
   firstMessage: string,
 ): Promise<string | null> => invoke("generate_session_title", { firstMessage });
 
-// Terminal commands
+// Terminal commands.
+//
+// `createTerminal` only spawns the user's interactive login shell — it
+// intentionally cannot accept a command string. Use `createRunTerminal` to
+// start the workspace's configured `run` command from `.argus.json`; the
+// command is resolved server-side so the renderer never gets to choose what
+// runs in `sh -c`.
 export const createTerminal = (
   workspaceId: string,
   subDir?: string,
-  command?: string,
 ): Promise<string> =>
   invoke("create_terminal", {
     workspaceId,
     ...(subDir != null && subDir !== "" && { subDir }),
-    ...(command != null && command !== "" && { command }),
   });
+
+export const createRunTerminal = (workspaceId: string): Promise<string> =>
+  invoke("create_run_terminal", { workspaceId });
 
 export const startTerminal = (
   sessionId: string,
