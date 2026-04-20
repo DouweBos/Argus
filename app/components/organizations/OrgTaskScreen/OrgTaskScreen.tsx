@@ -1,17 +1,21 @@
-import type { OrgTask, OrgTaskMember } from "../../../lib/types";
-import { useState } from "react";
+import type {
+  AgentStatus,
+  OrgTask,
+  OrgTaskScopeEntry,
+} from "../../../lib/types";
+import { useMemo, useState } from "react";
 import { Button, TextArea } from "@argus/peacock";
 import { sendAgentMessage } from "../../../lib/ipc";
+import { useAgentsRecord } from "../../../stores/agentStore";
 import {
   cancelOrgTask,
   setActiveOrgTask,
   useActiveOrgTask,
 } from "../../../stores/orgTaskStore";
 import { useOrganizations } from "../../../stores/organizationStore";
-import { selectWorkspace } from "../../../stores/workspaceStore";
+import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
 import styles from "./OrgTaskScreen.module.css";
 
-/** Mount-point wrapper — shown when an active OrgTask is selected. */
 export function OrgTaskOverlay() {
   const task = useActiveOrgTask();
   if (!task) {
@@ -24,13 +28,34 @@ export function OrgTaskOverlay() {
 export function OrgTaskScreen({ task }: { task: OrgTask }) {
   const orgs = useOrganizations();
   const org = orgs.find((o) => o.id === task.organization_id);
-  const [bulkMessage, setBulkMessage] = useState("");
+  const [followUp, setFollowUp] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const agents = useAgentsRecord();
+  const workspaces = useWorkspaces();
 
   const elapsedMs = Date.now() - task.created_at;
 
+  const children = useMemo<AgentStatus[]>(() => {
+    if (!task.host_agent_id) {
+      return [];
+    }
+
+    return Object.values(agents).filter(
+      (a) => a.parent_agent_id === task.host_agent_id,
+    );
+  }, [agents, task.host_agent_id]);
+
+  const hostStatus: string = task.host_agent_id
+    ? (agents[task.host_agent_id]?.status ?? task.status)
+    : task.status;
+
   const handleCancel = async () => {
-    if (!window.confirm("Cancel this task? All running child agents stop.")) {
+    if (
+      !window.confirm(
+        "Cancel this task? The host agent stops; any child agents keep running.",
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -41,25 +66,31 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
     }
   };
 
-  const handleBulk = async () => {
-    const msg = bulkMessage.trim();
-    if (!msg) {
+  const handleOpenHost = () => {
+    if (!task.host_workspace_id) {
+      return;
+    }
+    selectWorkspace(task.host_workspace_id);
+    setActiveOrgTask(null);
+  };
+
+  const handleFollowUp = async () => {
+    const msg = followUp.trim();
+    if (!msg || !task.host_agent_id) {
       return;
     }
     setBusy(true);
     try {
-      await Promise.all(
-        task.members
-          .filter((m) => m.agent_id && m.status === "running")
-          .map((m) =>
-            sendAgentMessage(m.agent_id as string, msg).catch(() => {}),
-          ),
-      );
-      setBulkMessage("");
+      await sendAgentMessage(task.host_agent_id, msg);
+      setFollowUp("");
+    } catch {
+      // Surfaced via agent log.
     } finally {
       setBusy(false);
     }
   };
+
+  const hostWorkspaceReady = Boolean(task.host_workspace_id);
 
   return (
     <div className={styles.overlay}>
@@ -70,12 +101,19 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
           </span>
           <span className={styles.title}>{task.title}</span>
           <span className={styles.meta}>
-            {task.status} · started {formatElapsed(elapsedMs)} ago ·{" "}
-            {task.members.length} member
-            {task.members.length === 1 ? "" : "s"}
+            {task.status} · host {hostStatus} · started{" "}
+            {formatElapsed(elapsedMs)} ago · {task.scope.length} repo
+            {task.scope.length === 1 ? "" : "s"} in scope
           </span>
         </div>
         <div className={styles.actions}>
+          <Button
+            variant="ghost"
+            onClick={handleOpenHost}
+            disabled={!hostWorkspaceReady}
+          >
+            Open host workspace
+          </Button>
           <Button variant="ghost" onClick={() => setActiveOrgTask(null)}>
             Close
           </Button>
@@ -93,124 +131,96 @@ export function OrgTaskScreen({ task }: { task: OrgTask }) {
           <div className={styles.promptBox}>{task.prompt}</div>
         </section>
 
-        {task.status === "running" && (
+        {task.host_agent_id && task.status === "running" && (
           <section className={styles.section}>
-            <div className={styles.sectionTitle}>
-              Send follow-up to all running agents
-            </div>
+            <div className={styles.sectionTitle}>Follow-up to host</div>
             <div className={styles.followUpBar}>
               <TextArea
                 rows={2}
-                value={bulkMessage}
-                onChange={(e) => setBulkMessage(e.target.value)}
-                placeholder="e.g. Please start with the backend schema"
+                value={followUp}
+                onChange={(e) => setFollowUp(e.target.value)}
+                placeholder="Send a follow-up message to the host agent"
               />
               <Button
                 variant="primary"
-                onClick={handleBulk}
-                disabled={busy || !bulkMessage.trim()}
+                onClick={handleFollowUp}
+                disabled={busy || !followUp.trim()}
               >
-                Send to all
+                Send
               </Button>
             </div>
           </section>
         )}
 
         <section className={styles.section}>
-          <div className={styles.sectionTitle}>Members</div>
+          <div className={styles.sectionTitle}>Scope</div>
           <div className={styles.memberList}>
-            {task.members.map((m) => (
-              <MemberCard key={m.repo_root} member={m} />
+            {task.scope.map((s) => (
+              <ScopeRow key={s.repo_root} entry={s} />
             ))}
           </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>Child agents</div>
+          {children.length === 0 ? (
+            <div className={styles.meta}>
+              The host hasn&apos;t spawned any child agents yet.
+            </div>
+          ) : (
+            <div className={styles.memberList}>
+              {children.map((c) => {
+                const ws = workspaces.find((w) => w.id === c.workspace_id);
+                const repoRoot = ws?.repo_root ?? "(unknown)";
+                const label = basename(repoRoot);
+
+                return (
+                  <div key={c.agent_id} className={styles.memberCard}>
+                    <div className={styles.memberHead}>
+                      <div className={styles.memberInfo}>
+                        <span className={styles.memberName}>{label}</span>
+                        <span className={styles.memberRole}>{repoRoot}</span>
+                      </div>
+                      <span
+                        className={styles.memberStatus}
+                        data-status={c.status}
+                      >
+                        {c.status}
+                      </span>
+                      <div className={styles.memberActions}>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            selectWorkspace(c.workspace_id);
+                            setActiveOrgTask(null);
+                          }}
+                        >
+                          Open workspace
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
     </div>
   );
 }
 
-function MemberCard({ member }: { member: OrgTaskMember }) {
-  const [showFollowUp, setShowFollowUp] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [sending, setSending] = useState(false);
-
-  const handleOpen = () => {
-    if (!member.workspace_id) {
-      return;
-    }
-    selectWorkspace(member.workspace_id);
-    setActiveOrgTask(null);
-  };
-
-  const handleSend = async () => {
-    if (!member.agent_id || !msg.trim()) {
-      return;
-    }
-    setSending(true);
-    try {
-      await sendAgentMessage(member.agent_id, msg.trim());
-      setMsg("");
-      setShowFollowUp(false);
-    } catch {
-      // Silent — surfaced via agent log.
-    } finally {
-      setSending(false);
-    }
-  };
-
+function ScopeRow({ entry }: { entry: OrgTaskScopeEntry }) {
   return (
     <div className={styles.memberCard}>
       <div className={styles.memberHead}>
         <div className={styles.memberInfo}>
-          <span className={styles.memberName}>
-            {basename(member.repo_root)}
-          </span>
+          <span className={styles.memberName}>{basename(entry.repo_root)}</span>
           <span className={styles.memberRole}>
-            {(member.role || "(no role)") + " · " + member.repo_root}
+            {(entry.role || "(no role)") + " · " + entry.repo_root}
           </span>
-        </div>
-        <span className={styles.memberStatus} data-status={member.status}>
-          {member.status}
-        </span>
-        <div className={styles.memberActions}>
-          <Button
-            variant="ghost"
-            onClick={handleOpen}
-            disabled={!member.workspace_id}
-          >
-            Open workspace
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setShowFollowUp((v) => !v)}
-            disabled={!member.agent_id || member.status !== "running"}
-          >
-            Follow-up
-          </Button>
         </div>
       </div>
-
-      {member.addendum && (
-        <div className={styles.addendum}>Addendum: {member.addendum}</div>
-      )}
-
-      {showFollowUp && (
-        <div className={styles.followUpRow}>
-          <TextArea
-            rows={2}
-            value={msg}
-            onChange={(e) => setMsg(e.target.value)}
-            placeholder={`Follow-up for ${basename(member.repo_root)}`}
-          />
-          <Button
-            variant="primary"
-            onClick={handleSend}
-            disabled={sending || !msg.trim()}
-          >
-            Send
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

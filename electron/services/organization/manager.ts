@@ -10,6 +10,7 @@ import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { isGitRepo } from "../mcp/projects";
+import { deleteOrgTasksForOrganization } from "../organizationTask/manager";
 import { addRepoRoot, createHeadWorkspace } from "../workspace/manager";
 import { ORGANIZATION_ACCENTS } from "./models";
 import { loadOrganizations, saveOrganizations } from "./store";
@@ -168,6 +169,9 @@ export function deleteOrganization(id: string): void {
   if (!appState.organizations.delete(id)) {
     throw `Organization not found: ${id}`;
   }
+  // Cascade: remove every org task belonging to this organization along with
+  // their host workspace directories.
+  deleteOrgTasksForOrganization(id);
   persist();
 }
 

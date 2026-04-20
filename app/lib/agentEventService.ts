@@ -66,6 +66,13 @@ export function maybeGenerateTitle(agentId: string, firstMessage: string) {
   if (titleRequested.has(agentId)) {
     return;
   }
+  // Resumed conversations already carry a title — don't regenerate it from
+  // the first follow-up message.
+  if (getConversationState().conversations[agentId]?.title) {
+    titleRequested.add(agentId);
+
+    return;
+  }
   const text = firstMessage.trim();
   if (!text) {
     return;

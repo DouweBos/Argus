@@ -8,9 +8,9 @@ import type { OrgTask } from "./models";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { warn } from "../../../app/lib/logger";
+import { info, warn } from "../../../app/lib/logger";
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 interface OrgTasksFile {
   version: number;
@@ -40,6 +40,17 @@ export function loadOrgTasks(): OrgTask[] {
   }
 
   if (file.version !== SCHEMA_VERSION || !Array.isArray(file.tasks)) {
+    // Old schema — back up the file so the user can recover state manually
+    // and start fresh. Org tasks are ephemeral working state, so wiping is
+    // the least-bad option.
+    const backup = `${filePath}.bak`;
+    try {
+      fs.renameSync(filePath, backup);
+      info(`organization-tasks.json schema mismatch; backed up to ${backup}`);
+    } catch (e) {
+      warn(`Failed to back up organization-tasks.json: ${String(e)}`);
+    }
+
     return [];
   }
 

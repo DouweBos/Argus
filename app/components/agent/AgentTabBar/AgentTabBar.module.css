@@ -79,6 +79,72 @@
   color: var(--text-primary);
 }
 
+.mergedTab {
+  padding: 0;
+  gap: 0;
+  box-shadow: inset 0 0 0 1px var(--glass-border);
+}
+
+.mergedTab:hover,
+.mergedTab.active {
+  gap: 0;
+}
+
+.mergedHalf {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+  cursor: pointer;
+}
+
+.mergedHalf:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.mergedActive {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.mergedDivider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 0;
+  background: var(--glass-border);
+  flex-shrink: 0;
+}
+
+.mergedUnpairBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0 4px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  opacity: 0;
+  transition:
+    opacity var(--transition-base),
+    background var(--transition-base);
+}
+
+.mergedTab:hover .mergedUnpairBtn {
+  opacity: 1;
+}
+
+.mergedUnpairBtn:hover {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
 /* Slight gap between label and Badge/close on active/hover */
 .tab:hover,
 .tab.active {

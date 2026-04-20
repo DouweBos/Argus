@@ -1,16 +1,17 @@
-import { useMemo } from "react";
 import type { AgentStatus } from "../../../lib/types";
+import { Icons } from "@argus/peacock";
+import { setActiveAgent, setSplitPair } from "../../../stores/agentStore";
 import { useConversation } from "../../../stores/conversationStore";
-import { setSecondaryAgent } from "../../../stores/agentStore";
 import { AgentChat } from "../AgentChat";
+import { AgentSingleDropZone } from "../AgentChatDropZone";
 import styles from "./SplitAgentPanes.module.css";
 
 interface SplitAgentPanesProps {
   agents: AgentStatus[];
-  primary: AgentStatus;
-  secondaryAgentId: string | null;
-  workspaceId: string;
+  left: AgentStatus;
   onRestart: (agentId: string) => void;
+  right: AgentStatus;
+  workspaceId: string;
 }
 
 function PaneHeader({
@@ -19,23 +20,23 @@ function PaneHeader({
   label,
   disabledIds,
   onChange,
+  onClose,
 }: {
   agents: AgentStatus[];
-  selectedId: string | null;
-  label: string;
   disabledIds: Set<string>;
-  onChange?: (agentId: string) => void;
+  label: string;
+  onChange: (agentId: string) => void;
+  onClose?: () => void;
+  selectedId: string;
 }) {
   return (
     <div className={styles.paneHeader}>
       <span className={styles.paneLabel}>{label}</span>
       <select
         className={styles.paneSelect}
-        value={selectedId ?? ""}
-        disabled={!onChange}
-        onChange={(e) => onChange?.(e.target.value)}
+        value={selectedId}
+        onChange={(e) => onChange(e.target.value)}
       >
-        {selectedId === null && <option value="">Select an agent…</option>}
         {agents.map((a, idx) => (
           <PaneOption
             key={a.agent_id}
@@ -45,6 +46,15 @@ function PaneHeader({
           />
         ))}
       </select>
+      {onClose && (
+        <button
+          className={styles.paneCloseBtn}
+          title="Merge back into single tab"
+          onClick={onClose}
+        >
+          <Icons.CloseIcon size={10} />
+        </button>
+      )}
     </div>
   );
 }
@@ -55,8 +65,8 @@ function PaneOption({
   disabled,
 }: {
   agent: AgentStatus;
-  index: number;
   disabled: boolean;
+  index: number;
 }) {
   const conv = useConversation(agent.agent_id);
   const fallback = `Agent ${index + 1}`;
@@ -71,71 +81,108 @@ function PaneOption({
 
 export function SplitAgentPanes({
   agents,
-  primary,
-  secondaryAgentId,
+  left,
+  right,
   workspaceId,
   onRestart,
 }: SplitAgentPanesProps) {
-  // Resolve the secondary agent. Default to the first non-primary in order.
-  // If the stored secondary equals the primary (or is missing), fall back.
-  const secondary = useMemo(() => {
-    if (secondaryAgentId && secondaryAgentId !== primary.agent_id) {
-      const match = agents.find((a) => a.agent_id === secondaryAgentId);
-      if (match) {
-        return match;
-      }
+  const leftDisabled = new Set<string>([right.agent_id]);
+  const rightDisabled = new Set<string>([left.agent_id]);
+
+  const closeSplit = () => {
+    setSplitPair(workspaceId, null);
+  };
+
+  const changeLeft = (id: string) => {
+    if (id === left.agent_id) {
+      return;
     }
-    const fallback = agents.find((a) => a.agent_id !== primary.agent_id);
+    if (id === right.agent_id) {
+      // Swap
+      setSplitPair(workspaceId, { left: id, right: left.agent_id });
+      setActiveAgent(workspaceId, id);
 
-    return fallback ?? null;
-  }, [agents, primary.agent_id, secondaryAgentId]);
+      return;
+    }
+    setSplitPair(workspaceId, { left: id, right: right.agent_id });
+    setActiveAgent(workspaceId, id);
+  };
 
-  const primaryDisabled = new Set<string>();
-  if (secondary) {
-    primaryDisabled.add(secondary.agent_id);
-  }
-  const secondaryDisabled = new Set<string>([primary.agent_id]);
+  const changeRight = (id: string) => {
+    if (id === right.agent_id) {
+      return;
+    }
+    if (id === left.agent_id) {
+      setSplitPair(workspaceId, { left: right.agent_id, right: id });
+      setActiveAgent(workspaceId, right.agent_id);
+
+      return;
+    }
+    setSplitPair(workspaceId, { left: left.agent_id, right: id });
+  };
+
+  const dropOnLeft = (id: string) => {
+    if (id === left.agent_id) {
+      return;
+    }
+    changeLeft(id);
+  };
+
+  const dropOnRight = (id: string) => {
+    if (id === right.agent_id) {
+      return;
+    }
+    changeRight(id);
+  };
 
   return (
     <div className={styles.panes}>
       <div className={styles.pane}>
         <PaneHeader
           agents={agents}
-          selectedId={primary.agent_id}
+          selectedId={left.agent_id}
           label="Left"
-          disabledIds={primaryDisabled}
+          disabledIds={leftDisabled}
+          onChange={changeLeft}
         />
-        <div className={styles.paneBody}>
-          <AgentChat
-            agentId={primary.agent_id}
-            permissionMode={primary.permission_mode}
-            workspaceId={workspaceId}
-            onRestart={() => onRestart(primary.agent_id)}
-          />
-        </div>
+        <AgentSingleDropZone
+          ignoreIds={[left.agent_id]}
+          label="Set as left pane"
+          onDrop={dropOnLeft}
+        >
+          <div className={styles.paneBody}>
+            <AgentChat
+              agentId={left.agent_id}
+              permissionMode={left.permission_mode}
+              workspaceId={workspaceId}
+              onRestart={() => onRestart(left.agent_id)}
+            />
+          </div>
+        </AgentSingleDropZone>
       </div>
       <div className={styles.pane}>
         <PaneHeader
           agents={agents}
-          selectedId={secondary?.agent_id ?? null}
+          selectedId={right.agent_id}
           label="Right"
-          disabledIds={secondaryDisabled}
-          onChange={(id) => setSecondaryAgent(workspaceId, id)}
+          disabledIds={rightDisabled}
+          onChange={changeRight}
+          onClose={closeSplit}
         />
-        <div className={styles.paneBody}>
-          {secondary ? (
+        <AgentSingleDropZone
+          ignoreIds={[right.agent_id]}
+          label="Set as right pane"
+          onDrop={dropOnRight}
+        >
+          <div className={styles.paneBody}>
             <AgentChat
-              agentId={secondary.agent_id}
-              permissionMode={secondary.permission_mode}
+              agentId={right.agent_id}
+              permissionMode={right.permission_mode}
               workspaceId={workspaceId}
-              onRestart={() => onRestart(secondary.agent_id)}
+              onRestart={() => onRestart(right.agent_id)}
             />
-          ) : (
-            <div className={styles.emptyPane}>
-              Start another agent or pick one to view it here.
-            </div>
-          )}
-        </div>
+          </div>
+        </AgentSingleDropZone>
       </div>
     </div>
   );

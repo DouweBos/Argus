@@ -4,11 +4,11 @@ import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useSuppressSpacePageScroll } from "../../../hooks/useSuppressSpacePageScroll";
 import { useWindowFocus } from "../../../hooks/useWindowFocus";
 import { useProjects } from "../../../hooks/useWorkspaces";
-import { stopAgentById } from "../../../lib/agentEventService";
 import { startAgentInWorkspace } from "../../../lib/agentLifecycle";
+import { runCloseIntent } from "../../../lib/closeIntent";
 import { closeWindow } from "../../../lib/ipc";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
-import { cycleActiveAgent, getAgentState } from "../../../stores/agentStore";
+import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
@@ -23,13 +23,13 @@ import {
   useOpenProjectVisible,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
-import { useOrgTaskSync } from "../../../stores/orgTaskStore";
 import {
   setLeftPanelWidth,
   toggleLeftSidebar,
   toggleRightPanel,
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
+import { useOrgTaskSync } from "../../../stores/orgTaskStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import {
   getWorkspaceState,
@@ -45,7 +45,6 @@ import { NewWorkspacePicker } from "../../home/HomeScreen/NewWorkspacePicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
 import { OrganizationsScreen } from "../../organizations";
 import { OrgTaskOverlay } from "../../organizations/OrgTaskScreen";
-import { StartTaskDialogHost } from "../../organizations/StartTaskDialog";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
@@ -163,15 +162,11 @@ export function AppShell() {
   }, [startNewAgentInCurrent, cycleAgentTab, goToProjectHome]);
   useGlobalShortcuts(shortcuts);
 
-  // Cmd+W: close the active agent tab in the selected workspace first. Only
-  // fall through to closing the window when no agent is open.
+  // Cmd+W: let view-level handlers consume the intent first (e.g. the agent
+  // view closes the active agent tab). Fall through to closing the window
+  // when no view claims it.
   useIpcEvent<undefined>("menu:close-intent", () => {
-    const { selectedId: id } = getWorkspaceState();
-    const { agents, activeAgentId } = getAgentState();
-    const activeId = id ? activeAgentId[id] : null;
-    if (activeId && agents[activeId]) {
-      stopAgentById(activeId).catch(() => {});
-
+    if (runCloseIntent()) {
       return;
     }
     closeWindow().catch(() => {});
@@ -283,8 +278,6 @@ export function AppShell() {
           onClose={hideCreateWorkspaceDialog}
         />
       )}
-
-      <StartTaskDialogHost />
     </div>
   );
 }

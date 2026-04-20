@@ -150,6 +150,8 @@ export interface SidebarRepoGroupProps extends HTMLAttributes<HTMLDivElement> {
   color?: string;
   count?: ReactNode;
   expanded?: boolean;
+  /** Hide the expand/collapse chevron entirely (e.g. when the group has no collapsible content). */
+  hideChevron?: boolean;
   dim?: boolean;
   /** Highlights the header to indicate the repo home is the active view. */
   active?: boolean;
@@ -177,6 +179,7 @@ export function SidebarRepoGroup({
   color,
   count,
   expanded = true,
+  hideChevron = false,
   dim,
   active,
   leading,
@@ -209,19 +212,23 @@ export function SidebarRepoGroup({
         title={title}
       >
         <div className={styles.repoHeadRow}>
-          <button
-            type="button"
-            aria-label={expanded ? "Collapse" : "Expand"}
-            className={[
-              styles.repoChevron,
-              expanded ? "" : styles.repoChevronCollapsed,
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={toggle}
-          >
-            <ChevronDownIcon size={10} />
-          </button>
+          {hideChevron ? (
+            <span className={styles.repoChevron} aria-hidden="true" />
+          ) : (
+            <button
+              type="button"
+              aria-label={expanded ? "Collapse" : "Expand"}
+              className={[
+                styles.repoChevron,
+                expanded ? "" : styles.repoChevronCollapsed,
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={toggle}
+            >
+              <ChevronDownIcon size={10} />
+            </button>
+          )}
           <button
             type="button"
             className={styles.repoLabel}
@@ -250,7 +257,11 @@ export function SidebarRepoGroup({
           {actions && <div className={styles.repoActions}>{actions}</div>}
         </div>
         {(subtitle || meta || persistentAction) && (
-          <div className={styles.repoSubtitleRow}>
+          <div
+            className={styles.repoSubtitleRow}
+            onClick={label}
+            role={label ? "button" : undefined}
+          >
             <span className={styles.repoSubtitle}>{subtitle}</span>
             <span className={styles.repoSubtitleTrailing}>
               {meta && <span className={styles.repoMeta}>{meta}</span>}
@@ -273,8 +284,7 @@ export function SidebarRepoGroup({
   );
 }
 
-export interface SidebarRepoActionProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SidebarRepoActionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   title: string;
 }
 

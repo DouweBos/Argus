@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { Icons } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { checkoutBranch, listBranches } from "../../../lib/ipc";
@@ -11,6 +18,12 @@ interface BranchSwitcherProps {
   repoRoot: string;
 }
 
+interface DropdownRect {
+  left: number;
+  top: number;
+  width: number;
+}
+
 export function BranchSwitcher({
   repoRoot,
   currentBranch,
@@ -20,21 +33,32 @@ export function BranchSwitcher({
   const [isOpen, setIsOpen] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<DropdownRect | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const updateRect = useCallback(() => {
+    const node = triggerRef.current;
+    if (!node) {
+      return;
+    }
+    const r = node.getBoundingClientRect();
+    setRect({ left: r.left, top: r.bottom + 2, width: r.width });
+  }, []);
 
   const open = useCallback(async () => {
+    updateRect();
     setIsOpen(true);
     setIsLoading(true);
     try {
       const list = await listBranches(repoRoot);
       setBranches(list);
     } catch {
-      // Failed to list branches — close dropdown
       setIsOpen(false);
     } finally {
       setIsLoading(false);
     }
-  }, [repoRoot]);
+  }, [repoRoot, updateRect]);
 
   const close = useCallback(() => {
     setIsOpen(false);
@@ -67,9 +91,25 @@ export function BranchSwitcher({
     [repoRoot, currentBranch, close, onBranchChanged],
   );
 
-  useOutsideClick(wrapperRef, isOpen, close);
+  useOutsideClick(dropdownRef, isOpen, close, (target) => {
+    return triggerRef.current?.contains(target) ?? false;
+  });
 
-  // Close on Escape
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    updateRect();
+    const handle = () => updateRect();
+    window.addEventListener("resize", handle);
+    window.addEventListener("scroll", handle, true);
+
+    return () => {
+      window.removeEventListener("resize", handle);
+      window.removeEventListener("scroll", handle, true);
+    };
+  }, [isOpen, updateRect]);
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -86,8 +126,9 @@ export function BranchSwitcher({
   }, [isOpen, close]);
 
   return (
-    <div ref={wrapperRef} className={styles.wrapper}>
+    <div className={styles.wrapper}>
       <button
+        ref={triggerRef}
         aria-disabled={disabled}
         className={`${styles.trigger} ${disabled ? styles.disabled : ""}`}
         onClick={disabled ? undefined : handleTriggerClick}
@@ -98,28 +139,39 @@ export function BranchSwitcher({
           <Icons.ChevronDownIcon size={10} />
         </span>
       </button>
-      {isOpen && (
-        <div className={styles.dropdown}>
-          {isLoading ? (
-            <div
-              className={styles.branchItem}
-              style={{ color: "var(--text-muted)" }}
-            >
-              Loading...
-            </div>
-          ) : (
-            branches.map((branch) => (
-              <button
-                key={branch}
-                className={`${styles.branchItem} ${branch === currentBranch ? styles.branchItemActive : ""}`}
-                onClick={() => handleSelect(branch)}
+      {isOpen &&
+        rect &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className={styles.dropdown}
+            style={{
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+            }}
+          >
+            {isLoading ? (
+              <div
+                className={styles.branchItem}
+                style={{ color: "var(--text-muted)" }}
               >
-                {branch}
-              </button>
-            ))
-          )}
-        </div>
-      )}
+                Loading...
+              </div>
+            ) : (
+              branches.map((branch) => (
+                <button
+                  key={branch}
+                  className={`${styles.branchItem} ${branch === currentBranch ? styles.branchItemActive : ""}`}
+                  onClick={() => handleSelect(branch)}
+                >
+                  {branch}
+                </button>
+              ))
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

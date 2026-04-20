@@ -5,17 +5,16 @@ import type {
 import { useCallback, useState, type ReactNode } from "react";
 import { Badge, Button, Icons } from "@argus/peacock";
 import { renderMarkdown } from "../../../lib/markdown";
+import { updateAgent } from "../../../stores/agentStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { EditDiffView } from "../EditDiffView";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
 import { alwaysAllowRule } from "../alwaysAllowRule";
+import { AnsweredQuestionView } from "./AnsweredQuestionView";
 import { PlanApproval } from "./PlanApproval";
 import { QuestionForm } from "./QuestionForm";
-import {
-  AnsweredQuestionView,
-  parseAnswerSelections,
-} from "./AnsweredQuestionView";
 import styles from "./ToolCallCard.module.css";
+import { parseAnswerSelections } from "./parseAnswerSelections";
 import { parseQuestions } from "./parseQuestions";
 
 interface ToolCallCardProps {
@@ -38,64 +37,35 @@ interface ToolCallCardProps {
 function toolSummary(name: string, input: Record<string, unknown>): string {
   switch (name) {
     case "Edit":
-    case "MultiEdit": {
-      const path = (input.file_path ?? input.path ?? "") as string;
-
-      return `Edit ${path}`;
-    }
-
-    case "Write": {
-      const path = (input.file_path ?? input.path ?? "") as string;
-
-      return `Write ${path}`;
-    }
-
+    case "MultiEdit":
+    case "Write":
     case "Read": {
-      const path = (input.file_path ?? input.path ?? "") as string;
-
-      return `Read ${path}`;
+      return (input.file_path ?? input.path ?? "") as string;
     }
 
     case "Bash": {
-      const cmd = ((input.command ?? "") as string).slice(0, 60);
-
-      return `Bash: ${cmd}`;
+      return ((input.command ?? "") as string).slice(0, 60);
     }
 
-    case "Glob": {
-      const pattern = (input.pattern ?? "") as string;
-
-      return `Glob: ${pattern}`;
-    }
-
+    case "Glob":
     case "Grep": {
-      const pattern = (input.pattern ?? "") as string;
-
-      return `Grep: ${pattern}`;
+      return (input.pattern ?? "") as string;
     }
 
     case "LS": {
-      const path = (input.path ?? ".") as string;
-
-      return `LS ${path}`;
+      return (input.path ?? ".") as string;
     }
 
     case "Task": {
-      const desc = (input.description ?? "") as string;
-
-      return `Task: ${desc.slice(0, 60)}`;
+      return ((input.description ?? "") as string).slice(0, 60);
     }
 
     case "WebSearch": {
-      const query = (input.query ?? "") as string;
-
-      return `WebSearch: ${query.slice(0, 60)}`;
+      return ((input.query ?? "") as string).slice(0, 60);
     }
 
     case "WebFetch": {
-      const url = (input.url ?? "") as string;
-
-      return `WebFetch: ${url.slice(0, 60)}`;
+      return ((input.url ?? "") as string).slice(0, 60);
     }
 
     case "Agent": {
@@ -107,7 +77,7 @@ function toolSummary(name: string, input: Record<string, unknown>): string {
     }
 
     default:
-      return name;
+      return "";
   }
 }
 
@@ -268,6 +238,10 @@ export function ToolCallCard({
   const isSubAgentParent =
     toolCall.name === "Agent" || toolCall.name === "Task";
   const children = toolCall.children ?? [];
+  const childToolCalls = children.flatMap((c) =>
+    c.kind === "tool_use" ? [c.toolCall] : [],
+  );
+  const previewToolCalls = childToolCalls.slice(-5);
   const agentType = isAgent
     ? ((toolCall.input.subagent_type ?? "") as string) || "Agent"
     : "";
@@ -314,8 +288,16 @@ export function ToolCallCard({
   const allowRule = alwaysAllowRule(toolCall.name, toolCall.input);
 
   const handleAllow = useCallback(() => {
+    // Approving ExitPlanMode causes the CLI to leave plan mode internally,
+    // but it doesn't notify us. Clear our local flag so the chip reflects
+    // reality — otherwise the user toggles it manually mid-implementation,
+    // which sends a `set_permission_mode` control request that interrupts
+    // the in-flight turn.
+    if (toolCall.name === "ExitPlanMode" && agentId) {
+      updateAgent(agentId, { permission_mode: undefined });
+    }
     onPermissionRespond?.(toolCall.id, "allow");
-  }, [onPermissionRespond, toolCall.id]);
+  }, [agentId, onPermissionRespond, toolCall.id, toolCall.name]);
 
   const handleAllowAll = useCallback(() => {
     onPermissionRespond?.(toolCall.id, "allow", allowRule, true);
@@ -473,6 +455,32 @@ export function ToolCallCard({
 
       {alwaysShowInputPreview && !expanded && (
         <div className={styles.body}>{structuredInputPreview}</div>
+      )}
+
+      {isSubAgentParent && !expanded && previewToolCalls.length > 0 && (
+        <div className={styles.inlinePreview}>
+          {previewToolCalls.map((child) => {
+            const childSummary = toolSummary(child.name, child.input);
+            const childLabel =
+              child.name === "Agent"
+                ? ((child.input.subagent_type ?? "") as string) || "Agent"
+                : child.name;
+
+            return (
+              <div className={styles.previewRow} key={child.id}>
+                <span className={styles.previewName}>{childLabel}</span>
+                {childSummary && (
+                  <span className={styles.previewSummary}>{childSummary}</span>
+                )}
+              </div>
+            );
+          })}
+          {childToolCalls.length > previewToolCalls.length && (
+            <div className={styles.previewMore}>
+              +{childToolCalls.length - previewToolCalls.length} more
+            </div>
+          )}
+        </div>
       )}
 
       {expanded && (

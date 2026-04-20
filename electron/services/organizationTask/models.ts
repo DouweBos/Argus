@@ -1,50 +1,33 @@
 /**
- * OrgTask — one user-initiated cross-repo task that fans out to every selected
- * member repo of an organization. Each member gets its own workspace + agent;
- * agents share the task prompt and know about each other via the organization
- * context prompt.
+ * OrgTask — one user-initiated cross-repo task. A single "host" agent runs in
+ * a neutral workspace (not a worktree of any scope repo) and orchestrates
+ * child agents into per-repo worktrees on demand via the Argus MCP tools.
  */
 
-export type OrgTaskStatus = "running" | "completed" | "failed" | "cancelled";
+export type OrgTaskStatus = "cancelled" | "completed" | "failed" | "running";
 
-export type OrgTaskMemberStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed";
-
-export interface OrgTaskMember {
-  /** Absolute path to the member's repo root. */
+export interface OrgTaskScopeEntry {
+  /** Absolute path to the scope repo's root. */
   repo_root: string;
   /** Copy of the org member's role at task-creation time. */
   role: string;
-  /** Workspace created for this member (null until workspace is set up). */
-  workspace_id: string | null;
-  /** Agent spawned in that workspace (null until spawned). */
-  agent_id: string | null;
-  /** Optional per-member extra instructions appended to the shared prompt. */
-  addendum: string;
-  /** Per-member lifecycle state. */
-  status: OrgTaskMemberStatus;
 }
 
 export interface OrgTask {
-  /** Stable UUID. */
   id: string;
-  /** Parent organization. */
   organization_id: string;
-  /** Short label ("Add favorites list"). */
   title: string;
-  /** Shared prompt injected into every member agent. */
   prompt: string;
-  /** Overall task status. */
   status: OrgTaskStatus;
-  /** Unix ms. */
   created_at: number;
-  /** Unix ms. */
   updated_at: number;
-  /** One entry per selected member repo. */
-  members: OrgTaskMember[];
+
+  /** Neutral workspace (kind: "org_host") hosting the lone agent. Null until created. */
+  host_workspace_id: string | null;
+  /** Agent running in the host workspace. Null until spawned. */
+  host_agent_id: string | null;
+  /** All in-scope repos (information for the agent; not a fan-out list). */
+  scope: OrgTaskScopeEntry[];
 }
 
 /** IPC payload for the create call. */
@@ -52,5 +35,5 @@ export interface StartOrgTaskInput {
   organizationId: string;
   title: string;
   prompt: string;
-  members: { repo_root: string; addendum?: string }[];
+  scope: { repo_root: string }[];
 }

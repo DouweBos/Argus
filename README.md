@@ -207,7 +207,3 @@ A few ground rules (the full list nests in `CLAUDE.md`):
 Open a PR. Drop into an issue. Poke around and tell us what's broken.
 
 > _The eyes of Argus are many — but there's always room for one more feather._
-
-## License
-
-See [LICENSE](LICENSE).

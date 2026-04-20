@@ -35,13 +35,6 @@
   transition: opacity 400ms ease;
 }
 
-.pickerBar {
-  position: absolute;
-  bottom: 16px;
-  right: 20px;
-  z-index: 3;
-}
-
 .body {
   flex: 1;
   display: flex;

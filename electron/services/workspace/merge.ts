@@ -74,7 +74,8 @@ export async function mergeWorkspaceIntoBase(
     // `diff --cached --quiet` exits non-zero when there are staged changes.
     await git(wsPath, ["diff", "--cached", "--quiet"]);
   } catch {
-    await git(wsPath, ["commit", "-m", "Workspace changes"]);
+    const message = await buildStagedCommitMessage(wsPath, workspaceBranch);
+    await git(wsPath, ["commit", "-m", message]);
   }
 
   // Pre-check for conflicts before touching the working tree.
@@ -131,11 +132,7 @@ async function squashWorkspaceCommits(
   workspaceBranch: string,
   baseBranch: string,
 ): Promise<void> {
-  const log = await git(wsPath, [
-    "log",
-    `${baseBranch}..HEAD`,
-    "--pretty=%s",
-  ]);
+  const log = await git(wsPath, ["log", `${baseBranch}..HEAD`, "--pretty=%s"]);
   const subjects = log
     .split("\n")
     .map((s) => s.trim())
@@ -160,11 +157,93 @@ async function squashWorkspaceCommits(
 }
 
 /**
+ * Build a conventional-commit message for the pre-merge commit that captures
+ * whatever an agent left staged in the workspace. The subject derives from the
+ * branch name; the body lists the staged files grouped by status so reviewers
+ * can see the shape of the change at a glance.
+ */
+async function buildStagedCommitMessage(
+  wsPath: string,
+  workspaceBranch: string,
+): Promise<string> {
+  const summary = branchToSummary(workspaceBranch);
+  const nameStatus = await git(wsPath, ["diff", "--cached", "--name-status"]);
+
+  const added: string[] = [];
+  const modified: string[] = [];
+  const deleted: string[] = [];
+  const renamed: string[] = [];
+  const other: string[] = [];
+
+  for (const line of nameStatus.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const parts = trimmed.split("\t");
+    const status = parts[0]?.[0] ?? "";
+    const pathA = parts[1] ?? "";
+    const pathB = parts[2];
+
+    if (status === "A") {
+      added.push(pathA);
+    } else if (status === "M") {
+      modified.push(pathA);
+    } else if (status === "D") {
+      deleted.push(pathA);
+    } else if (status === "R" && pathB) {
+      renamed.push(`${pathA} → ${pathB}`);
+    } else if (pathA) {
+      other.push(pathA);
+    }
+  }
+
+  const type = deriveTypeFromFiles(added, modified, deleted);
+  const bodyLines: string[] = [];
+  const section = (label: string, items: string[]) => {
+    if (items.length === 0) {
+      return;
+    }
+    bodyLines.push(label);
+    for (const item of items) {
+      bodyLines.push(`- ${item}`);
+    }
+    bodyLines.push("");
+  };
+  section("Added:", added);
+  section("Modified:", modified);
+  section("Deleted:", deleted);
+  section("Renamed:", renamed);
+  section("Changed:", other);
+
+  const body = bodyLines.join("\n").trimEnd();
+
+  return body ? `${type}: ${summary}\n\n${body}` : `${type}: ${summary}`;
+}
+
+/**
+ * Pick a conventional-commit type based on the file-status mix of the staged
+ * changes. Pure deletions read as chores; everything else is a feature commit
+ * by default (the agent presumably built or changed something).
+ */
+function deriveTypeFromFiles(
+  added: string[],
+  modified: string[],
+  deleted: string[],
+): "chore" | "feat" {
+  if (added.length === 0 && modified.length === 0 && deleted.length > 0) {
+    return "chore";
+  }
+
+  return "feat";
+}
+
+/**
  * Pick a conventional-commit type from a list of commit subjects.
  * Priority: fix > feat > chore. Defaults to "feat" when no subject carries a
  * recognised prefix.
  */
-function deriveCommitType(subjects: string[]): "fix" | "feat" | "chore" {
+function deriveCommitType(subjects: string[]): "chore" | "feat" | "fix" {
   const has = (t: string) =>
     subjects.some((s) => new RegExp(`^${t}(\\([^)]*\\))?!?:`, "i").test(s));
 
@@ -266,7 +345,9 @@ export function parseConflictingFiles(stdout: string): string[] {
       const lower = trimmed.toLowerCase();
       const idx = lower.lastIndexOf("merge conflict in ");
       if (idx !== -1) {
-        const filePath = trimmed.slice(idx + "merge conflict in ".length).trim();
+        const filePath = trimmed
+          .slice(idx + "merge conflict in ".length)
+          .trim();
         if (filePath) {
           conflicts.push(filePath);
         }

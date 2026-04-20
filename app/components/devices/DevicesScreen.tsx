@@ -1,6 +1,6 @@
 import type { DeviceInfo } from "../../lib/types";
-import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
 import { useState } from "react";
+import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
 import { stopDevice } from "../../lib/ipc";
 import { refreshDevices } from "../../stores/deviceStore";
 import {

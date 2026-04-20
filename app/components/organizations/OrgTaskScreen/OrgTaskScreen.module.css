@@ -155,15 +155,6 @@
   align-items: center;
 }
 
-.followUpRow {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
-}
-.followUpRow > :global(textarea) {
-  flex: 1;
-}
-
 .followUpBar {
   display: flex;
   gap: 6px;
@@ -174,13 +165,4 @@
 }
 .followUpBar > :global(textarea) {
   flex: 1;
-}
-
-.addendum {
-  font-size: 11px;
-  color: var(--text-muted);
-  padding: 6px 8px;
-  border-left: 2px solid var(--accent);
-  background: rgba(255, 255, 255, 0.02);
-  white-space: pre-wrap;
 }

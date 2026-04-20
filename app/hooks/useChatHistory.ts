@@ -1,6 +1,8 @@
 import type { ChatHistoryEntry } from "../lib/chatHistory";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { deleteChatHistory, listChatHistory } from "../lib/ipc";
+import { useAgentsRecord } from "../stores/agentStore";
+import { useConversations } from "../stores/conversationStore";
 
 export interface UseChatHistoryResult {
   clearAll: () => void;
@@ -11,9 +13,30 @@ export interface UseChatHistoryResult {
 }
 
 export function useChatHistory(repoRoot: string | null): UseChatHistoryResult {
-  const [entries, setEntries] = useState<ChatHistoryEntry[]>([]);
+  const [allEntries, setAllEntries] = useState<ChatHistoryEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const agents = useAgentsRecord();
+  const conversations = useConversations();
+
+  // Session IDs of agents currently open in the tab bar — these chats are
+  // "live" and should not show up as resumable recent sessions.
+  const openSessionIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const agentId of Object.keys(agents)) {
+      const sessionId = conversations[agentId]?.sessionId;
+      if (sessionId) {
+        ids.add(sessionId);
+      }
+    }
+
+    return ids;
+  }, [agents, conversations]);
+
+  const entries = useMemo(
+    () => allEntries.filter((entry) => !openSessionIds.has(entry.sessionId)),
+    [allEntries, openSessionIds],
+  );
 
   useEffect(() => {
     if (!repoRoot) {
@@ -25,7 +48,7 @@ export function useChatHistory(repoRoot: string | null): UseChatHistoryResult {
         if (cancelled) {
           return;
         }
-        setEntries(result);
+        setAllEntries(result);
         setLoaded(true);
       })
       .catch(() => {

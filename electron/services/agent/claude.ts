@@ -126,6 +126,7 @@ function injectDeviceFlag(command: string, udid: string): string {
 const cachedPrompts: Record<string, string | null> = {
   worktree: null,
   repo_root: null,
+  org_host: null,
   conductor: null,
 };
 
@@ -143,12 +144,17 @@ function loadPromptFile(filename: string): string {
   }
 }
 
-function getSystemPromptForKind(kind: "repo_root" | "worktree"): string {
+function getSystemPromptForKind(
+  kind: "org_host" | "repo_root" | "worktree",
+): string {
   if (cachedPrompts[kind] === null) {
-    cachedPrompts[kind] =
-      kind === "repo_root"
-        ? loadPromptFile("root-agent-system-prompt.md")
-        : loadPromptFile("worktree-agent-system-prompt.md");
+    if (kind === "repo_root") {
+      cachedPrompts[kind] = loadPromptFile("root-agent-system-prompt.md");
+    } else if (kind === "org_host") {
+      cachedPrompts[kind] = loadPromptFile("org-host-agent-system-prompt.md");
+    } else {
+      cachedPrompts[kind] = loadPromptFile("worktree-agent-system-prompt.md");
+    }
   }
 
   return cachedPrompts[kind] ?? "";
@@ -182,7 +188,13 @@ function buildOrganizationContext(
   repoRoot: string,
   workspaceId: string,
 ): string {
-  const orgs = organizationsForRepo(repoRoot);
+  const task = findOrgTaskForWorkspace(workspaceId);
+  // For org_host workspaces repo_root is the neutral dir, so look up the org
+  // via the task itself. For normal workspaces, fall back to repo membership.
+  const taskOrg = task
+    ? (appState.organizations.get(task.organization_id) ?? null)
+    : null;
+  const orgs = taskOrg ? [taskOrg] : organizationsForRepo(repoRoot);
   if (orgs.length === 0) {
     return "";
   }
@@ -211,10 +223,13 @@ function buildOrganizationContext(
 
   let base = `## Organization Context\n\n${sections.join("\n\n")}`;
 
-  // If this workspace belongs to a cross-repo OrgTask, surface the task and
-  // the live worktree paths of sibling agents so this agent can coordinate.
-  const task = findOrgTaskForWorkspace(workspaceId);
+  // If this workspace is the host of a cross-repo OrgTask, surface the task
+  // so the agent has it in context after restarts. Host-only — child worktrees
+  // inherit context from their parent's spawn prompt.
   if (task) {
+    const scopeLines = task.scope
+      .map((s) => `- \`${s.repo_root}\` — ${s.role || "(no role described)"}`)
+      .join("\n");
     const taskLines: string[] = [
       "",
       "## Current Cross-Repo Task",
@@ -225,32 +240,10 @@ function buildOrganizationContext(
       "",
       task.prompt,
       "",
-      "**Sibling agents running in parallel:**",
+      "**In-scope repos:**",
+      "",
+      scopeLines,
     ];
-    let siblingCount = 0;
-    for (const m of task.members) {
-      if (m.workspace_id === workspaceId) {
-        continue;
-      }
-      const siblingWs = m.workspace_id
-        ? appState.workspaces.get(m.workspace_id)
-        : null;
-      const pathLabel = siblingWs?.path ?? "(workspace pending)";
-      const role = m.role || "(no role described)";
-      taskLines.push(`- \`${pathLabel}\` — ${role} (${m.repo_root})`);
-      siblingCount += 1;
-    }
-    if (siblingCount > 0) {
-      taskLines.push(
-        "",
-        "These sibling worktrees are checked out on disk alongside yours — you can read their files directly via the absolute paths above to understand what they're building. Use `spawn_agent` / `wait_for_agent` / `send_agent_message` via the Argus MCP tools when you need to coordinate with those agents (hand off state, ask for an API shape, etc.). Stay in your own repo; let siblings handle theirs.",
-      );
-    } else {
-      taskLines.push(
-        "",
-        "No sibling agents are running — you are the only agent working on this task.",
-      );
-    }
 
     base += "\n" + taskLines.join("\n");
   }
@@ -382,6 +375,14 @@ export async function startAgent(
   if (mcpPort) {
     env.ARGUS_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/argus/acquire-device`;
   }
+
+  // Disable the Claude CLI's default per-tool MCP call timeout (~60s). Argus
+  // tools like `wait_for_agent` and `send_agent_message` legitimately block
+  // for minutes-to-hours; without this, the CLI's MCP client aborts the HTTP
+  // request mid-wait, the server-side promise resolves into a dead socket,
+  // and the caller never learns the child finished. 24h cap = effectively off.
+  env.MCP_TOOL_TIMEOUT = "86400000";
+  env.MCP_TIMEOUT = env.MCP_TIMEOUT ?? "30000";
 
   const child = spawn(CLAUDE_BIN, args, {
     cwd: worktreePath,

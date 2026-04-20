@@ -19,6 +19,8 @@ extraResources:
     to: worktree-agent-system-prompt.md
   - from: electron/prompts/root-agent-system-prompt.md
     to: root-agent-system-prompt.md
+  - from: electron/prompts/org-host-agent-system-prompt.md
+    to: org-host-agent-system-prompt.md
   - from: native/conductor
     to: conductor
     filter:

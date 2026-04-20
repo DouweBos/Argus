@@ -2,8 +2,8 @@
   "name": "argus",
   "description": "Agentic IDE for mobile development",
   "author": "Houwert",
-  "license": "MIT",
-  "private": false,
+  "license": "UNLICENSED",
+  "private": true,
   "repository": {
     "type": "git",
     "url": "https://github.com/DouweBos/Argus.git"

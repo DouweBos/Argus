@@ -1,17 +1,17 @@
 import type { Organization, OrgTask } from "../../../lib/types";
 import { useState } from "react";
 import { Button, Icons } from "@argus/peacock";
+import { openOrganization } from "../../../stores/centerViewStore";
 import {
   showCreateOrganizationDialog,
   showEditOrganizationDialog,
-  showStartTaskDialog,
 } from "../../../stores/dialogStore";
-import { useOrganizations } from "../../../stores/organizationStore";
 import {
   setActiveOrgTask,
   useOrgTasks,
   useOrgTaskSync,
 } from "../../../stores/orgTaskStore";
+import { useOrganizations } from "../../../stores/organizationStore";
 import styles from "./OrganizationsPanel.module.css";
 
 export function OrganizationsPanel() {
@@ -106,12 +106,11 @@ function OrganizationRow({
               )}
             </span>
           </span>
-          <Icons.ChevronRightIcon size={12} />
         </button>
         <div className={styles.rowActions}>
           <Button
             variant="primary"
-            onClick={() => showStartTaskDialog(org.id)}
+            onClick={() => openOrganization(org.id)}
             disabled={org.members.length === 0}
           >
             Start task
@@ -152,14 +151,13 @@ function TaskRow({ task }: { task: OrgTask }) {
         {task.status}
       </span>
       <span className={styles.taskMembers}>
-        {task.members.map((m) => (
+        {task.scope.map((s) => (
           <span
-            key={m.repo_root}
+            key={s.repo_root}
             className={styles.memberChip}
-            data-status={m.status}
-            title={`${basename(m.repo_root)} — ${m.status}`}
+            title={basename(s.repo_root)}
           >
-            {basename(m.repo_root)}
+            {basename(s.repo_root)}
           </span>
         ))}
       </span>
