@@ -533,28 +533,35 @@ export function ArgusLogo({ size = 48, className, ...rest }: IconProps) {
       {...rest}
       fill="none"
       height={size}
-      viewBox="0 0 48 48"
+      viewBox="0 0 120 120"
       width={size}
     >
       <defs>
-        <linearGradient id="argus-grad" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="#00d4aa" />
-          <stop offset="100%" stopColor="#4d9fff" />
-        </linearGradient>
-        <linearGradient id="argus-grad-bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="#00d4aa" stopOpacity="0.12" />
-          <stop offset="100%" stopColor="#4d9fff" stopOpacity="0.12" />
-        </linearGradient>
+        <radialGradient id="argus-logo-glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+        </radialGradient>
       </defs>
-      <rect fill="url(#argus-grad-bg)" height="48" rx="14" width="48" />
-      <path
-        d="M12 24 L24 12 L36 24 L24 36 Z"
+      <circle cx="60" cy="60" r="55" fill="url(#argus-logo-glow)" />
+      <circle
+        cx="60"
+        cy="60"
+        r="22"
         fill="none"
-        stroke="url(#argus-grad)"
-        strokeLinejoin="round"
-        strokeWidth="2.5"
+        stroke="var(--accent)"
+        strokeWidth="1.5"
       />
-      <circle cx="24" cy="24" fill="url(#argus-grad)" r="4" />
+      <circle cx="60" cy="60" r="6" fill="var(--accent)" />
+      <circle
+        cx="60"
+        cy="60"
+        r="40"
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="1"
+        strokeDasharray="3 5"
+        opacity="0.5"
+      />
     </svg>
   );
 }

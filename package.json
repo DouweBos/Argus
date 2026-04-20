@@ -28,6 +28,7 @@
     "storybook": "pnpm --filter @argus/peacock storybook",
     "lint": "tsc --noEmit && eslint . && prettier --check . && pnpm run lint:css-modules",
     "build:bridge": "make -C native/argus-sim-bridge",
+    "build:icon": "electron scripts/generate-icon.cjs",
     "lint:css-modules": "tsx scripts/check-css-module-usage.ts",
     "lint:ts": "tsc --noEmit && eslint . && prettier --check .",
     "lint:fix": "eslint . --fix && prettier --write .",
