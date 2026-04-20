@@ -120,12 +120,8 @@ export function TitleBar() {
       onJump={openCommandPalette}
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={workspace ? toggleRightPanel : undefined}
-      right={
-        <>
-          <NavigationButtons />
-          {workspace && <RunControl workspaceId={workspace.id} />}
-        </>
-      }
+      left={<NavigationButtons />}
+      right={workspace ? <RunControl workspaceId={workspace.id} /> : undefined}
     />
   );
 }

@@ -15,6 +15,7 @@ export interface TitleBarProps extends Omit<
   onJump?: () => void;
   onToggleLeft?: () => void;
   onToggleRight?: () => void;
+  left?: ReactNode;
   right?: ReactNode;
 }
 
@@ -25,6 +26,7 @@ export function TitleBar({
   onJump,
   onToggleLeft,
   onToggleRight,
+  left,
   right,
   className,
   ...rest
@@ -41,6 +43,7 @@ export function TitleBar({
           <span style={{ background: "#28c840" }} />
         </div>
       )}
+      {left && <div className={styles.left}>{left}</div>}
       <div className={styles.title}>{title}</div>
       <div className={styles.right}>
         {right}

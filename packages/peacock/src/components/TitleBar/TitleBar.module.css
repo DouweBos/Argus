@@ -27,6 +27,12 @@
   color: var(--text-secondary);
 }
 
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
 .right {
   margin-left: auto;
   display: flex;

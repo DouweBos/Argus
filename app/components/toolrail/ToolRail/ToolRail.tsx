@@ -1,9 +1,7 @@
 import type { SVGProps } from "react";
+import { useLocation } from "react-router-dom";
 import { Icons } from "@argus/peacock";
-import {
-  setCenterView,
-  useCenterView,
-} from "../../../stores/centerViewStore";
+import { setCenterView } from "../../../stores/centerViewStore";
 import {
   type ToolId,
   toggleTool,
@@ -35,11 +33,12 @@ const TOOLS: ToolDef[] = [
 export function ToolRail() {
   const activeToolId = useActiveToolId();
   const selectedWorkspaceId = useSelectedWorkspaceId();
-  const centerView = useCenterView();
+  const location = useLocation();
   const notifications = useNotifications();
   const unseen = useUnseenNotificationCount();
 
-  const notificationsActive = centerView === "notifications";
+  const notificationsActive =
+    location.pathname.replace(/\/+$/, "") === "/notifications";
   const hasEntries = notifications.length > 0;
   const hasError = notifications.some((n) => n.level === "error");
 

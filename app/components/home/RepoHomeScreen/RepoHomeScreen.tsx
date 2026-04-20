@@ -11,7 +11,6 @@ import {
 } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { focusAgent } from "../../../lib/agentLifecycle";
-import { revealInFinder } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
@@ -20,6 +19,7 @@ import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectWorkspace, useWorkspaces } from "../../../stores/workspaceStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { HOME_SHORTCUTS } from "../HomeScreen/homeContent";
+import { PathLink } from "../PathLink/PathLink";
 import styles from "../homeLayout.module.css";
 
 interface RepoHomeScreenProps {
@@ -200,19 +200,7 @@ export function RepoHomeScreen({
           </div>
         </div>
 
-        {repoRoot && (
-          <div
-            className={styles.repoPath}
-            title="⌘-click to reveal in Finder"
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey) {
-                revealInFinder(repoRoot).catch(() => {});
-              }
-            }}
-          >
-            {repoRoot}
-          </div>
-        )}
+        {repoRoot && <PathLink path={repoRoot} />}
 
         <StatsStrip>
           <StatCell

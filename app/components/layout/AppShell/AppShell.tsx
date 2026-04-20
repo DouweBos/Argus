@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useSuppressSpacePageScroll } from "../../../hooks/useSuppressSpacePageScroll";
@@ -74,8 +75,9 @@ function renderCenter(
     | "notifications"
     | "organizations"
     | "review-queue",
+  isNotificationsRoute: boolean,
 ) {
-  if (centerView === "notifications") {
+  if (isNotificationsRoute) {
     return <NotificationsScreen />;
   }
   if (selectedId !== null) {
@@ -103,6 +105,8 @@ function renderCenter(
 export function AppShell() {
   const selectedId = useSelectedWorkspaceId();
   const centerView = useCenterView();
+  const location = useLocation();
+  const isNotificationsRoute = location.pathname.replace(/\/+$/, "") === "/notifications";
   const leftVisible = useLeftSidebarVisible();
   const setLeftWidth = setLeftPanelWidth;
   useWindowFocus();
@@ -242,7 +246,9 @@ export function AppShell() {
         )}
 
         <main className={styles.center}>
-          <ErrorBoundary>{renderCenter(selectedId, centerView)}</ErrorBoundary>
+          <ErrorBoundary>
+            {renderCenter(selectedId, centerView, isNotificationsRoute)}
+          </ErrorBoundary>
           <OrgTaskOverlay />
           <PermissionBanner />
         </main>
