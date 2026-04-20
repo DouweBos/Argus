@@ -103,7 +103,10 @@ export function ProjectSegment({
             />
           </div>
         ) : (
-          (repoBranch ?? repoRootSession?.branch)
+          <span className={styles.branchSubtitle}>
+            <Icons.BranchIcon size={11} />
+            <span>{repoBranch ?? repoRootSession?.branch}</span>
+          </span>
         )
       }
       endContent={
@@ -204,10 +207,6 @@ export function ProjectSegment({
         </>
       }
     >
-      <div className={styles.sessionsGroupLabel}>
-        <span>Sessions</span>
-        <span className={styles.sessionsCount}>{worktrees.length}</span>
-      </div>
       <div aria-label="Sessions" className={styles.list} role="listbox">
         {worktrees.length === 0 ? (
           <p className={styles.emptyHint}>No sessions yet.</p>
@@ -235,13 +234,6 @@ export function ProjectSegment({
         createPortal(
           <CreateSessionDialog
             repoRoot={repoRoot}
-            sourceSession={
-              selectedId
-                ? (sessions.find(
-                    (w) => w.id === selectedId && w.kind === "worktree",
-                  ) ?? null)
-                : null
-            }
             onClose={() => setShowCreate(false)}
           />,
           document.body,

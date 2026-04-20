@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { Button, Icons, Input, SegmentedCard } from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
 import {
@@ -62,6 +71,228 @@ function previewSlug(input: string): string {
   return cleaned || "session";
 }
 
+interface BranchSection {
+  branches: string[];
+  formatDisplay?: (b: string) => string;
+  label: string;
+}
+
+interface BranchDropdownProps {
+  loading?: boolean;
+  onChange: (branch: string) => void;
+  placeholder?: string;
+  sections: BranchSection[];
+  value: string;
+}
+
+function BranchDropdown({
+  sections,
+  value,
+  onChange,
+  loading = false,
+  placeholder = "Select a branch…",
+}: BranchDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [popoverRect, setPopoverRect] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+  }, []);
+
+  const updatePosition = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) {
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    setPopoverRect({ left: r.left, top: r.bottom + 4, width: r.width });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, updatePosition]);
+
+  // Close on outside click (wrapper + portaled popover count as inside)
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (wrapperRef.current?.contains(target)) {
+        return;
+      }
+      if (popoverRef.current?.contains(target)) {
+        return;
+      }
+      close();
+    };
+
+    document.addEventListener("mousedown", handler);
+
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, close]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, close]);
+
+  // Focus search when opened
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => searchRef.current?.focus(), 0);
+    }
+  }, [open]);
+
+  const filteredSections = sections.map((s) => ({
+    ...s,
+    filtered: filterBranches(s.branches, query),
+  }));
+
+  const hasAny = filteredSections.some((s) => s.filtered.length > 0);
+
+  // Find display label for current value
+  const displayValue = (() => {
+    for (const s of sections) {
+      if (s.branches.includes(value)) {
+        return s.formatDisplay ? s.formatDisplay(value) : value;
+      }
+    }
+
+    return value || null;
+  })();
+
+  let listContent: ReactNode;
+  if (loading) {
+    listContent = (
+      <div className={styles.branchListEmpty}>Loading branches…</div>
+    );
+  } else if (!hasAny) {
+    listContent = (
+      <div className={styles.branchListEmpty}>
+        {query ? "No matching branches" : "No branches available"}
+      </div>
+    );
+  } else {
+    listContent = filteredSections.map((s) =>
+      s.filtered.length === 0 ? null : (
+        <div key={s.label}>
+          {sections.length > 1 && (
+            <div className={styles.branchSectionHeader}>{s.label}</div>
+          )}
+          {s.filtered.map((b) => {
+            const display = s.formatDisplay ? s.formatDisplay(b) : b;
+
+            return (
+              <button
+                key={`${s.label}:${b}`}
+                className={`${styles.branchItem} ${b === value ? styles.branchItemSelected : ""}`}
+                type="button"
+                role="option"
+                aria-selected={b === value}
+                onClick={() => {
+                  onChange(b);
+                  close();
+                }}
+              >
+                {display}
+              </button>
+            );
+          })}
+        </div>
+      ),
+    );
+  }
+
+  return (
+    <div className={styles.branchDropdownWrapper} ref={wrapperRef}>
+      <button
+        ref={triggerRef}
+        className={styles.branchDropdownTrigger}
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span
+          className={
+            displayValue
+              ? styles.branchDropdownValue
+              : styles.branchDropdownPlaceholder
+          }
+        >
+          {displayValue ?? placeholder}
+        </span>
+        <Icons.ChevronDownIcon
+          size={10}
+          className={`${styles.branchDropdownChevron} ${open ? styles.branchDropdownChevronOpen : ""}`}
+        />
+      </button>
+
+      {open &&
+        popoverRect &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className={styles.branchDropdownPopover}
+            role="listbox"
+            style={{
+              left: popoverRect.left,
+              top: popoverRect.top,
+              width: popoverRect.width,
+            }}
+          >
+            <div className={styles.branchDropdownSearch}>
+              <Input
+                ref={searchRef}
+                autoComplete="off"
+                placeholder="Search branches…"
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            <div className={styles.branchDropdownList}>{listContent}</div>
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+}
+
 export function CreateSessionDialog({
   repoRoot,
   onClose,
@@ -75,13 +306,11 @@ export function CreateSessionDialog({
   const [sourceBranch, setSourceBranch] = useState<string>(
     sourceSession?.branch ?? "",
   );
-  const [sourceQuery, setSourceQuery] = useState("");
   const [description, setDescription] = useState("");
   const [newBranch, setNewBranch] = useState("");
 
   // adopt state
   const [adoptBranch, setAdoptBranch] = useState("");
-  const [adoptQuery, setAdoptQuery] = useState("");
   const [adoptDescription, setAdoptDescription] = useState("");
 
   const [localBranches, setLocalBranches] = useState<string[]>([]);
@@ -246,7 +475,6 @@ export function CreateSessionDialog({
   const goPick = () => {
     setFlow("pick");
     setAdoptBranch("");
-    setAdoptQuery("");
     setAdoptDescription("");
     setNewBranch("");
     setDescription("");
@@ -303,63 +531,6 @@ export function CreateSessionDialog({
 
   // ---- Step: branch-off ----
   if (flow === "branch-off") {
-    const localSuggestions = filterBranches(localBranches, sourceQuery);
-    const remoteSuggestions = filterBranches(remoteBranches, sourceQuery);
-    const hasSuggestions =
-      localSuggestions.length > 0 || remoteSuggestions.length > 0;
-
-    let sourceListBody: ReactNode;
-    if (branchesLoading) {
-      sourceListBody = (
-        <div className={styles.branchListEmpty}>Loading branches…</div>
-      );
-    } else if (!hasSuggestions) {
-      sourceListBody = (
-        <div className={styles.branchListEmpty}>No matching branches</div>
-      );
-    } else {
-      sourceListBody = (
-        <>
-          {localSuggestions.length > 0 && (
-            <>
-              <div className={styles.branchSectionHeader}>Local</div>
-              {localSuggestions.map((b) => (
-                <button
-                  key={b}
-                  className={`${styles.branchItem} ${b === sourceBranch ? styles.branchItemSelected : ""}`}
-                  type="button"
-                  onClick={() => {
-                    setSourceBranch(b);
-                    setSourceQuery("");
-                  }}
-                >
-                  {b}
-                </button>
-              ))}
-            </>
-          )}
-          {remoteSuggestions.length > 0 && (
-            <>
-              <div className={styles.branchSectionHeader}>Remote</div>
-              {remoteSuggestions.map((b) => (
-                <button
-                  key={`remote:${b}`}
-                  className={`${styles.branchItem} ${b === sourceBranch ? styles.branchItemSelected : ""}`}
-                  type="button"
-                  onClick={() => {
-                    setSourceBranch(b);
-                    setSourceQuery("");
-                  }}
-                >
-                  {b}
-                </button>
-              ))}
-            </>
-          )}
-        </>
-      );
-    }
-
     let branchHint: ReactNode = null;
     if (branchCollision) {
       branchHint = (
@@ -469,23 +640,17 @@ export function CreateSessionDialog({
 
           {!sourceSession && (
             <div className={styles.field}>
-              <label className={styles.label} htmlFor="source-branch-input">
-                Source branch
-              </label>
-              <Input
-                autoComplete="off"
-                id="source-branch-input"
-                placeholder="Search branches…"
-                type="text"
-                value={sourceQuery}
-                onChange={(e) => setSourceQuery(e.target.value)}
+              <label className={styles.label}>Source branch</label>
+              <BranchDropdown
+                sections={[
+                  { label: "Local", branches: localBranches },
+                  { label: "Remote", branches: remoteBranches },
+                ]}
+                value={sourceBranch}
+                onChange={setSourceBranch}
+                loading={branchesLoading}
+                placeholder="Select a branch…"
               />
-              {sourceBranch && (
-                <span className={styles.createNewHint}>
-                  Selected: <strong>{sourceBranch}</strong>
-                </span>
-              )}
-              <div className={styles.branchList}>{sourceListBody}</div>
             </div>
           )}
 
@@ -516,36 +681,7 @@ export function CreateSessionDialog({
   // ---- Step: adopt-local / adopt-remote ----
   const isRemote = flow === "adopt-remote";
   const pool = isRemote ? adoptableRemote : adoptableLocal;
-  const filteredPool = filterBranches(pool, adoptQuery);
   const subtitle = isRemote ? "Remote branch" : "Local branch";
-
-  let adoptListBody: ReactNode;
-  if (branchesLoading) {
-    adoptListBody = (
-      <div className={styles.branchListEmpty}>Loading branches…</div>
-    );
-  } else if (pool.length === 0) {
-    adoptListBody = (
-      <div className={styles.branchListEmpty}>
-        No {isRemote ? "remote" : "local"} branches available
-      </div>
-    );
-  } else if (filteredPool.length === 0) {
-    adoptListBody = (
-      <div className={styles.branchListEmpty}>No matching branches</div>
-    );
-  } else {
-    adoptListBody = filteredPool.map((b) => (
-      <button
-        key={b}
-        className={`${styles.branchItem} ${b === adoptBranch ? styles.branchItemSelected : ""}`}
-        type="button"
-        onClick={() => setAdoptBranch(b)}
-      >
-        {isRemote ? `origin/${b}` : b}
-      </button>
-    ));
-  }
 
   return (
     <Dialog
@@ -557,27 +693,22 @@ export function CreateSessionDialog({
     >
       <form className={styles.form} onSubmit={handleSubmitAdopt}>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="adopt-branch-input">
+          <label className={styles.label}>
             {isRemote ? "Remote branch" : "Local branch"}
           </label>
-          <Input
-            autoComplete="off"
-            autoFocus
-            id="adopt-branch-input"
-            placeholder="Search branches…"
-            type="text"
-            value={adoptQuery}
-            onChange={(e) => setAdoptQuery(e.target.value)}
+          <BranchDropdown
+            sections={[
+              {
+                label: isRemote ? "Remote" : "Local",
+                branches: pool,
+                formatDisplay: isRemote ? (b) => `origin/${b}` : undefined,
+              },
+            ]}
+            value={adoptBranch}
+            onChange={setAdoptBranch}
+            loading={branchesLoading}
+            placeholder={`Select a ${isRemote ? "remote" : "local"} branch…`}
           />
-          {adoptBranch && (
-            <span className={styles.createNewHint}>
-              Selected:{" "}
-              <strong>
-                {isRemote ? `origin/${adoptBranch}` : adoptBranch}
-              </strong>
-            </span>
-          )}
-          <div className={styles.branchList}>{adoptListBody}</div>
         </div>
 
         <div className={styles.field}>

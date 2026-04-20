@@ -41,7 +41,6 @@ import {
 } from "../stores/centerViewStore";
 import { setActiveCenterView, getEditorState } from "../stores/editorStore";
 import { getSessionState, selectSession } from "../stores/sessionStore";
-import { persistRoute } from "./routePersistence";
 
 export type AppView =
   | "activity"
@@ -221,8 +220,6 @@ export function useRouteSync(): void {
         },
       }),
     );
-
-    persistRoute(location.pathname);
   }, [location.pathname, navType]);
 }
 

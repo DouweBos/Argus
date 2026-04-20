@@ -254,23 +254,27 @@ export function SidebarRepoGroup({
           {endContent && (
             <div className={styles.repoEndContent}>{endContent}</div>
           )}
-          {actions && <div className={styles.repoActions}>{actions}</div>}
+          {(meta || actions) && (
+            <div className={styles.repoTrailing}>
+              {meta && <span className={styles.repoMeta}>{meta}</span>}
+              {actions && <div className={styles.repoActions}>{actions}</div>}
+            </div>
+          )}
         </div>
-        {(subtitle || meta || persistentAction) && (
+        {(subtitle || persistentAction) && (
           <div
             className={styles.repoSubtitleRow}
             onClick={label}
             role={label ? "button" : undefined}
           >
             <span className={styles.repoSubtitle}>{subtitle}</span>
-            <span className={styles.repoSubtitleTrailing}>
-              {meta && <span className={styles.repoMeta}>{meta}</span>}
-              {persistentAction && (
+            {persistentAction && (
+              <span className={styles.repoSubtitleTrailing}>
                 <span className={styles.repoPersistentAction}>
                   {persistentAction}
                 </span>
-              )}
-            </span>
+              </span>
+            )}
           </div>
         )}
       </div>

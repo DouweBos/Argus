@@ -65,34 +65,45 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     autoOpenedRef.current.add(sessionId);
 
     (async () => {
+      let opened = 0;
       try {
         const ws = getSessionState().sessions.find((w) => w.id === sessionId);
-        if (!ws) {
-          return;
-        }
-        const config = await readArgusConfig(ws.repo_root);
-        if (!config.terminals?.length) {
-          return;
-        }
-
-        for (const entry of config.terminals) {
-          try {
-            const terminalId = await createTerminal(
-              sessionId,
-              entry.dir || undefined,
-            );
-            startListening(terminalId);
-            addSession({
-              id: terminalId,
-              session_id: sessionId,
-              title: entry.name || entry.dir || "Shell",
-            });
-          } catch {
-            // skip terminals that fail (e.g. dir doesn't exist)
+        if (ws) {
+          const config = await readArgusConfig(ws.repo_root);
+          for (const entry of config.terminals ?? []) {
+            try {
+              const terminalId = await createTerminal(
+                sessionId,
+                entry.dir || undefined,
+              );
+              startListening(terminalId);
+              addSession({
+                id: terminalId,
+                session_id: sessionId,
+                title: entry.name || entry.dir || "Shell",
+              });
+              opened += 1;
+            } catch {
+              // skip terminals that fail (e.g. dir doesn't exist)
+            }
           }
         }
       } catch {
-        // no config or read failed — silently ignore
+        // no config or read failed — fall through to default terminal
+      }
+
+      if (opened === 0 && getSessionsForSession(sessionId).length === 0) {
+        try {
+          const terminalId = await createTerminal(sessionId);
+          startListening(terminalId);
+          addSession({
+            id: terminalId,
+            session_id: sessionId,
+            title: "Shell 1",
+          });
+        } catch {
+          // backend not ready — silently ignore
+        }
       }
     })();
   }, [sessionId]);

@@ -9,6 +9,7 @@ import {
   StatsStrip,
   SessionCard,
 } from "@argus/peacock";
+import { useArgusJson } from "../../../hooks/useArgusJson";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { useAgentsRecord } from "../../../stores/agentStore";
@@ -24,6 +25,7 @@ import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { HOME_SHORTCUTS } from "../HomeScreen/homeContent";
 import { PathLink } from "../PathLink/PathLink";
 import styles from "../homeLayout.module.css";
+import { NoArgusJsonCard } from "./NoArgusJsonCard";
 
 interface RepoHomeScreenProps {
   canStart: boolean;
@@ -90,6 +92,7 @@ export function RepoHomeScreen({
   const devices = useDevices();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
+  const argusJson = useArgusJson(repoRoot);
   const handleClearAllHistory = history.clearAll;
   const handleDeleteHistoryEntry = history.remove;
 
@@ -212,6 +215,13 @@ export function RepoHomeScreen({
         </div>
 
         {repoRoot && <PathLink path={repoRoot} />}
+
+        {repoRoot && argusJson.exists === false && (
+          <NoArgusJsonCard
+            repoRoot={repoRoot}
+            onGenerated={argusJson.refresh}
+          />
+        )}
 
         <StatsStrip>
           <StatCell

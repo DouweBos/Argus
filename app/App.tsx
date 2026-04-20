@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import "./styles/global.css";
 import { AppShell } from "./components/layout/AppShell";
@@ -8,7 +7,6 @@ import { QuitGuard } from "./components/shared/ConfirmStopAgent/QuitGuard";
 import { StopAgentGuard } from "./components/shared/ConfirmStopAgent/stopAgentGuard";
 import { ImageViewer } from "./components/shared/ImageViewer/ImageViewer";
 import { useOnboarding } from "./hooks/useOnboarding";
-import { getPersistedRoute } from "./lib/routePersistence";
 import { useRegisterNavigator, useRouteSync } from "./lib/router";
 
 function RouterGlue() {
@@ -20,15 +18,8 @@ function RouterGlue() {
 
 export default function App() {
   const { config, loading } = useOnboarding();
-  const [initialPath, setInitialPath] = useState<string | null>(null);
 
-  useEffect(() => {
-    getPersistedRoute()
-      .then((p) => setInitialPath(p ?? "/"))
-      .catch(() => setInitialPath("/"));
-  }, []);
-
-  if (loading || initialPath === null) {
+  if (loading) {
     return null;
   }
 
@@ -39,7 +30,7 @@ export default function App() {
   }
 
   return (
-    <MemoryRouter initialEntries={[initialPath]}>
+    <MemoryRouter initialEntries={["/"]}>
       <RouterGlue />
       <AppShell />
       <ImageViewer />
