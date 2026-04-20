@@ -38,14 +38,6 @@ function formatRelativeDate(timestamp: number): string {
   });
 }
 
-function formatCost(cost?: number): string | null {
-  if (cost == null || cost <= 0) {
-    return null;
-  }
-
-  return `$${cost.toFixed(2)}`;
-}
-
 function roleLabel(role: ChatHistoryMessageMatch["role"]): string {
   if (role === "user") {
     return "You";
@@ -89,8 +81,6 @@ function EntryRow({
   onResume,
   onDelete,
 }: EntryRowProps) {
-  const cost = formatCost(entry.totalCost);
-
   return (
     <div className={styles.entry} onClick={() => onView(entry.id)}>
       <span className={styles.entryTitle}>{entry.title}</span>
@@ -98,18 +88,6 @@ function EntryRow({
         <span>{formatRelativeDate(entry.endedAt)}</span>
         <span className={styles.dot} />
         <span>{entry.sessionBranch}</span>
-        {entry.model && (
-          <>
-            <span className={styles.dot} />
-            <span>{entry.model}</span>
-          </>
-        )}
-        {cost && (
-          <>
-            <span className={styles.dot} />
-            <span>{cost}</span>
-          </>
-        )}
         <span className={styles.dot} />
         <span>
           {entry.messageCount} msg{entry.messageCount !== 1 ? "s" : ""}
