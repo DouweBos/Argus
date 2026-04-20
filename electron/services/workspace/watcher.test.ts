@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { appState } from "../../state";
 import { WatcherHandle, startWatcher } from "./watcher";
 
 // ---------------------------------------------------------------------------
@@ -39,6 +40,7 @@ describe("watcherHandle", () => {
     vi.useFakeTimers();
     mockSend.mockClear();
     gitMock.mockReset();
+    appState.workspaces.clear();
   });
 
   afterEach(() => {
@@ -298,6 +300,152 @@ describe("watcherHandle", () => {
     expect(mockSend).toHaveBeenCalledWith("workspace:diff-changed:ws-1", {
       files: 3,
       additions: 0,
+      deletions: 0,
+    });
+
+    handle.stop();
+  });
+
+  it("sums committed diff (base...HEAD) and working-tree diff", async () => {
+    appState.workspaces.set("ws-1", {
+      id: "ws-1",
+      kind: "worktree",
+      branch: "feature",
+      base_branch: "main",
+      description: "",
+      path: "/repo",
+      repo_root: "/repo",
+      status: "ready",
+    });
+
+    gitMock.mockImplementation((_cwd, args) => {
+      if (args[0] === "diff" && args[1] === "HEAD" && args[2] === "--numstat") {
+        return Promise.resolve("2\t1\tworking.ts\n");
+      }
+      if (
+        args[0] === "diff" &&
+        args[1] === "main...HEAD" &&
+        args[2] === "--numstat"
+      ) {
+        return Promise.resolve("10\t3\tcommitted.ts\n5\t0\tshared.ts\n");
+      }
+      if (args[0] === "ls-files") {
+        return Promise.resolve("");
+      }
+
+      return Promise.resolve("");
+    });
+
+    const handle = new WatcherHandle("ws-1", "/repo");
+    handle.start(5000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockSend).toHaveBeenCalledWith("workspace:diff-changed:ws-1", {
+      files: 3,
+      additions: 17,
+      deletions: 4,
+    });
+
+    handle.stop();
+  });
+
+  it("dedupes files that appear in both committed and working-tree diffs", async () => {
+    appState.workspaces.set("ws-1", {
+      id: "ws-1",
+      kind: "worktree",
+      branch: "feature",
+      base_branch: "main",
+      description: "",
+      path: "/repo",
+      repo_root: "/repo",
+      status: "ready",
+    });
+
+    gitMock.mockImplementation((_cwd, args) => {
+      if (args[0] === "diff" && args[1] === "HEAD") {
+        return Promise.resolve("1\t1\tshared.ts\n");
+      }
+      if (args[0] === "diff" && args[1] === "main...HEAD") {
+        return Promise.resolve("5\t2\tshared.ts\n");
+      }
+      if (args[0] === "ls-files") {
+        return Promise.resolve("");
+      }
+
+      return Promise.resolve("");
+    });
+
+    const handle = new WatcherHandle("ws-1", "/repo");
+    handle.start(5000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Counts are summed; file count is deduped (1 unique path).
+    expect(mockSend).toHaveBeenCalledWith("workspace:diff-changed:ws-1", {
+      files: 1,
+      additions: 6,
+      deletions: 3,
+    });
+
+    handle.stop();
+  });
+
+  it("skips committed diff when workspace has no base branch", async () => {
+    gitMock.mockImplementation((_cwd, args) => {
+      if (args[0] === "diff" && args[1] === "HEAD") {
+        return Promise.resolve("1\t0\tfile.ts\n");
+      }
+      if (args[0] === "ls-files") {
+        return Promise.resolve("");
+      }
+
+      return Promise.resolve("");
+    });
+
+    const handle = new WatcherHandle("ws-1", "/repo");
+    handle.start(5000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    // Only the two base commands should be called — no base...HEAD diff.
+    const diffCalls = gitMock.mock.calls.filter((c) => c[1][0] === "diff");
+    expect(diffCalls).toHaveLength(1);
+    expect(diffCalls[0][1]).toEqual(["diff", "HEAD", "--numstat"]);
+
+    handle.stop();
+  });
+
+  it("survives when base...HEAD fails (e.g. new branch with no commits)", async () => {
+    appState.workspaces.set("ws-1", {
+      id: "ws-1",
+      kind: "worktree",
+      branch: "feature",
+      base_branch: "main",
+      description: "",
+      path: "/repo",
+      repo_root: "/repo",
+      status: "ready",
+    });
+
+    gitMock.mockImplementation((_cwd, args) => {
+      if (args[0] === "diff" && args[1] === "HEAD") {
+        return Promise.resolve("1\t0\tfile.ts\n");
+      }
+      if (args[0] === "diff" && args[1] === "main...HEAD") {
+        return Promise.reject(new Error("unknown revision"));
+      }
+      if (args[0] === "ls-files") {
+        return Promise.resolve("");
+      }
+
+      return Promise.resolve("");
+    });
+
+    const handle = new WatcherHandle("ws-1", "/repo");
+    handle.start(5000);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(mockSend).toHaveBeenCalledWith("workspace:diff-changed:ws-1", {
+      files: 1,
+      additions: 1,
       deletions: 0,
     });
 
