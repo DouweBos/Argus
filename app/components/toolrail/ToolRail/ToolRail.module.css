@@ -10,6 +10,10 @@
   border-left: 1px solid var(--glass-border);
 }
 
+.spacer {
+  flex: 1;
+}
+
 .tool {
   position: relative;
   display: flex;
@@ -47,4 +51,29 @@
   width: 2px;
   border-radius: 1px;
   background: var(--accent);
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+}
+
+.badgeError {
+  background: #ff6680;
+}
+
+.badgeWarning {
+  background: #ffb547;
+  color: #1a1a1a;
 }

@@ -101,7 +101,6 @@ describe("external branch switch → full pipeline", () => {
       workspaces: [],
       selectedId: null,
       isLoading: false,
-      error: null,
       setupProgressByWorkspaceId: {},
     });
     setLayoutState({

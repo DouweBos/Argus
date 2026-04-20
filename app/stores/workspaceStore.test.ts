@@ -36,7 +36,6 @@ describe("workspaceStore", () => {
       workspaces: [],
       selectedId: null,
       isLoading: false,
-      error: null,
       setupProgressByWorkspaceId: {},
     });
   });

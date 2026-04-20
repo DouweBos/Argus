@@ -6,6 +6,7 @@ export type CenterView =
   | "agents"
   | "devices"
   | "home"
+  | "notifications"
   | "organizations"
   | "review-queue";
 
