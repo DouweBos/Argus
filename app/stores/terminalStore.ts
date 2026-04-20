@@ -6,6 +6,8 @@ interface TerminalStoreData {
   activeSessionId: Record<string, string | null>;
   /** Serialized xterm buffer cache for unmounted terminals. */
   bufferCache: Record<string, string>;
+  /** Map of sessionId -> whether the underlying pty is still alive. */
+  liveSessions: Record<string, boolean>;
   // Map of workspaceId -> whether the run command is executing
   runBusy: Record<string, boolean>;
   // Map of workspaceId -> run terminal session id
@@ -20,6 +22,7 @@ const terminalStore = create<TerminalStoreData>(() => ({
   runSessionId: {},
   runBusy: {},
   bufferCache: {},
+  liveSessions: {},
 }));
 
 const useTerminalStore = terminalStore;
@@ -37,9 +40,21 @@ export const addSession = (session: TerminalSession) => {
         ...state.activeSessionId,
         [session.workspace_id]: session.id,
       },
+      liveSessions: { ...state.liveSessions, [session.id]: true },
     };
   });
 };
+
+export const markSessionExited = (sessionId: string) => {
+  terminalStore.setState((state) => ({
+    liveSessions: { ...state.liveSessions, [sessionId]: false },
+  }));
+};
+
+export const useSessionAlive = (sessionId: string | null): boolean =>
+  useTerminalStore((s) =>
+    sessionId ? (s.liveSessions[sessionId] ?? false) : false,
+  );
 
 export const removeSession = (workspaceId: string, sessionId: string) => {
   terminalStore.setState((state) => {
@@ -50,6 +65,8 @@ export const removeSession = (workspaceId: string, sessionId: string) => {
       currentActive === sessionId
         ? (remaining[remaining.length - 1]?.id ?? null)
         : currentActive;
+    const { [sessionId]: _removedAlive, ...remainingAlive } =
+      state.liveSessions;
 
     return {
       sessions: { ...state.sessions, [workspaceId]: remaining },
@@ -57,6 +74,7 @@ export const removeSession = (workspaceId: string, sessionId: string) => {
         ...state.activeSessionId,
         [workspaceId]: newActive,
       },
+      liveSessions: remainingAlive,
     };
   });
 };

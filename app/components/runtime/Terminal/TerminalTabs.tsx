@@ -4,6 +4,7 @@ import {
   createTerminal,
   destroyTerminal,
   readArgusConfig,
+  stopTerminal,
 } from "../../../lib/ipc";
 import {
   startListening,
@@ -18,6 +19,7 @@ import {
   setActiveSession,
   useActiveSessionId,
   useRunSessionId,
+  useSessionAlive,
   useTerminalSessionsSlice,
 } from "../../../stores/terminalStore";
 import { getWorkspaceState } from "../../../stores/workspaceStore";
@@ -32,6 +34,7 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
   const sessions = useTerminalSessionsSlice(workspaceId);
   const activeId = useActiveSessionId(workspaceId);
   const runSessionId = useRunSessionId(workspaceId);
+  const activeAlive = useSessionAlive(activeId);
   const [isCreating, setIsCreating] = useState(false);
   const autoOpenedRef = useRef<Set<string>>(new Set());
 
@@ -131,6 +134,17 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
     [workspaceId],
   );
 
+  const handleStop = useCallback(async () => {
+    if (!activeId) {
+      return;
+    }
+    try {
+      await stopTerminal(activeId);
+    } catch {
+      // Session already gone — UI will catch up via the exit event.
+    }
+  }, [activeId]);
+
   const handleExit = useCallback(
     (sessionId: string) => {
       // Don't auto-remove the run terminal on exit — keep output visible
@@ -182,6 +196,16 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
             );
           })}
         </div>
+        {activeAlive && (
+          <button
+            aria-label="Stop terminal process"
+            className={styles.stopBtn}
+            title="Stop (SIGINT → SIGTERM → SIGKILL)"
+            onClick={handleStop}
+          >
+            <Icons.StopIcon size={10} />
+          </button>
+        )}
         <button
           aria-label="New terminal"
           className={styles.addTabBtn}
@@ -221,6 +245,7 @@ export function TerminalTabs({ workspaceId }: TerminalTabsProps) {
                 className={`${styles.terminalWrapper} ${isActive ? styles.terminalWrapperActive : ""}`}
               >
                 <ShellTerminal
+                  isActive={isActive}
                   sessionId={session.id}
                   onExit={() => handleExit(session.id)}
                 />
