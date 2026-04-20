@@ -29,6 +29,7 @@ interface WorkspaceHomeScreenProps {
   onResumeHistory: (sessionId: string) => void;
   onSelectAgent: (agentId: string, workspaceId: string) => void;
   onStart: () => void;
+  onStartPlan: () => void;
   onViewHistory: (historyId: string) => void;
   repoRoot: string | null;
   workspaceId: string;
@@ -77,6 +78,7 @@ export function WorkspaceHomeScreen({
   isStarting,
   canStart,
   onStart,
+  onStartPlan,
   onSelectAgent,
   onViewHistory,
   onResumeHistory,
@@ -215,6 +217,15 @@ export function WorkspaceHomeScreen({
           </div>
           <div className={styles.heroSpacer} />
           <div className={styles.ctas}>
+            <Button
+              variant="ghost"
+              leading={<Icons.AgentStartIcon size={12} />}
+              disabled={!canStart || isStarting}
+              onClick={onStartPlan}
+              title="Start in plan mode — agent must present a plan for approval before any writes"
+            >
+              Plan mode
+            </Button>
             <Button
               variant="primary"
               leading={<Icons.AgentStartIcon size={12} />}

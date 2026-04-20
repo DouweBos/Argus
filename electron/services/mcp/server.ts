@@ -542,10 +542,10 @@ export function createMcpServer(): McpServer {
         .string()
         .describe("Initial message/instructions to send to the agent"),
       permission_mode: z
-        .string()
+        .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
         .optional()
         .describe(
-          "Permission mode for the agent (e.g. 'auto', 'default'). Defaults to the app's setting.",
+          "Permission mode for the agent. Use 'plan' to start the agent in plan mode — read-only exploration plus AskUserQuestion/ExitPlanMode, with the agent required to present a plan for user approval before any writes. 'default' prompts per tool; 'auto'/'acceptEdits' auto-accept edits; 'bypassPermissions' skips prompts. Defaults to the app's setting.",
         ),
       platforms: z
         .array(z.enum(["ios", "android", "web"]))
@@ -656,10 +656,10 @@ export function createMcpServer(): McpServer {
         )
         .describe("Array of agents to spawn, each in its own workspace"),
       permission_mode: z
-        .string()
+        .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
         .optional()
         .describe(
-          "Permission mode for all agents (e.g. 'auto'). Defaults to app setting.",
+          "Permission mode for all agents. Use 'plan' for planning-only agents that must call ExitPlanMode before any writes. See spawn_agent for other values. Defaults to app setting.",
         ),
       parent_agent_id: z
         .string()

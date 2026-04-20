@@ -27,6 +27,7 @@ interface RepoHomeScreenProps {
   onResumeHistory: (sessionId: string) => void;
   onSelectAgent: (agentId: string, workspaceId: string) => void;
   onStart: () => void;
+  onStartPlan: () => void;
   onViewHistory: (historyId: string) => void;
   /** Repo root path — used to scope orchestration and chat history. */
   repoRoot: string | null;
@@ -74,6 +75,7 @@ export function RepoHomeScreen({
   isStarting,
   canStart,
   onStart,
+  onStartPlan,
   onSelectAgent,
   onViewHistory,
   onResumeHistory,
@@ -176,6 +178,15 @@ export function RepoHomeScreen({
               onClick={triggerNewWorkspace}
             >
               New workspace
+            </Button>
+            <Button
+              variant="ghost"
+              leading={<Icons.AgentStartIcon size={12} />}
+              disabled={!canStart || isStarting}
+              onClick={onStartPlan}
+              title="Start in plan mode — agent must present a plan for approval before any writes"
+            >
+              Plan mode
             </Button>
             <Button
               variant="primary"
