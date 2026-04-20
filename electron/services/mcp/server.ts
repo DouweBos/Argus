@@ -598,6 +598,7 @@ export function createMcpServer(): McpServer {
         status: agentInfo.status,
         permission_mode,
         parent_agent_id: agentInfo.parent_agent_id,
+        initial_prompt: prompt,
       });
 
       // Send the initial prompt after startup.
@@ -758,6 +759,7 @@ export function createMcpServer(): McpServer {
             status: agentInfo.status,
             permission_mode,
             parent_agent_id: agentInfo.parent_agent_id,
+            initial_prompt: spec.prompt,
           });
 
           sendAgentMessage(agentInfo.agent_id, spec.prompt);

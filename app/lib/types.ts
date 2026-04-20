@@ -41,6 +41,13 @@ export interface TerminalSession {
 
 export interface AgentStatus {
   agent_id: string;
+  /**
+   * Prompt sent to an externally-spawned agent (e.g. via the MCP `spawn_agent`
+   * tool). Present only on the `agent:started` event — used by the renderer
+   * to derive a session title, since the UI never sees the first user
+   * message for MCP-spawned agents.
+   */
+  initial_prompt?: string;
   /** Agent that spawned this one (null for user-initiated agents). */
   parent_agent_id?: string | null;
   /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */
