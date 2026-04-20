@@ -6,6 +6,7 @@ import {
   maybeGenerateTitle,
   notifyMessageSent,
 } from "../../../lib/agentEventService";
+import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   type ImageAttachment,
   getCommandMetrics,
@@ -385,6 +386,42 @@ export function AgentChat({
     [agentId],
   );
 
+  const handleCopyMessage = useCallback((message: ConversationMessage) => {
+    const textParts: string[] = [];
+    for (const block of message.textBlocks) {
+      const trimmed = block.trim();
+      if (trimmed) {
+        textParts.push(trimmed);
+      }
+    }
+    if (textParts.length === 0) {
+      return;
+    }
+    navigator.clipboard.writeText(textParts.join("\n\n")).catch(() => {});
+  }, []);
+
+  const sourceBranch = useMemo(
+    () => sessions.find((w) => w.id === sessionId)?.branch ?? "",
+    [sessions, sessionId],
+  );
+
+  const handleForkMessage = useCallback(
+    async (message: ConversationMessage) => {
+      if (!agentId) {
+        return;
+      }
+      try {
+        await forkChatFromMessage(sessionId, sourceBranch, agentId, message.id);
+      } catch (err) {
+        // Surface failures through the system message channel so they're visible
+        // in the current conversation. Best-effort — avoid throwing into React.
+        // eslint-disable-next-line no-console
+        console.error("Fork failed:", err);
+      }
+    },
+    [agentId, sessionId, sourceBranch],
+  );
+
   const handleInterrupt = useCallback(async () => {
     if (!agentId) {
       return;
@@ -533,6 +570,8 @@ export function AgentChat({
               key={segment.message.id}
               agentId={agentId ?? undefined}
               message={segment.message}
+              onCopy={readOnly ? undefined : handleCopyMessage}
+              onFork={readOnly ? undefined : handleForkMessage}
               onPermissionRespond={
                 readOnly ? undefined : handlePermissionRespond
               }

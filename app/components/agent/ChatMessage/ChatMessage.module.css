@@ -23,6 +23,15 @@
   position: relative;
 }
 
+/* Reveal the shared Peacock HoverActionBar when the message is hovered. The
+   bar styles itself; we only toggle its visibility here. */
+.userMsg:hover .actions,
+.assistantMsg:hover .actions,
+.actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .userTextWrap {
   display: flex;
   justify-content: flex-end;
@@ -90,6 +99,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
 }
 
 /* Tool-call-only messages stack tightly — consecutive calls should read as

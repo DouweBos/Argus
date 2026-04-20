@@ -125,6 +125,52 @@ export const deleteSession = (
     shouldDeleteBranch: deleteBranch ?? false,
   });
 
+export interface ForkSessionResult {
+  claude_session_id: string | null;
+  session: Session;
+}
+
+export type ForkReplayOp =
+  | {
+      content: string;
+      filePath: string;
+      timestampMs: number;
+      type: "write";
+    }
+  | {
+      edits: { newString: string; oldString: string; replaceAll?: boolean }[];
+      filePath: string;
+      timestampMs: number;
+      type: "multiEdit";
+    }
+  | {
+      filePath: string;
+      newString: string;
+      oldString: string;
+      replaceAll?: boolean;
+      timestampMs: number;
+      type: "edit";
+    };
+
+export const forkSession = (
+  sourceSessionId: string,
+  branch: string,
+  description: string,
+  forkTimestampMs: number,
+  forkTurnNumber: number,
+  sourceClaudeSessionId?: string | null,
+  replayOps?: ForkReplayOp[] | null,
+): Promise<ForkSessionResult> =>
+  invoke("fork_session", {
+    sourceSessionId,
+    branch,
+    description,
+    forkTimestampMs,
+    forkTurnNumber,
+    sourceClaudeSessionId: sourceClaudeSessionId ?? null,
+    replayOps: replayOps ?? null,
+  });
+
 export const getSessionDiff = (id: string): Promise<string> =>
   invoke("get_session_diff", { id });
 

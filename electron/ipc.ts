@@ -128,6 +128,7 @@ import {
   createSession,
   createHeadSession,
   deleteSession,
+  forkSession,
 } from "./services/session/manager";
 import {
   getRepoBranch,
@@ -384,6 +385,17 @@ export function registerIpcHandlers(): void {
   );
   handle("delete_session", (a) =>
     deleteSession(a.id as string, a.shouldDeleteBranch as boolean | undefined),
+  );
+  handle("fork_session", (a) =>
+    forkSession(
+      a.sourceSessionId as string,
+      a.branch as string,
+      a.description as string,
+      a.forkTimestampMs as number,
+      a.forkTurnNumber as number,
+      a.sourceClaudeSessionId as string | null | undefined,
+      a.replayOps as Parameters<typeof forkSession>[6],
+    ),
   );
 
   // Organizations
