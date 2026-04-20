@@ -87,6 +87,12 @@
   color: var(--text-muted);
   opacity: 0.7;
   margin-top: -6px;
+  user-select: text;
+  transition: opacity 120ms ease;
+}
+
+.repoPath:hover {
+  opacity: 1;
 }
 
 .grid {

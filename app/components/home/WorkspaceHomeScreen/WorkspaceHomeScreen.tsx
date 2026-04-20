@@ -13,7 +13,7 @@ import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { listen } from "../../../lib/events";
-import { watchWorkspace } from "../../../lib/ipc";
+import { revealInFinder, watchWorkspace } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useDevices } from "../../../stores/deviceStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
@@ -238,7 +238,17 @@ export function WorkspaceHomeScreen({
         </div>
 
         {workspace?.path && (
-          <div className={styles.repoPath}>{workspace.path}</div>
+          <div
+            className={styles.repoPath}
+            title="⌘-click to reveal in Finder"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey) {
+                revealInFinder(workspace.path).catch(() => {});
+              }
+            }}
+          >
+            {workspace.path}
+          </div>
         )}
 
         <StatsStrip>
