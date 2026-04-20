@@ -1,5 +1,5 @@
-import { Button, Icons } from "@argus/peacock";
 import { useCallback, useEffect, useRef } from "react";
+import { Button, Icons } from "@argus/peacock";
 import { error } from "@logger";
 import {
   bootSimulator,

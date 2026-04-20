@@ -1,5 +1,5 @@
-import { Button, Input } from "@argus/peacock";
 import { useEffect, useRef, useState } from "react";
+import { Button, Input } from "@argus/peacock";
 import { setConversationTitle } from "../../../stores/conversationStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 

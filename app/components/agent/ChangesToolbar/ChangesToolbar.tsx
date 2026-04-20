@@ -1,6 +1,6 @@
 import type { GitStashEntry } from "../../../lib/ipc";
-import { Icons } from "@argus/peacock";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { Icons } from "@argus/peacock";
 import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import {

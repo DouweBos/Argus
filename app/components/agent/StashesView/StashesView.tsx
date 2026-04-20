@@ -1,7 +1,7 @@
 import type { DiffFile } from "../../../lib/diffParser";
 import type { GitStashEntry } from "../../../lib/ipc";
-import { Button, DiffStat, Icons } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, DiffStat, Icons } from "@argus/peacock";
 import { parseDiff } from "../../../lib/diffParser";
 import {
   gitStashApply,

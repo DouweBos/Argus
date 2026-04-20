@@ -1,6 +1,6 @@
 import type { Organization, OrgTask } from "../../../lib/types";
-import { Button, Icons } from "@argus/peacock";
 import { useState } from "react";
+import { Button, Icons } from "@argus/peacock";
 import { openOrganization } from "../../../stores/centerViewStore";
 import {
   showCreateOrganizationDialog,

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   AgentRow,
   Button,
@@ -8,7 +9,6 @@ import {
   StatsStrip,
   WorkspaceCard,
 } from "@argus/peacock";
-import { useMemo } from "react";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { useAgentsRecord } from "../../../stores/agentStore";

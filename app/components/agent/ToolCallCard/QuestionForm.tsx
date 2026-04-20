@@ -1,6 +1,6 @@
 import type { Question } from "./parseQuestions";
-import { Button } from "@argus/peacock";
 import { useCallback, useMemo, useState } from "react";
+import { Button } from "@argus/peacock";
 import styles from "./QuestionForm.module.css";
 
 interface QuestionFormProps {

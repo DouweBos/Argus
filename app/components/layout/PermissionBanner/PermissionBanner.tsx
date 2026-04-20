@@ -1,5 +1,5 @@
-import { Badge, Button } from "@argus/peacock";
 import { useCallback, useMemo } from "react";
+import { Badge, Button } from "@argus/peacock";
 import { respondToPermission } from "../../../lib/ipc";
 import { formatToolName } from "../../../lib/toolLabels";
 import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";

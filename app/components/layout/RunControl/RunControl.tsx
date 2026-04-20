@@ -1,6 +1,6 @@
 import type { RunCommand } from "../../../lib/types";
-import { Button, ContextMenu, Icons } from "@argus/peacock";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, ContextMenu, Icons } from "@argus/peacock";
 import { error as logError } from "@logger";
 import { createRunTerminal, readArgusConfig } from "../../../lib/ipc";
 import {

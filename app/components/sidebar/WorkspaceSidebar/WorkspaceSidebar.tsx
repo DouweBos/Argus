@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   CommitIcon,
   Icons,
@@ -10,7 +11,6 @@ import {
   SidebarScroll,
   SidebarSection,
 } from "@argus/peacock";
-import { useState } from "react";
 import { useProjects } from "../../../hooks/useWorkspaces";
 import { useActivityCount } from "../../../stores/activityStore";
 import { useAgentsRecord } from "../../../stores/agentStore";

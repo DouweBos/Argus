@@ -1,5 +1,5 @@
-import { TitleBar as PeacockTitleBar } from "@argus/peacock";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { TitleBar as PeacockTitleBar } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { listBranches, setWorkspaceBaseBranch } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";

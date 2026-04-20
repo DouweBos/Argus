@@ -1,5 +1,5 @@
-import { Dialog } from "@argus/peacock";
 import { useCallback, useMemo, useState } from "react";
+import { Dialog } from "@argus/peacock";
 import { useWorkspaceAgents } from "../../../hooks/useAgent";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";

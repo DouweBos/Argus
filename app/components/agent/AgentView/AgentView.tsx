@@ -1,5 +1,5 @@
-import { Icons } from "@argus/peacock";
 import { useCallback, useMemo } from "react";
+import { Icons } from "@argus/peacock";
 import { useWorkspaceAgents } from "../../../hooks/useAgent";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
 import { isWorkspaceReady } from "../../../lib/types";

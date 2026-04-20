@@ -1,6 +1,6 @@
 import type { Organization } from "../../../lib/types";
-import { ChatInput, Chip, Icons } from "@argus/peacock";
 import { useMemo, useState } from "react";
+import { ChatInput, Chip, Icons } from "@argus/peacock";
 import { setActiveOrgTask, startOrgTask } from "../../../stores/orgTaskStore";
 import styles from "./StartTaskComposer.module.css";
 

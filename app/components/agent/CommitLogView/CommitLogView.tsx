@@ -1,7 +1,7 @@
 import type { DiffFile } from "../../../lib/diffParser";
 import type { GitCommit } from "../../../lib/ipc";
-import { Button, DiffStat, Icons } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, DiffStat, Icons } from "@argus/peacock";
 import { parseDiff } from "../../../lib/diffParser";
 import { buildGraphLanes } from "../../../lib/gitGraph";
 import { gitLog, gitShowCommit } from "../../../lib/ipc";
