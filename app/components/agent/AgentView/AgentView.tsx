@@ -1,11 +1,17 @@
-import { useCallback, useMemo } from "react";
-import { Icons } from "@argus/peacock";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  ContextMenu,
+  type ContextMenuItem,
+  Icons,
+} from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
 import { isSessionReady } from "../../../lib/types";
 import {
+  removeRecentlyClosed,
   setActiveAgent,
   setSplitPair,
+  useRecentlyClosedAgents,
   useSplitPair,
 } from "../../../stores/agentStore";
 import { useSessions } from "../../../stores/sessionStore";
@@ -90,6 +96,63 @@ export function AgentView({ sessionId }: AgentViewProps) {
 
   const showSplit = activeIsPaired && !!resolvedPair;
 
+  const recentlyClosed = useRecentlyClosedAgents(sessionId);
+  const [recentMenuPos, setRecentMenuPos] = useState<
+    { x: number; y: number } | null
+  >(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
+  const addBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  const openRecentMenu = useCallback(() => {
+    if (!addBtnRef.current) {
+      return;
+    }
+    const rect = addBtnRef.current.getBoundingClientRect();
+    setRecentMenuPos({ x: rect.left, y: rect.bottom + 4 });
+  }, []);
+
+  const handleAddPointerDown = useCallback(() => {
+    longPressFired.current = false;
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current);
+    }
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      openRecentMenu();
+    }, 500);
+  }, [openRecentMenu]);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleAddClick = useCallback(() => {
+    if (longPressFired.current) {
+      longPressFired.current = false;
+
+      return;
+    }
+    startNew();
+  }, [startNew]);
+
+  const recentMenuItems = useMemo<ContextMenuItem[]>(() => {
+    if (recentlyClosed.length === 0) {
+      return [{ disabled: true, label: "No recently closed agents", onClick: () => {} }];
+    }
+
+    return recentlyClosed.map((entry) => ({
+      label: entry.title,
+      onClick: () => {
+        removeRecentlyClosed(sessionId, entry.agentId);
+        startNew(undefined, undefined, entry.claudeSessionId).catch(() => {});
+      },
+    }));
+  }, [recentlyClosed, sessionId, startNew]);
+
   // Cmd+W closes the active agent tab when one is open in this view.
   useCloseIntent(() => {
     if (!activeAgent) {
@@ -114,13 +177,25 @@ export function AgentView({ sessionId }: AgentViewProps) {
           onUnpair={() => setSplitPair(sessionId, null)}
         />
         <button
+          ref={addBtnRef}
           className={styles.agentBarAddBtn}
-          title="Start new agent"
-          onClick={() => startNew()}
+          title="Start new agent (long-press for recently closed)"
+          onClick={handleAddClick}
+          onPointerDown={handleAddPointerDown}
+          onPointerUp={cancelLongPress}
+          onPointerLeave={cancelLongPress}
+          onPointerCancel={cancelLongPress}
         >
           <Icons.PlusIcon size={12} />
         </button>
         <div className={styles.agentBarSpacer} />
+        {recentMenuPos && (
+          <ContextMenu
+            items={recentMenuItems}
+            position={recentMenuPos}
+            onClose={() => setRecentMenuPos(null)}
+          />
+        )}
       </div>
 
       {!activeAgent && <HomePanel sessionId={sessionId} />}

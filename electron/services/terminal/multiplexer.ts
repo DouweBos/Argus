@@ -190,6 +190,16 @@ export function createTerminal(
       cleanEnv[k] = v;
     }
   }
+  // Advertise 24-bit color support so TUIs (nvim, bat, fzf, delta, …) enable
+  // truecolor rendering. `TERM` is set to xterm-256color below via node-pty.
+  if (!cleanEnv.COLORTERM) {
+    cleanEnv.COLORTERM = "truecolor";
+  }
+  // Let tools identify the host terminal (git config hints, shell rc logic,
+  // etc.). Distinct from `TERM`, which describes capabilities.
+  if (!cleanEnv.TERM_PROGRAM) {
+    cleanEnv.TERM_PROGRAM = "Argus";
+  }
   Object.assign(cleanEnv, extraEnv);
 
   const ptyProcess: IPty = pty.spawn(program, args, {
@@ -200,16 +210,47 @@ export function createTerminal(
     env: cleanEnv,
   });
 
-  // Forward PTY output to the renderer as base64-encoded chunks.
-  ptyProcess.onData((data: string) => {
+  // Coalesce PTY output on a short timer. Under heavy load (yarn/pnpm install,
+  // verbose builds) node-pty emits many small chunks — batching them drops
+  // IPC event count ~10–100× with no perceptible latency cost.
+  let pendingChunks: string[] = [];
+  let flushTimer: NodeJS.Timeout | null = null;
+  const FLUSH_INTERVAL_MS = 8;
+
+  const flush = (): void => {
+    if (pendingChunks.length === 0) {
+      return;
+    }
+    const combined = pendingChunks.join("");
+    pendingChunks = [];
     getMainWindow()?.webContents.send(
       `terminal:data:${terminalId}`,
-      Buffer.from(data).toString("base64"),
+      Buffer.from(combined).toString("base64"),
     );
+  };
+
+  // Forward PTY output to the renderer as base64-encoded chunks.
+  ptyProcess.onData((data: string) => {
+    pendingChunks.push(data);
+    if (flushTimer === null) {
+      flushTimer = setTimeout(() => {
+        flushTimer = null;
+        flush();
+      }, FLUSH_INTERVAL_MS);
+      // Keep timer from holding the event loop open on app shutdown.
+      flushTimer.unref?.();
+    }
   });
 
   // Forward exit notification to the renderer.
   ptyProcess.onExit(({ exitCode }: { exitCode: number }) => {
+    // Drain any buffered output before signalling exit so the renderer sees
+    // trailing bytes (e.g. a failing command's last line) before the close.
+    if (flushTimer !== null) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+    flush();
     getMainWindow()?.webContents.send(`terminal:exit:${terminalId}`, exitCode);
     // Clean up state when the process exits on its own.
     appState.terminals.delete(terminalId);
@@ -401,14 +442,33 @@ export function stopTerminal(sessionId: string): void {
     return;
   }
 
-  setTimeout(() => {
+  const termTimer = setTimeout(() => {
     if (!escalate("SIGTERM")) {
       return;
     }
-    setTimeout(() => {
+    const killTimer = setTimeout(() => {
       escalate("SIGKILL");
     }, 1500);
+    // Don't keep the event loop alive for escalation during app shutdown.
+    killTimer.unref?.();
   }, 1500);
+  termTimer.unref?.();
+}
+
+/**
+ * Destroy every registered terminal. Intended for `before-quit` cleanup so
+ * long-running `run` commands (dev servers, Metro, watchers) and any detached
+ * grandchildren they spawned are torn down rather than relying on PTY-master
+ * close → SIGHUP, which some processes ignore or survive.
+ */
+export function destroyAllTerminals(): void {
+  for (const id of Array.from(appState.terminals.keys())) {
+    try {
+      destroyTerminal(id);
+    } catch {
+      // non-fatal — best-effort cleanup during shutdown.
+    }
+  }
 }
 
 /**
@@ -425,7 +485,11 @@ export function terminalWrite(sessionId: string, data: string): void {
     throw `Terminal session not found: ${sessionId}`;
   }
   const raw = Buffer.from(data, "base64");
-  session.pty.write(raw.toString());
+  // Decode as "binary" (latin1) rather than the default UTF-8 so byte values
+  // survive 1:1 into the PTY. This preserves non-UTF-8 pastes and raw escape
+  // sequences; node-pty's write API only accepts strings, so this is the
+  // closest approximation to passing bytes through unchanged.
+  session.pty.write(raw.toString("binary"));
 }
 
 /**

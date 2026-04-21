@@ -226,16 +226,24 @@ export function useProjects() {
   }, []);
 
   useEffect(() => {
-    const unlisten = listen<{ display_name?: string | null; id: string }>(
-      "session:updated",
-      (event) => {
-        const { id, display_name } = event.payload;
-        if (!getSessionState().sessions.some((w) => w.id === id)) {
-          return;
-        }
-        updateSession(id, { display_name: display_name ?? null });
-      },
-    );
+    const unlisten = listen<{
+      branch?: string;
+      display_name?: string | null;
+      id: string;
+    }>("session:updated", (event) => {
+      const { id, display_name, branch } = event.payload;
+      if (!getSessionState().sessions.some((w) => w.id === id)) {
+        return;
+      }
+      const patch: { branch?: string; display_name?: string | null } = {};
+      if (display_name !== undefined) {
+        patch.display_name = display_name ?? null;
+      }
+      if (branch !== undefined) {
+        patch.branch = branch;
+      }
+      updateSession(id, patch);
+    });
 
     return () => {
       unlisten.then((fn) => fn());

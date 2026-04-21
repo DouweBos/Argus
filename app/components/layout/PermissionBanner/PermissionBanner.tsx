@@ -2,13 +2,24 @@ import { useCallback, useMemo } from "react";
 import { Badge, Button } from "@argus/peacock";
 import { respondToPermission } from "../../../lib/ipc";
 import { formatToolName } from "../../../lib/toolLabels";
-import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
+import {
+  setActiveAgent,
+  useActiveAgentIds,
+  useAgentsRecord,
+} from "../../../stores/agentStore";
 import {
   clearPermission,
   useConversations,
 } from "../../../stores/conversationStore";
-import { setActiveCenterView } from "../../../stores/editorStore";
-import { selectSession, useSessions } from "../../../stores/sessionStore";
+import {
+  setActiveCenterView,
+  useActiveCenterView,
+} from "../../../stores/editorStore";
+import {
+  selectSession,
+  useSelectedSessionId,
+  useSessions,
+} from "../../../stores/sessionStore";
 import { alwaysAllowRule } from "../../agent/alwaysAllowRule";
 import styles from "./PermissionBanner.module.css";
 
@@ -58,12 +69,22 @@ export function PermissionBanner() {
   const conversations = useConversations();
   const agents = useAgentsRecord();
   const sessions = useSessions();
+  const selectedSessionId = useSelectedSessionId();
+  const activeAgentIds = useActiveAgentIds();
+  const activeCenterView = useActiveCenterView();
 
   const pending = useMemo<PendingEntry[]>(() => {
     const entries: PendingEntry[] = [];
     for (const [agentId, conv] of Object.entries(conversations)) {
       const agent = agents[agentId];
       if (!agent) {
+        continue;
+      }
+      if (
+        activeCenterView === "agents" &&
+        agent.session_id === selectedSessionId &&
+        activeAgentIds[agent.session_id] === agentId
+      ) {
         continue;
       }
       const session = sessions.find((w) => w.id === agent.session_id);
@@ -90,7 +111,14 @@ export function PermissionBanner() {
     }
 
     return entries;
-  }, [conversations, agents, sessions]);
+  }, [
+    conversations,
+    agents,
+    sessions,
+    selectedSessionId,
+    activeAgentIds,
+    activeCenterView,
+  ]);
 
   const reviewInChat = useCallback((entry: PendingEntry) => {
     selectSession(entry.sessionId);

@@ -6,6 +6,15 @@ export interface SplitPair {
   right: string;
 }
 
+export interface RecentlyClosedAgent {
+  agentId: string;
+  claudeSessionId?: string;
+  closedAt: number;
+  title: string;
+}
+
+const RECENTLY_CLOSED_LIMIT = 5;
+
 interface AgentStoreData {
   // Which agent is active per session: session_id -> agent_id
   activeAgentId: Record<string, string | null>;
@@ -13,6 +22,8 @@ interface AgentStoreData {
   agents: Record<string, AgentStatus>;
   // Ordered agent ids per session (tab order)
   order: Record<string, string[]>;
+  // Most recently closed agents per session, newest first, capped at 5.
+  recentlyClosed: Record<string, RecentlyClosedAgent[]>;
   // A paired (merged) tab per session. When the active agent is one of the
   // pair members, the UI renders a split view; otherwise it renders a single
   // agent. Only one pair per session — dropping a third agent on the right
@@ -24,6 +35,7 @@ const agentStore = create<AgentStoreData>(() => ({
   agents: {},
   activeAgentId: {},
   order: {},
+  recentlyClosed: {},
   splitPair: {},
 }));
 
@@ -275,6 +287,47 @@ export const setSplitPair = (sessionId: string, pair: SplitPair | null) => {
 
 export const useSplitPair = (sessionId: string | null): SplitPair | null =>
   useAgentStore((s) => (sessionId ? (s.splitPair[sessionId] ?? null) : null));
+
+export const recordRecentlyClosed = (
+  sessionId: string,
+  entry: RecentlyClosedAgent,
+) => {
+  agentStore.setState((state) => {
+    const existing = state.recentlyClosed[sessionId] ?? [];
+    const next = [entry, ...existing.filter((e) => e.agentId !== entry.agentId)]
+      .slice(0, RECENTLY_CLOSED_LIMIT);
+
+    return {
+      recentlyClosed: { ...state.recentlyClosed, [sessionId]: next },
+    };
+  });
+};
+
+export const removeRecentlyClosed = (sessionId: string, agentId: string) => {
+  agentStore.setState((state) => {
+    const existing = state.recentlyClosed[sessionId];
+    if (!existing) {
+      return state;
+    }
+    const next = existing.filter((e) => e.agentId !== agentId);
+    if (next.length === existing.length) {
+      return state;
+    }
+
+    return {
+      recentlyClosed: { ...state.recentlyClosed, [sessionId]: next },
+    };
+  });
+};
+
+const EMPTY_RECENT: RecentlyClosedAgent[] = [];
+
+export const useRecentlyClosedAgents = (
+  sessionId: string | null,
+): RecentlyClosedAgent[] =>
+  useAgentStore((s) =>
+    sessionId ? (s.recentlyClosed[sessionId] ?? EMPTY_RECENT) : EMPTY_RECENT,
+  );
 
 /** For tests and imperative access */
 export const getAgentState = () => agentStore.getState();

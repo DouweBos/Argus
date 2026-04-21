@@ -976,6 +976,58 @@ export function renameSession(id: string, displayName: string): void {
 }
 
 /**
+ * Rename the git branch backing a worktree session. Runs `git branch -m` in
+ * the worktree (which updates the ref and repoints the worktree), updates
+ * in-memory state, and notifies the renderer.
+ *
+ * The worktree directory is intentionally left in place — git tracks the
+ * worktree by path, and moving it would invalidate running terminals and the
+ * agent's cwd. The path's old branch slug is cosmetic only.
+ */
+export async function renameSessionBranch(
+  id: string,
+  newBranch: string,
+): Promise<void> {
+  const session = appState.sessions.get(id);
+  if (!session) {
+    throw `Session not found: ${id}`;
+  }
+  if (session.kind !== "worktree") {
+    throw `Cannot rename branch on a session of kind "${session.kind}"`;
+  }
+
+  const slug = titleToBranchSlug(newBranch);
+  if (!slug) {
+    throw "Branch name cannot be empty";
+  }
+  if (slug === session.branch) {
+    return;
+  }
+
+  for (const other of appState.sessions.values()) {
+    if (
+      other.id !== id &&
+      other.kind === "worktree" &&
+      other.repo_root === session.repo_root &&
+      other.branch === slug
+    ) {
+      const label = other.display_name ?? other.branch;
+      throw `Branch "${slug}" is already used by session "${label}".`;
+    }
+  }
+
+  await git(session.path, ["branch", "-m", session.branch, slug]);
+
+  session.branch = slug;
+  appState.sessions.set(id, session);
+
+  getMainWindow()?.webContents.send("session:updated", {
+    id,
+    branch: slug,
+  });
+}
+
+/**
  * Delete a session: kill its agent and terminals, remove the worktree.
  *
  * Returns immediately after cleaning up in-memory state. The actual

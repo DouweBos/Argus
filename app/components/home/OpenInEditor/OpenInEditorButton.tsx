@@ -43,7 +43,7 @@ export function OpenInEditorButton({ path }: OpenInEditorButtonProps) {
   if (builtinItems.length === 0 && customItems.length === 0) {
     items = [
       {
-        label: "No editors detected",
+        label: "No apps detected",
         disabled: true,
         onClick: () => undefined,
       },
@@ -61,9 +61,9 @@ export function OpenInEditorButton({ path }: OpenInEditorButtonProps) {
         leading={<Icons.PopoutIcon size={12} />}
         trailing={<Icons.ChevronDownIcon size={10} />}
         onClick={handleClick}
-        title="Open this directory in an external editor"
+        title="Open this directory in an external app"
       >
-        Open in editor
+        Open in
       </Button>
       {menuPos && (
         <ContextMenu

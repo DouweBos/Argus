@@ -130,6 +130,7 @@ import {
   deleteSession,
   forkSession,
   renameSession,
+  renameSessionBranch,
 } from "./services/session/manager";
 import {
   getRepoBranch,
@@ -394,6 +395,9 @@ export function registerIpcHandlers(): void {
   );
   handle("rename_session", (a) =>
     renameSession(a.id as string, a.displayName as string),
+  );
+  handle("rename_session_branch", (a) =>
+    renameSessionBranch(a.id as string, a.branch as string),
   );
   handle("fork_session", (a) =>
     forkSession(

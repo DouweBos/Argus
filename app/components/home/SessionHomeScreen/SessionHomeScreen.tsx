@@ -8,6 +8,7 @@ import { useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
+import { RenameBranchDialog } from "../RenameBranchDialog/RenameBranchDialog";
 import { ReadyToMergeCard } from "../RepoHomeScreen/ReadyToMergeCard";
 import styles from "../homeLayout.module.css";
 
@@ -60,6 +61,7 @@ export function SessionHomeScreen({
   );
 
   const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
+  const [isRenamingBranch, setIsRenamingBranch] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +119,17 @@ export function SessionHomeScreen({
                 <span className={styles.branchChip}>
                   <Icons.BranchIcon size={10} />
                   {branch}
+                  {session?.kind === "worktree" && (
+                    <button
+                      type="button"
+                      className={styles.branchEditBtn}
+                      onClick={() => setIsRenamingBranch(true)}
+                      title="Rename branch"
+                      aria-label="Rename branch"
+                    >
+                      <Icons.PencilIcon size={10} />
+                    </button>
+                  )}
                 </span>
                 {baseBranch && (
                   <>
@@ -212,6 +225,12 @@ export function SessionHomeScreen({
           </div>
         )}
       </div>
+      {isRenamingBranch && session && (
+        <RenameBranchDialog
+          session={session}
+          onClose={() => setIsRenamingBranch(false)}
+        />
+      )}
     </div>
   );
 }

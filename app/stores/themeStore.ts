@@ -78,6 +78,24 @@ export const useResolvedTheme = (): ResolvedTheme =>
     return s.systemResolved;
   });
 
+export function getResolvedTheme(): ResolvedTheme {
+  return resolve(store.getState());
+}
+
+export function subscribeResolvedTheme(
+  listener: (theme: ResolvedTheme) => void,
+): () => void {
+  let last = resolve(store.getState());
+
+  return store.subscribe((state) => {
+    const next = resolve(state);
+    if (next !== last) {
+      last = next;
+      listener(next);
+    }
+  });
+}
+
 export function initTheme() {
   apply(resolve(store.getState()));
 

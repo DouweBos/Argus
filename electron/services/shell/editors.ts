@@ -1,9 +1,10 @@
 /**
- * External editor detection + launch.
+ * External "open in" target detection + launch.
  *
- * Supports VS Code, Cursor, Codex, IntelliJ IDEA, Xcode, Android Studio.
- * On macOS we prefer `open -a <AppName>` when the .app bundle is installed,
- * and fall back to a CLI on PATH (`code`, `cursor`, `idea`, etc.).
+ * Supports editors (VS Code, Cursor, Codex, IntelliJ IDEA, Xcode, Android
+ * Studio) and terminal apps (iTerm, Terminal). On macOS we prefer
+ * `open -a <AppName>` when the .app bundle is installed, and fall back to a
+ * CLI on PATH (`code`, `cursor`, `idea`, etc.).
  */
 
 import { execFile } from "node:child_process";
@@ -65,13 +66,29 @@ const EDITORS: EditorDef[] = [
     appNames: ["Android Studio.app"],
     clis: ["studio"],
   },
+  {
+    id: "iterm",
+    name: "iTerm",
+    appNames: ["iTerm.app"],
+    clis: [],
+  },
+  {
+    id: "terminal",
+    name: "Terminal",
+    appNames: ["Terminal.app"],
+    clis: [],
+  },
+];
+
+const APP_SEARCH_ROOTS = [
+  "/Applications",
+  `${homedir()}/Applications`,
+  "/System/Applications",
+  "/System/Applications/Utilities",
 ];
 
 function appExists(appName: string): boolean {
-  return (
-    existsSync(`/Applications/${appName}`) ||
-    existsSync(`${homedir()}/Applications/${appName}`)
-  );
+  return APP_SEARCH_ROOTS.some((root) => existsSync(`${root}/${appName}`));
 }
 
 async function cliExists(cli: string): Promise<boolean> {

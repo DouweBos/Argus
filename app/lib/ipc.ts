@@ -128,6 +128,11 @@ export const deleteSession = (
 export const renameSession = (id: string, displayName: string): Promise<void> =>
   invoke("rename_session", { id, displayName });
 
+export const renameSessionBranch = (
+  id: string,
+  branch: string,
+): Promise<void> => invoke("rename_session_branch", { id, branch });
+
 export interface ForkSessionResult {
   claude_session_id: string | null;
   session: Session;
