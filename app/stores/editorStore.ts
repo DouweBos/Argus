@@ -48,8 +48,7 @@ export const useActiveSessionId = () =>
 export const useActiveCenterView = (): CenterView => useRouteSessionPanel();
 
 /** Non-hook accessor — returns the panel for the current route. */
-export const getActiveCenterView = (): CenterView =>
-  getCurrentRoute().panel;
+export const getActiveCenterView = (): CenterView => getCurrentRoute().panel;
 
 /** For tests and imperative reads */
 export const getEditorState = () => editorStore.getState();

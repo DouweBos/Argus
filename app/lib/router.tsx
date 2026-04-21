@@ -24,11 +24,7 @@
  */
 
 import { useEffect } from "react";
-import {
-  useLocation,
-  useNavigate,
-  useNavigationType,
-} from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 
 export type AppView =

@@ -4,10 +4,7 @@
  * `useRouteOrganizationId` (for reads). No local Zustand state lives here.
  */
 
-import {
-  useRouteOrganizationId,
-  useRouteView,
-} from "../lib/routeHooks";
+import { useRouteOrganizationId, useRouteView } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
 
 export type CenterView =

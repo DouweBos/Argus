@@ -294,8 +294,10 @@ export const recordRecentlyClosed = (
 ) => {
   agentStore.setState((state) => {
     const existing = state.recentlyClosed[sessionId] ?? [];
-    const next = [entry, ...existing.filter((e) => e.agentId !== entry.agentId)]
-      .slice(0, RECENTLY_CLOSED_LIMIT);
+    const next = [
+      entry,
+      ...existing.filter((e) => e.agentId !== entry.agentId),
+    ].slice(0, RECENTLY_CLOSED_LIMIT);
 
     return {
       recentlyClosed: { ...state.recentlyClosed, [sessionId]: next },

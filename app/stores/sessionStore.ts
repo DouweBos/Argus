@@ -130,7 +130,9 @@ export const mergeSessionsForProject = (
     // Preserve optimistic placeholders for this repo — the backend hasn't
     // materialized them yet (no path) so they would otherwise be wiped by the
     // merge and reappear only once create_session resolves.
-    const pendingPlaceholders = existing.filter((w) => w.id.startsWith("pending-"));
+    const pendingPlaceholders = existing.filter((w) =>
+      w.id.startsWith("pending-"),
+    );
 
     return { sessions: [...otherSessions, ...merged, ...pendingPlaceholders] };
   });

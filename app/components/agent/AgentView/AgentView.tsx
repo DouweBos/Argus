@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import {
-  ContextMenu,
-  type ContextMenuItem,
-  Icons,
-} from "@argus/peacock";
+import { ContextMenu, type ContextMenuItem, Icons } from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
 import { isSessionReady } from "../../../lib/types";
@@ -97,9 +93,10 @@ export function AgentView({ sessionId }: AgentViewProps) {
   const showSplit = activeIsPaired && !!resolvedPair;
 
   const recentlyClosed = useRecentlyClosedAgents(sessionId);
-  const [recentMenuPos, setRecentMenuPos] = useState<
-    { x: number; y: number } | null
-  >(null);
+  const [recentMenuPos, setRecentMenuPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressFired = useRef(false);
   const addBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -141,7 +138,13 @@ export function AgentView({ sessionId }: AgentViewProps) {
 
   const recentMenuItems = useMemo<ContextMenuItem[]>(() => {
     if (recentlyClosed.length === 0) {
-      return [{ disabled: true, label: "No recently closed agents", onClick: () => {} }];
+      return [
+        {
+          disabled: true,
+          label: "No recently closed agents",
+          onClick: () => {},
+        },
+      ];
     }
 
     return recentlyClosed.map((entry) => ({
