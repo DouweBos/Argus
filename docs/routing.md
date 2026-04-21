@@ -10,22 +10,22 @@ No Zustand store mirrors the route. Reads go through URL-derived hooks
 
 ## URL inventory
 
-| URL                                        | Screen                       | Notes                                                               |
-| ------------------------------------------ | ---------------------------- | ------------------------------------------------------------------- |
-| `/`                                        | Home / project picker        | Default route on launch.                                            |
-| `/activity`                                | Activity                     | Cross-session activity feed.                                        |
-| `/agents`                                  | Agents overview              | All agents across all sessions.                                     |
-| `/devices`                                 | Devices                      | iOS simulators + Android emulators.                                 |
-| `/notifications`                           | Notifications                | Warnings & errors.                                                  |
-| `/organizations`                           | Organizations list           | All organizations.                                                  |
-| `/organizations/:organizationId`           | Single organization          | Org detail + tasks.                                                 |
-| `/review-queue`                            | Review queue                 | Sessions ready to merge.                                            |
-| `/runtimes`                                | Runtimes overview            | All running dev servers / terminals.                                |
-| `/sessions/:sessionId`                     | Session (defaults to agents) | Equivalent to `/sessions/:sessionId/agents`.                        |
-| `/sessions/:sessionId/agents`              | Session → Agents panel       | Claude Code agents for this session.                                |
-| `/sessions/:sessionId/editor`              | Session → Editor panel       | Monaco / VS Code editor.                                            |
-| `/sessions/:sessionId/git`                 | Session → Git panel          | Commit log, stashes, diffs.                                         |
-| `/sessions/:sessionId/home`                | Session → Home panel         | Per-session overview.                                               |
+| URL                              | Screen                       | Notes                                        |
+| -------------------------------- | ---------------------------- | -------------------------------------------- |
+| `/`                              | Home / project picker        | Default route on launch.                     |
+| `/activity`                      | Activity                     | Cross-session activity feed.                 |
+| `/agents`                        | Agents overview              | All agents across all sessions.              |
+| `/devices`                       | Devices                      | iOS simulators + Android emulators.          |
+| `/notifications`                 | Notifications                | Warnings & errors.                           |
+| `/organizations`                 | Organizations list           | All organizations.                           |
+| `/organizations/:organizationId` | Single organization          | Org detail + tasks.                          |
+| `/review-queue`                  | Review queue                 | Sessions ready to merge.                     |
+| `/runtimes`                      | Runtimes overview            | All running dev servers / terminals.         |
+| `/sessions/:sessionId`           | Session (defaults to agents) | Equivalent to `/sessions/:sessionId/agents`. |
+| `/sessions/:sessionId/agents`    | Session → Agents panel       | Claude Code agents for this session.         |
+| `/sessions/:sessionId/editor`    | Session → Editor panel       | Monaco / VS Code editor.                     |
+| `/sessions/:sessionId/git`       | Session → Git panel          | Commit log, stashes, diffs.                  |
+| `/sessions/:sessionId/home`      | Session → Home panel         | Per-session overview.                        |
 
 `/settings` is not a route — the settings dialog is overlaid on top of the
 current URL.
@@ -46,8 +46,8 @@ interface ParsedRoute {
     | "review-queue"
     | "runtimes"
     | "session";
-  sessionId: string | null;        // set when view === "session"
-  organizationId: string | null;   // set on /organizations/:organizationId
+  sessionId: string | null; // set when view === "session"
+  organizationId: string | null; // set on /organizations/:organizationId
   panel: "agents" | "editor" | "git" | "home"; // only meaningful when view === "session"
 }
 ```
@@ -99,14 +99,14 @@ appNavigate({ view: "home" }, { replace: true });
 The following store helpers are thin wrappers around `appNavigate` — use
 whichever reads best:
 
-| Helper                           | Effect                                                   |
-| -------------------------------- | -------------------------------------------------------- |
-| `selectSession(id)`              | `/sessions/{id}/{currentPanel}`                          |
-| `selectSession(null)`            | `/`                                                      |
-| `setCenterView(view)`            | `/{view}`                                                |
-| `openOrganization(id)`           | `/organizations/{id}`                                    |
-| `setActiveCenterView(panel)`     | `/sessions/{currentSessionId}/{panel}` (no-op off-route) |
-| `navigateToPath(path)`           | Raw path (used by deep-link IPC handler)                 |
+| Helper                       | Effect                                                   |
+| ---------------------------- | -------------------------------------------------------- |
+| `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                          |
+| `selectSession(null)`        | `/`                                                      |
+| `setCenterView(view)`        | `/{view}`                                                |
+| `openOrganization(id)`       | `/organizations/{id}`                                    |
+| `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route) |
+| `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                 |
 
 ## Building paths
 

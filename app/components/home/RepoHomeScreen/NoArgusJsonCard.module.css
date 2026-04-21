@@ -80,14 +80,3 @@
   opacity: 0.5;
   cursor: progress;
 }
-
-.secondaryBtn {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: var(--text-secondary);
-}
-
-.secondaryBtn:hover {
-  background: var(--surface-3);
-  color: var(--text-primary);
-}

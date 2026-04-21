@@ -73,7 +73,7 @@ function invoke<T>(
   // a rejection here matches the existing "session not found" contract
   // without spamming the main-process logs.
   if (args) {
-    const candidate = (args["id"] ?? args["sessionId"]) as unknown;
+    const candidate = (args.id ?? args.sessionId) as unknown;
     if (typeof candidate === "string" && isPendingSessionId(candidate)) {
       return Promise.reject(new Error("Session is pending creation"));
     }

@@ -1,7 +1,7 @@
+import type { AgentStatus } from "../../lib/agentStatus";
 import type { CSSProperties, HTMLAttributes, MouseEventHandler } from "react";
 import { StarIcon } from "../../icons/HomeIcons";
 import { FolderIcon } from "../../icons/Icons";
-import type { AgentStatus } from "../../lib/agentStatus";
 import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
 import styles from "./ProjectCard.module.css";
 

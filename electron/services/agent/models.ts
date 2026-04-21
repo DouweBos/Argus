@@ -3,6 +3,7 @@
  */
 
 import type { ControlHandler } from "./controlHandler";
+import type { InitializeResponse } from "./protocol";
 import type { ChildProcess } from "node:child_process";
 import type { Writable } from "node:stream";
 
@@ -93,5 +94,5 @@ export interface AgentInfo {
    * on `start_agent` resolution — the async `agent:capabilities` event fires
    * before renderer listeners are wired up and would otherwise be missed.
    */
-  capabilities?: import("./protocol").InitializeResponse | null;
+  capabilities?: InitializeResponse | null;
 }

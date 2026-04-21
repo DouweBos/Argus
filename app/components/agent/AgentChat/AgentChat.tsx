@@ -8,7 +8,6 @@ import {
   ThinkingDots,
 } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
-import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
   maybeGenerateTitle,
   notifyMessageSent,
@@ -23,6 +22,7 @@ import {
   respondToPermission,
   sendAgentMessage,
 } from "../../../lib/ipc";
+import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
   getAgent,
   updateAgent,
@@ -353,20 +353,21 @@ export function AgentChat({
   // for the duration of each thinking episode so the bubble doesn't flicker
   // on re-render. Reset on agent switch so each agent gets a fresh verb.
   const isThinking = activity.description === "Thinking";
-  const spinnerVerbRef = useRef<string>(randomSpinnerVerb());
-  const wasThinkingRef = useRef(false);
-  const lastAgentIdRef = useRef<string | null>(agentId);
-  if (lastAgentIdRef.current !== agentId) {
-    lastAgentIdRef.current = agentId;
-    wasThinkingRef.current = false;
+  const [spinnerVerb, setSpinnerVerb] = useState<string>(() =>
+    randomSpinnerVerb(),
+  );
+  const [prevAgentId, setPrevAgentId] = useState<string | null>(agentId);
+  const [wasThinking, setWasThinking] = useState(false);
+  if (prevAgentId !== agentId) {
+    setPrevAgentId(agentId);
+    setWasThinking(false);
+  } else if (isThinking && !wasThinking) {
+    setSpinnerVerb(randomSpinnerVerb());
+    setWasThinking(true);
+  } else if (!isThinking && wasThinking) {
+    setWasThinking(false);
   }
-  if (isThinking && !wasThinkingRef.current) {
-    spinnerVerbRef.current = randomSpinnerVerb();
-  }
-  wasThinkingRef.current = isThinking;
-  const activityDescription = isThinking
-    ? spinnerVerbRef.current
-    : activity.description;
+  const activityDescription = isThinking ? spinnerVerb : activity.description;
 
   const isAlive =
     !readOnly && (agentStatus === "running" || agentStatus === "idle");
@@ -646,9 +647,7 @@ export function AgentChat({
                 tone={activity.state === "working" ? "accent" : "warning"}
                 pulse={activity.state === "working"}
               />
-              <span className={styles.activityText}>
-                {activityDescription}
-              </span>
+              <span className={styles.activityText}>{activityDescription}</span>
               {activity.state === "working" && <ThinkingDots />}
             </div>
           )}

@@ -119,8 +119,8 @@ function CustomEditorsSection() {
     <section className={styles.section}>
       <div className={styles.label}>Custom &ldquo;Open in&rdquo; apps</div>
       <div className={styles.caption}>
-        Add your own apps to the &ldquo;Open in&rdquo; menu. Command is a CLI
-        on PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to a{" "}
+        Add your own apps to the &ldquo;Open in&rdquo; menu. Command is a CLI on
+        PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to a{" "}
         <code>.app</code> bundle (e.g. <code>/Applications/Zed.app</code>).
       </div>
 
