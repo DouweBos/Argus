@@ -7,6 +7,7 @@ import {
   mergeSessionIntoBase,
   rebaseSessionOnBase,
 } from "../lib/ipc";
+import { pushError } from "../stores/notificationsStore";
 import { useIpcEvent } from "./useIpcEvent";
 
 interface UseMergeStatusResult {
@@ -73,7 +74,9 @@ export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
     try {
       await mergeSessionIntoBase(sessionId);
     } catch (err) {
-      setMergeError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setMergeError(message);
+      pushError(message, "Merge failed");
       // Refresh conflict list so the UI can surface "Fix in chat".
       await fetchStatus();
     } finally {
@@ -90,7 +93,9 @@ export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
     try {
       await rebaseSessionOnBase(sessionId);
     } catch (err) {
-      setRebaseError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setRebaseError(message);
+      pushError(message, "Rebase failed");
     } finally {
       setIsRebasing(false);
       await fetchStatus();

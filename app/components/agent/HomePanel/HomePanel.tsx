@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
 import { Dialog } from "@argus/peacock";
+import { useCallback, useMemo, useState } from "react";
 import { useSessionAgents } from "../../../hooks/useAgent";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
@@ -32,6 +32,21 @@ export function HomePanel({ sessionId }: HomePanelProps) {
     autoStart: false,
     sessionReady: session ? isSessionReady(session.status) : false,
   });
+
+  // The session's worktree exists as soon as `createSession` resolves, so
+  // agents can be spawned while the setup pipeline (copy/symlink/install)
+  // is still running in the background. Only block the start buttons when
+  // the session is in a terminal bad state.
+  const canStart = useMemo(() => {
+    if (!session) {
+      return false;
+    }
+    if (typeof session.status === "object") {
+      return false;
+    }
+
+    return session.status !== "deleting";
+  }, [session]);
 
   const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
@@ -113,7 +128,6 @@ export function HomePanel({ sessionId }: HomePanelProps) {
     [handleCloseHistory, repoRoot, startNew],
   );
 
-  const wsReady = session != null && isSessionReady(session.status);
   const isRepoHome = session?.kind === "project_root";
 
   const handleStart = () => {
@@ -130,7 +144,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
     <>
       {isRepoHome ? (
         <RepoHomeScreen
-          canStart={wsReady}
+          canStart={canStart}
           isStarting={isStarting}
           repoRoot={repoRoot}
           sessionId={sessionId}
@@ -142,7 +156,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
         />
       ) : (
         <SessionHomeScreen
-          canStart={wsReady}
+          canStart={canStart}
           isStarting={isStarting}
           repoRoot={repoRoot}
           sessionId={sessionId}

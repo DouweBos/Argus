@@ -24,21 +24,21 @@ function buildConflictResolutionPrompt(
 ): string {
   const fileList = conflictFiles.length
     ? conflictFiles.map((f) => `- ${f}`).join("\n")
-    : "(specific files could not be determined — git merge will report them)";
+    : "(specific files could not be determined — git rebase will report them)";
 
-  return `Resolve merge conflicts between this session's branch (\`${sessionBranch}\`) and its base branch (\`${baseBranch}\`).
+  return `Rebase this session's branch (\`${sessionBranch}\`) onto its base branch (\`${baseBranch}\`) and resolve the conflicts that come up.
 
 Expected conflicting files:
 ${fileList}
 
 Steps:
-1. Run \`git fetch\` then \`git merge ${baseBranch}\` in this session.
-2. For each conflicting file, read both sides and resolve the conflict so both intents are preserved. Prefer the behavior this branch intended; don't silently drop changes from either side.
-3. After resolving, run the project's type-check / build / tests to confirm nothing is broken.
-4. Stage the resolved files and commit the merge with a clear message (e.g. \`Merge ${baseBranch} into ${sessionBranch}\`).
+1. Run \`git fetch\` then \`git rebase ${baseBranch}\` in this session. Do **not** \`git merge\` — we want history to stay linear.
+2. For each conflicting file, read both sides and resolve so both intents are preserved. Prefer the behavior this branch intended; don't silently drop changes from either side.
+3. Stage the resolved files with \`git add\`, then run \`git rebase --continue\`. Repeat if further commits conflict.
+4. After the rebase completes, run the project's type-check / build / tests to confirm nothing is broken.
 5. Report which files you resolved and any decisions you had to make.
 
-Don't push. Don't merge back into \`${baseBranch}\` — the user will do that separately once you're done.`;
+If the rebase becomes unrecoverable, \`git rebase --abort\` to return to the pre-rebase state and ask for guidance rather than falling back to a merge. Don't push. Don't merge back into \`${baseBranch}\` — the user will do that separately once you're done.`;
 }
 
 /**

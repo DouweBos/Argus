@@ -1,3 +1,4 @@
+import { Button, Icons, Input, SegmentedCard, TextArea } from "@argus/peacock";
 import {
   useEffect,
   useLayoutEffect,
@@ -8,8 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button, Icons, Input, SegmentedCard } from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
+import { startAgentInSession, sendUserMessageToAgent } from "../../../lib/agentLifecycle";
 import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   getUserProjectSettings,
@@ -306,10 +307,10 @@ function BranchDropdown({
 
 function getSubmitLabel(isCreating: boolean, isFork: boolean): string {
   if (isCreating) {
-    return isFork ? "Forking…" : "Creating…";
+    return isFork ? "Forking…" : "Starting…";
   }
 
-  return isFork ? "Fork Session" : "Create Session";
+  return isFork ? "Fork Session" : "Start Session";
 }
 
 export function CreateSessionDialog({
@@ -378,7 +379,7 @@ export function CreateSessionDialog({
     }
   };
 
-  const descriptionRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -436,12 +437,11 @@ export function CreateSessionDialog({
   const trimmedNewBranch = newBranch.trim();
   const trimmedDescription = description.trim();
 
-  // Effective branch name: explicit if given, else derived from description.
-  const rawBranch = trimmedNewBranch.length
-    ? trimmedNewBranch
-    : trimmedDescription;
-  const effectiveBranch = rawBranch
-    ? applyBranchPrefix(rawBranch, branchPrefix)
+  // Effective branch name: only shown when the user explicitly typed one.
+  // When empty, the backend generates a branch name from the prompt via
+  // `claude -p`, so we don't need to compute or display a preview here.
+  const effectiveBranch = trimmedNewBranch
+    ? applyBranchPrefix(trimmedNewBranch, branchPrefix)
     : "";
   const effectiveSlug = effectiveBranch ? previewSlug(effectiveBranch) : "";
 
@@ -452,7 +452,7 @@ export function CreateSessionDialog({
       claimedBranches.has(effectiveSlug));
 
   const canSubmitBranchOff =
-    !!sourceBranch && !!effectiveSlug && !branchCollision;
+    !!sourceBranch && !!trimmedDescription && !branchCollision;
   const canSubmitAdoptLocal = !!adoptBranch;
   const canSubmitAdoptRemote = !!adoptBranch;
 
@@ -461,6 +461,7 @@ export function CreateSessionDialog({
     desc: string,
     useExisting: boolean,
     baseBranch: string | undefined,
+    initialPrompt?: string,
   ) => {
     setIsCreating(true);
     setError(null);
@@ -474,7 +475,27 @@ export function CreateSessionDialog({
           desc,
         );
       } else {
-        await createSession(branch, desc, useExisting, baseBranch);
+        const session = await createSession(
+          branch,
+          desc,
+          useExisting,
+          baseBranch,
+        );
+        // Spawn an agent immediately with the user's prompt as the first
+        // message. The session's worktree already exists by the time
+        // createSession resolves — the setup pipeline (copy/symlink/install)
+        // continues in the background but does not block agent startup.
+        if (initialPrompt && session) {
+          const agentInfo = await startAgentInSession(session.id, {
+            focus: true,
+          });
+          await sendUserMessageToAgent(
+            agentInfo.agent_id,
+            initialPrompt,
+            undefined,
+            { assumeIdle: true },
+          );
+        }
       }
       onClose();
     } catch (err) {
@@ -489,9 +510,15 @@ export function CreateSessionDialog({
     if (!canSubmitBranchOff) {
       return;
     }
-    // Pass the effective display name (before slugging) so backend can use it
-    // as the humanized display_name while slugging it for the branch.
-    await submit(effectiveBranch, trimmedDescription, false, sourceBranch);
+    // When the user typed a branch, pass it (prefix applied). When empty,
+    // pass "" — the backend generates a branch name + title from the prompt.
+    await submit(
+      effectiveBranch,
+      trimmedDescription,
+      false,
+      sourceBranch,
+      trimmedDescription,
+    );
   };
 
   const handleSubmitAdopt = async (e: React.FormEvent) => {
@@ -581,6 +608,18 @@ export function CreateSessionDialog({
           )}
         </span>
       );
+    } else if (trimmedDescription) {
+      branchHint = (
+        <span className={styles.createNewHint}>
+          Branch name will be generated from your prompt
+          {sourceBranch && (
+            <>
+              , branching from <strong>{sourceBranch}</strong>
+            </>
+          )}
+          .
+        </span>
+      );
     }
 
     return (
@@ -594,16 +633,32 @@ export function CreateSessionDialog({
         <form className={styles.form} onSubmit={handleSubmitBranchOff}>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="description-input">
-              Description
+              Prompt{" "}
+              <span className={styles.labelHint}>
+                (sent to the agent as the first message)
+              </span>
             </label>
-            <Input
+            <TextArea
               ref={descriptionRef}
               autoFocus
               id="description-input"
-              placeholder="What are you building?"
-              type="text"
+              placeholder="What are you building? Describe the task the agent should pick up."
+              rows={5}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={(e) => {
+                if (
+                  (e.metaKey || e.ctrlKey) &&
+                  e.key === "Enter" &&
+                  canSubmitBranchOff &&
+                  !isCreating
+                ) {
+                  e.preventDefault();
+                  handleSubmitBranchOff(
+                    e as unknown as React.FormEvent,
+                  ).catch(() => {});
+                }
+              }}
             />
           </div>
 
@@ -611,7 +666,7 @@ export function CreateSessionDialog({
             <label className={styles.label} htmlFor="new-branch-input">
               Branch name{" "}
               <span className={styles.labelHint}>
-                (optional — generated from description)
+                (optional — generated from prompt)
               </span>
             </label>
             <Input

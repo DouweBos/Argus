@@ -40,20 +40,16 @@
   padding: 4px 8px;
   margin: 2px 0 0 4px;
   font-size: 10px;
-  color: var(--text-muted);
-  opacity: 0.4;
+  color: var(--accent);
   border: none;
   background: none;
   border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition:
-    color var(--transition-base),
-    opacity var(--transition-base);
+  transition: color var(--transition-base);
 }
 
 .newSessionBtn:hover {
-  color: var(--accent);
-  opacity: 1;
+  color: var(--accent-hover, var(--accent));
 }
 
 .newSessionBtn svg {

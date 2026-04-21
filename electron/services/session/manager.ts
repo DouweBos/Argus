@@ -10,6 +10,7 @@ import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import {
+  generateBranchAndTitle,
   generateSessionTitle,
   humanizeBranchName,
 } from "../llm/titleGenerator";
@@ -236,10 +237,24 @@ export async function createSession(
 ): Promise<Session> {
   // Apply the developer's personal required branch prefix (if configured) to
   // new branches. Existing branches are adopted as-is.
+  //
+  // If the caller supplied an empty branch (new-session flow where the user
+  // didn't type one), ask claude -p to generate a branch name + title from
+  // the prompt. On failure, fall back to slugging the description directly.
   let branchInput = branch;
+  let preGeneratedTitle: string | null = null;
   if (useExistingBranch !== true) {
+    if (!branch.trim() && description.trim()) {
+      const generated = await generateBranchAndTitle(description, repoRoot);
+      if (generated) {
+        branchInput = generated.branch;
+        preGeneratedTitle = generated.title;
+      } else {
+        branchInput = description;
+      }
+    }
     const prefix = loadUserProjectSettings(repoRoot).branch_prefix ?? "";
-    branchInput = applyBranchPrefix(branch, prefix);
+    branchInput = applyBranchPrefix(branchInput, prefix);
   }
 
   // Enforce one-session-per-branch: a given branch in a given repo may only be
@@ -294,8 +309,11 @@ export async function createSession(
   session.env_index = nextIndex;
 
   // Set a humanized placeholder title so the row renders something readable
-  // before the LLM-generated title comes back.
-  if (
+  // before the LLM-generated title comes back. If claude -p already produced
+  // a nice title as part of branch generation, use that directly.
+  if (preGeneratedTitle) {
+    session.display_name = preGeneratedTitle;
+  } else if (
     !session.display_name ||
     session.display_name === branch ||
     session.display_name === branchInput
@@ -320,14 +338,16 @@ export async function createSession(
   }
 
   // Fire-and-forget: ask Claude for a nicer title. On success, update state,
-  // persist, and notify the renderer so the row re-renders.
+  // persist, and notify the renderer so the row re-renders. Skipped when
+  // branch+title was pre-generated above (we already have a good title).
   const titleSessionId = session.id;
   const titleSessionPath = session.path;
-  generateSessionTitle({
-    branch: session.branch,
-    description: session.description,
-    repoRoot,
-  })
+  if (!preGeneratedTitle) {
+    generateSessionTitle({
+      branch: session.branch,
+      description: session.description,
+      repoRoot,
+    })
     .then((title) => {
       if (!title) {
         return;
@@ -360,6 +380,7 @@ export async function createSession(
     .catch((e: unknown) => {
       info(`Title generation skipped for session ${titleSessionId}:`, e);
     });
+  }
 
   const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();
   const setupSessionId = `setup:${session.id}`;

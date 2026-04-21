@@ -77,6 +77,82 @@ export async function generateSessionTitle(
   }
 }
 
+interface BranchAndTitle {
+  branch: string;
+  title: string;
+}
+
+/**
+ * Generate a branch-name slug + 3-5 word title from a user-authored prompt.
+ *
+ * Single `claude -p` call (haiku) returning JSON with both fields. Returns
+ * null on any failure — callers should fall back to slugging the prompt
+ * directly.
+ */
+export async function generateBranchAndTitle(
+  prompt: string,
+  repoRoot?: string,
+): Promise<BranchAndTitle | null> {
+  const trimmed = prompt.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const instruction =
+    `Given a developer's description of a coding task, produce a short git branch name and a 3-5 word session title. ` +
+    `Reply with ONLY a JSON object like {"branch":"kebab-case-branch","title":"Short Title Here"}. ` +
+    `The branch must be lowercase kebab-case, max 40 chars, no slashes. ` +
+    `The title must be 3-5 words, title-cased, no trailing punctuation. ` +
+    `Task: ${trimmed}`;
+
+  try {
+    const { stdout } = await execFileAsync(
+      CLAUDE_BIN,
+      ["-p", "--model", "haiku", "--output-format", "json", instruction],
+      {
+        timeout: TIMEOUT_MS,
+        maxBuffer: 1024 * 1024,
+        cwd: repoRoot,
+      },
+    );
+
+    const parsed = JSON.parse(stdout) as PrintResult;
+    if (parsed.is_error || !parsed.result) {
+      return null;
+    }
+
+    const jsonMatch = parsed.result.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return null;
+    }
+    const obj = JSON.parse(jsonMatch[0]) as Partial<BranchAndTitle>;
+    const branch = normaliseBranchSlug(obj.branch ?? "");
+    const title = normaliseTitle(obj.title ?? "") ?? "";
+    if (!branch || !title) {
+      return null;
+    }
+
+    return { branch, title };
+  } catch (e) {
+    warn("generateBranchAndTitle failed:", e);
+
+    return null;
+  }
+}
+
+function normaliseBranchSlug(raw: string): string {
+  const slug = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9/_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^[-_/]+|[-_/]+$/g, "");
+  if (!slug) {
+    return "";
+  }
+
+  return slug.length > 40 ? slug.slice(0, 40).replace(/-+$/, "") : slug;
+}
+
 function normaliseTitle(raw: string): string | null {
   let title = raw.trim();
   if (
