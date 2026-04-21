@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { TitleBar as PeacockTitleBar } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { listBranches, setSessionBaseBranch } from "../../../lib/ipc";
@@ -18,9 +19,26 @@ import { NavigationButtons } from "../NavigationButtons";
 import { RunControl } from "../RunControl";
 import styles from "./TitleBar.module.css";
 
+const ROUTE_TITLES: Record<string, string> = {
+  "": "Home",
+  agents: "Agents",
+  devices: "Devices",
+  organizations: "Organizations",
+  "review-queue": "Review queue",
+  activity: "Activity",
+  notifications: "Notifications",
+};
+
+function routeTitle(pathname: string): string {
+  const segment = pathname.replace(/\/+$/, "").split("/")[1] ?? "";
+
+  return ROUTE_TITLES[segment] ?? "Home";
+}
+
 export function TitleBar() {
   const selectedId = useSelectedSessionId();
   const sessions = useSessions();
+  const location = useLocation();
   const session = useMemo(
     () =>
       selectedId ? (sessions.find((w) => w.id === selectedId) ?? null) : null,
@@ -108,7 +126,9 @@ export function TitleBar() {
       )}
     </div>
   ) : (
-    <span className={styles.homeTitle}>Argus · home</span>
+    <span className={styles.homeTitle}>
+      Argus · {routeTitle(location.pathname)}
+    </span>
   );
 
   return (

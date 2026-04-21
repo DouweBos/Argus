@@ -89,7 +89,31 @@ export function titleToBranchSlug(title: string): string {
     .replace(/^-+/, "")
     .toLowerCase();
 
-  return slug.length === 0 ? "session" : slug;
+  return slug.length === 0 ? "session" : truncateSlug(slug, MAX_BRANCH_SLUG_LENGTH);
+}
+
+/**
+ * Maximum length for a generated branch slug. Git itself allows very long
+ * refs, but filesystems impose a 255-byte limit on path components — and
+ * git creates `<branch>.lock` files under `.git/refs/heads/`, which fails
+ * with `File name too long` well before that limit when the branch name
+ * approaches it. Keep slugs compact so they're readable and safe.
+ */
+const MAX_BRANCH_SLUG_LENGTH = 50;
+
+/**
+ * Truncate a slug to `max` characters, preferring to cut at a hyphen so we
+ * don't slice mid-word. Strips trailing separators.
+ */
+function truncateSlug(slug: string, max: number): string {
+  if (slug.length <= max) {
+    return slug;
+  }
+  const head = slug.slice(0, max);
+  const lastHyphen = head.lastIndexOf("-");
+  const cut = lastHyphen > max / 2 ? head.slice(0, lastHyphen) : head;
+
+  return cut.replace(/[-_]+$/g, "") || slug.slice(0, max);
 }
 
 // ---------------------------------------------------------------------------

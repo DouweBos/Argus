@@ -30,7 +30,7 @@ import {
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useSessions } from "../../../stores/sessionStore";
-import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
+import { ForkSessionDialog } from "../ForkSessionDialog";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
@@ -400,11 +400,6 @@ export function AgentChat({
     navigator.clipboard.writeText(textParts.join("\n\n")).catch(() => {});
   }, []);
 
-  const sourceBranch = useMemo(
-    () => sessions.find((w) => w.id === sessionId)?.branch ?? "",
-    [sessions, sessionId],
-  );
-
   const [forkDialogMessageId, setForkDialogMessageId] = useState<string | null>(
     null,
   );
@@ -708,14 +703,11 @@ export function AgentChat({
         />
       )}
       {forkDialogMessageId != null && agentId != null && repoRoot != null && (
-        <CreateSessionDialog
+        <ForkSessionDialog
           repoRoot={repoRoot}
-          sourceSession={{ branch: sourceBranch }}
-          forkContext={{
-            agentId,
-            messageId: forkDialogMessageId,
-            sourceSessionId: sessionId,
-          }}
+          agentId={agentId}
+          messageId={forkDialogMessageId}
+          sourceSessionId={sessionId}
           onClose={() => setForkDialogMessageId(null)}
         />
       )}

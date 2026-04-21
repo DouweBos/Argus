@@ -60,6 +60,15 @@ describe("titleToBranchSlug", () => {
     const result = titleToBranchSlug("Fix bug");
     expect(result).toBe("fix-bug");
   });
+
+  it("truncates long slugs at a word boundary", () => {
+    const long =
+      "when creating a new session in the session dialog the start session button hangs probably on the branch name";
+    const result = titleToBranchSlug(long);
+    expect(result.length).toBeLessThanOrEqual(50);
+    expect(result).not.toMatch(/-$/);
+    expect(result).toBe("when-creating-a-new-session-in-the-session-dialog");
+  });
 });
 
 describe("worktreesRoot", () => {

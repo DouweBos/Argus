@@ -167,6 +167,8 @@
 }
 
 .historyWrap {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-md);
   overflow: hidden;
