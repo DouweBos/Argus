@@ -8,6 +8,7 @@ import { useAgentsRecord } from "../../../stores/agentStore";
 import { setActiveOrgTask, useOrgTasks } from "../../../stores/orgTaskStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import { useSetupProgressBySessionId } from "../../../stores/sessionStore";
+import { useSessionIsRunning } from "../../../stores/terminalStore";
 import { BranchSwitcher } from "../BranchSwitcher";
 import styles from "./SessionCard.module.css";
 
@@ -72,6 +73,7 @@ export function SessionCard({
   );
 
   const diffStats = useSessionDiffStats(session.id, session.status);
+  const isRunning = useSessionIsRunning(session.id);
   const orgTasks = useOrgTasks();
   const orgTask = session.organization_task_id
     ? orgTasks.find((t) => t.id === session.organization_task_id)
@@ -130,6 +132,13 @@ export function SessionCard({
           <div className={styles.titleRow}>
             {session.kind === "project_root" ? (
               <Icons.RepoIcon size={13} />
+            ) : isRunning ? (
+              <span
+                className={styles.runningIcon}
+                title="Run command is executing"
+              >
+                <Icons.PlayIcon size={13} />
+              </span>
             ) : (
               <Icons.BranchIcon size={13} />
             )}

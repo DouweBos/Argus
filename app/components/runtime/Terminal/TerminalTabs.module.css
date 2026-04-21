@@ -96,6 +96,31 @@
   color: var(--text-primary);
 }
 
+.tab.dragging {
+  opacity: 0.4;
+}
+
+.tab.dropBefore::before,
+.tab.dropAfter::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tab.dropBefore::before {
+  left: 0;
+}
+
+.tab.dropAfter::after {
+  right: 0;
+}
+
 /* Run-type tab accent — earthy green kept distinct from the emerald accent */
 .runTab {
   /* inherits base tab styles */

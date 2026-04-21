@@ -130,6 +130,11 @@
   background: rgba(0, 212, 170, 0.08);
   color: var(--success);
   font-weight: 500;
+  transition: opacity var(--transition-fast);
+}
+.card:hover .agentPill,
+.card:focus-within .agentPill {
+  opacity: 0;
 }
 .agentPill.warn {
   background: rgba(255, 213, 74, 0.1);

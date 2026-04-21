@@ -14,6 +14,10 @@ interface TerminalStoreData {
   runSessionId: Record<string, string | null>;
   // Map of sessionId -> list of terminal sessions
   sessions: Record<string, TerminalSession[]>;
+  // Map of sessionId -> Map of run-command title -> running terminal id.
+  // Populated by RunControl so any component (e.g. SessionCard) can tell
+  // whether a session currently has a run-command executing.
+  runningTerminals: Record<string, Record<string, string>>;
 }
 
 const terminalStore = create<TerminalStoreData>(() => ({
@@ -23,6 +27,7 @@ const terminalStore = create<TerminalStoreData>(() => ({
   runBusy: {},
   bufferCache: {},
   liveSessions: {},
+  runningTerminals: {},
 }));
 
 const useTerminalStore = terminalStore;
@@ -113,6 +118,83 @@ export const updateSession = (
   });
 };
 
+/**
+ * Reorder a terminal tab within its session. Used by drag-and-drop in the
+ * terminal tab bar; semantics mirror `reorderAgent` in `agentStore`.
+ */
+export const reorderSession = (
+  sessionId: string,
+  terminalId: string,
+  targetTerminalId: string,
+  position: "after" | "before" = "before",
+) => {
+  if (terminalId === targetTerminalId) {
+    return;
+  }
+  terminalStore.setState((state) => {
+    const current = state.sessions[sessionId];
+    if (!current) {
+      return state;
+    }
+    const fromIdx = current.findIndex((s) => s.id === terminalId);
+    const toIdx = current.findIndex((s) => s.id === targetTerminalId);
+    if (fromIdx === -1 || toIdx === -1) {
+      return state;
+    }
+    const without = current.slice();
+    const [moved] = without.splice(fromIdx, 1);
+    const adjustedTargetIdx = without.findIndex(
+      (s) => s.id === targetTerminalId,
+    );
+    const insertIdx =
+      position === "after" ? adjustedTargetIdx + 1 : adjustedTargetIdx;
+    without.splice(insertIdx, 0, moved);
+
+    return { sessions: { ...state.sessions, [sessionId]: without } };
+  });
+};
+
+/**
+ * Swap the backing terminal id of an existing session tab in place. Used
+ * when a run command re-spawns: the tab (and its position) is preserved,
+ * but it now points at the freshly-spawned pty. Also migrates liveSessions,
+ * bufferCache, and activeSessionId references from the old id to the new.
+ */
+export const replaceSessionId = (
+  sessionId: string,
+  fromId: string,
+  toId: string,
+) => {
+  terminalStore.setState((state) => {
+    if (fromId === toId) {
+      return state;
+    }
+    const list = state.sessions[sessionId] ?? [];
+    const updatedList = list.map((s) => (s.id === fromId ? { ...s, id: toId } : s));
+
+    const { [fromId]: _oldAlive, ...restAlive } = state.liveSessions;
+    const liveSessions = { ...restAlive, [toId]: true };
+
+    const { [fromId]: oldBuffer, ...restBuffer } = state.bufferCache;
+    const bufferCache =
+      oldBuffer === undefined
+        ? restBuffer
+        : { ...restBuffer, [toId]: oldBuffer };
+
+    const activeSessionId =
+      state.activeSessionId[sessionId] === fromId
+        ? { ...state.activeSessionId, [sessionId]: toId }
+        : state.activeSessionId;
+
+    return {
+      sessions: { ...state.sessions, [sessionId]: updatedList },
+      liveSessions,
+      bufferCache,
+      activeSessionId,
+    };
+  });
+};
+
 export const setRunSession = (sessionId: string, terminalId: string | null) => {
   terminalStore.setState((state) => ({
     runSessionId: { ...state.runSessionId, [sessionId]: terminalId },
@@ -194,6 +276,58 @@ export const useRunSessionId = (sessionId: string) =>
 
 export const useRunBusy = (sessionId: string) =>
   useTerminalStore((s) => s.runBusy[sessionId] ?? false);
+
+export const setRunningTerminal = (
+  sessionId: string,
+  title: string,
+  terminalId: string | null,
+) => {
+  terminalStore.setState((state) => {
+    const existing = state.runningTerminals[sessionId] ?? {};
+    if (terminalId === null) {
+      const { [title]: _removed, ...rest } = existing;
+      const next = { ...state.runningTerminals, [sessionId]: rest };
+      if (Object.keys(rest).length === 0) {
+        delete next[sessionId];
+      }
+
+      return { runningTerminals: next };
+    }
+
+    return {
+      runningTerminals: {
+        ...state.runningTerminals,
+        [sessionId]: { ...existing, [title]: terminalId },
+      },
+    };
+  });
+};
+
+/**
+ * Clear the running-terminal marker only if it still points at `terminalId`.
+ * Used on pty-exit to avoid racing a rerun that has already re-populated the
+ * slot with a fresh terminal id.
+ */
+export const clearRunningTerminalIfMatches = (
+  sessionId: string,
+  title: string,
+  terminalId: string,
+) => {
+  const current = terminalStore.getState().runningTerminals[sessionId]?.[title];
+  if (current === terminalId) {
+    setRunningTerminal(sessionId, title, null);
+  }
+};
+
+const EMPTY_RUNNING: Record<string, string> = {};
+
+export const useRunningTerminalsForSession = (sessionId: string) =>
+  useTerminalStore((s) => s.runningTerminals[sessionId] ?? EMPTY_RUNNING);
+
+export const useSessionIsRunning = (sessionId: string) =>
+  useTerminalStore(
+    (s) => Object.keys(s.runningTerminals[sessionId] ?? {}).length > 0,
+  );
 
 /** For tests */
 export const getTerminalState = () => terminalStore.getState();

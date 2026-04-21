@@ -1,3 +1,4 @@
+import type { DropPosition } from "../../../hooks/useTabReorder";
 import type { AgentStatus } from "../../../lib/types";
 import type { SplitPair } from "../../../stores/agentStore";
 import type { StatusDotsState } from "@argus/peacock";
@@ -10,6 +11,7 @@ import {
   Icons,
   StatusDots,
 } from "@argus/peacock";
+import { useTabReorder } from "../../../hooks/useTabReorder";
 import { interruptAgent, revealInFinder } from "../../../lib/ipc";
 import { reorderAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
@@ -34,15 +36,6 @@ interface AgentTabBarProps {
   onSelectHome: () => void;
   onUnpair?: () => void;
   splitPair?: SplitPair | null;
-}
-
-const DRAG_MIME = AGENT_DRAG_MIME;
-
-type DropPosition = "after" | "before";
-
-interface DropIndicator {
-  position: DropPosition;
-  targetAgentId: string;
 }
 
 function useTabMeta(
@@ -314,10 +307,32 @@ export function AgentTabBar({
     }
   }, [activeAgentId, agents.length]);
 
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dropIndicator, setDropIndicator] = useState<DropIndicator | null>(
-    null,
+  const reorderForTarget = useCallback(
+    (fromId: string, targetId: string, position: DropPosition) => {
+      const target = agents.find((a) => a.agent_id === targetId);
+      if (!target) {
+        return;
+      }
+      reorderAgent(target.session_id, fromId, targetId, position);
+    },
+    [agents],
   );
+
+  const {
+    draggingId,
+    getIndicator,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+  } = useTabReorder({
+    mime: AGENT_DRAG_MIME,
+    onDragEnd: endAgentDrag,
+    onDragStart: beginAgentDrag,
+    onReorder: reorderForTarget,
+  });
+
   const [menuState, setMenuState] = useState<{
     agentId: string;
     position: { x: number; y: number };
@@ -465,64 +480,6 @@ export function AgentTabBar({
     return counts;
   }, [allAgents]);
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>, id: string) => {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData(DRAG_MIME, id);
-    // Some browsers require data on the plain text type for drag to init.
-    e.dataTransfer.setData("text/plain", id);
-    setDraggingId(id);
-    beginAgentDrag(id);
-  };
-
-  const handleDragEnd = () => {
-    setDraggingId(null);
-    setDropIndicator(null);
-    endAgentDrag();
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>, id: string) => {
-    if (!draggingId || draggingId === id) {
-      return;
-    }
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isBefore = e.clientX < rect.left + rect.width / 2;
-    const position: DropPosition = isBefore ? "before" : "after";
-    setDropIndicator((prev) =>
-      prev && prev.targetAgentId === id && prev.position === position
-        ? prev
-        : { targetAgentId: id, position },
-    );
-  };
-
-  const handleDragLeave = (id: string) => {
-    setDropIndicator((prev) =>
-      prev && prev.targetAgentId === id ? null : prev,
-    );
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>, targetId: string) => {
-    e.preventDefault();
-    const fromId =
-      e.dataTransfer.getData(DRAG_MIME) ||
-      e.dataTransfer.getData("text/plain") ||
-      draggingId;
-    setDraggingId(null);
-    const indicator = dropIndicator;
-    setDropIndicator(null);
-    if (!fromId || fromId === targetId) {
-      return;
-    }
-    const target = agents.find((a) => a.agent_id === targetId);
-    if (!target) {
-      return;
-    }
-    const position: DropPosition = indicator?.position ?? "before";
-    reorderAgent(target.session_id, fromId, targetId, position);
-  };
-
   const homeClasses = [
     styles.tab,
     styles.homeTab,
@@ -543,10 +500,7 @@ export function AgentTabBar({
         <span className={styles.label}>Home</span>
       </div>
       {agents.map((agent, index) => {
-        const indicator =
-          dropIndicator && dropIndicator.targetAgentId === agent.agent_id
-            ? dropIndicator.position
-            : null;
+        const indicator = getIndicator(agent.agent_id);
         let pairedWith: (typeof agents)[number] | null | undefined = null;
         if (splitPair && pairedMembers.has(agent.agent_id)) {
           if (splitPair.left === agent.agent_id) {

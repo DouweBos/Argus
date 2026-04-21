@@ -1,5 +1,8 @@
+import type { DropPosition } from "../../../hooks/useTabReorder";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
+import { useCloseIntent } from "../../../hooks/useCloseIntent";
+import { useTabReorder } from "../../../hooks/useTabReorder";
 import {
   createTerminal,
   destroyTerminal,
@@ -17,6 +20,7 @@ import {
   getRunSessionId,
   getSessionsForSession,
   removeSession,
+  reorderSession,
   setActiveSession,
   useActiveSessionId,
   useRunSessionId,
@@ -37,6 +41,7 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
   const activeAlive = useSessionAlive(activeId);
   const [isCreating, setIsCreating] = useState(false);
   const autoOpenedRef = useRef<Set<string>>(new Set());
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Sort sessions so the run tab is always first
   const sortedSessions = [...sessions].sort((a, b) => {
@@ -154,6 +159,59 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     }
   }, [activeId]);
 
+  const handleReorder = useCallback(
+    (fromId: string, targetId: string, position: DropPosition) => {
+      // Never allow reordering around the pinned run tab — it is always
+      // rendered first via sortedSessions.
+      const currentRunId = getRunSessionId(sessionId);
+      if (fromId === currentRunId || targetId === currentRunId) {
+        return;
+      }
+      reorderSession(sessionId, fromId, targetId, position);
+    },
+    [sessionId],
+  );
+
+  const {
+    draggingId,
+    getIndicator,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+  } = useTabReorder({
+    mime: "application/x-argus-terminal-tab",
+    onReorder: handleReorder,
+  });
+
+  // Cmd+W: when focus is inside the terminal panel, close the active tab
+  // instead of letting the agent view consume the intent. The run tab is
+  // pinned and cannot be closed — still consume to avoid falling through.
+  useCloseIntent(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return false;
+    }
+    const focused = document.activeElement;
+    if (!(focused instanceof Node) || !container.contains(focused)) {
+      return false;
+    }
+    if (!activeId) {
+      return false;
+    }
+    if (activeId === runSessionId) {
+      // Focused on the run tab — don't close it, but consume the intent.
+      return true;
+    }
+    stopListening(activeId);
+    clearBuffer(activeId);
+    removeSession(sessionId, activeId);
+    destroyTerminal(activeId).catch(() => {});
+
+    return true;
+  });
+
   const handleExit = useCallback(
     (terminalId: string) => {
       // Don't auto-remove the run terminal on exit — keep output visible
@@ -167,18 +225,42 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
   );
 
   return (
-    <div className={styles.container}>
+    <div ref={containerRef} className={styles.container}>
       {/* Tab bar */}
       <div className={styles.tabBar}>
         <div className={styles.tabs}>
           {sortedSessions.map((session) => {
             const isRun = session.id === runSessionId;
+            const indicator = getIndicator(session.id);
+            const isDragging = draggingId === session.id;
+            const classes = [
+              styles.tab,
+              session.id === activeId ? styles.activeTab : null,
+              isRun ? styles.runTab : null,
+              isDragging ? styles.dragging : null,
+              indicator === "before" ? styles.dropBefore : null,
+              indicator === "after" ? styles.dropAfter : null,
+            ]
+              .filter(Boolean)
+              .join(" ");
 
             return (
               <button
                 key={session.id}
-                className={`${styles.tab} ${session.id === activeId ? styles.activeTab : ""} ${isRun ? styles.runTab : ""}`}
+                className={classes}
+                draggable={!isRun}
                 onClick={() => setActiveSession(sessionId, session.id)}
+                onDragStart={
+                  isRun ? undefined : (e) => handleDragStart(e, session.id)
+                }
+                onDragEnd={isRun ? undefined : handleDragEnd}
+                onDragOver={
+                  isRun ? undefined : (e) => handleDragOver(e, session.id)
+                }
+                onDragLeave={
+                  isRun ? undefined : () => handleDragLeave(session.id)
+                }
+                onDrop={isRun ? undefined : (e) => handleDrop(e, session.id)}
               >
                 {isRun ? (
                   <Icons.PlayIcon size={11} />
