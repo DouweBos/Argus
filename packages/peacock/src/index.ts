@@ -26,6 +26,7 @@ export * from "./components/HomeCTA/HomeCTA";
 export * from "./components/HoverActionBar/HoverActionBar";
 export * from "./components/Input/Input";
 export * from "./components/Kbd/Kbd";
+export * from "./components/OrganizationCard/OrganizationCard";
 export * from "./components/PalettePill/PalettePill";
 export * from "./components/Planet/Planet";
 export * from "./components/PlatformChip/PlatformChip";

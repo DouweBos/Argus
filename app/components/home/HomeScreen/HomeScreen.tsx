@@ -1,28 +1,66 @@
 import type { DependencyStatus } from "../../../lib/types";
 import { useEffect, useState } from "react";
-import { Banner, Button, EmptyHome, Icons, Kbd } from "@argus/peacock";
+import {
+  AgentRow,
+  Banner,
+  Button,
+  EmptyHome,
+  Icons,
+  Kbd,
+  OrganizationCard,
+  ProjectCard,
+} from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
 import { setActiveAgent } from "../../../stores/agentStore";
+import {
+  openOrganization,
+  setCenterView,
+} from "../../../stores/centerViewStore";
 import { useDevicePoller } from "../../../stores/deviceStore";
 import {
+  showCreateOrganizationDialog,
   showOpenProjectDialog,
   triggerNewSession,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
-import { useOrganizationSync } from "../../../stores/organizationStore";
+import {
+  useOrganizations,
+  useOrganizationSync,
+} from "../../../stores/organizationStore";
+import { useOrgTasks, useOrgTaskSync } from "../../../stores/orgTaskStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectSession } from "../../../stores/sessionStore";
 import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";
 import styles from "./HomeScreen.module.css";
-import { CommandCenter } from "./directions/CommandCenter/CommandCenter";
 import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
+
+function basename(p: string): string {
+  return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
+}
+
+function agentMeta(status: string): string {
+  if (status === "running") {
+    return "running";
+  }
+  if (status === "error") {
+    return "blocked";
+  }
+  if (status === "pending") {
+    return "waiting";
+  }
+
+  return "idle";
+}
 
 export function HomeScreen() {
   useDevicePoller(5000);
   useOrganizationSync();
+  useOrgTaskSync();
   const data = useHomeData();
+  const orgs = useOrganizations();
+  const tasks = useOrgTasks();
   const { openProject } = useProjects();
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
@@ -74,17 +112,19 @@ export function HomeScreen() {
   const handleAddRepository = () => showOpenProjectDialog();
   const handleNewSession = () => triggerNewSession();
 
-  const directionProps = {
-    data,
-    onAddRepository: handleAddRepository,
-    onNewSession: handleNewSession,
-    onOpenProject: (p: HomeProject) => {
-      handleOpenProject(p).catch(() => {});
-    },
-    onOpenSession: handleOpenSession,
+  const openDevices = () => {
+    selectSession(null);
+    setCenterView("devices");
   };
 
-  const isEmpty = data.projects.length === 0;
+  const openAgents = () => {
+    selectSession(null);
+    setCenterView("agents");
+  };
+
+  const { projects, activeAgents, devices, formatLastOpened } = data;
+  const runningDevices = devices.filter((d) => d.online);
+  const isEmpty = projects.length === 0;
 
   return (
     <div className={styles.screen}>
@@ -135,7 +175,191 @@ export function HomeScreen() {
               ))}
             />
           ) : (
-            <CommandCenter {...directionProps} />
+            <div className={styles.wrap}>
+              <div className={styles.hero}>
+                <div className={styles.brandMark}>
+                  <Icons.ArgusLogo size={28} />
+                  <h1 className={styles.title}>Argus</h1>
+                </div>
+                <div className={styles.heroSpacer} />
+                <div className={styles.ctas}>
+                  <Button
+                    variant="ghost"
+                    leading={<Icons.FolderIcon size={12} />}
+                    onClick={handleAddRepository}
+                  >
+                    Open repo
+                  </Button>
+                  <Button
+                    variant="primary"
+                    leading={<Icons.PlusIcon size={12} />}
+                    onClick={handleNewSession}
+                  >
+                    New session
+                  </Button>
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <div className={styles.sectionHead}>
+                  <span className={styles.eyebrow}>Organizations</span>
+                  <button
+                    type="button"
+                    className={styles.linkBtn}
+                    onClick={showCreateOrganizationDialog}
+                  >
+                    New organization
+                  </button>
+                </div>
+                {orgs.length === 0 ? (
+                  <div className={styles.emptyCell}>
+                    Group a backend + frontend + mobile repo into one product.
+                    Agents inherit the organization&apos;s system prompt.
+                  </div>
+                ) : (
+                  <div className={styles.projGrid}>
+                    {orgs.map((org) => {
+                      const orgTasks = tasks.filter(
+                        (t) => t.organization_id === org.id,
+                      );
+                      const running = orgTasks.filter(
+                        (t) => t.status === "running",
+                      ).length;
+
+                      return (
+                        <OrganizationCard
+                          key={org.id}
+                          name={org.name}
+                          description={org.description || undefined}
+                          accent={org.accent}
+                          members={org.members.map((m) =>
+                            basename(m.repo_root),
+                          )}
+                          taskCount={orgTasks.length}
+                          runningCount={running}
+                          onClick={() => openOrganization(org.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.section}>
+                <span className={styles.eyebrow}>Recent projects</span>
+                {projects.length === 0 ? (
+                  <div className={styles.emptyCell}>
+                    No recent projects. Open a repo to get started.
+                  </div>
+                ) : (
+                  <div className={styles.projGrid}>
+                    {projects.map((p) => (
+                      <ProjectCard
+                        key={p.id}
+                        name={p.name}
+                        path={p.path}
+                        accent={p.accent}
+                        agents={p.agents.map((a) => ({ status: a.status }))}
+                        lastOpened={formatLastOpened(p.lastOpened)}
+                        onClick={() => {
+                          handleOpenProject(p).catch(() => {});
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          if (
+                            window.confirm(
+                              `Remove ${p.name} from recent projects?`,
+                            )
+                          ) {
+                            removeRecentProject(p.path);
+                          }
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.twoCol}>
+                <div className={styles.section}>
+                  <div className={styles.sectionHead}>
+                    <span className={styles.eyebrow}>Active agents</span>
+                    <button
+                      type="button"
+                      className={styles.linkBtn}
+                      onClick={openAgents}
+                    >
+                      View all
+                    </button>
+                  </div>
+                  {activeAgents.length === 0 ? (
+                    <div className={styles.emptyCell}>
+                      No agents running. Start one from a session.
+                    </div>
+                  ) : (
+                    <div className={styles.rowList}>
+                      {activeAgents.slice(0, 6).map((a) => (
+                        <AgentRow
+                          key={a.id}
+                          name={a.displayName}
+                          project={basename(a.session.repo_root)}
+                          status={a.status}
+                          meta={agentMeta(a.status)}
+                          role="button"
+                          tabIndex={0}
+                          style={{ cursor: "pointer" }}
+                          onClick={() =>
+                            handleOpenSession(
+                              a.session.id,
+                              a.session.repo_root,
+                              a.id,
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.section}>
+                  <div className={styles.sectionHead}>
+                    <span className={styles.eyebrow}>Devices</span>
+                    <button
+                      type="button"
+                      className={styles.linkBtn}
+                      onClick={openDevices}
+                    >
+                      View all
+                    </button>
+                  </div>
+                  {runningDevices.length === 0 ? (
+                    <div className={styles.emptyCell}>
+                      No devices online. Boot a simulator or start an agent.
+                    </div>
+                  ) : (
+                    <div className={styles.rowList}>
+                      {runningDevices.slice(0, 6).map((d) => (
+                        <AgentRow
+                          key={`${d.platform}:${d.deviceKey}`}
+                          name={d.name}
+                          project={
+                            d.repoRoot
+                              ? basename(d.repoRoot)
+                              : d.platform.toUpperCase()
+                          }
+                          status={d.reserved ? "running" : "idle"}
+                          meta={d.reserved ? "reserved" : "available"}
+                          role="button"
+                          tabIndex={0}
+                          style={{ cursor: "pointer" }}
+                          onClick={openDevices}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

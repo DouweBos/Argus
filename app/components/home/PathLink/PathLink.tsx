@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { revealInFinder } from "../../../lib/ipc";
 import styles from "./PathLink.module.css";
@@ -5,9 +6,10 @@ import styles from "./PathLink.module.css";
 interface PathLinkProps {
   className?: string;
   path: string;
+  style?: CSSProperties;
 }
 
-export function PathLink({ path, className }: PathLinkProps) {
+export function PathLink({ path, className, style }: PathLinkProps) {
   const [metaDown, setMetaDown] = useState(false);
 
   useEffect(() => {
@@ -31,6 +33,7 @@ export function PathLink({ path, className }: PathLinkProps) {
       className={[styles.path, metaDown ? styles.armed : "", className]
         .filter(Boolean)
         .join(" ")}
+      style={style}
       title="⌘-click to reveal in Finder"
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey) {
