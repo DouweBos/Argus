@@ -6,7 +6,6 @@ import {
   EmptyHome,
   Icons,
   Kbd,
-  SparkleIcon,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
@@ -117,22 +116,13 @@ export function HomeScreen() {
           {isEmpty ? (
             <EmptyHome
               actions={
-                <>
-                  <Button
-                    variant="primary"
-                    leading={<Icons.FolderIcon size={13} />}
-                    onClick={handleAddRepository}
-                  >
-                    Add repository
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    leading={<SparkleIcon size={13} />}
-                    onClick={handleAddRepository}
-                  >
-                    Try the tour
-                  </Button>
-                </>
+                <Button
+                  variant="primary"
+                  leading={<Icons.FolderIcon size={13} />}
+                  onClick={handleAddRepository}
+                >
+                  Add repository
+                </Button>
               }
               shortcuts={HOME_SHORTCUTS.slice(0, 3).map((s) => (
                 <span
