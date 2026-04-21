@@ -50,10 +50,9 @@ export function useDeviceNavigation() {
     const wsId = resolveFrontendSessionId(device);
 
     if (kind === "session" && wsId) {
-      setCenterView("home");
-      selectSession(wsId);
       setActiveAgent(wsId, null);
       setActiveCenterView("agents");
+      selectSession(wsId);
     }
 
     if (kind === "agent" && wsId && device.agentId) {
@@ -66,10 +65,9 @@ export function useDeviceNavigation() {
           status: "running",
         });
       }
-      setCenterView("home");
-      selectSession(wsId);
       setActiveAgent(wsId, device.agentId);
       setActiveCenterView("agents");
+      selectSession(wsId);
     }
 
     if (kind === "project") {

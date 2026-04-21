@@ -2,7 +2,7 @@ import type { AppView } from "../../../lib/router";
 import type { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { SidebarItem } from "@argus/peacock";
-import { parseRoute, pushRoute } from "../../../lib/router";
+import { appNavigate, parseRoute } from "../../../lib/router";
 
 interface SidebarNavItemProps {
   children: ReactNode;
@@ -28,7 +28,7 @@ export function SidebarNavItem({
       active={active}
       leading={leading}
       count={count}
-      onClick={() => pushRoute({ view })}
+      onClick={() => appNavigate({ view })}
     >
       {children}
     </SidebarItem>

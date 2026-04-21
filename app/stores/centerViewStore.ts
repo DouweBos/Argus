@@ -1,5 +1,14 @@
-import { create } from "zustand";
-import { pushRoute } from "../lib/router";
+/**
+ * Center-view helpers. The current view is derived from the URL — these are
+ * thin wrappers around `appNavigate` (for writes) and `useRouteView` /
+ * `useRouteOrganizationId` (for reads). No local Zustand state lives here.
+ */
+
+import {
+  useRouteOrganizationId,
+  useRouteView,
+} from "../lib/routeHooks";
+import { appNavigate, getCurrentRoute } from "../lib/router";
 
 export type CenterView =
   | "activity"
@@ -11,36 +20,30 @@ export type CenterView =
   | "review-queue"
   | "runtimes";
 
-interface CenterViewData {
-  selectedOrganizationId: string | null;
-  view: CenterView;
-}
-
-const centerViewStore = create<CenterViewData>(() => ({
-  view: "home",
-  selectedOrganizationId: null,
-}));
-
 export const setCenterView = (view: CenterView): void => {
-  centerViewStore.setState({ view, selectedOrganizationId: null });
-  pushRoute({ view });
-};
-
-export const clearSelectedOrganization = (): void => {
-  centerViewStore.setState({ selectedOrganizationId: null });
+  appNavigate({ view });
 };
 
 export const openOrganization = (organizationId: string): void => {
-  centerViewStore.setState({
-    view: "organizations",
-    selectedOrganizationId: organizationId,
-  });
-  pushRoute({ view: "organizations", organizationId });
+  appNavigate({ view: "organizations", organizationId });
 };
 
-export const useCenterView = (): CenterView => centerViewStore((s) => s.view);
+export const clearSelectedOrganization = (): void => {
+  // No-op — the org id only lives in the URL. Navigate explicitly away from
+  // a specific org if you want to clear it.
+};
+
+export const useCenterView = (): CenterView => {
+  const view = useRouteView();
+
+  return view === "session" ? "home" : view;
+};
 
 export const useSelectedOrganizationId = (): string | null =>
-  centerViewStore((s) => s.selectedOrganizationId);
+  useRouteOrganizationId();
 
-export const getCenterView = (): CenterView => centerViewStore.getState().view;
+export const getCenterView = (): CenterView => {
+  const view = getCurrentRoute().view;
+
+  return view === "session" ? "home" : view;
+};

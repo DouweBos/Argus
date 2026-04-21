@@ -30,6 +30,7 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
 - **Shared types:** `src/lib/types.ts` — TypeScript interfaces matching backend types. Keep in sync manually
 - **Hooks:** `src/hooks/` — `useIpcEvent`, `useWorkspaces`, `useTerminal`, `useAgent`
 - **Components:** organized by panel — `layout/`, `sidebar/`, `agent/`, `runtime/`, `home/`
+- **Routing:** URL is the single source of truth for "which screen". See [`docs/routing.md`](docs/routing.md) for the full URL inventory and navigation API. When adding, removing, or renaming a route, update that doc in the same change.
 
 ### Backend (`electron/`)
 
@@ -70,6 +71,15 @@ Three-panel layout: workspace sidebar (left), agent control (center), runtime & 
 - Zustand stores: simple `create<State>()` pattern, no providers
 - IPC: always go through `src/lib/ipc.ts` wrappers, never call `window.argus.invoke()` directly from components
 - Events: use `src/hooks/useIpcEvent.ts` for event subscriptions
+
+### Routing
+
+The URL is the single source of truth for the current screen. Full inventory and navigation API live in [`docs/routing.md`](docs/routing.md) — keep that doc in sync whenever you add, rename, or remove a route.
+
+1. **Every screen has a URL.** If you're adding a new screen (tool-rail button, sidebar entry, modal-that-acts-like-a-page), add a route for it in `app/lib/router.tsx` and document it in `docs/routing.md`.
+2. **Navigate via `appNavigate(route)`** from `app/lib/router.tsx`, or one of the thin semantic wrappers (`selectSession`, `setCenterView`, `openOrganization`, `setActiveCenterView`). Never call React Router's `navigate()` from components directly — it bypasses the registered-navigator indirection used by non-hook callers.
+3. **One navigation call per user action.** Two `appNavigate` calls back-to-back stack two history entries and break the back button. Collapse them into a single call with the final destination; `syncRouteToStores` does not exist — there's nothing to reconcile.
+4. **Read the URL, don't mirror it.** No Zustand state holds "which session/view is selected". Use the URL-derived hooks (`useSelectedSessionId`, `useCenterView`, `useActiveCenterView`, `useSelectedOrganizationId`, or the raw `useCurrentRoute`/`useRouteSessionId` in `app/lib/routeHooks.ts`). For non-hook code, use `getSelectedSessionId()`, `getActiveCenterView()`, `getCurrentRoute()`.
 
 ### Design system (`@argus/peacock`)
 

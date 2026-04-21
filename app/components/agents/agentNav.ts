@@ -24,14 +24,12 @@ export function useAgentNavigation() {
     });
 
     if (kind === "session") {
-      setCenterView("home");
-      selectSession(target.sessionId);
       setActiveAgent(target.sessionId, null);
       setActiveCenterView("agents");
+      selectSession(target.sessionId);
     }
 
     if (kind === "agent" && target.agentId) {
-      setCenterView("home");
       focusAgent(target.sessionId, target.agentId);
     }
 

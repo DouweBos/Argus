@@ -113,12 +113,10 @@ export function HomeScreen() {
   const handleNewSession = () => triggerNewSession();
 
   const openDevices = () => {
-    selectSession(null);
     setCenterView("devices");
   };
 
   const openAgents = () => {
-    selectSession(null);
     setCenterView("agents");
   };
 

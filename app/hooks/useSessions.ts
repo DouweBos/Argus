@@ -24,6 +24,7 @@ import {
 import {
   addProject,
   addSession,
+  getSelectedSessionId,
   getSessionState,
   mergeSessionsForProject,
   removeProject,
@@ -155,7 +156,7 @@ export function useProjects() {
         if (
           shouldAutoSelect &&
           projectSessions.length > 0 &&
-          getSessionState().selectedId === null
+          getSelectedSessionId() === null
         ) {
           const repoRootWs = projectSessions.find(
             (w) => w.kind === "project_root",

@@ -32,6 +32,7 @@ import {
 } from "../../../stores/layoutStore";
 import { useOrgTaskSync } from "../../../stores/orgTaskStore";
 import {
+  getSelectedSessionId,
   getSessionState,
   selectSession,
   useSelectedSessionId,
@@ -119,7 +120,7 @@ export function AppShell() {
   useOrgTaskSync();
 
   const startNewAgentInCurrent = useCallback(async () => {
-    const { selectedId: id } = getSessionState();
+    const id = getSelectedSessionId();
     if (!id) {
       return;
     }
@@ -131,7 +132,7 @@ export function AppShell() {
   }, []);
 
   const cycleAgentTab = useCallback((direction: -1 | 1) => {
-    const { selectedId: id } = getSessionState();
+    const id = getSelectedSessionId();
     if (id) {
       cycleActiveAgent(id, direction);
       setActiveCenterView("agents");
@@ -139,7 +140,8 @@ export function AppShell() {
   }, []);
 
   const goToProjectHome = useCallback(() => {
-    const { selectedId: id, sessions } = getSessionState();
+    const id = getSelectedSessionId();
+    const { sessions } = getSessionState();
     const current = sessions.find((w) => w.id === id);
     if (!current) {
       return;
