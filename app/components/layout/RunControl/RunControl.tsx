@@ -15,8 +15,13 @@ import { setActiveTool } from "../../../stores/layoutStore";
 import { getSessionState } from "../../../stores/sessionStore";
 import {
   addSession,
+  clearBuffer,
+  clearRunningTerminalIfMatches,
   getSessionsForSession,
+  replaceSessionId,
   setActiveSession,
+  setRunningTerminal,
+  useRunningTerminalsForSession,
 } from "../../../stores/terminalStore";
 import styles from "./RunControl.module.css";
 
@@ -34,9 +39,7 @@ export function RunControl({ sessionId }: RunControlProps) {
   const [runs, setRuns] = useState<RunCommand[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
-  const [runningTerminals, setRunningTerminals] = useState<
-    Record<string, string>
-  >({});
+  const runningTerminals = useRunningTerminalsForSession(sessionId);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,24 +71,27 @@ export function RunControl({ sessionId }: RunControlProps) {
       try {
         const result = await createRunTerminal(sessionId, title);
 
-        setRunningTerminals((prev) => ({ ...prev, [title]: result.sessionId }));
+        setRunningTerminal(sessionId, title, result.sessionId);
 
-        // Register the session in the terminal store if it isn't already
-        // present. When the backend reuses an existing session the same id
-        // is returned — addSession would duplicate, so we dedupe here.
-        const existing = getSessionsForSession(sessionId).some(
-          (s) => s.id === result.sessionId,
+        // Reuse the tab from a previous run of the same title: swap the old
+        // (stale) terminal id in place with the freshly spawned one, keeping
+        // the tab and its position intact.
+        const sessions = getSessionsForSession(sessionId);
+        const sameTitle = sessions.find(
+          (s) => s.title === title && s.id !== result.sessionId,
         );
-        if (!existing) {
-          startListening(result.sessionId);
+        if (sameTitle) {
+          stopListening(sameTitle.id);
+          clearBuffer(sameTitle.id);
+          replaceSessionId(sessionId, sameTitle.id, result.sessionId);
+        } else if (!sessions.some((s) => s.id === result.sessionId)) {
           addSession({
             id: result.sessionId,
             session_id: sessionId,
             title,
           });
-        } else {
-          startListening(result.sessionId);
         }
+        startListening(result.sessionId);
         setActiveSession(sessionId, result.sessionId);
         setActiveTool("terminal");
 
@@ -94,14 +100,7 @@ export function RunControl({ sessionId }: RunControlProps) {
         const unlisten = window.argus.on<number>(
           `terminal:exit:${result.sessionId}`,
           () => {
-            setRunningTerminals((prev) => {
-              if (prev[title] !== result.sessionId) {
-                return prev;
-              }
-              const { [title]: _removed, ...rest } = prev;
-
-              return rest;
-            });
+            clearRunningTerminalIfMatches(sessionId, title, result.sessionId);
             unlisten();
             stopListening(result.sessionId);
           },

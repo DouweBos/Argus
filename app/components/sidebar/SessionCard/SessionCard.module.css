@@ -81,6 +81,13 @@
   font-weight: 600;
   flex-shrink: 0;
   font-family: var(--font-mono);
+  order: 2;
+  transition: opacity var(--transition-fast);
+}
+
+.card:hover .diffStats,
+.card:focus-within .diffStats {
+  opacity: 0;
 }
 
 .diffFileCount {
@@ -132,6 +139,7 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .descriptionInline {
@@ -144,6 +152,14 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+/* Swaps in for BranchIcon when the session has a run command executing. */
+.runningIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--success);
+  animation: pulse 2s ease-in-out infinite;
 }
 
 /* Agent status dot */
@@ -281,7 +297,10 @@
 
 /* Context menu and actions */
 .menuAnchor {
-  position: relative;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
 }

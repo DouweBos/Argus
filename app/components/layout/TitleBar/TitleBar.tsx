@@ -121,7 +121,9 @@ export function TitleBar() {
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={session ? toggleRightPanel : undefined}
       left={<NavigationButtons />}
-      right={session ? <RunControl sessionId={session.id} /> : undefined}
+      right={
+        session ? <RunControl key={session.id} sessionId={session.id} /> : undefined
+      }
     />
   );
 }
