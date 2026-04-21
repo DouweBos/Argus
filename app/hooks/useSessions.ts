@@ -12,6 +12,7 @@ import {
   listSessions,
 } from "../lib/ipc";
 import { seedReviewStateForSession } from "../lib/reviewQueueService";
+import { startListening } from "../lib/terminalBufferService";
 import { getAgentState, removeAgent } from "../stores/agentStore";
 import { pushError } from "../stores/notificationsStore";
 import {
@@ -36,6 +37,10 @@ import {
   useSessionProjects,
   useSessions,
 } from "../stores/sessionStore";
+import {
+  addSession as addTerminalSession,
+  getSessionsForSession as getTerminalsForSession,
+} from "../stores/terminalStore";
 import { isWindowFocused } from "./useWindowFocus";
 
 // ---------------------------------------------------------------------------
@@ -61,6 +66,25 @@ function setupSessionStatusListener(sessionId: string): Promise<() => void> {
 
     updateSession(sessionId, { status });
   });
+}
+
+function setupSessionTerminalListener(sessionId: string): Promise<() => void> {
+  return listen<{ terminalId: string; title: string }>(
+    `session:setup_terminal:${sessionId}`,
+    (event) => {
+      const { terminalId, title } = event.payload;
+      const existing = getTerminalsForSession(sessionId);
+      if (existing.some((t) => t.id === terminalId)) {
+        return;
+      }
+      startListening(terminalId);
+      addTerminalSession({
+        id: terminalId,
+        session_id: sessionId,
+        title: title || "Setup",
+      });
+    },
+  );
 }
 
 function setupSessionProgressListener(sessionId: string): Promise<() => void> {
@@ -385,10 +409,12 @@ export function useProjectSessions(repoRoot: string) {
         Promise.all([
           setupSessionStatusListener(id),
           setupSessionProgressListener(id),
-        ]).then(([unlistenStatus, unlistenProgress]) => {
+          setupSessionTerminalListener(id),
+        ]).then(([unlistenStatus, unlistenProgress, unlistenTerminal]) => {
           listenersRef.current.set(id, () => {
             unlistenStatus();
             unlistenProgress();
+            unlistenTerminal();
           });
         });
       }
@@ -422,13 +448,29 @@ export function useProjectSessions(repoRoot: string) {
         addSession(session);
         selectSession(session.id);
 
-        const [unlistenStatus, unlistenProgress] = await Promise.all([
-          setupSessionStatusListener(session.id),
-          setupSessionProgressListener(session.id),
-        ]);
+        // Attach the setup PTY as a visible tab as soon as we know its id,
+        // so init output (and any interactive prompts) are immediately
+        // reachable by the user. The realtime session:setup_terminal event
+        // is a fallback for code paths that don't go through this hook.
+        if (session.setup_terminal_id) {
+          startListening(session.setup_terminal_id);
+          addTerminalSession({
+            id: session.setup_terminal_id,
+            session_id: session.id,
+            title: "Setup",
+          });
+        }
+
+        const [unlistenStatus, unlistenProgress, unlistenTerminal] =
+          await Promise.all([
+            setupSessionStatusListener(session.id),
+            setupSessionProgressListener(session.id),
+            setupSessionTerminalListener(session.id),
+          ]);
         listenersRef.current.set(session.id, () => {
           unlistenStatus();
           unlistenProgress();
+          unlistenTerminal();
         });
 
         return session;

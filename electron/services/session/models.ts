@@ -47,6 +47,13 @@ export interface Session {
   base_branch?: string | null;
   /** OrgTask that owns this session (if spawned from a cross-repo task). */
   organization_task_id?: string | null;
+  /**
+   * Transient terminal id for the setup pipeline's PTY, included on the
+   * response from `create_session` so the renderer can attach a Setup tab
+   * synchronously — avoiding a race against the `session:setup_terminal`
+   * event. Not persisted; absent on subsequent session listings.
+   */
+  setup_terminal_id?: string | null;
 }
 
 /** A terminal to auto-open when loading a session. */

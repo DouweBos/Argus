@@ -2,12 +2,7 @@
   "setup": {
     "copy": [".claude", "node_modules"]
   },
-  "terminals": [
-    {
-      "name": "Shell",
-      "dir": "."
-    }
-  ],
+  "terminals": [],
   "run": [
     {
       "title": "Dev",

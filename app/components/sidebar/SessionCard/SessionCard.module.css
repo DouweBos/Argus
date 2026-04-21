@@ -90,7 +90,9 @@
 .card:hover .agentDot,
 .card:focus-within .agentDot,
 .card:hover .statusBadge,
-.card:focus-within .statusBadge {
+.card:focus-within .statusBadge,
+.card:hover .aheadBadge,
+.card:focus-within .aheadBadge {
   opacity: 0;
 }
 
@@ -114,6 +116,7 @@
   font-family: var(--font-mono);
   color: var(--accent);
   flex-shrink: 0;
+  transition: opacity var(--transition-fast);
 }
 
 .subtitleRow {

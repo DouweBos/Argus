@@ -58,7 +58,11 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
       return;
     }
     const existingSessions = getSessionsForSession(sessionId);
-    if (existingSessions.length > 0) {
+    // The Setup tab (attached during session init) doesn't count as a
+    // "real" existing terminal — we still want to auto-open any terminals
+    // configured in .argus.json alongside it.
+    const hasNonSetupTab = existingSessions.some((s) => s.title !== "Setup");
+    if (hasNonSetupTab) {
       autoOpenedRef.current.add(sessionId);
 
       return;
@@ -94,7 +98,9 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
         // no config or read failed — fall through to default terminal
       }
 
-      if (opened === 0 && getSessionsForSession(sessionId).length === 0) {
+      const tabs = getSessionsForSession(sessionId);
+      const hasNonSetup = tabs.some((s) => s.title !== "Setup");
+      if (opened === 0 && !hasNonSetup) {
         try {
           const terminalId = await createTerminal(sessionId);
           startListening(terminalId);

@@ -15,6 +15,7 @@ import {
   humanizeBranchName,
 } from "../llm/titleGenerator";
 import { orgHostDir } from "../organizationTask/paths";
+import { createTerminal } from "../terminal/multiplexer";
 import {
   applyBranchPrefix,
   loadUserProjectSettings,
@@ -383,16 +384,42 @@ export async function createSession(
   }
 
   const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();
-  const setupSessionId = `setup:${session.id}`;
   const taskSessionId = session.id;
   const taskSessionPath = session.path;
+
+  // Spawn the setup PTY up-front so its id can be returned in the session
+  // response — this lets the renderer attach a Setup tab synchronously,
+  // avoiding a race against the fire-and-forget pipeline below. Non-fatal on
+  // failure: the pipeline will still run (using a freshly-spawned pty).
+  let setupTerminalId: string | null = null;
+  try {
+    setupTerminalId = createTerminal(taskSessionId);
+  } catch (e) {
+    info(
+      `Could not pre-spawn setup terminal for ${taskSessionId}: ${String(e)}`,
+    );
+  }
+  session.setup_terminal_id = setupTerminalId;
+  if (setupTerminalId) {
+    const stored = appState.sessions.get(taskSessionId);
+    if (stored) {
+      stored.setup_terminal_id = setupTerminalId;
+      appState.sessions.set(taskSessionId, stored);
+    }
+  }
 
   info(
     `Spawning setup pipeline for session ${taskSessionId} (path=${taskSessionPath})`,
   );
 
   // Run setup pipeline in background (no await — returns immediately).
-  runSetupPipeline(repoRoot, taskSessionPath, config, setupSessionId)
+  runSetupPipeline(
+    repoRoot,
+    taskSessionPath,
+    config,
+    taskSessionId,
+    setupTerminalId,
+  )
     .then(() => {
       const finalStatus: SessionStatus = "ready";
       const ws = appState.sessions.get(taskSessionId);

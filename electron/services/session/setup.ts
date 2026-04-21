@@ -10,6 +10,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
+import { appState } from "../../state";
+import { createTerminal } from "../terminal/multiplexer";
 import {
   type BrowserPresetConfig,
   defaultArgusConfig,
@@ -407,34 +409,60 @@ async function expandPatterns(
 /**
  * Execute the setup pipeline for a newly created worktree.
  *
- * Output is streamed line-by-line to the frontend via
- * `terminal:data:{setupSessionId}` events (base64 encoded).
- * Progress is reported via `session:setup_progress:{sessionId}` events.
+ * A real PTY is spawned and registered as a "Setup" tab on the session so the
+ * user can see init output live and respond to interactive prompts instead of
+ * having the pipeline silently hang. The copy/symlink phases run in Node.js
+ * and emit log lines directly to the terminal's output channel; the commands
+ * phase writes each command into the PTY's stdin and waits for a sentinel
+ * carrying the exit code.
+ *
+ * Progress is also reported via `session:setup_progress:{sessionId}` events
+ * for the header progress bar.
  *
  * Returns on success; throws a string describing the first step that failed.
+ * On both success and failure the PTY is left alive so the user can inspect
+ * state or continue working in the shell.
  */
 export async function runSetupPipeline(
   repoRoot: string,
   worktreePath: string,
   config: ArgusConfig,
-  setupSessionId: string,
+  sessionId: string,
+  preCreatedTerminalId?: string | null,
 ): Promise<void> {
-  const sessionId = setupSessionId.startsWith("setup:")
-    ? setupSessionId.slice("setup:".length)
-    : setupSessionId;
-
   info(
     `Setup pipeline started for session ${sessionId}, repo_root=${repoRoot}, worktree=${worktreePath}`,
   );
 
+  // Use the caller-supplied PTY if one was pre-spawned (so its id could be
+  // returned in the create_session response without a race), otherwise spawn
+  // one here. createTerminal registers it in appState.terminals and wires up
+  // the standard terminal:data / terminal:exit channels.
+  let terminalId = preCreatedTerminalId ?? null;
+  if (!terminalId || !appState.terminals.has(terminalId)) {
+    terminalId = createTerminal(sessionId);
+  }
+  const terminal = appState.terminals.get(terminalId);
+  if (!terminal) {
+    throw `Failed to create setup terminal for session ${sessionId}`;
+  }
+  const setupPty = terminal.pty;
+
+  // Fire the setup-terminal event so listeners registered via the realtime
+  // path (not via the synchronous create_session response) still attach a tab.
+  getMainWindow()?.webContents.send(`session:setup_terminal:${sessionId}`, {
+    terminalId,
+    title: "Setup",
+  });
+
   const progressEvent = `session:setup_progress:${sessionId}`;
 
+  // Write decorated log lines directly to the terminal's output channel.
+  // This bypasses the shell's stdin so our banners don't get echoed back by
+  // the line editor and don't interfere with any command in flight.
   const emit = (msg: string) => {
     const encoded = Buffer.from(msg).toString("base64");
-    getMainWindow()?.webContents.send(
-      `terminal:data:${setupSessionId}`,
-      encoded,
-    );
+    getMainWindow()?.webContents.send(`terminal:data:${terminalId}`, encoded);
   };
 
   const emitProgressItem = (item: string, current: number, total: number) => {
@@ -444,6 +472,36 @@ export async function runSetupPipeline(
       total,
     });
   };
+
+  // Run a single setup command inside the PTY and resolve with its exit code.
+  // We append a printf that emits a unique sentinel containing `$?`, then
+  // scan the PTY output stream for it. The sentinel matches POSIX sh / bash /
+  // zsh; fish (and other non-POSIX shells) as $SHELL will hang — acceptable
+  // limitation for v1 since setup typically runs via sh-style shells.
+  const runInPty = (cmd: string): Promise<number> =>
+    new Promise((resolve) => {
+      const token = crypto.randomUUID().replace(/-/g, "");
+      const sentinel = `__ARGUS_DONE_${token}__`;
+      const re = new RegExp(`${sentinel}:(\\d+)`);
+      let buffer = "";
+      const disposable = setupPty.onData((data: string) => {
+        buffer += data;
+        const match = buffer.match(re);
+        if (match) {
+          disposable.dispose();
+          resolve(parseInt(match[1], 10));
+
+          return;
+        }
+        if (buffer.length > 64 * 1024) {
+          buffer = buffer.slice(-32 * 1024);
+        }
+      });
+      // Chain the sentinel printf with `;` so it runs regardless of cmd's
+      // exit status and reports it via `$?`. Newline terminates the input
+      // line so the shell actually executes.
+      setupPty.write(`${cmd}; printf '\\n${sentinel}:%s\\n' "$?"\n`);
+    });
 
   // Pre-compute all items to get total count for progress bar.
   const allItems: string[] = [];
@@ -557,49 +615,20 @@ export async function runSetupPipeline(
   }
 
   // -- Commands phase --------------------------------------------------------
+  // Drive each command through the setup PTY. Output streams naturally via
+  // the terminal's data channel, so nothing to re-emit here. If a command
+  // prompts for input, the user can type into the visible tab and unblock it.
   info("Setup pipeline: starting commands phase");
   for (const cmdStr of config.setup.commands) {
     idx += 1;
     info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
     emitProgressItem(cmdStr, idx, total);
-    emit(`[argus] Running: ${cmdStr}\r\n`);
+    emit(`\r\n[argus] Running: ${cmdStr}\r\n`);
 
-    let stdout = "";
-    let stderr = "";
-    let failed = false;
-    let exitCode: number | null = null;
+    const exitCode = await runInPty(cmdStr);
 
-    try {
-      const result = await execFileAsync("sh", ["-c", cmdStr], {
-        cwd: worktreePath,
-      });
-      stdout = result.stdout;
-      stderr = result.stderr;
-    } catch (e: unknown) {
-      const err = e as {
-        stdout?: string;
-        stderr?: string;
-        code?: number;
-      };
-      stdout = err.stdout ?? "";
-      stderr = err.stderr ?? "";
-      exitCode = err.code ?? null;
-      failed = true;
-    }
-
-    for (const line of stdout.split("\n")) {
-      if (line) {
-        emit(`${line}\r\n`);
-      }
-    }
-    for (const line of stderr.split("\n")) {
-      if (line) {
-        emit(`${line}\r\n`);
-      }
-    }
-
-    if (failed) {
-      emit(`[argus] Command failed (exit ${exitCode ?? "?"}): ${cmdStr}\r\n`);
+    if (exitCode !== 0) {
+      emit(`[argus] Command failed (exit ${exitCode}): ${cmdStr}\r\n`);
       throw `Setup command failed: ${cmdStr}`;
     }
 
@@ -607,7 +636,7 @@ export async function runSetupPipeline(
   }
 
   info(`Setup pipeline: complete for session ${sessionId}`);
-  emit("[argus] Setup complete.\r\n");
+  emit("\r\n[argus] Setup complete.\r\n");
 }
 
 // ---------------------------------------------------------------------------
