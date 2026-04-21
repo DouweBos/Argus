@@ -217,6 +217,7 @@ export function initExternalAgentStarted(): void {
     // MCP-spawned agents, since the renderer never sees the first user
     // message (it is written to stdin by the backend).
     if (info.initial_prompt) {
+      addUserMessage(info.agent_id, info.initial_prompt);
       maybeGenerateTitle(info.agent_id, info.initial_prompt);
     }
     // MCP-spawned agents receive an initial prompt from the backend before
