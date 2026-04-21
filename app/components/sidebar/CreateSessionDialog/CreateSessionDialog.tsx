@@ -14,14 +14,25 @@ import {
   startAgentInSession,
   sendUserMessageToAgent,
 } from "../../../lib/agentLifecycle";
+import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   getUserProjectSettings,
   listAllBranches,
   setUserProjectSettings,
 } from "../../../lib/ipc";
+import { pushError } from "../../../stores/notificationsStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface CreateSessionDialogProps {
+  /**
+   * When set, submitting the branch-off flow forks the chat at `messageId`
+   * instead of creating an empty session. Requires `sourceSession` to be set.
+   */
+  forkContext?: {
+    agentId: string;
+    messageId: string;
+    sourceSessionId: string;
+  } | null;
   onClose: () => void;
   repoRoot: string;
   /** When set, the new session forks from this session's branch instead of project root HEAD. */
@@ -310,10 +321,15 @@ function BranchDropdown({
   );
 }
 
+function getSubmitLabel(isFork: boolean): string {
+  return isFork ? "Fork Session" : "Start Session";
+}
+
 export function CreateSessionDialog({
   repoRoot,
   onClose,
   sourceSession,
+  forkContext,
 }: CreateSessionDialogProps) {
   const { sessions, createSession } = useProjectSessions(repoRoot);
 
@@ -334,7 +350,6 @@ export function CreateSessionDialog({
   const [remoteBranches, setRemoteBranches] = useState<string[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
 
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Per-developer branch prefix (stored in ~/.argus, not .argus.json).
@@ -452,53 +467,72 @@ export function CreateSessionDialog({
   const canSubmitAdoptLocal = !!adoptBranch;
   const canSubmitAdoptRemote = !!adoptBranch;
 
-  const submit = async (
+  const submit = (
     branch: string,
     desc: string,
     useExisting: boolean,
     baseBranch: string | undefined,
     initialPrompt?: string,
   ) => {
-    setIsCreating(true);
-    setError(null);
-    try {
-      const session = await createSession(
-        branch,
-        desc,
-        useExisting,
-        baseBranch,
-      );
-      // Spawn an agent immediately with the user's prompt as the first
-      // message. The session's worktree already exists by the time
-      // createSession resolves — the setup pipeline (copy/symlink/install)
-      // continues in the background but does not block agent startup.
-      if (initialPrompt && session) {
-        const agentInfo = await startAgentInSession(session.id, {
-          focus: true,
-        });
-        await sendUserMessageToAgent(
-          agentInfo.agent_id,
-          initialPrompt,
-          undefined,
-          { assumeIdle: true },
+    // Close the dialog immediately — branch name generation and worktree
+    // setup can take several seconds (claude -p title generation, git
+    // worktree add, copy/symlink pipeline). The session renders in the
+    // sidebar with an `initializing` status while the backend finishes.
+    onClose();
+
+    (async () => {
+      try {
+        if (forkContext && !useExisting) {
+          await forkChatFromMessage(
+            forkContext.sourceSessionId,
+            forkContext.agentId,
+            forkContext.messageId,
+            branch,
+            desc,
+          );
+        } else {
+          const session = await createSession(
+            branch,
+            desc,
+            useExisting,
+            baseBranch,
+          );
+          // Spawn an agent immediately with the user's prompt as the first
+          // message. The session's worktree already exists by the time
+          // createSession resolves — the setup pipeline (copy/symlink/install)
+          // continues in the background but does not block agent startup.
+          if (initialPrompt && session) {
+            const agentInfo = await startAgentInSession(session.id, {
+              focus: true,
+            });
+            await sendUserMessageToAgent(
+              agentInfo.agent_id,
+              initialPrompt,
+              undefined,
+              { assumeIdle: true },
+            );
+          }
+        }
+      } catch (err) {
+        // useProjectSessions.createSession already reports its own errors,
+        // but fork/agent-start paths do not — surface everything here so the
+        // user sees a notification instead of silently losing the session.
+        pushError(
+          err instanceof Error ? err.message : "Failed to create session",
+          "create_session",
         );
       }
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create session");
-    } finally {
-      setIsCreating(false);
-    }
+    })();
   };
 
-  const handleSubmitBranchOff = async (e: React.FormEvent) => {
+  const handleSubmitBranchOff = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmitBranchOff) {
       return;
     }
     // When the user typed a branch, pass it (prefix applied). When empty,
     // pass "" — the backend generates a branch name + title from the prompt.
-    await submit(
+    submit(
       effectiveBranch,
       trimmedDescription,
       false,
@@ -507,12 +541,12 @@ export function CreateSessionDialog({
     );
   };
 
-  const handleSubmitAdopt = async (e: React.FormEvent) => {
+  const handleSubmitAdopt = (e: React.FormEvent) => {
     e.preventDefault();
     if (!adoptBranch) {
       return;
     }
-    await submit(adoptBranch, adoptDescription.trim(), true, undefined);
+    submit(adoptBranch, adoptDescription.trim(), true, undefined);
   };
 
   const goPick = () => {
@@ -524,7 +558,7 @@ export function CreateSessionDialog({
     setError(null);
   };
 
-  const title = "New Session";
+  const title = forkContext ? "Fork Session" : "New Session";
 
   // ---- Step: pick flow ----
   if (flow === "pick") {
@@ -636,13 +670,10 @@ export function CreateSessionDialog({
                 if (
                   (e.metaKey || e.ctrlKey) &&
                   e.key === "Enter" &&
-                  canSubmitBranchOff &&
-                  !isCreating
+                  canSubmitBranchOff
                 ) {
                   e.preventDefault();
-                  handleSubmitBranchOff(e as unknown as React.FormEvent).catch(
-                    () => {},
-                  );
+                  handleSubmitBranchOff(e as unknown as React.FormEvent);
                 }
               }}
             />
@@ -738,10 +769,10 @@ export function CreateSessionDialog({
             </Button>
             <Button
               variant="primary"
-              disabled={isCreating || !canSubmitBranchOff}
+              disabled={!canSubmitBranchOff}
               type="submit"
             >
-              {isCreating ? "Starting…" : "Start Session"}
+              {getSubmitLabel(Boolean(forkContext))}
             </Button>
           </div>
         </form>
@@ -807,12 +838,11 @@ export function CreateSessionDialog({
           <Button
             variant="primary"
             disabled={
-              isCreating ||
-              (isRemote ? !canSubmitAdoptRemote : !canSubmitAdoptLocal)
+              isRemote ? !canSubmitAdoptRemote : !canSubmitAdoptLocal
             }
             type="submit"
           >
-            {isCreating ? "Creating…" : "Create Session"}
+            Create Session
           </Button>
         </div>
       </form>
