@@ -6,7 +6,7 @@ import {
   maybeGenerateTitle,
   notifyMessageSent,
 } from "../../../lib/agentEventService";
-import { forkChatFromMessage } from "../../../lib/forkChat";
+import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
 import {
   type ImageAttachment,
   getCommandMetrics,
@@ -405,21 +405,18 @@ export function AgentChat({
     [sessions, sessionId],
   );
 
+  const [forkDialogMessageId, setForkDialogMessageId] = useState<string | null>(
+    null,
+  );
+
   const handleForkMessage = useCallback(
-    async (message: ConversationMessage) => {
+    (message: ConversationMessage) => {
       if (!agentId) {
         return;
       }
-      try {
-        await forkChatFromMessage(sessionId, sourceBranch, agentId, message.id);
-      } catch (err) {
-        // Surface failures through the system message channel so they're visible
-        // in the current conversation. Best-effort — avoid throwing into React.
-        // eslint-disable-next-line no-console
-        console.error("Fork failed:", err);
-      }
+      setForkDialogMessageId(message.id);
     },
-    [agentId, sessionId, sourceBranch],
+    [agentId],
   );
 
   const handleInterrupt = useCallback(async () => {
@@ -708,6 +705,18 @@ export function AgentChat({
               // Best-effort
             }
           }}
+        />
+      )}
+      {forkDialogMessageId != null && agentId != null && repoRoot != null && (
+        <CreateSessionDialog
+          repoRoot={repoRoot}
+          sourceSession={{ branch: sourceBranch }}
+          forkContext={{
+            agentId,
+            messageId: forkDialogMessageId,
+            sourceSessionId: sessionId,
+          }}
+          onClose={() => setForkDialogMessageId(null)}
         />
       )}
     </div>

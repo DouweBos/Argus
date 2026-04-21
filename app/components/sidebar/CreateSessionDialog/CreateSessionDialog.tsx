@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { Button, Icons, Input, SegmentedCard } from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
+import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   getUserProjectSettings,
   listAllBranches,
@@ -22,6 +23,15 @@ interface CreateSessionDialogProps {
   repoRoot: string;
   /** When set, the new session forks from this session's branch instead of project root HEAD. */
   sourceSession?: { branch: string; display_name?: string | null } | null;
+  /**
+   * When set, submitting the branch-off flow forks the chat at `messageId`
+   * instead of creating an empty session. Requires `sourceSession` to be set.
+   */
+  forkContext?: {
+    agentId: string;
+    messageId: string;
+    sourceSessionId: string;
+  } | null;
 }
 
 type Flow = "adopt-local" | "adopt-remote" | "branch-off" | "pick";
@@ -297,6 +307,7 @@ export function CreateSessionDialog({
   repoRoot,
   onClose,
   sourceSession,
+  forkContext,
 }: CreateSessionDialogProps) {
   const { sessions, createSession } = useProjectSessions(repoRoot);
 
@@ -445,7 +456,17 @@ export function CreateSessionDialog({
     setIsCreating(true);
     setError(null);
     try {
-      await createSession(branch, desc, useExisting, baseBranch);
+      if (forkContext && !useExisting) {
+        await forkChatFromMessage(
+          forkContext.sourceSessionId,
+          forkContext.agentId,
+          forkContext.messageId,
+          branch,
+          desc,
+        );
+      } else {
+        await createSession(branch, desc, useExisting, baseBranch);
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");
@@ -481,7 +502,7 @@ export function CreateSessionDialog({
     setError(null);
   };
 
-  const title = "New Session";
+  const title = forkContext ? "Fork Session" : "New Session";
 
   // ---- Step: pick flow ----
   if (flow === "pick") {
@@ -670,7 +691,13 @@ export function CreateSessionDialog({
               disabled={isCreating || !canSubmitBranchOff}
               type="submit"
             >
-              {isCreating ? "Creating…" : "Create Session"}
+              {isCreating
+                ? forkContext
+                  ? "Forking…"
+                  : "Creating…"
+                : forkContext
+                  ? "Fork Session"
+                  : "Create Session"}
             </Button>
           </div>
         </form>
