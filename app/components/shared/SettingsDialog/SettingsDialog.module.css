@@ -56,3 +56,64 @@
 .radio {
   accent-color: var(--accent);
 }
+
+.editorList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.editorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+}
+
+.editorRowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.editorRowName {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.editorRowCommand {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editorRowActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.editorForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.02));
+}
+
+.editorFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}

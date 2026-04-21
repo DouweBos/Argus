@@ -179,6 +179,11 @@ import {
   gitStashApply,
   gitStashDrop,
 } from "./services/session/sessionOps";
+import {
+  listEditors,
+  openInCustomEditor,
+  openInEditor,
+} from "./services/shell/editors";
 import { openExternalUrl, revealInFinder } from "./services/shell/operations";
 import {
   checkAndroidTools,
@@ -916,6 +921,13 @@ export function registerIpcHandlers(): void {
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));
   handle("open_external_url", (a) => openExternalUrl(a.url as string));
+  handle("list_editors", () => listEditors());
+  handle("open_in_editor", (a) =>
+    openInEditor(a.editorId as string, a.path as string),
+  );
+  handle("open_in_custom_editor", (a) =>
+    openInCustomEditor(a.command as string, a.path as string),
+  );
 
   // Extensions
   handle("discover_extensions", () => discoverExtensions());

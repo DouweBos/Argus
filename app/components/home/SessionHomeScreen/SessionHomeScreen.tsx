@@ -20,6 +20,7 @@ import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { HOME_SHORTCUTS } from "../HomeScreen/homeContent";
+import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
 import { ReadyToMergeCard } from "../RepoHomeScreen/ReadyToMergeCard";
 import styles from "../homeLayout.module.css";
@@ -214,6 +215,7 @@ export function SessionHomeScreen({
           </div>
           <div className={styles.heroSpacer} />
           <div className={styles.ctas}>
+            {session?.path && <OpenInEditorButton path={session.path} />}
             <Button
               variant="ghost"
               leading={<Icons.AgentStartIcon size={12} />}

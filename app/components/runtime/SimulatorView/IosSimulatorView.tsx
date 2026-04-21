@@ -412,37 +412,38 @@ export function IosSimulatorView({
 
   // --- tvOS custom stream layout (canvas + remote side by side) ---
 
-  const renderTvStream = isTv && selectedUdid
-    ? ({
-        imgRef,
-        streamUrl,
-        isReceiving,
-      }: {
-        imgRef: React.RefObject<HTMLImageElement | null>;
-        isReceiving: boolean;
-        streamUrl: string | null;
-      }) => (
-        <div className={styles.tvBody}>
-          <div className={styles.canvasContainer}>
-            {streamUrl && (
-              <img
-                ref={imgRef}
-                alt="Simulator"
-                className={`${styles.canvas} ${styles.tvCanvas}`}
-                draggable={false}
-                src={streamUrl}
-              />
-            )}
-            {!isReceiving && (
-              <div className={styles.connecting}>
-                <p>Waiting for frames...</p>
-              </div>
-            )}
+  const renderTvStream =
+    isTv && selectedUdid
+      ? ({
+          imgRef,
+          streamUrl,
+          isReceiving,
+        }: {
+          imgRef: React.RefObject<HTMLImageElement | null>;
+          isReceiving: boolean;
+          streamUrl: string | null;
+        }) => (
+          <div className={styles.tvBody}>
+            <div className={styles.canvasContainer}>
+              {streamUrl && (
+                <img
+                  ref={imgRef}
+                  alt="Simulator"
+                  className={`${styles.canvas} ${styles.tvCanvas}`}
+                  draggable={false}
+                  src={streamUrl}
+                />
+              )}
+              {!isReceiving && (
+                <div className={styles.connecting}>
+                  <p>Waiting for frames...</p>
+                </div>
+              )}
+            </div>
+            <AppleTVRemote udid={selectedUdid} />
           </div>
-          <AppleTVRemote udid={selectedUdid} />
-        </div>
-      )
-    : undefined;
+        )
+      : undefined;
 
   return (
     <IosDeviceStreamView

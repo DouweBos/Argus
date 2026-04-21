@@ -54,7 +54,10 @@ const Host = ({
 export const TopRight: Story = {
   render: () => (
     <Host>
-      <HoverActionBar placement="top-right" style={{ opacity: 1, pointerEvents: "auto" }}>
+      <HoverActionBar
+        placement="top-right"
+        style={{ opacity: 1, pointerEvents: "auto" }}
+      >
         <HoverActionButton
           icon={<CopyIcon size={12} />}
           label="Copy"
@@ -73,7 +76,10 @@ export const TopRight: Story = {
 export const TopLeft: Story = {
   render: () => (
     <Host>
-      <HoverActionBar placement="top-left" style={{ opacity: 1, pointerEvents: "auto" }}>
+      <HoverActionBar
+        placement="top-left"
+        style={{ opacity: 1, pointerEvents: "auto" }}
+      >
         <HoverActionButton
           icon={<CopyIcon size={12} />}
           label="Copy"
@@ -87,7 +93,10 @@ export const TopLeft: Story = {
 export const SingleAction: Story = {
   render: () => (
     <Host>
-      <HoverActionBar placement="top-right" style={{ opacity: 1, pointerEvents: "auto" }}>
+      <HoverActionBar
+        placement="top-right"
+        style={{ opacity: 1, pointerEvents: "auto" }}
+      >
         <HoverActionButton
           icon={<BranchIcon size={12} />}
           label="Fork workspace"

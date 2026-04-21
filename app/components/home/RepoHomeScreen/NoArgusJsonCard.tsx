@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { Icons } from "@argus/peacock";
-import {
-  suggestArgusJson,
-  writeOnboardingArgusJson,
-} from "../../../lib/ipc";
+import { suggestArgusJson, writeOnboardingArgusJson } from "../../../lib/ipc";
 import styles from "./NoArgusJsonCard.module.css";
 
 interface NoArgusJsonCardProps {
-  repoRoot: string;
   onGenerated: () => void;
+  repoRoot: string;
 }
 
 export function NoArgusJsonCard({

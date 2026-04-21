@@ -1,3 +1,4 @@
+import { useState } from "react";
 import styles from "./EditDiffView.module.css";
 
 interface EditDiffViewProps {
@@ -10,6 +11,8 @@ interface DiffLine {
   lineNo?: number;
   type: "add" | "context" | "remove";
 }
+
+const COLLAPSED_LINE_COUNT = 12;
 
 function lineTypeClassName(type: DiffLine["type"]): string {
   if (type === "add") {
@@ -106,25 +109,57 @@ function writeLines(content: string): DiffLine[] {
 }
 
 export function EditDiffView({ oldString, newString }: EditDiffViewProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const lines =
     oldString != null
       ? computeDiffLines(oldString, newString)
       : writeLines(newString);
 
+  const overflows = lines.length > COLLAPSED_LINE_COUNT;
+  const collapsed = overflows && !expanded;
+  const visibleLines = collapsed ? lines.slice(0, COLLAPSED_LINE_COUNT) : lines;
+
   return (
-    <div className={styles.diff}>
-      {lines.map((line, i) => (
-        <div
-          key={i}
-          className={`${styles.line} ${lineTypeClassName(line.type)}`}
-        >
-          <span className={styles.lineNo}>
-            {line.lineNo != null ? line.lineNo : ""}
-          </span>
-          <span className={styles.linePrefix}>{linePrefixChar(line.type)}</span>
-          <span className={styles.lineContent}>{line.content}</span>
+    <div className={styles.wrapper}>
+      <div className={styles.diff}>
+        {visibleLines.map((line, i) => (
+          <div
+            key={i}
+            className={`${styles.line} ${lineTypeClassName(line.type)}`}
+          >
+            <span className={styles.lineNo}>
+              {line.lineNo != null ? line.lineNo : ""}
+            </span>
+            <span className={styles.linePrefix}>
+              {linePrefixChar(line.type)}
+            </span>
+            <span className={styles.lineContent}>{line.content}</span>
+          </div>
+        ))}
+      </div>
+      {collapsed && (
+        <div className={styles.overlay}>
+          <button
+            type="button"
+            className={styles.seeAll}
+            onClick={() => setExpanded(true)}
+          >
+            See all {lines.length} lines
+          </button>
         </div>
-      ))}
+      )}
+      {overflows && expanded && (
+        <div className={styles.collapseBar}>
+          <button
+            type="button"
+            className={styles.seeAll}
+            onClick={() => setExpanded(false)}
+          >
+            Collapse
+          </button>
+        </div>
+      )}
     </div>
   );
 }

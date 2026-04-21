@@ -21,6 +21,18 @@ interface ReadyToMergeCardProps {
   titleClassName?: string;
 }
 
+function getRebaseLabel(
+  isRebasing: boolean,
+  hasWork: boolean,
+  baseBranch: string,
+): string {
+  if (isRebasing) {
+    return hasWork ? "Rebasing…" : "Updating…";
+  }
+
+  return hasWork ? `Rebase onto ${baseBranch}` : `Update from ${baseBranch}`;
+}
+
 export function ReadyToMergeCard({
   sessionId,
   baseBranch,
@@ -217,13 +229,7 @@ export function ReadyToMergeCard({
                   onClick={handleRebase}
                 >
                   <Icons.BranchIcon size={11} />
-                  {isRebasing
-                    ? hasWork
-                      ? "Rebasing\u2026"
-                      : "Updating\u2026"
-                    : hasWork
-                      ? `Rebase onto ${baseBranch}`
-                      : `Update from ${baseBranch}`}
+                  {getRebaseLabel(isRebasing, hasWork, baseBranch)}
                 </button>
               )}
               {baseBranch && !hasConflicts && hasWork && (

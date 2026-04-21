@@ -79,8 +79,15 @@ function collectReplayOps(
               };
             })
             .filter(
-              (e): e is { newString: string; oldString: string; replaceAll: boolean } =>
-                typeof e.oldString === "string" && typeof e.newString === "string",
+              (
+                e,
+              ): e is {
+                newString: string;
+                oldString: string;
+                replaceAll: boolean;
+              } =>
+                typeof e.oldString === "string" &&
+                typeof e.newString === "string",
             );
           if (edits.length > 0) {
             ops.push({
@@ -98,7 +105,10 @@ function collectReplayOps(
   return ops;
 }
 
-function countUserTurns(messages: ConversationMessage[], upToIdx: number): number {
+function countUserTurns(
+  messages: ConversationMessage[],
+  upToIdx: number,
+): number {
   let n = 0;
   for (let i = 0; i <= upToIdx; i++) {
     if (messages[i].role === "user") {

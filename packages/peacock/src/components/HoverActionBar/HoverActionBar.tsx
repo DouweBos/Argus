@@ -7,8 +7,10 @@ export type HoverActionBarPlacement =
   | "top-left"
   | "top-right";
 
-export interface HoverActionBarProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
+export interface HoverActionBarProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "children"
+> {
   children: ReactNode;
   /** Which corner the bar anchors to. Defaults to `top-right`. */
   placement?: HoverActionBarPlacement;
@@ -61,8 +63,7 @@ export function HoverActionBar({
   );
 }
 
-export interface HoverActionButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface HoverActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Icon element (typically a Peacock icon at size 11–12). */
   icon: ReactNode;
   /** Accessible label — also used as the native tooltip. */

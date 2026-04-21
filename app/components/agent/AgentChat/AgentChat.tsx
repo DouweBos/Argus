@@ -6,7 +6,6 @@ import {
   maybeGenerateTitle,
   notifyMessageSent,
 } from "../../../lib/agentEventService";
-import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
 import {
   type ImageAttachment,
   getCommandMetrics,
@@ -31,6 +30,7 @@ import {
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useSessions } from "../../../stores/sessionStore";
+import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";

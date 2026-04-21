@@ -23,6 +23,7 @@ import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { HOME_SHORTCUTS } from "../HomeScreen/homeContent";
+import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
 import styles from "../homeLayout.module.css";
 import { NoArgusJsonCard } from "./NoArgusJsonCard";
@@ -95,6 +96,7 @@ export function RepoHomeScreen({
   const argusJson = useArgusJson(repoRoot);
   const handleClearAllHistory = history.clearAll;
   const handleDeleteHistoryEntry = history.remove;
+  const handleArgusJsonGenerated = argusJson.refresh;
 
   const repoSessions = useMemo(
     () => (repoRoot ? sessions.filter((w) => w.repo_root === repoRoot) : []),
@@ -187,6 +189,7 @@ export function RepoHomeScreen({
           </div>
           <div className={styles.heroSpacer} />
           <div className={styles.ctas}>
+            {repoRoot && <OpenInEditorButton path={repoRoot} />}
             <Button
               variant="ghost"
               leading={<Icons.PlusIcon size={12} />}
@@ -219,7 +222,7 @@ export function RepoHomeScreen({
         {repoRoot && argusJson.exists === false && (
           <NoArgusJsonCard
             repoRoot={repoRoot}
-            onGenerated={argusJson.refresh}
+            onGenerated={handleArgusJsonGenerated}
           />
         )}
 

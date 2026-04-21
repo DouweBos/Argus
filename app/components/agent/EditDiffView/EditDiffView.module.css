@@ -1,3 +1,7 @@
+.wrapper {
+  position: relative;
+}
+
 .diff {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
@@ -5,9 +9,7 @@
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: var(--border-radius-sm);
   background: rgba(0, 0, 0, 0.2);
-  overflow-x: auto;
-  max-height: 300px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .line {
@@ -61,4 +63,51 @@
 
 .lineRemove .lineContent {
   color: var(--text-primary);
+}
+
+.overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 72px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.45) 80%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  border-bottom-left-radius: var(--border-radius-sm);
+  border-bottom-right-radius: var(--border-radius-sm);
+}
+
+.collapseBar {
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.seeAll {
+  pointer-events: auto;
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--glass-bg, rgba(30, 30, 30, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.seeAll:hover {
+  background: rgba(50, 50, 50, 0.95);
+  border-color: rgba(255, 255, 255, 0.16);
 }

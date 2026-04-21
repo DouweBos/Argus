@@ -739,6 +739,23 @@ export const revealInFinder = (path: string): Promise<void> =>
 export const openExternalUrl = (url: string): Promise<void> =>
   invoke("open_external_url", { url });
 
+export interface EditorDescriptor {
+  available: boolean;
+  id: string;
+  name: string;
+}
+
+export const listEditors = (): Promise<EditorDescriptor[]> =>
+  invoke("list_editors");
+
+export const openInEditor = (editorId: string, path: string): Promise<void> =>
+  invoke("open_in_editor", { editorId, path });
+
+export const openInCustomEditor = (
+  command: string,
+  path: string,
+): Promise<void> => invoke("open_in_custom_editor", { command, path });
+
 export const showImageContextMenu = (
   src: string,
   suggestedName?: string,
