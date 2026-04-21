@@ -27,6 +27,7 @@ import {
   clearConversation,
   getConversationState,
   migrateConversation,
+  setCapabilities,
 } from "../stores/conversationStore";
 import { useIpcEvent } from "./useIpcEvent";
 
@@ -223,6 +224,9 @@ export function useSessionAgents(
         permission_mode: newPermissionMode,
       });
       startAgentListening(agentInfo.agent_id);
+      if (agentInfo.capabilities) {
+        setCapabilities(agentInfo.agent_id, agentInfo.capabilities);
+      }
     },
     [sessionId],
   );

@@ -783,6 +783,7 @@ export async function startAgent(
     session_id: sessionId,
     status: agentSession.status,
     parent_agent_id: parentAgentId ?? null,
+    capabilities: controlHandler.getCapabilities(),
   };
 }
 

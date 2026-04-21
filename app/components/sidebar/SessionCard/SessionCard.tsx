@@ -50,15 +50,39 @@ interface SessionCardProps {
 function renderSessionIcon(
   kind: Session["kind"],
   isRunning: boolean,
+  isAgentRunning: boolean,
   runningIconClass: string,
+  agentRunningIconClass: string,
+  runningCount: number,
 ) {
   if (kind === "project_root") {
+    if (isAgentRunning) {
+      return (
+        <span
+          className={agentRunningIconClass}
+          title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
+        >
+          <Icons.RepoIcon size={13} />
+        </span>
+      );
+    }
+
     return <Icons.RepoIcon size={13} />;
   }
   if (isRunning) {
     return (
       <span className={runningIconClass} title="Run command is executing">
         <Icons.PlayIcon size={13} />
+      </span>
+    );
+  }
+  if (isAgentRunning) {
+    return (
+      <span
+        className={agentRunningIconClass}
+        title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
+      >
+        <Icons.BranchIcon size={13} />
       </span>
     );
   }
@@ -166,17 +190,18 @@ export function SessionCard({
       <div className={styles.main}>
         <div className={styles.left}>
           <div className={styles.titleRow}>
-            {renderSessionIcon(session.kind, isRunning, styles.runningIcon)}
+            {renderSessionIcon(
+              session.kind,
+              isRunning,
+              runningCount > 0,
+              styles.runningIcon,
+              styles.agentRunningIcon,
+              runningCount,
+            )}
             <span className={styles.projectName}>{projectName}</span>
           </div>
         </div>
         <div className={styles.right}>
-          {runningCount > 0 && (
-            <span
-              className={`${styles.agentDot} ${styles.agent_running}`}
-              title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
-            />
-          )}
           {showStatusBadge && (
             <span
               className={`${styles.statusBadge} ${styles[`ws_${statusLabel}`]}`}

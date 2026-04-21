@@ -44,6 +44,12 @@ export interface TerminalSession {
 export interface AgentStatus {
   agent_id: string;
   /**
+   * Initialize-response capabilities returned inline on `start_agent` so the
+   * renderer has them before the async `agent:capabilities` event would
+   * otherwise race with listener setup.
+   */
+  capabilities?: AgentCapabilities | null;
+  /**
    * Prompt sent to an externally-spawned agent (e.g. via the MCP `spawn_agent`
    * tool). Present only on the `agent:started` event — used by the renderer
    * to derive a session title, since the UI never sees the first user

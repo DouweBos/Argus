@@ -72,6 +72,9 @@ export class ControlHandler {
   /** The request_id of our outbound initialize request (if pending). */
   private initializeRequestId: string | null = null;
 
+  /** Cached initialize response, captured when the CLI replies. */
+  private capabilities: InitializeResponse | null = null;
+
   /** Resolves when the CLI's initialize `control_response` arrives. */
   private initPromise: Promise<void> | null = null;
   private initResolve: (() => void) | null = null;
@@ -129,6 +132,11 @@ export class ControlHandler {
     return this.initPromise ?? Promise.resolve();
   }
 
+  /** The cached initialize response, or `null` if init hasn't completed. */
+  getCapabilities(): InitializeResponse | null {
+    return this.capabilities;
+  }
+
   /**
    * Check if a `control_response` is the response to our initialize request.
    * If so, parse the capabilities and emit them to the renderer.
@@ -176,6 +184,7 @@ export class ControlHandler {
 
     const data = response.response.response as InitializeResponse | undefined;
     if (data) {
+      this.capabilities = data;
       const cmds = data.commands ?? [];
       const models = data.models ?? [];
       const agents = data.agents ?? [];

@@ -87,8 +87,6 @@
 
 .card:hover .diffStats,
 .card:focus-within .diffStats,
-.card:hover .agentDot,
-.card:focus-within .agentDot,
 .card:hover .statusBadge,
 .card:focus-within .statusBadge,
 .card:hover .aheadBadge,
@@ -169,38 +167,21 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* Agent status dot */
-.agentDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: opacity var(--transition-fast);
-}
-
-.agent_running {
-  background: var(--success);
-  box-shadow: 0 0 8px var(--accent-glow);
+/* Wraps the branch/repo icon when one or more agents are running. */
+.agentRunningIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--success);
   animation: pulse 2s ease-in-out infinite;
 }
 
-.agent_error {
-  background: var(--error);
-  box-shadow: 0 0 4px var(--error-overlay-xl);
-}
-
-.agent_idle,
-.agent_stopped {
-  background: var(--text-muted);
-  opacity: 0.25;
-}
-
-.agentCount {
-  font-size: 10px;
-  font-weight: 600;
+.card.selected .agentRunningIcon {
   color: var(--success);
-  line-height: 1;
-  font-family: var(--font-mono);
+}
+
+.titleRow .agentRunningIcon svg {
+  color: var(--success);
+  opacity: 1;
 }
 
 @keyframes pulse {
