@@ -47,6 +47,13 @@ function spaceTargetAllowsBrowserDefault(e: KeyboardEvent): boolean {
     return true;
   }
 
+  // Monaco/VS Code editor handles Space itself (typing, commands). The focused
+  // element may be a wrapper rather than the inner textarea, so match the
+  // editor root directly.
+  if (t.closest(".monaco-editor, .xterm")) {
+    return true;
+  }
+
   // Native Space: activate control / follow link / toggle details / menus
   if (
     t.closest(

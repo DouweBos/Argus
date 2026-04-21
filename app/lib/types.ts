@@ -11,6 +11,8 @@ export interface Session {
   organization_task_id?: string | null;
   path: string;
   repo_root: string;
+  /** Transient terminal id for the setup PTY; only present on create_session. */
+  setup_terminal_id?: string | null;
   status: "deleting" | "initializing" | "ready" | { error: string };
 }
 
