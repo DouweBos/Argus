@@ -50,6 +50,7 @@ export type AppView =
   | "notifications"
   | "organizations"
   | "review-queue"
+  | "runtimes"
   | "session";
 
 export interface ParsedRoute {
@@ -98,7 +99,8 @@ export function parseRoute(pathname: string): ParsedRoute {
     segments[0] === "agents" ||
     segments[0] === "devices" ||
     segments[0] === "notifications" ||
-    segments[0] === "review-queue"
+    segments[0] === "review-queue" ||
+    segments[0] === "runtimes"
   ) {
     return emptyRoute(segments[0] as AppView);
   }
@@ -128,7 +130,8 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
     route.view === "agents" ||
     route.view === "devices" ||
     route.view === "notifications" ||
-    route.view === "review-queue"
+    route.view === "review-queue" ||
+    route.view === "runtimes"
   ) {
     return `/${route.view}`;
   }

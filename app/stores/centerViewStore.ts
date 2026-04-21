@@ -8,7 +8,8 @@ export type CenterView =
   | "home"
   | "notifications"
   | "organizations"
-  | "review-queue";
+  | "review-queue"
+  | "runtimes";
 
 interface CenterViewData {
   selectedOrganizationId: string | null;
