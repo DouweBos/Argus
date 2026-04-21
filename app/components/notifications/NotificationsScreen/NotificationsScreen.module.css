@@ -18,12 +18,12 @@
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--text-high, #fff);
+  color: var(--text-primary);
 }
 
 .sub {
   font-size: 12px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+  color: var(--text-muted);
 }
 
 .spacer {
@@ -43,13 +43,13 @@
   align-items: start;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
   transition: background 120ms ease;
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
 }
 
 .icon {
@@ -59,18 +59,18 @@
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted, rgba(255, 255, 255, 0.6));
+  background: var(--surface-3);
+  color: var(--text-muted);
 }
 
 .toneError {
-  color: #ff6680;
-  background: rgba(255, 102, 128, 0.08);
+  color: var(--error-soft);
+  background: var(--error-overlay-sm);
 }
 
 .toneWarning {
-  color: #ffb547;
-  background: rgba(255, 181, 71, 0.08);
+  color: var(--warning-soft);
+  background: var(--warning-overlay-sm);
 }
 
 .body {
@@ -86,7 +86,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  color: var(--text-muted);
 }
 
 .levelChip {
@@ -94,7 +94,7 @@
 }
 
 .sourceChip {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-family: var(--font-mono);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -102,7 +102,7 @@
 .message {
   font-size: 13px;
   line-height: 1.4;
-  color: var(--text-high, rgba(255, 255, 255, 0.88));
+  color: var(--text-primary);
   word-break: break-word;
   white-space: pre-wrap;
 }
@@ -116,7 +116,7 @@
 
 .time {
   font-size: 11px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -128,7 +128,7 @@
   height: 20px;
   border: none;
   background: transparent;
-  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  color: var(--text-muted);
   border-radius: 4px;
   cursor: pointer;
   transition:
@@ -137,6 +137,6 @@
 }
 
 .dismiss:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-high, rgba(255, 255, 255, 0.88));
+  background: var(--surface-5);
+  color: var(--text-primary);
 }

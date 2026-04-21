@@ -185,12 +185,16 @@ export function ReadyToMergeCard({
         <div className={styles.body}>
           <div className={styles.title}>
             {title}
-            {baseBranch && !hasConflicts && !hasRebaseError && !justMerged && hasWork && (
-              <span className={styles.target}>
-                {" into "}
-                <span className={styles.branch}>{baseBranch}</span>
-              </span>
-            )}
+            {baseBranch &&
+              !hasConflicts &&
+              !hasRebaseError &&
+              !justMerged &&
+              hasWork && (
+                <span className={styles.target}>
+                  {" into "}
+                  <span className={styles.branch}>{baseBranch}</span>
+                </span>
+              )}
           </div>
           <div className={styles.meta}>
             <span>{statusLine}</span>

@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--scrim-lg);
   backdrop-filter: blur(10px);
   z-index: 1200;
   display: flex;
@@ -19,8 +19,8 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.65),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 24px 64px var(--scrim-xl),
+    0 0 0 1px var(--surface-3);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -100,7 +100,7 @@
 
 .item:focus-visible,
 .itemActive {
-  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.06));
+  background: var(--glass-bg-hover);
 }
 
 .itemIcon {

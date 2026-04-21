@@ -24,8 +24,8 @@
 }
 
 .error {
-  color: var(--error, #ff6b6b);
+  color: var(--error);
   font-size: 12px;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   white-space: pre-wrap;
 }

@@ -316,12 +316,8 @@
 }
 
 .badgeR {
-  color: var(--warning, var(--accent));
-  background: color-mix(
-    in srgb,
-    var(--warning, var(--accent)) 15%,
-    transparent
-  );
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
 }
 
 .filePath {

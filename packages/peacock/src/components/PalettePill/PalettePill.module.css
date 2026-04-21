@@ -4,23 +4,23 @@
   gap: 10px;
   padding: 8px 14px;
   border-radius: var(--border-radius-pill);
-  background: rgba(10, 10, 15, 0.6);
+  background: var(--bg-primary-60);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--glass-border);
   transition: var(--transition-fast);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(245, 166, 35, 0.04);
+    0 4px 24px var(--scrim-md),
+    inset 0 0 0 1px var(--accent-overlay-sm);
   width: 100%;
   max-width: 560px;
 }
 
 .pill:hover,
 .pill:focus-within {
-  border-color: rgba(245, 166, 35, 0.3);
+  border-color: var(--accent-border-soft);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 4px 24px var(--scrim-md),
     0 0 0 3px var(--accent-glow);
 }
 

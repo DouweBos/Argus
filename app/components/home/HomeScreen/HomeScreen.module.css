@@ -17,24 +17,6 @@
   position: relative;
 }
 
-/* Ambient radial glow — signature Argus atmosphere. */
-.screen::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(800px 500px at 15% 0%, var(--accent-glow), transparent 65%),
-    radial-gradient(
-      900px 600px at 90% 100%,
-      rgba(124, 92, 252, 0.06),
-      transparent 70%
-    );
-  opacity: 0.9;
-  transition: opacity 400ms ease;
-}
-
 .body {
   flex: 1;
   display: flex;

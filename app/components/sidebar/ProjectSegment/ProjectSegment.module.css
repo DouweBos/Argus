@@ -153,7 +153,7 @@
 }
 
 .ws_initializing {
-  background: rgba(245, 166, 35, 0.08);
+  background: var(--accent-overlay-lg);
   color: var(--warning);
 }
 

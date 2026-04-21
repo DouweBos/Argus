@@ -18,19 +18,19 @@
 }
 
 .accent {
-  background: rgba(245, 166, 35, 0.08);
+  background: var(--accent-overlay-lg);
   color: var(--accent);
 }
 .success {
-  background: rgba(0, 212, 170, 0.08);
+  background: var(--success-overlay-sm);
   color: var(--success);
 }
 .warning {
-  background: rgba(255, 213, 74, 0.1);
+  background: var(--warning-overlay-lg);
   color: var(--warning);
 }
 .error {
-  background: rgba(255, 68, 102, 0.08);
+  background: var(--error-bg);
   color: var(--error);
 }
 .neutral {
@@ -39,7 +39,7 @@
   opacity: 0.55;
 }
 .neutralFilled {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 9px;
@@ -60,11 +60,11 @@
 }
 .dotLight.success {
   background: var(--success);
-  box-shadow: 0 0 8px rgba(0, 212, 170, 0.5);
+  box-shadow: 0 0 8px var(--success-glow);
 }
 .dotLight.warning {
   background: var(--warning);
-  box-shadow: 0 0 6px rgba(245, 166, 35, 0.5);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 50%, transparent);
 }
 .dotLight.accent {
   background: var(--accent);
@@ -72,7 +72,7 @@
 }
 .dotLight.error {
   background: var(--error);
-  box-shadow: 0 0 6px rgba(255, 68, 102, 0.5);
+  box-shadow: 0 0 6px var(--error-glow);
 }
 .dotLight.idle {
   background: var(--text-muted);

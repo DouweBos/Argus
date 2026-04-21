@@ -626,13 +626,17 @@ export async function runSetupPipeline(
  * can reset the flag while another is still copying. Shelling out sidesteps
  * the asar layer entirely.
  *
- * We use rsync with `--copy-unsafe-links`: internal relative symlinks are
- * preserved (pnpm's `node_modules/.pnpm` store depends on them, and they
- * resolve correctly inside the worktree because all targets are relative and
- * stay within the copied tree or the worktree's repo checkout). Only symlinks
- * pointing *outside* the source tree are materialized as file copies. This
- * avoids the recursive dereference failures that `cp -RL` hits when chasing
- * long chains of pnpm symlinks.
+ * We use rsync with `-a` (which includes `-l`, preserving symlinks as
+ * symlinks). Every symlink — including pnpm's `.pnpm/` internal forest and
+ * workspace package links like `node_modules/@argus/peacock → ../../packages/
+ * peacock` — is copied verbatim. The worktree has its own `packages/`
+ * checkout at the same relative path, so workspace-symlink targets still
+ * resolve correctly.
+ *
+ * Do NOT add `--copy-unsafe-links`: it dereferences any symlink pointing
+ * outside the source (e.g. workspace packages, since they live next to
+ * `node_modules/`, not inside it) into a frozen snapshot — edits to the
+ * workspace source never reach the worktree.
  */
 async function copyDirAll(src: string, dst: string): Promise<void> {
   await fs.promises.mkdir(path.dirname(dst), { recursive: true });
@@ -643,7 +647,7 @@ async function copyDirAll(src: string, dst: string): Promise<void> {
   }
   // Trailing slash on src tells rsync to copy the contents of src into dst
   // (matching `cp -R src dst` semantics where dst doesn't yet exist).
-  await execFileAsync("rsync", ["-a", "--copy-unsafe-links", `${src}/`, dst]);
+  await execFileAsync("rsync", ["-a", `${src}/`, dst]);
 }
 
 /** Returns true if `p` is a symlink (without throwing on missing path). */

@@ -8,7 +8,7 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--surface-3);
   user-select: none;
 }
 
@@ -69,17 +69,17 @@
 }
 
 .fileListItem:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
 }
 
 .fileListItemActive {
-  background: rgba(245, 166, 35, 0.08);
+  background: var(--accent-overlay-lg);
   color: var(--text-primary);
   border-left-color: var(--accent);
 }
 
 .fileListItemActive:hover {
-  background: rgba(245, 166, 35, 0.1);
+  background: var(--accent-overlay-lg);
 }
 
 .fileItemStatus {
@@ -125,12 +125,8 @@
 }
 
 .badgeR {
-  color: var(--warning, var(--accent));
-  background: color-mix(
-    in srgb,
-    var(--warning, var(--accent)) 15%,
-    transparent
-  );
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
 }
 
 .fileItemPath {

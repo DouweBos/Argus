@@ -38,7 +38,7 @@
 }
 
 .header:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-2);
 }
 
 .headerOpen {
@@ -108,7 +108,7 @@
 }
 
 .dismiss:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
   color: var(--text-primary);
   border-color: var(--text-muted);
 }
@@ -147,7 +147,7 @@
 
 .inProgress .checkbox {
   border-color: var(--accent);
-  background: rgba(245, 166, 35, 0.15);
+  background: var(--accent-overlay-xl);
   box-shadow: 0 0 6px var(--accent-glow);
 }
 

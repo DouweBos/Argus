@@ -26,9 +26,9 @@
 
 .meta {
   padding: 12px 14px;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg-raised, rgba(12, 12, 16, 0.6));
+  background: var(--bg-tertiary);
   font-size: 12px;
   display: grid;
   grid-template-columns: 110px 1fr;
@@ -37,7 +37,7 @@
 }
 
 .metaLabel {
-  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  color: var(--text-muted);
   text-transform: uppercase;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -45,12 +45,12 @@
 }
 
 .metaValue {
-  color: var(--text-high, rgba(255, 255, 255, 0.9));
+  color: var(--text-primary);
   word-break: break-all;
 }
 
 .link {
-  color: var(--accent, #4d9fff);
+  color: var(--accent);
   background: none;
   border: none;
   padding: 0;
@@ -65,9 +65,9 @@
 .preview {
   flex: 1;
   min-height: 0;
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #000;
+  background: var(--media-bg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -84,7 +84,7 @@
 }
 
 .previewPlaceholder {
-  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  color: var(--text-muted);
   font-size: 12px;
   text-align: center;
   padding: 24px;
@@ -107,7 +107,7 @@
 }
 
 .pointerLayer:focus {
-  box-shadow: inset 0 0 0 1px rgba(77, 159, 255, 0.35);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .controlBar {
@@ -115,17 +115,17 @@
   gap: 8px;
   padding: 6px 10px;
   align-items: center;
-  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.06));
-  background: var(--bg-raised, rgba(12, 12, 16, 0.6));
+  border-top: 1px solid var(--border);
+  background: var(--bg-tertiary);
   border-radius: 0 0 8px 8px;
   font-size: 11px;
-  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  color: var(--text-muted);
 }
 
 .controlBtn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  color: var(--text-high, rgba(255, 255, 255, 0.9));
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 11px;
@@ -134,11 +134,11 @@
 }
 
 .controlBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-6);
 }
 
 .controlBtn:active {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--surface-8);
 }
 
 .controlHint {

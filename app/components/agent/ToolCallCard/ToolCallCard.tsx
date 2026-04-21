@@ -311,7 +311,7 @@ function writeToolAddedContent(
     return addedLines(input.old_string, input.new_string);
   }
   if (name === "MultiEdit" && Array.isArray(input.edits)) {
-    return (input.edits as Array<Record<string, unknown>>)
+    return (input.edits as Record<string, unknown>[])
       .map((e) =>
         typeof e.old_string === "string" && typeof e.new_string === "string"
           ? addedLines(e.old_string, e.new_string)

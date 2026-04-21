@@ -1,11 +1,7 @@
 .card {
   border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--glass-border));
-  border-radius: var(--border-radius-md, 8px);
-  background: color-mix(
-    in srgb,
-    var(--accent) 6%,
-    var(--bg-secondary, rgba(255, 255, 255, 0.02))
-  );
+  border-radius: var(--border-radius-md);
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-secondary));
   padding: 14px;
 }
 
@@ -83,4 +79,15 @@
 .primaryBtn:disabled {
   opacity: 0.5;
   cursor: progress;
+}
+
+.secondaryBtn {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+}
+
+.secondaryBtn:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
 }

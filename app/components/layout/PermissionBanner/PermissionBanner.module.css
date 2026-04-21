@@ -16,7 +16,7 @@
   gap: var(--space-6);
   padding: 10px 12px;
   border-radius: var(--border-radius-sm);
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--scrim-sm);
   border: 1px solid var(--glass-border);
 }
 

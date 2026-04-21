@@ -480,7 +480,10 @@ function WebPreview({ device }: { device: DeviceInfo }) {
 
   if (loadError) {
     return (
-      <div className={styles.previewPlaceholder} style={{ color: "#ff8ea0" }}>
+      <div
+        className={styles.previewPlaceholder}
+        style={{ color: "var(--error)" }}
+      >
         Could not start web preview: {loadError}
       </div>
     );

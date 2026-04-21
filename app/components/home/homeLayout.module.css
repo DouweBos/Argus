@@ -39,14 +39,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(
-    in srgb,
-    var(--hero-accent, var(--accent)) 16%,
-    transparent
-  );
-  color: var(--hero-accent, var(--accent));
-  border: 1px solid
-    color-mix(in srgb, var(--hero-accent, var(--accent)) 30%, transparent);
+  background: color-mix(in srgb, var(--hero-accent) 16%, transparent);
+  color: var(--hero-accent);
+  border: 1px solid color-mix(in srgb, var(--hero-accent) 30%, transparent);
 }
 
 .title {
@@ -173,9 +168,9 @@
 
 .historyWrap {
   border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-md, 8px);
+  border-radius: var(--border-radius-md);
   overflow: hidden;
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+  background: var(--bg-secondary);
   max-height: 320px;
 }
 

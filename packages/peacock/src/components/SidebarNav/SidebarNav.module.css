@@ -1,6 +1,6 @@
 .sidebar {
   width: var(--sidebar-left-default);
-  background: rgba(17, 17, 24, 0.85);
+  background: var(--bg-secondary-85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
@@ -110,7 +110,7 @@
 }
 
 .sectionCount {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
   padding: 1px 6px;
   border-radius: var(--border-radius-pill);
   font-size: 9px;
@@ -389,7 +389,7 @@
   transition: var(--transition-fast);
 }
 .repoActionBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-5);
   color: var(--text-primary);
 }
 

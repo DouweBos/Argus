@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--scrim-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,8 +20,8 @@
   display: flex;
   flex-direction: column;
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 24px 64px var(--scrim-lg),
+    0 0 0 1px var(--surface-3);
   overflow: hidden;
 }
 

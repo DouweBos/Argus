@@ -12,6 +12,10 @@ import { initReviewQueueListener } from "./lib/reviewQueueService";
 import { vscodeReady } from "./lib/vscodeSetup";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
+import { initTheme } from "./stores/themeStore";
+
+// Apply theme before first paint so there is no flash of the wrong theme.
+initTheme();
 
 const params = new URLSearchParams(window.location.search);
 const popoutMode = params.get("popout");

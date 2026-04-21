@@ -11,17 +11,17 @@
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-2);
   border-color: var(--border-subtle);
 }
 
 .pending {
-  background: rgba(255, 213, 74, 0.05);
-  border-color: rgba(255, 213, 74, 0.18);
+  background: var(--warning-overlay-sm);
+  border-color: var(--warning-overlay-lg);
 }
 .error {
-  background: rgba(255, 68, 102, 0.04);
-  border-color: rgba(255, 68, 102, 0.15);
+  background: var(--error-overlay-sm);
+  border-color: var(--error-overlay-lg);
 }
 
 .info {

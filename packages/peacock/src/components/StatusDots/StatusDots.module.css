@@ -23,7 +23,7 @@
    Delays map to 3x3 positions: row + col (in children order). */
 .running .dot {
   animation: statusDotPulse 1.2s ease-in-out infinite;
-  background: var(--text-primary, #fff);
+  background: var(--text-primary);
 }
 
 .running .dot:nth-child(1) {
@@ -47,7 +47,7 @@
 }
 
 .awaiting .dot {
-  background: var(--accent, #ff9500);
+  background: var(--accent);
   opacity: 1;
   animation: statusDotBreath 1.4s ease-in-out infinite;
 }

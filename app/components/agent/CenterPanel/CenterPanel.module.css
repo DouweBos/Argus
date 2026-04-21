@@ -10,7 +10,7 @@
   align-items: center;
   height: var(--toolbar-height);
   border-bottom: 1px solid var(--glass-border);
-  background: rgba(17, 17, 24, 0.7);
+  background: var(--bg-secondary-50);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   flex-shrink: 0;
@@ -26,7 +26,7 @@
 
 /* Active state override on peacock Chip */
 .chipActive {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: var(--surface-5) !important;
+  border-color: var(--surface-7) !important;
   color: var(--text-primary) !important;
 }

@@ -19,7 +19,7 @@
   background: var(--glass-bg-hover);
 }
 .input:focus {
-  border-color: rgba(245, 166, 35, 0.35);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 

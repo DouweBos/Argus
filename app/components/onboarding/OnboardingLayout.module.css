@@ -1,7 +1,7 @@
 .root {
   position: fixed;
   inset: 0;
-  background: var(--bg-primary, #0a0a0e);
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
   z-index: 9999;
@@ -73,7 +73,7 @@
   align-items: center;
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--surface-3);
 }
 
 .footerLeft,

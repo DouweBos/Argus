@@ -1,30 +1,55 @@
 /* ==========================================================================
-   Argus Design System — Colors & Typography
+   Argus Design System — Tokens (Dark + Light themes)
    ==========================================================================
-   A premium dark-theme IDE for parallel agentic development.
-   Deep, slightly blue-tinted blacks + blue accent system + glass morphism.
-   Mirrors app/styles/global.css from the Argus codebase.
+   The default `html` block is the dark theme; the light theme lives in
+   `html[data-theme="light"]`. The app toggles `data-theme` on <html>
+   based on system preference + user override (see app/stores/themeStore.ts).
+
+   Token groups:
+     - Backgrounds, borders, text            (theme-aware)
+     - Accent (amber)                        (theme-aware accent surface/fg)
+     - Semantic (success / warning / error)  (hue fixed, surfaces shift)
+     - Surface overlay scale                 (theme-aware: light overlays on
+                                              dark, dark overlays on light)
+     - Scrim / backdrop overlays             (always dark — modal curtains)
+     - Accent / semantic soft overlays       (opacity tints on the hue)
+     - Glass morphism                        (theme-aware)
+     - Shadows                               (theme-aware)
+
+   Project-accent palette and syntax colors stay hardcoded — they're
+   semantic identities, not themed surfaces.
    ========================================================================== */
 
-/* Note: fonts are not loaded here. Consumers are responsible for providing
-   Inter and JetBrains Mono (see `@argus/peacock/fonts.css` for a Google Fonts
-   shim usable in web/Storybook contexts). */
-
-:root {
+html,
+html[data-theme="dark"] {
   /* ─── Backgrounds ─── deep, slightly blue-tinted blacks */
   --bg-primary: #0a0a0f;
   --bg-secondary: #111118;
   --bg-tertiary: #1a1a24;
   --bg-hover: #222233;
 
+  /* Tinted overlays of the secondary background, used for floating panels
+     (title bar, chat input, hover action bars). Theme-aware so they become
+     light panels on light themes. */
+  --bg-secondary-50: rgba(17, 17, 24, 0.5);
+  --bg-secondary-85: rgba(17, 17, 24, 0.85);
+  --bg-secondary-90: rgba(17, 17, 24, 0.9);
+  --bg-secondary-0: rgba(17, 17, 24, 0);
+  --bg-primary-60: rgba(10, 10, 15, 0.6);
+  --bg-primary-85: rgba(10, 10, 15, 0.85);
+  --bg-primary-0: rgba(10, 10, 15, 0);
+
   /* ─── Borders ─── */
   --border: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.15);
 
   /* ─── Text ─── */
   --text-primary: #f0f0f5;
   --text-secondary: #a0a0b8;
   --text-muted: #55556a;
+  --text-inverse: #0a0a0f;
+  --text-on-accent: #0a0a0f;
 
   /* ─── Accent ─── amber system */
   --accent: #f5a623;
@@ -35,12 +60,80 @@
   --accent-glow-strong: rgba(245, 166, 35, 0.1);
   --accent-gradient: linear-gradient(135deg, #f5a623, #ff7a4d);
 
+  /* Accent soft overlays — opacity tints for badges, hovers, focused states */
+  --accent-overlay-sm: rgba(245, 166, 35, 0.04);
+  --accent-overlay-md: rgba(245, 166, 35, 0.06);
+  --accent-overlay-lg: rgba(245, 166, 35, 0.08);
+  --accent-overlay-xl: rgba(245, 166, 35, 0.12);
+  --accent-overlay-2xl: rgba(245, 166, 35, 0.18);
+  --accent-border-soft: rgba(245, 166, 35, 0.25);
+  --accent-border-strong: rgba(245, 166, 35, 0.4);
+
   /* ─── Semantic ─── */
   --success: #00d4aa;
+  --success-soft: #4ade80;
+  --success-fg: #ffffff;
   --warning: #ffd54a;
+  --warning-soft: #ffb547;
+  --warning-fg: #1a1a1a;
   --error: #ff4466;
+  --error-soft: #ff6b6b;
   --error-bg: rgba(255, 68, 102, 0.08);
   --error-fg: #ffffff;
+
+  --success-overlay-sm: rgba(0, 212, 170, 0.05);
+  --success-overlay-lg: rgba(0, 212, 170, 0.12);
+  --success-overlay-xl: rgba(0, 212, 170, 0.25);
+  --success-glow: rgba(0, 212, 170, 0.7);
+  --warning-overlay-sm: rgba(255, 213, 74, 0.06);
+  --warning-overlay-lg: rgba(255, 213, 74, 0.12);
+  --warning-overlay-xl: rgba(255, 213, 74, 0.24);
+  --error-overlay-sm: rgba(255, 68, 102, 0.06);
+  --error-overlay-lg: rgba(255, 68, 102, 0.12);
+  --error-overlay-xl: rgba(255, 68, 102, 0.25);
+  --error-glow: rgba(255, 68, 102, 0.7);
+
+  /* ─── Brand secondary ─── purple, used for org/project accents */
+  --brand-purple: #7c5cfc;
+  --brand-purple-overlay-sm: rgba(124, 92, 252, 0.06);
+  --brand-purple-overlay-md: rgba(124, 92, 252, 0.12);
+  --brand-purple-overlay-lg: rgba(124, 92, 252, 0.2);
+
+  /* ─── Media background ─── true black for simulator/video surfaces.
+     Always black regardless of theme — matches a powered-off screen. */
+  --media-bg: #000000;
+
+  /* ─── Traffic light palette ─── macOS window button colours.
+     Fixed OS identity — do not retheme. */
+  --traffic-red: #ff5f57;
+  --traffic-yellow: #febc2e;
+  --traffic-green: #28c840;
+
+  /* ─── Folder icon palette ─── tan/beige macOS-style folder fills.
+     Same hue in both themes (iconography identity). */
+  --folder-icon-fill: #dcb67a;
+  --folder-icon-shadow: #c09553;
+
+  /* ─── Surface overlay scale ─── theme-aware "tint on surface".
+     On dark themes these are white at increasing opacity; on light themes
+     they flip to dark at matching opacity so hover/glass surfaces still
+     contrast their underlying background. Use these instead of bare
+     rgba(255,255,255,0.x) or rgba(0,0,0,0.x) whenever the overlay is meant
+     to darken/lighten the surface underneath it. */
+  --surface-1: rgba(255, 255, 255, 0.02);
+  --surface-2: rgba(255, 255, 255, 0.03);
+  --surface-3: rgba(255, 255, 255, 0.04);
+  --surface-4: rgba(255, 255, 255, 0.06);
+  --surface-5: rgba(255, 255, 255, 0.08);
+  --surface-6: rgba(255, 255, 255, 0.1);
+  --surface-7: rgba(255, 255, 255, 0.12);
+  --surface-8: rgba(255, 255, 255, 0.15);
+
+  /* ─── Scrim overlays ─── modal curtains, always dark regardless of theme */
+  --scrim-sm: rgba(0, 0, 0, 0.25);
+  --scrim-md: rgba(0, 0, 0, 0.45);
+  --scrim-lg: rgba(0, 0, 0, 0.6);
+  --scrim-xl: rgba(0, 0, 0, 0.7);
 
   /* ─── Glass morphism ─── signature Argus surface */
   --glass-bg: rgba(255, 255, 255, 0.03);
@@ -48,6 +141,12 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 16px;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* ─── Shadows / elevation ─── theme-aware */
+  --shadow-sm: 0 2px 16px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-sidebar: 2px 0 20px rgba(0, 0, 0, 0.3);
 
   /* ─── Layout tokens ─── */
   --titlebar-height: 38px;
@@ -72,26 +171,20 @@
   --font-size-md: 14px;
 
   /* Semantic type roles (Argus uses tight, compact UI scale) */
-  --type-display: 700 28px/1.1 var(--font-ui); /* Hero (home screen title) */
-  --type-h1: 600 16px/1.3 var(--font-ui); /* Section header */
-  --type-h2: 600 14px/1.3 var(--font-ui); /* Sub-section */
-  --type-body: 400 13px/1.5 var(--font-ui); /* Default body */
-  --type-ui: 500 12px/1.4 var(--font-ui); /* Buttons, chips, tabs */
-  --type-caption: 500 11px/1.4 var(--font-ui); /* Metadata, timestamps */
-  --type-eyebrow: 600 10px/1.4 var(--font-ui); /* UPPERCASE section labels */
-  --type-code: 400 11px/1.6 var(--font-mono); /* Inline + block code */
-  --type-mono-badge: 600 10px/1 var(--font-mono); /* Diff counts, PIDs */
+  --type-display: 700 28px/1.1 var(--font-ui);
+  --type-h1: 600 16px/1.3 var(--font-ui);
+  --type-h2: 600 14px/1.3 var(--font-ui);
+  --type-body: 400 13px/1.5 var(--font-ui);
+  --type-ui: 500 12px/1.4 var(--font-ui);
+  --type-caption: 500 11px/1.4 var(--font-ui);
+  --type-eyebrow: 600 10px/1.4 var(--font-ui);
+  --type-code: 400 11px/1.6 var(--font-mono);
+  --type-mono-badge: 600 10px/1 var(--font-mono);
 
   /* ─── Transitions ─── */
   --transition-fast: 120ms ease;
   --transition-base: 200ms ease;
   --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* ─── Shadows / elevation ─── */
-  --shadow-sm: 0 2px 16px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-sidebar: 2px 0 20px rgba(0, 0, 0, 0.3);
 
   /* ─── Spacing scale ─── tight, IDE-dense */
   --space-1: 2px;
@@ -106,6 +199,116 @@
   --space-12: 24px;
   --space-16: 32px;
   --space-20: 40px;
+}
+
+/* ==========================================================================
+   Light theme — inverted surfaces, same accent hue.
+   Applied when the user (or system) selects light mode.
+   ========================================================================== */
+
+html[data-theme="light"] {
+  /* ─── Backgrounds ─── warm near-white, gently tinted blue */
+  --bg-primary: #fafbfc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eceef2;
+  --bg-hover: #dcdfe6;
+
+  /* Keep translucent panels mostly opaque so dark window chrome doesn't
+     bleed through and muddy the surface. */
+  --bg-secondary-50: rgba(255, 255, 255, 0.85);
+  --bg-secondary-85: rgba(255, 255, 255, 0.96);
+  --bg-secondary-90: rgba(255, 255, 255, 0.98);
+  --bg-secondary-0: rgba(255, 255, 255, 0);
+  --bg-primary-60: rgba(250, 251, 252, 0.85);
+  --bg-primary-85: rgba(250, 251, 252, 0.96);
+  --bg-primary-0: rgba(250, 251, 252, 0);
+
+  /* ─── Borders ─── dark hairlines, strong enough to delineate panels */
+  --border: rgba(10, 10, 15, 0.14);
+  --border-subtle: rgba(10, 10, 15, 0.08);
+  --border-strong: rgba(10, 10, 15, 0.24);
+
+  /* ─── Text ─── tuned for WCAG AA on white */
+  --text-primary: #0d0d14;
+  --text-secondary: #2f2f40;
+  --text-muted: #5c5c72;
+  --text-inverse: #fafbfc;
+  --text-on-accent: #ffffff;
+
+  /* ─── Accent ─── same amber hue, darker for legibility on white */
+  --accent: #c7861f;
+  --accent-hover: #e09820;
+  --accent-secondary: #a56e17;
+  --accent-fg: #ffffff;
+  --accent-glow: rgba(199, 134, 31, 0.18);
+  --accent-glow-strong: rgba(199, 134, 31, 0.28);
+  --accent-gradient: linear-gradient(135deg, #c7861f, #d4633a);
+
+  --accent-overlay-sm: rgba(199, 134, 31, 0.06);
+  --accent-overlay-md: rgba(199, 134, 31, 0.1);
+  --accent-overlay-lg: rgba(199, 134, 31, 0.14);
+  --accent-overlay-xl: rgba(199, 134, 31, 0.2);
+  --accent-overlay-2xl: rgba(199, 134, 31, 0.28);
+  --accent-border-soft: rgba(199, 134, 31, 0.3);
+  --accent-border-strong: rgba(199, 134, 31, 0.5);
+
+  /* ─── Semantic ─── darkened for contrast on light backgrounds */
+  --success: #00a884;
+  --success-soft: #2fa355;
+  --success-fg: #ffffff;
+  --warning: #d69a00;
+  --warning-soft: #c98400;
+  --warning-fg: #1a1a1a;
+  --error: #dc2c49;
+  --error-soft: #d32f45;
+  --error-bg: rgba(220, 44, 73, 0.1);
+  --error-fg: #ffffff;
+
+  --success-overlay-sm: rgba(0, 168, 132, 0.08);
+  --success-overlay-lg: rgba(0, 168, 132, 0.16);
+  --success-overlay-xl: rgba(0, 168, 132, 0.28);
+  --success-glow: rgba(0, 168, 132, 0.6);
+  --warning-overlay-sm: rgba(214, 154, 0, 0.1);
+  --warning-overlay-lg: rgba(214, 154, 0, 0.18);
+  --warning-overlay-xl: rgba(214, 154, 0, 0.3);
+  --error-overlay-sm: rgba(220, 44, 73, 0.08);
+  --error-overlay-lg: rgba(220, 44, 73, 0.16);
+  --error-overlay-xl: rgba(220, 44, 73, 0.28);
+  --error-glow: rgba(220, 44, 73, 0.55);
+
+  /* Brand secondary — darkened purple for white backgrounds */
+  --brand-purple: #5a3dd4;
+  --brand-purple-overlay-sm: rgba(90, 61, 212, 0.08);
+  --brand-purple-overlay-md: rgba(90, 61, 212, 0.14);
+  --brand-purple-overlay-lg: rgba(90, 61, 212, 0.22);
+
+  /* Surface overlays inverted: dark tints on light surfaces */
+  --surface-1: rgba(10, 10, 15, 0.025);
+  --surface-2: rgba(10, 10, 15, 0.04);
+  --surface-3: rgba(10, 10, 15, 0.055);
+  --surface-4: rgba(10, 10, 15, 0.07);
+  --surface-5: rgba(10, 10, 15, 0.09);
+  --surface-6: rgba(10, 10, 15, 0.12);
+  --surface-7: rgba(10, 10, 15, 0.16);
+  --surface-8: rgba(10, 10, 15, 0.22);
+
+  /* Scrim stays dark — modal curtains always darken */
+  --scrim-sm: rgba(0, 0, 0, 0.18);
+  --scrim-md: rgba(0, 0, 0, 0.32);
+  --scrim-lg: rgba(0, 0, 0, 0.45);
+  --scrim-xl: rgba(0, 0, 0, 0.55);
+
+  /* Glass — soft dark-tinted frost; hover states need to actually register */
+  --glass-bg: rgba(10, 10, 15, 0.05);
+  --glass-bg-hover: rgba(10, 10, 15, 0.09);
+  --glass-border: rgba(10, 10, 15, 0.14);
+  --glass-shadow: 0 8px 32px rgba(10, 10, 15, 0.12);
+
+  /* Shadows softened for light surfaces */
+  --shadow-sm: 0 2px 16px rgba(10, 10, 15, 0.08);
+  --shadow-md: 0 4px 24px rgba(10, 10, 15, 0.1);
+  --shadow-lg: 0 8px 32px rgba(10, 10, 15, 0.14);
+  --shadow-sidebar: 2px 0 20px rgba(10, 10, 15, 0.08);
 }
 
 /* ─── Semantic element defaults ───────────────────────────── */

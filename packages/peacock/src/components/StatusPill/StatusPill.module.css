@@ -14,22 +14,22 @@
 }
 
 .pass {
-  background: rgba(0, 212, 170, 0.12);
+  background: var(--success-overlay-lg);
   color: var(--success);
 }
 .warn {
-  background: rgba(255, 213, 74, 0.12);
+  background: var(--warning-overlay-lg);
   color: var(--warning);
 }
 .fail {
-  background: rgba(255, 68, 102, 0.12);
+  background: var(--error-overlay-lg);
   color: var(--error);
 }
 .skipped {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
   color: var(--text-muted);
 }
 .running {
-  background: rgba(245, 166, 35, 0.12);
+  background: var(--accent-overlay-xl);
   color: var(--accent);
 }

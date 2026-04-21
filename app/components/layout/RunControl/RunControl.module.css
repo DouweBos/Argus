@@ -15,5 +15,5 @@
   border-bottom-left-radius: 0;
   padding-left: 6px;
   padding-right: 6px;
-  border-left: 1px solid rgba(0, 0, 0, 0.15);
+  border-left: 1px solid var(--scrim-sm);
 }
