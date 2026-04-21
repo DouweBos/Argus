@@ -8,7 +8,6 @@ import { Button, Eyebrow, Icons, Input } from "@argus/peacock";
 import { searchChatHistory } from "../../../lib/ipc";
 import styles from "./ChatHistoryList.module.css";
 
-const DEFAULT_LIMIT = 10;
 const SEARCH_DEBOUNCE_MS = 120;
 
 function formatRelativeDate(timestamp: number): string {
@@ -205,11 +204,9 @@ export function ChatHistoryList({
     trimmed && (searchState.query !== trimmed || searchState.searching);
 
   const visibleEntries = useMemo(
-    () => (!trimmed ? entries.slice(0, DEFAULT_LIMIT) : []),
+    () => (!trimmed ? entries : []),
     [entries, trimmed],
   );
-
-  const hiddenCount = !trimmed ? entries.length - visibleEntries.length : 0;
 
   if (entries.length === 0) {
     return null;
@@ -272,11 +269,6 @@ export function ChatHistoryList({
           />
         ))}
 
-      {!trimmed && hiddenCount > 0 && (
-        <div className={styles.moreHint}>
-          {hiddenCount} more — search to find them
-        </div>
-      )}
       {trimmed && effectiveSearching && !effectiveResults && (
         <div className={styles.moreHint}>Searching…</div>
       )}

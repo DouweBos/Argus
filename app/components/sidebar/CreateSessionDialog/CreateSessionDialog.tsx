@@ -14,7 +14,6 @@ import {
   startAgentInSession,
   sendUserMessageToAgent,
 } from "../../../lib/agentLifecycle";
-import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   getUserProjectSettings,
   listAllBranches,
@@ -23,15 +22,6 @@ import {
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface CreateSessionDialogProps {
-  /**
-   * When set, submitting the branch-off flow forks the chat at `messageId`
-   * instead of creating an empty session. Requires `sourceSession` to be set.
-   */
-  forkContext?: {
-    agentId: string;
-    messageId: string;
-    sourceSessionId: string;
-  } | null;
   onClose: () => void;
   repoRoot: string;
   /** When set, the new session forks from this session's branch instead of project root HEAD. */
@@ -74,6 +64,8 @@ function applyBranchPrefix(branch: string, prefix: string): string {
 }
 
 /** Cheap preview slug matching backend titleToBranchSlug shape. */
+const PREVIEW_SLUG_MAX_LENGTH = 50;
+
 function previewSlug(input: string): string {
   const cleaned = input
     .trim()
@@ -81,8 +73,18 @@ function previewSlug(input: string): string {
     .replace(/[^a-z0-9/_-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^[-_]+|[-_]+$/g, "");
+  if (!cleaned) {
+    return "session";
+  }
+  if (cleaned.length <= PREVIEW_SLUG_MAX_LENGTH) {
+    return cleaned;
+  }
+  const head = cleaned.slice(0, PREVIEW_SLUG_MAX_LENGTH);
+  const lastHyphen = head.lastIndexOf("-");
+  const cut =
+    lastHyphen > PREVIEW_SLUG_MAX_LENGTH / 2 ? head.slice(0, lastHyphen) : head;
 
-  return cleaned || "session";
+  return cut.replace(/[-_]+$/g, "") || cleaned.slice(0, PREVIEW_SLUG_MAX_LENGTH);
 }
 
 interface BranchSection {
@@ -308,19 +310,10 @@ function BranchDropdown({
   );
 }
 
-function getSubmitLabel(isCreating: boolean, isFork: boolean): string {
-  if (isCreating) {
-    return isFork ? "Forking…" : "Starting…";
-  }
-
-  return isFork ? "Fork Session" : "Start Session";
-}
-
 export function CreateSessionDialog({
   repoRoot,
   onClose,
   sourceSession,
-  forkContext,
 }: CreateSessionDialogProps) {
   const { sessions, createSession } = useProjectSessions(repoRoot);
 
@@ -469,36 +462,26 @@ export function CreateSessionDialog({
     setIsCreating(true);
     setError(null);
     try {
-      if (forkContext && !useExisting) {
-        await forkChatFromMessage(
-          forkContext.sourceSessionId,
-          forkContext.agentId,
-          forkContext.messageId,
-          branch,
-          desc,
+      const session = await createSession(
+        branch,
+        desc,
+        useExisting,
+        baseBranch,
+      );
+      // Spawn an agent immediately with the user's prompt as the first
+      // message. The session's worktree already exists by the time
+      // createSession resolves — the setup pipeline (copy/symlink/install)
+      // continues in the background but does not block agent startup.
+      if (initialPrompt && session) {
+        const agentInfo = await startAgentInSession(session.id, {
+          focus: true,
+        });
+        await sendUserMessageToAgent(
+          agentInfo.agent_id,
+          initialPrompt,
+          undefined,
+          { assumeIdle: true },
         );
-      } else {
-        const session = await createSession(
-          branch,
-          desc,
-          useExisting,
-          baseBranch,
-        );
-        // Spawn an agent immediately with the user's prompt as the first
-        // message. The session's worktree already exists by the time
-        // createSession resolves — the setup pipeline (copy/symlink/install)
-        // continues in the background but does not block agent startup.
-        if (initialPrompt && session) {
-          const agentInfo = await startAgentInSession(session.id, {
-            focus: true,
-          });
-          await sendUserMessageToAgent(
-            agentInfo.agent_id,
-            initialPrompt,
-            undefined,
-            { assumeIdle: true },
-          );
-        }
       }
       onClose();
     } catch (err) {
@@ -541,7 +524,7 @@ export function CreateSessionDialog({
     setError(null);
   };
 
-  const title = forkContext ? "Fork Session" : "New Session";
+  const title = "New Session";
 
   // ---- Step: pick flow ----
   if (flow === "pick") {
@@ -758,7 +741,7 @@ export function CreateSessionDialog({
               disabled={isCreating || !canSubmitBranchOff}
               type="submit"
             >
-              {getSubmitLabel(isCreating, Boolean(forkContext))}
+              {isCreating ? "Starting…" : "Start Session"}
             </Button>
           </div>
         </form>
