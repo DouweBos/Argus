@@ -19,10 +19,6 @@ import {
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface CreateSessionDialogProps {
-  onClose: () => void;
-  repoRoot: string;
-  /** When set, the new session forks from this session's branch instead of project root HEAD. */
-  sourceSession?: { branch: string; display_name?: string | null } | null;
   /**
    * When set, submitting the branch-off flow forks the chat at `messageId`
    * instead of creating an empty session. Requires `sourceSession` to be set.
@@ -32,6 +28,10 @@ interface CreateSessionDialogProps {
     messageId: string;
     sourceSessionId: string;
   } | null;
+  onClose: () => void;
+  repoRoot: string;
+  /** When set, the new session forks from this session's branch instead of project root HEAD. */
+  sourceSession?: { branch: string; display_name?: string | null } | null;
 }
 
 type Flow = "adopt-local" | "adopt-remote" | "branch-off" | "pick";
@@ -135,6 +135,7 @@ function BranchDropdown({
     updatePosition();
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
+
     return () => {
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
@@ -301,6 +302,14 @@ function BranchDropdown({
         )}
     </div>
   );
+}
+
+function getSubmitLabel(isCreating: boolean, isFork: boolean): string {
+  if (isCreating) {
+    return isFork ? "Forking…" : "Creating…";
+  }
+
+  return isFork ? "Fork Session" : "Create Session";
 }
 
 export function CreateSessionDialog({
@@ -691,13 +700,7 @@ export function CreateSessionDialog({
               disabled={isCreating || !canSubmitBranchOff}
               type="submit"
             >
-              {isCreating
-                ? forkContext
-                  ? "Forking…"
-                  : "Creating…"
-                : forkContext
-                  ? "Fork Session"
-                  : "Create Session"}
+              {getSubmitLabel(isCreating, Boolean(forkContext))}
             </Button>
           </div>
         </form>

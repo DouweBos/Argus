@@ -10,14 +10,14 @@ interface TerminalStoreData {
   liveSessions: Record<string, boolean>;
   // Map of sessionId -> whether the run command is executing
   runBusy: Record<string, boolean>;
-  // Map of sessionId -> run terminal session id
-  runSessionId: Record<string, string | null>;
-  // Map of sessionId -> list of terminal sessions
-  sessions: Record<string, TerminalSession[]>;
   // Map of sessionId -> Map of run-command title -> running terminal id.
   // Populated by RunControl so any component (e.g. SessionCard) can tell
   // whether a session currently has a run-command executing.
   runningTerminals: Record<string, Record<string, string>>;
+  // Map of sessionId -> run terminal session id
+  runSessionId: Record<string, string | null>;
+  // Map of sessionId -> list of terminal sessions
+  sessions: Record<string, TerminalSession[]>;
 }
 
 const terminalStore = create<TerminalStoreData>(() => ({
@@ -170,7 +170,9 @@ export const replaceSessionId = (
       return state;
     }
     const list = state.sessions[sessionId] ?? [];
-    const updatedList = list.map((s) => (s.id === fromId ? { ...s, id: toId } : s));
+    const updatedList = list.map((s) =>
+      s.id === fromId ? { ...s, id: toId } : s,
+    );
 
     const { [fromId]: _oldAlive, ...restAlive } = state.liveSessions;
     const liveSessions = { ...restAlive, [toId]: true };
@@ -286,12 +288,15 @@ export const setRunningTerminal = (
     const existing = state.runningTerminals[sessionId] ?? {};
     if (terminalId === null) {
       const { [title]: _removed, ...rest } = existing;
-      const next = { ...state.runningTerminals, [sessionId]: rest };
       if (Object.keys(rest).length === 0) {
-        delete next[sessionId];
+        const { [sessionId]: _dropped, ...remaining } = state.runningTerminals;
+
+        return { runningTerminals: remaining };
       }
 
-      return { runningTerminals: next };
+      return {
+        runningTerminals: { ...state.runningTerminals, [sessionId]: rest },
+      };
     }
 
     return {

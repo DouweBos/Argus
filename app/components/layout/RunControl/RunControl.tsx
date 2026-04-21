@@ -130,9 +130,9 @@ export function RunControl({ sessionId }: RunControlProps) {
   const toggleTitle = useCallback(
     (title: string) => {
       if (runningTerminals[title]) {
-        void stopTitle(title);
+        stopTitle(title).catch(() => undefined);
       } else {
-        void runTitle(title);
+        runTitle(title).catch(() => undefined);
       }
     },
     [runningTerminals, runTitle, stopTitle],

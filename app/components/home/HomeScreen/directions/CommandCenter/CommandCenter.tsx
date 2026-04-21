@@ -1,16 +1,22 @@
 import type { HomeData, HomeProject } from "../../useHomeData";
+import { useState } from "react";
 import {
   AgentRow,
   Button,
+  ContextMenu,
+  type ContextMenuItem,
   Icons,
   ProjectCard,
   ShortcutsRail,
   StatCell,
   StatsStrip,
 } from "@argus/peacock";
+import { openInCustomEditor, openInEditor } from "../../../../../lib/ipc";
 import { setCenterView } from "../../../../../stores/centerViewStore";
 import { removeRecentProject } from "../../../../../stores/recentProjectsStore";
 import { selectSession } from "../../../../../stores/sessionStore";
+import { useCustomEditors } from "../../../../../stores/settingsStore";
+import { useEditors } from "../../../OpenInEditor/useEditors";
 import { OrganizationsPanel } from "../../../OrganizationsPanel/OrganizationsPanel";
 import { HOME_SHORTCUTS } from "../../homeContent";
 import styles from "./CommandCenter.module.css";
@@ -50,6 +56,55 @@ export function CommandCenter({
 }: CommandCenterProps) {
   const { projects, activeAgents, devices, stats, formatLastOpened } = data;
   const runningDevices = devices.filter((d) => d.online);
+  const editors = useEditors();
+  const customEditors = useCustomEditors();
+  const [projectMenu, setProjectMenu] = useState<{
+    name: string;
+    path: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const availableEditors = editors.filter((e) => e.available);
+  let projectMenuItems: ContextMenuItem[] = [];
+  if (projectMenu) {
+    const targetPath = projectMenu.path;
+    const builtinItems: ContextMenuItem[] = availableEditors.map((ed) => ({
+      label: `Open in ${ed.name}`,
+      onClick: () => {
+        openInEditor(ed.id, targetPath).catch(() => undefined);
+      },
+    }));
+    const customItems: ContextMenuItem[] = customEditors.map((ed) => ({
+      label: `Open in ${ed.name}`,
+      onClick: () => {
+        openInCustomEditor(ed.command, targetPath).catch(() => undefined);
+      },
+    }));
+    let editorItems: ContextMenuItem[];
+    if (builtinItems.length === 0 && customItems.length === 0) {
+      editorItems = [
+        {
+          label: "No editors detected",
+          disabled: true,
+          onClick: () => undefined,
+        },
+      ];
+    } else if (builtinItems.length > 0 && customItems.length > 0) {
+      editorItems = [...builtinItems, { separator: true }, ...customItems];
+    } else {
+      editorItems = [...builtinItems, ...customItems];
+    }
+    projectMenuItems = [
+      ...editorItems,
+      { separator: true },
+      {
+        label: `Remove ${projectMenu.name} from recent`,
+        danger: true,
+        onClick: () => removeRecentProject(projectMenu.path),
+      },
+    ];
+  }
 
   const openDevices = () => {
     selectSession(null);
@@ -160,13 +215,12 @@ export function CommandCenter({
                       onClick={() => onOpenProject(p)}
                       onContextMenu={(e) => {
                         e.preventDefault();
-                        if (
-                          window.confirm(
-                            `Remove ${p.name} from recent projects?`,
-                          )
-                        ) {
-                          removeRecentProject(p.path);
-                        }
+                        setProjectMenu({
+                          path: p.path,
+                          name: p.name,
+                          x: e.clientX,
+                          y: e.clientY,
+                        });
                       }}
                     />
                   ))}
@@ -276,6 +330,13 @@ export function CommandCenter({
           <ShortcutsRail shortcuts={HOME_SHORTCUTS.slice(0, 4)} />
         </div>
       </div>
+      {projectMenu && (
+        <ContextMenu
+          items={projectMenuItems}
+          position={{ x: projectMenu.x, y: projectMenu.y }}
+          onClose={() => setProjectMenu(null)}
+        />
+      )}
     </div>
   );
 }

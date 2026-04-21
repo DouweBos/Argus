@@ -1,12 +1,6 @@
 import type { DependencyStatus } from "../../../lib/types";
 import { useEffect, useState } from "react";
-import {
-  Banner,
-  Button,
-  EmptyHome,
-  Icons,
-  Kbd,
-} from "@argus/peacock";
+import { Banner, Button, EmptyHome, Icons, Kbd } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
 import { setActiveAgent } from "../../../stores/agentStore";

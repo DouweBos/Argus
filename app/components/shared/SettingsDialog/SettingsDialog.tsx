@@ -1,8 +1,13 @@
-import { Dialog } from "@argus/peacock";
+import { useState } from "react";
+import { Button, Dialog, Icons, Input } from "@argus/peacock";
 import {
   PERMISSION_MODE_LABELS,
+  addCustomEditor,
   hideSettingsDialog,
+  removeCustomEditor,
   setDefaultPermissionMode,
+  updateCustomEditor,
+  useCustomEditors,
   useDefaultPermissionMode,
   useSettingsDialogOpen,
   type PermissionMode,
@@ -59,7 +64,169 @@ function SettingsDialogContent() {
             ))}
           </div>
         </section>
+
+        <CustomEditorsSection />
       </div>
     </Dialog>
+  );
+}
+
+function CustomEditorsSection() {
+  const editors = useCustomEditors();
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCommand, setNewCommand] = useState("");
+
+  const handleAdd = () => {
+    if (!newName.trim() || !newCommand.trim()) {
+      return;
+    }
+    addCustomEditor(newName, newCommand);
+    setNewName("");
+    setNewCommand("");
+    setAdding(false);
+  };
+
+  return (
+    <section className={styles.section}>
+      <div className={styles.label}>Custom editors</div>
+      <div className={styles.caption}>
+        Add your own editors to the &ldquo;Open in editor&rdquo; menu. Command
+        is a CLI on PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to
+        a <code>.app</code> bundle (e.g. <code>/Applications/Zed.app</code>).
+      </div>
+
+      <div className={styles.editorList}>
+        {editors.map((ed) => (
+          <CustomEditorRow
+            key={ed.id}
+            id={ed.id}
+            name={ed.name}
+            command={ed.command}
+          />
+        ))}
+      </div>
+
+      {adding ? (
+        <div className={styles.editorForm}>
+          <Input
+            placeholder="Name (e.g. Zed)"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <Input
+            mono
+            placeholder="Command or .app path"
+            value={newCommand}
+            onChange={(e) => setNewCommand(e.target.value)}
+          />
+          <div className={styles.editorFormActions}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setAdding(false);
+                setNewName("");
+                setNewCommand("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              disabled={!newName.trim() || !newCommand.trim()}
+              onClick={handleAdd}
+            >
+              Add editor
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          variant="ghost"
+          leading={<Icons.PlusIcon size={12} />}
+          onClick={() => setAdding(true)}
+        >
+          Add editor
+        </Button>
+      )}
+    </section>
+  );
+}
+
+interface CustomEditorRowProps {
+  command: string;
+  id: string;
+  name: string;
+}
+
+function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState(name);
+  const [draftCommand, setDraftCommand] = useState(command);
+
+  if (editing) {
+    return (
+      <div className={styles.editorForm}>
+        <Input
+          value={draftName}
+          onChange={(e) => setDraftName(e.target.value)}
+        />
+        <Input
+          mono
+          value={draftCommand}
+          onChange={(e) => setDraftCommand(e.target.value)}
+        />
+        <div className={styles.editorFormActions}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setDraftName(name);
+              setDraftCommand(command);
+              setEditing(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!draftName.trim() || !draftCommand.trim()}
+            onClick={() => {
+              updateCustomEditor(id, {
+                name: draftName,
+                command: draftCommand,
+              });
+              setEditing(false);
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.editorRow}>
+      <div className={styles.editorRowText}>
+        <div className={styles.editorRowName}>{name}</div>
+        <div className={styles.editorRowCommand}>{command}</div>
+      </div>
+      <div className={styles.editorRowActions}>
+        <Button
+          variant="ghost"
+          leading={<Icons.PencilIcon size={10} />}
+          onClick={() => setEditing(true)}
+        >
+          Edit
+        </Button>
+        <Button
+          variant="ghost"
+          leading={<Icons.TrashIcon size={12} />}
+          onClick={() => removeCustomEditor(id)}
+        >
+          Remove
+        </Button>
+      </div>
+    </div>
   );
 }

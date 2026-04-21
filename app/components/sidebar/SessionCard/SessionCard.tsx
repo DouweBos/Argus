@@ -43,6 +43,25 @@ interface SessionCardProps {
   session: Session;
 }
 
+function renderSessionIcon(
+  kind: Session["kind"],
+  isRunning: boolean,
+  runningIconClass: string,
+) {
+  if (kind === "project_root") {
+    return <Icons.RepoIcon size={13} />;
+  }
+  if (isRunning) {
+    return (
+      <span className={runningIconClass} title="Run command is executing">
+        <Icons.PlayIcon size={13} />
+      </span>
+    );
+  }
+
+  return <Icons.BranchIcon size={13} />;
+}
+
 export function SessionCard({
   session,
   repoBasename,
@@ -130,18 +149,7 @@ export function SessionCard({
       <div className={styles.main}>
         <div className={styles.left}>
           <div className={styles.titleRow}>
-            {session.kind === "project_root" ? (
-              <Icons.RepoIcon size={13} />
-            ) : isRunning ? (
-              <span
-                className={styles.runningIcon}
-                title="Run command is executing"
-              >
-                <Icons.PlayIcon size={13} />
-              </span>
-            ) : (
-              <Icons.BranchIcon size={13} />
-            )}
+            {renderSessionIcon(session.kind, isRunning, styles.runningIcon)}
             <span className={styles.projectName}>{projectName}</span>
           </div>
         </div>

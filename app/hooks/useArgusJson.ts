@@ -7,42 +7,70 @@ interface ArgusJsonState {
   refresh: () => void;
 }
 
-export function useArgusJson(repoRoot: string | null): ArgusJsonState {
-  const [exists, setExists] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [nonce, setNonce] = useState(0);
+interface TrackedState {
+  exists: boolean | null;
+  loading: boolean;
+  nonce: number;
+  repoRoot: string | null;
+}
 
-  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+export function useArgusJson(repoRoot: string | null): ArgusJsonState {
+  const [tracked, setTracked] = useState<TrackedState>({
+    exists: null,
+    loading: repoRoot !== null,
+    nonce: 0,
+    repoRoot,
+  });
+
+  if (tracked.repoRoot !== repoRoot) {
+    setTracked({
+      exists: null,
+      loading: repoRoot !== null,
+      nonce: 0,
+      repoRoot,
+    });
+  }
+
+  const refresh = useCallback(() => {
+    setTracked((prev) => ({ ...prev, loading: true, nonce: prev.nonce + 1 }));
+  }, []);
+
+  const { nonce } = tracked;
 
   useEffect(() => {
     if (!repoRoot) {
-      setExists(null);
-
-      return;
+      return undefined;
     }
     let cancelled = false;
-    setLoading(true);
     readExistingArgusJson(repoRoot)
       .then((cfg) => {
-        if (!cancelled) {
-          setExists(cfg !== null);
+        if (cancelled) {
+          return;
         }
+        setTracked((prev) =>
+          prev.repoRoot === repoRoot
+            ? { ...prev, exists: cfg !== null, loading: false }
+            : prev,
+        );
       })
       .catch(() => {
-        if (!cancelled) {
-          setExists(false);
+        if (cancelled) {
+          return;
         }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        setTracked((prev) =>
+          prev.repoRoot === repoRoot
+            ? { ...prev, exists: false, loading: false }
+            : prev,
+        );
       });
 
     return () => {
       cancelled = true;
     };
   }, [repoRoot, nonce]);
+
+  const exists = tracked.repoRoot === repoRoot ? tracked.exists : null;
+  const loading = tracked.repoRoot === repoRoot ? tracked.loading : false;
 
   return { exists, loading, refresh };
 }

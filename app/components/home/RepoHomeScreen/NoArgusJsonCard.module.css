@@ -1,7 +1,11 @@
 .card {
   border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--glass-border));
   border-radius: var(--border-radius-md, 8px);
-  background: color-mix(in srgb, var(--accent) 6%, var(--bg-secondary, rgba(255, 255, 255, 0.02)));
+  background: color-mix(
+    in srgb,
+    var(--accent) 6%,
+    var(--bg-secondary, rgba(255, 255, 255, 0.02))
+  );
   padding: 14px;
 }
 
@@ -50,8 +54,7 @@
   flex-shrink: 0;
 }
 
-.primaryBtn,
-.secondaryBtn {
+.primaryBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -80,15 +83,4 @@
 .primaryBtn:disabled {
   opacity: 0.5;
   cursor: progress;
-}
-
-.secondaryBtn {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: var(--text-secondary, var(--text-primary));
-}
-
-.secondaryBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
 }
