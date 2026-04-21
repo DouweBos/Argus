@@ -50,6 +50,12 @@ export interface TerminalSession {
    * Used by {@link createRunTerminal} to match restart-on-rerun semantics.
    */
   runTitle?: string;
+  /**
+   * When true, {@link terminalWrite} silently drops renderer-originated input.
+   * Used by the setup pipeline so user keystrokes don't race with commands
+   * being fed into the PTY's stdin while initialization is in progress.
+   */
+  locked?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -483,6 +489,9 @@ export function terminalWrite(sessionId: string, data: string): void {
   const session = appState.terminals.get(sessionId);
   if (!session) {
     throw `Terminal session not found: ${sessionId}`;
+  }
+  if (session.locked) {
+    return;
   }
   const raw = Buffer.from(data, "base64");
   // Decode as "binary" (latin1) rather than the default UTF-8 so byte values
