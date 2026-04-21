@@ -203,6 +203,30 @@
   color: var(--text-secondary);
 }
 
+.branchEditBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  padding: 1px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm, 4px);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease,
+    background 0.12s ease;
+}
+
+.branchEditBtn:hover {
+  opacity: 1;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
 @media (max-width: 1100px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);

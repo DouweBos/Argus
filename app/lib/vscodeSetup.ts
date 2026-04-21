@@ -70,6 +70,11 @@ import getWorkingCopyServiceOverride from "@codingame/monaco-vscode-working-copy
 import getWorkspaceTrustServiceOverride from "@codingame/monaco-vscode-workspace-trust-service-override";
 // Import language extensions (triggers TextMate grammar registration)
 import "./vscodeExtensions";
+import {
+  getResolvedTheme,
+  subscribeResolvedTheme,
+  type ResolvedTheme,
+} from "../stores/themeStore";
 import { createLogger } from "./logger";
 import { registerIpcFilesystem } from "./vscodeFilesystem";
 import { loadLocalExtensions } from "./vscodeLocalExtensions";
@@ -162,25 +167,243 @@ window.MonacoEnvironment = {
 // ---------------------------------------------------------------------------
 // Argus theme — applied as user configuration before services initialize.
 //
-// Maps Argus's CSS palette (global.css :root vars) onto VS Code's
-// workbench color tokens so the editor, explorer, status bar, etc. all
-// match the surrounding Argus shell.
-//
-// Palette reference (keep in sync with global.css):
-//   --bg-primary:   #0a0a0f    --text-primary:   #f0f0f5
-//   --bg-secondary: #111118    --text-secondary: #a0a0b8
-//   --bg-tertiary:  #1a1a24    --text-muted:     #55556a
-//   --bg-hover:     #222233    --accent:         #4d9fff
-//   --border:       rgba(255,255,255,0.08) ≈ #15151d on #0a0a0f
-//   --error:        #ff4466    --warning:        #f5a623
-//   --success:      #00d4aa
+// Maps Argus's CSS palette (tokens.css) onto VS Code's workbench color
+// tokens so the editor, explorer, status bar, etc. match the surrounding
+// Argus shell. Two palettes are defined — dark and light — and scoped via
+// `[Default Dark Modern]` / `[Default Light Modern]` inside
+// `workbench.colorCustomizations`. At runtime we flip `workbench.colorTheme`
+// in response to app theme changes; VS Code applies the matching scope.
 // ---------------------------------------------------------------------------
-const BORDER = "#1c1c28"; // Solid approximation of rgba(255,255,255,0.08) on bg-primary
+
+interface ArgusPalette {
+  accent: string;
+  accentHover: string;
+  bgHover: string;
+  bgPrimary: string;
+  bgSecondary: string;
+  bgTertiary: string;
+  border: string;
+  error: string;
+  success: string;
+  textMuted: string;
+  textOnAccent: string;
+  textPrimary: string;
+  textSecondary: string;
+  warning: string;
+}
+
+// Dark palette — mirrors tokens.css html[data-theme="dark"]
+const DARK: ArgusPalette = {
+  bgPrimary: "#0a0a0f",
+  bgSecondary: "#111118",
+  bgTertiary: "#1a1a24",
+  bgHover: "#222233",
+  border: "#1c1c28", // solid approximation of rgba(255,255,255,0.08) on bgPrimary
+  textPrimary: "#ffffff",
+  textSecondary: "#d0d0dc",
+  textMuted: "#8a8aa0",
+  textOnAccent: "#0a0a0f",
+  accent: "#f5a623",
+  accentHover: "#ffbe4d",
+  error: "#ff4466",
+  warning: "#f5a623",
+  success: "#00d4aa",
+};
+
+// Light palette — mirrors tokens.css html[data-theme="light"]
+const LIGHT: ArgusPalette = {
+  bgPrimary: "#fafbfc",
+  bgSecondary: "#ffffff",
+  bgTertiary: "#eceef2",
+  bgHover: "#dcdfe6",
+  border: "#d0d3da", // solid approximation of rgba(10,10,15,0.14) on bgPrimary
+  textPrimary: "#0d0d14",
+  textSecondary: "#2f2f40",
+  textMuted: "#5c5c72",
+  textOnAccent: "#ffffff",
+  accent: "#c7861f",
+  accentHover: "#e09820",
+  error: "#dc2c49",
+  warning: "#d69a00",
+  success: "#00a884",
+};
+
+function buildColorCustomizations(p: ArgusPalette): Record<string, string> {
+  return {
+    // Editor
+    "editor.background": p.bgPrimary,
+    "editor.foreground": p.textPrimary,
+    "editor.lineHighlightBackground": p.bgTertiary,
+    "editor.selectionBackground": `${p.accent}40`,
+    "editor.inactiveSelectionBackground": `${p.accent}20`,
+    "editorCursor.foreground": p.accent,
+    "editorLineNumber.foreground": p.textMuted,
+    "editorLineNumber.activeForeground": p.textSecondary,
+    "editorIndentGuide.background": p.border,
+    "editorIndentGuide.activeBackground": p.bgHover,
+    "editorWidget.background": p.bgSecondary,
+    "editorWidget.border": p.border,
+    "editorBracketMatch.border": `${p.accent}80`,
+    "editorBracketMatch.background": `${p.accent}18`,
+    "editorGutter.background": p.bgPrimary,
+    "editorOverviewRuler.border": p.border,
+    "editorGroup.border": p.border,
+    "editorGroupHeader.tabsBackground": p.bgSecondary,
+    "editorGroupHeader.tabsBorder": p.border,
+
+    // Tabs
+    "tab.activeBackground": p.bgPrimary,
+    "tab.activeForeground": p.textPrimary,
+    "tab.activeBorderTop": p.accent,
+    "tab.inactiveBackground": p.bgSecondary,
+    "tab.inactiveForeground": p.textMuted,
+    "tab.border": p.border,
+    "tab.hoverBackground": p.bgHover,
+
+    // Activity bar (hidden, but keep colors for consistency)
+    "activityBar.background": p.bgPrimary,
+    "activityBar.foreground": p.textPrimary,
+    "activityBar.inactiveForeground": p.textMuted,
+    "activityBar.border": p.border,
+    "activityBarBadge.background": p.accent,
+    "activityBarBadge.foreground": p.textOnAccent,
+
+    // Sidebar (explorer, search, etc.)
+    "sideBar.background": p.bgSecondary,
+    "sideBar.foreground": p.textSecondary,
+    "sideBar.border": p.border,
+    "sideBarTitle.foreground": p.textPrimary,
+    "sideBarSectionHeader.background": p.bgSecondary,
+    "sideBarSectionHeader.foreground": p.textSecondary,
+    "sideBarSectionHeader.border": p.border,
+
+    // Lists (file tree, search results, etc.)
+    "list.activeSelectionBackground": `${p.accent}20`,
+    "list.activeSelectionForeground": p.textPrimary,
+    "list.inactiveSelectionBackground": p.bgHover,
+    "list.inactiveSelectionForeground": p.textPrimary,
+    "list.hoverBackground": p.bgHover,
+    "list.hoverForeground": p.textPrimary,
+    "list.focusOutline": `${p.accent}80`,
+    "list.highlightForeground": p.accent,
+
+    // Status bar
+    "statusBar.background": p.bgPrimary,
+    "statusBar.foreground": p.textMuted,
+    "statusBar.border": p.border,
+    "statusBar.noFolderBackground": p.bgPrimary,
+    "statusBarItem.hoverBackground": p.bgHover,
+    "statusBarItem.activeBackground": p.bgHover,
+
+    // Title bar
+    "titleBar.activeBackground": p.bgPrimary,
+    "titleBar.activeForeground": p.textPrimary,
+    "titleBar.inactiveBackground": p.bgPrimary,
+    "titleBar.inactiveForeground": p.textMuted,
+    "titleBar.border": p.border,
+
+    // Panel (problems, output, terminal)
+    "panel.background": p.bgPrimary,
+    "panel.border": p.border,
+    "panelTitle.activeBorder": p.accent,
+    "panelTitle.activeForeground": p.textPrimary,
+    "panelTitle.inactiveForeground": p.textMuted,
+
+    // Input controls
+    "input.background": p.bgTertiary,
+    "input.foreground": p.textPrimary,
+    "input.border": p.border,
+    "input.placeholderForeground": p.textMuted,
+    "inputOption.activeBorder": p.accent,
+    "inputOption.activeBackground": `${p.accent}30`,
+    focusBorder: p.accent,
+
+    // Buttons
+    "button.background": p.accent,
+    "button.foreground": p.textOnAccent,
+    "button.hoverBackground": p.accentHover,
+
+    // Dropdown
+    "dropdown.background": p.bgSecondary,
+    "dropdown.foreground": p.textPrimary,
+    "dropdown.border": p.border,
+
+    // Badges
+    "badge.background": p.accent,
+    "badge.foreground": p.textOnAccent,
+
+    // Scrollbar
+    "scrollbar.shadow": "#00000000",
+    "scrollbarSlider.background": `${p.bgHover}80`,
+    "scrollbarSlider.hoverBackground": `${p.textMuted}80`,
+    "scrollbarSlider.activeBackground": `${p.textMuted}80`,
+
+    // Minimap
+    "minimap.background": p.bgPrimary,
+
+    // Breadcrumbs
+    "breadcrumb.foreground": p.textMuted,
+    "breadcrumb.focusForeground": p.textPrimary,
+    "breadcrumb.activeSelectionForeground": p.textPrimary,
+    "breadcrumbPicker.background": p.bgSecondary,
+
+    // Notifications
+    "notifications.background": p.bgSecondary,
+    "notifications.foreground": p.textPrimary,
+    "notifications.border": p.border,
+    "notificationCenterHeader.background": p.bgSecondary,
+
+    // Quick input (command palette)
+    "quickInput.background": p.bgSecondary,
+    "quickInput.foreground": p.textPrimary,
+    "quickInputList.focusBackground": p.bgHover,
+    "quickInputTitle.background": p.bgSecondary,
+
+    // Peek view
+    "peekView.border": p.accent,
+    "peekViewEditor.background": p.bgPrimary,
+    "peekViewResult.background": p.bgSecondary,
+    "peekViewTitle.background": p.bgSecondary,
+
+    // Diff editor
+    "diffEditor.insertedTextBackground": `${p.success}18`,
+    "diffEditor.removedTextBackground": `${p.error}18`,
+
+    // Git decorations
+    "gitDecoration.modifiedResourceForeground": p.warning,
+    "gitDecoration.untrackedResourceForeground": p.success,
+    "gitDecoration.deletedResourceForeground": p.error,
+    "gitDecoration.conflictingResourceForeground": p.error,
+    "gitDecoration.ignoredResourceForeground": p.textMuted,
+
+    // Error / warning / info
+    "editorError.foreground": p.error,
+    "editorWarning.foreground": p.warning,
+    "editorInfo.foreground": p.accent,
+
+    // Selection highlight
+    "editor.wordHighlightBackground": `${p.accent}18`,
+    "editor.wordHighlightStrongBackground": `${p.accent}28`,
+    "editor.findMatchBackground": `${p.warning}40`,
+    "editor.findMatchHighlightBackground": `${p.warning}20`,
+  };
+}
+
+const DARK_THEME_ID = "Default Dark Modern";
+const LIGHT_THEME_ID = "Default Light Modern";
+
+function themeIdFor(theme: ResolvedTheme): string {
+  return theme === "light" ? LIGHT_THEME_ID : DARK_THEME_ID;
+}
+
+const initialResolvedTheme = getResolvedTheme();
 
 const argusUserConfig = JSON.stringify({
-  // Force our base theme and disable theme picker
-  "workbench.colorTheme": "Default Dark Modern",
-  "workbench.preferredDarkColorTheme": "Default Dark Modern",
+  // Pick base theme from the app's resolved theme at startup. Runtime
+  // changes flow through subscribeResolvedTheme below.
+  "workbench.colorTheme": themeIdFor(initialResolvedTheme),
+  "workbench.preferredDarkColorTheme": DARK_THEME_ID,
+  "workbench.preferredLightColorTheme": LIGHT_THEME_ID,
 
   // Hide the native activity bar — replaced by custom SidebarHeader component
   "workbench.activityBar.location": "hidden",
@@ -199,164 +422,11 @@ const argusUserConfig = JSON.stringify({
   "workbench.editor.restoreViewState": false,
   "workbench.startupEditor": "none",
 
-  // Override every significant workbench color to match the Argus palette
+  // Scope overrides by base theme so both palettes coexist. VS Code applies
+  // whichever block matches the currently-active workbench.colorTheme.
   "workbench.colorCustomizations": {
-    // Editor
-    "editor.background": "#0a0a0f",
-    "editor.foreground": "#f0f0f5",
-    "editor.lineHighlightBackground": "#1a1a24",
-    "editor.selectionBackground": "#4d9fff40",
-    "editor.inactiveSelectionBackground": "#4d9fff20",
-    "editorCursor.foreground": "#4d9fff",
-    "editorLineNumber.foreground": "#55556a",
-    "editorLineNumber.activeForeground": "#a0a0b8",
-    "editorIndentGuide.background": BORDER,
-    "editorIndentGuide.activeBackground": "#222233",
-    "editorWidget.background": "#111118",
-    "editorWidget.border": BORDER,
-    "editorBracketMatch.border": "#4d9fff80",
-    "editorBracketMatch.background": "#4d9fff18",
-    "editorGutter.background": "#0a0a0f",
-    "editorOverviewRuler.border": BORDER,
-    "editorGroup.border": BORDER,
-    "editorGroupHeader.tabsBackground": "#111118",
-    "editorGroupHeader.tabsBorder": BORDER,
-
-    // Tabs
-    "tab.activeBackground": "#0a0a0f",
-    "tab.activeForeground": "#f0f0f5",
-    "tab.activeBorderTop": "#4d9fff",
-    "tab.inactiveBackground": "#111118",
-    "tab.inactiveForeground": "#55556a",
-    "tab.border": BORDER,
-    "tab.hoverBackground": "#222233",
-
-    // Activity bar (hidden, but keep colors for consistency)
-    "activityBar.background": "#0a0a0f",
-    "activityBar.foreground": "#f0f0f5",
-    "activityBar.inactiveForeground": "#55556a",
-    "activityBar.border": BORDER,
-    "activityBarBadge.background": "#4d9fff",
-    "activityBarBadge.foreground": "#0a0a0f",
-
-    // Sidebar (explorer, search, etc.)
-    "sideBar.background": "#111118",
-    "sideBar.foreground": "#a0a0b8",
-    "sideBar.border": BORDER,
-    "sideBarTitle.foreground": "#f0f0f5",
-    "sideBarSectionHeader.background": "#111118",
-    "sideBarSectionHeader.foreground": "#a0a0b8",
-    "sideBarSectionHeader.border": BORDER,
-
-    // Lists (file tree, search results, etc.)
-    "list.activeSelectionBackground": "#4d9fff20",
-    "list.activeSelectionForeground": "#f0f0f5",
-    "list.inactiveSelectionBackground": "#222233",
-    "list.inactiveSelectionForeground": "#f0f0f5",
-    "list.hoverBackground": "#222233",
-    "list.hoverForeground": "#f0f0f5",
-    "list.focusOutline": "#4d9fff80",
-    "list.highlightForeground": "#4d9fff",
-
-    // Status bar
-    "statusBar.background": "#0a0a0f",
-    "statusBar.foreground": "#55556a",
-    "statusBar.border": BORDER,
-    "statusBar.noFolderBackground": "#0a0a0f",
-    "statusBarItem.hoverBackground": "#222233",
-    "statusBarItem.activeBackground": "#222233",
-
-    // Title bar
-    "titleBar.activeBackground": "#0a0a0f",
-    "titleBar.activeForeground": "#f0f0f5",
-    "titleBar.inactiveBackground": "#0a0a0f",
-    "titleBar.inactiveForeground": "#55556a",
-    "titleBar.border": BORDER,
-
-    // Panel (problems, output, terminal)
-    "panel.background": "#0a0a0f",
-    "panel.border": BORDER,
-    "panelTitle.activeBorder": "#4d9fff",
-    "panelTitle.activeForeground": "#f0f0f5",
-    "panelTitle.inactiveForeground": "#55556a",
-
-    // Input controls
-    "input.background": "#1a1a24",
-    "input.foreground": "#f0f0f5",
-    "input.border": BORDER,
-    "input.placeholderForeground": "#55556a",
-    "inputOption.activeBorder": "#4d9fff",
-    "inputOption.activeBackground": "#4d9fff30",
-    focusBorder: "#4d9fff",
-
-    // Buttons
-    "button.background": "#4d9fff",
-    "button.foreground": "#0a0a0f",
-    "button.hoverBackground": "#70b3ff",
-
-    // Dropdown
-    "dropdown.background": "#111118",
-    "dropdown.foreground": "#f0f0f5",
-    "dropdown.border": BORDER,
-
-    // Badges
-    "badge.background": "#4d9fff",
-    "badge.foreground": "#0a0a0f",
-
-    // Scrollbar
-    "scrollbar.shadow": "#00000000",
-    "scrollbarSlider.background": "#22223380",
-    "scrollbarSlider.hoverBackground": "#55556a80",
-    "scrollbarSlider.activeBackground": "#55556a80",
-
-    // Minimap
-    "minimap.background": "#0a0a0f",
-
-    // Breadcrumbs
-    "breadcrumb.foreground": "#55556a",
-    "breadcrumb.focusForeground": "#f0f0f5",
-    "breadcrumb.activeSelectionForeground": "#f0f0f5",
-    "breadcrumbPicker.background": "#111118",
-
-    // Notifications
-    "notifications.background": "#111118",
-    "notifications.foreground": "#f0f0f5",
-    "notifications.border": BORDER,
-    "notificationCenterHeader.background": "#111118",
-
-    // Quick input (command palette)
-    "quickInput.background": "#111118",
-    "quickInput.foreground": "#f0f0f5",
-    "quickInputList.focusBackground": "#222233",
-    "quickInputTitle.background": "#111118",
-
-    // Peek view
-    "peekView.border": "#4d9fff",
-    "peekViewEditor.background": "#0a0a0f",
-    "peekViewResult.background": "#111118",
-    "peekViewTitle.background": "#111118",
-
-    // Diff editor
-    "diffEditor.insertedTextBackground": "#00d4aa18",
-    "diffEditor.removedTextBackground": "#ff446618",
-
-    // Git decorations
-    "gitDecoration.modifiedResourceForeground": "#f5a623",
-    "gitDecoration.untrackedResourceForeground": "#00d4aa",
-    "gitDecoration.deletedResourceForeground": "#ff4466",
-    "gitDecoration.conflictingResourceForeground": "#ff4466",
-    "gitDecoration.ignoredResourceForeground": "#55556a",
-
-    // Error / warning / info
-    "editorError.foreground": "#ff4466",
-    "editorWarning.foreground": "#f5a623",
-    "editorInfo.foreground": "#4d9fff",
-
-    // Selection highlight
-    "editor.wordHighlightBackground": "#4d9fff18",
-    "editor.wordHighlightStrongBackground": "#4d9fff28",
-    "editor.findMatchBackground": "#f5a62340",
-    "editor.findMatchHighlightBackground": "#f5a62320",
+    [`[${DARK_THEME_ID}]`]: buildColorCustomizations(DARK),
+    [`[${LIGHT_THEME_ID}]`]: buildColorCustomizations(LIGHT),
   },
 
   // Editor settings
@@ -548,6 +618,43 @@ export const vscodeReady = (async () => {
     }
   } catch (err) {
     log.error("failed to introspect syntax highlighting state", err);
+  }
+
+  // Keep the VS Code workbench theme in sync with the app's resolved
+  // theme. Writes `workbench.colorTheme` to the configuration service;
+  // the scoped `workbench.colorCustomizations` above then take effect.
+  try {
+    const [{ IConfigurationService }, { ConfigurationTarget }] =
+      await Promise.all([
+        import("@codingame/monaco-vscode-api/services"),
+        import("@codingame/monaco-vscode-api/services"),
+      ]);
+
+    const configurationService = (await getService(
+      IConfigurationService,
+    )) as unknown as {
+      updateValue: (
+        key: string,
+        value: unknown,
+        target?: unknown,
+      ) => Promise<void>;
+    };
+
+    const applyTheme = (theme: ResolvedTheme) => {
+      configurationService
+        .updateValue(
+          "workbench.colorTheme",
+          themeIdFor(theme),
+          ConfigurationTarget.USER,
+        )
+        .catch((err) =>
+          log.error("failed to update workbench.colorTheme", err),
+        );
+    };
+
+    subscribeResolvedTheme(applyTheme);
+  } catch (err) {
+    log.error("failed to wire theme sync", err);
   }
 
   // After services are ready, disable "Open Folder" commands.

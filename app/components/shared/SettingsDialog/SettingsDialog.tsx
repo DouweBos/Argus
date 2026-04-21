@@ -117,11 +117,11 @@ function CustomEditorsSection() {
 
   return (
     <section className={styles.section}>
-      <div className={styles.label}>Custom editors</div>
+      <div className={styles.label}>Custom &ldquo;Open in&rdquo; apps</div>
       <div className={styles.caption}>
-        Add your own editors to the &ldquo;Open in editor&rdquo; menu. Command
-        is a CLI on PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to
-        a <code>.app</code> bundle (e.g. <code>/Applications/Zed.app</code>).
+        Add your own apps to the &ldquo;Open in&rdquo; menu. Command is a CLI
+        on PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to a{" "}
+        <code>.app</code> bundle (e.g. <code>/Applications/Zed.app</code>).
       </div>
 
       <div className={styles.editorList}>
@@ -138,7 +138,7 @@ function CustomEditorsSection() {
       {adding ? (
         <div className={styles.editorForm}>
           <Input
-            placeholder="Name (e.g. Zed)"
+            placeholder="Name (e.g. Zed, Warp)"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
           />
@@ -164,7 +164,7 @@ function CustomEditorsSection() {
               disabled={!newName.trim() || !newCommand.trim()}
               onClick={handleAdd}
             >
-              Add editor
+              Add app
             </Button>
           </div>
         </div>
@@ -174,7 +174,7 @@ function CustomEditorsSection() {
           leading={<Icons.PlusIcon size={12} />}
           onClick={() => setAdding(true)}
         >
-          Add editor
+          Add app
         </Button>
       )}
     </section>

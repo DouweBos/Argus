@@ -14,6 +14,7 @@
 
 .line {
   display: flex;
+  align-items: flex-start;
   min-height: 18px;
   padding: 0 8px 0 0;
 }
@@ -53,8 +54,11 @@
 }
 
 .lineContent {
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   color: var(--text-secondary);
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .lineAdd .lineContent {

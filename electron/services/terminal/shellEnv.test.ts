@@ -27,6 +27,8 @@ describe("fixProcessPath", () => {
   let originalAndroidHome: string | undefined;
   let originalAndroidSdkRoot: string | undefined;
   let originalJavaHome: string | undefined;
+  let originalLang: string | undefined;
+  let originalLcAll: string | undefined;
 
   beforeEach(() => {
     originalPath = process.env.PATH;
@@ -34,12 +36,16 @@ describe("fixProcessPath", () => {
     originalAndroidHome = process.env.ANDROID_HOME;
     originalAndroidSdkRoot = process.env.ANDROID_SDK_ROOT;
     originalJavaHome = process.env.JAVA_HOME;
+    originalLang = process.env.LANG;
+    originalLcAll = process.env.LC_ALL;
     // Pre-populate env vars that `fixProcessPath` imports from the login
     // shell so importShellEnvVars bails out early and doesn't add extra
     // execFileSync calls that would throw off the assertions below.
     process.env.ANDROID_HOME = "/prefilled";
     process.env.ANDROID_SDK_ROOT = "/prefilled";
     process.env.JAVA_HOME = "/prefilled";
+    process.env.LANG = "/prefilled";
+    process.env.LC_ALL = "/prefilled";
     vi.clearAllMocks();
   });
 
@@ -60,6 +66,16 @@ describe("fixProcessPath", () => {
       delete process.env.JAVA_HOME;
     } else {
       process.env.JAVA_HOME = originalJavaHome;
+    }
+    if (originalLang === undefined) {
+      delete process.env.LANG;
+    } else {
+      process.env.LANG = originalLang;
+    }
+    if (originalLcAll === undefined) {
+      delete process.env.LC_ALL;
+    } else {
+      process.env.LC_ALL = originalLcAll;
     }
   });
 

@@ -36,6 +36,7 @@ import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
 import { refreshAllBranches } from "./services/session/watcher";
 import { stopSimulatorCapture } from "./services/simulator/ios";
+import { destroyAllTerminals } from "./services/terminal/multiplexer";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { appState } from "./state";
 
@@ -431,6 +432,9 @@ app.on("before-quit", (e) => {
   stopMcpServer();
   stopMjpegServer();
   stopAllScreencasts();
+  // Tear down every PTY so run-commands (dev servers, Metro, watchers) and
+  // any detached grandchildren they spawned don't linger after Argus exits.
+  destroyAllTerminals();
   webBrowserPool.releaseAll().catch((err) => {
     log("webBrowserPool.releaseAll failed: %s", err);
   });

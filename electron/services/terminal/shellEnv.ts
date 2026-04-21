@@ -74,9 +74,22 @@ export function fixProcessPath(): string[] {
   // aren't on PATH but affect tool discovery — e.g. Argus needs ANDROID_HOME
   // to find adb/emulator when the user has it set in their shell rc.
   importShellEnvVars(
-    ["ANDROID_HOME", "ANDROID_SDK_ROOT", "JAVA_HOME"],
+    ["ANDROID_HOME", "ANDROID_SDK_ROOT", "JAVA_HOME", "LANG", "LC_ALL"],
     diagnostics,
   );
+
+  // Ensure a UTF-8 locale. When Argus is launched from Finder/Dock the
+  // process inherits no LANG, which breaks tools that assume UTF-8 stdin
+  // (notably CocoaPods, which fails to parse podspecs containing non-ASCII
+  // bytes under US-ASCII).
+  if (!process.env.LANG) {
+    process.env.LANG = "en_US.UTF-8";
+    diagnostics.push("defaulted LANG=en_US.UTF-8");
+  }
+  if (!process.env.LC_ALL) {
+    process.env.LC_ALL = "en_US.UTF-8";
+    diagnostics.push("defaulted LC_ALL=en_US.UTF-8");
+  }
 
   return diagnostics;
 }

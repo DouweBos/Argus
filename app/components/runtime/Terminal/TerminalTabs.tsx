@@ -7,7 +7,6 @@ import {
   createTerminal,
   destroyTerminal,
   readArgusConfig,
-  stopTerminal,
 } from "../../../lib/ipc";
 import {
   startListening,
@@ -24,7 +23,6 @@ import {
   setActiveSession,
   useActiveSessionId,
   useRunSessionId,
-  useSessionAlive,
   useTerminalSessionsSlice,
 } from "../../../stores/terminalStore";
 import { ShellTerminal } from "./ShellTerminal";
@@ -38,7 +36,6 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
   const sessions = useTerminalSessionsSlice(sessionId);
   const activeId = useActiveSessionId(sessionId);
   const runSessionId = useRunSessionId(sessionId);
-  const activeAlive = useSessionAlive(activeId);
   const [isCreating, setIsCreating] = useState(false);
   const autoOpenedRef = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -147,17 +144,6 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     },
     [sessionId],
   );
-
-  const handleStop = useCallback(async () => {
-    if (!activeId) {
-      return;
-    }
-    try {
-      await stopTerminal(activeId);
-    } catch {
-      // Session already gone — UI will catch up via the exit event.
-    }
-  }, [activeId]);
 
   const handleReorder = useCallback(
     (fromId: string, targetId: string, position: DropPosition) => {
@@ -287,16 +273,6 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
             );
           })}
         </div>
-        {activeAlive && (
-          <button
-            aria-label="Stop terminal process"
-            className={styles.stopBtn}
-            title="Stop (SIGINT → SIGTERM → SIGKILL)"
-            onClick={handleStop}
-          >
-            <Icons.StopIcon size={10} />
-          </button>
-        )}
         <button
           aria-label="New terminal"
           className={styles.addTabBtn}

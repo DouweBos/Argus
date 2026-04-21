@@ -10,6 +10,7 @@ import { error } from "@logger";
 import {
   addAgent,
   getAgentState,
+  recordRecentlyClosed,
   removeAgent,
   updateAgent,
 } from "../stores/agentStore";
@@ -236,6 +237,20 @@ export function initExternalAgentStarted(): void {
  */
 export async function stopAgentById(agentId: string): Promise<void> {
   saveAgentConversation(agentId);
+  const agent = getAgentState().agents[agentId];
+  const conv = getConversationState().conversations[agentId];
+  if (agent) {
+    const firstUserText = conv?.messages.find((m) => m.role === "user")
+      ?.textBlocks[0];
+    const title =
+      conv?.title?.trim() || firstUserText?.trim() || "Untitled agent";
+    recordRecentlyClosed(agent.session_id, {
+      agentId,
+      claudeSessionId: conv?.sessionId,
+      closedAt: Date.now(),
+      title: title.length > 60 ? title.slice(0, 60) + "…" : title,
+    });
+  }
   stopAgentListening(agentId);
   try {
     await apiStopAgent(agentId);
