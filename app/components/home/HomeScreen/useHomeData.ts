@@ -127,7 +127,11 @@ export function useHomeData(): HomeData & {
       }
       const conv = conversations[a.agent_id];
       const convTitle = conv?.title?.trim();
-      const displayName = convTitle || ws.display_name || ws.branch;
+      const firstUserText = conv?.messages
+        ?.find((m) => m.role === "user")
+        ?.textBlocks?.[0]?.trim();
+      const displayName =
+        convTitle || firstUserText || ws.display_name || ws.branch;
       const entry: HomeAgent = {
         id: a.agent_id,
         branch: ws.branch,

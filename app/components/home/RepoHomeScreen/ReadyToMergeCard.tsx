@@ -21,6 +21,28 @@ interface ReadyToMergeCardProps {
   titleClassName?: string;
 }
 
+function summarizeRebaseError(raw: string): string {
+  const conflictFiles = new Set<string>();
+  const conflictRe = /Merge conflict in (\S+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = conflictRe.exec(raw)) !== null) {
+    conflictFiles.add(m[1]);
+  }
+  if (conflictFiles.size > 0) {
+    const files = Array.from(conflictFiles);
+    const first = files[0].split("/").pop() ?? files[0];
+    if (files.length === 1) {
+      return `Rebase failed: conflict in ${first}`;
+    }
+
+    return `Rebase failed: conflicts in ${first} and ${files.length - 1} other file${files.length - 1 === 1 ? "" : "s"}`;
+  }
+  const firstLine = raw.split("\n").find((line) => line.trim().length > 0);
+  const snippet = (firstLine ?? raw).trim();
+
+  return `Rebase failed: ${snippet.length > 140 ? `${snippet.slice(0, 140)}…` : snippet}`;
+}
+
 function getRebaseLabel(
   isRebasing: boolean,
   hasWork: boolean,
@@ -106,8 +128,12 @@ export function ReadyToMergeCard({
   }
 
   const hasConflicts = conflicts.length > 0;
+  const hasRebaseError = Boolean(rebaseError) && !isRebasing;
   const canMerge =
-    (hasStaged || commitsAhead > 0) && !hasConflicts && !isMerging;
+    (hasStaged || commitsAhead > 0) &&
+    !hasConflicts &&
+    !hasRebaseError &&
+    !isMerging;
 
   const baseLabel = baseBranch ?? "parent";
 
@@ -117,7 +143,7 @@ export function ReadyToMergeCard({
   } else if (hasConflicts) {
     statusLine = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseLabel}`;
   } else if (rebaseError) {
-    statusLine = `Rebase failed: ${rebaseError}`;
+    statusLine = summarizeRebaseError(rebaseError);
   } else if (commitsAhead > 0 && commitsBehind > 0) {
     statusLine = `${commitsAhead} ahead · ${commitsBehind} behind ${baseLabel}`;
   } else if (commitsAhead > 0 && hasUncommitted) {
@@ -141,6 +167,9 @@ export function ReadyToMergeCard({
   } else if (hasConflicts) {
     title = "Merge blocked";
     tone = "warn";
+  } else if (hasRebaseError) {
+    title = `Rebase onto ${baseLabel} failed`;
+    tone = "warn";
   } else if (!hasWork && needsRebase) {
     title = "Update available";
   } else {
@@ -156,7 +185,7 @@ export function ReadyToMergeCard({
         <div className={styles.body}>
           <div className={styles.title}>
             {title}
-            {baseBranch && !hasConflicts && !justMerged && hasWork && (
+            {baseBranch && !hasConflicts && !hasRebaseError && !justMerged && hasWork && (
               <span className={styles.target}>
                 {" into "}
                 <span className={styles.branch}>{baseBranch}</span>

@@ -362,8 +362,12 @@ export function RepoHomeScreen({
                     const ws = repoSessions.find((w) => w.id === a.session_id);
                     const conv = conversations[a.agent_id];
                     const convTitle = conv?.title?.trim();
+                    const firstUserText = conv?.messages
+                      ?.find((m) => m.role === "user")
+                      ?.textBlocks?.[0]?.trim();
                     const name =
                       convTitle ||
+                      firstUserText ||
                       ws?.display_name ||
                       ws?.branch ||
                       a.agent_id;
