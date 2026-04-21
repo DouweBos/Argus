@@ -51,10 +51,34 @@ declare global {
   }
 }
 
+/**
+ * Check whether a session id refers to an optimistic placeholder that hasn't
+ * been created on the backend yet. Placeholders are inserted into the session
+ * list the moment the user submits the new-session dialog so the card renders
+ * immediately, while `create_session` is still generating the branch name and
+ * setting up the worktree in the background. Any backend call keyed by this
+ * id would throw "Session not found" until replacement.
+ */
+export function isPendingSessionId(id: string | null | undefined): boolean {
+  return typeof id === "string" && id.startsWith("pending-");
+}
+
 function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
+  // Short-circuit any session-scoped call that's targeting a placeholder
+  // session. Callers of these wrappers already swallow errors (the backend
+  // may legitimately not have the session yet during setup), so returning
+  // a rejection here matches the existing "session not found" contract
+  // without spamming the main-process logs.
+  if (args) {
+    const candidate = (args["id"] ?? args["sessionId"]) as unknown;
+    if (typeof candidate === "string" && isPendingSessionId(candidate)) {
+      return Promise.reject(new Error("Session is pending creation"));
+    }
+  }
+
   return window.argus.invoke<T>(channel, args);
 }
 

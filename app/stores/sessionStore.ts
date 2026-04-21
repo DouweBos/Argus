@@ -127,7 +127,12 @@ export const mergeSessionsForProject = (
       (w) => w.repo_root !== repoRoot,
     );
 
-    return { sessions: [...otherSessions, ...merged] };
+    // Preserve optimistic placeholders for this repo — the backend hasn't
+    // materialized them yet (no path) so they would otherwise be wiped by the
+    // merge and reappear only once create_session resolves.
+    const pendingPlaceholders = existing.filter((w) => w.id.startsWith("pending-"));
+
+    return { sessions: [...otherSessions, ...merged, ...pendingPlaceholders] };
   });
 };
 
@@ -148,6 +153,37 @@ export const updateSession = (id: string, patch: Partial<Session>) => {
   sessionStore.setState((state) => ({
     sessions: state.sessions.map((w) => (w.id === id ? { ...w, ...patch } : w)),
   }));
+};
+
+/**
+ * Replace an optimistic placeholder session with the real one returned by the
+ * backend, preserving its position in the list and migrating selection +
+ * terminal state to the new id.
+ */
+export const replaceSession = (tempId: string, session: Session) => {
+  if (tempId === session.id) {
+    updateSession(session.id, session);
+
+    return;
+  }
+  migrateSessions(tempId, session.id);
+  const wasSelected = sessionStore.getState().selectedId === tempId;
+  // Apply the sessions swap and the selectedId migration in a single
+  // setState so no render ever sees `selectedId === tempId` while the
+  // sessions list has already moved on to the real id — that intermediate
+  // state causes CenterPanel to fall back to HomeScreen.
+  sessionStore.setState((state) => ({
+    sessions: state.sessions.map((w) => (w.id === tempId ? session : w)),
+    selectedId: wasSelected ? session.id : state.selectedId,
+  }));
+  if (wasSelected) {
+    clearSelectedOrganization();
+    pushRoute({
+      view: "session",
+      sessionId: session.id,
+      panel: getEditorState().activeCenterView,
+    });
+  }
 };
 
 export const selectSession = (id: string | null) => {
