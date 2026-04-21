@@ -44,7 +44,7 @@ export async function startAgentInSession(
   addAgent({
     agent_id: info.agent_id,
     session_id: info.session_id,
-    status: "running",
+    status: info.status,
     permission_mode: permissionMode,
   });
 
