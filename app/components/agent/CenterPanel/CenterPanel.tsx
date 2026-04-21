@@ -4,10 +4,13 @@ import {
   setActiveCenterView,
   useActiveCenterView,
 } from "../../../stores/editorStore";
+import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { EditorPanel } from "../../editor/EditorPanel";
 import { HomeScreen } from "../../home/HomeScreen";
 import { RunControl } from "../../layout/RunControl";
+import { TaskBanner } from "../../organizations/TaskBanner";
+import { TaskSidePanel } from "../../organizations/TaskSidePanel";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import styles from "./CenterPanel.module.css";
@@ -27,19 +30,28 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
   const activeView = useActiveCenterView();
   const setActiveView = setActiveCenterView;
 
+  const orgTask = useOrgTaskForSession(sessionId);
+
   if (!sessionId || !session) {
     return <HomeScreen />;
   }
 
+  // Org-host sessions are pure agent orchestrators — they have no worktree,
+  // no file editor, no git view. Force the Agents view and hide the other
+  // tabs.
+  const isOrgHost = session.kind === "org_host";
+  const effectiveView = isOrgHost ? "agents" : activeView;
+
   return (
     <div className={styles.panel}>
+      {orgTask && <TaskBanner task={orgTask} />}
       {/* View switcher */}
       <div className={styles.navRow}>
         <div className={styles.viewSwitcher}>
           <Chip
             interactive
             className={
-              activeView === "agents" || activeView === "home"
+              effectiveView === "agents" || effectiveView === "home"
                 ? styles.chipActive
                 : undefined
             }
@@ -47,41 +59,56 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
           >
             Agents
           </Chip>
-          <Chip
-            interactive
-            className={activeView === "editor" ? styles.chipActive : undefined}
-            onClick={() => setActiveView("editor")}
-          >
-            Editor
-          </Chip>
-          <Chip
-            interactive
-            className={activeView === "git" ? styles.chipActive : undefined}
-            onClick={() => setActiveView("git")}
-          >
-            Git
-          </Chip>
+          {!isOrgHost && (
+            <>
+              <Chip
+                interactive
+                className={
+                  effectiveView === "editor" ? styles.chipActive : undefined
+                }
+                onClick={() => setActiveView("editor")}
+              >
+                Editor
+              </Chip>
+              <Chip
+                interactive
+                className={
+                  effectiveView === "git" ? styles.chipActive : undefined
+                }
+                onClick={() => setActiveView("git")}
+              >
+                Git
+              </Chip>
+            </>
+          )}
         </div>
-        <div className={styles.runControl}>
-          <RunControl key={sessionId} sessionId={sessionId} />
-        </div>
+        {!isOrgHost && (
+          <div className={styles.runControl}>
+            <RunControl key={sessionId} sessionId={sessionId} />
+          </div>
+        )}
       </div>
 
       {/* Content area */}
-      {(activeView === "agents" || activeView === "home") && (
-        <AgentView sessionId={sessionId} />
-      )}
+      <div className={styles.body}>
+        <div className={styles.bodyMain}>
+          {(effectiveView === "agents" || effectiveView === "home") && (
+            <AgentView sessionId={sessionId} />
+          )}
 
-      {activeView === "editor" && <EditorPanel sessionId={sessionId} />}
+          {effectiveView === "editor" && <EditorPanel sessionId={sessionId} />}
 
-      {activeView === "git" && (
-        <GitView
-          baseBranch={session?.base_branch}
-          branchName={session?.branch}
-          repoRoot={session?.repo_root ?? ""}
-          sessionId={sessionId}
-        />
-      )}
+          {effectiveView === "git" && (
+            <GitView
+              baseBranch={session?.base_branch}
+              branchName={session?.branch}
+              repoRoot={session?.repo_root ?? ""}
+              sessionId={sessionId}
+            />
+          )}
+        </div>
+        {orgTask && <TaskSidePanel task={orgTask} />}
+      </div>
     </div>
   );
 }

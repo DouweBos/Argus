@@ -10,7 +10,6 @@ import {
 } from "../lib/ipc";
 
 interface OrgTaskStoreData {
-  activeTaskId: string | null;
   error: string | null;
   loading: boolean;
   tasks: OrgTask[];
@@ -18,7 +17,6 @@ interface OrgTaskStoreData {
 
 const store = create<OrgTaskStoreData>(() => ({
   tasks: [],
-  activeTaskId: null,
   loading: false,
   error: null,
 }));
@@ -31,21 +29,19 @@ export const useOrgTasksFor = (organizationId: string): OrgTask[] => {
   return tasks.filter((t) => t.organization_id === organizationId);
 };
 
-export const useActiveOrgTaskId = (): string | null =>
-  store((s) => s.activeTaskId);
-
-export const useActiveOrgTask = (): OrgTask | null => {
-  const id = useActiveOrgTaskId();
+/**
+ * Look up the OrgTask (if any) whose host session is `sessionId`. Used by the
+ * session view to decide whether to render the task banner + side panel.
+ */
+export const useOrgTaskForSession = (
+  sessionId: string | null,
+): OrgTask | null => {
   const tasks = useOrgTasks();
-  if (!id) {
+  if (!sessionId) {
     return null;
   }
 
-  return tasks.find((t) => t.id === id) ?? null;
-};
-
-export const setActiveOrgTask = (taskId: string | null): void => {
-  store.setState({ activeTaskId: taskId });
+  return tasks.find((t) => t.host_session_id === sessionId) ?? null;
 };
 
 export async function refreshOrgTasks(): Promise<void> {
@@ -75,9 +71,6 @@ export async function cancelOrgTask(id: string): Promise<void> {
 
 export async function deleteOrgTask(id: string): Promise<void> {
   await deleteOrgTaskIpc(id);
-  if (store.getState().activeTaskId === id) {
-    store.setState({ activeTaskId: null });
-  }
   await refreshOrgTasks();
 }
 

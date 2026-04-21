@@ -1,7 +1,8 @@
 import type { Organization } from "../../../lib/types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatInput, Chip, Icons } from "@argus/peacock";
-import { setActiveOrgTask, startOrgTask } from "../../../stores/orgTaskStore";
+import { startOrgTask, useOrgTasks } from "../../../stores/orgTaskStore";
+import { selectSession } from "../../../stores/sessionStore";
 import styles from "./StartTaskComposer.module.css";
 
 interface Props {
@@ -34,6 +35,23 @@ export function StartTaskComposer({ org }: Props) {
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const pendingTaskId = useRef<string | null>(null);
+  const tasks = useOrgTasks();
+
+  // After creating a task, the host session is spawned asynchronously in the
+  // backend. When the task's `host_session_id` becomes available, navigate
+  // directly to the host session so the user lands on the live chat view.
+  useEffect(() => {
+    const pending = pendingTaskId.current;
+    if (!pending) {
+      return;
+    }
+    const task = tasks.find((t) => t.id === pending);
+    if (task?.host_session_id) {
+      pendingTaskId.current = null;
+      selectSession(task.host_session_id);
+    }
+  }, [tasks]);
 
   const selectedRoots = useMemo(
     () => org.members.map((m) => m.repo_root).filter((r) => included[r]),
@@ -64,7 +82,11 @@ export function StartTaskComposer({ org }: Props) {
         prompt: trimmed,
         scope: selectedRoots.map((repo_root) => ({ repo_root })),
       });
-      setActiveOrgTask(task.id);
+      if (task.host_session_id) {
+        selectSession(task.host_session_id);
+      } else {
+        pendingTaskId.current = task.id;
+      }
       setPrompt("");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -9,6 +9,8 @@ import {
   toggleLeftSidebar,
   toggleRightPanel,
 } from "../../../stores/layoutStore";
+import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
+import { useOrganizations } from "../../../stores/organizationStore";
 import {
   updateSession,
   useSelectedSessionId,
@@ -81,10 +83,20 @@ export function TitleBar() {
   useOutsideClick(pickerRef, isEditingBase, () => setIsEditingBase(false));
 
   const canEditBase = session?.kind === "worktree";
+  const isOrgHost = session?.kind === "org_host";
 
-  const projectName = session?.repo_root
-    ? (session.repo_root.split("/").filter(Boolean).pop() ?? null)
+  const orgTask = useOrgTaskForSession(session?.id ?? null);
+  const organizations = useOrganizations();
+  const taskOrg = orgTask
+    ? (organizations.find((o) => o.id === orgTask.organization_id) ?? null)
     : null;
+
+  let projectName: string | null = null;
+  if (isOrgHost && taskOrg) {
+    projectName = taskOrg.name;
+  } else if (session?.repo_root) {
+    projectName = session.repo_root.split("/").filter(Boolean).pop() ?? null;
+  }
 
   const title = session ? (
     <div className={styles.branchInfo}>
@@ -94,8 +106,10 @@ export function TitleBar() {
           <span className={styles.separator}>/</span>
         </>
       )}
-      <span className={styles.branchLabel}>{session.branch}</span>
-      {session.base_branch && (
+      <span className={styles.branchLabel}>
+        {isOrgHost ? (orgTask?.title ?? "Task") : session.branch}
+      </span>
+      {!isOrgHost && session.base_branch && (
         <div ref={pickerRef} className={styles.baseBranchGroup}>
           <button
             className={`${styles.baseBranchLabel} ${canEditBase ? styles.baseBranchEditable : ""}`}

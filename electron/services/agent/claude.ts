@@ -651,6 +651,10 @@ export async function startAgent(
   child.on("close", (code) => {
     const exitCode = code ?? 0;
 
+    // Reject any in-flight control requests (including initialize) so callers
+    // that are `await`ing don't hang forever on an exited child.
+    controlHandler.cleanup();
+
     const agentEntry = appState.agents.get(agentId);
     if (agentEntry) {
       agentEntry.status = exitCode === 0 ? "stopped" : "error";
@@ -762,6 +766,17 @@ export async function startAgent(
 
   emitAgentStatus(agentId, agentSession.status);
   info(`[agent:${agentId}] started for session ${sessionId}`);
+
+  // Wait for the CLI's initialize response before returning. Writing a user
+  // message to stdin before the CLI has finished its handshake can cause the
+  // message to be dropped (the child hasn't finished wiring its readline
+  // loop yet). Callers like the OrgTask orchestrator depend on the first
+  // message actually landing, so surface init failure as a thrown error.
+  try {
+    await controlHandler.waitForInit();
+  } catch (e) {
+    throw `Agent failed to initialize: ${String(e)}`;
+  }
 
   return {
     agent_id: agentId,

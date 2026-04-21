@@ -5,9 +5,12 @@ import { useSessionDiffStats } from "../../../hooks/useSessionDiffStats";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
 import { type Session, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
-import { setActiveOrgTask, useOrgTasks } from "../../../stores/orgTaskStore";
+import { useOrgTasks } from "../../../stores/orgTaskStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
-import { useSetupProgressBySessionId } from "../../../stores/sessionStore";
+import {
+  selectSession,
+  useSetupProgressBySessionId,
+} from "../../../stores/sessionStore";
 import { useSessionIsRunning } from "../../../stores/terminalStore";
 import { BranchSwitcher } from "../BranchSwitcher";
 import styles from "./SessionCard.module.css";
@@ -297,7 +300,9 @@ export function SessionCard({
           title={`Part of task: ${orgTask.title}`}
           onClick={(e) => {
             e.stopPropagation();
-            setActiveOrgTask(orgTask.id);
+            if (orgTask.host_session_id) {
+              selectSession(orgTask.host_session_id);
+            }
           }}
         >
           task: {orgTask.title}

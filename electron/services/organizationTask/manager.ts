@@ -31,17 +31,27 @@ const TERMINAL_STATUSES: ReadonlySet<OrgTaskStatus> = new Set([
 
 export function initOrgTasks(): void {
   const tasks = loadOrgTasks();
+  let stalePurged = 0;
   for (const t of tasks) {
-    // Running tasks can't survive a restart — the host agent process is
-    // gone and the neutral session won't be re-registered automatically.
-    // Mark them as failed so the UI reflects reality.
-    if (t.status === "running") {
-      t.status = "failed";
-      t.host_agent_id = null;
+    // Neutral org-host sessions don't survive a restart — the process is
+    // gone and the session record isn't persisted. Any task that had a
+    // host_session_id is now pointing at nothing; keeping it around just
+    // creates dead rows in the UI that navigate nowhere. Purge them along
+    // with their host directories.
+    if (t.host_session_id !== null || t.status === "running") {
+      removeHostDir(t);
+      stalePurged++;
+      continue;
     }
     appState.organizationTasks.set(t.id, t);
   }
-  info(`Loaded ${tasks.length} organization task(s) from disk.`);
+  info(
+    `Loaded ${tasks.length - stalePurged} organization task(s) from disk (purged ${stalePurged} stale).`,
+  );
+
+  if (stalePurged > 0) {
+    persist();
+  }
 
   // Run retention once so legacy on-disk state self-trims on startup.
   enforceRetention();

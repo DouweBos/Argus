@@ -72,6 +72,11 @@ export class ControlHandler {
   /** The request_id of our outbound initialize request (if pending). */
   private initializeRequestId: string | null = null;
 
+  /** Resolves when the CLI's initialize `control_response` arrives. */
+  private initPromise: Promise<void> | null = null;
+  private initResolve: (() => void) | null = null;
+  private initReject: ((reason: string) => void) | null = null;
+
   /** Outbound control requests awaiting a response, keyed by `request_id`. */
   private readonly outboundRequests = new Map<
     string,
@@ -95,6 +100,11 @@ export class ControlHandler {
     const requestId = crypto.randomUUID();
     this.initializeRequestId = requestId;
 
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      this.initResolve = resolve;
+      this.initReject = reject;
+    });
+
     const request: Record<string, unknown> = {
       subtype: "initialize",
     };
@@ -107,6 +117,16 @@ export class ControlHandler {
       request_id: requestId,
       request,
     });
+  }
+
+  /**
+   * Resolves when the CLI's initialize `control_response` is received, or
+   * rejects if the child exits / the handler is cleaned up first. Callers can
+   * `await` this before writing the first user message so the CLI has
+   * finished its capability handshake.
+   */
+  waitForInit(): Promise<void> {
+    return this.initPromise ?? Promise.resolve();
   }
 
   /**
@@ -147,6 +167,9 @@ export class ControlHandler {
       warn(
         `[agent:${this.agentId}] initialize failed: ${response.response.error}`,
       );
+      this.initReject?.(response.response.error);
+      this.initResolve = null;
+      this.initReject = null;
 
       return true;
     }
@@ -167,6 +190,10 @@ export class ControlHandler {
       }
       emit(`agent:capabilities:${this.agentId}`, data);
     }
+
+    this.initResolve?.();
+    this.initResolve = null;
+    this.initReject = null;
 
     return true;
   }
@@ -411,6 +438,12 @@ export class ControlHandler {
       entry.reject("Agent stopped");
     }
     this.outboundRequests.clear();
+    if (this.initReject) {
+      this.initReject("Agent stopped before initialize completed");
+    }
+    this.initResolve = null;
+    this.initReject = null;
+    this.initializeRequestId = null;
   }
 }
 
