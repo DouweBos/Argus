@@ -89,7 +89,9 @@ export function titleToBranchSlug(title: string): string {
     .replace(/^-+/, "")
     .toLowerCase();
 
-  return slug.length === 0 ? "session" : truncateSlug(slug, MAX_BRANCH_SLUG_LENGTH);
+  return slug.length === 0
+    ? "session"
+    : truncateSlug(slug, MAX_BRANCH_SLUG_LENGTH);
 }
 
 /**

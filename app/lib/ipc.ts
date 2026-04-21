@@ -125,6 +125,9 @@ export const deleteSession = (
     shouldDeleteBranch: deleteBranch ?? false,
   });
 
+export const renameSession = (id: string, displayName: string): Promise<void> =>
+  invoke("rename_session", { id, displayName });
+
 export interface ForkSessionResult {
   claude_session_id: string | null;
   session: Session;

@@ -939,6 +939,43 @@ export function createHeadSession(repoRoot: string): Session {
 // ---------------------------------------------------------------------------
 
 /**
+ * Rename a session by setting a new display name. Persists to metadata and
+ * notifies the renderer via `session:updated`.
+ */
+export function renameSession(id: string, displayName: string): void {
+  const session = appState.sessions.get(id);
+  if (!session) {
+    throw `Session not found: ${id}`;
+  }
+  const trimmed = displayName.trim();
+  if (!trimmed) {
+    throw "Display name cannot be empty";
+  }
+
+  session.display_name = trimmed;
+  appState.sessions.set(id, session);
+
+  try {
+    const worktreesDir = worktreesRoot(session.repo_root);
+    const meta = loadMetadata(worktreesDir);
+    const existing = meta.get(session.path) ?? {
+      id: session.id,
+      description: session.description,
+      base_branch: session.base_branch,
+    };
+    meta.set(session.path, { ...existing, display_name: trimmed });
+    saveMetadata(worktreesDir, meta);
+  } catch (e) {
+    info(`renameSession: persist metadata failed for ${id}:`, e);
+  }
+
+  getMainWindow()?.webContents.send("session:updated", {
+    id,
+    display_name: trimmed,
+  });
+}
+
+/**
  * Delete a session: kill its agent and terminals, remove the worktree.
  *
  * Returns immediately after cleaning up in-memory state. The actual

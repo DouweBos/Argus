@@ -24,11 +24,11 @@ import {
   triggerNewSession,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
+import { useOrgTasks, useOrgTaskSync } from "../../../stores/orgTaskStore";
 import {
   useOrganizations,
   useOrganizationSync,
 } from "../../../stores/organizationStore";
-import { useOrgTasks, useOrgTaskSync } from "../../../stores/orgTaskStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectSession } from "../../../stores/sessionStore";
 import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";

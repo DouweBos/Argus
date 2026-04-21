@@ -16,7 +16,6 @@ import {
 } from "../../../stores/sessionStore";
 import { PencilIcon } from "../../shared/Icons";
 import { NavigationButtons } from "../NavigationButtons";
-import { RunControl } from "../RunControl";
 import styles from "./TitleBar.module.css";
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -141,11 +140,6 @@ export function TitleBar() {
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={session ? toggleRightPanel : undefined}
       left={<NavigationButtons />}
-      right={
-        session ? (
-          <RunControl key={session.id} sessionId={session.id} />
-        ) : undefined
-      }
     />
   );
 }

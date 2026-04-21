@@ -20,12 +20,17 @@ function isSeparator(item: ContextMenuItem): item is ContextMenuSeparator {
   return "separator" in item && item.separator;
 }
 
-export type ContextMenuPosition = "anchor" | { x: number; y: number };
+export interface ContextMenuPosition {
+  x: number;
+  y: number;
+}
 
 export interface ContextMenuProps {
   items: ContextMenuItem[];
   onClose: () => void;
-  /** "anchor" positions below parent element; {x,y} positions at fixed coords (right-click). */
+  /** Viewport coordinates for the menu's top-left. Use a trigger's
+   * `getBoundingClientRect()` (e.g. `{ x: rect.right - width, y: rect.bottom + 4 }`)
+   * or the native event's `clientX/Y` for right-click menus. */
   position: ContextMenuPosition;
 }
 
@@ -61,7 +66,7 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
   }, [onClose]);
 
   useEffect(() => {
-    if (position === "anchor" || !menuRef.current) {
+    if (!menuRef.current) {
       return;
     }
     const rect = menuRef.current.getBoundingClientRect();
@@ -70,24 +75,26 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
     if (x + rect.width > window.innerWidth - pad) {
       x = window.innerWidth - rect.width - pad;
     }
+    if (x < pad) {
+      x = pad;
+    }
 
     if (y + rect.height > window.innerHeight - pad) {
       y = window.innerHeight - rect.height - pad;
+    }
+    if (y < pad) {
+      y = pad;
     }
 
     menuRef.current.style.left = `${x}px`;
     menuRef.current.style.top = `${y}px`;
   }, [position]);
 
-  const menuContent = (
+  return createPortal(
     <div
       ref={menuRef}
-      className={`${styles.menu} ${position !== "anchor" ? styles.fixed : ""}`}
-      style={
-        position !== "anchor"
-          ? { left: position.x, top: position.y }
-          : undefined
-      }
+      className={styles.menu}
+      style={{ left: position.x, top: position.y }}
     >
       {items.map((item, i) =>
         isSeparator(item) ? (
@@ -108,12 +115,7 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
           </button>
         ),
       )}
-    </div>
+    </div>,
+    document.body,
   );
-
-  if (position !== "anchor") {
-    return createPortal(menuContent, document.body);
-  }
-
-  return menuContent;
 }
