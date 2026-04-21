@@ -45,9 +45,9 @@ html[data-theme="dark"] {
   --border-strong: rgba(255, 255, 255, 0.15);
 
   /* ─── Text ─── */
-  --text-primary: #f0f0f5;
-  --text-secondary: #a0a0b8;
-  --text-muted: #55556a;
+  --text-primary: #ffffff;
+  --text-secondary: #d0d0dc;
+  --text-muted: #8a8aa0;
   --text-inverse: #0a0a0f;
   --text-on-accent: #0a0a0f;
 
