@@ -304,6 +304,7 @@ export async function startAgent(
   appendSystemPrompt?: string,
   platformsOverride?: RuntimePlatform[],
   parentAgentId?: string,
+  reuseAgentId?: string,
 ): Promise<AgentInfo> {
   // Verify the session exists and grab its path.
   const argusSession = appState.sessions.get(sessionId);
@@ -312,7 +313,10 @@ export async function startAgent(
   }
   const worktreePath = argusSession.path;
 
-  const agentId = crypto.randomUUID();
+  // When `reuseAgentId` is set we're respawning the child under an existing
+  // slot (e.g. restore-at-turn). Keep the same id so frontend listeners,
+  // conversation state, and UI tabs stay bound — no swap needed.
+  const agentId = reuseAgentId ?? crypto.randomUUID();
 
   // Create the control handler for permission management.
   const controlHandler = new ControlHandler(agentId);
@@ -656,6 +660,14 @@ export async function startAgent(
     controlHandler.cleanup();
 
     const agentEntry = appState.agents.get(agentId);
+    // If the slot was reused by a respawn (restore-at-turn), this `child` is
+    // the abandoned old process. Silently drop its close event so the
+    // frontend doesn't see spurious exit/stopped transitions.
+    if (agentEntry && agentEntry.child !== child) {
+      info(`[agent:${agentId}] old child closed after respawn — ignored`);
+
+      return;
+    }
     if (agentEntry) {
       agentEntry.status = exitCode === 0 ? "stopped" : "error";
 
@@ -693,6 +705,10 @@ export async function startAgent(
   // request or any user message triggers a turn, and flip back to idle when
   // it finishes. Tracking idle/running accurately matters for the quit
   // confirmation dialog, which should only block on agents doing real work.
+  // On respawn, carry the old slot's `suppressStatus` flag — the caller
+  // (e.g. restoreAgentAtTurn) sets it before the kill so the window from
+  // kill → new-child-ready stays silent on the status channel.
+  const previous = reuseAgentId ? appState.agents.get(reuseAgentId) : null;
   const agentSession: AgentSession = {
     agentId,
     sessionId,
@@ -704,6 +720,7 @@ export async function startAgent(
     resultSummary: null,
     exitWaiters: [],
     turnWaiters: [],
+    suppressStatus: previous?.suppressStatus ?? false,
   };
 
   appState.agents.set(agentId, agentSession);
@@ -788,6 +805,197 @@ export async function startAgent(
 }
 
 // ---------------------------------------------------------------------------
+// restore_agent_at_turn
+// ---------------------------------------------------------------------------
+
+/**
+ * Restore an agent's conversation to a prior user turn, in place.
+ *
+ * Kills the current Claude child process, truncates its JSONL transcript to
+ * `keepTurnNumber` real user turns (inclusive), deletes the old JSONL, and
+ * respawns a fresh child under the **same** `agentId` — meaning no state
+ * migration on the frontend, no listener rebind, no swap in the agent store.
+ * The conversation keeps the same id end-to-end; only the underlying
+ * subprocess and the Claude session UUID change.
+ *
+ * When `keepTurnNumber === 0` (first-message edit) the respawn starts fresh,
+ * no `--resume`.
+ *
+ * While the dance is in flight the agent slot has `suppressStatus = true`,
+ * so transient idle/stopped emissions are silenced — the UI's activity
+ * indicator stays lit through the whole restore.
+ *
+ * Returns the new Claude session id, or `null` if no resume JSONL was
+ * produced (fresh-start case).
+ */
+export async function restoreAgentAtTurn(args: {
+  agentId: string;
+  sourceClaudeSessionId: string;
+  keepTurnNumber: number;
+  cutoffTimestampMs: number;
+}): Promise<{ claude_session_id: string | null }> {
+  const session = appState.agents.get(args.agentId);
+  if (!session) {
+    throw `No agent found: ${args.agentId}`;
+  }
+
+  const sessionId = session.sessionId;
+  const argusSession = appState.sessions.get(sessionId);
+  if (
+    !argusSession ||
+    (argusSession.kind !== "worktree" && argusSession.kind !== "project_root")
+  ) {
+    throw `Cannot restore agent in session kind "${argusSession?.kind ?? "unknown"}"`;
+  }
+
+  // Pin status to "running" + silence the emit channel for the whole
+  // kill/fork/respawn window. The frontend keeps whatever indicator state
+  // it had; backend transitions stay internal.
+  session.status = "running";
+  session.suppressStatus = true;
+
+  // Kill the child and wait for it to actually exit. The close handler on
+  // this specific child instance will bail (because `agentEntry.child` will
+  // be the NEW child by the time its close fires after respawn), so we
+  // don't get a stopped/exit emission.
+  const oldChild = session.child;
+  const exited = new Promise<void>((resolve) => {
+    if (oldChild.exitCode !== null || oldChild.killed) {
+      resolve();
+
+      return;
+    }
+    const onExit = () => resolve();
+    oldChild.once("exit", onExit);
+    oldChild.once("close", onExit);
+  });
+  try {
+    oldChild.kill();
+  } catch (e) {
+    info(`[agent:${args.agentId}] restore kill returned: ${String(e)}`);
+  }
+  await Promise.race([
+    exited,
+    new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+  ]);
+
+  // Cleanup the prior control handler — pending requests belong to the dead
+  // process. The respawn below creates a fresh one.
+  session.controlHandler?.cleanup();
+
+  // Fork the JSONL into a new session file (same cwd, new UUID). Skipped
+  // when keepTurnNumber=0 — the respawn then starts without --resume.
+  let newClaudeSessionId: string | null = null;
+  if (args.keepTurnNumber > 0) {
+    const { forkClaudeSessionFile } = await import("../session/manager");
+    newClaudeSessionId = await forkClaudeSessionFile({
+      sourceCwd: argusSession.path,
+      sourceSessionId: args.sourceClaudeSessionId,
+      destCwd: argusSession.path,
+      destBranch: argusSession.branch,
+      forkTimestampMs: args.cutoffTimestampMs,
+      forkTurnNumber: args.keepTurnNumber,
+    });
+    if (!newClaudeSessionId) {
+      // Fork failed (empty result / missing source) — clear the suppress
+      // flag so the agent isn't left in a permanently-silent state, then
+      // throw so the caller can surface the error.
+      session.suppressStatus = false;
+      throw "Failed to truncate Claude session JSONL — nothing to resume";
+    }
+
+    // Delete the old JSONL now that the new one is written. Same-cwd
+    // restore discards the trailing history by design.
+    try {
+      const oldFile = path.join(
+        os.homedir(),
+        ".claude",
+        "projects",
+        argusSession.path.replace(/[^a-zA-Z0-9]/g, "-"),
+        `${args.sourceClaudeSessionId}.jsonl`,
+      );
+      const fs = await import("node:fs");
+      fs.unlinkSync(oldFile);
+    } catch (e) {
+      info(`[agent:${args.agentId}] old JSONL unlink: ${String(e)}`);
+    }
+  }
+
+  // Respawn the child in the SAME agent slot. `reuseAgentId` keeps the
+  // agentId stable and `suppressStatus` carries over so the new session's
+  // initial idle emission is silenced too. We clear the flag after spawn.
+  await startAgent(
+    sessionId,
+    undefined, // model — the CLI re-reads from the JSONL on resume
+    undefined, // permissionMode
+    newClaudeSessionId ?? undefined,
+    undefined, // appendSystemPrompt
+    undefined, // platformsOverride
+    session.parentAgentId ?? undefined,
+    args.agentId, // reuseAgentId
+  );
+
+  // Clear the suppress flag on the NEW slot — from now on, status changes
+  // flow normally. The caller is expected to write the next user message
+  // immediately, which flips the UI to "running" via notifyMessageSent; any
+  // transient idle between respawn and send has already been swallowed.
+  const fresh = appState.agents.get(args.agentId);
+  if (fresh) {
+    fresh.suppressStatus = false;
+    fresh.status = "running";
+  }
+
+  // Diagnostic: verify the truncated JSONL actually lands with the turn
+  // count we asked for. Useful when debugging "Claude still remembers
+  // discarded messages" reports — the log line surfaces the actual on-disk
+  // state rather than trusting the frontend's view.
+  if (newClaudeSessionId) {
+    try {
+      const fs = await import("node:fs");
+      const newFile = path.join(
+        os.homedir(),
+        ".claude",
+        "projects",
+        argusSession.path.replace(/[^a-zA-Z0-9]/g, "-"),
+        `${newClaudeSessionId}.jsonl`,
+      );
+      const content = fs.readFileSync(newFile, "utf8");
+      const lines = content.split("\n").filter((l) => l.trim().length > 0);
+      let realUserTurns = 0;
+      for (const line of lines) {
+        try {
+          const parsed = JSON.parse(line) as Record<string, unknown>;
+          if (parsed.type === "user") {
+            const message = parsed.message as { content?: unknown } | undefined;
+            const msgContent = Array.isArray(message?.content)
+              ? (message.content as unknown[])
+              : [];
+            const first = msgContent[0] as { type?: string } | undefined;
+            if (first?.type === "text") {
+              realUserTurns += 1;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+      info(
+        `[agent:${args.agentId}] restored at turn ${args.keepTurnNumber}: ` +
+          `claude ${newClaudeSessionId}, ${lines.length} entries, ${realUserTurns} real user turns`,
+      );
+    } catch (e) {
+      warn(`[agent:${args.agentId}] restore JSONL verify failed: ${String(e)}`);
+    }
+  } else {
+    info(
+      `[agent:${args.agentId}] restored fresh (no --resume) at turn ${args.keepTurnNumber}`,
+    );
+  }
+
+  return { claude_session_id: newClaudeSessionId };
+}
+
+// ---------------------------------------------------------------------------
 // stop_agent
 // ---------------------------------------------------------------------------
 
@@ -804,12 +1012,31 @@ export async function stopAgent(agentId: string): Promise<void> {
 
   session.status = "stopped";
 
+  // Await actual process exit (with a short timeout). Callers that restart
+  // the agent immediately — e.g. edit-and-restore — rely on the old process
+  // having released its stdout/JSONL writer before a replacement spawns.
+  const exited = new Promise<void>((resolve) => {
+    if (session.child.exitCode !== null || session.child.killed) {
+      resolve();
+
+      return;
+    }
+    const onExit = () => resolve();
+    session.child.once("exit", onExit);
+    session.child.once("close", onExit);
+  });
+
   try {
     session.child.kill();
   } catch (e) {
     // The process may have already exited; treat as non-fatal.
     info(`[agent:${agentId}] child.kill() returned: ${String(e)}`);
   }
+
+  await Promise.race([
+    exited,
+    new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+  ]);
 
   // Cleanup the control handler before removing the session.
   session.controlHandler?.cleanup();
@@ -1304,6 +1531,13 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
  * Emit an `agent:status:{agentId}` event to the renderer.
  */
 function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
+  const session = appState.agents.get(agentId);
+  if (session?.suppressStatus) {
+    // Restore-at-turn window — swallow transient transitions so the UI
+    // indicator doesn't flicker between the kill and the next user-driven
+    // running state.
+    return;
+  }
   getMainWindow()?.webContents.send(`agent:status:${agentId}`, status);
 }
 

@@ -56,6 +56,36 @@
   z-index: 2;
 }
 
+.userEdit {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 75%;
+  align-self: flex-end;
+}
+
+.userEditArea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  background: var(--accent-overlay-md);
+  border: 1px solid var(--accent);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 16px;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.6;
+  outline: none;
+}
+
+.userEditActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .userAttachments {
   display: flex;
   flex-wrap: wrap;

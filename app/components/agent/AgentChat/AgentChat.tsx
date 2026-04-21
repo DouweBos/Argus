@@ -1,12 +1,19 @@
 import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, Icons, StatusDot, ThinkingDots } from "@argus/peacock";
+import {
+  Button,
+  ConfirmDialog,
+  Icons,
+  StatusDot,
+  ThinkingDots,
+} from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
 import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
   maybeGenerateTitle,
   notifyMessageSent,
 } from "../../../lib/agentEventService";
+import { editAndRestoreFromMessage } from "../../../lib/editRestoreChat";
 import {
   type ImageAttachment,
   getCommandMetrics,
@@ -423,6 +430,38 @@ export function AgentChat({
   const [forkDialogMessageId, setForkDialogMessageId] = useState<string | null>(
     null,
   );
+  const [pendingEdit, setPendingEdit] = useState<{
+    messageId: string;
+    newText: string;
+  } | null>(null);
+
+  const handleEditMessage = useCallback(
+    (message: ConversationMessage, newText: string) => {
+      if (!agentId) {
+        return;
+      }
+      setPendingEdit({ messageId: message.id, newText });
+    },
+    [agentId],
+  );
+
+  const handleConfirmEditRestore = useCallback(async () => {
+    if (!agentId || !pendingEdit) {
+      return;
+    }
+    const edit = pendingEdit;
+    setPendingEdit(null);
+    try {
+      await editAndRestoreFromMessage(
+        sessionId,
+        agentId,
+        edit.messageId,
+        edit.newText,
+      );
+    } catch {
+      // Restore failed — leave the original conversation intact.
+    }
+  }, [agentId, pendingEdit, sessionId]);
 
   const handleForkMessage = useCallback(
     (message: ConversationMessage) => {
@@ -583,6 +622,7 @@ export function AgentChat({
               agentId={agentId ?? undefined}
               message={segment.message}
               onCopy={readOnly ? undefined : handleCopyMessage}
+              onEdit={readOnly ? undefined : handleEditMessage}
               onFork={readOnly ? undefined : handleForkMessage}
               onPermissionRespond={
                 readOnly ? undefined : handlePermissionRespond
@@ -730,6 +770,19 @@ export function AgentChat({
           sourceSessionId={sessionId}
           onClose={() => setForkDialogMessageId(null)}
         />
+      )}
+      {pendingEdit != null && (
+        <ConfirmDialog
+          title="Restore conversation?"
+          titleId="edit-restore-title"
+          confirmLabel="Edit & restore"
+          cancelLabel="No"
+          onCancel={() => setPendingEdit(null)}
+          onConfirm={handleConfirmEditRestore}
+        >
+          Your edit will replace this message and the conversation will be
+          rewound to this point. All messages after it will be discarded.
+        </ConfirmDialog>
       )}
     </div>
   );
