@@ -218,9 +218,8 @@ function MergedAgentTab({
     right.status,
   );
 
-  const leftActive = activeAgentId === left.agent_id;
-  const rightActive = activeAgentId === right.agent_id;
-  const anyActive = leftActive || rightActive;
+  const anyActive =
+    activeAgentId === left.agent_id || activeAgentId === right.agent_id;
 
   const classes = [
     styles.tab,
@@ -242,9 +241,7 @@ function MergedAgentTab({
       onDrop={(e) => onDrop(e, left.agent_id)}
     >
       <div
-        className={[styles.mergedHalf, leftActive ? styles.mergedActive : null]
-          .filter(Boolean)
-          .join(" ")}
+        className={styles.mergedHalf}
         onClick={(e) => {
           e.stopPropagation();
           onSelect(left.agent_id);
@@ -255,9 +252,7 @@ function MergedAgentTab({
       </div>
       <span className={styles.mergedDivider} aria-hidden />
       <div
-        className={[styles.mergedHalf, rightActive ? styles.mergedActive : null]
-          .filter(Boolean)
-          .join(" ")}
+        className={styles.mergedHalf}
         onClick={(e) => {
           e.stopPropagation();
           onSelect(right.agent_id);
