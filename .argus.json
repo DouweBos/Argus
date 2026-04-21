@@ -22,6 +22,5 @@
       "range": 100,
       "strategy": "sequential"
     }
-  ],
-  "protected_branches": ["main"]
+  ]
 }
