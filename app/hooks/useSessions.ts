@@ -28,6 +28,7 @@ import {
   mergeSessionsForProject,
   removeProject,
   removeSession,
+  replaceSession,
   selectSession,
   setProjectBranch,
   setSetupProgress,
@@ -437,6 +438,30 @@ export function useProjectSessions(repoRoot: string) {
       useExistingBranch?: boolean,
       baseBranch?: string,
     ) => {
+      // Optimistically insert a placeholder session so the sidebar card appears
+      // immediately. The backend's branch+title generation (claude -p) and
+      // worktree setup can take several seconds — without this, the user sees
+      // nothing happen until it finishes. Once the real session comes back we
+      // replace the placeholder in place, preserving selection and ordering.
+      const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const placeholderName =
+        branch.trim() ||
+        description.trim().split(/\r?\n/)[0].slice(0, 60) ||
+        "New session";
+      const optimistic: Session = {
+        id: tempId,
+        branch: branch.trim(),
+        description,
+        display_name: placeholderName,
+        kind: "worktree",
+        path: "",
+        repo_root: repoRoot,
+        status: "initializing",
+        base_branch: baseBranch ?? null,
+        organization_task_id: null,
+      };
+      addSession(optimistic);
+
       try {
         const session = await apiCreateSession(
           repoRoot,
@@ -445,8 +470,7 @@ export function useProjectSessions(repoRoot: string) {
           useExistingBranch,
           baseBranch,
         );
-        addSession(session);
-        selectSession(session.id);
+        replaceSession(tempId, session);
 
         // Attach the setup PTY as a visible tab as soon as we know its id,
         // so init output (and any interactive prompts) are immediately
@@ -475,6 +499,7 @@ export function useProjectSessions(repoRoot: string) {
 
         return session;
       } catch (err) {
+        removeSession(tempId);
         pushError(
           err instanceof Error ? err.message : String(err),
           "create_session",
