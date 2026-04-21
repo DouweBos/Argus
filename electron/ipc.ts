@@ -31,6 +31,7 @@ import {
 } from "./services/agent/chatHistory";
 import {
   checkClaudeCli,
+  restoreAgentAtTurn,
   startAgent,
   stopAgent,
   interruptAgent,
@@ -600,6 +601,14 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("stop_agent", (a) => stopAgent(a.agentId as string));
+  handle("restore_agent_at_turn", (a) =>
+    restoreAgentAtTurn({
+      agentId: a.agentId as string,
+      sourceClaudeSessionId: a.sourceClaudeSessionId as string,
+      keepTurnNumber: a.keepTurnNumber as number,
+      cutoffTimestampMs: a.cutoffTimestampMs as number,
+    }),
+  );
   handle("interrupt_agent", (a) => interruptAgent(a.agentId as string));
   handle("send_agent_message", (a) =>
     sendAgentMessage(

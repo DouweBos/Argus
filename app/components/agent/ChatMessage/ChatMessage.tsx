@@ -1,5 +1,11 @@
 import type { ConversationMessage } from "../../../stores/conversationStore";
-import { HoverActionBar, HoverActionButton, Icons } from "@argus/peacock";
+import { useEffect, useRef, useState } from "react";
+import {
+  Button,
+  HoverActionBar,
+  HoverActionButton,
+  Icons,
+} from "@argus/peacock";
 import { showImageContextMenu } from "../../../lib/ipc";
 import { renderMarkdown } from "../../../lib/markdown";
 import { openImageViewer } from "../../../stores/imageViewerStore";
@@ -11,6 +17,7 @@ interface ChatMessageProps {
   agentId?: string;
   message: ConversationMessage;
   onCopy?: (message: ConversationMessage) => void;
+  onEdit?: (message: ConversationMessage, newText: string) => void;
   onFork?: (message: ConversationMessage) => void;
   onPermissionRespond?: (
     toolUseId: string,
@@ -22,14 +29,16 @@ interface ChatMessageProps {
 
 function MessageActions({
   onCopy,
+  onEdit,
   onFork,
   placement,
 }: {
   onCopy?: () => void;
+  onEdit?: () => void;
   onFork?: () => void;
   placement: "top-left" | "top-right";
 }) {
-  if (!onCopy && !onFork) {
+  if (!onCopy && !onFork && !onEdit) {
     return null;
   }
 
@@ -40,6 +49,13 @@ function MessageActions({
           icon={<Icons.CopyIcon size={12} />}
           label="Copy message"
           onClick={onCopy}
+        />
+      )}
+      {onEdit && (
+        <HoverActionButton
+          icon={<Icons.PencilIcon size={12} />}
+          label="Edit message"
+          onClick={onEdit}
         />
       )}
       {onFork && (
@@ -57,11 +73,45 @@ export function ChatMessage({
   agentId,
   message,
   onCopy,
+  onEdit,
   onFork,
   onPermissionRespond,
 }: ChatMessageProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const editRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing && editRef.current) {
+      editRef.current.focus();
+      const len = editRef.current.value.length;
+      editRef.current.setSelectionRange(len, len);
+    }
+  }, [isEditing]);
+
   const handleCopy = onCopy ? () => onCopy(message) : undefined;
   const handleFork = onFork ? () => onFork(message) : undefined;
+  const handleStartEdit = onEdit
+    ? () => {
+        setDraft(message.textBlocks.join("\n\n"));
+        setIsEditing(true);
+      }
+    : undefined;
+
+  const submitEdit = () => {
+    const trimmed = draft.trim();
+    if (!trimmed || !onEdit) {
+      return;
+    }
+    const original = message.textBlocks.join("\n\n").trim();
+    if (trimmed === original) {
+      setIsEditing(false);
+
+      return;
+    }
+    onEdit(message, trimmed);
+    setIsEditing(false);
+  };
 
   if (message.role === "system") {
     const trimmed = message.textBlocks
@@ -91,10 +141,52 @@ export function ChatMessage({
       return null;
     }
 
+    if (isEditing) {
+      return (
+        <div className={styles.userMsg}>
+          <div className={styles.userEdit}>
+            <textarea
+              ref={editRef}
+              className={styles.userEditArea}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setIsEditing(false);
+                } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  submitEdit();
+                }
+              }}
+            />
+            <div className={styles.userEditActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!draft.trim()}
+                onClick={submitEdit}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={styles.userMsg}>
         <MessageActions
           onCopy={handleCopy}
+          onEdit={handleStartEdit}
           onFork={handleFork}
           placement="top-right"
         />

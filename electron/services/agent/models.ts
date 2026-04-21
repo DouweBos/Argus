@@ -64,6 +64,13 @@ export interface AgentSession {
    * `session_state_changed` event with `state: "idle"`.
    */
   turnWaiters: ((status: AgentStatusValue) => void)[];
+  /**
+   * When true, suppresses `agent:status` emissions to the renderer. Used
+   * during restore-at-turn: between kill and new-child-ready, we don't want
+   * transient idle/stopped signals to flicker the UI's activity indicator.
+   * Cleared once the respawn is complete and pending work is queued.
+   */
+  suppressStatus?: boolean;
 }
 
 // ---------------------------------------------------------------------------

@@ -37,6 +37,7 @@ import {
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
 import { loadArgusConfig, runSetupPipeline } from "./setup";
+import { truncateClaudeJsonl } from "./truncateClaudeJsonl";
 import { startBranchWatcher } from "./watcher";
 
 // ---------------------------------------------------------------------------
@@ -758,7 +759,7 @@ function claudeProjectSlug(cwd: string): string {
  * starts with a text block — tool_result entries are encoded as user-role in
  * JSONL but belong to the prior turn and must NOT trigger the cutoff.
  */
-async function forkClaudeSessionFile(args: {
+export async function forkClaudeSessionFile(args: {
   destBranch: string;
   destCwd: string;
   forkTimestampMs: number;
@@ -798,79 +799,16 @@ async function forkClaudeSessionFile(args: {
   const destFile = path.join(destDir, `${newSessionId}.jsonl`);
 
   const raw = fs.readFileSync(srcFile, "utf8");
-  const lines = raw.split("\n");
-  const kept: string[] = [];
+  const kept = truncateClaudeJsonl({
+    destBranch,
+    destCwd,
+    forkTimestampMs,
+    forkTurnNumber,
+    newSessionId,
+    raw,
+  });
 
-  let userTurnsSeen = 0;
-  let afterCutoff = false;
-  const cutoffMs = forkTimestampMs;
-  // Small buffer: frontend timestamps are set at event-receipt time and may
-  // lead the JSONL timestamp by a few hundred ms. 2s is more than enough.
-  const buffer = 2000;
-
-  for (const line of lines) {
-    if (!line.trim()) {
-      continue;
-    }
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(line) as Record<string, unknown>;
-    } catch {
-      continue;
-    }
-
-    const type = parsed.type;
-    const isRealUser =
-      type === "user" &&
-      (() => {
-        const message = parsed.message as { content?: unknown } | undefined;
-        const content = Array.isArray(message?.content)
-          ? (message.content as unknown[])
-          : [];
-        const first = content[0] as { type?: string } | undefined;
-
-        return first?.type === "text";
-      })();
-
-    if (isRealUser) {
-      userTurnsSeen += 1;
-      if (userTurnsSeen > forkTurnNumber) {
-        break;
-      }
-    }
-
-    // Timestamp safety-net: once we've passed the cutoff and we're between
-    // turns, stop. Keeps us from including events that trail the fork turn
-    // when the turn counter alone can't tell.
-    const ts = typeof parsed.timestamp === "string" ? parsed.timestamp : null;
-    if (ts) {
-      const entryMs = Date.parse(ts);
-      if (!Number.isNaN(entryMs) && entryMs > cutoffMs + buffer) {
-        if (userTurnsSeen >= forkTurnNumber) {
-          afterCutoff = true;
-        }
-      }
-    }
-    if (afterCutoff && isRealUser) {
-      break;
-    }
-
-    // Rewrite identity fields so the new JSONL stands alone as a resumable
-    // session tied to the forked worktree.
-    if ("sessionId" in parsed) {
-      parsed.sessionId = newSessionId;
-    }
-    if ("cwd" in parsed) {
-      parsed.cwd = destCwd;
-    }
-    if ("gitBranch" in parsed) {
-      parsed.gitBranch = destBranch;
-    }
-
-    kept.push(JSON.stringify(parsed));
-  }
-
-  if (kept.length === 0) {
+  if (!kept) {
     return null;
   }
 

@@ -203,6 +203,24 @@ export const forkSession = (
     replayOps: replayOps ?? null,
   });
 
+/**
+ * Restore an agent's conversation in place — kills and respawns the child
+ * under the same agentId. Returns the new Claude session UUID (or null for
+ * a fresh-start when `keepTurnNumber === 0`).
+ */
+export const restoreAgentAtTurn = (
+  agentId: string,
+  sourceClaudeSessionId: string,
+  keepTurnNumber: number,
+  cutoffTimestampMs: number,
+): Promise<{ claude_session_id: string | null }> =>
+  invoke("restore_agent_at_turn", {
+    agentId,
+    sourceClaudeSessionId,
+    keepTurnNumber,
+    cutoffTimestampMs,
+  });
+
 export const getSessionDiff = (id: string): Promise<string> =>
   invoke("get_session_diff", { id });
 
