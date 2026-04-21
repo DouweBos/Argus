@@ -1,4 +1,7 @@
+import { getService } from "@codingame/monaco-vscode-api";
+import { ICommandService } from "@codingame/monaco-vscode-api/services";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCloseIntent } from "../../../hooks/useCloseIntent";
 import { updateWorkspaceFolder } from "../../../lib/vscodeFilesystem";
 import {
   Parts,
@@ -131,6 +134,26 @@ export function EditorPanel({ sessionId }: EditorPanelProps) {
       }
     }
   }, []);
+
+  // Cmd+W: when focus is inside the editor panel, route the close intent
+  // to VS Code's closeActiveEditor command so tabs close instead of the app.
+  useCloseIntent(() => {
+    const container = panelContainerRef.current;
+    if (!container) {
+      return false;
+    }
+    const focused = document.activeElement;
+    if (!(focused instanceof Node) || !container.contains(focused)) {
+      return false;
+    }
+    getService(ICommandService)
+      .then((commandService) =>
+        commandService.executeCommand("workbench.action.closeActiveEditor"),
+      )
+      .catch(() => {});
+
+    return true;
+  });
 
   // Track part visibility for layout
   const sidebarVisible = usePartVisibility(Parts.SIDEBAR_PART);
