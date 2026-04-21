@@ -7,6 +7,7 @@ import {
 import { useSessions } from "../../../stores/sessionStore";
 import { EditorPanel } from "../../editor/EditorPanel";
 import { HomeScreen } from "../../home/HomeScreen";
+import { RunControl } from "../../layout/RunControl";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import styles from "./CenterPanel.module.css";
@@ -60,6 +61,9 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
           >
             Git
           </Chip>
+        </div>
+        <div className={styles.runControl}>
+          <RunControl key={sessionId} sessionId={sessionId} />
         </div>
       </div>
 

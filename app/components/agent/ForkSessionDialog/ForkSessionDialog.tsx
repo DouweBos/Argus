@@ -50,7 +50,9 @@ export function ForkSessionDialog({
 
   const [localBranches, setLocalBranches] = useState<string[]>([]);
   const [remoteBranches, setRemoteBranches] = useState<string[]>([]);
-  const [claimedBranches, setClaimedBranches] = useState<Set<string>>(new Set());
+  const [claimedBranches, setClaimedBranches] = useState<Set<string>>(
+    new Set(),
+  );
 
   const [branchPrefix, setBranchPrefix] = useState("");
   const [prefixDraft, setPrefixDraft] = useState("");
@@ -268,7 +270,11 @@ export function ForkSessionDialog({
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={isForking || !canSubmit} type="submit">
+          <Button
+            variant="primary"
+            disabled={isForking || !canSubmit}
+            type="submit"
+          >
             {isForking ? "Forking…" : "Fork Session"}
           </Button>
         </div>

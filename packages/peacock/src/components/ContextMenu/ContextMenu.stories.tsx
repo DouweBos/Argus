@@ -15,14 +15,16 @@ type Story = StoryObj<typeof ContextMenu>;
 
 const noop = () => {};
 
-export const Anchor: Story = {
+const centeredPosition = { x: 200, y: 120 };
+
+export const Default: Story = {
   render: (args) => (
-    <div style={{ position: "relative", width: 240, height: 260 }}>
+    <div style={{ width: 240, height: 300 }}>
       <ContextMenu {...args} />
     </div>
   ),
   args: {
-    position: "anchor",
+    position: centeredPosition,
     onClose: noop,
     items: [
       {
@@ -57,12 +59,12 @@ export const Anchor: Story = {
 
 export const WithDanger: Story = {
   render: (args) => (
-    <div style={{ position: "relative", width: 240, height: 220 }}>
+    <div style={{ width: 240, height: 260 }}>
       <ContextMenu {...args} />
     </div>
   ),
   args: {
-    position: "anchor",
+    position: centeredPosition,
     onClose: noop,
     items: [
       {
@@ -83,12 +85,12 @@ export const WithDanger: Story = {
 
 export const NoIcons: Story = {
   render: (args) => (
-    <div style={{ position: "relative", width: 240, height: 180 }}>
+    <div style={{ width: 240, height: 220 }}>
       <ContextMenu {...args} />
     </div>
   ),
   args: {
-    position: "anchor",
+    position: centeredPosition,
     onClose: noop,
     items: [
       { label: "Rename", onClick: noop },

@@ -23,6 +23,7 @@ import {
 import { BranchSwitcher } from "../BranchSwitcher";
 import { CreateSessionDialog } from "../CreateSessionDialog";
 import { DeleteSessionDialog } from "../DeleteSessionDialog";
+import { RenameSessionDialog } from "../RenameSessionDialog";
 import { SessionCard } from "../SessionCard";
 import { SetupConfigDialog } from "../SetupConfigDialog";
 import styles from "./ProjectSegment.module.css";
@@ -56,13 +57,15 @@ export function ProjectSegment({
   const [showCreate, setShowCreate] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
-  const [menuPosition, setMenuPosition] = useState<
-    "anchor" | { x: number; y: number } | null
-  >(null);
+  const [sessionToRename, setSessionToRename] = useState<Session | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   const repoRootSession = sessions.find((w) => w.kind === "project_root");
   const worktrees = sessions.filter((w) => w.kind !== "project_root");
-  const isRepoHomeSelected =
+  const isProjectSelected =
     repoRootSession != null && repoRootSession.id === selectedId;
 
   const openProjectHome = () => {
@@ -82,7 +85,7 @@ export function ProjectSegment({
       name={projectName}
       title={repoRoot}
       expanded={!isCollapsed}
-      active={isRepoHomeSelected}
+      active={isProjectSelected}
       leading={<Icons.FolderIcon size={11} style={{ color: accent }} />}
       onToggleExpanded={onToggleCollapsed}
       onHeaderClick={openProjectHome}
@@ -93,7 +96,7 @@ export function ProjectSegment({
       }}
       meta={repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
       subtitle={
-        isRepoHomeSelected && repoBranch ? (
+        isProjectSelected && repoBranch ? (
           <div
             className={styles.branchSwitcherSlot}
             onClick={(e) => e.stopPropagation()}
@@ -124,7 +127,12 @@ export function ProjectSegment({
               title="Project options"
               onClick={(e) => {
                 stop(e);
-                setMenuPosition((prev) => (prev ? null : "anchor"));
+                const rect = (
+                  e.currentTarget as HTMLElement
+                ).getBoundingClientRect();
+                setMenuPosition((prev) =>
+                  prev ? null : { x: rect.right - 200, y: rect.bottom + 4 },
+                );
               }}
             >
               <Icons.EllipsisIcon size={12} />
@@ -219,6 +227,7 @@ export function ProjectSegment({
               isSelected={session.id === selectedId}
               session={session}
               onDelete={async () => setSessionToDelete(session)}
+              onRename={() => setSessionToRename(session)}
               onSelect={() => selectSession(session.id)}
             />
           ))
@@ -258,6 +267,15 @@ export function ProjectSegment({
             onConfirm={async (deleteBranch) => {
               await deleteSession(sessionToDelete.id, deleteBranch);
             }}
+          />,
+          document.body,
+        )}
+
+      {sessionToRename &&
+        createPortal(
+          <RenameSessionDialog
+            session={sessionToRename}
+            onClose={() => setSessionToRename(null)}
           />,
           document.body,
         )}

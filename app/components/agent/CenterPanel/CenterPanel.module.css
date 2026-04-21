@@ -30,3 +30,11 @@
   border-color: var(--surface-7) !important;
   color: var(--text-primary) !important;
 }
+
+.runControl {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 0 8px;
+  flex-shrink: 0;
+}

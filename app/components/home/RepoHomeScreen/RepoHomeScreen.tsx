@@ -212,8 +212,8 @@ export function RepoHomeScreen({
               <ChatHistoryList
                 entries={history.entries}
                 repoRoot={repoRoot}
-                onClearAll={history.clearAll}
-                onDelete={history.remove}
+                onClearAll={() => history.clearAll()}
+                onDelete={(historyId) => history.remove(historyId)}
                 onResume={onResumeHistory}
                 onView={onViewHistory}
               />

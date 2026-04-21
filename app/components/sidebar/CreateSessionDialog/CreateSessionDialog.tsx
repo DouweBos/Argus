@@ -95,7 +95,9 @@ function previewSlug(input: string): string {
   const cut =
     lastHyphen > PREVIEW_SLUG_MAX_LENGTH / 2 ? head.slice(0, lastHyphen) : head;
 
-  return cut.replace(/[-_]+$/g, "") || cleaned.slice(0, PREVIEW_SLUG_MAX_LENGTH);
+  return (
+    cut.replace(/[-_]+$/g, "") || cleaned.slice(0, PREVIEW_SLUG_MAX_LENGTH)
+  );
 }
 
 interface BranchSection {
@@ -348,7 +350,7 @@ export function CreateSessionDialog({
 
   const [localBranches, setLocalBranches] = useState<string[]>([]);
   const [remoteBranches, setRemoteBranches] = useState<string[]>([]);
-  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [branchesLoading, setBranchesLoading] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -394,7 +396,6 @@ export function CreateSessionDialog({
 
   useEffect(() => {
     let cancelled = false;
-    setBranchesLoading(true);
     listAllBranches(repoRoot)
       .then((list) => {
         if (cancelled) {
@@ -837,9 +838,7 @@ export function CreateSessionDialog({
           </Button>
           <Button
             variant="primary"
-            disabled={
-              isRemote ? !canSubmitAdoptRemote : !canSubmitAdoptLocal
-            }
+            disabled={isRemote ? !canSubmitAdoptRemote : !canSubmitAdoptLocal}
             type="submit"
           >
             Create Session

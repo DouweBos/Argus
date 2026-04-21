@@ -37,7 +37,10 @@ interface RunControlProps {
  */
 export function RunControl({ sessionId }: RunControlProps) {
   const [runs, setRuns] = useState<RunCommand[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const runningTerminals = useRunningTerminalsForSession(sessionId);
 
@@ -187,11 +190,23 @@ export function RunControl({ sessionId }: RunControlProps) {
         className={styles.chevronSide}
         size="sm"
         variant="primary"
-        onClick={() => setMenuOpen((o) => !o)}
+        onClick={() => {
+          setMenuPosition((prev) => {
+            if (prev) {
+              return null;
+            }
+            const rect = anchorRef.current?.getBoundingClientRect();
+            if (!rect) {
+              return null;
+            }
+
+            return { x: rect.right - 200, y: rect.bottom + 4 };
+          });
+        }}
       >
         <Icons.ChevronDownIcon size={10} />
       </Button>
-      {menuOpen && (
+      {menuPosition && (
         <ContextMenu
           items={runs.map((r) => {
             const running = Boolean(runningTerminals[r.title]);
@@ -206,8 +221,8 @@ export function RunControl({ sessionId }: RunControlProps) {
               onClick: () => toggleTitle(r.title),
             };
           })}
-          position="anchor"
-          onClose={() => setMenuOpen(false)}
+          position={menuPosition}
+          onClose={() => setMenuPosition(null)}
         />
       )}
     </div>

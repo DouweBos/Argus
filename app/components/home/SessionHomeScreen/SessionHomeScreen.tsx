@@ -203,8 +203,8 @@ export function SessionHomeScreen({
               <ChatHistoryList
                 entries={sessionHistoryEntries}
                 repoRoot={repoRoot}
-                onClearAll={history.clearAll}
-                onDelete={history.remove}
+                onClearAll={() => history.clearAll()}
+                onDelete={(historyId) => history.remove(historyId)}
                 onResume={onResumeHistory}
                 onView={onViewHistory}
               />

@@ -1,22 +1,12 @@
 .menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 100;
+  position: fixed;
+  z-index: 10000;
   min-width: 180px;
   padding: var(--space-2);
-  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  background: var(--bg-secondary);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-.fixed {
-  position: fixed;
-  right: auto;
-  top: auto;
 }
 
 .item {

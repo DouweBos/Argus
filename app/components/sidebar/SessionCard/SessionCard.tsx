@@ -36,6 +36,7 @@ interface SessionCardProps {
   isSelected: boolean;
   onBranchChanged?: () => void;
   onDelete: () => Promise<void>;
+  onRename?: () => void;
   onSelect: () => void;
   repoBasename?: string;
   repoBranch?: string | null;
@@ -68,15 +69,17 @@ export function SessionCard({
   isSelected,
   onSelect,
   onDelete,
+  onRename,
   repoRoot,
   repoBranch,
   onBranchChanged,
 }: SessionCardProps) {
-  const isRepoRoot = session.kind === "project_root";
+  const isProject = session.kind === "project_root";
   const [isDeleting, setIsDeleting] = useState(false);
-  const [menuPosition, setMenuPosition] = useState<
-    "anchor" | { x: number; y: number } | null
-  >(null);
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const setupProgressById = useSetupProgressBySessionId();
   const setupProgress = setupProgressById[session.id];
@@ -111,7 +114,18 @@ export function SessionCard({
 
   const toggleMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMenuPosition((prev) => (prev ? null : "anchor"));
+    setMenuPosition((prev) => {
+      if (prev) {
+        return null;
+      }
+      const rect = menuBtnRef.current?.getBoundingClientRect();
+      if (!rect) {
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      // Right-align the menu with the trigger; ContextMenu clamps to viewport.
+      return { x: rect.right - 200, y: rect.bottom + 4 };
+    });
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -122,10 +136,10 @@ export function SessionCard({
 
   const effectiveRepoBasename =
     repoBasename ?? repoBasenameFromPath(session.repo_root);
-  const projectName = isRepoRoot
+  const projectName = isProject
     ? effectiveRepoBasename
     : (session.display_name ?? session.branch);
-  const branchName = isRepoRoot
+  const branchName = isProject
     ? (repoBranch ?? session.branch)
     : session.branch;
   const statusLabel = sessionStatusLabel(session.status);
@@ -168,7 +182,7 @@ export function SessionCard({
               {statusLabel}
             </span>
           )}
-          {!isRepoRoot && (
+          {!isProject && (
             <span className={styles.subtitleTrailing}>
               {!isDeletingStatus && diffStats && diffStats.files > 0 && (
                 <span className={styles.diffStats}>
@@ -249,6 +263,15 @@ export function SessionCard({
                           },
                         },
                         { separator: true as const },
+                        ...(onRename
+                          ? [
+                              {
+                                icon: <Icons.PencilIcon size={12} />,
+                                label: "Rename Session",
+                                onClick: onRename,
+                              },
+                            ]
+                          : []),
                         {
                           icon: <Icons.TrashIcon size={12} />,
                           label: isDeleting ? "Deleting..." : "Delete Session",
@@ -280,7 +303,7 @@ export function SessionCard({
           task: {orgTask.title}
         </button>
       )}
-      {isRepoRoot && (
+      {isProject && (
         <div className={styles.subtitleRow}>
           <span className={styles.branchSubtitle}>
             {branchName}
@@ -351,22 +374,15 @@ export function SessionCard({
           </span>
         </div>
       )}
-      {isRepoRoot &&
-        repoRoot &&
-        repoBranch &&
-        onBranchChanged &&
-        isSelected && (
-          <div
-            className={styles.branchRow}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <BranchSwitcher
-              currentBranch={repoBranch}
-              repoRoot={repoRoot}
-              onBranchChanged={onBranchChanged}
-            />
-          </div>
-        )}
+      {isProject && repoRoot && repoBranch && onBranchChanged && isSelected && (
+        <div className={styles.branchRow} onClick={(e) => e.stopPropagation()}>
+          <BranchSwitcher
+            currentBranch={repoBranch}
+            repoRoot={repoRoot}
+            onBranchChanged={onBranchChanged}
+          />
+        </div>
+      )}
       {session.status === "initializing" && setupProgress && (
         <div className={styles.setupProgressWrap}>
           {setupProgress.total > 0 && (
