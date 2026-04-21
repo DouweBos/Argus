@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Dialog } from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
-import { focusAgent } from "../../../lib/agentLifecycle";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
 import { isSessionReady } from "../../../lib/types";
 import {
@@ -55,13 +54,6 @@ export function HomePanel({ sessionId }: HomePanelProps) {
   const historyAgentId = viewingHistoryId
     ? `history:${viewingHistoryId}`
     : null;
-
-  const handleOrchestrationSelect = useCallback(
-    (agentId: string, agentSessionId: string) => {
-      focusAgent(agentSessionId, agentId);
-    },
-    [],
-  );
 
   const handleViewHistory = useCallback(
     (historyId: string) => {
@@ -149,7 +141,6 @@ export function HomePanel({ sessionId }: HomePanelProps) {
           repoRoot={repoRoot}
           sessionId={sessionId}
           onResumeHistory={handleResumeHistory}
-          onSelectAgent={handleOrchestrationSelect}
           onStart={handleStart}
           onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
@@ -161,7 +152,6 @@ export function HomePanel({ sessionId }: HomePanelProps) {
           repoRoot={repoRoot}
           sessionId={sessionId}
           onResumeHistory={handleResumeHistory}
-          onSelectAgent={handleOrchestrationSelect}
           onStart={handleStart}
           onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
