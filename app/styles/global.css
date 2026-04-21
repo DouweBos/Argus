@@ -1,18 +1,6 @@
 /* Design tokens are defined exclusively in @argus/peacock. */
 @import "@argus/peacock/tokens.css";
 
-/* App-only token additions — not appropriate for the design system (yet). */
-:root {
-  --border: rgba(255, 255, 255, 0.08);
-  --bg-hover: #222233;
-  --accent-hover: #70b3ff;
-  --accent-secondary: #3a7edf;
-  --error-fg: #ffffff;
-  --glass-blur: 16px;
-  --glass-shadow: var(--shadow-lg);
-  --toolbar-height: 33px;
-}
-
 /* Reset */
 *,
 *::before,
@@ -56,12 +44,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-5);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--surface-8);
 }
 
 /* Focus ring */

@@ -1,7 +1,7 @@
 .card {
   border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-md, 8px);
-  background: var(--bg-secondary, rgba(255, 255, 255, 0.02));
+  border-radius: var(--border-radius-md);
+  background: var(--bg-secondary);
   padding: 14px 14px;
 }
 
@@ -19,13 +19,13 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: rgba(80, 200, 120, 0.1);
-  color: #6ecf8a;
+  background: var(--success-overlay-lg);
+  color: var(--success-soft);
   flex-shrink: 0;
 }
 
 .iconWrap[data-tone="warn"] {
-  background: rgba(245, 166, 35, 0.12);
+  background: var(--accent-overlay-xl);
   color: var(--accent);
 }
 
@@ -49,7 +49,7 @@
 }
 
 .branch {
-  color: var(--text-secondary, var(--text-primary));
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 0.9em;
 }
@@ -96,11 +96,11 @@
 .secondaryBtn {
   background: transparent;
   border: 1px solid var(--glass-border);
-  color: var(--text-secondary, var(--text-primary));
+  color: var(--text-secondary);
 }
 
 .secondaryBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
   color: var(--text-primary);
 }
 

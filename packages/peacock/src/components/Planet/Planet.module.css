@@ -1,7 +1,7 @@
 .planet {
   width: 100%;
   max-width: 320px;
-  background: rgba(17, 17, 24, 0.85);
+  background: var(--bg-secondary-85);
   border: 1px solid var(--glass-border);
   border-radius: 14px;
   padding: 12px 14px;
@@ -21,8 +21,8 @@
   border-radius: 14px;
   pointer-events: none;
   background: radial-gradient(
-    80px 80px at var(--px, 100%) var(--py, 0%),
-    var(--planet-accent, var(--accent)),
+    80px 80px at var(--px) var(--py),
+    var(--planet-accent),
     transparent 70%
   );
   opacity: 0.08;
@@ -31,10 +31,10 @@
 
 .planet:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: var(--surface-7);
   box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.5),
-    0 0 24px var(--planet-glow, rgba(245, 166, 35, 0.15));
+    0 10px 40px var(--scrim-lg),
+    0 0 24px var(--planet-glow);
 }
 .planet:hover::before {
   opacity: 0.18;
@@ -42,9 +42,9 @@
 
 .pulse {
   box-shadow:
-    0 6px 30px rgba(0, 0, 0, 0.4),
-    0 0 0 1px var(--planet-accent, var(--accent)),
-    0 0 24px var(--planet-glow, rgba(245, 166, 35, 0.15));
+    0 6px 30px var(--scrim-md),
+    0 0 0 1px var(--planet-accent),
+    0 0 24px var(--planet-glow);
 }
 
 .row {
@@ -57,12 +57,12 @@
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-2);
   border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--planet-accent, var(--accent));
+  color: var(--planet-accent);
   position: relative;
   flex-shrink: 0;
 }
@@ -71,7 +71,7 @@
   position: absolute;
   inset: -3px;
   border-radius: 11px;
-  border: 1.5px solid var(--planet-accent, var(--accent));
+  border: 1.5px solid var(--planet-accent);
   opacity: 0.5;
   animation: planet-pulse 2s ease-in-out infinite;
 }

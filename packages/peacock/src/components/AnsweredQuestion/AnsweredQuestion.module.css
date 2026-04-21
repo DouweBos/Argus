@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--scrim-sm);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
 }

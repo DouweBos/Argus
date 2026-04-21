@@ -4,8 +4,8 @@
   gap: 8px;
   padding: 12px 14px;
   border-radius: var(--border-radius-medium);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--surface-1);
+  border: 1px solid var(--surface-3);
 }
 
 .header {
@@ -52,7 +52,7 @@
 
 .whyButton {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--surface-5);
   color: var(--text-muted);
   font-family: var(--font-ui);
   font-size: 11px;
@@ -62,13 +62,13 @@
   transition: all 120ms ease;
 }
 .whyButton:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--surface-8);
   color: var(--text-primary);
 }
 
 .detail {
   padding: 10px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--scrim-sm);
   border-radius: var(--border-radius-small);
   font-family: var(--font-mono);
   font-size: 11px;

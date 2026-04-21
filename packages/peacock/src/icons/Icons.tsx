@@ -657,7 +657,7 @@ export function StagedIcon({
         <path
           d="M5 8l2 2 4-4"
           fill="none"
-          stroke="#fff"
+          stroke="var(--accent-fg)"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="1.5"
@@ -678,7 +678,7 @@ export function StagedIcon({
         <circle cx="8" cy="8" fill="var(--error)" r="7" />
         <path
           d="M5 8h6"
-          stroke="#fff"
+          stroke="var(--error-fg)"
           strokeLinecap="round"
           strokeWidth="1.5"
         />
@@ -724,9 +724,13 @@ export function TreeFolderIcon({
       >
         <path
           d="M1.5 3A1.5 1.5 0 013 1.5h3.19a1.5 1.5 0 011.06.44L8.56 3.25H13A1.5 1.5 0 0114.5 4.75v.25H2V4.5A1.5 1.5 0 013.5 3h0z"
-          fill="#c09553"
+          fill="var(--folder-icon-shadow)"
         />
-        <path d="M1.5 5h13l-1.5 8.5H3L1.5 5z" fill="#dcb67a" opacity="0.85" />
+        <path
+          d="M1.5 5h13l-1.5 8.5H3L1.5 5z"
+          fill="var(--folder-icon-fill)"
+          opacity="0.85"
+        />
       </svg>
     );
   }

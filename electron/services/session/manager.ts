@@ -348,38 +348,38 @@ export async function createSession(
       description: session.description,
       repoRoot,
     })
-    .then((title) => {
-      if (!title) {
-        return;
-      }
-      const ws = appState.sessions.get(titleSessionId);
-      if (!ws) {
-        return;
-      }
-      ws.display_name = title;
-      appState.sessions.set(titleSessionId, ws);
+      .then((title) => {
+        if (!title) {
+          return;
+        }
+        const ws = appState.sessions.get(titleSessionId);
+        if (!ws) {
+          return;
+        }
+        ws.display_name = title;
+        appState.sessions.set(titleSessionId, ws);
 
-      try {
-        const metaNow = loadMetadata(worktreesDir);
-        const entry = metaNow.get(titleSessionPath) ?? {
-          id: ws.id,
-          description: ws.description,
-          base_branch: ws.base_branch,
-        };
-        metaNow.set(titleSessionPath, { ...entry, display_name: title });
-        saveMetadata(worktreesDir, metaNow);
-      } catch {
-        // Non-fatal
-      }
+        try {
+          const metaNow = loadMetadata(worktreesDir);
+          const entry = metaNow.get(titleSessionPath) ?? {
+            id: ws.id,
+            description: ws.description,
+            base_branch: ws.base_branch,
+          };
+          metaNow.set(titleSessionPath, { ...entry, display_name: title });
+          saveMetadata(worktreesDir, metaNow);
+        } catch {
+          // Non-fatal
+        }
 
-      getMainWindow()?.webContents.send("session:updated", {
-        id: titleSessionId,
-        display_name: title,
+        getMainWindow()?.webContents.send("session:updated", {
+          id: titleSessionId,
+          display_name: title,
+        });
+      })
+      .catch((e: unknown) => {
+        info(`Title generation skipped for session ${titleSessionId}:`, e);
       });
-    })
-    .catch((e: unknown) => {
-      info(`Title generation skipped for session ${titleSessionId}:`, e);
-    });
   }
 
   const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();

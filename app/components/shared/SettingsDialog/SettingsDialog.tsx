@@ -12,6 +12,12 @@ import {
   useSettingsDialogOpen,
   type PermissionMode,
 } from "../../../stores/settingsStore";
+import {
+  THEME_PREFERENCE_LABELS,
+  setThemePreference,
+  useThemePreference,
+  type ThemePreference,
+} from "../../../stores/themeStore";
 import styles from "./SettingsDialog.module.css";
 
 const MODES: PermissionMode[] = [
@@ -20,6 +26,8 @@ const MODES: PermissionMode[] = [
   "plan",
   "bypassPermissions",
 ];
+
+const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
 export function SettingsDialog() {
   const open = useSettingsDialogOpen();
@@ -32,6 +40,7 @@ export function SettingsDialog() {
 
 function SettingsDialogContent() {
   const mode = useDefaultPermissionMode();
+  const theme = useThemePreference();
 
   return (
     <Dialog
@@ -40,6 +49,25 @@ function SettingsDialogContent() {
       onClose={hideSettingsDialog}
     >
       <div className={styles.body}>
+        <section className={styles.section}>
+          <div className={styles.label}>Appearance</div>
+          <div className={styles.caption}>
+            Match your system, or force a specific theme.
+          </div>
+          <div className={styles.segmented}>
+            {THEMES.map((t) => (
+              <button
+                key={t}
+                className={`${styles.segment} ${theme === t ? styles.segmentActive : ""}`}
+                type="button"
+                onClick={() => setThemePreference(t)}
+              >
+                {THEME_PREFERENCE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section className={styles.section}>
           <div className={styles.label}>Default permission mode</div>
           <div className={styles.caption}>

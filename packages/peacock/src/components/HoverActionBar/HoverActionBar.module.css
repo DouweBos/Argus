@@ -15,8 +15,8 @@
      for legibility. */
   background: radial-gradient(
     ellipse 140% 160% at 85% 50%,
-    rgba(10, 10, 15, 0.85) 0%,
-    rgba(10, 10, 15, 0) 100%
+    var(--bg-primary-85) 0%,
+    var(--bg-primary-0) 100%
   );
   /* Give the fade-out edge room to breathe. */
   padding-left: 22px;
@@ -32,8 +32,8 @@
   left: 6px;
   background: radial-gradient(
     ellipse 140% 160% at 15% 50%,
-    rgba(10, 10, 15, 0.85) 0%,
-    rgba(10, 10, 15, 0) 100%
+    var(--bg-primary-85) 0%,
+    var(--bg-primary-0) 100%
   );
   padding-left: 6px;
   padding-right: 22px;
@@ -49,8 +49,8 @@
   left: 6px;
   background: radial-gradient(
     ellipse 140% 160% at 15% 50%,
-    rgba(10, 10, 15, 0.85) 0%,
-    rgba(10, 10, 15, 0) 100%
+    var(--bg-primary-85) 0%,
+    var(--bg-primary-0) 100%
   );
   padding-left: 6px;
   padding-right: 22px;
@@ -63,9 +63,9 @@
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--surface-5);
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--scrim-md);
   color: var(--text-muted);
   cursor: pointer;
   transition:
@@ -76,8 +76,8 @@
 
 .btn:hover {
   color: var(--text-primary);
-  border-color: rgba(245, 166, 35, 0.35);
-  background: rgba(245, 166, 35, 0.08);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-overlay-lg);
 }
 
 .btn:focus-visible {

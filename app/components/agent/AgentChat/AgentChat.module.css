@@ -54,13 +54,13 @@
 }
 
 .activityWorking {
-  background: rgba(245, 166, 35, 0.06);
-  border: 1px solid rgba(245, 166, 35, 0.1);
+  background: var(--accent-overlay-md);
+  border: 1px solid var(--accent-overlay-lg);
 }
 
 .activityBlocked {
-  background: rgba(245, 166, 35, 0.06);
-  border: 1px solid rgba(245, 166, 35, 0.1);
+  background: var(--accent-overlay-md);
+  border: 1px solid var(--accent-overlay-lg);
 }
 
 .activityText {
@@ -129,7 +129,7 @@
 }
 
 .queuedAttachment:hover {
-  border-color: rgba(245, 166, 35, 0.4);
+  border-color: var(--accent-border-strong);
   transform: translateY(-1px);
 }
 
@@ -148,7 +148,7 @@
   gap: 12px;
   padding: 10px 16px;
   background: var(--error-bg);
-  border-top: 1px solid rgba(255, 68, 102, 0.15);
+  border-top: 1px solid var(--error-overlay-lg);
   flex-shrink: 0;
 }
 
@@ -164,8 +164,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 8px 16px;
-  background: rgba(245, 166, 35, 0.06);
-  border-bottom: 1px solid rgba(245, 166, 35, 0.12);
+  background: var(--accent-overlay-md);
+  border-bottom: 1px solid var(--accent-overlay-xl);
   flex-shrink: 0;
 }
 
@@ -191,10 +191,10 @@
   padding: 5px 14px;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  background: rgba(17, 17, 24, 0.85);
+  background: var(--bg-secondary-85);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-pill);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px var(--scrim-lg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   cursor: pointer;
@@ -205,6 +205,6 @@
 }
 
 .scrollToBottom:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-6);
   color: var(--text-primary);
 }

@@ -8,13 +8,13 @@
 }
 
 .barReady {
-  background: rgba(245, 166, 35, 0.08);
-  border-top-color: rgba(245, 166, 35, 0.2);
+  background: var(--accent-overlay-lg);
+  border-top-color: var(--accent-glow);
 }
 
 .barConflict {
-  background: rgba(245, 166, 35, 0.06);
-  border-top-color: rgba(245, 166, 35, 0.15);
+  background: var(--accent-overlay-md);
+  border-top-color: var(--accent-overlay-xl);
 }
 
 .barNoStaged {

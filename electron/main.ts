@@ -238,7 +238,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     show: false,
-    backgroundColor: "#1e1e1e",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0a0a0f" : "#fafbfc",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 12, y: 12 },
     ...(iconPath ? { icon: iconPath } : {}),

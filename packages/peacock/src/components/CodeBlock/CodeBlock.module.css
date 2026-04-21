@@ -1,7 +1,7 @@
 .block {
   position: relative;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--scrim-md);
+  border: 1px solid var(--surface-3);
   border-radius: var(--border-radius-small);
   font-family: var(--font-mono);
   overflow: hidden;
@@ -21,8 +21,8 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-3);
+  border: 1px solid var(--surface-5);
   color: var(--text-muted);
   font-family: var(--font-ui);
   font-size: 10px;
@@ -33,5 +33,5 @@
 }
 .copy:hover {
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--surface-8);
 }

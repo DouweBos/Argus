@@ -1,6 +1,6 @@
 .card {
   position: relative;
-  background: rgba(255, 255, 255, 0.015);
+  background: var(--surface-1);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 12px 14px;
@@ -19,14 +19,14 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--card-accent, var(--accent));
+  background: var(--card-accent);
   opacity: 0;
   transition: opacity 200ms ease;
 }
 
 .card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--surface-3);
+  border-color: var(--surface-7);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -44,7 +44,7 @@
   width: 26px;
   height: 26px;
   border-radius: 7px;
-  background: var(--card-accent, var(--accent));
+  background: var(--card-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,7 +127,7 @@
   gap: 5px;
   padding: 2px 8px;
   border-radius: var(--border-radius-pill);
-  background: rgba(0, 212, 170, 0.08);
+  background: var(--success-overlay-sm);
   color: var(--success);
   font-weight: 500;
   transition: opacity var(--transition-fast);
@@ -137,15 +137,15 @@
   opacity: 0;
 }
 .agentPill.warn {
-  background: rgba(255, 213, 74, 0.1);
+  background: var(--warning-overlay-lg);
   color: var(--warning);
 }
 .agentPill.err {
-  background: rgba(255, 68, 102, 0.08);
+  background: var(--error-bg);
   color: var(--error);
 }
 .agentPill.muted {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-2);
   color: var(--text-muted);
 }
 

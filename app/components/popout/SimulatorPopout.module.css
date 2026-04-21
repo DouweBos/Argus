@@ -6,7 +6,7 @@
   width: 100vw;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-family, system-ui, sans-serif);
+  font-family: var(--font-family);
   overflow: hidden;
   outline: none;
   padding-top: 28px;

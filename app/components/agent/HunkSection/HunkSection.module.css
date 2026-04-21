@@ -8,9 +8,9 @@
   display: flex;
   align-items: center;
   padding: 4px 12px;
-  background: rgba(245, 166, 35, 0.04);
+  background: var(--accent-overlay-sm);
   border-top: 1px solid var(--glass-border);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--surface-3);
   gap: 8px;
   user-select: none;
 }
@@ -45,7 +45,7 @@
   font-size: var(--font-size-xs);
   font-weight: 500;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
   border-radius: var(--border-radius-pill);
   border: 1px solid var(--glass-border);
   white-space: nowrap;
@@ -57,9 +57,9 @@
 }
 
 .hunkBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-5);
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--surface-8);
 }
 
 /* --- Diff lines --- */

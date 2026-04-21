@@ -107,8 +107,8 @@ export function DefaultsFormStep() {
           style={{
             padding: "8px 10px",
             borderRadius: "var(--border-radius-small)",
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "var(--surface-1)",
+            border: "1px solid var(--border)",
             color: "var(--text-primary)",
             fontFamily: "var(--font-ui)",
           }}
@@ -127,8 +127,8 @@ export function DefaultsFormStep() {
           style={{
             padding: "8px 10px",
             borderRadius: "var(--border-radius-small)",
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "var(--surface-1)",
+            border: "1px solid var(--border)",
             color: "var(--text-primary)",
             fontFamily: "var(--font-ui)",
           }}

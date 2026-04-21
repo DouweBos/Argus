@@ -38,9 +38,9 @@ export function TitleBar({
     >
       {showTraffic && (
         <div className={styles.traffic} aria-hidden>
-          <span style={{ background: "#ff5f57" }} />
-          <span style={{ background: "#febc2e" }} />
-          <span style={{ background: "#28c840" }} />
+          <span />
+          <span />
+          <span />
         </div>
       )}
       {left && <div className={styles.left}>{left}</div>}

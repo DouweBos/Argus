@@ -55,8 +55,8 @@
   transform: scale(1.08);
 }
 .swatchSelected {
-  border-color: var(--bg-primary, #000);
-  box-shadow: 0 0 0 2px var(--text-primary, #fff);
+  border-color: var(--bg-primary);
+  box-shadow: 0 0 0 2px var(--text-primary);
 }
 
 .members {
@@ -111,7 +111,7 @@
   cursor: pointer;
 }
 .iconBtn:hover {
-  color: var(--text);
+  color: var(--text-primary);
   border-color: var(--accent);
 }
 
@@ -149,7 +149,7 @@
     border-color 120ms ease;
 }
 .pill:hover {
-  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.04));
+  background: var(--glass-bg-hover);
   border-color: var(--accent);
 }
 
@@ -166,7 +166,7 @@
 }
 
 .error {
-  color: var(--danger, #ff6b6b);
+  color: var(--error);
   font-size: 12px;
 }
 

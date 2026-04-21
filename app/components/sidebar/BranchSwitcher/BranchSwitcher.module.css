@@ -20,7 +20,7 @@
 
 .trigger:hover:not(.disabled) {
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
 }
 
 .disabled {
@@ -48,7 +48,7 @@
 
 .dropdown {
   position: fixed;
-  background: rgba(17, 17, 24, 0.92);
+  background: var(--bg-secondary-90);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   box-shadow: var(--glass-shadow);
@@ -74,7 +74,7 @@
 }
 
 .branchItem:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-3);
 }
 
 .branchItemActive {

@@ -45,7 +45,7 @@
 }
 
 .option:hover {
-  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.04));
+  background: var(--glass-bg-hover);
 }
 
 .optionActive {
@@ -55,6 +55,40 @@
 
 .radio {
   accent-color: var(--accent);
+}
+
+.segmented {
+  display: inline-flex;
+  padding: var(--space-1);
+  gap: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  background: var(--glass-bg);
+  align-self: flex-start;
+  margin-top: var(--space-3);
+}
+
+.segment {
+  padding: var(--space-3) var(--space-6);
+  border-radius: calc(var(--border-radius-sm) - 2px);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.segment:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.segmentActive,
+.segmentActive:hover {
+  background: var(--accent);
+  color: var(--accent-fg);
 }
 
 .editorList {
@@ -90,7 +124,7 @@
 .editorRowCommand {
   font-size: 11px;
   color: var(--text-muted);
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -108,7 +142,7 @@
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--border);
   border-radius: var(--border-radius-sm);
-  background: var(--glass-bg, rgba(255, 255, 255, 0.02));
+  background: var(--glass-bg);
 }
 
 .editorFormActions {

@@ -1,4 +1,3 @@
-import { Button, Icons, Input, SegmentedCard, TextArea } from "@argus/peacock";
 import {
   useEffect,
   useLayoutEffect,
@@ -9,8 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { Button, Icons, Input, SegmentedCard, TextArea } from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
-import { startAgentInSession, sendUserMessageToAgent } from "../../../lib/agentLifecycle";
+import {
+  startAgentInSession,
+  sendUserMessageToAgent,
+} from "../../../lib/agentLifecycle";
 import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   getUserProjectSettings,
@@ -654,9 +657,9 @@ export function CreateSessionDialog({
                   !isCreating
                 ) {
                   e.preventDefault();
-                  handleSubmitBranchOff(
-                    e as unknown as React.FormEvent,
-                  ).catch(() => {});
+                  handleSubmitBranchOff(e as unknown as React.FormEvent).catch(
+                    () => {},
+                  );
                 }
               }}
             />

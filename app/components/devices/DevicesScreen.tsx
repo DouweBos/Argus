@@ -108,7 +108,7 @@ export function DevicesScreen() {
       </div>
 
       {error && (
-        <div className={styles.empty} style={{ color: "#ff8ea0" }}>
+        <div className={styles.empty} style={{ color: "var(--error)" }}>
           Failed to list devices: {error}
         </div>
       )}

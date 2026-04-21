@@ -46,11 +46,11 @@
 .secondary {
   background: transparent;
   color: var(--accent);
-  border: 1px solid rgba(245, 166, 35, 0.25);
+  border: 1px solid var(--accent-border-soft);
   padding: 6px 18px;
 }
 .secondary:hover:not(:disabled) {
-  border-color: rgba(245, 166, 35, 0.4);
+  border-color: var(--accent-border-strong);
   box-shadow: 0 0 16px var(--accent-glow);
 }
 
@@ -68,13 +68,13 @@
 
 /* Danger — hot pink-red */
 .danger {
-  background: rgba(255, 68, 102, 0.12);
-  border: 1px solid rgba(255, 68, 102, 0.25);
+  background: var(--error-overlay-lg);
+  border: 1px solid var(--error-overlay-xl);
   color: var(--error);
   padding: 4px 14px;
 }
 .danger:hover:not(:disabled) {
-  background: rgba(255, 68, 102, 0.2);
+  background: var(--error-overlay-xl);
 }
 
 /* Send — circular 28px gradient with glow */

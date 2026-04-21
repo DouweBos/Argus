@@ -9,7 +9,7 @@
 }
 
 .count {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
   padding: 1px 6px;
   border-radius: var(--border-radius-pill);
   font-size: 9px;

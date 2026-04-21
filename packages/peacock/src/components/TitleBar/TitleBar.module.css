@@ -4,7 +4,7 @@
   align-items: center;
   gap: var(--space-6);
   padding: 0 var(--space-6);
-  background: rgba(17, 17, 24, 0.7);
+  background: var(--bg-secondary-50);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border-subtle);
@@ -18,7 +18,16 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-6);
+}
+.traffic span:nth-child(1) {
+  background: var(--traffic-red);
+}
+.traffic span:nth-child(2) {
+  background: var(--traffic-yellow);
+}
+.traffic span:nth-child(3) {
+  background: var(--traffic-green);
 }
 
 .title {
@@ -59,7 +68,7 @@
 }
 .cmdk:hover {
   background: var(--glass-bg-hover);
-  border-color: rgba(245, 166, 35, 0.2);
+  border-color: var(--accent-glow);
 }
 .cmdkText {
   flex: 1;

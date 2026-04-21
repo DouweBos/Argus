@@ -4,7 +4,7 @@
   gap: 3px;
   min-width: 96px;
   padding: 4px 8px;
-  border-radius: var(--border-radius-sm, 6px);
+  border-radius: var(--border-radius-sm);
 }
 
 .row {
@@ -34,7 +34,7 @@
   height: 3px;
   width: 100%;
   border-radius: 999px;
-  background: var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--border-subtle);
   overflow: hidden;
 }
 
@@ -48,10 +48,10 @@
   background: var(--accent);
 }
 .warning .fill {
-  background: var(--warning, #f5a524);
+  background: var(--warning);
 }
 .danger .fill {
-  background: var(--error, #f55);
+  background: var(--error);
 }
 
 .hint {

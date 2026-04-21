@@ -33,7 +33,7 @@
 }
 
 .item:hover:not(:disabled) {
-  background: var(--glass-bg-hover, rgba(255, 255, 255, 0.04));
+  background: var(--glass-bg-hover);
 }
 
 .item:disabled {
@@ -50,9 +50,9 @@
 
 .error {
   padding: var(--space-4) var(--space-5);
-  color: var(--danger, #ff4466);
+  color: var(--error);
   font-size: 12px;
-  border: 1px solid var(--danger, #ff4466);
+  border: 1px solid var(--error);
   border-radius: var(--border-radius-sm);
 }
 

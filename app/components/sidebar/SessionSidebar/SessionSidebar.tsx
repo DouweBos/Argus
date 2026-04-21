@@ -20,6 +20,7 @@ import {
 } from "../../../stores/organizationStore";
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import { toggleProjectCollapsed } from "../../../stores/sessionStore";
+import { showSettingsDialog } from "../../../stores/settingsStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
 import { OrganizationSegment } from "../OrganizationSegment";
 import { ProjectSegment } from "../ProjectSegment";
@@ -68,8 +69,11 @@ export function SessionSidebar() {
             <SidebarHeaderAction title="New project" onClick={handleAdd}>
               <Icons.PlusIcon size={12} />
             </SidebarHeaderAction>
-            <SidebarHeaderAction title="Open repo" onClick={handleAdd}>
-              <Icons.FolderIcon size={12} />
+            <SidebarHeaderAction
+              title="Settings (⌘,)"
+              onClick={showSettingsDialog}
+            >
+              <Icons.GearIcon size={12} />
             </SidebarHeaderAction>
           </>
         }

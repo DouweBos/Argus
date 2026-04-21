@@ -9,7 +9,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--scrim-sm);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
 }
@@ -40,7 +40,7 @@
   padding: 8px 10px;
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-sm);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--surface-1);
   cursor: pointer;
   transition:
     background var(--transition-base),
@@ -48,12 +48,12 @@
 }
 
 .option:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-3);
 }
 
 .optionChecked {
   border-color: var(--accent);
-  background: rgba(245, 166, 35, 0.08);
+  background: var(--accent-overlay-lg);
 }
 
 .option input {

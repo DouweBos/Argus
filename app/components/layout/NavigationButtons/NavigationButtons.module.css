@@ -13,14 +13,14 @@
   justify-content: center;
   border: 0;
   background: transparent;
-  color: var(--text-muted, #9ba3af);
+  color: var(--text-muted);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .btn:hover:not(:disabled) {
-  background: var(--glass-hover, rgba(255, 255, 255, 0.06));
-  color: var(--text, #e7e9ee);
+  background: var(--glass-hover);
+  color: var(--text-primary);
 }
 
 .btn:disabled {
