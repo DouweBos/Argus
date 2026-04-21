@@ -219,7 +219,7 @@ export function useSessionAgents(
       replaceAgent(agentId, {
         agent_id: agentInfo.agent_id,
         session_id: agentInfo.session_id,
-        status: "running",
+        status: agentInfo.status,
         permission_mode: newPermissionMode,
       });
       startAgentListening(agentInfo.agent_id);

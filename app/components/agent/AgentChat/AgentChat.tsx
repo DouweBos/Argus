@@ -2,6 +2,7 @@ import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Icons, StatusDot, ThinkingDots } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
+import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
   maybeGenerateTitle,
   notifyMessageSent,
@@ -341,6 +342,25 @@ export function AgentChat({
     ],
   );
 
+  // Swap the generic "Thinking" fallback for a whimsical verb, held stable
+  // for the duration of each thinking episode so the bubble doesn't flicker
+  // on re-render. Reset on agent switch so each agent gets a fresh verb.
+  const isThinking = activity.description === "Thinking";
+  const spinnerVerbRef = useRef<string>(randomSpinnerVerb());
+  const wasThinkingRef = useRef(false);
+  const lastAgentIdRef = useRef<string | null>(agentId);
+  if (lastAgentIdRef.current !== agentId) {
+    lastAgentIdRef.current = agentId;
+    wasThinkingRef.current = false;
+  }
+  if (isThinking && !wasThinkingRef.current) {
+    spinnerVerbRef.current = randomSpinnerVerb();
+  }
+  wasThinkingRef.current = isThinking;
+  const activityDescription = isThinking
+    ? spinnerVerbRef.current
+    : activity.description;
+
   const isAlive =
     !readOnly && (agentStatus === "running" || agentStatus === "idle");
 
@@ -587,7 +607,7 @@ export function AgentChat({
                 pulse={activity.state === "working"}
               />
               <span className={styles.activityText}>
-                {activity.description}
+                {activityDescription}
               </span>
               {activity.state === "working" && <ThinkingDots />}
             </div>
