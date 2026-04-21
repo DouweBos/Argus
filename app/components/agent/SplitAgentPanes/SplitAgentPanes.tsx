@@ -1,104 +1,27 @@
 import type { AgentStatus } from "../../../lib/types";
-import { Icons } from "@argus/peacock";
 import { setActiveAgent, setSplitPair } from "../../../stores/agentStore";
-import { useConversation } from "../../../stores/conversationStore";
 import { AgentChat } from "../AgentChat";
 import { AgentSingleDropZone } from "../AgentChatDropZone";
 import styles from "./SplitAgentPanes.module.css";
 
 interface SplitAgentPanesProps {
-  agents: AgentStatus[];
   left: AgentStatus;
   onRestart: (agentId: string) => void;
   right: AgentStatus;
   sessionId: string;
 }
 
-function PaneHeader({
-  agents,
-  selectedId,
-  label,
-  disabledIds,
-  onChange,
-  onClose,
-}: {
-  agents: AgentStatus[];
-  disabledIds: Set<string>;
-  label: string;
-  onChange: (agentId: string) => void;
-  onClose?: () => void;
-  selectedId: string;
-}) {
-  return (
-    <div className={styles.paneHeader}>
-      <span className={styles.paneLabel}>{label}</span>
-      <select
-        className={styles.paneSelect}
-        value={selectedId}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {agents.map((a, idx) => (
-          <PaneOption
-            key={a.agent_id}
-            agent={a}
-            index={idx}
-            disabled={disabledIds.has(a.agent_id)}
-          />
-        ))}
-      </select>
-      {onClose && (
-        <button
-          className={styles.paneCloseBtn}
-          title="Merge back into single tab"
-          onClick={onClose}
-        >
-          <Icons.CloseIcon size={10} />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function PaneOption({
-  agent,
-  index,
-  disabled,
-}: {
-  agent: AgentStatus;
-  disabled: boolean;
-  index: number;
-}) {
-  const conv = useConversation(agent.agent_id);
-  const fallback = `Agent ${index + 1}`;
-  const title = conv?.title?.trim() || fallback;
-
-  return (
-    <option value={agent.agent_id} disabled={disabled}>
-      {title}
-    </option>
-  );
-}
-
 export function SplitAgentPanes({
-  agents,
   left,
   right,
   sessionId,
   onRestart,
 }: SplitAgentPanesProps) {
-  const leftDisabled = new Set<string>([right.agent_id]);
-  const rightDisabled = new Set<string>([left.agent_id]);
-
-  const closeSplit = () => {
-    setSplitPair(sessionId, null);
-  };
-
-  const changeLeft = (id: string) => {
+  const dropOnLeft = (id: string) => {
     if (id === left.agent_id) {
       return;
     }
     if (id === right.agent_id) {
-      // Swap
       setSplitPair(sessionId, { left: id, right: left.agent_id });
       setActiveAgent(sessionId, id);
 
@@ -108,7 +31,7 @@ export function SplitAgentPanes({
     setActiveAgent(sessionId, id);
   };
 
-  const changeRight = (id: string) => {
+  const dropOnRight = (id: string) => {
     if (id === right.agent_id) {
       return;
     }
@@ -121,30 +44,9 @@ export function SplitAgentPanes({
     setSplitPair(sessionId, { left: left.agent_id, right: id });
   };
 
-  const dropOnLeft = (id: string) => {
-    if (id === left.agent_id) {
-      return;
-    }
-    changeLeft(id);
-  };
-
-  const dropOnRight = (id: string) => {
-    if (id === right.agent_id) {
-      return;
-    }
-    changeRight(id);
-  };
-
   return (
     <div className={styles.panes}>
       <div className={styles.pane}>
-        <PaneHeader
-          agents={agents}
-          selectedId={left.agent_id}
-          label="Left"
-          disabledIds={leftDisabled}
-          onChange={changeLeft}
-        />
         <AgentSingleDropZone
           ignoreIds={[left.agent_id]}
           label="Set as left pane"
@@ -161,14 +63,6 @@ export function SplitAgentPanes({
         </AgentSingleDropZone>
       </div>
       <div className={styles.pane}>
-        <PaneHeader
-          agents={agents}
-          selectedId={right.agent_id}
-          label="Right"
-          disabledIds={rightDisabled}
-          onChange={changeRight}
-          onClose={closeSplit}
-        />
         <AgentSingleDropZone
           ignoreIds={[right.agent_id]}
           label="Set as right pane"

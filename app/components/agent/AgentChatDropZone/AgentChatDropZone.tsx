@@ -1,6 +1,7 @@
 import type { DragEvent, ReactNode } from "react";
 import { useCallback, useState } from "react";
 import {
+  endAgentDrag,
   isAgentDrag,
   readDraggedAgentId,
   useDraggingAgentId,
@@ -63,6 +64,10 @@ export function AgentSplitDropZone({
     e.stopPropagation();
     const id = readDraggedAgentId(e.dataTransfer);
     setHoverSide(null);
+    // The drop may unmount the source tab (e.g. when merging into a split
+    // pair), which prevents its `dragend` from firing. Clear the global
+    // drag signal here so sibling drop zones can hide their overlays.
+    endAgentDrag();
     if (isIgnored(id)) {
       return;
     }
@@ -131,6 +136,9 @@ export function AgentSingleDropZone({
     e.stopPropagation();
     const id = readDraggedAgentId(e.dataTransfer);
     setHover(false);
+    // See note in AgentSplitDropZone — the source tab may be unmounted by
+    // the drop, so `dragend` never fires. End the drag manually.
+    endAgentDrag();
     if (isIgnored(id)) {
       return;
     }

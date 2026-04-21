@@ -51,6 +51,22 @@ export function AgentView({ sessionId }: AgentViewProps) {
     [activeAgent, sessionId, setActive],
   );
 
+  const openOnLeft = useCallback(
+    (agentId: string) => {
+      if (!activeAgent) {
+        setActive(agentId);
+
+        return;
+      }
+      if (agentId === activeAgent.agent_id) {
+        return;
+      }
+      setSplitPair(sessionId, { left: agentId, right: activeAgent.agent_id });
+      setActive(agentId);
+    },
+    [activeAgent, sessionId, setActive],
+  );
+
   const activeIsPaired =
     !!activeAgent &&
     !!splitPair &&
@@ -110,7 +126,6 @@ export function AgentView({ sessionId }: AgentViewProps) {
       {!activeAgent && <HomePanel sessionId={sessionId} />}
       {activeAgent && showSplit && resolvedPair && (
         <SplitAgentPanes
-          agents={agents}
           left={resolvedPair.left}
           right={resolvedPair.right}
           sessionId={sessionId}
@@ -120,7 +135,7 @@ export function AgentView({ sessionId }: AgentViewProps) {
       {activeAgent && !showSplit && (
         <AgentSplitDropZone
           ignoreIds={[activeAgent.agent_id]}
-          onDropLeft={(id) => setActive(id)}
+          onDropLeft={openOnLeft}
           onDropRight={openOnRight}
         >
           <AgentChat
