@@ -1,0 +1,156 @@
+.screen {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 32px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 500;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 120ms ease;
+}
+
+.row:hover {
+  background: var(--surface-2);
+}
+
+.row td {
+  padding: 10px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.name {
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.link {
+  color: var(--accent);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.statusDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: var(--text-muted);
+}
+
+.statusDot.running {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success-glow);
+}
+
+.statusDot.stopped {
+  background: var(--text-muted);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  background: var(--surface-4);
+  color: var(--text-primary);
+}
+
+.actionCell {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actionCell button + button {
+  margin-left: 6px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.iconBtn:hover {
+  background: var(--surface-6);
+  color: var(--text-inverse);
+}
+
+.iconBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

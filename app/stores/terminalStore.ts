@@ -334,6 +334,21 @@ export const useSessionIsRunning = (sessionId: string) =>
     (s) => Object.keys(s.runningTerminals[sessionId] ?? {}).length > 0,
   );
 
+export const useAllRunningTerminals = () =>
+  useTerminalStore((s) => s.runningTerminals);
+
+export const useLiveSessions = () => useTerminalStore((s) => s.liveSessions);
+
+export const useTotalRunningTerminals = () =>
+  useTerminalStore((s) => {
+    let count = 0;
+    for (const perSession of Object.values(s.runningTerminals)) {
+      count += Object.keys(perSession).length;
+    }
+
+    return count;
+  });
+
 /** For tests */
 export const getTerminalState = () => terminalStore.getState();
 export const setTerminalState = terminalStore.setState.bind(terminalStore);

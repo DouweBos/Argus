@@ -21,6 +21,7 @@ import {
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import { toggleProjectCollapsed } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
+import { useTotalRunningTerminals } from "../../../stores/terminalStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
 import { OrganizationSegment } from "../OrganizationSegment";
 import { ProjectSegment } from "../ProjectSegment";
@@ -33,6 +34,7 @@ export function SessionSidebar() {
   const agentsRecord = useAgentsRecord();
   const [showOpenProject, setShowOpenProject] = useState(false);
   const runningDevices = devices.filter((d) => d.online).length;
+  const runningRuntimes = useTotalRunningTerminals();
   const runningAgents = Object.values(agentsRecord).filter(
     (a) => a.status === "running",
   ).length;
@@ -100,6 +102,13 @@ export function SessionSidebar() {
           count={runningDevices}
         >
           Devices
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="runtimes"
+          leading={<Icons.TerminalIcon size={12} />}
+          count={runningRuntimes}
+        >
+          Runtimes
         </SidebarNavItem>
         <SidebarNavItem
           view="organizations"

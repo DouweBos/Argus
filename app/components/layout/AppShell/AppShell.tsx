@@ -48,6 +48,7 @@ import { NotificationsScreen } from "../../notifications";
 import { OrganizationsScreen } from "../../organizations";
 import { OrgTaskOverlay } from "../../organizations/OrgTaskScreen";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
+import { RuntimeScreen } from "../../runtimes";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
 import { SettingsDialog } from "../../shared/SettingsDialog";
@@ -74,7 +75,8 @@ function renderCenter(
     | "home"
     | "notifications"
     | "organizations"
-    | "review-queue",
+    | "review-queue"
+    | "runtimes",
   isNotificationsRoute: boolean,
 ) {
   if (isNotificationsRoute) {
@@ -88,6 +90,9 @@ function renderCenter(
   }
   if (centerView === "agents") {
     return <AgentsScreen />;
+  }
+  if (centerView === "runtimes") {
+    return <RuntimeScreen />;
   }
   if (centerView === "organizations") {
     return <OrganizationsScreen />;
