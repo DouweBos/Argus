@@ -91,6 +91,10 @@ export function HoverActionButton({
       className={classes}
       onClick={(e) => {
         e.stopPropagation();
+        // Blur so the bar's `:focus-within` reveal doesn't latch open after
+        // a click — callers want the bar to fade out once the pointer
+        // leaves, regardless of which button was last pressed.
+        e.currentTarget.blur();
         onClick?.(e);
       }}
       title={label}

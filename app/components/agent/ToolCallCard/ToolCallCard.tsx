@@ -236,16 +236,92 @@ function formatInput(name: string, input: Record<string, unknown>): string {
   return JSON.stringify(input, null, 2);
 }
 
-function ForkAction({ onFork }: { onFork: () => void }) {
+function WriteToolActions({
+  onCopy,
+  onFork,
+}: {
+  onCopy: () => void;
+  onFork?: () => void;
+}) {
   return (
     <HoverActionBar className={styles.forkActions} placement="top-right">
       <HoverActionButton
-        icon={<Icons.BranchIcon size={12} />}
-        label="Fork workspace and chat from here"
-        onClick={onFork}
+        icon={<Icons.CopyIcon size={12} />}
+        label="Copy new content"
+        onClick={onCopy}
       />
+      {onFork && (
+        <HoverActionButton
+          icon={<Icons.BranchIcon size={12} />}
+          label="Fork workspace and chat from here"
+          onClick={onFork}
+        />
+      )}
     </HoverActionBar>
   );
+}
+
+/**
+ * Return only the added lines (not the common prefix/suffix context) when
+ * diffing `oldStr` against `newStr`, mirroring EditDiffView's diff logic.
+ */
+function addedLines(oldStr: string, newStr: string): string {
+  const oldLines = oldStr.split("\n");
+  const newLines = newStr.split("\n");
+
+  let prefixLen = 0;
+  while (
+    prefixLen < oldLines.length &&
+    prefixLen < newLines.length &&
+    oldLines[prefixLen] === newLines[prefixLen]
+  ) {
+    prefixLen++;
+  }
+
+  let suffixLen = 0;
+  while (
+    suffixLen < oldLines.length - prefixLen &&
+    suffixLen < newLines.length - prefixLen &&
+    oldLines[oldLines.length - 1 - suffixLen] ===
+      newLines[newLines.length - 1 - suffixLen]
+  ) {
+    suffixLen++;
+  }
+
+  return newLines.slice(prefixLen, newLines.length - suffixLen).join("\n");
+}
+
+/**
+ * Extract just the added lines from a Write / Edit / MultiEdit tool call,
+ * suitable for placing on the clipboard. Context lines present in both old
+ * and new are excluded.
+ */
+function writeToolAddedContent(
+  name: string,
+  input: Record<string, unknown>,
+): string {
+  if (name === "Write" && typeof input.content === "string") {
+    return input.content;
+  }
+  if (
+    name === "Edit" &&
+    typeof input.old_string === "string" &&
+    typeof input.new_string === "string"
+  ) {
+    return addedLines(input.old_string, input.new_string);
+  }
+  if (name === "MultiEdit" && Array.isArray(input.edits)) {
+    return (input.edits as Array<Record<string, unknown>>)
+      .map((e) =>
+        typeof e.old_string === "string" && typeof e.new_string === "string"
+          ? addedLines(e.old_string, e.new_string)
+          : "",
+      )
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return "";
 }
 
 export function ToolCallCard({
@@ -254,11 +330,18 @@ export function ToolCallCard({
   onPermissionRespond,
   toolCall,
 }: ToolCallCardProps) {
-  const canFork =
-    onFork != null &&
-    (toolCall.name === "Write" ||
-      toolCall.name === "Edit" ||
-      toolCall.name === "MultiEdit");
+  const isWriteTool =
+    toolCall.name === "Write" ||
+    toolCall.name === "Edit" ||
+    toolCall.name === "MultiEdit";
+  const canFork = onFork != null && isWriteTool;
+
+  const handleCopyWriteContent = useCallback(() => {
+    const text = writeToolAddedContent(toolCall.name, toolCall.input);
+    if (text) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  }, [toolCall.name, toolCall.input]);
   const [userExpanded, setUserExpanded] = useState(false);
   // Auto-expand when a permission request is pending; user toggle applies otherwise.
   const expanded = !!toolCall.pendingPermission || userExpanded;
@@ -436,7 +519,12 @@ export function ToolCallCard({
     <FileLinkHandler
       className={`${styles.card} ${toolCall.isError ? styles.cardError : ""} ${isPending ? styles.cardPending : ""}`}
     >
-      {canFork && onFork && <ForkAction onFork={onFork} />}
+      {isWriteTool && (
+        <WriteToolActions
+          onCopy={handleCopyWriteContent}
+          onFork={canFork ? onFork : undefined}
+        />
+      )}
       <button
         aria-expanded={expanded}
         className={styles.header}
