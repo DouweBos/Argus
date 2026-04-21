@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   addProject,
   addSession,
+  getSelectedSessionId,
   getSessionState,
   mergeSessionsForProject,
   removeProject,
@@ -34,7 +35,6 @@ describe("sessionStore", () => {
     setSessionState({
       projects: [],
       sessions: [],
-      selectedId: null,
       isLoading: false,
       setupProgressBySessionId: {},
     });
@@ -68,7 +68,7 @@ describe("sessionStore", () => {
       addSession(session());
       selectSession("ws-1");
       removeProject("/home/user/Projects/MyApp");
-      expect(getSessionState().selectedId).toBeNull();
+      expect(getSelectedSessionId()).toBeNull();
     });
 
     it("toggles project collapsed state", () => {
@@ -95,7 +95,7 @@ describe("sessionStore", () => {
       addSession(session());
       selectSession("ws-1");
       removeSession("ws-1");
-      expect(getSessionState().selectedId).toBeNull();
+      expect(getSelectedSessionId()).toBeNull();
     });
 
     it("updates session fields", () => {

@@ -11,10 +11,7 @@ import {
   useNotifications,
   useUnseenNotificationCount,
 } from "../../../stores/notificationsStore";
-import {
-  selectSession,
-  useSelectedSessionId,
-} from "../../../stores/sessionStore";
+import { useSelectedSessionId } from "../../../stores/sessionStore";
 import styles from "./ToolRail.module.css";
 
 type IconComponent = React.ComponentType<
@@ -49,7 +46,6 @@ export function ToolRail() {
     if (notificationsActive) {
       return;
     }
-    selectSession(null);
     setCenterView("notifications");
   };
 

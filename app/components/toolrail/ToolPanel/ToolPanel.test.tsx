@@ -17,6 +17,7 @@ import { setLayoutState } from "../../../stores/layoutStore";
 import {
   addProject,
   addSession,
+  getSelectedSessionId,
   getSessionState,
   selectSession,
   setProjectBranch,
@@ -99,7 +100,6 @@ describe("external branch switch → full pipeline", () => {
     setSessionState({
       projects: [],
       sessions: [],
-      selectedId: null,
       isLoading: false,
       setupProgressBySessionId: {},
     });
@@ -176,7 +176,7 @@ describe("external branch switch → full pipeline", () => {
     });
 
     // Simulate what ToolPanel does: look up session by selectedId
-    const selectedId = getSessionState().selectedId;
+    const selectedId = getSelectedSessionId();
     const session = getSessionState().sessions.find(
       (w: Session) => w.id === selectedId,
     );

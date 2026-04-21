@@ -31,13 +31,11 @@ export function useRuntimeNavigation() {
       return;
     }
 
-    setCenterView("home");
-    selectSession(target.sessionId);
-
     if (kind === "runtime") {
       setActiveSession(target.sessionId, target.terminalId);
       setActiveTool("terminal");
     }
+    selectSession(target.sessionId);
   }
 
   return { goto };

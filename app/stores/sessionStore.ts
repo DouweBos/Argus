@@ -1,8 +1,8 @@
 import type { Session } from "../lib/types";
 import { create } from "zustand";
-import { pushRoute } from "../lib/router";
-import { clearSelectedOrganization } from "./centerViewStore";
-import { getEditorState } from "./editorStore";
+import { useRouteSessionId } from "../lib/routeHooks";
+import { appNavigate, getCurrentRoute } from "../lib/router";
+import { getActiveCenterView } from "./editorStore";
 import { migrateSessions } from "./terminalStore";
 
 export interface Project {
@@ -15,7 +15,6 @@ export interface Project {
 interface SessionStoreData {
   isLoading: boolean;
   projects: Project[];
-  selectedId: string | null;
   sessions: Session[];
   /** Current item and progress during setup. Cleared when setup completes. */
   setupProgressBySessionId: Record<
@@ -27,7 +26,6 @@ interface SessionStoreData {
 const sessionStore = create<SessionStoreData>(() => ({
   projects: [],
   sessions: [],
-  selectedId: null,
   isLoading: false,
   setupProgressBySessionId: {},
 }));
@@ -55,17 +53,19 @@ export const addProject = (repoRoot: string) => {
 };
 
 export const removeProject = (repoRoot: string) => {
+  const selectedId = getSelectedSessionId();
   sessionStore.setState((state) => {
     const wsIds = state.sessions
       .filter((w) => w.repo_root === repoRoot)
       .map((w) => w.id);
-    const selectedGone =
-      state.selectedId != null && wsIds.includes(state.selectedId);
+    const selectedGone = selectedId != null && wsIds.includes(selectedId);
+    if (selectedGone) {
+      appNavigate({ view: "home" });
+    }
 
     return {
       projects: state.projects.filter((p) => p.repoRoot !== repoRoot),
       sessions: state.sessions.filter((w) => w.repo_root !== repoRoot),
-      selectedId: selectedGone ? null : state.selectedId,
     };
   });
 };
@@ -143,9 +143,11 @@ export const addSession = (session: Session) => {
 };
 
 export const removeSession = (id: string) => {
+  if (getSelectedSessionId() === id) {
+    appNavigate({ view: "home" });
+  }
   sessionStore.setState((state) => ({
     sessions: state.sessions.filter((w) => w.id !== id),
-    selectedId: state.selectedId === id ? null : state.selectedId,
   }));
 };
 
@@ -157,8 +159,8 @@ export const updateSession = (id: string, patch: Partial<Session>) => {
 
 /**
  * Replace an optimistic placeholder session with the real one returned by the
- * backend, preserving its position in the list and migrating selection +
- * terminal state to the new id.
+ * backend. Migrates terminal/id state and, if the URL currently points at the
+ * temp id, redirects to the real one.
  */
 export const replaceSession = (tempId: string, session: Session) => {
   if (tempId === session.id) {
@@ -167,36 +169,31 @@ export const replaceSession = (tempId: string, session: Session) => {
     return;
   }
   migrateSessions(tempId, session.id);
-  const wasSelected = sessionStore.getState().selectedId === tempId;
-  // Apply the sessions swap and the selectedId migration in a single
-  // setState so no render ever sees `selectedId === tempId` while the
-  // sessions list has already moved on to the real id — that intermediate
-  // state causes CenterPanel to fall back to HomeScreen.
+  const wasSelected = getSelectedSessionId() === tempId;
   sessionStore.setState((state) => ({
     sessions: state.sessions.map((w) => (w.id === tempId ? session : w)),
-    selectedId: wasSelected ? session.id : state.selectedId,
   }));
   if (wasSelected) {
-    clearSelectedOrganization();
-    pushRoute({
-      view: "session",
-      sessionId: session.id,
-      panel: getEditorState().activeCenterView,
-    });
+    appNavigate(
+      {
+        view: "session",
+        sessionId: session.id,
+        panel: getActiveCenterView(),
+      },
+      { replace: true },
+    );
   }
 };
 
 export const selectSession = (id: string | null) => {
-  sessionStore.setState({ selectedId: id });
   if (id !== null) {
-    clearSelectedOrganization();
-    pushRoute({
+    appNavigate({
       view: "session",
       sessionId: id,
-      panel: getEditorState().activeCenterView,
+      panel: getActiveCenterView(),
     });
   } else {
-    pushRoute({ view: "home" });
+    appNavigate({ view: "home" });
   }
 };
 
@@ -226,7 +223,8 @@ export const setSetupProgress = (
 
 export const useSessionProjects = () => useSessionStore((s) => s.projects);
 
-export const useSelectedSessionId = () => useSessionStore((s) => s.selectedId);
+/** URL-derived: returns the session id from the current path. */
+export const useSelectedSessionId = (): string | null => useRouteSessionId();
 
 export const useSessionLoading = () => useSessionStore((s) => s.isLoading);
 
@@ -235,6 +233,10 @@ export const useSessions = () => useSessionStore((s) => s.sessions);
 export const useSetupProgressBySessionId = () =>
   useSessionStore((s) => s.setupProgressBySessionId);
 
-/** For tests */
+/** Non-hook accessor for the currently selected session id (from URL). */
+export const getSelectedSessionId = (): string | null =>
+  getCurrentRoute().sessionId;
+
+/** For tests — the Zustand slice (sessions, projects, setup progress). */
 export const getSessionState = () => sessionStore.getState();
 export const setSessionState = sessionStore.setState.bind(sessionStore);

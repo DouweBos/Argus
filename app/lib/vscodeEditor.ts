@@ -14,7 +14,7 @@ import {
 } from "@codingame/monaco-vscode-api/services";
 import { URI } from "@codingame/monaco-vscode-api/vscode/vs/base/common/uri";
 import { setActiveCenterView } from "../stores/editorStore";
-import { getSessionState } from "../stores/sessionStore";
+import { getSelectedSessionId, getSessionState } from "../stores/sessionStore";
 import { createLogger } from "./logger";
 import {
   getActiveWorktreePath,
@@ -31,7 +31,8 @@ function getSessionRoot(): string | null {
   if (active) {
     return active;
   }
-  const { selectedId, sessions } = getSessionState();
+  const selectedId = getSelectedSessionId();
+  const { sessions } = getSessionState();
   const ws = sessions.find((w) => w.id === selectedId);
 
   return ws?.path ?? null;

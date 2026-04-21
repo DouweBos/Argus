@@ -1,11 +1,9 @@
 /**
  * Argus navigation router.
  *
- * Uses react-router-dom's MemoryRouter so the in-renderer URL is the source of
- * truth for "which screen am I on" — Zustand stores continue to own data state
- * (session list, agents, terminals), but the current view and the selected
- * session id are reflected in the URL so back/forward history and deep links
- * work.
+ * The URL is the single source of truth for "which screen am I on". All reads
+ * derive from the current pathname via `useLocation` / `useMatch`; all writes
+ * call `appNavigate(path)`. No Zustand store mirrors the route.
  *
  * ## Route inventory
  *
@@ -13,34 +11,25 @@
  * - `/activity`                                  → activity screen
  * - `/agents`                                    → global agents overview
  * - `/devices`                                   → devices screen
+ * - `/notifications`                             → notifications screen
  * - `/organizations`                             → organizations list
  * - `/organizations/:organizationId`             → single organization detail
  * - `/review-queue`                              → review queue
+ * - `/runtimes`                                  → runtimes overview
  * - `/settings`                                  → settings (opened as dialog)
- * - `/sessions/:sessionId`                   → session (default agent tab)
- * - `/sessions/:sessionId/agents`            → session agents view
- * - `/sessions/:sessionId/editor`            → session editor view
- * - `/sessions/:sessionId/git`               → session git view
- *
- * `parseRoute` turns any incoming URL into a normalised `{ view, sessionId,
- * organizationId, panel }` descriptor; `syncRouteToStores` reflects that
- * descriptor into the Zustand stores that still drive rendering. This keeps
- * the migration pragmatic — new routes are first-class but existing components
- * continue to read the same selectors they always did.
+ * - `/sessions/:sessionId`                       → session (default agent tab)
+ * - `/sessions/:sessionId/agents`                → session agents view
+ * - `/sessions/:sessionId/editor`                → session editor view
+ * - `/sessions/:sessionId/git`                   → session git view
  */
 
-import type { CenterView } from "../stores/centerViewStore";
-import type { CenterView as EditorCenterView } from "../stores/editorStore";
 import { useEffect } from "react";
-import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
-import type { NavigateFunction } from "react-router-dom";
 import {
-  setCenterView,
-  openOrganization,
-  clearSelectedOrganization,
-} from "../stores/centerViewStore";
-import { setActiveCenterView, getEditorState } from "../stores/editorStore";
-import { getSessionState, selectSession } from "../stores/sessionStore";
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from "react-router-dom";
+import type { NavigateFunction } from "react-router-dom";
 
 export type AppView =
   | "activity"
@@ -53,18 +42,19 @@ export type AppView =
   | "runtimes"
   | "session";
 
+export type SessionPanel = "agents" | "editor" | "git" | "home";
+
 export interface ParsedRoute {
   organizationId: string | null;
   /** Session panel (agents/editor/git). Only meaningful when view=session. */
-  panel: EditorCenterView;
+  panel: SessionPanel;
   sessionId: string | null;
   view: AppView;
 }
 
-/**
- * Parse a pathname (e.g. `/sessions/abc/git`) into a normalised route
- * descriptor. Unknown paths fall back to the home route.
- */
+const VALID_PANELS: SessionPanel[] = ["agents", "editor", "git", "home"];
+
+/** Parse a pathname into a normalised route descriptor. */
 export function parseRoute(pathname: string): ParsedRoute {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const segments = clean.split("/").filter(Boolean);
@@ -74,14 +64,13 @@ export function parseRoute(pathname: string): ParsedRoute {
   }
 
   if (segments[0] === "sessions" && segments[1]) {
-    const panel = (segments[2] ?? "agents") as EditorCenterView;
-    const valid: EditorCenterView[] = ["agents", "editor", "git", "home"];
+    const panel = (segments[2] ?? "agents") as SessionPanel;
 
     return {
       view: "session",
       sessionId: segments[1],
       organizationId: null,
-      panel: valid.includes(panel) ? panel : "agents",
+      panel: VALID_PANELS.includes(panel) ? panel : "agents",
     };
   }
 
@@ -139,80 +128,39 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
   return "/";
 }
 
-/** Map the non-session views to the legacy CenterView enum. */
-function toCenterView(view: AppView): CenterView {
-  if (view === "session") {
-    // Session-view routes don't drive centerView; the store value is
-    // ignored while a session is selected.
-    return "home";
-  }
+// ---------------------------------------------------------------------------
+// Module-level navigator — lets non-hook code trigger navigation.
+// ---------------------------------------------------------------------------
 
-  return view;
-}
+let navigator: NavigateFunction | null = null;
+let lastPath: string | null = null;
+const historyStack: string[] = [];
+let historyCursor = -1;
 
-/**
- * Reflect a parsed route into the Zustand stores that still own rendering
- * decisions. Called from `useRouteSync` on every location change.
- */
-export function syncRouteToStores(route: ParsedRoute): void {
-  const { selectedId } = getSessionState();
-
-  if (route.view === "session") {
-    if (selectedId !== route.sessionId) {
-      selectSession(route.sessionId);
-    }
-    if (getEditorState().activeCenterView !== route.panel) {
-      setActiveCenterView(route.panel);
-    }
-
-    return;
-  }
-
-  if (selectedId !== null) {
-    selectSession(null);
-  }
-
-  if (route.view === "organizations" && route.organizationId) {
-    openOrganization(route.organizationId);
-
-    return;
-  }
-
-  clearSelectedOrganization();
-  setCenterView(toCenterView(route.view));
-}
-
-/** Hook: keep stores in sync with the current URL. */
-export function useRouteSync(): void {
-  const location = useLocation();
+/** Registers the latest `navigate` function so non-hook code can push routes. */
+export function useRegisterNavigator(): void {
+  const nav = useNavigate();
+  const loc = useLocation();
   const navType = useNavigationType();
-  useEffect(() => {
-    syncing = true;
-    try {
-      syncRouteToStores(parseRoute(location.pathname));
-    } finally {
-      syncing = false;
-    }
 
-    // Update the history cursor so the back/forward buttons know whether
-    // they can fire. PUSH grows the stack; POP just moves the cursor.
+  useEffect(() => {
+    navigator = nav;
+    lastPath = loc.pathname;
+
     if (historyStack.length === 0) {
-      // Seed the stack with the initial entry on first sync — react-router
-      // reports navType="POP" on mount, so without this the home screen
-      // would never be recorded and back/forward couldn't return to it.
-      historyStack.push(location.pathname);
+      historyStack.push(loc.pathname);
       historyCursor = 0;
     } else if (navType === "PUSH") {
       historyStack.length = historyCursor + 1;
-      historyStack.push(location.pathname);
+      historyStack.push(loc.pathname);
       historyCursor = historyStack.length - 1;
     } else if (navType === "POP") {
-      const idx = historyStack.lastIndexOf(location.pathname);
+      const idx = historyStack.lastIndexOf(loc.pathname);
       if (idx >= 0) {
         historyCursor = idx;
       }
     } else if (navType === "REPLACE") {
-      historyStack[historyCursor] = location.pathname;
+      historyStack[historyCursor] = loc.pathname;
     }
 
     window.dispatchEvent(
@@ -223,57 +171,30 @@ export function useRouteSync(): void {
         },
       }),
     );
-  }, [location.pathname, navType]);
-}
-
-let navigator: NavigateFunction | null = null;
-let syncing = false;
-let lastPath: string | null = null;
-const historyStack: string[] = [];
-let historyCursor = -1;
-
-/** Registers the latest `navigate` function so non-hook code can push routes. */
-export function useRegisterNavigator(): void {
-  const nav = useNavigate();
-  const loc = useLocation();
-  useEffect(() => {
-    navigator = nav;
-    lastPath = loc.pathname;
 
     return () => {
       navigator = null;
     };
-  }, [nav, loc.pathname]);
+  }, [nav, loc.pathname, navType]);
 }
 
-/**
- * Push a new route entry onto the history stack. No-op while `useRouteSync`
- * is reconciling the URL back into the stores (prevents loops) and when the
- * target path equals the current one.
- */
-export function pushRoute(route: Partial<ParsedRoute>): void {
-  if (syncing || !navigator) {
-    return;
-  }
+/** Navigate to a route descriptor. No-op if already there. */
+export function appNavigate(
+  route: Partial<ParsedRoute>,
+  options?: { replace?: boolean },
+): void {
   const path = routeToPath(route);
-  if (path === lastPath) {
+  if (path === lastPath && !options?.replace) {
     return;
   }
   lastPath = path;
-  navigator(path);
+  // When no router is mounted (tests, early startup) the lastPath update
+  // above is still honoured by `getCurrentPath` / `getCurrentRoute`, so
+  // non-hook consumers still see the navigation.
+  navigator?.(path, { replace: options?.replace });
 }
 
-/** Replace the current route (no new history entry). */
-export function replaceRoute(route: Partial<ParsedRoute>): void {
-  if (syncing || !navigator) {
-    return;
-  }
-  const path = routeToPath(route);
-  lastPath = path;
-  navigator(path, { replace: true });
-}
-
-/** Imperative navigation for deep links coming from main process. */
+/** Navigate to a raw pathname (used for deep links from the main process). */
 export function navigateToPath(path: string): void {
   if (!navigator) {
     return;
@@ -283,6 +204,11 @@ export function navigateToPath(path: string): void {
 }
 
 /** Current path as last observed by the registered navigator hook. */
-export function getCurrentPath(): string | null {
-  return lastPath;
+export function getCurrentPath(): string {
+  return lastPath ?? "/";
+}
+
+/** Non-hook accessor for the current parsed route. */
+export function getCurrentRoute(): ParsedRoute {
+  return parseRoute(getCurrentPath());
 }
