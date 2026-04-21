@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icons, Kbd, useDismissOnEscape } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { startAgentInSession } from "../../../lib/agentLifecycle";
@@ -102,6 +102,7 @@ function CommandPaletteContent() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const activeItemRef = useRef<HTMLButtonElement>(null);
   useDismissOnEscape(closeCommandPalette);
 
   const selectedSession = useMemo(
@@ -467,6 +468,10 @@ function CommandPaletteContent() {
 
   const safeIndex = Math.min(Math.max(activeIndex, 0), ordered.length - 1);
 
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: "nearest" });
+  }, [safeIndex]);
+
   const onOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       closeCommandPalette();
@@ -538,6 +543,7 @@ function CommandPaletteContent() {
                 return (
                   <button
                     key={it.id}
+                    ref={active ? activeItemRef : undefined}
                     className={`${styles.item} ${active ? styles.itemActive : ""}`}
                     type="button"
                     onClick={() => runPick(it)}
