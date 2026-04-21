@@ -7,16 +7,6 @@ import { addSession, selectSession } from "../stores/sessionStore";
 import { startAgentInSession } from "./agentLifecycle";
 import { type ForkReplayOp, forkSession } from "./ipc";
 
-function deriveForkBranch(sourceBranch: string): string {
-  const stamp = new Date()
-    .toISOString()
-    .replace(/[-:T]/g, "")
-    .slice(2, 12);
-  const base = sourceBranch.replace(/[^a-zA-Z0-9/_.-]/g, "-");
-
-  return `fork/${base}-${stamp}`;
-}
-
 /**
  * Count the number of real user turns in `messages[0..idx]` (inclusive).
  *
@@ -130,9 +120,10 @@ function countUserTurns(messages: ConversationMessage[], upToIdx: number): numbe
  */
 export async function forkChatFromMessage(
   sourceSessionId: string,
-  sourceBranch: string,
   agentId: string,
   forkMessageId: string,
+  branch: string,
+  description: string,
 ): Promise<void> {
   const conversation = getConversationState().conversations[agentId];
   if (!conversation) {
@@ -148,12 +139,6 @@ export async function forkChatFromMessage(
     .map((m) => ({ ...m }));
   const turnNumber = countUserTurns(conversation.messages, idx);
   const replayOps = collectReplayOps(conversation.messages, idx);
-
-  const branch = deriveForkBranch(sourceBranch);
-  const description =
-    conversation.title != null && conversation.title.length > 0
-      ? `Fork of "${conversation.title}"`
-      : "Forked workspace";
 
   const { session: newSession, claude_session_id: newClaudeSessionId } =
     await forkSession(
