@@ -503,140 +503,167 @@ export async function runSetupPipeline(
       setupPty.write(`${cmd}; printf '\\n${sentinel}:%s\\n' "$?"\n`);
     });
 
-  // Pre-compute all items to get total count for progress bar.
-  const allItems: string[] = [];
-
-  info("Setup pipeline: expanding copy patterns");
-  for (const rel of config.setup.copy) {
-    emitProgressItem(`Matching: ${rel}`, 0, 0);
-    emit(`[argus] Matching pattern ${rel}...\r\n`);
-    const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
-    if (expanded.length === 0) {
-      emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
-    } else {
-      allItems.push(...expanded);
+  // Hand control of the PTY back to the user once setup is done (or has
+  // failed). Unlocks renderer input and execs into the user's real shell so
+  // the tab becomes a normal interactive terminal cwd'd in the worktree.
+  const handoffToUserShell = () => {
+    const userShell = process.env.SHELL ?? "/bin/sh";
+    // Clear the current input line (in case anything queued while locked) and
+    // exec the login shell so it replaces this `sh` process in-place.
+    setupPty.write(`exec ${userShell} -l\n`);
+    const t = appState.terminals.get(terminalId);
+    if (t) {
+      t.locked = false;
     }
+  };
+
+  try {
+    await runSetupBody();
+  } catch (e) {
+    handoffToUserShell();
+    throw e;
   }
+  handoffToUserShell();
 
-  info("Setup pipeline: expanding symlink patterns");
-  for (const rel of config.setup.symlink) {
-    emitProgressItem(`Matching: ${rel}`, 0, 0);
-    emit(`[argus] Matching pattern ${rel}...\r\n`);
-    const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
-    if (expanded.length === 0) {
-      emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
-    } else {
-      allItems.push(...expanded);
-    }
-  }
+  return;
 
-  for (const cmd of config.setup.commands) {
-    allItems.push(cmd);
-  }
+  // ------------------------------------------------------------------
+  async function runSetupBody(): Promise<void> {
+    // Pre-compute all items to get total count for progress bar.
+    const allItems: string[] = [];
 
-  const total = allItems.length;
-  info(
-    `Setup pipeline: ${total} items total (${config.setup.copy.length} copy, ${config.setup.symlink.length} symlink, ${config.setup.commands.length} commands)`,
-  );
-
-  let idx = 0;
-
-  // -- Copy phase ------------------------------------------------------------
-  info("Setup pipeline: starting copy phase");
-  for (const rel of config.setup.copy) {
-    const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
-    if (expanded.length === 0) {
-      continue;
-    }
-
-    for (const relPath of expanded) {
-      const src = path.join(repoRoot, relPath);
-      const dst = path.join(worktreePath, relPath);
-      idx += 1;
-      info(`Setup pipeline: copying [${idx}/${total}] ${relPath}`);
-      emitProgressItem(relPath, idx, total);
-      emit(`[argus] Copying ${relPath}...\r\n`);
-
-      try {
-        const stat = await fs.promises.stat(src);
-        if (stat.isDirectory()) {
-          await copyDirAll(src, dst);
-        } else if (stat.isFile()) {
-          await fs.promises.mkdir(path.dirname(dst), { recursive: true });
-          await fs.promises.copyFile(src, dst);
-        } else {
-          emit(`[argus] Warning: ${relPath} not found, skipping.\r\n`);
-        }
-      } catch (e) {
-        throw `Failed to copy '${relPath}': ${e}`;
+    info("Setup pipeline: expanding copy patterns");
+    for (const rel of config.setup.copy) {
+      emitProgressItem(`Matching: ${rel}`, 0, 0);
+      emit(`[argus] Matching pattern ${rel}...\r\n`);
+      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+      if (expanded.length === 0) {
+        emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
+      } else {
+        allItems.push(...expanded);
       }
     }
-  }
 
-  // -- Symlink phase ---------------------------------------------------------
-  info("Setup pipeline: starting symlink phase");
-  for (const rel of config.setup.symlink) {
-    const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
-    if (expanded.length === 0) {
-      emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
-      continue;
+    info("Setup pipeline: expanding symlink patterns");
+    for (const rel of config.setup.symlink) {
+      emitProgressItem(`Matching: ${rel}`, 0, 0);
+      emit(`[argus] Matching pattern ${rel}...\r\n`);
+      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+      if (expanded.length === 0) {
+        emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
+      } else {
+        allItems.push(...expanded);
+      }
     }
 
-    for (const relPath of expanded) {
-      const src = path.join(repoRoot, relPath);
-      const dst = path.join(worktreePath, relPath);
-      idx += 1;
-      info(`Setup pipeline: symlinking [${idx}/${total}] ${relPath}`);
-      emitProgressItem(relPath, idx, total);
-      emit(`[argus] Symlinking ${relPath}...\r\n`);
+    for (const cmd of config.setup.commands) {
+      allItems.push(cmd);
+    }
 
-      fs.mkdirSync(path.dirname(dst), { recursive: true });
+    const total = allItems.length;
+    info(
+      `Setup pipeline: ${total} items total (${config.setup.copy.length} copy, ${config.setup.symlink.length} symlink, ${config.setup.commands.length} commands)`,
+    );
 
-      // Remove existing destination so we can re-create the symlink.
-      if (fs.existsSync(dst) || isSymlink(dst)) {
+    let idx = 0;
+
+    // -- Copy phase ------------------------------------------------------------
+    info("Setup pipeline: starting copy phase");
+    for (const rel of config.setup.copy) {
+      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+      if (expanded.length === 0) {
+        continue;
+      }
+
+      for (const relPath of expanded) {
+        const src = path.join(repoRoot, relPath);
+        const dst = path.join(worktreePath, relPath);
+        idx += 1;
+        info(`Setup pipeline: copying [${idx}/${total}] ${relPath}`);
+        emitProgressItem(relPath, idx, total);
+        emit(`[argus] Copying ${relPath}...\r\n`);
+
         try {
-          const dstStat = fs.lstatSync(dst);
-          if (dstStat.isDirectory() && !dstStat.isSymbolicLink()) {
-            fs.rmSync(dst, { recursive: true, force: true });
+          const stat = await fs.promises.stat(src);
+          if (stat.isDirectory()) {
+            await copyDirAll(src, dst);
+          } else if (stat.isFile()) {
+            await fs.promises.mkdir(path.dirname(dst), { recursive: true });
+            await fs.promises.copyFile(src, dst);
           } else {
-            fs.unlinkSync(dst);
+            emit(`[argus] Warning: ${relPath} not found, skipping.\r\n`);
           }
         } catch (e) {
-          throw `Failed to remove existing '${relPath}': ${e}`;
+          throw `Failed to copy '${relPath}': ${e}`;
         }
       }
+    }
 
-      try {
-        fs.symlinkSync(src, dst);
-      } catch (e) {
-        throw `Failed to symlink '${relPath}': ${e}`;
+    // -- Symlink phase ---------------------------------------------------------
+    info("Setup pipeline: starting symlink phase");
+    for (const rel of config.setup.symlink) {
+      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+      if (expanded.length === 0) {
+        emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
+        continue;
+      }
+
+      for (const relPath of expanded) {
+        const src = path.join(repoRoot, relPath);
+        const dst = path.join(worktreePath, relPath);
+        idx += 1;
+        info(`Setup pipeline: symlinking [${idx}/${total}] ${relPath}`);
+        emitProgressItem(relPath, idx, total);
+        emit(`[argus] Symlinking ${relPath}...\r\n`);
+
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+
+        // Remove existing destination so we can re-create the symlink.
+        if (fs.existsSync(dst) || isSymlink(dst)) {
+          try {
+            const dstStat = fs.lstatSync(dst);
+            if (dstStat.isDirectory() && !dstStat.isSymbolicLink()) {
+              fs.rmSync(dst, { recursive: true, force: true });
+            } else {
+              fs.unlinkSync(dst);
+            }
+          } catch (e) {
+            throw `Failed to remove existing '${relPath}': ${e}`;
+          }
+        }
+
+        try {
+          fs.symlinkSync(src, dst);
+        } catch (e) {
+          throw `Failed to symlink '${relPath}': ${e}`;
+        }
       }
     }
-  }
 
-  // -- Commands phase --------------------------------------------------------
-  // Drive each command through the setup PTY. Output streams naturally via
-  // the terminal's data channel, so nothing to re-emit here. If a command
-  // prompts for input, the user can type into the visible tab and unblock it.
-  info("Setup pipeline: starting commands phase");
-  for (const cmdStr of config.setup.commands) {
-    idx += 1;
-    info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
-    emitProgressItem(cmdStr, idx, total);
-    emit(`\r\n[argus] Running: ${cmdStr}\r\n`);
+    // -- Commands phase --------------------------------------------------------
+    // Drive each command through the setup PTY. Output streams naturally via
+    // the terminal's data channel, so nothing to re-emit here. If a command
+    // prompts for input, the user can type into the visible tab and unblock it.
+    info("Setup pipeline: starting commands phase");
+    for (const cmdStr of config.setup.commands) {
+      idx += 1;
+      info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
+      emitProgressItem(cmdStr, idx, total);
+      emit(`\r\n[argus] Running: ${cmdStr}\r\n`);
 
-    const exitCode = await runInPty(cmdStr);
+      const exitCode = await runInPty(cmdStr);
 
-    if (exitCode !== 0) {
-      emit(`[argus] Command failed (exit ${exitCode}): ${cmdStr}\r\n`);
-      throw `Setup command failed: ${cmdStr}`;
+      if (exitCode !== 0) {
+        emit(`[argus] Command failed (exit ${exitCode}): ${cmdStr}\r\n`);
+        throw `Setup command failed: ${cmdStr}`;
+      }
+
+      info(`Setup pipeline: command completed: ${cmdStr}`);
     }
 
-    info(`Setup pipeline: command completed: ${cmdStr}`);
+    info(`Setup pipeline: complete for session ${sessionId}`);
+    emit("\r\n[argus] Setup complete.\r\n");
   }
-
-  info(`Setup pipeline: complete for session ${sessionId}`);
-  emit("\r\n[argus] Setup complete.\r\n");
 }
 
 // ---------------------------------------------------------------------------

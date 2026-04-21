@@ -391,9 +391,22 @@ export async function createSession(
   // response — this lets the renderer attach a Setup tab synchronously,
   // avoiding a race against the fire-and-forget pipeline below. Non-fatal on
   // failure: the pipeline will still run (using a freshly-spawned pty).
+  //
+  // Runs `sh` as the program (not $SHELL) so the user's interactive shell
+  // prompt doesn't appear underneath our setup log lines, and no RC files
+  // fire while init is in progress. The terminal is also marked `locked` so
+  // renderer-originated keystrokes don't race with commands being written to
+  // the PTY's stdin. Both are reversed at the end of the pipeline so the tab
+  // becomes a normal interactive shell cwd'd in the new worktree.
   let setupTerminalId: string | null = null;
   try {
-    setupTerminalId = createTerminal(taskSessionId);
+    // `exec` replaces the outer `sh -c` with the inner sh in the same pid,
+    // so we end up with exactly one non-interactive sh reading from the PTY.
+    setupTerminalId = createTerminal(taskSessionId, undefined, "exec /bin/sh");
+    const t = appState.terminals.get(setupTerminalId);
+    if (t) {
+      t.locked = true;
+    }
   } catch (e) {
     info(
       `Could not pre-spawn setup terminal for ${taskSessionId}: ${String(e)}`,
