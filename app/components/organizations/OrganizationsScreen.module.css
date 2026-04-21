@@ -229,21 +229,54 @@
 }
 
 .taskRow {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  transition: border-color 120ms ease;
+}
+.taskRow:hover {
+  border-color: var(--accent);
+}
+.taskRow[data-disabled="true"] {
+  opacity: 0.55;
+}
+
+.taskRowMain {
+  flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) auto minmax(0, 1.4fr) auto;
   gap: 10px;
   align-items: center;
   padding: 8px 12px;
   background: transparent;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
+  border: none;
   color: inherit;
   cursor: pointer;
   text-align: left;
-  transition: border-color 120ms ease;
 }
-.taskRow:hover {
-  border-color: var(--accent);
+.taskRowMain:disabled {
+  cursor: default;
+}
+
+.taskDeleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background 120ms ease;
+}
+.taskDeleteBtn:hover {
+  color: var(--error-soft);
+  background: color-mix(in srgb, var(--error-soft) 12%, transparent);
 }
 
 .taskTitle {

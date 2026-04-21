@@ -502,6 +502,8 @@ export interface ExampleProject {
 
 export interface OrgTask {
   created_at: number;
+  /** Human-readable reason a task is in a failed state (e.g. initialize failed). */
+  error?: string | null;
   host_agent_id: string | null;
   host_session_id: string | null;
   id: string;

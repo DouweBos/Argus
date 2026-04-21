@@ -7,11 +7,12 @@ import {
   showEditOrganizationDialog,
 } from "../../../stores/dialogStore";
 import {
-  setActiveOrgTask,
+  deleteOrgTask,
   useOrgTasks,
   useOrgTaskSync,
 } from "../../../stores/orgTaskStore";
 import { useOrganizations } from "../../../stores/organizationStore";
+import { selectSession } from "../../../stores/sessionStore";
 import styles from "./OrganizationsPanel.module.css";
 
 export function OrganizationsPanel() {
@@ -140,29 +141,52 @@ function OrganizationRow({
 }
 
 function TaskRow({ task }: { task: OrgTask }) {
+  const hostReady = Boolean(task.host_session_id);
+
   return (
-    <button
-      type="button"
-      className={styles.taskRow}
-      onClick={() => setActiveOrgTask(task.id)}
-    >
-      <span className={styles.taskTitle}>{task.title}</span>
-      <span className={styles.taskStatus} data-status={task.status}>
-        {task.status}
-      </span>
-      <span className={styles.taskMembers}>
-        {task.scope.map((s) => (
-          <span
-            key={s.repo_root}
-            className={styles.memberChip}
-            title={basename(s.repo_root)}
-          >
-            {basename(s.repo_root)}
-          </span>
-        ))}
-      </span>
-      <span className={styles.taskTime}>{formatTimeAgo(task.created_at)}</span>
-    </button>
+    <div className={styles.taskRow} data-disabled={!hostReady}>
+      <button
+        type="button"
+        className={styles.taskRowMain}
+        disabled={!hostReady}
+        onClick={() => {
+          if (task.host_session_id) {
+            selectSession(task.host_session_id);
+          }
+        }}
+      >
+        <span className={styles.taskTitle}>{task.title}</span>
+        <span className={styles.taskStatus} data-status={task.status}>
+          {task.status}
+        </span>
+        <span className={styles.taskMembers}>
+          {task.scope.map((s) => (
+            <span
+              key={s.repo_root}
+              className={styles.memberChip}
+              title={basename(s.repo_root)}
+            >
+              {basename(s.repo_root)}
+            </span>
+          ))}
+        </span>
+        <span className={styles.taskTime}>
+          {formatTimeAgo(task.created_at)}
+        </span>
+      </button>
+      <button
+        type="button"
+        className={styles.taskDeleteBtn}
+        aria-label="Delete task"
+        title="Delete task"
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteOrgTask(task.id).catch(() => {});
+        }}
+      >
+        <Icons.TrashIcon size={14} />
+      </button>
+    </div>
   );
 }
 

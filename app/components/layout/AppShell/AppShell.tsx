@@ -46,7 +46,6 @@ import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
 import { NotificationsScreen } from "../../notifications";
 import { OrganizationsScreen } from "../../organizations";
-import { OrgTaskOverlay } from "../../organizations/OrgTaskScreen";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { RuntimeScreen } from "../../runtimes";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
@@ -255,7 +254,6 @@ export function AppShell() {
           <ErrorBoundary>
             {renderCenter(selectedId, centerView, isNotificationsRoute)}
           </ErrorBoundary>
-          <OrgTaskOverlay />
           <PermissionBanner />
         </main>
 

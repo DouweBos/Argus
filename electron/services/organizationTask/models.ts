@@ -28,6 +28,13 @@ export interface OrgTask {
   host_agent_id: string | null;
   /** All in-scope repos (information for the agent; not a fan-out list). */
   scope: OrgTaskScopeEntry[];
+  /**
+   * Human-readable reason the task ended in a non-terminal-success state
+   * (e.g. host agent failed to initialize, initial prompt could not be
+   * delivered). Present when `status === "failed"` and the failure origin is
+   * known; the UI surfaces it on the task banner.
+   */
+  error?: string | null;
 }
 
 /** IPC payload for the create call. */
