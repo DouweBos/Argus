@@ -80,4 +80,11 @@ export interface AgentInfo {
   session_id: string;
   status: AgentStatusValue;
   parent_agent_id: string | null;
+  /**
+   * Initialize-response capabilities (commands, models, agents) captured during
+   * the CLI handshake. Returned inline so the renderer has them immediately
+   * on `start_agent` resolution — the async `agent:capabilities` event fires
+   * before renderer listeners are wired up and would otherwise be missed.
+   */
+  capabilities?: import("./protocol").InitializeResponse | null;
 }

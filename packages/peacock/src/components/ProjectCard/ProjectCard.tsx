@@ -1,8 +1,7 @@
 import type { CSSProperties, HTMLAttributes, MouseEventHandler } from "react";
 import { StarIcon } from "../../icons/HomeIcons";
 import { FolderIcon } from "../../icons/Icons";
-import { agentStatusTone, type AgentStatus } from "../../lib/agentStatus";
-import { StatusDot } from "../Badge/Badge";
+import type { AgentStatus } from "../../lib/agentStatus";
 import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
 import styles from "./ProjectCard.module.css";
 
@@ -72,9 +71,8 @@ export function ProjectCard({
   const pillStatus = pickPillStatus(agents);
   const pillClass = pickPillClass(pillStatus, styles);
 
-  const dotStatus: AgentStatus =
-    pillStatus === "empty" ? "idle" : (pillStatus as AgentStatus);
   const running = agents.filter((a) => a.status === "running").length;
+  const isAnyRunning = running > 0;
 
   const mergedStyle: CSSProperties = accent
     ? ({ ...style, ["--card-accent" as string]: accent } as CSSProperties)
@@ -87,7 +85,16 @@ export function ProjectCard({
       {...rest}
     >
       <div className={styles.head}>
-        <div className={styles.badge}>
+        <div
+          className={[styles.badge, isAnyRunning ? styles.badgeRunning : ""]
+            .filter(Boolean)
+            .join(" ")}
+          title={
+            isAnyRunning
+              ? `${running} agent${running > 1 ? "s" : ""} running`
+              : undefined
+          }
+        >
           <FolderIcon size={14} />
         </div>
         <div className={styles.name}>{name}</div>
@@ -115,10 +122,6 @@ export function ProjectCard({
           <span
             className={[styles.agentPill, pillClass].filter(Boolean).join(" ")}
           >
-            <StatusDot
-              tone={agentStatusTone(dotStatus)}
-              pulse={dotStatus === "running" || dotStatus === "pending"}
-            />
             {running} running · {agents.length} total
           </span>
         ) : (

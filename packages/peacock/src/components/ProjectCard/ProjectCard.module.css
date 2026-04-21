@@ -64,6 +64,21 @@
   z-index: -1;
 }
 
+.badgeRunning {
+  background: var(--success);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .name {
   font-size: var(--font-size-base);
   font-weight: 600;
@@ -130,11 +145,17 @@
   background: var(--success-overlay-sm);
   color: var(--success);
   font-weight: 500;
-  transition: opacity var(--transition-fast);
+  transition:
+    opacity var(--transition-fast),
+    visibility 0s linear var(--transition-fast);
 }
 .card:hover .agentPill,
 .card:focus-within .agentPill {
   opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--transition-fast),
+    visibility 0s linear 0s;
 }
 .agentPill.warn {
   background: var(--warning-overlay-lg);

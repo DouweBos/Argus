@@ -5,7 +5,11 @@ import {
   setActiveAgent,
   updateAgent,
 } from "../stores/agentStore";
-import { addUserMessage, queueMessage } from "../stores/conversationStore";
+import {
+  addUserMessage,
+  queueMessage,
+  setCapabilities,
+} from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { selectSession } from "../stores/sessionStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
@@ -47,6 +51,12 @@ export async function startAgentInSession(
     status: info.status,
     permission_mode: permissionMode,
   });
+  // Capabilities are returned inline on start_agent because the backend's
+  // `agent:capabilities` event fires before renderer listeners attach and
+  // would otherwise be lost — seed the store directly.
+  if (info.capabilities) {
+    setCapabilities(info.agent_id, info.capabilities);
+  }
 
   if (focus) {
     focusAgent(info.session_id, info.agent_id);
