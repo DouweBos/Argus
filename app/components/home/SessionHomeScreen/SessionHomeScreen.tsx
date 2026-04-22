@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, DiffStat, Icons, projectAccent } from "@argus/peacock";
+import {
+  Button,
+  DiffStat,
+  IconBadge,
+  Icons,
+  projectAccent,
+  SectionPanel,
+} from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { listen } from "../../../lib/events";
 import { watchSession } from "../../../lib/ipc";
@@ -108,11 +115,11 @@ export function SessionHomeScreen({
         <div className={styles.hero}>
           <div
             className={styles.brandMark}
-            style={{ ["--hero-accent" as string]: accent }}
+            style={{ ["--project-accent" as string]: accent }}
           >
-            <div className={styles.heroBadge}>
+            <IconBadge size="lg" tone="project">
               <Icons.BranchIcon size={18} />
-            </div>
+            </IconBadge>
             <div>
               <h1 className={styles.title}>{displayName}</h1>
               <div className={styles.sub}>
@@ -178,40 +185,29 @@ export function SessionHomeScreen({
         />
 
         {(filesChanged > 0 || session?.description) && (
-          <div className={styles.panel}>
-            <div className={styles.panelHead}>
-              <span className={styles.eyebrow}>Changes</span>
-              <div className={styles.panelSpacer} />
-              {filesChanged > 0 && (
+          <SectionPanel
+            title="Changes"
+            action={
+              filesChanged > 0 ? (
                 <DiffStat
                   added={additions}
                   removed={deletions}
                   files={filesChanged}
                 />
-              )}
-            </div>
+              ) : undefined
+            }
+          >
             {session?.description && (
-              <div
-                style={{
-                  fontSize: "var(--font-size-sm)",
-                  color: "var(--text-secondary)",
-                  lineHeight: 1.5,
-                }}
-              >
-                {session.description}
-              </div>
+              <div className={styles.description}>{session.description}</div>
             )}
-          </div>
+          </SectionPanel>
         )}
 
         {repoRoot && history.loaded && sessionHistoryEntries.length > 0 && (
-          <div className={styles.panel}>
-            <div className={styles.panelHead}>
-              <span className={styles.eyebrow}>Chat history</span>
-              <span className={styles.subMeta}>
-                {sessionHistoryEntries.length} in this session
-              </span>
-            </div>
+          <SectionPanel
+            title="Chat history"
+            meta={`${sessionHistoryEntries.length} in this session`}
+          >
             <div className={styles.historyWrap}>
               <ChatHistoryList
                 entries={sessionHistoryEntries}
@@ -222,7 +218,7 @@ export function SessionHomeScreen({
                 onView={onViewHistory}
               />
             </div>
-          </div>
+          </SectionPanel>
         )}
       </div>
       {isRenamingBranch && session && (

@@ -27,7 +27,7 @@
 .meta {
   padding: 12px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   background: var(--bg-tertiary);
   font-size: 12px;
   display: grid;
@@ -66,7 +66,7 @@
   flex: 1;
   min-height: 0;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
   background: var(--media-bg);
   display: flex;
   flex-direction: column;
@@ -126,7 +126,7 @@
   background: var(--surface-3);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   padding: 4px 10px;
   font-size: 11px;
   cursor: pointer;

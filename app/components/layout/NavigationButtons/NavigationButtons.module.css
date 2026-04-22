@@ -14,7 +14,7 @@
   border: 0;
   background: transparent;
   color: var(--text-muted);
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
 }
 

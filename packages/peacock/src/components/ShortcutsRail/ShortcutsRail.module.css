@@ -5,7 +5,7 @@
   padding: 10px 14px;
   background: var(--surface-1);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: var(--border-radius-lg);
   flex-wrap: wrap;
 }
 

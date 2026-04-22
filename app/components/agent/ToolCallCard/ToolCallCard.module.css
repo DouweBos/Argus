@@ -237,7 +237,7 @@
   font-size: 0.9em;
   background: var(--surface-4);
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
 }
 
 .result {

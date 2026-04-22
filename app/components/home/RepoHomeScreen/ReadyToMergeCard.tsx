@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DiffStat, Icons } from "@argus/peacock";
+import { CalloutCard, DiffStat, IconBadge, Icons } from "@argus/peacock";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { listen } from "../../../lib/events";
@@ -176,112 +176,119 @@ export function ReadyToMergeCard({
     title = "Ready to merge";
   }
 
+  const titleNode = (
+    <>
+      {title}
+      {baseBranch &&
+        !hasConflicts &&
+        !hasRebaseError &&
+        !justMerged &&
+        hasWork && (
+          <span className={styles.target}>
+            {" into "}
+            <span className={styles.branch}>{baseBranch}</span>
+          </span>
+        )}
+    </>
+  );
+
+  const metaNode = (
+    <span className={styles.meta}>
+      <span>{statusLine}</span>
+      {diffStats && diffStats.files > 0 && !justMerged && (
+        <>
+          <span className={styles.sep}>·</span>
+          <DiffStat
+            added={diffStats.additions}
+            removed={diffStats.deletions}
+            files={diffStats.files}
+          />
+        </>
+      )}
+    </span>
+  );
+
+  const actionsNode = justMerged ? (
+    <button
+      className={`${styles.actionBtn} ${styles.delete}`}
+      disabled={isDeleting}
+      title="Delete this session and its branch"
+      type="button"
+      onClick={handleDelete}
+    >
+      <Icons.TrashIcon size={11} />
+      {isDeleting ? "Deleting…" : "Delete session"}
+    </button>
+  ) : (
+    <>
+      <button
+        className={`${styles.actionBtn} ${styles.secondary}`}
+        type="button"
+        onClick={handleReview}
+      >
+        Review
+      </button>
+      {baseBranch && hasConflicts && (
+        <button
+          className={`${styles.actionBtn} ${styles.conflict}`}
+          disabled={isDispatchingAgent}
+          title={
+            isDispatchingAgent
+              ? "Starting agent…"
+              : `Start an agent to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranch}`
+          }
+          type="button"
+          onClick={handleFixConflictsInChat}
+        >
+          <Icons.AgentStartIcon size={11} />
+          {isDispatchingAgent
+            ? "Starting…"
+            : `Fix ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} in chat`}
+        </button>
+      )}
+      {baseBranch && !hasConflicts && needsRebase && (
+        <button
+          className={`${styles.actionBtn} ${styles.rebase}`}
+          disabled={isRebasing}
+          title={
+            hasWork
+              ? `Rebase ${sessionBranch ?? "this branch"} onto ${baseBranch}`
+              : `Update ${sessionBranch ?? "this branch"} from ${baseBranch}`
+          }
+          type="button"
+          onClick={handleRebase}
+        >
+          <Icons.BranchIcon size={11} />
+          {getRebaseLabel(isRebasing, hasWork, baseBranch)}
+        </button>
+      )}
+      {baseBranch && !hasConflicts && hasWork && (
+        <button
+          className={`${styles.actionBtn} ${styles.merge}`}
+          disabled={!canMerge}
+          title={`Merge into ${baseBranch}`}
+          type="button"
+          onClick={handleMerge}
+        >
+          <Icons.MergeIcon size={11} />
+          {isMerging ? "Merging…" : "Merge"}
+        </button>
+      )}
+    </>
+  );
+
   const content = (
-    <div className={styles.card}>
-      <div className={styles.row}>
-        <div className={styles.iconWrap} data-tone={tone}>
+    <CalloutCard
+      tone={tone === "warn" ? "accent" : "neutral"}
+      leading={
+        <IconBadge tone={tone === "warn" ? "accent" : "success"}>
           <Icons.MergeIcon size={14} />
-        </div>
-        <div className={styles.body}>
-          <div className={styles.title}>
-            {title}
-            {baseBranch &&
-              !hasConflicts &&
-              !hasRebaseError &&
-              !justMerged &&
-              hasWork && (
-                <span className={styles.target}>
-                  {" into "}
-                  <span className={styles.branch}>{baseBranch}</span>
-                </span>
-              )}
-          </div>
-          <div className={styles.meta}>
-            <span>{statusLine}</span>
-            {diffStats && diffStats.files > 0 && !justMerged && (
-              <>
-                <span className={styles.sep}>·</span>
-                <DiffStat
-                  added={diffStats.additions}
-                  removed={diffStats.deletions}
-                  files={diffStats.files}
-                />
-              </>
-            )}
-          </div>
-        </div>
-        <div className={styles.actions}>
-          {justMerged ? (
-            <button
-              className={styles.deleteBtn}
-              disabled={isDeleting}
-              title="Delete this session and its branch"
-              type="button"
-              onClick={handleDelete}
-            >
-              <Icons.TrashIcon size={11} />
-              {isDeleting ? "Deleting\u2026" : "Delete session"}
-            </button>
-          ) : (
-            <>
-              <button
-                className={styles.secondaryBtn}
-                type="button"
-                onClick={handleReview}
-              >
-                Review
-              </button>
-              {baseBranch && hasConflicts && (
-                <button
-                  className={styles.conflictBtn}
-                  disabled={isDispatchingAgent}
-                  title={
-                    isDispatchingAgent
-                      ? "Starting agent\u2026"
-                      : `Start an agent to resolve ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} with ${baseBranch}`
-                  }
-                  type="button"
-                  onClick={handleFixConflictsInChat}
-                >
-                  <Icons.AgentStartIcon size={11} />
-                  {isDispatchingAgent
-                    ? "Starting\u2026"
-                    : `Fix ${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} in chat`}
-                </button>
-              )}
-              {baseBranch && !hasConflicts && needsRebase && (
-                <button
-                  className={styles.rebaseBtn}
-                  disabled={isRebasing}
-                  title={
-                    hasWork
-                      ? `Rebase ${sessionBranch ?? "this branch"} onto ${baseBranch}`
-                      : `Update ${sessionBranch ?? "this branch"} from ${baseBranch}`
-                  }
-                  type="button"
-                  onClick={handleRebase}
-                >
-                  <Icons.BranchIcon size={11} />
-                  {getRebaseLabel(isRebasing, hasWork, baseBranch)}
-                </button>
-              )}
-              {baseBranch && !hasConflicts && hasWork && (
-                <button
-                  className={styles.mergeBtn}
-                  disabled={!canMerge}
-                  title={`Merge into ${baseBranch}`}
-                  type="button"
-                  onClick={handleMerge}
-                >
-                  <Icons.MergeIcon size={11} />
-                  {isMerging ? "Merging\u2026" : "Merge"}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+        </IconBadge>
+      }
+      title={titleNode}
+      meta={metaNode}
+      actions={actionsNode}
+    />
   );
 
   if (sectionClassName || titleClassName) {

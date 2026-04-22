@@ -7,7 +7,7 @@
 .key {
   padding: 0 4px;
   background: var(--surface-3);
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
   font-size: 10px;
   font-family: var(--font-mono);
   color: var(--text-muted);

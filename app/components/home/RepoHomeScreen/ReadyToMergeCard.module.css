@@ -1,48 +1,3 @@
-.card {
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-md);
-  background: var(--bg-secondary);
-  padding: 14px 14px;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.iconWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: var(--success-overlay-lg);
-  color: var(--success-soft);
-  flex-shrink: 0;
-}
-
-.iconWrap[data-tone="warn"] {
-  background: var(--accent-overlay-xl);
-  color: var(--accent);
-}
-
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.title {
-  font: var(--type-ui);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
 .target {
   font-weight: 400;
   color: var(--text-muted);
@@ -58,8 +13,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font: var(--type-caption);
-  color: var(--text-muted);
   flex-wrap: wrap;
 }
 
@@ -67,18 +20,7 @@
   opacity: 0.5;
 }
 
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.secondaryBtn,
-.mergeBtn,
-.conflictBtn,
-.rebaseBtn,
-.deleteBtn {
+.actionBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -93,77 +35,67 @@
     color var(--transition-base);
 }
 
-.secondaryBtn {
+.secondary {
   background: transparent;
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
 }
 
-.secondaryBtn:hover {
+.secondary:hover {
   background: var(--surface-3);
   color: var(--text-primary);
 }
 
-.mergeBtn {
+.merge {
   background: color-mix(in srgb, var(--success) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
   color: var(--success);
 }
 
-.mergeBtn:hover:not(:disabled) {
+.merge:hover:not(:disabled) {
   background: color-mix(in srgb, var(--success) 22%, transparent);
   border-color: var(--success);
 }
 
-.mergeBtn:disabled {
+.merge:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.conflictBtn {
+.conflict {
   background: color-mix(in srgb, var(--error) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--error) 45%, transparent);
   color: var(--error);
 }
 
-.conflictBtn:hover:not(:disabled) {
+.conflict:hover:not(:disabled) {
   background: color-mix(in srgb, var(--error) 22%, transparent);
   border-color: var(--error);
 }
 
-.conflictBtn:disabled {
-  opacity: 0.5;
-  cursor: progress;
-}
-
-.rebaseBtn {
+.rebase {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   color: var(--accent);
 }
 
-.rebaseBtn:hover:not(:disabled) {
+.rebase:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   border-color: var(--accent);
 }
 
-.rebaseBtn:disabled {
-  opacity: 0.5;
-  cursor: progress;
-}
-
-.deleteBtn {
+.delete {
   background: color-mix(in srgb, var(--error) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
   color: var(--error);
 }
 
-.deleteBtn:hover:not(:disabled) {
+.delete:hover:not(:disabled) {
   background: color-mix(in srgb, var(--error) 22%, transparent);
   border-color: var(--error);
 }
 
-.deleteBtn:disabled {
+.actionBtn:disabled {
   opacity: 0.5;
   cursor: progress;
 }

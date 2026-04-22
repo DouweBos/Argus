@@ -154,9 +154,14 @@ html[data-theme="dark"] {
   --sidebar-left-default: 260px;
   --panel-min-width: 160px;
 
-  /* ─── Radii ─── rounder, modern */
-  --border-radius: 12px;
-  --border-radius-sm: 6px;
+  /* ─── Radii ─── rounder, modern
+     Use these tokens instead of hardcoded px values. The scale covers every
+     practical use; if something doesn't fit, propose a new token here. */
+  --border-radius-xs: 3px; /* tiny chips, kbd, dots-with-squircle */
+  --border-radius-sm: 6px; /* inputs, small buttons, list rows */
+  --border-radius-md: 8px; /* icon backgrounds, medium surfaces */
+  --border-radius-lg: 10px; /* project/quick cards */
+  --border-radius: 12px; /* default — main panels, primary cards */
   --border-radius-pill: 999px;
 
   /* ─── Typography ─── */

@@ -1,5 +1,12 @@
 import { useMemo } from "react";
-import { Button, Icons, projectAccent, SessionCard } from "@argus/peacock";
+import {
+  Button,
+  IconBadge,
+  Icons,
+  projectAccent,
+  SectionPanel,
+  SessionCard,
+} from "@argus/peacock";
 import { useArgusJson } from "../../../hooks/useArgusJson";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useAgentsRecord } from "../../../stores/agentStore";
@@ -98,11 +105,11 @@ export function RepoHomeScreen({
         <div className={styles.hero}>
           <div
             className={styles.brandMark}
-            style={{ ["--hero-accent" as string]: accent }}
+            style={{ ["--project-accent" as string]: accent }}
           >
-            <div className={styles.heroBadge}>
+            <IconBadge size="lg" tone="project">
               <Icons.FolderIcon size={18} />
-            </div>
+            </IconBadge>
             <div className={styles.titleStack}>
               <h1 className={styles.title}>{projectName}</h1>
               {repoRoot && (
@@ -147,13 +154,10 @@ export function RepoHomeScreen({
           />
         )}
 
-        <div className={styles.panel}>
-          <div className={styles.panelHead}>
-            <span className={styles.eyebrow}>Sessions</span>
-            <span className={styles.subMeta}>
-              {visibleSessions.length} total
-            </span>
-            <div className={styles.panelSpacer} />
+        <SectionPanel
+          title="Sessions"
+          meta={`${visibleSessions.length} total`}
+          action={
             <button
               type="button"
               className={styles.linkBtn}
@@ -161,7 +165,8 @@ export function RepoHomeScreen({
             >
               New
             </button>
-          </div>
+          }
+        >
           {visibleSessions.length === 0 ? (
             <div className={styles.emptyCell}>
               No sessions yet. Create one to start a branch.
@@ -198,16 +203,13 @@ export function RepoHomeScreen({
               })}
             </div>
           )}
-        </div>
+        </SectionPanel>
 
         {repoRoot && history.loaded && history.entries.length > 0 && (
-          <div className={styles.panel}>
-            <div className={styles.panelHead}>
-              <span className={styles.eyebrow}>Chat history</span>
-              <span className={styles.subMeta}>
-                {history.entries.length} sessions
-              </span>
-            </div>
+          <SectionPanel
+            title="Chat history"
+            meta={`${history.entries.length} sessions`}
+          >
             <div className={styles.historyWrap}>
               <ChatHistoryList
                 entries={history.entries}
@@ -218,7 +220,7 @@ export function RepoHomeScreen({
                 onView={onViewHistory}
               />
             </div>
-          </div>
+          </SectionPanel>
         )}
       </div>
     </div>
