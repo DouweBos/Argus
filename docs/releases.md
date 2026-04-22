@@ -5,9 +5,11 @@ Cuts a signed + notarized macOS arm64 build, uploads it to a GitHub release.
 ## TL;DR
 
 1. Add a changeset on every PR that should appear in release notes:
+
    ```
    pnpm changeset
    ```
+
    Pick a bump (patch/minor/major) for `argus`, write a one-line summary, commit
    the generated `.changeset/*.md` file alongside the change.
 
@@ -42,16 +44,16 @@ pnpm dist:release
 See `.github/workflows/release.yml`. These all live under **Settings → Secrets
 and variables → Actions**:
 
-| Secret | Used for |
-| --- | --- |
-| `MATCH_GIT_URL` | HTTPS URL of the `apple-certificates` repo (e.g. `https://github.com/DouweBos/apple-certificates.git`) |
-| `MATCH_GIT_BASIC_AUTHORIZATION` | Base64 of `username:personal_access_token` for the cert repo (PAT needs `repo` read) |
-| `MATCH_PASSWORD` | The shared password the cert repo is encrypted with |
-| `MATCH_KEYCHAIN_PASSWORD` | Any random string — used to unlock the throwaway CI keychain |
-| `APP_STORE_CONNECT_API_KEY_ID` | Key ID of the App Store Connect API key (e.g. `ABCD1234`) |
-| `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | Issuer UUID for the API key |
-| `APP_STORE_CONNECT_API_KEY_CONTENT` | Raw contents of the `.p8` file (newlines preserved) |
-| `RELEASE_TOKEN` | GitHub PAT used to push the version-bump commit/tag back to `main` and to create the release. Needs `contents: write` on the Argus repo. The default `GITHUB_TOKEN` can't push past branch protection — `RELEASE_TOKEN` (issued by a human or a bot account) can. |
+| Secret                                | Used for                                                                                                                                                                                                                                                          |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MATCH_GIT_URL`                       | HTTPS URL of the `apple-certificates` repo (e.g. `https://github.com/DouweBos/apple-certificates.git`)                                                                                                                                                            |
+| `MATCH_GIT_BASIC_AUTHORIZATION`       | Base64 of `username:personal_access_token` for the cert repo (PAT needs `repo` read)                                                                                                                                                                              |
+| `MATCH_PASSWORD`                      | The shared password the cert repo is encrypted with                                                                                                                                                                                                               |
+| `MATCH_KEYCHAIN_PASSWORD`             | Any random string — used to unlock the throwaway CI keychain                                                                                                                                                                                                      |
+| `APP_STORE_CONNECT_API_KEY_ID`        | Key ID of the App Store Connect API key (e.g. `ABCD1234`)                                                                                                                                                                                                         |
+| `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | Issuer UUID for the API key                                                                                                                                                                                                                                       |
+| `APP_STORE_CONNECT_API_KEY_CONTENT`   | Raw contents of the `.p8` file (newlines preserved)                                                                                                                                                                                                               |
+| `RELEASE_TOKEN`                       | GitHub PAT used to push the version-bump commit/tag back to `main` and to create the release. Needs `contents: write` on the Argus repo. The default `GITHUB_TOKEN` can't push past branch protection — `RELEASE_TOKEN` (issued by a human or a bot account) can. |
 
 ## Branch protection
 
