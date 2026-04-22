@@ -676,11 +676,14 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agents_batch",
-    "Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once.",
+    "Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Agents may target different repositories — set `repo_root` per-agent to spawn across repos in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once.",
     {
       repo_root: z
         .string()
-        .describe("Absolute path to the repository root for all sessions."),
+        .optional()
+        .describe(
+          "Default repository root used when an agent entry doesn't specify its own `repo_root`. Optional if every agent specifies its own.",
+        ),
       agents: z
         .array(
           z.object({
@@ -694,6 +697,12 @@ export function createMcpServer(): McpServer {
               .optional()
               .describe("What this agent/session is for"),
             prompt: z.string().describe("Initial instructions for the agent"),
+            repo_root: z
+              .string()
+              .optional()
+              .describe(
+                "Override the top-level `repo_root` for this agent only — use to spawn agents into different repositories in a single batch.",
+              ),
             platforms: z
               .array(z.enum(["ios", "android", "web"]))
               .optional()
@@ -729,21 +738,51 @@ export function createMcpServer(): McpServer {
       parent_agent_id,
       base_branch,
     }) => {
-      const repoRoot = repo_root;
+      // Resolve each agent's repo_root up-front: prefer the per-agent override,
+      // fall back to the top-level default. Callers passing only top-level
+      // `repo_root` and no per-agent overrides still work unchanged.
+      const resolvedRepoRoots: string[] = [];
+      const missing: string[] = [];
+      agentSpecs.forEach((spec, idx) => {
+        const resolved = spec.repo_root ?? repo_root;
+        if (!resolved) {
+          missing.push(spec.name || `agents[${idx}]`);
+        }
+        resolvedRepoRoots.push(resolved ?? "");
+      });
+      if (missing.length > 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `spawn_agents_batch: no repo_root resolved for agent(s): ${missing.join(", ")}. Provide a top-level \`repo_root\` as default, or set \`repo_root\` on each agent entry. No sessions were created.`,
+            },
+          ],
+          isError: true,
+        };
+      }
 
-      const isNew = !appState.repoRoots.has(repoRoot);
-      ensureRepoRegistered(repoRoot);
-      if (isNew) {
-        getMainWindow()?.webContents.send("project:added", repoRoot);
+      // Register each unique repo once, notifying the renderer when it's new.
+      const registered = new Set<string>();
+      for (const rr of resolvedRepoRoots) {
+        if (registered.has(rr)) {
+          continue;
+        }
+        registered.add(rr);
+        const isNew = !appState.repoRoots.has(rr);
+        ensureRepoRegistered(rr);
+        if (isNew) {
+          getMainWindow()?.webContents.send("project:added", rr);
+        }
       }
 
       // Create all sessions in parallel.
       const sessionResults = await Promise.allSettled(
-        agentSpecs.map(async (spec) => {
+        agentSpecs.map(async (spec, idx) => {
           const suffix = crypto.randomUUID().slice(0, 6);
           const uniqueName = `${spec.name}-${suffix}`;
           const ws = await createSession(
-            repoRoot,
+            resolvedRepoRoots[idx],
             uniqueName,
             spec.description ?? "",
             false,
