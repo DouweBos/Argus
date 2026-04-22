@@ -26,7 +26,7 @@ mac:
   # Distribution build — signed with Developer ID, notarized, stapled.
   # Driven by `fastlane release`, which exports the signing +
   # notarization env vars before invoking electron-builder.
-  identity: "Developer ID Application: Douwe Bos (P3WX7QK8Q3)"
+  identity: "Douwe Bos (CKZT75PN5T)"
   target:
     - target: dmg
       arch: [arm64]

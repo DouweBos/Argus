@@ -1,8 +1,11 @@
 default_platform(:mac)
 
-TEAM_ID      = "P3WX7QK8Q3"
-SIGN_IDENTITY_DEV     = "Apple Development: Douwe Bos (#{TEAM_ID})"
-SIGN_IDENTITY_RELEASE = "Developer ID Application: Douwe Bos (#{TEAM_ID})"
+TEAM_ID      = "CKZT75PN5T"
+# electron-builder reads CSC_NAME and adds the type prefix internally — it
+# rejects values that already start with "Apple Development:" or
+# "Developer ID Application:", so we pass the bare common name.
+SIGN_IDENTITY_DEV     = "Douwe Bos (#{TEAM_ID})"
+SIGN_IDENTITY_RELEASE = "Douwe Bos (#{TEAM_ID})"
 
 platform :mac do
   desc "Sync the Developer ID Application cert from the match repo. Pass generate:true on first run to create and upload a new cert."
@@ -15,9 +18,13 @@ platform :mac do
     UI.user_error!("CI must authenticate via APP_STORE_CONNECT_API_KEY_* env vars") if is_ci && api_key.nil?
 
     match_options = {
-      type:     "developer_id",
-      readonly: !options.fetch(:generate, false),
-      platform: "macos",
+      type:                       "developer_id",
+      readonly:                   !options.fetch(:generate, false),
+      platform:                   "macos",
+      # Argus uses no entitlements that require a provisioning profile.
+      # Without this flag, recent fastlane tries to fetch a "Direct"
+      # provisioning profile and fails for Developer ID distribution.
+      skip_provisioning_profiles: true,
     }
     match_options[:api_key] = api_key if api_key
 
@@ -41,10 +48,11 @@ platform :mac do
 
     api_key = load_app_store_connect_api_key
     match(
-      type:     "developer_id",
-      readonly: true,
-      api_key:  api_key,
-      platform: "macos",
+      type:                       "developer_id",
+      readonly:                   true,
+      api_key:                    api_key,
+      platform:                   "macos",
+      skip_provisioning_profiles: true,
     )
 
     # Version + tag are driven by changesets. CI runs `changeset version`,

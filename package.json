@@ -19,7 +19,7 @@
     "dev:vite": "vite",
     "dev:electron": "pnpm build:electron && electron .",
     "build:electron": "node build-electron.mjs",
-    "build": "tsc --noEmit && pnpm typecheck:electron && vite build && pnpm build:electron",
+    "build": "pnpm ensure:bridge && tsc --noEmit && pnpm typecheck:electron && vite build && pnpm build:electron",
     "build:app": "pnpm build && electron-builder",
     "dist:dev": "bundle exec fastlane mac dev",
     "dist:release": "bundle exec fastlane mac release",
