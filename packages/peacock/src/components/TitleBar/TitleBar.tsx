@@ -43,6 +43,16 @@ export function TitleBar({
           <span />
         </div>
       )}
+      {onToggleLeft && (
+        <button
+          className={styles.iconBtn}
+          onClick={onToggleLeft}
+          aria-label="Toggle left sidebar"
+          type="button"
+        >
+          <LeftSidebarIcon size={14} />
+        </button>
+      )}
       {left && <div className={styles.left}>{left}</div>}
       <div className={styles.title}>{title}</div>
       <div className={styles.right}>
@@ -51,16 +61,6 @@ export function TitleBar({
           <span className={styles.cmdkText}>Jump to anything</span>
           <Kbd keys={jumpHotkey} />
         </button>
-        {onToggleLeft && (
-          <button
-            className={styles.iconBtn}
-            onClick={onToggleLeft}
-            aria-label="Toggle left sidebar"
-            type="button"
-          >
-            <LeftSidebarIcon size={14} />
-          </button>
-        )}
         {onToggleRight && (
           <button
             className={styles.iconBtn}
