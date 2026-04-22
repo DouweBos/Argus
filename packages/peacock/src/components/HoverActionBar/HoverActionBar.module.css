@@ -4,7 +4,7 @@
   align-items: center;
   gap: 2px;
   padding: 8px 6px;
-  border-radius: 999px;
+  border-radius: var(--border-radius-pill);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition-base);
@@ -64,7 +64,7 @@
   height: 22px;
   padding: 0;
   border: 1px solid var(--surface-5);
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   background: var(--scrim-md);
   color: var(--text-muted);
   cursor: pointer;

@@ -1,0 +1,68 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-md);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.sm {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-sm);
+}
+
+.md {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--border-radius-md);
+}
+
+.lg {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--border-radius);
+}
+
+.neutral {
+  background: var(--surface-3);
+  color: var(--text-secondary);
+}
+
+.accent {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.success {
+  background: var(--success-overlay-lg);
+  color: var(--success-soft);
+}
+
+.warning {
+  background: var(--warning-overlay-sm);
+  color: var(--warning);
+}
+
+.error {
+  background: var(--error-overlay-xl);
+  color: var(--error);
+}
+
+.project {
+  background: color-mix(
+    in srgb,
+    var(--project-accent, var(--accent)) 16%,
+    transparent
+  );
+  color: var(--project-accent, var(--accent));
+  border-color: color-mix(
+    in srgb,
+    var(--project-accent, var(--accent)) 30%,
+    transparent
+  );
+}

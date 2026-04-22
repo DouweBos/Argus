@@ -127,7 +127,7 @@
   flex-shrink: 0;
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
   border: 1.5px solid var(--text-muted);
   margin-top: 3px;
   display: flex;

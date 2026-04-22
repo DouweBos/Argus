@@ -1,6 +1,14 @@
 import type { Organization, OrgTask } from "../../lib/types";
 import { useState } from "react";
-import { Button, Icons, StatCell, StatsStrip } from "@argus/peacock";
+import {
+  Button,
+  IconBadge,
+  Icons,
+  SectionPanel,
+  StatCell,
+  StatsStrip,
+} from "@argus/peacock";
+import { useAgentsRecord } from "../../stores/agentStore";
 import {
   openOrganization,
   useSelectedOrganizationId,
@@ -11,6 +19,7 @@ import {
 } from "../../stores/dialogStore";
 import {
   deleteOrgTask,
+  taskLiveStatus,
   useOrgTaskSync,
   useOrgTasks,
 } from "../../stores/orgTaskStore";
@@ -33,8 +42,15 @@ export function OrganizationsScreen() {
   useOrgTaskSync();
   const orgs = useOrganizations();
   const tasks = useOrgTasks();
+  const agents = useAgentsRecord();
   const selectedOrgId = useSelectedOrganizationId();
-  const runningTasks = tasks.filter((t) => t.status === "running").length;
+  const runningTasks = tasks.filter(
+    (t) =>
+      taskLiveStatus(
+        t,
+        t.host_agent_id ? agents[t.host_agent_id] : undefined,
+      ) === "running",
+  ).length;
 
   const selectedOrg = selectedOrgId
     ? (orgs.find((o) => o.id === selectedOrgId) ?? null)
@@ -117,7 +133,14 @@ function OrganizationHome({
   org: Organization;
   tasks: OrgTask[];
 }) {
-  const running = tasks.filter((t) => t.status === "running").length;
+  const agents = useAgentsRecord();
+  const running = tasks.filter(
+    (t) =>
+      taskLiveStatus(
+        t,
+        t.host_agent_id ? agents[t.host_agent_id] : undefined,
+      ) === "running",
+  ).length;
   const completed = tasks.filter((t) => t.status === "completed").length;
   const failed = tasks.filter((t) => t.status === "failed").length;
   const sortedTasks = [...tasks].sort((a, b) => b.created_at - a.created_at);
@@ -128,11 +151,11 @@ function OrganizationHome({
         <div className={homeStyles.hero}>
           <div
             className={homeStyles.brandMark}
-            style={{ ["--hero-accent" as string]: org.accent }}
+            style={{ ["--project-accent" as string]: org.accent }}
           >
-            <div className={homeStyles.heroBadge}>
+            <IconBadge size="lg" tone="project">
               <Icons.OrganizationIcon size={18} />
-            </div>
+            </IconBadge>
             <div>
               <h1 className={homeStyles.title}>{org.name}</h1>
               <div className={homeStyles.sub}>
@@ -197,23 +220,16 @@ function OrganizationHome({
 
         <div className={homeStyles.grid}>
           <div className={homeStyles.col}>
-            <div className={homeStyles.panel}>
-              <div className={homeStyles.panelHead}>
-                <span className={homeStyles.eyebrow}>New task</span>
-                <span className={homeStyles.subMeta}>
-                  prompt · implement across selected repos
-                </span>
-              </div>
+            <SectionPanel
+              title="New task"
+              meta="prompt · implement across selected repos"
+            >
               <div className={styles.composerWrap}>
                 <StartTaskComposer org={org} />
               </div>
-            </div>
+            </SectionPanel>
 
-            <div className={homeStyles.panel}>
-              <div className={homeStyles.panelHead}>
-                <span className={homeStyles.eyebrow}>Tasks</span>
-                <span className={homeStyles.subMeta}>{tasks.length} total</span>
-              </div>
+            <SectionPanel title="Tasks" meta={`${tasks.length} total`}>
               <div className={homeStyles.panelScroll}>
                 {sortedTasks.length === 0 ? (
                   <div className={homeStyles.emptyCell}>
@@ -228,17 +244,14 @@ function OrganizationHome({
                   </div>
                 )}
               </div>
-            </div>
+            </SectionPanel>
           </div>
 
           <div className={homeStyles.col}>
-            <div className={homeStyles.panel}>
-              <div className={homeStyles.panelHead}>
-                <span className={homeStyles.eyebrow}>Member repos</span>
-                <span className={homeStyles.subMeta}>
-                  {org.members.length} bound
-                </span>
-                <div className={homeStyles.panelSpacer} />
+            <SectionPanel
+              title="Member repos"
+              meta={`${org.members.length} bound`}
+              action={
                 <button
                   type="button"
                   className={homeStyles.linkBtn}
@@ -246,7 +259,8 @@ function OrganizationHome({
                 >
                   Edit
                 </button>
-              </div>
+              }
+            >
               <div className={styles.memberList}>
                 {org.members.length === 0 ? (
                   <div className={homeStyles.emptyCell}>
@@ -271,7 +285,7 @@ function OrganizationHome({
                   ))
                 )}
               </div>
-            </div>
+            </SectionPanel>
           </div>
         </div>
       </div>
@@ -287,7 +301,14 @@ function OrganizationCard({
   tasks: OrgTask[];
 }) {
   const [expanded, setExpanded] = useState(tasks.length > 0);
-  const running = tasks.filter((t) => t.status === "running").length;
+  const agents = useAgentsRecord();
+  const running = tasks.filter(
+    (t) =>
+      taskLiveStatus(
+        t,
+        t.host_agent_id ? agents[t.host_agent_id] : undefined,
+      ) === "running",
+  ).length;
   const canStart = org.members.length > 0;
 
   const sortedTasks = [...tasks].sort((a, b) => b.created_at - a.created_at);
@@ -381,6 +402,11 @@ function OrganizationCard({
 
 function TaskRow({ task }: { task: OrgTask }) {
   const hostReady = Boolean(task.host_session_id);
+  const agents = useAgentsRecord();
+  const liveStatus = taskLiveStatus(
+    task,
+    task.host_agent_id ? agents[task.host_agent_id] : undefined,
+  );
 
   return (
     <div className={styles.taskRow} data-disabled={!hostReady}>
@@ -395,8 +421,8 @@ function TaskRow({ task }: { task: OrgTask }) {
         }}
       >
         <span className={styles.taskTitle}>{task.title}</span>
-        <span className={styles.taskStatus} data-status={task.status}>
-          {task.status}
+        <span className={styles.taskStatus} data-status={liveStatus}>
+          {liveStatus}
         </span>
         <span className={styles.taskMembers}>
           {task.scope.map((s) => (

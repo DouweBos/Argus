@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Icons } from "@argus/peacock";
+import { Button, CalloutCard, IconBadge, Icons } from "@argus/peacock";
 import { suggestArgusJson, writeOnboardingArgusJson } from "../../../lib/ipc";
-import styles from "./NoArgusJsonCard.module.css";
 
 interface NoArgusJsonCardProps {
   onGenerated: () => void;
@@ -32,31 +31,30 @@ export function NoArgusJsonCard({
   };
 
   return (
-    <div className={styles.card}>
-      <div className={styles.row}>
-        <div className={styles.iconWrap}>
+    <CalloutCard
+      tone="accent"
+      leading={
+        <IconBadge tone="accent">
           <Icons.GearIcon size={14} />
-        </div>
-        <div className={styles.body}>
-          <div className={styles.title}>Finish setting up this project</div>
-          <div className={styles.meta}>
-            {error
-              ? `Failed to generate: ${error}`
-              : "No .argus.json found — Argus needs it to know how to copy files, run commands, and allocate ports when creating sessions."}
-          </div>
-        </div>
-        <div className={styles.actions}>
-          <button
-            className={styles.primaryBtn}
-            disabled={isGenerating}
-            type="button"
-            onClick={handleGenerate}
-          >
-            <Icons.PlusIcon size={11} />
-            {isGenerating ? "Generating\u2026" : "Generate .argus.json"}
-          </button>
-        </div>
-      </div>
-    </div>
+        </IconBadge>
+      }
+      title="Finish setting up this project"
+      meta={
+        error
+          ? `Failed to generate: ${error}`
+          : "No .argus.json found — Argus needs it to know how to copy files, run commands, and allocate ports when creating sessions."
+      }
+      actions={
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={isGenerating}
+          leading={<Icons.PlusIcon size={11} />}
+          onClick={handleGenerate}
+        >
+          {isGenerating ? "Generating…" : "Generate .argus.json"}
+        </Button>
+      }
+    />
   );
 }

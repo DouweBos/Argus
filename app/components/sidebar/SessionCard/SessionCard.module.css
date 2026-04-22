@@ -329,7 +329,7 @@
   font-family: var(--font-mono);
   padding: 1px 6px;
   margin-top: 2px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
   background: transparent;
   border: 1px solid var(--accent);
   color: var(--accent);

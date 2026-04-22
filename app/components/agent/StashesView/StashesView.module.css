@@ -296,7 +296,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
   flex-shrink: 0;
 }
 

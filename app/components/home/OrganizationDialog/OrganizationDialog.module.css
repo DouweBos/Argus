@@ -138,7 +138,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--border-radius-pill);
   border: 1px solid var(--glass-border);
   background: transparent;
   color: inherit;

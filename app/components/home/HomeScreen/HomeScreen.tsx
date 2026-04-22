@@ -1,4 +1,4 @@
-import type { DependencyStatus } from "../../../lib/types";
+import type { DependencyStatus, OrgTask } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import {
   AgentRow,
@@ -12,7 +12,7 @@ import {
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
-import { setActiveAgent } from "../../../stores/agentStore";
+import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
 import {
   openOrganization,
   setCenterView,
@@ -24,7 +24,11 @@ import {
   triggerNewSession,
 } from "../../../stores/dialogStore";
 import { setActiveCenterView } from "../../../stores/editorStore";
-import { useOrgTasks, useOrgTaskSync } from "../../../stores/orgTaskStore";
+import {
+  taskLiveStatus,
+  useOrgTasks,
+  useOrgTaskSync,
+} from "../../../stores/orgTaskStore";
 import {
   useOrganizations,
   useOrganizationSync,
@@ -38,6 +42,107 @@ import { useHomeData, type HomeProject } from "./useHomeData";
 
 function basename(p: string): string {
   return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
+}
+
+function OrganizationCardWithTasks({
+  org,
+  tasks,
+  onOpen,
+}: {
+  onOpen: () => void;
+  org: ReturnType<typeof useOrganizations>[number];
+  tasks: OrgTask[];
+}) {
+  const agents = useAgentsRecord();
+
+  const taskAgents = tasks.map((t) => ({
+    task: t,
+    pillStatus: taskLiveStatus(
+      t,
+      t.host_agent_id ? agents[t.host_agent_id] : undefined,
+    ),
+  }));
+
+  const liveRunning = taskAgents.filter((ta) => ta.pillStatus === "running");
+  const visible = taskAgents.filter(
+    (ta) => ta.pillStatus === "running" || ta.pillStatus === "pending",
+  );
+
+  const [expanded, setExpanded] = useState(visible.length > 0);
+
+  let toggleLabel: string;
+  if (liveRunning.length > 0) {
+    toggleLabel = `${liveRunning.length} running task${liveRunning.length === 1 ? "" : "s"}`;
+  } else if (tasks.length > 0) {
+    toggleLabel = `${tasks.length} task${tasks.length === 1 ? "" : "s"}`;
+  } else {
+    toggleLabel = "No tasks yet";
+  }
+
+  return (
+    <OrganizationCard
+      name={org.name}
+      description={org.description || undefined}
+      accent={org.accent}
+      members={org.members.map((m) => basename(m.repo_root))}
+      taskCount={tasks.length}
+      runningCount={liveRunning.length}
+      collapsible
+      expanded={expanded}
+      onToggle={() => setExpanded((v) => !v)}
+      toggleLabel={toggleLabel}
+      onClick={onOpen}
+      style={{ cursor: "pointer" }}
+    >
+      {visible.length === 0 ? (
+        <div
+          style={{
+            padding: "10px 12px",
+            fontSize: 11,
+            color: "var(--text-muted)",
+          }}
+        >
+          No running tasks.
+        </div>
+      ) : (
+        visible.map(({ task: t, pillStatus }) => (
+          <ProjectCard
+            key={t.id}
+            name={t.title}
+            accent={org.accent}
+            icon={<Icons.TaskIcon size={14} />}
+            agents={[{ status: pillStatus }]}
+            lastOpened={formatTimeAgo(t.created_at)}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (t.host_session_id) {
+                selectSession(t.host_session_id);
+              }
+            }}
+          />
+        ))
+      )}
+    </OrganizationCard>
+  );
+}
+
+function formatTimeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) {
+    return `${sec}s ago`;
+  }
+  const min = Math.floor(sec / 60);
+  if (min < 60) {
+    return `${min}m ago`;
+  }
+  const hr = Math.floor(min / 60);
+  if (hr < 24) {
+    return `${hr}h ago`;
+  }
+  const day = Math.floor(hr / 24);
+
+  return `${day}d ago`;
 }
 
 function agentMeta(status: string): string {
@@ -216,29 +321,16 @@ export function HomeScreen() {
                   </div>
                 ) : (
                   <div className={styles.projGrid}>
-                    {orgs.map((org) => {
-                      const orgTasks = tasks.filter(
-                        (t) => t.organization_id === org.id,
-                      );
-                      const running = orgTasks.filter(
-                        (t) => t.status === "running",
-                      ).length;
-
-                      return (
-                        <OrganizationCard
-                          key={org.id}
-                          name={org.name}
-                          description={org.description || undefined}
-                          accent={org.accent}
-                          members={org.members.map((m) =>
-                            basename(m.repo_root),
-                          )}
-                          taskCount={orgTasks.length}
-                          runningCount={running}
-                          onClick={() => openOrganization(org.id)}
-                        />
-                      );
-                    })}
+                    {orgs.map((org) => (
+                      <OrganizationCardWithTasks
+                        key={org.id}
+                        org={org}
+                        tasks={tasks.filter(
+                          (t) => t.organization_id === org.id,
+                        )}
+                        onOpen={() => openOrganization(org.id)}
+                      />
+                    ))}
                   </div>
                 )}
               </div>

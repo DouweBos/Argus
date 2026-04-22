@@ -1,6 +1,13 @@
 import type { ActivityEvent, ActivityKind } from "../../../lib/activityTypes";
+import type { FeedItemTone } from "@argus/peacock";
 import type { ReactNode } from "react";
-import { CommitIcon, EmptyState, Icons, WarningIcon } from "@argus/peacock";
+import {
+  CommitIcon,
+  EmptyState,
+  FeedItem,
+  Icons,
+  WarningIcon,
+} from "@argus/peacock";
 import { useActivityEvents } from "../../../stores/activityStore";
 import styles from "./ActivityScreen.module.css";
 
@@ -57,21 +64,21 @@ function kindIcon(kind: ActivityKind): ReactNode {
   }
 }
 
-function kindToneClass(kind: ActivityKind): string {
+function kindTone(kind: ActivityKind): FeedItemTone {
   switch (kind) {
     case "agent_errored":
-      return styles.toneError;
+      return "error";
     case "agent_spawned":
     case "session_created":
     case "device_online":
-      return styles.toneSuccess;
+      return "success";
     case "session_merged":
     case "commit_landed":
-      return styles.toneAccent;
+      return "accent";
     case "agent_stopped":
     case "session_deleted":
     case "device_offline":
-      return styles.toneMuted;
+      return "muted";
   }
 }
 
@@ -79,22 +86,21 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
   const project = projectName(event.repoRoot);
 
   return (
-    <div className={styles.row}>
-      <div className={[styles.icon, kindToneClass(event.kind)].join(" ")}>
-        {kindIcon(event.kind)}
-      </div>
-      <div className={styles.body}>
-        <div className={styles.top}>
+    <FeedItem
+      icon={kindIcon(event.kind)}
+      tone={kindTone(event.kind)}
+      chips={
+        <>
           {project && <span className={styles.projectChip}>{project}</span>}
           {event.branch && (
             <span className={styles.branchChip}>{event.branch}</span>
           )}
-        </div>
-        <div className={styles.title}>{event.title}</div>
-        {event.detail && <div className={styles.detail}>{event.detail}</div>}
-      </div>
-      <div className={styles.time}>{relativeTime(event.ts)}</div>
-    </div>
+        </>
+      }
+      title={event.title}
+      detail={event.detail}
+      time={relativeTime(event.ts)}
+    />
   );
 }
 

@@ -1,107 +1,76 @@
-import type { AgentStatus } from "../../lib/agentStatus";
 import type { HTMLAttributes, ReactNode } from "react";
-import { CommitIcon, SparkleIcon, WarningIcon } from "../../icons/HomeIcons";
-import { TerminalIcon, MergeIcon } from "../../icons/Icons";
 import styles from "./FeedItem.module.css";
 
-export type FeedKind =
-  | "build"
-  | "commit"
-  | "merge"
-  | "permission"
-  | "tool_call";
+export type FeedItemTone =
+  | "accent"
+  | "error"
+  | "muted"
+  | "neutral"
+  | "success"
+  | "warning";
 
-export interface FeedItemProps extends HTMLAttributes<HTMLDivElement> {
-  kind: FeedKind;
-  /** Detail status for the row — drives color accents. */
-  status?: AgentStatus;
-  project: ReactNode;
-  agent: ReactNode;
-  text: ReactNode;
-  /** Shown in the top-right timestamp slot (e.g., "just now", "12s"). */
+export interface FeedItemProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "title"
+> {
+  icon: ReactNode;
+  /** Tone applied to the icon tile. */
+  tone?: FeedItemTone;
+  /** Small uppercase chips rendered above the title (project, branch, source, etc). */
+  chips?: ReactNode;
+  title: ReactNode;
+  detail?: ReactNode;
   time?: ReactNode;
-  /** Render text in monospace (used for tool calls, permission asks, builds). */
-  mono?: boolean;
-  /** Slot for action buttons, typically rendered when status === "pending". */
-  actions?: ReactNode;
+  /** Optional trailing slot (e.g. dismiss button) rendered next to the timestamp. */
+  trailing?: ReactNode;
+  /** Render with an opaque surface + border (notifications). Default false uses a hover-only row (activity). */
+  bordered?: boolean;
 }
 
-const KIND_ICON: Record<FeedKind, ReactNode> = {
-  tool_call: <TerminalIcon size={13} />,
-  permission: <WarningIcon size={13} />,
-  commit: <CommitIcon size={13} />,
-  build: <WarningIcon size={13} />,
-  merge: <MergeIcon size={13} />,
+const iconToneClass: Record<FeedItemTone, string> = {
+  neutral: "",
+  success: styles.iconSuccess,
+  error: styles.iconError,
+  warning: styles.iconWarning,
+  accent: styles.iconAccent,
+  muted: styles.iconMuted,
 };
 
-function toneClass(kind: FeedKind, status?: AgentStatus): string {
-  if (status === "pending") {
-    return "pending";
-  }
-  if (status === "running") {
-    return "running";
-  }
-  if (status === "error") {
-    return "error";
-  }
-  if (kind === "merge") {
-    return "merge";
-  }
-
-  return "";
-}
-
 export function FeedItem({
-  kind,
-  status,
-  project,
-  agent,
-  text,
+  icon,
+  tone = "neutral",
+  chips,
+  title,
+  detail,
   time,
-  mono,
-  actions,
+  trailing,
+  bordered,
   className,
   ...rest
 }: FeedItemProps) {
-  const tone = toneClass(kind, status);
+  const rowClasses = [
+    styles.item,
+    bordered ? styles.bordered : styles.hoverable,
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const iconClasses = [styles.icon, iconToneClass[tone]]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div
-      className={[styles.item, tone && styles[tone], className]
-        .filter(Boolean)
-        .join(" ")}
-      {...rest}
-    >
-      <div
-        className={[styles.icon, tone && styles[tone]]
-          .filter(Boolean)
-          .join(" ")}
-      >
-        {KIND_ICON[kind] ?? <SparkleIcon size={13} />}
-      </div>
+    <div className={rowClasses} {...rest}>
+      <div className={iconClasses}>{icon}</div>
       <div className={styles.body}>
-        <div className={styles.top}>
-          <span className={styles.projectChip}>{project}</span>
-          <span className={styles.agentChip}>/ {agent}</span>
-        </div>
-        <div
-          className={[styles.text, mono ? styles.textMono : ""]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          {text}
-        </div>
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {chips && <div className={styles.chips}>{chips}</div>}
+        <div className={styles.title}>{title}</div>
+        {detail && <div className={styles.detail}>{detail}</div>}
       </div>
-      {(time || status) && (
-        <div className={styles.meta}>
-          {time}
-          {status && (
-            <>
-              <br />
-              <span className={styles.metaStatus}>{status}</span>
-            </>
-          )}
+      {(time || trailing) && (
+        <div className={styles.trailing}>
+          {time && <span className={styles.time}>{time}</span>}
+          {trailing}
         </div>
       )}
     </div>

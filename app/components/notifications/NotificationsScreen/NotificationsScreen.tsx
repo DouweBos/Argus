@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { Button, EmptyState, Icons, WarningIcon } from "@argus/peacock";
+import {
+  Button,
+  EmptyState,
+  FeedItem,
+  Icons,
+  WarningIcon,
+} from "@argus/peacock";
 import {
   clearNotifications,
   dismissNotification,
@@ -32,25 +38,22 @@ function relativeTime(ts: number): string {
 }
 
 function NotificationRow({ entry }: { entry: Notification }) {
-  const toneClass =
-    entry.level === "error" ? styles.toneError : styles.toneWarning;
-
   return (
-    <div className={styles.row}>
-      <div className={[styles.icon, toneClass].join(" ")}>
-        <WarningIcon size={13} />
-      </div>
-      <div className={styles.body}>
-        <div className={styles.top}>
+    <FeedItem
+      icon={<WarningIcon size={13} />}
+      tone={entry.level === "error" ? "error" : "warning"}
+      bordered
+      chips={
+        <>
           <span className={styles.levelChip}>{entry.level}</span>
           {entry.source && (
             <span className={styles.sourceChip}>{entry.source}</span>
           )}
-        </div>
-        <div className={styles.message}>{entry.message}</div>
-      </div>
-      <div className={styles.meta}>
-        <span className={styles.time}>{relativeTime(entry.timestamp)}</span>
+        </>
+      }
+      title={entry.message}
+      time={relativeTime(entry.timestamp)}
+      trailing={
         <button
           className={styles.dismiss}
           title="Dismiss"
@@ -58,8 +61,8 @@ function NotificationRow({ entry }: { entry: Notification }) {
         >
           <Icons.CloseIcon size={10} />
         </button>
-      </div>
-    </div>
+      }
+    />
   );
 }
 

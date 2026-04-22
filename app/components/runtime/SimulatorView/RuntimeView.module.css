@@ -204,7 +204,7 @@
   gap: 6px;
   margin: 6px 6px 8px;
   background: var(--bg-primary);
-  border-radius: 8px;
+  border-radius: var(--border-radius-md);
 }
 
 /* Tools-missing placeholder */
@@ -227,7 +227,7 @@
   font-size: 9px;
   background: var(--surface-4);
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--border-radius-xs);
 }
 
 /* Stream body — wraps canvas when capturing (iOS/Android phone) */
@@ -316,7 +316,7 @@
   width: 160px;
   height: 100px;
   border: 1.5px solid var(--glass-border);
-  border-radius: 6px;
+  border-radius: var(--border-radius-sm);
   background: var(--surface-2);
   display: flex;
   align-items: center;
