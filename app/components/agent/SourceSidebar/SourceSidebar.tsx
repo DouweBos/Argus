@@ -26,7 +26,7 @@ export function SourceSidebar({
       </SidebarItem>
       <SidebarItem
         active={activeView === "branch"}
-        leading={<Icons.BranchNodesIcon size={13} />}
+        leading={<Icons.BranchIcon size={13} />}
         onClick={() => onViewChange("branch")}
       >
         Branch

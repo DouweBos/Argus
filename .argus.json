@@ -8,6 +8,11 @@
       "title": "Dev",
       "command": "pnpm dev",
       "restartOnRerun": true
+    },
+    {
+      "title": "Storybook",
+      "command": "pnpm storybook",
+      "restartOnRerun": true
     }
   ],
   "workspace_env": [
