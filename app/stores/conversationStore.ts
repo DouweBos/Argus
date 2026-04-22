@@ -44,13 +44,32 @@ export interface ToolCallInfo {
   result?: ToolResultBlock[] | string;
 }
 
+/**
+ * Describes where a system message came from, so the UI can render it with
+ * richer framing (source label, parent agent name, attachments).
+ *
+ * Today only MCP-originated messages carry a source; future origins (scripts,
+ * webhooks, scheduled triggers) can add new `kind` variants.
+ */
+export interface SystemMessageSource {
+  kind: "mcp";
+  /** Agent that originated the call, if known. */
+  parentAgentId?: string;
+  /** Human-readable label for the originating agent (session display name). */
+  parentLabel?: string;
+  /** MCP tool that injected the message. */
+  tool: "send_agent_message" | "spawn_agent" | "spawn_agents_batch";
+}
+
 export interface ConversationMessage {
   id: string;
-  /** Image attachments the user sent alongside this message (user role only). */
+  /** Image attachments accompanying this message. */
   images?: ImageAttachment[];
   /** True for stderr / error system messages (styled differently). */
   isError?: boolean;
   role: "assistant" | "system" | "user";
+  /** Origin metadata for system messages (e.g. MCP tool calls). */
+  source?: SystemMessageSource;
   textBlocks: string[];
   timestamp: number;
   toolCalls: ToolCallInfo[];

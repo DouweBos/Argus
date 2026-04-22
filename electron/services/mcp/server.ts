@@ -29,6 +29,7 @@ import {
   waitForAgent,
   ensureSimulatorForAgent,
   ensureWebBrowserForAgent,
+  emitMcpSystemMessage,
 } from "../agent/claude";
 import {
   addRepoToOrganization,
@@ -640,6 +641,14 @@ export function createMcpServer(): McpServer {
       // Send the initial prompt after startup.
       sendAgentMessage(agentInfo.agent_id, prompt, images);
 
+      // Surface the orchestrator's prompt in the child agent's conversation UI.
+      emitMcpSystemMessage(agentInfo.agent_id, {
+        tool: "spawn_agent",
+        message: prompt,
+        images,
+        parentAgentId: parent_agent_id,
+      });
+
       return {
         content: [
           {
@@ -821,6 +830,13 @@ export function createMcpServer(): McpServer {
           });
 
           sendAgentMessage(agentInfo.agent_id, spec.prompt, images);
+
+          emitMcpSystemMessage(agentInfo.agent_id, {
+            tool: "spawn_agents_batch",
+            message: spec.prompt,
+            images,
+            parentAgentId: parent_agent_id,
+          });
 
           results.push({
             agent_id: agentInfo.agent_id,
@@ -1126,8 +1142,14 @@ export function createMcpServer(): McpServer {
         .describe(
           "Optional attachments (images/screenshots) to attach to this message. Use { path: '/abs/path/to/file.png' } for files on disk, or { data: '<base64>', mime_type: 'image/png' } for inline bytes. Only image types are supported (image/png, image/jpeg, image/gif, image/webp).",
         ),
+      parent_agent_id: z
+        .string()
+        .optional()
+        .describe(
+          "Your own agent_id, so the recipient's UI can show who the message came from. Optional but strongly recommended.",
+        ),
     },
-    async ({ agent_id, message, attachments }) => {
+    async ({ agent_id, message, attachments, parent_agent_id }) => {
       let images;
       try {
         images = resolveAttachments(attachments);
@@ -1139,6 +1161,13 @@ export function createMcpServer(): McpServer {
       }
 
       sendAgentMessage(agent_id, message, images);
+
+      emitMcpSystemMessage(agent_id, {
+        tool: "send_agent_message",
+        message,
+        images,
+        parentAgentId: parent_agent_id,
+      });
 
       return {
         content: [

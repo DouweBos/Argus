@@ -269,6 +269,21 @@ const capListeners = new Map<string, UnlistenFn>();
 const modelListeners = new Map<string, UnlistenFn>();
 const permModeListeners = new Map<string, UnlistenFn>();
 const stderrListeners = new Map<string, UnlistenFn>();
+const mcpMessageListeners = new Map<string, UnlistenFn>();
+
+/**
+ * Payload emitted by the Electron main process when the MCP server injects
+ * a prompt or follow-up into an agent. Mirrors
+ * `McpSystemMessagePayload` on the backend.
+ */
+interface McpSystemMessagePayload {
+  images?: { data: string; media_type: string }[];
+  message: string;
+  parentAgentId?: string;
+  parentLabel?: string;
+  timestamp: number;
+  tool: "send_agent_message" | "spawn_agent" | "spawn_agents_batch";
+}
 
 /** Subscribe to all agent event channels. */
 export function startAgentListening(agentId: string): void {
@@ -474,6 +489,36 @@ export function startAgentListening(agentId: string): void {
   // Watch for stderr output from the CLI process (auth errors, diagnostics).
   stderrListeners.set(agentId, () => {});
 
+  // Watch for MCP-injected messages (spawn_agent prompt, send_agent_message).
+  mcpMessageListeners.set(agentId, () => {});
+
+  listen<McpSystemMessagePayload>(`agent:mcp-message:${agentId}`, (event) => {
+    const payload = event.payload;
+    appendSystemMessage(agentId, {
+      id: crypto.randomUUID(),
+      role: "system",
+      textBlocks: [payload.message],
+      toolCalls: [],
+      images: payload.images?.length ? payload.images : undefined,
+      timestamp: payload.timestamp ?? Date.now(),
+      source: {
+        kind: "mcp",
+        tool: payload.tool,
+        parentAgentId: payload.parentAgentId,
+        parentLabel: payload.parentLabel,
+      },
+    });
+    scheduleAgentSave(agentId);
+  }).then((unlisten) => {
+    if (!mcpMessageListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+
+    mcpMessageListeners.set(agentId, unlisten);
+  });
+
   listen<string>(`agent:stderr:${agentId}`, (event) => {
     const line = event.payload;
     if (!line) {
@@ -593,4 +638,10 @@ export function stopAgentListening(agentId: string): void {
     stderrUnlisten();
   }
   stderrListeners.delete(agentId);
+
+  const mcpUnlisten = mcpMessageListeners.get(agentId);
+  if (mcpUnlisten) {
+    mcpUnlisten();
+  }
+  mcpMessageListeners.delete(agentId);
 }
