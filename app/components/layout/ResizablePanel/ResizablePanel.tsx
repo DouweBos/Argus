@@ -9,6 +9,8 @@ interface ResizablePanelProps {
   defaultWidth: number; // fraction of container width, e.g. 0.2
   maxWidth?: number; // fraction, e.g. 0.5
   minWidth?: number; // fraction, e.g. 0.1
+  /** Suppress open/close transitions for the next commit — used to skip animation on navigation changes. */
+  noAnimate?: boolean;
   onMouseEnter?: React.MouseEventHandler;
   onMouseLeave?: React.MouseEventHandler;
   /** Called when width fraction changes (for syncing to external state) */
@@ -29,6 +31,7 @@ export function ResizablePanel({
   onMouseEnter,
   onMouseLeave,
   peeking = false,
+  noAnimate = false,
 }: ResizablePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +92,7 @@ export function ResizablePanel({
       className={styles.panel}
       data-collapsed={collapsed}
       data-dragging={isDragging}
+      data-no-animate={noAnimate}
       data-peeking={peeking}
       style={{
         width: widthPercent,

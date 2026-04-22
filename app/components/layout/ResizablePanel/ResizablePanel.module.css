@@ -10,7 +10,8 @@
     transform var(--transition-smooth);
 }
 
-.panel[data-dragging="true"] {
+.panel[data-dragging="true"],
+.panel[data-no-animate="true"] {
   transition: none;
 }
 

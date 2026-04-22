@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getLayoutState,
   setLayoutState,
@@ -8,13 +9,26 @@ import {
   toggleTool,
 } from "./layoutStore";
 
+vi.mock("../lib/router", () => ({
+  getCurrentRoute: () => ({
+    view: "session",
+    sessionId: "ws-1",
+    organizationId: null,
+    panel: "agents",
+  }),
+}));
+
+vi.mock("../lib/routeHooks", () => ({
+  useRouteSessionId: () => "ws-1",
+}));
+
 describe("layoutStore", () => {
   beforeEach(() => {
     setLayoutState({
       leftSidebarVisible: true,
       leftPanelWidth: 0.18,
-      activeToolId: null,
-      lastActiveToolId: "terminal",
+      activeToolBySessionId: {},
+      lastActiveToolBySessionId: {},
       mountedToolIds: {
         changes: false,
         simulator: false,
@@ -28,7 +42,7 @@ describe("layoutStore", () => {
     const state = getLayoutState();
     expect(state.leftSidebarVisible).toBe(true);
     expect(state.leftPanelWidth).toBe(0.18);
-    expect(state.activeToolId).toBeNull();
+    expect(state.activeToolBySessionId).toEqual({});
     expect(state.toolPanelWidth).toBe(0.3);
   });
 
@@ -44,21 +58,30 @@ describe("layoutStore", () => {
     expect(getLayoutState().leftPanelWidth).toBe(0.25);
   });
 
-  it("toggles tool open", () => {
+  it("toggles tool open for current session", () => {
     toggleTool("terminal");
-    expect(getLayoutState().activeToolId).toBe("terminal");
+    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBe("terminal");
   });
 
   it("toggles same tool closed", () => {
     toggleTool("terminal");
     toggleTool("terminal");
-    expect(getLayoutState().activeToolId).toBeNull();
+    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBeNull();
+  });
+
+  it("remembers the last active tool per session after closing", () => {
+    toggleTool("simulator");
+    toggleTool("simulator");
+    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBeNull();
+    expect(getLayoutState().lastActiveToolBySessionId["ws-1"]).toBe(
+      "simulator",
+    );
   });
 
   it("switches tool when different id toggled", () => {
     toggleTool("terminal");
     toggleTool("simulator");
-    expect(getLayoutState().activeToolId).toBe("simulator");
+    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBe("simulator");
   });
 
   it("marks a tool mounted when opened and keeps it after close", () => {

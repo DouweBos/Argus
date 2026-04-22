@@ -106,8 +106,8 @@ describe("external branch switch → full pipeline", () => {
     setLayoutState({
       leftSidebarVisible: true,
       leftPanelWidth: 0.18,
-      activeToolId: "changes",
-      lastActiveToolId: "terminal",
+      activeToolBySessionId: { "ws-root": "changes" },
+      lastActiveToolBySessionId: { "ws-root": "changes" },
       mountedToolIds: {
         changes: true,
         simulator: false,

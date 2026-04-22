@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import {
   type ToolId,
@@ -50,12 +51,31 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
   const lastActiveToolId = useLastActiveToolId();
   const displayToolId = activeToolId ?? lastActiveToolId;
 
+  // Skip the open/close transition when the panel's visibility flips because
+  // of a session change (navigation) rather than a user toggle. useLayoutEffect
+  // runs before paint, so the DOM commit with `data-no-animate="true"` lands
+  // in the same frame as the new `collapsed` value — the browser sees only
+  // the final state and snaps to it without animating.
+  const prevSessionIdRef = useRef(sessionId);
+  const [noAnimate, setNoAnimate] = useState(false);
+  useLayoutEffect(() => {
+    if (prevSessionIdRef.current === sessionId) {
+      return;
+    }
+    prevSessionIdRef.current = sessionId;
+    setNoAnimate(true);
+    const raf = requestAnimationFrame(() => setNoAnimate(false));
+
+    return () => cancelAnimationFrame(raf);
+  }, [sessionId]);
+
   return (
     <ResizablePanel
       collapsed={!activeToolId}
       defaultWidth={0.3}
       maxWidth={0.5}
       minWidth={0.15}
+      noAnimate={noAnimate}
       side="right"
       onResize={setWidth}
     >
