@@ -55,7 +55,9 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
   // of a session change (navigation) rather than a user toggle. useLayoutEffect
   // runs before paint, so the DOM commit with `data-no-animate="true"` lands
   // in the same frame as the new `collapsed` value — the browser sees only
-  // the final state and snaps to it without animating.
+  // the final state and snaps to it without animating. The `setNoAnimate`
+  // calls inside the effect are deliberate: this is a one-frame DOM-sync
+  // pattern, not the cascading-render antipattern the lint rule targets.
   const prevSessionIdRef = useRef(sessionId);
   const [noAnimate, setNoAnimate] = useState(false);
   useLayoutEffect(() => {
@@ -63,9 +65,13 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
       return;
     }
     prevSessionIdRef.current = sessionId;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: disable animation for one frame on session change
+    /* eslint-disable react-hooks/set-state-in-effect --
+       One-frame flag flip is the whole point: we need the flag ON during
+       the commit that follows a session change and OFF once the frame
+       has painted. There's no external-state source to derive from. */
     setNoAnimate(true);
     const raf = requestAnimationFrame(() => setNoAnimate(false));
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     return () => cancelAnimationFrame(raf);
   }, [sessionId]);

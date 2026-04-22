@@ -904,7 +904,7 @@ export function SetupConfigDialog({
 
   return (
     <Dialog
-      className={styles.dialogConfig}
+      size="medium"
       title="Project Configuration"
       titleId="setup-cfg-title"
       onClose={onClose}

@@ -34,7 +34,7 @@ export function AgentPreviewDialog({
 
   return (
     <Dialog
-      className={styles.dialog}
+      size="full"
       onClose={onClose}
       title={
         <span className={styles.titleRow}>

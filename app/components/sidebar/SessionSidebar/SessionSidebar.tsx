@@ -9,6 +9,7 @@ import {
   SidebarNavGroup,
   SidebarScroll,
   SidebarSection,
+  StatusDot,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { useActivityCount } from "../../../stores/activityStore";
@@ -18,6 +19,10 @@ import {
   useOrganizations,
   useOrganizationSync,
 } from "../../../stores/organizationStore";
+import {
+  useAwaitingMyReviewCount,
+  usePrList,
+} from "../../../stores/pullRequestStore";
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import { toggleProjectCollapsed } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
@@ -39,6 +44,21 @@ export function SessionSidebar() {
     (a) => a.status === "running",
   ).length;
   const reviewQueueCount = useReviewQueueCount();
+  const awaitingMyReviewCount = useAwaitingMyReviewCount();
+  const prList = usePrList();
+  // Show a spinner until the first fetch has landed; swapping to `0`
+  // before we have data would imply "no reviews waiting" when really
+  // we just haven't asked GitHub yet.
+  const prNavCount =
+    prList.data === null ? (
+      <StatusDot
+        tone="currentColor"
+        pulse
+        aria-label="Fetching pull requests"
+      />
+    ) : (
+      awaitingMyReviewCount
+    );
   const activityCount = useActivityCount();
   useOrganizationSync();
   const organizations = useOrganizations();
@@ -116,6 +136,13 @@ export function SessionSidebar() {
           count={organizationsCount}
         >
           Organizations
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="pull-requests"
+          leading={<Icons.MergeIcon size={12} />}
+          count={prNavCount}
+        >
+          Pull requests
         </SidebarNavItem>
         <SidebarNavItem
           view="review-queue"

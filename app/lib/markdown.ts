@@ -27,6 +27,44 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
   }
 });
 
+/**
+ * Rewrite GFM task-list `<input type="checkbox">` nodes as
+ * `<span data-task-check="checked|unchecked">` _before_ DOMPurify runs.
+ *
+ * Why not a DOMPurify hook? DOMPurify strips `<input>` in its element
+ * pre-pass (DOM-clobbering protection) before any `afterSanitizeAttributes`
+ * hook fires, and `ADD_TAGS: ["input"]` alone doesn't keep them either —
+ * the tag is dropped and the hook never sees the node. Doing the rewrite
+ * up front means the sanitiser never sees an input at all; only the
+ * sanitiser-friendly span reaches the output.
+ *
+ * Both `marked` and GitHub's `bodyHTML` emit the same shape, so a single
+ * pre-process covers every markdown surface in the app.
+ */
+function transformTaskChecks(html: string): string {
+  if (typeof DOMParser === "undefined") {
+    return html;
+  }
+  const doc = new DOMParser().parseFromString(
+    `<!doctype html><body>${html}`,
+    "text/html",
+  );
+  const inputs = doc.querySelectorAll('input[type="checkbox"]');
+  if (inputs.length === 0) {
+    return html;
+  }
+  for (const input of Array.from(inputs)) {
+    const span = doc.createElement("span");
+    span.setAttribute(
+      "data-task-check",
+      input.hasAttribute("checked") ? "checked" : "unchecked",
+    );
+    input.replaceWith(span);
+  }
+
+  return doc.body.innerHTML;
+}
+
 const SANITIZE_CONFIG: DOMPurifyConfig = {
   RETURN_TRUSTED_TYPE: false,
   // Strip the most dangerous elements outright.
@@ -42,8 +80,25 @@ const SANITIZE_CONFIG: DOMPurifyConfig = {
 /** Parse markdown text to a sanitized HTML string (synchronous). */
 export function renderMarkdown(text: string): string {
   const rawHtml = marked.parse(text, { async: false }) as string;
+  const withChecks = transformTaskChecks(rawHtml);
   const safeHtml = DOMPurify.sanitize(
-    rawHtml,
+    withChecks,
+    SANITIZE_CONFIG,
+  ) as unknown as string;
+
+  return linkifyFilePaths(safeHtml);
+}
+
+/**
+ * Sanitise already-rendered HTML (e.g. GitHub's `bodyHTML` from the GraphQL
+ * API, which has autolinks, task lists, issue refs, and emoji expanded).
+ * Runs through the same DOMPurify config as `renderMarkdown` so XSS is
+ * neutralised even when the upstream source is trusted.
+ */
+export function renderHtml(html: string): string {
+  const withChecks = transformTaskChecks(html);
+  const safeHtml = DOMPurify.sanitize(
+    withChecks,
     SANITIZE_CONFIG,
   ) as unknown as string;
 

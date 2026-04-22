@@ -14,6 +14,8 @@ export type CenterView =
   | "home"
   | "notifications"
   | "organizations"
+  | "pull-request-detail"
+  | "pull-requests"
   | "review-queue"
   | "runtimes";
 

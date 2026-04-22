@@ -4,11 +4,25 @@ import { CloseIcon } from "../../icons/Icons";
 import { useDismissOnEscape } from "../../lib/modalStack";
 import styles from "./Dialog.module.css";
 
+export type DialogSize = "content" | "full" | "medium";
+
 export interface DialogProps {
   children: ReactNode;
   /** Optional className merged onto the dialog container. */
   className?: string;
   onClose: () => void;
+  /**
+   * `content` (default) — dialog hugs its children, capped at ~420px wide;
+   * right for confirmations and short forms.
+   *
+   * `medium` — capped at ~640px; right for multi-field forms, pickers,
+   * config panels.
+   *
+   * `full` — dialog fills most of the viewport (~min(1100px, 95vw) wide,
+   * full max-height); right for workspace-style modals like PR detail where
+   * content is long and layout stability matters.
+   */
+  size?: DialogSize;
   title: ReactNode;
   /** Optional extra content shown in the header (next to the title). */
   titleExtra?: ReactNode;
@@ -27,6 +41,7 @@ export function Dialog({
   children,
   className,
   onClose,
+  size = "content",
   title,
   titleId,
   titleExtra,
@@ -50,9 +65,15 @@ export function Dialog({
     [onClose],
   );
 
-  const dialogClass = className
-    ? `${styles.dialog} ${className}`
-    : styles.dialog;
+  const sizeClasses: Record<DialogSize, string> = {
+    content: styles.content,
+    medium: styles.medium,
+    full: styles.full,
+  };
+  const sizeClass = sizeClasses[size];
+  const dialogClass = [styles.dialog, sizeClass, className]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div

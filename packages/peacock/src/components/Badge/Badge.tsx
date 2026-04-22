@@ -38,7 +38,13 @@ export function Badge({
   );
 }
 
-export type StatusTone = "accent" | "error" | "idle" | "success" | "warning";
+export type StatusTone =
+  | "accent"
+  | "currentColor"
+  | "error"
+  | "idle"
+  | "success"
+  | "warning";
 
 export interface StatusDotProps extends HTMLAttributes<HTMLSpanElement> {
   tone?: StatusTone;

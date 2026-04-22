@@ -101,6 +101,59 @@ body.sim-touching * {
   -webkit-user-select: none !important;
 }
 
+/* GFM task-list checkboxes rendered by `renderMarkdown` / `renderHtml`.
+   The sanitiser replaces `<input type="checkbox">` with
+   `<span data-task-check="checked|unchecked">`, which sidesteps the global
+   input reset above and CSS-module classname hashing on GitHub's
+   `contains-task-list` / `task-list-item-checkbox` classes. Rules live here
+   so every markdown surface (agent chat, tool cards, PR bodies) renders
+   consistently. */
+[data-task-check] {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  position: relative;
+  margin-right: 2px;
+  vertical-align: text-bottom;
+  box-sizing: border-box;
+}
+
+[data-task-check="checked"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+[data-task-check="checked"]::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-fg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Task-list ULs/LIs land unstyled when marked / GitHub emit them — kill the
+   bullet and lay the row out as a flex strip so the indicator sits beside
+   the text. Uses :has() + the attribute selector so we don't depend on any
+   class name (CSS modules would mangle them anyway). */
+ul:has(> li > [data-task-check]) {
+  list-style: none;
+  padding-left: 0;
+}
+
+li:has(> [data-task-check]) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
 /* Utility classes */
 .truncate {
   overflow: hidden;

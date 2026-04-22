@@ -14,6 +14,8 @@
  * - `/notifications`                             → notifications screen
  * - `/organizations`                             → organizations list
  * - `/organizations/:organizationId`             → single organization detail
+ * - `/pull-requests`                             → outstanding PRs of interest
+ * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
  * - `/review-queue`                              → review queue
  * - `/runtimes`                                  → runtimes overview
  * - `/settings`                                  → settings (opened as dialog)
@@ -34,16 +36,26 @@ export type AppView =
   | "home"
   | "notifications"
   | "organizations"
+  | "pull-request-detail"
+  | "pull-requests"
   | "review-queue"
   | "runtimes"
   | "session";
 
 export type SessionPanel = "agents" | "editor" | "git" | "home";
 
+export interface PullRequestRef {
+  number: number;
+  owner: string;
+  repo: string;
+}
+
 export interface ParsedRoute {
   organizationId: string | null;
   /** Session panel (agents/editor/git). Only meaningful when view=session. */
   panel: SessionPanel;
+  /** Identifies which PR to show when view === "pull-request-detail". */
+  pr: PullRequestRef | null;
   sessionId: string | null;
   view: AppView;
 }
@@ -67,6 +79,7 @@ export function parseRoute(pathname: string): ParsedRoute {
       sessionId: segments[1],
       organizationId: null,
       panel: VALID_PANELS.includes(panel) ? panel : "agents",
+      pr: null,
     };
   }
 
@@ -76,7 +89,31 @@ export function parseRoute(pathname: string): ParsedRoute {
       sessionId: null,
       organizationId: segments[1] ?? null,
       panel: "agents",
+      pr: null,
     };
+  }
+
+  if (
+    segments[0] === "pull-requests" &&
+    segments.length >= 4 &&
+    segments[1] &&
+    segments[2] &&
+    segments[3]
+  ) {
+    const number = Number.parseInt(segments[3], 10);
+    if (Number.isFinite(number)) {
+      return {
+        view: "pull-request-detail",
+        sessionId: null,
+        organizationId: null,
+        panel: "agents",
+        pr: {
+          owner: decodeURIComponent(segments[1]),
+          repo: decodeURIComponent(segments[2]),
+          number,
+        },
+      };
+    }
   }
 
   if (
@@ -84,6 +121,7 @@ export function parseRoute(pathname: string): ParsedRoute {
     segments[0] === "agents" ||
     segments[0] === "devices" ||
     segments[0] === "notifications" ||
+    segments[0] === "pull-requests" ||
     segments[0] === "review-queue" ||
     segments[0] === "runtimes"
   ) {
@@ -94,7 +132,13 @@ export function parseRoute(pathname: string): ParsedRoute {
 }
 
 function emptyRoute(view: AppView): ParsedRoute {
-  return { view, sessionId: null, organizationId: null, panel: "agents" };
+  return {
+    view,
+    sessionId: null,
+    organizationId: null,
+    panel: "agents",
+    pr: null,
+  };
 }
 
 /** Build a pathname for a given route descriptor. */
@@ -110,11 +154,17 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
       ? `/organizations/${route.organizationId}`
       : "/organizations";
   }
+  if (route.view === "pull-request-detail" && route.pr) {
+    const { owner, repo, number } = route.pr;
+
+    return `/pull-requests/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${number}`;
+  }
   if (
     route.view === "activity" ||
     route.view === "agents" ||
     route.view === "devices" ||
     route.view === "notifications" ||
+    route.view === "pull-requests" ||
     route.view === "review-queue" ||
     route.view === "runtimes"
   ) {

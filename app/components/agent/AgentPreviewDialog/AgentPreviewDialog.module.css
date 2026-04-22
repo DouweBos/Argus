@@ -1,12 +1,3 @@
-.dialog {
-  width: min(920px, 92vw);
-  height: min(780px, 85vh);
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 .body {
   flex: 1;
   min-height: 0;

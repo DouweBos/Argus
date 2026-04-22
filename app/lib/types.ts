@@ -506,6 +506,113 @@ export interface ExampleProject {
   slug: string;
 }
 
+export type PullRequestReason =
+  | "author"
+  | "commenter"
+  | "mentioned"
+  | "reviewer"
+  | "team";
+
+export interface InterestingPullRequest {
+  author: string | null;
+  authorAvatarUrl: string | null;
+  baseRefName: string;
+  createdAt: string;
+  headRefName: string;
+  isDraft: boolean;
+  number: number;
+  reasons: PullRequestReason[];
+  repoNameWithOwner: string;
+  /** Absolute path of the Argus-open project this PR's repo maps to. */
+  repoRoot: string;
+  repoUrl: string;
+  /** `APPROVED` | `CHANGES_REQUESTED` | `REVIEW_REQUIRED` | null. */
+  reviewDecision: string | null;
+  title: string;
+  updatedAt: string;
+  url: string;
+}
+
+export interface PullRequestFile {
+  additions: number;
+  changeType: string;
+  deletions: number;
+  path: string;
+}
+
+export interface PullRequestCommit {
+  abbreviatedOid: string;
+  author: string | null;
+  authorAvatarUrl: string | null;
+  committedDate: string;
+  message: string;
+  oid: string;
+  statusRollup: string | null;
+  url: string;
+}
+
+export interface PullRequestCheck {
+  conclusion: string | null;
+  description: string | null;
+  detailsUrl: string | null;
+  name: string;
+  status: string | null;
+}
+
+export interface InlineReviewComment {
+  body: string;
+  /** GitHub's pre-rendered HTML — autolinks, emoji, task lists, etc. */
+  bodyHtml: string;
+  createdAt: string;
+  id: string;
+  url: string;
+}
+
+export interface PullRequestComment {
+  author: string | null;
+  authorAvatarUrl: string | null;
+  body: string;
+  /** GitHub's pre-rendered HTML — autolinks, emoji, task lists, etc. */
+  bodyHtml: string;
+  createdAt: string;
+  id: string;
+  /** Inline review comments attached to a `kind === "review"` entry. */
+  inlineComments?: InlineReviewComment[];
+  kind: "issue" | "review";
+  reviewState?: string;
+  url: string;
+}
+
+export interface PullRequestDetail {
+  additions: number;
+  author: string | null;
+  authorAvatarUrl: string | null;
+  baseRefName: string;
+  body: string;
+  /** GitHub's pre-rendered HTML — autolinks, emoji, task lists, etc. */
+  bodyHtml: string;
+  changedFiles: number;
+  checks: PullRequestCheck[];
+  comments: PullRequestComment[];
+  commitList: PullRequestCommit[];
+  commits: number;
+  createdAt: string;
+  deletions: number;
+  files: PullRequestFile[];
+  headRefName: string;
+  isDraft: boolean;
+  labels: string[];
+  mergeable: string;
+  merged: boolean;
+  number: number;
+  repoNameWithOwner: string;
+  repoUrl: string;
+  state: string;
+  title: string;
+  updatedAt: string;
+  url: string;
+}
+
 export interface OrgTask {
   created_at: number;
   /** Human-readable reason a task is in a failed state (e.g. initialize failed). */

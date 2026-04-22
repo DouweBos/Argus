@@ -2,6 +2,7 @@ import type { Organization, OrgTask } from "../../lib/types";
 import { useState } from "react";
 import {
   Button,
+  GridScreen,
   IconBadge,
   Icons,
   SectionPanel,
@@ -68,28 +69,28 @@ export function OrganizationsScreen() {
   }
 
   return (
-    <div className={styles.screen}>
-      <div className={styles.head}>
-        <div className={styles.headText}>
-          <span className={styles.title}>Organizations</span>
-          <span className={styles.sub}>
-            {orgs.length === 0
-              ? "Group repos that ship one product together"
-              : `${orgs.length} ${orgs.length === 1 ? "organization" : "organizations"}${
-                  runningTasks > 0
-                    ? ` · ${runningTasks} running task${runningTasks === 1 ? "" : "s"}`
-                    : ""
-                }`}
-          </span>
-        </div>
-        <Button
-          variant="primary"
-          leading={<Icons.PlusIcon size={12} />}
-          onClick={showCreateOrganizationDialog}
-        >
-          New organization
-        </Button>
-      </div>
+    <GridScreen>
+      <GridScreen.Header
+        title="Organizations"
+        subtitle={
+          orgs.length === 0
+            ? "Group repos that ship one product together"
+            : `${orgs.length} ${orgs.length === 1 ? "organization" : "organizations"}${
+                runningTasks > 0
+                  ? ` · ${runningTasks} running task${runningTasks === 1 ? "" : "s"}`
+                  : ""
+              }`
+        }
+        actions={
+          <Button
+            variant="primary"
+            leading={<Icons.PlusIcon size={12} />}
+            onClick={showCreateOrganizationDialog}
+          >
+            New organization
+          </Button>
+        }
+      />
 
       {orgs.length === 0 ? (
         <div className={styles.empty}>
@@ -110,7 +111,7 @@ export function OrganizationsScreen() {
           </Button>
         </div>
       ) : (
-        <div className={styles.list}>
+        <GridScreen.Grid>
           {orgs.map((org) => (
             <OrganizationCard
               key={org.id}
@@ -118,11 +119,11 @@ export function OrganizationsScreen() {
               tasks={tasks.filter((t) => t.organization_id === org.id)}
             />
           ))}
-        </div>
+        </GridScreen.Grid>
       )}
 
       <OrganizationDialogHost />
-    </div>
+    </GridScreen>
   );
 }
 

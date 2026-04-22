@@ -1,0 +1,173 @@
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.rowHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+}
+
+.avatarFallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+.rowTitleBlock {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rowTitleLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.005em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.repo {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.metaSep {
+  opacity: 0.5;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* The row as a whole is the click target. Don't let the branch chip suggest
+   it's independently interactive — Peacock's default Chip styles give every
+   chip a hover tint. */
+.branchChip,
+.branchChip:hover {
+  background: var(--glass-bg);
+  cursor: inherit;
+}
+
+.rowActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+/* Empty-state card shown when nothing in the attention buckets — the top of
+   the page should still have *something* above the quiet divider so the
+   hierarchy stays legible. */
+.allClear {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Strong separation between attention buckets and the rest. A full-width
+   rule with a label in front, so the eye skips the quieter block unless the
+   user wants to browse it. */
+.quietDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 4px;
+}
+
+.quietDividerLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.quietDividerCount {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.quietDividerRule {
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Quiet bucket container — deprioritised cards sit here at reduced
+   intensity. Hover brings the block back to full opacity so browsing stays
+   comfortable. */
+.quietBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  opacity: 0.72;
+  transition: opacity 160ms ease;
+}
+
+.quietBlock:hover,
+.quietBlock:focus-within {
+  opacity: 1;
+}
