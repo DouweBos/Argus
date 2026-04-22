@@ -612,6 +612,7 @@ function runtimeSummary(
   envEntries: EnvEntry[],
   browserPresets: BrowserPresetEntry[],
   platforms: RuntimePlatform[],
+  singleRuntime: boolean,
 ): string {
   const parts: string[] = [];
   if (platforms.length) {
@@ -622,6 +623,9 @@ function runtimeSummary(
   ).length;
   if (runCount) {
     parts.push(`${runCount} run`);
+  }
+  if (singleRuntime) {
+    parts.push("single runtime");
   }
   const bu = browserUrl.trim();
   if (bu) {
@@ -676,6 +680,7 @@ export function SetupConfigDialog({
   const [platforms, setPlatforms] = useState<RuntimePlatform[]>([]);
   const [agentPrompt, setAgentPrompt] = useState("");
   const [saveChatHistory, setSaveChatHistory] = useState(true);
+  const [singleRuntime, setSingleRuntime] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -731,6 +736,9 @@ export function SetupConfigDialog({
         }
         if (config.save_chat_history != null) {
           setSaveChatHistory(config.save_chat_history !== false);
+        }
+        if (config.single_runtime) {
+          setSingleRuntime(true);
         }
         if (config.browser_url) {
           setBrowserUrl(config.browser_url);
@@ -831,6 +839,9 @@ export function SetupConfigDialog({
     if (platforms.length) {
       config.platforms = platforms;
     }
+    if (singleRuntime) {
+      config.single_runtime = true;
+    }
     const envVars = envList.items
       .filter((e) => e.name.trim())
       .map((e) => {
@@ -899,7 +910,8 @@ export function SetupConfigDialog({
     browserPresetList.items.length > 0 ||
     terminalList.items.length > 0 ||
     envList.items.length > 0 ||
-    platforms.length > 0;
+    platforms.length > 0 ||
+    singleRuntime;
   const hasAgent = !!agentPrompt.trim() || !saveChatHistory;
 
   return (
@@ -964,6 +976,7 @@ export function SetupConfigDialog({
               envList.items,
               browserPresetList.items,
               platforms,
+              singleRuntime,
             )}
             title="Runtime"
           >
@@ -1016,6 +1029,23 @@ export function SetupConfigDialog({
             <BrowserPresetField list={browserPresetList} />
 
             <RunCommandsField list={runList} />
+
+            <div className={styles.field}>
+              <label className={styles.checkboxRow}>
+                <input
+                  checked={singleRuntime}
+                  type="checkbox"
+                  onChange={(e) => setSingleRuntime(e.target.checked)}
+                />
+                Only one runtime at a time
+              </label>
+              <p className={styles.helpText}>
+                When enabled, starting a run command prompts you to stop any
+                runtime already active in another session of this project.
+                Useful when the dev server binds a fixed port or device that
+                can&apos;t be shared.
+              </p>
+            </div>
 
             <TerminalField list={terminalList} />
 

@@ -1,6 +1,6 @@
 import type { RunCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, ContextMenu, Icons } from "@argus/peacock";
+import { Button, ConfirmDialog, ContextMenu, Icons } from "@argus/peacock";
 import { error as logError } from "@logger";
 import {
   createRunTerminal,
@@ -18,12 +18,20 @@ import {
   clearBuffer,
   clearRunningTerminalIfMatches,
   getSessionsForSession,
+  getTerminalState,
   replaceSessionId,
   setActiveSession,
   setRunningTerminal,
   useRunningTerminalsForSession,
 } from "../../../stores/terminalStore";
 import styles from "./RunControl.module.css";
+
+interface ConflictingRuntime {
+  sessionId: string;
+  sessionName: string;
+  terminalId: string;
+  title: string;
+}
 
 interface RunControlProps {
   sessionId: string;
@@ -37,9 +45,14 @@ interface RunControlProps {
  */
 export function RunControl({ sessionId }: RunControlProps) {
   const [runs, setRuns] = useState<RunCommand[]>([]);
+  const [singleRuntime, setSingleRuntime] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{
     x: number;
     y: number;
+  } | null>(null);
+  const [pendingConflict, setPendingConflict] = useState<{
+    conflicts: ConflictingRuntime[];
+    title: string;
   } | null>(null);
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const runningTerminals = useRunningTerminalsForSession(sessionId);
@@ -57,9 +70,11 @@ export function RunControl({ sessionId }: RunControlProps) {
           return;
         }
         setRuns(Array.isArray(config.run) ? config.run : []);
+        setSingleRuntime(Boolean(config.single_runtime));
       } catch {
         if (!cancelled) {
           setRuns([]);
+          setSingleRuntime(false);
         }
       }
     })();
@@ -130,19 +145,114 @@ export function RunControl({ sessionId }: RunControlProps) {
     [runningTerminals],
   );
 
+  const findConflictingRuntimes = useCallback((): ConflictingRuntime[] => {
+    const sessions = getSessionState().sessions;
+    const currentSession = sessions.find((s) => s.id === sessionId);
+    if (!currentSession) {
+      return [];
+    }
+    const allRunning = getTerminalState().runningTerminals;
+    const conflicts: ConflictingRuntime[] = [];
+    for (const [otherSessionId, runs] of Object.entries(allRunning)) {
+      if (otherSessionId === sessionId) {
+        continue;
+      }
+      const otherSession = sessions.find((s) => s.id === otherSessionId);
+      if (!otherSession) {
+        continue;
+      }
+      if (otherSession.repo_root !== currentSession.repo_root) {
+        continue;
+      }
+      for (const [title, terminalId] of Object.entries(runs)) {
+        conflicts.push({
+          sessionId: otherSessionId,
+          sessionName:
+            otherSession.display_name ?? otherSession.branch ?? otherSessionId,
+          terminalId,
+          title,
+        });
+      }
+    }
+
+    return conflicts;
+  }, [sessionId]);
+
   const toggleTitle = useCallback(
     (title: string) => {
       if (runningTerminals[title]) {
         stopTitle(title).catch(() => undefined);
-      } else {
-        runTitle(title).catch(() => undefined);
+
+        return;
       }
+      if (singleRuntime) {
+        const conflicts = findConflictingRuntimes();
+        if (conflicts.length > 0) {
+          setPendingConflict({ conflicts, title });
+
+          return;
+        }
+      }
+      runTitle(title).catch(() => undefined);
     },
-    [runningTerminals, runTitle, stopTitle],
+    [
+      runningTerminals,
+      runTitle,
+      stopTitle,
+      singleRuntime,
+      findConflictingRuntimes,
+    ],
   );
 
+  const handleConfirmStopAndRun = useCallback(async () => {
+    if (!pendingConflict) {
+      return;
+    }
+    const { conflicts, title } = pendingConflict;
+    await Promise.all(
+      conflicts.map(async (c) => {
+        try {
+          await stopTerminal(c.terminalId);
+        } catch (e) {
+          logError("stop other runtime failed:", e);
+        }
+      }),
+    );
+    setPendingConflict(null);
+    runTitle(title).catch(() => undefined);
+  }, [pendingConflict, runTitle]);
+
+  const conflictDialog = pendingConflict ? (
+    <ConfirmDialog
+      cancelLabel="Cancel"
+      confirmLabel="Stop other & run"
+      destructive
+      title="Another runtime is running"
+      titleId="single-runtime-conflict"
+      onCancel={() => setPendingConflict(null)}
+      onConfirm={handleConfirmStopAndRun}
+    >
+      <p>
+        This project allows only one runtime at a time. The following{" "}
+        {pendingConflict.conflicts.length === 1 ? "runtime is" : "runtimes are"}{" "}
+        still active:
+      </p>
+      <ul>
+        {pendingConflict.conflicts.map((c) => (
+          <li key={`${c.sessionId}:${c.title}`}>
+            <strong>{c.title}</strong> in <em>{c.sessionName}</em>
+          </li>
+        ))}
+      </ul>
+      <p>
+        Stop {pendingConflict.conflicts.length === 1 ? "it" : "them"} and start{" "}
+        <strong>{pendingConflict.title}</strong> here?
+      </p>
+    </ConfirmDialog>
+  ) : null;
+
   if (runs.length === 0) {
-    return null;
+    return conflictDialog;
   }
 
   if (runs.length === 1) {
@@ -150,17 +260,24 @@ export function RunControl({ sessionId }: RunControlProps) {
     const running = Boolean(runningTerminals[only.title]);
 
     return (
-      <Button
-        leading={
-          running ? <Icons.StopIcon size={10} /> : <Icons.PlayIcon size={10} />
-        }
-        size="sm"
-        variant="primary"
-        title={running ? `Stop ${only.title}` : only.command}
-        onClick={() => toggleTitle(only.title)}
-      >
-        {running ? "Stop" : only.title}
-      </Button>
+      <>
+        <Button
+          leading={
+            running ? (
+              <Icons.StopIcon size={10} />
+            ) : (
+              <Icons.PlayIcon size={10} />
+            )
+          }
+          size="sm"
+          variant="primary"
+          title={running ? `Stop ${only.title}` : only.command}
+          onClick={() => toggleTitle(only.title)}
+        >
+          {running ? "Stop" : only.title}
+        </Button>
+        {conflictDialog}
+      </>
     );
   }
 
@@ -225,6 +342,7 @@ export function RunControl({ sessionId }: RunControlProps) {
           onClose={() => setMenuPosition(null)}
         />
       )}
+      {conflictDialog}
     </div>
   );
 }

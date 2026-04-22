@@ -108,6 +108,8 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
         : true,
     platforms: normalizePlatforms(parsed.platforms),
     protected_branches: normalizeProtectedBranches(parsed.protected_branches),
+    single_runtime:
+      parsed.single_runtime != null ? Boolean(parsed.single_runtime) : false,
   };
 }
 
@@ -301,6 +303,7 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       local.protected_branches.length > 0
         ? local.protected_branches
         : base.protected_branches,
+    single_runtime: local.single_runtime ?? base.single_runtime ?? false,
   };
 }
 
