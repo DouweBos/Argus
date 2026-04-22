@@ -1,5 +1,5 @@
 app_identifier "dev.houwert.argus"
-team_id "P3WX7QK8Q3"
+team_id "CKZT75PN5T"
 
 # Apple ID is resolved per-environment:
 #   - locally: set FASTLANE_APPLE_ID in your shell / .env

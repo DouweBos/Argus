@@ -13,3 +13,8 @@ git_url ENV["MATCH_GIT_URL"] || "git@github.com:DouweBos/apple-certificates.git"
 storage_mode "git"
 type "developer_id"
 platform "macos"
+
+# Argus has no profile-bound entitlements (push, iCloud, etc.), so don't
+# let match try to fetch a "Direct" provisioning profile from the dev
+# portal — it fails and isn't needed for Developer ID distribution.
+skip_provisioning_profiles true
