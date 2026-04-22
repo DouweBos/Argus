@@ -21,6 +21,8 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Test
         run: pnpm test
