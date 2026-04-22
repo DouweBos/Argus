@@ -66,6 +66,12 @@ export interface AgentSession {
    */
   turnWaiters: ((status: AgentStatusValue) => void)[];
   /**
+   * Number of turns that have transitioned running → idle. Used by
+   * `wait_for_agent` to distinguish a freshly spawned agent (idle but
+   * never ran) from one that has finished a turn.
+   */
+  turnsCompleted: number;
+  /**
    * When true, suppresses `agent:status` emissions to the renderer. Used
    * during restore-at-turn: between kill and new-child-ready, we don't want
    * transient idle/stopped signals to flicker the UI's activity indicator.

@@ -691,6 +691,7 @@ describe("agent_status", () => {
       resultSummary: null,
       exitWaiters: [],
       turnWaiters: [],
+      turnsCompleted: 0,
     });
 
     const result = await client.callTool({

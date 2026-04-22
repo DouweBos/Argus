@@ -607,6 +607,7 @@ export async function startAgent(
               emitAgentStatus(agentId, parsed.state);
             }
             if (parsed.state === "idle" && prev !== "idle") {
+              sess.turnsCompleted += 1;
               // Notify anyone waiting on turn completion.
               for (const resolve of sess.turnWaiters) {
                 resolve("idle");
@@ -720,6 +721,7 @@ export async function startAgent(
     resultSummary: null,
     exitWaiters: [],
     turnWaiters: [],
+    turnsCompleted: previous?.turnsCompleted ?? 0,
     suppressStatus: previous?.suppressStatus ?? false,
   };
 
@@ -1113,9 +1115,9 @@ export function waitForAgent(
   }
 
   if (
-    session.status === "idle" ||
     session.status === "stopped" ||
-    session.status === "error"
+    session.status === "error" ||
+    (session.status === "idle" && session.turnsCompleted > 0)
   ) {
     return Promise.resolve({
       status: session.status,
