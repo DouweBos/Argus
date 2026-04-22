@@ -57,6 +57,7 @@ vi.mock("../agent/claude", () => ({
   sendAgentMessage: vi.fn(),
   listAgents: vi.fn(),
   waitForAgent: vi.fn(),
+  emitMcpSystemMessage: vi.fn(),
 }));
 
 vi.mock("../terminal/multiplexer", () => ({
