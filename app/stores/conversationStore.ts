@@ -257,6 +257,54 @@ export function queueMessage(
   });
 }
 
+export function removeQueuedMessage(agentId: string, id: string) {
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId];
+    if (!existing) {
+      return state;
+    }
+    const next = existing.queuedMessages.filter((m) => m.id !== id);
+    if (next.length === existing.queuedMessages.length) {
+      return state;
+    }
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: { ...existing, queuedMessages: next },
+      },
+    };
+  });
+}
+
+export function updateQueuedMessage(agentId: string, id: string, text: string) {
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId];
+    if (!existing) {
+      return state;
+    }
+    let changed = false;
+    const next = existing.queuedMessages.map((m) => {
+      if (m.id !== id) {
+        return m;
+      }
+      changed = true;
+
+      return { ...m, text };
+    });
+    if (!changed) {
+      return state;
+    }
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: { ...existing, queuedMessages: next },
+      },
+    };
+  });
+}
+
 export function dequeueMessage(agentId: string): QueuedMessage | undefined {
   let msg: QueuedMessage | undefined;
   conversationStore.setState((state) => {

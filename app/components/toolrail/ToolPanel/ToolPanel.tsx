@@ -63,6 +63,7 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
       return;
     }
     prevSessionIdRef.current = sessionId;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: disable animation for one frame on session change
     setNoAnimate(true);
     const raf = requestAnimationFrame(() => setNoAnimate(false));
 
