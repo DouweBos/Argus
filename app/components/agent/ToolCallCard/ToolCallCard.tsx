@@ -45,6 +45,18 @@ interface ToolCallCardProps {
 }
 
 /** Generate a short human-readable summary from tool name + input. */
+const PATH_SUMMARY_TOOLS = new Set([
+  "Read",
+  "Edit",
+  "MultiEdit",
+  "Write",
+  "LS",
+]);
+
+function isPathTool(name: string): boolean {
+  return PATH_SUMMARY_TOOLS.has(name);
+}
+
 function toolSummary(name: string, input: Record<string, unknown>): string {
   switch (name) {
     case "Edit":
@@ -363,6 +375,7 @@ export function ToolCallCard({
   const summary = toolSummary(toolCall.name, toolCall.input);
   const hasResult = toolCall.result !== undefined;
   const isBash = toolCall.name === "Bash";
+  const isPathSummary = isPathTool(toolCall.name);
   const isEdit =
     (toolCall.name === "Edit" || toolCall.name === "MultiEdit") &&
     typeof toolCall.input.old_string === "string" &&
@@ -540,7 +553,9 @@ export function ToolCallCard({
         <span className={styles.name}>
           {isAgent ? agentType : toolCall.name}
         </span>
-        <span className={styles.summary}>
+        <span
+          className={`${styles.summary} ${isPathSummary ? styles.summaryPath : ""}`}
+        >
           {isAgent ? agentDesc : <LinkifiedText text={summary} />}
         </span>
         {editStats && (editStats.additions > 0 || editStats.deletions > 0) && (
@@ -588,7 +603,11 @@ export function ToolCallCard({
               <div className={styles.previewRow} key={child.id}>
                 <span className={styles.previewName}>{childLabel}</span>
                 {childSummary && (
-                  <span className={styles.previewSummary}>{childSummary}</span>
+                  <span
+                    className={`${styles.previewSummary} ${isPathTool(child.name) ? styles.summaryPath : ""}`}
+                  >
+                    {childSummary}
+                  </span>
                 )}
               </div>
             );

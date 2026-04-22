@@ -112,6 +112,14 @@
   min-width: 0;
 }
 
+/* Path summaries truncate at the start so the filename stays visible.
+   direction: rtl puts the ellipsis on the leading edge; strong-LTR Latin
+   characters inside still render left-to-right within the RTL container. */
+.summaryPath {
+  direction: rtl;
+  text-align: left;
+}
+
 /* Additions/deletions indicator — matches ChangesSummary styling */
 .editStats {
   display: inline-flex;
