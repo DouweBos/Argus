@@ -1258,3 +1258,23 @@ export function OrganizationIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+export function TaskIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2.25" />
+      <path d="M5.25 8.25 L7.25 10.25 L10.75 5.75" />
+    </svg>
+  );
+}

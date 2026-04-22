@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
@@ -36,6 +37,8 @@ function toTildePath(absPath: string): string {
 }
 
 interface SessionCardProps {
+  /** Override the default branch/repo icon (e.g. TaskIcon for org task hosts). */
+  iconOverride?: ReactNode;
   isSelected: boolean;
   onBranchChanged?: () => void;
   onDelete: () => Promise<void>;
@@ -54,7 +57,16 @@ function renderSessionIcon(
   runningIconClass: string,
   agentRunningIconClass: string,
   runningCount: number,
+  iconOverride?: ReactNode,
 ) {
+  const base =
+    iconOverride ??
+    (kind === "project_root" ? (
+      <Icons.RepoIcon size={13} />
+    ) : (
+      <Icons.BranchIcon size={13} />
+    ));
+
   if (kind === "project_root") {
     if (isAgentRunning) {
       return (
@@ -62,17 +74,17 @@ function renderSessionIcon(
           className={agentRunningIconClass}
           title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
         >
-          <Icons.RepoIcon size={13} />
+          {base}
         </span>
       );
     }
 
-    return <Icons.RepoIcon size={13} />;
+    return base;
   }
   if (isRunning) {
     return (
       <span className={runningIconClass} title="Run command is executing">
-        <Icons.PlayIcon size={13} />
+        {iconOverride ?? <Icons.PlayIcon size={13} />}
       </span>
     );
   }
@@ -82,12 +94,12 @@ function renderSessionIcon(
         className={agentRunningIconClass}
         title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
       >
-        <Icons.BranchIcon size={13} />
+        {base}
       </span>
     );
   }
 
-  return <Icons.BranchIcon size={13} />;
+  return base;
 }
 
 export function SessionCard({
@@ -100,6 +112,7 @@ export function SessionCard({
   repoRoot,
   repoBranch,
   onBranchChanged,
+  iconOverride,
 }: SessionCardProps) {
   const isProject = session.kind === "project_root";
   const [isDeleting, setIsDeleting] = useState(false);
@@ -197,6 +210,7 @@ export function SessionCard({
               styles.runningIcon,
               styles.agentRunningIcon,
               runningCount,
+              iconOverride,
             )}
             <span className={styles.projectName}>{projectName}</span>
           </div>

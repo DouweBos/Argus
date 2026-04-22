@@ -1,5 +1,10 @@
 import type { AgentStatus } from "../../lib/agentStatus";
-import type { CSSProperties, HTMLAttributes, MouseEventHandler } from "react";
+import type {
+  CSSProperties,
+  HTMLAttributes,
+  MouseEventHandler,
+  ReactNode,
+} from "react";
 import { StarIcon } from "../../icons/HomeIcons";
 import { FolderIcon } from "../../icons/Icons";
 import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
@@ -19,6 +24,8 @@ export interface ProjectCardProps extends HTMLAttributes<HTMLDivElement> {
   onToggleStar?: MouseEventHandler<HTMLButtonElement>;
   agents?: ProjectCardAgent[];
   lastOpened?: string;
+  /** Override the default folder badge icon. */
+  icon?: ReactNode;
 }
 
 function pickPillStatus(agents: ProjectCardAgent[]): AgentStatus | "empty" {
@@ -64,6 +71,7 @@ export function ProjectCard({
   onToggleStar,
   agents = [],
   lastOpened,
+  icon,
   className,
   style,
   ...rest
@@ -95,7 +103,7 @@ export function ProjectCard({
               : undefined
           }
         >
-          <FolderIcon size={14} />
+          {icon ?? <FolderIcon size={14} />}
         </div>
         <div className={styles.name}>{name}</div>
         <button

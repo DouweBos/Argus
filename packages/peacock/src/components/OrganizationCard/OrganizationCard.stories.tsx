@@ -1,4 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import { TaskIcon } from "../../icons/Icons";
+import { ProjectCard } from "../ProjectCard/ProjectCard";
 import { OrganizationCard } from "./OrganizationCard";
 
 const meta: Meta<typeof OrganizationCard> = {
@@ -40,6 +43,51 @@ export const Idle: Story = {
       <OrganizationCard {...args} />
     </div>
   ),
+};
+
+export const WithRunningTasks: Story = {
+  args: {
+    name: "Houwert.dev",
+    description: "Argus + Conductor ship as one product",
+    accent: "#7c5cff",
+    members: ["argus", "conductor"],
+    taskCount: 2,
+    runningCount: 2,
+  },
+  render: (args) => {
+    function Demo() {
+      const [expanded, setExpanded] = useState(true);
+
+      return (
+        <div style={{ width: 340 }}>
+          <OrganizationCard
+            {...args}
+            collapsible
+            expanded={expanded}
+            onToggle={() => setExpanded((v) => !v)}
+            toggleLabel="2 running tasks"
+          >
+            <ProjectCard
+              name="Ship onboarding redesign"
+              accent={args.accent}
+              icon={<TaskIcon size={14} />}
+              agents={[{ status: "running" }, { status: "running" }]}
+              lastOpened="3m ago"
+            />
+            <ProjectCard
+              name="Wire analytics events"
+              accent={args.accent}
+              icon={<TaskIcon size={14} />}
+              agents={[{ status: "running" }]}
+              lastOpened="12m ago"
+            />
+          </OrganizationCard>
+        </div>
+      );
+    }
+
+    return <Demo />;
+  },
 };
 
 export const Empty: Story = {
