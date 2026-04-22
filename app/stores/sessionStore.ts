@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
 import { getActiveCenterView } from "./editorStore";
+import { forgetSessionTools } from "./layoutStore";
 import { migrateSessions } from "./terminalStore";
 
 export interface Project {
@@ -54,10 +55,12 @@ export const addProject = (repoRoot: string) => {
 
 export const removeProject = (repoRoot: string) => {
   const selectedId = getSelectedSessionId();
+  let removedIds: string[] = [];
   sessionStore.setState((state) => {
     const wsIds = state.sessions
       .filter((w) => w.repo_root === repoRoot)
       .map((w) => w.id);
+    removedIds = wsIds;
     const selectedGone = selectedId != null && wsIds.includes(selectedId);
     if (selectedGone) {
       appNavigate({ view: "home" });
@@ -68,6 +71,9 @@ export const removeProject = (repoRoot: string) => {
       sessions: state.sessions.filter((w) => w.repo_root !== repoRoot),
     };
   });
+  for (const id of removedIds) {
+    forgetSessionTools(id);
+  }
 };
 
 export const setProjectBranch = (repoRoot: string, branch: string | null) => {
@@ -151,6 +157,7 @@ export const removeSession = (id: string) => {
   sessionStore.setState((state) => ({
     sessions: state.sessions.filter((w) => w.id !== id),
   }));
+  forgetSessionTools(id);
 };
 
 export const updateSession = (id: string, patch: Partial<Session>) => {
