@@ -31,6 +31,7 @@ import {
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
 import { useOrgTaskSync } from "../../../stores/orgTaskStore";
+import { usePullRequestsSync } from "../../../stores/pullRequestStore";
 import {
   getSelectedSessionId,
   getSessionState,
@@ -47,6 +48,8 @@ import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
 import { NotificationsScreen } from "../../notifications";
 import { OrganizationsScreen } from "../../organizations";
+import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
+import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
 import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { RuntimeScreen } from "../../runtimes";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
@@ -75,6 +78,8 @@ function renderCenter(
     | "home"
     | "notifications"
     | "organizations"
+    | "pull-request-detail"
+    | "pull-requests"
     | "review-queue"
     | "runtimes",
   isNotificationsRoute: boolean,
@@ -100,6 +105,16 @@ function renderCenter(
   if (centerView === "review-queue") {
     return <ReviewQueueScreen />;
   }
+  if (centerView === "pull-requests" || centerView === "pull-request-detail") {
+    // Detail is an overlay on top of the list — the list stays mounted behind
+    // so closing the detail leaves the user exactly where they were.
+    return (
+      <>
+        <PullRequestsScreen />
+        {centerView === "pull-request-detail" && <PullRequestDetailScreen />}
+      </>
+    );
+  }
   if (centerView === "activity") {
     return <ActivityScreen />;
   }
@@ -118,6 +133,7 @@ export function AppShell() {
   useWindowFocus();
   useSuppressSpacePageScroll();
   useOrgTaskSync();
+  usePullRequestsSync();
 
   const startNewAgentInCurrent = useCallback(async () => {
     const id = getSelectedSessionId();

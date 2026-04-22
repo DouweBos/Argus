@@ -26,6 +26,7 @@ const ROUTE_TITLES: Record<string, string> = {
   devices: "Devices",
   runtimes: "Runtimes",
   organizations: "Organizations",
+  "pull-requests": "Pull requests",
   "review-queue": "Review queue",
   activity: "Activity",
   notifications: "Notifications",

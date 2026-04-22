@@ -4,7 +4,12 @@
  * consumer re-renders on navigation without any intermediate Zustand state.
  */
 
-import type { AppView, ParsedRoute, SessionPanel } from "./router";
+import type {
+  AppView,
+  ParsedRoute,
+  PullRequestRef,
+  SessionPanel,
+} from "./router";
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { parseRoute } from "./router";
@@ -29,4 +34,8 @@ export function useRouteOrganizationId(): string | null {
 
 export function useRouteSessionPanel(): SessionPanel {
   return useCurrentRoute().panel;
+}
+
+export function useRoutePR(): PullRequestRef | null {
+  return useCurrentRoute().pr;
 }

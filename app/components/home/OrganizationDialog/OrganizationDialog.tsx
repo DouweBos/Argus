@@ -161,7 +161,7 @@ function OrganizationDialog({ orgId }: { orgId: string | null }) {
       onClose={hideOrganizationDialog}
       title={existing ? "Edit organization" : "New organization"}
       titleId="organization-dialog"
-      className={styles.dialog}
+      size="medium"
     >
       <div className={styles.body}>
         <Field label="Name">

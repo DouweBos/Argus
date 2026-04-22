@@ -10,22 +10,24 @@ No Zustand store mirrors the route. Reads go through URL-derived hooks
 
 ## URL inventory
 
-| URL                              | Screen                       | Notes                                        |
-| -------------------------------- | ---------------------------- | -------------------------------------------- |
-| `/`                              | Home / project picker        | Default route on launch.                     |
-| `/activity`                      | Activity                     | Cross-session activity feed.                 |
-| `/agents`                        | Agents overview              | All agents across all sessions.              |
-| `/devices`                       | Devices                      | iOS simulators + Android emulators.          |
-| `/notifications`                 | Notifications                | Warnings & errors.                           |
-| `/organizations`                 | Organizations list           | All organizations.                           |
-| `/organizations/:organizationId` | Single organization          | Org detail + tasks.                          |
-| `/review-queue`                  | Review queue                 | Sessions ready to merge.                     |
-| `/runtimes`                      | Runtimes overview            | All running dev servers / terminals.         |
-| `/sessions/:sessionId`           | Session (defaults to agents) | Equivalent to `/sessions/:sessionId/agents`. |
-| `/sessions/:sessionId/agents`    | Session → Agents panel       | Claude Code agents for this session.         |
-| `/sessions/:sessionId/editor`    | Session → Editor panel       | Monaco / VS Code editor.                     |
-| `/sessions/:sessionId/git`       | Session → Git panel          | Commit log, stashes, diffs.                  |
-| `/sessions/:sessionId/home`      | Session → Home panel         | Per-session overview.                        |
+| URL                                   | Screen                       | Notes                                                 |
+| ------------------------------------- | ---------------------------- | ----------------------------------------------------- |
+| `/`                                   | Home / project picker        | Default route on launch.                              |
+| `/activity`                           | Activity                     | Cross-session activity feed.                          |
+| `/agents`                             | Agents overview              | All agents across all sessions.                       |
+| `/devices`                            | Devices                      | iOS simulators + Android emulators.                   |
+| `/notifications`                      | Notifications                | Warnings & errors.                                    |
+| `/organizations`                      | Organizations list           | All organizations.                                    |
+| `/organizations/:organizationId`      | Single organization          | Org detail + tasks.                                   |
+| `/pull-requests`                      | Pull requests                | GitHub PRs of interest across open projects.          |
+| `/pull-requests/:owner/:repo/:number` | Pull request detail          | Single PR view: description, checks, files, comments. |
+| `/review-queue`                       | Review queue                 | Sessions ready to merge.                              |
+| `/runtimes`                           | Runtimes overview            | All running dev servers / terminals.                  |
+| `/sessions/:sessionId`                | Session (defaults to agents) | Equivalent to `/sessions/:sessionId/agents`.          |
+| `/sessions/:sessionId/agents`         | Session → Agents panel       | Claude Code agents for this session.                  |
+| `/sessions/:sessionId/editor`         | Session → Editor panel       | Monaco / VS Code editor.                              |
+| `/sessions/:sessionId/git`            | Session → Git panel          | Commit log, stashes, diffs.                           |
+| `/sessions/:sessionId/home`           | Session → Home panel         | Per-session overview.                                 |
 
 `/settings` is not a route — the settings dialog is overlaid on top of the
 current URL.
@@ -43,6 +45,8 @@ interface ParsedRoute {
     | "home"
     | "notifications"
     | "organizations"
+    | "pull-request-detail"
+    | "pull-requests"
     | "review-queue"
     | "runtimes"
     | "session";

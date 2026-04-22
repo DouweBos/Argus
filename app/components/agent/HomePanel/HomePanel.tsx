@@ -159,7 +159,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
       )}
       {viewingHistoryId && historyAgentId && (
         <Dialog
-          className={styles.dialog}
+          size="full"
           title={viewingTitle}
           titleId="chat-history-preview-title"
           onClose={handleCloseHistory}

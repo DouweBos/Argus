@@ -78,6 +78,11 @@
   background: var(--text-muted);
   opacity: 0.25;
 }
+/* Inherits from the parent's text colour — right for sidebar/nav badges
+   where the dot should follow whatever tone the surrounding link uses. */
+.dotLight.currentColor {
+  background: currentColor;
+}
 
 .pulse {
   animation: pulse 2s ease-in-out infinite;

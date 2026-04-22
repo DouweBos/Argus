@@ -63,6 +63,52 @@ export const LongTitle: Story = {
   render: () => <DialogDemo titleText="A dialog with a longer title string" />,
 };
 
+export const FullSize: Story = {
+  render: () => {
+    const [open, setOpen] = useState(true);
+
+    return (
+      <div
+        style={{
+          padding: 24,
+          background: "var(--bg-primary)",
+          minHeight: "100vh",
+        }}
+      >
+        {!open && (
+          <Button variant="primary" onClick={() => setOpen(true)}>
+            Open full dialog
+          </Button>
+        )}
+        {open && (
+          <Dialog
+            onClose={() => setOpen(false)}
+            size="full"
+            title="Full-size dialog"
+            titleId="demo-dialog-full"
+          >
+            <div
+              style={{
+                flex: 1,
+                overflow: "auto",
+                padding: "16px 20px 20px",
+                color: "var(--text-secondary)",
+                fontSize: 13,
+              }}
+            >
+              Workspace-style modal. Fills the viewport (minus a small margin),
+              pins to the max height regardless of how short the body is, and
+              caps the width at a readable reading measure on huge displays.
+              Good for PR detail, diff viewers, long forms — anything where
+              layout stability matters and the dialog is essentially a page.
+            </div>
+          </Dialog>
+        )}
+      </div>
+    );
+  },
+};
+
 export const WithTitleExtra: Story = {
   render: () => {
     const [open, setOpen] = useState(true);

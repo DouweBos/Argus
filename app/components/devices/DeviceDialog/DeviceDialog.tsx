@@ -73,7 +73,7 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
 
   return (
     <Dialog
-      className={styles.dialog}
+      size="full"
       title={device.name}
       titleId="device-dialog-title"
       titleExtra={

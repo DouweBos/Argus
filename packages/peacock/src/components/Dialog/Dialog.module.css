@@ -15,14 +15,35 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   width: 100%;
-  max-width: 420px;
-  max-height: calc(100vh - var(--space-12) * 2);
   display: flex;
   flex-direction: column;
   box-shadow:
     0 24px 64px var(--scrim-lg),
     0 0 0 1px var(--surface-3);
   overflow: hidden;
+}
+
+/* Default — confirmations and short forms. Grows to fit content up to the
+   cap, never forces a long scroll on small payloads. */
+.content {
+  max-width: 420px;
+  max-height: calc(100vh - var(--space-12) * 2);
+}
+
+/* Multi-field form / picker / config panel. Still content-sized vertically
+   so short bodies don't stretch into a long pane. */
+.medium {
+  max-width: 640px;
+  max-height: calc(100vh - var(--space-12) * 2);
+}
+
+/* Workspace modal — always fills the viewport with a small margin, stable
+   layout regardless of content length. Used for rich views like PR detail
+   where the dialog is essentially a page. */
+.full {
+  max-width: min(1100px, 95vw);
+  height: calc(100vh - 48px);
+  max-height: calc(100vh - 48px);
 }
 
 .header {

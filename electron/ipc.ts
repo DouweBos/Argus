@@ -85,6 +85,11 @@ import {
   renamePath,
 } from "./services/file/operations";
 import {
+  getPullRequestDetail,
+  getPullRequestDiff,
+} from "./services/github/prDetail";
+import { listInterestingPullRequests } from "./services/github/pullRequests";
+import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
   claudePing as onboardingClaudePing,
@@ -376,6 +381,22 @@ export function registerIpcHandlers(): void {
   });
 
   // Session CRUD
+  handle("list_interesting_pull_requests", (a) =>
+    listInterestingPullRequests((a.repoRoots as string[]) ?? []),
+  );
+
+  handle("get_pull_request_detail", (a) =>
+    getPullRequestDetail(
+      a.owner as string,
+      a.repo as string,
+      a.number as number,
+    ),
+  );
+
+  handle("get_pull_request_diff", (a) =>
+    getPullRequestDiff(a.owner as string, a.repo as string, a.number as number),
+  );
+
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
   handle("list_sessions", (a) => listSessions(a.repoRoot as string));

@@ -23,7 +23,9 @@ import type {
   DirEntry,
   ExampleProject,
   FileStat,
+  InterestingPullRequest,
   MentionPathResult,
+  PullRequestDetail,
   OnboardingConfigFile,
   OnboardingDefaults,
   OnboardingStep,
@@ -97,6 +99,25 @@ export const appCancelQuit = (): Promise<void> => invoke("app_cancel_quit");
 export interface QuitRequestPayload {
   runningCount: number;
 }
+
+// GitHub PR discovery
+export const listInterestingPullRequests = (
+  repoRoots: string[],
+): Promise<InterestingPullRequest[]> =>
+  invoke("list_interesting_pull_requests", { repoRoots });
+
+export const getPullRequestDetail = (
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<PullRequestDetail> =>
+  invoke("get_pull_request_detail", { owner, repo, number });
+
+export const getPullRequestDiff = (
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<string> => invoke("get_pull_request_diff", { owner, repo, number });
 
 // Session commands
 export const addRepoRoot = (path: string): Promise<void> =>

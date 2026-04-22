@@ -171,7 +171,7 @@ export function ForkSessionDialog({
 
   return (
     <Dialog
-      className={styles.dialogLarge}
+      size="medium"
       title="Fork Session"
       titleId="fork-session-title"
       onClose={onClose}

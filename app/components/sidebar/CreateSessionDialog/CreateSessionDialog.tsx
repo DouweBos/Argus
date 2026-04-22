@@ -565,7 +565,7 @@ export function CreateSessionDialog({
   if (flow === "pick") {
     return (
       <Dialog
-        className={styles.dialogLarge}
+        size="medium"
         title={title}
         titleId="create-ws-title"
         onClose={onClose}
@@ -645,7 +645,7 @@ export function CreateSessionDialog({
 
     return (
       <Dialog
-        className={styles.dialogLarge}
+        size="medium"
         title={title}
         titleExtra={<span className={styles.subtitle}>Branch off</span>}
         titleId="create-ws-title"
@@ -788,7 +788,7 @@ export function CreateSessionDialog({
 
   return (
     <Dialog
-      className={styles.dialogLarge}
+      size="medium"
       title={title}
       titleExtra={<span className={styles.subtitle}>{subtitle}</span>}
       titleId="create-ws-title"

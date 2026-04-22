@@ -25,10 +25,6 @@
   overflow: hidden;
 }
 
-.dialogLarge {
-  max-width: 640px;
-}
-
 .header {
   display: flex;
   align-items: center;
@@ -358,11 +354,6 @@ select.input {
   overflow-x: auto;
   max-height: 1200px;
   overflow-y: auto;
-}
-
-/* Config dialog — collapsible sections */
-.dialogConfig {
-  max-width: 680px;
 }
 
 .configSection {
