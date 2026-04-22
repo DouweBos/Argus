@@ -79,15 +79,17 @@ export function ProjectSegment({
 
   const projectName = basename(repoRoot);
   const accent = projectAccent(repoRoot);
+  const hasSessions = worktrees.length > 0;
 
   return (
     <SidebarRepoGroup
       name={projectName}
       title={repoRoot}
-      expanded={!isCollapsed}
+      expanded={!isCollapsed && hasSessions}
+      hideChevron={!hasSessions}
       active={isProjectSelected}
       leading={<Icons.FolderIcon size={11} style={{ color: accent }} />}
-      onToggleExpanded={onToggleCollapsed}
+      onToggleExpanded={hasSessions ? onToggleCollapsed : undefined}
       onHeaderClick={openProjectHome}
       onHeaderContextMenu={(e) => {
         e.preventDefault();
