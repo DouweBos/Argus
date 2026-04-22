@@ -36,7 +36,6 @@ import {
   queueMessage,
   useConversation,
 } from "../../../stores/conversationStore";
-import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
@@ -44,6 +43,7 @@ import { CollapsedToolGroup } from "../CollapsedToolGroup";
 import { ForkSessionDialog } from "../ForkSessionDialog";
 import { TodoList, type TodoItem } from "../TodoList";
 import styles from "./AgentChat.module.css";
+import { QueuedMessages } from "./QueuedMessages";
 
 /**
  * Well-known commands that should always appear in autocomplete.
@@ -652,44 +652,8 @@ export function AgentChat({
             </div>
           )}
 
-        {!readOnly && queuedMessages.length > 0 && (
-          <div className={styles.queuedSection}>
-            <span className={styles.queuedLabel}>Queued</span>
-            {queuedMessages.map((qm) => {
-              const images = qm.images ?? [];
-
-              return (
-                <div key={qm.id} className={styles.queuedMessageWrap}>
-                  <div className={styles.queuedMessage}>{qm.text}</div>
-                  {images.length > 0 && (
-                    <div className={styles.queuedAttachments}>
-                      {images.map((img, i) => {
-                        const src = `data:${img.media_type};base64,${img.data}`;
-
-                        return (
-                          <button
-                            key={i}
-                            className={styles.queuedAttachment}
-                            title={`Image ${i + 1}`}
-                            type="button"
-                            onClick={() =>
-                              openImageViewer(src, `Attachment ${i + 1}`)
-                            }
-                          >
-                            <img
-                              alt={`Attachment ${i + 1}`}
-                              className={styles.queuedAttachmentImg}
-                              src={src}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        {!readOnly && agentId && queuedMessages.length > 0 && (
+          <QueuedMessages agentId={agentId} messages={queuedMessages} />
         )}
 
         <div ref={messagesEndRef} />

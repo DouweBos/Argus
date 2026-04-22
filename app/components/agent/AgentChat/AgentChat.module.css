@@ -90,7 +90,14 @@
   gap: 0;
 }
 
+.queuedMessageRow {
+  position: relative;
+  display: flex;
+  align-self: stretch;
+}
+
 .queuedMessage {
+  flex: 1;
   font: var(--type-body);
   color: var(--text-secondary);
   padding: var(--space-4) var(--space-6);
@@ -100,6 +107,61 @@
   white-space: pre-wrap;
   word-break: break-word;
   align-self: stretch;
+}
+
+.queuedEditArea {
+  flex: 1;
+  font: var(--type-body);
+  color: var(--text-primary);
+  padding: var(--space-4) var(--space-6);
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-border-strong);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  resize: vertical;
+  min-height: 36px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.queuedActions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.queuedMessageRow:hover .queuedActions,
+.queuedMessageRow:focus-within .queuedActions {
+  opacity: 1;
+}
+
+.queuedActionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary-85);
+  color: var(--text-muted);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--transition-base),
+    border-color var(--transition-base),
+    background var(--transition-base);
+}
+
+.queuedActionButton:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-border-strong);
+  background: var(--surface-6);
 }
 
 .queuedAttachments {

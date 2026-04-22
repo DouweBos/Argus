@@ -917,7 +917,10 @@ describe("spawn_agents_batch", () => {
 
   it("honors per-agent repo_root overrides for cross-repo spawning", async () => {
     mockCreateSession.mockImplementation(async (repoRoot: string) =>
-      mockSession({ id: `ws-${repoRoot.replace(/\W/g, "")}`, repo_root: repoRoot }),
+      mockSession({
+        id: `ws-${repoRoot.replace(/\W/g, "")}`,
+        repo_root: repoRoot,
+      }),
     );
 
     const result = await client.callTool({
@@ -941,7 +944,10 @@ describe("spawn_agents_batch", () => {
 
   it("mixes default and per-agent overrides", async () => {
     mockCreateSession.mockImplementation(async (repoRoot: string) =>
-      mockSession({ id: `ws-${repoRoot.replace(/\W/g, "")}`, repo_root: repoRoot }),
+      mockSession({
+        id: `ws-${repoRoot.replace(/\W/g, "")}`,
+        repo_root: repoRoot,
+      }),
     );
 
     const result = await client.callTool({
