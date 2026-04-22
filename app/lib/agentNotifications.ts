@@ -1,5 +1,6 @@
 import type { PermissionRequest } from "./types";
 import { getAgentState, setActiveAgent } from "../stores/agentStore";
+import { getConversationState } from "../stores/conversationStore";
 import { getSessionState, selectSession } from "../stores/sessionStore";
 
 const MIN_TURN_DURATION_MS = 10_000;
@@ -27,6 +28,12 @@ function sessionLabel(sessionId: string | undefined): string {
   return ws?.display_name ?? ws?.branch ?? "session";
 }
 
+function agentLabel(agentId: string): string {
+  const title = getConversationState().conversations[agentId]?.title;
+
+  return title?.trim() ? title : "Agent";
+}
+
 function focusAgent(agentId: string): void {
   window.focus();
   const agent = getAgentState().agents[agentId];
@@ -50,7 +57,9 @@ export function notifyAgentFinished(
   }
 
   const agent = getAgentState().agents[agentId];
-  const label = sessionLabel(agent?.session_id);
+  const session = sessionLabel(agent?.session_id);
+  const name = agentLabel(agentId);
+  const label = `${name} · ${session}`;
   const seconds = Math.max(1, Math.round(durationMs / 1000));
 
   const title =
@@ -78,8 +87,9 @@ export function notifyPermissionRequested(
   }
 
   const agent = getAgentState().agents[agentId];
-  const label = sessionLabel(agent?.session_id);
-  const title = `Permission requested · ${label}`;
+  const session = sessionLabel(agent?.session_id);
+  const name = agentLabel(agentId);
+  const title = `Permission requested · ${name} · ${session}`;
   const body = `${request.tool_name} needs your approval`;
 
   const n = new Notification(title, { body, requireInteraction: true });
