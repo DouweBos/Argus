@@ -176,6 +176,13 @@ export interface ArgusConfig {
    * protected surface a "Push & open PR" flow instead of "Merge".
    */
   protected_branches: string[];
+  /**
+   * When true, the project can only have one runtime (run command) active at
+   * a time across all its sessions. Pressing Run while another session in the
+   * same repo is already running prompts the user to stop the other runtime
+   * or cancel.
+   */
+  single_runtime?: boolean | null;
 }
 
 /** Default/empty `SetupConfig`. */
@@ -197,5 +204,6 @@ export function defaultArgusConfig(): ArgusConfig {
     save_chat_history: true,
     platforms: null,
     protected_branches: [],
+    single_runtime: false,
   };
 }

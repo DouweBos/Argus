@@ -225,6 +225,11 @@ export interface ArgusConfig {
   run?: RunCommand[];
   /** Whether to save chat history when agents stop. Defaults to true. */
   save_chat_history?: boolean;
+  /**
+   * When true, only one runtime may be active across all sessions of this
+   * project. The run button prompts before starting a second runtime.
+   */
+  single_runtime?: boolean;
   setup?: {
     commands?: string[];
     copy?: string[];
