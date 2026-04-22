@@ -117,8 +117,58 @@ export function ChatMessage({
     const trimmed = message.textBlocks
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
-    if (trimmed.length === 0) {
+    const images = message.images ?? [];
+    if (trimmed.length === 0 && images.length === 0) {
       return null;
+    }
+
+    if (message.source?.kind === "mcp") {
+      const sourceLabel = message.source.parentLabel?.trim()
+        ? `${message.source.parentLabel} → ${message.source.tool}`
+        : `MCP · ${message.source.tool}`;
+
+      return (
+        <div className={styles.mcpMsg}>
+          <div className={styles.mcpHeader}>
+            <span className={styles.mcpBadge}>MCP</span>
+            <span className={styles.mcpLabel}>{sourceLabel}</span>
+          </div>
+          <FileLinkHandler className={styles.mcpBody}>
+            {trimmed.map((text, i) => (
+              <p key={i} className={styles.mcpText}>
+                <MentionedText text={text} />
+              </p>
+            ))}
+          </FileLinkHandler>
+          {images.length > 0 && (
+            <div className={styles.mcpAttachments}>
+              {images.map((img, i) => {
+                const src = `data:${img.media_type};base64,${img.data}`;
+
+                return (
+                  <button
+                    key={i}
+                    className={styles.mcpAttachment}
+                    title={`Image ${i + 1}`}
+                    type="button"
+                    onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      showImageContextMenu(src, `mcp-attachment-${i + 1}`);
+                    }}
+                  >
+                    <img
+                      alt={`Attachment ${i + 1}`}
+                      className={styles.mcpAttachmentImg}
+                      src={src}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
     }
 
     return (

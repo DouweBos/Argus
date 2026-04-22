@@ -1240,6 +1240,72 @@ export function sendAgentMessage(
 }
 
 // ---------------------------------------------------------------------------
+// MCP system messages
+// ---------------------------------------------------------------------------
+
+/**
+ * Payload pushed to the renderer so an MCP-injected message (initial prompt
+ * on spawn, or follow-up) appears in the recipient agent's conversation UI
+ * as a system message. Display-only — the actual prompt is still delivered
+ * to the agent via stdin by the regular {@link sendAgentMessage} path.
+ */
+export interface McpSystemMessagePayload {
+  tool: "send_agent_message" | "spawn_agent" | "spawn_agents_batch";
+  message: string;
+  images?: ImageAttachment[];
+  parentAgentId?: string;
+  parentLabel?: string;
+  timestamp: number;
+}
+
+/**
+ * Resolve a human-readable label for an originating parent agent. Falls back
+ * to an empty string when the parent has already exited or was never known.
+ */
+function resolveParentLabel(parentAgentId: string | undefined): string {
+  if (!parentAgentId) {
+    return "";
+  }
+  const parent = appState.agents.get(parentAgentId);
+  if (!parent) {
+    return "";
+  }
+  const session = appState.sessions.get(parent.sessionId);
+  if (!session) {
+    return "";
+  }
+
+  return session.display_name ?? session.branch ?? "";
+}
+
+/**
+ * Emit a system-message event that the renderer renders in the recipient
+ * agent's conversation view. Safe no-op if the main window is gone.
+ */
+export function emitMcpSystemMessage(
+  recipientAgentId: string,
+  payload: Omit<McpSystemMessagePayload, "parentLabel" | "timestamp"> & {
+    parentLabel?: string;
+  },
+): void {
+  const window = getMainWindow();
+  if (!window) {
+    return;
+  }
+  const parentLabel =
+    payload.parentLabel ?? resolveParentLabel(payload.parentAgentId);
+  const full: McpSystemMessagePayload = {
+    tool: payload.tool,
+    message: payload.message,
+    images: payload.images,
+    parentAgentId: payload.parentAgentId,
+    parentLabel,
+    timestamp: Date.now(),
+  };
+  window.webContents.send(`agent:mcp-message:${recipientAgentId}`, full);
+}
+
+// ---------------------------------------------------------------------------
 // set_agent_model
 // ---------------------------------------------------------------------------
 
