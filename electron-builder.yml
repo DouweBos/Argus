@@ -35,6 +35,14 @@ mac:
   entitlementsInherit: build/entitlements.mac.plist
   hardenedRuntime: true
   gatekeeperAssess: false
+  extendInfo:
+    NSDesktopFolderUsageDescription: Argus needs access to your Desktop so agents can read and edit files in projects you keep there.
+    NSDocumentsFolderUsageDescription: Argus needs access to your Documents so agents can read and edit files in projects you keep there.
+    NSDownloadsFolderUsageDescription: Argus needs access to your Downloads so agents can read files you've downloaded into projects.
+    NSRemovableVolumesUsageDescription: Argus needs access to removable volumes so agents can read files from external drives.
+    NSNetworkVolumesUsageDescription: Argus needs access to network volumes so agents can read files from mounted shares.
+    NSAppleEventsUsageDescription: Argus uses Apple Events to control developer tools (simulators, terminals) on your behalf.
+    NSSystemAdministrationUsageDescription: Argus performs system administration tasks to manage simulators, emulators, and developer tooling.
 dmg:
   artifactName: "${productName}-${version}-${arch}.${ext}"
 asar: true
