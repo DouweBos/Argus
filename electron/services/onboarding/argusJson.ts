@@ -18,6 +18,24 @@ interface PackageJsonShape {
 
 type Platform = "android" | "ios" | "web";
 
+interface DetectionContext {
+  copy: Set<string>;
+  platforms: Set<Platform>;
+  repoRoot: string;
+  run: { title: string; command: string; restartOnRerun: boolean }[];
+  setupCommands: string[];
+  signals: DetectedSignal[];
+}
+
+/** Join a dir + child path, stripping the "./" prefix when dir is the repo root. */
+function joinRel(dir: string, child: string): string {
+  if (dir === "." || dir === "") {
+    return child;
+  }
+
+  return `${dir}/${child}`;
+}
+
 const RUN_SCRIPT_KEYS = [
   "dev",
   "start",
@@ -64,33 +82,10 @@ function firstMatchingDir(
 export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
   const signals: DetectedSignal[] = [];
   const inferred: string[] = [];
-
-  const pkg = readPackageJson(repoRoot);
-  if (!pkg) {
-    return {
-      config: {
-        setup: { copy: [], symlink: [], commands: [] },
-        terminals: [{ name: "Shell", dir: "." }],
-        run: [],
-        workspace_env: [],
-        protected_branches: ["main", "master"],
-      },
-      inferredFrom: [],
-      signals: [],
-    };
-  }
-  signals.push({
-    label: "package.json",
-    detail: pkg.name ?? "Node project",
-    kind: "project",
-  });
-  inferred.push("package.json");
-
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-  const scripts = pkg.scripts ?? {};
   const platforms = new Set<Platform>();
   const run: { title: string; command: string; restartOnRerun: boolean }[] = [];
   const copy = new Set<string>();
+  const setupCommands: string[] = [];
   const workspaceEnv: {
     name: string;
     base_value: number;
@@ -99,8 +94,30 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
   }[] = [];
   let browserUrl: string | null = null;
 
-  // Framework detection ---------------------------------------------------
-  if (deps.expo) {
+  const pkg = readPackageJson(repoRoot);
+  const deps = pkg ? { ...pkg.dependencies, ...pkg.devDependencies } : {};
+  const scripts = pkg?.scripts ?? {};
+
+  if (pkg) {
+    signals.push({
+      label: "package.json",
+      detail: pkg.name ?? "Node project",
+      kind: "project",
+    });
+    inferred.push("package.json");
+  }
+
+  const ctx: DetectionContext = {
+    repoRoot,
+    signals,
+    platforms,
+    copy,
+    setupCommands,
+    run,
+  };
+
+  // Framework detection (JS/TS only) --------------------------------------
+  if (pkg && deps.expo) {
     platforms.add("ios");
     platforms.add("android");
     signals.push({ label: "Expo", detail: deps.expo, kind: "framework" });
@@ -188,18 +205,10 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
   // Native platform dirs --------------------------------------------------
   const iosDir = firstMatchingDir(repoRoot, ["ios", "apps/ios", "mobile/ios"]);
   if (iosDir) {
-    platforms.add("ios");
-    signals.push({ label: "iOS project", detail: iosDir, kind: "platform" });
-    if (exists(repoRoot, path.join(iosDir, "Podfile"))) {
-      signals.push({ label: "CocoaPods", detail: "Podfile", kind: "native" });
-      copy.add(`${iosDir}/Pods`);
-    }
-    const xcworkspace = fs
-      .readdirSync(path.join(repoRoot, iosDir))
-      .find((n) => n.endsWith(".xcworkspace") || n.endsWith(".xcodeproj"));
-    if (xcworkspace) {
-      signals.push({ label: "Xcode", detail: xcworkspace, kind: "native" });
-    }
+    detectIos(ctx, iosDir);
+  } else if (looksLikeNativeIosRoot(repoRoot)) {
+    detectIos(ctx, ".");
+    inferred.push("native-ios");
   }
   const androidDir = firstMatchingDir(repoRoot, [
     "android",
@@ -207,22 +216,20 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     "mobile/android",
   ]);
   if (androidDir) {
-    platforms.add("android");
-    signals.push({
-      label: "Android project",
-      detail: androidDir,
-      kind: "platform",
-    });
-    if (exists(repoRoot, path.join(androidDir, "gradlew"))) {
-      signals.push({ label: "Gradle", kind: "native" });
-    }
-    copy.add(`${androidDir}/.gradle`);
-    copy.add(`${androidDir}/build`);
+    detectAndroid(ctx, androidDir);
+  } else if (looksLikeNativeAndroidRoot(repoRoot)) {
+    detectAndroid(ctx, ".");
+    inferred.push("native-android");
+  }
+
+  // Flutter ---------------------------------------------------------------
+  if (isFlutterProject(repoRoot)) {
+    detectFlutter(ctx);
+    inferred.push("flutter");
   }
 
   // Lockfiles / package managers -----------------------------------------
   const runner = pickRunner(repoRoot);
-  const setupCommands: string[] = [];
   if (exists(repoRoot, "pnpm-lock.yaml")) {
     setupCommands.push("pnpm install");
     signals.push({ label: "pnpm", detail: "pnpm-lock.yaml", kind: "tooling" });
@@ -273,7 +280,7 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     signals.push({ label: "Nx", kind: "monorepo" });
     inferred.push("nx.json");
   }
-  if (pkg.workspaces) {
+  if (pkg?.workspaces) {
     signals.push({ label: "Yarn/npm workspaces", kind: "monorepo" });
   }
 
@@ -342,6 +349,155 @@ function pickRunner(repoRoot: string): string {
 
 function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// --- Native project detection -------------------------------------------
+
+function listDir(repoRoot: string, rel: string): string[] {
+  try {
+    return fs.readdirSync(path.join(repoRoot, rel));
+  } catch {
+    return [];
+  }
+}
+
+function looksLikeNativeIosRoot(repoRoot: string): boolean {
+  const entries = listDir(repoRoot, ".");
+
+  return (
+    entries.some(
+      (n) => n.endsWith(".xcodeproj") || n.endsWith(".xcworkspace"),
+    ) ||
+    entries.includes("Podfile") ||
+    entries.includes("Package.swift")
+  );
+}
+
+function looksLikeNativeAndroidRoot(repoRoot: string): boolean {
+  const entries = listDir(repoRoot, ".");
+  const hasGradleSettings = entries.some(
+    (n) => n === "settings.gradle" || n === "settings.gradle.kts",
+  );
+  const hasRootBuildGradle = entries.some(
+    (n) => n === "build.gradle" || n === "build.gradle.kts",
+  );
+  const hasGradlew = entries.includes("gradlew");
+
+  return hasGradleSettings || (hasRootBuildGradle && hasGradlew);
+}
+
+function detectIos(ctx: DetectionContext, dir: string): void {
+  const { repoRoot, signals, platforms, copy, setupCommands } = ctx;
+  platforms.add("ios");
+  signals.push({
+    label: "iOS project",
+    detail: dir === "." ? "repo root" : dir,
+    kind: "platform",
+  });
+
+  if (exists(repoRoot, joinRel(dir, "Podfile"))) {
+    signals.push({ label: "CocoaPods", detail: "Podfile", kind: "native" });
+    copy.add(joinRel(dir, "Pods"));
+    const podCommand =
+      dir === "." ? "pod install" : `cd ${dir} && pod install`;
+    if (!setupCommands.includes(podCommand)) {
+      setupCommands.push(podCommand);
+    }
+  }
+
+  const entries = listDir(repoRoot, dir);
+  const xcworkspace = entries.find(
+    (n) => n.endsWith(".xcworkspace") || n.endsWith(".xcodeproj"),
+  );
+  if (xcworkspace) {
+    signals.push({ label: "Xcode", detail: xcworkspace, kind: "native" });
+  }
+  if (entries.includes("Package.swift")) {
+    signals.push({
+      label: "Swift Package Manager",
+      detail: "Package.swift",
+      kind: "native",
+    });
+    copy.add(joinRel(dir, ".build"));
+  }
+  // Xcode's DerivedData default lives outside the repo, but local per-project
+  // build output is worth caching when present.
+  if (exists(repoRoot, joinRel(dir, "DerivedData"))) {
+    copy.add(joinRel(dir, "DerivedData"));
+  }
+}
+
+function detectAndroid(ctx: DetectionContext, dir: string): void {
+  const { repoRoot, signals, platforms, copy } = ctx;
+  platforms.add("android");
+  signals.push({
+    label: "Android project",
+    detail: dir === "." ? "repo root" : dir,
+    kind: "platform",
+  });
+
+  if (exists(repoRoot, joinRel(dir, "gradlew"))) {
+    signals.push({ label: "Gradle", kind: "native" });
+  }
+  copy.add(joinRel(dir, ".gradle"));
+  copy.add(joinRel(dir, "build"));
+  // Common app module build output
+  if (exists(repoRoot, joinRel(dir, "app/build"))) {
+    copy.add(joinRel(dir, "app/build"));
+  }
+}
+
+function isFlutterProject(repoRoot: string): boolean {
+  try {
+    const raw = fs.readFileSync(path.join(repoRoot, "pubspec.yaml"), "utf8");
+
+    // A pubspec is Flutter when it declares a `flutter` dependency or SDK constraint.
+    return /^\s*flutter\s*:/m.test(raw) || /sdk:\s*flutter/m.test(raw);
+  } catch {
+    return false;
+  }
+}
+
+function detectFlutter(ctx: DetectionContext): void {
+  const { repoRoot, signals, platforms, copy, setupCommands, run } = ctx;
+  signals.push({
+    label: "Flutter",
+    detail: "pubspec.yaml",
+    kind: "framework",
+  });
+
+  // Flutter generates platform subdirs — mark each platform that is present.
+  const flutterPlatformDirs: { dir: string; platform: Platform }[] = [
+    { dir: "ios", platform: "ios" },
+    { dir: "android", platform: "android" },
+    { dir: "web", platform: "web" },
+  ];
+  for (const { dir, platform } of flutterPlatformDirs) {
+    if (exists(repoRoot, dir)) {
+      platforms.add(platform);
+    }
+  }
+
+  copy.add(".dart_tool");
+  if (exists(repoRoot, "build")) {
+    copy.add("build");
+  }
+  setupCommands.push("flutter pub get");
+
+  // Cocoapods is used by Flutter's iOS target too.
+  if (exists(repoRoot, "ios/Podfile")) {
+    setupCommands.push("cd ios && pod install");
+    copy.add("ios/Pods");
+    signals.push({ label: "CocoaPods", detail: "ios/Podfile", kind: "native" });
+  }
+
+  if (!run.find((r) => r.title === "Flutter")) {
+    run.push({
+      title: "Flutter",
+      command: "flutter run",
+      restartOnRerun: true,
+    });
+  }
 }
 
 /** Write `.argus.json` to the repo root. Does NOT commit. */
