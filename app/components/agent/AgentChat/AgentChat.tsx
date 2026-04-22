@@ -31,6 +31,7 @@ import {
 import {
   type ConversationMessage,
   addUserMessage,
+  clearAgentTodos,
   clearConversation,
   clearPermission,
   queueMessage,
@@ -41,7 +42,7 @@ import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
 import { ForkSessionDialog } from "../ForkSessionDialog";
-import { TodoList, type TodoItem } from "../TodoList";
+import { TodoList } from "../TodoList";
 import styles from "./AgentChat.module.css";
 import { QueuedMessages } from "./QueuedMessages";
 
@@ -95,26 +96,6 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
   },
 ];
 const EMPTY_MESSAGES: ConversationMessage[] = [];
-
-function findLatestTodos(
-  messages: ConversationMessage[],
-): { id: string; todos: TodoItem[] } | null {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i];
-    for (let j = msg.toolCalls.length - 1; j >= 0; j--) {
-      const tc = msg.toolCalls[j];
-      if (tc.name !== "TodoWrite") {
-        continue;
-      }
-      const todos = (tc.input as { todos?: unknown }).todos;
-      if (Array.isArray(todos) && todos.length > 0) {
-        return { id: tc.id, todos: todos as TodoItem[] };
-      }
-    }
-  }
-
-  return null;
-}
 
 interface AgentChatProps {
   agentId: string | null;
@@ -197,25 +178,10 @@ export function AgentChat({
   // Group consecutive tool-call-only assistant messages into collapsed segments
   const segments = useMemo(() => groupMessages(messages), [messages]);
 
-  // Find the most recent TodoWrite tool call's todo list (if any). Displayed
-  // above the chat input so users always see current progress. React Compiler
-  // memoizes this for us.
-  const latestTodos = findLatestTodos(messages);
-
-  // Track the dismissed todo list per agent. Scoping by agentId means switching
-  // agents automatically re-surfaces the current list instead of carrying a
-  // stale dismissal across tabs. A new TodoWrite produces a new ID and
-  // re-surfaces the view within the same agent.
-  const [dismissedTodo, setDismissedTodo] = useState<{
-    agentId: string;
-    todoId: string;
-  } | null>(null);
-  const isDismissed =
-    dismissedTodo != null &&
-    dismissedTodo.agentId === agentId &&
-    latestTodos != null &&
-    dismissedTodo.todoId === latestTodos.id;
-  const activeTodos = latestTodos && !isDismissed ? latestTodos.todos : null;
+  // The agent's current todo list lives on the conversation in the store —
+  // updated by every TodoWrite tool call and cleared to null when the user
+  // dismisses it. A subsequent TodoWrite repopulates it.
+  const activeTodos = conversation?.todos ?? null;
 
   // Merge built-in commands with backend-reported commands, deduplicating by
   // name and preferring richer objects (ones with a description).
@@ -683,12 +649,10 @@ export function AgentChat({
         </div>
       )}
 
-      {activeTodos && activeTodos.length > 0 && (
+      {activeTodos && activeTodos.length > 0 && agentId && (
         <TodoList
           todos={activeTodos}
-          onDismiss={() =>
-            latestTodos && setDismissedTodo({ agentId, todoId: latestTodos.id })
-          }
+          onDismiss={() => clearAgentTodos(agentId)}
         />
       )}
 

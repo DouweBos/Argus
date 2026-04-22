@@ -1,1 +1,1 @@
-export { TodoList, type TodoItem } from "./TodoList";
+export { TodoList } from "./TodoList";
