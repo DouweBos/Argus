@@ -111,6 +111,14 @@ When adding a new backend command:
 
 Worktrees live in `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Workspace initialization after `git worktree add`: copy dirs, symlink files, run commands — all configured in `.argus.json` at repo root.
 
+### Changesets
+
+Every user-visible change ships with a changeset in `.changeset/`. The body is concatenated into app release notes, so write for the end user, not the reviewer:
+
+- One or two short sentences, present tense, describing the behavior change. No implementation details, no file paths, no internal type/component names.
+- Bump `"argus"` for app-visible changes and `"@argus/peacock"` when the design system's public surface changes. Use `patch` for fixes, `minor` for new behavior.
+- Skip the changeset entirely for pure refactors, tests, tooling, or internal cleanup that users won't notice.
+
 ## Key technical decisions
 
 - `node-pty` for terminals — same as VSCode, spawns immediately at 80x24 then resizes
