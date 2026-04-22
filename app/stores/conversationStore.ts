@@ -16,6 +16,12 @@ export interface QueuedMessage {
   timestamp: number;
 }
 
+export interface TodoItem {
+  activeForm?: string;
+  content: string;
+  status: "completed" | "in_progress" | "pending";
+}
+
 export type ToolResultBlock =
   | {
       source: { data: string; media_type: string; type: "base64" };
@@ -97,6 +103,12 @@ export interface AgentConversation {
   slashCommands?: SlashCommand[];
   /** Generated short title summarising the conversation (async). */
   title?: string;
+  /**
+   * Latest todo list authored by the agent via TodoWrite. Overwritten on each
+   * new TodoWrite call, and set to null when the user dismisses the list.
+   * A subsequent TodoWrite repopulates it.
+   */
+  todos?: TodoItem[] | null;
   tools?: string[];
   totalCost?: number;
   totalDuration?: number;
@@ -118,6 +130,34 @@ interface ConversationStoreData {
 
 function emptyConversation(): AgentConversation {
   return { messages: [], queuedMessages: [] };
+}
+
+function extractTodos(toolCalls: ToolCallInfo[]): TodoItem[] | null {
+  for (let i = toolCalls.length - 1; i >= 0; i--) {
+    const tc = toolCalls[i];
+    if (tc.name !== "TodoWrite") {
+      continue;
+    }
+    const todos = (tc.input as { todos?: unknown }).todos;
+    if (Array.isArray(todos)) {
+      return todos as TodoItem[];
+    }
+  }
+
+  return null;
+}
+
+function findLatestTodosInMessages(
+  messages: ConversationMessage[],
+): TodoItem[] | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const todos = extractTodos(messages[i].toolCalls);
+    if (todos) {
+      return todos;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -520,6 +560,11 @@ export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
       const lastTool =
         toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
 
+      // Update the agent's todo list whenever a TodoWrite tool call arrives.
+      // Later calls overwrite earlier ones so the stored snapshot always
+      // reflects the most recent agent-authored state.
+      const newTodos = extractTodos(toolCalls);
+
       return {
         conversations: {
           ...state.conversations,
@@ -530,6 +575,7 @@ export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
             messages: [...existing.messages, assistantMsg],
             pendingToolName: lastTool?.name ?? null,
             pendingToolInput: lastTool?.input ?? null,
+            todos: newTodos ?? existing.todos,
           },
         },
       };
@@ -837,9 +883,26 @@ export function loadSavedMessages(
         sessionId,
         resuming,
         title,
+        todos: findLatestTodosInMessages(messages),
       },
     },
   }));
+}
+
+export function clearAgentTodos(agentId: string) {
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId];
+    if (!existing) {
+      return state;
+    }
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: { ...existing, todos: null },
+      },
+    };
+  });
 }
 
 export function setConversationTitle(agentId: string, title: string) {

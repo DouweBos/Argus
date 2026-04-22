@@ -1,12 +1,7 @@
 import { useState } from "react";
 import { Icons } from "@argus/peacock";
+import type { TodoItem } from "../../../stores/conversationStore";
 import styles from "./TodoList.module.css";
-
-export interface TodoItem {
-  activeForm?: string;
-  content: string;
-  status: "completed" | "in_progress" | "pending";
-}
 
 interface TodoListProps {
   onDismiss?: () => void;
