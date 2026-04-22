@@ -873,6 +873,136 @@ describe("merge_session", () => {
 });
 
 // ===========================================================================
+// spawn_agents_batch
+// ===========================================================================
+
+describe("spawn_agents_batch", () => {
+  beforeEach(() => {
+    mockStartAgent.mockImplementation(async (sessionId: string) => ({
+      agent_id: `agent-for-${sessionId}`,
+      session_id: sessionId,
+      status: "running" as const,
+      parent_agent_id: null,
+    }));
+  });
+
+  it("uses top-level repo_root for all agents (existing behavior)", async () => {
+    mockCreateSession.mockImplementation(async (repoRoot: string) =>
+      mockSession({
+        id: `ws-${repoRoot.replace(/\W/g, "")}-${Math.random()}`,
+        repo_root: repoRoot,
+      }),
+    );
+
+    const result = await client.callTool({
+      name: "spawn_agents_batch",
+      arguments: {
+        repo_root: "/projects/frontend",
+        agents: [
+          { name: "A", prompt: "do A" },
+          { name: "B", prompt: "do B" },
+        ],
+      },
+    });
+    const parsed = jsonOf(result) as { spawned: number; failed: number };
+    expect(parsed.failed).toBe(0);
+    expect(parsed.spawned).toBe(2);
+    expect(mockCreateSession).toHaveBeenCalledTimes(2);
+    expect(mockCreateSession.mock.calls[0][0]).toBe("/projects/frontend");
+    expect(mockCreateSession.mock.calls[1][0]).toBe("/projects/frontend");
+    // Repo registered exactly once even with two agents.
+    expect(mockEnsureRepoRegistered).toHaveBeenCalledTimes(1);
+    expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/frontend");
+  });
+
+  it("honors per-agent repo_root overrides for cross-repo spawning", async () => {
+    mockCreateSession.mockImplementation(async (repoRoot: string) =>
+      mockSession({ id: `ws-${repoRoot.replace(/\W/g, "")}`, repo_root: repoRoot }),
+    );
+
+    const result = await client.callTool({
+      name: "spawn_agents_batch",
+      arguments: {
+        agents: [
+          { name: "A", prompt: "do A", repo_root: "/projects/frontend" },
+          { name: "B", prompt: "do B", repo_root: "/projects/backend" },
+        ],
+      },
+    });
+    const parsed = jsonOf(result) as { spawned: number; failed: number };
+    expect(parsed.failed).toBe(0);
+    expect(parsed.spawned).toBe(2);
+    expect(mockCreateSession.mock.calls.map((c) => c[0]).sort()).toEqual([
+      "/projects/backend",
+      "/projects/frontend",
+    ]);
+    expect(mockEnsureRepoRegistered).toHaveBeenCalledTimes(2);
+  });
+
+  it("mixes default and per-agent overrides", async () => {
+    mockCreateSession.mockImplementation(async (repoRoot: string) =>
+      mockSession({ id: `ws-${repoRoot.replace(/\W/g, "")}`, repo_root: repoRoot }),
+    );
+
+    const result = await client.callTool({
+      name: "spawn_agents_batch",
+      arguments: {
+        repo_root: "/projects/frontend",
+        agents: [
+          { name: "A", prompt: "do A" },
+          { name: "B", prompt: "do B", repo_root: "/projects/backend" },
+        ],
+      },
+    });
+    const parsed = jsonOf(result) as { spawned: number };
+    expect(parsed.spawned).toBe(2);
+    expect(mockCreateSession.mock.calls.map((c) => c[0]).sort()).toEqual([
+      "/projects/backend",
+      "/projects/frontend",
+    ]);
+  });
+
+  it("registers each unique repo only once even when shared by multiple agents", async () => {
+    mockCreateSession.mockImplementation(async (repoRoot: string) =>
+      mockSession({ id: `ws-${Math.random()}`, repo_root: repoRoot }),
+    );
+
+    await client.callTool({
+      name: "spawn_agents_batch",
+      arguments: {
+        agents: [
+          { name: "A", prompt: "do A", repo_root: "/projects/frontend" },
+          { name: "B", prompt: "do B", repo_root: "/projects/frontend" },
+          { name: "C", prompt: "do C", repo_root: "/projects/backend" },
+        ],
+      },
+    });
+    expect(mockEnsureRepoRegistered).toHaveBeenCalledTimes(2);
+    const registered = mockEnsureRepoRegistered.mock.calls
+      .map((c) => c[0])
+      .sort();
+    expect(registered).toEqual(["/projects/backend", "/projects/frontend"]);
+  });
+
+  it("fails the whole batch with a clear error when no repo_root resolves", async () => {
+    const result = await client.callTool({
+      name: "spawn_agents_batch",
+      arguments: {
+        agents: [
+          { name: "A", prompt: "do A", repo_root: "/projects/frontend" },
+          { name: "B", prompt: "do B" },
+        ],
+      },
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("B");
+    expect(textOf(result)).toContain("repo_root");
+    expect(mockCreateSession).not.toHaveBeenCalled();
+    expect(mockEnsureRepoRegistered).not.toHaveBeenCalled();
+  });
+});
+
+// ===========================================================================
 // resolveRepoRoot (tested indirectly)
 // ===========================================================================
 

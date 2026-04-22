@@ -20,7 +20,7 @@ You have access to the **Argus MCP server** which provides tools for session man
 ### Agent orchestration
 
 - **`spawn_agent`** — Start a parallel agent in another session (including cross-project sessions).
-- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once.
+- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Set `repo_root` per-agent to span multiple repositories in a single batch; the top-level `repo_root` is an optional default.
 - **`list_agents`** / **`agent_status`** — Check on other running agents.
 - **`get_agent_result`** — Get the result summary of a completed agent.
 - **`wait_for_agent`** — Block until an agent finishes, then return its status and result.

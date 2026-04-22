@@ -30,7 +30,7 @@ Prefer option 1 unless the parallelism is clearly worth the coordination cost. S
 
 ### Agent orchestration
 
-- **`spawn_agent`** / **`spawn_agents_batch`** — Spawn child agents in worktrees. Pass your own agent ID as `parent_agent_id`.
+- **`spawn_agent`** / **`spawn_agents_batch`** — Spawn child agents in worktrees. Pass your own agent ID as `parent_agent_id`. For `spawn_agents_batch`, set `repo_root` per-agent to fan work across multiple member repos in a single call.
 - **`wait_for_agent`** — Block until a child finishes.
 - **`get_agent_result`** / **`agent_status`** — Inspect child progress.
 - **`send_agent_message`** — Send a follow-up to a child.

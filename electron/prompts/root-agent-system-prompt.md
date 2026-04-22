@@ -20,7 +20,7 @@ You have access to the **Argus MCP server** which provides tools for managing se
 ### Agent orchestration
 
 - **`spawn_agent`** — Start a new Claude Code agent in a session. The agent runs as an independent, parallel process. Pass it a descriptive prompt with everything it needs to do the work autonomously. Pass your own agent ID as `parent_agent_id` to track the relationship.
-- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Much more efficient than calling `create_session` + `spawn_agent` in a loop. Pass `repo_root`, an array of `agents` (each with `name`, `prompt`, optional `description` and `platforms`), and optionally `parent_agent_id` and `base_branch`.
+- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Much more efficient than calling `create_session` + `spawn_agent` in a loop. Pass an optional top-level `repo_root` (default for all agents) and an array of `agents` (each with `name`, `prompt`, optional `description`, `platforms`, and optional `repo_root` to override the default). Set per-agent `repo_root` to spawn agents across different repositories in a single batch. Also accepts `parent_agent_id` and `base_branch`.
 - **`list_agents`** — List all running agents across sessions. Includes `parent_agent_id` for child agents.
 - **`agent_status`** — Check whether a specific agent is still running, stopped, or errored.
 - **`get_agent_result`** — Get the result summary of a completed agent (final output text, cost, duration). Only works after the agent has finished.
