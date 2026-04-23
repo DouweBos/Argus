@@ -10,6 +10,7 @@ import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
+import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
 import { RenameBranchDialog } from "../RenameBranchDialog/RenameBranchDialog";
@@ -59,6 +60,7 @@ export function SessionHomeScreen({
   );
 
   const [isRenamingBranch, setIsRenamingBranch] = useState(false);
+  const [isChangingBaseBranch, setIsChangingBaseBranch] = useState(false);
 
   const projectName = useMemo(() => {
     if (!repoRoot) {
@@ -107,10 +109,24 @@ export function SessionHomeScreen({
                     </button>
                   )}
                 </span>
-                {baseBranch && (
+                {(baseBranch || session?.kind === "worktree") && (
                   <>
                     <span className={styles.dot}>·</span>
-                    <span>from {baseBranch}</span>
+                    <span className={styles.branchChip}>
+                      <Icons.BranchIcon size={10} />
+                      from {baseBranch ?? "—"}
+                      {session?.kind === "worktree" && (
+                        <button
+                          type="button"
+                          className={styles.branchEditBtn}
+                          onClick={() => setIsChangingBaseBranch(true)}
+                          title="Change source branch"
+                          aria-label="Change source branch"
+                        >
+                          <Icons.PencilIcon size={10} />
+                        </button>
+                      )}
+                    </span>
                   </>
                 )}
                 {projectName && (
@@ -177,6 +193,12 @@ export function SessionHomeScreen({
         <RenameBranchDialog
           session={session}
           onClose={() => setIsRenamingBranch(false)}
+        />
+      )}
+      {isChangingBaseBranch && session && (
+        <ChangeBaseBranchDialog
+          session={session}
+          onClose={() => setIsChangingBaseBranch(false)}
         />
       )}
     </div>
