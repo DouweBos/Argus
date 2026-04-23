@@ -156,11 +156,13 @@ export function SessionCard({
     e.stopPropagation();
     if (menuPosition) {
       setMenuPosition(null);
+
       return;
     }
     const rect = menuBtnRef.current?.getBoundingClientRect();
     if (!rect) {
       setMenuPosition({ x: e.clientX, y: e.clientY });
+
       return;
     }
     // Right-align the menu with the trigger; ContextMenu clamps to viewport.

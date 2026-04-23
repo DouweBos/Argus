@@ -398,8 +398,7 @@ function detectIos(ctx: DetectionContext, dir: string): void {
   if (exists(repoRoot, joinRel(dir, "Podfile"))) {
     signals.push({ label: "CocoaPods", detail: "Podfile", kind: "native" });
     copy.add(joinRel(dir, "Pods"));
-    const podCommand =
-      dir === "." ? "pod install" : `cd ${dir} && pod install`;
+    const podCommand = dir === "." ? "pod install" : `cd ${dir} && pod install`;
     if (!setupCommands.includes(podCommand)) {
       setupCommands.push(podCommand);
     }

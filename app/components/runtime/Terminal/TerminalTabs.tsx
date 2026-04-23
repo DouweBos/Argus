@@ -272,7 +272,9 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
                 draggable={!isRun && !isRenaming}
                 onClick={() => setActiveSession(sessionId, session.id)}
                 onDoubleClick={
-                  isRun ? undefined : () => startRename(session.id, session.title)
+                  isRun
+                    ? undefined
+                    : () => startRename(session.id, session.title)
                 }
                 onDragStart={
                   isRun || isRenaming

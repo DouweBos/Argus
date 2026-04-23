@@ -71,7 +71,9 @@ export function ChangeBaseBranchDialog({
       updateSession(session.id, { base_branch: trimmed });
       onClose();
     } catch (err) {
-      setError(typeof err === "string" ? err : "Failed to change source branch");
+      setError(
+        typeof err === "string" ? err : "Failed to change source branch",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -109,7 +111,9 @@ export function ChangeBaseBranchDialog({
                     type="button"
                     className={`${styles.branchItem} ${b === selected ? styles.branchItemSelected : ""}`}
                     disabled={isSelf}
-                    title={isSelf ? "This is the session's own branch" : undefined}
+                    title={
+                      isSelf ? "This is the session's own branch" : undefined
+                    }
                     onClick={() => setSelected(b)}
                   >
                     {b}

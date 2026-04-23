@@ -153,7 +153,7 @@ export function RunControl({ sessionId }: RunControlProps) {
     }
     const allRunning = getTerminalState().runningTerminals;
     const conflicts: ConflictingRuntime[] = [];
-    for (const [otherSessionId, runs] of Object.entries(allRunning)) {
+    for (const [otherSessionId, sessionRuns] of Object.entries(allRunning)) {
       if (otherSessionId === sessionId) {
         continue;
       }
@@ -164,7 +164,7 @@ export function RunControl({ sessionId }: RunControlProps) {
       if (otherSession.repo_root !== currentSession.repo_root) {
         continue;
       }
-      for (const [title, terminalId] of Object.entries(runs)) {
+      for (const [title, terminalId] of Object.entries(sessionRuns)) {
         conflicts.push({
           sessionId: otherSessionId,
           sessionName:

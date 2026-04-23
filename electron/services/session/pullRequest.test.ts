@@ -2,10 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  buildPullRequestUrl,
-  pickPullRequestTemplate,
-} from "./pullRequest";
+import { buildPullRequestUrl, pickPullRequestTemplate } from "./pullRequest";
 
 let repoRoot: string;
 
@@ -22,14 +19,8 @@ function write(rel: string, content: string): void {
 describe("buildPullRequestUrl", () => {
   it("returns a compare URL for github https remotes", () => {
     expect(
-      buildPullRequestUrl(
-        "https://github.com/owner/repo.git",
-        "feat",
-        "main",
-      ),
-    ).toBe(
-      "https://github.com/owner/repo/compare/main...feat?expand=1",
-    );
+      buildPullRequestUrl("https://github.com/owner/repo.git", "feat", "main"),
+    ).toBe("https://github.com/owner/repo/compare/main...feat?expand=1");
   });
 
   it("handles SSH remotes and strips the .git suffix", () => {
@@ -40,11 +31,7 @@ describe("buildPullRequestUrl", () => {
 
   it("returns null for non-github hosts", () => {
     expect(
-      buildPullRequestUrl(
-        "git@gitlab.com:owner/repo.git",
-        "feat",
-        "main",
-      ),
+      buildPullRequestUrl("git@gitlab.com:owner/repo.git", "feat", "main"),
     ).toBeNull();
   });
 
@@ -133,7 +120,10 @@ describe("pickPullRequestTemplate", () => {
   });
 
   it("override wins even when no templates exist on disk (user knows what they want)", () => {
-    write(".argus.json", JSON.stringify({ pull_request_template: "custom.md" }));
+    write(
+      ".argus.json",
+      JSON.stringify({ pull_request_template: "custom.md" }),
+    );
 
     expect(pickPullRequestTemplate(repoRoot)).toBe("custom.md");
   });

@@ -96,7 +96,8 @@ export function SessionSidebar() {
       e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       const rect = e.currentTarget.getBoundingClientRect();
-      const position = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+      const position =
+        e.clientY < rect.top + rect.height / 2 ? "before" : "after";
       setDropTarget((prev) =>
         prev?.root === repoRoot && prev.position === position
           ? prev

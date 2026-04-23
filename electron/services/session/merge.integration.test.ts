@@ -82,38 +82,31 @@ describe("checkMergeConflicts (integration)", () => {
     expect(conflicts).toContain("README.md");
   });
 
-  it(
-    "detects a conflict that only exists in the session's STAGED changes when wsPath is provided",
-    async () => {
-      // Advance base branch so the staged change on `feat` will conflict.
-      git(repoRoot, ["checkout", "-q", "main"]);
-      write("README.md", "hello from main\n");
-      git(repoRoot, ["add", "-A"]);
-      git(repoRoot, ["commit", "-q", "-m", "main edit"]);
+  it("detects a conflict that only exists in the session's STAGED changes when wsPath is provided", async () => {
+    // Advance base branch so the staged change on `feat` will conflict.
+    git(repoRoot, ["checkout", "-q", "main"]);
+    write("README.md", "hello from main\n");
+    git(repoRoot, ["add", "-A"]);
+    git(repoRoot, ["commit", "-q", "-m", "main edit"]);
 
-      // Switch back to feat, stage a conflicting change (NOT committed).
-      git(repoRoot, ["checkout", "-q", "feat"]);
-      write("README.md", "hello from feat staged\n");
-      git(repoRoot, ["add", "-A"]);
+    // Switch back to feat, stage a conflicting change (NOT committed).
+    git(repoRoot, ["checkout", "-q", "feat"]);
+    write("README.md", "hello from feat staged\n");
+    git(repoRoot, ["add", "-A"]);
 
-      // Without wsPath the check only sees committed history on the branch
-      // → no conflict is reported.
-      const committedOnly = await checkMergeConflicts(
-        repoRoot,
-        "feat",
-        "main",
-      );
-      expect(committedOnly).toEqual([]);
+    // Without wsPath the check only sees committed history on the branch
+    // → no conflict is reported.
+    const committedOnly = await checkMergeConflicts(repoRoot, "feat", "main");
+    expect(committedOnly).toEqual([]);
 
-      // With wsPath the check synthesises a commit for the staged index and
-      // now catches the conflict before the merge runs.
-      const withStaged = await checkMergeConflicts(
-        repoRoot,
-        "feat",
-        "main",
-        repoRoot,
-      );
-      expect(withStaged).toContain("README.md");
-    },
-  );
+    // With wsPath the check synthesises a commit for the staged index and
+    // now catches the conflict before the merge runs.
+    const withStaged = await checkMergeConflicts(
+      repoRoot,
+      "feat",
+      "main",
+      repoRoot,
+    );
+    expect(withStaged).toContain("README.md");
+  });
 });
