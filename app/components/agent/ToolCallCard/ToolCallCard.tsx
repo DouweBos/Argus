@@ -10,9 +10,9 @@ import {
   HoverActionButton,
   Icons,
 } from "@argus/peacock";
-import { renderMarkdown } from "../../../lib/markdown";
 import { updateAgent } from "../../../stores/agentStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
+import { Markdown } from "../../shared/Markdown";
 import { EditDiffView } from "../EditDiffView";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
 import { alwaysAllowRule } from "../alwaysAllowRule";
@@ -511,10 +511,7 @@ export function ToolCallCard({
     structuredInputPreview = (
       <div className={styles.section}>
         <span className={styles.sectionLabel}>Plan</span>
-        <div
-          className={styles.planPreview}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(planText) }}
-        />
+        <Markdown className={styles.planPreview} text={planText} />
       </div>
     );
   } else {

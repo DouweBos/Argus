@@ -7,8 +7,8 @@ import {
   Icons,
 } from "@argus/peacock";
 import { showImageContextMenu } from "../../../lib/ipc";
-import { renderMarkdown } from "../../../lib/markdown";
 import { openImageViewer } from "../../../stores/imageViewerStore";
+import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
@@ -304,11 +304,7 @@ export function ChatMessage({
       {hasText && (
         <FileLinkHandler className={styles.textContent}>
           {trimmedBlocks.map((text, i) => (
-            <div
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-              key={i}
-              className={styles.markdown}
-            />
+            <Markdown key={i} className={styles.markdown} text={text} />
           ))}
         </FileLinkHandler>
       )}

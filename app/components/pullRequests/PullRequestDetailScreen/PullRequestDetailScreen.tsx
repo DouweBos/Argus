@@ -22,7 +22,7 @@ import {
   createSession as apiCreateSession,
   openExternalUrl,
 } from "../../../lib/ipc";
-import { renderHtml, renderMarkdown } from "../../../lib/markdown";
+import { renderHtml } from "../../../lib/markdown";
 import { useRoutePR } from "../../../lib/routeHooks";
 import { appNavigate } from "../../../lib/router";
 import { pushError } from "../../../stores/notificationsStore";
@@ -37,6 +37,7 @@ import {
   selectSession,
   useSessionProjects,
 } from "../../../stores/sessionStore";
+import { Markdown } from "../../shared/Markdown";
 import styles from "./PullRequestDetailScreen.module.css";
 
 function relativeTime(iso: string): string {
@@ -370,25 +371,26 @@ function RichBody({
   bodyHtml: string;
   fallback: string;
 }) {
-  const html = useMemo(() => {
-    // Prefer GitHub's pre-rendered HTML — it already resolves issue refs,
-    // @mentions, emoji shortcodes, task lists and repo autolink rules.
-    // Fall back to running the raw markdown through marked ourselves when
-    // the HTML field is empty (older API payloads, cached detail, etc).
-    if (bodyHtml.trim()) {
-      return renderHtml(bodyHtml);
-    }
-
-    return renderMarkdown(fallback);
-  }, [bodyHtml, fallback]);
-
-  return (
-    <div
-      className={styles.markdown}
-      // Safe: both pipelines run DOMPurify with a strict allowlist.
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+  // Prefer GitHub's pre-rendered HTML — it already resolves issue refs,
+  // @mentions, emoji shortcodes, task lists and repo autolink rules.
+  // Fall back to rendering the raw markdown ourselves when the HTML field
+  // is empty (older API payloads, cached detail, etc).
+  const html = useMemo(
+    () => (bodyHtml.trim() ? renderHtml(bodyHtml) : null),
+    [bodyHtml],
   );
+
+  if (html != null) {
+    return (
+      <div
+        className={styles.markdown}
+        // Safe: runs DOMPurify with a strict allowlist.
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
+  return <Markdown className={styles.markdown} text={fallback} />;
 }
 
 function DetailBody({
