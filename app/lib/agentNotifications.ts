@@ -19,13 +19,22 @@ function canNotify(): boolean {
   return true;
 }
 
-function sessionLabel(sessionId: string | undefined): string {
+interface SessionContext {
+  projectName: string | null;
+  sessionName: string;
+}
+
+function sessionContext(sessionId: string | undefined): SessionContext {
   if (!sessionId) {
-    return "session";
+    return { projectName: null, sessionName: "session" };
   }
   const ws = getSessionState().sessions.find((w) => w.id === sessionId);
+  const sessionName = ws?.display_name ?? ws?.branch ?? "session";
+  const projectName = ws?.repo_root
+    ? (ws.repo_root.split("/").filter(Boolean).pop() ?? null)
+    : null;
 
-  return ws?.display_name ?? ws?.branch ?? "session";
+  return { projectName, sessionName };
 }
 
 function agentLabel(agentId: string): string {
@@ -57,19 +66,19 @@ export function notifyAgentFinished(
   }
 
   const agent = getAgentState().agents[agentId];
-  const session = sessionLabel(agent?.session_id);
+  const ctx = sessionContext(agent?.session_id);
   const name = agentLabel(agentId);
-  const label = `${name} · ${session}`;
+  const project = ctx.projectName ?? "Project";
   const seconds = Math.max(1, Math.round(durationMs / 1000));
 
   const title =
     subtype === "error"
-      ? `Agent failed · ${label}`
-      : `Agent finished · ${label}`;
+      ? `${project} agent failed`
+      : `${project} agent finished`;
   const body =
     subtype === "error"
-      ? "Turn ended with an error — click to view"
-      : `Turn completed in ${seconds}s — click to view`;
+      ? `${ctx.sessionName} - ${name} ended with an error`
+      : `${ctx.sessionName} - ${name} completed in ${seconds}s`;
 
   const n = new Notification(title, { body });
   n.onclick = () => {
@@ -87,10 +96,12 @@ export function notifyPermissionRequested(
   }
 
   const agent = getAgentState().agents[agentId];
-  const session = sessionLabel(agent?.session_id);
+  const ctx = sessionContext(agent?.session_id);
   const name = agentLabel(agentId);
-  const title = `Permission requested · ${name} · ${session}`;
-  const body = `${request.tool_name} needs your approval`;
+  const project = ctx.projectName ?? "Project";
+
+  const title = `${project} agent needs approval`;
+  const body = `${ctx.sessionName} - ${name} requested ${request.tool_name}`;
 
   const n = new Notification(title, { body, requireInteraction: true });
   n.onclick = () => {
