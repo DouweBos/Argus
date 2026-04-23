@@ -482,16 +482,20 @@ export async function runSetupPipeline(
   // zsh; fish (and other non-POSIX shells) as $SHELL will hang — acceptable
   // limitation for v1 since setup typically runs via sh-style shells.
   const runInPty = (cmd: string): Promise<number> =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const token = crypto.randomUUID().replace(/-/g, "");
       const sentinel = `__ARGUS_DONE_${token}__`;
       const re = new RegExp(`${sentinel}:(\\d+)`);
       let buffer = "";
-      const disposable = setupPty.onData((data: string) => {
+      let settled = false;
+      const dataDisposable = setupPty.onData((data: string) => {
+        if (settled) return;
         buffer += data;
         const match = buffer.match(re);
         if (match) {
-          disposable.dispose();
+          settled = true;
+          dataDisposable.dispose();
+          exitDisposable.dispose();
           resolve(parseInt(match[1], 10));
 
           return;
@@ -499,6 +503,20 @@ export async function runSetupPipeline(
         if (buffer.length > 64 * 1024) {
           buffer = buffer.slice(-32 * 1024);
         }
+      });
+      // If the PTY dies before we see the sentinel (terminal closed, shell
+      // crashed, command received SIGKILL), reject so the setup pipeline
+      // unblocks instead of hanging forever in "initializing".
+      const exitDisposable = setupPty.onExit(({ exitCode, signal }) => {
+        if (settled) return;
+        settled = true;
+        dataDisposable.dispose();
+        exitDisposable.dispose();
+        reject(
+          `Setup PTY exited before command completed (exitCode=${exitCode}${
+            signal ? `, signal=${signal}` : ""
+          }) while running: ${cmd}`,
+        );
       });
       // Chain the sentinel printf with `;` so it runs regardless of cmd's
       // exit status and reports it via `$?`. Newline terminates the input
