@@ -21,6 +21,7 @@ import {
   removeSession,
   reorderSession,
   setActiveSession,
+  updateSession,
   useActiveSessionId,
   useRunSessionId,
   useTerminalSessionsSlice,
@@ -37,8 +38,35 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
   const activeId = useActiveSessionId(sessionId);
   const runSessionId = useRunSessionId(sessionId);
   const [isCreating, setIsCreating] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const autoOpenedRef = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const startRename = useCallback(
+    (terminalId: string, currentTitle: string) => {
+      setRenamingId(terminalId);
+      setRenameDraft(currentTitle);
+    },
+    [],
+  );
+
+  const commitRename = useCallback(() => {
+    if (!renamingId) {
+      return;
+    }
+    const trimmed = renameDraft.trim();
+    if (trimmed.length > 0) {
+      updateSession(renamingId, { title: trimmed });
+    }
+    setRenamingId(null);
+    setRenameDraft("");
+  }, [renamingId, renameDraft]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingId(null);
+    setRenameDraft("");
+  }, []);
 
   // Sort sessions so the run tab is always first
   const sortedSessions = [...sessions].sort((a, b) => {
@@ -223,6 +251,7 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
         <div className={styles.tabs}>
           {sortedSessions.map((session) => {
             const isRun = session.id === runSessionId;
+            const isRenaming = session.id === renamingId;
             const indicator = getIndicator(session.id);
             const isDragging = draggingId === session.id;
             const classes = [
@@ -240,10 +269,15 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
               <button
                 key={session.id}
                 className={classes}
-                draggable={!isRun}
+                draggable={!isRun && !isRenaming}
                 onClick={() => setActiveSession(sessionId, session.id)}
+                onDoubleClick={
+                  isRun ? undefined : () => startRename(session.id, session.title)
+                }
                 onDragStart={
-                  isRun ? undefined : (e) => handleDragStart(e, session.id)
+                  isRun || isRenaming
+                    ? undefined
+                    : (e) => handleDragStart(e, session.id)
                 }
                 onDragEnd={isRun ? undefined : handleDragEnd}
                 onDragOver={
@@ -259,8 +293,31 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
                 ) : (
                   <Icons.TerminalIcon size={11} />
                 )}
-                <span className={styles.tabTitle}>{session.title}</span>
-                {!isRun && (
+                {isRenaming ? (
+                  <input
+                    autoFocus
+                    className={styles.tabTitleInput}
+                    value={renameDraft}
+                    onBlur={commitRename}
+                    onChange={(e) => setRenameDraft(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        commitRename();
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        cancelRename();
+                      } else {
+                        e.stopPropagation();
+                      }
+                    }}
+                  />
+                ) : (
+                  <span className={styles.tabTitle}>{session.title}</span>
+                )}
+                {!isRun && !isRenaming && (
                   <span
                     aria-label={`Close ${session.title}`}
                     className={styles.tabClose}
