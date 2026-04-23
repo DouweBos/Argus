@@ -42,23 +42,40 @@ jobs:
             found { print }
           ' CHANGELOG.md > release-notes.md
 
-      - name: Commit and tag
+      - name: Commit and tag release
+        id: stage
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --staged --quiet; then
             echo "No changesets to release"
-            exit 0
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            git commit -m "chore: release v${VERSION}"
+            git tag "v${VERSION}"
+            git push origin main
+            git push origin "v${VERSION}"
           fi
-          git commit -m "chore: release v${VERSION}"
-          git tag "v${VERSION}"
-          git push origin main
-          git push origin "v${VERSION}"
 
       - name: Install fastlane
         run: bundle install
+
+      - name: Create build keychain
+        env:
+          MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$HOME/Library/Keychains/build.keychain-db"
+          security create-keychain -p "$MATCH_KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p "$MATCH_KEYCHAIN_PASSWORD" build.keychain
+          # Prepend build.keychain to the search list so match can find installed certs
+          security list-keychains -d user -s build.keychain $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s build.keychain
+          echo "Keychain ready at $KEYCHAIN_PATH"
 
       - name: Run fastlane release
         env:
@@ -84,4 +101,5 @@ jobs:
           FASTLANE_SKIP_UPDATE_CHECK: "1"
           FASTLANE_HIDE_CHANGELOG: "1"
           CI: "true"
+          NODE_OPTIONS: "--max-old-space-size=8192"
         run: bundle exec fastlane mac release allow_dirty:true allow_any_branch:true

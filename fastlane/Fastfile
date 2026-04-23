@@ -64,7 +64,12 @@ platform :mac do
     prepare_notarize_env
 
     ENV["CSC_NAME"]        = SIGN_IDENTITY_RELEASE
-    ENV["CSC_IDENTITY_AUTO_DISCOVERY"] = "false"
+    # Let electron-builder find the Developer ID cert match just installed
+    # into build.keychain. With auto-discovery off electron-builder ignores
+    # the keychain entirely (it expects CSC_LINK/CSC_KEY_PASSWORD instead),
+    # which is why CI was falling back to ad-hoc signing.
+    ENV["CSC_IDENTITY_AUTO_DISCOVERY"] = "true"
+    ENV["CSC_KEYCHAIN"]    = ENV["MATCH_KEYCHAIN_NAME"] if ENV["MATCH_KEYCHAIN_NAME"] && !ENV["MATCH_KEYCHAIN_NAME"].empty?
     ENV["GH_TOKEN"]        = ENV["GITHUB_TOKEN"] if ENV["GITHUB_TOKEN"] && ENV["GH_TOKEN"].nil?
 
     sh("cd .. && pnpm install --frozen-lockfile")
