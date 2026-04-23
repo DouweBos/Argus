@@ -31,7 +31,7 @@ release
 .argus.local.json
 
 # Claude Code
-.claude/
+.claude/settings.local.json
 
 # Native build artifacts
 native/argus-sim-bridge/argus-sim-bridge
