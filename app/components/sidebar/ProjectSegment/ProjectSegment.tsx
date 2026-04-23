@@ -129,12 +129,14 @@ export function ProjectSegment({
               title="Project options"
               onClick={(e) => {
                 stop(e);
+                if (menuPosition) {
+                  setMenuPosition(null);
+                  return;
+                }
                 const rect = (
                   e.currentTarget as HTMLElement
                 ).getBoundingClientRect();
-                setMenuPosition((prev) =>
-                  prev ? null : { x: rect.right - 200, y: rect.bottom + 4 },
-                );
+                setMenuPosition({ x: rect.right - 200, y: rect.bottom + 4 });
               }}
             >
               <Icons.EllipsisIcon size={12} />

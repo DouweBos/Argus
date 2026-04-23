@@ -83,6 +83,7 @@
   font-family: var(--font-mono);
   order: 2;
   transition: opacity var(--transition-fast);
+  pointer-events: none;
 }
 
 .card:hover .diffStats,
@@ -115,6 +116,7 @@
   color: var(--accent);
   flex-shrink: 0;
   transition: opacity var(--transition-fast);
+  pointer-events: none;
 }
 
 .subtitleRow {
@@ -202,6 +204,7 @@
   font-weight: 500;
   line-height: 16px;
   transition: opacity var(--transition-fast);
+  pointer-events: none;
 }
 
 .ws_ready {
@@ -293,6 +296,7 @@
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
+  z-index: 1;
 }
 
 .actionBtn {

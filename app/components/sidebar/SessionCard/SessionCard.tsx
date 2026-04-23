@@ -154,18 +154,17 @@ export function SessionCard({
 
   const toggleMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMenuPosition((prev) => {
-      if (prev) {
-        return null;
-      }
-      const rect = menuBtnRef.current?.getBoundingClientRect();
-      if (!rect) {
-        return { x: e.clientX, y: e.clientY };
-      }
-
-      // Right-align the menu with the trigger; ContextMenu clamps to viewport.
-      return { x: rect.right - 200, y: rect.bottom + 4 };
-    });
+    if (menuPosition) {
+      setMenuPosition(null);
+      return;
+    }
+    const rect = menuBtnRef.current?.getBoundingClientRect();
+    if (!rect) {
+      setMenuPosition({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    // Right-align the menu with the trigger; ContextMenu clamps to viewport.
+    setMenuPosition({ x: rect.right - 200, y: rect.bottom + 4 });
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
