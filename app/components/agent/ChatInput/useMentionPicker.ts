@@ -108,6 +108,32 @@ function fileDirname(filePath: string): string {
   return i === -1 ? "" : filePath.slice(0, i);
 }
 
+/**
+ * Rank a candidate against a lowercase query. Higher is better.
+ * Case-insensitive at every step so users get the same results regardless
+ * of how they typed the query.
+ */
+function scoreMatch(candidate: string, lowerQuery: string): number {
+  if (!lowerQuery) {
+    return 0;
+  }
+
+  const lower = candidate.toLowerCase();
+  if (lower === lowerQuery) {
+    return 3;
+  }
+
+  if (lower.startsWith(lowerQuery)) {
+    return 2;
+  }
+
+  if (lower.includes(lowerQuery)) {
+    return 1;
+  }
+
+  return 0;
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -219,15 +245,27 @@ export function useMentionPicker(sessionId: string | undefined) {
         return browseState.entries;
       }
 
-      return browseState.entries.filter(
-        (e) => e.isLinkAction || e.display.toLowerCase().includes(filter),
-      );
+      return browseState.entries
+        .filter(
+          (e) => e.isLinkAction || e.display.toLowerCase().includes(filter),
+        )
+        .sort((a, b) => {
+          if (a.isLinkAction !== b.isLinkAction) {
+            return a.isLinkAction ? -1 : 1;
+          }
+
+          return scoreMatch(b.display, filter) - scoreMatch(a.display, filter);
+        });
     }
 
-    // Search mode: filter session files + directories
+    // Search mode: filter session files + directories (case-insensitive)
     const q = mentionContext.query.toLowerCase();
     const matchedDirs: MentionPickerItem[] = sessionDirs
       .filter((d) => d.toLowerCase().includes(q))
+      .sort(
+        (a, b) =>
+          scoreMatch(fileBasename(b), q) - scoreMatch(fileBasename(a), q),
+      )
       .slice(0, 6)
       .map((d) => ({
         display: fileBasename(d),
@@ -237,6 +275,10 @@ export function useMentionPicker(sessionId: string | undefined) {
 
     const matchedFiles: MentionPickerItem[] = sessionFiles
       .filter((f) => f.toLowerCase().includes(q))
+      .sort(
+        (a, b) =>
+          scoreMatch(fileBasename(b), q) - scoreMatch(fileBasename(a), q),
+      )
       .slice(0, MAX_RESULTS - matchedDirs.length)
       .map((f) => ({
         display: fileBasename(f),
