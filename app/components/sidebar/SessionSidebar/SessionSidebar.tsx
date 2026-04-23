@@ -23,8 +23,12 @@ import {
   useAwaitingMyReviewCount,
   usePrList,
 } from "../../../stores/pullRequestStore";
+import { reorderOpenProjects } from "../../../stores/recentProjectsStore";
 import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
-import { toggleProjectCollapsed } from "../../../stores/sessionStore";
+import {
+  reorderProjects,
+  toggleProjectCollapsed,
+} from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useTotalRunningTerminals } from "../../../stores/terminalStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
@@ -67,10 +71,57 @@ export function SessionSidebar() {
     (a, b) => a.created_at - b.created_at,
   );
 
-  const sorted = [...projects].sort((a, b) => a.addedAt - b.addedAt);
-  const totalProjects = sorted.length;
+  const totalProjects = projects.length;
+
+  const [dragRoot, setDragRoot] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{
+    position: "after" | "before";
+    root: string;
+  } | null>(null);
 
   const handleAdd = () => setShowOpenProject(true);
+
+  const handleDragStart =
+    (repoRoot: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      setDragRoot(repoRoot);
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", repoRoot);
+    };
+
+  const handleDragOver =
+    (repoRoot: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      if (!dragRoot || dragRoot === repoRoot) {
+        return;
+      }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const rect = e.currentTarget.getBoundingClientRect();
+      const position = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+      setDropTarget((prev) =>
+        prev?.root === repoRoot && prev.position === position
+          ? prev
+          : { root: repoRoot, position },
+      );
+    };
+
+  const handleDrop =
+    (repoRoot: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const from = dragRoot;
+      const target = dropTarget;
+      setDragRoot(null);
+      setDropTarget(null);
+      if (!from || from === repoRoot || !target) {
+        return;
+      }
+      reorderProjects(from, target.root, target.position);
+      reorderOpenProjects(from, target.root, target.position);
+    };
+
+  const handleDragEnd = () => {
+    setDragRoot(null);
+    setDropTarget(null);
+  };
 
   return (
     <SidebarNav
@@ -173,18 +224,46 @@ export function SessionSidebar() {
         )}
 
         <SidebarSection count={totalProjects}>Projects</SidebarSection>
-        {sorted.length === 0 ? (
+        {projects.length === 0 ? (
           <p className={styles.empty}>No active projects.</p>
         ) : (
-          sorted.map((project) => (
-            <ProjectSegment
-              key={project.repoRoot}
-              isCollapsed={project.isCollapsed}
-              repoRoot={project.repoRoot}
-              onClose={() => closeProject(project.repoRoot)}
-              onToggleCollapsed={() => toggleProjectCollapsed(project.repoRoot)}
-            />
-          ))
+          projects.map((project) => {
+            const isDragging = dragRoot === project.repoRoot;
+            const isTarget = dropTarget?.root === project.repoRoot;
+            const slotClass = [
+              styles.projectSlot,
+              isDragging ? styles.dragging : "",
+              isTarget && dropTarget?.position === "before"
+                ? styles.dropBefore
+                : "",
+              isTarget && dropTarget?.position === "after"
+                ? styles.dropAfter
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+
+            return (
+              <div
+                key={project.repoRoot}
+                className={slotClass}
+                draggable
+                onDragStart={handleDragStart(project.repoRoot)}
+                onDragOver={handleDragOver(project.repoRoot)}
+                onDrop={handleDrop(project.repoRoot)}
+                onDragEnd={handleDragEnd}
+              >
+                <ProjectSegment
+                  isCollapsed={project.isCollapsed}
+                  repoRoot={project.repoRoot}
+                  onClose={() => closeProject(project.repoRoot)}
+                  onToggleCollapsed={() =>
+                    toggleProjectCollapsed(project.repoRoot)
+                  }
+                />
+              </div>
+            );
+          })
         )}
       </SidebarScroll>
 
