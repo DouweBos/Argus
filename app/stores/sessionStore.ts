@@ -76,6 +76,27 @@ export const removeProject = (repoRoot: string) => {
   }
 };
 
+export const reorderProjects = (
+  fromRoot: string,
+  toRoot: string,
+  position: "after" | "before",
+) => {
+  sessionStore.setState((state) => {
+    const fromIdx = state.projects.findIndex((p) => p.repoRoot === fromRoot);
+    const toIdx = state.projects.findIndex((p) => p.repoRoot === toRoot);
+    if (fromIdx === -1 || toIdx === -1 || fromRoot === toRoot) {
+      return state;
+    }
+    const next = [...state.projects];
+    const [moved] = next.splice(fromIdx, 1);
+    const insertIdx = next.findIndex((p) => p.repoRoot === toRoot);
+    const anchor = position === "after" ? insertIdx + 1 : insertIdx;
+    next.splice(anchor, 0, moved);
+
+    return { projects: next };
+  });
+};
+
 export const setProjectBranch = (repoRoot: string, branch: string | null) => {
   sessionStore.setState((state) => ({
     projects: state.projects.map((p) =>

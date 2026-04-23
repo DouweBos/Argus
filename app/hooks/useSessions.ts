@@ -195,9 +195,8 @@ export function useProjects() {
   useEffect(() => {
     const open = getOpenProjects();
     if (open.length > 0) {
-      const sorted = [...open].sort((a, b) => a.addedAt - b.addedAt);
       (async () => {
-        for (const p of sorted) {
+        for (const p of open) {
           try {
             await openProject(p.path, { autoSelect: false, skipRecent: true });
           } catch {

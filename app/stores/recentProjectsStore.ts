@@ -46,7 +46,7 @@ function loadOpenProjects(): OpenProject[] {
     }
     const parsed = JSON.parse(raw) as OpenProject[];
 
-    return parsed.sort((a, b) => a.addedAt - b.addedAt);
+    return parsed;
   } catch {
     return [];
   }
@@ -113,6 +113,28 @@ export const removeOpenProject = (path: string) => {
     persistOpenProjects(updated);
 
     return { openProjects: updated };
+  });
+};
+
+export const reorderOpenProjects = (
+  fromPath: string,
+  toPath: string,
+  position: "after" | "before",
+) => {
+  recentProjectsStore.setState((state) => {
+    const fromIdx = state.openProjects.findIndex((p) => p.path === fromPath);
+    const toIdx = state.openProjects.findIndex((p) => p.path === toPath);
+    if (fromIdx === -1 || toIdx === -1 || fromPath === toPath) {
+      return state;
+    }
+    const next = [...state.openProjects];
+    const [moved] = next.splice(fromIdx, 1);
+    const insertIdx = next.findIndex((p) => p.path === toPath);
+    const anchor = position === "after" ? insertIdx + 1 : insertIdx;
+    next.splice(anchor, 0, moved);
+    persistOpenProjects(next);
+
+    return { openProjects: next };
   });
 };
 

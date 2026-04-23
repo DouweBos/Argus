@@ -14,3 +14,32 @@
   padding: 6px 8px;
   margin: 0;
 }
+
+.projectSlot {
+  position: relative;
+}
+
+.projectSlot.dragging {
+  opacity: 0.4;
+}
+
+.projectSlot.dropBefore::before,
+.projectSlot.dropAfter::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.projectSlot.dropBefore::before {
+  top: -1px;
+}
+
+.projectSlot.dropAfter::after {
+  bottom: -1px;
+}
