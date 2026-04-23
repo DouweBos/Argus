@@ -132,12 +132,6 @@
   font-size: var(--font-size-xs);
 }
 
-.description {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  line-height: 1.5;
-}
-
 .branchChip {
   display: inline-flex;
   align-items: center;

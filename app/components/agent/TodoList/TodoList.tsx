@@ -1,6 +1,6 @@
+import type { TodoItem } from "../../../stores/conversationStore";
 import { useState } from "react";
 import { Icons } from "@argus/peacock";
-import type { TodoItem } from "../../../stores/conversationStore";
 import styles from "./TodoList.module.css";
 
 interface TodoListProps {

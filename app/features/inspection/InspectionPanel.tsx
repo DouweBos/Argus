@@ -129,7 +129,8 @@ export function InspectionPanel({
         className={styles.sdkBanner}
       >
         Inspect runs against the accessibility hierarchy — class names and
-        better view hierarchy inspection tools will come soon through an custom SDK.
+        better view hierarchy inspection tools will come soon through an custom
+        SDK.
       </Banner>
       <div className={styles.header}>
         {!showSidebar && (

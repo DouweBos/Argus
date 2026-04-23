@@ -489,7 +489,9 @@ export async function runSetupPipeline(
       let buffer = "";
       let settled = false;
       const dataDisposable = setupPty.onData((data: string) => {
-        if (settled) return;
+        if (settled) {
+          return;
+        }
         buffer += data;
         const match = buffer.match(re);
         if (match) {
@@ -508,7 +510,9 @@ export async function runSetupPipeline(
       // crashed, command received SIGKILL), reject so the setup pipeline
       // unblocks instead of hanging forever in "initializing".
       const exitDisposable = setupPty.onExit(({ exitCode, signal }) => {
-        if (settled) return;
+        if (settled) {
+          return;
+        }
         settled = true;
         dataDisposable.dispose();
         exitDisposable.dispose();

@@ -401,8 +401,7 @@ export const getSessionConflicts = (id: string): Promise<string[]> =>
 
 export const getSessionChangesets = (
   id: string,
-): Promise<SessionChangesetsResult> =>
-  invoke("get_session_changesets", { id });
+): Promise<SessionChangesetsResult> => invoke("get_session_changesets", { id });
 
 export const getSessionCommitsAhead = (id: string): Promise<number> =>
   invoke("get_session_commits_ahead", { id });

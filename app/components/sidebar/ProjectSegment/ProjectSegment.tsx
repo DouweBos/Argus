@@ -131,6 +131,7 @@ export function ProjectSegment({
                 stop(e);
                 if (menuPosition) {
                   setMenuPosition(null);
+
                   return;
                 }
                 const rect = (

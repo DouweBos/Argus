@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReadyToMergeCard } from "./ReadyToMergeCard";
 
@@ -370,9 +376,7 @@ describe("readyToMergeCard", () => {
       />,
     );
 
-    expect(
-      screen.getByText("Short description of the session."),
-    ).toBeTruthy();
+    expect(screen.getByText("Short description of the session.")).toBeTruthy();
     expect(screen.getByText(/1 changeset ready to merge/)).toBeTruthy();
     expect(screen.getByText("silly-cats-dance.md")).toBeTruthy();
   });

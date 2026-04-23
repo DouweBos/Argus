@@ -19,10 +19,7 @@ import {
 } from "./merge";
 import { loadMetadata, saveMetadata } from "./metadata";
 import { defaultArgusConfig, type ArgusConfig } from "./models";
-import {
-  buildPullRequestUrl,
-  pickPullRequestTemplate,
-} from "./pullRequest";
+import { buildPullRequestUrl, pickPullRequestTemplate } from "./pullRequest";
 import { isBranchProtected, loadArgusConfig } from "./setup";
 import { startWatcher, type WatcherHandle } from "./watcher";
 
@@ -921,7 +918,6 @@ export async function pushSessionBranch(id: string): Promise<{
 
   return { branch: ws.branch, prUrl, remoteName };
 }
-
 
 // Re-exported so existing imports keep working — see `./pullRequest.ts`.
 export { buildPullRequestUrl } from "./pullRequest";

@@ -128,7 +128,7 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
     el.addEventListener("contextmenu", handler, true);
 
     return () => el.removeEventListener("contextmenu", handler, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- hitTest closes
+
     // over current scale/capture on every render; the listener always sees
     // the latest via the closure created on this effect invocation.
   }, [capture, scaleX, scaleY]);

@@ -84,12 +84,12 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
-import { captureUi } from "./services/inspection/capture";
 import {
   getPullRequestDetail,
   getPullRequestDiff,
 } from "./services/github/prDetail";
 import { listInterestingPullRequests } from "./services/github/pullRequests";
+import { captureUi } from "./services/inspection/capture";
 import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
@@ -545,9 +545,7 @@ export function registerIpcHandlers(): void {
     setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
   handle("get_session_conflicts", (a) => getSessionConflicts(a.id as string));
-  handle("get_session_changesets", (a) =>
-    getSessionChangesets(a.id as string),
-  );
+  handle("get_session_changesets", (a) => getSessionChangesets(a.id as string));
   handle("get_session_commits_ahead", (a) =>
     getSessionCommitsAhead(a.id as string),
   );

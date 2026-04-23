@@ -61,7 +61,9 @@ export async function getSessionChangesets(
   }
 
   const mdFiles = entries
-    .filter((name) => name.endsWith(".md") && name.toLowerCase() !== "readme.md")
+    .filter(
+      (name) => name.endsWith(".md") && name.toLowerCase() !== "readme.md",
+    )
     .sort();
 
   // Restrict to changesets that only exist on this session's branch. Files that
@@ -156,7 +158,9 @@ export function parseChangeset(filename: string, raw: string): ChangesetEntry {
         continue;
       }
       // Match: "pkg-name": patch   or   pkg-name: minor
-      const m = trimmed.match(/^["']?([^"':]+?)["']?\s*:\s*["']?([^"']+?)["']?$/);
+      const m = trimmed.match(
+        /^["']?([^"':]+?)["']?\s*:\s*["']?([^"']+?)["']?$/,
+      );
       if (m) {
         packages.push({ bump: m[2].trim(), name: m[1].trim() });
       }

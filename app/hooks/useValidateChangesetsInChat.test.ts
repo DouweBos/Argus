@@ -9,7 +9,9 @@ import { useValidateChangesetsInChat } from "./useValidateChangesetsInChat";
 // ---------------------------------------------------------------------------
 
 const mockStartAgentInSession = vi
-  .fn<(id: string, opts?: { focus?: boolean }) => Promise<{ agent_id: string }>>()
+  .fn<
+    (id: string, opts?: { focus?: boolean }) => Promise<{ agent_id: string }>
+  >()
   .mockResolvedValue({ agent_id: "agent-1" });
 const mockSendUserMessageToAgent = vi
   .fn<

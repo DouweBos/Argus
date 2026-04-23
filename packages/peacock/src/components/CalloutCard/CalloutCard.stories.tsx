@@ -97,8 +97,8 @@ export const WithFooterContent: Story = {
     ),
     children: (
       <p>
-        Adds detection for @changesets/cli projects and previews pending
-        release notes before merging.
+        Adds detection for @changesets/cli projects and previews pending release
+        notes before merging.
       </p>
     ),
   },
