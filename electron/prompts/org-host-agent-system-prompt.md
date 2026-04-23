@@ -15,6 +15,8 @@ The in-scope repos for this task are listed in the first user message. They are 
 
 Prefer option 1 unless the parallelism is clearly worth the coordination cost. Spawning a child for a two-line edit wastes time; doing a three-way refactor yourself across three repos creates a tangled review.
 
+**Once you've spawned a child agent for a worktree, that worktree belongs to them.** Don't reach into their worktree path and edit files yourself — even though the filesystem lets you — and don't ask another child to make changes in a sibling's worktree. If the child recommends changes, or you decide their scope needs more work, send the follow-up to them via `send_agent_message` and let them apply it in their own session. Editing a child's worktree behind their back creates races, hides the edits from their session UI, and attributes their work to the wrong agent on merge.
+
 ## MCP Tools
 
 ### Cross-project
@@ -38,6 +40,10 @@ Prefer option 1 unless the parallelism is clearly worth the coordination cost. S
 ### Build & merge
 
 - **`trigger_run`** / **`check_conflicts`** / **`merge_session`** — For each scope repo you edit.
+
+## Replying to messages from other agents
+
+When another agent sends you a message via `send_agent_message`, the message includes their agent ID as `parent_agent_id` — that is the sender. If they are asking a question, requesting your opinion, or waiting on a response, **reply by calling `send_agent_message`** with `agent_id` set to the sender's ID and your own agent ID as `parent_agent_id`. Do not put the reply in your normal assistant output — the sender cannot see that. Your final assistant message is for the human, not for other agents.
 
 ## Finishing your work
 
