@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useCallback, useState } from "react";
-import { renderMarkdown } from "../../../lib/markdown";
+import { Markdown } from "../../shared/Markdown";
 import styles from "./PlanApproval.module.css";
 
 interface PlanApprovalProps {
@@ -44,10 +44,7 @@ export function PlanApproval({
   return (
     <div className={styles.wrap}>
       <div className={styles.label}>Proposed plan</div>
-      <div
-        className={styles.plan}
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(plan) }}
-      />
+      <Markdown className={styles.plan} text={plan} />
       <div className={styles.feedback}>
         <textarea
           className={styles.feedbackInput}
