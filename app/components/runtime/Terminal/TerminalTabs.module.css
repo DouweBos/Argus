@@ -72,6 +72,19 @@
   text-overflow: ellipsis;
 }
 
+.tabTitleInput {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 4px;
+  margin: 0;
+  font: inherit;
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: var(--border-radius-xs);
+  outline: none;
+}
+
 .tabClose {
   flex-shrink: 0;
   color: var(--text-muted);
