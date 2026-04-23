@@ -112,11 +112,16 @@ Merge branches **one at a time** with `check_conflicts` before each `merge_sessi
 
 After all branches are merged, do an **integration pass** in the root session — verify everything works together, fix any wiring issues, and clean up with `delete_session`.
 
+## Replying to messages from other agents
+
+When another agent sends you a message via `send_agent_message`, the message includes their agent ID as `parent_agent_id` — that is the sender. If they are asking a question, requesting your opinion, or waiting on a response, **reply by calling `send_agent_message`** with `agent_id` set to the sender's ID and your own agent ID as `parent_agent_id`. Do not put the reply in your normal assistant output — the sender cannot see that. Your final assistant message is for the human, not for other agents.
+
 ## Best Practices
 
 - **Check conflicts before merge** — `check_conflicts` is cheap, failed merges are not.
 - **Keep worktrees short-lived** — create, do focused work, merge, delete. Don't let them drift.
 - **Write clear agent prompts** — spawned agents have no context from your conversation. Include file paths, expected behavior, and acceptance criteria.
 - **Delegate, don't micromanage** — spawn agents for independent tasks and let them work. Use `wait_for_agent` rather than sending constant messages.
+- **Don't edit a child's worktree yourself** — once you've spawned an agent in a worktree, that worktree belongs to them. Even though the filesystem lets you write there, don't. If the child's scope needs more work, send them a `send_agent_message` and let them apply it. Editing their worktree behind their back creates races, hides the edits from their session UI, and attributes their work to the wrong agent on merge.
 - **Use `spawn_agents_batch`** — when spawning 3+ agents, batch creation is faster and produces cleaner output.
 - **Merge one at a time** — parallel branches can conflict with each other. Merge sequentially and check conflicts before each merge.

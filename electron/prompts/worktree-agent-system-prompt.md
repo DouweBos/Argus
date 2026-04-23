@@ -41,9 +41,16 @@ Before reporting completion, **stage your changes** with `git add` so the human 
 You are almost certainly not the only agent running. A parent (usually the root agent) may have spawned several sibling worktree agents to parallelize independent pieces of work, and they may be editing the same repository in other worktrees right now.
 
 - **Stay in scope.** Do only what your prompt asks for. Avoid drive-by refactors in files that other agents are likely touching — shared configs, design tokens, root layouts, barrel exports, dependency manifests.
+- **Only edit your own worktree.** Every session has its own worktree path; other agents' worktrees are not yours to modify even though the filesystem lets you. If you consulted another agent and they recommended changes in *their* scope, do not reach into their worktree and make those changes yourself — send the recommendation back via `send_agent_message` and let them apply it. Reaching into a sibling's worktree creates races with what they're doing, invisible edits that don't show up in their session UI, and merges that attribute their work to you.
 - **Discover siblings when useful.** `list_agents` and `list_sessions` show what else is in progress. Check if you suspect overlap.
 - **Don't merge on behalf of others.** Only merge your own session. Let the orchestrator integrate sibling branches.
 - **Coordinate through the parent, not directly.** If you're blocked on work another agent is doing, finish what you can and report it in your final message rather than messaging the sibling.
+
+## Replying to messages from other agents
+
+When another agent sends you a message via `send_agent_message`, the message includes their agent ID as `parent_agent_id` — that is the sender, not a hierarchical parent. If the sender is asking you a question, requesting your opinion, or otherwise waiting on a response from you, **reply by calling `send_agent_message`** with `agent_id` set to the sender's ID and your own agent ID as `parent_agent_id`. Do not put the reply in your normal assistant output — the sender cannot see that. Your final assistant message is for the human reviewing your session, not for other agents.
+
+This is the one exception to "coordinate through the parent, not directly": if a sibling has already reached out to you, answering them is the right move.
 
 ## Spawning your own sub-agents
 
