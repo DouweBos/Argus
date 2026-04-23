@@ -91,13 +91,16 @@ function truncate(s: string, max = 2000): string {
 export async function execConductor(
   deviceKey: string,
   args: string[],
-  options?: { env?: NodeJS.ProcessEnv },
+  options?: { env?: NodeJS.ProcessEnv; maxBuffer?: number },
 ): Promise<{ stdout: string; stderr: string }> {
   const t0 = Date.now();
   try {
     const result = await execFileAsync(getConductorBin(), args, {
       ...options,
       encoding: "utf8",
+      // Default 1MB chokes on large outputs like `capture-ui --json` (screenshot
+      // base64 alone is often 3–10MB). Callers can override.
+      maxBuffer: options?.maxBuffer ?? 64 * 1024 * 1024,
     });
     conductorLogStore.push({
       ts: t0,

@@ -23,12 +23,15 @@ import styles from "./RuntimeView.module.css";
 
 interface AndroidDeviceViewProps {
   children?: React.ReactNode;
+  /** Hide the internal device `<select>` — the parent owns the target picker. */
+  hideDevicePicker?: boolean;
   sessionId: string | null;
   titleBarToggles?: React.ReactNode;
 }
 
 export function AndroidDeviceView({
   children,
+  hideDevicePicker = false,
   sessionId,
   titleBarToggles,
 }: AndroidDeviceViewProps) {
@@ -378,7 +381,7 @@ export function AndroidDeviceView({
     <AndroidDeviceStreamView
       actionButtons={actionButtons}
       capturing={androidCapturing}
-      devicePicker={devicePicker}
+      devicePicker={hideDevicePicker ? null : devicePicker}
       placeholder={placeholderContent}
       showFloatingActionBar={deviceSessionActive}
       titleBarExtra={titleBarExtra}

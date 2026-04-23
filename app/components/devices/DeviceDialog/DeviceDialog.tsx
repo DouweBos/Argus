@@ -8,7 +8,6 @@ import {
 } from "../../../lib/ipc";
 import { refreshDevices } from "../../../stores/deviceStore";
 import { useDeviceNavigation } from "../deviceNav";
-import { ConductorLogPanel } from "./ConductorLogPanel";
 import styles from "./DeviceDialog.module.css";
 import { DevicePreview } from "./DevicePreview";
 
@@ -147,10 +146,7 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
           <div className={styles.preview}>
             <DevicePreview device={device} />
           </div>
-        </div>
 
-        <div className={styles.col}>
-          <ConductorLogPanel deviceKey={device.deviceKey} />
           <div className={styles.actions}>
             {canBoot && (
               <Button

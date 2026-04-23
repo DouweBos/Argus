@@ -809,6 +809,9 @@ export const runConductorCommand = (
   args: string[],
 ): Promise<void> => invoke("run_conductor_command", { deviceKey, args });
 
+export const inspectionCapture = <T = unknown>(deviceKey: string): Promise<T> =>
+  invoke("inspection_capture", { deviceKey });
+
 // Shell commands
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });

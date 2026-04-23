@@ -24,12 +24,15 @@ import styles from "./RuntimeView.module.css";
 
 interface IosSimulatorViewProps {
   children?: React.ReactNode;
+  /** Hide the internal device `<select>` — the parent owns the target picker. */
+  hideDevicePicker?: boolean;
   sessionId: string | null;
   titleBarToggles?: React.ReactNode;
 }
 
 export function IosSimulatorView({
   children,
+  hideDevicePicker = false,
   sessionId,
   titleBarToggles,
 }: IosSimulatorViewProps) {
@@ -449,7 +452,7 @@ export function IosSimulatorView({
     <IosDeviceStreamView
       actionButtons={actionButtons}
       capturing={capturing}
-      devicePicker={devicePicker}
+      devicePicker={hideDevicePicker ? null : devicePicker}
       mjpegPort={mjpegPort}
       placeholder={placeholderContent}
       showFloatingActionBar={deviceSessionActive}

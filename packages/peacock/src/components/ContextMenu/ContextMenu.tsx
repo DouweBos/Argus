@@ -6,18 +6,33 @@ export interface ContextMenuAction {
   danger?: boolean;
   disabled?: boolean;
   icon?: ReactNode;
-  label: string;
+  label: ReactNode;
   onClick: () => void;
+  /** Shows a highlight + checkmark-style trailing mark on this row. */
+  selected?: boolean;
+  /** Small text on the right (shortcut, status, etc.). */
+  trailing?: ReactNode;
 }
 
 export interface ContextMenuSeparator {
   separator: true;
 }
 
-export type ContextMenuItem = ContextMenuAction | ContextMenuSeparator;
+export interface ContextMenuHeader {
+  header: ReactNode;
+}
+
+export type ContextMenuItem =
+  | ContextMenuAction
+  | ContextMenuHeader
+  | ContextMenuSeparator;
 
 function isSeparator(item: ContextMenuItem): item is ContextMenuSeparator {
-  return "separator" in item && item.separator;
+  return "separator" in item && item.separator === true;
+}
+
+function isHeader(item: ContextMenuItem): item is ContextMenuHeader {
+  return "header" in item;
 }
 
 export interface ContextMenuPosition {
@@ -96,13 +111,29 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
       className={styles.menu}
       style={{ left: position.x, top: position.y }}
     >
-      {items.map((item, i) =>
-        isSeparator(item) ? (
-          <div key={i} className={styles.separator} />
-        ) : (
+      {items.map((item, i) => {
+        if (isSeparator(item)) {
+          return <div key={i} className={styles.separator} />;
+        }
+        if (isHeader(item)) {
+          return (
+            <div key={i} className={styles.header}>
+              {item.header}
+            </div>
+          );
+        }
+        const classes = [
+          styles.item,
+          item.danger ? styles.danger : "",
+          item.selected ? styles.itemSelected : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        return (
           <button
             key={i}
-            className={`${styles.item} ${item.danger ? styles.danger : ""}`}
+            className={classes}
             disabled={item.disabled}
             onClick={(e) => {
               e.stopPropagation();
@@ -112,9 +143,12 @@ export function ContextMenu({ items, position, onClose }: ContextMenuProps) {
           >
             {item.icon && <span className={styles.icon}>{item.icon}</span>}
             <span className={styles.label}>{item.label}</span>
+            {item.trailing !== undefined && (
+              <span className={styles.trailing}>{item.trailing}</span>
+            )}
           </button>
-        ),
-      )}
+        );
+      })}
     </div>,
     document.body,
   );

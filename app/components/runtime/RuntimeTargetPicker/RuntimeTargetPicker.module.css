@@ -1,0 +1,59 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 3px 8px 3px 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  min-width: 0;
+  max-width: 240px;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.trigger:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--border-strong);
+}
+
+.trigger:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  outline: none;
+}
+
+.triggerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.triggerLabel {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.triggerLabelMuted {
+  color: var(--text-muted);
+}
+
+.triggerChevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
