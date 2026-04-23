@@ -79,3 +79,27 @@ export const Error: Story = {
     meta: "Conflicts in src/App.tsx and 2 other files",
   },
 };
+
+export const WithFooterContent: Story = {
+  args: {
+    tone: "neutral",
+    leading: (
+      <IconBadge tone="success">
+        <Icons.MergeIcon size={14} />
+      </IconBadge>
+    ),
+    title: "Ready to merge",
+    meta: "1 ahead · 1 behind main",
+    actions: (
+      <Button variant="primary" size="sm">
+        Merge
+      </Button>
+    ),
+    children: (
+      <p>
+        Adds detection for @changesets/cli projects and previews pending
+        release notes before merging.
+      </p>
+    ),
+  },
+};

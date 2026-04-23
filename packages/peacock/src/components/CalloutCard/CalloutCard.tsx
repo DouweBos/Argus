@@ -34,6 +34,7 @@ export function CalloutCard({
   meta,
   actions,
   className,
+  children,
   ...rest
 }: CalloutCardProps) {
   const classes = [styles.card, toneClass[tone], className]
@@ -42,12 +43,15 @@ export function CalloutCard({
 
   return (
     <div className={classes} {...rest}>
-      {leading && <span className={styles.leading}>{leading}</span>}
-      <div className={styles.body}>
-        <div className={styles.title}>{title}</div>
-        {meta && <div className={styles.meta}>{meta}</div>}
+      <div className={styles.head}>
+        {leading && <span className={styles.leading}>{leading}</span>}
+        <div className={styles.body}>
+          <div className={styles.title}>{title}</div>
+          {meta && <div className={styles.meta}>{meta}</div>}
+        </div>
+        {actions && <div className={styles.actions}>{actions}</div>}
       </div>
-      {actions && <div className={styles.actions}>{actions}</div>}
+      {children != null && <div className={styles.footer}>{children}</div>}
     </div>
   );
 }
