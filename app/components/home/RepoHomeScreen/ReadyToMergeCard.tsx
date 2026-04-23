@@ -1,10 +1,20 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CalloutCard, DiffStat, IconBadge, Icons } from "@argus/peacock";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
+import { useSessionChangesets } from "../../../hooks/useSessionChangesets";
+import { useValidateChangesetsInChat } from "../../../hooks/useValidateChangesetsInChat";
 import { listen } from "../../../lib/events";
-import { deleteSession, watchSession } from "../../../lib/ipc";
+import {
+  deleteSession,
+  openExternalUrl,
+  pushSessionBranch,
+  readArgusConfig,
+  watchSession,
+} from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
+import { pushError } from "../../../stores/notificationsStore";
+import { SessionChangesetsList } from "../SessionChangesetsCard/SessionChangesetsCard";
 import styles from "./ReadyToMergeCard.module.css";
 
 interface DiffStats {
@@ -15,6 +25,13 @@ interface DiffStats {
 
 interface ReadyToMergeCardProps {
   baseBranch?: string | null;
+  description?: string | null;
+  /**
+   * Absolute path of the repo the session belongs to. Used to read
+   * `.argus.json` and check whether the base branch is protected. When
+   * omitted the card behaves as if the base is not protected.
+   */
+  repoRoot?: string | null;
   sectionClassName?: string;
   sessionBranch?: string | null;
   sessionId: string;
@@ -59,6 +76,8 @@ export function ReadyToMergeCard({
   sessionId,
   baseBranch,
   sessionBranch,
+  description,
+  repoRoot,
   sectionClassName,
   titleClassName,
 }: ReadyToMergeCardProps) {
@@ -76,6 +95,18 @@ export function ReadyToMergeCard({
   const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
   const [justMerged, setJustMerged] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isProtectedBase, setIsProtectedBase] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const changesets = useSessionChangesets(sessionId);
+  const {
+    dispatch: validateChangesets,
+    isDispatching: isValidatingChangesets,
+  } = useValidateChangesetsInChat({
+    sessionId,
+    baseBranch,
+    sessionBranch,
+    changesets,
+  });
   const {
     dispatch: handleFixConflictsInChat,
     isDispatching: isDispatchingAgent,
@@ -104,10 +135,59 @@ export function ReadyToMergeCard({
     };
   }, [sessionId]);
 
-  const handleMerge = async () => {
-    await performMerge();
-    setJustMerged(true);
-  };
+  // Detect whether the base branch is listed as protected in `.argus.json`.
+  // Protected branches can't be merged into from the app — the UI flips to a
+  // "Push & open PR" flow instead.
+  useEffect(() => {
+    if (!repoRoot || !baseBranch) {
+      setIsProtectedBase(false);
+
+      return;
+    }
+    let cancelled = false;
+    readArgusConfig(repoRoot)
+      .then((config) => {
+        if (cancelled) {
+          return;
+        }
+        const list = config.protected_branches ?? [];
+        setIsProtectedBase(list.includes(baseBranch));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsProtectedBase(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repoRoot, baseBranch]);
+
+  const handleMerge = useCallback(async () => {
+    const ok = await performMerge();
+    // Only flip to the "Merged" state when the backend actually reports
+    // success — otherwise the failure leaves the merge button visible so the
+    // user can try again (or resolve conflicts).
+    if (ok) {
+      setJustMerged(true);
+    }
+  }, [performMerge]);
+
+  const handlePushAndOpenPr = useCallback(async () => {
+    setIsPushing(true);
+    try {
+      const { prUrl } = await pushSessionBranch(sessionId);
+      if (prUrl) {
+        await openExternalUrl(prUrl);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      pushError(message, "Push failed");
+    } finally {
+      setIsPushing(false);
+    }
+  }, [sessionId]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -123,7 +203,8 @@ export function ReadyToMergeCard({
   const hasUncommitted = (diffStats?.files ?? 0) > 0;
   const hasWork = commitsAhead > 0 || hasStaged || hasUncommitted;
   const needsRebase = commitsBehind > 0 && conflicts.length === 0;
-  if (!hasWork && !needsRebase && !justMerged) {
+  const hasFooter = Boolean(description) || changesets.length > 0;
+  if (!hasWork && !needsRebase && !justMerged && !hasFooter) {
     return null;
   }
 
@@ -172,6 +253,10 @@ export function ReadyToMergeCard({
     tone = "warn";
   } else if (!hasWork && needsRebase) {
     title = "Update available";
+  } else if (!hasWork) {
+    title = "Changes";
+  } else if (isProtectedBase) {
+    title = `Ready to push`;
   } else {
     title = "Ready to merge";
   }
@@ -185,14 +270,15 @@ export function ReadyToMergeCard({
         !justMerged &&
         hasWork && (
           <span className={styles.target}>
-            {" into "}
+            {isProtectedBase ? " to PR against " : " into "}
             <span className={styles.branch}>{baseBranch}</span>
           </span>
         )}
     </>
   );
 
-  const metaNode = (
+  const showMeta = hasWork || needsRebase || justMerged || hasConflicts;
+  const metaNode = showMeta ? (
     <span className={styles.meta}>
       <span>{statusLine}</span>
       {diffStats && diffStats.files > 0 && !justMerged && (
@@ -206,7 +292,7 @@ export function ReadyToMergeCard({
         </>
       )}
     </span>
-  );
+  ) : null;
 
   const actionsNode = justMerged ? (
     <button
@@ -262,7 +348,19 @@ export function ReadyToMergeCard({
           {getRebaseLabel(isRebasing, hasWork, baseBranch)}
         </button>
       )}
-      {baseBranch && !hasConflicts && hasWork && (
+      {baseBranch && !hasConflicts && hasWork && isProtectedBase && (
+        <button
+          className={`${styles.actionBtn} ${styles.merge}`}
+          disabled={isPushing}
+          title={`${baseBranch} is protected — push ${sessionBranch ?? "this branch"} and open a pull request`}
+          type="button"
+          onClick={handlePushAndOpenPr}
+        >
+          <Icons.PushIcon size={11} />
+          {isPushing ? "Pushing…" : "Push & open PR"}
+        </button>
+      )}
+      {baseBranch && !hasConflicts && hasWork && !isProtectedBase && (
         <button
           className={`${styles.actionBtn} ${styles.merge}`}
           disabled={!canMerge}
@@ -277,6 +375,17 @@ export function ReadyToMergeCard({
     </>
   );
 
+  const footerNode = hasFooter ? (
+    <div className={styles.footer}>
+      {description && <p className={styles.description}>{description}</p>}
+      <SessionChangesetsList
+        changesets={changesets}
+        isValidating={isValidatingChangesets}
+        onValidate={validateChangesets}
+      />
+    </div>
+  ) : null;
+
   const content = (
     <CalloutCard
       tone={tone === "warn" ? "accent" : "neutral"}
@@ -288,7 +397,9 @@ export function ReadyToMergeCard({
       title={titleNode}
       meta={metaNode}
       actions={actionsNode}
-    />
+    >
+      {footerNode}
+    </CalloutCard>
   );
 
   if (sectionClassName || titleClassName) {

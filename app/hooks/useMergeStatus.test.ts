@@ -108,22 +108,24 @@ describe("useMergeStatus", () => {
     });
   });
 
-  it("handleMerge calls mergeSessionIntoBase", async () => {
+  it("handleMerge calls mergeSessionIntoBase and returns true on success", async () => {
     const { result } = renderHook(() => useMergeStatus("ws-1"));
 
     await waitFor(() => {
       expect(mockGetSessionConflicts).toHaveBeenCalled();
     });
 
+    let ok: boolean | undefined;
     await act(async () => {
-      await result.current.handleMerge();
+      ok = await result.current.handleMerge();
     });
 
     expect(mockMergeSessionIntoBase).toHaveBeenCalledWith("ws-1");
+    expect(ok).toBe(true);
     expect(result.current.isMerging).toBe(false);
   });
 
-  it("handleMerge captures error in mergeError on failure", async () => {
+  it("handleMerge returns false and records the error on failure", async () => {
     mockMergeSessionIntoBase.mockRejectedValue(
       new Error("merge conflict detected"),
     );
@@ -134,12 +136,26 @@ describe("useMergeStatus", () => {
       expect(mockGetSessionConflicts).toHaveBeenCalled();
     });
 
+    let ok: boolean | undefined;
     await act(async () => {
-      await result.current.handleMerge();
+      ok = await result.current.handleMerge();
     });
 
+    expect(ok).toBe(false);
     expect(result.current.mergeError).toBe("merge conflict detected");
     expect(result.current.isMerging).toBe(false);
+  });
+
+  it("handleMerge returns false when sessionId is null", async () => {
+    const { result } = renderHook(() => useMergeStatus(null));
+
+    let ok: boolean | undefined;
+    await act(async () => {
+      ok = await result.current.handleMerge();
+    });
+
+    expect(ok).toBe(false);
+    expect(mockMergeSessionIntoBase).not.toHaveBeenCalled();
   });
 
   it("no-ops when sessionId is null", async () => {

@@ -14,7 +14,8 @@ interface UseMergeStatusResult {
   commitsAhead: number;
   commitsBehind: number;
   conflicts: string[];
-  handleMerge: () => Promise<void>;
+  /** Returns `true` when the merge completed successfully, `false` otherwise. */
+  handleMerge: () => Promise<boolean>;
   handleRebase: () => Promise<void>;
   hasStaged: boolean;
   isMerging: boolean;
@@ -65,20 +66,24 @@ export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
   // commit on the branch, or a sibling merge completion).
   useIpcEvent("session:review-state", fetchStatus);
 
-  const handleMerge = useCallback(async () => {
+  const handleMerge = useCallback(async (): Promise<boolean> => {
     if (!sessionId) {
-      return;
+      return false;
     }
     setIsMerging(true);
     setMergeError(null);
     try {
       await mergeSessionIntoBase(sessionId);
+
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setMergeError(message);
       pushError(message, "Merge failed");
       // Refresh conflict list so the UI can surface "Fix in chat".
       await fetchStatus();
+
+      return false;
     } finally {
       setIsMerging(false);
     }

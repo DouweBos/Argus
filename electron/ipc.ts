@@ -126,6 +126,7 @@ import {
   cancelOrgTask,
   startOrgTask,
 } from "./services/organizationTask/orchestrator";
+import { getSessionChangesets } from "./services/session/changesets";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
 import {
   addRepoRoot,
@@ -543,6 +544,9 @@ export function registerIpcHandlers(): void {
     setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
   handle("get_session_conflicts", (a) => getSessionConflicts(a.id as string));
+  handle("get_session_changesets", (a) =>
+    getSessionChangesets(a.id as string),
+  );
   handle("get_session_commits_ahead", (a) =>
     getSessionCommitsAhead(a.id as string),
   );

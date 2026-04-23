@@ -1,12 +1,23 @@
 .card {
   display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-md);
   background: var(--bg-secondary);
   padding: 14px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.footer {
+  border-top: 1px solid var(--glass-border);
+  padding-top: 12px;
 }
 
 .neutral {

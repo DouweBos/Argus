@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Button,
-  DiffStat,
   IconBadge,
   Icons,
   projectAccent,
   SectionPanel,
 } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
-import { listen } from "../../../lib/events";
-import { watchSession } from "../../../lib/ipc";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
@@ -28,12 +25,6 @@ interface SessionHomeScreenProps {
   onViewHistory: (historyId: string) => void;
   repoRoot: string | null;
   sessionId: string;
-}
-
-interface DiffStats {
-  additions: number;
-  deletions: number;
-  files: number;
 }
 
 function basename(p: string): string {
@@ -67,26 +58,7 @@ export function SessionHomeScreen({
     [history.entries, session],
   );
 
-  const [diffStats, setDiffStats] = useState<DiffStats | null>(null);
   const [isRenamingBranch, setIsRenamingBranch] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const unlistenPromise = listen<DiffStats>(
-      `session:diff-changed:${sessionId}`,
-      (event) => {
-        if (!cancelled) {
-          setDiffStats(event.payload);
-        }
-      },
-    );
-    watchSession(sessionId).catch(() => {});
-
-    return () => {
-      cancelled = true;
-      unlistenPromise.then((fn) => fn());
-    };
-  }, [sessionId]);
 
   const projectName = useMemo(() => {
     if (!repoRoot) {
@@ -105,9 +77,6 @@ export function SessionHomeScreen({
   const displayName = session?.display_name ?? session?.branch ?? "Session";
   const branch = session?.branch ?? "";
   const baseBranch = session?.base_branch ?? null;
-  const additions = diffStats?.additions ?? 0;
-  const deletions = diffStats?.deletions ?? 0;
-  const filesChanged = diffStats?.files ?? 0;
 
   return (
     <div className={styles.screen}>
@@ -180,28 +149,11 @@ export function SessionHomeScreen({
 
         <ReadyToMergeCard
           baseBranch={session?.base_branch}
+          description={session?.description}
+          repoRoot={session?.repo_root}
           sessionBranch={session?.branch}
           sessionId={sessionId}
         />
-
-        {(filesChanged > 0 || session?.description) && (
-          <SectionPanel
-            title="Changes"
-            action={
-              filesChanged > 0 ? (
-                <DiffStat
-                  added={additions}
-                  removed={deletions}
-                  files={filesChanged}
-                />
-              ) : undefined
-            }
-          >
-            {session?.description && (
-              <div className={styles.description}>{session.description}</div>
-            )}
-          </SectionPanel>
-        )}
 
         {repoRoot && history.loaded && sessionHistoryEntries.length > 0 && (
           <SectionPanel

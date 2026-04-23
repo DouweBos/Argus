@@ -177,6 +177,14 @@ export interface ArgusConfig {
    */
   protected_branches: string[];
   /**
+   * Filename of the preferred pull-request template — used by the
+   * "Push & open PR" flow when the repo has multiple templates in
+   * `.github/PULL_REQUEST_TEMPLATE/` (where GitHub otherwise requires an
+   * explicit `?template=` query parameter). Matches the filename as it
+   * lives on disk, e.g. `"feature.md"`.
+   */
+  pull_request_template?: string | null;
+  /**
    * When true, the project can only have one runtime (run command) active at
    * a time across all its sessions. Pressing Run while another session in the
    * same repo is already running prompts the user to stop the other runtime

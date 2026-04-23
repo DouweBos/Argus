@@ -26,6 +26,7 @@ import type {
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
+  SessionChangesetsResult,
   OnboardingConfigFile,
   OnboardingDefaults,
   OnboardingStep,
@@ -397,6 +398,11 @@ export const setSessionBaseBranch = (
 
 export const getSessionConflicts = (id: string): Promise<string[]> =>
   invoke("get_session_conflicts", { id });
+
+export const getSessionChangesets = (
+  id: string,
+): Promise<SessionChangesetsResult> =>
+  invoke("get_session_changesets", { id });
 
 export const getSessionCommitsAhead = (id: string): Promise<number> =>
   invoke("get_session_commits_ahead", { id });

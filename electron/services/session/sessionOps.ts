@@ -19,6 +19,10 @@ import {
 } from "./merge";
 import { loadMetadata, saveMetadata } from "./metadata";
 import { defaultArgusConfig, type ArgusConfig } from "./models";
+import {
+  buildPullRequestUrl,
+  pickPullRequestTemplate,
+} from "./pullRequest";
 import { isBranchProtected, loadArgusConfig } from "./setup";
 import { startWatcher, type WatcherHandle } from "./watcher";
 
@@ -680,7 +684,7 @@ export async function getSessionConflicts(id: string): Promise<string[]> {
     return [];
   }
 
-  return checkMergeConflicts(ws.repo_root, ws.branch, ws.base_branch);
+  return checkMergeConflicts(ws.repo_root, ws.branch, ws.base_branch, ws.path);
 }
 
 /** Merge session's branch into its base branch. */
@@ -901,38 +905,23 @@ export async function pushSessionBranch(id: string): Promise<{
   const remoteUrl = (
     await git(ws.repo_root, ["remote", "get-url", remoteName])
   ).trim();
+
+  // Honor the project's pull-request template so the PR form opens
+  // prefilled. For repos with multiple templates in
+  // `.github/PULL_REQUEST_TEMPLATE/`, GitHub requires `?template=<file>` —
+  // without it the PR body opens blank. Single top-level templates are
+  // auto-detected by GitHub from `?expand=1` alone.
+  const template = pickPullRequestTemplate(ws.repo_root);
   const prUrl = buildPullRequestUrl(
     remoteUrl,
     ws.branch,
     ws.base_branch ?? null,
+    template,
   );
 
   return { branch: ws.branch, prUrl, remoteName };
 }
 
-/**
- * Convert a git remote URL into a GitHub "open PR" URL. Returns `null` for
- * non-GitHub hosts so callers can decide how to handle (e.g. just open the
- * remote URL, or show the branch name so the user can file the PR manually).
- */
-export function buildPullRequestUrl(
-  remoteUrl: string,
-  branch: string,
-  baseBranch: string | null,
-): string | null {
-  // ssh: git@github.com:owner/repo(.git)   |  https://github.com/owner/repo(.git)
-  const match =
-    remoteUrl.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/i) ?? null;
-  if (!match) {
-    return null;
-  }
-  const [, owner, repo] = match;
-  const encBranch = encodeURIComponent(branch);
-  if (baseBranch) {
-    const encBase = encodeURIComponent(baseBranch);
 
-    return `https://github.com/${owner}/${repo}/compare/${encBase}...${encBranch}?expand=1`;
-  }
-
-  return `https://github.com/${owner}/${repo}/pull/new/${encBranch}`;
-}
+// Re-exported so existing imports keep working — see `./pullRequest.ts`.
+export { buildPullRequestUrl } from "./pullRequest";

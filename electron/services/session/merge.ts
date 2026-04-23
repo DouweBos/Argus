@@ -22,8 +22,9 @@ export async function checkMergeConflicts(
   repoRoot: string,
   sessionBranch: string,
   baseBranch: string,
+  wsPath?: string,
 ): Promise<string[]> {
-  // Find the merge base.
+  // Find the merge base — fail fast when branches have no shared history.
   const mergeBase = (
     await git(repoRoot, ["merge-base", baseBranch, sessionBranch])
   ).trim();
@@ -32,13 +33,23 @@ export async function checkMergeConflicts(
     throw "No common ancestor between branches";
   }
 
-  // Use `git merge-tree` to detect conflicts without touching the working tree.
-  // Note: exit code behavior varies across git versions — always parse stdout.
+  // Merge targets the effective state the merge will actually commit —
+  // including anything currently staged in the session worktree. Without
+  // this, conflicts introduced by uncommitted index entries go undetected
+  // until the merge runs and aborts mid-flight.
+  const cwd = wsPath ?? repoRoot;
+  const sessionRef = wsPath
+    ? ((await effectiveSessionRef(wsPath)) ?? sessionBranch)
+    : sessionBranch;
+
+  // `git merge-tree --write-tree` detects conflicts without touching the
+  // working tree. Exit code behavior varies across git versions — always
+  // parse stdout.
   const stdout: string = await new Promise((resolve) => {
     execFile(
       "git",
-      ["merge-tree", "--write-tree", sessionBranch, baseBranch],
-      { cwd: repoRoot, maxBuffer: 32 * 1024 * 1024 },
+      ["merge-tree", "--write-tree", sessionRef, baseBranch],
+      { cwd, maxBuffer: 32 * 1024 * 1024 },
       (_err: Error | null, out: string) => resolve(out || ""),
     );
   });
@@ -46,6 +57,48 @@ export async function checkMergeConflicts(
   const unique = [...new Set(parseConflictingFiles(stdout))].sort();
 
   return unique;
+}
+
+/**
+ * Synthesise a throwaway commit that captures the current index (staged
+ * changes) on top of HEAD, and return its SHA. Returns `null` when the index
+ * is clean — callers should fall back to using the branch ref directly.
+ *
+ * The loose object never touches any ref, so it is collected by git gc; the
+ * ephemeral hash is only used to feed `git merge-tree`.
+ */
+async function effectiveSessionRef(wsPath: string): Promise<string | null> {
+  try {
+    await git(wsPath, ["diff", "--cached", "--quiet"]);
+
+    return null;
+  } catch {
+    // Staged changes present — fall through.
+  }
+  try {
+    const tree = (await git(wsPath, ["write-tree"])).trim();
+    if (!tree) {
+      return null;
+    }
+    const head = (await git(wsPath, ["rev-parse", "HEAD"])).trim();
+    if (!head) {
+      return null;
+    }
+    const commit = (
+      await git(wsPath, [
+        "commit-tree",
+        tree,
+        "-p",
+        head,
+        "-m",
+        "argus: staged (conflict pre-check)",
+      ])
+    ).trim();
+
+    return commit || null;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -78,11 +131,14 @@ export async function mergeSessionIntoBase(
     await git(wsPath, ["commit", "-m", message]);
   }
 
-  // Pre-check for conflicts before touching the working tree.
+  // Pre-check for conflicts before touching the working tree. Pass `wsPath`
+  // so any still-uncommitted staged changes (e.g. added between the UI
+  // refresh and the merge click) are included in the check.
   const conflicts = await checkMergeConflicts(
     repoRoot,
     sessionBranch,
     baseBranch,
+    wsPath,
   );
   if (conflicts.length > 0) {
     throw `Cannot merge: ${conflicts.length} conflicting file(s):\n${conflicts.join("\n")}`;

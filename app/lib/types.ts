@@ -30,6 +30,20 @@ export interface BranchList {
   remote: string[];
 }
 
+export interface ChangesetEntry {
+  /** File name within `.changeset/`, e.g. `silly-cats-dance.md`. */
+  filename: string;
+  /** Packages + bump types declared in the frontmatter. */
+  packages: { bump: string; name: string }[];
+  /** Body of the changeset (release note text), trimmed. */
+  summary: string;
+}
+
+export interface SessionChangesetsResult {
+  changesets: ChangesetEntry[];
+  usesChangesets: boolean;
+}
+
 /** Check if session is ready. */
 export function isSessionReady(status: Session["status"]): boolean {
   return status === "ready";
@@ -221,20 +235,27 @@ export interface ArgusConfig {
    * shows a "Push & open PR" flow instead. Typical values: `["main"]`.
    */
   protected_branches?: string[];
+  /**
+   * Filename of the preferred pull-request template — used by the
+   * "Push & open PR" flow when the repo has multiple templates in
+   * `.github/PULL_REQUEST_TEMPLATE/`. Without this, Argus uses the first
+   * template alphabetically.
+   */
+  pull_request_template?: string;
   /** Ordered list of run commands shown in the app's run menu. */
   run?: RunCommand[];
   /** Whether to save chat history when agents stop. Defaults to true. */
   save_chat_history?: boolean;
-  /**
-   * When true, only one runtime may be active across all sessions of this
-   * project. The run button prompts before starting a second runtime.
-   */
-  single_runtime?: boolean;
   setup?: {
     commands?: string[];
     copy?: string[];
     symlink?: string[];
   };
+  /**
+   * When true, only one runtime may be active across all sessions of this
+   * project. The run button prompts before starting a second runtime.
+   */
+  single_runtime?: boolean;
   terminals?: TerminalConfigEntry[];
   /** Env vars set in each session's terminals with a unique integer per session. */
   workspace_env?: WorkspaceEnvConfig[];
