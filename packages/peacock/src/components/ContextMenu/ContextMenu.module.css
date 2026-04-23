@@ -60,3 +60,32 @@
   margin: 4px 6px;
   background: var(--glass-border);
 }
+
+.header {
+  padding: 6px 10px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.itemSelected {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text-primary);
+}
+
+.itemSelected:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.trailing {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.itemSelected .trailing {
+  color: var(--accent);
+}

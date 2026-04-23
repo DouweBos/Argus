@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import "./styles/global.css";
 import { SimulatorPopout } from "./components/popout/SimulatorPopout";
 import { seedPopoutStore } from "./components/popout/seedPopoutStore";
 import { initActivityService } from "./lib/activityService";

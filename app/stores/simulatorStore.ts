@@ -79,6 +79,7 @@ function loadBrowserPreset(): string {
 }
 
 export type Platform = "android" | "ios" | "web";
+export type RuntimeMode = "inspect" | "simulate";
 
 interface SimulatorStoreData {
   androidBooting: boolean;
@@ -113,6 +114,8 @@ interface SimulatorStoreData {
   platform: Platform;
   /** Simulator runtime (iOS / Android / Web) shown in the tool panel or in a fullscreen-style dialog */
   runtimeDialogOpen: boolean;
+  /** Whether the runtime view shows the live simulator or the inspection panel. */
+  runtimeMode: RuntimeMode;
   selectedAndroidBySession: Record<string, string | null>;
   selectedUdidBySession: Record<string, string | null>;
 }
@@ -138,6 +141,7 @@ const simulatorStore = create<SimulatorStoreData>(() => ({
   browserUrlBySession: {},
   mountedSessionIds: {},
   runtimeDialogOpen: false,
+  runtimeMode: "simulate",
 }));
 
 const useSimulatorStore = simulatorStore;
@@ -145,6 +149,10 @@ const useSimulatorStore = simulatorStore;
 export const setPlatform = (platform: Platform) => {
   localStorage.setItem(PLATFORM_STORAGE_KEY, platform);
   simulatorStore.setState({ platform });
+};
+
+export const setRuntimeMode = (mode: RuntimeMode) => {
+  simulatorStore.setState({ runtimeMode: mode });
 };
 
 export const setIosToolsStatus = (available: boolean, error: string | null) => {
@@ -386,11 +394,30 @@ export function useSimulatorControlsState() {
   };
 }
 
+/**
+ * Returns the combined state needed by the RuntimeTargetPicker — active
+ * platform, both device lists, and the session's current iOS/Android pick.
+ * Memoised with `useShallow` so the picker only re-renders on real changes.
+ */
+export function useRuntimeTargetState(sessionId: string | null) {
+  return useSimulatorStore(
+    useShallow((s) => ({
+      platform: s.platform,
+      devices: s.devices,
+      androidDevices: s.androidDevices,
+      iosUdid: s.selectedUdidBySession[sessionId ?? "__global__"] ?? null,
+      androidSerial:
+        s.selectedAndroidBySession[sessionId ?? "__global__"] ?? null,
+    })),
+  );
+}
+
 export function useRuntimeViewSimulatorState() {
   const data = useSimulatorStore(
     useShallow((s) => ({
       platform: s.platform,
       runtimeDialogOpen: s.runtimeDialogOpen,
+      runtimeMode: s.runtimeMode,
     })),
   );
 
@@ -398,6 +425,7 @@ export function useRuntimeViewSimulatorState() {
     ...data,
     setPlatform,
     setRuntimeDialogOpen,
+    setRuntimeMode,
   };
 }
 

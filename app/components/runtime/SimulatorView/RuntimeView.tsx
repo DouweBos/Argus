@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
-import { Icons, PlatformChip } from "@argus/peacock";
+import { Icons, SegmentedControl } from "@argus/peacock";
+import { InspectionPanel } from "../../../features/inspection/InspectionPanel";
+import { NodeMetadataPanel } from "../../../features/inspection/NodeMetadataPanel";
+import { useDragResize } from "../../../hooks/useDragResize";
 import { openSimulatorPopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {
@@ -8,6 +11,7 @@ import {
   useRuntimeViewSimulatorState,
 } from "../../../stores/simulatorStore";
 import { ConductorLogPanel } from "../../devices/DeviceDialog/ConductorLogPanel";
+import { RuntimeTargetPicker } from "../RuntimeTargetPicker/RuntimeTargetPicker";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
 import { IosSimulatorView } from "./IosSimulatorView";
@@ -28,13 +32,37 @@ interface RuntimeViewProps {
  * whole surface can be shown embedded in the tool panel or in a modal dialog
  * (see `runtimeDialogOpen` in the simulator store).
  */
+const SIDE_PANEL_KEY = "argus:runtime:sidePanelWidth";
+const SIDE_PANEL_DEFAULT = 300;
+const SIDE_PANEL_MIN = 240;
+const SIDE_PANEL_MAX = 720;
+
+function loadSidePanelWidth(): number {
+  try {
+    const raw = localStorage.getItem(SIDE_PANEL_KEY);
+    const n = raw ? Number.parseFloat(raw) : NaN;
+    if (Number.isFinite(n)) {
+      return Math.min(SIDE_PANEL_MAX, Math.max(SIDE_PANEL_MIN, n));
+    }
+  } catch {
+    // ignore
+  }
+
+  return SIDE_PANEL_DEFAULT;
+}
+
 export function RuntimeView({
   sessionId,
   variant = "embedded",
 }: RuntimeViewProps) {
   const isPopout = variant === "popout";
-  const { platform, setPlatform, runtimeDialogOpen, setRuntimeDialogOpen } =
-    useRuntimeViewSimulatorState();
+  const {
+    platform,
+    runtimeDialogOpen,
+    setRuntimeDialogOpen,
+    runtimeMode,
+    setRuntimeMode,
+  } = useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId();
   const activeDeviceKey = useActiveDeviceKey(sessionId, platform);
 
@@ -50,6 +78,22 @@ export function RuntimeView({
 
   const canPopout = !isPopout && platform === "ios" && !!activeDeviceKey;
 
+  const { size: sidePanelWidth, onMouseDown: onSidePanelResize } =
+    useDragResize({
+      axis: "horizontal",
+      initialSize: loadSidePanelWidth(),
+      min: SIDE_PANEL_MIN,
+      max: SIDE_PANEL_MAX,
+      invert: true,
+    });
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDE_PANEL_KEY, String(sidePanelWidth));
+    } catch {
+      // ignore storage failures
+    }
+  }, [sidePanelWidth]);
+
   const handlePopout = useCallback(() => {
     if (!activeDeviceKey) {
       return;
@@ -60,23 +104,19 @@ export function RuntimeView({
   }, [activeDeviceKey]);
 
   const toggle = (
-    <div className={styles.platformToggle}>
-      <PlatformChip
-        active={platform === "ios"}
-        platform="ios"
-        onClick={() => setPlatform("ios")}
+    <>
+      <RuntimeTargetPicker sessionId={sessionId} />
+      <SegmentedControl
+        aria-label="Runtime mode"
+        className={styles.modeSegment}
+        value={runtimeMode}
+        onChange={setRuntimeMode}
+        options={[
+          { label: "Simulate", value: "simulate" },
+          { label: "Inspect", value: "inspect" },
+        ]}
       />
-      <PlatformChip
-        active={platform === "android"}
-        platform="android"
-        onClick={() => setPlatform("android")}
-      />
-      <PlatformChip
-        active={platform === "web"}
-        platform="web"
-        onClick={() => setPlatform("web")}
-      />
-    </div>
+    </>
   );
 
   const titleBarToggles = (
@@ -111,7 +151,11 @@ export function RuntimeView({
   let nativeSimulator: ReactNode = null;
   if (platform === "ios") {
     nativeSimulator = (
-      <IosSimulatorView sessionId={sessionId} titleBarToggles={titleBarToggles}>
+      <IosSimulatorView
+        sessionId={sessionId}
+        titleBarToggles={titleBarToggles}
+        hideDevicePicker
+      >
         {toggle}
       </IosSimulatorView>
     );
@@ -120,6 +164,7 @@ export function RuntimeView({
       <AndroidDeviceView
         sessionId={sessionId}
         titleBarToggles={titleBarToggles}
+        hideDevicePicker
       >
         {toggle}
       </AndroidDeviceView>
@@ -170,18 +215,35 @@ export function RuntimeView({
                 {toggle}
               </WebBrowserViewStack>
             </div>
+            <div
+              className={
+                runtimeMode === "inspect"
+                  ? styles.inspectionLayer
+                  : styles.inspectionLayerHidden
+              }
+              aria-hidden={runtimeMode !== "inspect"}
+            >
+              <InspectionPanel
+                deviceKey={activeDeviceKey}
+                showSidebar={runtimeDialogOpen || isPopout}
+              />
+            </div>
           </div>
         </div>
-        {runtimeDialogOpen && activeDeviceKey && (
-          <div
-            style={{
-              width: 380,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-            }}
-          >
-            <ConductorLogPanel deviceKey={activeDeviceKey} />
+        {runtimeDialogOpen && (
+          <div className={styles.sidePanel} style={{ width: sidePanelWidth }}>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize side panel"
+              className={styles.sidePanelResizer}
+              onMouseDown={onSidePanelResize}
+            />
+            {runtimeMode === "inspect" ? (
+              <NodeMetadataPanel />
+            ) : activeDeviceKey ? (
+              <ConductorLogPanel deviceKey={activeDeviceKey} />
+            ) : null}
           </div>
         )}
       </div>

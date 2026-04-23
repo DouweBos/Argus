@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "capturedAt": "2026-04-22T10:05:00.000Z",
+  "device": {
+    "platform": "ios",
+    "deviceId": "RAW-IPHONE-16",
+    "width": 390,
+    "height": 844
+  },
+  "screenshot": {
+    "kind": "composite",
+    "encoding": "png",
+    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgAAIAAAUAAeImBZsAAAAASUVORK5CYII="
+  },
+  "capabilities": { "perViewPixels": false, "depthData": false },
+  "hierarchy": {
+    "axElement": {
+      "nodeId": "0",
+      "elementType": 4,
+      "frame": { "X": 0, "Y": 0, "Width": 390, "Height": 844 },
+      "enabled": true,
+      "selected": false,
+      "hasFocus": false,
+      "isAccessibilityElement": false,
+      "accessibilityOrder": null,
+      "children": [
+        {
+          "nodeId": "0.0",
+          "elementType": 9,
+          "frame": { "X": 24, "Y": 300, "Width": 342, "Height": 50 },
+          "label": "Sign In",
+          "identifier": "btn_sign_in",
+          "enabled": true,
+          "selected": false,
+          "hasFocus": false,
+          "isAccessibilityElement": true,
+          "accessibilityOrder": 0,
+          "traits": ["button"]
+        }
+      ]
+    },
+    "depth": 2
+  },
+  "a11ySnapshot": [
+    {
+      "nodeId": "0.0",
+      "order": 0,
+      "frame": { "x": 24, "y": 300, "w": 342, "h": 50 },
+      "label": "Sign In",
+      "role": "button",
+      "traits": ["button"],
+      "state": { "enabled": true, "selected": false, "focused": false }
+    }
+  ]
+}

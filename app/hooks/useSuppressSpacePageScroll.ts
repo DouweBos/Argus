@@ -36,6 +36,17 @@ function spaceTargetAllowsBrowserDefault(e: KeyboardEvent): boolean {
     return false;
   }
 
+  // Plain form controls: never intercept space. Checked first via
+  // tagName so a role="treeitem" or role="button" ancestor lower in the
+  // allowlist can't accidentally override a real <input>.
+  if (
+    t instanceof HTMLInputElement ||
+    t instanceof HTMLTextAreaElement ||
+    t instanceof HTMLSelectElement
+  ) {
+    return true;
+  }
+
   if (t instanceof HTMLElement && t.isContentEditable) {
     return true;
   }

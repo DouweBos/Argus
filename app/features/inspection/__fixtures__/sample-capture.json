@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "capturedAt": "2026-04-22T10:00:00.000Z",
+  "device": {
+    "platform": "ios",
+    "deviceId": "FIXTURE-IPHONE-16",
+    "width": 390,
+    "height": 844
+  },
+  "screenshot": {
+    "kind": "composite",
+    "encoding": "png",
+    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgAAIAAAUAAeImBZsAAAAASUVORK5CYII="
+  },
+  "capabilities": {
+    "perViewPixels": false,
+    "depthData": false
+  },
+  "hierarchy": {
+    "id": "0",
+    "type": "UIWindow",
+    "frame": { "x": 0, "y": 0, "w": 390, "h": 844 },
+    "isAccessibilityElement": false,
+    "accessibilityOrder": null,
+    "state": { "enabled": true, "selected": false, "focused": false },
+    "children": [
+      {
+        "id": "0.0",
+        "type": "UIView",
+        "frame": { "x": 0, "y": 44, "w": 390, "h": 800 },
+        "isAccessibilityElement": false,
+        "accessibilityOrder": null,
+        "state": { "enabled": true, "selected": false, "focused": false },
+        "children": [
+          {
+            "id": "0.0.0",
+            "type": "UILabel",
+            "frame": { "x": 24, "y": 80, "w": 342, "h": 40 },
+            "label": "Welcome back",
+            "identifier": "welcome_title",
+            "isAccessibilityElement": true,
+            "accessibilityOrder": 1,
+            "role": "header",
+            "traits": ["header"],
+            "state": { "enabled": true, "selected": false, "focused": false },
+            "children": []
+          },
+          {
+            "id": "0.0.1",
+            "type": "UITextField",
+            "frame": { "x": 24, "y": 160, "w": 342, "h": 44 },
+            "label": "Email",
+            "identifier": "email_field",
+            "isAccessibilityElement": true,
+            "accessibilityOrder": 2,
+            "role": "textField",
+            "value": "",
+            "state": { "enabled": true, "selected": false, "focused": true },
+            "children": []
+          },
+          {
+            "id": "0.0.2",
+            "type": "UITextField",
+            "frame": { "x": 24, "y": 220, "w": 342, "h": 44 },
+            "label": "Password",
+            "identifier": "password_field",
+            "isAccessibilityElement": true,
+            "accessibilityOrder": 3,
+            "role": "textField",
+            "value": "",
+            "state": { "enabled": true, "selected": false, "focused": false },
+            "children": []
+          },
+          {
+            "id": "0.0.3",
+            "type": "UIButton",
+            "frame": { "x": 24, "y": 300, "w": 342, "h": 50 },
+            "label": "Sign In",
+            "identifier": "btn_sign_in",
+            "isAccessibilityElement": true,
+            "accessibilityOrder": 4,
+            "role": "button",
+            "traits": ["button"],
+            "state": { "enabled": true, "selected": false, "focused": false },
+            "children": []
+          },
+          {
+            "id": "0.0.4",
+            "type": "UIButton",
+            "frame": { "x": 24, "y": 370, "w": 342, "h": 30 },
+            "label": "Forgot password?",
+            "identifier": "btn_forgot_password",
+            "isAccessibilityElement": true,
+            "accessibilityOrder": 5,
+            "role": "button",
+            "traits": ["button"],
+            "state": { "enabled": true, "selected": false, "focused": false },
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "a11ySnapshot": [
+    {
+      "nodeId": "0.0.0",
+      "order": 1,
+      "frame": { "x": 24, "y": 80, "w": 342, "h": 40 },
+      "label": "Welcome back",
+      "role": "header",
+      "traits": ["header"],
+      "announcement": "Welcome back, heading",
+      "state": { "enabled": true, "selected": false, "focused": false }
+    },
+    {
+      "nodeId": "0.0.1",
+      "order": 2,
+      "frame": { "x": 24, "y": 160, "w": 342, "h": 44 },
+      "label": "Email",
+      "role": "textField",
+      "value": "",
+      "state": { "enabled": true, "selected": false, "focused": true }
+    },
+    {
+      "nodeId": "0.0.2",
+      "order": 3,
+      "frame": { "x": 24, "y": 220, "w": 342, "h": 44 },
+      "label": "Password",
+      "role": "textField",
+      "value": "",
+      "state": { "enabled": true, "selected": false, "focused": false }
+    },
+    {
+      "nodeId": "0.0.3",
+      "order": 4,
+      "frame": { "x": 24, "y": 300, "w": 342, "h": 50 },
+      "label": "Sign In",
+      "role": "button",
+      "traits": ["button"],
+      "state": { "enabled": true, "selected": false, "focused": false }
+    },
+    {
+      "nodeId": "0.0.4",
+      "order": 5,
+      "frame": { "x": 24, "y": 370, "w": 342, "h": 30 },
+      "label": "Forgot password?",
+      "role": "button",
+      "traits": ["button"],
+      "state": { "enabled": true, "selected": false, "focused": false }
+    }
+  ]
+}

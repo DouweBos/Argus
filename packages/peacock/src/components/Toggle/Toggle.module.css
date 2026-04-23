@@ -1,0 +1,97 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.root[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.track {
+  position: relative;
+  flex-shrink: 0;
+  background: var(--surface-5);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition:
+    left var(--transition-fast),
+    background var(--transition-fast);
+}
+
+/* Sizes: sm = 28×16, md = 34×20 */
+.sizeSm {
+  width: 28px;
+  height: 16px;
+  padding: 1px;
+}
+.sizeSm .thumb {
+  width: 12px;
+  height: 12px;
+  left: 1px;
+}
+.sizeSm.checked .thumb {
+  left: 15px;
+}
+
+.sizeMd {
+  width: 34px;
+  height: 20px;
+  padding: 1px;
+}
+.sizeMd .thumb {
+  width: 16px;
+  height: 16px;
+  left: 1px;
+}
+.sizeMd.checked .thumb {
+  left: 17px;
+}
+
+.checked .track,
+.track.checked {
+  background: var(--accent);
+  border-color: var(--accent-hover);
+}
+.checked .thumb {
+  background: var(--accent-fg);
+}
+
+.root:hover .track:not(.checked) {
+  background: var(--surface-6);
+}
+
+.label {
+  line-height: 1;
+}
+
+/* Native-feeling focus ring — keyboard only. */
+.input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.input:focus-visible + .track {
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}

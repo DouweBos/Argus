@@ -1,0 +1,52 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--border-radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border);
+}
+
+.segment {
+  padding: 3px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.segment:hover:not(.segmentActive):not(:disabled) {
+  color: var(--text-secondary);
+  background: var(--glass-bg-hover);
+}
+
+.segment:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.segmentActive {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.segmentActive:hover {
+  background: var(--accent-hover);
+}
+
+.sizeSm .segment {
+  padding: 3px 10px;
+  font-size: 11px;
+}
+
+.sizeMd .segment {
+  padding: 5px 14px;
+  font-size: var(--font-size-sm);
+}

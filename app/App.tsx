@@ -1,5 +1,4 @@
 import { MemoryRouter } from "react-router-dom";
-import "./styles/global.css";
 import { AppShell } from "./components/layout/AppShell";
 import { NavigationDeepLinkBridge } from "./components/layout/NavigationDeepLinkBridge";
 import { OnboardingRoot } from "./components/onboarding/OnboardingRoot";

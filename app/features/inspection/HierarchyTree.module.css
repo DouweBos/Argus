@@ -1,0 +1,126 @@
+.tree {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-xs);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-secondary);
+  overflow: auto;
+  height: 100%;
+  outline: none;
+}
+
+.tree:focus-visible {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-4) 2px var(--space-3);
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1.6;
+  border-left: 2px solid transparent;
+  transition: background-color var(--transition-fast);
+  user-select: none;
+}
+
+.row:hover {
+  background: var(--glass-bg-hover);
+}
+
+.rowSelected {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-left-color: var(--accent);
+  border-left-width: 3px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.toggle:hover {
+  background: var(--glass-bg-hover);
+  color: var(--text-primary);
+}
+
+.toggleOpen {
+  transform: rotate(90deg);
+}
+
+.togglePlaceholder {
+  display: inline-block;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.type {
+  color: var(--text-primary);
+}
+
+.rowSelected .type {
+  color: var(--accent);
+}
+
+.label {
+  color: var(--text-muted);
+  font-family: var(--font-sans, inherit);
+}
+
+.rowFocused {
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+}
+
+.rowFocused:hover {
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+.focusedDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warning);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--warning) 70%, transparent);
+  flex-shrink: 0;
+  margin-left: var(--space-1);
+}
+
+.rowDimmed {
+  opacity: 0.35;
+}
+
+.rowDimmed:hover {
+  opacity: 0.7;
+}
+
+.rowMatch {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.rowMatch.rowSelected {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.mark {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text-primary);
+  border-radius: 2px;
+  padding: 0 1px;
+}

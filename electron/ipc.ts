@@ -84,6 +84,7 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
+import { captureUi } from "./services/inspection/capture";
 import {
   getPullRequestDetail,
   getPullRequestDiff,
@@ -951,6 +952,9 @@ export function registerIpcHandlers(): void {
   );
   handle("list_conductor_logs", (a) =>
     conductorLogStore.list(a.deviceKey as string),
+  );
+  handle("inspection_capture", (a) =>
+    captureUi({ deviceKey: a.deviceKey as string }),
   );
   handle("run_conductor_command", async (a) => {
     const deviceKey = a.deviceKey as string;
