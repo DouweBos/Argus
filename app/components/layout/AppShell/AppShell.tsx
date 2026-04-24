@@ -39,7 +39,6 @@ import {
   useSelectedSessionId,
 } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
-import { ActivityScreen } from "../../activity/ActivityScreen";
 import { CenterPanel } from "../../agent/CenterPanel";
 import { AgentsScreen } from "../../agents/AgentsScreen";
 import { DevicesScreen } from "../../devices/DevicesScreen";
@@ -72,7 +71,6 @@ const PEEK_LEAVE_DELAY_MS = 1000;
 function renderCenter(
   selectedId: string | null,
   centerView:
-    | "activity"
     | "agents"
     | "devices"
     | "home"
@@ -114,9 +112,6 @@ function renderCenter(
         {centerView === "pull-request-detail" && <PullRequestDetailScreen />}
       </>
     );
-  }
-  if (centerView === "activity") {
-    return <ActivityScreen />;
   }
 
   return <HomeScreen />;

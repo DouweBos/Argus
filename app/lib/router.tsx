@@ -8,7 +8,6 @@
  * ## Route inventory
  *
  * - `/`                                          → home / project picker
- * - `/activity`                                  → activity screen
  * - `/agents`                                    → global agents overview
  * - `/devices`                                   → devices screen
  * - `/notifications`                             → notifications screen
@@ -30,7 +29,6 @@ import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 
 export type AppView =
-  | "activity"
   | "agents"
   | "devices"
   | "home"
@@ -117,7 +115,6 @@ export function parseRoute(pathname: string): ParsedRoute {
   }
 
   if (
-    segments[0] === "activity" ||
     segments[0] === "agents" ||
     segments[0] === "devices" ||
     segments[0] === "notifications" ||
@@ -160,7 +157,6 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
     return `/pull-requests/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${number}`;
   }
   if (
-    route.view === "activity" ||
     route.view === "agents" ||
     route.view === "devices" ||
     route.view === "notifications" ||

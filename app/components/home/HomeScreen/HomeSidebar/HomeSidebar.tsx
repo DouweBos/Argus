@@ -1,7 +1,6 @@
 import type { HomeData, HomeProject } from "../useHomeData";
 import { useMemo, useState } from "react";
 import {
-  CommitIcon,
   Icons,
   SidebarFooter,
   SidebarHeader,
@@ -17,7 +16,7 @@ import {
   agentStatusTone,
 } from "@argus/peacock";
 
-export type HomeSidebarView = "activity" | "home" | "review";
+export type HomeSidebarView = "home" | "review";
 
 export interface HomeSidebarProps {
   data: HomeData;
@@ -47,9 +46,6 @@ export function HomeSidebar({
     () => data.activeAgents.filter((a) => a.status === "pending").length,
     [data.activeAgents],
   );
-  const runningCount = data.activeAgents.filter(
-    (a) => a.status === "running",
-  ).length;
 
   const toggle = (id: string) => setCollapsed((s) => ({ ...s, [id]: !s[id] }));
 
@@ -90,14 +86,6 @@ export function HomeSidebar({
           onClick={() => onViewChange?.("review")}
         >
           Review queue
-        </SidebarItem>
-        <SidebarItem
-          active={view === "activity"}
-          leading={<CommitIcon size={12} />}
-          count={runningCount}
-          onClick={() => onViewChange?.("activity")}
-        >
-          Activity
         </SidebarItem>
       </SidebarNavGroup>
 
