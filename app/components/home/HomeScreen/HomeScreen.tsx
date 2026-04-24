@@ -20,6 +20,7 @@ import {
 import { useDevicePoller } from "../../../stores/deviceStore";
 import {
   showCreateOrganizationDialog,
+  showCreateSessionDialog,
   showOpenProjectDialog,
   triggerNewSession,
 } from "../../../stores/dialogStore";
@@ -353,6 +354,9 @@ export function HomeScreen() {
                         lastOpened={formatLastOpened(p.lastOpened)}
                         onClick={() => {
                           handleOpenProject(p).catch(() => {});
+                        }}
+                        onNewSession={() => {
+                          showCreateSessionDialog(p.path);
                         }}
                         onContextMenu={(e) => {
                           e.preventDefault();

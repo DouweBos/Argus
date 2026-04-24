@@ -62,3 +62,23 @@ export const NoAgents: Story = {
     </div>
   ),
 };
+
+export const WithNewSession: Story = {
+  args: {
+    name: "Argus",
+    path: "~/Code/argus",
+    platform: "desktop",
+    accent: "#4d9fff",
+    agents: [{ status: "running" }],
+    lastOpened: "2m ago",
+    onNewSession: () => {
+      // eslint-disable-next-line no-console
+      console.log("new session clicked");
+    },
+  },
+  render: (args) => (
+    <div style={{ width: 340 }}>
+      <ProjectCard {...args} />
+    </div>
+  ),
+};
