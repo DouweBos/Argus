@@ -42,7 +42,7 @@ jobs:
             found { print }
           ' CHANGELOG.md > release-notes.md
 
-      - name: Stage version bump
+      - name: Commit and tag release
         id: stage
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -53,14 +53,20 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changesets to release"
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          git commit -m "chore: release v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"
 
       - name: Install fastlane
+        if: steps.stage.outputs.has_changes == 'true'
         run: bundle install
 
       - name: Create build keychain
+        if: steps.stage.outputs.has_changes == 'true'
         env:
           MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
         run: |
@@ -74,6 +80,7 @@ jobs:
           echo "Keychain ready at $KEYCHAIN_PATH"
 
       - name: Run fastlane release
+        if: steps.stage.outputs.has_changes == 'true'
         env:
           # --- Signing (match) ---
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
@@ -99,12 +106,3 @@ jobs:
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: bundle exec fastlane mac release allow_dirty:true allow_any_branch:true
-
-      - name: Commit and tag release
-        if: steps.stage.outputs.has_changes == 'true'
-        run: |
-          VERSION="${{ steps.stage.outputs.version }}"
-          git commit -m "chore: release v${VERSION}"
-          git tag "v${VERSION}"
-          git push origin main
-          git push origin "v${VERSION}"
