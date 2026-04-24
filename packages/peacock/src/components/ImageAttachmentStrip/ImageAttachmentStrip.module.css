@@ -1,0 +1,63 @@
+.strip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.stripScroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.thumb {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--glass-border);
+}
+
+.previewBtn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumb:hover .remove {
+  opacity: 1;
+}
+
+.remove:hover {
+  color: var(--error);
+  border-color: var(--error);
+}

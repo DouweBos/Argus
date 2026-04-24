@@ -1,3 +1,4 @@
+import type { PendingImage } from "../../../stores/conversationStore";
 import {
   useEffect,
   useLayoutEffect,
@@ -8,7 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button, Icons, Input, SegmentedCard, TextArea } from "@argus/peacock";
+import {
+  Button,
+  Icons,
+  ImageAttachmentStrip,
+  Input,
+  SegmentedCard,
+  TextArea,
+} from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
 import {
   startAgentInSession,
@@ -16,10 +24,17 @@ import {
 } from "../../../lib/agentLifecycle";
 import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
+  ACCEPTED_IMAGE_TYPES,
+  extractImageFilesFromClipboard,
+  filesToPendingImages,
+} from "../../../lib/imageAttachments";
+import {
   getUserProjectSettings,
+  type ImageAttachment,
   listAllBranches,
   setUserProjectSettings,
 } from "../../../lib/ipc";
+import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -354,6 +369,61 @@ export function CreateSessionDialog({
 
   const [error, setError] = useState<string | null>(null);
 
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addImageFiles = useCallback(async (files: File[]) => {
+    const newImages = await filesToPendingImages(files);
+    if (newImages.length > 0) {
+      setPendingImages((prev) => [...prev, ...newImages]);
+    }
+  }, []);
+
+  const removeImage = useCallback((index: number) => {
+    setPendingImages((prev) => {
+      const removed = prev[index];
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const handlePromptPaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const imageFiles = extractImageFilesFromClipboard(e);
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        addImageFiles(imageFiles);
+      }
+    },
+    [addImageFiles],
+  );
+
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files) {
+        return;
+      }
+      await addImageFiles(Array.from(files));
+      e.target.value = "";
+      descriptionRef.current?.focus();
+    },
+    [addImageFiles],
+  );
+
+  // Revoke object URLs when the dialog unmounts.
+  useEffect(() => {
+    return () => {
+      for (const img of pendingImages) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Per-developer branch prefix (stored in ~/.argus, not .argus.json).
   const [branchPrefix, setBranchPrefix] = useState("");
   const [prefixDraft, setPrefixDraft] = useState("");
@@ -474,6 +544,7 @@ export function CreateSessionDialog({
     useExisting: boolean,
     baseBranch: string | undefined,
     initialPrompt?: string,
+    initialImages?: ImageAttachment[],
   ) => {
     // Close the dialog immediately — branch name generation and worktree
     // setup can take several seconds (claude -p title generation, git
@@ -502,14 +573,14 @@ export function CreateSessionDialog({
           // message. The session's worktree already exists by the time
           // createSession resolves — the setup pipeline (copy/symlink/install)
           // continues in the background but does not block agent startup.
-          if (initialPrompt && session) {
+          if ((initialPrompt || initialImages?.length) && session) {
             const agentInfo = await startAgentInSession(session.id, {
               focus: true,
             });
             await sendUserMessageToAgent(
               agentInfo.agent_id,
-              initialPrompt,
-              undefined,
+              initialPrompt || "(see attached images)",
+              initialImages?.length ? initialImages : undefined,
               { assumeIdle: true },
             );
           }
@@ -531,6 +602,7 @@ export function CreateSessionDialog({
     if (!canSubmitBranchOff) {
       return;
     }
+    const images = pendingImages.map((p) => p.attachment);
     // When the user typed a branch, pass it (prefix applied). When empty,
     // pass "" — the backend generates a branch name + title from the prompt.
     submit(
@@ -539,6 +611,7 @@ export function CreateSessionDialog({
       false,
       sourceBranch,
       trimmedDescription,
+      images.length > 0 ? images : undefined,
     );
   };
 
@@ -659,24 +732,61 @@ export function CreateSessionDialog({
                 (sent to the agent as the first message)
               </span>
             </label>
-            <TextArea
-              ref={descriptionRef}
-              autoFocus
-              id="description-input"
-              placeholder="What are you building? Describe the task the agent should pick up."
-              rows={5}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onKeyDown={(e) => {
-                if (
-                  (e.metaKey || e.ctrlKey) &&
-                  e.key === "Enter" &&
-                  canSubmitBranchOff
-                ) {
-                  e.preventDefault();
-                  handleSubmitBranchOff(e as unknown as React.FormEvent);
+            <div className={styles.promptWrap}>
+              <TextArea
+                ref={descriptionRef}
+                autoFocus
+                id="description-input"
+                placeholder="What are you building? Describe the task the agent should pick up."
+                rows={5}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onPaste={handlePromptPaste}
+                onKeyDown={(e) => {
+                  if (
+                    (e.metaKey || e.ctrlKey) &&
+                    e.key === "Enter" &&
+                    canSubmitBranchOff
+                  ) {
+                    e.preventDefault();
+                    handleSubmitBranchOff(e as unknown as React.FormEvent);
+                  }
+                }}
+              />
+              <button
+                aria-label="Attach image"
+                className={styles.promptAttachBtn}
+                type="button"
+                title="Attach image"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Icons.PaperclipIcon />
+              </button>
+            </div>
+            <ImageAttachmentStrip
+              className={styles.attachments}
+              items={pendingImages}
+              onPreview={(i) => {
+                const img = pendingImages[i];
+                if (!img) {
+                  return;
                 }
+                openImageViewer(
+                  `data:${img.attachment.media_type};base64,${img.attachment.data}`,
+                  img.name,
+                  img.previewUrl,
+                );
               }}
+              onRemove={removeImage}
+            />
+            <input
+              ref={fileInputRef}
+              accept={ACCEPTED_IMAGE_TYPES}
+              className={styles.hiddenFileInput}
+              multiple
+              tabIndex={-1}
+              type="file"
+              onChange={handleFileSelect}
             />
           </div>
 

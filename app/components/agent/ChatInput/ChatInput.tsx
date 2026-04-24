@@ -1,8 +1,19 @@
 import type { ImageAttachment } from "../../../lib/ipc";
 import type { ProjectEntry, SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Chip, ContextMeter, Icons } from "@argus/peacock";
+import {
+  Button,
+  Chip,
+  ContextMeter,
+  Icons,
+  ImageAttachmentStrip,
+} from "@argus/peacock";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
+import {
+  ACCEPTED_IMAGE_TYPES,
+  extractImageFilesFromClipboard,
+  filesToPendingImages,
+} from "../../../lib/imageAttachments";
 import { listProjects } from "../../../lib/ipc";
 import {
   clearDraft,
@@ -23,8 +34,6 @@ import { type ModelOption, ModelPicker } from "../ModelPicker";
 import { ProjectPicker } from "../ProjectPicker";
 import styles from "./ChatInput.module.css";
 import { useMentionPicker } from "./useMentionPicker";
-
-const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/gif,image/webp";
 
 interface ChatInputProps {
   /** Agent ID — used to persist draft text across tab switches. */
@@ -56,21 +65,6 @@ interface ChatInputProps {
   sessionId?: string;
   slashCommands?: SlashCommand[];
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
-}
-
-/** Read a File as base64 (without the data-URL prefix). */
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Strip "data:<type>;base64," prefix
-      resolve(result.split(",")[1]);
-    };
-
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
 }
 
 export function ChatInput({
@@ -279,19 +273,7 @@ export function ChatInput({
 
   const addImageFiles = useCallback(
     async (files: File[]) => {
-      const newImages: PendingImage[] = [];
-      for (const file of files) {
-        if (!file.type.startsWith("image/")) {
-          continue;
-        }
-        const data = await readFileAsBase64(file);
-        newImages.push({
-          name: file.name || "pasted-image",
-          previewUrl: URL.createObjectURL(file),
-          attachment: { data, media_type: file.type },
-        });
-      }
-
+      const newImages = await filesToPendingImages(files);
       if (newImages.length > 0) {
         updatePendingImages((prev) => [...prev, ...newImages]);
       }
@@ -391,20 +373,7 @@ export function ChatInput({
 
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) {
-        return;
-      }
-      const imageFiles: File[] = [];
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith("image/")) {
-          const file = item.getAsFile();
-          if (file) {
-            imageFiles.push(file);
-          }
-        }
-      }
-
+      const imageFiles = extractImageFilesFromClipboard(e);
       if (imageFiles.length > 0) {
         e.preventDefault();
         addImageFiles(imageFiles);
@@ -589,40 +558,23 @@ export function ChatInput({
           />
         )}
 
-        {pendingImages.length > 0 && (
-          <div className={styles.attachments}>
-            {pendingImages.map((img, i) => (
-              <div key={img.name + i} className={styles.attachmentThumb}>
-                <button
-                  className={styles.attachmentPreviewBtn}
-                  title={img.name}
-                  type="button"
-                  onClick={() =>
-                    openImageViewer(
-                      `data:${img.attachment.media_type};base64,${img.attachment.data}`,
-                      img.name,
-                      img.previewUrl,
-                    )
-                  }
-                >
-                  <img
-                    alt={img.name}
-                    className={styles.attachmentImg}
-                    src={img.previewUrl}
-                  />
-                </button>
-                <button
-                  aria-label={`Remove ${img.name}`}
-                  className={styles.attachmentRemove}
-                  title="Remove"
-                  onClick={() => removeImage(i)}
-                >
-                  <Icons.CloseIcon size={8} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <ImageAttachmentStrip
+          scroll
+          className={styles.attachments}
+          items={pendingImages}
+          onPreview={(i) => {
+            const img = pendingImages[i];
+            if (!img) {
+              return;
+            }
+            openImageViewer(
+              `data:${img.attachment.media_type};base64,${img.attachment.data}`,
+              img.name,
+              img.previewUrl,
+            );
+          }}
+          onRemove={removeImage}
+        />
 
         <div className={styles.textareaWrap}>
           <textarea
