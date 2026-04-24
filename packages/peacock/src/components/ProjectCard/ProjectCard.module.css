@@ -129,6 +129,7 @@
 }
 
 .foot {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -168,6 +169,43 @@
 .agentPill.muted {
   background: var(--surface-2);
   color: var(--text-muted);
+}
+
+.newSession {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: var(--border-radius-pill);
+  background: color-mix(in srgb, var(--card-accent) 15%, transparent);
+  color: var(--card-accent);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 35%, transparent);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--transition-fast),
+    background var(--transition-fast),
+    visibility 0s linear var(--transition-fast);
+}
+.card:hover .newSession,
+.card:focus-within .newSession {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--transition-fast),
+    background var(--transition-fast),
+    visibility 0s linear 0s;
+}
+.newSession:hover {
+  background: color-mix(in srgb, var(--card-accent) 25%, transparent);
 }
 
 .when {

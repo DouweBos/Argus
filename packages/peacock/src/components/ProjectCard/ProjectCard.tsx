@@ -6,7 +6,7 @@ import type {
   ReactNode,
 } from "react";
 import { StarIcon } from "../../icons/HomeIcons";
-import { FolderIcon } from "../../icons/Icons";
+import { FolderIcon, PlusIcon } from "../../icons/Icons";
 import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
 import styles from "./ProjectCard.module.css";
 
@@ -22,6 +22,8 @@ export interface ProjectCardProps extends HTMLAttributes<HTMLDivElement> {
   accent?: string;
   starred?: boolean;
   onToggleStar?: MouseEventHandler<HTMLButtonElement>;
+  /** When provided, renders a "+" action on the card that creates a new session. */
+  onNewSession?: MouseEventHandler<HTMLButtonElement>;
   agents?: ProjectCardAgent[];
   lastOpened?: string;
   /** Override the default folder badge icon. */
@@ -69,6 +71,7 @@ export function ProjectCard({
   accent,
   starred,
   onToggleStar,
+  onNewSession,
   agents = [],
   lastOpened,
   icon,
@@ -136,6 +139,21 @@ export function ProjectCard({
           <span className={[styles.agentPill, styles.muted].join(" ")}>
             no agents
           </span>
+        )}
+        {onNewSession && (
+          <button
+            type="button"
+            className={styles.newSession}
+            aria-label="New session"
+            title="New session"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNewSession(e);
+            }}
+          >
+            <PlusIcon size={11} />
+            <span>New session</span>
+          </button>
         )}
         {lastOpened && <span className={styles.when}>{lastOpened}</span>}
       </div>

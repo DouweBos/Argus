@@ -82,6 +82,7 @@ export function ProjectSegment({
   const hasSessions = worktrees.length > 0;
 
   return (
+    <>
     <SidebarRepoGroup
       name={projectName}
       title={repoRoot}
@@ -245,46 +246,47 @@ export function ProjectSegment({
         <Icons.PlusIcon size={10} />
         <span>New session</span>
       </button>
-
-      {showCreate &&
-        createPortal(
-          <CreateSessionDialog
-            repoRoot={repoRoot}
-            onClose={() => setShowCreate(false)}
-          />,
-          document.body,
-        )}
-
-      {showConfig &&
-        createPortal(
-          <SetupConfigDialog
-            repoRoot={repoRoot}
-            onClose={() => setShowConfig(false)}
-          />,
-          document.body,
-        )}
-
-      {sessionToDelete &&
-        createPortal(
-          <DeleteSessionDialog
-            session={sessionToDelete}
-            onClose={() => setSessionToDelete(null)}
-            onConfirm={async (deleteBranch) => {
-              await deleteSession(sessionToDelete.id, deleteBranch);
-            }}
-          />,
-          document.body,
-        )}
-
-      {sessionToRename &&
-        createPortal(
-          <RenameSessionDialog
-            session={sessionToRename}
-            onClose={() => setSessionToRename(null)}
-          />,
-          document.body,
-        )}
     </SidebarRepoGroup>
+
+    {showCreate &&
+      createPortal(
+        <CreateSessionDialog
+          repoRoot={repoRoot}
+          onClose={() => setShowCreate(false)}
+        />,
+        document.body,
+      )}
+
+    {showConfig &&
+      createPortal(
+        <SetupConfigDialog
+          repoRoot={repoRoot}
+          onClose={() => setShowConfig(false)}
+        />,
+        document.body,
+      )}
+
+    {sessionToDelete &&
+      createPortal(
+        <DeleteSessionDialog
+          session={sessionToDelete}
+          onClose={() => setSessionToDelete(null)}
+          onConfirm={async (deleteBranch) => {
+            await deleteSession(sessionToDelete.id, deleteBranch);
+          }}
+        />,
+        document.body,
+      )}
+
+    {sessionToRename &&
+      createPortal(
+        <RenameSessionDialog
+          session={sessionToRename}
+          onClose={() => setSessionToRename(null)}
+        />,
+        document.body,
+      )}
+    </>
   );
 }
 
