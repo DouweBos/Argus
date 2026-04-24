@@ -42,7 +42,7 @@ export async function generateSessionTitle(
   const prompt = `Produce a title (3-6 words, no trailing punctuation, no quotes, title case) that summarises this chat's topic based on the user's first message. Respond with ONLY the title text, nothing else.\n\nUser message:\n${snippet}`;
 
   try {
-    const { stdout } = await execFileAsync(
+    const child = execFileAsync(
       CLAUDE_BIN,
       ["-p", "--model", "haiku", "--output-format", "json", prompt],
       {
@@ -50,6 +50,8 @@ export async function generateSessionTitle(
         maxBuffer: 1024 * 1024,
       },
     );
+    child.child.stdin?.end();
+    const { stdout } = await child;
 
     const parsed = JSON.parse(stdout) as PrintResult;
     if (parsed.is_error || !parsed.result) {

@@ -54,7 +54,7 @@ export async function generateSessionTitle(
   const prompt = `Generate a concise 3-5 word title for a coding session. Respond with only the title, no punctuation, no quotes. Branch: ${opts.branch}. Description: ${desc}.`;
 
   try {
-    const { stdout } = await execFileAsync(
+    const child = execFileAsync(
       CLAUDE_BIN,
       ["-p", "--model", "haiku", "--output-format", "json", prompt],
       {
@@ -63,6 +63,8 @@ export async function generateSessionTitle(
         cwd: opts.repoRoot,
       },
     );
+    child.child.stdin?.end();
+    const { stdout } = await child;
 
     const parsed = JSON.parse(stdout) as PrintResult;
     if (parsed.is_error || !parsed.result) {
@@ -105,7 +107,7 @@ export async function generateBranchAndTitle(
     `Task: ${trimmed}`;
 
   try {
-    const { stdout } = await execFileAsync(
+    const child = execFileAsync(
       CLAUDE_BIN,
       ["-p", "--model", "haiku", "--output-format", "json", instruction],
       {
@@ -114,6 +116,8 @@ export async function generateBranchAndTitle(
         cwd: repoRoot,
       },
     );
+    child.child.stdin?.end();
+    const { stdout } = await child;
 
     const parsed = JSON.parse(stdout) as PrintResult;
     if (parsed.is_error || !parsed.result) {
