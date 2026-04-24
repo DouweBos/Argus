@@ -7,6 +7,7 @@ import {
   getSessionState,
   subscribeSessionStore,
 } from "../stores/sessionStore";
+import { maybeGenerateTitle } from "./agentEventService";
 import { startAgentInSession, sendUserMessageToAgent } from "./agentLifecycle";
 
 /**
@@ -37,6 +38,7 @@ async function dispatchPrompt(
 ): Promise<void> {
   try {
     const agentInfo = await startAgentInSession(session.id, { focus: true });
+    maybeGenerateTitle(agentInfo.agent_id, prompt);
     await sendUserMessageToAgent(
       agentInfo.agent_id,
       prompt || "(see attached images)",
