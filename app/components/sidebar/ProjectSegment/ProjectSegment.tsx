@@ -137,7 +137,7 @@ export function ProjectSegment({
                 const rect = (
                   e.currentTarget as HTMLElement
                 ).getBoundingClientRect();
-                setMenuPosition({ x: rect.right - 200, y: rect.bottom + 4 });
+                setMenuPosition({ x: rect.left, y: rect.bottom + 4 });
               }}
             >
               <Icons.EllipsisIcon size={12} />
