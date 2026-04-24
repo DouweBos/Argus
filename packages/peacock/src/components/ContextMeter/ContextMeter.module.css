@@ -1,0 +1,30 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.ring {
+  display: block;
+}
+
+.track {
+  stroke: var(--border-subtle);
+}
+
+.fill {
+  transition:
+    stroke-dashoffset 300ms ease,
+    stroke 200ms ease;
+}
+
+.accent .fill {
+  stroke: var(--accent);
+}
+.warning .fill {
+  stroke: var(--warning);
+}
+.danger .fill {
+  stroke: var(--error);
+}
