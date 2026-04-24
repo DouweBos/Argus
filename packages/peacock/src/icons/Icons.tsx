@@ -368,6 +368,27 @@ export function FileIcon({ size = 14, className, ...rest }: IconProps) {
   );
 }
 
+export function DownloadIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 2v8" />
+      <path d="M4.5 7 8 10.5 11.5 7" />
+      <path d="M2.5 12.5v1A1.5 1.5 0 0 0 4 15h8a1.5 1.5 0 0 0 1.5-1.5v-1" />
+    </svg>
+  );
+}
+
 export function ChevronLeftIcon({ size = 8, className, ...rest }: IconProps) {
   return (
     <svg

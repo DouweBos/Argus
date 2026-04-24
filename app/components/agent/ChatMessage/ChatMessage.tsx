@@ -1,4 +1,7 @@
-import type { ConversationMessage } from "../../../stores/conversationStore";
+import type {
+  ConversationMessage,
+  ToolCallInfo,
+} from "../../../stores/conversationStore";
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
@@ -25,6 +28,7 @@ interface ChatMessageProps {
     allowRule?: string,
     allowAll?: boolean,
   ) => void;
+  onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
 
 function MessageActions({
@@ -76,6 +80,7 @@ export function ChatMessage({
   onEdit,
   onFork,
   onPermissionRespond,
+  onSaveToolCallToDisk,
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -318,6 +323,7 @@ export function ChatMessage({
               toolCall={tc}
               onFork={handleFork}
               onPermissionRespond={onPermissionRespond}
+              onSaveToDisk={onSaveToolCallToDisk}
             />
           ))}
         </div>

@@ -41,6 +41,11 @@ interface ToolCallCardProps {
     /** Optional custom message for deny (used by AskUserQuestion answers). */
     denyMessage?: string,
   ) => void;
+  /**
+   * Save the file the tool would write to disk — entire file contents, not
+   * just the diff. Only rendered for Write / Edit / MultiEdit.
+   */
+  onSaveToDisk?: (toolCall: ToolCallInfo) => void;
   toolCall: ToolCallInfo;
 }
 
@@ -251,9 +256,11 @@ function formatInput(name: string, input: Record<string, unknown>): string {
 function WriteToolActions({
   onCopy,
   onFork,
+  onSaveToDisk,
 }: {
   onCopy: () => void;
   onFork?: () => void;
+  onSaveToDisk?: () => void;
 }) {
   return (
     <HoverActionBar className={styles.forkActions} placement="top-right">
@@ -262,6 +269,13 @@ function WriteToolActions({
         label="Copy new content"
         onClick={onCopy}
       />
+      {onSaveToDisk && (
+        <HoverActionButton
+          icon={<Icons.DownloadIcon size={12} />}
+          label="Save entire file to disk"
+          onClick={onSaveToDisk}
+        />
+      )}
       {onFork && (
         <HoverActionButton
           icon={<Icons.BranchIcon size={12} />}
@@ -340,6 +354,7 @@ export function ToolCallCard({
   agentId,
   onFork,
   onPermissionRespond,
+  onSaveToDisk,
   toolCall,
 }: ToolCallCardProps) {
   const isWriteTool =
@@ -347,6 +362,8 @@ export function ToolCallCard({
     toolCall.name === "Edit" ||
     toolCall.name === "MultiEdit";
   const canFork = onFork != null && isWriteTool;
+  const handleSaveToDisk =
+    onSaveToDisk && isWriteTool ? () => onSaveToDisk(toolCall) : undefined;
 
   const handleCopyWriteContent = useCallback(() => {
     const text = writeToolAddedContent(toolCall.name, toolCall.input);
@@ -533,6 +550,7 @@ export function ToolCallCard({
         <WriteToolActions
           onCopy={handleCopyWriteContent}
           onFork={canFork ? onFork : undefined}
+          onSaveToDisk={handleSaveToDisk}
         />
       )}
       <button
