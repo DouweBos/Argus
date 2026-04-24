@@ -7,6 +7,7 @@ import {
 } from "react";
 import { SendIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
+import { ChatInputShell } from "../ChatInputShell/ChatInputShell";
 import styles from "./ChatInput.module.css";
 
 export interface ChatInputProps extends Omit<
@@ -47,8 +48,20 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     };
 
     return (
-      <div
-        className={[styles.wrap, className].filter(Boolean).join(" ")}
+      <ChatInputShell
+        className={className}
+        disabled={disabled}
+        actions={actions}
+        trailing={
+          <Button
+            variant="send"
+            aria-label="Send"
+            disabled={disabled || !value.trim()}
+            onClick={onSubmit}
+          >
+            <SendIcon size={13} />
+          </Button>
+        }
         {...rest}
       >
         <textarea
@@ -61,18 +74,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           onChange={handleChange}
           onKeyDown={handleKey}
         />
-        <div className={styles.bar}>
-          <div className={styles.left}>{actions}</div>
-          <Button
-            variant="send"
-            aria-label="Send"
-            disabled={disabled || !value.trim()}
-            onClick={onSubmit}
-          >
-            <SendIcon size={13} />
-          </Button>
-        </div>
-      </div>
+      </ChatInputShell>
     );
   },
 );

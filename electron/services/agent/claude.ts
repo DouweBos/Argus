@@ -51,7 +51,7 @@ import path from "node:path";
 import readline from "node:readline";
 import { promisify } from "node:util";
 import { info, warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { broadcastToRenderers } from "../../broadcast";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
 import { getConductorBinDir, getConductorSkillPath } from "../cli/conductor";
@@ -468,9 +468,10 @@ export async function startAgent(
     }
   });
 
-  // Helper to emit IPC events to the renderer.
+  // Helper to emit IPC events to every renderer — main window plus any agent
+  // popouts that subscribe to this agent's stream.
   const emit = (channel: string, data: unknown): void => {
-    getMainWindow()?.webContents.send(channel, data);
+    broadcastToRenderers(channel, data);
   };
 
   // Drain stdout line by line.
@@ -701,7 +702,7 @@ export async function startAgent(
       warn(`[agent:${agentId}] web browser release failed: ${String(e)}`);
     });
 
-    getMainWindow()?.webContents.send(`agent:exit:${agentId}`, exitCode);
+    broadcastToRenderers(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
 
     // Re-evaluate whether this session now has reviewable changes.
@@ -1057,6 +1058,7 @@ export async function stopAgent(agentId: string): Promise<void> {
   await webBrowserPool.releaseBrowser(agentId);
 
   appState.agents.delete(agentId);
+  appState.agentSnapshots.delete(agentId);
 
   emitAgentStatus(agentId, "stopped");
   info(`[agent:${agentId}] stopped`);
@@ -1297,10 +1299,6 @@ export function emitMcpSystemMessage(
     parentLabel?: string;
   },
 ): void {
-  const window = getMainWindow();
-  if (!window) {
-    return;
-  }
   const parentLabel =
     payload.parentLabel ?? resolveParentLabel(payload.parentAgentId);
   const full: McpSystemMessagePayload = {
@@ -1311,7 +1309,7 @@ export function emitMcpSystemMessage(
     parentLabel,
     timestamp: Date.now(),
   };
-  window.webContents.send(`agent:mcp-message:${recipientAgentId}`, full);
+  broadcastToRenderers(`agent:mcp-message:${recipientAgentId}`, full);
 }
 
 // ---------------------------------------------------------------------------
@@ -1348,7 +1346,7 @@ export async function setAgentModel(
   session.stdin.write(json + "\n");
   await promise;
 
-  getMainWindow()?.webContents.send(`agent:model-changed:${agentId}`, model);
+  broadcastToRenderers(`agent:model-changed:${agentId}`, model);
   info(`[agent:${agentId}] model changed to ${model}`);
 }
 
@@ -1386,10 +1384,7 @@ export async function setAgentPermissionMode(
   session.stdin.write(json + "\n");
   await promise;
 
-  getMainWindow()?.webContents.send(
-    `agent:permission-mode-changed:${agentId}`,
-    mode,
-  );
+  broadcastToRenderers(`agent:permission-mode-changed:${agentId}`, mode);
   info(`[agent:${agentId}] permission mode changed to ${mode}`);
 }
 
@@ -1616,7 +1611,7 @@ function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
     // running state.
     return;
   }
-  getMainWindow()?.webContents.send(`agent:status:${agentId}`, status);
+  broadcastToRenderers(`agent:status:${agentId}`, status);
 }
 
 /**

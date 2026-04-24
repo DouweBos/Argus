@@ -8,6 +8,7 @@ export * from "./components/Button/Button";
 export * from "./components/CalloutCard/CalloutCard";
 export * from "./components/Card/Card";
 export * from "./components/ChatInput/ChatInput";
+export * from "./components/ChatInputShell/ChatInputShell";
 export * from "./components/ChecklistRow/ChecklistRow";
 export * from "./components/Chip/Chip";
 export * from "./components/Coachmark/Coachmark";

@@ -36,6 +36,7 @@ import { deriveTitle } from "./chatHistory";
 import { type UnlistenFn, listen } from "./events";
 import {
   generateSessionTitle,
+  publishAgentSnapshot,
   saveChatHistory,
   sendAgentMessage,
   stopAgent as apiStopAgent,
@@ -103,6 +104,23 @@ export function maybeGenerateTitle(agentId: string, firstMessage: string) {
 }
 
 /**
+ * Publish the current in-memory conversation to the backend so other windows
+ * (notably a freshly opened agent popout) can hydrate without waiting for the
+ * next live event. Fire-and-forget; best-effort.
+ */
+function publishSnapshot(agentId: string): void {
+  const conv = getConversationState().conversations[agentId];
+  if (!conv) {
+    return;
+  }
+  try {
+    publishAgentSnapshot(agentId, JSON.stringify(conv)).catch(() => {});
+  } catch {
+    // Circular refs / huge payloads — skip rather than crash.
+  }
+}
+
+/**
  * Build a SavedConversation from the current store state and persist it.
  * No-op if the conversation has no messages or was already saved.
  */
@@ -112,6 +130,8 @@ export function saveAgentConversation(agentId: string): void {
     clearTimeout(timer);
     saveTimers.delete(agentId);
   }
+
+  publishSnapshot(agentId);
 
   const conv = getConversationState().conversations[agentId];
   if (!conv || conv.messages.length === 0) {

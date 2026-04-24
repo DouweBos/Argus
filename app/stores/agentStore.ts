@@ -22,6 +22,10 @@ interface AgentStoreData {
   agents: Record<string, AgentStatus>;
   // Ordered agent ids per session (tab order)
   order: Record<string, string[]>;
+  // Agents that are currently detached into their own popout window. These
+  // are hidden from the tab bar while detached; closing the popout window (or
+  // pressing "back to main window") removes them from this set.
+  poppedOut: Record<string, true>;
   // Most recently closed agents per session, newest first, capped at 5.
   recentlyClosed: Record<string, RecentlyClosedAgent[]>;
   // A paired (merged) tab per session. When the active agent is one of the
@@ -35,6 +39,7 @@ const agentStore = create<AgentStoreData>(() => ({
   agents: {},
   activeAgentId: {},
   order: {},
+  poppedOut: {},
   recentlyClosed: {},
   splitPair: {},
 }));
@@ -330,6 +335,41 @@ export const useRecentlyClosedAgents = (
   useAgentStore((s) =>
     sessionId ? (s.recentlyClosed[sessionId] ?? EMPTY_RECENT) : EMPTY_RECENT,
   );
+
+export const markAgentPoppedOut = (agentId: string) => {
+  agentStore.setState((state) =>
+    state.poppedOut[agentId]
+      ? state
+      : { poppedOut: { ...state.poppedOut, [agentId]: true } },
+  );
+};
+
+export const unmarkAgentPoppedOut = (agentId: string) => {
+  agentStore.setState((state) => {
+    if (!state.poppedOut[agentId]) {
+      return state;
+    }
+    const { [agentId]: _removed, ...rest } = state.poppedOut;
+
+    return { poppedOut: rest };
+  });
+};
+
+export const seedPoppedOutAgents = (agentIds: string[]) => {
+  agentStore.setState(() => {
+    const next: Record<string, true> = {};
+    for (const id of agentIds) {
+      next[id] = true;
+    }
+
+    return { poppedOut: next };
+  });
+};
+
+export const isAgentPoppedOut = (agentId: string): boolean =>
+  !!agentStore.getState().poppedOut[agentId];
+
+export const usePoppedOutAgents = () => useAgentStore((s) => s.poppedOut);
 
 /** For tests and imperative access */
 export const getAgentState = () => agentStore.getState();

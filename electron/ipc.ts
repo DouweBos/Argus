@@ -16,8 +16,11 @@ import { Menu, app, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createLogger } from "../app/lib/logger";
+import { broadcastToRenderers } from "./broadcast";
 import {
+  closeFloatingAgentWindow,
   closeFloatingSimulatorWindow,
+  createFloatingAgentWindow,
   createFloatingSimulatorWindow,
   getMainWindow,
   markQuitConfirmedDespiteAgents,
@@ -786,6 +789,63 @@ export function registerIpcHandlers(): void {
     closeFloatingSimulatorWindow(a.udid as string);
 
     return Promise.resolve();
+  });
+
+  handle("open_agent_popout", (a) => {
+    const agentId = a.agentId as string;
+    const sessionId = a.sessionId as string;
+    const title = typeof a.title === "string" ? (a.title as string) : undefined;
+    const cursorX =
+      typeof a.cursorX === "number" ? (a.cursorX as number) : undefined;
+    const cursorY =
+      typeof a.cursorY === "number" ? (a.cursorY as number) : undefined;
+    createFloatingAgentWindow({
+      agentId,
+      sessionId,
+      title,
+      cursorX,
+      cursorY,
+    });
+    // Broadcast so every window (including the one that requested it) can
+    // hide the agent from its tab bar in sync.
+    broadcastToRenderers("agent:popout-opened", { agentId, sessionId });
+
+    return Promise.resolve();
+  });
+  handle("close_agent_popout", (a) => {
+    const agentId = a.agentId as string;
+    closeFloatingAgentWindow(agentId);
+    // The window's `closed` handler broadcasts `agent:popout-closed`; nothing
+    // more to do here.
+
+    return Promise.resolve();
+  });
+  handle("list_popped_out_agents", () =>
+    Promise.resolve(Array.from(appState.agentPopouts.keys())),
+  );
+  handle("publish_agent_snapshot", (a) => {
+    const agentId = a.agentId as string;
+    const snapshot = a.snapshot as string;
+    if (!agentId) {
+      return Promise.resolve();
+    }
+    if (typeof snapshot !== "string" || snapshot.length === 0) {
+      appState.agentSnapshots.delete(agentId);
+    } else {
+      appState.agentSnapshots.set(agentId, snapshot);
+    }
+
+    return Promise.resolve();
+  });
+  handle("get_agent_snapshot", (a) => {
+    const agentId = a.agentId as string;
+
+    return Promise.resolve(appState.agentSnapshots.get(agentId) ?? null);
+  });
+  handle("get_session", (a) => {
+    const id = a.id as string;
+
+    return Promise.resolve(appState.sessions.get(id) ?? null);
   });
 
   // Android device commands

@@ -22,6 +22,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { log as emitLog } from "../app/lib/logger";
+import { broadcastToRenderers } from "./broadcast";
 import { registerIpcHandlers } from "./ipc";
 import { writeLogLine } from "./lib/logFile";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
@@ -789,4 +790,93 @@ export function closeFloatingSimulatorWindow(udid: string): void {
     win.close();
   }
   appState.simulatorPopouts.delete(udid);
+}
+
+/**
+ * Open an agent in its own floating window. The new window loads the same
+ * renderer bundle with `?popout=agent&agentId=...&sessionId=...`, which
+ * short-circuits into the minimal `AgentPopout` React tree (see
+ * `app/main.tsx`). The main window hides the agent's tab while the popout is
+ * open; closing the window (or pressing the "back to main window" button)
+ * returns it to the tab bar.
+ *
+ * Idempotent: reusing the same agentId focuses the existing popout.
+ */
+export function createFloatingAgentWindow(options: {
+  agentId: string;
+  sessionId: string;
+  title?: string;
+  /** Drop cursor position (screen coords). When set, the window is placed so
+   * the cursor sits inside its top edge, making the drag release feel like
+   * the ghost is landing on the new window. */
+  cursorX?: number;
+  cursorY?: number;
+}): BrowserWindow {
+  const { agentId, sessionId, title, cursorX, cursorY } = options;
+  const existing = appState.agentPopouts.get(agentId);
+  if (existing && !existing.isDestroyed()) {
+    existing.show();
+    existing.focus();
+
+    return existing;
+  }
+
+  const width = 520;
+  const height = 720;
+  const placement =
+    typeof cursorX === "number" && typeof cursorY === "number"
+      ? { x: Math.round(cursorX - width / 2), y: Math.round(cursorY - 20) }
+      : {};
+
+  const win = new BrowserWindow({
+    width,
+    height,
+    minWidth: 360,
+    minHeight: 400,
+    ...placement,
+    show: false,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0a0a0f" : "#fafbfc",
+    title: title ? `Argus · ${title}` : "Argus · Agent",
+    titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 12, y: 12 },
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  const params = new URLSearchParams({
+    popout: "agent",
+    agentId,
+    sessionId,
+    ...(title ? { title } : {}),
+  });
+
+  if (isDev) {
+    win.loadURL(`${VITE_DEV_URL}?${params.toString()}`);
+  } else {
+    const indexPath = path.join(__dirname, "../dist/index.html");
+    win.loadFile(indexPath, { search: `?${params.toString()}` });
+  }
+
+  win.once("ready-to-show", () => win.show());
+  win.on("closed", () => {
+    appState.agentPopouts.delete(agentId);
+    broadcastToRenderers("agent:popout-closed", { agentId });
+  });
+
+  appState.agentPopouts.set(agentId, win);
+
+  return win;
+}
+
+/** Close the popout window for a given agentId, if any. */
+export function closeFloatingAgentWindow(agentId: string): void {
+  const win = appState.agentPopouts.get(agentId);
+  if (win && !win.isDestroyed()) {
+    win.close();
+  }
+  appState.agentPopouts.delete(agentId);
 }

@@ -1,0 +1,95 @@
+.shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+  container-name: chat-input;
+  background: var(--surface-1);
+  border: 1px solid var(--surface-4);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 16px var(--scrim-sm);
+  transition:
+    border-color var(--transition-smooth),
+    box-shadow var(--transition-smooth),
+    background var(--transition-smooth);
+}
+
+.shell:focus-within {
+  border-color: var(--accent-border-soft);
+  box-shadow:
+    0 0 0 1px var(--accent-overlay-lg),
+    0 4px 24px var(--scrim-md);
+}
+
+.disabled {
+  opacity: 0.55;
+}
+
+.dragOver {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    0 0 0 1px var(--accent-overlay-2xl),
+    0 4px 24px var(--scrim-md);
+  background: var(--accent-overlay-sm);
+}
+
+.body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 6px;
+  min-width: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.actions::-webkit-scrollbar {
+  display: none;
+}
+
+.actions > * {
+  flex-shrink: 0;
+}
+
+.trailing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.collapseLabel {
+  display: inline-block;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* At narrow widths, hide verbose chip labels so the toolbar doesn't wrap
+   or stretch the panel. Icons on the chips remain visible. */
+@container chat-input (max-width: 420px) {
+  .collapseLabel {
+    display: none;
+  }
+}
