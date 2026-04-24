@@ -526,6 +526,13 @@ export interface ArgusConfigSuggestion {
   signals: DetectedSignal[];
 }
 
+export interface ProjectEntry {
+  description: string;
+  path: string;
+  registered: boolean;
+  source: string;
+}
+
 export interface ExampleProject {
   description: string;
   name: string;

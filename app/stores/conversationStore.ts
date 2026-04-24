@@ -124,6 +124,12 @@ interface ConversationStoreData {
   conversations: Record<string, AgentConversation>;
   /** Draft message text per agent, preserved across tab switches. */
   drafts: Record<string, string>;
+  /**
+   * Absolute paths of extra project directories linked to a chat. The agent
+   * is allowed to read from and write into these directories in addition to
+   * its own worktree. Preserved across tab switches for the agent's lifetime.
+   */
+  linkedProjects: Record<string, string[]>;
   /** Pending image attachments per agent, preserved across tab switches. */
   pendingImages: Record<string, PendingImage[]>;
 }
@@ -229,6 +235,7 @@ function updateToolCallInMessages(
 const conversationStore = create<ConversationStoreData>(() => ({
   conversations: {},
   drafts: {},
+  linkedProjects: {},
   pendingImages: {},
 }));
 
@@ -957,6 +964,36 @@ export function setPendingImages(agentId: string, images: PendingImage[]) {
     };
   });
 }
+
+const EMPTY_LINKED_PROJECTS: string[] = [];
+
+export function getLinkedProjects(agentId: string): string[] {
+  return (
+    conversationStore.getState().linkedProjects[agentId] ??
+    EMPTY_LINKED_PROJECTS
+  );
+}
+
+export function setLinkedProjects(agentId: string, paths: string[]) {
+  conversationStore.setState((state) => {
+    if (paths.length === 0) {
+      const { [agentId]: _removed, ...next } = state.linkedProjects;
+
+      return { linkedProjects: next };
+    }
+
+    return {
+      linkedProjects: { ...state.linkedProjects, [agentId]: paths },
+    };
+  });
+}
+
+export const useLinkedProjects = (agentId: string | null | undefined) =>
+  useConversationStore((state) =>
+    agentId
+      ? (state.linkedProjects[agentId] ?? EMPTY_LINKED_PROJECTS)
+      : EMPTY_LINKED_PROJECTS,
+  );
 
 export const usePendingImages = (agentId: string | null | undefined) =>
   useConversationStore((state) =>

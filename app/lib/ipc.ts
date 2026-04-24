@@ -35,6 +35,7 @@ import type {
   OrganizationMember,
   PrereqId,
   PrereqResult,
+  ProjectEntry,
   SimulatorDevice,
   Session,
   UserProjectSettings,
@@ -126,6 +127,9 @@ export const addRepoRoot = (path: string): Promise<void> =>
 
 export const removeRepoRoot = (path: string): Promise<void> =>
   invoke("remove_repo_root", { path });
+
+export const listProjects = (): Promise<ProjectEntry[]> =>
+  invoke("list_projects");
 
 export const getRepoBranch = (repoRoot: string): Promise<string> =>
   invoke("get_repo_branch", { repoRoot });
