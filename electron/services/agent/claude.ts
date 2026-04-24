@@ -213,7 +213,7 @@ function buildOrganizationContext(repoRoot: string, sessionId: string): string {
     }
     lines.push(
       "",
-      "Use `spawn_agent` with a member's `repo_root` to delegate work to the repo responsible for that slice of the product.",
+      "Use `spawn_agent` with a member's `project_path` to delegate work to the project responsible for that slice of the product.",
     );
 
     return lines.join("\n");
@@ -766,7 +766,7 @@ export async function startAgent(
   // Combine prompts: kind-specific → project context → org context → conductor skill → project-level → runtime → caller-provided.
   const systemPrompt = getSystemPromptForKind(argusSession.kind);
   const conductorSkill = getConductorSkill();
-  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`repo_root\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
+  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
   const orgContext = buildOrganizationContext(
     argusSession.repo_root,
     argusSession.id,

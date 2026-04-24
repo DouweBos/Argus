@@ -13,14 +13,14 @@ You have access to the **Argus MCP server** which provides tools for session man
 
 ### Session management
 
-- **`list_sessions`** — List all sessions to see what else is in progress. Pass `repo_root` to list sessions for a specific project.
-- **`create_session`** — Create a new worktree. **Always pass `repo_root`** — use your current project path for work here, or a path from `list_projects` for another project. Pass `base_branch` with your current branch name to create a child worktree.
+- **`list_sessions`** — List all sessions to see what else is in progress. Pass `project_path` to list sessions for a specific project.
+- **`create_session`** — Create a new worktree. **Always pass `project_path`** — use your current project path for work here, or a path from `list_projects` for another project. Pass `base_branch` with your current branch name to create a child worktree.
 - **`delete_session`** — Clean up a session you no longer need.
 
 ### Agent orchestration
 
 - **`spawn_agent`** — Start a parallel agent in another session (including cross-project sessions).
-- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Set `repo_root` per-agent to span multiple repositories in a single batch; the top-level `repo_root` is an optional default.
+- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Set `project_path` per-agent to span multiple projects in a single batch; the top-level `project_path` is an optional default.
 - **`list_agents`** / **`agent_status`** — Check on other running agents.
 - **`get_agent_result`** — Get the result summary of a completed agent.
 - **`wait_for_agent`** — Block until an agent finishes, then return its status and result.

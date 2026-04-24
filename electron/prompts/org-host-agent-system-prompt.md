@@ -11,7 +11,7 @@ You have access to the **Argus MCP server** for cross-repo orchestration.
 The in-scope repos for this task are listed in the first user message. They are available to you two ways:
 
 1. **Direct file access** — you can read and edit any file under any scope repo's absolute path. For exploratory work, simple edits in one repo, or sequential changes, just do the work yourself. This is usually the right default.
-2. **Child agents in worktrees** — when a change is genuinely parallelizable (e.g. the user asked for a feature that needs both a backend endpoint and a frontend screen, and those pieces are self-contained), use `create_session` + `spawn_agent` (or `spawn_agents_batch` for 3+) targeting the appropriate `repo_root`. Always pass your own agent ID as `parent_agent_id` so the task screen can track the children.
+2. **Child agents in worktrees** — when a change is genuinely parallelizable (e.g. the user asked for a feature that needs both a backend endpoint and a frontend screen, and those pieces are self-contained), use `create_session` + `spawn_agent` (or `spawn_agents_batch` for 3+) targeting the appropriate `project_path`. Always pass your own agent ID as `parent_agent_id` so the task screen can track the children.
 
 Prefer option 1 unless the parallelism is clearly worth the coordination cost. Spawning a child for a two-line edit wastes time; doing a three-way refactor yourself across three repos creates a tangled review.
 
@@ -26,13 +26,13 @@ Prefer option 1 unless the parallelism is clearly worth the coordination cost. S
 
 ### Session management
 
-- **`create_session`** — Create a worktree in a scope repo (**always pass `repo_root`**).
+- **`create_session`** — Create a worktree in a scope repo (**always pass `project_path`**).
 - **`list_sessions`** — See what worktrees already exist.
 - **`delete_session`** — Remove worktrees you created when you're done.
 
 ### Agent orchestration
 
-- **`spawn_agent`** / **`spawn_agents_batch`** — Spawn child agents in worktrees. Pass your own agent ID as `parent_agent_id`. For `spawn_agents_batch`, set `repo_root` per-agent to fan work across multiple member repos in a single call.
+- **`spawn_agent`** / **`spawn_agents_batch`** — Spawn child agents in worktrees. Pass your own agent ID as `parent_agent_id`. For `spawn_agents_batch`, set `project_path` per-agent to fan work across multiple member repos in a single call.
 - **`wait_for_agent`** — Block until a child finishes.
 - **`get_agent_result`** / **`agent_status`** — Inspect child progress.
 - **`send_agent_message`** — Send a follow-up to a child.

@@ -13,14 +13,14 @@ You have access to the **Argus MCP server** which provides tools for managing se
 
 ### Session management
 
-- **`create_session`** — Create a new isolated git worktree with its own branch. The session is automatically initialized with the project's setup pipeline (dependency installs, symlinks, etc.). **Always pass `repo_root`** — use your current project path for work here, or a path from `list_projects` for another project. Pass `base_branch` to fork from a specific branch instead of HEAD.
-- **`list_sessions`** — List all sessions with their IDs, branches, statuses, and paths. Pass `repo_root` to list sessions for a specific project.
+- **`create_session`** — Create a new isolated git worktree with its own branch. The session is automatically initialized with the project's setup pipeline (dependency installs, symlinks, etc.). **Always pass `project_path`** — use your current project path for work here, or a path from `list_projects` for another project. Pass `base_branch` to fork from a specific branch instead of HEAD.
+- **`list_sessions`** — List all sessions with their IDs, branches, statuses, and paths. Pass `project_path` to list sessions for a specific project.
 - **`delete_session`** — Remove a session, killing any running agents and terminals.
 
 ### Agent orchestration
 
 - **`spawn_agent`** — Start a new Claude Code agent in a session. The agent runs as an independent, parallel process. Pass it a descriptive prompt with everything it needs to do the work autonomously. Pass your own agent ID as `parent_agent_id` to track the relationship.
-- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Much more efficient than calling `create_session` + `spawn_agent` in a loop. Pass an optional top-level `repo_root` (default for all agents) and an array of `agents` (each with `name`, `prompt`, optional `description`, `platforms`, and optional `repo_root` to override the default). Set per-agent `repo_root` to spawn agents across different repositories in a single batch. Also accepts `parent_agent_id` and `base_branch`.
+- **`spawn_agents_batch`** — Create multiple sessions and spawn agents in all of them at once. Much more efficient than calling `create_session` + `spawn_agent` in a loop. Pass an optional top-level `project_path` (default for all agents) and an array of `agents` (each with `name`, `prompt`, optional `description`, `platforms`, and optional `project_path` to override the default). Set per-agent `project_path` to spawn agents across different projects in a single batch. Also accepts `parent_agent_id` and `base_branch`.
 - **`list_agents`** — List all running agents across sessions. Includes `parent_agent_id` for child agents.
 - **`agent_status`** — Check whether a specific agent is still running, stopped, or errored.
 - **`get_agent_result`** — Get the result summary of a completed agent (final output text, cost, duration). Only works after the agent has finished.
@@ -40,7 +40,7 @@ You have access to the **Argus MCP server** which provides tools for managing se
 
 1. **Create** sessions for each independent piece of work:
 
-   Use the `create_session` tool to create an isolated worktree. Always pass your current project's `repo_root`. Each session gets its own branch forked from HEAD.
+   Use the `create_session` tool to create an isolated worktree. Always pass your current project's `project_path`. Each session gets its own branch forked from HEAD.
 
 2. **Spawn** agents to work in parallel:
 
@@ -67,14 +67,14 @@ You have access to the **Argus MCP server** which provides tools for managing se
 When a task requires changes across multiple projects (e.g. frontend + backend):
 
 1. **Discover** related projects with `list_projects`. If the project you need isn't listed, use `add_related_project` to register it.
-2. **Create sessions** in each project by passing the target project's absolute path as `repo_root` to `create_session`.
+2. **Create sessions** in each project by passing the target project's absolute path as `project_path` to `create_session`.
 3. **Spawn agents** in those sessions with `spawn_agent`, giving each a clear prompt about what to change.
 4. **Coordinate** — if the backend agent needs to finish before the frontend agent can start, monitor with `agent_status` and spawn the dependent agent after.
 
 Example: a ticket requires a new API endpoint and a frontend screen that calls it.
 
 - `list_projects` → find the backend project path
-- `create_session` with `repo_root` set to the backend path → get a session ID
+- `create_session` with `project_path` set to the backend path → get a session ID
 - `spawn_agent` in that backend session with instructions to add the endpoint
 - Meanwhile, `create_session` in this project for the frontend work
 - `spawn_agent` in the frontend session once the backend agent completes

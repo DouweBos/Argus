@@ -224,7 +224,7 @@ describe("add_related_project", () => {
     mockExistsSync.mockReturnValue(false);
     const result = await client.callTool({
       name: "add_related_project",
-      arguments: { project_path: "/nonexistent", description: "Nope" },
+      arguments: { related_project_path: "/nonexistent", description: "Nope" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("does not exist");
@@ -235,7 +235,7 @@ describe("add_related_project", () => {
     mockIsGitRepo.mockReturnValue(false);
     const result = await client.callTool({
       name: "add_related_project",
-      arguments: { project_path: "/not-git", description: "Not git" },
+      arguments: { related_project_path: "/not-git", description: "Not git" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Not a git repository");
@@ -257,8 +257,8 @@ describe("add_related_project", () => {
     const result = await client.callTool({
       name: "add_related_project",
       arguments: {
-        repo_root: "/projects/frontend",
-        project_path: "/projects/backend",
+        project_path: "/projects/frontend",
+        related_project_path: "/projects/backend",
         description: "Backend API",
       },
     });
@@ -283,8 +283,8 @@ describe("add_related_project", () => {
     const result = await client.callTool({
       name: "add_related_project",
       arguments: {
-        repo_root: "/projects/frontend",
-        project_path: "/projects/backend",
+        project_path: "/projects/frontend",
+        related_project_path: "/projects/backend",
         description: "Backend API",
       },
     });
@@ -318,7 +318,7 @@ describe("create_session", () => {
       arguments: {
         name: "Cool Thing",
         description: "A cool feature",
-        repo_root: "/projects/frontend",
+        project_path: "/projects/frontend",
       },
     });
     const parsed = jsonOf(result) as { session_id: string; branch: string };
@@ -334,7 +334,7 @@ describe("create_session", () => {
     );
   });
 
-  it("passes explicit repo_root and base_branch through", async () => {
+  it("passes explicit project_path and base_branch through", async () => {
     mockCreateSession.mockResolvedValue(
       mockSession({ repo_root: "/projects/backend" }),
     );
@@ -343,7 +343,7 @@ describe("create_session", () => {
       name: "create_session",
       arguments: {
         name: "API fix",
-        repo_root: "/projects/backend",
+        project_path: "/projects/backend",
         base_branch: "develop",
       },
     });
@@ -538,40 +538,12 @@ describe("spawn_agent", () => {
     );
   });
 
-  it("accepts the legacy `workspace` param as a back-compat alias", async () => {
-    const ws = mockSession();
-    appState.sessions.set("ws-1", ws);
-    mockStartAgent.mockResolvedValue({
-      agent_id: "agent-legacy",
-      session_id: "ws-1",
-      status: "running",
-      parent_agent_id: null,
-    });
-
-    const result = await client.callTool({
-      name: "spawn_agent",
-      arguments: { workspace: "ws-1", prompt: "from old caller" },
-    });
-    const parsed = jsonOf(result) as { agent_id: string };
-    expect(parsed.agent_id).toBe("agent-legacy");
-    expect(mockStartAgent).toHaveBeenCalledWith(
-      "ws-1",
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
-  });
-
-  it("requires either `session` or `workspace` to be present", async () => {
+  it("requires `session` to be present", async () => {
     const result = await client.callTool({
       name: "spawn_agent",
       arguments: { prompt: "no target" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("session");
   });
 });
 
@@ -887,7 +859,7 @@ describe("spawn_agents_batch", () => {
     }));
   });
 
-  it("uses top-level repo_root for all agents (existing behavior)", async () => {
+  it("uses top-level project_path for all agents (existing behavior)", async () => {
     mockCreateSession.mockImplementation(async (repoRoot: string) =>
       mockSession({
         id: `ws-${repoRoot.replace(/\W/g, "")}-${Math.random()}`,
@@ -898,7 +870,7 @@ describe("spawn_agents_batch", () => {
     const result = await client.callTool({
       name: "spawn_agents_batch",
       arguments: {
-        repo_root: "/projects/frontend",
+        project_path: "/projects/frontend",
         agents: [
           { name: "A", prompt: "do A" },
           { name: "B", prompt: "do B" },
@@ -916,7 +888,7 @@ describe("spawn_agents_batch", () => {
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/projects/frontend");
   });
 
-  it("honors per-agent repo_root overrides for cross-repo spawning", async () => {
+  it("honors per-agent project_path overrides for cross-project spawning", async () => {
     mockCreateSession.mockImplementation(async (repoRoot: string) =>
       mockSession({
         id: `ws-${repoRoot.replace(/\W/g, "")}`,
@@ -928,8 +900,8 @@ describe("spawn_agents_batch", () => {
       name: "spawn_agents_batch",
       arguments: {
         agents: [
-          { name: "A", prompt: "do A", repo_root: "/projects/frontend" },
-          { name: "B", prompt: "do B", repo_root: "/projects/backend" },
+          { name: "A", prompt: "do A", project_path: "/projects/frontend" },
+          { name: "B", prompt: "do B", project_path: "/projects/backend" },
         ],
       },
     });
@@ -954,10 +926,10 @@ describe("spawn_agents_batch", () => {
     const result = await client.callTool({
       name: "spawn_agents_batch",
       arguments: {
-        repo_root: "/projects/frontend",
+        project_path: "/projects/frontend",
         agents: [
           { name: "A", prompt: "do A" },
-          { name: "B", prompt: "do B", repo_root: "/projects/backend" },
+          { name: "B", prompt: "do B", project_path: "/projects/backend" },
         ],
       },
     });
@@ -978,9 +950,9 @@ describe("spawn_agents_batch", () => {
       name: "spawn_agents_batch",
       arguments: {
         agents: [
-          { name: "A", prompt: "do A", repo_root: "/projects/frontend" },
-          { name: "B", prompt: "do B", repo_root: "/projects/frontend" },
-          { name: "C", prompt: "do C", repo_root: "/projects/backend" },
+          { name: "A", prompt: "do A", project_path: "/projects/frontend" },
+          { name: "B", prompt: "do B", project_path: "/projects/frontend" },
+          { name: "C", prompt: "do C", project_path: "/projects/backend" },
         ],
       },
     });
@@ -991,19 +963,19 @@ describe("spawn_agents_batch", () => {
     expect(registered).toEqual(["/projects/backend", "/projects/frontend"]);
   });
 
-  it("fails the whole batch with a clear error when no repo_root resolves", async () => {
+  it("fails the whole batch with a clear error when no project_path resolves", async () => {
     const result = await client.callTool({
       name: "spawn_agents_batch",
       arguments: {
         agents: [
-          { name: "A", prompt: "do A", repo_root: "/projects/frontend" },
+          { name: "A", prompt: "do A", project_path: "/projects/frontend" },
           { name: "B", prompt: "do B" },
         ],
       },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("B");
-    expect(textOf(result)).toContain("repo_root");
+    expect(textOf(result)).toContain("project_path");
     expect(mockCreateSession).not.toHaveBeenCalled();
     expect(mockEnsureRepoRegistered).not.toHaveBeenCalled();
   });
@@ -1013,8 +985,8 @@ describe("spawn_agents_batch", () => {
 // resolveRepoRoot (tested indirectly)
 // ===========================================================================
 
-describe("create_session repo_root handling", () => {
-  it("requires repo_root — omitting it returns an error", async () => {
+describe("create_session project_path handling", () => {
+  it("requires project_path — omitting it returns an error", async () => {
     appState.repoRoots.add("/first/repo");
 
     const result = await client.callTool({
@@ -1025,7 +997,7 @@ describe("create_session repo_root handling", () => {
     expect(result.isError).toBe(true);
   });
 
-  it("uses explicit repo_root when provided", async () => {
+  it("uses explicit project_path when provided", async () => {
     appState.repoRoots.add("/default/repo");
     mockCreateSession.mockResolvedValue(
       mockSession({ repo_root: "/other/repo" }),
@@ -1033,7 +1005,7 @@ describe("create_session repo_root handling", () => {
 
     await client.callTool({
       name: "create_session",
-      arguments: { name: "test", repo_root: "/other/repo" },
+      arguments: { name: "test", project_path: "/other/repo" },
     });
     expect(mockEnsureRepoRegistered).toHaveBeenCalledWith("/other/repo");
   });

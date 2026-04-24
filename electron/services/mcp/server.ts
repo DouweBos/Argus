@@ -18,7 +18,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { z } from "zod";
-import { createLogger, info, warn } from "../../../app/lib/logger";
+import { createLogger, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { resolveAttachments, mcpAttachmentSchema } from "../agent/attachments";
@@ -217,14 +217,14 @@ function readJsonBody(
   });
 }
 
-/** Resolve the repo_root for a session or fall back to the first repo root. */
-function resolveRepoRoot(repoRoot?: string): string {
-  if (repoRoot) {
-    return repoRoot;
+/** Resolve the project_path for a call, or fall back to the first registered project. */
+function resolveRepoRoot(projectPath?: string): string {
+  if (projectPath) {
+    return projectPath;
   }
   const first = appState.repoRoots.values().next();
   if (first.done) {
-    throw new Error("No repository roots registered");
+    throw new Error("No projects registered");
   }
 
   return first.value;
@@ -301,13 +301,13 @@ export function createMcpServer(): McpServer {
     "add_related_project",
     "Add a related project to a project's .argus.json configuration. Use this when you discover that work on your current project requires changes in another project that isn't yet listed as related.",
     {
-      repo_root: z
+      project_path: z
         .string()
         .optional()
         .describe(
-          "Absolute path to the project whose config to update. Defaults to the first registered repo.",
+          "Absolute path to the project whose config to update. Defaults to the first registered project.",
         ),
-      project_path: z
+      related_project_path: z
         .string()
         .describe("Absolute path to the related project to add."),
       description: z
@@ -316,27 +316,27 @@ export function createMcpServer(): McpServer {
           "Human-readable description of what this related project is (e.g. 'Backend API server', 'Shared component library').",
         ),
     },
-    async ({ repo_root, project_path, description }) => {
-      const repoRoot = resolveRepoRoot(repo_root);
+    async ({ project_path, related_project_path, description }) => {
+      const repoRoot = resolveRepoRoot(project_path);
 
       // Validate the target path exists and is a git repo.
-      if (!fs.existsSync(project_path)) {
+      if (!fs.existsSync(related_project_path)) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Path does not exist: ${project_path}`,
+              text: `Path does not exist: ${related_project_path}`,
             },
           ],
           isError: true,
         };
       }
-      if (!isGitRepo(project_path)) {
+      if (!isGitRepo(related_project_path)) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Not a git repository: ${project_path}`,
+              text: `Not a git repository: ${related_project_path}`,
             },
           ],
           isError: true,
@@ -344,7 +344,7 @@ export function createMcpServer(): McpServer {
       }
 
       // Compute relative path from repoRoot to the target.
-      const relativePath = path.relative(repoRoot, project_path);
+      const relativePath = path.relative(repoRoot, related_project_path);
 
       // Read existing config, add the entry, write back.
       const config = readArgusConfig(repoRoot);
@@ -352,7 +352,7 @@ export function createMcpServer(): McpServer {
 
       // Check for duplicate.
       const absExisting = existing.map((p) => path.resolve(repoRoot, p.path));
-      const absTarget = path.resolve(project_path);
+      const absTarget = path.resolve(related_project_path);
       if (absExisting.includes(absTarget)) {
         return {
           content: [
@@ -392,7 +392,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "create_session",
-    "Create a new isolated git worktree session. Returns the session ID and branch name. The session will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Requires repo_root — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
+    "Create a new isolated git worktree session. Returns the session ID and branch name. The session will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Requires project_path — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
     {
       name: z
         .string()
@@ -403,20 +403,20 @@ export function createMcpServer(): McpServer {
         .string()
         .optional()
         .describe("Human-readable description of what this session is for"),
-      repo_root: z
+      project_path: z
         .string()
         .describe(
-          "Absolute path to the repository root. Use the repo_root from your system prompt for the current project, or a path from list_projects for another project.",
+          "Absolute path to the project root. Use the project_path from your system prompt for the current project, or a path from list_projects for another project.",
         ),
       base_branch: z
         .string()
         .optional()
         .describe(
-          "Branch to fork from. Defaults to the repo root HEAD. Use this to create a child worktree off another worktree's branch.",
+          "Branch to fork from. Defaults to the project's HEAD. Use this to create a child worktree off another worktree's branch.",
         ),
     },
-    async ({ name, description, repo_root, base_branch }) => {
-      const repoRoot = repo_root;
+    async ({ name, description, project_path, base_branch }) => {
+      const repoRoot = project_path;
 
       // Auto-register the repo root if targeting a cross-project session.
       const isNew = !appState.repoRoots.has(repoRoot);
@@ -478,17 +478,17 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_sessions",
-    "List all sessions (worktrees and repo root) for a repository. Returns session IDs, branches, paths, and statuses.",
+    "List all sessions (worktrees and project root) for a project. Returns session IDs, branches, paths, and statuses.",
     {
-      repo_root: z
+      project_path: z
         .string()
         .optional()
         .describe(
-          "Absolute path to the repository root. Defaults to the first registered repo.",
+          "Absolute path to the project root. Defaults to the first registered project.",
         ),
     },
-    async ({ repo_root }) => {
-      const repoRoot = resolveRepoRoot(repo_root);
+    async ({ project_path }) => {
+      const repoRoot = resolveRepoRoot(project_path);
       const sessions = await listSessions(repoRoot);
       const summary = sessions.map((ws) => ({
         session_id: ws.id,
@@ -564,15 +564,8 @@ export function createMcpServer(): McpServer {
     {
       session: z
         .string()
-        .optional()
         .describe(
           "Session ID, branch name, or display name to run the agent in",
-        ),
-      workspace: z
-        .string()
-        .optional()
-        .describe(
-          "Deprecated alias for `session`. Kept for back-compat with older orchestrators; prefer `session`.",
         ),
       prompt: z
         .string()
@@ -604,37 +597,19 @@ export function createMcpServer(): McpServer {
     },
     async ({
       session,
-      workspace,
       prompt,
       permission_mode,
       platforms,
       parent_agent_id,
       attachments,
     }) => {
-      const sessionArg = session ?? workspace;
-      if (!sessionArg) {
-        return {
-          content: [
-            {
-              type: "text" as const,
-              text: "Either `session` or `workspace` must be provided.",
-            },
-          ],
-          isError: true,
-        };
-      }
-      if (workspace && !session) {
-        warn(
-          "[mcp:spawn_agent] `workspace` parameter is deprecated — use `session` instead",
-        );
-      }
-      const ws = resolveSession(sessionArg);
+      const ws = resolveSession(session);
       if (!ws) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `Session not found: ${sessionArg}`,
+              text: `Session not found: ${session}`,
             },
           ],
           isError: true,
@@ -723,13 +698,13 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agents_batch",
-    "Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Agents may target different repositories — set `repo_root` per-agent to spawn across repos in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once.",
+    "Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Agents may target different projects — set `project_path` per-agent to spawn across projects in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once.",
     {
-      repo_root: z
+      project_path: z
         .string()
         .optional()
         .describe(
-          "Default repository root used when an agent entry doesn't specify its own `repo_root`. Optional if every agent specifies its own.",
+          "Default project path used when an agent entry doesn't specify its own `project_path`. Optional if every agent specifies its own.",
         ),
       agents: z
         .array(
@@ -744,11 +719,11 @@ export function createMcpServer(): McpServer {
               .optional()
               .describe("What this agent/session is for"),
             prompt: z.string().describe("Initial instructions for the agent"),
-            repo_root: z
+            project_path: z
               .string()
               .optional()
               .describe(
-                "Override the top-level `repo_root` for this agent only — use to spawn agents into different repositories in a single batch.",
+                "Override the top-level `project_path` for this agent only — use to spawn agents into different projects in a single batch.",
               ),
             platforms: z
               .array(z.enum(["ios", "android", "web"]))
@@ -779,19 +754,19 @@ export function createMcpServer(): McpServer {
         .describe("Branch to fork all sessions from. Defaults to HEAD."),
     },
     async ({
-      repo_root,
+      project_path,
       agents: agentSpecs,
       permission_mode,
       parent_agent_id,
       base_branch,
     }) => {
-      // Resolve each agent's repo_root up-front: prefer the per-agent override,
-      // fall back to the top-level default. Callers passing only top-level
-      // `repo_root` and no per-agent overrides still work unchanged.
+      // Resolve each agent's project_path up-front: prefer the per-agent
+      // override, fall back to the top-level default. Callers passing only
+      // top-level `project_path` and no per-agent overrides still work.
       const resolvedRepoRoots: string[] = [];
       const missing: string[] = [];
       agentSpecs.forEach((spec, idx) => {
-        const resolved = spec.repo_root ?? repo_root;
+        const resolved = spec.project_path ?? project_path;
         if (!resolved) {
           missing.push(spec.name || `agents[${idx}]`);
         }
@@ -802,7 +777,7 @@ export function createMcpServer(): McpServer {
           content: [
             {
               type: "text" as const,
-              text: `spawn_agents_batch: no repo_root resolved for agent(s): ${missing.join(", ")}. Provide a top-level \`repo_root\` as default, or set \`repo_root\` on each agent entry. No sessions were created.`,
+              text: `spawn_agents_batch: no project_path resolved for agent(s): ${missing.join(", ")}. Provide a top-level \`project_path\` as default, or set \`project_path\` on each agent entry. No sessions were created.`,
             },
           ],
           isError: true,
@@ -1461,18 +1436,18 @@ export function createMcpServer(): McpServer {
       members: z
         .array(
           z.object({
-            repo_root: z
+            project_path: z
               .string()
-              .describe("Absolute path to the member repo root."),
+              .describe("Absolute path to the member project root."),
             role: z
               .string()
               .describe(
-                "What this repo implements within the org (e.g. 'Backend API', 'iOS app').",
+                "What this project implements within the org (e.g. 'Backend API', 'iOS app').",
               ),
           }),
         )
         .optional()
-        .describe("Member repos and their roles."),
+        .describe("Member projects and their roles."),
     },
     async ({ name, description, system_prompt, accent, members }) => {
       const org = createOrganization({
@@ -1480,7 +1455,10 @@ export function createMcpServer(): McpServer {
         description,
         system_prompt,
         accent,
-        members,
+        members: members?.map((m) => ({
+          repo_root: m.project_path,
+          role: m.role,
+        })),
       });
 
       return {
@@ -1507,7 +1485,7 @@ export function createMcpServer(): McpServer {
       members: z
         .array(
           z.object({
-            repo_root: z.string(),
+            project_path: z.string(),
             role: z.string(),
           }),
         )
@@ -1519,7 +1497,10 @@ export function createMcpServer(): McpServer {
         description,
         system_prompt,
         accent,
-        members,
+        members: members?.map((m) => ({
+          repo_root: m.project_path,
+          role: m.role,
+        })),
       });
 
       return {
@@ -1555,18 +1536,18 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "add_repo_to_organization",
-    "Add a repo as a member of an organization, or update its role if already a member. The repo is auto-registered as an open project.",
+    "Add a project as a member of an organization, or update its role if already a member. The project is auto-registered.",
     {
       id: z.string().describe("Organization id."),
-      repo_root: z.string().describe("Absolute path to the repo root."),
+      project_path: z.string().describe("Absolute path to the project root."),
       role: z
         .string()
         .describe(
-          "What this repo implements within the org (e.g. 'Backend API').",
+          "What this project implements within the org (e.g. 'Backend API').",
         ),
     },
-    async ({ id, repo_root, role }) => {
-      const org = addRepoToOrganization(id, { repo_root, role });
+    async ({ id, project_path, role }) => {
+      const org = addRepoToOrganization(id, { repo_root: project_path, role });
 
       return {
         content: [
@@ -1582,13 +1563,13 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "remove_repo_from_organization",
-    "Remove a repo from an organization's member list. The repo itself is not deleted.",
+    "Remove a project from an organization's member list. The project itself is not deleted.",
     {
       id: z.string().describe("Organization id."),
-      repo_root: z.string().describe("Absolute path to the repo root."),
+      project_path: z.string().describe("Absolute path to the project root."),
     },
-    async ({ id, repo_root }) => {
-      const org = removeRepoFromOrganization(id, repo_root);
+    async ({ id, project_path }) => {
+      const org = removeRepoFromOrganization(id, project_path);
 
       return {
         content: [
