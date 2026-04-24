@@ -1,5 +1,20 @@
 # @argus/peacock
 
+## 0.3.0
+
+### Minor Changes
+
+- f59bc95: Show a small circular meter next to the model chip in the chat toolbar that fills as the agent's context window fills up. Hover the chip to see the exact percentage and token budget.
+- 903e8c1: Attach images to the first prompt when creating a new session. Paste screenshots directly into the prompt field, or use the Attach image button — they're sent to the agent with the initial message.
+- 8b4cbdf: Project cards on the home screen now have a "New session" button so you can start a session for that project without opening it first.
+- 41b250b: Add `--surface-3-solid` and `--surface-4-solid` tokens — opaque equivalents of the translucent `--surface-*` overlays, for cases where an absolutely-positioned overlay needs to fully cover what's underneath.
+
+### Patch Changes
+
+- 1177f75: `ChevronUpIcon` now matches `ChevronDownIcon` in optical weight and default size, so up/down chevron pairs render consistently.
+- 70a417e: Add a "Save entire file to disk" hover action to Write, Edit, and MultiEdit tool calls in the chat, so you can apply what an agent proposed without rerunning the tool.
+- a2a4801: Truncate long agent names in the active agents list so a single row no longer expands to fill the panel.
+
 ## 0.2.0
 
 ### Minor Changes
