@@ -43,6 +43,12 @@ export async function getSessionChangesets(
   if (!ws) {
     throw `Session not found: ${id}`;
   }
+  // Pending sessions (still initializing) have no worktree on disk yet —
+  // resolving `.changeset/` against an empty path would land us in
+  // `process.cwd()`'s `.changeset` directory, returning bogus results.
+  if (!ws.path) {
+    return { changesets: [], usesChangesets: false };
+  }
 
   const changesetDir = path.join(ws.path, ".changeset");
   const hasConfig =

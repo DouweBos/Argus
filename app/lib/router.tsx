@@ -10,6 +10,7 @@
  * - `/`                                          → home / project picker
  * - `/agents`                                    → global agents overview
  * - `/devices`                                   → devices screen
+ * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
  * - `/notifications`                             → notifications screen
  * - `/organizations`                             → organizations list
  * - `/organizations/:organizationId`             → single organization detail

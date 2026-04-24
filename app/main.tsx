@@ -8,6 +8,8 @@ import {
   initAppQuitSave,
   initExternalAgentStarted,
 } from "./lib/agentEventService";
+import { initNotificationsListener } from "./lib/notificationsService";
+import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initReviewQueueListener } from "./lib/reviewQueueService";
 import { vscodeReady } from "./lib/vscodeSetup";
 import { initConductorLogListener } from "./stores/conductorLogStore";
@@ -55,6 +57,11 @@ if (popoutMode === "simulator") {
   initDevicePolling();
   // Maintain the Review queue from backend `session:review-state` events.
   initReviewQueueListener();
+  // Surface backend `notification` events (e.g. failed title generation)
+  // as user-visible toasts in the notifications panel.
+  initNotificationsListener();
+  // Dispatch captured initial prompts once their session's worktree is ready.
+  initPendingSessionPrompts();
 
   // VS Code services must be initialized before any editor component renders
   vscodeReady.then(() => {
