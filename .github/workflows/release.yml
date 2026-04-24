@@ -42,7 +42,7 @@ jobs:
             found { print }
           ' CHANGELOG.md > release-notes.md
 
-      - name: Commit and tag release
+      - name: Stage version bump
         id: stage
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -55,10 +55,6 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           else
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
-            git commit -m "chore: release v${VERSION}"
-            git tag "v${VERSION}"
-            git push origin main
-            git push origin "v${VERSION}"
           fi
 
       - name: Install fastlane
@@ -103,3 +99,12 @@ jobs:
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: bundle exec fastlane mac release allow_dirty:true allow_any_branch:true
+
+      - name: Commit and tag release
+        if: steps.stage.outputs.has_changes == 'true'
+        run: |
+          VERSION="${{ steps.stage.outputs.version }}"
+          git commit -m "chore: release v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"

@@ -209,3 +209,16 @@ li:has(> [data-task-check]) {
 .xterm-viewport {
   border-radius: 0;
 }
+
+/* In-chat find (Cmd+F) highlights — driven by the CSS Custom Highlight API.
+   Registered under "chat-search" (all matches) and "chat-search-active"
+   (the currently focused match). */
+::highlight(chat-search) {
+  background-color: var(--accent-overlay-2xl);
+  color: var(--text-primary);
+}
+
+::highlight(chat-search-active) {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+}
