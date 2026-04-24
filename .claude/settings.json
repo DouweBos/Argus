@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm lint"
+            "command": "sh -c 'o=$(pnpm lint 2>&1) || { printf \"%s\\n\" \"$o\"; exit 1; }'"
           }
         ]
       }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm lint"
+            "command": "sh -c 'o=$(pnpm lint 2>&1) || { printf \"%s\\n\" \"$o\"; exit 1; }'"
           }
         ]
       }
