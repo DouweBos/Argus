@@ -1,7 +1,7 @@
 import type { ImageAttachment } from "../../../lib/ipc";
 import type { SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Chip, Icons } from "@argus/peacock";
+import { Button, Chip, ContextMeter, Icons } from "@argus/peacock";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
 import {
   clearDraft,
@@ -30,6 +30,10 @@ interface ChatInputProps {
     | "running"
     | "stopped"
     | null;
+  /** Max context-window size for the active model (tokens). */
+  contextLimit?: number;
+  /** Tokens currently resident in the model's context window. */
+  contextTokens?: number;
   disabled?: boolean;
   disabledPlaceholder?: string;
   model?: string;
@@ -68,6 +72,8 @@ export function ChatInput({
   onInterrupt,
   agentId,
   agentStatus,
+  contextTokens,
+  contextLimit,
   disabled = false,
   disabledPlaceholder,
   slashCommands,
@@ -599,7 +605,22 @@ export function ChatInput({
                   mono
                   muted
                   interactive
-                  title="Switch model"
+                  title={
+                    contextLimit && contextLimit > 0
+                      ? `Switch model — context: ${Math.round(
+                          ((contextTokens ?? 0) / contextLimit) * 100,
+                        )}% of ${contextLimit.toLocaleString()} tokens`
+                      : "Switch model"
+                  }
+                  leading={
+                    contextLimit && contextLimit > 0 ? (
+                      <ContextMeter
+                        progress={(contextTokens ?? 0) / contextLimit}
+                        size={12}
+                        stroke={2}
+                      />
+                    ) : undefined
+                  }
                   onClick={() => setModelPickerOpen(!modelPickerOpen)}
                 >
                   {model}

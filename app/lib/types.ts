@@ -353,6 +353,8 @@ export interface ClaudeToolResult {
 }
 
 export interface TokenUsage {
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
   input_tokens: number;
   output_tokens: number;
 }

@@ -12,6 +12,10 @@ import {
   maybeGenerateTitle,
   notifyMessageSent,
 } from "../../../lib/agentEventService";
+import {
+  contextLimitForModel,
+  tokensInContext,
+} from "../../../lib/contextWindow";
 import { editAndRestoreFromMessage } from "../../../lib/editRestoreChat";
 import {
   type ImageAttachment,
@@ -151,6 +155,26 @@ export function AgentChat({
 
     return match?.displayName ?? capabilitiesModels[0]?.displayName;
   }, [capabilitiesModels, modelValue, conversation?.model]);
+
+  // Derive live context-window usage from the latest assistant message's
+  // usage payload. Each assistant turn reports cumulative input-side tokens
+  // (input + cache_read + cache_creation) plus the output tokens it emitted,
+  // which together approximate the tokens now resident in context.
+  const contextLimit = useMemo(
+    () => contextLimitForModel(modelValue),
+    [modelValue],
+  );
+  const lastUsage = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role === "assistant" && m.usage) {
+        return m.usage;
+      }
+    }
+
+    return undefined;
+  }, [messages]);
+  const contextTokens = tokensInContext(lastUsage);
 
   // Model options for the picker, derived from capabilities.
   const modelOptions = useMemo(() => {
@@ -742,6 +766,8 @@ export function AgentChat({
         <ChatInput
           agentId={agentId}
           agentStatus={agentStatus}
+          contextLimit={contextLimit}
+          contextTokens={contextTokens}
           disabled={!isAlive}
           model={model}
           sessionId={sessionId}
