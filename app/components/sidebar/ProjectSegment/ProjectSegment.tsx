@@ -80,6 +80,18 @@ export function ProjectSegment({
   const projectName = basename(repoRoot);
   const accent = projectAccent(repoRoot);
   const hasSessions = worktrees.length > 0;
+  const agents = useAgentsRecord();
+  const projectSessionIds = useMemo(
+    () => new Set(sessions.map((s) => s.id)),
+    [sessions],
+  );
+  const hasRunningAgent = useMemo(
+    () =>
+      Object.values(agents).some(
+        (a) => a.status === "running" && projectSessionIds.has(a.session_id),
+      ),
+    [agents, projectSessionIds],
+  );
 
   return (
     <>
@@ -89,7 +101,14 @@ export function ProjectSegment({
         expanded={!isCollapsed && hasSessions}
         hideChevron={!hasSessions}
         active={isProjectSelected}
-        leading={<Icons.FolderIcon size={11} style={{ color: accent }} />}
+        leading={
+          <span
+            className={hasRunningAgent ? styles.folderPulse : undefined}
+            style={{ color: accent, display: "inline-flex" }}
+          >
+            <Icons.FolderIcon size={11} />
+          </span>
+        }
         onToggleExpanded={hasSessions ? onToggleCollapsed : undefined}
         onHeaderClick={openProjectHome}
         onHeaderContextMenu={(e) => {
@@ -329,14 +348,6 @@ function RepoHeaderMeta({ session }: { session: Session }) {
 }
 
 function RepoHeaderStatus({ session }: { session: Session }) {
-  const agents = useAgentsRecord();
-  const runningCount = useMemo(
-    () =>
-      Object.values(agents).filter(
-        (a) => a.session_id === session.id && a.status === "running",
-      ).length,
-    [agents, session.id],
-  );
   const setupProgressById = useSetupProgressBySessionId();
   const setupProgress = setupProgressById[session.id];
   const statusLabel = sessionStatusLabel(session.status);
@@ -349,26 +360,16 @@ function RepoHeaderStatus({ session }: { session: Session }) {
     errorMessage ??
     (setupProgress?.item ? `Setup: ${setupProgress.item}` : undefined);
 
-  if (runningCount === 0 && !showStatusBadge) {
+  if (!showStatusBadge) {
     return null;
   }
 
   return (
-    <>
-      {runningCount > 0 && (
-        <span
-          className={styles.agentDot}
-          title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
-        />
-      )}
-      {showStatusBadge && (
-        <span
-          className={`${styles.statusBadge} ${styles[`ws_${statusLabel}`]}`}
-          title={title}
-        >
-          {statusLabel}
-        </span>
-      )}
-    </>
+    <span
+      className={`${styles.statusBadge} ${styles[`ws_${statusLabel}`]}`}
+      title={title}
+    >
+      {statusLabel}
+    </span>
   );
 }
