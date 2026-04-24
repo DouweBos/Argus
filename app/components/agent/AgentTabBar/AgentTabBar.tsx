@@ -480,16 +480,37 @@ export function AgentTabBar({
     return counts;
   }, [allAgents]);
 
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) {
+      return;
+    }
+    const update = () => setIsScrolled(el.scrollLeft > 0);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [agents.length]);
+
   const homeClasses = [
     styles.tab,
     styles.homeTab,
     isHomeActive ? styles.active : null,
+    isScrolled ? styles.homeTabScrolled : null,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={styles.tabs}>
+    <div ref={tabsRef} className={styles.tabs}>
       <div
         className={homeClasses}
         title="Home"

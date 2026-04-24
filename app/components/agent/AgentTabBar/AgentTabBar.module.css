@@ -37,10 +37,25 @@
   left: 0;
   z-index: 1;
   background: var(--bg-secondary);
+  transition:
+    background var(--transition-base),
+    color var(--transition-base),
+    gap var(--transition-base),
+    opacity var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 .homeTab:hover {
   gap: var(--space-2);
+  background: var(--bg-secondary);
+}
+
+.homeTab.active {
+  background: var(--bg-secondary);
+}
+
+.homeTabScrolled {
+  box-shadow: var(--shadow-sidebar);
 }
 
 .tab.dragging {
