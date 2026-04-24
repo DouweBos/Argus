@@ -52,10 +52,16 @@ body {
   background: var(--surface-8);
 }
 
-/* Focus ring */
+/* Focus ring — skipped for text inputs, which get their own focus-within
+   styling on their container. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
 }
 
 /* Button reset */
