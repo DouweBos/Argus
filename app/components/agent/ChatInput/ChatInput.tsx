@@ -1,20 +1,26 @@
 import type { ImageAttachment } from "../../../lib/ipc";
-import type { SlashCommand } from "../../../lib/types";
+import type { ProjectEntry, SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Chip, ContextMeter, Icons } from "@argus/peacock";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
+import { listProjects } from "../../../lib/ipc";
 import {
   clearDraft,
   getDraft,
+  getLinkedProjects,
   getPendingImages,
   type PendingImage,
   setDraft,
+  setLinkedProjects,
   setPendingImages,
+  useLinkedProjects,
   usePendingImages,
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { FileMentionPicker } from "../FileMentionPicker";
 import { type ModelOption, ModelPicker } from "../ModelPicker";
+import { ProjectPicker } from "../ProjectPicker";
 import styles from "./ChatInput.module.css";
 import { useMentionPicker } from "./useMentionPicker";
 
@@ -96,6 +102,13 @@ export function ChatInput({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  const [projects, setProjects] = useState<ProjectEntry[]>([]);
+  const linkedProjects = useLinkedProjects(agentId);
+  const sessions = useSessions();
+  const currentRepoRoot = sessionId
+    ? (sessions.find((s) => s.id === sessionId)?.repo_root ?? null)
+    : null;
   const pendingImages = usePendingImages(agentId);
   const updatePendingImages = useCallback(
     (updater: (prev: PendingImage[]) => PendingImage[]) => {
@@ -116,6 +129,44 @@ export function ChatInput({
     dismissMention,
     headerText: mentionHeaderText,
   } = useMentionPicker(sessionId);
+
+  // Lazily fetch the list of projects when the picker opens. Always refresh
+  // on open so newly registered projects appear without a reload.
+  useEffect(() => {
+    if (!projectPickerOpen) {
+      return;
+    }
+    let cancelled = false;
+    listProjects()
+      .then((result) => {
+        if (!cancelled) {
+          setProjects(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProjects([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPickerOpen]);
+
+  const toggleLinkedProject = useCallback(
+    (path: string) => {
+      if (!agentId) {
+        return;
+      }
+      const current = getLinkedProjects(agentId);
+      const next = current.includes(path)
+        ? current.filter((p) => p !== path)
+        : [...current, path];
+      setLinkedProjects(agentId, next);
+    },
+    [agentId],
+  );
 
   // Model picker: controlled from parent if props provided, otherwise internal.
   const modelPickerOpen = controlledPickerOpen ?? internalPickerOpen;
@@ -184,7 +235,20 @@ export function ChatInput({
       pendingImages.length > 0
         ? pendingImages.map((p) => p.attachment)
         : undefined;
-    onSend(value || "(see attached images)", images);
+
+    const baseMessage = value || "(see attached images)";
+    // If the user has linked other project directories to this chat, prepend
+    // a context block so the agent knows it is explicitly allowed to read and
+    // edit files inside those directories — overriding the worktree prompt's
+    // default "only edit your own worktree" restriction.
+    const messageWithContext =
+      linkedProjects.length > 0
+        ? `[Linked project directories — the user has explicitly attached the following project roots to this chat. You are allowed and expected to read from and make changes in these directories in addition to your own worktree:\n${linkedProjects
+            .map((p) => `- ${p}`)
+            .join("\n")}]\n\n${baseMessage}`
+        : baseMessage;
+
+    onSend(messageWithContext, images);
     if (textareaRef.current) {
       textareaRef.current.value = "";
       adjustHeight();
@@ -203,7 +267,15 @@ export function ChatInput({
     }
     setSuggestions([]);
     dismissMention();
-  }, [onSend, disabled, adjustHeight, pendingImages, dismissMention, agentId]);
+  }, [
+    onSend,
+    disabled,
+    adjustHeight,
+    pendingImages,
+    dismissMention,
+    agentId,
+    linkedProjects,
+  ]);
 
   const addImageFiles = useCallback(
     async (files: File[]) => {
@@ -677,6 +749,39 @@ export function ChatInput({
             >
               Link issue
             </Chip>
+            <div className={styles.modelPickerAnchor}>
+              <Chip
+                interactive
+                muted={linkedProjects.length === 0}
+                aria-label="Link other project"
+                title={
+                  linkedProjects.length === 0
+                    ? "Link other project"
+                    : `${linkedProjects.length} project${linkedProjects.length === 1 ? "" : "s"} linked`
+                }
+                leading={<Icons.FolderIcon size={11} />}
+                className={`${disabled ? styles.chipDisabled : ""} ${linkedProjects.length > 0 ? styles.planModeActive : ""}`}
+                onClick={() => {
+                  if (disabled) {
+                    return;
+                  }
+                  setProjectPickerOpen((o) => !o);
+                }}
+              >
+                {linkedProjects.length === 0
+                  ? "Link other project"
+                  : `${linkedProjects.length} linked`}
+              </Chip>
+              {projectPickerOpen && (
+                <ProjectPicker
+                  projects={projects}
+                  selectedPaths={linkedProjects}
+                  excludePaths={currentRepoRoot ? [currentRepoRoot] : []}
+                  onToggle={toggleLinkedProject}
+                  onClose={() => setProjectPickerOpen(false)}
+                />
+              )}
+            </div>
           </div>
           <div className={styles.toolbarRight}>
             <button

@@ -90,6 +90,7 @@ import {
 } from "./services/github/prDetail";
 import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
+import { collectAllProjects } from "./services/mcp/projects";
 import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
@@ -401,6 +402,7 @@ export function registerIpcHandlers(): void {
 
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
+  handle("list_projects", () => collectAllProjects());
   handle("list_sessions", (a) => listSessions(a.repoRoot as string));
   handle("create_session", (a) =>
     createSession(
