@@ -239,11 +239,10 @@ export function RuntimeView({
               className={styles.sidePanelResizer}
               onMouseDown={onSidePanelResize}
             />
-            {runtimeMode === "inspect" ? (
-              <NodeMetadataPanel />
-            ) : activeDeviceKey ? (
+            {runtimeMode === "inspect" && <NodeMetadataPanel />}
+            {runtimeMode !== "inspect" && activeDeviceKey && (
               <ConductorLogPanel deviceKey={activeDeviceKey} />
-            ) : null}
+            )}
           </div>
         )}
       </div>
