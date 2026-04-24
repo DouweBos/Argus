@@ -613,6 +613,40 @@ export const openSimulatorPopout = (udid: string): Promise<void> =>
 export const closeSimulatorPopout = (udid: string): Promise<void> =>
   invoke("close_simulator_popout", { udid });
 
+// Agent popout — detach an agent into its own window. The backend creates a
+// BrowserWindow that loads the renderer bundle with `?popout=agent` and
+// broadcasts `agent:popout-opened` / `agent:popout-closed` so every window
+// can keep its tab bar in sync.
+export const openAgentPopout = (args: {
+  agentId: string;
+  /** Screen coords of the drop cursor, if this was triggered by a drag. */
+  cursorX?: number;
+  cursorY?: number;
+  sessionId: string;
+  title?: string;
+}): Promise<void> => invoke("open_agent_popout", args);
+
+export const closeAgentPopout = (agentId: string): Promise<void> =>
+  invoke("close_agent_popout", { agentId });
+
+export const listPoppedOutAgents = (): Promise<string[]> =>
+  invoke("list_popped_out_agents");
+
+// Cross-window conversation snapshot sharing — lets a newly opened popout (or
+// reloaded main) hydrate an agent's conversation from whichever window last
+// owned it, without waiting for the next live event.
+export const publishAgentSnapshot = (
+  agentId: string,
+  snapshot: string | null,
+): Promise<void> =>
+  invoke("publish_agent_snapshot", { agentId, snapshot: snapshot ?? "" });
+
+export const getAgentSnapshot = (agentId: string): Promise<string | null> =>
+  invoke("get_agent_snapshot", { agentId });
+
+export const getSession = (id: string): Promise<Session | null> =>
+  invoke("get_session", { id });
+
 export const startTerminal = (
   sessionId: string,
   cols: number,

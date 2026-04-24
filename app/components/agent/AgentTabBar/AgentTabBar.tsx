@@ -12,8 +12,17 @@ import {
   StatusDots,
 } from "@argus/peacock";
 import { useTabReorder } from "../../../hooks/useTabReorder";
-import { interruptAgent, revealInFinder } from "../../../lib/ipc";
-import { reorderAgent, useAgentsRecord } from "../../../stores/agentStore";
+import { saveAgentConversation } from "../../../lib/agentEventService";
+import {
+  interruptAgent,
+  openAgentPopout,
+  revealInFinder,
+} from "../../../lib/ipc";
+import {
+  reorderAgent,
+  useAgentsRecord,
+  usePoppedOutAgents,
+} from "../../../stores/agentStore";
 import {
   getConversationState,
   useConversation,
@@ -138,7 +147,7 @@ function AgentTab({
       onClick={() => onSelect(agent.agent_id)}
       onContextMenu={(e) => onContextMenu(e, agent.agent_id)}
       onDragStart={(e) => onDragStart(e, agent.agent_id)}
-      onDragEnd={onDragEnd}
+      onDragEnd={() => onDragEnd()}
       onDragOver={(e) => onDragOver(e, agent.agent_id)}
       onDragLeave={() => onDragLeave(agent.agent_id)}
       onDrop={(e) => onDrop(e, agent.agent_id)}
@@ -271,7 +280,7 @@ function MergedAgentTab({
 }
 
 export function AgentTabBar({
-  agents,
+  agents: rawAgents,
   activeAgentId,
   isHomeActive,
   splitPair = null,
@@ -281,6 +290,14 @@ export function AgentTabBar({
   onUnpair,
 }: AgentTabBarProps) {
   const allAgents = useAgentsRecord();
+  const poppedOut = usePoppedOutAgents();
+  // Detached agents render in their own window, so hide them from the tab
+  // bar. `AgentView` still sees them in its unfiltered list — it's responsible
+  // for clearing an active selection that just popped out.
+  const agents = useMemo(
+    () => rawAgents.filter((a) => !poppedOut[a.agent_id]),
+    [rawAgents, poppedOut],
+  );
   const tabRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const setTabRef = useCallback(
     (id: string) => (el: HTMLDivElement | null) => {
@@ -380,7 +397,10 @@ export function AgentTabBar({
 
     const target = agents[targetIndex];
     const conv = getConversationState().conversations[targetId];
-    const fallbackTitle = `Agent ${targetIndex + 1}`;
+    // Number by the agent's stable position in the unfiltered session order
+    // so detaching a sibling into a popout window doesn't renumber the rest.
+    const stableIndex = rawAgents.findIndex((a) => a.agent_id === targetId);
+    const fallbackTitle = `Agent ${(stableIndex < 0 ? targetIndex : stableIndex) + 1}`;
     const firstUserText = conv?.messages.find((m) => m.role === "user")
       ?.textBlocks[0];
     const currentTitle =
@@ -407,6 +427,20 @@ export function AgentTabBar({
         disabled: !isRunning,
         onClick: () => {
           interruptAgent(targetId).catch(() => {});
+        },
+      },
+      {
+        label: "Open in New Window",
+        onClick: () => {
+          // Flush the current in-memory conversation to the backend first
+          // so the freshly opened popout can hydrate from it — the
+          // debounced save in `scheduleAgentSave` may not have fired yet.
+          saveAgentConversation(targetId);
+          openAgentPopout({
+            agentId: targetId,
+            sessionId: target.session_id,
+            title: currentTitle || undefined,
+          }).catch(() => {});
         },
       },
       {
@@ -452,7 +486,7 @@ export function AgentTabBar({
         onClick: () => closeMany(agents.map((a) => a.agent_id)),
       },
     ];
-  }, [agents, menuState, onClose]);
+  }, [agents, rawAgents, menuState, onClose]);
 
   const pairedMembers = useMemo(() => {
     const set = new Set<string>();
@@ -522,6 +556,10 @@ export function AgentTabBar({
       </div>
       {agents.map((agent, index) => {
         const indicator = getIndicator(agent.agent_id);
+        // Number by position in the full session order, not the filtered
+        // tab list, so detached agents don't renumber the remaining tabs.
+        const rawIdx = rawAgents.indexOf(agent);
+        const labelIndex = rawIdx >= 0 ? rawIdx : index;
         let pairedWith: (typeof agents)[number] | null | undefined = null;
         if (splitPair && pairedMembers.has(agent.agent_id)) {
           if (splitPair.left === agent.agent_id) {
@@ -545,10 +583,8 @@ export function AgentTabBar({
               key={`pair:${agent.agent_id}:${right.agent_id}`}
               left={agent}
               right={right}
-              leftIndex={index}
-              rightIndex={agents.findIndex(
-                (a) => a.agent_id === right.agent_id,
-              )}
+              leftIndex={labelIndex}
+              rightIndex={rawAgents.indexOf(right)}
               activeAgentId={activeAgentId}
               dropIndicator={indicator}
               onSelect={onSelect}
@@ -568,7 +604,7 @@ export function AgentTabBar({
             childCount={childCounts[agent.agent_id] ?? 0}
             dropIndicator={indicator}
             hasParent={Boolean(agent.parent_agent_id)}
-            index={index}
+            index={labelIndex}
             isActive={agent.agent_id === activeAgentId}
             isSecondary={false}
             isDragging={draggingId === agent.agent_id}

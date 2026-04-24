@@ -3,6 +3,7 @@ import type { ProjectEntry, SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
+  ChatInputShell,
   Chip,
   ContextMeter,
   Icons,
@@ -124,8 +125,6 @@ export function ChatInput({
     headerText: mentionHeaderText,
   } = useMentionPicker(sessionId);
 
-  // Lazily fetch the list of projects when the picker opens. Always refresh
-  // on open so newly registered projects appear without a reload.
   useEffect(() => {
     if (!projectPickerOpen) {
       return;
@@ -162,7 +161,6 @@ export function ChatInput({
     [agentId],
   );
 
-  // Model picker: controlled from parent if props provided, otherwise internal.
   const modelPickerOpen = controlledPickerOpen ?? internalPickerOpen;
   const setModelPickerOpen = (open: boolean) => {
     onModelPickerOpenChange?.(open);
@@ -198,7 +196,6 @@ export function ChatInput({
     }
 
     const val = el.value;
-    // Only show suggestions when the input starts with "/" and is a single token
     if (val.startsWith("/") && !val.includes(" ") && !val.includes("\n")) {
       const query = val.slice(1).toLowerCase();
       const matches = slashCommands.filter((cmd) =>
@@ -231,10 +228,6 @@ export function ChatInput({
         : undefined;
 
     const baseMessage = value || "(see attached images)";
-    // If the user has linked other project directories to this chat, prepend
-    // a context block so the agent knows it is explicitly allowed to read and
-    // edit files inside those directories — overriding the worktree prompt's
-    // default "only edit your own worktree" restriction.
     const messageWithContext =
       linkedProjects.length > 0
         ? `[Linked project directories — the user has explicitly attached the following project roots to this chat. You are allowed and expected to read from and make changes in these directories in addition to your own worktree:\n${linkedProjects
@@ -251,7 +244,6 @@ export function ChatInput({
       clearDraft(agentId);
     }
 
-    // Revoke object URLs to free memory
     for (const img of pendingImages) {
       URL.revokeObjectURL(img.previewUrl);
     }
@@ -288,7 +280,6 @@ export function ChatInput({
         return;
       }
       await addImageFiles(Array.from(files));
-      // Reset file input so the same file can be re-selected
       e.target.value = "";
       textareaRef.current?.focus();
     },
@@ -378,7 +369,6 @@ export function ChatInput({
         e.preventDefault();
         addImageFiles(imageFiles);
       }
-      // If no images, let the default paste (text) happen
     },
     [addImageFiles],
   );
@@ -500,274 +490,277 @@ export function ChatInput({
     ],
   );
 
-  // Scroll selected suggestion into view
   useEffect(() => {
     const container = suggestionsRef.current;
     if (!container) {
       return;
     }
-    // +1 to skip the header element at children[0]
     const selected = container.children[selectedIndex + 1] as HTMLElement;
     selected?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
-  return (
-    <div className={styles.wrapper}>
-      <div
-        className={`${styles.container} ${disabled ? styles.containerDisabled : ""} ${isDragOver ? styles.containerDragOver : ""}`}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+  const above = (
+    <>
+      {suggestions.length > 0 && (
+        <div ref={suggestionsRef} className={styles.suggestions}>
+          <div className={styles.suggestionsHeader}>Commands</div>
+          {suggestions.map((cmd, i) => (
+            <button
+              key={cmd.name}
+              className={`${styles.suggestion} ${i === selectedIndex ? styles.suggestionActive : ""}`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                applySuggestion(cmd);
+              }}
+              onMouseEnter={() => setSelectedIndex(i)}
+            >
+              <span className={styles.suggestionSlash}>/</span>
+              <span className={styles.suggestionName}>{cmd.name}</span>
+              {cmd.description && (
+                <span className={styles.suggestionDesc}>{cmd.description}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {mentionContext && suggestions.length === 0 && (
+        <FileMentionPicker
+          headerText={mentionHeaderText}
+          items={mentionItems}
+          selectedIndex={mentionSelectedIndex}
+          onSelect={(index) => {
+            selectMentionItem(textareaRef.current, index);
+            adjustHeight();
+          }}
+          onSelectedIndexChange={setMentionSelectedIndex}
+        />
+      )}
+
+      <ImageAttachmentStrip
+        scroll
+        className={styles.attachments}
+        items={pendingImages}
+        onPreview={(i) => {
+          const img = pendingImages[i];
+          if (!img) {
+            return;
+          }
+          openImageViewer(
+            `data:${img.attachment.media_type};base64,${img.attachment.data}`,
+            img.name,
+            img.previewUrl,
+          );
+        }}
+        onRemove={removeImage}
+      />
+    </>
+  );
+
+  const actions = (
+    <>
+      {model && (
+        <div className={styles.modelPickerAnchor}>
+          <Chip
+            mono
+            muted
+            interactive
+            title={
+              contextLimit && contextLimit > 0
+                ? `Switch model — context: ${Math.round(
+                    ((contextTokens ?? 0) / contextLimit) * 100,
+                  )}% of ${contextLimit.toLocaleString()} tokens`
+                : "Switch model"
+            }
+            leading={
+              contextLimit && contextLimit > 0 ? (
+                <ContextMeter
+                  progress={(contextTokens ?? 0) / contextLimit}
+                  size={12}
+                  stroke={2}
+                />
+              ) : undefined
+            }
+            onClick={() => setModelPickerOpen(!modelPickerOpen)}
+          >
+            <ChatInputShell.CollapseLabel>{model}</ChatInputShell.CollapseLabel>
+          </Chip>
+          {modelPickerOpen && onModelSelect && models && models.length > 0 && (
+            <ModelPicker
+              currentModel={modelValue ?? model}
+              models={models}
+              onClose={() => setModelPickerOpen(false)}
+              onSelect={(m) => {
+                setModelPickerOpen(false);
+                onModelSelect(m);
+              }}
+            />
+          )}
+        </div>
+      )}
+      {onTogglePlanMode && (
+        <Chip
+          interactive
+          muted={!planMode}
+          className={planMode ? styles.planModeActive : undefined}
+          aria-label="Toggle plan mode"
+          title={
+            planMode
+              ? "Plan mode on — click to disable (restarts agent)"
+              : "Enable plan mode (restarts agent)"
+          }
+          onClick={onTogglePlanMode}
+        >
+          Plan
+        </Chip>
+      )}
+      <Chip
+        interactive
+        muted
+        aria-label="Link Linear issue"
+        title="Link Linear issue"
+        leading={<Icons.LinearIcon size={11} />}
+        className={disabled ? styles.chipDisabled : undefined}
+        onClick={() => {
+          if (disabled || !textareaRef.current) {
+            return;
+          }
+          textareaRef.current.value = "/linear ";
+          textareaRef.current.focus();
+          adjustHeight();
+          updateSuggestions();
+        }}
       >
-        {suggestions.length > 0 && (
-          <div ref={suggestionsRef} className={styles.suggestions}>
-            <div className={styles.suggestionsHeader}>Commands</div>
-            {suggestions.map((cmd, i) => (
-              <button
-                key={cmd.name}
-                className={`${styles.suggestion} ${i === selectedIndex ? styles.suggestionActive : ""}`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  applySuggestion(cmd);
-                }}
-                onMouseEnter={() => setSelectedIndex(i)}
-              >
-                <span className={styles.suggestionSlash}>/</span>
-                <span className={styles.suggestionName}>{cmd.name}</span>
-                {cmd.description && (
-                  <span className={styles.suggestionDesc}>
-                    {cmd.description}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {mentionContext && suggestions.length === 0 && (
-          <FileMentionPicker
-            headerText={mentionHeaderText}
-            items={mentionItems}
-            selectedIndex={mentionSelectedIndex}
-            onSelect={(index) => {
-              selectMentionItem(textareaRef.current, index);
-              adjustHeight();
-            }}
-            onSelectedIndexChange={setMentionSelectedIndex}
-          />
-        )}
-
-        <ImageAttachmentStrip
-          scroll
-          className={styles.attachments}
-          items={pendingImages}
-          onPreview={(i) => {
-            const img = pendingImages[i];
-            if (!img) {
+        <ChatInputShell.CollapseLabel>Link issue</ChatInputShell.CollapseLabel>
+      </Chip>
+      <div className={styles.modelPickerAnchor}>
+        <Chip
+          interactive
+          muted={linkedProjects.length === 0}
+          aria-label="Link other project"
+          title={
+            linkedProjects.length === 0
+              ? "Link other project"
+              : `${linkedProjects.length} project${linkedProjects.length === 1 ? "" : "s"} linked`
+          }
+          leading={<Icons.FolderIcon size={11} />}
+          className={`${disabled ? styles.chipDisabled : ""} ${linkedProjects.length > 0 ? styles.planModeActive : ""}`}
+          onClick={() => {
+            if (disabled) {
               return;
             }
-            openImageViewer(
-              `data:${img.attachment.media_type};base64,${img.attachment.data}`,
-              img.name,
-              img.previewUrl,
-            );
+            setProjectPickerOpen((o) => !o);
           }}
-          onRemove={removeImage}
-        />
-
-        <div className={styles.textareaWrap}>
-          <textarea
-            ref={combinedRef}
-            aria-label="Message the agent"
-            className={styles.textarea}
-            disabled={disabled}
-            placeholder={
-              disabled
-                ? (disabledPlaceholder ?? "Agent is not running")
-                : "Message the agent\u2026 (Enter to send, / for commands, @ for files)"
-            }
-            rows={1}
-            onBlur={() => setIsFocused(false)}
-            onClick={() => {
-              if (suggestions.length > 0) {
-                setSuggestions([]);
-              }
-            }}
-            onFocus={() => setIsFocused(true)}
-            onInput={handleInput}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            onSelect={() => updateMentions(textareaRef.current)}
+        >
+          <ChatInputShell.CollapseLabel>
+            {linkedProjects.length === 0
+              ? "Link other project"
+              : `${linkedProjects.length} linked`}
+          </ChatInputShell.CollapseLabel>
+        </Chip>
+        {projectPickerOpen && (
+          <ProjectPicker
+            projects={projects}
+            selectedPaths={linkedProjects}
+            excludePaths={currentRepoRoot ? [currentRepoRoot] : []}
+            onToggle={toggleLinkedProject}
+            onClose={() => setProjectPickerOpen(false)}
           />
-          {!isFocused &&
-            !disabled &&
-            suggestions.length === 0 &&
-            !modelPickerOpen && (
-              <span className={styles.focusHint}>
-                {navigator.platform?.includes("Mac") ? "\u2318" : "Ctrl+"}L to
-                focus
-              </span>
-            )}
-        </div>
-
-        <input
-          ref={fileInputRef}
-          accept={ACCEPTED_IMAGE_TYPES}
-          className={styles.hiddenFileInput}
-          multiple
-          tabIndex={-1}
-          type="file"
-          onChange={handleFileSelect}
-        />
-
-        <div className={styles.toolbar}>
-          <div className={styles.toolbarLeft}>
-            {model && (
-              <div className={styles.modelPickerAnchor}>
-                <Chip
-                  mono
-                  muted
-                  interactive
-                  title={
-                    contextLimit && contextLimit > 0
-                      ? `Switch model — context: ${Math.round(
-                          ((contextTokens ?? 0) / contextLimit) * 100,
-                        )}% of ${contextLimit.toLocaleString()} tokens`
-                      : "Switch model"
-                  }
-                  leading={
-                    contextLimit && contextLimit > 0 ? (
-                      <ContextMeter
-                        progress={(contextTokens ?? 0) / contextLimit}
-                        size={12}
-                        stroke={2}
-                      />
-                    ) : undefined
-                  }
-                  onClick={() => setModelPickerOpen(!modelPickerOpen)}
-                >
-                  {model}
-                </Chip>
-                {modelPickerOpen &&
-                  onModelSelect &&
-                  models &&
-                  models.length > 0 && (
-                    <ModelPicker
-                      currentModel={modelValue ?? model}
-                      models={models}
-                      onClose={() => setModelPickerOpen(false)}
-                      onSelect={(m) => {
-                        setModelPickerOpen(false);
-                        onModelSelect(m);
-                      }}
-                    />
-                  )}
-              </div>
-            )}
-            {onTogglePlanMode && (
-              <Chip
-                interactive
-                muted={!planMode}
-                className={planMode ? styles.planModeActive : undefined}
-                aria-label="Toggle plan mode"
-                title={
-                  planMode
-                    ? "Plan mode on — click to disable (restarts agent)"
-                    : "Enable plan mode (restarts agent)"
-                }
-                onClick={onTogglePlanMode}
-              >
-                Plan
-              </Chip>
-            )}
-            <Chip
-              interactive
-              muted
-              aria-label="Link Linear issue"
-              title="Link Linear issue"
-              leading={<Icons.LinearIcon size={11} />}
-              className={disabled ? styles.chipDisabled : undefined}
-              onClick={() => {
-                if (disabled || !textareaRef.current) {
-                  return;
-                }
-                // Insert /linear command to trigger the slash command flow
-                textareaRef.current.value = "/linear ";
-                textareaRef.current.focus();
-                adjustHeight();
-                updateSuggestions();
-              }}
-            >
-              Link issue
-            </Chip>
-            <div className={styles.modelPickerAnchor}>
-              <Chip
-                interactive
-                muted={linkedProjects.length === 0}
-                aria-label="Link other project"
-                title={
-                  linkedProjects.length === 0
-                    ? "Link other project"
-                    : `${linkedProjects.length} project${linkedProjects.length === 1 ? "" : "s"} linked`
-                }
-                leading={<Icons.FolderIcon size={11} />}
-                className={`${disabled ? styles.chipDisabled : ""} ${linkedProjects.length > 0 ? styles.planModeActive : ""}`}
-                onClick={() => {
-                  if (disabled) {
-                    return;
-                  }
-                  setProjectPickerOpen((o) => !o);
-                }}
-              >
-                {linkedProjects.length === 0
-                  ? "Link other project"
-                  : `${linkedProjects.length} linked`}
-              </Chip>
-              {projectPickerOpen && (
-                <ProjectPicker
-                  projects={projects}
-                  selectedPaths={linkedProjects}
-                  excludePaths={currentRepoRoot ? [currentRepoRoot] : []}
-                  onToggle={toggleLinkedProject}
-                  onClose={() => setProjectPickerOpen(false)}
-                />
-              )}
-            </div>
-          </div>
-          <div className={styles.toolbarRight}>
-            <button
-              aria-label="Attach image"
-              className={styles.toolbarBtn}
-              disabled={disabled}
-              title="Attach image"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icons.PaperclipIcon />
-            </button>
-            {agentStatus === "running" && onInterrupt ? (
-              <Button
-                variant="stop"
-                aria-label="Stop agent"
-                title="Stop"
-                onClick={onInterrupt}
-              >
-                <Icons.StopIcon />
-              </Button>
-            ) : (
-              <Button
-                variant="send"
-                aria-label="Send message"
-                disabled={disabled}
-                title="Send"
-                onClick={submit}
-              >
-                <Icons.SendIcon />
-              </Button>
-            )}
-          </div>
-        </div>
+        )}
       </div>
-    </div>
+    </>
+  );
+
+  const trailing = (
+    <>
+      <button
+        aria-label="Attach image"
+        className={styles.toolbarBtn}
+        disabled={disabled}
+        title="Attach image"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Icons.PaperclipIcon />
+      </button>
+      {agentStatus === "running" && onInterrupt ? (
+        <Button
+          variant="stop"
+          aria-label="Stop agent"
+          title="Stop"
+          onClick={onInterrupt}
+        >
+          <Icons.StopIcon />
+        </Button>
+      ) : (
+        <Button
+          variant="send"
+          aria-label="Send message"
+          disabled={disabled}
+          title="Send"
+          onClick={submit}
+        >
+          <Icons.SendIcon />
+        </Button>
+      )}
+    </>
+  );
+
+  return (
+    <ChatInputShell
+      className={styles.shell}
+      disabled={disabled}
+      dragOver={isDragOver}
+      above={above}
+      actions={actions}
+      trailing={trailing}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      <div className={styles.textareaWrap}>
+        <textarea
+          ref={combinedRef}
+          aria-label="Message the agent"
+          className={styles.textarea}
+          disabled={disabled}
+          placeholder={
+            disabled
+              ? (disabledPlaceholder ?? "Agent is not running")
+              : "Message the agent… (Enter to send, / for commands, @ for files)"
+          }
+          rows={1}
+          onBlur={() => setIsFocused(false)}
+          onClick={() => {
+            if (suggestions.length > 0) {
+              setSuggestions([]);
+            }
+          }}
+          onFocus={() => setIsFocused(true)}
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
+          onSelect={() => updateMentions(textareaRef.current)}
+        />
+        {!isFocused &&
+          !disabled &&
+          suggestions.length === 0 &&
+          !modelPickerOpen && (
+            <span className={styles.focusHint}>
+              {navigator.platform?.includes("Mac") ? "⌘" : "Ctrl+"}L to focus
+            </span>
+          )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        accept={ACCEPTED_IMAGE_TYPES}
+        className={styles.hiddenFileInput}
+        multiple
+        tabIndex={-1}
+        type="file"
+        onChange={handleFileSelect}
+      />
+    </ChatInputShell>
   );
 }

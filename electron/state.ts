@@ -92,6 +92,21 @@ class AppState {
    * UDID they mirror.
    */
   simulatorPopouts = new Map<string, BrowserWindow>();
+
+  /**
+   * Agent popout windows (dragged out of the tab bar), keyed by the agent_id
+   * they display. While an entry exists, the tab bar in the main window hides
+   * that agent.
+   */
+  agentPopouts = new Map<string, BrowserWindow>();
+
+  /**
+   * Latest conversation snapshot per agent, serialized as a JSON string.
+   * Published by whichever window currently owns the agent (main or popout)
+   * on every meaningful state change. Lets a newly opened window (or popout)
+   * hydrate its conversation store without round-tripping to disk.
+   */
+  agentSnapshots = new Map<string, string>();
 }
 
 /** Singleton instance. */

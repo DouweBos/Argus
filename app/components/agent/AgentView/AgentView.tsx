@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ContextMenu, type ContextMenuItem, Icons } from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
@@ -7,6 +7,7 @@ import {
   removeRecentlyClosed,
   setActiveAgent,
   setSplitPair,
+  usePoppedOutAgents,
   useRecentlyClosedAgents,
   useSplitPair,
 } from "../../../stores/agentStore";
@@ -36,7 +37,18 @@ export function AgentView({ sessionId }: AgentViewProps) {
       sessionReady: session ? isSessionReady(session.status) : false,
     });
 
-  const isHomeActive = !activeAgent;
+  const poppedOut = usePoppedOutAgents();
+  // If the currently active agent was just detached into a popout window,
+  // drop the selection so the main view isn't left rendering a chat that
+  // lives in a different window.
+  useEffect(() => {
+    if (activeAgent && poppedOut[activeAgent.agent_id]) {
+      setActiveAgent(sessionId, null);
+    }
+  }, [activeAgent, poppedOut, sessionId]);
+
+  const isHomeActive =
+    !activeAgent || !!(activeAgent && poppedOut[activeAgent.agent_id]);
   const splitPair = useSplitPair(sessionId);
 
   const openOnRight = useCallback(
@@ -76,8 +88,9 @@ export function AgentView({ sessionId }: AgentViewProps) {
     (activeAgent.agent_id === splitPair.left ||
       activeAgent.agent_id === splitPair.right);
 
-  // Resolve both pair members exist in this session's agents; otherwise the
-  // pair is stale and we fall back to single-agent view.
+  // Resolve both pair members exist in this session's agents (and neither is
+  // detached into a popout); otherwise the pair is stale and we fall back to
+  // single-agent view.
   const resolvedPair = useMemo(() => {
     if (!splitPair) {
       return null;
@@ -87,9 +100,12 @@ export function AgentView({ sessionId }: AgentViewProps) {
     if (!left || !right) {
       return null;
     }
+    if (poppedOut[left.agent_id] || poppedOut[right.agent_id]) {
+      return null;
+    }
 
     return { left, right };
-  }, [agents, splitPair]);
+  }, [agents, splitPair, poppedOut]);
 
   const showSplit = activeIsPaired && !!resolvedPair;
 
