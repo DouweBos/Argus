@@ -1247,7 +1247,56 @@ async function createWorktreeFromExisting(
 
   fs.mkdirSync(worktreesDir, { recursive: true });
 
-  await git(repoRoot, ["worktree", "add", worktreePath, branch]);
+  // The branch may exist only as a remote-tracking ref (e.g. a PR branch
+  // authored by someone else that hasn't been checked out locally yet). In
+  // that case `git worktree add <path> <branch>` fails with "invalid
+  // reference", so fall back to creating a local branch that tracks the
+  // remote ref.
+  let hasLocal = true;
+  try {
+    await git(repoRoot, [
+      "rev-parse",
+      "--verify",
+      "--quiet",
+      `refs/heads/${branch}`,
+    ]);
+  } catch {
+    hasLocal = false;
+  }
+
+  if (hasLocal) {
+    await git(repoRoot, ["worktree", "add", worktreePath, branch]);
+  } else {
+    let remoteRef: string | null = null;
+    try {
+      const remotes = (await git(repoRoot, ["remote"])).split("\n").filter(Boolean);
+      for (const remote of remotes) {
+        const candidate = `refs/remotes/${remote}/${branch}`;
+        try {
+          await git(repoRoot, ["rev-parse", "--verify", "--quiet", candidate]);
+          remoteRef = `${remote}/${branch}`;
+          break;
+        } catch {
+          // try next remote
+        }
+      }
+    } catch {
+      // no remotes configured
+    }
+
+    if (!remoteRef) {
+      throw `Branch "${branch}" does not exist locally or on any remote. Fetch it first (e.g. \`git fetch\`) and try again.`;
+    }
+
+    await git(repoRoot, [
+      "worktree",
+      "add",
+      "-b",
+      branch,
+      worktreePath,
+      remoteRef,
+    ]);
+  }
 
   info(`Created worktree for existing branch '${branch}' at ${worktreePath}`);
 
