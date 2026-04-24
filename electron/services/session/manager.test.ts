@@ -45,6 +45,21 @@ function makeSession(partial: Partial<Session>): Session {
   };
 }
 
+// `createSession` now returns immediately with `status: "initializing"` and
+// runs uniqueness validation in the background `finalizeSession` task, which
+// reports collisions by flipping the session's status to `{ error: ... }`.
+// These tests wait for the background task to settle and assert on that state.
+async function waitForStatusError(id: string): Promise<string> {
+  for (let i = 0; i < 50; i++) {
+    const ws = appState.sessions.get(id);
+    if (ws && typeof ws.status !== "string" && "error" in ws.status) {
+      return ws.status.error;
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error(`session ${id} never reached error status`);
+}
+
 describe("createSession — one-session-per-branch enforcement", () => {
   beforeEach(() => {
     appState.sessions.clear();
@@ -61,9 +76,15 @@ describe("createSession — one-session-per-branch enforcement", () => {
       }),
     );
 
-    await expect(
-      createSession("/repo", "feat-x", "desc", false, "main"),
-    ).rejects.toMatch(/already used by session "Existing"/);
+    const pending = await createSession(
+      "/repo",
+      "feat-x",
+      "desc",
+      false,
+      "main",
+    );
+    const error = await waitForStatusError(pending.id);
+    expect(error).toMatch(/already used by session "Existing"/);
   });
 
   it("rejects adopting an existing branch already owned by another session", async () => {
@@ -77,9 +98,15 @@ describe("createSession — one-session-per-branch enforcement", () => {
       }),
     );
 
-    await expect(
-      createSession("/repo", "adopt-me", "desc", true, "main"),
-    ).rejects.toMatch(/already used by session "adopt-me"/);
+    const pending = await createSession(
+      "/repo",
+      "adopt-me",
+      "desc",
+      true,
+      "main",
+    );
+    const error = await waitForStatusError(pending.id);
+    expect(error).toMatch(/already used by session "adopt-me"/);
   });
 
   it("does not collide with a session for the same branch in a different repo", async () => {
@@ -92,10 +119,22 @@ describe("createSession — one-session-per-branch enforcement", () => {
       }),
     );
 
-    // Should not throw the collision error (it'll fail later on git mock, but
-    // not with the session-level message).
-    await expect(
-      createSession("/repo", "feat-x", "desc", true, "main"),
-    ).resolves.toBeDefined();
+    // Should not emit the collision error (finalization may fail later on the
+    // mocked git, but not with the session-level uniqueness message).
+    const pending = await createSession(
+      "/repo",
+      "feat-x",
+      "desc",
+      true,
+      "main",
+    );
+    // Give the background task a tick to run past the uniqueness check.
+    await new Promise((r) => setTimeout(r, 20));
+    const ws = appState.sessions.get(pending.id);
+    const errorMsg =
+      ws && typeof ws.status !== "string" && "error" in ws.status
+        ? ws.status.error
+        : "";
+    expect(errorMsg).not.toMatch(/already used by session/);
   });
 });
