@@ -483,6 +483,7 @@ describe("spawn_agent", () => {
       session_id: "ws-1",
       status: "running",
       parent_agent_id: null,
+      created_at: 1_700_000_000_000,
     });
 
     const result = await client.callTool({
@@ -517,6 +518,7 @@ describe("spawn_agent", () => {
       session_id: "ws-1",
       status: "running",
       parent_agent_id: null,
+      created_at: 1_700_000_000_000,
     });
 
     await client.callTool({
@@ -570,6 +572,7 @@ describe("list_agents", () => {
         session_id: "ws-1",
         status: "running",
         parent_agent_id: null,
+        created_at: 1_700_000_000_000,
       },
     ]);
 
@@ -597,6 +600,7 @@ describe("list_agents", () => {
             session_id: "ws-1",
             status: "running" as const,
             parent_agent_id: null,
+            created_at: 1_700_000_000_000,
           },
         ];
       }
@@ -607,6 +611,7 @@ describe("list_agents", () => {
             session_id: "ws-2",
             status: "running" as const,
             parent_agent_id: null,
+            created_at: 1_700_000_000_000,
           },
         ];
       }
@@ -665,6 +670,7 @@ describe("agent_status", () => {
       exitWaiters: [],
       turnWaiters: [],
       turnsCompleted: 0,
+      createdAt: 1_700_000_000_000,
     });
 
     const result = await client.callTool({
@@ -856,6 +862,7 @@ describe("spawn_agents_batch", () => {
       session_id: sessionId,
       status: "running" as const,
       parent_agent_id: null,
+      created_at: 1_700_000_000_000,
     }));
   });
 

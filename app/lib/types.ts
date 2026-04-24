@@ -64,6 +64,12 @@ export interface AgentStatus {
    */
   capabilities?: AgentCapabilities | null;
   /**
+   * Unix ms timestamp when the agent session was created on the backend.
+   * Optional because optimistic renderer-side entries and synthetic device-nav
+   * placeholders don't know the authoritative value until the backend reports.
+   */
+  created_at?: number;
+  /**
    * Prompt sent to an externally-spawned agent (e.g. via the MCP `spawn_agent`
    * tool). Present only on the `agent:started` event — used by the renderer
    * to derive a session title, since the UI never sees the first user

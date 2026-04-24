@@ -23,6 +23,8 @@ export interface HomeProject {
   accent: string;
   agents: HomeAgent[];
   id: string;
+  /** Timestamp of the most recent agent creation in this project, or null if none. */
+  lastAgentCreatedAt: number | null;
   lastOpened: number;
   name: string;
   path: string;
@@ -97,6 +99,7 @@ export function useHomeData(): HomeData & {
         sessions: [],
         agents: [],
         lastOpened: rp.lastOpened,
+        lastAgentCreatedAt: null,
       });
     });
 
@@ -113,6 +116,7 @@ export function useHomeData(): HomeData & {
           agents: [],
           // Unknown — place at the top of the list by using a sentinel.
           lastOpened: 0,
+          lastAgentCreatedAt: null,
         };
         projectsByPath.set(key, proj);
       }
@@ -142,13 +146,22 @@ export function useHomeData(): HomeData & {
       const proj = projectsByPath.get(ws.repo_root);
       if (proj) {
         proj.agents.push(entry);
+        if (typeof a.created_at === "number") {
+          proj.lastAgentCreatedAt = Math.max(
+            proj.lastAgentCreatedAt ?? 0,
+            a.created_at,
+          );
+        }
       }
       activeAgents.push(entry);
     });
 
-    const projects = Array.from(projectsByPath.values()).sort(
-      (a, b) => b.lastOpened - a.lastOpened,
-    );
+    const projects = Array.from(projectsByPath.values()).sort((a, b) => {
+      const aKey = a.lastAgentCreatedAt ?? a.lastOpened;
+      const bKey = b.lastAgentCreatedAt ?? b.lastOpened;
+
+      return bKey - aKey;
+    });
 
     const stats: HomeStats = {
       agentsRunning: activeAgents.filter((a) => a.status === "running").length,

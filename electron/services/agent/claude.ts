@@ -730,6 +730,7 @@ export async function startAgent(
     turnWaiters: [],
     turnsCompleted: previous?.turnsCompleted ?? 0,
     suppressStatus: previous?.suppressStatus ?? false,
+    createdAt: previous?.createdAt ?? Date.now(),
   };
 
   appState.agents.set(agentId, agentSession);
@@ -809,6 +810,7 @@ export async function startAgent(
     session_id: sessionId,
     status: agentSession.status,
     parent_agent_id: parentAgentId ?? null,
+    created_at: agentSession.createdAt,
     capabilities: controlHandler.getCapabilities(),
   };
 }
@@ -1407,6 +1409,7 @@ export function listAgents(sessionId: string): AgentInfo[] {
         session_id: session.sessionId,
         status: session.status,
         parent_agent_id: session.parentAgentId,
+        created_at: session.createdAt,
       });
     }
   }

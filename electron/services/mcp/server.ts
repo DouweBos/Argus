@@ -657,6 +657,7 @@ export function createMcpServer(): McpServer {
         status: agentInfo.status,
         permission_mode,
         parent_agent_id: agentInfo.parent_agent_id,
+        created_at: agentInfo.created_at,
         initial_prompt: prompt,
       });
 
@@ -891,6 +892,7 @@ export function createMcpServer(): McpServer {
             status: agentInfo.status,
             permission_mode,
             parent_agent_id: agentInfo.parent_agent_id,
+            created_at: agentInfo.created_at,
             initial_prompt: spec.prompt,
           });
 

@@ -51,6 +51,7 @@ export async function startAgentInSession(
     session_id: sessionId,
     status: "idle",
     permission_mode: permissionMode,
+    created_at: Date.now(),
   };
   startAgentListening(agentId);
   addAgent(optimistic);
@@ -72,6 +73,7 @@ export async function startAgentInSession(
     updateAgent(agentId, {
       status: info.status,
       parent_agent_id: info.parent_agent_id,
+      created_at: info.created_at,
     });
     // Capabilities are returned inline on start_agent because the backend's
     // `agent:capabilities` event fires before renderer listeners attach and
