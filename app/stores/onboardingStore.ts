@@ -30,15 +30,12 @@ interface OnboardingStoreData {
   loading: boolean;
   /** Map of prereq id → most recent result (incl. running). */
   prereqs: Record<string, PrereqResult>;
-  /** Selected project root (set during project step). */
-  projectPath: string | null;
 }
 
 export const onboardingStore = create<OnboardingStoreData>(() => ({
   config: null,
   currentStep: "welcome",
   loading: true,
-  projectPath: null,
   prereqs: {},
 }));
 
@@ -54,10 +51,6 @@ export function setOnboardingConfig(config: OnboardingConfigFile): void {
 
 export function setCurrentStep(step: OnboardingStep): void {
   onboardingStore.setState({ currentStep: step });
-}
-
-export function setProjectPath(path: string | null): void {
-  onboardingStore.setState({ projectPath: path });
 }
 
 export function setPrereq(result: PrereqResult): void {

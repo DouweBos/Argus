@@ -10,7 +10,7 @@ export function CompletionStep() {
       currentStep="completion"
       hero={<EmptyStateIllustration variant="success" size={120} />}
       title="You're all set"
-      subtitle="Argus will mount the main window now. Come back to this flow via Help → Reset onboarding."
+      subtitle="Argus will mount the main window now. Add your first project from the sidebar — Argus will guide you through the rest as you go."
       footerRight={
         <Button
           variant="primary"
@@ -35,9 +35,9 @@ export function CompletionStep() {
           fontSize: 13,
         }}
       >
+        <li>✓ Prerequisites checked</li>
+        <li>✓ Claude authenticated</li>
         <li>✓ Defaults saved to ~/.argus/config.json</li>
-        <li>✓ Project registered</li>
-        <li>✓ Worktree ready</li>
       </ul>
     </OnboardingLayout>
   );
