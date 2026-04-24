@@ -129,6 +129,13 @@ html[data-theme="dark"] {
   --surface-7: rgba(255, 255, 255, 0.12);
   --surface-8: rgba(255, 255, 255, 0.15);
 
+  /* Solid equivalents of the surface overlay scale — use when a solid fill
+     is required (e.g. absolutely-positioned overlays that need to hide the
+     content beneath them). Approximated by compositing the overlay onto
+     `--bg-primary` inside the glass panel context. */
+  --surface-3-solid: #1b1b22;
+  --surface-4-solid: #20202a;
+
   /* ─── Scrim overlays ─── modal curtains, always dark regardless of theme */
   --scrim-sm: rgba(0, 0, 0, 0.25);
   --scrim-md: rgba(0, 0, 0, 0.45);
@@ -296,6 +303,10 @@ html[data-theme="light"] {
   --surface-6: rgba(10, 10, 15, 0.12);
   --surface-7: rgba(10, 10, 15, 0.16);
   --surface-8: rgba(10, 10, 15, 0.22);
+
+  /* Solid equivalents of the surface overlay scale — see dark-theme block. */
+  --surface-3-solid: #e5e6ea;
+  --surface-4-solid: #dde0e5;
 
   /* Scrim stays dark — modal curtains always darken */
   --scrim-sm: rgba(0, 0, 0, 0.18);

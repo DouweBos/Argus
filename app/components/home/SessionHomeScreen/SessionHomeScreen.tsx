@@ -1,11 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Button,
-  IconBadge,
-  Icons,
-  projectAccent,
-  SectionPanel,
-} from "@argus/peacock";
+import { Button, IconBadge, Icons, projectAccent } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useSessions } from "../../../stores/sessionStore";
@@ -172,21 +166,16 @@ export function SessionHomeScreen({
         />
 
         {repoRoot && history.loaded && sessionHistoryEntries.length > 0 && (
-          <SectionPanel
+          <ChatHistoryList
+            entries={sessionHistoryEntries}
             title="Chat history"
             meta={`${sessionHistoryEntries.length} in this session`}
-          >
-            <div className={styles.historyWrap}>
-              <ChatHistoryList
-                entries={sessionHistoryEntries}
-                repoRoot={repoRoot}
-                onClearAll={() => history.clearAll()}
-                onDelete={(historyId) => history.remove(historyId)}
-                onResume={onResumeHistory}
-                onView={onViewHistory}
-              />
-            </div>
-          </SectionPanel>
+            repoRoot={repoRoot}
+            onClearAll={() => history.clearAll()}
+            onDelete={(historyId) => history.remove(historyId)}
+            onResume={onResumeHistory}
+            onView={onViewHistory}
+          />
         )}
       </div>
       {isRenamingBranch && session && (

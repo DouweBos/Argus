@@ -206,21 +206,16 @@ export function RepoHomeScreen({
         </SectionPanel>
 
         {repoRoot && history.loaded && history.entries.length > 0 && (
-          <SectionPanel
+          <ChatHistoryList
+            entries={history.entries}
             title="Chat history"
             meta={`${history.entries.length} sessions`}
-          >
-            <div className={styles.historyWrap}>
-              <ChatHistoryList
-                entries={history.entries}
-                repoRoot={repoRoot}
-                onClearAll={() => history.clearAll()}
-                onDelete={(historyId) => history.remove(historyId)}
-                onResume={onResumeHistory}
-                onView={onViewHistory}
-              />
-            </div>
-          </SectionPanel>
+            repoRoot={repoRoot}
+            onClearAll={() => history.clearAll()}
+            onDelete={(historyId) => history.remove(historyId)}
+            onResume={onResumeHistory}
+            onView={onViewHistory}
+          />
         )}
       </div>
     </div>
