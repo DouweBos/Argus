@@ -8,7 +8,6 @@ import { useRouteOrganizationId, useRouteView } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
 
 export type CenterView =
-  | "activity"
   | "agents"
   | "devices"
   | "home"

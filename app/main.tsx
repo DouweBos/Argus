@@ -4,7 +4,6 @@ import App from "./App";
 import "./styles/global.css";
 import { SimulatorPopout } from "./components/popout/SimulatorPopout";
 import { seedPopoutStore } from "./components/popout/seedPopoutStore";
-import { initActivityService } from "./lib/activityService";
 import {
   initAppQuitSave,
   initExternalAgentStarted,
@@ -22,8 +21,8 @@ const params = new URLSearchParams(window.location.search);
 const popoutMode = params.get("popout");
 
 if (popoutMode === "simulator") {
-  // Minimal popout renderer — bypasses the heavy VS Code / activity / quit
-  // wiring so this separate BrowserWindow stays lightweight.
+  // Minimal popout renderer — bypasses the heavy VS Code / quit wiring so
+  // this separate BrowserWindow stays lightweight.
   const udid = params.get("udid") ?? "";
   const portRaw = params.get("port");
   const port = portRaw ? Number.parseInt(portRaw, 10) : NaN;
@@ -56,8 +55,6 @@ if (popoutMode === "simulator") {
   initDevicePolling();
   // Maintain the Review queue from backend `session:review-state` events.
   initReviewQueueListener();
-  // Subscribe to agent/session/commit/device signals and populate Activity.
-  initActivityService();
 
   // VS Code services must be initialized before any editor component renders
   vscodeReady.then(() => {

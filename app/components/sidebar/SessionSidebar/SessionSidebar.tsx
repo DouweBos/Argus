@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  CommitIcon,
   Icons,
   SidebarFooter,
   SidebarHeader,
@@ -12,7 +11,6 @@ import {
   StatusDot,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
-import { useActivityCount } from "../../../stores/activityStore";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
@@ -63,7 +61,6 @@ export function SessionSidebar() {
     ) : (
       awaitingMyReviewCount
     );
-  const activityCount = useActivityCount();
   useOrganizationSync();
   const organizations = useOrganizations();
   const organizationsCount = organizations.length;
@@ -202,13 +199,6 @@ export function SessionSidebar() {
           count={reviewQueueCount}
         >
           Review queue
-        </SidebarNavItem>
-        <SidebarNavItem
-          view="activity"
-          leading={<CommitIcon size={12} />}
-          count={activityCount}
-        >
-          Activity
         </SidebarNavItem>
       </SidebarNavGroup>
 

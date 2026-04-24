@@ -13,7 +13,6 @@ No Zustand store mirrors the route. Reads go through URL-derived hooks
 | URL                                   | Screen                       | Notes                                                 |
 | ------------------------------------- | ---------------------------- | ----------------------------------------------------- |
 | `/`                                   | Home / project picker        | Default route on launch.                              |
-| `/activity`                           | Activity                     | Cross-session activity feed.                          |
 | `/agents`                             | Agents overview              | All agents across all sessions.                       |
 | `/devices`                            | Devices                      | iOS simulators + Android emulators.                   |
 | `/notifications`                      | Notifications                | Warnings & errors.                                    |
@@ -39,7 +38,6 @@ Every URL parses into a `ParsedRoute`:
 ```ts
 interface ParsedRoute {
   view:
-    | "activity"
     | "agents"
     | "devices"
     | "home"

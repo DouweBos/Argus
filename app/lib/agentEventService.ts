@@ -28,7 +28,6 @@ import {
   setPermissionPending,
 } from "../stores/conversationStore";
 import { getSessionState } from "../stores/sessionStore";
-import { recordAgentLifecycle } from "./activityService";
 import {
   notifyAgentFinished,
   notifyPermissionRequested,
@@ -294,8 +293,6 @@ export function startAgentListening(agentId: string): void {
   // Store placeholder so we know listening has been requested
   listeners.set(agentId, () => {});
 
-  recordAgentLifecycle(agentId, "agent_spawned");
-
   listen<string>(`agent:event:${agentId}`, (event) => {
     try {
       const parsed: ClaudeStreamEvent = JSON.parse(event.payload);
@@ -367,10 +364,6 @@ export function startAgentListening(agentId: string): void {
     saveAgentConversation(agentId);
     updateAgent(agentId, { status });
     inflight.delete(agentId);
-    recordAgentLifecycle(
-      agentId,
-      exitCode === 0 ? "agent_stopped" : "agent_errored",
-    );
   }).then((unlisten) => {
     if (!exitListeners.has(agentId)) {
       unlisten();
