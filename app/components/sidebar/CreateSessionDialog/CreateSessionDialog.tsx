@@ -18,10 +18,6 @@ import {
   TextArea,
 } from "@argus/peacock";
 import { useProjectSessions } from "../../../hooks/useSessions";
-import {
-  startAgentInSession,
-  sendUserMessageToAgent,
-} from "../../../lib/agentLifecycle";
 import { forkChatFromMessage } from "../../../lib/forkChat";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -36,6 +32,7 @@ import {
 } from "../../../lib/ipc";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
+import { setPendingPrompt } from "../../../stores/sessionStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface CreateSessionDialogProps {
@@ -569,19 +566,17 @@ export function CreateSessionDialog({
             useExisting,
             baseBranch,
           );
-          // Spawn an agent immediately with the user's prompt as the first
-          // message. The session's worktree already exists by the time
-          // createSession resolves — the setup pipeline (copy/symlink/install)
-          // continues in the background but does not block agent startup.
+          // The backend returns with the session in `initializing` status —
+          // branch-name generation and worktree creation still run in the
+          // background. Starting an agent here would pick the wrong cwd (or
+          // fail outright), so record the prompt (and any attached images)
+          // against the session id and let `initPendingSessionPrompts`
+          // dispatch it once the session transitions to `ready`.
           if ((initialPrompt || initialImages?.length) && session) {
-            const agentInfo = await startAgentInSession(session.id, {
-              focus: true,
-            });
-            await sendUserMessageToAgent(
-              agentInfo.agent_id,
-              initialPrompt || "(see attached images)",
+            setPendingPrompt(
+              session.id,
+              initialPrompt || "",
               initialImages?.length ? initialImages : undefined,
-              { assumeIdle: true },
             );
           }
         }

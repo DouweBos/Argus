@@ -1,6 +1,12 @@
 {
   "setup": {
-    "copy": [".claude", "node_modules", "native/conductor", "native/scrcpy-server", "native/argus-sim-bridge/argus-sim-bridge"]
+    "copy": [
+      ".claude",
+      "node_modules",
+      "native/conductor",
+      "native/scrcpy-server",
+      "native/argus-sim-bridge/argus-sim-bridge"
+    ]
   },
   "terminals": [],
   "run": [

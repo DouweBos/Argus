@@ -311,6 +311,13 @@ export async function startAgent(
   if (!argusSession) {
     throw `Session not found: ${sessionId}`;
   }
+  // Pending sessions have no worktree yet — spawning Claude with `cwd: ""`
+  // would silently land in the Argus app's own working directory. The
+  // frontend's `pendingSessionPrompts` waits for `ready`; this guard
+  // protects MCP / IPC entry points that don't.
+  if (!argusSession.path) {
+    throw `Session ${sessionId} is still initializing`;
+  }
   const worktreePath = argusSession.path;
 
   // When `reuseAgentId` is set we're respawning the child under an existing

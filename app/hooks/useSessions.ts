@@ -29,7 +29,6 @@ import {
   mergeSessionsForProject,
   removeProject,
   removeSession,
-  replaceSession,
   selectSession,
   setProjectBranch,
   setSetupProgress,
@@ -52,7 +51,7 @@ import { isWindowFocused } from "./useWindowFocus";
 function setupSessionStatusListener(sessionId: string): Promise<() => void> {
   return listen<string>(`session:status:${sessionId}`, (event) => {
     const payload = event.payload;
-    let status: "deleting" | "initializing" | "ready" | { error: string };
+    let status: Session["status"];
     if (payload === "ready") {
       status = "ready";
       setSetupProgress(sessionId, null);
@@ -252,20 +251,33 @@ export function useProjects() {
 
   useEffect(() => {
     const unlisten = listen<{
+      base_branch?: string | null;
       branch?: string;
       display_name?: string | null;
       id: string;
+      path?: string;
+      status?: Session["status"];
     }>("session:updated", (event) => {
-      const { id, display_name, branch } = event.payload;
+      const { id, display_name, branch, path, base_branch, status } =
+        event.payload;
       if (!getSessionState().sessions.some((w) => w.id === id)) {
         return;
       }
-      const patch: { branch?: string; display_name?: string | null } = {};
+      const patch: Partial<Session> = {};
       if (display_name !== undefined) {
         patch.display_name = display_name ?? null;
       }
       if (branch !== undefined) {
         patch.branch = branch;
+      }
+      if (path !== undefined) {
+        patch.path = path;
+      }
+      if (base_branch !== undefined) {
+        patch.base_branch = base_branch;
+      }
+      if (status !== undefined) {
+        patch.status = status;
       }
       updateSession(id, patch);
     });
@@ -438,31 +450,13 @@ export function useProjectSessions(repoRoot: string) {
       useExistingBranch?: boolean,
       baseBranch?: string,
     ) => {
-      // Optimistically insert a placeholder session so the sidebar card appears
-      // immediately. The backend's branch+title generation (claude -p) and
-      // worktree setup can take several seconds — without this, the user sees
-      // nothing happen until it finishes. Once the real session comes back we
-      // replace the placeholder in place, preserving selection and ordering.
-      const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const placeholderName =
-        branch.trim() ||
-        description.trim().split(/\r?\n/)[0].slice(0, 60) ||
-        "New session";
-      const optimistic: Session = {
-        id: tempId,
-        branch: branch.trim(),
-        description,
-        display_name: placeholderName,
-        kind: "worktree",
-        path: "",
-        repo_root: repoRoot,
-        status: "initializing",
-        base_branch: baseBranch ?? null,
-        organization_task_id: null,
-      };
-      addSession(optimistic);
-
       try {
+        // The backend mints the id, inserts an `initializing` session into state,
+        // and broadcasts `session:created` before returning. Branch-name
+        // generation and worktree setup then happen in the background, with
+        // progress reported via `session:updated` / `session:status:{id}`.
+        // The returned session is the same id we'll see in subsequent
+        // events — no placeholder / hot-swap needed.
         const session = await apiCreateSession(
           repoRoot,
           branch,
@@ -470,19 +464,12 @@ export function useProjectSessions(repoRoot: string) {
           useExistingBranch,
           baseBranch,
         );
-        replaceSession(tempId, session);
 
-        // Attach the setup PTY as a visible tab as soon as we know its id,
-        // so init output (and any interactive prompts) are immediately
-        // reachable by the user. The realtime session:setup_terminal event
-        // is a fallback for code paths that don't go through this hook.
-        if (session.setup_terminal_id) {
-          startListening(session.setup_terminal_id);
-          addTerminalSession({
-            id: session.setup_terminal_id,
-            session_id: session.id,
-            title: "Setup",
-          });
+        // The sibling `session:created` listener in useSessions handles
+        // store insertion; guard against a missed event by inserting here
+        // too if needed.
+        if (!getSessionState().sessions.some((w) => w.id === session.id)) {
+          addSession(session);
         }
 
         const [unlistenStatus, unlistenProgress, unlistenTerminal] =
@@ -499,7 +486,6 @@ export function useProjectSessions(repoRoot: string) {
 
         return session;
       } catch (err) {
-        removeSession(tempId);
         pushError(
           err instanceof Error ? err.message : String(err),
           "create_session",

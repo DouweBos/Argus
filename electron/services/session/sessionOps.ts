@@ -575,8 +575,18 @@ export function watchSession(id: string): void {
     return;
   }
 
-  const wtPath = sessionPath(id);
-  const handle: WatcherHandle = startWatcher(id, wtPath);
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  // Sessions still in `initializing` have no worktree on disk yet — `git`
+  // calls would just spin up failing subprocesses every poll. Callers
+  // re-invoke this once the session flips to `ready`.
+  if (!ws.path) {
+    return;
+  }
+
+  const handle: WatcherHandle = startWatcher(id, ws.path);
   appState.watchers.set(id, handle);
 }
 
@@ -678,6 +688,11 @@ export async function getSessionConflicts(id: string): Promise<string[]> {
     throw `Session not found: ${id}`;
   }
   if (!ws.base_branch) {
+    return [];
+  }
+  // Pending sessions don't have a branch or worktree yet — there's nothing
+  // to compare against the base.
+  if (!ws.branch || !ws.path) {
     return [];
   }
 

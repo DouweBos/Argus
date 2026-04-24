@@ -83,209 +83,209 @@ export function ProjectSegment({
 
   return (
     <>
-    <SidebarRepoGroup
-      name={projectName}
-      title={repoRoot}
-      expanded={!isCollapsed && hasSessions}
-      hideChevron={!hasSessions}
-      active={isProjectSelected}
-      leading={<Icons.FolderIcon size={11} style={{ color: accent }} />}
-      onToggleExpanded={hasSessions ? onToggleCollapsed : undefined}
-      onHeaderClick={openProjectHome}
-      onHeaderContextMenu={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setMenuPosition({ x: e.clientX, y: e.clientY });
-      }}
-      meta={repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
-      subtitle={
-        isProjectSelected && repoBranch ? (
-          <div
-            className={styles.branchSwitcherSlot}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <BranchSwitcher
-              currentBranch={repoBranch}
-              repoRoot={repoRoot}
-              onBranchChanged={refresh}
-            />
-          </div>
-        ) : (
-          <span className={styles.branchSubtitle}>
-            <Icons.BranchIcon size={11} />
-            <span>{repoBranch ?? repoRootSession?.branch}</span>
-          </span>
-        )
-      }
-      endContent={
-        repoRootSession && <RepoHeaderStatus session={repoRootSession} />
-      }
-      persistentAction={
-        repoRootSession && (
-          <div
-            className={styles.menuAnchor}
-            onClick={(e) => e.stopPropagation()}
-          >
+      <SidebarRepoGroup
+        name={projectName}
+        title={repoRoot}
+        expanded={!isCollapsed && hasSessions}
+        hideChevron={!hasSessions}
+        active={isProjectSelected}
+        leading={<Icons.FolderIcon size={11} style={{ color: accent }} />}
+        onToggleExpanded={hasSessions ? onToggleCollapsed : undefined}
+        onHeaderClick={openProjectHome}
+        onHeaderContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setMenuPosition({ x: e.clientX, y: e.clientY });
+        }}
+        meta={repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
+        subtitle={
+          isProjectSelected && repoBranch ? (
+            <div
+              className={styles.branchSwitcherSlot}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <BranchSwitcher
+                currentBranch={repoBranch}
+                repoRoot={repoRoot}
+                onBranchChanged={refresh}
+              />
+            </div>
+          ) : (
+            <span className={styles.branchSubtitle}>
+              <Icons.BranchIcon size={11} />
+              <span>{repoBranch ?? repoRootSession?.branch}</span>
+            </span>
+          )
+        }
+        endContent={
+          repoRootSession && <RepoHeaderStatus session={repoRootSession} />
+        }
+        persistentAction={
+          repoRootSession && (
+            <div
+              className={styles.menuAnchor}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <SidebarRepoAction
+                title="Project options"
+                onClick={(e) => {
+                  stop(e);
+                  if (menuPosition) {
+                    setMenuPosition(null);
+
+                    return;
+                  }
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
+                  setMenuPosition({ x: rect.left, y: rect.bottom + 4 });
+                }}
+              >
+                <Icons.EllipsisIcon size={12} />
+              </SidebarRepoAction>
+              {menuPosition && (
+                <ContextMenu
+                  items={
+                    [
+                      {
+                        icon: <Icons.CopyIcon size={12} />,
+                        label: "Copy Absolute Path",
+                        onClick: () =>
+                          navigator.clipboard.writeText(repoRootSession.path),
+                      },
+                      {
+                        icon: <Icons.CopyIcon size={12} />,
+                        label: "Copy Relative Path",
+                        onClick: () =>
+                          navigator.clipboard.writeText(
+                            toTildePath(repoRootSession.path),
+                          ),
+                      },
+                      {
+                        icon: <Icons.BranchIcon size={12} />,
+                        label: "Copy Branch Name",
+                        onClick: () =>
+                          navigator.clipboard.writeText(
+                            repoBranch ?? repoRootSession.branch,
+                          ),
+                      },
+                      { separator: true },
+                      {
+                        icon: <Icons.FolderIcon size={12} />,
+                        label: "Reveal in Finder",
+                        onClick: () => revealInFinder(repoRootSession.path),
+                      },
+                      {
+                        icon: <Icons.TerminalIcon size={12} />,
+                        label: "Open in Terminal",
+                        onClick: () => {
+                          createTerminal(repoRootSession.id);
+                        },
+                      },
+                    ] satisfies ContextMenuItem[]
+                  }
+                  position={menuPosition}
+                  onClose={closeMenu}
+                />
+              )}
+            </div>
+          )
+        }
+        actions={
+          <>
             <SidebarRepoAction
-              title="Project options"
+              title="New session"
               onClick={(e) => {
                 stop(e);
-                if (menuPosition) {
-                  setMenuPosition(null);
-
-                  return;
-                }
-                const rect = (
-                  e.currentTarget as HTMLElement
-                ).getBoundingClientRect();
-                setMenuPosition({ x: rect.left, y: rect.bottom + 4 });
+                setShowCreate(true);
               }}
             >
-              <Icons.EllipsisIcon size={12} />
+              <Icons.PlusIcon size={10} />
             </SidebarRepoAction>
-            {menuPosition && (
-              <ContextMenu
-                items={
-                  [
-                    {
-                      icon: <Icons.CopyIcon size={12} />,
-                      label: "Copy Absolute Path",
-                      onClick: () =>
-                        navigator.clipboard.writeText(repoRootSession.path),
-                    },
-                    {
-                      icon: <Icons.CopyIcon size={12} />,
-                      label: "Copy Relative Path",
-                      onClick: () =>
-                        navigator.clipboard.writeText(
-                          toTildePath(repoRootSession.path),
-                        ),
-                    },
-                    {
-                      icon: <Icons.BranchIcon size={12} />,
-                      label: "Copy Branch Name",
-                      onClick: () =>
-                        navigator.clipboard.writeText(
-                          repoBranch ?? repoRootSession.branch,
-                        ),
-                    },
-                    { separator: true },
-                    {
-                      icon: <Icons.FolderIcon size={12} />,
-                      label: "Reveal in Finder",
-                      onClick: () => revealInFinder(repoRootSession.path),
-                    },
-                    {
-                      icon: <Icons.TerminalIcon size={12} />,
-                      label: "Open in Terminal",
-                      onClick: () => {
-                        createTerminal(repoRootSession.id);
-                      },
-                    },
-                  ] satisfies ContextMenuItem[]
-                }
-                position={menuPosition}
-                onClose={closeMenu}
-              />
-            )}
-          </div>
-        )
-      }
-      actions={
-        <>
-          <SidebarRepoAction
-            title="New session"
-            onClick={(e) => {
-              stop(e);
-              setShowCreate(true);
-            }}
-          >
-            <Icons.PlusIcon size={10} />
-          </SidebarRepoAction>
-          <SidebarRepoAction
-            title="Project configuration"
-            onClick={(e) => {
-              stop(e);
-              setShowConfig(true);
-            }}
-          >
-            <Icons.GearIcon size={12} />
-          </SidebarRepoAction>
-          <SidebarRepoAction
-            title="Close project"
-            onClick={(e) => {
-              stop(e);
-              onClose();
-            }}
-          >
-            <Icons.CloseIcon size={10} />
-          </SidebarRepoAction>
-        </>
-      }
-    >
-      <div aria-label="Sessions" className={styles.list} role="listbox">
-        {worktrees.length === 0 ? (
-          <p className={styles.emptyHint}>No sessions yet.</p>
-        ) : (
-          worktrees.map((session) => (
-            <SessionCard
-              key={session.id}
-              isSelected={session.id === selectedId}
-              session={session}
-              onDelete={async () => setSessionToDelete(session)}
-              onRename={() => setSessionToRename(session)}
-              onSelect={() => selectSession(session.id)}
-            />
-          ))
-        )}
-      </div>
-      <button
-        className={styles.newSessionBtn}
-        onClick={() => setShowCreate(true)}
+            <SidebarRepoAction
+              title="Project configuration"
+              onClick={(e) => {
+                stop(e);
+                setShowConfig(true);
+              }}
+            >
+              <Icons.GearIcon size={12} />
+            </SidebarRepoAction>
+            <SidebarRepoAction
+              title="Close project"
+              onClick={(e) => {
+                stop(e);
+                onClose();
+              }}
+            >
+              <Icons.CloseIcon size={10} />
+            </SidebarRepoAction>
+          </>
+        }
       >
-        <Icons.PlusIcon size={10} />
-        <span>New session</span>
-      </button>
-    </SidebarRepoGroup>
+        <div aria-label="Sessions" className={styles.list} role="listbox">
+          {worktrees.length === 0 ? (
+            <p className={styles.emptyHint}>No sessions yet.</p>
+          ) : (
+            worktrees.map((session) => (
+              <SessionCard
+                key={session.id}
+                isSelected={session.id === selectedId}
+                session={session}
+                onDelete={async () => setSessionToDelete(session)}
+                onRename={() => setSessionToRename(session)}
+                onSelect={() => selectSession(session.id)}
+              />
+            ))
+          )}
+        </div>
+        <button
+          className={styles.newSessionBtn}
+          onClick={() => setShowCreate(true)}
+        >
+          <Icons.PlusIcon size={10} />
+          <span>New session</span>
+        </button>
+      </SidebarRepoGroup>
 
-    {showCreate &&
-      createPortal(
-        <CreateSessionDialog
-          repoRoot={repoRoot}
-          onClose={() => setShowCreate(false)}
-        />,
-        document.body,
-      )}
+      {showCreate &&
+        createPortal(
+          <CreateSessionDialog
+            repoRoot={repoRoot}
+            onClose={() => setShowCreate(false)}
+          />,
+          document.body,
+        )}
 
-    {showConfig &&
-      createPortal(
-        <SetupConfigDialog
-          repoRoot={repoRoot}
-          onClose={() => setShowConfig(false)}
-        />,
-        document.body,
-      )}
+      {showConfig &&
+        createPortal(
+          <SetupConfigDialog
+            repoRoot={repoRoot}
+            onClose={() => setShowConfig(false)}
+          />,
+          document.body,
+        )}
 
-    {sessionToDelete &&
-      createPortal(
-        <DeleteSessionDialog
-          session={sessionToDelete}
-          onClose={() => setSessionToDelete(null)}
-          onConfirm={async (deleteBranch) => {
-            await deleteSession(sessionToDelete.id, deleteBranch);
-          }}
-        />,
-        document.body,
-      )}
+      {sessionToDelete &&
+        createPortal(
+          <DeleteSessionDialog
+            session={sessionToDelete}
+            onClose={() => setSessionToDelete(null)}
+            onConfirm={async (deleteBranch) => {
+              await deleteSession(sessionToDelete.id, deleteBranch);
+            }}
+          />,
+          document.body,
+        )}
 
-    {sessionToRename &&
-      createPortal(
-        <RenameSessionDialog
-          session={sessionToRename}
-          onClose={() => setSessionToRename(null)}
-        />,
-        document.body,
-      )}
+      {sessionToRename &&
+        createPortal(
+          <RenameSessionDialog
+            session={sessionToRename}
+            onClose={() => setSessionToRename(null)}
+          />,
+          document.body,
+        )}
     </>
   );
 }

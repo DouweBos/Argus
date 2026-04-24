@@ -1,3 +1,4 @@
+import type { ImageAttachment } from "../lib/ipc";
 import type { Session } from "../lib/types";
 import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
@@ -15,6 +16,18 @@ export interface Project {
 
 interface SessionStoreData {
   isLoading: boolean;
+  /**
+   * Prompts that should be dispatched to a freshly-spawned agent once the
+   * session finishes resolving. The key is the session id; value is the
+   * user-authored prompt captured at session-creation time. The worktree
+   * may not exist yet when this is set, so no agent is started — the
+   * subscription in `app/lib/pendingSessionPrompts.ts` picks it up when
+   * the session transitions to `ready`.
+   */
+  pendingPromptBySessionId: Record<
+    string,
+    { images?: ImageAttachment[]; prompt: string }
+  >;
   projects: Project[];
   sessions: Session[];
   /** Current item and progress during setup. Cleared when setup completes. */
@@ -29,6 +42,7 @@ const sessionStore = create<SessionStoreData>(() => ({
   sessions: [],
   isLoading: false,
   setupProgressBySessionId: {},
+  pendingPromptBySessionId: {},
 }));
 
 const useSessionStore = sessionStore;
@@ -154,14 +168,15 @@ export const mergeSessionsForProject = (
       (w) => w.repo_root !== repoRoot,
     );
 
-    // Preserve optimistic placeholders for this repo — the backend hasn't
-    // materialized them yet (no path) so they would otherwise be wiped by the
-    // merge and reappear only once create_session resolves.
-    const pendingPlaceholders = existing.filter((w) =>
-      w.id.startsWith("pending-"),
+    // Preserve in-flight placeholders — the backend hasn't materialized them
+    // on disk yet (no worktree path) so they would otherwise be wiped by the
+    // merge and reappear only once finalizeSession resolves.
+    const mergedIdSet = new Set(merged.map((w) => w.id));
+    const placeholders = existing.filter(
+      (w) => !mergedIdSet.has(w.id) && !w.path,
     );
 
-    return { sessions: [...otherSessions, ...merged, ...pendingPlaceholders] };
+    return { sessions: [...otherSessions, ...merged, ...placeholders] };
   });
 };
 
@@ -175,9 +190,14 @@ export const removeSession = (id: string) => {
   if (getSelectedSessionId() === id) {
     appNavigate({ view: "home" });
   }
-  sessionStore.setState((state) => ({
-    sessions: state.sessions.filter((w) => w.id !== id),
-  }));
+  sessionStore.setState((state) => {
+    const { [id]: _removed, ...pending } = state.pendingPromptBySessionId;
+
+    return {
+      sessions: state.sessions.filter((w) => w.id !== id),
+      pendingPromptBySessionId: pending,
+    };
+  });
   forgetSessionTools(id);
 };
 
@@ -185,34 +205,6 @@ export const updateSession = (id: string, patch: Partial<Session>) => {
   sessionStore.setState((state) => ({
     sessions: state.sessions.map((w) => (w.id === id ? { ...w, ...patch } : w)),
   }));
-};
-
-/**
- * Replace an optimistic placeholder session with the real one returned by the
- * backend. Migrates terminal/id state and, if the URL currently points at the
- * temp id, redirects to the real one.
- */
-export const replaceSession = (tempId: string, session: Session) => {
-  if (tempId === session.id) {
-    updateSession(session.id, session);
-
-    return;
-  }
-  migrateSessions(tempId, session.id);
-  const wasSelected = getSelectedSessionId() === tempId;
-  sessionStore.setState((state) => ({
-    sessions: state.sessions.map((w) => (w.id === tempId ? session : w)),
-  }));
-  if (wasSelected) {
-    appNavigate(
-      {
-        view: "session",
-        sessionId: session.id,
-        panel: getActiveCenterView(),
-      },
-      { replace: true },
-    );
-  }
 };
 
 export const selectSession = (id: string | null) => {
@@ -250,6 +242,46 @@ export const setSetupProgress = (
     };
   });
 };
+
+export const setPendingPrompt = (
+  sessionId: string,
+  prompt: string,
+  images?: ImageAttachment[],
+) => {
+  sessionStore.setState((state) => ({
+    pendingPromptBySessionId: {
+      ...state.pendingPromptBySessionId,
+      [sessionId]: { prompt, images: images?.length ? images : undefined },
+    },
+  }));
+};
+
+export const consumePendingPrompt = (
+  sessionId: string,
+): { images?: ImageAttachment[]; prompt: string } | null => {
+  const state = sessionStore.getState();
+  const entry = state.pendingPromptBySessionId[sessionId];
+  if (entry === undefined) {
+    return null;
+  }
+  const { [sessionId]: _removed, ...rest } = state.pendingPromptBySessionId;
+  sessionStore.setState({ pendingPromptBySessionId: rest });
+
+  return entry;
+};
+
+export const clearPendingPrompt = (sessionId: string) => {
+  sessionStore.setState((state) => {
+    if (!(sessionId in state.pendingPromptBySessionId)) {
+      return state;
+    }
+    const { [sessionId]: _removed, ...rest } = state.pendingPromptBySessionId;
+
+    return { pendingPromptBySessionId: rest };
+  });
+};
+
+export const subscribeSessionStore = sessionStore.subscribe.bind(sessionStore);
 
 export const useSessionProjects = () => useSessionStore((s) => s.projects);
 

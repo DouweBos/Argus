@@ -143,6 +143,13 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.kind !== "project_root" &&
       !livePaths.has(ws.path)
     ) {
+      // A session with no path hasn't been placed on disk yet — the worktree
+      // is still being created by `finalizeSession`. Skip it; deleting would
+      // cause `finalizeSession`'s `appState.sessions.has(id)` guards to bail
+      // silently and leave the renderer stuck in "initializing" forever.
+      if (!ws.path) {
+        continue;
+      }
       if (isValidWorktree(ws.path)) {
         diskSessions.push({ ...ws });
         livePaths.add(ws.path);
@@ -226,9 +233,11 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
 /**
  * Create a new session (git worktree + branch) and run the setup pipeline.
  *
- * Returns immediately with the session in `initializing` status. The setup
- * pipeline runs asynchronously in the background, emitting
- * `session:status:{id}` when complete.
+ * Returns immediately with the session in `initializing` status and a freshly
+ * minted id. Branch-name generation, worktree creation, and the setup
+ * pipeline all run asynchronously in the background — progress is reported
+ * via `session:updated` (branch/path/display_name/status) and
+ * `session:status:{id}` events. The id is stable from the first response.
  */
 export async function createSession(
   repoRoot: string,
@@ -237,231 +246,311 @@ export async function createSession(
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
 ): Promise<Session> {
-  // Apply the developer's personal required branch prefix (if configured) to
-  // new branches. Existing branches are adopted as-is.
-  //
-  // If the caller supplied an empty branch (new-session flow where the user
-  // didn't type one), ask claude -p to generate a branch name + title from
-  // the prompt. On failure, fall back to slugging the description directly.
-  let branchInput = branch;
-  let preGeneratedTitle: string | null = null;
-  if (useExistingBranch !== true) {
-    if (!branch.trim() && description.trim()) {
-      const generated = await generateBranchAndTitle(description, repoRoot);
-      if (generated) {
-        branchInput = generated.branch;
-        preGeneratedTitle = generated.title;
-      } else {
-        branchInput = description;
-      }
-    }
-    const prefix = loadUserProjectSettings(repoRoot).branch_prefix ?? "";
-    branchInput = applyBranchPrefix(branchInput, prefix);
-  }
+  const id = crypto.randomUUID();
 
-  // Enforce one-session-per-branch: a given branch in a given repo may only be
-  // claimed by a single worktree-kind session.
-  const branchSlug =
-    useExistingBranch === true ? branchInput : titleToBranchSlug(branchInput);
-  for (const existing of appState.sessions.values()) {
-    if (
-      existing.kind === "worktree" &&
-      existing.repo_root === repoRoot &&
-      existing.branch === branchSlug
-    ) {
-      const label = existing.display_name ?? existing.branch;
-      throw `Branch "${branchSlug}" is already used by session "${label}". Each branch can only be used by one session.`;
-    }
-  }
+  // Provisional display name so the sidebar row has something readable before
+  // branch generation returns. Prefer the user-typed branch, then the first
+  // line of the description, then a generic fallback.
+  const provisionalName =
+    branch.trim() ||
+    description.trim().split(/\r?\n/)[0].slice(0, 60) ||
+    "New session";
 
-  // Use the explicit base branch if provided (e.g. when creating a child
-  // worktree from another worktree), otherwise fall back to the repo root HEAD.
-  let baseBranch: string | undefined = explicitBaseBranch;
-  if (!baseBranch) {
-    try {
-      baseBranch = (
-        await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
-      ).trim();
-    } catch {
-      baseBranch = undefined;
-    }
-  }
-
-  let session: Session;
-  if (useExistingBranch === true) {
-    session = await createWorktreeFromExisting(
-      repoRoot,
-      branchInput,
-      description,
-      baseBranch,
-    );
-  } else {
-    session = await createWorktree(
-      repoRoot,
-      branchInput,
-      description,
-      baseBranch,
-    );
-  }
-
-  // Assign sequential env_index.
   const nextIndex = [...appState.sessions.values()].filter(
     (w) => w.kind !== "project_root",
   ).length;
-  session.env_index = nextIndex;
 
-  // Set a humanized placeholder title so the row renders something readable
-  // before the LLM-generated title comes back. If claude -p already produced
-  // a nice title as part of branch generation, use that directly.
-  if (preGeneratedTitle) {
-    session.display_name = preGeneratedTitle;
-  } else if (
-    !session.display_name ||
-    session.display_name === branch ||
-    session.display_name === branchInput
-  ) {
-    session.display_name = humanizeBranchName(session.branch);
-  }
-  appState.sessions.set(session.id, { ...session });
+  const pending: Session = {
+    id,
+    kind: "worktree",
+    branch: "",
+    display_name: provisionalName,
+    description,
+    path: "",
+    repo_root: repoRoot,
+    status: "initializing",
+    env_index: nextIndex,
+    base_branch: explicitBaseBranch ?? null,
+    organization_task_id: null,
+  };
+  appState.sessions.set(id, { ...pending });
+  getMainWindow()?.webContents.send("session:created", { ...pending });
 
-  // Persist display name and base_branch so it survives app restarts.
-  const worktreesDir = worktreesRoot(repoRoot);
-  const meta = loadMetadata(worktreesDir);
-  meta.set(session.path, {
-    id: session.id,
-    display_name: session.display_name,
-    description: session.description,
-    base_branch: session.base_branch,
+  // Kick off the real work in the background. Don't await — callers get the
+  // pending session back immediately.
+  finalizeSession(id, repoRoot, branch, description, {
+    useExistingBranch,
+    explicitBaseBranch,
+  }).catch((e: unknown) => {
+    error(`finalizeSession unhandled: ${String(e)}`);
   });
-  try {
-    saveMetadata(worktreesDir, meta);
-  } catch {
-    // Non-fatal
-  }
 
-  // Fire-and-forget: ask Claude for a nicer title. On success, update state,
-  // persist, and notify the renderer so the row re-renders. Skipped when
-  // branch+title was pre-generated above (we already have a good title).
-  const titleSessionId = session.id;
-  const titleSessionPath = session.path;
-  if (!preGeneratedTitle) {
-    generateSessionTitle({
-      branch: session.branch,
-      description: session.description,
-      repoRoot,
-    })
-      .then((title) => {
-        if (!title) {
-          return;
-        }
-        const ws = appState.sessions.get(titleSessionId);
-        if (!ws) {
-          return;
-        }
-        ws.display_name = title;
-        appState.sessions.set(titleSessionId, ws);
+  return { ...pending };
+}
 
-        try {
-          const metaNow = loadMetadata(worktreesDir);
-          const entry = metaNow.get(titleSessionPath) ?? {
-            id: ws.id,
-            description: ws.description,
-            base_branch: ws.base_branch,
-          };
-          metaNow.set(titleSessionPath, { ...entry, display_name: title });
-          saveMetadata(worktreesDir, metaNow);
-        } catch {
-          // Non-fatal
-        }
+/**
+ * Resolve the branch name (asking claude -p if needed), create the git
+ * worktree, and run the setup pipeline for a session that was already
+ * inserted into `appState.sessions` with status `initializing`.
+ *
+ * At every async boundary we re-check that the session still exists — the
+ * user may have deleted it mid-resolve, in which case we clean up and bail.
+ */
+async function finalizeSession(
+  id: string,
+  repoRoot: string,
+  branch: string,
+  description: string,
+  opts: { useExistingBranch?: boolean; explicitBaseBranch?: string },
+): Promise<void> {
+  const { useExistingBranch, explicitBaseBranch } = opts;
 
-        getMainWindow()?.webContents.send("session:updated", {
-          id: titleSessionId,
-          display_name: title,
-        });
-      })
-      .catch((e: unknown) => {
-        info(`Title generation skipped for session ${titleSessionId}:`, e);
-      });
-  }
-
-  const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();
-  const taskSessionId = session.id;
-  const taskSessionPath = session.path;
-
-  // Spawn the setup PTY up-front so its id can be returned in the session
-  // response — this lets the renderer attach a Setup tab synchronously,
-  // avoiding a race against the fire-and-forget pipeline below. Non-fatal on
-  // failure: the pipeline will still run (using a freshly-spawned pty).
-  //
-  // Runs `sh` as the program (not $SHELL) so the user's interactive shell
-  // prompt doesn't appear underneath our setup log lines, and no RC files
-  // fire while init is in progress. The terminal is also marked `locked` so
-  // renderer-originated keystrokes don't race with commands being written to
-  // the PTY's stdin. Both are reversed at the end of the pipeline so the tab
-  // becomes a normal interactive shell cwd'd in the new worktree.
-  let setupTerminalId: string | null = null;
-  try {
-    // `exec` replaces the outer `sh -c` with the inner sh in the same pid,
-    // so we end up with exactly one non-interactive sh reading from the PTY.
-    setupTerminalId = createTerminal(taskSessionId, undefined, "exec /bin/sh");
-    const t = appState.terminals.get(setupTerminalId);
-    if (t) {
-      t.locked = true;
+  const emitError = (msg: string) => {
+    const ws = appState.sessions.get(id);
+    if (!ws) {
+      return;
     }
-  } catch (e) {
-    info(
-      `Could not pre-spawn setup terminal for ${taskSessionId}: ${String(e)}`,
-    );
-  }
-  session.setup_terminal_id = setupTerminalId;
-  if (setupTerminalId) {
-    const stored = appState.sessions.get(taskSessionId);
-    if (stored) {
-      stored.setup_terminal_id = setupTerminalId;
-      appState.sessions.set(taskSessionId, stored);
+    ws.status = { error: msg };
+    appState.sessions.set(id, ws);
+    getMainWindow()?.webContents.send(`session:status:${id}`, `error:${msg}`);
+  };
+
+  try {
+    // --- Phase 1: resolve branch name + optional pre-generated title ------
+    let branchInput = branch;
+    let preGeneratedTitle: string | null = null;
+    if (useExistingBranch !== true) {
+      if (!branch.trim() && description.trim()) {
+        const generated = await generateBranchAndTitle(description, repoRoot);
+        if (generated) {
+          branchInput = generated.branch;
+          preGeneratedTitle = generated.title;
+        } else {
+          branchInput = description;
+        }
+      }
+      const prefix = loadUserProjectSettings(repoRoot).branch_prefix ?? "";
+      branchInput = applyBranchPrefix(branchInput, prefix);
     }
-  }
 
-  info(
-    `Spawning setup pipeline for session ${taskSessionId} (path=${taskSessionPath})`,
-  );
+    if (!appState.sessions.has(id)) {
+      return; // Deleted mid-resolve.
+    }
 
-  // Run setup pipeline in background (no await — returns immediately).
-  runSetupPipeline(
-    repoRoot,
-    taskSessionPath,
-    config,
-    taskSessionId,
-    setupTerminalId,
-  )
-    .then(() => {
-      const finalStatus: SessionStatus = "ready";
-      const ws = appState.sessions.get(taskSessionId);
-      if (ws) {
-        ws.status = finalStatus;
-        appState.sessions.set(taskSessionId, ws);
+    // --- Phase 2: uniqueness check ---------------------------------------
+    const branchSlug =
+      useExistingBranch === true ? branchInput : titleToBranchSlug(branchInput);
+    for (const existing of appState.sessions.values()) {
+      if (
+        existing.id !== id &&
+        existing.kind === "worktree" &&
+        existing.repo_root === repoRoot &&
+        existing.branch === branchSlug
+      ) {
+        const label = existing.display_name ?? existing.branch;
+        emitError(
+          `Branch "${branchSlug}" is already used by session "${label}". Each branch can only be used by one session.`,
+        );
+
+        return;
       }
-      getMainWindow()?.webContents.send(
-        `session:status:${taskSessionId}`,
-        "ready",
-      );
-    })
-    .catch((e: unknown) => {
-      const errMsg = typeof e === "string" ? e : String(e);
-      error(`Setup pipeline failed for session ${taskSessionId}: ${errMsg}`);
-      const finalStatus: SessionStatus = { error: errMsg };
-      const ws = appState.sessions.get(taskSessionId);
-      if (ws) {
-        ws.status = finalStatus;
-        appState.sessions.set(taskSessionId, ws);
+    }
+
+    // --- Phase 3: resolve base branch ------------------------------------
+    let baseBranch: string | undefined = explicitBaseBranch;
+    if (!baseBranch) {
+      try {
+        baseBranch = (
+          await git(repoRoot, ["rev-parse", "--abbrev-ref", "HEAD"])
+        ).trim();
+      } catch {
+        baseBranch = undefined;
       }
-      getMainWindow()?.webContents.send(
-        `session:status:${taskSessionId}`,
-        `error:${errMsg}`,
-      );
+    }
+
+    if (!appState.sessions.has(id)) {
+      return;
+    }
+
+    // --- Phase 4: create the worktree ------------------------------------
+    const worktreeInfo =
+      useExistingBranch === true
+        ? await createWorktreeFromExisting(repoRoot, branchInput, baseBranch)
+        : await createWorktree(repoRoot, branchInput, baseBranch);
+
+    // If the session was deleted while we were creating the worktree, tear
+    // the worktree back down instead of leaking the directory.
+    if (!appState.sessions.has(id)) {
+      try {
+        await git(repoRoot, [
+          "worktree",
+          "remove",
+          "--force",
+          worktreeInfo.path,
+        ]);
+      } catch (e) {
+        info(
+          `finalizeSession: cleanup of orphaned worktree failed: ${String(e)}`,
+        );
+      }
+
+      return;
+    }
+
+    // --- Phase 5: pick a display name -----------------------------------
+    const provisional = appState.sessions.get(id)?.display_name ?? null;
+    let displayName: string | null;
+    if (preGeneratedTitle) {
+      displayName = preGeneratedTitle;
+    } else if (
+      !provisional ||
+      provisional === branch ||
+      provisional === branchInput ||
+      provisional === "New session"
+    ) {
+      displayName = humanizeBranchName(worktreeInfo.branch);
+    } else {
+      displayName = provisional;
+    }
+
+    // --- Phase 6: merge into state + notify renderer --------------------
+    const ws = appState.sessions.get(id);
+    if (!ws) {
+      return;
+    }
+    ws.branch = worktreeInfo.branch;
+    ws.path = worktreeInfo.path;
+    ws.base_branch = baseBranch ?? null;
+    ws.display_name = displayName;
+    ws.status = "initializing";
+    appState.sessions.set(id, ws);
+
+    getMainWindow()?.webContents.send("session:updated", {
+      id,
+      branch: ws.branch,
+      path: ws.path,
+      base_branch: ws.base_branch,
+      display_name: ws.display_name,
+      status: ws.status,
     });
 
-  return session;
+    // --- Phase 7: persist metadata --------------------------------------
+    const worktreesDir = worktreesRoot(repoRoot);
+    const meta = loadMetadata(worktreesDir);
+    meta.set(ws.path, {
+      id: ws.id,
+      display_name: ws.display_name,
+      description: ws.description,
+      base_branch: ws.base_branch,
+    });
+    try {
+      saveMetadata(worktreesDir, meta);
+    } catch {
+      // Non-fatal
+    }
+
+    // --- Phase 8: fire-and-forget nicer-title generation ---------------
+    if (!preGeneratedTitle) {
+      const titleSessionPath = ws.path;
+      generateSessionTitle({
+        branch: ws.branch,
+        description: ws.description,
+        repoRoot,
+      })
+        .then((title) => {
+          if (!title) {
+            return;
+          }
+          const current = appState.sessions.get(id);
+          if (!current) {
+            return;
+          }
+          current.display_name = title;
+          appState.sessions.set(id, current);
+
+          try {
+            const metaNow = loadMetadata(worktreesDir);
+            const entry = metaNow.get(titleSessionPath) ?? {
+              id: current.id,
+              description: current.description,
+              base_branch: current.base_branch,
+            };
+            metaNow.set(titleSessionPath, { ...entry, display_name: title });
+            saveMetadata(worktreesDir, metaNow);
+          } catch {
+            // Non-fatal
+          }
+
+          getMainWindow()?.webContents.send("session:updated", {
+            id,
+            display_name: title,
+          });
+        })
+        .catch((e: unknown) => {
+          info(`Title generation skipped for session ${id}:`, e);
+        });
+    }
+
+    // --- Phase 9: spawn setup terminal ---------------------------------
+    // `exec` replaces the outer `sh -c` with the inner sh in the same pid,
+    // so we end up with exactly one non-interactive sh reading from the PTY.
+    let setupTerminalId: string | null = null;
+    try {
+      setupTerminalId = createTerminal(id, undefined, "exec /bin/sh");
+      const t = appState.terminals.get(setupTerminalId);
+      if (t) {
+        t.locked = true;
+      }
+    } catch (e) {
+      info(`Could not pre-spawn setup terminal for ${id}: ${String(e)}`);
+    }
+    if (setupTerminalId) {
+      const stored = appState.sessions.get(id);
+      if (stored) {
+        stored.setup_terminal_id = setupTerminalId;
+        appState.sessions.set(id, stored);
+      }
+      getMainWindow()?.webContents.send(`session:setup_terminal:${id}`, {
+        terminalId: setupTerminalId,
+        title: "Setup",
+      });
+    }
+
+    // --- Phase 10: run setup pipeline ----------------------------------
+    const config = loadArgusConfig(repoRoot) ?? defaultArgusConfig();
+    const taskSessionPath = ws.path;
+
+    info(`Spawning setup pipeline for session ${id} (path=${taskSessionPath})`);
+
+    runSetupPipeline(repoRoot, taskSessionPath, config, id, setupTerminalId)
+      .then(() => {
+        const finalStatus: SessionStatus = "ready";
+        const current = appState.sessions.get(id);
+        if (current) {
+          current.status = finalStatus;
+          appState.sessions.set(id, current);
+        }
+        getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+      })
+      .catch((e: unknown) => {
+        const errMsg = typeof e === "string" ? e : String(e);
+        error(`Setup pipeline failed for session ${id}: ${errMsg}`);
+        const current = appState.sessions.get(id);
+        if (current) {
+          current.status = { error: errMsg };
+          appState.sessions.set(id, current);
+        }
+        getMainWindow()?.webContents.send(
+          `session:status:${id}`,
+          `error:${errMsg}`,
+        );
+      });
+  } catch (e) {
+    const errMsg =
+      typeof e === "string" ? e : (e as Error).message || String(e);
+    error(`finalizeSession failed for ${id}: ${errMsg}`);
+    emitError(errMsg);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1163,16 +1252,22 @@ export async function deleteSession(
 // Internal helpers: createWorktree / createWorktreeFromExisting
 // ---------------------------------------------------------------------------
 
+/** Branch + path pair returned from the worktree-creation helpers. */
+interface WorktreeInfo {
+  branch: string;
+  path: string;
+}
+
 /**
- * Create a new worktree for `branch` branching from the current HEAD of the
- * main repo. Returns the new `Session` in `initializing` status.
+ * Create a new worktree for `branch` branching from `baseBranch` (or the
+ * current HEAD of the main repo). Returns the final branch slug and on-disk
+ * path.
  */
 async function createWorktree(
   repoRoot: string,
   branch: string,
-  description: string,
   baseBranch: string | undefined,
-): Promise<Session> {
+): Promise<WorktreeInfo> {
   const branchSlug = titleToBranchSlug(branch);
   const worktreesDir = worktreesRoot(repoRoot);
   const dirName = branchToDir(branchSlug);
@@ -1212,18 +1307,7 @@ async function createWorktree(
 
   info(`Created worktree for branch '${branchSlug}' at ${worktreePath}`);
 
-  return {
-    id: crypto.randomUUID(),
-    kind: "worktree",
-    branch: branchSlug,
-    display_name: branch,
-    description,
-    path: worktreePath,
-    repo_root: repoRoot,
-    status: "initializing",
-    env_index: null,
-    base_branch: baseBranch ?? null,
-  };
+  return { branch: branchSlug, path: worktreePath };
 }
 
 /**
@@ -1233,9 +1317,8 @@ async function createWorktree(
 async function createWorktreeFromExisting(
   repoRoot: string,
   branch: string,
-  description: string,
-  baseBranch: string | undefined,
-): Promise<Session> {
+  _baseBranch: string | undefined,
+): Promise<WorktreeInfo> {
   const worktreesDir = worktreesRoot(repoRoot);
   const baseDir = branchToDir(branch);
   let worktreePath = `${worktreesDir}/${baseDir}`;
@@ -1269,7 +1352,9 @@ async function createWorktreeFromExisting(
   } else {
     let remoteRef: string | null = null;
     try {
-      const remotes = (await git(repoRoot, ["remote"])).split("\n").filter(Boolean);
+      const remotes = (await git(repoRoot, ["remote"]))
+        .split("\n")
+        .filter(Boolean);
       for (const remote of remotes) {
         const candidate = `refs/remotes/${remote}/${branch}`;
         try {
@@ -1300,18 +1385,7 @@ async function createWorktreeFromExisting(
 
   info(`Created worktree for existing branch '${branch}' at ${worktreePath}`);
 
-  return {
-    id: crypto.randomUUID(),
-    kind: "worktree",
-    branch,
-    display_name: null,
-    description,
-    path: worktreePath,
-    repo_root: repoRoot,
-    status: "initializing",
-    env_index: null,
-    base_branch: baseBranch ?? null,
-  };
+  return { branch, path: worktreePath };
 }
 
 // ---------------------------------------------------------------------------

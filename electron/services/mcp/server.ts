@@ -157,6 +157,40 @@ function resolveSession(idOrBranch: string) {
 }
 
 /**
+ * Wait for a freshly-created session to finish provisioning its worktree.
+ *
+ * `create_session` returns immediately with `status: "initializing"` while
+ * branch resolution and `git worktree add` run in the background. Anything
+ * that needs the worktree on disk (spawning an agent, opening a terminal)
+ * has to wait — `startAgent` / `createTerminal` now throw on a missing path.
+ *
+ * Resolves once the session reaches `ready`. Throws if the session enters an
+ * `error` state, is deleted, or the timeout elapses.
+ */
+async function waitForSessionReady(
+  id: string,
+  timeoutMs = 120_000,
+): Promise<void> {
+  const start = Date.now();
+  // Poll on a short interval — provisioning is typically sub-second once the
+  // branch name is resolved, but title generation can briefly stretch it.
+  while (Date.now() - start < timeoutMs) {
+    const ws = appState.sessions.get(id);
+    if (!ws) {
+      throw `Session ${id} was deleted before it became ready`;
+    }
+    if (ws.status === "ready") {
+      return;
+    }
+    if (typeof ws.status !== "string") {
+      throw `Session ${id} failed to initialize: ${ws.status.error}`;
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw `Timed out waiting for session ${id} to become ready`;
+}
+
+/**
  * Read a JSON request body and parse it. Returns an empty object on empty
  * bodies and throws on parse errors.
  */
@@ -617,6 +651,19 @@ export function createMcpServer(): McpServer {
         };
       }
 
+      // Sessions created by `create_session` return immediately with status
+      // `initializing` — the worktree is still being provisioned in the
+      // background. Block here until it's ready so `startAgent` finds a real
+      // working directory.
+      try {
+        await waitForSessionReady(ws.id);
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+
       const agentInfo = await startAgent(
         ws.id,
         undefined, // model — use default
@@ -849,6 +896,10 @@ export function createMcpServer(): McpServer {
         }
 
         try {
+          // Wait for the freshly-created worktree to land on disk before
+          // spawning the agent — otherwise Claude would launch with `cwd: ""`.
+          await waitForSessionReady(ws.id);
+
           const agentInfo = await startAgent(
             ws.id,
             undefined,

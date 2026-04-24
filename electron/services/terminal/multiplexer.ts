@@ -162,6 +162,12 @@ export function createTerminal(
   if (!ws) {
     throw `Session not found: ${sessionId}`;
   }
+  // Pending sessions don't have a worktree on disk yet. node-pty would
+  // spawn the shell in `process.cwd()` (the Argus app root) which is wildly
+  // wrong — refuse instead so callers retry once setup finishes.
+  if (!ws.path) {
+    throw `Session ${sessionId} is still initializing`;
+  }
 
   // Resolve working directory.
   let cwd: string = ws.path;

@@ -41,7 +41,6 @@ import {
   setAgentModel,
   setAgentPermissionMode,
 } from "./services/agent/claude";
-import { generateSessionTitle } from "./services/agent/sessionTitle";
 import {
   startScreencast,
   stopScreencast,
@@ -90,6 +89,7 @@ import {
 } from "./services/github/prDetail";
 import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
+import { generateChatTitle } from "./services/llm/titleGenerator";
 import { collectAllProjects } from "./services/mcp/projects";
 import {
   addSkipped as onboardingAddSkipped,
@@ -679,7 +679,7 @@ export function registerIpcHandlers(): void {
     deleteHistoryEntry(a.repoRoot as string, a.historyId as string),
   );
   handle("generate_session_title", (a) =>
-    generateSessionTitle(a.firstMessage as string),
+    generateChatTitle(a.firstMessage as string),
   );
 
   // Terminal commands.
