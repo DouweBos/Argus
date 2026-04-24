@@ -29,6 +29,7 @@ export * from "./lib/diff";
 export * from "./components/HomeCTA/HomeCTA";
 export * from "./components/HoverActionBar/HoverActionBar";
 export * from "./components/IconBadge/IconBadge";
+export * from "./components/ImageAttachmentStrip/ImageAttachmentStrip";
 export * from "./components/Input/Input";
 export * from "./components/Kbd/Kbd";
 export * from "./components/OrganizationCard/OrganizationCard";
