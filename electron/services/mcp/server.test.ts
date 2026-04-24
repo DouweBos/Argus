@@ -856,6 +856,17 @@ describe("merge_session", () => {
 // ===========================================================================
 
 describe("spawn_agents_batch", () => {
+  // Mirror the real manager: register the created session in appState so
+  // `waitForSessionReady` (called before startAgent) resolves immediately.
+  function mockReadyCreateSession(idFn: (repoRoot: string) => string) {
+    mockCreateSession.mockImplementation(async (repoRoot: string) => {
+      const ws = mockSession({ id: idFn(repoRoot), repo_root: repoRoot });
+      appState.sessions.set(ws.id, ws);
+
+      return ws;
+    });
+  }
+
   beforeEach(() => {
     mockStartAgent.mockImplementation(async (sessionId: string) => ({
       agent_id: `agent-for-${sessionId}`,
@@ -867,11 +878,8 @@ describe("spawn_agents_batch", () => {
   });
 
   it("uses top-level project_path for all agents (existing behavior)", async () => {
-    mockCreateSession.mockImplementation(async (repoRoot: string) =>
-      mockSession({
-        id: `ws-${repoRoot.replace(/\W/g, "")}-${Math.random()}`,
-        repo_root: repoRoot,
-      }),
+    mockReadyCreateSession(
+      (repoRoot) => `ws-${repoRoot.replace(/\W/g, "")}-${Math.random()}`,
     );
 
     const result = await client.callTool({
@@ -896,12 +904,7 @@ describe("spawn_agents_batch", () => {
   });
 
   it("honors per-agent project_path overrides for cross-project spawning", async () => {
-    mockCreateSession.mockImplementation(async (repoRoot: string) =>
-      mockSession({
-        id: `ws-${repoRoot.replace(/\W/g, "")}`,
-        repo_root: repoRoot,
-      }),
-    );
+    mockReadyCreateSession((repoRoot) => `ws-${repoRoot.replace(/\W/g, "")}`);
 
     const result = await client.callTool({
       name: "spawn_agents_batch",
@@ -923,12 +926,7 @@ describe("spawn_agents_batch", () => {
   });
 
   it("mixes default and per-agent overrides", async () => {
-    mockCreateSession.mockImplementation(async (repoRoot: string) =>
-      mockSession({
-        id: `ws-${repoRoot.replace(/\W/g, "")}`,
-        repo_root: repoRoot,
-      }),
-    );
+    mockReadyCreateSession((repoRoot) => `ws-${repoRoot.replace(/\W/g, "")}`);
 
     const result = await client.callTool({
       name: "spawn_agents_batch",
@@ -949,9 +947,7 @@ describe("spawn_agents_batch", () => {
   });
 
   it("registers each unique repo only once even when shared by multiple agents", async () => {
-    mockCreateSession.mockImplementation(async (repoRoot: string) =>
-      mockSession({ id: `ws-${Math.random()}`, repo_root: repoRoot }),
-    );
+    mockReadyCreateSession(() => `ws-${Math.random()}`);
 
     await client.callTool({
       name: "spawn_agents_batch",
