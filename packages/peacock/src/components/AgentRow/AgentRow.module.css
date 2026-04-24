@@ -35,11 +35,19 @@
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--text-primary);
+  min-width: 0;
+}
+.top > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .project {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .tool {
