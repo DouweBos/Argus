@@ -31,6 +31,7 @@ import {
   stopMjpegServer,
 } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
+import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
@@ -282,6 +283,9 @@ function createWindow(): void {
   mainWindow.once("ready-to-show", () => {
     log("ready-to-show fired");
     mainWindow?.show();
+    nudgeForFullDiskAccess(mainWindow).catch((e) =>
+      log("nudgeForFullDiskAccess failed: %s", String(e)),
+    );
   });
 
   mainWindow.webContents.on("did-finish-load", () => {
