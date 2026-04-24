@@ -224,7 +224,7 @@ export async function rebaseSessionOnBase(
  * Collapse every commit ahead of `baseBranch` on the current session branch
  * into a single commit. The subject uses a conventional-commit prefix derived
  * from the original commit messages (fix > feat > chore, default feat) and a
- * summary derived from the branch name. The body lists the original subjects.
+ * summary derived from the branch name.
  *
  * No-op when there are 0 or 1 commits ahead of the base.
  */
@@ -245,13 +245,7 @@ async function squashSessionCommits(
 
   const type = deriveCommitType(subjects);
   const summary = branchToSummary(sessionBranch);
-  // Reverse so the body reads oldest → newest.
-  const body = subjects
-    .slice()
-    .reverse()
-    .map((s) => `- ${s}`)
-    .join("\n");
-  const message = `${type}: ${summary}\n\n${body}`;
+  const message = `${type}: ${summary}`;
 
   await git(wsPath, ["reset", "--soft", baseBranch]);
   await git(wsPath, ["commit", "-m", message]);
