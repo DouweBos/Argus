@@ -115,16 +115,6 @@
   gap: var(--space-4);
 }
 
-.historyWrap {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  background: var(--bg-secondary);
-  max-height: 320px;
-}
-
 .emptyCell {
   padding: 24px;
   text-align: center;

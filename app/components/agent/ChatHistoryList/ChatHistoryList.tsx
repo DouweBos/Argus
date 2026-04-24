@@ -4,7 +4,7 @@ import type {
   ChatHistorySearchResult,
 } from "../../../lib/chatHistory";
 import { useEffect, useMemo, useState } from "react";
-import { Button, Eyebrow, Icons, Input } from "@argus/peacock";
+import { Button, Icons, Input, SectionPanel } from "@argus/peacock";
 import { searchChatHistory } from "../../../lib/ipc";
 import styles from "./ChatHistoryList.module.css";
 
@@ -137,15 +137,19 @@ function EntryRow({
 
 interface ChatHistoryListProps {
   entries: ChatHistoryEntry[];
+  meta: string;
   onClearAll?: () => void;
   onDelete: (historyId: string) => void;
   onResume: (sessionId: string) => void;
   onView: (historyId: string) => void;
   repoRoot: string | null;
+  title: string;
 }
 
 export function ChatHistoryList({
   entries,
+  title,
+  meta,
   repoRoot,
   onView,
   onResume,
@@ -212,74 +216,75 @@ export function ChatHistoryList({
     return null;
   }
 
-  return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <Eyebrow>Recent Sessions</Eyebrow>
-        <div className={styles.headerActions}>
-          <div className={styles.searchWrap}>
-            <Icons.SearchIcon size={12} className={styles.searchIcon} />
-            <Input
-              bare
-              type="search"
-              placeholder="Search chats & messages"
-              className={styles.searchInput}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-          {onClearAll && (
-            <button
-              className={styles.clearAll}
-              title="Clear all chats"
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClearAll();
-              }}
-            >
-              <Icons.TrashIcon size={12} />
-            </button>
-          )}
-        </div>
+  const action = (
+    <div className={styles.headerActions}>
+      <div className={styles.searchWrap}>
+        <Icons.SearchIcon size={12} className={styles.searchIcon} />
+        <Input
+          bare
+          type="search"
+          placeholder="Search chats & messages"
+          className={styles.searchInput}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+        />
       </div>
-
-      {!trimmed &&
-        visibleEntries.map((entry) => (
-          <EntryRow
-            key={entry.id}
-            entry={entry}
-            matches={[]}
-            onDelete={onDelete}
-            onResume={onResume}
-            onView={onView}
-          />
-        ))}
-
-      {trimmed &&
-        effectiveResults?.map((result) => (
-          <EntryRow
-            key={result.entry.id}
-            entry={result.entry}
-            matches={result.messageMatches}
-            onDelete={onDelete}
-            onResume={onResume}
-            onView={onView}
-          />
-        ))}
-
-      {trimmed && effectiveSearching && !effectiveResults && (
-        <div className={styles.moreHint}>Searching…</div>
+      {onClearAll && (
+        <button
+          className={styles.clearAll}
+          title="Clear all chats"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClearAll();
+          }}
+        >
+          <Icons.TrashIcon size={12} />
+        </button>
       )}
-      {trimmed &&
-        !effectiveSearching &&
-        effectiveResults &&
-        effectiveResults.length === 0 && (
-          <div className={styles.moreHint}>
-            No chats match &ldquo;{query}&rdquo;
-          </div>
-        )}
     </div>
+  );
+
+  return (
+    <SectionPanel title={title} meta={meta} action={action}>
+      <div className={styles.container}>
+        {!trimmed &&
+          visibleEntries.map((entry) => (
+            <EntryRow
+              key={entry.id}
+              entry={entry}
+              matches={[]}
+              onDelete={onDelete}
+              onResume={onResume}
+              onView={onView}
+            />
+          ))}
+
+        {trimmed &&
+          effectiveResults?.map((result) => (
+            <EntryRow
+              key={result.entry.id}
+              entry={result.entry}
+              matches={result.messageMatches}
+              onDelete={onDelete}
+              onResume={onResume}
+              onView={onView}
+            />
+          ))}
+
+        {trimmed && effectiveSearching && !effectiveResults && (
+          <div className={styles.moreHint}>Searching…</div>
+        )}
+        {trimmed &&
+          !effectiveSearching &&
+          effectiveResults &&
+          effectiveResults.length === 0 && (
+            <div className={styles.moreHint}>
+              No chats match &ldquo;{query}&rdquo;
+            </div>
+          )}
+      </div>
+    </SectionPanel>
   );
 }
