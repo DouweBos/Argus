@@ -15,6 +15,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
+import { ONBOARDING_STEPS } from "./types";
 
 const SCHEMA_VERSION = 1;
 
@@ -76,11 +77,19 @@ export function loadConfig(): OnboardingConfigFile {
     parsed = {};
   }
 
+  const onboarding: OnboardingStateData = {
+    ...DEFAULT_STATE,
+    ...(parsed.onboarding ?? {}),
+  };
+  // Migrate away from removed steps (project/argus_config/first_session/
+  // first_agent) that may live in older config.json files. Snap to completion
+  // if onboarding was already finished, else restart at welcome.
+  if (!ONBOARDING_STEPS.includes(onboarding.lastStep)) {
+    onboarding.lastStep = onboarding.completed ? "completion" : "welcome";
+  }
+
   return {
-    onboarding: {
-      ...DEFAULT_STATE,
-      ...(parsed.onboarding ?? {}),
-    },
+    onboarding,
     defaults: {
       ...DEFAULT_DEFAULTS,
       ...(parsed.defaults ?? {}),

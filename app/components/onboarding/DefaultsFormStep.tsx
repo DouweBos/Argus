@@ -55,7 +55,7 @@ export function DefaultsFormStep() {
         }
       }
       await saveOnboardingDefaults({ model, permissionMode });
-      await advance("project");
+      await advance("completion");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

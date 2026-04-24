@@ -10,10 +10,6 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   preflight: "Preflight",
   claude_auth: "Claude",
   defaults: "Defaults",
-  project: "Project",
-  argus_config: "Config",
-  first_session: "Session",
-  first_agent: "Agent",
   completion: "Done",
 };
 
