@@ -1,6 +1,13 @@
 import type { Capture, HierarchyNode } from "./types";
 import type { ContextMenuItem } from "@argus/peacock";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ContextMenu } from "@argus/peacock";
 import { A11yBadgeLayer } from "./A11yBadgeLayer";
 import styles from "./FlatRenderer.module.css";
@@ -80,17 +87,20 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
 
   const screenshotSrc = `data:image/${capture.screenshot.encoding};base64,${capture.screenshot.data}`;
 
-  const hitTest = (clientX: number, clientY: number): HierarchyNode[] => {
-    const el = inputRef.current;
-    if (!el || scaleX === 0 || scaleY === 0) {
-      return [];
-    }
-    const rect = el.getBoundingClientRect();
-    const devX = (clientX - rect.left) / scaleX;
-    const devY = (clientY - rect.top) / scaleY;
+  const hitTest = useCallback(
+    (clientX: number, clientY: number): HierarchyNode[] => {
+      const el = inputRef.current;
+      if (!el || scaleX === 0 || scaleY === 0) {
+        return [];
+      }
+      const rect = el.getBoundingClientRect();
+      const devX = (clientX - rect.left) / scaleX;
+      const devY = (clientY - rect.top) / scaleY;
 
-    return nodesContainingPoint(capture.hierarchy, devX, devY);
-  };
+      return nodesContainingPoint(capture.hierarchy, devX, devY);
+    },
+    [capture.hierarchy, scaleX, scaleY],
+  );
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const hits = hitTest(e.clientX, e.clientY);
@@ -128,10 +138,7 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
     el.addEventListener("contextmenu", handler, true);
 
     return () => el.removeEventListener("contextmenu", handler, true);
-
-    // over current scale/capture on every render; the listener always sees
-    // the latest via the closure created on this effect invocation.
-  }, [capture, scaleX, scaleY]);
+  }, [hitTest]);
 
   const stackItems = useMemo<ContextMenuItem[]>(() => {
     if (!stackMenu) {
