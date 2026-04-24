@@ -447,6 +447,7 @@ export const startAgent = (
   permissionMode?: string,
   resumeSessionId?: string,
   appendSystemPrompt?: string,
+  agentId?: string,
 ): Promise<AgentStatus> =>
   invoke("start_agent", {
     sessionId,
@@ -456,6 +457,7 @@ export const startAgent = (
       resumeSessionId !== "" && { resumeSessionId }),
     ...(appendSystemPrompt != null &&
       appendSystemPrompt !== "" && { appendSystemPrompt }),
+    ...(agentId != null && agentId !== "" && { agentId }),
   });
 
 export const stopAgent = (agentId: string): Promise<void> =>

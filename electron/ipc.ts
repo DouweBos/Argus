@@ -624,6 +624,9 @@ export function registerIpcHandlers(): void {
       a.permissionMode as string | undefined,
       a.resumeSessionId as string | undefined,
       a.appendSystemPrompt as string | undefined,
+      undefined,
+      undefined,
+      a.agentId as string | undefined,
     ),
   );
   handle("stop_agent", (a) => stopAgent(a.agentId as string));
