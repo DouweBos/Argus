@@ -210,6 +210,7 @@ export function initExternalAgentStarted(): void {
       status: info.status,
       permission_mode: info.permission_mode,
       parent_agent_id: info.parent_agent_id,
+      created_at: info.created_at,
     });
     startAgentListening(info.agent_id);
     // Derive a human-readable title from the prompt the MCP tool sent.

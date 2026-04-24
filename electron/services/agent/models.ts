@@ -52,6 +52,12 @@ export interface AgentSession {
   controlHandler: ControlHandler | null;
   /** Agent that spawned this one via MCP `spawn_agent` (null for user-initiated). */
   parentAgentId: string | null;
+  /**
+   * Unix ms timestamp captured when this agent session was first created.
+   * Preserved across restore-at-turn respawns so the agent's creation time
+   * is stable through the agent's lifetime.
+   */
+  createdAt: number;
   /** Captured when the agent emits its final `type: "result"` event. */
   resultSummary: AgentResult | null;
   /**
@@ -94,6 +100,8 @@ export interface AgentInfo {
   session_id: string;
   status: AgentStatusValue;
   parent_agent_id: string | null;
+  /** Unix ms timestamp when the agent session was created. */
+  created_at: number;
   /**
    * Initialize-response capabilities (commands, models, agents) captured during
    * the CLI handshake. Returned inline so the renderer has them immediately
