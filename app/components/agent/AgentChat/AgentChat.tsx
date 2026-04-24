@@ -19,8 +19,10 @@ import {
   interruptAgent,
   setAgentModel as ipcSetAgentModel,
   setAgentPermissionMode as ipcSetAgentPermissionMode,
+  readFile,
   respondToPermission,
   sendAgentMessage,
+  writeFile,
 } from "../../../lib/ipc";
 import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
@@ -30,6 +32,7 @@ import {
 } from "../../../stores/agentStore";
 import {
   type ConversationMessage,
+  type ToolCallInfo,
   addUserMessage,
   clearAgentTodos,
   clearConversation,
@@ -449,6 +452,62 @@ export function AgentChat({
     [agentId],
   );
 
+  const handleSaveToolCallToDisk = useCallback(
+    async (toolCall: ToolCallInfo) => {
+      const filePath = toolCall.input.file_path;
+      if (typeof filePath !== "string" || !filePath) {
+        return;
+      }
+      try {
+        if (toolCall.name === "Write") {
+          const content = toolCall.input.content;
+          if (typeof content !== "string") {
+            return;
+          }
+          await writeFile(sessionId, filePath, content);
+
+          return;
+        }
+        if (toolCall.name === "Edit") {
+          const { old_string: oldStr, new_string: newStr } = toolCall.input;
+          if (typeof oldStr !== "string" || typeof newStr !== "string") {
+            return;
+          }
+          const current = await readFile(sessionId, filePath);
+          const next = toolCall.input.replace_all
+            ? current.split(oldStr).join(newStr)
+            : current.replace(oldStr, newStr);
+          await writeFile(sessionId, filePath, next);
+
+          return;
+        }
+        if (
+          toolCall.name === "MultiEdit" &&
+          Array.isArray(toolCall.input.edits)
+        ) {
+          let current = await readFile(sessionId, filePath);
+          for (const edit of toolCall.input.edits as Record<
+            string,
+            unknown
+          >[]) {
+            const oldStr = edit.old_string;
+            const newStr = edit.new_string;
+            if (typeof oldStr !== "string" || typeof newStr !== "string") {
+              continue;
+            }
+            current = edit.replace_all
+              ? current.split(oldStr).join(newStr)
+              : current.replace(oldStr, newStr);
+          }
+          await writeFile(sessionId, filePath, current);
+        }
+      } catch {
+        // Best-effort — file may not exist yet or disk state may have drifted.
+      }
+    },
+    [sessionId],
+  );
+
   const handleInterrupt = useCallback(async () => {
     if (!agentId) {
       return;
@@ -599,6 +658,9 @@ export function AgentChat({
               onPermissionRespond={
                 readOnly ? undefined : handlePermissionRespond
               }
+              onSaveToolCallToDisk={
+                readOnly ? undefined : handleSaveToolCallToDisk
+              }
             />
           ) : (
             <ChatMessage
@@ -610,6 +672,9 @@ export function AgentChat({
               onFork={readOnly ? undefined : handleForkMessage}
               onPermissionRespond={
                 readOnly ? undefined : handlePermissionRespond
+              }
+              onSaveToolCallToDisk={
+                readOnly ? undefined : handleSaveToolCallToDisk
               }
             />
           ),

@@ -1,4 +1,7 @@
-import type { ConversationMessage } from "../../../stores/conversationStore";
+import type {
+  ConversationMessage,
+  ToolCallInfo,
+} from "../../../stores/conversationStore";
 import { useState } from "react";
 import { Icons } from "@argus/peacock";
 import { ToolCallCard } from "../ToolCallCard";
@@ -14,12 +17,14 @@ interface CollapsedToolGroupProps {
     allowRule?: string,
     allowAll?: boolean,
   ) => void;
+  onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
 
 export function CollapsedToolGroup({
   agentId,
   messages,
   onPermissionRespond,
+  onSaveToolCallToDisk,
 }: CollapsedToolGroupProps) {
   const hasPendingPermission = messages.some((m) =>
     m.toolCalls.some((tc) => tc.pendingPermission),
@@ -102,6 +107,7 @@ export function CollapsedToolGroup({
                 agentId={agentId}
                 toolCall={tc}
                 onPermissionRespond={onPermissionRespond}
+                onSaveToDisk={onSaveToolCallToDisk}
               />
             )),
           )}
