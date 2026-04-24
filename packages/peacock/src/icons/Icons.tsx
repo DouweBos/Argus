@@ -427,7 +427,7 @@ export function ChevronDownIcon({ size = 10, className, ...rest }: IconProps) {
   );
 }
 
-export function ChevronUpIcon({ size = 12, className, ...rest }: IconProps) {
+export function ChevronUpIcon({ size = 10, className, ...rest }: IconProps) {
   return (
     <svg
       className={className}
@@ -437,7 +437,7 @@ export function ChevronUpIcon({ size = 12, className, ...rest }: IconProps) {
       viewBox="0 0 16 16"
       width={size}
     >
-      <path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z" />
+      <path d="M4.646 11.354a.5.5 0 0 0 .708 0L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708l-3-3a.5.5 0 0 0-.708 0l-3 3a.5.5 0 0 0 0 .708z" />
     </svg>
   );
 }

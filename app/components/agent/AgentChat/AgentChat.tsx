@@ -40,6 +40,7 @@ import {
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
+import { ChatSearchBar } from "../ChatSearchBar";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
 import { ForkSessionDialog } from "../ForkSessionDialog";
 import { TodoList } from "../TodoList";
@@ -128,6 +129,7 @@ export function AgentChat({
     {},
   );
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const messages = conversation?.messages ?? EMPTY_MESSAGES;
   const queuedMessages = conversation?.queuedMessages ?? [];
@@ -275,12 +277,18 @@ export function AgentChat({
     recheckAtBottom();
   }, [segments, recheckAtBottom]);
 
-  // Cmd+L / Ctrl+L to focus the input
+  // Cmd+L / Ctrl+L to focus the input, Cmd+F / Ctrl+F to open find-in-chat.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "l") {
         e.preventDefault();
         chatInputRef.current?.focus();
+
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === "f" || e.key === "F")) {
+        e.preventDefault();
+        setSearchOpen(true);
       }
     };
 
@@ -327,6 +335,7 @@ export function AgentChat({
   if (prevAgentId !== agentId) {
     setPrevAgentId(agentId);
     setWasThinking(false);
+    setSearchOpen(false);
   } else if (isThinking && !wasThinking) {
     setSpinnerVerb(randomSpinnerVerb());
     setWasThinking(true);
@@ -560,6 +569,14 @@ export function AgentChat({
             )}
           </div>
         </div>
+      )}
+
+      {searchOpen && (
+        <ChatSearchBar
+          containerRef={messagesContainerRef}
+          messagesVersion={messages.length}
+          onClose={() => setSearchOpen(false)}
+        />
       )}
 
       <div ref={messagesContainerRef} className={styles.messages}>
