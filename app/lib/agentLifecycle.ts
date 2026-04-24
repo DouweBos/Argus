@@ -2,6 +2,7 @@ import type { AgentStatus } from "./types";
 import {
   addAgent,
   getAgent,
+  removeAgent,
   setActiveAgent,
   updateAgent,
 } from "../stores/agentStore";
@@ -11,6 +12,7 @@ import {
   setCapabilities,
 } from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
+import { pushError } from "../stores/notificationsStore";
 import { selectSession } from "../stores/sessionStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
 import {
@@ -38,31 +40,52 @@ export async function startAgentInSession(
 ): Promise<AgentStatus> {
   const { focus = true, model, permissionMode, resumeSessionId } = options;
 
-  const info = await apiStartAgent(
-    sessionId,
-    model,
-    permissionMode,
-    resumeSessionId,
-  );
-  startAgentListening(info.agent_id);
-  addAgent({
-    agent_id: info.agent_id,
-    session_id: info.session_id,
-    status: info.status,
+  // Optimistic path: mint the agent id on the renderer so the agent row,
+  // active selection, and center-view switch can land in the store
+  // synchronously. The backend's `start_agent` spawns a child process and
+  // blocks on the CLI initialize handshake (can be 1–3s); without this the
+  // "New Agent" button feels laggy.
+  const agentId = crypto.randomUUID();
+  const optimistic: AgentStatus = {
+    agent_id: agentId,
+    session_id: sessionId,
+    status: "idle",
     permission_mode: permissionMode,
-  });
-  // Capabilities are returned inline on start_agent because the backend's
-  // `agent:capabilities` event fires before renderer listeners attach and
-  // would otherwise be lost — seed the store directly.
-  if (info.capabilities) {
-    setCapabilities(info.agent_id, info.capabilities);
-  }
-
+  };
+  startAgentListening(agentId);
+  addAgent(optimistic);
   if (focus) {
-    focusAgent(info.session_id, info.agent_id);
+    focusAgent(sessionId, agentId);
   }
 
-  return info;
+  try {
+    const info = await apiStartAgent(
+      sessionId,
+      model,
+      permissionMode,
+      resumeSessionId,
+      undefined,
+      agentId,
+    );
+    // Reconcile backend-authoritative fields onto the optimistic entry.
+    // The id is identical, so no replace — just patch any drift.
+    updateAgent(agentId, {
+      status: info.status,
+      parent_agent_id: info.parent_agent_id,
+    });
+    // Capabilities are returned inline on start_agent because the backend's
+    // `agent:capabilities` event fires before renderer listeners attach and
+    // would otherwise be lost — seed the store directly.
+    if (info.capabilities) {
+      setCapabilities(agentId, info.capabilities);
+    }
+
+    return info;
+  } catch (err) {
+    removeAgent(agentId);
+    pushError(err instanceof Error ? err.message : String(err), "start_agent");
+    throw err;
+  }
 }
 
 /**
