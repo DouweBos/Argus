@@ -107,8 +107,10 @@ async function spawnHost(taskId: string): Promise<void> {
 
   updateOrgTask(taskId, { host_session_id: session.id });
 
-  // Spawn the agent.
-  const agentInfo = await startAgent(session.id);
+  // Spawn the agent in plan mode — tasks must always present a plan
+  // before any work begins, so the user can approve scope and assignments
+  // before child agents are spawned.
+  const agentInfo = await startAgent(session.id, undefined, "plan");
   updateOrgTask(taskId, { host_agent_id: agentInfo.agent_id });
 
   // Deliver the shared prompt + org context as the first user message.
@@ -130,7 +132,9 @@ async function spawnHost(taskId: string): Promise<void> {
     "",
     scopeLines,
     "",
-    "You are running in a neutral session that is not a worktree of any scope repo. The repos above are available via the Argus MCP tools — you can read and edit their files directly at their absolute paths for simple or sequential work. When a change is genuinely parallelizable, call `spawn_agent` or `spawn_agents_batch` with the target `repo_root` to do the work in an isolated worktree.",
+    "You are running in a neutral session that is not a worktree of any scope repo. You may read files in the scope repos directly at their absolute paths to gather context, but you MUST NOT edit, create, or delete any files in those repo directories — they are the user's working trees and changes there would land outside any branch the user can review or merge.",
+    "",
+    "All work happens in worktrees. For every scope repo you need to change, call `spawn_agents_batch` with one entry per `project_path` (or, for a single repo, `create_session` followed by `spawn_agent`) — that creates a fresh worktree on a task-specific branch and spawns a child agent inside it. Coordinate the children from this host; never bypass them by editing repo files yourself.",
   ].join("\n");
 
   // Notify the renderer so the agent store registers this agent and its
@@ -141,7 +145,7 @@ async function spawnHost(taskId: string): Promise<void> {
     agent_id: agentInfo.agent_id,
     session_id: agentInfo.session_id,
     status: agentInfo.status,
-    permission_mode: undefined,
+    permission_mode: "plan",
     parent_agent_id: agentInfo.parent_agent_id,
     initial_prompt: combined,
   });
