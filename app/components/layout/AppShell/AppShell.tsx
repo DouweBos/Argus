@@ -59,6 +59,7 @@ import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
 import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
 import { ToolRail } from "../../toolrail/ToolRail";
+import { BottomPanel } from "../BottomPanel";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { PermissionBanner } from "../PermissionBanner";
 import { ResizablePanel } from "../ResizablePanel";
@@ -264,10 +265,13 @@ export function AppShell() {
         )}
 
         <main className={styles.center}>
-          <ErrorBoundary>
-            {renderCenter(selectedId, centerView, isNotificationsRoute)}
-          </ErrorBoundary>
-          <PermissionBanner />
+          <div className={styles.centerContent}>
+            <ErrorBoundary>
+              {renderCenter(selectedId, centerView, isNotificationsRoute)}
+            </ErrorBoundary>
+            <PermissionBanner />
+          </div>
+          {selectedId !== null && <BottomPanel sessionId={selectedId} />}
         </main>
 
         {selectedId !== null && <ToolPanel sessionId={selectedId} />}

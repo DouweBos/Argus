@@ -64,6 +64,12 @@ import {
 import { getMjpegPort } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
 import {
+  listDebugStreams,
+  runDebugCommand,
+  startDebugStream,
+  stopDebugStream,
+} from "./services/conductor/debug";
+import {
   listDevices,
   stopDevice,
   type DevicePlatform,
@@ -1026,6 +1032,26 @@ export function registerIpcHandlers(): void {
     const finalArgs = hasDeviceFlag ? args : [...args, "--device", deviceKey];
     await execConductor(deviceKey, finalArgs);
   });
+
+  // Debug panel — streaming conductor subprocesses + one-shot probes.
+  handle("debug_start_stream", (a) => {
+    startDebugStream({
+      streamId: a.streamId as string,
+      deviceKey: a.deviceKey as string,
+      args: a.args as string[],
+    });
+
+    return null;
+  });
+  handle("debug_stop_stream", (a) => {
+    stopDebugStream(a.streamId as string);
+
+    return null;
+  });
+  handle("debug_list_streams", () => listDebugStreams());
+  handle("debug_run_command", (a) =>
+    runDebugCommand(a.deviceKey as string, a.args as string[]),
+  );
 
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));

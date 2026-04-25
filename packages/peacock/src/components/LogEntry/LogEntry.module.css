@@ -1,0 +1,139 @@
+.row {
+  display: grid;
+  grid-template-columns: 3px 1fr;
+  gap: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.45;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--border-subtle) 50%, transparent);
+}
+
+.gutter {
+  background: transparent;
+}
+
+.level_error .gutter {
+  background: var(--error);
+}
+
+.level_warning .gutter {
+  background: var(--warning);
+}
+
+.level_info .gutter,
+.level_log .gutter {
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.level_debug .gutter,
+.level_verbose .gutter {
+  background: color-mix(in srgb, var(--text-muted) 40%, transparent);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: 14px 76px 32px auto 1fr;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 10px 4px 6px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  min-width: 0;
+}
+
+.head:disabled {
+  cursor: default;
+}
+
+.head:hover:not(:disabled) {
+  background: var(--scrim-sm);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  width: 14px;
+}
+
+.time {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border-radius: var(--border-radius-sm);
+  padding: 1px 4px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.badge_error {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.badge_warning {
+  background: var(--warning-overlay-lg);
+  color: var(--warning);
+}
+
+.badge_info,
+.badge_log {
+  background: var(--accent-overlay-lg);
+  color: var(--accent);
+}
+
+.badge_debug,
+.badge_verbose {
+  background: var(--surface-3);
+  color: var(--text-secondary);
+}
+
+.source {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.message {
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.level_error .message {
+  color: var(--error);
+}
+
+.level_warning .message {
+  color: var(--warning);
+}
+
+.stack {
+  margin: 0;
+  padding: 4px 10px 8px 32px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
+}

@@ -2,9 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getLayoutState,
+  setBottomPanelHeight,
   setLayoutState,
   setLeftPanelWidth,
-  setToolPanelWidth,
+  setRightPanelWidth,
   toggleLeftSidebar,
   toggleTool,
 } from "./layoutStore";
@@ -27,14 +28,19 @@ describe("layoutStore", () => {
     setLayoutState({
       leftSidebarVisible: true,
       leftPanelWidth: 0.18,
-      activeToolBySessionId: {},
-      lastActiveToolBySessionId: {},
+      activeRightToolBySessionId: {},
+      activeBottomToolBySessionId: {},
+      lastActiveRightToolBySessionId: {},
+      lastActiveBottomToolBySessionId: {},
       mountedToolIds: {
         changes: false,
+        debug: false,
+        notifications: false,
         simulator: false,
         terminal: false,
       },
-      toolPanelWidth: 0.3,
+      rightPanelWidth: 0.3,
+      bottomPanelHeight: 0.3,
     });
   });
 
@@ -42,8 +48,10 @@ describe("layoutStore", () => {
     const state = getLayoutState();
     expect(state.leftSidebarVisible).toBe(true);
     expect(state.leftPanelWidth).toBe(0.18);
-    expect(state.activeToolBySessionId).toEqual({});
-    expect(state.toolPanelWidth).toBe(0.3);
+    expect(state.activeRightToolBySessionId).toEqual({});
+    expect(state.activeBottomToolBySessionId).toEqual({});
+    expect(state.rightPanelWidth).toBe(0.3);
+    expect(state.bottomPanelHeight).toBe(0.3);
   });
 
   it("toggles left sidebar", () => {
@@ -58,30 +66,54 @@ describe("layoutStore", () => {
     expect(getLayoutState().leftPanelWidth).toBe(0.25);
   });
 
-  it("toggles tool open for current session", () => {
+  it("opens a bottom tool in the bottom slot", () => {
     toggleTool("terminal");
-    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBe("terminal");
+    expect(getLayoutState().activeBottomToolBySessionId["ws-1"]).toBe(
+      "terminal",
+    );
+    expect(getLayoutState().activeRightToolBySessionId["ws-1"]).toBeUndefined();
+  });
+
+  it("opens a right tool in the right slot", () => {
+    toggleTool("simulator");
+    expect(getLayoutState().activeRightToolBySessionId["ws-1"]).toBe(
+      "simulator",
+    );
+    expect(
+      getLayoutState().activeBottomToolBySessionId["ws-1"],
+    ).toBeUndefined();
+  });
+
+  it("right and bottom panels stay independent", () => {
+    toggleTool("terminal");
+    toggleTool("simulator");
+    expect(getLayoutState().activeBottomToolBySessionId["ws-1"]).toBe(
+      "terminal",
+    );
+    expect(getLayoutState().activeRightToolBySessionId["ws-1"]).toBe(
+      "simulator",
+    );
   });
 
   it("toggles same tool closed", () => {
     toggleTool("terminal");
     toggleTool("terminal");
-    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBeNull();
+    expect(getLayoutState().activeBottomToolBySessionId["ws-1"]).toBeNull();
   });
 
-  it("remembers the last active tool per session after closing", () => {
+  it("remembers the last active tool per session and placement after closing", () => {
     toggleTool("simulator");
     toggleTool("simulator");
-    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBeNull();
-    expect(getLayoutState().lastActiveToolBySessionId["ws-1"]).toBe(
+    expect(getLayoutState().activeRightToolBySessionId["ws-1"]).toBeNull();
+    expect(getLayoutState().lastActiveRightToolBySessionId["ws-1"]).toBe(
       "simulator",
     );
   });
 
-  it("switches tool when different id toggled", () => {
+  it("switches tool when different id in same placement is toggled", () => {
     toggleTool("terminal");
-    toggleTool("simulator");
-    expect(getLayoutState().activeToolBySessionId["ws-1"]).toBe("simulator");
+    toggleTool("debug");
+    expect(getLayoutState().activeBottomToolBySessionId["ws-1"]).toBe("debug");
   });
 
   it("marks a tool mounted when opened and keeps it after close", () => {
@@ -92,8 +124,10 @@ describe("layoutStore", () => {
     expect(getLayoutState().mountedToolIds.terminal).toBe(true);
   });
 
-  it("sets tool panel width", () => {
-    setToolPanelWidth(0.4);
-    expect(getLayoutState().toolPanelWidth).toBe(0.4);
+  it("sets right and bottom panel sizes", () => {
+    setRightPanelWidth(0.4);
+    setBottomPanelHeight(0.5);
+    expect(getLayoutState().rightPanelWidth).toBe(0.4);
+    expect(getLayoutState().bottomPanelHeight).toBe(0.5);
   });
 });

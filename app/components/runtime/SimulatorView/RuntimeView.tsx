@@ -10,7 +10,6 @@ import {
   useActiveDeviceKey,
   useRuntimeViewSimulatorState,
 } from "../../../stores/simulatorStore";
-import { ConductorLogPanel } from "../../devices/DeviceDialog/ConductorLogPanel";
 import { RuntimeTargetPicker } from "../RuntimeTargetPicker/RuntimeTargetPicker";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
@@ -63,7 +62,7 @@ export function RuntimeView({
     runtimeMode,
     setRuntimeMode,
   } = useRuntimeViewSimulatorState();
-  const activeToolId = useActiveToolId();
+  const activeToolId = useActiveToolId("right");
   const activeDeviceKey = useActiveDeviceKey(sessionId, platform);
 
   useEffect(() => {
@@ -230,7 +229,7 @@ export function RuntimeView({
             </div>
           </div>
         </div>
-        {runtimeDialogOpen && (
+        {runtimeDialogOpen && runtimeMode === "inspect" && (
           <div className={styles.sidePanel} style={{ width: sidePanelWidth }}>
             <div
               role="separator"
@@ -239,10 +238,7 @@ export function RuntimeView({
               className={styles.sidePanelResizer}
               onMouseDown={onSidePanelResize}
             />
-            {runtimeMode === "inspect" && <NodeMetadataPanel />}
-            {runtimeMode !== "inspect" && activeDeviceKey && (
-              <ConductorLogPanel deviceKey={activeDeviceKey} />
-            )}
+            <NodeMetadataPanel />
           </div>
         )}
       </div>

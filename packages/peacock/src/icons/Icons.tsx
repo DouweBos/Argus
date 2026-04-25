@@ -130,6 +130,47 @@ export function StopIcon({ size = 13, className, ...rest }: IconProps) {
   );
 }
 
+export function PauseIcon({ size = 13, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="10" rx="1" width="3" x="4" y="3" />
+      <rect height="10" rx="1" width="3" x="9" y="3" />
+    </svg>
+  );
+}
+
+export function ScrollToBottomIcon({
+  size = 13,
+  className,
+  ...rest
+}: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 2v8" />
+      <path d="M4.5 7L8 10.5 11.5 7" />
+      <path d="M3 13.25h10" />
+    </svg>
+  );
+}
+
 export function SendIcon({ size = 13, className, ...rest }: IconProps) {
   return (
     <svg
@@ -1274,6 +1315,30 @@ export function OrganizationIcon({ size = 12, className, ...rest }: IconProps) {
         opacity="0.65"
       />
       <rect x="9.25" y="9.25" width="5.5" height="5.5" rx="1.25" />
+    </svg>
+  );
+}
+
+export function BugIcon({ size = 18, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M5.25 5.25h5.5a2 2 0 0 1 2 2v2.25a4.25 4.25 0 0 1-8.5 0V7.25a2 2 0 0 1 1-1.73Z" />
+      <path d="M6 5.25V4.5a2 2 0 1 1 4 0v.75" />
+      <path d="M8 9v3.75" />
+      <path d="M2.75 7.5h1.75M2.75 11h2" />
+      <path d="M13.25 7.5H11.5M13.25 11h-2" />
+      <path d="M3.5 4.25 5 5.5M12.5 4.25 11 5.5" />
     </svg>
   );
 }

@@ -1,9 +1,8 @@
 import type { SVGProps } from "react";
-import { useLocation } from "react-router-dom";
 import { Icons } from "@argus/peacock";
-import { setCenterView } from "../../../stores/centerViewStore";
 import {
   type ToolId,
+  TOOL_PLACEMENT,
   toggleTool,
   useActiveToolId,
 } from "../../../stores/layoutStore";
@@ -24,56 +23,43 @@ interface ToolDef {
   label: string;
 }
 
-const TOOLS: ToolDef[] = [
+const TOP_TOOLS: ToolDef[] = [
   { id: "changes", label: "Changes", icon: Icons.GitChangesIcon },
-  { id: "terminal", label: "Terminal", icon: Icons.TerminalToolIcon },
   { id: "simulator", label: "Simulator", icon: Icons.SimulatorIcon },
 ];
 
+const BOTTOM_TOOLS: ToolDef[] = [
+  { id: "terminal", label: "Terminal", icon: Icons.TerminalToolIcon },
+  { id: "debug", label: "Debug", icon: Icons.BugIcon },
+  { id: "notifications", label: "Warnings & errors", icon: Icons.WarningIcon },
+];
+
 export function ToolRail() {
-  const activeToolId = useActiveToolId();
+  const activeRightToolId = useActiveToolId("right");
+  const activeBottomToolId = useActiveToolId("bottom");
   const selectedSessionId = useSelectedSessionId();
-  const location = useLocation();
   const notifications = useNotifications();
   const unseen = useUnseenNotificationCount();
 
-  const notificationsActive =
-    location.pathname.replace(/\/+$/, "") === "/notifications";
   const hasEntries = notifications.length > 0;
   const hasError = notifications.some((n) => n.level === "error");
 
-  const openNotifications = () => {
-    if (notificationsActive) {
-      return;
-    }
-    setCenterView("notifications");
-  };
+  const renderTool = ({ id, label, icon: Icon }: ToolDef) => {
+    const active =
+      TOOL_PLACEMENT[id] === "right"
+        ? activeRightToolId === id
+        : activeBottomToolId === id;
 
-  return (
-    <div className={styles.rail}>
-      {selectedSessionId !== null &&
-        TOOLS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            aria-label={label}
-            className={`${styles.tool} ${activeToolId === id ? styles.active : ""}`}
-            title={label}
-            onClick={() => toggleTool(id)}
-          >
-            <Icon size={18} />
-          </button>
-        ))}
-
-      <div className={styles.spacer} />
-
+    return (
       <button
-        aria-label="Warnings and errors"
-        className={`${styles.tool} ${notificationsActive ? styles.active : ""}`}
-        title="Warnings & errors"
-        onClick={openNotifications}
+        key={id}
+        aria-label={label}
+        className={`${styles.tool} ${active ? styles.active : ""}`}
+        title={label}
+        onClick={() => toggleTool(id)}
       >
-        <Icons.WarningIcon size={18} />
-        {hasEntries && (
+        <Icon size={18} />
+        {id === "notifications" && hasEntries && (
           <span
             className={`${styles.badge} ${hasError ? styles.badgeError : styles.badgeWarning}`}
             data-unseen={unseen > 0 ? "true" : "false"}
@@ -82,6 +68,18 @@ export function ToolRail() {
           </span>
         )}
       </button>
+    );
+  };
+
+  if (selectedSessionId === null) {
+    return <div className={styles.rail} />;
+  }
+
+  return (
+    <div className={styles.rail}>
+      {TOP_TOOLS.map(renderTool)}
+      <div className={styles.spacer} />
+      {BOTTOM_TOOLS.map(renderTool)}
     </div>
   );
 }
