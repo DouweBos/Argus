@@ -1,11 +1,10 @@
 
 ### Minor Changes
 
-- 8c3cc41: Add a native menu bar with quick actions for new sessions, opening projects, jumping to Agents/Devices/Runtimes/Pull Requests/Review Queue/Notifications/Organizations, toggling panels and tools, and opening the command palette.
+- 494c536: Argus now checks for updates automatically and prompts you to restart when a new version finishes downloading. The Help menu has a manual "Check for Updates…" item, and the home screen shows a banner with a "See changes" button that opens the release notes — extracted from the changelog at build time — inside the running app.
 
 ### Patch Changes
 
-- 92e53d9: New sessions no longer steal focus when they finish initializing. The agent still starts and runs your prompt in the background — open the session yourself when you want to check on it.
-- Updated dependencies [ef5d5f5]
-  - @argus/peacock@0.4.1
+- 1d07bdd: Editing a chat message now keeps the bubble's original width and height instead of collapsing it into a small text input.
+- d916c2d: Removed the "Link issue" pill from the chat input. It will return in a later update.
 
