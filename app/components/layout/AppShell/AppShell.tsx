@@ -30,7 +30,9 @@ import {
   toggleLeftSidebar,
   toggleRightPanel,
   toggleTool,
+  TOOL_PLACEMENT,
   useLeftSidebarVisible,
+  useMountedToolIds,
 } from "../../../stores/layoutStore";
 import { openOpenPalette } from "../../../stores/openPaletteStore";
 import { useOrgTaskSync } from "../../../stores/orgTaskStore";
@@ -124,6 +126,10 @@ function renderCenter(
 
 export function AppShell() {
   const selectedId = useSelectedSessionId();
+  const mountedToolIds = useMountedToolIds();
+  const anyBottomToolMounted = (
+    Object.keys(mountedToolIds) as (keyof typeof mountedToolIds)[]
+  ).some((id) => TOOL_PLACEMENT[id] === "bottom" && mountedToolIds[id]);
   const centerView = useCenterView();
   const location = useLocation();
   const isNotificationsRoute =
@@ -281,7 +287,9 @@ export function AppShell() {
             </ErrorBoundary>
             <PermissionBanner />
           </div>
-          {selectedId !== null && <BottomPanel sessionId={selectedId} />}
+          {selectedId !== null && anyBottomToolMounted && (
+            <BottomPanel sessionId={selectedId} />
+          )}
         </main>
 
         {selectedId !== null && <ToolPanel sessionId={selectedId} />}
