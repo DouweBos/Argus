@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import {
   type ToolId,
@@ -6,7 +5,6 @@ import {
   setBottomPanelHeight,
   toggleTool,
   useActiveToolId,
-  useLastActiveToolId,
   useMountedToolIds,
 } from "../../../stores/layoutStore";
 import { DebugTool } from "../../toolrail/tools/DebugTool";
@@ -48,33 +46,15 @@ export function BottomPanel({ sessionId }: BottomPanelProps) {
   const activeToolId = useActiveToolId("bottom");
   const mountedToolIds = useMountedToolIds();
 
-  const lastActiveToolId = useLastActiveToolId("bottom");
-  const displayToolId = activeToolId ?? lastActiveToolId;
-
-  const prevSessionIdRef = useRef(sessionId);
-  const [noAnimate, setNoAnimate] = useState(false);
-  useLayoutEffect(() => {
-    if (prevSessionIdRef.current === sessionId) {
-      return;
-    }
-    prevSessionIdRef.current = sessionId;
-    /* eslint-disable react-hooks/set-state-in-effect --
-       One-frame flag flip mirrors ToolPanel: we want the panel to snap to
-       its new collapsed state on session navigation, not animate. */
-    setNoAnimate(true);
-    const raf = requestAnimationFrame(() => setNoAnimate(false));
-    /* eslint-enable react-hooks/set-state-in-effect */
-
-    return () => cancelAnimationFrame(raf);
-  }, [sessionId]);
+  if (!activeToolId) {
+    return null;
+  }
 
   return (
     <ResizablePanel
-      collapsed={!activeToolId}
       defaultWidth={0.3}
       maxWidth={0.7}
       minWidth={0.15}
-      noAnimate={noAnimate}
       side="bottom"
       onResize={setBottomPanelHeight}
     >
@@ -85,7 +65,7 @@ export function BottomPanel({ sessionId }: BottomPanelProps) {
               <button
                 key={id}
                 className={styles.tab}
-                data-active={id === displayToolId}
+                data-active={id === activeToolId}
                 onClick={() => toggleTool(id)}
               >
                 {TOOL_LABELS[id]}
@@ -95,7 +75,7 @@ export function BottomPanel({ sessionId }: BottomPanelProps) {
           <button
             className={styles.closeBtn}
             title="Close panel"
-            onClick={() => activeToolId && toggleTool(activeToolId)}
+            onClick={() => toggleTool(activeToolId)}
           >
             <Icons.CloseIcon size={10} />
           </button>
@@ -105,7 +85,7 @@ export function BottomPanel({ sessionId }: BottomPanelProps) {
             <div
               key={id}
               className={styles.toolSlot}
-              data-visible={id === displayToolId}
+              data-visible={id === activeToolId}
             >
               {mountedToolIds[id] && renderToolContent(id, sessionId)}
             </div>
