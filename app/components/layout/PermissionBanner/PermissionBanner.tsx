@@ -25,6 +25,7 @@ import styles from "./PermissionBanner.module.css";
 
 interface PendingEntry {
   agentId: string;
+  projectName: string | null;
   sessionId: string;
   sessionLabel: string;
   toolInput: Record<string, unknown>;
@@ -90,6 +91,9 @@ export function PermissionBanner() {
       const session = sessions.find((w) => w.id === agent.session_id);
       const sessionLabel =
         session?.display_name || session?.branch || agent.session_id;
+      const projectName = session?.repo_root
+        ? (session.repo_root.split("/").filter(Boolean).pop() ?? null)
+        : null;
 
       for (const msg of conv.messages) {
         if (msg.role !== "assistant") {
@@ -99,6 +103,7 @@ export function PermissionBanner() {
           if (tc.pendingPermission) {
             entries.push({
               agentId,
+              projectName,
               sessionId: agent.session_id,
               sessionLabel,
               toolUseId: tc.id,
@@ -174,7 +179,9 @@ export function PermissionBanner() {
                   type="button"
                 >
                   <Badge tone="neutral" size="tag">
-                    {entry.sessionLabel}
+                    {entry.projectName
+                      ? `${entry.projectName} / ${entry.sessionLabel}`
+                      : entry.sessionLabel}
                   </Badge>
                 </button>
               </div>
