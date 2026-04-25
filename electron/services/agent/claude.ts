@@ -45,7 +45,7 @@ import type { RuntimePlatform } from "../session/models";
 import { app } from "electron";
 import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -317,6 +317,17 @@ export async function startAgent(
   // protects MCP / IPC entry points that don't.
   if (!argusSession.path) {
     throw `Session ${sessionId} is still initializing`;
+  }
+  // The on-disk working directory can disappear between session creation and
+  // agent spawn — most commonly for org_host sessions whose host dir was
+  // pruned by a stale-task cleanup (e.g. another Argus instance running
+  // `initOrgTasks`). Without this guard `spawn` fails with a confusing
+  // `ENOENT` that points at the binary, the optimistic agent gets removed,
+  // and the new-agent tab appears to vanish on click.
+  if (!existsSync(argusSession.path)) {
+    appState.sessions.delete(sessionId);
+    broadcastToRenderers("session:deleted", sessionId);
+    throw `Session working directory no longer exists: ${argusSession.path}`;
   }
   const worktreePath = argusSession.path;
 
