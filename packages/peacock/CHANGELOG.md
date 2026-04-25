@@ -1,5 +1,17 @@
 # @argus/peacock
 
+## 0.4.0
+
+### Minor Changes
+
+- 64ad9f3: A new Debug panel in the toolrail lets you watch live conductor output for any device. It ships with two tools — streaming app logs and a periodic memory sampler — and is scaffolded so more device diagnostics can slot in as conductor adds them.
+- 70f9047: App settings and project settings now open in a shared iPad-style screen with a list of sections on the left and the active section's controls on the right. Project settings can now also configure protected branches and the preferred pull-request template.
+
+### Patch Changes
+
+- 1bfc1c3: Chat input now expands to fill its wrapper when it has no action pills, so long prompts no longer get cut off behind the send button.
+- 18184d4: Running tasks in the sidebar now show an empty checkbox — the checkmark only appears once a task is completed, so a checked box reliably means "done".
+
 ## 0.3.0
 
 ### Minor Changes
