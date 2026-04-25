@@ -4,10 +4,21 @@ import type {
   ArgusConfig,
   WorkspaceEnvConfig,
 } from "../../../lib/types";
-import { useEffect, useState } from "react";
-import { Button, Icons, Input, TextArea } from "@argus/peacock";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Button,
+  Icons,
+  Input,
+  SettingsDialogShell,
+  SettingsScreenDetail,
+  SettingsScreenDetailBody,
+  SettingsScreenDetailHeader,
+  TextArea,
+  type SettingsDialogGroup,
+} from "@argus/peacock";
 import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
-import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
+import { dialogStyles as styles } from "../../shared/Dialog";
+import sectionStyles from "./SetupConfigDialog.module.css";
 
 interface SetupConfigDialogProps {
   onClose: () => void;
@@ -145,53 +156,7 @@ function useBrowserPresetListState(initial: BrowserPresetEntry[]) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  ConfigSection — collapsible group                                  */
-/* ------------------------------------------------------------------ */
-
-interface ConfigSectionProps {
-  children: React.ReactNode;
-  defaultOpen: boolean;
-  description: string;
-  summary: string;
-  title: string;
-}
-
-function ConfigSection({
-  title,
-  summary,
-  description,
-  defaultOpen,
-  children,
-}: ConfigSectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div className={styles.configSection}>
-      <button
-        className={styles.configSectionHeader}
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-      >
-        <Icons.ChevronRightIcon
-          className={`${styles.configSectionChevron} ${open ? styles.configSectionChevronExpanded : ""}`}
-        />
-        <span className={styles.configSectionTitle}>{title}</span>
-        {!open && summary && (
-          <span className={styles.configSectionSummary}>{summary}</span>
-        )}
-      </button>
-      {open && (
-        <div className={styles.configSectionBody}>
-          <p className={styles.configSectionDesc}>{description}</p>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Sub-components                                                     */
+/*  Reusable field sub-components                                      */
 /* ------------------------------------------------------------------ */
 
 interface ListFieldProps {
@@ -242,20 +207,19 @@ function ListField({ label, placeholder, emptyLabel, list }: ListFieldProps) {
   );
 }
 
-interface TerminalFieldProps {
+function TerminalField({
+  list,
+}: {
   list: ReturnType<typeof useTerminalListState>;
-}
-
-function TerminalField({ list }: TerminalFieldProps) {
-  const handleTerminalListAdd = list.add;
+}) {
+  const handleAdd = list.add;
 
   return (
     <div className={styles.field}>
-      <p className={styles.sectionTitle}>Auto-open Terminals</p>
       {list.items.length === 0 ? (
         <div className={styles.emptyState}>
           <span>No terminals configured</span>
-          <button className={styles.addRowBtn} onClick={handleTerminalListAdd}>
+          <button className={styles.addRowBtn} onClick={handleAdd}>
             + Add
           </button>
         </div>
@@ -286,7 +250,7 @@ function TerminalField({ list }: TerminalFieldProps) {
               </button>
             </div>
           ))}
-          <button className={styles.addRowBtn} onClick={handleTerminalListAdd}>
+          <button className={styles.addRowBtn} onClick={handleAdd}>
             + Add
           </button>
         </div>
@@ -295,16 +259,15 @@ function TerminalField({ list }: TerminalFieldProps) {
   );
 }
 
-interface RunCommandsFieldProps {
+function RunCommandsField({
+  list,
+}: {
   list: ReturnType<typeof useRunListState>;
-}
-
-function RunCommandsField({ list }: RunCommandsFieldProps) {
+}) {
   const handleAdd = list.add;
 
   return (
     <div className={styles.field}>
-      <p className={styles.sectionTitle}>Run Commands</p>
       {list.items.length === 0 ? (
         <div className={styles.emptyState}>
           <span>No run commands configured</span>
@@ -374,20 +337,15 @@ function RunCommandsField({ list }: RunCommandsFieldProps) {
   );
 }
 
-interface EnvFieldProps {
-  list: ReturnType<typeof useEnvListState>;
-}
-
-function EnvField({ list }: EnvFieldProps) {
-  const handleEnvListAdd = list.add;
+function EnvField({ list }: { list: ReturnType<typeof useEnvListState> }) {
+  const handleAdd = list.add;
 
   return (
     <div className={styles.field}>
-      <p className={styles.sectionTitle}>Session Environment Variables</p>
       {list.items.length === 0 ? (
         <div className={styles.emptyState}>
           <span>No env variables configured</span>
-          <button className={styles.addRowBtn} onClick={handleEnvListAdd}>
+          <button className={styles.addRowBtn} onClick={handleAdd}>
             + Add
           </button>
         </div>
@@ -462,7 +420,7 @@ function EnvField({ list }: EnvFieldProps) {
               )}
             </div>
           ))}
-          <button className={styles.addRowBtn} onClick={handleEnvListAdd}>
+          <button className={styles.addRowBtn} onClick={handleAdd}>
             + Add
           </button>
         </div>
@@ -475,16 +433,15 @@ function EnvField({ list }: EnvFieldProps) {
   );
 }
 
-interface BrowserPresetFieldProps {
+function BrowserPresetField({
+  list,
+}: {
   list: ReturnType<typeof useBrowserPresetListState>;
-}
-
-function BrowserPresetField({ list }: BrowserPresetFieldProps) {
+}) {
   const handleAdd = list.add;
 
   return (
     <div className={styles.field}>
-      <p className={styles.sectionTitle}>Browser Device Presets</p>
       {list.items.length === 0 ? (
         <div className={styles.emptyState}>
           <span>No custom presets</span>
@@ -580,87 +537,6 @@ function BrowserPresetField({ list }: BrowserPresetFieldProps) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Summary helpers                                                    */
-/* ------------------------------------------------------------------ */
-
-function setupSummary(
-  copy: string[],
-  symlink: string[],
-  commands: string[],
-): string {
-  const parts: string[] = [];
-  const c = copy.filter(Boolean).length;
-  const s = symlink.filter(Boolean).length;
-  const cmd = commands.filter(Boolean).length;
-  if (c) {
-    parts.push(`${c} copy`);
-  }
-  if (s) {
-    parts.push(`${s} symlink`);
-  }
-  if (cmd) {
-    parts.push(`${cmd} command${cmd > 1 ? "s" : ""}`);
-  }
-
-  return parts.join(", ");
-}
-
-function runtimeSummary(
-  runs: RunEntry[],
-  browserUrl: string,
-  terminals: TerminalEntry[],
-  envEntries: EnvEntry[],
-  browserPresets: BrowserPresetEntry[],
-  platforms: RuntimePlatform[],
-  singleRuntime: boolean,
-): string {
-  const parts: string[] = [];
-  if (platforms.length) {
-    parts.push(platforms.join("+"));
-  }
-  const runCount = runs.filter(
-    (r) => r.title.trim() && r.command.trim(),
-  ).length;
-  if (runCount) {
-    parts.push(`${runCount} run`);
-  }
-  if (singleRuntime) {
-    parts.push("single runtime");
-  }
-  const bu = browserUrl.trim();
-  if (bu) {
-    parts.push(bu.length > 40 ? bu.slice(0, 40) + "…" : bu);
-  }
-  const bp = browserPresets.filter((p) => p.id.trim()).length;
-  if (bp) {
-    parts.push(`${bp} preset${bp > 1 ? "s" : ""}`);
-  }
-  const t = terminals.filter((e) => e.name || e.dir).length;
-  if (t) {
-    parts.push(`${t} terminal${t > 1 ? "s" : ""}`);
-  }
-  const e = envEntries.filter((v) => v.name.trim()).length;
-  if (e) {
-    parts.push(`${e} env var${e > 1 ? "s" : ""}`);
-  }
-
-  return parts.join(", ");
-}
-
-function agentSummary(prompt: string, saveChatHistory: boolean): string {
-  const parts: string[] = [];
-  const trimmed = prompt.trim();
-  if (trimmed) {
-    parts.push(trimmed.length > 40 ? trimmed.slice(0, 40) + "..." : trimmed);
-  }
-  if (!saveChatHistory) {
-    parts.push("history off");
-  }
-
-  return parts.join(", ");
-}
-
-/* ------------------------------------------------------------------ */
 /*  Main dialog                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -676,15 +552,16 @@ export function SetupConfigDialog({
   const envList = useEnvListState([]);
   const browserPresetList = useBrowserPresetListState([]);
   const runList = useRunListState([]);
+  const protectedBranchList = useListState([]);
   const [browserUrl, setBrowserUrl] = useState("");
   const [platforms, setPlatforms] = useState<RuntimePlatform[]>([]);
   const [agentPrompt, setAgentPrompt] = useState("");
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
+  const [pullRequestTemplate, setPullRequestTemplate] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
 
   const setCopies = copyList.setItems;
   const setSymlinks = symlinkList.setItems;
@@ -693,6 +570,7 @@ export function SetupConfigDialog({
   const setEnvs = envList.setItems;
   const setBrowserPresets = browserPresetList.setItems;
   const setRuns = runList.setItems;
+  const setProtectedBranches = protectedBranchList.setItems;
 
   useEffect(() => {
     let cancelled = false;
@@ -719,7 +597,6 @@ export function SetupConfigDialog({
             })),
           );
         }
-
         if (config.run?.length) {
           setRuns(
             config.run.map((r) => ({
@@ -730,7 +607,6 @@ export function SetupConfigDialog({
             })),
           );
         }
-
         if (config.agent_prompt) {
           setAgentPrompt(config.agent_prompt);
         }
@@ -772,6 +648,12 @@ export function SetupConfigDialog({
             })),
           );
         }
+        if (config.protected_branches?.length) {
+          setProtectedBranches(config.protected_branches);
+        }
+        if (config.pull_request_template) {
+          setPullRequestTemplate(config.pull_request_template);
+        }
       } catch {
         // No config file or not readable — start with empty fields
       } finally {
@@ -793,6 +675,7 @@ export function SetupConfigDialog({
     setEnvs,
     setBrowserPresets,
     setRuns,
+    setProtectedBranches,
   ]);
 
   const buildConfig = (): ArgusConfig => {
@@ -876,11 +759,39 @@ export function SetupConfigDialog({
     if (presets.length) {
       config.browser_presets = presets;
     }
+    const protectedBranches = protectedBranchList.items.filter(Boolean);
+    if (protectedBranches.length) {
+      config.protected_branches = protectedBranches;
+    }
+    const prTemplate = pullRequestTemplate.trim();
+    if (prTemplate) {
+      config.pull_request_template = prTemplate;
+    }
 
     return config;
   };
 
-  const previewJson = JSON.stringify(buildConfig(), null, 2);
+  const previewJson = useMemo(
+    () => JSON.stringify(buildConfig(), null, 2),
+    // buildConfig closes over every piece of state — recompute on any change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      copyList.items,
+      symlinkList.items,
+      commandList.items,
+      terminalList.items,
+      runList.items,
+      envList.items,
+      browserPresetList.items,
+      protectedBranchList.items,
+      browserUrl,
+      platforms,
+      agentPrompt,
+      saveChatHistory,
+      singleRuntime,
+      pullRequestTemplate,
+    ],
+  );
 
   const handleSave = async () => {
     if (!repoRoot) {
@@ -899,226 +810,332 @@ export function SetupConfigDialog({
     }
   };
 
-  /* Compute whether sections have values (for default open state) */
-  const hasSetup =
-    copyList.items.length > 0 ||
-    symlinkList.items.length > 0 ||
-    commandList.items.length > 0;
-  const hasRuntime =
-    runList.items.length > 0 ||
-    !!browserUrl.trim() ||
-    browserPresetList.items.length > 0 ||
-    terminalList.items.length > 0 ||
-    envList.items.length > 0 ||
-    platforms.length > 0 ||
-    singleRuntime;
-  const hasAgent = !!agentPrompt.trim() || !saveChatHistory;
-
-  return (
-    <Dialog
-      size="medium"
-      title="Project Configuration"
-      titleId="setup-cfg-title"
-      onClose={onClose}
-    >
-      {isLoading ? (
-        <div className={styles.form}>
-          <p
-            style={{
-              color: "var(--text-muted)",
-              fontSize: "var(--font-size-sm)",
-            }}
-          >
-            Loading config...
-          </p>
-        </div>
-      ) : (
-        <div className={styles.form}>
-          {/* ---- Session Setup ---- */}
-          <ConfigSection
-            defaultOpen={hasSetup}
-            description="Runs once when creating a new worktree session."
-            summary={setupSummary(
-              copyList.items,
-              symlinkList.items,
-              commandList.items,
-            )}
-            title="Session Setup"
-          >
-            <ListField
-              emptyLabel="No copy patterns"
-              label="Copy"
-              list={copyList}
-              placeholder="path/to/dir or *.env (glob)"
-            />
-            <ListField
-              emptyLabel="No symlink patterns"
-              label="Symlink"
-              list={symlinkList}
-              placeholder="path/to/file or **/.env.local (glob)"
-            />
-            <ListField
-              emptyLabel="No setup commands"
-              label="Commands"
-              list={commandList}
-              placeholder="npm install"
-            />
-          </ConfigSection>
-
-          {/* ---- Runtime ---- */}
-          <ConfigSection
-            defaultOpen={hasRuntime}
-            description="Controls how sessions run, what URL the browser opens to, and what terminals open."
-            summary={runtimeSummary(
-              runList.items,
-              browserUrl,
-              terminalList.items,
-              envList.items,
-              browserPresetList.items,
-              platforms,
-              singleRuntime,
-            )}
-            title="Runtime"
-          >
-            <div className={styles.field}>
-              <p className={styles.sectionTitle}>Target Platforms</p>
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                {(["ios", "android", "web"] as const).map((p) => (
-                  <label key={p} className={styles.checkboxRow}>
+  const groups: SettingsDialogGroup[] = [
+    {
+      label: "Workspace",
+      sections: [
+        {
+          id: "setup",
+          label: "Setup",
+          description: "Copy, symlink, commands",
+          icon: <Icons.FolderIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="What happens once when a worktree session is created. Order: copy → symlink → commands."
+                title="Session setup"
+              />
+              <SettingsScreenDetailBody>
+                <ListField
+                  emptyLabel="No copy patterns"
+                  label="Copy"
+                  list={copyList}
+                  placeholder="path/to/dir or *.env (glob)"
+                />
+                <ListField
+                  emptyLabel="No symlink patterns"
+                  label="Symlink"
+                  list={symlinkList}
+                  placeholder="path/to/file or **/.env.local (glob)"
+                />
+                <ListField
+                  emptyLabel="No setup commands"
+                  label="Commands"
+                  list={commandList}
+                  placeholder="npm install"
+                />
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "platforms",
+          label: "Platforms",
+          description: "iOS / Android / Web",
+          icon: <Icons.SimulatorIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Runtimes Argus pre-allocates per session. Leave empty if this project doesn't need any of them — each unused runtime still costs CPU and memory."
+                title="Target platforms"
+              />
+              <SettingsScreenDetailBody>
+                <div className={styles.field}>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    {(["ios", "android", "web"] as const).map((p) => (
+                      <label key={p} className={styles.checkboxRow}>
+                        <input
+                          checked={platforms.includes(p)}
+                          type="checkbox"
+                          onChange={(e) =>
+                            setPlatforms((prev) =>
+                              e.target.checked
+                                ? [...prev, p]
+                                : prev.filter((x) => x !== p),
+                            )
+                          }
+                        />
+                        {platformLabel(p)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "workspace-env",
+          label: "Workspace env",
+          description: "Per-session vars",
+          icon: <Icons.GearIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Env vars set in every terminal and run command of a session, with a value unique to that session. Useful for port allocation."
+                title="Workspace environment"
+              />
+              <SettingsScreenDetailBody>
+                <EnvField list={envList} />
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+      ],
+    },
+    {
+      label: "Runtime",
+      sections: [
+        {
+          id: "run",
+          label: "Run commands",
+          description: "Dev, Storybook, …",
+          icon: <Icons.PlayIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Entries shown in the run menu. Argus tracks each running command per session."
+                title="Run commands"
+              />
+              <SettingsScreenDetailBody>
+                <RunCommandsField list={runList} />
+                <div className={styles.field}>
+                  <label className={styles.checkboxRow}>
                     <input
-                      checked={platforms.includes(p)}
+                      checked={singleRuntime}
                       type="checkbox"
-                      onChange={(e) =>
-                        setPlatforms((prev) =>
-                          e.target.checked
-                            ? [...prev, p]
-                            : prev.filter((x) => x !== p),
-                        )
-                      }
+                      onChange={(e) => setSingleRuntime(e.target.checked)}
                     />
-                    {platformLabel(p)}
+                    Only one runtime active at a time across this project
                   </label>
-                ))}
-              </div>
-              <p className={styles.helpText}>
-                Runtimes agents pre-allocate per session (iOS simulator, Android
-                emulator, headless Chromium). Leave empty if this project
-                doesn&apos;t need any of them — each unused runtime still
-                consumes CPU and memory.
-              </p>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="setup-browser-url">
-                Default browser URL
-              </label>
-              <Input
-                autoComplete="url"
-                id="setup-browser-url"
-                placeholder="http://localhost:3000"
-                type="text"
-                value={browserUrl}
-                onChange={(e) => setBrowserUrl(e.target.value)}
+                  <p className={styles.helpText}>
+                    When enabled, starting a run command prompts you to stop
+                    any runtime already active in another session of this
+                    project. Useful when the dev server binds a fixed port or
+                    device that can&apos;t be shared.
+                  </p>
+                </div>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "terminals",
+          label: "Terminals",
+          description: "Auto-opened tabs",
+          icon: <Icons.TerminalIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Terminal tabs that auto-open in the bottom panel when a session is selected."
+                title="Terminals"
               />
-              <p className={styles.helpText}>
-                Default address for the web browser panel when a session has not
-                navigated elsewhere yet.
-              </p>
-            </div>
-
-            <BrowserPresetField list={browserPresetList} />
-
-            <RunCommandsField list={runList} />
-
-            <div className={styles.field}>
-              <label className={styles.checkboxRow}>
-                <input
-                  checked={singleRuntime}
-                  type="checkbox"
-                  onChange={(e) => setSingleRuntime(e.target.checked)}
-                />
-                Only one runtime at a time
-              </label>
-              <p className={styles.helpText}>
-                When enabled, starting a run command prompts you to stop any
-                runtime already active in another session of this project.
-                Useful when the dev server binds a fixed port or device that
-                can&apos;t be shared.
-              </p>
-            </div>
-
-            <TerminalField list={terminalList} />
-
-            <EnvField list={envList} />
-          </ConfigSection>
-
-          {/* ---- Agent ---- */}
-          <ConfigSection
-            defaultOpen={hasAgent}
-            description="Configuration for Claude agents working in this project."
-            summary={agentSummary(agentPrompt, saveChatHistory)}
-            title="Agent"
-          >
-            <div className={styles.field}>
-              <p className={styles.sectionTitle}>System Prompt</p>
-              <TextArea
-                placeholder="Additional instructions appended to every agent's system prompt..."
-                rows={4}
-                style={{ resize: "vertical", fontFamily: "inherit" }}
-                value={agentPrompt}
-                onChange={(e) => setAgentPrompt(e.target.value)}
+              <SettingsScreenDetailBody>
+                <TerminalField list={terminalList} />
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "browser",
+          label: "Browser",
+          description: "URL & device presets",
+          icon: <Icons.WebIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="The web runtime panel loads this URL on first open and exposes the device presets in its picker."
+                title="Browser"
               />
-              <p className={styles.helpText}>
-                Extra context or instructions appended to every agent&apos;s
-                system prompt.
-              </p>
-            </div>
-            <div className={styles.field}>
-              <label className={styles.checkboxRow}>
-                <input
-                  checked={saveChatHistory}
-                  type="checkbox"
-                  onChange={(e) => setSaveChatHistory(e.target.checked)}
+              <SettingsScreenDetailBody>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="setup-browser-url">
+                    Default browser URL
+                  </label>
+                  <Input
+                    autoComplete="url"
+                    id="setup-browser-url"
+                    placeholder="http://localhost:3000"
+                    type="text"
+                    value={browserUrl}
+                    onChange={(e) => setBrowserUrl(e.target.value)}
+                  />
+                </div>
+                <BrowserPresetField list={browserPresetList} />
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+      ],
+    },
+    {
+      label: "Workflow",
+      sections: [
+        {
+          id: "branch-protection",
+          label: "Branch protection",
+          description: "Protected branches",
+          icon: <Icons.BranchIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Sessions whose base branch matches a protected branch are merged through a pull request instead of a direct merge."
+                title="Branch protection"
+              />
+              <SettingsScreenDetailBody>
+                <ListField
+                  emptyLabel="No protected branches"
+                  label="Protected branches"
+                  list={protectedBranchList}
+                  placeholder="main"
                 />
-                Save chat history
-              </label>
-              <p className={styles.helpText}>
-                Automatically save agent conversations when they end. Lets you
-                review and resume previous sessions.
-              </p>
-            </div>
-          </ConfigSection>
 
-          {/* ---- Preview toggle ---- */}
-          <button
-            className={styles.previewToggle}
-            type="button"
-            onClick={() => setShowPreview((p) => !p)}
-          >
-            <Icons.ChevronRightIcon
-              className={`${styles.configSectionChevron} ${showPreview ? styles.configSectionChevronExpanded : ""}`}
-            />
-            {showPreview ? "Hide JSON" : "Show JSON"}
-          </button>
-          {showPreview && <pre className={styles.preview}>{previewJson}</pre>}
+                <details className={sectionStyles.advanced}>
+                  <summary className={sectionStyles.advancedSummary}>
+                    Advanced
+                  </summary>
+                  <div className={styles.field}>
+                    <label
+                      className={styles.label}
+                      htmlFor="setup-pr-template"
+                    >
+                      Preferred PR template filename
+                    </label>
+                    <Input
+                      id="setup-pr-template"
+                      placeholder="feature.md"
+                      type="text"
+                      value={pullRequestTemplate}
+                      onChange={(e) => setPullRequestTemplate(e.target.value)}
+                    />
+                    <p className={styles.helpText}>
+                      Only relevant when the repo has multiple PR templates
+                      under <code>.github/PULL_REQUEST_TEMPLATE/</code>. For
+                      the common single-template case GitHub auto-applies the
+                      file and this field does nothing.
+                    </p>
+                  </div>
+                </details>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "agent",
+          label: "Agent",
+          description: "Prompt & history",
+          icon: <Icons.AgentIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Configuration for Claude agents working in this project."
+                title="Agent"
+              />
+              <SettingsScreenDetailBody>
+                <div className={styles.field}>
+                  <p className={styles.sectionTitle}>System prompt</p>
+                  <TextArea
+                    placeholder="Additional instructions appended to every agent's system prompt..."
+                    rows={6}
+                    style={{ resize: "vertical", fontFamily: "inherit" }}
+                    value={agentPrompt}
+                    onChange={(e) => setAgentPrompt(e.target.value)}
+                  />
+                  <p className={styles.helpText}>
+                    Appended to every agent&apos;s system prompt in this
+                    project.
+                  </p>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.checkboxRow}>
+                    <input
+                      checked={saveChatHistory}
+                      type="checkbox"
+                      onChange={(e) => setSaveChatHistory(e.target.checked)}
+                    />
+                    Save chat history when agents stop
+                  </label>
+                </div>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+      ],
+    },
+    {
+      label: "Reference",
+      sections: [
+        {
+          id: "preview",
+          label: "JSON preview",
+          description: "Generated .argus.json",
+          icon: <Icons.FileIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Read-only view of what will be written to .argus.json on save."
+                title="JSON preview"
+              />
+              <SettingsScreenDetailBody>
+                <pre className={styles.preview}>{previewJson}</pre>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+      ],
+    },
+  ];
 
-          {error && <p className={styles.errorMsg}>{error}</p>}
+  const footer = (
+    <>
+      {error && (
+        <div className={sectionStyles.errorBar}>
+          <p className={styles.errorMsg}>{error}</p>
         </div>
       )}
-
       <div className={styles.stickyFooter}>
-        <Button variant="secondary" type="button" onClick={onClose}>
+        <Button type="button" variant="secondary" onClick={onClose}>
           Cancel
         </Button>
         <Button
-          variant="primary"
           disabled={isSaving || isLoading || !repoRoot}
           type="button"
+          variant="primary"
           onClick={handleSave}
         >
-          {isSaving ? "Saving..." : "Save .argus.json"}
+          {isSaving ? "Saving…" : "Save .argus.json"}
         </Button>
       </div>
-    </Dialog>
+    </>
+  );
+
+  return (
+    <SettingsDialogShell
+      footer={footer}
+      groups={groups}
+      title="Project settings"
+      titleId="setup-cfg-title"
+      onClose={onClose}
+    />
   );
 }

@@ -1,0 +1,28 @@
+.errorBar {
+  padding: 0 var(--space-10);
+  flex-shrink: 0;
+}
+
+.advanced {
+  margin-top: var(--space-6);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-5);
+}
+
+.advancedSummary {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  padding: var(--space-2) 0;
+}
+
+.advancedSummary:hover {
+  color: var(--text-primary);
+}
+
+.advanced > *:not(summary) {
+  margin-top: var(--space-4);
+}

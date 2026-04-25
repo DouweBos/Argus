@@ -1,0 +1,9 @@
+.dialog {
+  padding: 0;
+  max-width: min(960px, 95vw);
+}
+
+.screen {
+  flex: 1;
+  min-height: 0;
+}
