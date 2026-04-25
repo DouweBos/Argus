@@ -82,6 +82,13 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling.
 
+**Configurability of new features:** when adding a feature, ask whether the user might reasonably want to customize it. If yes, expose it as a setting:
+
+- **App-level** (per developer, machine-local) → add to `app/stores/settingsStore.ts`, surface in the Settings dialog (`app/components/shared/SettingsDialog/`), and document in [`docs/app-settings.md`](docs/app-settings.md). Use `SettingsScreenField` from Peacock for layout consistency. Per-project personal prefs (e.g. branch prefix) go in `~/.argus/user-project-settings.json` instead — see `electron/services/userProjectSettings/store.ts`.
+- **Project-level** (shared with the team, checked in) → add the field to `ArgusConfig` in `electron/services/session/models.ts`, parse/normalize it in `electron/services/session/setup.ts`, optionally extend onboarding inference in `electron/services/onboarding/argusJson.ts`, and document in [`docs/project-settings.md`](docs/project-settings.md).
+
+If the new setting needs UI primitives Peacock doesn't have, add them to Peacock first (with a story) — same rule as everywhere else.
+
 ## Key technical decisions
 
 - `node-pty` for terminals (same as VSCode) — spawn at 80x24, resize

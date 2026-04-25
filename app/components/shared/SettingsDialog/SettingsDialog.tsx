@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Button, Dialog, Icons, Input } from "@argus/peacock";
+import {
+  Button,
+  Icons,
+  Input,
+  SettingsDialogShell,
+  SettingsScreenDetail,
+  SettingsScreenDetailBody,
+  SettingsScreenDetailHeader,
+  SettingsScreenField,
+  type SettingsDialogGroup,
+} from "@argus/peacock";
 import {
   PERMISSION_MODE_LABELS,
   addCustomEditor,
@@ -39,21 +49,55 @@ export function SettingsDialog() {
 }
 
 function SettingsDialogContent() {
-  const mode = useDefaultPermissionMode();
-  const theme = useThemePreference();
+  const groups: SettingsDialogGroup[] = [
+    {
+      sections: [
+        {
+          id: "appearance",
+          label: "Appearance",
+          description: "Theme",
+          icon: <Icons.HomeIcon size={12} />,
+          render: () => <AppearanceSection />,
+        },
+        {
+          id: "permissions",
+          label: "Agents",
+          description: "Default permissions",
+          icon: <Icons.AgentIcon size={12} />,
+          render: () => <PermissionsSection />,
+        },
+        {
+          id: "open-in",
+          label: "Open in apps",
+          description: "Custom editors",
+          icon: <Icons.FolderIcon size={12} />,
+          render: () => <OpenInAppsSection />,
+        },
+      ],
+    },
+  ];
 
   return (
-    <Dialog
+    <SettingsDialogShell
+      groups={groups}
       title="Settings"
       titleId="settings-dialog-title"
       onClose={hideSettingsDialog}
-    >
-      <div className={styles.body}>
-        <section className={styles.section}>
-          <div className={styles.label}>Appearance</div>
-          <div className={styles.caption}>
-            Match your system, or force a specific theme.
-          </div>
+    />
+  );
+}
+
+function AppearanceSection() {
+  const theme = useThemePreference();
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Match your system, or pin Argus to a specific theme."
+        title="Appearance"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField label="Theme">
           <div className={styles.segmented}>
             {THEMES.map((t) => (
               <button
@@ -66,13 +110,23 @@ function SettingsDialogContent() {
               </button>
             ))}
           </div>
-        </section>
+        </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
 
-        <section className={styles.section}>
-          <div className={styles.label}>Default permission mode</div>
-          <div className={styles.caption}>
-            Applied to new agents unless overridden per-session.
-          </div>
+function PermissionsSection() {
+  const mode = useDefaultPermissionMode();
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Controls how new agents handle tool calls. You can still override this per session."
+        title="Default permission mode"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField label="When a new agent starts">
           <div className={styles.options}>
             {MODES.map((m) => (
               <label
@@ -91,15 +145,13 @@ function SettingsDialogContent() {
               </label>
             ))}
           </div>
-        </section>
-
-        <CustomEditorsSection />
-      </div>
-    </Dialog>
+        </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
   );
 }
 
-function CustomEditorsSection() {
+function OpenInAppsSection() {
   const editors = useCustomEditors();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
@@ -116,68 +168,79 @@ function CustomEditorsSection() {
   };
 
   return (
-    <section className={styles.section}>
-      <div className={styles.label}>Custom &ldquo;Open in&rdquo; apps</div>
-      <div className={styles.caption}>
-        Add your own apps to the &ldquo;Open in&rdquo; menu. Command is a CLI on
-        PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to a{" "}
-        <code>.app</code> bundle (e.g. <code>/Applications/Zed.app</code>).
-      </div>
-
-      <div className={styles.editorList}>
-        {editors.map((ed) => (
-          <CustomEditorRow
-            key={ed.id}
-            id={ed.id}
-            name={ed.name}
-            command={ed.command}
-          />
-        ))}
-      </div>
-
-      {adding ? (
-        <div className={styles.editorForm}>
-          <Input
-            placeholder="Name (e.g. Zed, Warp)"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-          <Input
-            mono
-            placeholder="Command or .app path"
-            value={newCommand}
-            onChange={(e) => setNewCommand(e.target.value)}
-          />
-          <div className={styles.editorFormActions}>
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        action={
+          !adding && (
             <Button
+              leading={<Icons.PlusIcon size={12} />}
               variant="ghost"
-              onClick={() => {
-                setAdding(false);
-                setNewName("");
-                setNewCommand("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={!newName.trim() || !newCommand.trim()}
-              onClick={handleAdd}
+              onClick={() => setAdding(true)}
             >
               Add app
             </Button>
-          </div>
+          )
+        }
+        description={
+          <>
+            Show your own apps in the &ldquo;Open in&rdquo; menu. Command is a
+            CLI on PATH (e.g. <code>zed</code>, <code>subl</code>) or a path to
+            a <code>.app</code> bundle.
+          </>
+        }
+        title='Custom "Open in" apps'
+      />
+      <SettingsScreenDetailBody>
+        <div className={styles.editorList}>
+          {editors.map((ed) => (
+            <CustomEditorRow
+              key={ed.id}
+              command={ed.command}
+              id={ed.id}
+              name={ed.name}
+            />
+          ))}
+          {editors.length === 0 && !adding && (
+            <div className={styles.emptyHint}>No custom apps yet.</div>
+          )}
         </div>
-      ) : (
-        <Button
-          variant="ghost"
-          leading={<Icons.PlusIcon size={12} />}
-          onClick={() => setAdding(true)}
-        >
-          Add app
-        </Button>
-      )}
-    </section>
+
+        {adding && (
+          <div className={styles.editorForm}>
+            <Input
+              placeholder="Name (e.g. Zed, Warp)"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+            <Input
+              mono
+              placeholder="Command or .app path"
+              value={newCommand}
+              onChange={(e) => setNewCommand(e.target.value)}
+            />
+            <div className={styles.editorFormActions}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setAdding(false);
+                  setNewName("");
+                  setNewCommand("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!newName.trim() || !newCommand.trim()}
+                variant="primary"
+                onClick={handleAdd}
+              >
+                Add app
+              </Button>
+            </div>
+          </div>
+        )}
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
   );
 }
 
@@ -216,8 +279,8 @@ function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
             Cancel
           </Button>
           <Button
-            variant="primary"
             disabled={!draftName.trim() || !draftCommand.trim()}
+            variant="primary"
             onClick={() => {
               updateCustomEditor(id, {
                 name: draftName,
@@ -241,15 +304,15 @@ function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
       </div>
       <div className={styles.editorRowActions}>
         <Button
-          variant="ghost"
           leading={<Icons.PencilIcon size={10} />}
+          variant="ghost"
           onClick={() => setEditing(true)}
         >
           Edit
         </Button>
         <Button
-          variant="ghost"
           leading={<Icons.TrashIcon size={12} />}
+          variant="ghost"
           onClick={() => removeCustomEditor(id)}
         >
           Remove
