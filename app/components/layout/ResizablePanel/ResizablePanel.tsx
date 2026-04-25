@@ -2,22 +2,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useDragResize } from "../../../hooks/useDragResize";
 import styles from "./ResizablePanel.module.css";
 
+export type PanelSide = "bottom" | "left" | "right";
+
 interface ResizablePanelProps {
   children: React.ReactNode;
   /** Animate panel off-screen — stays in DOM but slides out via margin + transform */
   collapsed?: boolean;
-  defaultWidth: number; // fraction of container width, e.g. 0.2
-  maxWidth?: number; // fraction, e.g. 0.5
-  minWidth?: number; // fraction, e.g. 0.1
-  /** Suppress open/close transitions for the next commit — used to skip animation on navigation changes. */
+  /** Initial size fraction (width for left/right; height for bottom). */
+  defaultWidth: number;
+  maxWidth?: number;
+  minWidth?: number;
+  /** Suppress open/close transitions for the next commit. */
   noAnimate?: boolean;
   onMouseEnter?: React.MouseEventHandler;
   onMouseLeave?: React.MouseEventHandler;
-  /** Called when width fraction changes (for syncing to external state) */
-  onResize?: (width: number) => void;
-  /** Show the collapsed panel as a floating overlay (keeps negative margin, removes transform) */
+  /** Called when size fraction changes (for syncing to external state) */
+  onResize?: (size: number) => void;
+  /** Show the collapsed panel as a floating overlay (left/right peek). */
   peeking?: boolean;
-  side: "left" | "right";
+  side: PanelSide;
 }
 
 export function ResizablePanel({
@@ -35,21 +38,50 @@ export function ResizablePanel({
 }: ResizablePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const isVertical = side === "bottom";
+
   const mapDelta = useCallback(
-    (delta: number) =>
-      delta /
-      (panelRef.current?.parentElement?.offsetWidth ?? window.innerWidth),
-    [],
+    (delta: number) => {
+      const parent = panelRef.current?.parentElement;
+      if (isVertical) {
+        return delta / (parent?.offsetHeight ?? window.innerHeight);
+      }
+
+      return delta / (parent?.offsetWidth ?? window.innerWidth);
+    },
+    [isVertical],
   );
 
-  const { size: widthFraction, onMouseDown } = useDragResize({
-    axis: "horizontal",
+  const { size: sizeFraction, onMouseDown } = useDragResize({
+    axis: isVertical ? "vertical" : "horizontal",
     initialSize: defaultWidth,
     min: minWidth,
     max: maxWidth,
     mapDelta,
-    invert: side === "right",
+    invert: side === "right" || side === "bottom",
   });
+
+  // For vertical panels we need the parent's pixel height so the negative
+  // margin used to collapse the panel out of the flex layout is expressed in
+  // pixels. Percent margins resolve against the parent's WIDTH (not height),
+  // so a `-30%` margin-bottom would otherwise pull the layout up by far more
+  // than the panel's actual height.
+  const [parentHeightPx, setParentHeightPx] = useState(0);
+  useEffect(() => {
+    if (!isVertical) {
+      return;
+    }
+    const parent = panelRef.current?.parentElement;
+    if (!parent) {
+      return;
+    }
+    const update = () => setParentHeightPx(parent.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(parent);
+
+    return () => ro.disconnect();
+  }, [isVertical]);
 
   // Track drag state to disable CSS transitions during resize
   const [isDragging, setIsDragging] = useState(false);
@@ -71,19 +103,43 @@ export function ResizablePanel({
   }, [isDragging]);
 
   useEffect(() => {
-    onResize?.(widthFraction);
-  }, [widthFraction, onResize]);
+    onResize?.(sizeFraction);
+  }, [sizeFraction, onResize]);
 
-  const widthPercent = `${widthFraction * 100}%`;
-  const marginProp = side === "left" ? "marginLeft" : "marginRight";
-  const hiddenOffset = side === "left" ? "-100%" : "100%";
-  const peekOffset = side === "left" ? "100%" : "-100%";
+  const sizePercent = `${sizeFraction * 100}%`;
 
   let transform = "none";
-  if (collapsed && peeking) {
+  if (collapsed && peeking && !isVertical) {
+    const peekOffset = side === "left" ? "100%" : "-100%";
     transform = `translateX(${peekOffset})`;
   } else if (collapsed) {
-    transform = `translateX(${hiddenOffset})`;
+    if (side === "left") {
+      transform = "translateX(-100%)";
+    } else if (side === "right") {
+      transform = "translateX(100%)";
+    } else {
+      transform = "translateY(100%)";
+    }
+  }
+
+  const style: React.CSSProperties = { transform };
+  if (isVertical) {
+    const heightPx = parentHeightPx * sizeFraction;
+    style.height = `${heightPx}px`;
+    style.marginBottom = collapsed ? `-${heightPx}px` : "0";
+  } else {
+    style.width = sizePercent;
+    const marginProp = side === "left" ? "marginLeft" : "marginRight";
+    style[marginProp] = collapsed ? `-${sizeFraction * 100}%` : "0";
+  }
+
+  let dividerSideClass = styles.right;
+  if (side === "left") {
+    dividerSideClass = styles.right;
+  } else if (side === "right") {
+    dividerSideClass = styles.left;
+  } else {
+    dividerSideClass = styles.top;
   }
 
   return (
@@ -94,11 +150,8 @@ export function ResizablePanel({
       data-dragging={isDragging}
       data-no-animate={noAnimate}
       data-peeking={peeking}
-      style={{
-        width: widthPercent,
-        [marginProp]: collapsed ? `-${widthFraction * 100}%` : "0",
-        transform,
-      }}
+      data-side={side}
+      style={style}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -106,8 +159,8 @@ export function ResizablePanel({
       {!collapsed && (
         <div
           aria-label="Resize panel"
-          aria-orientation="vertical"
-          className={`${styles.divider} ${side === "left" ? styles.right : styles.left}`}
+          aria-orientation={isVertical ? "horizontal" : "vertical"}
+          className={`${styles.divider} ${dividerSideClass}`}
           role="separator"
           onMouseDown={handleDividerMouseDown}
         />

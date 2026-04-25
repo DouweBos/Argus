@@ -106,14 +106,19 @@ describe("external branch switch → full pipeline", () => {
     setLayoutState({
       leftSidebarVisible: true,
       leftPanelWidth: 0.18,
-      activeToolBySessionId: { "ws-root": "changes" },
-      lastActiveToolBySessionId: { "ws-root": "changes" },
+      activeRightToolBySessionId: { "ws-root": "changes" },
+      activeBottomToolBySessionId: {},
+      lastActiveRightToolBySessionId: { "ws-root": "changes" },
+      lastActiveBottomToolBySessionId: {},
       mountedToolIds: {
         changes: true,
+        debug: false,
+        notifications: false,
         simulator: false,
         terminal: false,
       },
-      toolPanelWidth: 0.3,
+      rightPanelWidth: 0.3,
+      bottomPanelHeight: 0.3,
     });
   });
 

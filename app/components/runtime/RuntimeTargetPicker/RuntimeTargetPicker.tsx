@@ -1,6 +1,6 @@
-import type { ContextMenuItem } from "@argus/peacock";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ContextMenu, Icons } from "@argus/peacock";
+import type { RuntimePickerSection } from "@argus/peacock";
+import { useEffect, useMemo } from "react";
+import { Icons, RuntimePicker } from "@argus/peacock";
 import { listAndroidDevices, listSimulators } from "../../../lib/ipc";
 import {
   selectAndroidDevice,
@@ -10,7 +10,6 @@ import {
   setPlatform,
   useRuntimeTargetState,
 } from "../../../stores/simulatorStore";
-import styles from "./RuntimeTargetPicker.module.css";
 
 interface RuntimeTargetPickerProps {
   sessionId: string | null;
@@ -32,14 +31,9 @@ const SESSION_GLOBAL = "__global__";
 export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
   const { platform, devices, androidDevices, iosUdid, androidSerial } =
     useRuntimeTargetState(sessionId);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   const sid = sessionId ?? SESSION_GLOBAL;
 
-  // Fetch both platform device lists on mount and when the picker opens so
-  // the menu reflects current reality no matter what platform is active.
   useEffect(() => {
     listSimulators()
       .then(setDevices)
@@ -51,7 +45,51 @@ export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
       .catch(() => {
         // Same — ADB/emulator not available.
       });
-  }, [menuOpen]);
+  }, []);
+
+  const sections = useMemo<RuntimePickerSection[]>(
+    () => [
+      {
+        header: "iOS Simulators",
+        items: devices.map((d) => ({
+          id: d.udid,
+          label: d.name,
+          trailing: d.booted ? "booted" : undefined,
+          selected: platform === "ios" && d.udid === iosUdid,
+          onSelect: () => {
+            setPlatform("ios");
+            selectDevice(sid, d.udid);
+          },
+        })),
+      },
+      {
+        header: "Android Emulators",
+        items: androidDevices.map((d) => ({
+          id: d.serial,
+          label: d.name ?? d.serial,
+          selected: platform === "android" && d.serial === androidSerial,
+          onSelect: () => {
+            setPlatform("android");
+            selectAndroidDevice(sid, d.serial);
+          },
+        })),
+      },
+      {
+        header: "Web",
+        items: [
+          {
+            id: "chromium",
+            label: "Chromium",
+            selected: platform === "web",
+            onSelect: () => {
+              setPlatform("web");
+            },
+          },
+        ],
+      },
+    ],
+    [devices, androidDevices, platform, iosUdid, androidSerial, sid],
+  );
 
   const { icon, label, muted } = useMemo(
     () =>
@@ -65,91 +103,13 @@ export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
     [platform, devices, androidDevices, iosUdid, androidSerial],
   );
 
-  const openMenu = () => {
-    const el = triggerRef.current;
-    if (!el) {
-      return;
-    }
-    const rect = el.getBoundingClientRect();
-    setMenuPos({ x: rect.left, y: rect.bottom + 4 });
-    setMenuOpen(true);
-  };
-
-  const items = useMemo<ContextMenuItem[]>(() => {
-    const list: ContextMenuItem[] = [];
-    if (devices.length > 0) {
-      list.push({ header: "iOS Simulators" });
-      for (const d of devices) {
-        const selected = platform === "ios" && d.udid === iosUdid;
-        list.push({
-          label: d.name,
-          trailing: d.booted ? "booted" : undefined,
-          selected,
-          onClick: () => {
-            setPlatform("ios");
-            selectDevice(sid, d.udid);
-          },
-        });
-      }
-    }
-    if (androidDevices.length > 0) {
-      if (list.length > 0) {
-        list.push({ separator: true });
-      }
-      list.push({ header: "Android Emulators" });
-      for (const d of androidDevices) {
-        const selected = platform === "android" && d.serial === androidSerial;
-        list.push({
-          label: d.name ?? d.serial,
-          selected,
-          onClick: () => {
-            setPlatform("android");
-            selectAndroidDevice(sid, d.serial);
-          },
-        });
-      }
-    }
-    if (list.length > 0) {
-      list.push({ separator: true });
-    }
-    list.push({ header: "Web" });
-    list.push({
-      label: "Chromium",
-      selected: platform === "web",
-      onClick: () => {
-        setPlatform("web");
-      },
-    });
-
-    return list;
-  }, [devices, androidDevices, platform, iosUdid, androidSerial, sid]);
-
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        className={styles.trigger}
-        onClick={openMenu}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-      >
-        <span className={styles.triggerIcon}>{icon}</span>
-        <span
-          className={`${styles.triggerLabel} ${muted ? styles.triggerLabelMuted : ""}`}
-        >
-          {label}
-        </span>
-        <Icons.ChevronDownIcon className={styles.triggerChevron} size={10} />
-      </button>
-      {menuOpen && (
-        <ContextMenu
-          items={items}
-          position={menuPos}
-          onClose={() => setMenuOpen(false)}
-        />
-      )}
-    </>
+    <RuntimePicker
+      icon={icon}
+      label={label}
+      muted={muted}
+      sections={sections}
+    />
   );
 }
 

@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import {
   type ToolId,
-  setToolPanelWidth,
+  TOOL_PLACEMENT,
+  setRightPanelWidth,
   toggleTool,
   useActiveToolId,
   useLastActiveToolId,
@@ -11,30 +12,28 @@ import {
 import { ResizablePanel } from "../../layout/ResizablePanel";
 import { ChangesSummary } from "../tools/ChangesSummary";
 import { SimulatorTool } from "../tools/SimulatorTool";
-import { TerminalTool } from "../tools/TerminalTool";
 import styles from "./ToolPanel.module.css";
 
 const TOOL_LABELS: Record<ToolId, string> = {
   changes: "Changes",
   terminal: "Terminal",
   simulator: "Simulator",
+  debug: "Debug",
+  notifications: "Notifications",
 };
 
-const ALL_TOOL_IDS: ToolId[] = ["changes", "terminal", "simulator"];
+const RIGHT_TOOL_IDS: ToolId[] = (
+  ["changes", "terminal", "simulator", "debug"] as ToolId[]
+).filter((id) => TOOL_PLACEMENT[id] === "right");
 
 function renderToolContent(id: ToolId, sessionId: string | null) {
   switch (id) {
     case "changes":
       return <ChangesSummary sessionId={sessionId} />;
-    case "terminal":
-      return <TerminalTool sessionId={sessionId} />;
     case "simulator":
       return <SimulatorTool sessionId={sessionId} />;
-    default: {
-      const _exhaustive: never = id;
-
-      return _exhaustive;
-    }
+    default:
+      return null;
   }
 }
 
@@ -43,21 +42,13 @@ interface ToolPanelProps {
 }
 
 export function ToolPanel({ sessionId }: ToolPanelProps) {
-  const activeToolId = useActiveToolId();
-  const setWidth = setToolPanelWidth;
+  const activeToolId = useActiveToolId("right");
+  const setWidth = setRightPanelWidth;
   const mountedToolIds = useMountedToolIds();
 
-  // Remember last active tool so the header stays correct during close animation
-  const lastActiveToolId = useLastActiveToolId();
+  const lastActiveToolId = useLastActiveToolId("right");
   const displayToolId = activeToolId ?? lastActiveToolId;
 
-  // Skip the open/close transition when the panel's visibility flips because
-  // of a session change (navigation) rather than a user toggle. useLayoutEffect
-  // runs before paint, so the DOM commit with `data-no-animate="true"` lands
-  // in the same frame as the new `collapsed` value — the browser sees only
-  // the final state and snaps to it without animating. The `setNoAnimate`
-  // calls inside the effect are deliberate: this is a one-frame DOM-sync
-  // pattern, not the cascading-render antipattern the lint rule targets.
   const prevSessionIdRef = useRef(sessionId);
   const [noAnimate, setNoAnimate] = useState(false);
   useLayoutEffect(() => {
@@ -98,7 +89,7 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
           </button>
         </div>
         <div className={styles.content}>
-          {ALL_TOOL_IDS.map((id) => (
+          {RIGHT_TOOL_IDS.map((id) => (
             <div
               key={id}
               className={styles.toolSlot}

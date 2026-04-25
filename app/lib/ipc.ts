@@ -827,6 +827,30 @@ export const runConductorCommand = (
 export const inspectionCapture = <T = unknown>(deviceKey: string): Promise<T> =>
   invoke("inspection_capture", { deviceKey });
 
+// Debug panel
+export interface DebugCommandResult {
+  durationMs: number;
+  error?: string;
+  ok: boolean;
+  stderr?: string;
+  stdout: string;
+}
+
+export const debugStartStream = (
+  streamId: string,
+  deviceKey: string,
+  args: string[],
+): Promise<void> => invoke("debug_start_stream", { streamId, deviceKey, args });
+
+export const debugStopStream = (streamId: string): Promise<void> =>
+  invoke("debug_stop_stream", { streamId });
+
+export const debugRunCommand = (
+  deviceKey: string,
+  args: string[],
+): Promise<DebugCommandResult> =>
+  invoke("debug_run_command", { deviceKey, args });
+
 // Shell commands
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
