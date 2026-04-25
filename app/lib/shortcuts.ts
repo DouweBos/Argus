@@ -12,11 +12,17 @@ export type ShortcutId =
   | "new-agent"
   | "new-session"
   | "next-agent-tab"
+  | "open-palette"
   | "open-repo"
   | "prev-agent-tab"
   | "settings"
+  | "toggle-bottom-panel"
+  | "toggle-changes"
+  | "toggle-debug"
   | "toggle-left-sidebar"
-  | "toggle-right-panel";
+  | "toggle-right-panel"
+  | "toggle-simulator"
+  | "toggle-terminal";
 
 export interface ShortcutDef {
   alt?: boolean;
@@ -47,7 +53,42 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
     label: "Toggle right panel",
   },
   "open-repo": { meta: true, key: "o", label: "Open repo" },
+  "open-palette": {
+    meta: true,
+    shift: true,
+    key: "o",
+    label: "Open project or session…",
+  },
   "new-session": { meta: true, key: "n", label: "New session" },
+  "toggle-bottom-panel": {
+    meta: true,
+    key: "j",
+    label: "Toggle bottom panel",
+  },
+  "toggle-terminal": {
+    meta: true,
+    shift: true,
+    key: "t",
+    label: "Toggle terminal",
+  },
+  "toggle-debug": {
+    meta: true,
+    shift: true,
+    key: "d",
+    label: "Toggle device debugger",
+  },
+  "toggle-changes": {
+    meta: true,
+    shift: true,
+    key: "g",
+    label: "Toggle changes",
+  },
+  "toggle-simulator": {
+    meta: true,
+    shift: true,
+    key: "m",
+    label: "Toggle simulator",
+  },
   "new-agent": { meta: true, shift: true, key: "a", label: "New agent" },
   settings: { meta: true, key: ",", label: "Settings" },
   "next-agent-tab": {

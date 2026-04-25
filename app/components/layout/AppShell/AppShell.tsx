@@ -26,10 +26,13 @@ import {
 import { setActiveCenterView } from "../../../stores/editorStore";
 import {
   setLeftPanelWidth,
+  toggleBottomPanel,
   toggleLeftSidebar,
   toggleRightPanel,
+  toggleTool,
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
+import { openOpenPalette } from "../../../stores/openPaletteStore";
 import { useOrgTaskSync } from "../../../stores/orgTaskStore";
 import { usePullRequestsSync } from "../../../stores/pullRequestStore";
 import {
@@ -53,6 +56,7 @@ import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { RuntimeScreen } from "../../runtimes";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
+import { OpenPalette } from "../../shared/OpenPalette";
 import { SettingsDialog } from "../../shared/SettingsDialog";
 import { CreateSessionDialog } from "../../sidebar/CreateSessionDialog";
 import { OpenProjectDialog } from "../../sidebar/OpenProjectDialog";
@@ -171,7 +175,13 @@ export function AppShell() {
       "command-palette": toggleCommandPalette,
       "toggle-left-sidebar": toggleLeftSidebar,
       "toggle-right-panel": toggleRightPanel,
+      "toggle-bottom-panel": toggleBottomPanel,
+      "toggle-terminal": () => toggleTool("terminal"),
+      "toggle-debug": () => toggleTool("debug"),
+      "toggle-changes": () => toggleTool("changes"),
+      "toggle-simulator": () => toggleTool("simulator"),
       "open-repo": showOpenProjectDialog,
+      "open-palette": openOpenPalette,
       "new-session": triggerNewSession,
       "new-agent": () => {
         startNewAgentInCurrent().catch(() => {});
@@ -279,6 +289,7 @@ export function AppShell() {
       </div>
 
       <CommandPalette />
+      <OpenPalette />
       <SettingsDialog />
       <BranchPickerDialog />
 

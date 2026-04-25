@@ -1,0 +1,1 @@
+export { OpenPalette } from "./OpenPalette";
