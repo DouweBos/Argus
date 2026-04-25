@@ -170,8 +170,8 @@ export function AppShell() {
     }
   }, []);
 
-  const shortcuts = useMemo(() => {
-    const handlers: Record<ShortcutId, () => void> = {
+  const shortcutHandlers = useMemo<Record<ShortcutId, () => void>>(
+    () => ({
       "command-palette": toggleCommandPalette,
       "toggle-left-sidebar": toggleLeftSidebar,
       "toggle-right-panel": toggleRightPanel,
@@ -191,14 +191,22 @@ export function AppShell() {
       "prev-agent-tab": () => cycleAgentTab(-1),
       "go-home": () => selectSession(null),
       "go-project-home": goToProjectHome,
-    };
-
-    return (Object.keys(handlers) as ShortcutId[]).map((id) => ({
-      ...SHORTCUTS[id],
-      handler: handlers[id],
-    }));
-  }, [startNewAgentInCurrent, cycleAgentTab, goToProjectHome]);
+    }),
+    [startNewAgentInCurrent, cycleAgentTab, goToProjectHome],
+  );
+  const shortcuts = useMemo(
+    () =>
+      (Object.keys(shortcutHandlers) as ShortcutId[]).map((id) => ({
+        ...SHORTCUTS[id],
+        handler: shortcutHandlers[id],
+      })),
+    [shortcutHandlers],
+  );
   useGlobalShortcuts(shortcuts);
+
+  useIpcEvent<{ id: ShortcutId }>("menu:invoke-shortcut", ({ id }) => {
+    shortcutHandlers[id]?.();
+  });
 
   // Cmd+W: let view-level handlers consume the intent first (e.g. the agent
   // view closes the active agent tab). Fall through to closing the window
