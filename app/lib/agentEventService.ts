@@ -576,8 +576,15 @@ export function notifyMessageSent(agentId: string): void {
 /**
  * If the queue has a message, dequeue it, send it, and mark in-flight.
  * Returns true if a message was sent.
+ *
+ * Bails when a message is already in-flight so that overlapping `result`
+ * and `session_state_changed(idle)` signals don't drain multiple queued
+ * messages back-to-back without waiting for each turn to finish.
  */
 function trySendNextQueued(agentId: string): boolean {
+  if (inflight.has(agentId)) {
+    return false;
+  }
   const next = dequeueMessage(agentId);
   if (!next) {
     return false;
