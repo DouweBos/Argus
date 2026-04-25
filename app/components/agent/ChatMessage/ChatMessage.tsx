@@ -84,7 +84,12 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [bubbleSize, setBubbleSize] = useState<{
+    height: number;
+    width: number;
+  } | null>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
+  const userMsgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isEditing && editRef.current) {
@@ -98,6 +103,28 @@ export function ChatMessage({
   const handleFork = onFork ? () => onFork(message) : undefined;
   const handleStartEdit = onEdit
     ? () => {
+        const root = userMsgRef.current;
+        if (root) {
+          const paragraphs =
+            root.querySelectorAll<HTMLElement>("[data-bubble-text]");
+          let maxW = 0;
+          let totalH = 0;
+          paragraphs.forEach((p) => {
+            const r = p.getBoundingClientRect();
+            if (r.width > maxW) {
+              maxW = r.width;
+            }
+            totalH += r.height;
+          });
+          if (paragraphs.length > 1) {
+            totalH += (paragraphs.length - 1) * 8;
+          }
+          if (maxW > 0 && totalH > 0) {
+            setBubbleSize({ width: maxW, height: totalH });
+          } else {
+            setBubbleSize(null);
+          }
+        }
         setDraft(message.textBlocks.join("\n\n"));
         setIsEditing(true);
       }
@@ -198,11 +225,15 @@ export function ChatMessage({
 
     if (isEditing) {
       return (
-        <div className={styles.userMsg}>
-          <div className={styles.userEdit}>
+        <div ref={userMsgRef} className={styles.userMsg}>
+          <div
+            className={styles.userEdit}
+            style={bubbleSize ? { width: bubbleSize.width } : undefined}
+          >
             <textarea
               ref={editRef}
               className={styles.userEditArea}
+              style={bubbleSize ? { minHeight: bubbleSize.height } : undefined}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
@@ -238,7 +269,7 @@ export function ChatMessage({
     }
 
     return (
-      <div className={styles.userMsg}>
+      <div ref={userMsgRef} className={styles.userMsg}>
         <MessageActions
           onCopy={handleCopy}
           onEdit={handleStartEdit}
@@ -247,7 +278,7 @@ export function ChatMessage({
         />
         <FileLinkHandler className={styles.userTextWrap}>
           {trimmedUserBlocks.map((text, i) => (
-            <p key={i} className={styles.userText}>
+            <p key={i} className={styles.userText} data-bubble-text="">
               <MentionedText text={text} />
             </p>
           ))}
