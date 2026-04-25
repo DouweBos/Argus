@@ -28,11 +28,13 @@ import {
   triggerNewSession,
 } from "../../../stores/dialogStore";
 import {
+  toggleBottomPanel,
   toggleLeftSidebar,
   toggleRightPanel,
   toggleTool,
   type ToolId,
 } from "../../../stores/layoutStore";
+import { openOpenPalette } from "../../../stores/openPaletteStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import {
   selectSession,
@@ -142,6 +144,19 @@ function CommandPaletteContent() {
       },
       {
         group: "action",
+        id: "action:open-palette",
+        title: "Open project or session…",
+        sublabel: "Search across open projects and sessions",
+        icon: <Icons.FolderIcon size={13} />,
+        keywords: "open project session search switch jump",
+        hint: shortcutKeys("open-palette"),
+        run: () => {
+          closeCommandPalette();
+          openOpenPalette();
+        },
+      },
+      {
+        group: "action",
         id: "action:new-session",
         title: "New session…",
         sublabel: "Create a worktree from a branch",
@@ -178,6 +193,18 @@ function CommandPaletteContent() {
         run: () => {
           closeCommandPalette();
           toggleRightPanel();
+        },
+      },
+      {
+        group: "view",
+        id: "view:toggle-bottom",
+        title: "Toggle bottom panel",
+        icon: <Icons.FolderIcon size={13} />,
+        keywords: "toggle bottom panel terminal debug hide show",
+        hint: shortcutKeys("toggle-bottom-panel"),
+        run: () => {
+          closeCommandPalette();
+          toggleBottomPanel();
         },
       },
     );
@@ -223,19 +250,25 @@ function CommandPaletteContent() {
               } satisfies PaletteItem,
             ]
           : []),
-        ...(["terminal", "changes", "simulator"] as ToolId[]).map<PaletteItem>(
-          (id) => ({
-            group: "view",
-            id: `view:tool:${id}`,
-            title: `Show ${id}`,
-            icon: <Icons.FolderIcon size={13} />,
-            keywords: `tool panel show ${id}`,
-            run: () => {
-              closeCommandPalette();
-              toggleTool(id);
-            },
-          }),
-        ),
+        ...(
+          [
+            { id: "terminal", shortcut: "toggle-terminal" as const },
+            { id: "changes", shortcut: "toggle-changes" as const },
+            { id: "simulator", shortcut: "toggle-simulator" as const },
+            { id: "debug", shortcut: "toggle-debug" as const },
+          ] satisfies { id: ToolId; shortcut: Parameters<typeof shortcutKeys>[0] }[]
+        ).map<PaletteItem>(({ id, shortcut }) => ({
+          group: "view",
+          id: `view:tool:${id}`,
+          title: `Toggle ${id}`,
+          icon: <Icons.FolderIcon size={13} />,
+          keywords: `tool panel show toggle ${id}`,
+          hint: shortcutKeys(shortcut),
+          run: () => {
+            closeCommandPalette();
+            toggleTool(id);
+          },
+        })),
       );
 
       out.push({
