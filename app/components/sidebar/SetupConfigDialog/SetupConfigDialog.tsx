@@ -929,10 +929,10 @@ export function SetupConfigDialog({
                     Only one runtime active at a time across this project
                   </label>
                   <p className={styles.helpText}>
-                    When enabled, starting a run command prompts you to stop
-                    any runtime already active in another session of this
-                    project. Useful when the dev server binds a fixed port or
-                    device that can&apos;t be shared.
+                    When enabled, starting a run command prompts you to stop any
+                    runtime already active in another session of this project.
+                    Useful when the dev server binds a fixed port or device that
+                    can&apos;t be shared.
                   </p>
                 </div>
               </SettingsScreenDetailBody>
@@ -1015,10 +1015,7 @@ export function SetupConfigDialog({
                     Advanced
                   </summary>
                   <div className={styles.field}>
-                    <label
-                      className={styles.label}
-                      htmlFor="setup-pr-template"
-                    >
+                    <label className={styles.label} htmlFor="setup-pr-template">
                       Preferred PR template filename
                     </label>
                     <Input
@@ -1030,9 +1027,9 @@ export function SetupConfigDialog({
                     />
                     <p className={styles.helpText}>
                       Only relevant when the repo has multiple PR templates
-                      under <code>.github/PULL_REQUEST_TEMPLATE/</code>. For
-                      the common single-template case GitHub auto-applies the
-                      file and this field does nothing.
+                      under <code>.github/PULL_REQUEST_TEMPLATE/</code>. For the
+                      common single-template case GitHub auto-applies the file
+                      and this field does nothing.
                     </p>
                   </div>
                 </details>

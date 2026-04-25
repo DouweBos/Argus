@@ -4,7 +4,7 @@ App-level settings apply to your install of Argus, regardless of which
 project is open. They live on your machine and are not shared with the
 team.
 
-Open them with **⌘,** or from the command palette → *Settings*.
+Open them with **⌘,** or from the command palette → _Settings_.
 
 Two storage layers back these:
 
@@ -18,8 +18,8 @@ Two storage layers back these:
 
 ## Appearance
 
-| Setting | Storage | Default | Description |
-| --- | --- | --- | --- |
+| Setting   | Storage                        | Default  | Description                                                                         |
+| --------- | ------------------------------ | -------- | ----------------------------------------------------------------------------------- |
 | **Theme** | `localStorage` (`argus:theme`) | `system` | `system`, `light`, or `dark`. `system` follows the OS `prefers-color-scheme` query. |
 
 Set the resolved theme on `<html data-theme="…">`, which Peacock tokens
@@ -29,8 +29,8 @@ key off of. Hardcoded colours bypass this — see CLAUDE.md.
 
 ## Agents
 
-| Setting | Storage | Default | Description |
-| --- | --- | --- | --- |
+| Setting                     | Storage                           | Default   | Description                                                                          |
+| --------------------------- | --------------------------------- | --------- | ------------------------------------------------------------------------------------ |
 | **Default permission mode** | `localStorage` (`argus:settings`) | `default` | The permission mode applied to new agents unless overridden in the new-agent picker. |
 
 Permission modes are passed through to Claude Code:
@@ -45,9 +45,9 @@ Permission modes are passed through to Claude Code:
 
 ## Open in apps
 
-| Setting | Storage | Default | Description |
-| --- | --- | --- | --- |
-| **Custom editors** | `localStorage` (`argus:settings`) | `[]` | Extra entries shown in the *Open in…* menu (sidebar repo row, file context menus, etc.). |
+| Setting            | Storage                           | Default | Description                                                                              |
+| ------------------ | --------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| **Custom editors** | `localStorage` (`argus:settings`) | `[]`    | Extra entries shown in the _Open in…_ menu (sidebar repo row, file context menus, etc.). |
 
 Each entry has a **Name** and a **Command**. The command is either:
 
@@ -60,12 +60,12 @@ Each entry has a **Name** and a **Command**. The command is either:
 
 ## Per-project personal settings
 
-These are app-level (machine-local) settings *about* a specific project.
+These are app-level (machine-local) settings _about_ a specific project.
 Stored in `~/.argus/user-project-settings.json` keyed by repo root path.
 
-| Setting | Default | Description |
-| --- | --- | --- |
-| **Branch prefix** | `""` | Prepended to the branch name when creating a session in this project (e.g. `douwe/`, `team/feature-`). Leave empty to disable. If a user-typed branch already starts with the prefix, it isn't doubled. |
+| Setting           | Default | Description                                                                                                                                                                                             |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Branch prefix** | `""`    | Prepended to the branch name when creating a session in this project (e.g. `douwe/`, `team/feature-`). Leave empty to disable. If a user-typed branch already starts with the prefix, it isn't doubled. |
 
 ---
 
@@ -84,7 +84,7 @@ localStorage:
   sessions/                   ← Session metadata
 ```
 
-For project settings *shared* with the team (setup commands, run
+For project settings _shared_ with the team (setup commands, run
 targets, related projects, …) see [project-settings.md](./project-settings.md).
 
 ---
