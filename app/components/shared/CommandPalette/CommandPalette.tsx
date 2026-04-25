@@ -256,7 +256,10 @@ function CommandPaletteContent() {
             { id: "changes", shortcut: "toggle-changes" as const },
             { id: "simulator", shortcut: "toggle-simulator" as const },
             { id: "debug", shortcut: "toggle-debug" as const },
-          ] satisfies { id: ToolId; shortcut: Parameters<typeof shortcutKeys>[0] }[]
+          ] satisfies {
+            id: ToolId;
+            shortcut: Parameters<typeof shortcutKeys>[0];
+          }[]
         ).map<PaletteItem>(({ id, shortcut }) => ({
           group: "view",
           id: `view:tool:${id}`,
