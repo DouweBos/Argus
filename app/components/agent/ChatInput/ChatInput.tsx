@@ -96,6 +96,7 @@ export function ChatInput({
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const projectChipRef = useRef<HTMLDivElement>(null);
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
@@ -633,7 +634,7 @@ export function ChatInput({
       >
         <ChatInputShell.CollapseLabel>Link issue</ChatInputShell.CollapseLabel>
       </Chip>
-      <div className={styles.modelPickerAnchor}>
+      <div ref={projectChipRef} className={styles.modelPickerAnchor}>
         <Chip
           interactive
           muted={linkedProjects.length === 0}
@@ -660,6 +661,7 @@ export function ChatInput({
         </Chip>
         {projectPickerOpen && (
           <ProjectPicker
+            triggerRef={projectChipRef}
             projects={projects}
             selectedPaths={linkedProjects}
             excludePaths={currentRepoRoot ? [currentRepoRoot] : []}
