@@ -1343,7 +1343,12 @@ export function BugIcon({ size = 18, className, ...rest }: IconProps) {
   );
 }
 
-export function TaskIcon({ size = 12, className, ...rest }: IconProps) {
+export function TaskIcon({
+  size = 12,
+  className,
+  done = false,
+  ...rest
+}: IconProps & { done?: boolean }) {
   return (
     <svg
       className={className}
@@ -1358,7 +1363,7 @@ export function TaskIcon({ size = 12, className, ...rest }: IconProps) {
       width={size}
     >
       <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2.25" />
-      <path d="M5.25 8.25 L7.25 10.25 L10.75 5.75" />
+      {done && <path d="M5.25 8.25 L7.25 10.25 L10.75 5.75" />}
     </svg>
   );
 }

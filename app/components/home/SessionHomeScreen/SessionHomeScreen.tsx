@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { Button, IconBadge, Icons, projectAccent } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
+import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
+import { TaskWidgets } from "../../organizations/TaskWidgets";
 import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
@@ -39,6 +41,7 @@ export function SessionHomeScreen({
   const sessions = useSessions();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
+  const orgTask = useOrgTaskForSession(sessionId);
 
   const session = useMemo(
     () => sessions.find((w) => w.id === sessionId) ?? null,
@@ -156,6 +159,8 @@ export function SessionHomeScreen({
         </div>
 
         {session?.path && <PathLink path={session.path} />}
+
+        {orgTask && <TaskWidgets task={orgTask} />}
 
         <ReadyToMergeCard
           baseBranch={session?.base_branch}

@@ -96,7 +96,12 @@ export function OrganizationSegment({ org }: OrganizationSegmentProps) {
                 key={task.id}
                 session={{ ...session, display_name: task.title }}
                 isSelected={session.id === selectedSessionId}
-                iconOverride={<Icons.TaskIcon size={13} />}
+                iconOverride={
+                  <Icons.TaskIcon
+                    size={13}
+                    done={task.status === "completed"}
+                  />
+                }
                 onSelect={() => selectSession(session.id)}
                 onDelete={async () => {
                   await deleteOrgTask(task.id);

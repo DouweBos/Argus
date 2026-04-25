@@ -10,7 +10,6 @@ import { EditorPanel } from "../../editor/EditorPanel";
 import { HomeScreen } from "../../home/HomeScreen";
 import { RunControl } from "../../layout/RunControl";
 import { TaskBanner } from "../../organizations/TaskBanner";
-import { TaskSidePanel } from "../../organizations/TaskSidePanel";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import styles from "./CenterPanel.module.css";
@@ -91,23 +90,20 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
 
       {/* Content area */}
       <div className={styles.body}>
-        <div className={styles.bodyMain}>
-          {(effectiveView === "agents" || effectiveView === "home") && (
-            <AgentView sessionId={sessionId} />
-          )}
+        {(effectiveView === "agents" || effectiveView === "home") && (
+          <AgentView sessionId={sessionId} />
+        )}
 
-          {effectiveView === "editor" && <EditorPanel sessionId={sessionId} />}
+        {effectiveView === "editor" && <EditorPanel sessionId={sessionId} />}
 
-          {effectiveView === "git" && (
-            <GitView
-              baseBranch={session?.base_branch}
-              branchName={session?.branch}
-              repoRoot={session?.repo_root ?? ""}
-              sessionId={sessionId}
-            />
-          )}
-        </div>
-        {orgTask && <TaskSidePanel task={orgTask} />}
+        {effectiveView === "git" && (
+          <GitView
+            baseBranch={session?.base_branch}
+            branchName={session?.branch}
+            repoRoot={session?.repo_root ?? ""}
+            sessionId={sessionId}
+          />
+        )}
       </div>
     </div>
   );
