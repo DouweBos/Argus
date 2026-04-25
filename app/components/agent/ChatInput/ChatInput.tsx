@@ -615,25 +615,6 @@ export function ChatInput({
           Plan
         </Chip>
       )}
-      <Chip
-        interactive
-        muted
-        aria-label="Link Linear issue"
-        title="Link Linear issue"
-        leading={<Icons.LinearIcon size={11} />}
-        className={disabled ? styles.chipDisabled : undefined}
-        onClick={() => {
-          if (disabled || !textareaRef.current) {
-            return;
-          }
-          textareaRef.current.value = "/linear ";
-          textareaRef.current.focus();
-          adjustHeight();
-          updateSuggestions();
-        }}
-      >
-        <ChatInputShell.CollapseLabel>Link issue</ChatInputShell.CollapseLabel>
-      </Chip>
       <div ref={projectChipRef} className={styles.modelPickerAnchor}>
         <Chip
           interactive
