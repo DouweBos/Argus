@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.4.1
+
+### Patch Changes
+
+- ef5d5f5: Improve contrast of chat message hover action buttons in light theme so the icons are no longer grey-on-grey.
+
 ## 0.4.0
 
 ### Minor Changes
