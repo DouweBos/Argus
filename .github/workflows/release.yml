@@ -106,3 +106,27 @@ jobs:
           CI: "true"
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: bundle exec fastlane mac release allow_dirty:true allow_any_branch:true
+
+      - name: Notify houwert.dev to sync changelogs
+        # Fires a repository_dispatch on DouweBos/houwert.dev so its
+        # `Sync changelogs` workflow regenerates src/data/changelogs.generated.json
+        # and commits it to main. That commit is what triggers the
+        # Cloudflare Pages rebuild — keeps the repo and the deployed site
+        # in lockstep. WEBSITE_DISPATCH_TOKEN is a fine-grained PAT with
+        # `Actions: Read and write` on DouweBos/houwert.dev. Skipped silently
+        # if not configured.
+        if: steps.stage.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+          VERSION: ${{ steps.stage.outputs.version }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "WEBSITE_DISPATCH_TOKEN not set — skipping website notify"
+            exit 0
+          fi
+          gh api repos/DouweBos/houwert.dev/dispatches \
+            --method POST \
+            -f event_type=upstream-release \
+            -F "client_payload[product]=argus" \
+            -F "client_payload[version]=${VERSION}"
+          echo "Notified houwert.dev of argus v${VERSION}"
