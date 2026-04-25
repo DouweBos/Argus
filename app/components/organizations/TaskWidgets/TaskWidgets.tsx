@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { Button, Icons, SectionPanel } from "@argus/peacock";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
+import { MergeAction } from "../../runtime/MergeBar";
 import styles from "./TaskWidgets.module.css";
 
 interface Props {
@@ -55,11 +56,7 @@ export function TaskWidgets({ task }: Props) {
 
       <SectionPanel
         title="Child agents"
-        meta={
-          children.length === 0
-            ? "none yet"
-            : `${children.length} spawned`
-        }
+        meta={children.length === 0 ? "none yet" : `${children.length} spawned`}
       >
         {children.length === 0 ? (
           <div className={styles.empty}>
@@ -92,6 +89,7 @@ export function TaskWidgets({ task }: Props) {
                   >
                     Open session
                   </Button>
+                  <MergeAction sessionId={child.session_id} />
                 </div>
               );
             })}
