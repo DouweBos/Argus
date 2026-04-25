@@ -468,7 +468,7 @@ export async function resolveMentionPath(
   }
 
   const entries: MentionDirEntry[] = rawEntries
-    .filter((d) => d.name !== ".git" && !d.name.startsWith("."))
+    .filter((d) => d.name !== ".git")
     .map((d) => ({ name: d.name, is_dir: d.isDirectory() }))
     .sort((a, b) => {
       if (a.is_dir !== b.is_dir) {
