@@ -5,6 +5,7 @@ import { OnboardingRoot } from "./components/onboarding/OnboardingRoot";
 import { QuitGuard } from "./components/shared/ConfirmStopAgent/QuitGuard";
 import { StopAgentGuard } from "./components/shared/ConfirmStopAgent/stopAgentGuard";
 import { ImageViewer } from "./components/shared/ImageViewer/ImageViewer";
+import { UpdaterHost } from "./components/shared/Updater/UpdaterHost";
 import { useOnboarding } from "./hooks/useOnboarding";
 import { useRegisterNavigator } from "./lib/router";
 
@@ -34,6 +35,7 @@ export default function App() {
       <ImageViewer />
       <StopAgentGuard />
       <QuitGuard />
+      <UpdaterHost />
     </MemoryRouter>
   );
 }

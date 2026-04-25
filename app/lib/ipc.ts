@@ -1024,3 +1024,35 @@ export const completeOnboarding = (): Promise<void> =>
   invoke("onboarding_complete");
 
 export const resetOnboarding = (): Promise<void> => invoke("onboarding_reset");
+
+// Auto-updater
+export type UpdaterPhase =
+  | "available"
+  | "checking"
+  | "downloaded"
+  | "downloading"
+  | "error"
+  | "idle"
+  | "not-available";
+
+export interface UpdaterState {
+  currentVersion: string;
+  error: string | null;
+  lastCheckedAt: number | null;
+  phase: UpdaterPhase;
+  progressPercent: number;
+  releaseDate: string | null;
+  releaseNotes: string | null;
+  updateVersion: string | null;
+}
+
+export const updaterGetState = (): Promise<UpdaterState> =>
+  invoke("updater_get_state");
+
+export const updaterCheck = (silent = false): Promise<UpdaterState> =>
+  invoke("updater_check", { silent });
+
+export const updaterDownload = (): Promise<void> => invoke("updater_download");
+
+export const updaterQuitAndInstall = (): Promise<void> =>
+  invoke("updater_quit_and_install");
