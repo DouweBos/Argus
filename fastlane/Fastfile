@@ -74,9 +74,18 @@ platform :mac do
 
     sh("cd .. && pnpm install --frozen-lockfile")
 
-    notes_flag = ""
+    # Generate release-notes.md from the current version's CHANGELOG.md
+    # section unless the caller already provided a file. electron-builder
+    # embeds this into latest-mac.yml so electron-updater can show it
+    # inside the running app's "What's new" dialog.
     notes_file = ENV["ARGUS_RELEASE_NOTES_FILE"]
-    if notes_file && File.exist?(notes_file)
+    if notes_file.nil? || notes_file.empty?
+      notes_file = File.expand_path("../release-notes.md", __dir__)
+      sh("cd .. && pnpm exec tsx scripts/extract-release-notes.ts #{notes_file.shellescape}")
+    end
+
+    notes_flag = ""
+    if File.exist?(notes_file)
       notes_flag = " --config.releaseInfo.releaseNotesFile=#{notes_file.shellescape}"
     end
 

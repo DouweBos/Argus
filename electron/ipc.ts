@@ -240,6 +240,12 @@ import {
 } from "./services/terminal/multiplexer";
 import { getUiState, setUiState } from "./services/uiState";
 import {
+  checkForUpdates as updaterCheck,
+  downloadUpdate as updaterDownload,
+  getUpdaterState,
+  quitAndInstallUpdate,
+} from "./services/updater";
+import {
   loadUserProjectSettings,
   saveUserProjectSettings,
   type UserProjectSettings,
@@ -390,6 +396,14 @@ export function registerIpcHandlers(): void {
   // `before-quit` handler already called `event.preventDefault()`.
   handle("app_cancel_quit", () => {
     createLogger("ipc:app_cancel_quit").info("user cancelled quit");
+  });
+
+  // Auto-updater
+  handle("updater_get_state", () => getUpdaterState());
+  handle("updater_check", (a) => updaterCheck({ silent: a.silent === true }));
+  handle("updater_download", () => updaterDownload());
+  handle("updater_quit_and_install", () => {
+    quitAndInstallUpdate();
   });
 
   // Session CRUD

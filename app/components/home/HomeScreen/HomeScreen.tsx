@@ -36,6 +36,10 @@ import {
 } from "../../../stores/organizationStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectSession } from "../../../stores/sessionStore";
+import {
+  openChangelogDialog,
+  useUpdaterState,
+} from "../../../stores/updaterStore";
 import { OrganizationDialogHost } from "../OrganizationDialog/OrganizationDialog";
 import styles from "./HomeScreen.module.css";
 import { HOME_SHORTCUTS } from "./homeContent";
@@ -182,6 +186,13 @@ export function HomeScreen() {
 
   const missingRequired = missingDeps.filter((d) => d.severity === "required");
   const missingOptional = missingDeps.filter((d) => d.severity === "optional");
+  const updater = useUpdaterState();
+  const hasPendingUpdate =
+    (updater.phase === "available" ||
+      updater.phase === "downloading" ||
+      updater.phase === "downloaded") &&
+    updater.updateVersion !== null &&
+    updater.updateVersion !== updater.currentVersion;
 
   const handleOpenProject = async (p: HomeProject) => {
     setOpenError(null);
@@ -230,9 +241,28 @@ export function HomeScreen() {
   const runningDevices = devices.filter((d) => d.online);
   const isEmpty = projects.length === 0;
 
+  let updateLabel = "available";
+  if (updater.phase === "downloaded") {
+    updateLabel = "ready to install";
+  } else if (updater.phase === "downloading") {
+    updateLabel = `downloading (${updater.progressPercent}%)`;
+  }
+
   return (
     <div className={styles.screen}>
       <div className={styles.main}>
+        {hasPendingUpdate && (
+          <Banner
+            tone="info"
+            trailing={
+              <Button variant="secondary" onClick={openChangelogDialog}>
+                See changes
+              </Button>
+            }
+          >
+            <strong>Argus {updater.updateVersion}</strong> is {updateLabel}.
+          </Banner>
+        )}
         {missingRequired.map((dep) => (
           <Banner key={dep.id} tone="error">
             <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}

@@ -40,6 +40,7 @@ import { refreshAllBranches } from "./services/session/watcher";
 import { stopSimulatorCapture } from "./services/simulator/ios";
 import { destroyAllTerminals } from "./services/terminal/multiplexer";
 import { fixProcessPath } from "./services/terminal/shellEnv";
+import { checkForUpdates, initUpdater } from "./services/updater";
 import { appState } from "./state";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
@@ -457,6 +458,14 @@ function buildAppMenu(): Menu {
     {
       role: "help",
       submenu: [
+        {
+          label: "Check for Updates…",
+          click: () => {
+            checkForUpdates({ silent: false }).catch(() => {});
+            invoke("updater-show");
+          },
+        },
+        { type: "separator" },
         {
           label: "Argus on GitHub",
           click: () => {
@@ -893,6 +902,10 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(buildAppMenu());
 
   createWindow();
+
+  // Auto-updater. Skips itself in dev; in packaged builds it kicks off an
+  // initial feed check after a short delay and re-checks hourly.
+  initUpdater();
 
   // Refresh branch names when the window regains focus — fallback for cases
   // where fs.watch on .git/HEAD misses events (network drives, sleep/wake).
