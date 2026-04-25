@@ -40,6 +40,27 @@
   min-width: 0;
 }
 
+.shellFloating {
+  min-height: 88px;
+}
+
+.shellFloating .body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.shellFloating .body > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.trailingFloating {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+}
+
 .bar {
   display: flex;
   align-items: center;

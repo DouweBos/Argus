@@ -62,13 +62,21 @@ const ChatInputShellBase = forwardRef<HTMLDivElement, ChatInputShellProps>(
     },
     ref,
   ) {
-    const hasBar = actions !== undefined || trailing !== undefined;
+    const hasActions = actions !== undefined;
+    const hasTrailing = trailing !== undefined;
+    const hasBar = hasActions || hasTrailing;
+    // When only a trailing slot is present (no action pills), float the
+    // trailing control in the bottom-right corner so the textarea can fill
+    // the full height of the shell instead of being squeezed above a mostly
+    // empty bar.
+    const floatingTrailing = hasTrailing && !hasActions;
 
     return (
       <div
         ref={ref}
         className={[
           styles.shell,
+          floatingTrailing && styles.shellFloating,
           disabled && styles.disabled,
           dragOver && styles.dragOver,
           className,
@@ -79,11 +87,17 @@ const ChatInputShellBase = forwardRef<HTMLDivElement, ChatInputShellProps>(
       >
         {above}
         <div className={styles.body}>{children}</div>
-        {hasBar && (
-          <div className={styles.bar}>
-            <div className={styles.actions}>{actions}</div>
-            <div className={styles.trailing}>{trailing}</div>
+        {floatingTrailing ? (
+          <div className={[styles.trailing, styles.trailingFloating].join(" ")}>
+            {trailing}
           </div>
+        ) : (
+          hasBar && (
+            <div className={styles.bar}>
+              <div className={styles.actions}>{actions}</div>
+              <div className={styles.trailing}>{trailing}</div>
+            </div>
+          )
         )}
       </div>
     );
