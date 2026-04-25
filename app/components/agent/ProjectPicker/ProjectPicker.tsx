@@ -1,5 +1,12 @@
 import type { ProjectEntry } from "../../../lib/types";
-import { useEffect, useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import styles from "./ProjectPicker.module.css";
 
@@ -13,6 +20,13 @@ interface ProjectPickerProps {
   projects: ProjectEntry[];
   /** Paths currently linked to the chat. */
   selectedPaths: string[];
+  /** Element the picker should anchor to. Picker opens above and aligned to its left. */
+  triggerRef: RefObject<HTMLElement | null>;
+}
+
+interface PickerRect {
+  bottom: number;
+  left: number;
 }
 
 function basename(p: string): string {
@@ -22,6 +36,7 @@ function basename(p: string): string {
 }
 
 export function ProjectPicker({
+  triggerRef,
   projects,
   selectedPaths,
   excludePaths,
@@ -30,8 +45,31 @@ export function ProjectPicker({
   onClose,
 }: ProjectPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<PickerRect | null>(null);
 
-  useOutsideClick(ref, true, onClose);
+  useLayoutEffect(() => {
+    const updateRect = () => {
+      const node = triggerRef.current;
+      if (!node) {
+        return;
+      }
+      const r = node.getBoundingClientRect();
+      setRect({ left: r.left, bottom: window.innerHeight - r.top + 6 });
+    };
+
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [triggerRef]);
+
+  useOutsideClick(ref, true, onClose, (target) => {
+    return triggerRef.current?.contains(target) ?? false;
+  });
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -47,8 +85,16 @@ export function ProjectPicker({
   const exclude = new Set(excludePaths ?? []);
   const visible = projects.filter((p) => !exclude.has(p.path));
 
-  return (
-    <div ref={ref} className={styles.picker}>
+  if (!rect) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      ref={ref}
+      className={styles.picker}
+      style={{ left: rect.left, bottom: rect.bottom }}
+    >
       <div className={styles.header}>Link project</div>
       <div className={styles.hint}>
         Linked projects are shared with the agent so it can read from and edit
@@ -90,6 +136,7 @@ export function ProjectPicker({
           );
         })
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
