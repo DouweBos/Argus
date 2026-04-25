@@ -37,7 +37,7 @@ async function dispatchPrompt(
   images?: ImageAttachment[],
 ): Promise<void> {
   try {
-    const agentInfo = await startAgentInSession(session.id, { focus: true });
+    const agentInfo = await startAgentInSession(session.id, { focus: false });
     maybeGenerateTitle(agentInfo.agent_id, prompt);
     await sendUserMessageToAgent(
       agentInfo.agent_id,
