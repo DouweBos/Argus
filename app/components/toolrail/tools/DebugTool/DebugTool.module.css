@@ -256,14 +256,6 @@
   word-break: break-word;
 }
 
-.line {
-  color: var(--text-primary);
-}
-
-.lineErr {
-  color: var(--error);
-}
-
 .logList {
   display: flex;
   flex-direction: column;

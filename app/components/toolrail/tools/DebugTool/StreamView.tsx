@@ -390,13 +390,12 @@ export function StreamView({ deviceKey, tool }: StreamViewProps) {
       {error && <div className={styles.error}>{error}</div>}
       <div className={styles.logViewport}>
         <div ref={scrollRef} className={styles.logScroll} onScroll={onScroll}>
-          {visibleEntries.length === 0 ? (
-            sourceEntries.length === 0 ? null : (
-              <div className={styles.empty}>
-                <p>No lines match the current filter.</p>
-              </div>
-            )
-          ) : (
+          {visibleEntries.length === 0 && sourceEntries.length > 0 && (
+            <div className={styles.empty}>
+              <p>No lines match the current filter.</p>
+            </div>
+          )}
+          {visibleEntries.length > 0 && (
             <div className={styles.logList}>
               {visibleEntries.map((e) =>
                 e.kind === "structured" ? (
