@@ -8,6 +8,7 @@
  */
 
 import type { OrgTask, OrgTaskStatus } from "./models";
+import type { Session } from "../session/models";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { info, warn } from "../../../app/lib/logger";
@@ -15,6 +16,9 @@ import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { orgHostDir, orgHostOrgDir } from "./paths";
 import { loadOrgTasks, saveOrgTasks } from "./store";
+
+/** Tasks idle for longer than this on startup are purged with their host dir. */
+const ORG_TASK_IDLE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /** Max number of terminal (completed/failed/cancelled) tasks kept per org. */
 export const MAX_ORG_TASKS_PER_ORG = 100;
@@ -31,30 +35,74 @@ const TERMINAL_STATUSES: ReadonlySet<OrgTaskStatus> = new Set([
 
 export function initOrgTasks(): void {
   const tasks = loadOrgTasks();
-  let stalePurged = 0;
+  const now = Date.now();
+  let purged = 0;
+  let restored = 0;
+
   for (const t of tasks) {
-    // Neutral org-host sessions don't survive a restart — the process is
-    // gone and the session record isn't persisted. Any task that had a
-    // host_session_id is now pointing at nothing; keeping it around just
-    // creates dead rows in the UI that navigate nowhere. Purge them along
-    // with their host directories.
-    if (t.host_session_id !== null || t.status === "running") {
+    const lastActivity = t.updated_at || t.created_at;
+    const dir = orgHostDir(t.organization_id, t.id);
+    const dirExists = fs.existsSync(dir);
+
+    // Tasks idle for longer than the TTL — or whose host directory has
+    // already vanished from disk — are unrecoverable. Drop them along with
+    // their host dir so they don't accumulate.
+    if (now - lastActivity > ORG_TASK_IDLE_TTL_MS || !dirExists) {
       removeHostDir(t);
-      stalePurged++;
+      purged++;
       continue;
     }
-    appState.organizationTasks.set(t.id, t);
+
+    // The neutral org-host session itself is in-memory only and didn't
+    // survive the restart, but the on-disk host directory and the task's
+    // shared prompt/scope still exist. Recreate a fresh session pointed at
+    // the same directory so the user can navigate to the task and spawn
+    // new agents under it; the previous host agent process is gone so we
+    // clear `host_agent_id` too.
+    const session = restoreOrgHostSession(t, dir);
+    appState.organizationTasks.set(t.id, {
+      ...t,
+      host_session_id: session.id,
+      host_agent_id: null,
+    });
+    restored++;
   }
+
   info(
-    `Loaded ${tasks.length - stalePurged} organization task(s) from disk (purged ${stalePurged} stale).`,
+    `Loaded ${tasks.length - purged} organization task(s) from disk (purged ${purged}, restored ${restored} host session(s)).`,
   );
 
-  if (stalePurged > 0) {
+  if (purged > 0 || restored > 0) {
     persist();
   }
 
   // Run retention once so legacy on-disk state self-trims on startup.
   enforceRetention();
+}
+
+/**
+ * Recreate the in-memory `org_host` session for a task whose on-disk host
+ * directory survived a restart. Mirrors `createOrgHostSession` but reuses
+ * the existing directory instead of creating a new one.
+ */
+function restoreOrgHostSession(task: OrgTask, dir: string): Session {
+  const ws: Session = {
+    id: crypto.randomUUID(),
+    kind: "org_host",
+    branch: "",
+    display_name: task.title,
+    description: "",
+    path: dir,
+    repo_root: dir,
+    status: "ready",
+    env_index: null,
+    base_branch: null,
+    organization_task_id: task.id,
+  };
+  appState.sessions.set(ws.id, ws);
+  getMainWindow()?.webContents.send("session:created", { ...ws });
+
+  return ws;
 }
 
 function persist(): void {
