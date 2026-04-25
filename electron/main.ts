@@ -232,6 +232,250 @@ function log(msg: string, ...args: unknown[]): void {
   emitLog(`[Argus] ${msg}`, ...args);
 }
 
+/** Send a payload to the main window if it's alive. */
+function sendToRenderer(channel: string, payload?: unknown): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.send(channel, payload);
+  }
+}
+
+/**
+ * Build the application menu (macOS menu bar / Win+Linux window menu).
+ *
+ * Items that share a chord with a renderer-side global shortcut use
+ * `registerAccelerator: false` — the chord is shown in the menu for
+ * discoverability, but the renderer's keydown handler stays the single
+ * source of truth so we don't double-fire.
+ */
+function buildAppMenu(): Menu {
+  const isMac = process.platform === "darwin";
+  const appName = app.getName();
+
+  const goto = (route: string) =>
+    sendToRenderer("navigation:goto", { path: route });
+  const invoke = (id: string) => sendToRenderer("menu:invoke-shortcut", { id });
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(isMac
+      ? ([
+          {
+            label: appName,
+            submenu: [
+              { role: "about" },
+              { type: "separator" },
+              {
+                label: "Settings…",
+                accelerator: "CmdOrCtrl+,",
+                registerAccelerator: false,
+                click: () => invoke("settings"),
+              },
+              { type: "separator" },
+              { role: "services" },
+              { type: "separator" },
+              { role: "hide" },
+              { role: "hideOthers" },
+              { role: "unhide" },
+              { type: "separator" },
+              { role: "quit" },
+            ],
+          },
+        ] as Electron.MenuItemConstructorOptions[])
+      : []),
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "New Session…",
+          accelerator: "CmdOrCtrl+N",
+          registerAccelerator: false,
+          click: () => invoke("new-session"),
+        },
+        {
+          label: "New Agent in Current Session",
+          accelerator: "CmdOrCtrl+Shift+A",
+          registerAccelerator: false,
+          click: () => invoke("new-agent"),
+        },
+        { type: "separator" },
+        {
+          label: "Open Project…",
+          accelerator: "CmdOrCtrl+O",
+          registerAccelerator: false,
+          click: () => invoke("open-repo"),
+        },
+        {
+          label: "Open Project or Session…",
+          accelerator: "CmdOrCtrl+Shift+O",
+          registerAccelerator: false,
+          click: () => invoke("open-palette"),
+        },
+        { type: "separator" },
+        isMac ? { role: "close" } : { role: "quit" },
+      ],
+    },
+    {
+      label: "Edit",
+      submenu: [
+        { role: "undo" },
+        { role: "redo" },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "pasteAndMatchStyle" },
+        { role: "delete" },
+        { role: "selectAll" },
+      ],
+    },
+    {
+      label: "View",
+      submenu: [
+        {
+          label: "App Home",
+          accelerator: "CmdOrCtrl+Shift+H",
+          registerAccelerator: false,
+          click: () => invoke("go-home"),
+        },
+        {
+          label: "Project Home",
+          accelerator: "CmdOrCtrl+Alt+H",
+          registerAccelerator: false,
+          click: () => invoke("go-project-home"),
+        },
+        { type: "separator" },
+        {
+          label: "Agents",
+          accelerator: "CmdOrCtrl+1",
+          click: () => goto("/agents"),
+        },
+        {
+          label: "Devices",
+          accelerator: "CmdOrCtrl+2",
+          click: () => goto("/devices"),
+        },
+        {
+          label: "Runtimes",
+          accelerator: "CmdOrCtrl+3",
+          click: () => goto("/runtimes"),
+        },
+        {
+          label: "Pull Requests",
+          accelerator: "CmdOrCtrl+4",
+          click: () => goto("/pull-requests"),
+        },
+        {
+          label: "Review Queue",
+          accelerator: "CmdOrCtrl+5",
+          click: () => goto("/review-queue"),
+        },
+        {
+          label: "Notifications",
+          accelerator: "CmdOrCtrl+6",
+          click: () => goto("/notifications"),
+        },
+        {
+          label: "Organizations",
+          accelerator: "CmdOrCtrl+7",
+          click: () => goto("/organizations"),
+        },
+        { type: "separator" },
+        {
+          label: "Command Palette…",
+          accelerator: "CmdOrCtrl+Shift+P",
+          registerAccelerator: false,
+          click: () => invoke("command-palette"),
+        },
+        { type: "separator" },
+        {
+          label: "Toggle Left Sidebar",
+          accelerator: "CmdOrCtrl+B",
+          registerAccelerator: false,
+          click: () => invoke("toggle-left-sidebar"),
+        },
+        {
+          label: "Toggle Right Panel",
+          accelerator: "CmdOrCtrl+Alt+B",
+          registerAccelerator: false,
+          click: () => invoke("toggle-right-panel"),
+        },
+        {
+          label: "Toggle Bottom Panel",
+          accelerator: "CmdOrCtrl+J",
+          registerAccelerator: false,
+          click: () => invoke("toggle-bottom-panel"),
+        },
+        { type: "separator" },
+        {
+          label: "Toggle Terminal",
+          accelerator: "CmdOrCtrl+Shift+T",
+          registerAccelerator: false,
+          click: () => invoke("toggle-terminal"),
+        },
+        {
+          label: "Toggle Changes",
+          accelerator: "CmdOrCtrl+Shift+G",
+          registerAccelerator: false,
+          click: () => invoke("toggle-changes"),
+        },
+        {
+          label: "Toggle Simulator",
+          accelerator: "CmdOrCtrl+Shift+M",
+          registerAccelerator: false,
+          click: () => invoke("toggle-simulator"),
+        },
+        {
+          label: "Toggle Device Debugger",
+          accelerator: "CmdOrCtrl+Shift+D",
+          registerAccelerator: false,
+          click: () => invoke("toggle-debug"),
+        },
+        { type: "separator" },
+        { role: "reload" },
+        { role: "forceReload" },
+        { role: "toggleDevTools" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+    {
+      label: "Window",
+      submenu: [
+        { role: "minimize" },
+        { role: "zoom" },
+        ...(isMac
+          ? ([
+              { type: "separator" },
+              { role: "front" },
+              { type: "separator" },
+              { role: "window" },
+            ] as Electron.MenuItemConstructorOptions[])
+          : ([{ role: "close" }] as Electron.MenuItemConstructorOptions[])),
+      ],
+    },
+    {
+      role: "help",
+      submenu: [
+        {
+          label: "Argus on GitHub",
+          click: () => {
+            shell.openExternal("https://github.com/DouweBos/Argus");
+          },
+        },
+        {
+          label: "Report an Issue…",
+          click: () => {
+            shell.openExternal("https://github.com/DouweBos/Argus/issues/new");
+          },
+        },
+      ],
+    },
+  ];
+
+  return Menu.buildFromTemplate(template);
+}
+
 function createWindow(): void {
   log("createWindow: isDev=%s, __dirname=%s", isDev, __dirname);
   const iconPath = resolveAppIconPath();
@@ -645,6 +889,8 @@ app.whenReady().then(() => {
 
   // Register all IPC handlers before creating the window.
   registerIpcHandlers();
+
+  Menu.setApplicationMenu(buildAppMenu());
 
   createWindow();
 
