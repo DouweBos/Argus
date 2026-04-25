@@ -8,10 +8,10 @@ A second file, `.argus.local.json` (gitignored), is merged on top of
 `.argus.json` for personal overrides — handy when you want to add a run
 target locally without dirtying the team config.
 
-| | Lives at | Shared? | Use for |
-| --- | --- | --- | --- |
-| `.argus.json` | repo root | yes (commit it) | setup, run commands, related projects, anything the team needs |
-| `.argus.local.json` | repo root | **no** (gitignored) | personal run targets, local-only env, experiments |
+|                     | Lives at  | Shared?             | Use for                                                        |
+| ------------------- | --------- | ------------------- | -------------------------------------------------------------- |
+| `.argus.json`       | repo root | yes (commit it)     | setup, run commands, related projects, anything the team needs |
+| `.argus.local.json` | repo root | **no** (gitignored) | personal run targets, local-only env, experiments              |
 
 For app-level (machine-local) preferences, see
 [app-settings.md](./app-settings.md).
@@ -23,7 +23,7 @@ For app-level (machine-local) preferences, see
 Two ways to change project settings:
 
 1. **In-app — Project settings dialog.** Open from the sidebar's repo
-   row context menu → *Project settings*. iPad-style screen with
+   row context menu → _Project settings_. iPad-style screen with
    sections: Setup, Platforms, Workspace env, Run commands, Terminals,
    Browser, Branch protection, Agent. Reads and writes
    `.argus.json` directly. Includes a JSON-preview tab for the exact
@@ -31,18 +31,18 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field | Editable in dialog? |
-| --- | --- |
-| `setup.copy` / `symlink` / `commands` | yes (Setup) |
-| `terminals` | yes (Terminals) |
-| `run` | yes (Run commands) |
-| `workspace_env` | yes (Workspace env) |
-| `platforms` | yes (Platforms) |
-| `browser_url`, `browser_presets` | yes (Browser) |
-| `single_runtime` | yes (Run commands) |
-| `agent_prompt`, `save_chat_history` | yes (Agent) |
-| `protected_branches`, `pull_request_template` | yes (Branch protection) |
-| `related_projects` | **no** — hand-edit `.argus.json` |
+| Field                                         | Editable in dialog?              |
+| --------------------------------------------- | -------------------------------- |
+| `setup.copy` / `symlink` / `commands`         | yes (Setup)                      |
+| `terminals`                                   | yes (Terminals)                  |
+| `run`                                         | yes (Run commands)               |
+| `workspace_env`                               | yes (Workspace env)              |
+| `platforms`                                   | yes (Platforms)                  |
+| `browser_url`, `browser_presets`              | yes (Browser)                    |
+| `single_runtime`                              | yes (Run commands)               |
+| `agent_prompt`, `save_chat_history`           | yes (Agent)                      |
+| `protected_branches`, `pull_request_template` | yes (Branch protection)          |
+| `related_projects`                            | **no** — hand-edit `.argus.json` |
 
 ---
 
@@ -83,11 +83,11 @@ Order: copy → symlink → commands.
 }
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `copy` | `string[]` | `[]` | Files/dirs to copy from the main repo into the worktree. Glob patterns supported. Useful for `node_modules`, `.claude/`, native build artefacts, anything you don't want to rebuild from scratch. |
-| `symlink` | `string[]` | `[]` | Files to symlink into the worktree (changes flow both ways). Glob patterns supported. Use for shared secrets like `.env.local`. |
-| `commands` | `string[]` | `[]` | Shell commands run in the worktree after copy/symlink. Each entry is passed to `sh -c`. |
+| Field      | Type       | Default | Description                                                                                                                                                                                       |
+| ---------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `copy`     | `string[]` | `[]`    | Files/dirs to copy from the main repo into the worktree. Glob patterns supported. Useful for `node_modules`, `.claude/`, native build artefacts, anything you don't want to rebuild from scratch. |
+| `symlink`  | `string[]` | `[]`    | Files to symlink into the worktree (changes flow both ways). Glob patterns supported. Use for shared secrets like `.env.local`.                                                                   |
+| `commands` | `string[]` | `[]`    | Shell commands run in the worktree after copy/symlink. Each entry is passed to `sh -c`.                                                                                                           |
 
 ---
 
@@ -102,9 +102,9 @@ Tabs spawned in the bottom panel when a session is selected.
 ]
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | required | Tab label. |
+| Field  | Type     | Default  | Description                                |
+| ------ | -------- | -------- | ------------------------------------------ |
+| `name` | `string` | required | Tab label.                                 |
 | `dir`  | `string` | required | Relative directory from the worktree root. |
 
 ---
@@ -121,12 +121,12 @@ process per-session and shows a stop button while it's alive.
 ]
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `title` | `string` | required | Display label. Also the identifier — must be unique within the array. |
-| `command` | `string` | required | Shell command, passed to `sh -c`. |
-| `cwd` | `string?` | worktree root | Optional relative directory to run the command in. |
-| `restartOnRerun` | `boolean` | required | If `true`, pressing Run while the command is alive kills and restarts it. If `false`, the press is a no-op. |
+| Field            | Type      | Default       | Description                                                                                                 |
+| ---------------- | --------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `title`          | `string`  | required      | Display label. Also the identifier — must be unique within the array.                                       |
+| `command`        | `string`  | required      | Shell command, passed to `sh -c`.                                                                           |
+| `cwd`            | `string?` | worktree root | Optional relative directory to run the command in.                                                          |
+| `restartOnRerun` | `boolean` | required      | If `true`, pressing Run while the command is alive kills and restarts it. If `false`, the press is a no-op. |
 
 ---
 
@@ -142,12 +142,12 @@ in particular.
 ]
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | required | Env var name (e.g. `ARGUS_PORT`, `RCT_METRO_PORT`, `PORT`). |
-| `base_value` | `number` | required | Starting integer; final value is `base_value + offset`. |
-| `range` | `number` | required | Modulus for the `hash` strategy. |
-| `strategy` | `"sequential" \| "hash"` | required | `sequential` — assigned at session creation from a counter. `hash` — derived deterministically from the branch name modulo `range`. |
+| Field        | Type                     | Default  | Description                                                                                                                         |
+| ------------ | ------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `name`       | `string`                 | required | Env var name (e.g. `ARGUS_PORT`, `RCT_METRO_PORT`, `PORT`).                                                                         |
+| `base_value` | `number`                 | required | Starting integer; final value is `base_value + offset`.                                                                             |
+| `range`      | `number`                 | required | Modulus for the `hash` strategy.                                                                                                    |
+| `strategy`   | `"sequential" \| "hash"` | required | `sequential` — assigned at session creation from a counter. `hash` — derived deterministically from the branch name modulo `range`. |
 
 ---
 
@@ -188,10 +188,10 @@ Surfaced via the `list_projects` MCP tool.
 ]
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `path` | `string` | required | Relative path from this repo's root to the related repo's root. |
-| `description` | `string` | required | One-line description shown to spawned agents. |
+| Field         | Type     | Default  | Description                                                     |
+| ------------- | -------- | -------- | --------------------------------------------------------------- |
+| `path`        | `string` | required | Relative path from this repo's root to the related repo's root. |
+| `description` | `string` | required | One-line description shown to spawned agents.                   |
 
 ---
 
@@ -218,13 +218,13 @@ built-in list.
 ]
 ```
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `id` | `string` | required | Unique key for this preset. |
-| `label` | `string?` | `id` | Display name in the picker. |
-| `width` | `number` | required | Viewport width in CSS pixels. |
-| `height` | `number` | required | Viewport height in CSS pixels. |
-| `user_agent` | `string?` | desktop Chrome | Custom UA string. |
+| Field        | Type      | Default        | Description                    |
+| ------------ | --------- | -------------- | ------------------------------ |
+| `id`         | `string`  | required       | Unique key for this preset.    |
+| `label`      | `string?` | `id`           | Display name in the picker.    |
+| `width`      | `number`  | required       | Viewport width in CSS pixels.  |
+| `height`     | `number`  | required       | Viewport height in CSS pixels. |
+| `user_agent` | `string?` | desktop Chrome | Custom UA string.              |
 
 ---
 
@@ -243,7 +243,7 @@ on next interaction.
 ## `protected_branches` — require PR for these branches
 
 Sessions whose **base branch** is in this list cannot be merged
-directly — instead they surface a *Push & open PR* flow.
+directly — instead they surface a _Push & open PR_ flow.
 
 ```jsonc
 "protected_branches": ["main", "master", "release/*"]
@@ -277,23 +277,30 @@ remapped via `workspace_env`.
 ```jsonc
 {
   "setup": {
-    "copy":     [".claude", "node_modules"],
-    "symlink":  [".env.local"],
-    "commands": ["pnpm install"]
+    "copy": [".claude", "node_modules"],
+    "symlink": [".env.local"],
+    "commands": ["pnpm install"],
   },
-  "terminals": [
-    { "name": "Shell", "dir": "." }
-  ],
+  "terminals": [{ "name": "Shell", "dir": "." }],
   "run": [
-    { "title": "Dev",       "command": "pnpm dev",       "restartOnRerun": true },
-    { "title": "Storybook", "command": "pnpm storybook", "restartOnRerun": true }
+    { "title": "Dev", "command": "pnpm dev", "restartOnRerun": true },
+    {
+      "title": "Storybook",
+      "command": "pnpm storybook",
+      "restartOnRerun": true,
+    },
   ],
   "workspace_env": [
-    { "name": "ARGUS_PORT", "base_value": 1420, "range": 100, "strategy": "sequential" }
+    {
+      "name": "ARGUS_PORT",
+      "base_value": 1420,
+      "range": 100,
+      "strategy": "sequential",
+    },
   ],
   "platforms": ["web"],
   "browser_url": "http://localhost:1420",
-  "protected_branches": ["main"]
+  "protected_branches": ["main"],
 }
 ```
 

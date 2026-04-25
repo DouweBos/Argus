@@ -50,8 +50,7 @@ export function SettingsScreenSidebar({
   );
 }
 
-export interface SettingsScreenSectionGroupProps
-  extends HTMLAttributes<HTMLDivElement> {
+export interface SettingsScreenSectionGroupProps extends HTMLAttributes<HTMLDivElement> {
   label?: ReactNode;
 }
 
@@ -72,8 +71,7 @@ export function SettingsScreenSectionGroup({
   );
 }
 
-export interface SettingsScreenSectionProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface SettingsScreenSectionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
   icon?: ReactNode;
   description?: ReactNode;
@@ -124,8 +122,10 @@ export function SettingsScreenDetail({
   );
 }
 
-export interface SettingsScreenDetailHeaderProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
+export interface SettingsScreenDetailHeaderProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  "title"
+> {
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
@@ -175,8 +175,7 @@ export function SettingsScreenDetailBody({
  * A labelled block within the detail body. Pair with regular form controls
  * (Input, Toggle, etc.) for a consistent rhythm of label / caption / control.
  */
-export interface SettingsScreenFieldProps
-  extends HTMLAttributes<HTMLDivElement> {
+export interface SettingsScreenFieldProps extends HTMLAttributes<HTMLDivElement> {
   label: ReactNode;
   caption?: ReactNode;
 }

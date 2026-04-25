@@ -43,6 +43,7 @@ Node.js + TypeScript + Electron.
 **File size:** target <500 lines; split responsibilities when approaching. Components <300 lines — extract subcomponents/hooks/pure logic. Keep orchestrators thin.
 
 **Backend:**
+
 - IPC commands are `snake_case`
 - `child_process.execFile` for git (not libgit2); `node-pty` for terminals
 - Throw string errors from IPC handlers
@@ -50,17 +51,20 @@ Node.js + TypeScript + Electron.
 - Access `appState` directly
 
 **Frontend:**
+
 - CSS Modules only — no inline styles, no global class names
 - Pure logic → `src/lib/` (no React imports)
 - Zustand: plain `create<State>()`, no providers
 
 **Routing** (URL is the single source of truth; full inventory in [`docs/routing.md`](docs/routing.md) — update when adding/renaming/removing routes):
+
 1. Every screen has a URL. New screens → add route to `app/lib/router.tsx` + doc it.
 2. Navigate via `appNavigate(route)` or semantic wrappers (`selectSession`, `setCenterView`, `openOrganization`, `setActiveCenterView`). Never React Router's `navigate()` from components — bypasses the registered-navigator indirection.
 3. One navigation call per user action (two back-to-back stack history and break the back button).
 4. Read the URL, don't mirror it. Use hooks (`useSelectedSessionId`, `useCenterView`, etc.) or getters (`getSelectedSessionId()`, `getActiveCenterView()`, `getCurrentRoute()`). No Zustand state for "which screen".
 
 **Design system (`@argus/peacock`) — all visuals come from Peacock:**
+
 1. Check Storybook first. If something fits, use it.
 2. Missing/new variant → add to `packages/peacock/src/components/` with `.module.css` + `.stories.tsx`. No duplicate one-offs in `app/components/`.
 3. App-specific components wire IPC/state but compose Peacock primitives.
@@ -73,6 +77,7 @@ Node.js + TypeScript + Electron.
 Every Peacock component ships with a Storybook story covering meaningful states.
 
 **IPC contract (adding a command):**
+
 1. Handler in `electron/services/<domain>/`
 2. Register in `electron/ipc.ts` via `handle('command_name', handler)`
 3. Typed wrapper in `src/lib/ipc.ts`
