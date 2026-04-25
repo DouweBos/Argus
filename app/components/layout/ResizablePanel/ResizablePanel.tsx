@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDragResize } from "../../../hooks/useDragResize";
 import styles from "./ResizablePanel.module.css";
 
@@ -12,7 +6,7 @@ export type PanelSide = "bottom" | "left" | "right";
 
 interface ResizablePanelProps {
   children: React.ReactNode;
-  /** Animate panel off-screen — stays in DOM but slides out via margin + transform */
+  /** Animate panel off-screen — stays in DOM but slides out via margin + transform. Left/right only. */
   collapsed?: boolean;
   /** Initial size fraction (width for left/right; height for bottom). */
   defaultWidth: number;
@@ -67,27 +61,6 @@ export function ResizablePanel({
     invert: side === "right" || side === "bottom",
   });
 
-  // Vertical panels collapse via negative margin-bottom + translateY. Margin
-  // percentages resolve against width, not height, so we need the parent's
-  // pixel height. Measured synchronously on first layout to avoid an open-state
-  // paint when the panel mounts collapsed.
-  const [parentHeightPx, setParentHeightPx] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    if (!isVertical) {
-      return;
-    }
-    const parent = panelRef.current?.parentElement;
-    if (!parent) {
-      return;
-    }
-    const update = () => setParentHeightPx(parent.offsetHeight);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(parent);
-
-    return () => ro.disconnect();
-  }, [isVertical]);
-
   const [isDragging, setIsDragging] = useState(false);
   const handleDividerMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -110,41 +83,21 @@ export function ResizablePanel({
     onResize?.(sizeFraction);
   }, [sizeFraction, onResize]);
 
-  // Suppress transitions on the very first frame after mount (and on the frame
-  // that follows parent-height measurement) so the collapsed state paints
-  // directly instead of animating in from open.
-  const hasMeasured = !isVertical || parentHeightPx !== null;
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    if (!hasMeasured) {
-      return;
-    }
-    const raf = requestAnimationFrame(() => setSettled(true));
-
-    return () => cancelAnimationFrame(raf);
-  }, [hasMeasured]);
-
   const sizePercent = `${sizeFraction * 100}%`;
 
   let transform = "none";
   if (collapsed && peeking && !isVertical) {
     const peekOffset = side === "left" ? "100%" : "-100%";
     transform = `translateX(${peekOffset})`;
-  } else if (collapsed) {
-    if (side === "left") {
-      transform = "translateX(-100%)";
-    } else if (side === "right") {
-      transform = "translateX(100%)";
-    } else {
-      transform = "translateY(100%)";
-    }
+  } else if (collapsed && side === "left") {
+    transform = "translateX(-100%)";
+  } else if (collapsed && side === "right") {
+    transform = "translateX(100%)";
   }
 
   const style: React.CSSProperties = { transform };
   if (isVertical) {
-    const heightPx = (parentHeightPx ?? 0) * sizeFraction;
-    style.height = `${heightPx}px`;
-    style.marginBottom = collapsed ? `-${heightPx}px` : "0";
+    style.height = sizePercent;
   } else {
     style.width = sizePercent;
     const marginProp = side === "left" ? "marginLeft" : "marginRight";
@@ -166,7 +119,7 @@ export function ResizablePanel({
       className={styles.panel}
       data-collapsed={collapsed}
       data-dragging={isDragging}
-      data-no-animate={noAnimate || !settled}
+      data-no-animate={noAnimate}
       data-peeking={peeking}
       data-side={side}
       style={style}
