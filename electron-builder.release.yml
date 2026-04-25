@@ -47,10 +47,22 @@ mac:
     NSAppleEventsUsageDescription: Argus uses Apple Events to control developer tools (simulators, terminals) on your behalf.
     NSSystemAdministrationUsageDescription: Argus performs system administration tasks to manage simulators, emulators, and developer tooling.
 publish:
+  # Primary publish target: GitHub Releases on the (private) Argus repo.
+  # `electron-builder` uploads the .dmg / .zip / latest-mac.yml here from CI.
   - provider: github
     owner: DouweBos
     repo: Argus
     releaseType: release
+    publishAutoUpdate: false
+  # Auto-update channel: clients fetch latest-mac.yml + delta blockmaps + the
+  # signed installer through the houwert.dev reverse proxy
+  # (see houwert.dev/functions/argus/updates/[[path]].ts), which authenticates
+  # to GitHub Releases on behalf of the user. This keeps Argus's update URL
+  # under our own domain instead of github.com.
+  - provider: generic
+    url: https://houwert.dev/argus/updates
+    channel: latest
+    useMultipleRangeRequest: true
 dmg:
   artifactName: "${productName}-${version}-${arch}.${ext}"
 asar: true
