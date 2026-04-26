@@ -15,6 +15,10 @@ extraResources:
     to: argus-sim-bridge
     filter:
       - "**/*"
+  - from: build/menu-icons
+    to: menu-icons
+    filter:
+      - "**/*.png"
   - from: native/scrcpy-server/scrcpy-server.jar
     to: scrcpy-server.jar
   - from: electron/prompts/worktree-agent-system-prompt.md

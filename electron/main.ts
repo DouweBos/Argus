@@ -119,6 +119,31 @@ function resolveAppIconPath(): string | null {
   return null;
 }
 
+/**
+ * Resolve a menu-bar icon by base name (e.g. `check-for-updatesTemplate.png`).
+ * Lives in `build/menu-icons/` in dev and is shipped via `extraResources` in
+ * packaged builds. Returns `null` so callers can degrade to a label-only menu
+ * item if the asset goes missing.
+ */
+function resolveMenuIconPath(filename: string): string | null {
+  const candidates = isDev
+    ? [
+        path.join(__dirname, "..", "build", "menu-icons", filename),
+        path.join(__dirname, "..", "..", "build", "menu-icons", filename),
+      ]
+    : [
+        path.join(process.resourcesPath, "menu-icons", filename),
+        path.join(app.getAppPath(), "build", "menu-icons", filename),
+      ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+
+  return null;
+}
+
 // `argus://sessions/<id>/git` — register as this app's protocol handler so
 // external callers (MCP, Slack previews, custom URL openers) can jump straight
 // into a screen. Uses setAsDefaultProtocolClient; the actual URL is received
@@ -258,6 +283,19 @@ function buildAppMenu(): Menu {
     sendToRenderer("navigation:goto", { path: route });
   const invoke = (id: string) => sendToRenderer("menu:invoke-shortcut", { id });
 
+  // Template image (black on transparent, named `*Template.png`) so macOS
+  // tints it for light/dark menu bars automatically. The matching `@2x`
+  // variant lives next to it and is picked up by NativeImage on retina.
+  const checkForUpdatesIconPath = resolveMenuIconPath(
+    "check-for-updatesTemplate.png",
+  );
+  const checkForUpdatesIcon = checkForUpdatesIconPath
+    ? nativeImage.createFromPath(checkForUpdatesIconPath)
+    : undefined;
+  if (checkForUpdatesIcon) {
+    checkForUpdatesIcon.setTemplateImage(true);
+  }
+
   const template: Electron.MenuItemConstructorOptions[] = [
     ...(isMac
       ? ([
@@ -265,6 +303,14 @@ function buildAppMenu(): Menu {
             label: appName,
             submenu: [
               { role: "about" },
+              {
+                label: "Check for Updates…",
+                icon: checkForUpdatesIcon,
+                click: () => {
+                  checkForUpdates({ silent: false }).catch(() => {});
+                  invoke("updater-show");
+                },
+              },
               { type: "separator" },
               {
                 label: "Settings…",
@@ -453,31 +499,6 @@ function buildAppMenu(): Menu {
               { role: "window" },
             ] as Electron.MenuItemConstructorOptions[])
           : ([{ role: "close" }] as Electron.MenuItemConstructorOptions[])),
-      ],
-    },
-    {
-      role: "help",
-      submenu: [
-        {
-          label: "Check for Updates…",
-          click: () => {
-            checkForUpdates({ silent: false }).catch(() => {});
-            invoke("updater-show");
-          },
-        },
-        { type: "separator" },
-        {
-          label: "Argus on GitHub",
-          click: () => {
-            shell.openExternal("https://github.com/DouweBos/Argus");
-          },
-        },
-        {
-          label: "Report an Issue…",
-          click: () => {
-            shell.openExternal("https://github.com/DouweBos/Argus/issues/new");
-          },
-        },
       ],
     },
   ];
