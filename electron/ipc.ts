@@ -1129,14 +1129,15 @@ export function registerIpcHandlers(): void {
   });
 
   // Dialog
-  handle("show_open_dialog", async () => {
+  handle("show_open_dialog", async (a) => {
     const win = getMainWindow();
     if (!win) {
       return null;
     }
+    const title = (a?.title as string | undefined) ?? "Select Repository Root";
     const result = await dialog.showOpenDialog(win, {
       properties: ["openDirectory"],
-      title: "Select Repository Root",
+      title,
     });
     if (result.canceled || result.filePaths.length === 0) {
       return null;

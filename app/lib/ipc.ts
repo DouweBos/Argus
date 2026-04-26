@@ -107,6 +107,10 @@ export const removeRepoRoot = (path: string): Promise<void> =>
 export const listProjects = (): Promise<ProjectEntry[]> =>
   invoke("list_projects");
 
+export const showOpenDirectoryDialog = (
+  title?: string,
+): Promise<string | null> => invoke("show_open_dialog", { title });
+
 export const getRepoBranch = (repoRoot: string): Promise<string> =>
   invoke("get_repo_branch", { repoRoot });
 
