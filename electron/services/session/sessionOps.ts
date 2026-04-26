@@ -699,6 +699,96 @@ export async function getSessionConflicts(id: string): Promise<string[]> {
   return checkMergeConflicts(ws.repo_root, ws.branch, ws.base_branch, ws.path);
 }
 
+/**
+ * Return files in the base branch's worktree that have uncommitted changes
+ * AND would be modified by fast-forwarding the session's commits in. These
+ * are the files git would refuse the merge on with "your local changes
+ * would be overwritten by merge".
+ *
+ * Returns an empty array when:
+ * - the session has no base branch
+ * - the base branch isn't checked out in any worktree (we update the ref
+ *   directly in that case, no working tree is touched)
+ * - the base worktree is clean
+ * - none of the base worktree's dirty files overlap with the merge diff
+ */
+export async function getSessionMergeBlockers(id: string): Promise<string[]> {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  if (ws.kind === "project_root" || !ws.base_branch || !ws.branch || !ws.path) {
+    return [];
+  }
+
+  // Locate the worktree currently holding the base branch — only that path
+  // gets a real `git merge --ff-only` invocation.
+  const wtRaw = await git(ws.repo_root, ["worktree", "list", "--porcelain"]);
+  const fullRef = `refs/heads/${ws.base_branch}`;
+  let basePath: string | null = null;
+  let currentPath: string | null = null;
+  for (const line of wtRaw.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      currentPath = line.slice("worktree ".length).trim();
+    } else if (line.startsWith("branch ")) {
+      const ref = line.slice("branch ".length).trim();
+      if (ref === fullRef && currentPath) {
+        basePath = currentPath;
+        break;
+      }
+    } else if (line === "") {
+      currentPath = null;
+    }
+  }
+  if (!basePath) {
+    return [];
+  }
+
+  // Files that the merge would touch. `name-only` walks the diff between
+  // base tip and session tip — exactly the set git checks dirty entries
+  // against when refusing the ff merge.
+  let mergedFilesRaw: string;
+  try {
+    mergedFilesRaw = await git(basePath, [
+      "diff",
+      "--name-only",
+      `${ws.base_branch}..${ws.branch}`,
+    ]);
+  } catch {
+    return [];
+  }
+  const mergedFiles = new Set(
+    mergedFilesRaw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  if (mergedFiles.size === 0) {
+    return [];
+  }
+
+  // Dirty entries in the base worktree (staged, unstaged, or untracked).
+  let statusRaw: string;
+  try {
+    statusRaw = await git(basePath, ["status", "--porcelain=v1"]);
+  } catch {
+    return [];
+  }
+  const dirty: string[] = [];
+  for (const line of statusRaw.split("\n")) {
+    if (line.length < 4) {
+      continue;
+    }
+    // Porcelain v1: XY<space>path  (path may include rename "old -> new").
+    const path = line.slice(3).split(" -> ").pop()?.trim();
+    if (path) {
+      dirty.push(path);
+    }
+  }
+
+  return dirty.filter((p) => mergedFiles.has(p)).sort();
+}
+
 /** Merge session's branch into its base branch. */
 export async function mergeSessionIntoBase(id: string): Promise<void> {
   const ws = appState.sessions.get(id);

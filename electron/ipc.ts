@@ -184,6 +184,7 @@ import {
   getSessionCommitsBehind,
   getSessionWorkingTreeState,
   getSessionConflicts,
+  getSessionMergeBlockers,
   mergeSessionIntoBase,
   rebaseSessionOnBase,
   pushSessionBranch,
@@ -570,6 +571,9 @@ export function registerIpcHandlers(): void {
     setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
   handle("get_session_conflicts", (a) => getSessionConflicts(a.id as string));
+  handle("get_session_merge_blockers", (a) =>
+    getSessionMergeBlockers(a.id as string),
+  );
   handle("get_session_changesets", (a) => getSessionChangesets(a.id as string));
   handle("get_session_commits_ahead", (a) =>
     getSessionCommitsAhead(a.id as string),
