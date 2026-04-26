@@ -4,6 +4,7 @@ import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   getSessionCommitsAhead,
   getSessionConflicts,
+  getSessionMergeBlockers,
   getSessionStagedDiff,
   mergeSessionIntoBase,
   openExternalUrl,
@@ -26,6 +27,7 @@ export function MergeBar({ sessionId }: MergeBarProps) {
   );
 
   const [conflicts, setConflicts] = useState<string[]>([]);
+  const [blockers, setBlockers] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
   const [commitsAhead, setCommitsAhead] = useState(0);
   const [isMerging, setIsMerging] = useState(false);
@@ -38,12 +40,15 @@ export function MergeBar({ sessionId }: MergeBarProps) {
       return;
     }
     try {
-      const [conflictResult, stagedDiff, ahead] = await Promise.all([
-        getSessionConflicts(sessionId),
-        getSessionStagedDiff(sessionId),
-        getSessionCommitsAhead(sessionId),
-      ]);
+      const [conflictResult, blockerResult, stagedDiff, ahead] =
+        await Promise.all([
+          getSessionConflicts(sessionId),
+          getSessionMergeBlockers(sessionId),
+          getSessionStagedDiff(sessionId),
+          getSessionCommitsAhead(sessionId),
+        ]);
       setConflicts(conflictResult);
+      setBlockers(blockerResult);
       setHasStaged(stagedDiff.trim() !== "");
       setCommitsAhead(ahead);
     } catch {
@@ -131,8 +136,10 @@ export function MergeBar({ sessionId }: MergeBarProps) {
   }
 
   const hasConflicts = conflicts.length > 0;
+  const hasBlockers = blockers.length > 0;
   const hasMergeableWork = hasStaged || commitsAhead > 0;
-  const canMerge = hasMergeableWork && !hasConflicts && !isMerging;
+  const canMerge =
+    hasMergeableWork && !hasConflicts && !hasBlockers && !isMerging;
 
   if (isProtectedBase) {
     const canPush = hasMergeableWork && !isPushing;
@@ -172,6 +179,10 @@ export function MergeBar({ sessionId }: MergeBarProps) {
   let mergeBtnTitle: string;
   if (hasConflicts) {
     mergeBtnTitle = `${conflicts.length} conflict${conflicts.length === 1 ? "" : "s"} — resolve before merging into ${session.base_branch}`;
+  } else if (hasBlockers) {
+    const preview = blockers.slice(0, 3).join(", ");
+    const more = blockers.length > 3 ? ` (+${blockers.length - 3} more)` : "";
+    mergeBtnTitle = `${session.base_branch} has uncommitted changes that this merge would overwrite: ${preview}${more}. Commit, stash, or discard them in the ${session.base_branch} worktree first.`;
   } else if (!hasMergeableWork) {
     mergeBtnTitle = `Stage changes in this session, then merge into ${session.base_branch}`;
   } else if (hasStaged && commitsAhead > 0) {
@@ -189,6 +200,10 @@ export function MergeBar({ sessionId }: MergeBarProps) {
     barToneClass = styles.barConflict;
     statusTextToneClass = styles.statusTextConflict;
     statusLabel = `${conflicts.length} conflict${conflicts.length > 1 ? "s" : ""}`;
+  } else if (hasBlockers) {
+    barToneClass = styles.barConflict;
+    statusTextToneClass = styles.statusTextConflict;
+    statusLabel = `${session.base_branch} has uncommitted changes to ${blockers.length} file${blockers.length === 1 ? "" : "s"} this merge would overwrite`;
   } else if (hasMergeableWork) {
     barToneClass = styles.barReady;
     statusTextToneClass = styles.statusTextReady;

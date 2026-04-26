@@ -383,6 +383,9 @@ export const setSessionBaseBranch = (
 export const getSessionConflicts = (id: string): Promise<string[]> =>
   invoke("get_session_conflicts", { id });
 
+export const getSessionMergeBlockers = (id: string): Promise<string[]> =>
+  invoke("get_session_merge_blockers", { id });
+
 export const getSessionChangesets = (
   id: string,
 ): Promise<SessionChangesetsResult> => invoke("get_session_changesets", { id });
