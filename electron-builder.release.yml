@@ -63,14 +63,15 @@ publish:
     channel: latest
     useMultipleRangeRequest: true
   # Secondary publish target: GitHub Releases on the (private) Argus repo.
-  # `electron-builder` uploads the .dmg / .zip / latest-mac.yml here from CI.
-  # `publishAutoUpdate: false` keeps `latest-mac.yml` out of this provider's
-  # upload set; the proxy serves it from the generic feed instead.
+  # electron-builder uploads the .dmg / .zip / latest-mac.yml here from CI.
+  # The houwert.dev/argus/updates proxy reads latest-mac.yml + blockmaps +
+  # installers straight off the matching GitHub release, so
+  # `publishAutoUpdate` must stay at its default (true) — the generic
+  # provider above is read-only and can't accept uploads.
   - provider: github
     owner: DouweBos
     repo: Argus
     releaseType: release
-    publishAutoUpdate: false
 dmg:
   artifactName: "${productName}-${version}-${arch}.${ext}"
 asar: true
