@@ -7,7 +7,9 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { Icons } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
+import { showOpenDirectoryDialog } from "../../../lib/ipc";
 import styles from "./ProjectPicker.module.css";
 
 interface ProjectPickerProps {
@@ -83,7 +85,30 @@ export function ProjectPicker({
   }, [onClose]);
 
   const exclude = new Set(excludePaths ?? []);
-  const visible = projects.filter((p) => !exclude.has(p.path));
+  const knownPaths = new Set(projects.map((p) => p.path));
+  const extraSelected: ProjectEntry[] = selectedPaths
+    .filter((p) => !knownPaths.has(p) && !exclude.has(p))
+    .map((p) => ({
+      path: p,
+      description: "",
+      registered: false,
+      source: "linked",
+    }));
+  const visible = [
+    ...projects.filter((p) => !exclude.has(p.path)),
+    ...extraSelected,
+  ];
+
+  const handleBrowse = async () => {
+    try {
+      const selected = await showOpenDirectoryDialog("Link directory");
+      if (selected && !selectedPaths.includes(selected)) {
+        onToggle(selected);
+      }
+    } catch {
+      // Dialog cancelled or failed — no-op
+    }
+  };
 
   if (!rect) {
     return null;
@@ -100,10 +125,20 @@ export function ProjectPicker({
         Linked projects are shared with the agent so it can read from and edit
         their files, alongside its own worktree.
       </div>
+      <button
+        className={styles.browse}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleBrowse();
+        }}
+      >
+        <Icons.FolderIcon size={13} />
+        <span>Browse for directory…</span>
+      </button>
       {visible.length === 0 ? (
         <div className={styles.empty}>
           {emptyText ??
-            "No other projects available. Add one from the Argus home screen or declare it under related_projects in .argus.json."}
+            "No other projects available. Use Browse to link any directory, or add a project from the Argus home screen or under related_projects in .argus.json."}
         </div>
       ) : (
         visible.map((project) => {
