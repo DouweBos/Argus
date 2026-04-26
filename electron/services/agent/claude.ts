@@ -63,6 +63,7 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { emitReviewState } from "../session/sessionOps";
 import { loadArgusConfig } from "../session/setup";
 import { simulatorPool } from "../simulator/pool";
+import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
 import { ControlHandler } from "./controlHandler";
 
 const execFileAsync = promisify(execFile);
@@ -105,18 +106,6 @@ export async function ensureWebBrowserForAgent(
   const reservation = await webBrowserPool.acquireBrowser(agentId);
 
   return reservation.deviceId;
-}
-
-/**
- * Inject `--device {udid}` into a conductor CLI command string.
- * No-op if the command already contains `--device`.
- */
-function injectDeviceFlag(command: string, udid: string): string {
-  if (command.includes("--device")) {
-    return command;
-  }
-
-  return command.replace(/\bconductor(\s+\S+)/, `conductor$1 --device ${udid}`);
 }
 
 /**
@@ -554,27 +543,55 @@ export async function startAgent(
           const cmd = (payload.input?.command as string) ?? "";
 
           // iOS/Android: lazy simulator acquisition — inject --device {UDID}.
-          if (cmd.includes("conductor") && !cmd.includes("--device")) {
+          // Gate strictly on a real conductor CLI invocation so unrelated
+          // commands that merely mention the word "conductor" (e.g. a git
+          // operation against the conductor repo) don't trigger acquisition
+          // and don't get the flag spliced into them.
+          if (isConductorInvocation(cmd) && !cmd.includes("--device")) {
+            const respondWith = (rewrittenCmd: string | null) => {
+              if (rewrittenCmd !== null) {
+                payload.input = { ...payload.input, command: rewrittenCmd };
+              }
+              const resp = controlHandler.handleControlRequest(req, emit);
+              if (resp) {
+                safeWrite(resp + "\n");
+              }
+            };
+
+            // Bound the wait so a stalled simulator pool can't wedge the
+            // tool-approval channel (and therefore `wait_for_agent`) forever.
+            const SIM_ACQUIRE_TIMEOUT_MS = 60_000;
+            let settled = false;
+            const timer = setTimeout(() => {
+              if (settled) {
+                return;
+              }
+              settled = true;
+              warn(
+                `[agent:${agentId}] simulator acquisition timed out after ${SIM_ACQUIRE_TIMEOUT_MS}ms — running command without --device`,
+              );
+              respondWith(null);
+            }, SIM_ACQUIRE_TIMEOUT_MS);
+
             ensureSimulatorForAgent(agentId, argusSession.repo_root)
               .then((udid) => {
-                payload.input = {
-                  ...payload.input,
-                  command: injectDeviceFlag(cmd, udid),
-                };
-                const resp = controlHandler.handleControlRequest(req, emit);
-                if (resp) {
-                  safeWrite(resp + "\n");
+                if (settled) {
+                  return;
                 }
+                settled = true;
+                clearTimeout(timer);
+                respondWith(injectDeviceFlag(cmd, udid));
               })
               .catch((e) => {
+                if (settled) {
+                  return;
+                }
+                settled = true;
+                clearTimeout(timer);
                 warn(
                   `[agent:${agentId}] simulator acquisition failed: ${String(e)}`,
                 );
-                // Fall through without injection.
-                const resp = controlHandler.handleControlRequest(req, emit);
-                if (resp) {
-                  safeWrite(resp + "\n");
-                }
+                respondWith(null);
               });
 
             return; // Async path handles the response.
