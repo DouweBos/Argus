@@ -40,7 +40,11 @@ import { refreshAllBranches } from "./services/session/watcher";
 import { stopSimulatorCapture } from "./services/simulator/ios";
 import { destroyAllTerminals } from "./services/terminal/multiplexer";
 import { fixProcessPath } from "./services/terminal/shellEnv";
-import { checkForUpdates, initUpdater } from "./services/updater";
+import {
+  checkForUpdates,
+  initUpdater,
+  setBeforeQuitAndInstallHook,
+} from "./services/updater";
 import { appState } from "./state";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
@@ -926,6 +930,10 @@ app.whenReady().then(() => {
 
   // Auto-updater. Skips itself in dev; in packaged builds it kicks off an
   // initial feed check after a short delay and re-checks hourly.
+  setBeforeQuitAndInstallHook(() => {
+    isQuitting = true;
+    bypassRunningAgentsGuard = true;
+  });
   initUpdater();
 
   // Refresh branch names when the window regains focus — fallback for cases

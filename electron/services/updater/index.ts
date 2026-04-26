@@ -58,6 +58,16 @@ let state: UpdaterState = {
   lastCheckedAt: null,
 };
 let initialized = false;
+let onBeforeQuitAndInstall: (() => void) | null = null;
+
+/**
+ * Wire a callback that runs immediately before `autoUpdater.quitAndInstall`.
+ * Used by main.ts to flip its `isQuitting` flag — without it the macOS
+ * close handler hides the window instead of letting Squirrel.Mac terminate.
+ */
+export function setBeforeQuitAndInstallHook(hook: () => void): void {
+  onBeforeQuitAndInstall = hook;
+}
 
 function setState(patch: Partial<UpdaterState>): void {
   state = { ...state, ...patch };
@@ -244,6 +254,10 @@ export function quitAndInstallUpdate(): void {
   if (!app.isPackaged || state.phase !== "downloaded") {
     return;
   }
+  // On macOS Squirrel.Mac drives the install by closing the BrowserWindow
+  // rather than firing `before-quit`. Our window close handler hides on
+  // darwin unless `isQuitting` is set, so flag it now or the install no-ops.
+  onBeforeQuitAndInstall?.();
   // `isSilent=false` so the user sees the installer; `isForceRunAfter=true`
   // so Argus relaunches automatically once it finishes.
   autoUpdater.quitAndInstall(false, true);
