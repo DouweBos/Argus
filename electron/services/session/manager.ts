@@ -375,7 +375,7 @@ async function finalizeSession(
     // --- Phase 4: create the worktree ------------------------------------
     const worktreeInfo =
       useExistingBranch === true
-        ? await createWorktreeFromExisting(repoRoot, branchInput, baseBranch)
+        ? await checkoutBranchIntoWorktree(repoRoot, branchInput, baseBranch)
         : await createWorktree(repoRoot, branchInput, baseBranch);
 
     // If the session was deleted while we were creating the worktree, tear
@@ -1249,7 +1249,7 @@ export async function deleteSession(
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers: createWorktree / createWorktreeFromExisting
+// Internal helpers: createWorktree / checkoutBranchIntoWorktree
 // ---------------------------------------------------------------------------
 
 /** Branch + path pair returned from the worktree-creation helpers. */
@@ -1311,10 +1311,12 @@ async function createWorktree(
 }
 
 /**
- * Create a worktree for an existing branch (no new branch is created).
+ * Check out an existing branch into a new worktree. The branch may live
+ * locally, on a remote-tracking ref, or only on the remote (in which case
+ * we fetch it first — common for PR branches authored by someone else).
  * Finds a unique path by appending _2, _3, etc. if needed.
  */
-async function createWorktreeFromExisting(
+async function checkoutBranchIntoWorktree(
   repoRoot: string,
   branch: string,
   _baseBranch: string | undefined,
@@ -1350,23 +1352,42 @@ async function createWorktreeFromExisting(
   if (hasLocal) {
     await git(repoRoot, ["worktree", "add", worktreePath, branch]);
   } else {
-    let remoteRef: string | null = null;
+    let remotes: string[] = [];
     try {
-      const remotes = (await git(repoRoot, ["remote"]))
-        .split("\n")
-        .filter(Boolean);
+      remotes = (await git(repoRoot, ["remote"])).split("\n").filter(Boolean);
+    } catch {
+      // no remotes configured
+    }
+
+    const findRemoteRef = async (): Promise<string | null> => {
       for (const remote of remotes) {
         const candidate = `refs/remotes/${remote}/${branch}`;
         try {
           await git(repoRoot, ["rev-parse", "--verify", "--quiet", candidate]);
-          remoteRef = `${remote}/${branch}`;
-          break;
+
+          return `${remote}/${branch}`;
         } catch {
           // try next remote
         }
       }
-    } catch {
-      // no remotes configured
+
+      return null;
+    };
+
+    let remoteRef = await findRemoteRef();
+
+    // Branch may exist on the remote but not yet be fetched locally — common
+    // when checking out a PR authored by someone else for the first time.
+    // Try fetching the branch from each remote before giving up.
+    if (!remoteRef) {
+      for (const remote of remotes) {
+        try {
+          await git(repoRoot, ["fetch", remote, branch]);
+        } catch {
+          // branch likely doesn't exist on this remote — try next
+        }
+      }
+      remoteRef = await findRemoteRef();
     }
 
     if (!remoteRef) {
