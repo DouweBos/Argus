@@ -15,12 +15,4 @@ export const DEBUG_TOOLS: DebugToolDef[] = [
     kind: "stream",
     buildArgs: () => ["logs", "--json"],
   },
-  {
-    id: "memory",
-    label: "Memory",
-    description: "Fetch current memory usage for the foreground app.",
-    kind: "oneshot",
-    defaultIntervalMs: 2000,
-    buildArgs: () => ["memory"],
-  },
 ];
