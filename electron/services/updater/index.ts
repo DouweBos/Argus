@@ -94,6 +94,17 @@ export function initUpdater(): void {
   }
   initialized = true;
 
+  // Pin the feed to the houwert.dev reverse proxy regardless of what
+  // `publish:` resolves to in the packaged app-update.yml. The Argus repo
+  // on GitHub is private, so falling back to the github provider yields
+  // a 404 on `releases.atom`.
+  autoUpdater.setFeedURL({
+    provider: "generic",
+    url: "https://houwert.dev/argus/updates",
+    channel: "latest",
+    useMultipleRangeRequest: true,
+  });
+
   // We surface our own "restart now / later" prompt; let electron-updater
   // download in the background but never auto-install on quit unless the
   // user explicitly asks for it.
@@ -149,7 +160,7 @@ export function initUpdater(): void {
   autoUpdater.on("error", (err) => {
     setState({
       phase: "error",
-      error: err instanceof Error ? err.message : String(err),
+      error: friendlyUpdaterError(err),
     });
   });
 
@@ -191,11 +202,33 @@ export async function checkForUpdates(options?: {
   } catch (err) {
     setState({
       phase: "error",
-      error: err instanceof Error ? err.message : String(err),
+      error: friendlyUpdaterError(err),
     });
   }
 
   return state;
+}
+
+function friendlyUpdaterError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  // electron-updater dumps the full HTTP response (status + headers) into
+  // err.message on feed failures. Strip everything after the first newline
+  // and collapse common cases into something users can act on.
+  const firstLine = raw.split("\n")[0]?.trim() ?? raw;
+
+  if (/\b404\b/.test(firstLine)) {
+    return "No releases found. The update feed may be unavailable or this build isn't published yet.";
+  }
+  if (/\b(401|403)\b/.test(firstLine)) {
+    return "Update feed rejected the request. Check your network or authentication.";
+  }
+  if (/ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ETIMEDOUT|network/i.test(firstLine)) {
+    return "Couldn't reach the update server. Check your internet connection.";
+  }
+
+  // Fall back to the first line — short enough to fit a dialog without
+  // dumping response headers.
+  return firstLine.length > 240 ? `${firstLine.slice(0, 240)}…` : firstLine;
 }
 
 /** Force a download even when autoDownload is disabled. */

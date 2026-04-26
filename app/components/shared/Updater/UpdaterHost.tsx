@@ -117,9 +117,7 @@ function ChangelogDialog() {
         <Button
           variant="ghost"
           onClick={() => {
-            openExternalUrl("https://github.com/DouweBos/Argus/releases").catch(
-              () => {},
-            );
+            openExternalUrl("https://houwert.dev/argus").catch(() => {});
           }}
         >
           View all releases
