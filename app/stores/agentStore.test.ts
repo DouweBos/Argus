@@ -7,6 +7,7 @@ import {
   getAgentState,
   removeAgent,
   replaceAgent,
+  setActiveAgent,
   setAgentState,
   updateAgent,
 } from "./agentStore";
@@ -25,11 +26,11 @@ describe("agentStore", () => {
     setAgentState({ agents: {}, activeAgentId: {} });
   });
 
-  it("adds an agent and sets it as active", () => {
+  it("adds an agent without changing the active slot", () => {
     addAgent(agent());
     const state = getAgentState();
     expect(state.agents["agent-1"]).toBeDefined();
-    expect(state.activeAgentId["ws-1"]).toBe("agent-1");
+    expect(state.activeAgentId["ws-1"]).toBeUndefined();
   });
 
   it("updates an existing agent", () => {
@@ -46,6 +47,7 @@ describe("agentStore", () => {
 
   it("removes an agent and clears active if it was active", () => {
     addAgent(agent());
+    setActiveAgent("ws-1", "agent-1");
     removeAgent("agent-1");
     expect(getAgentState().agents["agent-1"]).toBeUndefined();
     expect(getAgentState().activeAgentId["ws-1"]).toBeNull();
@@ -53,6 +55,7 @@ describe("agentStore", () => {
 
   it("replaces an agent ID preserving the active slot", () => {
     addAgent(agent());
+    setActiveAgent("ws-1", "agent-1");
     replaceAgent("agent-1", agent({ agent_id: "agent-2", session_id: "ws-1" }));
     expect(getAgentState().agents["agent-1"]).toBeUndefined();
     expect(getAgentState().agents["agent-2"]).toBeDefined();
@@ -65,6 +68,7 @@ describe("agentStore", () => {
 
   it("getActiveAgent returns the active agent", () => {
     addAgent(agent());
+    setActiveAgent("ws-1", "agent-1");
     const active = getActiveAgent("ws-1");
     expect(active?.agent_id).toBe("agent-1");
   });
