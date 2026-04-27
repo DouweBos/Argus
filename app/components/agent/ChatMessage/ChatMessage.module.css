@@ -1,9 +1,36 @@
+/* Hover-revealed timestamp shown in the left gutter of every message. */
+.timestamp {
+  position: absolute;
+  left: 0;
+  top: var(--timestamp-top, 12px);
+  width: 56px;
+  padding-right: 8px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--text-muted);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base);
+  user-select: none;
+}
+
+.userMsg:hover .timestamp,
+.assistantMsg:hover .timestamp,
+.systemMsg:hover .timestamp,
+.mcpMsg:hover .timestamp {
+  opacity: 1;
+}
+
 /* System message — subtle divider line */
 .systemMsg {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 20px;
+  padding: 8px 20px 8px 64px;
+  position: relative;
+  --timestamp-top: 8px;
   font-size: var(--font-size-xs);
   color: var(--text-muted);
   border-bottom: 1px solid var(--surface-3);
@@ -20,7 +47,9 @@
   flex-direction: column;
   gap: 8px;
   margin: 8px 20px;
-  padding: 10px 14px;
+  padding: 10px 14px 10px 64px;
+  position: relative;
+  --timestamp-top: 12px;
   background: var(--surface-2);
   border: 1px solid var(--surface-4);
   border-left: 3px solid var(--accent);
@@ -106,8 +135,9 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 12px 20px;
+  padding: 12px 20px 12px 64px;
   position: relative;
+  --timestamp-top: 16px;
 }
 
 /* Reveal the shared Peacock HoverActionBar when the message is hovered. The
@@ -212,18 +242,20 @@
 
 /* Assistant message — full width, generous spacing */
 .assistantMsg {
-  padding: 14px 20px;
+  padding: 14px 20px 14px 64px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   position: relative;
+  --timestamp-top: 18px;
 }
 
 /* Tool-call-only messages stack tightly — consecutive calls should read as
    one continuous activity log, not as individually padded turns. */
 .assistantMsgToolOnly {
-  padding: 0 20px;
+  padding: 0 20px 0 64px;
   gap: 0;
+  --timestamp-top: 4px;
 }
 
 .assistantMsgToolOnly + .assistantMsgToolOnly {

@@ -16,6 +16,24 @@ import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
 
+function TimestampGutter({ timestamp }: { timestamp: number }) {
+  const d = new Date(timestamp);
+  const time = d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <time
+      className={styles.timestamp}
+      dateTime={d.toISOString()}
+      title={d.toLocaleString()}
+    >
+      {time}
+    </time>
+  );
+}
+
 interface ChatMessageProps {
   agentId?: string;
   message: ConversationMessage;
@@ -161,6 +179,7 @@ export function ChatMessage({
 
       return (
         <div className={styles.mcpMsg}>
+          <TimestampGutter timestamp={message.timestamp} />
           <div className={styles.mcpHeader}>
             <span className={styles.mcpBadge}>MCP</span>
             <span className={styles.mcpLabel}>{sourceLabel}</span>
@@ -207,6 +226,7 @@ export function ChatMessage({
       <div
         className={`${styles.systemMsg}${message.isError ? ` ${styles.systemMsgError}` : ""}`}
       >
+        <TimestampGutter timestamp={message.timestamp} />
         {trimmed.map((text, i) => (
           <span key={i}>{text}</span>
         ))}
@@ -226,6 +246,7 @@ export function ChatMessage({
     if (isEditing) {
       return (
         <div ref={userMsgRef} className={styles.userMsg}>
+          <TimestampGutter timestamp={message.timestamp} />
           <div
             className={styles.userEdit}
             style={bubbleSize ? { width: bubbleSize.width } : undefined}
@@ -270,6 +291,7 @@ export function ChatMessage({
 
     return (
       <div ref={userMsgRef} className={styles.userMsg}>
+        <TimestampGutter timestamp={message.timestamp} />
         <MessageActions
           onCopy={handleCopy}
           onEdit={handleStartEdit}
@@ -330,6 +352,7 @@ export function ChatMessage({
     <div
       className={`${styles.assistantMsg} ${toolOnly ? styles.assistantMsgToolOnly : ""}`}
     >
+      <TimestampGutter timestamp={message.timestamp} />
       {!toolOnly && (
         <MessageActions
           onCopy={handleCopy}
