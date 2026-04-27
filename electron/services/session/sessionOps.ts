@@ -6,14 +6,20 @@
  * delegates to the lower-level modules.
  */
 
+import type { SessionMergeStatus } from "./merge";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
+import nodePath from "node:path";
 import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { git, worktreesRoot } from "./git";
 import {
   checkMergeConflicts,
+  abortSessionMerge as doAbortSessionMerge,
+  attemptMergeSession as doAttemptMergeSession,
+  continueSessionMerge as doContinueSessionMerge,
+  getSessionMergeStatus as doGetSessionMergeStatus,
   mergeSessionIntoBase as doMergeSessionIntoBase,
   rebaseSessionOnBase as doRebaseSessionOnBase,
 } from "./merge";
@@ -819,6 +825,135 @@ export async function mergeSessionIntoBase(id: string): Promise<void> {
   });
 
   emitReviewState(id).catch(() => {});
+}
+
+/** Resumable-merge entrypoint: attempt rebase, leaving worktree paused on conflict. */
+export async function attemptSessionMerge(id: string) {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  if (!ws.base_branch || !ws.branch) {
+    throw "No base branch set for this session";
+  }
+  if (isBranchProtected(ws.repo_root, ws.base_branch)) {
+    throw (
+      `'${ws.base_branch}' is a protected branch. ` +
+      `Push this workspace's branch and open a pull request instead.`
+    );
+  }
+
+  const result = await doAttemptMergeSession(
+    ws.repo_root,
+    ws.path,
+    ws.branch,
+    ws.base_branch,
+  );
+
+  if (result.state === "merged") {
+    getMainWindow()?.webContents.send("session:merged", {
+      sessionId: id,
+      branch: ws.branch,
+      baseBranch: ws.base_branch,
+    });
+    emitReviewState(id).catch(() => {});
+  }
+
+  return result;
+}
+
+/** Continue an in-progress session merge after the orchestrator wrote resolutions. */
+export async function continueSessionMerge(id: string) {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  if (!ws.base_branch || !ws.branch) {
+    throw "No base branch set for this session";
+  }
+  const result = await doContinueSessionMerge(
+    ws.repo_root,
+    ws.path,
+    ws.branch,
+    ws.base_branch,
+  );
+
+  if (result.state === "merged") {
+    getMainWindow()?.webContents.send("session:merged", {
+      sessionId: id,
+      branch: ws.branch,
+      baseBranch: ws.base_branch,
+    });
+    emitReviewState(id).catch(() => {});
+  }
+
+  return result;
+}
+
+/** Abort an in-progress merge or rebase, restoring the worktree to a clean state. */
+export async function abortSessionMerge(id: string): Promise<void> {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  await doAbortSessionMerge(ws.path);
+}
+
+/** Comprehensive merge-readiness report for a session. */
+export async function getSessionMergeStatus(
+  id: string,
+): Promise<SessionMergeStatus> {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+
+  return doGetSessionMergeStatus(
+    ws.repo_root,
+    ws.path,
+    ws.branch ?? "",
+    ws.base_branch ?? null,
+  );
+}
+
+/**
+ * Write `content` to a file inside a session's worktree. Creates parent
+ * directories as needed. Refuses paths that resolve outside the worktree.
+ * When `stage` is true, runs `git add` so the change lands in the index —
+ * used for the merge-conflict-resolution flow where the orchestrator wants
+ * its write picked up by `git rebase --continue`.
+ */
+export async function writeSessionFile(
+  id: string,
+  filePath: string,
+  content: string,
+  stage: boolean,
+): Promise<{ bytes_written: number; resolved_path: string }> {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+
+  const wtRoot = nodePath.resolve(ws.path);
+  const abs = nodePath.isAbsolute(filePath)
+    ? nodePath.resolve(filePath)
+    : nodePath.resolve(wtRoot, filePath);
+  const rel = nodePath.relative(wtRoot, abs);
+  if (rel.startsWith("..") || nodePath.isAbsolute(rel)) {
+    throw `Refusing to write outside session worktree: ${filePath}`;
+  }
+
+  fs.mkdirSync(nodePath.dirname(abs), { recursive: true });
+  fs.writeFileSync(abs, content, "utf8");
+
+  if (stage) {
+    await git(ws.path, ["add", "--", rel]);
+  }
+
+  return {
+    bytes_written: Buffer.byteLength(content, "utf8"),
+    resolved_path: rel,
+  };
 }
 
 /**
