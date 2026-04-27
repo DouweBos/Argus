@@ -671,6 +671,7 @@ describe("agent_status", () => {
       turnWaiters: [],
       turnsCompleted: 0,
       createdAt: 1_700_000_000_000,
+      lastEventAt: 1_700_000_000_000,
     });
 
     const result = await client.callTool({

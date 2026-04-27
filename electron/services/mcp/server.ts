@@ -1065,6 +1065,64 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
+  // agent_vitals
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "agent_vitals",
+    "Batched health check for one or more agents. Returns each agent's status, turns completed, time since the CLI last emitted any event (`time_since_last_event_ms`), and creation/result info — enough to spot a stuck or slow child without pulling its full transcript. Pass every child you spawned in a fan-out and decide which ones to interrupt or wait on. Unknown agent IDs are returned with `status: \"not_found\"` instead of failing the whole call, so a dead child in the list doesn't block the rest of the report.",
+    {
+      agent_ids: z
+        .array(z.string())
+        .min(1)
+        .describe(
+          "Agent IDs to check. Pass the full list of children from your fan-out for a single round-trip health check.",
+        ),
+    },
+    async ({ agent_ids }) => {
+      const now = Date.now();
+      const vitals = agent_ids.map((id) => {
+        const session = appState.agents.get(id);
+        if (!session) {
+          return { agent_id: id, status: "not_found" as const };
+        }
+        const ws = appState.sessions.get(session.sessionId);
+
+        return {
+          agent_id: id,
+          session_id: session.sessionId,
+          branch: ws?.branch,
+          display_name: ws?.display_name,
+          status: session.status,
+          parent_agent_id: session.parentAgentId,
+          created_at: session.createdAt,
+          last_event_at: session.lastEventAt,
+          time_since_last_event_ms: now - session.lastEventAt,
+          turns_completed: session.turnsCompleted,
+          has_result: session.resultSummary !== null,
+        };
+      });
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                checked_at: now,
+                count: vitals.length,
+                vitals,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
   // get_agent_result
   // -------------------------------------------------------------------------
 

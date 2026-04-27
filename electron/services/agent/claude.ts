@@ -487,6 +487,14 @@ export async function startAgent(
       return;
     } // Skip blank separator lines.
 
+    // Cheap heartbeat: bump last-activity on every non-blank event so
+    // `agent_vitals` can answer "is this child stuck?" without parsing
+    // the transcript.
+    const sessForActivity = appState.agents.get(agentId);
+    if (sessForActivity) {
+      sessForActivity.lastEventAt = Date.now();
+    }
+
     // Fast-path check: only parse lines that look like control messages.
     // Most lines are assistant/user/result/system events and can be forwarded
     // as raw strings without parsing, keeping the backend lightweight.
@@ -760,6 +768,7 @@ export async function startAgent(
     turnsCompleted: previous?.turnsCompleted ?? 0,
     suppressStatus: previous?.suppressStatus ?? false,
     createdAt: previous?.createdAt ?? Date.now(),
+    lastEventAt: Date.now(),
   };
 
   appState.agents.set(agentId, agentSession);
