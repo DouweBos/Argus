@@ -36,7 +36,7 @@ export function TodoList({ todos, onDismiss }: TodoListProps) {
           <div className={styles.headerLeft}>
             <span className={styles.progress}>{headerText}</span>
           </div>
-          {allDone && onDismiss && (
+          {onDismiss && (
             <button
               type="button"
               className={styles.dismiss}
@@ -44,7 +44,7 @@ export function TodoList({ todos, onDismiss }: TodoListProps) {
                 e.stopPropagation();
                 onDismiss();
               }}
-              aria-label="Clear completed todos"
+              aria-label={allDone ? "Clear completed todos" : "Clear todos"}
             >
               <Icons.CloseIcon size={10} />
               Clear
