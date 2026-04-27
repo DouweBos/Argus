@@ -175,7 +175,7 @@ function resolveSession(idOrBranch: string) {
  */
 async function waitForSessionReady(
   id: string,
-  timeoutMs = 120_000,
+  timeoutMs = 900_000,
 ): Promise<void> {
   const start = Date.now();
   // Poll on a short interval — provisioning is typically sub-second once the
@@ -818,17 +818,8 @@ export function createMcpServer(): McpServer {
             base_branch,
           );
 
-          getMainWindow()?.webContents.send("session:created", {
-            id: ws.id,
-            kind: ws.kind,
-            branch: ws.branch,
-            display_name: ws.display_name,
-            description: ws.description,
-            path: ws.path,
-            repo_root: ws.repo_root,
-            status: ws.status,
-            base_branch: ws.base_branch,
-          });
+          // `createSession` already broadcasts `session:created`, so don't
+          // re-emit here.
 
           return { session: ws, spec };
         }),
