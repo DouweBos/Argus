@@ -184,6 +184,15 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative;
+}
+
+/* Per-section copy action — reveals on section hover, independent of the
+   card-level fork actions. */
+.section:hover .sectionActions,
+.sectionActions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .sectionLabel {
