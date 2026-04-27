@@ -58,6 +58,14 @@ export interface AgentSession {
    * is stable through the agent's lifetime.
    */
   createdAt: number;
+  /**
+   * Unix ms timestamp of the most recent stdout line received from the CLI
+   * subprocess. Bumped on every event regardless of type (assistant message,
+   * tool use, tool result, system event, etc.). Used by `agent_vitals` to
+   * surface "time since last activity" so an orchestrator can spot a stuck
+   * child without scanning its transcript.
+   */
+  lastEventAt: number;
   /** Captured when the agent emits its final `type: "result"` event. */
   resultSummary: AgentResult | null;
   /**
