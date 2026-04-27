@@ -535,6 +535,15 @@ export function ToolCallCard({
     structuredInputPreview = (
       <div className={styles.section}>
         <span className={styles.sectionLabel}>Input</span>
+        <HoverActionBar className={styles.sectionActions} placement="top-right">
+          <HoverActionButton
+            icon={<Icons.CopyIcon size={12} />}
+            label="Copy input"
+            onClick={() => {
+              navigator.clipboard.writeText(inputText).catch(() => {});
+            }}
+          />
+        </HoverActionBar>
         <pre className={`${styles.code} ${isBash ? styles.bash : ""}`}>
           <LinkifiedText text={inputText} />
         </pre>
@@ -669,6 +678,20 @@ export function ToolCallCard({
                     <span className={styles.sectionLabel}>
                       {toolCall.isError ? "Error" : "Result"}
                     </span>
+                    <HoverActionBar
+                      className={styles.sectionActions}
+                      placement="top-right"
+                    >
+                      <HoverActionButton
+                        icon={<Icons.CopyIcon size={12} />}
+                        label="Copy result"
+                        onClick={() => {
+                          navigator.clipboard
+                            .writeText(safeResultText(toolCall.result))
+                            .catch(() => {});
+                        }}
+                      />
+                    </HoverActionBar>
                     <pre
                       className={`${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`}
                     >
@@ -693,6 +716,20 @@ export function ToolCallCard({
                     <span className={styles.sectionLabel}>
                       {toolCall.isError ? "Error" : "Result"}
                     </span>
+                    <HoverActionBar
+                      className={styles.sectionActions}
+                      placement="top-right"
+                    >
+                      <HoverActionButton
+                        icon={<Icons.CopyIcon size={12} />}
+                        label="Copy result"
+                        onClick={() => {
+                          navigator.clipboard
+                            .writeText(safeResultText(toolCall.result))
+                            .catch(() => {});
+                        }}
+                      />
+                    </HoverActionBar>
                     {renderResult(
                       toolCall.result,
                       `${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`,
