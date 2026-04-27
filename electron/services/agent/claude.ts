@@ -1585,7 +1585,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
 
   lines.push("", "### Using conductor", "");
   lines.push(
-    "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor cheat-sheet` for a quick command reference or `conductor --help` for full usage.",
+    "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor --help` for usage.",
     "",
     "Device targeting:",
   );
