@@ -97,6 +97,7 @@ export function ChatInput({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const projectChipRef = useRef<HTMLDivElement>(null);
+  const modelChipRef = useRef<HTMLDivElement>(null);
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
@@ -561,7 +562,7 @@ export function ChatInput({
   const actions = (
     <>
       {model && (
-        <div className={styles.modelPickerAnchor}>
+        <div ref={modelChipRef} className={styles.modelPickerAnchor}>
           <Chip
             mono
             muted
@@ -588,6 +589,7 @@ export function ChatInput({
           </Chip>
           {modelPickerOpen && onModelSelect && models && models.length > 0 && (
             <ModelPicker
+              triggerRef={modelChipRef}
               currentModel={modelValue ?? model}
               models={models}
               onClose={() => setModelPickerOpen(false)}
