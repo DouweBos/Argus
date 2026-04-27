@@ -99,10 +99,6 @@ const useAgentStore = agentStore;
 export const addAgent = (agent: AgentStatus) => {
   agentStore.setState((state) => ({
     agents: { ...state.agents, [agent.agent_id]: agent },
-    activeAgentId: {
-      ...state.activeAgentId,
-      [agent.session_id]: agent.agent_id,
-    },
     order: appendOrder(state.order, agent.session_id, agent.agent_id),
   }));
 };
