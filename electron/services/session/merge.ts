@@ -4,6 +4,7 @@
 
 import { execFile } from "node:child_process";
 import fs from "node:fs";
+import path from "node:path";
 import { git } from "./git";
 
 // ---------------------------------------------------------------------------
@@ -171,6 +172,336 @@ export async function mergeSessionIntoBase(
   // Fast-forward the base branch to the rebased tip. If the base branch is
   // checked out in a worktree, update it there; otherwise update the ref
   // directly (safe because the rebase guarantees a fast-forward).
+  const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
+  if (existingCheckout) {
+    await git(existingCheckout, ["merge", "--ff-only", sessionBranch]);
+  } else {
+    await git(repoRoot, ["branch", "-f", baseBranch, sessionBranch]);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// resumable merge: attempt / continue / abort / status
+// ---------------------------------------------------------------------------
+
+/** Snapshot of a session's merge readiness vs. its base branch. */
+export interface SessionMergeStatus {
+  base_branch: string | null;
+  ahead: number;
+  behind: number;
+  uncommitted_changes: number;
+  staged_changes: number;
+  untracked_files: number;
+  /**
+   * `rebase` or `merge` if the worktree is mid-operation. Includes the list of
+   * files git currently considers conflicted (from `--diff-filter=U`). Null
+   * when no operation is in progress.
+   */
+  in_progress: {
+    kind: "merge" | "rebase";
+    conflicting_files: string[];
+  } | null;
+  /**
+   * Files that would conflict on a fresh merge attempt, computed from
+   * `git merge-tree --write-tree`. Empty during an in-progress merge — read
+   * `in_progress.conflicting_files` instead.
+   */
+  predicted_conflicts: string[];
+  can_merge_clean: boolean;
+}
+
+/**
+ * Comprehensive merge-readiness report for an orchestrator deciding what to
+ * do with a session: clean merge, predicted conflicts, or already in the
+ * middle of a paused merge waiting for resolution.
+ */
+export async function getSessionMergeStatus(
+  repoRoot: string,
+  wsPath: string,
+  sessionBranch: string,
+  baseBranch: string | null,
+): Promise<SessionMergeStatus> {
+  if (!fs.existsSync(wsPath)) {
+    throw `Session worktree not found at ${wsPath}`;
+  }
+
+  const status = await git(wsPath, [
+    "status",
+    "--porcelain=v1",
+    "--untracked-files=all",
+  ]);
+  let uncommitted = 0;
+  let staged = 0;
+  let untracked = 0;
+  for (const line of status.split("\n")) {
+    if (!line) {
+      continue;
+    }
+    const indexFlag = line.charAt(0);
+    const treeFlag = line.charAt(1);
+    if (indexFlag === "?" && treeFlag === "?") {
+      untracked += 1;
+      continue;
+    }
+    if (indexFlag !== " " && indexFlag !== "?") {
+      staged += 1;
+    }
+    if (treeFlag !== " " && treeFlag !== "?") {
+      uncommitted += 1;
+    }
+  }
+
+  const inProgress = await detectInProgressMerge(wsPath);
+
+  let ahead = 0;
+  let behind = 0;
+  let predicted: string[] = [];
+  let canMerge = false;
+
+  if (baseBranch) {
+    try {
+      const counts = (
+        await git(wsPath, [
+          "rev-list",
+          "--left-right",
+          "--count",
+          `${baseBranch}...HEAD`,
+        ])
+      ).trim();
+      const [b, a] = counts.split("\t").map((n) => parseInt(n, 10) || 0);
+      behind = b;
+      ahead = a;
+    } catch {
+      // No upstream relationship — leave both at 0.
+    }
+
+    if (!inProgress) {
+      try {
+        predicted = await checkMergeConflicts(
+          repoRoot,
+          sessionBranch,
+          baseBranch,
+          wsPath,
+        );
+      } catch {
+        predicted = [];
+      }
+      canMerge = predicted.length === 0 && ahead > 0;
+    }
+  }
+
+  return {
+    base_branch: baseBranch,
+    ahead,
+    behind,
+    uncommitted_changes: uncommitted,
+    staged_changes: staged,
+    untracked_files: untracked,
+    in_progress: inProgress,
+    predicted_conflicts: predicted,
+    can_merge_clean: canMerge,
+  };
+}
+
+/**
+ * Run the same flow as {@link mergeSessionIntoBase}, but on rebase conflict
+ * leave the worktree paused (markers in place, `git rebase --continue`
+ * pending) instead of aborting. Returns whether the merge completed or is
+ * waiting for resolution.
+ */
+export async function attemptMergeSession(
+  repoRoot: string,
+  wsPath: string,
+  sessionBranch: string,
+  baseBranch: string,
+): Promise<
+  { state: "conflicted"; conflicting_files: string[] } | { state: "merged" }
+> {
+  if (!fs.existsSync(wsPath)) {
+    throw `Session worktree not found at ${wsPath}`;
+  }
+
+  // Refuse to start a new attempt while another is in progress.
+  const existing = await detectInProgressMerge(wsPath);
+  if (existing) {
+    throw `A ${existing.kind} is already in progress in this worktree — call continue_merge or abort_merge first`;
+  }
+
+  // Commit any staged changes before rebasing (mirrors mergeSessionIntoBase).
+  try {
+    await git(wsPath, ["diff", "--cached", "--quiet"]);
+  } catch {
+    const message = await buildStagedCommitMessage(wsPath, sessionBranch);
+    await git(wsPath, ["commit", "-m", message]);
+  }
+
+  const baseAlreadyInHistory = await isAncestor(wsPath, baseBranch, "HEAD");
+  if (!baseAlreadyInHistory) {
+    try {
+      await git(wsPath, ["rebase", baseBranch]);
+    } catch {
+      // Don't abort — surface the conflict state to the caller.
+      const conflictingFiles = await listConflictingFiles(wsPath);
+
+      return { conflicting_files: conflictingFiles, state: "conflicted" };
+    }
+  }
+
+  await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  await fastForwardBase(repoRoot, sessionBranch, baseBranch);
+
+  return { state: "merged" };
+}
+
+/**
+ * Continue a paused rebase by staging all current changes and running
+ * `git rebase --continue`. If conflicts persist after the next commit,
+ * returns `conflicted` again so the caller can iterate. On success, finalises
+ * with the same squash + fast-forward base flow as a normal merge.
+ */
+export async function continueSessionMerge(
+  repoRoot: string,
+  wsPath: string,
+  sessionBranch: string,
+  baseBranch: string,
+): Promise<
+  | { state: "conflicted"; conflicting_files: string[] }
+  | { state: "merged" }
+  | { state: "no-merge-in-progress" }
+> {
+  const inProgress = await detectInProgressMerge(wsPath);
+  if (!inProgress) {
+    return { state: "no-merge-in-progress" };
+  }
+
+  // Stage everything in the worktree so the resolution lands on the rebase
+  // commit. Untracked files are left alone — the orchestrator can git-add
+  // them deliberately by calling write_session_file (which auto-stages).
+  await git(wsPath, ["add", "-u"]);
+
+  // Pick up files that were created during resolution as well.
+  await git(wsPath, ["add", "-A"]);
+
+  if (inProgress.kind === "rebase") {
+    try {
+      await runRebaseContinue(wsPath);
+    } catch {
+      const conflictingFiles = await listConflictingFiles(wsPath);
+
+      return { conflicting_files: conflictingFiles, state: "conflicted" };
+    }
+  } else {
+    // Plain merge — commit the resolution.
+    try {
+      await git(wsPath, ["commit", "--no-edit"]);
+    } catch {
+      const conflictingFiles = await listConflictingFiles(wsPath);
+
+      return { conflicting_files: conflictingFiles, state: "conflicted" };
+    }
+  }
+
+  await squashSessionCommits(wsPath, sessionBranch, baseBranch);
+  await fastForwardBase(repoRoot, sessionBranch, baseBranch);
+
+  return { state: "merged" };
+}
+
+/**
+ * Abort an in-progress merge or rebase, restoring the worktree to a clean
+ * state so the orchestrator can decide what to do next.
+ */
+export async function abortSessionMerge(wsPath: string): Promise<void> {
+  const inProgress = await detectInProgressMerge(wsPath);
+  if (!inProgress) {
+    return;
+  }
+  if (inProgress.kind === "rebase") {
+    await git(wsPath, ["rebase", "--abort"]);
+  } else {
+    await git(wsPath, ["merge", "--abort"]);
+  }
+}
+
+/** Detect a paused merge or rebase by inspecting the worktree's gitdir. */
+async function detectInProgressMerge(
+  wsPath: string,
+): Promise<{ conflicting_files: string[]; kind: "merge" | "rebase" } | null> {
+  let gitDir: string;
+  try {
+    gitDir = (await git(wsPath, ["rev-parse", "--git-dir"])).trim();
+  } catch {
+    return null;
+  }
+  if (!gitDir) {
+    return null;
+  }
+  const absGitDir = path.isAbsolute(gitDir)
+    ? gitDir
+    : path.resolve(wsPath, gitDir);
+
+  const hasRebase =
+    fs.existsSync(`${absGitDir}/rebase-merge`) ||
+    fs.existsSync(`${absGitDir}/rebase-apply`);
+  const hasMerge = fs.existsSync(`${absGitDir}/MERGE_HEAD`);
+
+  if (!hasRebase && !hasMerge) {
+    return null;
+  }
+
+  const conflicting = await listConflictingFiles(wsPath);
+
+  return {
+    conflicting_files: conflicting,
+    kind: hasRebase ? "rebase" : "merge",
+  };
+}
+
+/** List files git considers unmerged (`--diff-filter=U`). */
+async function listConflictingFiles(wsPath: string): Promise<string[]> {
+  try {
+    const raw = await git(wsPath, ["diff", "--name-only", "--diff-filter=U"]);
+
+    return raw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Run `git rebase --continue`. Sets `GIT_EDITOR=true` so any squash/fixup
+ * todo doesn't block on an interactive editor — the rebase just keeps the
+ * existing commit messages.
+ */
+function runRebaseContinue(wsPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    execFile(
+      "git",
+      ["rebase", "--continue"],
+      { cwd: wsPath, env: { ...process.env, GIT_EDITOR: "true" } },
+      (err, _stdout, stderr) => {
+        if (err) {
+          reject(stderr || (err.message ?? "git rebase --continue failed"));
+        } else {
+          resolve();
+        }
+      },
+    );
+  });
+}
+
+/**
+ * Fast-forward the base branch to the session tip. Extracted from
+ * {@link mergeSessionIntoBase} so the resumable flow can share it.
+ */
+async function fastForwardBase(
+  repoRoot: string,
+  sessionBranch: string,
+  baseBranch: string,
+): Promise<void> {
   const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
   if (existingCheckout) {
     await git(existingCheckout, ["merge", "--ff-only", sessionBranch]);

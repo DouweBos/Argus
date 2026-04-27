@@ -44,15 +44,20 @@ import {
 } from "../organization/manager";
 import { createSession, deleteSession, listSessions } from "../session/manager";
 import {
+  abortSessionMerge,
+  attemptSessionMerge,
+  continueSessionMerge,
   getSessionConflicts,
   getSessionBranchDiff,
   getSessionDiff,
   getSessionFullDiff,
+  getSessionMergeStatus,
   getSessionStagedDiff,
   getSessionStatus,
   getSessionUntrackedDiff,
   mergeSessionIntoBase,
   readArgusConfig,
+  writeSessionFile,
   writeArgusConfig,
 } from "../session/sessionOps";
 import {
@@ -2207,6 +2212,263 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
+  // merge_status
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "merge_status",
+    "Comprehensive merge-readiness report for a session. Returns ahead/behind commit counts vs the base branch, uncommitted/staged/untracked counts, predicted conflicts (from a `git merge-tree` dry-run), and whether the worktree is currently mid-merge or mid-rebase (with the conflicting file list). Use this before deciding whether to call `merge_session` (clean), `attempt_merge` (resumable), or `continue_merge` (resolve in-flight).",
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+    },
+    async ({ session }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const status = await getSessionMergeStatus(ws.id);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  session_id: ws.id,
+                  branch: ws.branch,
+                  ...status,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // attempt_merge
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "attempt_merge",
+    'Try to merge a session\'s branch into its base branch. On a clean rebase the merge completes (squash + fast-forward base) and returns `{ state: "merged" }`. If a conflict appears during the rebase the worktree is LEFT PAUSED with conflict markers in place — returns `{ state: "conflicted", conflicting_files: [...] }`. The orchestrator can then read each conflicted file via `read_session_file`, write a resolution via `write_session_file` (with `stage: true`), and call `continue_merge` to finish. Call `abort_merge` to give up and roll back. Use plain `merge_session` instead when you want clean-only behaviour that throws on conflict.',
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+    },
+    async ({ session }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await attemptSessionMerge(ws.id);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  session_id: ws.id,
+                  branch: ws.branch,
+                  base_branch: ws.base_branch,
+                  ...result,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // continue_merge
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "continue_merge",
+    'Continue an in-progress session merge after the orchestrator wrote conflict resolutions. Stages all worktree changes, runs `git rebase --continue` (or `git commit --no-edit` for a plain merge), and finalises with squash + fast-forward base on success. If git still reports unresolved conflicts the call returns `{ state: "conflicted", conflicting_files: [...] }` and the orchestrator can iterate. Returns `{ state: "no-merge-in-progress" }` if nothing is paused.',
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+    },
+    async ({ session }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await continueSessionMerge(ws.id);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  session_id: ws.id,
+                  branch: ws.branch,
+                  base_branch: ws.base_branch,
+                  ...result,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // abort_merge
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "abort_merge",
+    "Abort an in-progress merge or rebase, restoring the worktree to a clean state. No-op when nothing is paused. Use after `attempt_merge` returned `conflicted` and the orchestrator decides resolution is too risky to attempt automatically.",
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+    },
+    async ({ session }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        await abortSessionMerge(ws.id);
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Aborted any in-progress merge/rebase in '${ws.branch}'.`,
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // write_session_file
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "write_session_file",
+    "Write content to a file inside a session's worktree. Creates parent directories as needed. Path must resolve inside the worktree (no traversal). Set `stage: true` to also `git add` the file — required for the merge-conflict-resolution flow so the next `continue_merge` picks up the resolution. For ordinary editing inside an agent's own session, prefer spawning an agent or using `Edit/Write` tools — this is for orchestrator-level intervention (resolving a conflict in a child's worktree, dropping a config file, etc).",
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+      file_path: z
+        .string()
+        .describe(
+          "Relative path inside the session worktree (e.g. 'src/foo.ts') or an absolute path under it.",
+        ),
+      content: z.string().describe("Full file content. Overwrites if exists."),
+      stage: z
+        .boolean()
+        .optional()
+        .describe(
+          "Run `git add` on the file after writing. Defaults to false. Pass true when resolving a merge conflict so `continue_merge` picks up the resolution.",
+        ),
+    },
+    async ({ session, file_path, content, stage }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await writeSessionFile(
+          ws.id,
+          file_path,
+          content,
+          stage ?? false,
+        );
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  session_id: ws.id,
+                  branch: ws.branch,
+                  ...result,
+                  staged: stage ?? false,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
   // merge_session
   // -------------------------------------------------------------------------
 
@@ -2237,6 +2499,86 @@ export function createMcpServer(): McpServer {
           {
             type: "text" as const,
             text: `Successfully merged '${ws.branch}' into '${ws.base_branch}'.`,
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // complete_session
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "complete_session",
+    'Finish off a child session in one shot: clean-merge it into base, then delete the worktree (and optionally the branch). Throws on conflict — call `attempt_merge` + `continue_merge` first if you need to resolve. Use this for the happy-path "child finished, ship it" flow at the end of a fan-out.',
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+      delete_branch: z
+        .boolean()
+        .optional()
+        .describe(
+          "Also delete the merged branch (default: true — the branch is fully reachable from base after a successful merge so keeping it around is rarely useful).",
+        ),
+    },
+    async ({ session, delete_branch }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+      const wsId = ws.id;
+      const wsBranch = ws.branch;
+      const baseBranch = ws.base_branch;
+
+      try {
+        await mergeSessionIntoBase(wsId);
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Merge failed — session not deleted. ${String(e)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        await deleteSession(wsId, delete_branch ?? true);
+      } catch (e) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Merged into '${baseBranch}' but failed to delete session: ${String(e)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                session_id: wsId,
+                branch: wsBranch,
+                base_branch: baseBranch,
+                merged: true,
+                deleted: true,
+                branch_deleted: delete_branch ?? true,
+              },
+              null,
+              2,
+            ),
           },
         ],
       };
