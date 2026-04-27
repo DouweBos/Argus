@@ -27,6 +27,8 @@ import {
   sendAgentMessage,
   listAgents,
   waitForAgent,
+  stopAgent,
+  interruptAgent,
   ensureSimulatorForAgent,
   ensureWebBrowserForAgent,
   emitMcpSystemMessage,
@@ -42,6 +44,12 @@ import {
 import { createSession, deleteSession, listSessions } from "../session/manager";
 import {
   getSessionConflicts,
+  getSessionBranchDiff,
+  getSessionDiff,
+  getSessionFullDiff,
+  getSessionStagedDiff,
+  getSessionStatus,
+  getSessionUntrackedDiff,
   mergeSessionIntoBase,
   readArgusConfig,
   writeArgusConfig,
@@ -1245,6 +1253,172 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
+  // stop_agent
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "stop_agent",
+    "Terminate a running agent immediately. Kills the underlying Claude Code subprocess, releases any reserved devices, and removes the agent from active state. Use this for runaway children, course corrections that warrant a clean restart, or cleanup of completed orchestration phases. The session/worktree itself is preserved — call `delete_session` to remove that too. Idempotent: returns success if the agent is already gone.",
+    {
+      agent_id: z.string().describe("The agent ID returned by spawn_agent"),
+    },
+    async ({ agent_id }) => {
+      try {
+        await stopAgent(agent_id);
+
+        return {
+          content: [
+            { type: "text" as const, text: `Stopped agent ${agent_id}.` },
+          ],
+        };
+      } catch (e) {
+        // stopAgent throws when the agent isn't found. Treat that as success
+        // for idempotency — the orchestrator's intent (the agent is gone) is
+        // satisfied either way.
+        const msg = String(e);
+        if (msg.includes("No agent found")) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Agent ${agent_id} was already stopped or never existed.`,
+              },
+            ],
+          };
+        }
+
+        return {
+          content: [{ type: "text" as const, text: msg }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // interrupt_agent
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "interrupt_agent",
+    "Interrupt an agent's current turn without killing it. The agent stops the work it is currently doing, returns to idle, and remains ready to receive a new message via `send_agent_message`. Use this when you want to redirect a child mid-task instead of tearing it down. Prefer `stop_agent` when you no longer need the agent at all.",
+    {
+      agent_id: z.string().describe("The agent ID returned by spawn_agent"),
+    },
+    async ({ agent_id }) => {
+      try {
+        await interruptAgent(agent_id);
+
+        return {
+          content: [
+            { type: "text" as const, text: `Interrupted agent ${agent_id}.` },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // read_agent_transcript
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "read_agent_transcript",
+    "Read the conversation transcript of another agent — the messages it sent and received, including its tool calls and their outputs. Use this to review what a child agent actually did before merging or to debug why a child got stuck. Returns the live in-memory snapshot if the agent is still active, falling back to the on-disk chat history for completed agents. `get_agent_result` only returns the final summary; this returns the full conversation. Pass `tail_messages` to limit how much you pull into your own context.",
+    {
+      agent_id: z.string().describe("The agent ID returned by spawn_agent"),
+      tail_messages: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Return only the last N messages of the conversation. Defaults to 50. Pass 0 for the full transcript.",
+        ),
+    },
+    async ({ agent_id, tail_messages }) => {
+      const limit =
+        tail_messages === undefined ? 50 : Math.max(0, tail_messages);
+
+      const snapshotJson = appState.agentSnapshots.get(agent_id);
+      if (!snapshotJson) {
+        const agentSession = appState.agents.get(agent_id);
+        if (agentSession) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Agent ${agent_id} has not published a transcript snapshot yet — wait for it to produce messages and try again, or open its tab in the UI.`,
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `No transcript available for agent ${agent_id}. The agent has stopped and its in-memory snapshot was released; use \`get_agent_result\` for the final result summary instead.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      let conv: { messages?: unknown[]; title?: string } = {};
+      try {
+        conv = JSON.parse(snapshotJson);
+      } catch {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Failed to parse transcript snapshot for agent ${agent_id}.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const agentSession = appState.agents.get(agent_id);
+      const sessionMeta = agentSession
+        ? appState.sessions.get(agentSession.sessionId)
+        : undefined;
+      const messages = Array.isArray(conv.messages) ? conv.messages : [];
+      const trimmed =
+        limit > 0 && messages.length > limit
+          ? messages.slice(messages.length - limit)
+          : messages;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                agent_id,
+                session_id: agentSession?.sessionId ?? null,
+                branch: sessionMeta?.branch ?? null,
+                title: conv.title ?? null,
+                total_messages: messages.length,
+                returned_messages: trimmed.length,
+                messages: trimmed,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
   // list_run_commands
   // -------------------------------------------------------------------------
 
@@ -1543,6 +1717,285 @@ export function createMcpServer(): McpServer {
                     null,
                     2,
                   ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // session_diff
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "session_diff",
+    'Return the git diff for a session\'s worktree so you can review what a child agent actually changed before merging. `scope: "branch"` (default) shows the full divergence vs the session\'s base branch — committed, staged, and unstaged together — and is what an orchestrator usually wants. Other scopes: `"unstaged"`, `"staged"`, `"head"` (staged + unstaged vs HEAD), `"untracked"` (synthetic diff for new files). Output is truncated to `max_bytes` (default 64KB) — pull a specific file with `read_session_file` for the full content.',
+    {
+      session: z
+        .string()
+        .describe("Session ID, branch name, or display name to diff"),
+      scope: z
+        .enum(["branch", "unstaged", "staged", "head", "untracked"])
+        .optional()
+        .describe(
+          "Which diff to compute. Defaults to 'branch' (the full divergence vs base_branch).",
+        ),
+      max_bytes: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Maximum bytes of diff to return. Defaults to 65536. Pass 0 for unbounded (use sparingly — large diffs blow out context).",
+        ),
+    },
+    async ({ session, scope, max_bytes }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      const chosen = scope ?? "branch";
+      let diff: string;
+      try {
+        switch (chosen) {
+          case "branch":
+            diff = await getSessionBranchDiff(ws.id);
+            break;
+          case "unstaged":
+            diff = await getSessionDiff(ws.id);
+            break;
+          case "staged":
+            diff = await getSessionStagedDiff(ws.id);
+            break;
+          case "head":
+            diff = await getSessionFullDiff(ws.id);
+            break;
+          case "untracked":
+            diff = await getSessionUntrackedDiff(ws.id);
+            break;
+          default:
+            diff = "";
+        }
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+
+      const cap = max_bytes === undefined ? 65536 : Math.max(0, max_bytes);
+      const truncated = cap > 0 && diff.length > cap;
+      const body = truncated ? diff.slice(0, cap) : diff;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                session_id: ws.id,
+                branch: ws.branch,
+                base_branch: ws.base_branch,
+                scope: chosen,
+                total_bytes: diff.length,
+                returned_bytes: body.length,
+                truncated,
+                diff: body,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // list_session_changes
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "list_session_changes",
+    "List the files changed in a session's worktree (`git status --short`). Cheap, structured overview of what a child agent has touched — use before pulling full diffs or reading individual files. Returns parsed entries with index/worktree status codes (e.g. `M` modified, `A` added, `??` untracked, `D` deleted).",
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+    },
+    async ({ session }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      let raw: string;
+      try {
+        raw = await getSessionStatus(ws.id);
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+
+      const entries = raw
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .map((line) => {
+          // `git status --short` uses two leading status chars then a space
+          // then the path. Renames look like "R  old -> new".
+          const indexStatus = line.charAt(0);
+          const worktreeStatus = line.charAt(1);
+          const rest = line.slice(3);
+          const arrow = rest.indexOf(" -> ");
+
+          return arrow >= 0
+            ? {
+                index_status: indexStatus,
+                worktree_status: worktreeStatus,
+                path: rest.slice(arrow + 4),
+                from_path: rest.slice(0, arrow),
+              }
+            : {
+                index_status: indexStatus,
+                worktree_status: worktreeStatus,
+                path: rest,
+              };
+        });
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                session_id: ws.id,
+                branch: ws.branch,
+                base_branch: ws.base_branch,
+                changed_count: entries.length,
+                changes: entries,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // read_session_file
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "read_session_file",
+    "Read a file from a session's worktree. Use this to inspect a child agent's work in detail without spawning Bash or another agent — verify implementations, check generated configs, audit migrations, etc. The path must resolve inside the session's worktree (no traversal outside). Output is truncated to `max_bytes` (default 64KB).",
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+      file_path: z
+        .string()
+        .describe(
+          "Path to the file. Either relative to the session worktree (e.g. 'src/index.ts') or an absolute path under the worktree.",
+        ),
+      max_bytes: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Maximum bytes to return. Defaults to 65536. Pass 0 for unbounded.",
+        ),
+    },
+    async ({ session, file_path, max_bytes }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            { type: "text" as const, text: `Session not found: ${session}` },
+          ],
+          isError: true,
+        };
+      }
+
+      const wtRoot = path.resolve(ws.path);
+      const absRequested = path.isAbsolute(file_path)
+        ? path.resolve(file_path)
+        : path.resolve(wtRoot, file_path);
+
+      const rel = path.relative(wtRoot, absRequested);
+      if (rel.startsWith("..") || path.isAbsolute(rel)) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Refusing to read ${file_path}: resolved path is outside the session worktree.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      let stat;
+      try {
+        stat = fs.statSync(absRequested);
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+      if (stat.isDirectory()) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `${file_path} is a directory, not a file.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const cap = max_bytes === undefined ? 65536 : Math.max(0, max_bytes);
+      let content: string;
+      try {
+        content = fs.readFileSync(absRequested, "utf8");
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+
+      const truncated = cap > 0 && content.length > cap;
+      const body = truncated ? content.slice(0, cap) : content;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                session_id: ws.id,
+                branch: ws.branch,
+                path: rel,
+                total_bytes: content.length,
+                returned_bytes: body.length,
+                truncated,
+                content: body,
+              },
+              null,
+              2,
+            ),
           },
         ],
       };
