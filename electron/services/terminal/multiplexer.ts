@@ -56,6 +56,78 @@ export interface TerminalSession {
    * being fed into the PTY's stdin while initialization is in progress.
    */
   locked?: boolean;
+  /**
+   * Rolling capture of recent PTY output, capped at {@link MAX_OUTPUT_BYTES}.
+   * Used by {@link readTerminalOutput} / {@link waitForTerminal} so MCP-driven
+   * agents can inspect a runtime they triggered. Older bytes are dropped from
+   * the front when the cap is hit.
+   */
+  outputLog: string;
+  /** Total bytes ever written to the PTY (pre-cap). */
+  outputTotalBytes: number;
+  /** Bytes that have been dropped from the front of {@link outputLog}. */
+  outputDroppedBytes: number;
+  /**
+   * Exit code once the PTY has closed. `null` while the process is still
+   * running. We deliberately keep exited entries in the registry so that
+   * post-exit reads (e.g. an agent calling `read_terminal` after a quick
+   * one-shot has finished) still return its output.
+   */
+  exitCode: number | null;
+  /** Wall-clock ms timestamp of exit, or `null` while still running. */
+  exitedAt: number | null;
+  /** Pending {@link waitForTerminal} resolvers. Drained on match or exit. */
+  waiters: TerminalWaiter[];
+}
+
+interface TerminalWaiter {
+  predicate: ((output: string) => boolean) | null;
+  resolve: (result: TerminalWaitResult) => void;
+  timer: NodeJS.Timeout | null;
+}
+
+/** Result of a {@link waitForTerminal} call. */
+export interface TerminalWaitResult {
+  reason: "exit" | "match" | "timeout";
+  exitCode: number | null;
+  output: string;
+  totalBytes: number;
+  droppedBytes: number;
+}
+
+/** Result of a {@link readTerminalOutput} call. */
+export interface TerminalReadResult {
+  running: boolean;
+  exitCode: number | null;
+  output: string;
+  totalBytes: number;
+  droppedBytes: number;
+  runTitle: string | null;
+  sessionId: string;
+}
+
+/** Hard cap on per-terminal captured output (bytes). */
+const MAX_OUTPUT_BYTES = 256 * 1024;
+/** Default tail size returned by {@link readTerminalOutput}. */
+const DEFAULT_TAIL_BYTES = 16 * 1024;
+/** Hard cap on a single {@link waitForTerminal} timeout. */
+const MAX_WAIT_MS = 10 * 60 * 1000;
+
+/**
+ * Strip ANSI CSI / OSC escape sequences from `s`. Run-command output is full
+ * of color codes, cursor moves, and progress redraws that bloat the response
+ * and confuse pattern matching. We strip them by default for MCP reads.
+ */
+export function stripAnsi(s: string): string {
+  // CSI sequences (colors, cursor, erase, etc.) and OSC sequences (titles,
+  // hyperlinks). Covers the vast majority of what dev servers emit.
+  // ESC is intentional in these regexes — that's exactly what we're matching.
+  /* eslint-disable no-control-regex */
+  return s
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+    .replace(/\x1b[=>]/g, "");
+  /* eslint-enable no-control-regex */
 }
 
 // ---------------------------------------------------------------------------
@@ -169,6 +241,10 @@ export function createTerminal(
     throw `Session ${sessionId} is still initializing`;
   }
 
+  // Opportunistic GC of long-exited terminal entries we kept around for
+  // post-exit reads.
+  sweepExitedTerminals();
+
   // Resolve working directory.
   let cwd: string = ws.path;
   if (subDir) {
@@ -241,9 +317,34 @@ export function createTerminal(
     );
   };
 
-  // Forward PTY output to the renderer as base64-encoded chunks.
+  const terminal: TerminalSession = {
+    id: terminalId,
+    pty: ptyProcess,
+    sessionId,
+    outputLog: "",
+    outputTotalBytes: 0,
+    outputDroppedBytes: 0,
+    exitCode: null,
+    exitedAt: null,
+    waiters: [],
+  };
+
+  appState.terminals.set(terminalId, terminal);
+
+  // Forward PTY output to the renderer as base64-encoded chunks, and append
+  // to the in-memory capture so MCP `read_terminal` / `wait_for_terminal`
+  // can inspect runtime output later. The capture is bounded; older bytes
+  // are dropped from the front once {@link MAX_OUTPUT_BYTES} is exceeded.
   ptyProcess.onData((data: string) => {
     pendingChunks.push(data);
+    terminal.outputTotalBytes += data.length;
+    terminal.outputLog += data;
+    if (terminal.outputLog.length > MAX_OUTPUT_BYTES) {
+      const overflow = terminal.outputLog.length - MAX_OUTPUT_BYTES;
+      terminal.outputLog = terminal.outputLog.slice(overflow);
+      terminal.outputDroppedBytes += overflow;
+    }
+    notifyWaiters(terminal);
     if (flushTimer === null) {
       flushTimer = setTimeout(() => {
         flushTimer = null;
@@ -263,20 +364,205 @@ export function createTerminal(
       flushTimer = null;
     }
     flush();
+    terminal.exitCode = exitCode;
+    terminal.exitedAt = Date.now();
     getMainWindow()?.webContents.send(`terminal:exit:${terminalId}`, exitCode);
-    // Clean up state when the process exits on its own.
-    appState.terminals.delete(terminalId);
+    // Wake any pending waiters so they unblock immediately. We deliberately
+    // KEEP the entry in `appState.terminals` after exit so that follow-up
+    // reads still return the captured output and exit code; entries are
+    // garbage-collected by {@link sweepExitedTerminals}, by an explicit
+    // {@link destroyTerminal}, or when the parent session is deleted.
+    notifyWaiters(terminal);
   });
 
-  const terminal: TerminalSession = {
-    id: terminalId,
-    pty: ptyProcess,
-    sessionId,
-  };
-
-  appState.terminals.set(terminalId, terminal);
-
   return terminalId;
+}
+
+/**
+ * Notify pending {@link waitForTerminal} resolvers. Called after every output
+ * append and on exit. Each waiter's predicate is checked against the current
+ * captured log; matches resolve with `reason: "match"`. Once exited, all
+ * remaining waiters resolve with `reason: "exit"`.
+ */
+function notifyWaiters(terminal: TerminalSession): void {
+  if (terminal.waiters.length === 0) {
+    return;
+  }
+  const remaining: TerminalWaiter[] = [];
+  for (const w of terminal.waiters) {
+    if (terminal.exitCode !== null) {
+      if (w.timer) {
+        clearTimeout(w.timer);
+      }
+      w.resolve({
+        reason: "exit",
+        exitCode: terminal.exitCode,
+        output: terminal.outputLog,
+        totalBytes: terminal.outputTotalBytes,
+        droppedBytes: terminal.outputDroppedBytes,
+      });
+      continue;
+    }
+    if (w.predicate && w.predicate(terminal.outputLog)) {
+      if (w.timer) {
+        clearTimeout(w.timer);
+      }
+      w.resolve({
+        reason: "match",
+        exitCode: null,
+        output: terminal.outputLog,
+        totalBytes: terminal.outputTotalBytes,
+        droppedBytes: terminal.outputDroppedBytes,
+      });
+      continue;
+    }
+    remaining.push(w);
+  }
+  terminal.waiters = remaining;
+}
+
+/**
+ * Read captured output from a terminal session. Returns the tail of the
+ * captured log (defaulting to {@link DEFAULT_TAIL_BYTES}) along with the
+ * running/exit state. Strips ANSI escape sequences by default.
+ *
+ * @throws A plain string if the terminal session is not found.
+ */
+export function readTerminalOutput(
+  terminalId: string,
+  options?: {
+    tailBytes?: number;
+    stripAnsi?: boolean;
+  },
+): TerminalReadResult {
+  const terminal = appState.terminals.get(terminalId);
+  if (!terminal) {
+    throw `Terminal session not found: ${terminalId}`;
+  }
+  const tail = options?.tailBytes ?? DEFAULT_TAIL_BYTES;
+  const strip = options?.stripAnsi ?? true;
+
+  let output = terminal.outputLog;
+  if (tail > 0 && output.length > tail) {
+    output = output.slice(output.length - tail);
+  }
+  if (strip) {
+    output = stripAnsi(output);
+  }
+
+  return {
+    running: terminal.exitCode === null,
+    exitCode: terminal.exitCode,
+    output,
+    totalBytes: terminal.outputTotalBytes,
+    droppedBytes: terminal.outputDroppedBytes,
+    runTitle: terminal.runTitle ?? null,
+    sessionId: terminal.sessionId,
+  };
+}
+
+/**
+ * Wait for a terminal session to either:
+ *
+ * - emit captured output matching `untilPattern` (regex tested against the
+ *   ANSI-stripped log), or
+ * - exit, or
+ * - hit `timeoutMs`.
+ *
+ * Resolves with the reason and the captured output snapshot. Useful for
+ * agents that want to wait until a dev server is "ready" or for a one-shot
+ * command to finish. If the terminal has already exited, resolves
+ * immediately with `reason: "exit"`.
+ *
+ * @throws A plain string if the terminal session is not found.
+ */
+export function waitForTerminal(
+  terminalId: string,
+  options?: {
+    untilPattern?: string;
+    timeoutMs?: number;
+  },
+): Promise<TerminalWaitResult> {
+  const terminal = appState.terminals.get(terminalId);
+  if (!terminal) {
+    throw `Terminal session not found: ${terminalId}`;
+  }
+
+  // Already exited — resolve synchronously with the captured output.
+  if (terminal.exitCode !== null) {
+    return Promise.resolve({
+      reason: "exit",
+      exitCode: terminal.exitCode,
+      output: terminal.outputLog,
+      totalBytes: terminal.outputTotalBytes,
+      droppedBytes: terminal.outputDroppedBytes,
+    });
+  }
+
+  let predicate: ((output: string) => boolean) | null = null;
+  if (options?.untilPattern) {
+    let re: RegExp;
+    try {
+      re = new RegExp(options.untilPattern);
+    } catch (e) {
+      return Promise.reject(`Invalid until_pattern regex: ${String(e)}`);
+    }
+    predicate = (output) => re.test(stripAnsi(output));
+    // The pattern may already be present in output captured before we
+    // attached — short-circuit so callers don't hang waiting for a
+    // re-emission.
+    if (predicate(terminal.outputLog)) {
+      return Promise.resolve({
+        reason: "match",
+        exitCode: null,
+        output: terminal.outputLog,
+        totalBytes: terminal.outputTotalBytes,
+        droppedBytes: terminal.outputDroppedBytes,
+      });
+    }
+  }
+
+  const timeout = Math.min(
+    Math.max(options?.timeoutMs ?? 30_000, 0),
+    MAX_WAIT_MS,
+  );
+
+  return new Promise<TerminalWaitResult>((resolve) => {
+    const waiter: TerminalWaiter = {
+      predicate,
+      resolve,
+      timer: null,
+    };
+    if (timeout > 0) {
+      waiter.timer = setTimeout(() => {
+        // Drop this waiter from the queue and resolve with a timeout result.
+        terminal.waiters = terminal.waiters.filter((w) => w !== waiter);
+        resolve({
+          reason: "timeout",
+          exitCode: terminal.exitCode,
+          output: terminal.outputLog,
+          totalBytes: terminal.outputTotalBytes,
+          droppedBytes: terminal.outputDroppedBytes,
+        });
+      }, timeout);
+      waiter.timer.unref?.();
+    }
+    terminal.waiters.push(waiter);
+  });
+}
+
+/**
+ * Drop registry entries for terminals that exited more than `maxAgeMs` ago.
+ * Called opportunistically from {@link createTerminal} so the registry
+ * doesn't grow unbounded across long-lived sessions.
+ */
+function sweepExitedTerminals(maxAgeMs = 30 * 60 * 1000): void {
+  const now = Date.now();
+  for (const [id, t] of appState.terminals) {
+    if (t.exitedAt !== null && now - t.exitedAt > maxAgeMs) {
+      appState.terminals.delete(id);
+    }
+  }
 }
 
 /**
@@ -296,7 +582,7 @@ export function resolveRunCommand(
 
   const config = loadArgusConfig(ws.repo_root);
   if (!config.run || config.run.length === 0) {
-    throw "No 'run' commands configured in .argus.json";
+    throw "No 'run' commands configured in .argus.json — ask the user to add one before trying to start the runtime.";
   }
 
   if (!title) {
@@ -304,7 +590,8 @@ export function resolveRunCommand(
   }
   const match = config.run.find((r) => r.title === title);
   if (!match) {
-    throw `No run command with title '${title}' in .argus.json`;
+    const available = config.run.map((r) => `'${r.title}'`).join(", ");
+    throw `No run command with title '${title}' in .argus.json. Available: ${available}.`;
   }
 
   return match;
@@ -362,7 +649,11 @@ function findRunSession(
   title: string,
 ): TerminalSession | null {
   for (const session of appState.terminals.values()) {
-    if (session.sessionId === sessionId && session.runTitle === title) {
+    if (
+      session.sessionId === sessionId &&
+      session.runTitle === title &&
+      session.exitCode === null
+    ) {
       return session;
     }
   }
@@ -388,6 +679,10 @@ export function startTerminal(
   if (!session) {
     throw `Terminal session not found: ${sessionId}`;
   }
+  // The entry may be a tombstone for an exited PTY — resizing would crash.
+  if (session.exitCode !== null) {
+    return;
+  }
   session.pty.resize(cols, rows);
 }
 
@@ -405,6 +700,15 @@ export function destroyTerminal(sessionId: string): void {
     throw `Terminal session not found: ${sessionId}`;
   }
 
+  // If the process already exited, the entry is just a captured-output
+  // tombstone — drop it without re-emitting an exit event, since one was
+  // already broadcast when the PTY actually exited.
+  if (session.exitCode !== null) {
+    appState.terminals.delete(sessionId);
+
+    return;
+  }
+
   try {
     session.pty.kill();
   } catch {
@@ -412,6 +716,21 @@ export function destroyTerminal(sessionId: string): void {
   }
 
   appState.terminals.delete(sessionId);
+
+  // Wake any pending waiters so they don't hang on a destroyed terminal.
+  for (const w of session.waiters) {
+    if (w.timer) {
+      clearTimeout(w.timer);
+    }
+    w.resolve({
+      reason: "exit",
+      exitCode: -1,
+      output: session.outputLog,
+      totalBytes: session.outputTotalBytes,
+      droppedBytes: session.outputDroppedBytes,
+    });
+  }
+  session.waiters = [];
 
   // Notify the renderer that the session has ended.
   getMainWindow()?.webContents.send(`terminal:exit:${sessionId}`, -1);
@@ -434,6 +753,9 @@ export function stopTerminal(sessionId: string): void {
   const session = appState.terminals.get(sessionId);
   if (!session) {
     throw `Terminal session not found: ${sessionId}`;
+  }
+  if (session.exitCode !== null) {
+    return;
   }
 
   const escalate = (signal: "SIGINT" | "SIGKILL" | "SIGTERM"): boolean => {
@@ -499,6 +821,9 @@ export function terminalWrite(sessionId: string, data: string): void {
   if (session.locked) {
     return;
   }
+  if (session.exitCode !== null) {
+    return;
+  }
   const raw = Buffer.from(data, "base64");
   // Decode as "binary" (latin1) rather than the default UTF-8 so byte values
   // survive 1:1 into the PTY. This preserves non-UTF-8 pastes and raw escape
@@ -520,6 +845,9 @@ export function terminalResize(
   const session = appState.terminals.get(sessionId);
   if (!session) {
     throw `Terminal session not found: ${sessionId}`;
+  }
+  if (session.exitCode !== null) {
+    return;
   }
   session.pty.resize(cols, rows);
 }

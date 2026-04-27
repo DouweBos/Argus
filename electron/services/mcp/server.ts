@@ -46,7 +46,13 @@ import {
   readArgusConfig,
   writeArgusConfig,
 } from "../session/sessionOps";
-import { createRunTerminal, startTerminal } from "../terminal/multiplexer";
+import {
+  createRunTerminal,
+  readTerminalOutput,
+  startTerminal,
+  stripAnsi,
+  waitForTerminal,
+} from "../terminal/multiplexer";
 import {
   isGitRepo,
   ensureRepoRegistered,
@@ -1248,12 +1254,74 @@ export function createMcpServer(): McpServer {
   );
 
   // -------------------------------------------------------------------------
+  // list_run_commands
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "list_run_commands",
+    "List the run commands configured in a session's .argus.json. Use this to discover what `trigger_run` can launch (dev server, watcher, test runner, etc.) before deciding whether to start a runtime — the user has likely already configured the right command. Returns each entry's title, shell command, working dir, and restart-on-rerun flag.",
+    {
+      session: z.string().describe("Session ID, branch name, or display name"),
+    },
+    async ({ session }) => {
+      const ws = resolveSession(session);
+      if (!ws) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Session not found: ${session}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const config = readArgusConfig(ws.repo_root);
+        const commands = (config.run ?? []).map((r) => ({
+          title: r.title,
+          command: r.command,
+          cwd: r.cwd,
+          restartOnRerun: r.restartOnRerun,
+        }));
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  session_id: ws.id,
+                  branch: ws.branch,
+                  run_commands: commands,
+                  hint:
+                    commands.length === 0
+                      ? "No run commands configured. Ask the user to add one to .argus.json rather than spawning a dev server via Bash."
+                      : "Use `trigger_run` with one of these titles to (re)start the runtime in the Argus UI.",
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
   // trigger_run
   // -------------------------------------------------------------------------
 
   server.tool(
     "trigger_run",
-    "Trigger one of the configured run commands (from .argus.json) in a session's terminal. This starts the app's dev server, test runner, or whatever the project has configured as a run command. The command runs in a visible UI terminal. Pass `title` to pick a specific entry; omit to run the first configured command.",
+    "Start (or restart) one of the project's configured run commands from .argus.json — its dev server, watcher, test runner, simulator boot script, etc. ALWAYS use this instead of running `npm run dev`, `pnpm start`, `expo start`, `bun run`, `next dev`, `vite`, `cargo run`, `python manage.py runserver`, or any equivalent long-running process via the Bash tool. The user already has the runtime open in the Argus UI on the project's configured port; spawning your own copy from Bash collides on that port, fragments output the user can't see, and leaves orphaned processes. The command runs in a visible UI terminal the user can inspect. Pass `title` to pick a specific entry; omit to run the first configured command. If you don't know what's configured, call `list_run_commands` first. Returns a `terminal_session_id` — pair it with `wait_for_terminal` (block until a 'ready' regex appears or the process exits) and `read_terminal` (snapshot captured output) to observe the run.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
       title: z
@@ -1292,6 +1360,140 @@ export function createMcpServer(): McpServer {
                   title: result.title,
                   session_id: ws.id,
                   branch: ws.branch,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // read_terminal
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "read_terminal",
+    "Snapshot the captured output of a terminal session (typically one started via `trigger_run`). Returns the tail of the captured log, whether the process is still running, and its exit code if it has exited. ANSI escape codes are stripped by default so the output is plain text. Output capture is bounded (~256KB per terminal); `dropped_bytes` indicates how many older bytes were truncated from the front. Use this for non-blocking peeks; use `wait_for_terminal` when you want to block until something specific appears or the process exits.",
+    {
+      terminal_session_id: z
+        .string()
+        .describe(
+          "Terminal session id returned by `trigger_run` (NOT the worktree session id).",
+        ),
+      tail_bytes: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Return only the last N bytes of captured output. Defaults to ~16KB. Pass 0 for the full capture (capped at the per-terminal maximum).",
+        ),
+      strip_ansi: z
+        .boolean()
+        .optional()
+        .describe(
+          "Strip ANSI escape sequences (color codes, cursor moves, progress redraws). Defaults to true.",
+        ),
+    },
+    async ({ terminal_session_id, tail_bytes, strip_ansi }) => {
+      try {
+        const result = readTerminalOutput(terminal_session_id, {
+          tailBytes: tail_bytes,
+          stripAnsi: strip_ansi,
+        });
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  terminal_session_id,
+                  session_id: result.sessionId,
+                  run_title: result.runTitle,
+                  running: result.running,
+                  exit_code: result.exitCode,
+                  total_bytes: result.totalBytes,
+                  dropped_bytes: result.droppedBytes,
+                  output: result.output,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // wait_for_terminal
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "wait_for_terminal",
+    "Block until a terminal session (typically one started via `trigger_run`) emits output matching `until_pattern`, exits, or hits `timeout_ms`. Use this for: waiting for a dev server's 'ready'/'compiled' line before navigating, waiting for a one-shot command (tests, build, codegen run via a configured run command) to finish, or simply blocking until a process dies. Returns the reason for unblocking (`match` | `exit` | `timeout`), the exit code if exited, and the captured output snapshot. The pattern is matched against ANSI-stripped output. If the pattern is already present in already-captured output when you call, it returns immediately.",
+    {
+      terminal_session_id: z
+        .string()
+        .describe(
+          "Terminal session id returned by `trigger_run` (NOT the worktree session id).",
+        ),
+      until_pattern: z
+        .string()
+        .optional()
+        .describe(
+          "Regex tested against captured (ANSI-stripped) output. Common 'ready' patterns: `ready in \\d+`, `compiled successfully`, `Local:\\s+http`, `Listening on`, `Metro waiting`. Omit to wait purely for exit/timeout.",
+        ),
+      timeout_ms: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Maximum time to block, in milliseconds. Defaults to 30000 (30s). Capped at 600000 (10 min). Resolves with `reason: 'timeout'` if neither match nor exit happens in time.",
+        ),
+    },
+    async ({ terminal_session_id, until_pattern, timeout_ms }) => {
+      try {
+        const result = await waitForTerminal(terminal_session_id, {
+          untilPattern: until_pattern,
+          timeoutMs: timeout_ms,
+        });
+        // Trim to a reasonable tail so we don't blast 256KB of build output
+        // into the agent's context on every wait. Callers who need more can
+        // follow up with `read_terminal`.
+        const TAIL = 16 * 1024;
+        const tail =
+          result.output.length > TAIL
+            ? result.output.slice(result.output.length - TAIL)
+            : result.output;
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  terminal_session_id,
+                  reason: result.reason,
+                  exit_code: result.exitCode,
+                  total_bytes: result.totalBytes,
+                  dropped_bytes: result.droppedBytes,
+                  output_tail: stripAnsi(tail),
                 },
                 null,
                 2,
