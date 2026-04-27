@@ -1223,6 +1223,126 @@ export function waitForAgent(
 }
 
 // ---------------------------------------------------------------------------
+// wait_for_any_agent
+// ---------------------------------------------------------------------------
+
+/**
+ * Wait for the first of several agents to finish its current turn or exit.
+ *
+ * Resolves with the `agent_id` that settled plus its status and result. If
+ * any agent is already idle/stopped/errored when called, returns immediately
+ * for that one (lowest index in `agentIds` wins).
+ *
+ * @throws string if any `agent_id` is unknown or the timeout elapses.
+ */
+export function waitForAnyAgent(
+  agentIds: string[],
+  timeoutMs?: number,
+): Promise<{
+  agentId: string;
+  result: AgentResult | null;
+  status: AgentStatusValue;
+}> {
+  if (agentIds.length === 0) {
+    throw `wait_for_any_agent: agent_ids must be non-empty`;
+  }
+
+  // Validate up front so we never attach waiters to a partial set.
+  const sessions = agentIds.map((id) => {
+    const s = appState.agents.get(id);
+    if (!s) {
+      throw `No agent found: ${id}`;
+    }
+
+    return { id, session: s };
+  });
+
+  // Fast path — any already-terminal agent settles immediately.
+  for (const { id, session } of sessions) {
+    if (
+      session.status === "stopped" ||
+      session.status === "error" ||
+      (session.status === "idle" && session.turnsCompleted > 0)
+    ) {
+      return Promise.resolve({
+        agentId: id,
+        result: session.resultSummary,
+        status: session.status,
+      });
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let settled = false;
+
+    // Track each agent's waiters so we can detach them all when one fires.
+    const detachers: (() => void)[] = [];
+
+    const settle = (
+      agentId: string,
+      status: AgentStatusValue,
+      result: AgentResult | null,
+    ) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      for (const detach of detachers) {
+        detach();
+      }
+      resolve({ agentId, result, status });
+    };
+
+    for (const { id, session } of sessions) {
+      const onExit = (exitCode: number) => {
+        const final = appState.agents.get(id);
+        settle(
+          id,
+          exitCode === 0 ? "stopped" : "error",
+          final?.resultSummary ?? null,
+        );
+      };
+      const onTurn = (status: AgentStatusValue) => {
+        const final = appState.agents.get(id);
+        settle(id, status, final?.resultSummary ?? null);
+      };
+
+      session.exitWaiters.push(onExit);
+      session.turnWaiters.push(onTurn);
+      detachers.push(() => {
+        const exitIdx = session.exitWaiters.indexOf(onExit);
+        if (exitIdx !== -1) {
+          session.exitWaiters.splice(exitIdx, 1);
+        }
+        const turnIdx = session.turnWaiters.indexOf(onTurn);
+        if (turnIdx !== -1) {
+          session.turnWaiters.splice(turnIdx, 1);
+        }
+      });
+    }
+
+    if (timeoutMs !== undefined && timeoutMs > 0) {
+      timer = setTimeout(() => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        for (const detach of detachers) {
+          detach();
+        }
+        reject(
+          `Timeout waiting for any of ${agentIds.length} agents after ${timeoutMs}ms`,
+        );
+      }, timeoutMs);
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // send_agent_message
 // ---------------------------------------------------------------------------
 

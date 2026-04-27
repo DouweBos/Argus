@@ -27,6 +27,7 @@ import {
   sendAgentMessage,
   listAgents,
   waitForAgent,
+  waitForAnyAgent,
   stopAgent,
   interruptAgent,
   ensureSimulatorForAgent,
@@ -1174,6 +1175,86 @@ export function createMcpServer(): McpServer {
               text: JSON.stringify(
                 {
                   agent_id,
+                  session_id: session?.sessionId,
+                  branch: ws?.branch,
+                  status,
+                  result,
+                },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (e) {
+        return {
+          content: [{ type: "text" as const, text: String(e) }],
+          isError: true,
+        };
+      } finally {
+        if (keepalive) {
+          clearInterval(keepalive);
+        }
+      }
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // wait_for_any_agent
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "wait_for_any_agent",
+    "Block until the FIRST of several agents finishes its current turn or exits, then return which one settled along with its status and result. Use this when you've fanned out to multiple children and want to react as soon as any one of them is ready — `wait_for_agent` only watches a single agent and would force you to pick one to block on. Returns immediately if any of the listed agents is already idle/stopped/errored.",
+    {
+      agent_ids: z
+        .array(z.string())
+        .min(1)
+        .describe("Agent IDs to race. Must be non-empty."),
+      timeout_seconds: z
+        .number()
+        .optional()
+        .describe(
+          "Maximum seconds to wait before timing out. Defaults to no timeout (wait indefinitely).",
+        ),
+    },
+    async ({ agent_ids, timeout_seconds }, extra) => {
+      const progressToken = extra?._meta?.progressToken;
+      let ticks = 0;
+      const keepalive = progressToken
+        ? setInterval(() => {
+            ticks += 1;
+            extra
+              .sendNotification({
+                method: "notifications/progress",
+                params: {
+                  progressToken,
+                  progress: ticks,
+                  message: `waiting for any of ${agent_ids.length} agents`,
+                },
+              })
+              .catch(() => {});
+          }, 30_000)
+        : null;
+
+      try {
+        const { agentId, status, result } = await waitForAnyAgent(
+          agent_ids,
+          timeout_seconds ? timeout_seconds * 1000 : undefined,
+        );
+
+        const session = appState.agents.get(agentId);
+        const ws = session
+          ? appState.sessions.get(session.sessionId)
+          : undefined;
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  agent_id: agentId,
                   session_id: session?.sessionId,
                   branch: ws?.branch,
                   status,
