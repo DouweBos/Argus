@@ -66,6 +66,27 @@ export interface AgentSession {
    * child without scanning its transcript.
    */
   lastEventAt: number;
+  /**
+   * Total number of tool-use blocks observed in assistant stream events for
+   * this agent's lifetime. Independent of `turnsCompleted` — a single turn
+   * can fan out into many tool calls. Lets `agent_vitals` distinguish a
+   * model that's actively iterating (idle status, but tool count climbing
+   * across calls) from one that has truly parked.
+   */
+  toolUsesTotal: number;
+  /**
+   * Unix ms timestamp of the most recent observed tool-use block, or null if
+   * the agent has not made any tool calls yet. Reads better than
+   * `lastEventAt` for "is this child making forward progress" because it
+   * filters out chatty system/control events that don't represent work.
+   */
+  lastToolUseAt: number | null;
+  /**
+   * Name of the most recently observed tool (e.g. `Edit`, `Bash`, `Read`)
+   * or null if no tool has been used yet. Captured opportunistically from
+   * the assistant stream — not authoritative beyond the most recent event.
+   */
+  lastToolName: string | null;
   /** Captured when the agent emits its final `type: "result"` event. */
   resultSummary: AgentResult | null;
   /**

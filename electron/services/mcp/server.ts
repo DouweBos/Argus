@@ -232,6 +232,47 @@ function readJsonBody(
   });
 }
 
+/**
+ * Return the most recent mtime (Unix ms) across all files reported by
+ * `git status --short` in a session's worktree, or null if no files are
+ * changed or the lookup fails. Used by `agent_vitals` as a forward-progress
+ * signal that includes background processes the agent spawned (dev servers,
+ * watchers, codegen) — `lastEventAt` only catches CLI stream events.
+ */
+async function latestWorktreeMtime(
+  sessionId: string,
+  worktreePath: string,
+): Promise<number | null> {
+  let raw: string;
+  try {
+    raw = await getSessionStatus(sessionId);
+  } catch {
+    return null;
+  }
+  let latest = 0;
+  for (const line of raw.split("\n")) {
+    if (!line) {
+      continue;
+    }
+    // `git status --short` lines are `XY <path>` or `XY <from> -> <to>`.
+    const rest = line.slice(3);
+    const arrow = rest.indexOf(" -> ");
+    const rel = arrow >= 0 ? rest.slice(arrow + 4) : rest;
+    const abs = path.resolve(worktreePath, rel);
+    try {
+      const stat = fs.statSync(abs);
+      const ms = stat.mtimeMs;
+      if (ms > latest) {
+        latest = ms;
+      }
+    } catch {
+      // File may have been deleted between status and stat — skip.
+    }
+  }
+
+  return latest > 0 ? latest : null;
+}
+
 /** Resolve the project_path for a call, or fall back to the first registered project. */
 function resolveRepoRoot(projectPath?: string): string {
   if (projectPath) {
@@ -1070,7 +1111,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "agent_vitals",
-    "Batched health check for one or more agents. Returns each agent's status, turns completed, time since the CLI last emitted any event (`time_since_last_event_ms`), and creation/result info — enough to spot a stuck or slow child without pulling its full transcript. Pass every child you spawned in a fan-out and decide which ones to interrupt or wait on. Unknown agent IDs are returned with `status: \"not_found\"` instead of failing the whole call, so a dead child in the list doesn't block the rest of the report.",
+    'Batched health check for one or more agents. Returns each agent\'s status, turn count, lifetime tool-call count, and timestamps for last CLI event, last tool use, and last worktree file modification — enough to tell an actively iterating child from a parked one without pulling its transcript. Note: `status` reflects CLI turn boundaries (it flips to `idle` between turns), so `last_tool_use_at` and `last_file_change_at` are the truer signals of forward progress. `time_since_last_*_ms` are convenience deltas. Set `include_file_mtime: false` to skip the worktree stat call when checking many agents in a hot loop. Unknown agent IDs come back with `status: "not_found"` instead of failing the whole call.',
     {
       agent_ids: z
         .array(z.string())
@@ -1078,30 +1119,54 @@ export function createMcpServer(): McpServer {
         .describe(
           "Agent IDs to check. Pass the full list of children from your fan-out for a single round-trip health check.",
         ),
+      include_file_mtime: z
+        .boolean()
+        .optional()
+        .describe(
+          "Include the most recent file mtime in each agent's worktree (`last_file_change_at`). Defaults to true. Set false to skip the per-session stat calls when polling tightly.",
+        ),
     },
-    async ({ agent_ids }) => {
+    async ({ agent_ids, include_file_mtime }) => {
       const now = Date.now();
-      const vitals = agent_ids.map((id) => {
-        const session = appState.agents.get(id);
-        if (!session) {
-          return { agent_id: id, status: "not_found" as const };
-        }
-        const ws = appState.sessions.get(session.sessionId);
+      const includeMtime = include_file_mtime ?? true;
+      const vitals = await Promise.all(
+        agent_ids.map(async (id) => {
+          const session = appState.agents.get(id);
+          if (!session) {
+            return { agent_id: id, status: "not_found" as const };
+          }
+          const ws = appState.sessions.get(session.sessionId);
 
-        return {
-          agent_id: id,
-          session_id: session.sessionId,
-          branch: ws?.branch,
-          display_name: ws?.display_name,
-          status: session.status,
-          parent_agent_id: session.parentAgentId,
-          created_at: session.createdAt,
-          last_event_at: session.lastEventAt,
-          time_since_last_event_ms: now - session.lastEventAt,
-          turns_completed: session.turnsCompleted,
-          has_result: session.resultSummary !== null,
-        };
-      });
+          let lastFileChangeAt: number | null = null;
+          if (includeMtime && ws) {
+            lastFileChangeAt = await latestWorktreeMtime(ws.id, ws.path);
+          }
+
+          return {
+            agent_id: id,
+            session_id: session.sessionId,
+            branch: ws?.branch,
+            display_name: ws?.display_name,
+            status: session.status,
+            parent_agent_id: session.parentAgentId,
+            created_at: session.createdAt,
+            last_event_at: session.lastEventAt,
+            time_since_last_event_ms: now - session.lastEventAt,
+            last_tool_use_at: session.lastToolUseAt,
+            time_since_last_tool_use_ms:
+              session.lastToolUseAt !== null
+                ? now - session.lastToolUseAt
+                : null,
+            last_tool_name: session.lastToolName,
+            tool_uses_total: session.toolUsesTotal,
+            last_file_change_at: lastFileChangeAt,
+            time_since_last_file_change_ms:
+              lastFileChangeAt !== null ? now - lastFileChangeAt : null,
+            turns_completed: session.turnsCompleted,
+            has_result: session.resultSummary !== null,
+          };
+        }),
+      );
 
       return {
         content: [
