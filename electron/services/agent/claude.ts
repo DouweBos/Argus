@@ -493,6 +493,42 @@ export async function startAgent(
     const sessForActivity = appState.agents.get(agentId);
     if (sessForActivity) {
       sessForActivity.lastEventAt = Date.now();
+
+      // Tool-use heartbeat: increment counter and stamp "last tool" when an
+      // assistant message contains a tool_use content block. Cheap substring
+      // gate first to keep the hot path fast for non-tool events.
+      if (line.includes('"type":"tool_use"')) {
+        try {
+          const parsed = JSON.parse(line) as {
+            type?: string;
+            message?: {
+              content?: { type?: string; name?: string }[];
+            };
+          };
+          if (parsed.type === "assistant") {
+            const blocks = parsed.message?.content ?? [];
+            let observed = 0;
+            let latestName: string | null = null;
+            for (const block of blocks) {
+              if (block.type === "tool_use") {
+                observed += 1;
+                if (typeof block.name === "string") {
+                  latestName = block.name;
+                }
+              }
+            }
+            if (observed > 0) {
+              sessForActivity.toolUsesTotal += observed;
+              sessForActivity.lastToolUseAt = Date.now();
+              if (latestName !== null) {
+                sessForActivity.lastToolName = latestName;
+              }
+            }
+          }
+        } catch {
+          // Malformed line — already forwarded elsewhere; drop the metric.
+        }
+      }
     }
 
     // Fast-path check: only parse lines that look like control messages.
@@ -769,6 +805,9 @@ export async function startAgent(
     suppressStatus: previous?.suppressStatus ?? false,
     createdAt: previous?.createdAt ?? Date.now(),
     lastEventAt: Date.now(),
+    toolUsesTotal: previous?.toolUsesTotal ?? 0,
+    lastToolUseAt: previous?.lastToolUseAt ?? null,
+    lastToolName: previous?.lastToolName ?? null,
   };
 
   appState.agents.set(agentId, agentSession);

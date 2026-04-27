@@ -672,6 +672,9 @@ describe("agent_status", () => {
       turnsCompleted: 0,
       createdAt: 1_700_000_000_000,
       lastEventAt: 1_700_000_000_000,
+      toolUsesTotal: 0,
+      lastToolUseAt: null,
+      lastToolName: null,
     });
 
     const result = await client.callTool({
