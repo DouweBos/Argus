@@ -1,4 +1,11 @@
-import { useEffect, useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
+import { createPortal } from "react-dom";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import styles from "./ModelPicker.module.css";
 
@@ -16,6 +23,13 @@ interface ModelPickerProps {
   models: ModelOption[];
   onClose: () => void;
   onSelect: (modelValue: string) => void;
+  /** Element the picker should anchor to. Picker opens above and aligned to its left. */
+  triggerRef: RefObject<HTMLElement | null>;
+}
+
+interface PickerRect {
+  bottom: number;
+  left: number;
 }
 
 export function ModelPicker({
@@ -23,10 +37,34 @@ export function ModelPicker({
   currentModel,
   onSelect,
   onClose,
+  triggerRef,
 }: ModelPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [rect, setRect] = useState<PickerRect | null>(null);
 
-  useOutsideClick(ref, true, onClose);
+  useLayoutEffect(() => {
+    const updateRect = () => {
+      const node = triggerRef.current;
+      if (!node) {
+        return;
+      }
+      const r = node.getBoundingClientRect();
+      setRect({ left: r.left, bottom: window.innerHeight - r.top + 6 });
+    };
+
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [triggerRef]);
+
+  useOutsideClick(ref, true, onClose, (target) => {
+    return triggerRef.current?.contains(target) ?? false;
+  });
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -39,8 +77,16 @@ export function ModelPicker({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
-  return (
-    <div ref={ref} className={styles.picker}>
+  if (!rect) {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      ref={ref}
+      className={styles.picker}
+      style={{ left: rect.left, bottom: rect.bottom }}
+    >
       <div className={styles.header}>Switch model</div>
       {models.map((model) => {
         const isActive = model.value === currentModel;
@@ -64,6 +110,7 @@ export function ModelPicker({
           </button>
         );
       })}
-    </div>
+    </div>,
+    document.body,
   );
 }

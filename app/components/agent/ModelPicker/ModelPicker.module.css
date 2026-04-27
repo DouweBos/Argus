@@ -1,8 +1,8 @@
 .picker {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  width: clamp(200px, 60%, 600px);
+  position: fixed;
+  width: clamp(260px, 40vw, 600px);
+  max-height: 320px;
+  overflow-y: auto;
   background: var(--bg-secondary-90);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
