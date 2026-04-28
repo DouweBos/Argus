@@ -201,7 +201,7 @@ export function ChatInput({
     if (val.startsWith("/") && !val.includes(" ") && !val.includes("\n")) {
       const query = val.slice(1).toLowerCase();
       const matches = slashCommands.filter((cmd) =>
-        cmd.name.toLowerCase().startsWith(query),
+        cmd.name.toLowerCase().includes(query),
       );
       setSuggestions(matches.slice(0, 8));
       setSelectedIndex(0);
