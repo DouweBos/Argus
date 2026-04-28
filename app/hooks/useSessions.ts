@@ -89,22 +89,20 @@ function setupSessionTerminalListener(sessionId: string): Promise<() => void> {
 }
 
 function setupSessionProgressListener(sessionId: string): Promise<() => void> {
-  return listen<string>(`session:setup_progress:${sessionId}`, (event) => {
-    try {
-      const data = JSON.parse(event.payload) as {
-        current: number;
-        item: string;
-        total: number;
-      };
-      if (
-        typeof data.item === "string" &&
-        typeof data.current === "number" &&
-        typeof data.total === "number"
-      ) {
-        setSetupProgress(sessionId, data);
-      }
-    } catch {
-      // Ignore malformed payload
+  return listen<{
+    current: number;
+    item: string;
+    phase?: "command" | "copy" | "matching" | "symlink";
+    total: number;
+  }>(`session:setup_progress:${sessionId}`, (event) => {
+    const data = event.payload;
+    if (
+      data &&
+      typeof data.item === "string" &&
+      typeof data.current === "number" &&
+      typeof data.total === "number"
+    ) {
+      setSetupProgress(sessionId, data);
     }
   });
 }

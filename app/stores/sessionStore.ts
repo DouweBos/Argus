@@ -33,7 +33,12 @@ interface SessionStoreData {
   /** Current item and progress during setup. Cleared when setup completes. */
   setupProgressBySessionId: Record<
     string,
-    { current: number; item: string; total: number }
+    {
+      current: number;
+      item: string;
+      phase?: "command" | "copy" | "matching" | "symlink";
+      total: number;
+    }
   >;
 }
 
@@ -225,7 +230,12 @@ export const setLoading = (isLoading: boolean) => {
 
 export const setSetupProgress = (
   sessionId: string,
-  progress: { current: number; item: string; total: number } | null,
+  progress: {
+    current: number;
+    item: string;
+    phase?: "command" | "copy" | "matching" | "symlink";
+    total: number;
+  } | null,
 ) => {
   sessionStore.setState((state) => {
     if (progress == null) {

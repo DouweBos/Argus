@@ -12,6 +12,7 @@ import { PathLink } from "../PathLink/PathLink";
 import { RenameBranchDialog } from "../RenameBranchDialog/RenameBranchDialog";
 import { ReadyToMergeCard } from "../RepoHomeScreen/ReadyToMergeCard";
 import styles from "../homeLayout.module.css";
+import { InitializationStatus } from "./InitializationStatus";
 
 interface SessionHomeScreenProps {
   canStart: boolean;
@@ -159,6 +160,10 @@ export function SessionHomeScreen({
         </div>
 
         {session?.path && <PathLink path={session.path} />}
+
+        {session?.status === "initializing" && (
+          <InitializationStatus sessionId={sessionId} />
+        )}
 
         {orgTask && <TaskWidgets task={orgTask} />}
 
