@@ -42,6 +42,7 @@ export function OnboardingLayout({
 
   return (
     <div className={styles.root}>
+      <div className={styles.dragRegion} />
       {showStepper ? (
         <div className={styles.header}>
           <Stepper steps={steps} currentIndex={currentIndex} />
