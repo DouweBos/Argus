@@ -22,40 +22,40 @@
 
 html,
 html[data-theme="dark"] {
-  /* ─── Backgrounds ─── deep, slightly blue-tinted blacks */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-tertiary: #1a1a24;
-  --bg-hover: #222233;
+  /* ─── Backgrounds ─── lifted, slightly blue-tinted dark surfaces */
+  --bg-primary: #15151c;
+  --bg-secondary: #1c1c25;
+  --bg-tertiary: #252531;
+  --bg-hover: #2d2d3c;
 
   /* Tinted overlays of the secondary background, used for floating panels
      (title bar, chat input, hover action bars). Theme-aware so they become
      light panels on light themes. */
-  --bg-secondary-50: rgba(17, 17, 24, 0.5);
-  --bg-secondary-85: rgba(17, 17, 24, 0.85);
-  --bg-secondary-90: rgba(17, 17, 24, 0.9);
-  --bg-secondary-0: rgba(17, 17, 24, 0);
-  --bg-primary-60: rgba(10, 10, 15, 0.6);
-  --bg-primary-85: rgba(10, 10, 15, 0.85);
-  --bg-primary-0: rgba(10, 10, 15, 0);
+  --bg-secondary-50: rgba(28, 28, 37, 0.5);
+  --bg-secondary-85: rgba(28, 28, 37, 0.85);
+  --bg-secondary-90: rgba(28, 28, 37, 0.9);
+  --bg-secondary-0: rgba(28, 28, 37, 0);
+  --bg-primary-60: rgba(21, 21, 28, 0.6);
+  --bg-primary-85: rgba(21, 21, 28, 0.85);
+  --bg-primary-0: rgba(21, 21, 28, 0);
 
   /* ─── Borders ─── */
   --border: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.04);
   --border-strong: rgba(255, 255, 255, 0.15);
 
-  /* ─── Text ─── */
-  --text-primary: #ffffff;
-  --text-secondary: #d0d0dc;
-  --text-muted: #8a8aa0;
-  --text-inverse: #0a0a0f;
-  --text-on-accent: #0a0a0f;
+  /* ─── Text ─── softened off-white to reduce glare on lifted backgrounds */
+  --text-primary: #d8d8e2;
+  --text-secondary: #a8a8b8;
+  --text-muted: #70708a;
+  --text-inverse: #15151c;
+  --text-on-accent: #15151c;
 
   /* ─── Accent ─── amber system */
   --accent: #f5a623;
   --accent-hover: #ffbe4d;
   --accent-secondary: #c78519;
-  --accent-fg: #0a0a0f;
+  --accent-fg: #15151c;
   --accent-glow: rgba(245, 166, 35, 0.2);
   --accent-glow-strong: rgba(245, 166, 35, 0.1);
   --accent-gradient: linear-gradient(135deg, #f5a623, #ff7a4d);
@@ -133,8 +133,8 @@ html[data-theme="dark"] {
      is required (e.g. absolutely-positioned overlays that need to hide the
      content beneath them). Approximated by compositing the overlay onto
      `--bg-primary` inside the glass panel context. */
-  --surface-3-solid: #1b1b22;
-  --surface-4-solid: #20202a;
+  --surface-3-solid: #25252e;
+  --surface-4-solid: #2a2a35;
 
   /* ─── Scrim overlays ─── modal curtains, always dark regardless of theme */
   --scrim-sm: rgba(0, 0, 0, 0.25);

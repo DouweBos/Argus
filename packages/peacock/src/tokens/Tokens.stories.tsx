@@ -69,23 +69,23 @@ export const Colors: Story = {
         <div style={row}>
           <Token
             name="--bg-primary"
-            value="#0a0a0f"
-            preview={<div style={swatch("#0a0a0f")} />}
+            value="#15151c"
+            preview={<div style={swatch("#15151c")} />}
           />
           <Token
             name="--bg-secondary"
-            value="#111118"
-            preview={<div style={swatch("#111118")} />}
+            value="#1c1c25"
+            preview={<div style={swatch("#1c1c25")} />}
           />
           <Token
             name="--bg-tertiary"
-            value="#1a1a24"
-            preview={<div style={swatch("#1a1a24")} />}
+            value="#252531"
+            preview={<div style={swatch("#252531")} />}
           />
           <Token
             name="--bg-hover"
-            value="#222233"
-            preview={<div style={swatch("#222233")} />}
+            value="#2d2d3c"
+            preview={<div style={swatch("#2d2d3c")} />}
           />
         </div>
       </section>
@@ -131,18 +131,18 @@ export const Colors: Story = {
         <div style={row}>
           <Token
             name="--text-primary"
-            value="#f0f0f5"
-            preview={<div style={{ ...swatch("#f0f0f5") }} />}
+            value="#d8d8e2"
+            preview={<div style={{ ...swatch("#d8d8e2") }} />}
           />
           <Token
             name="--text-secondary"
-            value="#a0a0b8"
-            preview={<div style={swatch("#a0a0b8")} />}
+            value="#a8a8b8"
+            preview={<div style={swatch("#a8a8b8")} />}
           />
           <Token
             name="--text-muted"
-            value="#55556a"
-            preview={<div style={swatch("#55556a")} />}
+            value="#70708a"
+            preview={<div style={swatch("#70708a")} />}
           />
         </div>
       </section>
