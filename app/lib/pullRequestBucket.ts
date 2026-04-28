@@ -44,6 +44,7 @@ export const BUCKET_ORDER: PrBucket[] = [
 export const ATTENTION_BUCKETS = new Set<PrBucket>([
   "awaiting-me",
   "changes-requested",
+  "approved",
 ]);
 
 export function prBucket(pr: InterestingPullRequest): PrBucket {
