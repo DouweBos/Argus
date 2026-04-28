@@ -107,6 +107,24 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: bundle exec fastlane mac release allow_dirty:true allow_any_branch:true
 
+      - name: Update GitHub release body with changelog
+        # electron-builder uploads the .dmg / .zip / latest-mac.yml to the
+        # GitHub release, but its release body handling is unreliable —
+        # often the body ends up empty. Force the body to the extracted
+        # CHANGELOG section so the GitHub release page shows the actual
+        # user-facing changes.
+        if: steps.stage.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ steps.stage.outputs.version }}
+        run: |
+          if [ ! -s release-notes.md ]; then
+            echo "release-notes.md is empty — skipping body update"
+            exit 0
+          fi
+          gh release edit "v${VERSION}" --notes-file release-notes.md
+          echo "Updated GitHub release v${VERSION} body from release-notes.md"
+
       - name: Notify houwert.dev to sync changelogs
         # Fires a repository_dispatch on DouweBos/houwert.dev so its
         # `Sync changelogs` workflow regenerates src/data/changelogs.generated.json
