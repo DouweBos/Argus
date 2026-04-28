@@ -721,6 +721,9 @@ export async function startAgent(
               total_cost_usd: parsed.total_cost_usd ?? 0,
               duration_ms: parsed.duration_ms ?? 0,
             };
+            if (sess.inflightPrompts > 0) {
+              sess.inflightPrompts -= 1;
+            }
           }
         }
       } catch {
@@ -808,6 +811,10 @@ export async function startAgent(
     toolUsesTotal: previous?.toolUsesTotal ?? 0,
     lastToolUseAt: previous?.lastToolUseAt ?? null,
     lastToolName: previous?.lastToolName ?? null,
+    // Reset on respawn — the prior child's in-flight prompt is abandoned, and
+    // restoreAgentAtTurn writes a fresh user message which increments this
+    // again via sendAgentMessage.
+    inflightPrompts: 0,
   };
 
   appState.agents.set(agentId, agentSession);
@@ -1444,6 +1451,11 @@ export function sendAgentMessage(
   } catch (e) {
     throw `Failed to write to agent stdin: ${String(e)}`;
   }
+
+  // Track that a prompt is in flight so observers outside the renderer (tray,
+  // vitals) don't get fooled by a transient `session_state_changed:idle`
+  // emitted between tool calls within the same turn.
+  agentEntry.inflightPrompts += 1;
 }
 
 // ---------------------------------------------------------------------------
