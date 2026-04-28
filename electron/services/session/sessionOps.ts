@@ -1025,7 +1025,7 @@ export async function rebaseSessionOnBase(id: string): Promise<void> {
     throw "No base branch set for this session";
   }
 
-  await doRebaseSessionOnBase(ws.path, ws.base_branch);
+  await doRebaseSessionOnBase(ws.path, ws.branch ?? "", ws.base_branch);
 
   emitReviewState(id).catch(() => {});
 }
