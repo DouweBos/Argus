@@ -78,7 +78,7 @@ export function useWebBrowserView(
       return;
     }
     (async () => {
-      let chosenUrl = "https://houwert.dev";
+      let chosenUrl = "https://houwert.dev/argus";
       try {
         const session = getSessionState().sessions.find(
           (entry) => entry.id === sessionId,
