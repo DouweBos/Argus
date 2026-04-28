@@ -123,14 +123,7 @@ export async function mergeSessionIntoBase(
     throw `Session worktree not found at ${wsPath}`;
   }
 
-  // Commit any staged changes in the session worktree before rebasing.
-  try {
-    // `diff --cached --quiet` exits non-zero when there are staged changes.
-    await git(wsPath, ["diff", "--cached", "--quiet"]);
-  } catch {
-    const message = await buildStagedCommitMessage(wsPath, sessionBranch);
-    await git(wsPath, ["commit", "-m", message]);
-  }
+  await commitStagedChanges(wsPath, sessionBranch);
 
   // Pre-check for conflicts before touching the working tree. Pass `wsPath`
   // so any still-uncommitted staged changes (e.g. added between the UI
@@ -327,13 +320,7 @@ export async function attemptMergeSession(
     throw `A ${existing.kind} is already in progress in this worktree — call continue_merge or abort_merge first`;
   }
 
-  // Commit any staged changes before rebasing (mirrors mergeSessionIntoBase).
-  try {
-    await git(wsPath, ["diff", "--cached", "--quiet"]);
-  } catch {
-    const message = await buildStagedCommitMessage(wsPath, sessionBranch);
-    await git(wsPath, ["commit", "-m", message]);
-  }
+  await commitStagedChanges(wsPath, sessionBranch);
 
   const baseAlreadyInHistory = await isAncestor(wsPath, baseBranch, "HEAD");
   if (!baseAlreadyInHistory) {
@@ -524,11 +511,14 @@ async function fastForwardBase(
  */
 export async function rebaseSessionOnBase(
   wsPath: string,
+  sessionBranch: string,
   baseBranch: string,
 ): Promise<void> {
   if (!fs.existsSync(wsPath)) {
     throw `Session worktree not found at ${wsPath}`;
   }
+
+  await commitStagedChanges(wsPath, sessionBranch);
 
   const baseAlreadyInHistory = await isAncestor(wsPath, baseBranch, "HEAD");
   if (baseAlreadyInHistory) {
@@ -579,6 +569,28 @@ async function squashSessionCommits(
   const message = `${type}: ${summary}`;
 
   await git(wsPath, ["reset", "--soft", baseBranch]);
+  await git(wsPath, ["commit", "-m", message]);
+}
+
+/**
+ * Commit any staged changes in the session worktree as a conventional commit
+ * derived from the staged file set, so a subsequent rebase isn't blocked by
+ * git's "Your index contains uncommitted changes" guard. No-op when the index
+ * matches HEAD.
+ */
+async function commitStagedChanges(
+  wsPath: string,
+  sessionBranch: string,
+): Promise<void> {
+  try {
+    // `diff --cached --quiet` exits non-zero when there are staged changes.
+    await git(wsPath, ["diff", "--cached", "--quiet"]);
+
+    return;
+  } catch {
+    // Fall through — there's something staged.
+  }
+  const message = await buildStagedCommitMessage(wsPath, sessionBranch);
   await git(wsPath, ["commit", "-m", message]);
 }
 
