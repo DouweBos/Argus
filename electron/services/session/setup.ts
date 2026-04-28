@@ -468,11 +468,17 @@ export async function runSetupPipeline(
     getMainWindow()?.webContents.send(`terminal:data:${terminalId}`, encoded);
   };
 
-  const emitProgressItem = (item: string, current: number, total: number) => {
+  const emitProgressItem = (
+    item: string,
+    current: number,
+    total: number,
+    phase: "command" | "copy" | "matching" | "symlink",
+  ) => {
     getMainWindow()?.webContents.send(progressEvent, {
       item,
       current,
       total,
+      phase,
     });
   };
 
@@ -559,7 +565,7 @@ export async function runSetupPipeline(
 
     info("Setup pipeline: expanding copy patterns");
     for (const rel of config.setup.copy) {
-      emitProgressItem(`Matching: ${rel}`, 0, 0);
+      emitProgressItem(`Matching: ${rel}`, 0, 0, "matching");
       emit(`[argus] Matching pattern ${rel}...\r\n`);
       const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
       if (expanded.length === 0) {
@@ -571,7 +577,7 @@ export async function runSetupPipeline(
 
     info("Setup pipeline: expanding symlink patterns");
     for (const rel of config.setup.symlink) {
-      emitProgressItem(`Matching: ${rel}`, 0, 0);
+      emitProgressItem(`Matching: ${rel}`, 0, 0, "matching");
       emit(`[argus] Matching pattern ${rel}...\r\n`);
       const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
       if (expanded.length === 0) {
@@ -605,7 +611,7 @@ export async function runSetupPipeline(
         const dst = path.join(worktreePath, relPath);
         idx += 1;
         info(`Setup pipeline: copying [${idx}/${total}] ${relPath}`);
-        emitProgressItem(relPath, idx, total);
+        emitProgressItem(relPath, idx, total, "copy");
         emit(`[argus] Copying ${relPath}...\r\n`);
 
         try {
@@ -638,7 +644,7 @@ export async function runSetupPipeline(
         const dst = path.join(worktreePath, relPath);
         idx += 1;
         info(`Setup pipeline: symlinking [${idx}/${total}] ${relPath}`);
-        emitProgressItem(relPath, idx, total);
+        emitProgressItem(relPath, idx, total, "symlink");
         emit(`[argus] Symlinking ${relPath}...\r\n`);
 
         fs.mkdirSync(path.dirname(dst), { recursive: true });
@@ -673,7 +679,7 @@ export async function runSetupPipeline(
     for (const cmdStr of config.setup.commands) {
       idx += 1;
       info(`Setup pipeline: running command [${idx}/${total}] ${cmdStr}`);
-      emitProgressItem(cmdStr, idx, total);
+      emitProgressItem(cmdStr, idx, total, "command");
       emit(`\r\n[argus] Running: ${cmdStr}\r\n`);
 
       const exitCode = await runInPty(cmdStr);

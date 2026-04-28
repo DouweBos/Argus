@@ -38,6 +38,7 @@ export * from "./components/OrganizationCard/OrganizationCard";
 export * from "./components/PalettePill/PalettePill";
 export * from "./components/Planet/Planet";
 export * from "./components/PlatformChip/PlatformChip";
+export * from "./components/ProgressBar/ProgressBar";
 export * from "./components/ProjectCard/ProjectCard";
 export * from "./components/QuickCard/QuickCard";
 export * from "./components/SectionPanel/SectionPanel";
