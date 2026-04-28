@@ -14,7 +14,7 @@
 }
 
 .card:hover {
-  background: var(--surface-3);
+  background: var(--surface-3-solid);
 }
 
 /* Selected — teal tint with left accent, like Air's active task */
@@ -159,6 +159,7 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  min-width: 24px;
 }
 
 /* Swaps in for BranchIcon when the session has a run command executing. */
@@ -311,9 +312,14 @@
 
 .ellipsisBtn {
   opacity: 0;
+  background: var(--surface-3-solid);
   transition:
     opacity var(--transition-base),
     background var(--transition-base);
+}
+
+.card.selected .ellipsisBtn {
+  background: var(--surface-5);
 }
 
 .card:hover .ellipsisBtn {

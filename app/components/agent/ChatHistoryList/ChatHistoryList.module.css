@@ -82,7 +82,7 @@
 }
 
 .entry:hover {
-  background: var(--surface-3);
+  background: var(--surface-3-solid);
 }
 
 .entryTitle {
