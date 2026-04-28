@@ -115,7 +115,7 @@ export function AgentsScreen() {
                 <td className={styles.muted}>{a.branch}</td>
                 <td>
                   <button className={styles.link} onClick={nav("session", a)}>
-                    {a.session.id.slice(0, 8)}
+                    {a.session.display_name ?? a.session.branch}
                   </button>
                 </td>
                 <td>
