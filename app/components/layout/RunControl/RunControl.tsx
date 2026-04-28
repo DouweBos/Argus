@@ -256,14 +256,35 @@ export function RunControl({ sessionId }: RunControlProps) {
       return;
     }
     const { conflicts, title } = pendingConflict;
+    // `stopTerminal` only sends signals and returns immediately, but the
+    // child (e.g. a dev server holding port 1420) may take a moment to
+    // actually release its resources. Wait for the `terminal:exit` event
+    // before spawning the replacement, otherwise the new run races against
+    // the old one and dies on "port already in use".
     await Promise.all(
-      conflicts.map(async (c) => {
-        try {
-          await stopTerminal(c.terminalId);
-        } catch (e) {
-          logError("stop other runtime failed:", e);
-        }
-      }),
+      conflicts.map(
+        (c) =>
+          new Promise<void>((resolve) => {
+            const timeout = setTimeout(() => {
+              unlisten();
+              resolve();
+            }, 8000);
+            const unlisten = window.argus.on<number>(
+              `terminal:exit:${c.terminalId}`,
+              () => {
+                clearTimeout(timeout);
+                unlisten();
+                resolve();
+              },
+            );
+            stopTerminal(c.terminalId).catch((e) => {
+              logError("stop other runtime failed:", e);
+              clearTimeout(timeout);
+              unlisten();
+              resolve();
+            });
+          }),
+      ),
     );
     setPendingConflict(null);
     runTitle(title).catch(() => undefined);
