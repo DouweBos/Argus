@@ -115,10 +115,10 @@ export function initUpdater(): void {
     useMultipleRangeRequest: true,
   });
 
-  // We surface our own "restart now / later" prompt; let electron-updater
-  // download in the background but never auto-install on quit unless the
-  // user explicitly asks for it.
-  autoUpdater.autoDownload = true;
+  // The user reads the changelog before deciding whether to update, so we
+  // never start a download until they click "Download" in the dialog. And
+  // we never auto-install on quit either — the restart prompt is explicit.
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.logger = {
     info: (...args: unknown[]) => logger.info(...args),

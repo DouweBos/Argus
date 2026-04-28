@@ -5,6 +5,7 @@ import { openExternalUrl } from "../../../lib/ipc";
 import {
   closeChangelogDialog,
   dismissInstallPrompt,
+  downloadNow,
   initUpdaterStore,
   quitAndInstall,
   useUpdaterState,
@@ -65,31 +66,32 @@ export function UpdaterHost() {
 function ChangelogDialog() {
   const state = useUpdaterState();
 
+  // Once we have an update version, keep showing its notes through every
+  // phase (available → downloading → downloaded) so the title and body
+  // don't flip back to the currently-installed version while the download
+  // is in flight.
+  const showingUpdate =
+    state.updateVersion !== null &&
+    (state.phase === "available" ||
+      state.phase === "downloading" ||
+      state.phase === "downloaded");
+
   let body: React.ReactNode;
   if (state.phase === "checking") {
     body = <p className={styles.muted}>Checking for updates…</p>;
-  } else if (state.phase === "downloading") {
-    body = (
-      <p className={styles.muted}>
-        Downloading update {state.updateVersion ?? ""}… {state.progressPercent}%
-      </p>
-    );
   } else if (state.phase === "error") {
     body = (
       <p className={styles.error}>
         Could not check for updates. {state.error ?? ""}
       </p>
     );
-  } else if (
-    (state.phase === "available" || state.phase === "downloaded") &&
-    state.releaseNotes
-  ) {
+  } else if (showingUpdate && state.releaseNotes) {
     body = <Markdown text={state.releaseNotes} className={styles.notes} />;
-  } else if (state.phase === "available" || state.phase === "downloaded") {
+  } else if (showingUpdate) {
     body = (
       <p className={styles.muted}>
-        Release notes for {state.updateVersion ?? "the new version"} are not
-        available offline. See the GitHub release for the full changelog.
+        Release notes for {state.updateVersion} are not available offline. See
+        the GitHub release for the full changelog.
       </p>
     );
   } else {
@@ -100,10 +102,9 @@ function ChangelogDialog() {
     );
   }
 
-  const headerVersion =
-    state.phase === "available" || state.phase === "downloaded"
-      ? state.updateVersion
-      : state.currentVersion;
+  const headerVersion = showingUpdate
+    ? state.updateVersion
+    : state.currentVersion;
 
   return (
     <Dialog
@@ -123,7 +124,32 @@ function ChangelogDialog() {
           View all releases
         </Button>
         <div className={styles.spacer} />
-        {state.phase === "downloaded" ? (
+        {state.phase === "available" && (
+          <>
+            <Button variant="secondary" onClick={closeChangelogDialog}>
+              Later
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                downloadNow().catch(() => {});
+              }}
+            >
+              Download update
+            </Button>
+          </>
+        )}
+        {state.phase === "downloading" && (
+          <>
+            <span className={styles.muted}>
+              Downloading… {state.progressPercent}%
+            </span>
+            <Button variant="secondary" onClick={closeChangelogDialog}>
+              Close
+            </Button>
+          </>
+        )}
+        {state.phase === "downloaded" && (
           <Button
             variant="primary"
             onClick={async () => {
@@ -133,11 +159,14 @@ function ChangelogDialog() {
           >
             Restart & install
           </Button>
-        ) : (
-          <Button variant="secondary" onClick={closeChangelogDialog}>
-            Close
-          </Button>
         )}
+        {state.phase !== "available" &&
+          state.phase !== "downloading" &&
+          state.phase !== "downloaded" && (
+            <Button variant="secondary" onClick={closeChangelogDialog}>
+              Close
+            </Button>
+          )}
       </div>
     </Dialog>
   );
