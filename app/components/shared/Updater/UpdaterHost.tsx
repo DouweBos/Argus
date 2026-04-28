@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Button, ConfirmDialog, Dialog } from "@argus/peacock";
+import { Button, Dialog } from "@argus/peacock";
 import { openExternalUrl } from "../../../lib/ipc";
 import {
   closeChangelogDialog,
   dismissInstallPrompt,
   downloadNow,
   initUpdaterStore,
+  openChangelogDialog,
   quitAndInstall,
   useUpdaterState,
   useUpdaterUi,
@@ -17,9 +18,9 @@ import styles from "./UpdaterHost.module.css";
 /**
  * Top-level updater UI:
  *  - subscribes once to backend `updater:state` events
- *  - surfaces a "restart now / later" confirm dialog when an update finishes
- *    downloading
- *  - hosts the changelog dialog (shown via the home banner, the menu bar
+ *  - auto-opens the changelog dialog when an update finishes downloading so
+ *    the user sees release notes alongside the restart prompt
+ *  - hosts the changelog dialog (also shown via the home banner, the menu bar
  *    "Check for Updates…" item, or programmatically)
  */
 export function UpdaterHost() {
@@ -30,33 +31,20 @@ export function UpdaterHost() {
   const state = useUpdaterState();
   const ui = useUpdaterUi();
 
-  const showInstallPrompt =
+  const shouldAutoOpen =
     state.phase === "downloaded" &&
     state.updateVersion !== null &&
-    ui.installPromptDismissedFor !== state.updateVersion;
+    ui.installPromptDismissedFor !== state.updateVersion &&
+    !ui.changelogDialogOpen;
+
+  useEffect(() => {
+    if (shouldAutoOpen) {
+      openChangelogDialog();
+    }
+  }, [shouldAutoOpen]);
 
   return (
     <>
-      {showInstallPrompt &&
-        createPortal(
-          <ConfirmDialog
-            title="Update ready"
-            titleId="updater-install-prompt"
-            cancelLabel="Later"
-            confirmLabel="Restart & install"
-            onCancel={dismissInstallPrompt}
-            onConfirm={async () => {
-              await quitAndInstall();
-            }}
-          >
-            <div>
-              Argus {state.updateVersion} has been downloaded. Restart now to
-              install? Running agents will be stopped.
-            </div>
-          </ConfirmDialog>,
-          document.body,
-        )}
-
       {ui.changelogDialogOpen &&
         createPortal(<ChangelogDialog />, document.body)}
     </>
@@ -106,9 +94,16 @@ function ChangelogDialog() {
     ? state.updateVersion
     : state.currentVersion;
 
+  const onClose = () => {
+    if (state.phase === "downloaded") {
+      dismissInstallPrompt();
+    }
+    closeChangelogDialog();
+  };
+
   return (
     <Dialog
-      onClose={closeChangelogDialog}
+      onClose={onClose}
       size="medium"
       title={headerVersion ? `What's new in ${headerVersion}` : "What's new"}
       titleId="updater-changelog"
@@ -150,20 +145,25 @@ function ChangelogDialog() {
           </>
         )}
         {state.phase === "downloaded" && (
-          <Button
-            variant="primary"
-            onClick={async () => {
-              closeChangelogDialog();
-              await quitAndInstall();
-            }}
-          >
-            Restart & install
-          </Button>
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              Later
+            </Button>
+            <Button
+              variant="primary"
+              onClick={async () => {
+                closeChangelogDialog();
+                await quitAndInstall();
+              }}
+            >
+              Restart & install
+            </Button>
+          </>
         )}
         {state.phase !== "available" &&
           state.phase !== "downloading" &&
           state.phase !== "downloaded" && (
-            <Button variant="secondary" onClick={closeChangelogDialog}>
+            <Button variant="secondary" onClick={onClose}>
               Close
             </Button>
           )}
