@@ -25,7 +25,12 @@ export default function App() {
   const completed = config?.onboarding.completed ?? false;
 
   if (!completed) {
-    return <OnboardingRoot />;
+    return (
+      <>
+        <OnboardingRoot />
+        <UpdaterHost />
+      </>
+    );
   }
 
   return (
