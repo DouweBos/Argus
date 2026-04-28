@@ -10,12 +10,15 @@ import {
   initExternalAgentStarted,
 } from "./lib/agentEventService";
 import { initAgentPopoutSync } from "./lib/agentPopoutService";
+import { getTelemetryInit, setTelemetryEnabledOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initReviewQueueListener } from "./lib/reviewQueueService";
+import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
 import { vscodeReady } from "./lib/vscodeSetup";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
+import { getTelemetryEnabled } from "./stores/settingsStore";
 import { initTheme } from "./stores/themeStore";
 
 // Apply theme before first paint so there is no flash of the wrong theme.
@@ -23,6 +26,30 @@ initTheme();
 
 const params = new URLSearchParams(window.location.search);
 const popoutMode = params.get("popout");
+
+// Anonymous, opt-out telemetry. Boots once per renderer; popout windows
+// share the same install id and respect the same enable flag.
+async function bootTelemetry(): Promise<void> {
+  try {
+    const init = await getTelemetryInit();
+    const userEnabled = getTelemetryEnabled();
+    initTelemetry({
+      distinctId: init.distinctId,
+      enabled: userEnabled,
+      appVersion: init.appVersion,
+    });
+    if (userEnabled !== init.enabled) {
+      await setTelemetryEnabledOnMain(userEnabled);
+    }
+    if (userEnabled) {
+      telemetryCapture("renderer_started", { popout: popoutMode ?? "main" });
+    }
+  } catch {
+    // Telemetry must never block app startup.
+  }
+}
+
+bootTelemetry().catch(() => undefined);
 
 if (popoutMode === "agent") {
   // Minimal popout renderer for a single detached agent. Hydration happens

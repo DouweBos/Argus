@@ -15,6 +15,7 @@ import {
   humanizeBranchName,
 } from "../llm/titleGenerator";
 import { orgHostDir } from "../organizationTask/paths";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { createTerminal } from "../terminal/multiplexer";
 import {
   applyBranchPrefix,
@@ -275,6 +276,13 @@ export async function createSession(
   };
   appState.sessions.set(id, { ...pending });
   getMainWindow()?.webContents.send("session:created", { ...pending });
+
+  telemetryCapture("session_created", {
+    has_explicit_branch: branch.trim().length > 0,
+    has_description: description.trim().length > 0,
+    use_existing_branch: Boolean(useExistingBranch),
+    has_explicit_base_branch: Boolean(explicitBaseBranch),
+  });
 
   // Kick off the real work in the background. Don't await — callers get the
   // pending session back immediately.
@@ -1110,6 +1118,12 @@ export async function deleteSession(
     throw `Session not found: ${id}`;
   }
   const repoRoot = session.repo_root;
+
+  telemetryCapture("session_deleted", {
+    kind: session.kind,
+    delete_branch: Boolean(shouldDeleteBranch),
+    is_org_task: session.organization_task_id !== null,
+  });
 
   // Kill all agent sessions for this session.
   const killedAgentIds: string[] = [];

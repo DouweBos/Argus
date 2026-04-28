@@ -8,19 +8,23 @@ import {
   SettingsScreenDetailBody,
   SettingsScreenDetailHeader,
   SettingsScreenField,
+  Toggle,
   type SettingsDialogGroup,
 } from "@argus/peacock";
 import { getAppSettings, setAppSettings } from "../../../lib/ipc";
+import { setTelemetryEnabled } from "../../../lib/telemetry";
 import {
   PERMISSION_MODE_LABELS,
   addCustomEditor,
   hideSettingsDialog,
   removeCustomEditor,
   setDefaultPermissionMode,
+  setTelemetryEnabledSetting,
   updateCustomEditor,
   useCustomEditors,
   useDefaultPermissionMode,
   useSettingsDialogOpen,
+  useTelemetryEnabled,
   type PermissionMode,
 } from "../../../stores/settingsStore";
 import {
@@ -88,6 +92,13 @@ function SettingsDialogContent() {
           description: "Personal servers",
           icon: <Icons.GearIcon size={12} />,
           render: () => <McpServersSection />,
+        },
+        {
+          id: "privacy",
+          label: "Privacy",
+          description: "Telemetry",
+          icon: <Icons.HomeIcon size={12} />,
+          render: () => <PrivacySection />,
         },
       ],
     },
@@ -257,6 +268,39 @@ function McpServersSection() {
         {errorMsg && (
           <p style={{ color: "var(--error)", fontSize: 12 }}>{errorMsg}</p>
         )}
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
+
+function PrivacySection() {
+  const enabled = useTelemetryEnabled();
+
+  const onChange = (next: boolean) => {
+    setTelemetryEnabledSetting(next);
+    setTelemetryEnabled(next);
+  };
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description={
+          <>
+            Argus can send anonymous usage and crash data to help us find bugs
+            and prioritize features. We never collect file contents, prompts,
+            project names, paths, or anything that identifies you. An anonymous
+            install id (random UUID) is used so we can group events from the
+            same install. Toggle off to disable entirely.
+          </>
+        }
+        title="Anonymous usage & crash reports"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField label="Send anonymous telemetry">
+          <Toggle checked={enabled} onChange={onChange}>
+            {enabled ? "Enabled" : "Disabled"}
+          </Toggle>
+        </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

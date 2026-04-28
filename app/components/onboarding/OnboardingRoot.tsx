@@ -4,6 +4,7 @@ import { CompletionStep } from "./CompletionStep";
 import { DefaultsFormStep } from "./DefaultsFormStep";
 import { PermissionsStep } from "./PermissionsStep";
 import { PreflightStep } from "./PreflightStep";
+import { TelemetryStep } from "./TelemetryStep";
 import { WelcomeStep } from "./WelcomeStep";
 
 export function OnboardingRoot() {
@@ -24,6 +25,8 @@ export function OnboardingRoot() {
       return <ClaudeAuthStep />;
     case "defaults":
       return <DefaultsFormStep />;
+    case "telemetry":
+      return <TelemetryStep />;
     case "completion":
       return <CompletionStep />;
     default:

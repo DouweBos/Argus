@@ -27,13 +27,33 @@ const sinks: Record<LogLevel, (...args: unknown[]) => void> = {
 };
 /* eslint-enable no-console */
 
+export type ErrorSink = (scope: string | null, args: unknown[]) => void;
+
+let errorSink: ErrorSink | null = null;
+
+/**
+ * Register a callback invoked on every `log.error(...)`. Used by the telemetry
+ * layer (main + renderer) to forward caught errors to PostHog as `app_error`
+ * events. Kept as a registration hook to avoid a logger → telemetry import
+ * cycle (telemetry already imports the logger).
+ */
+export function setErrorSink(sink: ErrorSink | null): void {
+  errorSink = sink;
+}
+
 function emit(level: LogLevel, scope: string | null, args: unknown[]): void {
   if (scope) {
     sinks[level](`[${scope}]`, ...args);
-
-    return;
+  } else {
+    sinks[level](...args);
   }
-  sinks[level](...args);
+  if (level === "error" && errorSink) {
+    try {
+      errorSink(scope, args);
+    } catch {
+      // Never let telemetry break logging.
+    }
+  }
 }
 
 export function createLogger(scope: string): Logger {

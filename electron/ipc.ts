@@ -236,6 +236,13 @@ import {
   simulatorButton,
   simulatorKeyboard,
 } from "./services/simulator/ios";
+import { getAnonymousId } from "./services/telemetry/anonymousId";
+import {
+  capture as telemetryCapture,
+  captureException as telemetryCaptureException,
+  isTelemetryEnabled,
+  setTelemetryEnabled,
+} from "./services/telemetry/telemetry";
 import {
   createTerminal,
   createRunTerminal,
@@ -666,7 +673,8 @@ export function registerIpcHandlers(): void {
       a.appendSystemPrompt as string | undefined,
       undefined,
       undefined,
-      a.agentId as string | undefined,
+      undefined, // reuseAgentId — IPC callers are always fresh starts
+      a.agentId as string | undefined, // presetAgentId — renderer-minted optimistic id
     ),
   );
   handle("stop_agent", (a) => stopAgent(a.agentId as string));
@@ -1236,4 +1244,34 @@ export function registerIpcHandlers(): void {
     resetOnboarding();
   });
   handle("onboarding_argus_dir_path", () => argusDirPath());
+
+  // Telemetry — anonymous PostHog. Renderer asks for the install id + current
+  // enable state at boot, and pushes opt-in/opt-out toggles back here.
+  handle("telemetry_get_init", () => ({
+    distinctId: getAnonymousId(),
+    enabled: isTelemetryEnabled(),
+    appVersion: app.getVersion(),
+  }));
+  handle("telemetry_set_enabled", (a) => {
+    setTelemetryEnabled(Boolean(a.enabled));
+  });
+  handle("telemetry_capture", (a) => {
+    // The renderer is responsible for matching the event catalog (typed on
+    // its side via app/lib/telemetryEvents.ts). At the IPC boundary it
+    // arrives as opaque strings; we trust the renderer's type-checked call
+    // sites and forward as-is.
+    telemetryCapture(
+      String(a.event) as Parameters<typeof telemetryCapture>[0],
+      (a.props ?? {}) as never,
+    );
+  });
+  handle("telemetry_capture_exception", (a) => {
+    const message = String(a.message ?? "renderer error");
+    const stack = typeof a.stack === "string" ? a.stack : undefined;
+    const err = new Error(message);
+    if (stack) {
+      err.stack = stack;
+    }
+    telemetryCaptureException(err, (a.props as Record<string, unknown>) ?? {});
+  });
 }

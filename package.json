@@ -136,6 +136,8 @@
     "fast-glob": "^3.3.0",
     "marked": "^17.0.4",
     "node-pty": "^1.0.0",
+    "posthog-js": "^1.372.1",
+    "posthog-node": "^5.30.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

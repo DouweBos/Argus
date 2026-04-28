@@ -38,6 +38,11 @@ import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
 import { refreshAllBranches } from "./services/session/watcher";
 import { stopSimulatorCapture } from "./services/simulator/ios";
+import {
+  initTelemetry,
+  shutdownTelemetry,
+  capture as telemetryCapture,
+} from "./services/telemetry/telemetry";
 import { destroyAllTerminals } from "./services/terminal/multiplexer";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { destroyTray, initTray } from "./services/tray";
@@ -661,6 +666,8 @@ app.on("before-quit", (e) => {
   bypassRunningAgentsGuard = false;
   log("before-quit fired, setting isQuitting=true");
   isQuitting = true;
+  telemetryCapture("app_quit");
+  shutdownTelemetry().catch(() => undefined);
   stopMcpServer();
   stopMjpegServer();
   stopAllScreencasts();
@@ -763,6 +770,11 @@ app.whenReady().then(() => {
     app.isPackaged,
     process.resourcesPath,
   );
+
+  // Anonymous telemetry. Starts disabled — the renderer pushes the user's
+  // consent state (collected during onboarding, kept in localStorage) once
+  // it boots. Until that arrives, no events are sent.
+  initTelemetry();
 
   if (process.platform === "darwin" && app.dock) {
     const iconPath = resolveAppIconPath();
@@ -910,16 +922,33 @@ app.whenReady().then(() => {
       headers["Cross-Origin-Resource-Policy"] = ["cross-origin"];
     }
 
+    // open-vsx.org echoes back a `vscode-file://vscode-app` Access-Control-Allow-Origin
+    // (because monaco's gallery client emulates VSCode's request shape), which the
+    // renderer at http://localhost:1420 rejects. Rewrite to a permissive value so
+    // monaco can read public gallery metadata. These endpoints are unauthenticated.
+    if (details.url.startsWith("https://open-vsx.org/")) {
+      for (const key of Object.keys(headers)) {
+        const lower = key.toLowerCase();
+        if (
+          lower === "access-control-allow-origin" ||
+          lower === "access-control-allow-credentials"
+        ) {
+          headers[key] = [];
+        }
+      }
+      headers["Access-Control-Allow-Origin"] = ["*"];
+    }
+
     // Apply CSP to top-level document responses only.
     if (details.resourceType === "mainFrame") {
       const csp = [
         "default-src 'self' argus-ext:",
-        "script-src 'self' argus-ext:" +
+        "script-src 'self' argus-ext: https://*.i.posthog.com" +
           (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
         "style-src 'self' 'unsafe-inline' argus-ext:",
         "font-src 'self' argus-ext: data:",
         "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
-        "connect-src 'self' argus-ext: data: https://open-vsx.org" +
+        "connect-src 'self' argus-ext: data: https://open-vsx.org https://*.i.posthog.com" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
         "worker-src 'self' blob: data: argus-ext:",
       ].join("; ");

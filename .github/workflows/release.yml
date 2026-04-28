@@ -97,6 +97,13 @@ jobs:
           # --- GitHub release publisher ---
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
+          # --- Telemetry (PostHog) ---
+          # Inlined into the renderer bundle by Vite and read by posthog-node
+          # in the main process. Without this secret the integration stays
+          # dormant in the released build (no events sent).
+          VITE_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+
           # Forwarded to electron-builder so the GitHub release body reflects
           # the CHANGELOG section for this version.
           ARGUS_RELEASE_NOTES_FILE: ${{ github.workspace }}/release-notes.md
