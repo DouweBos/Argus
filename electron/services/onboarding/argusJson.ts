@@ -302,23 +302,13 @@ export function suggestArgusJson(repoRoot: string): ArgusConfigSuggestion {
     });
   }
 
-  // Web workspace_env port allocation when nothing framework-specific added
-  if (platforms.has("web") && workspaceEnv.length === 0) {
-    workspaceEnv.push({
-      name: "ARGUS_PORT",
-      base_value: 3000,
-      range: 100,
-      strategy: "sequential",
-    });
-  }
-
   const config: Record<string, unknown> = {
     setup: {
       copy: Array.from(copy).sort(),
       symlink: [],
       commands: setupCommands,
     },
-    terminals: [{ name: "Shell", dir: "." }],
+    terminals: [],
     run,
     workspace_env: workspaceEnv,
     protected_branches: ["main", "master"],
