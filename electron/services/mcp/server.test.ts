@@ -675,6 +675,7 @@ describe("agent_status", () => {
       toolUsesTotal: 0,
       lastToolUseAt: null,
       lastToolName: null,
+      inflightPrompts: 0,
     });
 
     const result = await client.callTool({

@@ -40,6 +40,7 @@ import { refreshAllBranches } from "./services/session/watcher";
 import { stopSimulatorCapture } from "./services/simulator/ios";
 import { destroyAllTerminals } from "./services/terminal/multiplexer";
 import { fixProcessPath } from "./services/terminal/shellEnv";
+import { destroyTray, initTray } from "./services/tray";
 import {
   checkForUpdates,
   initUpdater,
@@ -715,6 +716,7 @@ app.on("before-quit", (e) => {
   stopMcpServer();
   stopMjpegServer();
   stopAllScreencasts();
+  destroyTray();
   // Tear down every PTY so run-commands (dev servers, Metro, watchers) and
   // any detached grandchildren they spawned don't linger after Argus exits.
   destroyAllTerminals();
@@ -927,6 +929,23 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(buildAppMenu());
 
   createWindow();
+
+  // Menu-bar tray with a live "running agents" dropdown. macOS-only — the
+  // helper no-ops on other platforms.
+  initTray({
+    navigateMainWindow: (route) => {
+      if (!mainWindow || mainWindow.isDestroyed()) {
+        createWindow();
+      }
+      mainWindow?.show();
+      mainWindow?.focus();
+      if (mainWindow?.webContents.isLoading()) {
+        pendingDeepLink = route;
+      } else {
+        mainWindow?.webContents.send("navigation:goto", { path: route });
+      }
+    },
+  });
 
   // Auto-updater. Skips itself in dev; in packaged builds it kicks off an
   // initial feed check after a short delay and re-checks hourly.

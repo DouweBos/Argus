@@ -107,6 +107,16 @@ export interface AgentSession {
    */
   turnsCompleted: number;
   /**
+   * Number of prompts sent to the CLI that have not yet emitted a final
+   * `result` event. The CLI can briefly flip `session_state_changed` to
+   * `idle` between tool calls within a single turn, so process status alone
+   * understates "is this agent currently doing work". Anything that observes
+   * activity from outside the renderer (tray, vitals) should treat
+   * `inflightPrompts > 0` as live work in addition to `running` /
+   * `requires_action` statuses.
+   */
+  inflightPrompts: number;
+  /**
    * When true, suppresses `agent:status` emissions to the renderer. Used
    * during restore-at-turn: between kill and new-child-ready, we don't want
    * transient idle/stopped signals to flicker the UI's activity indicator.
