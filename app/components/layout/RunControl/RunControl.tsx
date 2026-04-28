@@ -281,15 +281,15 @@ export function RunControl({ sessionId }: RunControlProps) {
     );
   }
 
-  const first = runs[0];
-  const firstRunning = Boolean(runningTerminals[first.title]);
+  const primary = runs.find((r) => runningTerminals[r.title]) ?? runs[0];
+  const primaryRunning = Boolean(runningTerminals[primary.title]);
 
   return (
     <div ref={anchorRef} className={styles.splitGroup}>
       <Button
         className={styles.primarySide}
         leading={
-          firstRunning ? (
+          primaryRunning ? (
             <Icons.StopIcon size={10} />
           ) : (
             <Icons.PlayIcon size={10} />
@@ -297,10 +297,10 @@ export function RunControl({ sessionId }: RunControlProps) {
         }
         size="sm"
         variant="primary"
-        title={firstRunning ? `Stop ${first.title}` : first.command}
-        onClick={() => toggleTitle(first.title)}
+        title={primaryRunning ? `Stop ${primary.title}` : primary.command}
+        onClick={() => toggleTitle(primary.title)}
       >
-        {firstRunning ? "Stop" : first.title}
+        {primaryRunning ? "Stop" : primary.title}
       </Button>
       <Button
         aria-label="Show run commands"
