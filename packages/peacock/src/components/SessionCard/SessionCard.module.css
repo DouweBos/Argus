@@ -34,6 +34,10 @@
   min-width: 0;
 }
 
+.left > svg {
+  flex-shrink: 0;
+}
+
 .branch {
   font-size: var(--font-size-xs);
   font-weight: 600;
