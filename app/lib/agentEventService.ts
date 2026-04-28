@@ -231,6 +231,7 @@ export function initExternalAgentStarted(): void {
       permission_mode: info.permission_mode,
       parent_agent_id: info.parent_agent_id,
       created_at: info.created_at,
+      model: info.model,
     });
     startAgentListening(info.agent_id);
     // Derive a human-readable title from the prompt the MCP tool sent.
@@ -473,6 +474,9 @@ export function startAgentListening(agentId: string): void {
 
   listen<string>(`agent:model-changed:${agentId}`, (event) => {
     setModel(agentId, event.payload);
+    // Mirror onto agentStore so a later restartAgent / restoreAgentAtTurn
+    // sees the most recent model when re-spawning.
+    updateAgent(agentId, { model: event.payload });
   }).then((unlisten) => {
     if (!modelListeners.has(agentId)) {
       unlisten();

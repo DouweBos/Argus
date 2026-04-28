@@ -123,6 +123,14 @@ export interface AgentSession {
    * Cleared once the respawn is complete and pending work is queued.
    */
   suppressStatus?: boolean;
+  /**
+   * Model id that this agent was spawned with (e.g. `claude-opus-4-7` or
+   * `claude-opus-4-7[1m]`), or null if the CLI default was used. Persisted
+   * across `restoreAgentAtTurn` respawns and updated by `setAgentModel` so
+   * any restart re-passes `--model` and we don't accidentally drop variant
+   * suffixes (notably `[1m]`) that aren't preserved in the JSONL transcript.
+   */
+  model: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,4 +156,9 @@ export interface AgentInfo {
    * before renderer listeners are wired up and would otherwise be missed.
    */
   capabilities?: InitializeResponse | null;
+  /**
+   * Model id the agent is running with (variant suffixes like `[1m]` preserved),
+   * or null if the CLI default was used.
+   */
+  model: string | null;
 }

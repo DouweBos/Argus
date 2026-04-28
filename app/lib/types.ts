@@ -76,6 +76,13 @@ export interface AgentStatus {
    * message for MCP-spawned agents.
    */
   initial_prompt?: string;
+  /**
+   * Model id this agent was spawned with (variant suffixes like `[1m]`
+   * preserved), or null/undefined if the CLI default was used. Carried
+   * across restore-at-turn and restartAgent so the next spawn re-passes
+   * `--model` and the 1M-context variant doesn't silently revert to 200K.
+   */
+  model?: string | null;
   /** Agent that spawned this one (null for user-initiated agents). */
   parent_agent_id?: string | null;
   /** Claude Code permission mode (e.g. "plan", "default"). Frontend-only field. */

@@ -720,6 +720,7 @@ export function createMcpServer(): McpServer {
         parent_agent_id: agentInfo.parent_agent_id,
         created_at: agentInfo.created_at,
         initial_prompt: prompt,
+        model: agentInfo.model,
       });
 
       // Send the initial prompt after startup.
@@ -946,6 +947,7 @@ export function createMcpServer(): McpServer {
             parent_agent_id: agentInfo.parent_agent_id,
             created_at: agentInfo.created_at,
             initial_prompt: spec.prompt,
+            model: agentInfo.model,
           });
 
           sendAgentMessage(agentInfo.agent_id, spec.prompt, images);

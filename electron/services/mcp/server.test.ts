@@ -484,6 +484,7 @@ describe("spawn_agent", () => {
       status: "running",
       parent_agent_id: null,
       created_at: 1_700_000_000_000,
+      model: null,
     });
 
     const result = await client.callTool({
@@ -519,6 +520,7 @@ describe("spawn_agent", () => {
       status: "running",
       parent_agent_id: null,
       created_at: 1_700_000_000_000,
+      model: null,
     });
 
     await client.callTool({
@@ -573,6 +575,7 @@ describe("list_agents", () => {
         status: "running",
         parent_agent_id: null,
         created_at: 1_700_000_000_000,
+        model: null,
       },
     ]);
 
@@ -601,6 +604,7 @@ describe("list_agents", () => {
             status: "running" as const,
             parent_agent_id: null,
             created_at: 1_700_000_000_000,
+            model: null,
           },
         ];
       }
@@ -612,6 +616,7 @@ describe("list_agents", () => {
             status: "running" as const,
             parent_agent_id: null,
             created_at: 1_700_000_000_000,
+            model: null,
           },
         ];
       }
@@ -676,6 +681,7 @@ describe("agent_status", () => {
       lastToolUseAt: null,
       lastToolName: null,
       inflightPrompts: 0,
+      model: null,
     });
 
     const result = await client.callTool({
@@ -879,6 +885,7 @@ describe("spawn_agents_batch", () => {
       status: "running" as const,
       parent_agent_id: null,
       created_at: 1_700_000_000_000,
+      model: null,
     }));
   });
 
