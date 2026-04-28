@@ -589,58 +589,6 @@ function createWindow(): void {
     },
   );
 
-  // Spellcheck context menu — Electron enables the spellchecker by default but
-  // doesn't surface suggestions. Build a minimal context menu on right-click in
-  // editable fields with suggestions, Add to Dictionary, and the standard edit
-  // commands so misspellings can actually be corrected.
-  mainWindow.webContents.on("context-menu", (_e, params) => {
-    if (!params.isEditable) {
-      return;
-    }
-    const menu = new Menu();
-    if (params.misspelledWord && mainWindow) {
-      const wc = mainWindow.webContents;
-      for (const suggestion of params.dictionarySuggestions) {
-        menu.append(
-          new MenuItem({
-            label: suggestion,
-            click: () => wc.replaceMisspelling(suggestion),
-          }),
-        );
-      }
-      if (params.dictionarySuggestions.length === 0) {
-        menu.append(
-          new MenuItem({
-            label: "No suggestions",
-            enabled: false,
-          }),
-        );
-      }
-      menu.append(new MenuItem({ type: "separator" }));
-      menu.append(
-        new MenuItem({
-          label: "Add to Dictionary",
-          click: () =>
-            mainWindow?.webContents.session.addWordToSpellCheckerDictionary(
-              params.misspelledWord,
-            ),
-        }),
-      );
-      menu.append(new MenuItem({ type: "separator" }));
-    }
-    menu.append(new MenuItem({ role: "undo" }));
-    menu.append(new MenuItem({ role: "redo" }));
-    menu.append(new MenuItem({ type: "separator" }));
-    menu.append(new MenuItem({ role: "cut" }));
-    menu.append(new MenuItem({ role: "copy" }));
-    menu.append(new MenuItem({ role: "paste" }));
-    menu.append(new MenuItem({ type: "separator" }));
-    menu.append(new MenuItem({ role: "selectAll" }));
-    if (mainWindow) {
-      menu.popup({ window: mainWindow });
-    }
-  });
-
   // Open external links in the system browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -749,6 +697,64 @@ app.on("activate", () => {
     mainWindow?.show();
     mainWindow?.focus();
   }
+});
+
+/**
+ * Build the right-click context menu for editable text fields. Wired up to
+ * every webContents the app creates (main window + agent/simulator popouts)
+ * so misspellings can be corrected anywhere a textarea or input lives.
+ *
+ * Without a `context-menu` handler attached to a given webContents, Chromium
+ * shows the default platform menu without our spellcheck additions — which is
+ * why suggestions only worked in the main window before.
+ */
+function attachSpellcheckContextMenu(wc: Electron.WebContents): void {
+  wc.session.setSpellCheckerEnabled(true);
+  wc.session.setSpellCheckerLanguages(["en-US"]);
+  wc.on("context-menu", (_e, params) => {
+    if (!params.isEditable) {
+      return;
+    }
+    const menu = new Menu();
+    if (params.misspelledWord) {
+      for (const suggestion of params.dictionarySuggestions) {
+        menu.append(
+          new MenuItem({
+            label: suggestion,
+            click: () => wc.replaceMisspelling(suggestion),
+          }),
+        );
+      }
+      if (params.dictionarySuggestions.length === 0) {
+        menu.append(new MenuItem({ label: "No suggestions", enabled: false }));
+      }
+      menu.append(new MenuItem({ type: "separator" }));
+      menu.append(
+        new MenuItem({
+          label: "Add to Dictionary",
+          click: () =>
+            wc.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+        }),
+      );
+      menu.append(new MenuItem({ type: "separator" }));
+    }
+    menu.append(new MenuItem({ role: "undo" }));
+    menu.append(new MenuItem({ role: "redo" }));
+    menu.append(new MenuItem({ type: "separator" }));
+    menu.append(new MenuItem({ role: "cut" }));
+    menu.append(new MenuItem({ role: "copy" }));
+    menu.append(new MenuItem({ role: "paste" }));
+    menu.append(new MenuItem({ type: "separator" }));
+    menu.append(new MenuItem({ role: "selectAll" }));
+    const win = BrowserWindow.fromWebContents(wc);
+    if (win) {
+      menu.popup({ window: win });
+    }
+  });
+}
+
+app.on("web-contents-created", (_e, wc) => {
+  attachSpellcheckContextMenu(wc);
 });
 
 app.whenReady().then(() => {
