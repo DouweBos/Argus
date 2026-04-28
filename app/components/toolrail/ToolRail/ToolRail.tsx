@@ -71,15 +71,20 @@ export function ToolRail() {
     );
   };
 
-  if (selectedSessionId === null) {
-    return <div className={styles.rail} />;
-  }
+  // Without a session most tools have no context — only the notifications
+  // tool is global. Keep the rail and the notifications button visible so
+  // the home screen still surfaces background warnings/errors.
+  const topTools = selectedSessionId === null ? [] : TOP_TOOLS;
+  const bottomTools =
+    selectedSessionId === null
+      ? BOTTOM_TOOLS.filter((t) => t.id === "notifications")
+      : BOTTOM_TOOLS;
 
   return (
     <div className={styles.rail}>
-      {TOP_TOOLS.map(renderTool)}
+      {topTools.map(renderTool)}
       <div className={styles.spacer} />
-      {BOTTOM_TOOLS.map(renderTool)}
+      {bottomTools.map(renderTool)}
     </div>
   );
 }

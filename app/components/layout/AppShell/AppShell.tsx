@@ -289,7 +289,7 @@ export function AppShell() {
             </ErrorBoundary>
             <PermissionBanner />
           </div>
-          {selectedId !== null && <BottomPanel sessionId={selectedId} />}
+          <BottomPanel sessionId={selectedId} />
         </main>
 
         {selectedId !== null && <ToolPanel sessionId={selectedId} />}
