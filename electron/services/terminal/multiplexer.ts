@@ -46,6 +46,12 @@ export interface TerminalSession {
   /** UUID of the session this session belongs to. */
   sessionId: string;
   /**
+   * Renderer-supplied display label for the terminal tab. Persisted in main
+   * so the renderer can rehydrate tabs after a window reload without losing
+   * the user's chosen names.
+   */
+  title?: string;
+  /**
    * Optional label identifying the `run` command this session is executing.
    * Used by {@link createRunTerminal} to match restart-on-rerun semantics.
    */
@@ -93,6 +99,16 @@ export interface TerminalWaitResult {
   output: string;
   totalBytes: number;
   droppedBytes: number;
+}
+
+/** Snapshot returned by {@link listTerminals} so the renderer can rehydrate tab state after a window reload. */
+export interface TerminalSummary {
+  id: string;
+  sessionId: string;
+  title: string | null;
+  runTitle: string | null;
+  exited: boolean;
+  exitCode: number | null;
 }
 
 /** Result of a {@link readTerminalOutput} call. */
@@ -229,6 +245,7 @@ export function createTerminal(
   sessionId: string,
   subDir?: string,
   command?: string,
+  title?: string,
 ): string {
   const ws = appState.sessions.get(sessionId);
   if (!ws) {
@@ -321,6 +338,7 @@ export function createTerminal(
     id: terminalId,
     pty: ptyProcess,
     sessionId,
+    title,
     outputLog: "",
     outputTotalBytes: 0,
     outputDroppedBytes: 0,
@@ -634,7 +652,12 @@ export function createRunTerminal(
     }
   }
 
-  const terminalId = createTerminal(sessionId, runCmd.cwd, runCmd.command);
+  const terminalId = createTerminal(
+    sessionId,
+    runCmd.cwd,
+    runCmd.command,
+    runCmd.title,
+  );
   const terminal = appState.terminals.get(terminalId);
   if (terminal) {
     terminal.runTitle = runCmd.title;
@@ -659,6 +682,50 @@ function findRunSession(
   }
 
   return null;
+}
+
+/**
+ * List live terminals belonging to a session. Used by the renderer to
+ * rehydrate tab state after a window reload — PTYs persist in main but the
+ * Zustand store is renderer-local, so without this we'd "lose" tabs whose
+ * processes are still very much running.
+ *
+ * Exited tombstones are excluded; callers care about resumable tabs.
+ */
+export function listTerminals(sessionId: string): TerminalSummary[] {
+  const out: TerminalSummary[] = [];
+  for (const t of appState.terminals.values()) {
+    if (t.sessionId !== sessionId) {
+      continue;
+    }
+    if (t.exitCode !== null) {
+      continue;
+    }
+    out.push({
+      id: t.id,
+      sessionId: t.sessionId,
+      title: t.title ?? null,
+      runTitle: t.runTitle ?? null,
+      exited: false,
+      exitCode: null,
+    });
+  }
+
+  return out;
+}
+
+/**
+ * Update the renderer-facing title for an existing terminal so renames
+ * survive a window reload.
+ *
+ * @throws A plain string if the terminal session is not found.
+ */
+export function updateTerminalTitle(terminalId: string, title: string): void {
+  const session = appState.terminals.get(terminalId);
+  if (!session) {
+    throw `Terminal session not found: ${terminalId}`;
+  }
+  session.title = title;
 }
 
 /**

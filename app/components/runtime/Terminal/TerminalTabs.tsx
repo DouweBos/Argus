@@ -6,7 +6,9 @@ import { useTabReorder } from "../../../hooks/useTabReorder";
 import {
   createTerminal,
   destroyTerminal,
+  listTerminals,
   readArgusConfig,
+  updateTerminalTitle,
 } from "../../../lib/ipc";
 import {
   startListening,
@@ -58,6 +60,8 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     const trimmed = renameDraft.trim();
     if (trimmed.length > 0) {
       updateSession(renamingId, { title: trimmed });
+      // Persist the rename to main so it survives a window reload.
+      updateTerminalTitle(renamingId, trimmed).catch(() => {});
     }
     setRenamingId(null);
     setRenameDraft("");
@@ -80,7 +84,10 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     return 0;
   });
 
-  // Auto-open terminals from config when session is first selected
+  // Auto-open terminals from config when session is first selected. Before
+  // spawning anything, rehydrate from main: PTYs survive window reloads but
+  // the renderer Zustand store does not, so without this pass long-running
+  // tabs (dev servers, watchers) appear "lost" after a reload.
   useEffect(() => {
     if (autoOpenedRef.current.has(sessionId)) {
       return;
@@ -99,6 +106,32 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     autoOpenedRef.current.add(sessionId);
 
     (async () => {
+      let rehydrated = 0;
+      try {
+        const live = await listTerminals(sessionId);
+        const known = new Set(
+          getSessionsForSession(sessionId).map((s) => s.id),
+        );
+        for (const t of live) {
+          if (known.has(t.id)) {
+            continue;
+          }
+          startListening(t.id);
+          addSession({
+            id: t.id,
+            session_id: sessionId,
+            title: t.title ?? t.runTitle ?? "Shell",
+          });
+          rehydrated += 1;
+        }
+      } catch {
+        // backend may not be ready yet — fall through to fresh open below.
+      }
+
+      if (rehydrated > 0) {
+        return;
+      }
+
       let opened = 0;
       try {
         const ws = getSessionState().sessions.find((w) => w.id === sessionId);
@@ -106,15 +139,17 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
           const config = await readArgusConfig(ws.repo_root);
           for (const entry of config.terminals ?? []) {
             try {
+              const title = entry.name || entry.dir || "Shell";
               const terminalId = await createTerminal(
                 sessionId,
                 entry.dir || undefined,
+                title,
               );
               startListening(terminalId);
               addSession({
                 id: terminalId,
                 session_id: sessionId,
-                title: entry.name || entry.dir || "Shell",
+                title,
               });
               opened += 1;
             } catch {
@@ -130,12 +165,13 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
       const hasNonSetup = tabs.some((s) => s.title !== "Setup");
       if (opened === 0 && !hasNonSetup) {
         try {
-          const terminalId = await createTerminal(sessionId);
+          const title = "Shell 1";
+          const terminalId = await createTerminal(sessionId, undefined, title);
           startListening(terminalId);
           addSession({
             id: terminalId,
             session_id: sessionId,
-            title: "Shell 1",
+            title,
           });
         } catch {
           // backend not ready — silently ignore
@@ -150,12 +186,13 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
     }
     setIsCreating(true);
     try {
-      const terminalId = await createTerminal(sessionId);
+      const title = `Shell ${sessions.length + 1}`;
+      const terminalId = await createTerminal(sessionId, undefined, title);
       startListening(terminalId);
       addSession({
         id: terminalId,
         session_id: sessionId,
-        title: `Shell ${sessions.length + 1}`,
+        title,
       });
     } catch {
       // backend not ready — silently ignore
