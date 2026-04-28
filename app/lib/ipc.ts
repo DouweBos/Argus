@@ -37,6 +37,8 @@ import type {
   PrereqResult,
   ProjectEntry,
   SimulatorDevice,
+  AppSettings,
+  InheritedMcpServer,
   Session,
   UserProjectSettings,
 } from "./types";
@@ -540,6 +542,25 @@ export const setUserProjectSettings = (
   settings: UserProjectSettings,
 ): Promise<UserProjectSettings> =>
   invoke("set_user_project_settings", { repoRoot, settings });
+
+// Machine-local app settings (~/.argus/app-settings.json).
+export const getAppSettings = (): Promise<AppSettings> =>
+  invoke("get_app_settings", {});
+
+export const setAppSettings = (settings: AppSettings): Promise<AppSettings> =>
+  invoke("set_app_settings", { settings });
+
+/**
+ * Enumerate MCP servers Argus inherits from Claude Code (plugins,
+ * `~/.claude.json`, the worktree's `.mcp.json`). Pass the worktree path to
+ * include project-scoped sources; omit it for the global view.
+ */
+export const listInheritedMcpServers = (
+  worktreePath?: string | null,
+): Promise<InheritedMcpServer[]> =>
+  invoke("list_inherited_mcp_servers", {
+    worktreePath: worktreePath ?? null,
+  });
 
 // Command metrics (per-project slash command popularity)
 export const getCommandMetrics = (

@@ -18,6 +18,14 @@ import {
 } from "@argus/peacock";
 import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
 import { dialogStyles as styles } from "../../shared/Dialog";
+import {
+  InheritedMcpList,
+  McpServersField,
+  entriesToMap,
+  entriesValid,
+  mapToEntries,
+  type McpEntry,
+} from "../../shared/McpServersField";
 import sectionStyles from "./SetupConfigDialog.module.css";
 
 interface SetupConfigDialogProps {
@@ -559,6 +567,7 @@ export function SetupConfigDialog({
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [pullRequestTemplate, setPullRequestTemplate] = useState("");
+  const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -653,6 +662,9 @@ export function SetupConfigDialog({
         }
         if (config.pull_request_template) {
           setPullRequestTemplate(config.pull_request_template);
+        }
+        if (config.mcp_servers) {
+          setMcpEntries(mapToEntries(config.mcp_servers));
         }
       } catch {
         // No config file or not readable — start with empty fields
@@ -767,6 +779,10 @@ export function SetupConfigDialog({
     if (prTemplate) {
       config.pull_request_template = prTemplate;
     }
+    const mcpServers = entriesToMap(mcpEntries);
+    if (Object.keys(mcpServers).length > 0) {
+      config.mcp_servers = mcpServers;
+    }
 
     return config;
   };
@@ -790,6 +806,7 @@ export function SetupConfigDialog({
       saveChatHistory,
       singleRuntime,
       pullRequestTemplate,
+      mcpEntries,
     ],
   );
 
@@ -1077,6 +1094,28 @@ export function SetupConfigDialog({
             </SettingsScreenDetail>
           ),
         },
+        {
+          id: "mcp",
+          label: "MCP servers",
+          description: "Project-level servers",
+          icon: <Icons.GearIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="MCP servers shared with the team via .argus.json. Merged on top of plugin servers, ~/.claude.json, .mcp.json, and your personal app-level servers."
+                title="Project MCP servers"
+              />
+              <SettingsScreenDetailBody>
+                <InheritedMcpList worktreePath={repoRoot} />
+                <McpServersField
+                  emptyLabel="No project MCP servers"
+                  entries={mcpEntries}
+                  onChange={setMcpEntries}
+                />
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
       ],
     },
     {
@@ -1115,7 +1154,9 @@ export function SetupConfigDialog({
           Cancel
         </Button>
         <Button
-          disabled={isSaving || isLoading || !repoRoot}
+          disabled={
+            isSaving || isLoading || !repoRoot || !entriesValid(mcpEntries)
+          }
           type="button"
           variant="primary"
           onClick={handleSave}

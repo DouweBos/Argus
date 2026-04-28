@@ -42,6 +42,7 @@ Two ways to change project settings:
 | `single_runtime`                              | yes (Run commands)               |
 | `agent_prompt`, `save_chat_history`           | yes (Agent)                      |
 | `protected_branches`, `pull_request_template` | yes (Branch protection)          |
+| `mcp_servers`                                 | yes (MCP servers)                |
 | `related_projects`                            | **no** — hand-edit `.argus.json` |
 
 ---
@@ -62,7 +63,8 @@ Two ways to change project settings:
   "save_chat_history":  true,
   "protected_branches": ["main", "master"],
   "pull_request_template": "feature.md",
-  "single_runtime":     false
+  "single_runtime":     false,
+  "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } }
 }
 ```
 
@@ -269,6 +271,34 @@ When `true`, the project may only have one `run` command alive across
 already running prompts you to stop the other runtime or cancel.
 Useful when your run command claims a fixed port that can't be
 remapped via `workspace_env`.
+
+---
+
+## `mcp_servers` — extra MCP servers for every agent
+
+Map of server name → `.mcp.json`-style config, merged into every agent
+spawned for this project. Use this when your team needs a shared MCP
+server but you'd rather keep the entry next to the rest of your project
+config than maintain a separate `.mcp.json`.
+
+```jsonc
+"mcp_servers": {
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+  },
+  "remote": {
+    "url": "https://example.com/mcp",
+    "headers": { "Authorization": "Bearer ..." }
+  }
+}
+```
+
+Merge order (later wins): enabled Claude plugins, `~/.claude.json`, the
+worktree's `.mcp.json`, your personal `~/.argus/app-settings.json`,
+`mcp_servers` from this file, and finally Argus's built-in MCP server.
+Use the project-level entry for things the team should share; use the
+**app-level** field (Settings → MCP servers) for personal servers.
 
 ---
 
