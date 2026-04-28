@@ -16,7 +16,7 @@ import { broadcastNotification } from "../notifications/broadcast";
 const execFileAsync = promisify(execFile);
 
 const CLAUDE_BIN = "claude";
-export const DEFAULT_TIMEOUT_MS = 30_000;
+export const DEFAULT_TIMEOUT_MS = 90_000;
 const BROADCAST_COOLDOWN_MS = 10_000;
 
 interface PrintResult {
