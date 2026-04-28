@@ -208,11 +208,18 @@ export function useSessionAgents(
         opts?.permissionMode !== undefined
           ? opts.permissionMode
           : currentAgent?.permission_mode;
+      // Preserve the agent's model on restart. The conversationStore captures
+      // model from JSONL `system/init` events but those strip variant suffixes
+      // like `[1m]`, so prefer the agentStore's spawn-time value first.
+      const newModel =
+        opts?.model !== undefined
+          ? opts.model
+          : (currentAgent?.model ?? conv?.model ?? undefined);
       stopAgentListening(agentId);
       apiStopAgent(agentId).catch(() => {});
       const agentInfo: AgentStatus = await apiStartAgent(
         sessionId,
-        opts?.model,
+        newModel ?? undefined,
         newPermissionMode,
         claudeSessionId,
       );
@@ -222,6 +229,7 @@ export function useSessionAgents(
         session_id: agentInfo.session_id,
         status: agentInfo.status,
         permission_mode: newPermissionMode,
+        model: agentInfo.model ?? newModel ?? null,
       });
       startAgentListening(agentInfo.agent_id);
       if (agentInfo.capabilities) {

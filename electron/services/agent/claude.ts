@@ -325,6 +325,16 @@ export async function startAgent(
   // conversation state, and UI tabs stay bound — no swap needed.
   const agentId = reuseAgentId ?? crypto.randomUUID();
 
+  // Resolve the effective model: explicit arg wins, otherwise carry over the
+  // previous slot's model on respawn. The carry-over matters for variants
+  // like `claude-opus-4-7[1m]` whose suffix isn't echoed in the JSONL — if
+  // we re-spawn without `--model`, the CLI silently drops back to the 200K
+  // default and the next turn blows the context window.
+  const previousAgentForModel = reuseAgentId
+    ? appState.agents.get(reuseAgentId)
+    : null;
+  const effectiveModel = model ?? previousAgentForModel?.model ?? null;
+
   // Create the control handler for permission management.
   const controlHandler = new ControlHandler(agentId);
 
@@ -349,8 +359,8 @@ export async function startAgent(
     "stdio",
   ];
 
-  if (model) {
-    args.push("--model", model);
+  if (effectiveModel) {
+    args.push("--model", effectiveModel);
   }
   if (permissionMode) {
     args.push("--permission-mode", permissionMode);
@@ -815,6 +825,7 @@ export async function startAgent(
     // restoreAgentAtTurn writes a fresh user message which increments this
     // again via sendAgentMessage.
     inflightPrompts: 0,
+    model: effectiveModel,
   };
 
   appState.agents.set(agentId, agentSession);
@@ -896,6 +907,7 @@ export async function startAgent(
     parent_agent_id: parentAgentId ?? null,
     created_at: agentSession.createdAt,
     capabilities: controlHandler.getCapabilities(),
+    model: agentSession.model,
   };
 }
 
@@ -1019,9 +1031,12 @@ export async function restoreAgentAtTurn(args: {
   // Respawn the child in the SAME agent slot. `reuseAgentId` keeps the
   // agentId stable and `suppressStatus` carries over so the new session's
   // initial idle emission is silenced too. We clear the flag after spawn.
+  // Pass `undefined` for model so `startAgent` falls back to the previous
+  // slot's stored model — preserves variant suffixes (e.g. `[1m]`) that the
+  // JSONL doesn't echo and that would otherwise default to a 200K window.
   await startAgent(
     sessionId,
-    undefined, // model — the CLI re-reads from the JSONL on resume
+    undefined, // model — startAgent carries over the previous slot's model
     undefined, // permissionMode
     newClaudeSessionId ?? undefined,
     undefined, // appendSystemPrompt
@@ -1554,6 +1569,10 @@ export async function setAgentModel(
   session.stdin.write(json + "\n");
   await promise;
 
+  // Persist the new model on the session so a later restore-at-turn or
+  // restartAgent re-passes it on respawn.
+  session.model = model;
+
   broadcastToRenderers(`agent:model-changed:${agentId}`, model);
   info(`[agent:${agentId}] model changed to ${model}`);
 }
@@ -1613,6 +1632,7 @@ export function listAgents(sessionId: string): AgentInfo[] {
         status: session.status,
         parent_agent_id: session.parentAgentId,
         created_at: session.createdAt,
+        model: session.model,
       });
     }
   }

@@ -148,6 +148,7 @@ async function spawnHost(taskId: string): Promise<void> {
     permission_mode: "plan",
     parent_agent_id: agentInfo.parent_agent_id,
     initial_prompt: combined,
+    model: agentInfo.model,
   });
 
   try {

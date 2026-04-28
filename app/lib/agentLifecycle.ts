@@ -74,6 +74,7 @@ export async function startAgentInSession(
       status: info.status,
       parent_agent_id: info.parent_agent_id,
       created_at: info.created_at,
+      model: info.model,
     });
     // Capabilities are returned inline on start_agent because the backend's
     // `agent:capabilities` event fires before renderer listeners attach and
