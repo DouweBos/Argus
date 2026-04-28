@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Button,
   IconBadge,
@@ -17,6 +18,7 @@ import {
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
+import { SetupConfigDialog } from "../../sidebar/SetupConfigDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
 import styles from "../homeLayout.module.css";
@@ -53,6 +55,7 @@ export function RepoHomeScreen({
   const history = useChatHistory(repoRoot);
   const argusJson = useArgusJson(repoRoot);
   const handleArgusJsonGenerated = argusJson.refresh;
+  const [showProjectSettings, setShowProjectSettings] = useState(false);
 
   const repoSessions = useMemo(
     () => (repoRoot ? sessions.filter((w) => w.repo_root === repoRoot) : []),
@@ -120,6 +123,16 @@ export function RepoHomeScreen({
           <div className={styles.heroSpacer} />
           <div className={styles.ctas}>
             {repoRoot && <OpenInEditorButton path={repoRoot} />}
+            {repoRoot && argusJson.exists !== false && (
+              <Button
+                variant="ghost"
+                leading={<Icons.GearIcon size={12} />}
+                onClick={() => setShowProjectSettings(true)}
+                title="Edit .argus.json — copy/symlink rules, run commands, ports"
+              >
+                Project settings
+              </Button>
+            )}
             <Button
               variant="ghost"
               leading={<Icons.PlusIcon size={12} />}
@@ -218,6 +231,17 @@ export function RepoHomeScreen({
           />
         )}
       </div>
+
+      {showProjectSettings &&
+        repoRoot &&
+        createPortal(
+          <SetupConfigDialog
+            repoRoot={repoRoot}
+            onClose={() => setShowProjectSettings(false)}
+            onSaved={() => argusJson.refresh()}
+          />,
+          document.body,
+        )}
     </div>
   );
 }
