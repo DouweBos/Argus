@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CloseIcon } from "../../icons/Icons";
 import { useDismissOnEscape } from "../../lib/modalStack";
 import styles from "./Dialog.module.css";
@@ -75,7 +76,11 @@ export function Dialog({
     .filter(Boolean)
     .join(" ");
 
-  return (
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <div
       className={styles.overlay}
       onClick={onOverlayClick}
@@ -103,6 +108,7 @@ export function Dialog({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
