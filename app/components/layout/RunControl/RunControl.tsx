@@ -4,6 +4,7 @@ import { Button, ConfirmDialog, ContextMenu, Icons } from "@argus/peacock";
 import { error as logError } from "@logger";
 import {
   createRunTerminal,
+  listTerminals,
   readArgusConfig,
   stopTerminal,
 } from "../../../lib/ipc";
@@ -81,6 +82,52 @@ export function RunControl({ sessionId }: RunControlProps) {
 
     return () => {
       cancelled = true;
+    };
+  }, [sessionId]);
+
+  // Rehydrate the running-run marker after a window reload. PTYs persist in
+  // main, so a dev server kicked off before the reload is still alive — but
+  // the renderer's runningTerminals map (and the exit listener that flips
+  // the button back to Play) are gone unless we reattach.
+  useEffect(() => {
+    let cancelled = false;
+    const unlisteners: (() => void)[] = [];
+    (async () => {
+      try {
+        const live = await listTerminals(sessionId);
+        if (cancelled) {
+          return;
+        }
+        for (const t of live) {
+          if (!t.runTitle) {
+            continue;
+          }
+          if (getTerminalState().runningTerminals[sessionId]?.[t.runTitle]) {
+            continue;
+          }
+          setRunningTerminal(sessionId, t.runTitle, t.id);
+          const runTitle = t.runTitle;
+          const terminalId = t.id;
+          const unlisten = window.argus.on<number>(
+            `terminal:exit:${terminalId}`,
+            () => {
+              clearRunningTerminalIfMatches(sessionId, runTitle, terminalId);
+              unlisten();
+              stopListening(terminalId);
+            },
+          );
+          unlisteners.push(unlisten);
+        }
+      } catch {
+        // backend not ready — non-fatal.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      for (const u of unlisteners) {
+        u();
+      }
     };
   }, [sessionId]);
 

@@ -233,11 +233,13 @@ import {
 import {
   createTerminal,
   createRunTerminal,
+  listTerminals,
   startTerminal,
   destroyTerminal,
   stopTerminal,
   terminalWrite,
   terminalResize,
+  updateTerminalTitle,
 } from "./services/terminal/multiplexer";
 import { getUiState, setUiState } from "./services/uiState";
 import {
@@ -722,10 +724,19 @@ export function registerIpcHandlers(): void {
   // use `create_run_terminal`, which resolves the command server-side from
   // `.argus.json`.
   handle("create_terminal", (a) =>
-    createTerminal(a.sessionId as string, a.subDir as string | undefined),
+    createTerminal(
+      a.sessionId as string,
+      a.subDir as string | undefined,
+      undefined,
+      a.title as string | undefined,
+    ),
   );
   handle("create_run_terminal", (a) =>
     createRunTerminal(a.sessionId as string, a.title as string | undefined),
+  );
+  handle("list_terminals", (a) => listTerminals(a.sessionId as string));
+  handle("update_terminal_title", (a) =>
+    updateTerminalTitle(a.terminalId as string, a.title as string),
   );
   handle("start_terminal", (a) =>
     startTerminal(a.sessionId as string, a.cols as number, a.rows as number),

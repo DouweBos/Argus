@@ -592,11 +592,30 @@ export const generateSessionTitle = (
 export const createTerminal = (
   sessionId: string,
   subDir?: string,
+  title?: string,
 ): Promise<string> =>
   invoke("create_terminal", {
     sessionId,
     ...(subDir != null && subDir !== "" && { subDir }),
+    ...(title != null && title !== "" && { title }),
   });
+
+export interface TerminalSummary {
+  exitCode: number | null;
+  exited: boolean;
+  id: string;
+  runTitle: string | null;
+  sessionId: string;
+  title: string | null;
+}
+
+export const listTerminals = (sessionId: string): Promise<TerminalSummary[]> =>
+  invoke("list_terminals", { sessionId });
+
+export const updateTerminalTitle = (
+  terminalId: string,
+  title: string,
+): Promise<void> => invoke("update_terminal_title", { terminalId, title });
 
 export interface CreateRunTerminalResult {
   sessionId: string;
