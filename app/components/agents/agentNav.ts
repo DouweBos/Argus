@@ -1,9 +1,8 @@
 import { useProjects } from "../../hooks/useSessions";
 import { focusAgent } from "../../lib/agentLifecycle";
 import { setActiveAgent } from "../../stores/agentStore";
-import { setCenterView } from "../../stores/centerViewStore";
 import { setActiveCenterView } from "../../stores/editorStore";
-import { selectSession } from "../../stores/sessionStore";
+import { getSessionState, selectSession } from "../../stores/sessionStore";
 
 type GotoKind = "agent" | "project" | "session";
 
@@ -34,7 +33,12 @@ export function useAgentNavigation() {
     }
 
     if (kind === "project") {
-      setCenterView("home");
+      const projectRoot = getSessionState().sessions.find(
+        (w) => w.repo_root === target.repoRoot && w.kind === "project_root",
+      );
+      if (projectRoot) {
+        selectSession(projectRoot.id);
+      }
     }
   }
 
