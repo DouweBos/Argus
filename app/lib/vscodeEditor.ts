@@ -23,6 +23,43 @@ import {
 
 const log = createLogger("syntax-highlight-debug");
 
+// EditorPanel mounts lazily — only when the user's route lands on the editor
+// view. ⌘-click on a file link from the agents view first switches the route
+// (via setActiveCenterView), but openEditor must wait until EditorPanel has
+// actually mounted and called attachPart(EDITOR_PART, ...). Without this,
+// openEditor races the React commit and silently opens the editor into a
+// container that isn't visible — symptom: the editor view shows but the file
+// never appears. The race resolves quickly in dev but loses reliably in
+// production builds.
+let resolveEditorPartReady: (() => void) | null = null;
+let editorPartReadyPromise: Promise<void> | null = null;
+
+function ensureEditorPartReadyPromise(): Promise<void> {
+  if (!editorPartReadyPromise) {
+    editorPartReadyPromise = new Promise<void>((resolve) => {
+      resolveEditorPartReady = resolve;
+    });
+  }
+
+  return editorPartReadyPromise;
+}
+
+/** Called by EditorPanel after `attachPart(EDITOR_PART, …)` succeeds. */
+export function markEditorPartAttached(): void {
+  ensureEditorPartReadyPromise();
+  resolveEditorPartReady?.();
+  resolveEditorPartReady = null;
+}
+
+function whenEditorPartAttached(timeoutMs = 5000): Promise<void> {
+  const ready = ensureEditorPartReadyPromise();
+
+  return Promise.race([
+    ready,
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
 function getSessionRoot(): string | null {
   // Prefer VS Code's current session path (already initialized) but fall
   // back to the selected session from the store when the Editor tab has
@@ -70,6 +107,11 @@ export async function openFileInEditor(
   // Make the Editor view visible in the center panel so the user can see
   // the tab that's about to open.
   setActiveCenterView("editor");
+
+  // Wait for EditorPanel to mount and attach EDITOR_PART. Calling openEditor
+  // before that races the React commit and the file never becomes visible
+  // (loses reliably in production builds).
+  await whenEditorPartAttached();
 
   // [syntax-highlight-debug] Log the language that will be selected for this
   // file. If this returns "plaintext" for a file with a known extension, it
