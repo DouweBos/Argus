@@ -12,6 +12,7 @@ import {
   EmptyState,
   GridScreen,
   Icons,
+  Spinner,
 } from "@argus/peacock";
 import {
   createSession as apiCreateSession,
@@ -271,7 +272,7 @@ export function PullRequestsScreen() {
   } else if (!hasCache) {
     content = (
       <EmptyState
-        icon={<Icons.RefreshIcon size={20} />}
+        icon={<Spinner size="md" />}
         title="Loading pull requests"
         body="Asking GitHub for PRs that involve you across your open projects."
       />

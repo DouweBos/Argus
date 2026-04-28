@@ -16,6 +16,7 @@ import {
   FileDiffCard,
   GridScreen,
   Icons,
+  Spinner,
   parseDiff,
 } from "@argus/peacock";
 import {
@@ -245,7 +246,7 @@ export function PullRequestDetailScreen() {
   } else {
     content = (
       <EmptyState
-        icon={<Icons.RefreshIcon size={20} />}
+        icon={<Spinner size="md" />}
         title="Loading pull request"
         body={`${pr.owner}/${pr.repo}#${pr.number}`}
       />
@@ -813,7 +814,7 @@ function FilesTab({
   } else if (!hasCache) {
     content = (
       <EmptyState
-        icon={<Icons.RefreshIcon size={20} />}
+        icon={<Spinner size="md" />}
         title="Loading diff"
         body={`${detail.changedFiles} file${detail.changedFiles === 1 ? "" : "s"} changed`}
       />
