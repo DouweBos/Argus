@@ -63,6 +63,7 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { emitReviewState } from "../session/sessionOps";
 import { loadArgusConfig } from "../session/setup";
 import { simulatorPool } from "../simulator/pool";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
 import { ControlHandler } from "./controlHandler";
 
@@ -294,6 +295,13 @@ export async function startAgent(
   platformsOverride?: RuntimePlatform[],
   parentAgentId?: string,
   reuseAgentId?: string,
+  /**
+   * Optional id to assign to a *fresh* agent (e.g. one minted by the
+   * renderer for optimistic UI). Unlike `reuseAgentId`, this does NOT
+   * imply a respawn: no previous slot is looked up and the
+   * `agent_started` telemetry event still fires.
+   */
+  presetAgentId?: string,
 ): Promise<AgentInfo> {
   // Verify the session exists and grab its path.
   const argusSession = appState.sessions.get(sessionId);
@@ -323,7 +331,9 @@ export async function startAgent(
   // When `reuseAgentId` is set we're respawning the child under an existing
   // slot (e.g. restore-at-turn). Keep the same id so frontend listeners,
   // conversation state, and UI tabs stay bound — no swap needed.
-  const agentId = reuseAgentId ?? crypto.randomUUID();
+  // `presetAgentId` carries a renderer-minted id for optimistic UI on a
+  // fresh agent (no respawn semantics).
+  const agentId = reuseAgentId ?? presetAgentId ?? crypto.randomUUID();
 
   // Resolve the effective model: explicit arg wins, otherwise carry over the
   // previous slot's model on respawn. The carry-over matters for variants
@@ -790,6 +800,16 @@ export async function startAgent(
     broadcastToRenderers(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
 
+    if (agentEntry) {
+      telemetryCapture("agent_exited", {
+        exit_code: exitCode,
+        success: exitCode === 0,
+        turns_completed: agentEntry.turnsCompleted,
+        tool_uses: agentEntry.toolUsesTotal,
+        duration_ms: Date.now() - agentEntry.createdAt,
+      });
+    }
+
     // Re-evaluate whether this session now has reviewable changes.
     emitReviewState(sessionId).catch(() => {});
   });
@@ -829,6 +849,16 @@ export async function startAgent(
   };
 
   appState.agents.set(agentId, agentSession);
+
+  if (!reuseAgentId) {
+    telemetryCapture("agent_started", {
+      has_model: Boolean(model),
+      has_resume_id: Boolean(resumeSessionId),
+      has_parent: Boolean(parentAgentId),
+      permission_mode: permissionMode ?? "default",
+      session_kind: argusSession.kind,
+    });
+  }
 
   // Load project-level config from .argus.json (if present).
   let projectPrompt: string | null = null;
@@ -1045,6 +1075,11 @@ export async function restoreAgentAtTurn(args: {
     args.agentId, // reuseAgentId
   );
 
+  telemetryCapture("agent_restored", {
+    is_fresh_start: args.keepTurnNumber === 0,
+    keep_turn_number: args.keepTurnNumber,
+  });
+
   // Clear the suppress flag on the NEW slot — from now on, status changes
   // flow normally. The caller is expected to write the next user message
   // immediately, which flips the UI to "running" via notifyMessageSent; any
@@ -1160,6 +1195,7 @@ export async function stopAgent(agentId: string): Promise<void> {
 
   emitAgentStatus(agentId, "stopped");
   info(`[agent:${agentId}] stopped`);
+  telemetryCapture("agent_stopped");
 }
 
 // ---------------------------------------------------------------------------
@@ -1196,6 +1232,7 @@ export async function interruptAgent(agentId: string): Promise<void> {
   }
 
   info(`[agent:${agentId}] interrupted`);
+  telemetryCapture("agent_interrupted");
 }
 
 // ---------------------------------------------------------------------------

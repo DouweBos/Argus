@@ -17,6 +17,7 @@ import { appState } from "../../state";
 import { sendAgentMessage, startAgent, stopAgent } from "../agent/claude";
 import { ensureRepoRegistered } from "../mcp/projects";
 import { createOrgHostSession } from "../session/manager";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { createOrgTask, updateOrgTask } from "./manager";
 import { orgHostDir } from "./paths";
 
@@ -62,6 +63,10 @@ export async function startOrgTask(input: StartOrgTaskInput): Promise<OrgTask> {
     title,
     prompt,
     scope,
+  });
+
+  telemetryCapture("org_task_started", {
+    scope_size: scope.length,
   });
 
   // Spawn the host asynchronously — the UI can show "initializing" state

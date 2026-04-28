@@ -22,6 +22,7 @@ export interface CustomEditor {
 interface SettingsState {
   customEditors: CustomEditor[];
   defaultPermissionMode: PermissionMode;
+  telemetryEnabled: boolean;
 }
 
 const STORAGE_KEY = "argus:settings";
@@ -61,13 +62,23 @@ function load(): SettingsState {
             ? parsed.defaultPermissionMode
             : "default",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
+        telemetryEnabled:
+          typeof parsed.telemetryEnabled === "boolean"
+            ? parsed.telemetryEnabled
+            : false,
       };
     }
   } catch {
     // fall through to defaults
   }
 
-  return { defaultPermissionMode: "default", customEditors: [] };
+  // Default opt-out — consent is collected explicitly during the
+  // telemetry onboarding step before any analytics events are sent.
+  return {
+    defaultPermissionMode: "default",
+    customEditors: [],
+    telemetryEnabled: false,
+  };
 }
 
 function persist(state: SettingsState) {
@@ -127,6 +138,15 @@ export const updateCustomEditor = (
         : e,
     ),
   }));
+  persist(store.getState());
+};
+
+export const useTelemetryEnabled = () => store((s) => s.telemetryEnabled);
+
+export const getTelemetryEnabled = () => store.getState().telemetryEnabled;
+
+export const setTelemetryEnabledSetting = (enabled: boolean): void => {
+  store.setState({ telemetryEnabled: enabled });
   persist(store.getState());
 };
 

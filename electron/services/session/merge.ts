@@ -5,6 +5,7 @@
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { git } from "./git";
 
 // ---------------------------------------------------------------------------
@@ -329,6 +330,10 @@ export async function attemptMergeSession(
     } catch {
       // Don't abort — surface the conflict state to the caller.
       const conflictingFiles = await listConflictingFiles(wsPath);
+      telemetryCapture("session_merge_conflict", {
+        conflicting_files: conflictingFiles.length,
+        phase: "attempt",
+      });
 
       return { conflicting_files: conflictingFiles, state: "conflicted" };
     }
@@ -336,6 +341,8 @@ export async function attemptMergeSession(
 
   await squashSessionCommits(wsPath, sessionBranch, baseBranch);
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
+
+  telemetryCapture("session_merged", { phase: "attempt" });
 
   return { state: "merged" };
 }
@@ -374,6 +381,10 @@ export async function continueSessionMerge(
       await runRebaseContinue(wsPath);
     } catch {
       const conflictingFiles = await listConflictingFiles(wsPath);
+      telemetryCapture("session_merge_conflict", {
+        conflicting_files: conflictingFiles.length,
+        phase: "continue",
+      });
 
       return { conflicting_files: conflictingFiles, state: "conflicted" };
     }
@@ -383,6 +394,10 @@ export async function continueSessionMerge(
       await git(wsPath, ["commit", "--no-edit"]);
     } catch {
       const conflictingFiles = await listConflictingFiles(wsPath);
+      telemetryCapture("session_merge_conflict", {
+        conflicting_files: conflictingFiles.length,
+        phase: "continue",
+      });
 
       return { conflicting_files: conflictingFiles, state: "conflicted" };
     }
@@ -390,6 +405,8 @@ export async function continueSessionMerge(
 
   await squashSessionCommits(wsPath, sessionBranch, baseBranch);
   await fastForwardBase(repoRoot, sessionBranch, baseBranch);
+
+  telemetryCapture("session_merged", { phase: "continue" });
 
   return { state: "merged" };
 }
@@ -408,6 +425,7 @@ export async function abortSessionMerge(wsPath: string): Promise<void> {
   } else {
     await git(wsPath, ["merge", "--abort"]);
   }
+  telemetryCapture("session_merge_aborted", { kind: inProgress.kind });
 }
 
 /** Detect a paused merge or rebase by inspecting the worktree's gitdir. */

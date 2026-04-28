@@ -20,6 +20,7 @@ export * from "./components/EmptyHome/EmptyHome";
 export * from "./components/EmptyState/EmptyState";
 export * from "./components/EmptyStateIllustration/EmptyStateIllustration";
 export * from "./components/Eyebrow/Eyebrow";
+export * from "./components/FeedbackDialog/FeedbackDialog";
 export * from "./components/FeedItem/FeedItem";
 export * from "./components/FormField/FormField";
 export * from "./components/FileTypeBadge/FileTypeBadge";

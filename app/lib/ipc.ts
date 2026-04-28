@@ -1103,3 +1103,14 @@ export const updaterDownload = (): Promise<void> => invoke("updater_download");
 
 export const updaterQuitAndInstall = (): Promise<void> =>
   invoke("updater_quit_and_install");
+
+// Telemetry
+export interface TelemetryInit {
+  appVersion: string;
+  distinctId: string;
+  enabled: boolean;
+}
+export const getTelemetryInit = (): Promise<TelemetryInit> =>
+  invoke("telemetry_get_init");
+export const setTelemetryEnabledOnMain = (enabled: boolean): Promise<void> =>
+  invoke("telemetry_set_enabled", { enabled });

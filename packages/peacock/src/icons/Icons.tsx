@@ -232,6 +232,21 @@ export function CopyIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function QuestionIcon({ size = 14, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM.5 8a7.5 7.5 0 1 1 15 0 7.5 7.5 0 0 1-15 0Zm5.255-2.61c.18-1.06 1.097-1.89 2.245-1.89 1.252 0 2.293.95 2.293 2.18 0 .79-.42 1.34-1.034 1.797-.183.137-.355.255-.51.36l-.039.026c-.16.108-.296.2-.41.291-.215.17-.291.301-.291.452a.5.5 0 0 1-1 0c0-.557.318-.939.668-1.215.146-.115.31-.226.464-.331l.026-.018c.156-.106.301-.205.434-.304.461-.345.692-.624.692-1.058 0-.626-.554-1.18-1.293-1.18-.703 0-1.21.499-1.26 1.057a.5.5 0 0 1-.985-.167ZM8 12.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" />
+    </svg>
+  );
+}
+
 export function HomeIcon({ size = 14, className, ...rest }: IconProps) {
   return (
     <svg

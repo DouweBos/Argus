@@ -1,5 +1,10 @@
-import type { SVGProps } from "react";
-import { Icons } from "@argus/peacock";
+import { useState, type SVGProps } from "react";
+import { FeedbackDialog, Icons } from "@argus/peacock";
+import { createLogger } from "../../../lib/logger";
+import {
+  captureFeedback,
+  getFeedbackUnavailableReason,
+} from "../../../lib/telemetry";
 import {
   type ToolId,
   TOOL_PLACEMENT,
@@ -12,6 +17,8 @@ import {
 } from "../../../stores/notificationsStore";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
 import styles from "./ToolRail.module.css";
+
+const log = createLogger("feedback");
 
 type IconComponent = React.ComponentType<
   SVGProps<SVGSVGElement> & { size?: number }
@@ -40,6 +47,7 @@ export function ToolRail() {
   const selectedSessionId = useSelectedSessionId();
   const notifications = useNotifications();
   const unseen = useUnseenNotificationCount();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const hasEntries = notifications.length > 0;
   const hasError = notifications.some((n) => n.level === "error");
@@ -80,11 +88,40 @@ export function ToolRail() {
       ? BOTTOM_TOOLS.filter((t) => t.id === "notifications")
       : BOTTOM_TOOLS;
 
+  const feedbackButton = (
+    <button
+      aria-label="Send feedback"
+      className={styles.tool}
+      title="Send feedback"
+      type="button"
+      onClick={() => {
+        setFeedbackOpen(true);
+      }}
+    >
+      <Icons.QuestionIcon size={18} />
+    </button>
+  );
+
   return (
     <div className={styles.rail}>
       {topTools.map(renderTool)}
       <div className={styles.spacer} />
       {bottomTools.map(renderTool)}
+      {feedbackButton}
+      {feedbackOpen && (
+        <FeedbackDialog
+          onClose={() => setFeedbackOpen(false)}
+          unavailableReason={getFeedbackUnavailableReason()}
+          onSubmit={(message) => {
+            try {
+              captureFeedback(message);
+            } catch (e) {
+              log.warn("submit failed", e);
+              throw e;
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -82,6 +82,37 @@ whole team should get.
 
 ---
 
+## Privacy
+
+| Setting                      | Storage                           | Default | Description                                                                                                                                                                         |
+| ---------------------------- | --------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Send anonymous telemetry** | `localStorage` (`argus:settings`) | `false` | Sends anonymous usage and crash events to PostHog so we can find bugs and prioritize features. Consent is collected once during onboarding (telemetry step); flip it any time here. |
+
+What we send:
+
+- Anonymous install id (random UUID stored at `~/.argus/telemetry-id`).
+  Wiping this file resets it.
+- App version, OS, OS version, Electron/Node version, CPU arch.
+- Feature usage events (no arguments, no file paths, no project names).
+- Errors and crashes from both the main and renderer processes. Stack
+  traces are scrubbed of user home directory paths.
+
+What we do **not** send:
+
+- Your IP address, geolocation, or any session recording.
+- Prompts, file contents, agent output, project names, branch names,
+  repo paths, or any other content of your work.
+- Anything that ties an install id to a person, account, or machine.
+
+Telemetry is hard-disabled in any non-packaged build (`pnpm dev`,
+`vite build` previews, anything where `app.isPackaged` is false /
+`import.meta.env.PROD` is false), regardless of the toggle. So our own
+development sessions never appear in PostHog. The integration is also
+dormant in production builds unless `VITE_POSTHOG_KEY` was configured
+at build time.
+
+---
+
 ## Per-project personal settings
 
 These are app-level (machine-local) settings _about_ a specific project.

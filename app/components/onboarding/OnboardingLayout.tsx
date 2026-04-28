@@ -10,6 +10,7 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   preflight: "Preflight",
   claude_auth: "Claude",
   defaults: "Defaults",
+  telemetry: "Telemetry",
   completion: "Done",
 };
 

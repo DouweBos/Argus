@@ -15,6 +15,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
+import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { ONBOARDING_STEPS } from "./types";
 
 const SCHEMA_VERSION = 1;
@@ -146,10 +147,14 @@ export function registerProject(repoPath: string): void {
 
 export function completeOnboarding(): void {
   const cfg = loadConfig();
+  const wasAlreadyCompleted = cfg.onboarding.completed;
   cfg.onboarding.completed = true;
   cfg.onboarding.completedAt = Date.now();
   cfg.onboarding.lastStep = "completion";
   saveConfig(cfg);
+  if (!wasAlreadyCompleted) {
+    telemetryCapture("onboarding_completed");
+  }
 }
 
 export function resetOnboarding(): void {
