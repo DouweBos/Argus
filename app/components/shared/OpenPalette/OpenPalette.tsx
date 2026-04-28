@@ -32,7 +32,7 @@ const GROUP_LABELS: Record<OpenGroup, string> = {
   "recent-project": "Recent projects",
 };
 
-const GROUP_ORDER: OpenGroup[] = ["session", "open-project", "recent-project"];
+const GROUP_ORDER: OpenGroup[] = ["open-project", "recent-project", "session"];
 
 export function OpenPalette() {
   const open = useOpenPaletteOpen();
@@ -57,7 +57,16 @@ function OpenPaletteContent() {
   const items = useMemo<OpenItem[]>(() => {
     const out: OpenItem[] = [];
 
-    sessions.forEach((w) => {
+    const sortedSessions = [...sessions].sort((a, b) => {
+      const repoCmp = a.repo_root.localeCompare(b.repo_root);
+      if (repoCmp !== 0) {
+        return repoCmp;
+      }
+
+      return a.branch.localeCompare(b.branch);
+    });
+
+    sortedSessions.forEach((w) => {
       const isCurrent = w.id === selectedId;
       out.push({
         group: "session",
