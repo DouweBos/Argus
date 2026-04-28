@@ -5,6 +5,7 @@
  * broadcast pipeline — only the prompt and the parsing differ.
  */
 
+import { tmpdir } from "node:os";
 import { runClaudePrint } from "./claudePrint";
 
 const MAX_TITLE_CHARS = 60;
@@ -125,7 +126,11 @@ export async function generateChatTitle(
 
   const prompt = `Produce a title (3-6 words, no trailing punctuation, no quotes, title case) that summarises this chat's topic based on the user's first message. Respond with ONLY the title text, nothing else.\n\nUser message:\n${snippet}`;
 
-  const result = await runClaudePrint({ prompt, source: "chat_title" });
+  const result = await runClaudePrint({
+    prompt,
+    cwd: tmpdir(),
+    source: "chat_title",
+  });
 
   return result ? normaliseTitle(result, MAX_CHAT_TITLE_CHARS) : null;
 }

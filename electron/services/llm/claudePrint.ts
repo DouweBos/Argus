@@ -39,11 +39,25 @@ let lastBroadcastAt = 0;
  * login where `claude -p` stalls waiting for auth. ENOENT means the `claude`
  * binary isn't on PATH.
  */
+function extractResultFromStdout(stdout: unknown): string | null {
+  if (typeof stdout !== "string" || !stdout.trim()) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(stdout) as PrintResult;
+
+    return typeof parsed.result === "string" ? parsed.result.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function describeClaudeFailure(e: unknown): string {
   const err = e as {
     code?: number | string;
     killed?: boolean;
     stderr?: string;
+    stdout?: string;
   };
   if (err?.code === "ENOENT") {
     return "Claude Code CLI (`claude`) not found on PATH. Install it or add it to your shell PATH so Argus can generate session titles.";
@@ -54,6 +68,11 @@ function describeClaudeFailure(e: unknown): string {
   const stderr = typeof err?.stderr === "string" ? err.stderr.trim() : "";
   if (/auth|login|credential|unauthori[sz]ed/i.test(stderr)) {
     return "Claude Code authentication failed. Run `claude` in a terminal to re-authenticate. Argus fell back to a branch slug derived from your prompt.";
+  }
+
+  const innerResult = extractResultFromStdout(err?.stdout);
+  if (innerResult) {
+    return `Claude Code title generation failed: ${innerResult}. Argus fell back to a branch slug derived from your prompt.`;
   }
 
   return `Claude Code title generation failed${stderr ? `: ${stderr}` : ""}. Argus fell back to a branch slug derived from your prompt.`;
