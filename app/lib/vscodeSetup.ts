@@ -194,15 +194,15 @@ interface ArgusPalette {
 
 // Dark palette — mirrors tokens.css html[data-theme="dark"]
 const DARK: ArgusPalette = {
-  bgPrimary: "#0a0a0f",
-  bgSecondary: "#111118",
-  bgTertiary: "#1a1a24",
-  bgHover: "#222233",
-  border: "#1c1c28", // solid approximation of rgba(255,255,255,0.08) on bgPrimary
-  textPrimary: "#ffffff",
-  textSecondary: "#d0d0dc",
-  textMuted: "#8a8aa0",
-  textOnAccent: "#0a0a0f",
+  bgPrimary: "#15151c",
+  bgSecondary: "#1c1c25",
+  bgTertiary: "#252531",
+  bgHover: "#2d2d3c",
+  border: "#27272f", // solid approximation of rgba(255,255,255,0.08) on bgPrimary
+  textPrimary: "#d8d8e2",
+  textSecondary: "#a8a8b8",
+  textMuted: "#70708a",
+  textOnAccent: "#15151c",
   accent: "#f5a623",
   accentHover: "#ffbe4d",
   error: "#ff4466",

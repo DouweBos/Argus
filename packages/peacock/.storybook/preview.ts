@@ -8,9 +8,9 @@ const preview: Preview = {
     backgrounds: {
       default: "argus",
       values: [
-        { name: "argus", value: "#0a0a0f" },
-        { name: "secondary", value: "#111118" },
-        { name: "tertiary", value: "#1a1a24" },
+        { name: "argus", value: "#15151c" },
+        { name: "secondary", value: "#1c1c25" },
+        { name: "tertiary", value: "#252531" },
       ],
     },
     layout: "centered",
