@@ -80,6 +80,12 @@
   color: var(--text-secondary);
 }
 
+.customInput {
+  margin-top: 6px;
+  width: 100%;
+  resize: vertical;
+}
+
 .actions {
   display: flex;
   gap: 8px;

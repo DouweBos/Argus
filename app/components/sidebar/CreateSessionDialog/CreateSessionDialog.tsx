@@ -1,3 +1,4 @@
+import type { ProjectEntry } from "../../../lib/types";
 import type { PendingImage } from "../../../stores/conversationStore";
 import {
   useEffect,
@@ -11,6 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import {
   Button,
+  Chip,
   Icons,
   ImageAttachmentStrip,
   Input,
@@ -28,11 +30,15 @@ import {
   getUserProjectSettings,
   type ImageAttachment,
   listAllBranches,
+  listProjects,
   setUserProjectSettings,
 } from "../../../lib/ipc";
+import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
-import { setPendingPrompt } from "../../../stores/sessionStore";
+import { selectSession, setPendingPrompt } from "../../../stores/sessionStore";
+import { ModelPicker } from "../../agent/ModelPicker";
+import { ProjectPicker } from "../../agent/ProjectPicker";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
 interface CreateSessionDialogProps {
@@ -369,6 +375,58 @@ export function CreateSessionDialog({
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Model + linked-projects state for the branch-off prompt. These are
+  // forwarded to `setPendingPrompt` so the agent that boots from the new
+  // session honours both. We pull a model list from any existing
+  // conversation's reported capabilities — first-launch with no prior agent
+  // means the picker stays hidden.
+  const { models: knownModels } = useMemo(() => getLastKnownCapabilities(), []);
+  const [modelValue, setModelValue] = useState<string>("default");
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const modelChipRef = useRef<HTMLDivElement>(null);
+
+  const [linkedProjects, setLinkedProjects] = useState<string[]>([]);
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  const [allProjects, setAllProjects] = useState<ProjectEntry[]>([]);
+  const projectChipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!projectPickerOpen) {
+      return;
+    }
+    let cancelled = false;
+    listProjects()
+      .then((result) => {
+        if (!cancelled) {
+          setAllProjects(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAllProjects([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPickerOpen]);
+
+  const toggleLinkedProject = useCallback((path: string) => {
+    setLinkedProjects((prev) =>
+      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
+    );
+  }, []);
+
+  const modelDisplayName = useMemo(() => {
+    if (!knownModels.length) {
+      return undefined;
+    }
+    const match = knownModels.find((m) => m.value === modelValue);
+
+    return match?.displayName ?? knownModels[0]?.displayName;
+  }, [knownModels, modelValue]);
+
   const addImageFiles = useCallback(async (files: File[]) => {
     const newImages = await filesToPendingImages(files);
     if (newImages.length > 0) {
@@ -542,6 +600,8 @@ export function CreateSessionDialog({
     baseBranch: string | undefined,
     initialPrompt?: string,
     initialImages?: ImageAttachment[],
+    initialModel?: string,
+    initialLinkedProjects?: string[],
   ) => {
     // Close the dialog immediately — branch name generation and worktree
     // setup can take several seconds (claude -p title generation, git
@@ -572,12 +632,28 @@ export function CreateSessionDialog({
           // fail outright), so record the prompt (and any attached images)
           // against the session id and let `initPendingSessionPrompts`
           // dispatch it once the session transitions to `ready`.
-          if ((initialPrompt || initialImages?.length) && session) {
-            setPendingPrompt(
-              session.id,
-              initialPrompt || "",
-              initialImages?.length ? initialImages : undefined,
-            );
+          if (
+            (initialPrompt ||
+              initialImages?.length ||
+              initialLinkedProjects?.length) &&
+            session
+          ) {
+            setPendingPrompt(session.id, initialPrompt || "", {
+              images: initialImages?.length ? initialImages : undefined,
+              model:
+                initialModel && initialModel !== "default"
+                  ? initialModel
+                  : undefined,
+              linkedProjects: initialLinkedProjects?.length
+                ? initialLinkedProjects
+                : undefined,
+            });
+          }
+          // Focus the freshly-created session so the user lands on its home
+          // screen immediately. Setup (copy/symlink/install) keeps running in
+          // the background; the home screen reflects the `initializing` state.
+          if (session) {
+            selectSession(session.id);
           }
         }
       } catch (err) {
@@ -607,6 +683,8 @@ export function CreateSessionDialog({
       sourceBranch,
       trimmedDescription,
       images.length > 0 ? images : undefined,
+      modelValue,
+      linkedProjects.length > 0 ? linkedProjects : undefined,
     );
   };
 
@@ -774,6 +852,61 @@ export function CreateSessionDialog({
               }}
               onRemove={removeImage}
             />
+            <div className={styles.promptChips}>
+              {knownModels.length > 0 && modelDisplayName && (
+                <div ref={modelChipRef} className={styles.chipAnchor}>
+                  <Chip
+                    mono
+                    muted
+                    interactive
+                    title="Switch model for the first agent"
+                    onClick={() => setModelPickerOpen((o) => !o)}
+                  >
+                    {modelDisplayName}
+                  </Chip>
+                  {modelPickerOpen && (
+                    <ModelPicker
+                      triggerRef={modelChipRef}
+                      currentModel={modelValue}
+                      models={knownModels}
+                      onClose={() => setModelPickerOpen(false)}
+                      onSelect={(m) => {
+                        setModelPickerOpen(false);
+                        setModelValue(m);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+              <div ref={projectChipRef} className={styles.chipAnchor}>
+                <Chip
+                  interactive
+                  muted={linkedProjects.length === 0}
+                  aria-label="Link other project"
+                  title={
+                    linkedProjects.length === 0
+                      ? "Link other project"
+                      : `${linkedProjects.length} project${linkedProjects.length === 1 ? "" : "s"} linked`
+                  }
+                  leading={<Icons.FolderIcon size={11} />}
+                  onClick={() => setProjectPickerOpen((o) => !o)}
+                >
+                  {linkedProjects.length === 0
+                    ? "Link other project"
+                    : `${linkedProjects.length} linked`}
+                </Chip>
+                {projectPickerOpen && (
+                  <ProjectPicker
+                    triggerRef={projectChipRef}
+                    projects={allProjects}
+                    selectedPaths={linkedProjects}
+                    excludePaths={[repoRoot]}
+                    onToggle={toggleLinkedProject}
+                    onClose={() => setProjectPickerOpen(false)}
+                  />
+                )}
+              </div>
+            </div>
             <input
               ref={fileInputRef}
               accept={ACCEPTED_IMAGE_TYPES}

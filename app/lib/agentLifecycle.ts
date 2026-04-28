@@ -13,9 +13,11 @@ import {
 } from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { pushError } from "../stores/notificationsStore";
+import { clearPrewarm, getPrewarmSlot } from "../stores/prewarmStore";
 import { selectSession } from "../stores/sessionStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
 import {
+  claimPrewarmAgent,
   type ImageAttachment,
   sendAgentMessage,
   startAgent as apiStartAgent,
@@ -39,6 +41,34 @@ export async function startAgentInSession(
   options: StartAgentOptions = {},
 ): Promise<AgentStatus> {
   const { focus = true, model, permissionMode, resumeSessionId } = options;
+
+  // Prefer claiming a prewarmed slot — the Claude subprocess is already
+  // alive and past initialize, so the user-facing path is sub-second.
+  // `resumeSessionId` is incompatible with prewarms (the warm slot was
+  // started fresh, not resumed) so fall back to a normal spawn in that case.
+  if (!resumeSessionId) {
+    const slot = getPrewarmSlot(sessionId);
+    if (slot && slot.status === "ready" && slot.agentId) {
+      try {
+        const claimed = await claimPrewarm(slot.agentId, sessionId, {
+          focus,
+          model,
+          permissionMode,
+        });
+
+        return claimed;
+      } catch (err) {
+        // Fall through to a normal spawn — the warm slot may have died, or
+        // the model/permission change was rejected. Better to take the slow
+        // path than fail the user's action.
+        // eslint-disable-next-line no-console
+        console.warn(
+          "[prewarm] claim failed, falling back to fresh spawn:",
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
+  }
 
   // Optimistic path: mint the agent id on the renderer so the agent row,
   // active selection, and center-view switch can land in the store
@@ -87,6 +117,55 @@ export async function startAgentInSession(
   } catch (err) {
     removeAgent(agentId);
     pushError(err instanceof Error ? err.message : String(err), "start_agent");
+    throw err;
+  }
+}
+
+/**
+ * Claim a prewarmed Claude subprocess as a real agent. Applies any model /
+ * permission-mode change requested by the caller (via the existing control
+ * protocol — no respawn) and registers the agent with the renderer stores
+ * the same way `startAgentInSession` would. The prewarm slot is cleared on
+ * success so the prewarm service can spin up a fresh one.
+ */
+async function claimPrewarm(
+  agentId: string,
+  sessionId: string,
+  opts: { focus: boolean; model?: string; permissionMode?: string },
+): Promise<AgentStatus> {
+  startAgentListening(agentId);
+  const optimistic: AgentStatus = {
+    agent_id: agentId,
+    session_id: sessionId,
+    status: "idle",
+    permission_mode: opts.permissionMode,
+    created_at: Date.now(),
+  };
+  addAgent(optimistic);
+  if (opts.focus) {
+    focusAgent(sessionId, agentId);
+  }
+
+  try {
+    const info = await claimPrewarmAgent(agentId, {
+      model: opts.model,
+      permissionMode: opts.permissionMode,
+    });
+    updateAgent(agentId, {
+      status: info.status,
+      parent_agent_id: info.parent_agent_id,
+      created_at: info.created_at,
+      model: info.model,
+    });
+    if (info.capabilities) {
+      setCapabilities(agentId, info.capabilities);
+    }
+    clearPrewarm(sessionId);
+
+    return info;
+  } catch (err) {
+    removeAgent(agentId);
+    clearPrewarm(sessionId);
     throw err;
   }
 }

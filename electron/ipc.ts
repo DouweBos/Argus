@@ -34,6 +34,9 @@ import {
 } from "./services/agent/chatHistory";
 import {
   checkClaudeCli,
+  claimPrewarmAgent,
+  discardPrewarmAgent,
+  prewarmAgent,
   restoreAgentAtTurn,
   startAgent,
   stopAgent,
@@ -710,6 +713,16 @@ export function registerIpcHandlers(): void {
   );
   handle("set_agent_permission_mode", (a) =>
     setAgentPermissionMode(a.agentId as string, a.mode as string),
+  );
+  handle("prewarm_agent", (a) => prewarmAgent(a.sessionId as string));
+  handle("claim_prewarm_agent", (a) =>
+    claimPrewarmAgent(a.agentId as string, {
+      model: a.model as string | undefined,
+      permissionMode: a.permissionMode as string | undefined,
+    }),
+  );
+  handle("discard_prewarm_agent", (a) =>
+    discardPrewarmAgent(a.agentId as string),
   );
 
   // Chat history commands

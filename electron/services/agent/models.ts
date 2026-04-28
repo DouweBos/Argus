@@ -131,6 +131,15 @@ export interface AgentSession {
    * suffixes (notably `[1m]`) that aren't preserved in the JSONL transcript.
    */
   model: string | null;
+  /**
+   * When true, this agent was eagerly spawned by the renderer to warm up
+   * the CLI subprocess + initialize handshake before the user actually
+   * needs it. Prewarmed agents are hidden from `listAgents` (so MCP tools
+   * and child-counters don't see them) and stay invisible to the UI until
+   * the renderer "claims" them by calling `claim_prewarm_agent`. On claim
+   * the flag flips to false and the slot becomes a normal agent.
+   */
+  prewarmed?: boolean;
 }
 
 // ---------------------------------------------------------------------------

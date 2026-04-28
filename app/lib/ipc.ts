@@ -53,6 +53,7 @@ declare global {
       ) => Promise<T>;
       on: <T>(event: string, callback: (payload: T) => void) => () => void;
       send: (channel: string, args?: Record<string, unknown>) => void;
+      setZoomFactor: (factor: number) => void;
     };
   }
 }
@@ -503,6 +504,22 @@ export const setAgentPermissionMode = (
   agentId: string,
   mode: string,
 ): Promise<void> => invoke("set_agent_permission_mode", { agentId, mode });
+
+export const prewarmAgent = (sessionId: string): Promise<AgentStatus> =>
+  invoke("prewarm_agent", { sessionId });
+
+export const claimPrewarmAgent = (
+  agentId: string,
+  opts: { model?: string; permissionMode?: string } = {},
+): Promise<AgentStatus> =>
+  invoke("claim_prewarm_agent", {
+    agentId,
+    model: opts.model,
+    permissionMode: opts.permissionMode,
+  });
+
+export const discardPrewarmAgent = (agentId: string): Promise<void> =>
+  invoke("discard_prewarm_agent", { agentId });
 
 export const respondToPermission = (
   agentId: string,

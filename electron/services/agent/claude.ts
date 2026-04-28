@@ -1662,6 +1662,13 @@ export async function setAgentPermissionMode(
 export function listAgents(sessionId: string): AgentInfo[] {
   const result: AgentInfo[] = [];
   for (const session of appState.agents.values()) {
+    // Skip prewarmed (eager-spawned) agents — they're invisible until the
+    // renderer claims one by sending its first message. Surfacing them here
+    // would let MCP tools (`list_agents`, child-counters) treat the warm
+    // slot as real work, and confuse `wait_for_any_agent`.
+    if (session.prewarmed) {
+      continue;
+    }
     if (session.sessionId === sessionId) {
       result.push({
         agent_id: session.agentId,
@@ -1675,6 +1682,82 @@ export function listAgents(sessionId: string): AgentInfo[] {
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// prewarm_agent / claim_prewarm_agent / discard_prewarm_agent
+// ---------------------------------------------------------------------------
+
+/**
+ * Eagerly spawn a Claude subprocess and run the initialize handshake so the
+ * Start-agent dialog can show real models/slash-commands and the eventual
+ * "send" path skips the 1–3s spawn + init wait. The returned agent stays
+ * invisible (filtered out of `listAgents`) until claimed.
+ *
+ * Reuses `startAgent` for the actual spawn so the prewarmed slot has all the
+ * usual lifecycle hooks (status updates, exit handlers, control protocol).
+ * The only difference is the `prewarmed` flag, which gates visibility.
+ */
+export async function prewarmAgent(sessionId: string): Promise<AgentInfo> {
+  const spawned = await startAgent(sessionId);
+  const session = appState.agents.get(spawned.agent_id);
+  if (session) {
+    session.prewarmed = true;
+  }
+
+  return spawned;
+}
+
+/**
+ * Promote a prewarmed agent into a normal agent slot. Optionally applies a
+ * model + permission-mode change first (via the existing control protocol)
+ * so the user's dialog selections take effect before the first message.
+ *
+ * Throws if the agent is unknown or was not prewarmed in the first place.
+ */
+export async function claimPrewarmAgent(
+  agentId: string,
+  opts: { model?: string; permissionMode?: string } = {},
+): Promise<AgentInfo> {
+  const session = appState.agents.get(agentId);
+  if (!session) {
+    throw `No agent found: ${agentId}`;
+  }
+  if (!session.prewarmed) {
+    throw `Agent ${agentId} is not prewarmed`;
+  }
+
+  if (opts.model && opts.model !== session.model) {
+    await setAgentModel(agentId, opts.model);
+  }
+  if (opts.permissionMode) {
+    await setAgentPermissionMode(agentId, opts.permissionMode);
+  }
+
+  session.prewarmed = false;
+
+  return {
+    agent_id: session.agentId,
+    session_id: session.sessionId,
+    status: session.status,
+    parent_agent_id: session.parentAgentId,
+    created_at: session.createdAt,
+    capabilities: session.controlHandler?.getCapabilities() ?? null,
+    model: session.model,
+  };
+}
+
+/**
+ * Kill a prewarmed agent that is no longer wanted (session closed, app
+ * quitting, or a fresh prewarm replacing it). Quietly no-ops if the agent
+ * is already gone or has already been claimed.
+ */
+export async function discardPrewarmAgent(agentId: string): Promise<void> {
+  const session = appState.agents.get(agentId);
+  if (!session || !session.prewarmed) {
+    return;
+  }
+  await stopAgent(agentId);
 }
 
 // ---------------------------------------------------------------------------

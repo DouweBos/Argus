@@ -4,7 +4,7 @@
  * the main process (Node.js).
  */
 
-import { contextBridge, ipcRenderer, webUtils } from "electron";
+import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
 
 export interface ArgusAPI {
   invoke: <T>(channel: string, args?: Record<string, unknown>) => Promise<T>;
@@ -16,6 +16,12 @@ export interface ArgusAPI {
    * (e.g. programmatically constructed Blobs).
    */
   getFilePath: (file: File) => string;
+  /**
+   * Set the renderer's zoom factor. Unlike CSS `zoom`, this scales the
+   * viewport too — `vw`/`vh` units, intrinsic dialog widths, and media
+   * queries all account for the zoom — so dialogs don't overflow at >1.0.
+   */
+  setZoomFactor: (factor: number) => void;
 }
 
 const api: ArgusAPI = {
@@ -45,6 +51,14 @@ const api: ArgusAPI = {
       return webUtils.getPathForFile(file);
     } catch {
       return "";
+    }
+  },
+
+  setZoomFactor(factor: number): void {
+    try {
+      webFrame.setZoomFactor(factor);
+    } catch {
+      // ignore — falls back to default zoom
     }
   },
 

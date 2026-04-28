@@ -1,6 +1,6 @@
 import type { TodoItem } from "../../../stores/conversationStore";
 import { useState } from "react";
-import { Icons } from "@argus/peacock";
+import { Icons, Spinner } from "@argus/peacock";
 import styles from "./TodoList.module.css";
 
 interface TodoListProps {
@@ -34,6 +34,9 @@ export function TodoList({ todos, onDismiss }: TodoListProps) {
           }}
         >
           <div className={styles.headerLeft}>
+            {!allDone && (
+              <Spinner size="sm" tone="primary" aria-label="Working on todos" />
+            )}
             <span className={styles.progress}>{headerText}</span>
           </div>
           {onDismiss && (
@@ -75,9 +78,19 @@ export function TodoList({ todos, onDismiss }: TodoListProps) {
 
               return (
                 <div key={i} className={`${styles.item} ${statusClass}`}>
-                  <span className={styles.checkbox}>
-                    {todo.status === "completed" ? "\u2713" : ""}
-                  </span>
+                  {todo.status === "in_progress" ? (
+                    <span className={styles.itemSpinner}>
+                      <Spinner
+                        size="sm"
+                        tone="primary"
+                        aria-label="In progress"
+                      />
+                    </span>
+                  ) : (
+                    <span className={styles.checkbox}>
+                      {todo.status === "completed" ? "\u2713" : ""}
+                    </span>
+                  )}
                   <span className={styles.text}>{label}</span>
                 </div>
               );

@@ -12,6 +12,7 @@ import { useSessions } from "../../../stores/sessionStore";
 import { RepoHomeScreen } from "../../home/RepoHomeScreen";
 import { SessionHomeScreen } from "../../home/SessionHomeScreen";
 import { AgentChat } from "../AgentChat";
+import { StartAgentDialog } from "../StartAgentDialog";
 import styles from "./HomePanel.module.css";
 
 interface HomePanelProps {
@@ -122,14 +123,16 @@ export function HomePanel({ sessionId }: HomePanelProps) {
 
   const isRepoHome = session?.kind === "project_root";
 
+  const [startDialogMode, setStartDialogMode] = useState<
+    "default" | "plan" | null
+  >(null);
+
   const handleStart = () => {
-    setActiveCenterView("agents");
-    startNew();
+    setStartDialogMode("default");
   };
 
   const handleStartPlan = () => {
-    setActiveCenterView("agents");
-    startNew(undefined, "plan");
+    setStartDialogMode("plan");
   };
 
   return (
@@ -155,6 +158,13 @@ export function HomePanel({ sessionId }: HomePanelProps) {
           onStart={handleStart}
           onStartPlan={handleStartPlan}
           onViewHistory={handleViewHistory}
+        />
+      )}
+      {startDialogMode && (
+        <StartAgentDialog
+          mode={startDialogMode}
+          sessionId={sessionId}
+          onClose={() => setStartDialogMode(null)}
         />
       )}
       {viewingHistoryId && historyAgentId && (

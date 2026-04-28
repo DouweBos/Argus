@@ -8,6 +8,7 @@ import type {
   TokenUsage,
 } from "../lib/types";
 import { create } from "zustand";
+import { persistLastKnownCapabilities } from "../lib/lastKnownCapabilities";
 
 export interface QueuedMessage {
   id: string;
@@ -735,6 +736,17 @@ export function setCapabilities(
         },
       },
     };
+  });
+  // Cache to localStorage so the start-agent / new-session dialogs can show
+  // a real model + slash-command list immediately on the next launch,
+  // without waiting for an agent to spawn first.
+  persistLastKnownCapabilities({
+    models: capabilities.models?.map((m) => ({
+      value: m.value,
+      displayName: m.displayName,
+      description: m.description,
+    })),
+    slashCommands: capabilities.commands,
   });
 }
 
