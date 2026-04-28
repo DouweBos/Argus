@@ -18,9 +18,10 @@ Two storage layers back these:
 
 ## Appearance
 
-| Setting   | Storage                        | Default  | Description                                                                         |
-| --------- | ------------------------------ | -------- | ----------------------------------------------------------------------------------- |
-| **Theme** | `localStorage` (`argus:theme`) | `system` | `system`, `light`, or `dark`. `system` follows the OS `prefers-color-scheme` query. |
+| Setting          | Storage                           | Default   | Description                                                                                                                                                     |
+| ---------------- | --------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Theme**        | `localStorage` (`argus:theme`)    | `system`  | `system`, `light`, or `dark`. `system` follows the OS `prefers-color-scheme` query.                                                                             |
+| **Display size** | `localStorage` (`argus:ui-scale`) | `default` | One of `larger`, `large`, `default`, `small`, `smaller` — applied via Electron's `webFrame.setZoomFactor` so viewport units (and dialog sizes) stay consistent. |
 
 Set the resolved theme on `<html data-theme="…">`, which Peacock tokens
 key off of. Hardcoded colours bypass this — see CLAUDE.md.

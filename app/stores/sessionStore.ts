@@ -26,7 +26,14 @@ interface SessionStoreData {
    */
   pendingPromptBySessionId: Record<
     string,
-    { images?: ImageAttachment[]; prompt: string }
+    {
+      images?: ImageAttachment[];
+      /** Extra project roots to attach to the agent before the prompt is sent. */
+      linkedProjects?: string[];
+      /** CLI model identifier (e.g. `claude-opus-4-7`) — undefined uses the default. */
+      model?: string;
+      prompt: string;
+    }
   >;
   projects: Project[];
   sessions: Session[];
@@ -253,22 +260,39 @@ export const setSetupProgress = (
   });
 };
 
+export interface PendingPromptOptions {
+  images?: ImageAttachment[];
+  linkedProjects?: string[];
+  model?: string;
+}
+
 export const setPendingPrompt = (
   sessionId: string,
   prompt: string,
-  images?: ImageAttachment[],
+  options?: PendingPromptOptions,
 ) => {
+  const { images, linkedProjects, model } = options ?? {};
   sessionStore.setState((state) => ({
     pendingPromptBySessionId: {
       ...state.pendingPromptBySessionId,
-      [sessionId]: { prompt, images: images?.length ? images : undefined },
+      [sessionId]: {
+        prompt,
+        images: images?.length ? images : undefined,
+        linkedProjects: linkedProjects?.length ? linkedProjects : undefined,
+        model,
+      },
     },
   }));
 };
 
 export const consumePendingPrompt = (
   sessionId: string,
-): { images?: ImageAttachment[]; prompt: string } | null => {
+): {
+  images?: ImageAttachment[];
+  linkedProjects?: string[];
+  model?: string;
+  prompt: string;
+} | null => {
   const state = sessionStore.getState();
   const entry = state.pendingPromptBySessionId[sessionId];
   if (entry === undefined) {

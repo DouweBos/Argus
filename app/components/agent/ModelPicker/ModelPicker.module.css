@@ -11,7 +11,10 @@
   -webkit-backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
-  z-index: 10;
+  /* Sits above dialogs (z-index 1000–2000) so it stays usable from inside
+     the start-agent / new-session forms without being clipped by the
+     dialog scrim. */
+  z-index: 2100;
 }
 
 .header {

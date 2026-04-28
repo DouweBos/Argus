@@ -603,6 +603,18 @@ select.input {
   color: var(--text-secondary);
 }
 
+.promptChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.chipAnchor {
+  position: relative;
+  display: inline-flex;
+}
+
 .hiddenFileInput {
   position: absolute;
   width: 0;

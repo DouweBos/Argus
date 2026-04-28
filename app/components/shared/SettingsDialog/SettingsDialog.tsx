@@ -34,6 +34,12 @@ import {
   type ThemePreference,
 } from "../../../stores/themeStore";
 import {
+  UI_SCALE_LABELS,
+  UI_SCALE_ORDER,
+  setUiScale,
+  useUiScale,
+} from "../../../stores/uiScaleStore";
+import {
   InheritedMcpList,
   McpServersField,
   entriesToMap,
@@ -116,11 +122,12 @@ function SettingsDialogContent() {
 
 function AppearanceSection() {
   const theme = useThemePreference();
+  const scale = useUiScale();
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Match your system, or pin Argus to a specific theme."
+        description="Match your system theme and pick how dense Argus's UI feels."
         title="Appearance"
       />
       <SettingsScreenDetailBody>
@@ -134,6 +141,23 @@ function AppearanceSection() {
                 onClick={() => setThemePreference(t)}
               >
                 {THEME_PREFERENCE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </SettingsScreenField>
+        <SettingsScreenField
+          label="Display size"
+          caption="Scale the entire UI larger for readability or smaller for more space."
+        >
+          <div className={styles.segmented}>
+            {UI_SCALE_ORDER.map((s) => (
+              <button
+                key={s}
+                className={`${styles.segment} ${scale === s ? styles.segmentActive : ""}`}
+                type="button"
+                onClick={() => setUiScale(s)}
+              >
+                {UI_SCALE_LABELS[s]}
               </button>
             ))}
           </div>

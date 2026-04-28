@@ -1,5 +1,6 @@
 import type { ImageAttachment } from "./ipc";
 import type { Session } from "./types";
+import { setLinkedProjects } from "../stores/conversationStore";
 import { pushError } from "../stores/notificationsStore";
 import {
   clearPendingPrompt,
@@ -35,13 +36,26 @@ async function dispatchPrompt(
   session: Session,
   prompt: string,
   images?: ImageAttachment[],
+  model?: string,
+  linkedProjects?: string[],
 ): Promise<void> {
   try {
-    const agentInfo = await startAgentInSession(session.id, { focus: false });
+    const agentInfo = await startAgentInSession(session.id, {
+      focus: false,
+      model: model && model !== "default" ? model : undefined,
+    });
     maybeGenerateTitle(agentInfo.agent_id, prompt);
+    if (linkedProjects?.length) {
+      setLinkedProjects(agentInfo.agent_id, linkedProjects);
+    }
+    const message = linkedProjects?.length
+      ? `[Linked project directories — the user has explicitly attached the following project roots to this chat. You are allowed and expected to read from and make changes in these directories in addition to your own worktree:\n${linkedProjects
+          .map((p) => `- ${p}`)
+          .join("\n")}]\n\n${prompt || "(see attached images)"}`
+      : prompt || "(see attached images)";
     await sendUserMessageToAgent(
       agentInfo.agent_id,
-      prompt || "(see attached images)",
+      message,
       images?.length ? images : undefined,
       { assumeIdle: true },
     );
@@ -81,7 +95,13 @@ export function initPendingSessionPrompts(): () => void {
         continue;
       }
       dispatching.add(session.id);
-      dispatchPrompt(session, consumed.prompt, consumed.images).finally(() => {
+      dispatchPrompt(
+        session,
+        consumed.prompt,
+        consumed.images,
+        consumed.model,
+        consumed.linkedProjects,
+      ).finally(() => {
         dispatching.delete(session.id);
       });
     }

@@ -139,6 +139,16 @@
   line-height: 1;
 }
 
+.itemSpinner {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .completed .checkbox {
   background: var(--accent);
   border-color: var(--accent);
