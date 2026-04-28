@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Dialog } from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
-import { focusAgent } from "../../../lib/agentLifecycle";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
 import { isSessionReady } from "../../../lib/types";
 import {
@@ -99,10 +98,6 @@ export function HomePanel({ sessionId }: HomePanelProps) {
       if (!newAgentId || !repoRoot) {
         return;
       }
-      // Resuming from chat history is an explicit user action — surface the
-      // resumed agent as active so the chat panel actually shows it. (New
-      // agents otherwise don't auto-focus; see commit 41cf172d.)
-      focusAgent(sessionId, newAgentId);
 
       const entries = await listChatHistory(repoRoot).catch(() => []);
       const entry = entries.find((e) => e.sessionId === claudeSessionId);
@@ -122,7 +117,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
         }
       }
     },
-    [handleCloseHistory, repoRoot, sessionId, startNew],
+    [handleCloseHistory, repoRoot, startNew],
   );
 
   const isRepoHome = session?.kind === "project_root";

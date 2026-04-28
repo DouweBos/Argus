@@ -127,7 +127,7 @@ export function useSessionAgents(
       setIsStarting(true);
       try {
         const agentInfo = await startAgentInSession(sessionId, {
-          focus: false,
+          focus: true,
           model,
           permissionMode,
           resumeSessionId,
