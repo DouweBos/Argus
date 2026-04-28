@@ -1,5 +1,16 @@
 # @argus/peacock
 
+## 0.6.0
+
+### Minor Changes
+
+- 988c5db: Add anonymous usage and crash reporting via PostHog. Argus only sees which features are used and what errors occur — never your prompts, file contents, project names, or any identifying information. New installs now choose during onboarding whether to share data; the default is off until you opt in. A "?" button at the bottom of the tool rail (always visible) opens an anonymous feedback dialog. Flip the choice any time under Settings → Privacy. Disabled in development builds.
+
+### Patch Changes
+
+- 87b2808: Soften the dark theme: backgrounds are lifted from near-black to a slightly lighter slate, and primary text is dimmed from pure white to an easier-on-the-eyes off-white.
+- 98e243c: The branch icon in session cards stays the same size when the session name is long.
+
 ## 0.5.0
 
 ### Minor Changes
