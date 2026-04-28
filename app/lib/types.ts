@@ -238,6 +238,13 @@ export interface ArgusConfig {
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
   browser_url?: string;
   /**
+   * Project-level MCP servers, merged into every spawned agent. Map of
+   * server name to its `.mcp.json`-style config. Use `.mcp.json` for the
+   * Claude Code standard discovery path; this field keeps entries
+   * co-located with the rest of `.argus.json`.
+   */
+  mcp_servers?: Record<string, Record<string, unknown>>;
+  /**
    * Runtime platforms this project targets. Agents only pre-allocate iOS
    * simulators / Android emulators / headless Chromium browsers for the
    * platforms listed here. Omitted or empty → no runtimes pre-allocated.
@@ -272,6 +279,20 @@ export interface ArgusConfig {
   terminals?: TerminalConfigEntry[];
   /** Env vars set in each session's terminals with a unique integer per session. */
   workspace_env?: WorkspaceEnvConfig[];
+}
+
+/** A single MCP server Argus inherits from outside its own settings. */
+export interface InheritedMcpServer {
+  config: Record<string, unknown>;
+  name: string;
+  /** e.g. "plugin:team-tools", "~/.claude.json", ".mcp.json". */
+  source: string;
+}
+
+/** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
+export interface AppSettings {
+  /** User-defined MCP servers merged into every spawned agent. */
+  mcp_servers?: Record<string, Record<string, unknown>>;
 }
 
 /**

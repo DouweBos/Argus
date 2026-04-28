@@ -58,6 +58,30 @@ Each entry has a **Name** and a **Command**. The command is either:
 
 ---
 
+## MCP servers
+
+| Setting         | Storage                      | Default | Description                                                         |
+| --------------- | ---------------------------- | ------- | ------------------------------------------------------------------- |
+| **MCP servers** | `~/.argus/app-settings.json` | `{}`    | Personal MCP servers merged into every Argus agent on this machine. |
+
+Each entry has a **Name** and a JSON config matching the
+`.mcp.json` `mcpServers` shape — for example:
+
+```jsonc
+{
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-everything"],
+}
+```
+
+These are merged on top of the standard Claude Code discovery
+sources (plugins, `~/.claude.json`, the worktree's `.mcp.json`) and
+underneath project-level `mcp_servers` from `.argus.json`. Use this for
+servers _you_ want available; use the project setting for servers the
+whole team should get.
+
+---
+
 ## Per-project personal settings
 
 These are app-level (machine-local) settings _about_ a specific project.
@@ -79,6 +103,7 @@ localStorage:
   argus:recent-projects    ← Recently opened projects (UI cache)
 
 ~/.argus/
+  app-settings.json           ← App-level MCP servers (and future global prefs)
   user-project-settings.json  ← Per-developer project prefs (branch_prefix, …)
   worktrees/                  ← Session worktrees (one dir per repo)
   sessions/                   ← Session metadata

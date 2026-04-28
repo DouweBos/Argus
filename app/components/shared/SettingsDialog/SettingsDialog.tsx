@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Icons,
@@ -10,6 +10,7 @@ import {
   SettingsScreenField,
   type SettingsDialogGroup,
 } from "@argus/peacock";
+import { getAppSettings, setAppSettings } from "../../../lib/ipc";
 import {
   PERMISSION_MODE_LABELS,
   addCustomEditor,
@@ -28,6 +29,14 @@ import {
   useThemePreference,
   type ThemePreference,
 } from "../../../stores/themeStore";
+import {
+  InheritedMcpList,
+  McpServersField,
+  entriesToMap,
+  entriesValid,
+  mapToEntries,
+  type McpEntry,
+} from "../McpServersField";
 import styles from "./SettingsDialog.module.css";
 
 const MODES: PermissionMode[] = [
@@ -72,6 +81,13 @@ function SettingsDialogContent() {
           description: "Custom editors",
           icon: <Icons.FolderIcon size={12} />,
           render: () => <OpenInAppsSection />,
+        },
+        {
+          id: "mcp",
+          label: "MCP servers",
+          description: "Personal servers",
+          icon: <Icons.GearIcon size={12} />,
+          render: () => <McpServersSection />,
         },
       ],
     },
@@ -146,6 +162,101 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
+
+type McpSaveState = "error" | "idle" | "saved" | "saving";
+
+function saveButtonLabel(state: McpSaveState): string {
+  if (state === "saving") {
+    return "Saving…";
+  }
+  if (state === "saved") {
+    return "Saved";
+  }
+
+  return "Save";
+}
+
+function McpServersSection() {
+  const [entries, setEntries] = useState<McpEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [saveState, setSaveState] = useState<McpSaveState>("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAppSettings().then(
+      (settings) => {
+        if (cancelled) {
+          return;
+        }
+        setEntries(mapToEntries(settings.mcp_servers));
+        setLoaded(true);
+      },
+      () => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSave = async () => {
+    if (!entriesValid(entries)) {
+      return;
+    }
+    setSaveState("saving");
+    setErrorMsg(null);
+    try {
+      await setAppSettings({ mcp_servers: entriesToMap(entries) });
+      setSaveState("saved");
+      window.setTimeout(() => setSaveState("idle"), 1500);
+    } catch (e) {
+      setSaveState("error");
+      setErrorMsg(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        action={
+          <Button
+            disabled={
+              !loaded || !entriesValid(entries) || saveState === "saving"
+            }
+            variant="primary"
+            onClick={handleSave}
+          >
+            {saveButtonLabel(saveState)}
+          </Button>
+        }
+        description={
+          <>
+            Personal MCP servers merged into every Argus agent on this machine.
+            Stored in <code>~/.argus/app-settings.json</code>. Use project
+            settings for entries the whole team should get.
+          </>
+        }
+        title="MCP servers"
+      />
+      <SettingsScreenDetailBody>
+        <InheritedMcpList />
+        <McpServersField
+          emptyLabel="No personal MCP servers"
+          entries={entries}
+          onChange={setEntries}
+        />
+        {errorMsg && (
+          <p style={{ color: "var(--error)", fontSize: 12 }}>{errorMsg}</p>
+        )}
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

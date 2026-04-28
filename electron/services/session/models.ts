@@ -191,6 +191,13 @@ export interface ArgusConfig {
    * or cancel.
    */
   single_runtime?: boolean | null;
+  /**
+   * Project-level MCP servers, merged into every agent spawned for this
+   * project. Shape matches Claude Code's `.mcp.json` `mcpServers` map. Use
+   * `.mcp.json` for the standard discovery path; this field is for teams who
+   * want the entries co-located with the rest of `.argus.json`.
+   */
+  mcp_servers?: Record<string, Record<string, unknown>> | null;
 }
 
 /** Default/empty `SetupConfig`. */
@@ -213,5 +220,6 @@ export function defaultArgusConfig(): ArgusConfig {
     platforms: null,
     protected_branches: [],
     single_runtime: false,
+    mcp_servers: null,
   };
 }

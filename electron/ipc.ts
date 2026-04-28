@@ -45,6 +45,11 @@ import {
   setAgentPermissionMode,
 } from "./services/agent/claude";
 import {
+  loadAppSettings,
+  saveAppSettings,
+  type AppSettings,
+} from "./services/appSettings/store";
+import {
   startScreencast,
   stopScreencast,
   restartScreencast,
@@ -100,6 +105,7 @@ import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
 import { generateChatTitle } from "./services/llm/titleGenerator";
 import { collectAllProjects } from "./services/mcp/projects";
+import { listInheritedMcpServers } from "./services/mcp/userConfig";
 import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
@@ -565,6 +571,11 @@ export function registerIpcHandlers(): void {
       a.repoRoot as string,
       a.settings as UserProjectSettings,
     ),
+  );
+  handle("get_app_settings", () => loadAppSettings());
+  handle("set_app_settings", (a) => saveAppSettings(a.settings as AppSettings));
+  handle("list_inherited_mcp_servers", (a) =>
+    listInheritedMcpServers((a.worktreePath as string | null) ?? null),
   );
   handle("get_command_metrics", (a) =>
     loadCommandMetrics(a.repoRoot as string),
