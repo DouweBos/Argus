@@ -2,6 +2,7 @@ import { getService } from "@codingame/monaco-vscode-api";
 import { ICommandService } from "@codingame/monaco-vscode-api/services";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
+import { markEditorPartAttached } from "../../../lib/vscodeEditor";
 import { updateWorkspaceFolder } from "../../../lib/vscodeFilesystem";
 import {
   Parts,
@@ -133,6 +134,10 @@ export function EditorPanel({ sessionId }: EditorPanelProps) {
         attachPart(part, ref.current);
       }
     }
+
+    // Unblocks openFileInEditor calls that arrived before this panel mounted
+    // (e.g. ⌘-click on a file link from the agents view).
+    markEditorPartAttached();
   }, []);
 
   // Cmd+W: when focus is inside the editor panel, route the close intent
