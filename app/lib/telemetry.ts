@@ -1,85 +1,55 @@
 /**
- * Renderer telemetry. Wraps posthog-js with strict privacy defaults.
+ * Renderer telemetry. Forwards every event to the main process over IPC,
+ * which owns the single posthog-node client. Done this way because:
  *
- * - Anonymous distinct id is provided by the main process (random UUID
- *   stored under `~/.argus/telemetry-id`).
- * - No autocapture, no session recording, no IP, no person profiles.
- * - Off when the user opts out via Settings.
- * - Off when `VITE_POSTHOG_KEY` isn't configured at build time.
+ * - Production renderers run on a `file://` origin where posthog-js is
+ *   fragile (Origin: null on requests, localStorage edge cases).
+ * - The PostHog secret only lives in the main bundle (esbuild `define` in
+ *   `build-electron.mjs`); shipping it into the renderer too would just
+ *   double the surface for no benefit.
+ * - One pipe, one consent flag, one set of base props.
  *
- * Renderer-only events (UI clicks, navigation) capture here. Anything that
- * happens in the main process (crashes, child-process errors, lifecycle)
- * captures via `electron/services/telemetry` so it survives renderer death.
+ * Privacy posture is unchanged: anonymous distinct id, no autocapture,
+ * scrubbed messages, opt-out via Settings.
  */
 import type { EventArgs, EventMap, EventName } from "./telemetryEvents";
-import posthog from "posthog-js";
-import { setTelemetryEnabledOnMain } from "./ipc";
+import {
+  setTelemetryEnabledOnMain,
+  telemetryCapture,
+  telemetryCaptureException,
+  telemetryCaptureFeedback,
+} from "./ipc";
 import { createLogger, setErrorSink } from "./logger";
 
 const log = createLogger("telemetry");
 
-const API_KEY = (import.meta.env.VITE_POSTHOG_KEY as string | undefined) ?? "";
-const HOST =
-  (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ??
-  "https://eu.i.posthog.com";
-
 let initialized = false;
 let enabled = true;
+let configured = false;
+let popout = "main";
 
 function active(): boolean {
-  return initialized && enabled && Boolean(API_KEY);
+  return initialized && enabled && configured;
 }
 
 /**
- * Initialize PostHog. Call once at renderer startup.
- *
- * `distinctId` is generated and persisted by the main process; we never
- * fall back to PostHog's auto-generated id (which would be per-render,
- * not per-install).
+ * Initialize the renderer telemetry pipe. Call once at renderer startup.
+ * `configured` is reported by the main process based on whether a PostHog
+ * key is inlined in the build.
  */
 export function initTelemetry(opts: {
-  appVersion: string;
-  distinctId: string;
+  configured: boolean;
   enabled: boolean;
+  popout: string;
 }): void {
   enabled = opts.enabled;
-
-  // eslint-disable-next-line no-constant-condition, no-constant-binary-expression
-  if (false && !import.meta.env.PROD) {
-    log.info("disabled — dev build");
-    enabled = false;
-
-    return;
-  }
-
-  if (!API_KEY) {
-    log.info("disabled — no VITE_POSTHOG_KEY configured");
-
-    return;
-  }
-
-  posthog.init(API_KEY, {
-    api_host: HOST,
-    bootstrap: { distinctID: opts.distinctId },
-    persistence: "localStorage",
-    autocapture: false,
-    capture_pageview: false,
-    capture_pageleave: false,
-    disable_session_recording: true,
-    disable_surveys: true,
-    person_profiles: "never",
-    ip: false,
-    opt_out_capturing_by_default: !opts.enabled,
-    loaded: (ph) => {
-      ph.register({
-        app_version: opts.appVersion,
-        platform: navigator.platform,
-        process: "renderer",
-      });
-    },
-  });
-
+  configured = opts.configured;
+  popout = opts.popout;
   initialized = true;
+
+  if (!configured) {
+    log.info("disabled — main reports no PostHog key configured");
+  }
 
   // Renderer-side global error handlers — main process catches its own.
   window.addEventListener("error", (event) => {
@@ -105,14 +75,8 @@ export function initTelemetry(opts: {
 
 export function setTelemetryEnabled(next: boolean): void {
   enabled = next;
-  if (initialized) {
-    if (next) {
-      posthog.opt_in_capturing();
-    } else {
-      posthog.opt_out_capturing();
-    }
-  }
-  // Mirror to main process so its capture path follows the same toggle.
+  // Source of truth lives in main; this just keeps the renderer's local
+  // gate in sync with the IPC roundtrip below.
   setTelemetryEnabledOnMain(next).catch(() => undefined);
 }
 
@@ -124,11 +88,9 @@ export function capture<N extends EventName>(
     return;
   }
   const props = (rest[0] ?? {}) as EventMap[N] & Record<string, unknown>;
-  try {
-    posthog.capture(event, props);
-  } catch (e) {
-    log.warn("capture failed", e);
-  }
+  telemetryCapture(event, { ...props, process: "renderer", popout }).catch(
+    (e: unknown) => log.warn("capture failed", e),
+  );
 }
 
 function scrubMessage(msg: string): string {
@@ -159,18 +121,12 @@ function formatLogArgs(args: unknown[]): string {
 }
 
 /**
- * Capture a free-form feedback message as a `user_feedback` event.
- * Throws when telemetry can't deliver (dev build, missing key, opt-out)
- * so the dialog can surface that state to the user instead of silently
- * dropping their message.
- */
-/**
  * Returns a human-readable reason if the feedback channel can't currently
  * deliver, or null when it can. UI can surface this up-front instead of
  * waiting for `captureFeedback` to throw on submit.
  */
 export function getFeedbackUnavailableReason(): string | null {
-  if (!API_KEY) {
+  if (!configured) {
     return "Feedback isn't configured in this build, so messages can't be delivered. Please reach out through another channel.";
   }
   if (!enabled) {
@@ -183,20 +139,20 @@ export function getFeedbackUnavailableReason(): string | null {
   return null;
 }
 
+/**
+ * Capture a free-form feedback message. Throws when telemetry can't
+ * deliver so the dialog can surface that state to the user instead of
+ * silently dropping their message.
+ */
 export function captureFeedback(message: string): void {
   const reason = getFeedbackUnavailableReason();
   if (reason) {
     throw new Error(reason);
   }
-  try {
-    posthog.capture("user_feedback", {
-      $set_once: { has_submitted_feedback: true },
-      message,
-    });
-  } catch (e) {
+  telemetryCaptureFeedback(message).catch((e: unknown) => {
     log.warn("captureFeedback failed", e);
     throw e;
-  }
+  });
 }
 
 export function captureException(
@@ -207,17 +163,10 @@ export function captureException(
     return;
   }
   const error = err instanceof Error ? err : new Error(String(err));
-  try {
-    posthog.capture("$exception", {
-      ...props,
-      $exception_type: error.name,
-      $exception_message: scrubMessage(error.message),
-      $exception_stack_trace_raw: error.stack
-        ? scrubMessage(error.stack)
-        : undefined,
-      $exception_level: "error",
-    });
-  } catch (e) {
-    log.warn("captureException failed", e);
-  }
+  telemetryCaptureException(scrubMessage(error.message), error.stack, {
+    ...props,
+    process: "renderer",
+    popout,
+    $exception_type: error.name,
+  }).catch((e: unknown) => log.warn("captureException failed", e));
 }

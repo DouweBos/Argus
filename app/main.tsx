@@ -36,9 +36,9 @@ async function bootTelemetry(): Promise<void> {
     const init = await getTelemetryInit();
     const userEnabled = getTelemetryEnabled();
     initTelemetry({
-      distinctId: init.distinctId,
+      configured: init.configured,
       enabled: userEnabled,
-      appVersion: init.appVersion,
+      popout: popoutMode ?? "main",
     });
     if (userEnabled !== init.enabled) {
       await setTelemetryEnabledOnMain(userEnabled);

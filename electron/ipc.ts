@@ -245,6 +245,8 @@ import { getAnonymousId } from "./services/telemetry/anonymousId";
 import {
   capture as telemetryCapture,
   captureException as telemetryCaptureException,
+  captureFeedback as telemetryCaptureFeedback,
+  isTelemetryConfigured,
   isTelemetryEnabled,
   setTelemetryEnabled,
 } from "./services/telemetry/telemetry";
@@ -1272,6 +1274,7 @@ export function registerIpcHandlers(): void {
   handle("telemetry_get_init", () => ({
     distinctId: getAnonymousId(),
     enabled: isTelemetryEnabled(),
+    configured: isTelemetryConfigured(),
     appVersion: app.getVersion(),
   }));
   handle("telemetry_set_enabled", (a) => {
@@ -1295,5 +1298,8 @@ export function registerIpcHandlers(): void {
       err.stack = stack;
     }
     telemetryCaptureException(err, (a.props as Record<string, unknown>) ?? {});
+  });
+  handle("telemetry_capture_feedback", (a) => {
+    telemetryCaptureFeedback(String(a.message ?? ""));
   });
 }
