@@ -314,6 +314,16 @@
   min-width: 0;
 }
 
+/* In the enlarged dialog, stretch the canvas to fill the larger area and pin
+ * the remote to the top so it doesn't get stretched to dialog height. */
+.runtimeDialog .tvBody {
+  align-items: stretch;
+}
+
+.runtimeDialog .tvBody > :last-child {
+  align-self: flex-start;
+}
+
 /* Live canvas container */
 .canvasContainer {
   flex: 1;
