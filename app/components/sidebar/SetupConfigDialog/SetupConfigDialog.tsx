@@ -16,7 +16,12 @@ import {
   TextArea,
   type SettingsDialogGroup,
 } from "@argus/peacock";
-import { readArgusConfig, writeArgusConfig } from "../../../lib/ipc";
+import {
+  getUserProjectSettings,
+  readArgusConfig,
+  setUserProjectSettings,
+  writeArgusConfig,
+} from "../../../lib/ipc";
 import { dialogStyles as styles } from "../../shared/Dialog";
 import {
   InheritedMcpList,
@@ -610,6 +615,8 @@ export function SetupConfigDialog({
   const [pullRequestTemplate, setPullRequestTemplate] = useState("");
   const [minArgusVersion, setMinArgusVersion] = useState("");
   const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
+  const [branchPrefix, setBranchPrefix] = useState("");
+  const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -714,6 +721,18 @@ export function SetupConfigDialog({
         }
       } catch {
         // No config file or not readable — start with empty fields
+      }
+
+      try {
+        const personal = await getUserProjectSettings(repoRoot);
+        if (cancelled) {
+          return;
+        }
+        const prefix = personal.branch_prefix ?? "";
+        setBranchPrefix(prefix);
+        setInitialBranchPrefix(prefix);
+      } catch {
+        // No personal settings yet — leave blank.
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -874,6 +893,13 @@ export function SetupConfigDialog({
     setError(null);
     try {
       await writeArgusConfig(repoRoot, previewJson);
+      const trimmedPrefix = branchPrefix.trim();
+      if (trimmedPrefix !== initialBranchPrefix) {
+        await setUserProjectSettings(repoRoot, {
+          branch_prefix: trimmedPrefix,
+        });
+        setInitialBranchPrefix(trimmedPrefix);
+      }
       onSaved?.();
       onClose();
     } catch (err) {
@@ -1194,6 +1220,45 @@ export function SetupConfigDialog({
       ],
     },
     {
+      label: "Personal",
+      sections: [
+        {
+          id: "branch-prefix",
+          label: "Branch prefix",
+          description: "Local to this machine",
+          icon: <Icons.BranchIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Prepended to every new branch you create in this project. Stored in ~/.argus/user-project-settings.json — not in .argus.json — so it stays personal and is not shared with the team."
+                title="Personal branch prefix"
+              />
+              <SettingsScreenDetailBody>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="setup-branch-prefix">
+                    Branch prefix
+                  </label>
+                  <Input
+                    id="setup-branch-prefix"
+                    placeholder="douwe/"
+                    type="text"
+                    value={branchPrefix}
+                    onChange={(e) => setBranchPrefix(e.target.value)}
+                  />
+                  <p className={styles.helpText}>
+                    Example: <code>douwe/</code> turns a branch name like{" "}
+                    <code>fix-login</code> into <code>douwe/fix-login</code>.
+                    Leave empty to disable. You can also edit this inline from
+                    the Create Session dialog.
+                  </p>
+                </div>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+      ],
+    },
+    {
       label: "Reference",
       sections: [
         {
@@ -1236,7 +1301,7 @@ export function SetupConfigDialog({
           variant="primary"
           onClick={handleSave}
         >
-          {isSaving ? "Saving…" : "Save .argus.json"}
+          {isSaving ? "Saving…" : "Save"}
         </Button>
       </div>
     </>
