@@ -30,13 +30,13 @@ Argus orchestrates other tools rather than reimplementing them, so a few
 things should already be on your machine. The first-launch onboarding runs
 a Preflight check and tells you exactly what's missing.
 
-| Tool                  | Why                                                                                                        | Install hint                              |
-| --------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **`git`**             | Worktrees, branches, commits — the entire session model is built on git worktrees.                         | `xcode-select --install` brings it in.    |
-| **`claude` CLI**      | Each agent is a Claude Code subprocess. Argus pipes JSON over stdin/stdout to it.                          | See [claude.com/claude-code](https://docs.anthropic.com/en/docs/claude-code). |
-| **Xcode** (optional)  | Required if you want iOS simulators. Only the Command Line Tools are needed for git.                       | Mac App Store.                            |
-| **Android SDK** (optional) | Required if you want Android emulators. Argus discovers your `ANDROID_HOME` / `ANDROID_SDK_ROOT`.     | Android Studio installs the SDK for you.  |
-| **Node.js / pnpm / npm / yarn** (optional) | Whatever package manager your project uses — Argus runs your project's setup commands as-is. | Whatever you already use.                 |
+| Tool                                       | Why                                                                                               | Install hint                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **`git`**                                  | Worktrees, branches, commits — the entire session model is built on git worktrees.                | `xcode-select --install` brings it in.                                        |
+| **`claude` CLI**                           | Each agent is a Claude Code subprocess. Argus pipes JSON over stdin/stdout to it.                 | See [claude.com/claude-code](https://docs.anthropic.com/en/docs/claude-code). |
+| **Xcode** (optional)                       | Required if you want iOS simulators. Only the Command Line Tools are needed for git.              | Mac App Store.                                                                |
+| **Android SDK** (optional)                 | Required if you want Android emulators. Argus discovers your `ANDROID_HOME` / `ANDROID_SDK_ROOT`. | Android Studio installs the SDK for you.                                      |
+| **Node.js / pnpm / npm / yarn** (optional) | Whatever package manager your project uses — Argus runs your project's setup commands as-is.      | Whatever you already use.                                                     |
 
 You don't need to authenticate Argus separately; it uses the same `claude`
 CLI authentication that's already on your machine.
