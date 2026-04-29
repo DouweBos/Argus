@@ -41,6 +41,28 @@ function resolveClickpadButton(e: React.PointerEvent<HTMLDivElement>): Button {
 
 type ClickpadZone = Exclude<Button, "menu" | "playpause">;
 
+function isEditableElement(el: Element | null): boolean {
+  if (!(el instanceof HTMLElement)) {
+    return false;
+  }
+  if (el.isContentEditable) {
+    return true;
+  }
+  const tag = el.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+    return true;
+  }
+  if (el.closest(".xterm") || el.closest(".monaco-editor")) {
+    return true;
+  }
+
+  return false;
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && isEditableElement(target);
+}
+
 interface AppleTVRemoteProps {
   udid: string;
 }
@@ -92,6 +114,12 @@ export function AppleTVRemote({ udid }: AppleTVRemoteProps) {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (
+        isEditableTarget(e.target) ||
+        isEditableElement(document.activeElement)
+      ) {
+        return;
+      }
       let button: Button | null = null;
       switch (e.key) {
         case "ArrowUp":
