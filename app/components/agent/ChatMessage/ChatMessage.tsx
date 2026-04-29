@@ -2,14 +2,19 @@ import type {
   ConversationMessage,
   ToolCallInfo,
 } from "../../../stores/conversationStore";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
+  Chip,
   HoverActionBar,
   HoverActionButton,
   Icons,
 } from "@argus/peacock";
 import { showImageContextMenu } from "../../../lib/ipc";
+import {
+  buildLinkedProjectsPreamble,
+  parseLinkedProjectsPreamble,
+} from "../../../lib/linkedProjectsPreamble";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
@@ -143,23 +148,43 @@ export function ChatMessage({
             setBubbleSize(null);
           }
         }
-        setDraft(message.textBlocks.join("\n\n"));
+        const first = message.textBlocks[0];
+        const parsedForEdit =
+          first !== undefined ? parseLinkedProjectsPreamble(first) : null;
+        let seedBlocks = message.textBlocks;
+        if (parsedForEdit) {
+          seedBlocks =
+            parsedForEdit.rest.length > 0
+              ? [parsedForEdit.rest, ...message.textBlocks.slice(1)]
+              : message.textBlocks.slice(1);
+        }
+        setDraft(seedBlocks.join("\n\n"));
         setIsEditing(true);
       }
     : undefined;
+
+  const editPreamblePaths = useMemo(() => {
+    const first = message.textBlocks[0];
+    if (first === undefined) {
+      return [] as string[];
+    }
+    const parsed = parseLinkedProjectsPreamble(first);
+
+    return parsed?.paths ?? [];
+  }, [message.textBlocks]);
 
   const submitEdit = () => {
     const trimmed = draft.trim();
     if (!trimmed || !onEdit) {
       return;
     }
-    const original = message.textBlocks.join("\n\n").trim();
-    if (trimmed === original) {
+    const next = buildLinkedProjectsPreamble(editPreamblePaths, trimmed);
+    if (next === message.textBlocks.join("\n\n").trim()) {
       setIsEditing(false);
 
       return;
     }
-    onEdit(message, trimmed);
+    onEdit(message, next);
     setIsEditing(false);
   };
 
@@ -236,10 +261,30 @@ export function ChatMessage({
 
   if (message.role === "user") {
     const images = message.images ?? [];
-    const trimmedUserBlocks = message.textBlocks
+    // The first text block may carry the synthetic "[Linked project
+    // directories — …]" preamble. Surface those paths as chips and hide the
+    // raw bracket text from the bubble.
+    const rawBlocks = message.textBlocks;
+    let linkedPaths: string[] = [];
+    let displayBlocks = rawBlocks;
+    if (rawBlocks.length > 0) {
+      const parsed = parseLinkedProjectsPreamble(rawBlocks[0]);
+      if (parsed) {
+        linkedPaths = parsed.paths;
+        displayBlocks =
+          parsed.rest.length > 0
+            ? [parsed.rest, ...rawBlocks.slice(1)]
+            : rawBlocks.slice(1);
+      }
+    }
+    const trimmedUserBlocks = displayBlocks
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
-    if (trimmedUserBlocks.length === 0 && images.length === 0) {
+    if (
+      trimmedUserBlocks.length === 0 &&
+      images.length === 0 &&
+      linkedPaths.length === 0
+    ) {
       return null;
     }
 
@@ -298,13 +343,33 @@ export function ChatMessage({
           onFork={handleFork}
           placement="top-right"
         />
-        <FileLinkHandler className={styles.userTextWrap}>
-          {trimmedUserBlocks.map((text, i) => (
-            <p key={i} className={styles.userText} data-bubble-text="">
-              <MentionedText text={text} />
-            </p>
-          ))}
-        </FileLinkHandler>
+        {trimmedUserBlocks.length > 0 && (
+          <FileLinkHandler className={styles.userTextWrap}>
+            {trimmedUserBlocks.map((text, i) => (
+              <p key={i} className={styles.userText} data-bubble-text="">
+                <MentionedText text={text} />
+              </p>
+            ))}
+          </FileLinkHandler>
+        )}
+        {linkedPaths.length > 0 && (
+          <div className={styles.userLinkedProjects}>
+            {linkedPaths.map((path) => {
+              const label = path.split("/").filter(Boolean).pop() ?? path;
+
+              return (
+                <Chip
+                  key={path}
+                  muted
+                  title={path}
+                  leading={<Icons.FolderIcon size={11} />}
+                >
+                  {label}
+                </Chip>
+              );
+            })}
+          </div>
+        )}
         {images.length > 0 && (
           <div className={styles.userAttachments}>
             {images.map((img, i) => {

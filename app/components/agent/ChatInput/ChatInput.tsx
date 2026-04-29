@@ -16,6 +16,7 @@ import {
   filesToPendingImages,
 } from "../../../lib/imageAttachments";
 import { listProjects } from "../../../lib/ipc";
+import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
   clearDraft,
   getDraft,
@@ -230,12 +231,10 @@ export function ChatInput({
         : undefined;
 
     const baseMessage = value || "(see attached images)";
-    const messageWithContext =
-      linkedProjects.length > 0
-        ? `[Linked project directories — the user has explicitly attached the following project roots to this chat. You are allowed and expected to read from and make changes in these directories in addition to your own worktree:\n${linkedProjects
-            .map((p) => `- ${p}`)
-            .join("\n")}]\n\n${baseMessage}`
-        : baseMessage;
+    const messageWithContext = buildLinkedProjectsPreamble(
+      linkedProjects,
+      baseMessage,
+    );
 
     onSend(messageWithContext, images);
     if (textareaRef.current) {
@@ -252,6 +251,7 @@ export function ChatInput({
 
     if (agentId) {
       setPendingImages(agentId, []);
+      setLinkedProjects(agentId, []);
     }
     setSuggestions([]);
     dismissMention();

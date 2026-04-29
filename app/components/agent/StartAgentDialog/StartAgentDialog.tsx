@@ -19,6 +19,7 @@ import {
 } from "../../../lib/imageAttachments";
 import { listProjects } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
+import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { usePrewarmSlot } from "../../../stores/prewarmStore";
@@ -36,17 +37,11 @@ interface StartAgentDialogProps {
   sessionId: string;
 }
 
-const LINKED_PROJECTS_PREAMBLE_HEAD =
-  "[Linked project directories — the user has explicitly attached the following project roots to this chat. You are allowed and expected to read from and make changes in these directories in addition to your own worktree:";
-
 function buildMessage(prompt: string, linkedProjects: string[]): string {
-  const baseMessage = prompt.trim() || "(see attached images)";
-  if (linkedProjects.length === 0) {
-    return baseMessage;
-  }
-  const lines = linkedProjects.map((p) => `- ${p}`).join("\n");
-
-  return `${LINKED_PROJECTS_PREAMBLE_HEAD}\n${lines}]\n\n${baseMessage}`;
+  return buildLinkedProjectsPreamble(
+    linkedProjects,
+    prompt.trim() || "(see attached images)",
+  );
 }
 
 export function StartAgentDialog({
