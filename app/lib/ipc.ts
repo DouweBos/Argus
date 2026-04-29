@@ -39,6 +39,7 @@ import type {
   SimulatorDevice,
   AppSettings,
   InheritedMcpServer,
+  McpTestResult,
   Session,
   UserProjectSettings,
 } from "./types";
@@ -581,6 +582,15 @@ export const listInheritedMcpServers = (
   invoke("list_inherited_mcp_servers", {
     worktreePath: worktreePath ?? null,
   });
+
+/**
+ * Run a JSON-RPC `initialize` handshake against an MCP server config to
+ * confirm it's reachable. `config` matches the value stored under each
+ * `mcpServers[name]` key.
+ */
+export const testMcpServer = (
+  config: Record<string, unknown>,
+): Promise<McpTestResult> => invoke("test_mcp_server", { config });
 
 // Command metrics (per-project slash command popularity)
 export const getCommandMetrics = (

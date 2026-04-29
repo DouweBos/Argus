@@ -1,7 +1,19 @@
 import { Button, Icons, Input, TextArea } from "@argus/peacock";
 import { dialogStyles } from "../Dialog";
 import styles from "./McpServersField.module.css";
+import { McpTestButton } from "./McpTestButton";
 import { entryError, newMcpEntryId, type McpEntry } from "./helpers";
+
+function parseEntryConfig(entry: McpEntry): Record<string, unknown> | null {
+  if (entryError(entry) !== null) {
+    return null;
+  }
+  try {
+    return JSON.parse(entry.json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 interface McpServersFieldProps {
   emptyLabel?: string;
@@ -71,6 +83,9 @@ export function McpServersField({
               onChange={(e) => update(entry.id, { json: e.target.value })}
             />
             {error && <p className={styles.error}>{error}</p>}
+            <div className={styles.actions}>
+              <McpTestButton config={parseEntryConfig(entry)} />
+            </div>
             {i < entries.length - 1 && <hr className={styles.divider} />}
           </div>
         );
