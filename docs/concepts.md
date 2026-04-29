@@ -105,8 +105,8 @@ A **run command** is a long-running process you've declared in
 `.argus.json` (e.g. `pnpm dev`, `expo start`). Argus runs it inside the
 session's worktree and streams its output to the Runtime. You can
 restart, stop, and inspect each one. Run commands can declare
-prerequisites (`requires: ["backend"]`) so a frontend dev server only
-starts once its backend is up.
+prerequisites (`requires: ["backend"]`) — Argus starts any missing
+dependency automatically before launching the command.
 
 See [Project settings → Run commands](/argus/docs/project-settings) for
 the full schema.
