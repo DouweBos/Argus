@@ -245,20 +245,26 @@ function normalizeRunCommands(raw: unknown, repoRoot: string): RunCommand[] {
 
 /**
  * Normalise `platforms` from `.argus.json`. Accepts an array of the
- * strings "ios" | "android" | "web" (case-insensitive); returns null if
- * absent or unparseable so the prompt falls back to describing all three.
+ * strings "ios" | "android" | "tvos" | "web" (case-insensitive); returns
+ * null if absent or unparseable so the prompt falls back to describing
+ * the default set.
  */
 function normalizePlatforms(raw: unknown): ArgusConfig["platforms"] {
   if (!Array.isArray(raw)) {
     return null;
   }
-  const valid: ("android" | "ios" | "web")[] = [];
+  const valid: ("android" | "ios" | "tvos" | "web")[] = [];
   for (const entry of raw) {
     if (typeof entry !== "string") {
       continue;
     }
     const lower = entry.toLowerCase();
-    if (lower === "ios" || lower === "android" || lower === "web") {
+    if (
+      lower === "ios" ||
+      lower === "android" ||
+      lower === "tvos" ||
+      lower === "web"
+    ) {
       if (!valid.includes(lower)) {
         valid.push(lower);
       }

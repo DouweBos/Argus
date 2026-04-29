@@ -45,6 +45,9 @@ function platformLabel(p: string): string {
   if (p === "android") {
     return "Android";
   }
+  if (p === "tvos") {
+    return "tvOS";
+  }
 
   return "Web";
 }
@@ -672,7 +675,7 @@ export function SetupConfigDialog({
           setPlatforms(
             config.platforms.filter(
               (p): p is RuntimePlatform =>
-                p === "ios" || p === "android" || p === "web",
+                p === "ios" || p === "android" || p === "tvos" || p === "web",
             ),
           );
         }
@@ -940,18 +943,18 @@ export function SetupConfigDialog({
         {
           id: "platforms",
           label: "Platforms",
-          description: "iOS / Android / Web",
+          description: "iOS / Android / tvOS / Web",
           icon: <Icons.SimulatorIcon size={12} />,
           render: () => (
             <SettingsScreenDetail>
               <SettingsScreenDetailHeader
-                description="Runtimes Argus pre-allocates per session. Leave empty if this project doesn't need any of them — each unused runtime still costs CPU and memory."
+                description="Runtimes the agent system prompt describes. Leave empty to describe iOS, Android, and Web — narrow this so agents only see platforms this project actually targets. Devices are still acquired lazily when agents run conductor commands."
                 title="Target platforms"
               />
               <SettingsScreenDetailBody>
                 <div className={styles.field}>
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                    {(["ios", "android", "web"] as const).map((p) => (
+                    {(["ios", "android", "tvos", "web"] as const).map((p) => (
                       <label key={p} className={styles.checkboxRow}>
                         <input
                           checked={platforms.includes(p)}

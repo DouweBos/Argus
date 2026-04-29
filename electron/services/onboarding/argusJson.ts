@@ -16,7 +16,7 @@ interface PackageJsonShape {
   workspaces?: string[] | { packages?: string[] };
 }
 
-type Platform = "android" | "ios" | "web";
+type Platform = "android" | "ios" | "tvos" | "web";
 
 interface DetectionContext {
   copy: Set<string>;

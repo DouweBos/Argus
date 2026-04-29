@@ -55,7 +55,7 @@ Two ways to change project settings:
   "terminals":          [{ "name": "...", "dir": "..." }],
   "run":                [{ "title": "...", "command": "...", "restartOnRerun": true }],
   "workspace_env":      [{ "name": "...", "base_value": 0, "range": 100, "strategy": "sequential" }],
-  "platforms":          ["ios", "android", "web"],
+  "platforms":          ["ios", "android", "tvos", "web"],
   "agent_prompt":       "Extra system prompt appended to every agent.",
   "related_projects":   [{ "path": "../other-repo", "description": "..." }],
   "browser_url":        "http://localhost:3000",
@@ -158,13 +158,14 @@ in particular.
 ## `platforms` — runtime targets
 
 Tells the agent system prompt which runtimes to describe. If omitted,
-all three (iOS, Android, Web) are included.
+iOS, Android, and Web are included; declare `platforms` to opt into
+tvOS or to narrow the set to only what your project ships.
 
 ```jsonc
-"platforms": ["ios", "web"]
+"platforms": ["ios", "tvos"]
 ```
 
-Valid values: `"ios"`, `"android"`, `"web"`.
+Valid values: `"ios"`, `"android"`, `"tvos"`, `"web"`.
 
 ---
 
