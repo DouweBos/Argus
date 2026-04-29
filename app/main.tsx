@@ -16,7 +16,6 @@ import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initPrewarm } from "./lib/prewarmService";
 import { initReviewQueueListener } from "./lib/reviewQueueService";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
-import { vscodeReady } from "./lib/vscodeSetup";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
 import { getTelemetryEnabled } from "./stores/settingsStore";
@@ -115,12 +114,20 @@ if (popoutMode === "agent") {
   // tab bar hides agents that are currently detached.
   initAgentPopoutSync();
 
-  // VS Code services must be initialized before any editor component renders
-  vscodeReady.then(() => {
-    ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>,
-    );
-  });
+  // VS Code services must be initialized before any editor component renders.
+  // Imported lazily so popout windows don't pay the cost — and, critically,
+  // don't trigger the module-level IIFE that mounts the VS Code workbench
+  // into `document.body`, which otherwise covers the popout's React tree and
+  // leaves the floating simulator window blank-white.
+  import("./lib/vscodeSetup").then(({ vscodeReady }) =>
+    vscodeReady.then(() => {
+      ReactDOM.createRoot(
+        document.getElementById("root") as HTMLElement,
+      ).render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>,
+      );
+    }),
+  );
 }
