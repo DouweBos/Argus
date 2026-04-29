@@ -1017,6 +1017,27 @@ export function createHeadSession(repoRoot: string): Session {
  * Rename a session by setting a new display name. Persists to metadata and
  * notifies the renderer via `session:updated`.
  */
+/**
+ * Clear a session's failed-setup status and mark it ready.
+ *
+ * The user has presumably re-run the failed step manually in the worktree's
+ * terminal. We just flip the in-memory status so the rest of the UI stops
+ * blocking on the error — there's no on-disk state to repair.
+ */
+export function clearSessionSetupError(id: string): void {
+  const session = appState.sessions.get(id);
+  if (!session) {
+    throw `Session not found: ${id}`;
+  }
+  if (typeof session.status === "string" || !("error" in session.status)) {
+    return;
+  }
+
+  session.status = "ready";
+  appState.sessions.set(id, session);
+  getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+}
+
 export function renameSession(id: string, displayName: string): void {
   const session = appState.sessions.get(id);
   if (!session) {
