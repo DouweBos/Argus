@@ -1,0 +1,66 @@
+{
+  "$schema": "./marketing-manifest.schema.json",
+  "_comment": "Drives the public docs site at houwert.dev/argus/docs. Each entry pulls a markdown file from this directory, parses it, and publishes it to the marketing site at build time. To expose a new doc, add it here. Categories appear in declaration order; pages within a category appear in declaration order too.",
+  "categories": [
+    {
+      "id": "start",
+      "label": "Get started",
+      "pages": [
+        {
+          "slug": "getting-started",
+          "file": "getting-started.md",
+          "title": "Getting started",
+          "summary": "Install Argus, open your first project, and spin up a session in under five minutes."
+        },
+        {
+          "slug": "concepts",
+          "file": "concepts.md",
+          "title": "Concepts",
+          "summary": "Sessions, worktrees, agents, panels, and runtime views — how Argus is organised."
+        }
+      ]
+    },
+    {
+      "id": "features",
+      "label": "What Argus supports",
+      "pages": [
+        {
+          "slug": "features",
+          "file": "features.md",
+          "title": "Features",
+          "summary": "Simulators, embedded browser, terminals, run commands, git workflow, VS Code editor, permissions, and organisations."
+        }
+      ]
+    },
+    {
+      "id": "configuration",
+      "label": "Configuration",
+      "pages": [
+        {
+          "slug": "project-settings",
+          "file": "project-settings.md",
+          "title": "Project settings — .argus.json",
+          "summary": "Per-project configuration shared with the team. Setup commands, run targets, terminals, platforms, port allocation, branch protection, and more."
+        },
+        {
+          "slug": "app-settings",
+          "file": "app-settings.md",
+          "title": "App settings",
+          "summary": "Per-developer machine-local preferences. Theme, agent defaults, editor, telemetry opt-out, and other personal toggles."
+        }
+      ]
+    },
+    {
+      "id": "transparency",
+      "label": "Transparency",
+      "pages": [
+        {
+          "slug": "telemetry",
+          "file": "telemetry-events.md",
+          "title": "Telemetry events",
+          "summary": "Every event Argus sends to PostHog, with payload shapes. Anonymous distinct id only — opt out anytime in App settings."
+        }
+      ]
+    }
+  ]
+}
