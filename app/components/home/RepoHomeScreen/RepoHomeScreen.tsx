@@ -9,6 +9,7 @@ import {
   SessionCard,
 } from "@argus/peacock";
 import { useArgusJson } from "../../../hooks/useArgusJson";
+import { useArgusVersionCheck } from "../../../hooks/useArgusVersionCheck";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import {
@@ -23,6 +24,7 @@ import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
 import styles from "../homeLayout.module.css";
 import { NoArgusJsonCard } from "./NoArgusJsonCard";
+import { OutdatedArgusVersionCard } from "./OutdatedArgusVersionCard";
 
 interface RepoHomeScreenProps {
   canStart: boolean;
@@ -54,6 +56,7 @@ export function RepoHomeScreen({
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
   const argusJson = useArgusJson(repoRoot);
+  const versionCheck = useArgusVersionCheck(repoRoot);
   const handleArgusJsonGenerated = argusJson.refresh;
   const [showProjectSettings, setShowProjectSettings] = useState(false);
 
@@ -164,6 +167,13 @@ export function RepoHomeScreen({
           <NoArgusJsonCard
             repoRoot={repoRoot}
             onGenerated={handleArgusJsonGenerated}
+          />
+        )}
+
+        {versionCheck.outdated && (
+          <OutdatedArgusVersionCard
+            appVersion={versionCheck.appVersion}
+            minVersion={versionCheck.minVersion}
           />
         )}
 

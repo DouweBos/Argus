@@ -640,6 +640,20 @@ export function createRunTerminal(
 ): { sessionId: string; started: boolean; title: string } {
   const runCmd = resolveRunCommand(sessionId, title);
 
+  if (runCmd.requires && runCmd.requires.length > 0) {
+    const missing = runCmd.requires.filter(
+      (req) => !findRunSession(sessionId, req),
+    );
+    if (missing.length > 0) {
+      const list = missing.map((m) => `'${m}'`).join(", ");
+      throw `Cannot start '${runCmd.title}' — required run command${
+        missing.length === 1 ? "" : "s"
+      } not running: ${list}. Start ${
+        missing.length === 1 ? "it" : "them"
+      } first.`;
+    }
+  }
+
   const existing = findRunSession(sessionId, runCmd.title);
   if (existing) {
     if (!runCmd.restartOnRerun) {

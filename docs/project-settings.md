@@ -34,6 +34,7 @@ Two ways to change project settings:
 | Field                                         | Editable in dialog?              |
 | --------------------------------------------- | -------------------------------- |
 | `setup.copy` / `symlink` / `commands`         | yes (Setup)                      |
+| `min_argus_version`                           | yes (Setup)                      |
 | `terminals`                                   | yes (Terminals)                  |
 | `run`                                         | yes (Run commands)               |
 | `workspace_env`                               | yes (Workspace env)              |
@@ -64,6 +65,7 @@ Two ways to change project settings:
   "protected_branches": ["main", "master"],
   "pull_request_template": "feature.md",
   "single_runtime":     false,
+  "min_argus_version":  "0.10.0",
   "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } }
 }
 ```
@@ -123,12 +125,13 @@ process per-session and shows a stop button while it's alive.
 ]
 ```
 
-| Field            | Type      | Default       | Description                                                                                                 |
-| ---------------- | --------- | ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `title`          | `string`  | required      | Display label. Also the identifier — must be unique within the array.                                       |
-| `command`        | `string`  | required      | Shell command, passed to `sh -c`.                                                                           |
-| `cwd`            | `string?` | worktree root | Optional relative directory to run the command in.                                                          |
-| `restartOnRerun` | `boolean` | required      | If `true`, pressing Run while the command is alive kills and restarts it. If `false`, the press is a no-op. |
+| Field            | Type        | Default       | Description                                                                                                                                                                                                                       |
+| ---------------- | ----------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`          | `string`    | required      | Display label. Also the identifier — must be unique within the array.                                                                                                                                                             |
+| `command`        | `string`    | required      | Shell command, passed to `sh -c`.                                                                                                                                                                                                 |
+| `cwd`            | `string?`   | worktree root | Optional relative directory to run the command in.                                                                                                                                                                                |
+| `restartOnRerun` | `boolean`   | required      | If `true`, pressing Run while the command is alive kills and restarts it. If `false`, the press is a no-op.                                                                                                                       |
+| `requires`       | `string[]?` | `[]`          | Titles of other run commands that must already be running in the same session before this one can start. Useful when a frontend run command needs the backend up first. Starting while a prerequisite is missing throws an error. |
 
 ---
 
@@ -261,6 +264,20 @@ If the repo has multiple PR templates under
 `.github/PULL_REQUEST_TEMPLATE/`, GitHub requires an explicit
 `?template=` query parameter. Set this to the filename Argus should
 prefer (e.g. `"feature.md"`).
+
+---
+
+## `min_argus_version` — warn teammates on older Argus builds
+
+Semver string (e.g. `"0.10.0"`). When set, the project home screen
+shows a warning banner if the running Argus version is lower. Useful
+when your `.argus.json` relies on a config key, MCP server, or run
+command behaviour added in a specific Argus release. Pre-release and
+build suffixes are not supported.
+
+```jsonc
+"min_argus_version": "0.10.0"
+```
 
 ---
 

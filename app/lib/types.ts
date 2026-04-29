@@ -215,6 +215,8 @@ export interface FileStat {
 export interface RunCommand {
   command: string;
   cwd?: string;
+  /** Titles of other run commands that must already be running first. */
+  requires?: string[];
   restartOnRerun: boolean;
   title: string;
 }
@@ -244,6 +246,12 @@ export interface ArgusConfig {
    * co-located with the rest of `.argus.json`.
    */
   mcp_servers?: Record<string, Record<string, unknown>>;
+  /**
+   * Minimum Argus app version required for this project. Semver string
+   * (e.g. "0.10.0"). Surfaces a warning on the project home screen when
+   * the app version is lower.
+   */
+  min_argus_version?: string | null;
   /**
    * Runtime platforms this project targets. Agents only pre-allocate iOS
    * simulators / Android emulators / headless Chromium browsers for the

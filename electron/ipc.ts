@@ -1260,6 +1260,7 @@ export function registerIpcHandlers(): void {
 
   // Telemetry — anonymous PostHog. Renderer asks for the install id + current
   // enable state at boot, and pushes opt-in/opt-out toggles back here.
+  handle("get_app_version", () => app.getVersion());
   handle("telemetry_get_init", () => ({
     distinctId: getAnonymousId(),
     enabled: isTelemetryEnabled(),

@@ -118,6 +118,13 @@ export interface RunCommand {
    * is a no-op.
    */
   restartOnRerun: boolean;
+  /**
+   * Titles of other run commands that must already be running in the same
+   * session before this one can start. Useful when a frontend run command
+   * needs the backend's run command to be alive first. Trying to start while
+   * any prerequisite is missing throws a clear error.
+   */
+  requires?: string[];
 }
 
 /** The `setup` block inside `.argus.json`. */
@@ -145,6 +152,12 @@ export type RuntimePlatform = "android" | "ios" | "web";
 
 /** Parsed representation of `.argus.json` found at the repo root. */
 export interface ArgusConfig {
+  /**
+   * Minimum Argus app version required to work with this project. Format is
+   * a semver string (e.g. "0.10.0"). When set, the project home screen
+   * surfaces a warning banner if the user's running app version is lower.
+   */
+  min_argus_version?: string | null;
   /** Setup instructions run once when a new session is created. */
   setup: SetupConfig;
   /** Terminals to auto-open when a session is selected. */
@@ -221,5 +234,6 @@ export function defaultArgusConfig(): ArgusConfig {
     protected_branches: [],
     single_runtime: false,
     mcp_servers: null,
+    min_argus_version: null,
   };
 }
