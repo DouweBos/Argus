@@ -8,7 +8,7 @@ area, what's included, and which configuration controls it.
 ## iOS simulators
 
 - Boot any installed iOS Simulator runtime per-session.
-- Mirrored live in the runtime panel.
+- Mirrored live in the Runtime.
 - Agents (and you) can tap, swipe, scroll, type, press hardware
   buttons, rotate, and trigger system gestures.
 - Per-session isolation — parallel sessions never interfere.
@@ -20,7 +20,7 @@ Enable iOS in `.argus.json` with `"platforms": ["ios", …]`.
 ## Android emulators
 
 - Boot any installed AVD per-session.
-- Mirrored live in the runtime panel.
+- Mirrored live in the Runtime.
 - Tap, swipe, type, hardware keys.
 - Per-session isolation, like iOS.
 
@@ -58,7 +58,7 @@ Enable the web platform with `"platforms": ["web", …]` and configure
   - `cwd` — run in a subdirectory of the worktree.
   - `requires` — wait for other run commands by title before starting.
   - `prerequisites` — block start until a check command passes.
-- Output is streamed live into the runtime panel with ANSI colour and
+- Output is streamed live into the Runtime with ANSI colour and
   link detection.
 
 See [Project settings → Run commands](/argus/docs/project-settings) for

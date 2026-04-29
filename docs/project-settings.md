@@ -22,12 +22,11 @@ For app-level (machine-local) preferences, see
 
 Two ways to change project settings:
 
-1. **In-app — Project settings dialog.** Open from the sidebar's repo
-   row context menu → _Project settings_. iPad-style screen with
-   sections: Setup, Platforms, Workspace env, Run commands, Terminals,
-   Browser, Branch protection, Agent. Reads and writes
-   `.argus.json` directly. Includes a JSON-preview tab for the exact
-   payload that will be saved.
+1. **In-app — Project settings dialog.** Open it from the workspace's
+   repo row context menu → _Project settings_. Sections cover Setup,
+   Platforms, Workspace env, Run commands, Terminals, Browser, Branch
+   protection, and Agent, plus a JSON-preview tab for the exact
+   payload that will be saved. Reads and writes `.argus.json` directly.
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 

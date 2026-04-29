@@ -58,7 +58,7 @@ running `pnpm install`, etc.) is configured in `.argus.json`.
 ## Agent
 
 An **agent** is a running Claude Code process bound to a session's
-worktree. The streaming tool calls render in the centre panel as they
+worktree. Its streaming tool calls appear in the Agent area as they
 happen.
 
 Each tool call surfaces as a card you can expand to inspect arguments and
@@ -71,25 +71,25 @@ to delegate work). The orchestration tree visualises the live hierarchy.
 
 ---
 
-## Three-panel layout
+## Workspace, Agent, Runtime
 
-The Argus window is divided into three panels:
+Argus organises work around three areas:
 
-| Panel               | What it contains                                                                                                                   |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Sidebar (left)**  | Workspace tree — projects, sessions, organisations. Pick what to work on.                                                          |
-| **Agent (centre)**  | The agent's chat thread, tool call timeline, and prompt input. The "what is the AI doing?" panel.                                  |
-| **Runtime (right)** | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, git diff, VS Code editor. |
+| Area          | What lives there                                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Workspace** | Projects, sessions, and organisations — pick what to work on.                                                                      |
+| **Agent**     | The agent's chat thread, tool-call timeline, and prompt input.                                                                     |
+| **Runtime**   | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, git diff, VS Code editor. |
 
-Every visible screen has a URL — `Cmd+[` and `Cmd+]` navigate back and
-forward. Deep-link any session or project view directly.
+Every screen has a URL. `Cmd+[` and `Cmd+]` navigate back and forward;
+deep-link any session or project view directly.
 
 ---
 
 ## Runtime view
 
-A **runtime view** is anything in the right-hand panel: a simulator, an
-emulator, the embedded Chromium browser, the run command output, a
+A **runtime view** is anything in the Runtime area: a simulator, an
+emulator, the embedded Chromium browser, run-command output, a
 terminal, the git diff viewer, or the VS Code editor.
 
 Most runtime views are **per-session** — they reflect the state of the
@@ -103,7 +103,7 @@ terminals start in the worktree directory.
 
 A **run command** is a long-running process you've declared in
 `.argus.json` (e.g. `pnpm dev`, `expo start`). Argus runs it inside the
-session's worktree and streams its output to the runtime panel. You can
+session's worktree and streams its output to the Runtime. You can
 restart, stop, and inspect each one. Run commands can declare
 prerequisites (`requires: ["backend"]`) so a frontend dev server only
 starts once its backend is up.

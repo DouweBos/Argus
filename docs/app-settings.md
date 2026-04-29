@@ -39,9 +39,9 @@ Permission modes are passed through to Claude Code:
 
 ## Open in apps
 
-| Setting            | Default | Description                                                                              |
-| ------------------ | ------- | ---------------------------------------------------------------------------------------- |
-| **Custom editors** | `[]`    | Extra entries shown in the _Open in…_ menu (sidebar repo row, file context menus, etc.). |
+| Setting            | Default | Description                                                    |
+| ------------------ | ------- | -------------------------------------------------------------- |
+| **Custom editors** | `[]`    | Extra entries shown in the _Open in…_ menu on repos and files. |
 
 Each entry has a **Name** and a **Command**. The command is either:
 

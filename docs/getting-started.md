@@ -67,7 +67,7 @@ terminals) attached to it.
 To start one:
 
 1. Open the project from the home screen.
-2. Click **New session** in the sidebar.
+2. Click **New session**.
 3. Type a goal in plain English — the agent picks up from there.
 
 Argus creates a fresh worktree under `~/.argus/worktrees/`, runs your
@@ -83,7 +83,7 @@ commit, and merge or open a PR — without leaving the app.
 ## Where to go next
 
 - [Concepts](/argus/docs/concepts) — sessions, worktrees, agents,
-  the three-panel layout.
+  and how Argus organises work.
 - [Features](/argus/docs/features) — simulators, browser, terminals,
   run commands, git workflow, VS Code, permissions.
 - [Project settings](/argus/docs/project-settings) — every option in
