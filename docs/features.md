@@ -173,7 +173,7 @@ Organisations are configured in App settings.
 
 ---
 
-## What Argus deliberately does *not* do
+## What Argus deliberately does _not_ do
 
 - **No cloud sync.** Sessions, worktrees, and conversations live on your
   machine.

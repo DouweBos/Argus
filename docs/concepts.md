@@ -29,7 +29,7 @@ A **session** is the unit of work. Each session has:
 - Its own **Claude Code agent** subprocess — independent conversation,
   independent permissions, independent tool history.
 - Its own **runtime views** — simulators, embedded browser, run command
-  output, terminals — that mirror the state of *that worktree only*.
+  output, terminals — that mirror the state of _that worktree only_.
 - Its own **branch**, created from `main` (or your configured base
   branch) when the session starts.
 
@@ -46,7 +46,7 @@ A **worktree** is a checkout of your repo into a different directory,
 managed by `git worktree`. Argus uses one worktree per session to keep
 sessions truly independent.
 
-Your *primary* checkout — the one you cloned into — is never touched by
+Your _primary_ checkout — the one you cloned into — is never touched by
 agents. Argus puts every session's worktree under
 `~/.argus/worktrees/`, so your project directory stays clean.
 
@@ -76,11 +76,11 @@ to delegate work). The orchestration tree visualises the live hierarchy.
 
 The Argus window is divided into three panels:
 
-| Panel             | What it contains                                                                                           |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| **Sidebar (left)**   | Workspace tree — projects, sessions, organisations. Pick what to work on.                              |
-| **Agent (centre)**   | The agent's chat thread, tool call timeline, and prompt input. The "what is the AI doing?" panel.      |
-| **Runtime (right)**  | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, git diff, VS Code editor. |
+| Panel               | What it contains                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Sidebar (left)**  | Workspace tree — projects, sessions, organisations. Pick what to work on.                                                          |
+| **Agent (centre)**  | The agent's chat thread, tool call timeline, and prompt input. The "what is the AI doing?" panel.                                  |
+| **Runtime (right)** | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, git diff, VS Code editor. |
 
 Every visible screen has a URL — `Cmd+[` and `Cmd+]` navigate back and
 forward. Deep-link any session or project view directly.
