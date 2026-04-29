@@ -1866,6 +1866,15 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
     }
   }
 
+  if (platforms.has("tvos")) {
+    lines.push(
+      "",
+      "### tvOS Simulator",
+      "",
+      "A tvOS simulator may be available. Use `conductor list-devices` to find a booted tvOS device, then target it explicitly with `--device <udid>` (or `--device-name`). Native installs (e.g. `xcrun simctl install <udid> <path/to/app>`) must also target the UDID directly.",
+    );
+  }
+
   if (platforms.has("android")) {
     lines.push("", "### Android Emulator", "");
     if (androidDevice) {
@@ -1914,6 +1923,11 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       '- **iOS simulator**: `conductor <command>` (no `--device` flag needed — auto-provisioned on first use). To target a specific booted device when multiple exist, use `--device-name "<name>"` (e.g. a reference simulator running a different build).',
     );
   }
+  if (platforms.has("tvos")) {
+    lines.push(
+      "- **tvOS simulator**: `conductor <command> --device <tvos-udid>` (run `conductor list-devices` to find the UDID).",
+    );
+  }
   if (platforms.has("android")) {
     lines.push(
       "- **Android emulator**: `conductor <command> --device <android-id>` (run `conductor list-devices` to find the ID).",
@@ -1923,7 +1937,11 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
     lines.push("- **Web browser**: `conductor <command> --device web`");
   }
 
-  if (platforms.has("ios") || platforms.has("android")) {
+  if (
+    platforms.has("ios") ||
+    platforms.has("android") ||
+    platforms.has("tvos")
+  ) {
     lines.push(
       "",
       "Common commands for mobile UI validation:",

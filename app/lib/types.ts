@@ -230,7 +230,7 @@ export interface BrowserPresetConfig {
   width: number;
 }
 
-export type RuntimePlatform = "android" | "ios" | "web";
+export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
 
 export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
@@ -253,9 +253,11 @@ export interface ArgusConfig {
    */
   min_argus_version?: string | null;
   /**
-   * Runtime platforms this project targets. Agents only pre-allocate iOS
-   * simulators / Android emulators / headless Chromium browsers for the
-   * platforms listed here. Omitted or empty → no runtimes pre-allocated.
+   * Runtime platforms this project targets. Used to narrow the runtime
+   * sections injected into the agent system prompt; omitted or empty →
+   * iOS, Android, and Web are all described. Does not gate device
+   * allocation — simulators, emulators, and browsers are acquired
+   * lazily when agents run `conductor` commands.
    */
   platforms?: RuntimePlatform[];
   /**

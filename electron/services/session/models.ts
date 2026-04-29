@@ -148,7 +148,7 @@ export interface SetupConfig {
 
 /** Runtime platform a session targets. Drives which device-specific sections
  * appear in the agent system prompt. */
-export type RuntimePlatform = "android" | "ios" | "web";
+export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
 
 /** Parsed representation of `.argus.json` found at the repo root. */
 export interface ArgusConfig {
@@ -179,8 +179,8 @@ export interface ArgusConfig {
   /**
    * Runtime platforms this project targets (e.g. `["ios", "web"]`).
    * When set, the agent system prompt only describes these runtimes instead
-   * of the full iOS + Android + Web triple. If omitted, all three are
-   * described (backward compatible).
+   * of the full iOS + Android + tvOS + Web set. If omitted, iOS, Android,
+   * and Web are described (backward compatible — tvOS is opt-in).
    */
   platforms?: RuntimePlatform[] | null;
   /**
