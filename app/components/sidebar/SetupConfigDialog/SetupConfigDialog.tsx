@@ -109,6 +109,7 @@ function useEnvListState(initial: EnvEntry[]) {
 interface RunEntry {
   command: string;
   cwd: string;
+  requires: string[];
   restartOnRerun: boolean;
   title: string;
 }
@@ -118,7 +119,13 @@ function useRunListState(initial: RunEntry[]) {
   const add = () =>
     setItems((prev) => [
       ...prev,
-      { title: "", command: "", cwd: "", restartOnRerun: false },
+      {
+        title: "",
+        command: "",
+        cwd: "",
+        restartOnRerun: false,
+        requires: [],
+      },
     ]);
   const update = <K extends keyof RunEntry>(
     i: number,
@@ -285,52 +292,91 @@ function RunCommandsField({
         </div>
       ) : (
         <div className={styles.listEditor}>
-          {list.items.map((entry, i) => (
-            <div
-              key={i}
-              className={styles.listRow}
-              style={{ flexWrap: "wrap" }}
-            >
-              <Input
-                placeholder="Title (e.g. Dev)"
-                style={{ flex: 1, minWidth: 100 }}
-                type="text"
-                value={entry.title}
-                onChange={(e) => list.update(i, "title", e.target.value)}
-              />
-              <Input
-                placeholder="Command (e.g. pnpm dev)"
-                style={{ flex: 2, minWidth: 160 }}
-                type="text"
-                value={entry.command}
-                onChange={(e) => list.update(i, "command", e.target.value)}
-              />
-              <Input
-                placeholder="cwd (optional)"
-                style={{ flex: 1, minWidth: 100 }}
-                type="text"
-                value={entry.cwd}
-                onChange={(e) => list.update(i, "cwd", e.target.value)}
-              />
-              <label className={styles.checkboxRow}>
-                <input
-                  checked={entry.restartOnRerun}
-                  type="checkbox"
-                  onChange={(e) =>
-                    list.update(i, "restartOnRerun", e.target.checked)
-                  }
-                />
-                Restart on rerun
-              </label>
-              <button
-                aria-label="Remove"
-                className={styles.removeBtn}
-                onClick={() => list.remove(i)}
+          {list.items.map((entry, i) => {
+            const otherTitles = list.items
+              .map((e, idx) => ({ title: e.title.trim(), idx }))
+              .filter((e) => e.idx !== i && e.title.length > 0);
+            const toggleRequires = (req: string, checked: boolean) => {
+              const next = checked
+                ? [...entry.requires, req]
+                : entry.requires.filter((r) => r !== req);
+              list.update(i, "requires", next);
+            };
+
+            return (
+              <div
+                key={i}
+                className={styles.listRow}
+                style={{ flexWrap: "wrap" }}
               >
-                <Icons.CloseIcon size={12} />
-              </button>
-            </div>
-          ))}
+                <Input
+                  placeholder="Title (e.g. Dev)"
+                  style={{ flex: 1, minWidth: 100 }}
+                  type="text"
+                  value={entry.title}
+                  onChange={(e) => list.update(i, "title", e.target.value)}
+                />
+                <Input
+                  placeholder="Command (e.g. pnpm dev)"
+                  style={{ flex: 2, minWidth: 160 }}
+                  type="text"
+                  value={entry.command}
+                  onChange={(e) => list.update(i, "command", e.target.value)}
+                />
+                <Input
+                  placeholder="cwd (optional)"
+                  style={{ flex: 1, minWidth: 100 }}
+                  type="text"
+                  value={entry.cwd}
+                  onChange={(e) => list.update(i, "cwd", e.target.value)}
+                />
+                <label className={styles.checkboxRow}>
+                  <input
+                    checked={entry.restartOnRerun}
+                    type="checkbox"
+                    onChange={(e) =>
+                      list.update(i, "restartOnRerun", e.target.checked)
+                    }
+                  />
+                  Restart on rerun
+                </label>
+                <button
+                  aria-label="Remove"
+                  className={styles.removeBtn}
+                  onClick={() => list.remove(i)}
+                >
+                  <Icons.CloseIcon size={12} />
+                </button>
+                {otherTitles.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 12,
+                      flexWrap: "wrap",
+                      flexBasis: "100%",
+                      paddingLeft: 4,
+                    }}
+                  >
+                    <span className={styles.helpText} style={{ margin: 0 }}>
+                      Requires running:
+                    </span>
+                    {otherTitles.map((o) => (
+                      <label key={o.idx} className={styles.checkboxRow}>
+                        <input
+                          checked={entry.requires.includes(o.title)}
+                          type="checkbox"
+                          onChange={(e) =>
+                            toggleRequires(o.title, e.target.checked)
+                          }
+                        />
+                        {o.title}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           <button className={styles.addRowBtn} onClick={handleAdd}>
             + Add
           </button>
@@ -339,7 +385,8 @@ function RunCommandsField({
       <p className={styles.helpText}>
         Shown in the app&apos;s run menu. Title identifies each entry; enable
         &quot;Restart on rerun&quot; to kill an existing session before starting
-        a new one.
+        a new one. Use &quot;Requires running&quot; to assert another command is
+        already running (e.g. a frontend that needs the backend up first).
       </p>
     </div>
   );
@@ -567,6 +614,7 @@ export function SetupConfigDialog({
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [pullRequestTemplate, setPullRequestTemplate] = useState("");
+  const [minArgusVersion, setMinArgusVersion] = useState("");
   const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -613,6 +661,7 @@ export function SetupConfigDialog({
               command: r.command ?? "",
               cwd: r.cwd ?? "",
               restartOnRerun: Boolean(r.restartOnRerun),
+              requires: Array.isArray(r.requires) ? [...r.requires] : [],
             })),
           );
         }
@@ -663,6 +712,9 @@ export function SetupConfigDialog({
         if (config.pull_request_template) {
           setPullRequestTemplate(config.pull_request_template);
         }
+        if (config.min_argus_version) {
+          setMinArgusVersion(config.min_argus_version);
+        }
         if (config.mcp_servers) {
           setMcpEntries(mapToEntries(config.mcp_servers));
         }
@@ -710,12 +762,17 @@ export function SetupConfigDialog({
     }
     const runs = runList.items
       .filter((r) => r.title.trim() && r.command.trim())
-      .map((r) => ({
-        title: r.title.trim(),
-        command: r.command.trim(),
-        ...(r.cwd.trim() ? { cwd: r.cwd.trim() } : {}),
-        restartOnRerun: r.restartOnRerun,
-      }));
+      .map((r) => {
+        const requires = r.requires.map((s) => s.trim()).filter(Boolean);
+
+        return {
+          title: r.title.trim(),
+          command: r.command.trim(),
+          ...(r.cwd.trim() ? { cwd: r.cwd.trim() } : {}),
+          restartOnRerun: r.restartOnRerun,
+          ...(requires.length > 0 ? { requires } : {}),
+        };
+      });
     if (runs.length) {
       config.run = runs;
     }
@@ -779,6 +836,10 @@ export function SetupConfigDialog({
     if (prTemplate) {
       config.pull_request_template = prTemplate;
     }
+    const minVersion = minArgusVersion.trim().replace(/^v/i, "");
+    if (minVersion) {
+      config.min_argus_version = minVersion;
+    }
     const mcpServers = entriesToMap(mcpEntries);
     if (Object.keys(mcpServers).length > 0) {
       config.mcp_servers = mcpServers;
@@ -806,6 +867,7 @@ export function SetupConfigDialog({
       saveChatHistory,
       singleRuntime,
       pullRequestTemplate,
+      minArgusVersion,
       mcpEntries,
     ],
   );
@@ -861,6 +923,25 @@ export function SetupConfigDialog({
                   list={commandList}
                   placeholder="npm install"
                 />
+                <div className={styles.field}>
+                  <label
+                    className={styles.label}
+                    htmlFor="setup-min-argus-version"
+                  >
+                    Minimum Argus version
+                  </label>
+                  <Input
+                    id="setup-min-argus-version"
+                    placeholder="0.10.0"
+                    type="text"
+                    value={minArgusVersion}
+                    onChange={(e) => setMinArgusVersion(e.target.value)}
+                  />
+                  <p className={styles.helpText}>
+                    Optional. Semver string. The project home screen warns
+                    teammates running an older Argus build.
+                  </p>
+                </div>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),

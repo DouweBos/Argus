@@ -111,7 +111,34 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     single_runtime:
       parsed.single_runtime != null ? Boolean(parsed.single_runtime) : false,
     mcp_servers: normalizeMcpServers(parsed.mcp_servers),
+    min_argus_version: normalizeMinArgusVersion(
+      parsed.min_argus_version,
+      repoRoot,
+    ),
   };
+}
+
+/**
+ * Normalise `min_argus_version` — must be a semver string of `MAJOR.MINOR.PATCH`
+ * digits (with an optional leading `v`). Pre-release / build suffixes are
+ * rejected to keep the comparator simple. Returns null when absent.
+ */
+function normalizeMinArgusVersion(
+  raw: unknown,
+  repoRoot: string,
+): string | null {
+  if (raw == null || raw === "") {
+    return null;
+  }
+  if (typeof raw !== "string") {
+    throw `min_argus_version in ${repoRoot}/.argus.json must be a semver string like "0.10.0".`;
+  }
+  const trimmed = raw.trim().replace(/^v/i, "");
+  if (!/^\d+\.\d+\.\d+$/.test(trimmed)) {
+    throw `min_argus_version in ${repoRoot}/.argus.json must be a semver string like "0.10.0" (got "${raw}").`;
+  }
+
+  return trimmed;
 }
 
 /**
@@ -188,11 +215,30 @@ function normalizeRunCommands(raw: unknown, repoRoot: string): RunCommand[] {
       throw `run[${i}].command in ${repoRoot}/.argus.json must be a non-empty string.`;
     }
 
+    const requires: string[] = [];
+    if (Array.isArray(obj.requires)) {
+      for (const r of obj.requires) {
+        if (typeof r !== "string" || !r.trim()) {
+          throw `run[${i}].requires in ${repoRoot}/.argus.json must be an array of non-empty title strings.`;
+        }
+        const trimmed = r.trim();
+        if (trimmed === title) {
+          throw `run[${i}].requires in ${repoRoot}/.argus.json cannot reference its own title '${title}'.`;
+        }
+        if (!requires.includes(trimmed)) {
+          requires.push(trimmed);
+        }
+      }
+    } else if (obj.requires != null) {
+      throw `run[${i}].requires in ${repoRoot}/.argus.json must be an array of run-command titles.`;
+    }
+
     return {
       title,
       command,
       cwd: typeof obj.cwd === "string" && obj.cwd ? obj.cwd : undefined,
       restartOnRerun: Boolean(obj.restartOnRerun),
+      ...(requires.length > 0 ? { requires } : {}),
     };
   });
 }
@@ -330,6 +376,8 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       local.mcp_servers || base.mcp_servers
         ? { ...(base.mcp_servers ?? {}), ...(local.mcp_servers ?? {}) }
         : null,
+    min_argus_version:
+      local.min_argus_version ?? base.min_argus_version ?? null,
   };
 }
 

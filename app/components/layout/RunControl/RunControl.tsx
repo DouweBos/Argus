@@ -342,7 +342,7 @@ export function RunControl({ sessionId }: RunControlProps) {
           title={running ? `Stop ${only.title}` : only.command}
           onClick={() => toggleTitle(only.title)}
         >
-          {running ? "Stop" : only.title}
+          {running ? `Stop ${only.title}` : only.title}
         </Button>
         {conflictDialog}
       </>
@@ -368,7 +368,7 @@ export function RunControl({ sessionId }: RunControlProps) {
         title={primaryRunning ? `Stop ${primary.title}` : primary.command}
         onClick={() => toggleTitle(primary.title)}
       >
-        {primaryRunning ? "Stop" : primary.title}
+        {primaryRunning ? `Stop ${primary.title}` : primary.title}
       </Button>
       <Button
         aria-label="Show run commands"

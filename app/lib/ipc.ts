@@ -548,6 +548,9 @@ export const writeArgusConfig = (
 export const readArgusConfig = (repoRoot: string): Promise<ArgusConfig> =>
   invoke("read_argus_config", { repoRoot });
 
+// Returns the running Argus app version (semver string).
+export const getAppVersion = (): Promise<string> => invoke("get_app_version");
+
 // Per-developer, per-project personal settings (stored outside the repo).
 export const getUserProjectSettings = (
   repoRoot: string,

@@ -95,9 +95,28 @@ export async function runClaudePrint(
   opts: RunClaudePrintOptions,
 ): Promise<string | null> {
   try {
+    // Strip project context so haiku produces a title in one turn instead of
+    // loading the worktree's CLAUDE.md / MCP / hooks / skills and trying to
+    // "fix" the project with Bash. Without these flags a title call commonly
+    // ran 30-90s and tripped the timeout, which surfaced as a misleading
+    // "login expired" notification.
     const child = execFileAsync(
       CLAUDE_BIN,
-      ["-p", "--model", "haiku", "--output-format", "json", opts.prompt],
+      [
+        "-p",
+        "--model",
+        "haiku",
+        "--output-format",
+        "json",
+        "--tools",
+        "",
+        "--setting-sources",
+        "user",
+        "--disable-slash-commands",
+        "--system-prompt",
+        "You generate short titles and slugs. Reply with only what the user asks for, no tools, no explanation.",
+        opts.prompt,
+      ],
       {
         timeout: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         maxBuffer: 1024 * 1024,
