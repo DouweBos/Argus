@@ -1,6 +1,6 @@
 import type { DropPosition } from "../../../hooks/useTabReorder";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Icons } from "@argus/peacock";
+import { Button, Icons, Spinner } from "@argus/peacock";
 import { useCloseIntent } from "../../../hooks/useCloseIntent";
 import { useTabReorder } from "../../../hooks/useTabReorder";
 import {
@@ -25,6 +25,7 @@ import {
   setActiveSession,
   updateSession,
   useActiveSessionId,
+  useRunningTerminalsForSession,
   useRunSessionId,
   useTerminalSessionsSlice,
 } from "../../../stores/terminalStore";
@@ -39,6 +40,8 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
   const sessions = useTerminalSessionsSlice(sessionId);
   const activeId = useActiveSessionId(sessionId);
   const runSessionId = useRunSessionId(sessionId);
+  const runningTerminals = useRunningTerminalsForSession(sessionId);
+  const runningIds = new Set(Object.values(runningTerminals));
   const [isCreating, setIsCreating] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
@@ -327,11 +330,18 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
                 }
                 onDrop={isRun ? undefined : (e) => handleDrop(e, session.id)}
               >
-                {isRun ? (
-                  <Icons.PlayIcon size={11} />
-                ) : (
-                  <Icons.TerminalIcon size={11} />
-                )}
+                {(() => {
+                  if (runningIds.has(session.id)) {
+                    return (
+                      <Spinner aria-label="Running" size="xs" tone="primary" />
+                    );
+                  }
+                  if (isRun) {
+                    return <Icons.PlayIcon size={11} />;
+                  }
+
+                  return <Icons.TerminalIcon size={11} />;
+                })()}
                 {isRenaming ? (
                   <input
                     autoFocus

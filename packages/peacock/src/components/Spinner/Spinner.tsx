@@ -1,6 +1,6 @@
 import styles from "./Spinner.module.css";
 
-export type SpinnerSize = "lg" | "md" | "sm";
+export type SpinnerSize = "lg" | "md" | "sm" | "xs";
 export type SpinnerTone = "muted" | "neutral" | "primary";
 
 export interface SpinnerProps {
@@ -23,6 +23,7 @@ export function Spinner({
   tone = "primary",
 }: SpinnerProps) {
   const sizeClass: Record<SpinnerSize, string> = {
+    xs: styles.sizeXs,
     sm: styles.sizeSm,
     md: styles.sizeMd,
     lg: styles.sizeLg,
