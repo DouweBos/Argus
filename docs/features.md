@@ -182,9 +182,9 @@ Organisations are configured in App settings.
 - **Telemetry is off by default.** Opt in once during onboarding (or
   any time from App settings). When on, Argus sends anonymous,
   feature-level events to PostHog along with standard SDK properties
-  (browser/OS/screen/timezone) and IP-derived city-level GeoIP added
-  server-side. No session replay, no DOM autocapture, no prompts, no
-  file contents, no project names — full audit in
-  [Telemetry](/argus/docs/telemetry).
+  (browser/OS/screen/timezone). The raw IP is discarded post-ingestion,
+  but city-level GeoIP is still derived from it before discard. No
+  session replay, no DOM autocapture, no prompts, no file contents, no
+  project names — full audit in [Telemetry](/argus/docs/telemetry).
 - **No proprietary editor.** Argus embeds VS Code; your existing
   extensions and muscle memory carry over.

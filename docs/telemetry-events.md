@@ -58,9 +58,11 @@ list them in full.
 
 **GeoIP enrichment (server-side at PostHog):**
 
-PostHog's ingestion pipeline derives geographic properties from the
-request IP and attaches them to every event. This means the IP touches
-PostHog's servers, and the resulting event in PostHog includes:
+We have **Discard client IP data** turned on for our PostHog project.
+This means PostHog does **not** store the request IP alongside the
+event. However, the IP is still used at ingestion time — before it is
+discarded — to derive coarse geographic properties. Each event in
+PostHog therefore includes:
 
 - `$geoip_country_code`, `$geoip_country_name`, `$geoip_continent_code`,
   `$geoip_continent_name`
@@ -71,9 +73,11 @@ PostHog's servers, and the resulting event in PostHog includes:
 - `$geoip_latitude`, `$geoip_longitude`, `$geoip_accuracy_radius`
 - `$geoip_time_zone`
 
-The accuracy is roughly city-level. We do not log or persist your IP
-ourselves, but PostHog's ingestion sees it. If this is unacceptable to
-you, leave telemetry off — that is the supported privacy mode.
+The accuracy is roughly city-level. The raw IP is **not** retained.
+PostHog only supports discarding the IP after enrichment — they don't
+offer an option to skip GeoIP enrichment entirely. If even city-level
+geography is unacceptable to you, leave telemetry off — that is the
+supported privacy mode.
 
 **What is _not_ sent, even when telemetry is on:**
 
