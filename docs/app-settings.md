@@ -102,9 +102,12 @@ What we send (when the toggle is on):
   file URL — never external sites), and a per-SDK-session id.
 - Approximate location, derived **server-side at PostHog** from the
   request IP: country, region, city, postal code, and a city-level
-  latitude/longitude. We don't log or persist your IP ourselves, but
-  PostHog's ingestion pipeline sees it. If this is unacceptable, leave
-  telemetry off.
+  latitude/longitude. We have **Discard client IP data** enabled on
+  the PostHog project, so the raw IP is not stored alongside the
+  event — but PostHog still uses it at ingestion to derive these
+  GeoIP fields before discarding it. PostHog doesn't expose a switch
+  to skip enrichment entirely. If even city-level geography is
+  unacceptable, leave telemetry off.
 - Argus-specific events documented in
   [telemetry-events.md](./telemetry-events.md) — feature usage signals
   with the small, named props listed there. Never raw arguments, file
