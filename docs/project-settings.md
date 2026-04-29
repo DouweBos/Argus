@@ -124,13 +124,13 @@ process per-session and shows a stop button while it's alive.
 ]
 ```
 
-| Field            | Type        | Default       | Description                                                                                                                                                                                                                       |
-| ---------------- | ----------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`          | `string`    | required      | Display label. Also the identifier — must be unique within the array.                                                                                                                                                             |
-| `command`        | `string`    | required      | Shell command, passed to `sh -c`.                                                                                                                                                                                                 |
-| `cwd`            | `string?`   | worktree root | Optional relative directory to run the command in.                                                                                                                                                                                |
-| `restartOnRerun` | `boolean`   | required      | If `true`, pressing Run while the command is alive kills and restarts it. If `false`, the press is a no-op.                                                                                                                       |
-| `requires`       | `string[]?` | `[]`          | Titles of other run commands that must already be running in the same session before this one can start. Useful when a frontend run command needs the backend up first. Starting while a prerequisite is missing throws an error. |
+| Field            | Type        | Default       | Description                                                                                                                                                                              |
+| ---------------- | ----------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`          | `string`    | required      | Display label. Also the identifier — must be unique within the array.                                                                                                                    |
+| `command`        | `string`    | required      | Shell command, passed to `sh -c`.                                                                                                                                                        |
+| `cwd`            | `string?`   | worktree root | Optional relative directory to run the command in.                                                                                                                                       |
+| `restartOnRerun` | `boolean`   | required      | If `true`, pressing Run while the command is alive kills and restarts it. If `false`, the press is a no-op.                                                                              |
+| `requires`       | `string[]?` | `[]`          | Titles of other run commands this one depends on. Argus starts any that aren't already running before launching this command (recursively). Cycles in the dependency chain are rejected. |
 
 ---
 

@@ -375,8 +375,9 @@ function RunCommandsField({
       <p className={styles.helpText}>
         Shown in the app&apos;s run menu. Title identifies each entry; enable
         &quot;Restart on rerun&quot; to kill an existing session before starting
-        a new one. Use &quot;Requires running&quot; to assert another command is
-        already running (e.g. a frontend that needs the backend up first).
+        a new one. Use &quot;Requires running&quot; to declare dependencies on
+        other commands (e.g. a frontend that needs the backend up first) — Argus
+        will start any that aren&apos;t already running.
       </p>
     </div>
   );

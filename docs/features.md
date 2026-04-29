@@ -56,7 +56,7 @@ Enable the web platform with `"platforms": ["web", …]` and configure
 - Each run command has a title, a shell command, and optional flags:
   - `restartOnRerun` — kill and restart on every relaunch.
   - `cwd` — run in a subdirectory of the worktree.
-  - `requires` — wait for other run commands by title before starting.
+  - `requires` — declare dependencies on other run commands by title; any that aren't running are auto-started first.
   - `prerequisites` — block start until a check command passes.
 - Output is streamed live into the Runtime with ANSI colour and
   link detection.

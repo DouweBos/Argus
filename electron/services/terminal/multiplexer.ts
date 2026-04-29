@@ -647,6 +647,10 @@ export function resolveRunCommand(
  * `restartOnRerun` is false and a matching live session exists, its ID is
  * returned as-is without spawning a new one.
  *
+ * If the entry declares `requires`, any missing dependency is started
+ * recursively before the entry itself spawns. Cycles in the `requires`
+ * chain are detected and rejected.
+ *
  * @returns An object with the session id and whether a new session was
  *          actually started (vs. reusing an existing one).
  *
@@ -657,20 +661,27 @@ export function resolveRunCommand(
 export function createRunTerminal(
   sessionId: string,
   title?: string,
+  visiting = new Set<string>(),
 ): { sessionId: string; started: boolean; title: string } {
   const runCmd = resolveRunCommand(sessionId, title);
 
+  if (visiting.has(runCmd.title)) {
+    throw `Cannot start '${runCmd.title}' — circular dependency detected in 'requires' chain: ${[
+      ...visiting,
+      runCmd.title,
+    ]
+      .map((t) => `'${t}'`)
+      .join(" → ")}.`;
+  }
+
   if (runCmd.requires && runCmd.requires.length > 0) {
-    const missing = runCmd.requires.filter(
-      (req) => !findRunSession(sessionId, req),
-    );
-    if (missing.length > 0) {
-      const list = missing.map((m) => `'${m}'`).join(", ");
-      throw `Cannot start '${runCmd.title}' — required run command${
-        missing.length === 1 ? "" : "s"
-      } not running: ${list}. Start ${
-        missing.length === 1 ? "it" : "them"
-      } first.`;
+    const nextVisiting = new Set(visiting);
+    nextVisiting.add(runCmd.title);
+    for (const req of runCmd.requires) {
+      if (findRunSession(sessionId, req)) {
+        continue;
+      }
+      createRunTerminal(sessionId, req, nextVisiting);
     }
   }
 
