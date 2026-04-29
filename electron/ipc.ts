@@ -107,6 +107,7 @@ import {
 import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
 import { generateChatTitle } from "./services/llm/titleGenerator";
+import { testMcpServer } from "./services/mcp/connectivity";
 import { collectAllProjects } from "./services/mcp/projects";
 import { listInheritedMcpServers } from "./services/mcp/userConfig";
 import {
@@ -586,6 +587,9 @@ export function registerIpcHandlers(): void {
   handle("set_app_settings", (a) => saveAppSettings(a.settings as AppSettings));
   handle("list_inherited_mcp_servers", (a) =>
     listInheritedMcpServers((a.worktreePath as string | null) ?? null),
+  );
+  handle("test_mcp_server", (a) =>
+    testMcpServer(a.config as Record<string, unknown>),
   );
   handle("get_command_metrics", (a) =>
     loadCommandMetrics(a.repoRoot as string),

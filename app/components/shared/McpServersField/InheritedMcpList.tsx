@@ -2,6 +2,7 @@ import type { InheritedMcpServer } from "../../../lib/types";
 import { useEffect, useState } from "react";
 import { listInheritedMcpServers } from "../../../lib/ipc";
 import styles from "./InheritedMcpList.module.css";
+import { McpTestButton } from "./McpTestButton";
 
 interface InheritedMcpListProps {
   /** Pass null/undefined for the global (app-level) view. */
@@ -58,6 +59,9 @@ export function InheritedMcpList({ worktreePath }: InheritedMcpListProps) {
           <pre className={styles.config}>
             {JSON.stringify(s.config, null, 2)}
           </pre>
+          <div className={styles.actions}>
+            <McpTestButton config={s.config} />
+          </div>
         </div>
       ))}
     </div>

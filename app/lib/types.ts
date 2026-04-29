@@ -297,6 +297,16 @@ export interface InheritedMcpServer {
   source: string;
 }
 
+/** Result of a connectivity probe against an MCP server. */
+export interface McpTestResult {
+  error?: string;
+  latencyMs?: number;
+  ok: boolean;
+  protocolVersion?: string;
+  serverInfo?: { name?: string; version?: string };
+  transport: "http" | "stdio" | "unknown";
+}
+
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
   /** User-defined MCP servers merged into every spawned agent. */
