@@ -10,6 +10,7 @@ import {
 } from "../stores/sessionStore";
 import { maybeGenerateTitle } from "./agentEventService";
 import { startAgentInSession, sendUserMessageToAgent } from "./agentLifecycle";
+import { buildLinkedProjectsPreamble } from "./linkedProjectsPreamble";
 
 /**
  * Pending prompts are captured at session-creation time. The backend creates
@@ -48,11 +49,10 @@ async function dispatchPrompt(
     if (linkedProjects?.length) {
       setLinkedProjects(agentInfo.agent_id, linkedProjects);
     }
-    const message = linkedProjects?.length
-      ? `[Linked project directories — the user has explicitly attached the following project roots to this chat. You are allowed and expected to read from and make changes in these directories in addition to your own worktree:\n${linkedProjects
-          .map((p) => `- ${p}`)
-          .join("\n")}]\n\n${prompt || "(see attached images)"}`
-      : prompt || "(see attached images)";
+    const message = buildLinkedProjectsPreamble(
+      linkedProjects ?? [],
+      prompt || "(see attached images)",
+    );
     await sendUserMessageToAgent(
       agentInfo.agent_id,
       message,
