@@ -25,8 +25,14 @@ let lastActive = false;
 const isDev = !app.isPackaged;
 
 interface TrayHooks {
-  /** Show + focus the main window and navigate to the given path. */
-  navigateMainWindow: (path: string) => void;
+  /**
+   * Show + focus the main window and navigate to the given path.
+   *
+   * `agentId` is forwarded to the renderer so the deep-link can also set the
+   * session's active agent — important when the user is already on the same
+   * session and a plain navigate() would be a no-op.
+   */
+  navigateMainWindow: (path: string, agentId?: string) => void;
 }
 
 let hooks: TrayHooks | null = null;
@@ -105,14 +111,6 @@ function projectName(session: Session): string | null {
   return segments[segments.length - 1] ?? null;
 }
 
-function sessionLabel(session: Session): string {
-  const name =
-    session.display_name?.trim() || session.branch || "Untitled session";
-  const project = projectName(session);
-
-  return project ? `${project} · ${name}` : name;
-}
-
 function agentLabel(agentId: string): string {
   const snapshotJson = appState.agentSnapshots.get(agentId);
   if (snapshotJson) {
@@ -130,19 +128,55 @@ function agentLabel(agentId: string): string {
   return "Agent";
 }
 
-function navigateToSession(sessionId: string): void {
+function navigateToSession(sessionId: string, agentId?: string): void {
   if (!hooks) {
     return;
   }
-  hooks.navigateMainWindow(`/sessions/${sessionId}`);
+  hooks.navigateMainWindow(`/sessions/${sessionId}/agents`, agentId);
+}
+
+function projectKey(session: Session): string {
+  return session.repo_root ?? "__no_project__";
+}
+
+function projectDisplayName(session: Session | undefined): string {
+  if (!session) {
+    return "Project";
+  }
+  const name = projectName(session);
+
+  return name ?? "Project";
+}
+
+function shortSessionLabel(session: Session): string {
+  return session.display_name?.trim() || session.branch || "Untitled session";
 }
 
 function buildMenu(): Menu {
-  const grouped = new Map<string, AgentSession[]>();
+  // Build Project → Sessions → Agents tree. Agents are the source of truth
+  // for which sessions appear (we only surface sessions that have at least
+  // one live agent), and sessions tell us which project bucket they fall in.
+  const sessionAgents = new Map<string, AgentSession[]>();
   for (const agent of appState.agents.values()) {
-    const list = grouped.get(agent.sessionId) ?? [];
+    const list = sessionAgents.get(agent.sessionId) ?? [];
     list.push(agent);
-    grouped.set(agent.sessionId, list);
+    sessionAgents.set(agent.sessionId, list);
+  }
+
+  const projects = new Map<
+    string,
+    {
+      session: Session | undefined;
+      sessionId: string;
+      agents: AgentSession[];
+    }[]
+  >();
+  for (const [sessionId, agents] of sessionAgents) {
+    const session = appState.sessions.get(sessionId);
+    const key = session ? projectKey(session) : "__no_project__";
+    const list = projects.get(key) ?? [];
+    list.push({ session, sessionId, agents });
+    projects.set(key, list);
   }
 
   const template: Electron.MenuItemConstructorOptions[] = [];
@@ -155,39 +189,61 @@ function buildMenu(): Menu {
 
   template.push({
     label:
-      grouped.size === 0
+      sessionAgents.size === 0
         ? "No agents running"
         : `${appState.agents.size} agent${appState.agents.size === 1 ? "" : "s"} · ${runningCount} active`,
     enabled: false,
   });
   template.push({ type: "separator" });
 
-  if (grouped.size > 0) {
-    // Stable session ordering — newest first by created_at on contained agents.
-    const sessionEntries = Array.from(grouped.entries()).sort(
+  if (projects.size > 0) {
+    // Sort projects by the most-recent agent activity within them.
+    const projectEntries = Array.from(projects.entries()).sort(
       ([, a], [, b]) => {
-        const aMax = Math.max(...a.map((x) => x.createdAt));
-        const bMax = Math.max(...b.map((x) => x.createdAt));
+        const aMax = Math.max(
+          ...a.flatMap((s) => s.agents.map((x) => x.createdAt)),
+        );
+        const bMax = Math.max(
+          ...b.flatMap((s) => s.agents.map((x) => x.createdAt)),
+        );
 
         return bMax - aMax;
       },
     );
 
-    for (const [sessionId, agents] of sessionEntries) {
-      const session = appState.sessions.get(sessionId);
-      const label = session ? sessionLabel(session) : "Session";
-      const sessionRunning = agents.some(isAgentActive);
+    for (const [, sessions] of projectEntries) {
+      // Sessions newest-first by their newest agent.
+      sessions.sort((a, b) => {
+        const aMax = Math.max(...a.agents.map((x) => x.createdAt));
+        const bMax = Math.max(...b.agents.map((x) => x.createdAt));
+
+        return bMax - aMax;
+      });
+
+      const projectLabel = projectDisplayName(sessions[0]?.session);
+      const totalAgents = sessions.reduce((n, s) => n + s.agents.length, 0);
+      const projectRunning = sessions.some((s) => s.agents.some(isAgentActive));
 
       template.push({
-        label: `${sessionRunning ? "● " : "○ "}${label}  (${agents.length})`,
-        click: () => navigateToSession(sessionId),
-        submenu: agents
-          .slice()
-          .sort((a, b) => a.createdAt - b.createdAt)
-          .map<Electron.MenuItemConstructorOptions>((agent) => ({
-            label: `${isAgentActive(agent) ? "● " : "○ "}${agentLabel(agent.agentId)}`,
-            click: () => navigateToSession(sessionId),
-          })),
+        label: `${projectRunning ? "● " : "○ "}${projectLabel}  (${totalAgents})`,
+        submenu: sessions.map<Electron.MenuItemConstructorOptions>(
+          ({ session, sessionId, agents }) => {
+            const label = session ? shortSessionLabel(session) : "Session";
+            const sessionRunning = agents.some(isAgentActive);
+
+            return {
+              label: `${sessionRunning ? "● " : "○ "}${label}  (${agents.length})`,
+              click: () => navigateToSession(sessionId),
+              submenu: agents
+                .slice()
+                .sort((a, b) => a.createdAt - b.createdAt)
+                .map<Electron.MenuItemConstructorOptions>((agent) => ({
+                  label: `${isAgentActive(agent) ? "● " : "○ "}${agentLabel(agent.agentId)}`,
+                  click: () => navigateToSession(sessionId, agent.agentId),
+                })),
+            };
+          },
+        ),
       });
     }
   }

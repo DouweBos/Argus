@@ -968,7 +968,7 @@ app.whenReady().then(() => {
   // Menu-bar tray with a live "running agents" dropdown. macOS-only — the
   // helper no-ops on other platforms.
   initTray({
-    navigateMainWindow: (route) => {
+    navigateMainWindow: (route, agentId) => {
       if (!mainWindow || mainWindow.isDestroyed()) {
         createWindow();
       }
@@ -977,7 +977,10 @@ app.whenReady().then(() => {
       if (mainWindow?.webContents.isLoading()) {
         pendingDeepLink = route;
       } else {
-        mainWindow?.webContents.send("navigation:goto", { path: route });
+        mainWindow?.webContents.send("navigation:goto", {
+          path: route,
+          agentId,
+        });
       }
     },
   });
