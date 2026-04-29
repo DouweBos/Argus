@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Button, CalloutCard, IconBadge, Icons } from "@argus/peacock";
+import {
+  Button,
+  CalloutCard,
+  CodeBlock,
+  IconBadge,
+  Icons,
+  Spinner,
+} from "@argus/peacock";
 import {
   refineArgusJsonWithClaude,
   suggestArgusJson,
@@ -12,7 +19,13 @@ interface NoArgusJsonCardProps {
   repoRoot: string;
 }
 
-type Mode = "choosing" | "generating-claude" | "generating-quick" | "idle";
+type Mode =
+  | "choosing"
+  | "generating-claude"
+  | "generating-quick"
+  | "idle"
+  | "reviewing"
+  | "saving";
 
 export function NoArgusJsonCard({
   repoRoot,
@@ -20,17 +33,28 @@ export function NoArgusJsonCard({
 }: NoArgusJsonCardProps) {
   const [mode, setMode] = useState<Mode>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [proposed, setProposed] = useState<Record<string, unknown> | null>(
+    null,
+  );
+  const [proposedSource, setProposedSource] = useState<"claude" | "quick">(
+    "quick",
+  );
 
   const open = () => {
     setError(null);
     setMode("choosing");
   };
   const close = () => {
-    if (mode === "generating-quick" || mode === "generating-claude") {
+    if (
+      mode === "generating-quick" ||
+      mode === "generating-claude" ||
+      mode === "saving"
+    ) {
       return;
     }
     setMode("idle");
     setError(null);
+    setProposed(null);
   };
 
   const runQuick = async () => {
@@ -38,12 +62,9 @@ export function NoArgusJsonCard({
     setError(null);
     try {
       const suggestion = await suggestArgusJson(repoRoot);
-      await writeOnboardingArgusJson(
-        repoRoot,
-        suggestion.config as Record<string, unknown>,
-      );
-      setMode("idle");
-      onGenerated();
+      setProposed(suggestion.config as Record<string, unknown>);
+      setProposedSource("quick");
+      setMode("reviewing");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setMode("choosing");
@@ -59,17 +80,41 @@ export function NoArgusJsonCard({
         repoRoot,
         suggestion.config as Record<string, unknown>,
       );
-      await writeOnboardingArgusJson(repoRoot, refined);
-      setMode("idle");
-      onGenerated();
+      setProposed(refined);
+      setProposedSource("claude");
+      setMode("reviewing");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setMode("choosing");
     }
   };
 
+  const acceptProposed = async () => {
+    if (!proposed) {
+      return;
+    }
+    setMode("saving");
+    setError(null);
+    try {
+      await writeOnboardingArgusJson(repoRoot, proposed);
+      setMode("idle");
+      setProposed(null);
+      onGenerated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setMode("reviewing");
+    }
+  };
+
+  const discardProposed = () => {
+    setProposed(null);
+    setError(null);
+    setMode("choosing");
+  };
+
   const isGenerating =
     mode === "generating-quick" || mode === "generating-claude";
+  const isSaving = mode === "saving";
 
   return (
     <>
@@ -101,59 +146,113 @@ export function NoArgusJsonCard({
           onClose={close}
           size="medium"
         >
-          <div className={styles.form}>
-            <p className={styles.helpText}>
-              An <code>.argus.json</code> file tells Argus how to set up new
-              worktrees for this project — which directories to copy (
-              <code>node_modules</code>, <code>Pods</code>), which files to
-              symlink (<code>.env</code>), which install commands to run, and
-              which ports to allocate per session. It&apos;s checked in so the
-              whole team shares the same setup.
-            </p>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Quick generate</label>
+          {mode === "reviewing" || mode === "saving" ? (
+            <div className={styles.form}>
               <p className={styles.helpText}>
-                Inspect <code>package.json</code>, lockfiles, and platform dirs
-                and write a sensible default. Fast, no network, no LLM.
+                {proposedSource === "claude"
+                  ? "Claude proposed the following .argus.json. Review the contents and save it to write the file to the repo root."
+                  : "Argus inferred the following .argus.json from your project. Review the contents and save it to write the file to the repo root."}
               </p>
-              <Button
-                variant="secondary"
-                disabled={isGenerating}
-                onClick={runQuick}
-              >
-                {mode === "generating-quick" ? "Generating…" : "Quick generate"}
-              </Button>
-            </div>
 
-            <div className={styles.field}>
-              <label className={styles.label}>Generate with Claude</label>
+              <CodeBlock
+                code={JSON.stringify(proposed ?? {}, null, 2)}
+                language="json"
+              />
+
+              {error && <p className={styles.errorMsg}>{error}</p>}
+
+              <div className={styles.footer}>
+                <Button
+                  variant="ghost"
+                  disabled={isSaving}
+                  onClick={discardProposed}
+                >
+                  Discard
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled={isSaving || !proposed}
+                  onClick={acceptProposed}
+                  leading={
+                    isSaving ? (
+                      <Spinner size="sm" tone="neutral" />
+                    ) : (
+                      <Icons.CheckIcon size={12} />
+                    )
+                  }
+                >
+                  {isSaving ? "Saving…" : "Save .argus.json"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.form}>
               <p className={styles.helpText}>
-                Run the Claude CLI in this project to refine the config — it
-                reads your scripts, native targets, and env files and produces a
-                tailored result. Takes ~30–90s. Requires the <code>claude</code>{" "}
-                CLI to be installed and authenticated.
+                An <code>.argus.json</code> file tells Argus how to set up new
+                worktrees for this project — which directories to copy (
+                <code>node_modules</code>, <code>Pods</code>), which files to
+                symlink (<code>.env</code>), which install commands to run, and
+                which ports to allocate per session. It&apos;s checked in so the
+                whole team shares the same setup.
               </p>
-              <Button
-                variant="primary"
-                disabled={isGenerating}
-                onClick={runClaude}
-                leading={<Icons.AgentStartIcon size={12} />}
-              >
-                {mode === "generating-claude"
-                  ? "Asking Claude…"
-                  : "Generate with Claude"}
-              </Button>
-            </div>
 
-            {error && <p className={styles.errorMsg}>{error}</p>}
+              <div className={styles.field}>
+                <label className={styles.label}>Quick generate</label>
+                <p className={styles.helpText}>
+                  Inspect <code>package.json</code>, lockfiles, and platform
+                  dirs and write a sensible default. Fast, no network, no LLM.
+                </p>
+                <Button
+                  variant="secondary"
+                  disabled={isGenerating}
+                  onClick={runQuick}
+                  leading={
+                    mode === "generating-quick" ? (
+                      <Spinner size="sm" tone="muted" />
+                    ) : undefined
+                  }
+                >
+                  {mode === "generating-quick"
+                    ? "Generating…"
+                    : "Quick generate"}
+                </Button>
+              </div>
 
-            <div className={styles.footer}>
-              <Button variant="ghost" disabled={isGenerating} onClick={close}>
-                Cancel
-              </Button>
+              <div className={styles.field}>
+                <label className={styles.label}>Generate with Claude</label>
+                <p className={styles.helpText}>
+                  Run the Claude CLI in this project to refine the config — it
+                  reads your scripts, native targets, and env files and produces
+                  a tailored result. Takes ~30–90s. Requires the{" "}
+                  <code>claude</code> CLI to be installed and authenticated.
+                </p>
+                <Button
+                  variant="primary"
+                  disabled={isGenerating}
+                  onClick={runClaude}
+                  leading={
+                    mode === "generating-claude" ? (
+                      <Spinner size="sm" tone="neutral" />
+                    ) : (
+                      <Icons.AgentStartIcon size={12} />
+                    )
+                  }
+                >
+                  {mode === "generating-claude"
+                    ? "Asking Claude…"
+                    : "Generate with Claude"}
+                </Button>
+              </div>
+
+              {error && <p className={styles.errorMsg}>{error}</p>}
+
+              <div className={styles.footer}>
+                <Button variant="ghost" disabled={isGenerating} onClick={close}>
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </Dialog>
       )}
     </>
