@@ -89,21 +89,41 @@ whole team should get.
 | ---------------------------- | --------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Send anonymous telemetry** | `localStorage` (`argus:settings`) | `false` | Sends anonymous usage and crash events to PostHog so we can find bugs and prioritize features. Consent is collected once during onboarding (telemetry step); flip it any time here. |
 
-What we send:
+What we send (when the toggle is on):
 
-- Anonymous install id (random UUID stored at `~/.argus/telemetry-id`).
-  Wiping this file resets it.
+- Anonymous install id (random UUID stored at `~/.argus/telemetry-id`
+  for the main process, `localStorage` for the renderer). Wiping it
+  rotates the id. We never call `posthog.identify(...)`, so the id
+  isn't linked to a person, account, or email.
 - App version, OS, OS version, Electron/Node version, CPU arch.
-- Feature usage events (no arguments, no file paths, no project names).
+- Standard auto-properties added by PostHog's web SDK in the renderer:
+  browser type/version/language, raw user agent, screen and viewport
+  size, timezone, in-app URL/path (always `localhost` or the bundled
+  file URL — never external sites), and a per-SDK-session id.
+- Approximate location, derived **server-side at PostHog** from the
+  request IP: country, region, city, postal code, and a city-level
+  latitude/longitude. We don't log or persist your IP ourselves, but
+  PostHog's ingestion pipeline sees it. If this is unacceptable, leave
+  telemetry off.
+- Argus-specific events documented in
+  [telemetry-events.md](./telemetry-events.md) — feature usage signals
+  with the small, named props listed there. Never raw arguments, file
+  paths, or project content.
 - Errors and crashes from both the main and renderer processes. Stack
-  traces are scrubbed of user home directory paths.
+  traces are scrubbed of user home directory paths
+  (`/Users/<name>`, `/home/<name>`, `C:\Users\<name>`).
 
 What we do **not** send:
 
-- Your IP address, geolocation, or any session recording.
+- Session replays / DOM recordings. Disabled in code (`$has_recording`
+  is `false` on every event we emit).
+- DOM autocapture — element selectors, click targets, form inputs.
+  Disabled in code.
 - Prompts, file contents, agent output, project names, branch names,
   repo paths, or any other content of your work.
-- Anything that ties an install id to a person, account, or machine.
+- A person profile linking the install id to a name, email, or
+  account. We don't `identify(...)` and PostHog reports
+  `$process_person_profile: false` on every event.
 
 Telemetry is hard-disabled in any non-packaged build (`pnpm dev`,
 `vite build` previews, anything where `app.isPackaged` is false /
@@ -111,6 +131,9 @@ Telemetry is hard-disabled in any non-packaged build (`pnpm dev`,
 development sessions never appear in PostHog. The integration is also
 dormant in production builds unless `VITE_POSTHOG_KEY` was configured
 at build time.
+
+For the full per-event catalogue and exhaustive property list, see
+[telemetry-events.md](./telemetry-events.md).
 
 ---
 
