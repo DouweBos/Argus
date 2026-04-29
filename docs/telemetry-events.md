@@ -1,20 +1,104 @@
 # Telemetry events
 
-Catalog of every event Argus sends to PostHog. Anonymous distinct id only — see [`app-settings.md`](app-settings.md) for the privacy contract.
+Catalog of every event Argus sends to PostHog when telemetry is opted in.
+Telemetry is **off by default** and gated by a one-time consent step during
+first-launch onboarding. See [`app-settings.md`](app-settings.md) for the
+toggle and the storage details.
 
-Two sources: **main** (`electron/services/telemetry/telemetry.ts` via `posthog-node`) and **renderer** (`app/lib/telemetry.ts` via `posthog-js`). Renderer events can also be forwarded through the `telemetry_capture` IPC when something in the renderer wants the main-process channel (survives renderer death).
+Two sources: **main** (`electron/services/telemetry/telemetry.ts` via
+`posthog-node`) and **renderer** (`app/lib/telemetry.ts` via `posthog-js`).
+Renderer events can also be forwarded through the `telemetry_capture` IPC
+when something in the renderer wants the main-process channel (survives
+renderer death).
 
-## Base properties
+## What's attached to every event
 
-Attached to every event automatically.
+When you opt in, every event PostHog receives carries the catalogue below.
+Some of these come from our explicit `baseProps()`; some are added
+automatically by PostHog's SDKs; some are enriched server-side at PostHog
+from the request IP. We list all three so the picture is complete.
 
-**Main** (`baseProps()` in `electron/services/telemetry/telemetry.ts`):
+**Identifiers** — anonymous, but stable across launches:
 
-- `app_version`, `is_packaged`, `platform`, `arch`, `os_release`, `electron_version`, `node_version`
+- `distinct_id` / `$device_id` — random UUID generated locally and stored
+  at `~/.argus/telemetry-id` (main) or `localStorage` (renderer). Wipe
+  the file or clear browser storage to rotate it. We never call
+  `posthog.identify(...)` — there is no person profile, no email, and no
+  account linked to it (`$is_identified: false`,
+  `$process_person_profile: false`).
 
-**Renderer** (registered in `posthog.init` `loaded` callback):
+**Argus props (from our `baseProps()`):**
 
-- `app_version`, `platform`, `process: "renderer"`
+- Main: `app_version`, `is_packaged`, `platform`, `arch`, `os_release`,
+  `electron_version`, `node_version`.
+- Renderer: `app_version`, `platform`, `process: "renderer"`.
+
+**PostHog SDK auto-properties (renderer only — `posthog-js`):**
+
+- `$browser`, `$browser_version`, `$browser_language`, `$raw_user_agent`
+- `$os`, `$os_version` (derived from the user agent)
+- `$device_type` (e.g. `Desktop`)
+- `$screen_width` / `$screen_height` and `$viewport_width` / `$viewport_height`
+- `$timezone`, `$timezone_offset`
+- `$current_url`, `$pathname`, `$host` — the in-app URL of the renderer
+  window (always under `localhost:1420` or the bundled file URL; never
+  external sites)
+- `$referrer`, `$referring_domain` — almost always `$direct` because
+  the renderer is local
+- `$session_id`, `$window_id`, `$session_entry_*` — rotating per
+  PostHog SDK session (30-min idle timeout); used by PostHog to group
+  events into sessions on its end
+- `$insert_id`, `$sent_at`, `$time`, `$lib`, `$lib_version` — SDK
+  bookkeeping
+
+These come from PostHog's `posthog-js` and are not configured by us. If
+you want to know what each one means, the
+[PostHog autocapture docs](https://posthog.com/docs/data/autocapture)
+list them in full.
+
+**GeoIP enrichment (server-side at PostHog):**
+
+PostHog's ingestion pipeline derives geographic properties from the
+request IP and attaches them to every event. This means the IP touches
+PostHog's servers, and the resulting event in PostHog includes:
+
+- `$geoip_country_code`, `$geoip_country_name`, `$geoip_continent_code`,
+  `$geoip_continent_name`
+- `$geoip_subdivision_1_code`, `$geoip_subdivision_1_name` (state /
+  province)
+- `$geoip_city_name`
+- `$geoip_postal_code`
+- `$geoip_latitude`, `$geoip_longitude`, `$geoip_accuracy_radius`
+- `$geoip_time_zone`
+
+The accuracy is roughly city-level. We do not log or persist your IP
+ourselves, but PostHog's ingestion sees it. If this is unacceptable to
+you, leave telemetry off — that is the supported privacy mode.
+
+**What is _not_ sent, even when telemetry is on:**
+
+- Session replay / DOM recordings — disabled in code
+  (`$has_recording: false`, `$recording_status: "disabled"` confirm this
+  on every event).
+- DOM autocapture — disabled in code, so we never send element selectors
+  or click targets.
+- Person profiles — we never call `posthog.identify(...)`, so PostHog
+  doesn't link the distinct id to a person record
+  (`$process_person_profile: false`).
+- Prompts, file contents, agent output, file paths, project names, repo
+  names, branch names — anything from your work. The
+  [event catalogue below](#lifecycle) lists exactly which props each
+  event carries; nothing else is sent.
+- File-system paths inside error messages and stack traces — these are
+  scrubbed of `/Users/<name>`, `/home/<name>`, and `C:\Users\<name>`
+  before sending.
+
+**When telemetry is hard-disabled, regardless of the toggle:**
+
+- Any non-packaged build (`pnpm dev`, Vite previews — anything where
+  `app.isPackaged` is `false` or `import.meta.env.PROD` is `false`).
+- Production builds where `VITE_POSTHOG_KEY` was not configured at
+  build time.
 
 ## Lifecycle
 

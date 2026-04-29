@@ -179,8 +179,12 @@ Organisations are configured in App settings.
   machine.
 - **No mandatory account.** You sign into the `claude` CLI; Argus has no
   account of its own.
-- **No telemetry by default for privacy-sensitive data.** Anonymous
-  distinct id only, opt-out toggle in App settings, full event catalogue
-  in [Telemetry](/argus/docs/telemetry).
+- **Telemetry is off by default.** Opt in once during onboarding (or
+  any time from App settings). When on, Argus sends anonymous,
+  feature-level events to PostHog along with standard SDK properties
+  (browser/OS/screen/timezone) and IP-derived city-level GeoIP added
+  server-side. No session replay, no DOM autocapture, no prompts, no
+  file contents, no project names — full audit in
+  [Telemetry](/argus/docs/telemetry).
 - **No proprietary editor.** Argus embeds VS Code; your existing
   extensions and muscle memory carry over.
