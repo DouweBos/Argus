@@ -382,6 +382,26 @@ export function createTerminal(
       flushTimer = null;
     }
     flush();
+    // For run-commands (configured in `.argus.json`), append an explicit
+    // exit-status line. Build commands often end on a noisy "building…"
+    // print, leaving the user unable to tell whether the run finished.
+    if (terminal.runTitle) {
+      const color = exitCode === 0 ? "\x1b[1;32m" : "\x1b[1;31m";
+      const label =
+        exitCode === 0 ? "exited cleanly" : `exited with code ${exitCode}`;
+      const line = `\r\n${color}— ${terminal.runTitle} ${label}\x1b[0m\r\n`;
+      terminal.outputTotalBytes += line.length;
+      terminal.outputLog += line;
+      if (terminal.outputLog.length > MAX_OUTPUT_BYTES) {
+        const overflow = terminal.outputLog.length - MAX_OUTPUT_BYTES;
+        terminal.outputLog = terminal.outputLog.slice(overflow);
+        terminal.outputDroppedBytes += overflow;
+      }
+      getMainWindow()?.webContents.send(
+        `terminal:data:${terminalId}`,
+        Buffer.from(line).toString("base64"),
+      );
+    }
     terminal.exitCode = exitCode;
     terminal.exitedAt = Date.now();
     getMainWindow()?.webContents.send(`terminal:exit:${terminalId}`, exitCode);
