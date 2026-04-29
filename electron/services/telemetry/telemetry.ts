@@ -7,7 +7,11 @@
  * - No autocapture, no session recording, no IP, no PII in props.
  * - Off when `enabled` is false (renderer mirrors via the
  *   `telemetry_set_enabled` IPC).
- * - Off when `POSTHOG_KEY` / `VITE_POSTHOG_KEY` are not configured.
+ * - Off when `POSTHOG_KEY` is not configured. The key is inlined into the
+ *   main bundle at build time by `build-electron.mjs` via esbuild `define`
+ *   (matching how Vite inlines `VITE_POSTHOG_KEY` for the renderer); reading
+ *   `process.env` at runtime in a packaged Electron app would always be
+ *   empty, which is exactly the bug this avoids.
  */
 import type {
   EventArgs,
@@ -22,11 +26,8 @@ import { getAnonymousId } from "./anonymousId";
 
 const log = createLogger("telemetry");
 
-const API_KEY = process.env.POSTHOG_KEY ?? process.env.VITE_POSTHOG_KEY ?? "";
-const HOST =
-  process.env.POSTHOG_HOST ??
-  process.env.VITE_POSTHOG_HOST ??
-  "https://eu.i.posthog.com";
+const API_KEY = process.env.POSTHOG_KEY ?? "";
+const HOST = process.env.POSTHOG_HOST || "https://eu.i.posthog.com";
 
 let client: PostHog | null = null;
 // Default opt-out — the renderer pushes the user's consent state via

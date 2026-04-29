@@ -98,9 +98,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
           # --- Telemetry (PostHog) ---
-          # Inlined into the renderer bundle by Vite and read by posthog-node
-          # in the main process. Without this secret the integration stays
-          # dormant in the released build (no events sent).
+          # Inlined at build time into both bundles: Vite picks up
+          # `VITE_POSTHOG_*` for the renderer, and `build-electron.mjs`
+          # passes `POSTHOG_*` to esbuild `define` so posthog-node in the
+          # main process gets the same secret. Both pairs come from the
+          # same GitHub secret. Without these, telemetry stays dormant.
+          POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
           VITE_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
 

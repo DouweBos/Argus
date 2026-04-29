@@ -305,6 +305,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ["build-electron.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     files: ["**/*.{test,spec}.{ts,tsx}"],
     plugins: { vitest },
     rules: {
