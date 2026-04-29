@@ -26,3 +26,47 @@
 .advanced > *:not(summary) {
   margin-top: var(--space-4);
 }
+
+.runCommandList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.runCommandCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  background: var(--bg-primary);
+}
+
+.runCommandCard:hover {
+  border-color: var(--border-strong, var(--border));
+}
+
+.runCommandTopRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.runCommandRequiresRow {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--border);
+}
+
+.runCommandRequiresLabel {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}

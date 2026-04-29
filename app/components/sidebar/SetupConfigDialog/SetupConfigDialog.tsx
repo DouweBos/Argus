@@ -291,7 +291,7 @@ function RunCommandsField({
           </button>
         </div>
       ) : (
-        <div className={styles.listEditor}>
+        <div className={sectionStyles.runCommandList}>
           {list.items.map((entry, i) => {
             const otherTitles = list.items
               .map((e, idx) => ({ title: e.title.trim(), idx }))
@@ -304,61 +304,51 @@ function RunCommandsField({
             };
 
             return (
-              <div
-                key={i}
-                className={styles.listRow}
-                style={{ flexWrap: "wrap" }}
-              >
-                <Input
-                  placeholder="Title (e.g. Dev)"
-                  style={{ flex: 1, minWidth: 100 }}
-                  type="text"
-                  value={entry.title}
-                  onChange={(e) => list.update(i, "title", e.target.value)}
-                />
-                <Input
-                  placeholder="Command (e.g. pnpm dev)"
-                  style={{ flex: 2, minWidth: 160 }}
-                  type="text"
-                  value={entry.command}
-                  onChange={(e) => list.update(i, "command", e.target.value)}
-                />
-                <Input
-                  placeholder="cwd (optional)"
-                  style={{ flex: 1, minWidth: 100 }}
-                  type="text"
-                  value={entry.cwd}
-                  onChange={(e) => list.update(i, "cwd", e.target.value)}
-                />
-                <label className={styles.checkboxRow}>
-                  <input
-                    checked={entry.restartOnRerun}
-                    type="checkbox"
-                    onChange={(e) =>
-                      list.update(i, "restartOnRerun", e.target.checked)
-                    }
+              <div key={i} className={sectionStyles.runCommandCard}>
+                <div className={sectionStyles.runCommandTopRow}>
+                  <Input
+                    placeholder="Title (e.g. Dev)"
+                    style={{ flex: 1, minWidth: 100 }}
+                    type="text"
+                    value={entry.title}
+                    onChange={(e) => list.update(i, "title", e.target.value)}
                   />
-                  Restart on rerun
-                </label>
-                <button
-                  aria-label="Remove"
-                  className={styles.removeBtn}
-                  onClick={() => list.remove(i)}
-                >
-                  <Icons.CloseIcon size={12} />
-                </button>
-                {otherTitles.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 12,
-                      flexWrap: "wrap",
-                      flexBasis: "100%",
-                      paddingLeft: 4,
-                    }}
+                  <Input
+                    placeholder="Command (e.g. pnpm dev)"
+                    style={{ flex: 2, minWidth: 160 }}
+                    type="text"
+                    value={entry.command}
+                    onChange={(e) => list.update(i, "command", e.target.value)}
+                  />
+                  <Input
+                    placeholder="cwd (optional)"
+                    style={{ flex: 1, minWidth: 100 }}
+                    type="text"
+                    value={entry.cwd}
+                    onChange={(e) => list.update(i, "cwd", e.target.value)}
+                  />
+                  <label className={styles.checkboxRow}>
+                    <input
+                      checked={entry.restartOnRerun}
+                      type="checkbox"
+                      onChange={(e) =>
+                        list.update(i, "restartOnRerun", e.target.checked)
+                      }
+                    />
+                    Restart on rerun
+                  </label>
+                  <button
+                    aria-label="Remove"
+                    className={styles.removeBtn}
+                    onClick={() => list.remove(i)}
                   >
-                    <span className={styles.helpText} style={{ margin: 0 }}>
-                      Requires running:
+                    <Icons.CloseIcon size={12} />
+                  </button>
+                </div>
+                {otherTitles.length > 0 && (
+                  <div className={sectionStyles.runCommandRequiresRow}>
+                    <span className={sectionStyles.runCommandRequiresLabel}>
+                      Requires running
                     </span>
                     {otherTitles.map((o) => (
                       <label key={o.idx} className={styles.checkboxRow}>
