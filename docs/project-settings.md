@@ -350,25 +350,3 @@ Use the project-level entry for things the team should share; use the
   "protected_branches": ["main"],
 }
 ```
-
----
-
-## Adding a new project setting
-
-When you build a feature whose behaviour the team should be able to
-configure on a per-project basis:
-
-1. Add the field to `ArgusConfig` in
-   `electron/services/session/models.ts`. Default it in
-   `defaultArgusConfig()`.
-2. Parse + normalise it in
-   `electron/services/session/setup.ts`. Throw a clear error string
-   when the input is malformed.
-3. If the field belongs in the auto-generated config, extend
-   `electron/services/onboarding/argusJson.ts` so onboarding fills it
-   in automatically.
-4. Update the **Project settings** section of the in-app Settings
-   screen if there's a UI for editing it (currently this section just
-   links here for hand-editing).
-5. Document it here. Add a row to the table for the relevant block, or
-   a new top-level section if it deserves one.

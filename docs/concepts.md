@@ -58,9 +58,8 @@ running `pnpm install`, etc.) is configured in `.argus.json`.
 ## Agent
 
 An **agent** is a running Claude Code process bound to a session's
-worktree. Argus spawns it as a subprocess with `--output-format
-stream-json` and renders the streaming tool calls in the centre panel as
-they happen.
+worktree. The streaming tool calls render in the centre panel as they
+happen.
 
 Each tool call surfaces as a card you can expand to inspect arguments and
 results. If a tool needs permission, the **permission broker** asks you

@@ -5,11 +5,10 @@ Telemetry is **off by default** and gated by a one-time consent step during
 first-launch onboarding. See [`app-settings.md`](app-settings.md) for the
 toggle and the storage details.
 
-Two sources: **main** (`electron/services/telemetry/telemetry.ts` via
-`posthog-node`) and **renderer** (`app/lib/telemetry.ts` via `posthog-js`).
-Renderer events can also be forwarded through the `telemetry_capture` IPC
-when something in the renderer wants the main-process channel (survives
-renderer death).
+Events come from two channels: **main** (the Argus app process,
+covering lifecycle, sessions, merges, agents, org tasks) and
+**renderer** (the UI, covering renderer lifecycle and feedback). Both
+funnel into the same PostHog project.
 
 ## What's attached to every event
 
@@ -99,59 +98,58 @@ supported privacy mode.
 
 **When telemetry is hard-disabled, regardless of the toggle:**
 
-- Any non-packaged build (`pnpm dev`, Vite previews — anything where
-  `app.isPackaged` is `false` or `import.meta.env.PROD` is `false`).
-- Production builds where `VITE_POSTHOG_KEY` was not configured at
-  build time.
+- Development builds. Our own development sessions never appear in
+  PostHog.
 
 ## Lifecycle
 
 | Event                | Source   | When                                                                      | Extra props                |
 | -------------------- | -------- | ------------------------------------------------------------------------- | -------------------------- |
 | `app_launched`       | main     | Telemetry transitions off → on (first opt-in, or re-enable after opt-out) | —                          |
-| `app_quit`           | main     | `before-quit` in `electron/main.ts`                                       | —                          |
+| `app_quit`           | main     | App is quitting                                                           | —                          |
 | `renderer_started`   | renderer | Each renderer (main window or popout) finishes booting                    | `popout: "main" \| string` |
 | `telemetry_enabled`  | main     | User opts in                                                              | —                          |
 | `telemetry_disabled` | main     | User opts out (sent before the off-flip + flush)                          | —                          |
 
 ## Sessions
 
-| Event             | Source | When                                | Extra props                                                                                 |
-| ----------------- | ------ | ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| `session_created` | main   | `createSession` accepted user input | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
-| `session_deleted` | main   | `deleteSession` invoked             | `kind` (`worktree` \| `org_host` \| `project_root`), `delete_branch`, `is_org_task`         |
+| Event             | Source | When                     | Extra props                                                                                 |
+| ----------------- | ------ | ------------------------ | ------------------------------------------------------------------------------------------- |
+| `session_created` | main   | A new session is created | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
+| `session_deleted` | main   | A session is deleted     | `kind` (`worktree` \| `org_host` \| `project_root`), `delete_branch`, `is_org_task`         |
 
 ## Merges
 
-`session_merge_*` covers the rebase-based merge flow in `electron/services/session/merge.ts`. `phase` distinguishes the initial attempt from a `continue` after the user resolved conflicts.
+`session_merge_*` covers the merge flow. `phase` distinguishes the
+initial attempt from a `continue` after the user resolved conflicts.
 
-| Event                    | Source | When                                                 | Extra props                                     |
-| ------------------------ | ------ | ---------------------------------------------------- | ----------------------------------------------- |
-| `session_merged`         | main   | Merge completed cleanly (squash + fast-forward done) | `phase: "attempt" \| "continue"`                |
-| `session_merge_conflict` | main   | Rebase or merge stopped on conflicts                 | `phase`, `conflicting_files` (count, not paths) |
-| `session_merge_aborted`  | main   | `abort_merge` called on an in-progress rebase/merge  | `kind: "rebase" \| "merge"`                     |
+| Event                    | Source | When                             | Extra props                                     |
+| ------------------------ | ------ | -------------------------------- | ----------------------------------------------- |
+| `session_merged`         | main   | Merge completed cleanly          | `phase: "attempt" \| "continue"`                |
+| `session_merge_conflict` | main   | Merge stopped on conflicts       | `phase`, `conflicting_files` (count, not paths) |
+| `session_merge_aborted`  | main   | An in-progress merge was aborted | `kind: "rebase" \| "merge"`                     |
 
 ## Agents
 
-| Event               | Source | When                                      | Extra props                                                                   |
-| ------------------- | ------ | ----------------------------------------- | ----------------------------------------------------------------------------- |
-| `agent_started`     | main   | New Claude child spawned (not on respawn) | `has_model`, `has_resume_id`, `has_parent`, `permission_mode`, `session_kind` |
-| `agent_restored`    | main   | Conversation restored at a prior turn     | `keep_turn_number`, `is_fresh_start`                                          |
-| `agent_exited`      | main   | Child process closed                      | `exit_code`, `success`, `turns_completed`, `tool_uses`, `duration_ms`         |
-| `agent_stopped`     | main   | `stopAgent` finished tearing down         | —                                                                             |
-| `agent_interrupted` | main   | Interrupt control request acked           | —                                                                             |
+| Event               | Source | When                                  | Extra props                                                                   |
+| ------------------- | ------ | ------------------------------------- | ----------------------------------------------------------------------------- |
+| `agent_started`     | main   | A new agent is started                | `has_model`, `has_resume_id`, `has_parent`, `permission_mode`, `session_kind` |
+| `agent_restored`    | main   | Conversation restored at a prior turn | `keep_turn_number`, `is_fresh_start`                                          |
+| `agent_exited`      | main   | The agent process exited              | `exit_code`, `success`, `turns_completed`, `tool_uses`, `duration_ms`         |
+| `agent_stopped`     | main   | The agent was stopped                 | —                                                                             |
+| `agent_interrupted` | main   | The agent was interrupted             | —                                                                             |
 
 ## Org tasks
 
-| Event              | Source | When                           | Extra props  |
-| ------------------ | ------ | ------------------------------ | ------------ |
-| `org_task_started` | main   | `startOrgTask` validated input | `scope_size` |
+| Event              | Source | When                         | Extra props  |
+| ------------------ | ------ | ---------------------------- | ------------ |
+| `org_task_started` | main   | An organisation task started | `scope_size` |
 
 ## Onboarding
 
-| Event                  | Source | When                                      | Extra props |
-| ---------------------- | ------ | ----------------------------------------- | ----------- |
-| `onboarding_completed` | main   | First time `completeOnboarding` is called | —           |
+| Event                  | Source | When                             | Extra props |
+| ---------------------- | ------ | -------------------------------- | ----------- |
+| `onboarding_completed` | main   | First-launch onboarding finished | —           |
 
 ## Feedback
 
@@ -163,32 +161,13 @@ supported privacy mode.
 
 Two channels:
 
-- **`$exception`** — only fires on truly unhandled crashes (process gone, uncaught exception/rejection, `window.onerror`). Follows PostHog's [exception autocapture schema](https://posthog.com/docs/error-tracking).
-- **`app_error`** — every `log.error(...)` call from anywhere in the app. Wired through `setErrorSink` in `app/lib/logger.ts`, so caught-and-logged errors that never reach the unhandled path still get captured. Props: `scope` (logger scope, e.g. `agent`, `session:merge`) and `message` (scrubbed, truncated to 2 KB). No automatic capture for `log.warn` / `log.info`.
+- **`$exception`** — fires on truly unhandled crashes (process gone,
+  uncaught exception or rejection). Includes the error name, scrubbed
+  error message, scrubbed stack trace, and a `source` indicating which
+  channel triggered it. Crash-process events additionally include the
+  exit reason and exit code.
+- **`app_error`** — caught-and-logged errors. Props: `scope` (e.g.
+  `agent`, `session:merge`) and a scrubbed, truncated `message`.
 
-Error messages and stack traces are scrubbed of `/Users/<name>`, `/home/<name>`, and `C:\Users\<name>` paths before sending.
-
-| Source   | Trigger               | `source` prop         |
-| -------- | --------------------- | --------------------- |
-| main     | `render-process-gone` | `render-process-gone` |
-| main     | `child-process-gone`  | `child-process-gone`  |
-| main     | `uncaughtException`   | `uncaughtException`   |
-| main     | `unhandledRejection`  | `unhandledRejection`  |
-| renderer | `window.onerror`      | `window.onerror`      |
-| renderer | `unhandledrejection`  | `unhandledrejection`  |
-
-Common props on all `$exception` events:
-
-- `$exception_type` — `error.name`
-- `$exception_message` — scrubbed `error.message`
-- `$exception_stack_trace_raw` — scrubbed `error.stack` (if present)
-- `$exception_level: "error"`
-- `source` — see table above
-- `render-process-gone` / `child-process-gone` additionally include `reason`, `exitCode`, and (for child) `type`. The `name` field from `child-process-gone` is dropped — it can leak window titles.
-
-## Adding a new event
-
-1. Use `capture(name, props)` from `app/lib/telemetry.ts` (renderer) or `electron/services/telemetry/telemetry.ts` (main). Don't call `posthog.capture` directly.
-2. Event names are `snake_case`. Group with a stable prefix (`feedback_`, `agent_`, `session_`).
-3. Never include prompts, file contents, project/repo names, branch names, file paths, or any user-identifying string in props.
-4. Add a row to the matching table above.
+Error messages and stack traces are scrubbed of user home directory
+paths before sending.
