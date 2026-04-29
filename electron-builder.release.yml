@@ -25,6 +25,8 @@ extraResources:
     to: root-agent-system-prompt.md
   - from: electron/prompts/org-host-agent-system-prompt.md
     to: org-host-agent-system-prompt.md
+  - from: docs/project-settings.md
+    to: docs/project-settings.md
 afterPack: scripts/electron-after-pack.cjs
 mac:
   # Distribution build — signed with Developer ID, notarized, stapled.

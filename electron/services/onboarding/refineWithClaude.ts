@@ -7,25 +7,35 @@
  * asking for JSON output. The caller decides what to do with the result.
  */
 
+import { app } from "electron";
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { warn } from "../../../app/lib/logger";
 
 const CLAUDE_BIN = "claude";
 const TIMEOUT_MS = 120_000;
 
-const SCHEMA_DOC = `Schema (all fields optional unless noted):
-{
-  "setup": {
-    "copy": string[],         // dirs/files to copy into each worktree (e.g. "node_modules", "ios/Pods")
-    "symlink": string[],      // files to symlink (e.g. ".env.local")
-    "commands": string[]      // shell commands run once after copy/symlink (e.g. "pnpm install")
-  },
-  "terminals": [{ "name": string, "dir": string }],
-  "run": [{ "title": string, "command": string, "restartOnRerun": boolean, "cwd"?: string }],
-  "workspace_env": [{ "name": string, "base_value": number, "range": number, "strategy": "hash" | "sequential" }],
-  "platforms"?: ("ios" | "android" | "web")[],
-  "browser_url"?: string,
-  "related_projects"?: [{ "path": string, "description": string }]
-}`;
+let cachedSchemaDoc: string | null = null;
+
+function loadSchemaDoc(): string {
+  if (cachedSchemaDoc !== null) {
+    return cachedSchemaDoc;
+  }
+  const docPath = app.isPackaged
+    ? path.join(process.resourcesPath, "docs", "project-settings.md")
+    : path.join(process.cwd(), "docs", "project-settings.md");
+  try {
+    cachedSchemaDoc = readFileSync(docPath, "utf-8");
+  } catch (e) {
+    cachedSchemaDoc = "";
+    warn(
+      `Failed to load project-settings.md for refineWithClaude: ${String(e)}`,
+    );
+  }
+
+  return cachedSchemaDoc;
+}
 
 export async function refineArgusJsonWithClaude(
   repoRoot: string,
@@ -45,7 +55,9 @@ export async function refineArgusJsonWithClaude(
     "- Add a `workspace_env` port allocation if the dev server listens on a port.",
     "- Keep it minimal: don't invent commands that aren't warranted by the project.",
     "",
-    SCHEMA_DOC,
+    "Reference documentation for `.argus.json` (all supported fields, semantics, and examples):",
+    "",
+    loadSchemaDoc(),
     "",
     "Current inferred config:",
     "```json",
