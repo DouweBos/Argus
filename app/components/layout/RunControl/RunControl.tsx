@@ -136,6 +136,33 @@ export function RunControl({ sessionId }: RunControlProps) {
       try {
         const result = await createRunTerminal(sessionId, title);
 
+        // Register any auto-spawned dependencies (entries in `requires`)
+        // first so their tabs appear before the primary one and their PTY
+        // output is captured from the start. Without this they run
+        // invisibly in main.
+        for (const dep of result.dependencies) {
+          setRunningTerminal(sessionId, dep.title, dep.sessionId);
+          const depSessions = getSessionsForSession(sessionId);
+          if (!depSessions.some((s) => s.id === dep.sessionId)) {
+            addSession({
+              id: dep.sessionId,
+              session_id: sessionId,
+              title: dep.title,
+            });
+          }
+          startListening(dep.sessionId);
+          const depTitle = dep.title;
+          const depId = dep.sessionId;
+          const unlistenDep = window.argus.on<number>(
+            `terminal:exit:${depId}`,
+            () => {
+              clearRunningTerminalIfMatches(sessionId, depTitle, depId);
+              unlistenDep();
+              stopListening(depId);
+            },
+          );
+        }
+
         setRunningTerminal(sessionId, title, result.sessionId);
 
         // Reuse the tab from a previous run of the same title: swap the old
