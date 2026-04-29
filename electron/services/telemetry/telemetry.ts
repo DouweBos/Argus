@@ -134,6 +134,16 @@ export function isTelemetryEnabled(): boolean {
   return enabled;
 }
 
+/**
+ * Whether the build has a PostHog key inlined (and therefore the main
+ * process is capable of delivering events at all). Renderer asks for this
+ * at boot so `getFeedbackUnavailableReason()` can tell the user up front
+ * that messages can't be delivered.
+ */
+export function isTelemetryConfigured(): boolean {
+  return Boolean(client);
+}
+
 export function capture<N extends EventName>(
   event: N,
   ...rest: EventArgs<N>
@@ -221,6 +231,38 @@ export function captureException(
     });
   } catch (e) {
     log.warn("captureException failed", e);
+  }
+}
+
+/**
+ * Send a free-form `user_feedback` event with PostHog's `$set_once` magic
+ * so the person profile is flagged as having submitted feedback at least
+ * once. Bypasses the typed event catalog because the prop shape is bespoke.
+ */
+export function captureFeedback(message: string): void {
+  if (!client) {
+    log.info("drop user_feedback: client not initialized");
+
+    return;
+  }
+  if (!enabled) {
+    log.info("drop user_feedback: telemetry disabled");
+
+    return;
+  }
+  try {
+    client.capture({
+      distinctId,
+      event: "user_feedback",
+      properties: {
+        ...baseProps(),
+        $set_once: { has_submitted_feedback: true },
+        message,
+      },
+    });
+    log.info("capture user_feedback");
+  } catch (e) {
+    log.warn("captureFeedback failed", e);
   }
 }
 

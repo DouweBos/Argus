@@ -1140,6 +1140,7 @@ export const updaterQuitAndInstall = (): Promise<void> =>
 // Telemetry
 export interface TelemetryInit {
   appVersion: string;
+  configured: boolean;
   distinctId: string;
   enabled: boolean;
 }
@@ -1147,3 +1148,15 @@ export const getTelemetryInit = (): Promise<TelemetryInit> =>
   invoke("telemetry_get_init");
 export const setTelemetryEnabledOnMain = (enabled: boolean): Promise<void> =>
   invoke("telemetry_set_enabled", { enabled });
+export const telemetryCapture = (
+  event: string,
+  props: Record<string, unknown>,
+): Promise<void> => invoke("telemetry_capture", { event, props });
+export const telemetryCaptureException = (
+  message: string,
+  stack: string | undefined,
+  props: Record<string, unknown>,
+): Promise<void> =>
+  invoke("telemetry_capture_exception", { message, props, stack });
+export const telemetryCaptureFeedback = (message: string): Promise<void> =>
+  invoke("telemetry_capture_feedback", { message });
