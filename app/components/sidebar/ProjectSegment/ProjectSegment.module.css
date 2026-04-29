@@ -124,6 +124,13 @@
   animation: projectFolderPulse 2s ease-in-out infinite;
 }
 
+.runningIcon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--success);
+  animation: projectFolderPulse 2s ease-in-out infinite;
+}
+
 @keyframes projectFolderPulse {
   0%,
   100% {

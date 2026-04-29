@@ -20,6 +20,7 @@ import {
   useSelectedSessionId,
   useSetupProgressBySessionId,
 } from "../../../stores/sessionStore";
+import { useSessionIsRunning } from "../../../stores/terminalStore";
 import { BranchSwitcher } from "../BranchSwitcher";
 import { CreateSessionDialog } from "../CreateSessionDialog";
 import { DeleteSessionDialog } from "../DeleteSessionDialog";
@@ -92,6 +93,7 @@ export function ProjectSegment({
       ),
     [agents, projectSessionIds],
   );
+  const isRunCommandRunning = useSessionIsRunning(repoRootSession?.id ?? "");
 
   return (
     <>
@@ -102,12 +104,21 @@ export function ProjectSegment({
         hideChevron={!hasSessions}
         active={isProjectSelected}
         leading={
-          <span
-            className={hasRunningAgent ? styles.folderPulse : undefined}
-            style={{ color: accent, display: "inline-flex" }}
-          >
-            <Icons.FolderIcon size={11} />
-          </span>
+          isRunCommandRunning ? (
+            <span
+              className={styles.runningIcon}
+              title="Run command is executing"
+            >
+              <Icons.PlayIcon size={11} />
+            </span>
+          ) : (
+            <span
+              className={hasRunningAgent ? styles.folderPulse : undefined}
+              style={{ color: accent, display: "inline-flex" }}
+            >
+              <Icons.FolderIcon size={11} />
+            </span>
+          )
         }
         onToggleExpanded={hasSessions ? onToggleCollapsed : undefined}
         onHeaderClick={openProjectHome}
