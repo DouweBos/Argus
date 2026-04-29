@@ -10,7 +10,7 @@ import { useChatHistory } from "../../../hooks/useChatHistory";
 import { clearSessionSetupError } from "../../../lib/ipc";
 import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
-import { useSessions } from "../../../stores/sessionStore";
+import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { TaskWidgets } from "../../organizations/TaskWidgets";
 import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
@@ -191,6 +191,10 @@ export function SessionHomeScreen({
                 onClick={async () => {
                   setIsClearingSetupError(true);
                   try {
+                    const initialPrompt = session?.description.trim();
+                    if (initialPrompt) {
+                      setPendingPrompt(sessionId, initialPrompt);
+                    }
                     await clearSessionSetupError(sessionId);
                   } finally {
                     setIsClearingSetupError(false);
