@@ -8,15 +8,10 @@ area, what's included, and which configuration controls it.
 ## iOS simulators
 
 - Boot any installed iOS Simulator runtime per-session.
-- Mirrored live in the runtime panel using a native macOS bridge
-  (`argus-sim-bridge`) — Argus captures the simulator's frame buffer
-  directly rather than screen-recording the OS.
-- HID injection: agents (and you) can tap, swipe, scroll, type, press
-  hardware buttons, rotate, and trigger system gestures.
-- Per-session isolation: each session boots its own simulator clone, so
-  parallel sessions never interfere with each other.
-- Argus discovers your installed runtimes via `simctl` — you don't
-  configure simulators directly.
+- Mirrored live in the runtime panel.
+- Agents (and you) can tap, swipe, scroll, type, press hardware
+  buttons, rotate, and trigger system gestures.
+- Per-session isolation — parallel sessions never interfere.
 
 Enable iOS in `.argus.json` with `"platforms": ["ios", …]`.
 
@@ -25,11 +20,9 @@ Enable iOS in `.argus.json` with `"platforms": ["ios", …]`.
 ## Android emulators
 
 - Boot any installed AVD per-session.
-- Mirrored using `scrcpy` — bundled with Argus, no separate install.
-- HID injection: tap, swipe, type, hardware keys.
+- Mirrored live in the runtime panel.
+- Tap, swipe, type, hardware keys.
 - Per-session isolation, like iOS.
-
-Argus discovers AVDs from `$ANDROID_HOME` / `$ANDROID_SDK_ROOT`.
 
 Enable Android in `.argus.json` with `"platforms": ["android", …]`.
 
@@ -37,13 +30,9 @@ Enable Android in `.argus.json` with `"platforms": ["android", …]`.
 
 ## Embedded Chromium browser
 
-- Real Chromium running inside Argus, with the Chrome DevTools Protocol
-  (CDP) screencast surfaced into the runtime panel.
-- Per-session: the browser navigates to the session's allocated URL (you
-  declare a `browser_url` template in `.argus.json` that's
-  port-substituted per session).
-- HID injection: agents can click, type, scroll, fill forms, and run
-  JavaScript via CDP.
+- Chromium running inside Argus.
+- Per-session: the browser navigates to the session's allocated URL.
+- Agents can click, type, scroll, fill forms, and run JavaScript.
 - DevTools available on demand, per-session.
 
 Enable the web platform with `"platforms": ["web", …]` and configure
@@ -53,15 +42,10 @@ Enable the web platform with `"platforms": ["web", …]` and configure
 
 ## Terminals
 
-- Real PTY-backed terminals (the same `node-pty` library VS Code uses).
-- Per-session, started in the session's worktree directory.
+- Real terminals, per-session, started in the session's worktree.
 - Configurable in `.argus.json` under `terminals[]` — declare a name,
-  starting directory, and any auto-launch commands. Argus opens them on
-  session start.
-- You can also open ad-hoc terminals at any time.
-
-Both the agent and you can drive the same terminal — useful for paired
-debugging.
+  starting directory, and any auto-launch commands.
+- Both the agent and you can drive the same terminal.
 
 ---
 
@@ -89,37 +73,31 @@ A real git workflow lives inside Argus:
 - **Branches** — create, switch, delete; sessions branch from your
   configured base branch automatically.
 - **Worktrees** — one per session; managed for you.
-- **Diff viewer** — file-level and hunk-level, with side-by-side and
-  inline modes.
+- **Diff viewer** — file- and hunk-level, side-by-side or inline.
 - **Hunk-level staging** — accept individual hunks, reject others, and
   refine before committing.
-- **Commit & amend** — commit from the UI with the conventional
-  one-sentence subject style.
-- **Stash** — list, apply, drop; useful when an agent needs to test a
-  clean state.
-- **Merge & rebase** — Argus runs `git merge` / `git rebase` for you and
-  surfaces conflicts with an inline resolver.
-- **Pull request** — open a draft PR via `gh` directly from the session.
-
-Argus uses the git CLI under the hood (not libgit2), so anything you can
-do in your shell, Argus can do — and vice versa.
+- **Commit & amend** — commit from the UI.
+- **Stash** — list, apply, drop.
+- **Merge & rebase** — Argus runs them for you and surfaces conflicts
+  with an inline resolver.
+- **Pull request** — open a draft PR directly from the session.
 
 ---
 
 ## VS Code editor
 
-- A real, embedded VS Code via `@codingame/monaco-vscode-api`.
+- A real, embedded VS Code instance.
 - Extensions, multi-file edits, project-wide search, IntelliSense, the
   command palette — all functional.
 - The editor opens the session's worktree, so what you see is what the
   agent has been changing.
-- Not a chat box pretending to be an IDE.
 
 ---
 
-## Permission broker
+## Permissions
 
-- Every tool call an agent makes runs through Argus's permission broker.
+- Every tool call an agent makes asks for approval if it isn't already
+  allow-listed.
 - Inline approval — the agent isn't halted; the prompt appears beside
   the tool call and the agent waits for your response.
 - "Always allow" patterns persist for the rest of the session (or until
@@ -166,10 +144,8 @@ Organisations are configured in App settings.
 
 ## Auto-update
 
-- Signed and notarised macOS arm64 builds.
-- Updates fetched through the houwert.dev → GitHub Releases reverse
-  proxy, so the update channel stays under our domain.
-- Background download; relaunch when convenient.
+Argus checks for updates in the background and prompts you to relaunch
+when one is ready.
 
 ---
 
