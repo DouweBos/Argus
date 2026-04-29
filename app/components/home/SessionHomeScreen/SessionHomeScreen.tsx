@@ -1,6 +1,13 @@
 import { useMemo, useState } from "react";
-import { Button, IconBadge, Icons, projectAccent } from "@argus/peacock";
+import {
+  Button,
+  CalloutCard,
+  IconBadge,
+  Icons,
+  projectAccent,
+} from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
+import { clearSessionSetupError } from "../../../lib/ipc";
 import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { useSessions } from "../../../stores/sessionStore";
@@ -59,6 +66,12 @@ export function SessionHomeScreen({
 
   const [isRenamingBranch, setIsRenamingBranch] = useState(false);
   const [isChangingBaseBranch, setIsChangingBaseBranch] = useState(false);
+  const [isClearingSetupError, setIsClearingSetupError] = useState(false);
+
+  const setupError =
+    session && typeof session.status === "object" && "error" in session.status
+      ? session.status.error
+      : null;
 
   const projectName = useMemo(() => {
     if (!repoRoot) {
@@ -163,6 +176,32 @@ export function SessionHomeScreen({
 
         {session?.status === "initializing" && (
           <InitializationStatus sessionId={sessionId} />
+        )}
+
+        {setupError && (
+          <CalloutCard
+            tone="error"
+            leading={<Icons.WarningIcon size={16} />}
+            title="Setup failed"
+            meta={setupError}
+            actions={
+              <Button
+                variant="ghost"
+                disabled={isClearingSetupError}
+                onClick={async () => {
+                  setIsClearingSetupError(true);
+                  try {
+                    await clearSessionSetupError(sessionId);
+                  } finally {
+                    setIsClearingSetupError(false);
+                  }
+                }}
+                title="Mark setup as complete and unblock this session. Use this after you've fixed the failing step yourself in a terminal."
+              >
+                {isClearingSetupError ? "Clearing…" : "Mark as ready"}
+              </Button>
+            }
+          />
         )}
 
         {orgTask && <TaskWidgets task={orgTask} />}

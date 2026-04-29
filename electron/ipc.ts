@@ -159,6 +159,7 @@ import {
   forkSession,
   renameSession,
   renameSessionBranch,
+  clearSessionSetupError,
 } from "./services/session/manager";
 import {
   getRepoBranch,
@@ -467,6 +468,9 @@ export function registerIpcHandlers(): void {
   );
   handle("rename_session_branch", (a) =>
     renameSessionBranch(a.id as string, a.branch as string),
+  );
+  handle("clear_session_setup_error", (a) =>
+    clearSessionSetupError(a.id as string),
   );
   handle("fork_session", (a) =>
     forkSession(
