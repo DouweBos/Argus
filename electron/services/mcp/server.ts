@@ -1723,6 +1723,12 @@ export function createMcpServer(): McpServer {
 
       try {
         const result = createRunTerminal(ws.id, title);
+        // Boot the primary terminal plus every auto-spawned dependency so
+        // their PTYs actually start producing output — `createRunTerminal`
+        // only allocates the sessions.
+        for (const dep of result.dependencies) {
+          startTerminal(dep.sessionId, 120, 40);
+        }
         startTerminal(result.sessionId, 120, 40);
 
         return {
@@ -1736,6 +1742,10 @@ export function createMcpServer(): McpServer {
                   title: result.title,
                   session_id: ws.id,
                   branch: ws.branch,
+                  dependencies: result.dependencies.map((d) => ({
+                    terminal_session_id: d.sessionId,
+                    title: d.title,
+                  })),
                 },
                 null,
                 2,

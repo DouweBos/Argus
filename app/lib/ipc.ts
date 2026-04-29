@@ -672,6 +672,12 @@ export const updateTerminalTitle = (
 ): Promise<void> => invoke("update_terminal_title", { terminalId, title });
 
 export interface CreateRunTerminalResult {
+  /**
+   * Newly-spawned dependency terminals (from the entry's `requires` chain)
+   * that the renderer also needs to register as tabs and attach buffer
+   * listeners to. Empty when no dependencies were started.
+   */
+  dependencies: { sessionId: string; title: string }[];
   sessionId: string;
   started: boolean;
   title: string;

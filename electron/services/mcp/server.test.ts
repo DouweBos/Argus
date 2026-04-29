@@ -752,6 +752,7 @@ describe("trigger_run", () => {
       sessionId: "term-1",
       started: true,
       title: "dev",
+      dependencies: [],
     });
 
     const result = await client.callTool({

@@ -658,11 +658,25 @@ export function resolveRunCommand(
  * terminal-stop branch lands, swap the `destroyTerminal` call below for it so
  * restart kills are not SIGKILL-hammered.
  */
+export interface RunTerminalResult {
+  sessionId: string;
+  started: boolean;
+  title: string;
+  /**
+   * Dependencies that were auto-spawned to satisfy this entry's `requires`
+   * chain, in dependency-first order. Already-running dependencies are not
+   * included — only newly created terminals. The renderer needs these to
+   * register tabs and attach output listeners; without them the PTY runs
+   * invisibly in main.
+   */
+  dependencies: { sessionId: string; title: string }[];
+}
+
 export function createRunTerminal(
   sessionId: string,
   title?: string,
   visiting = new Set<string>(),
-): { sessionId: string; started: boolean; title: string } {
+): RunTerminalResult {
   const runCmd = resolveRunCommand(sessionId, title);
 
   if (visiting.has(runCmd.title)) {
@@ -674,6 +688,7 @@ export function createRunTerminal(
       .join(" → ")}.`;
   }
 
+  const dependencies: { sessionId: string; title: string }[] = [];
   if (runCmd.requires && runCmd.requires.length > 0) {
     const nextVisiting = new Set(visiting);
     nextVisiting.add(runCmd.title);
@@ -681,14 +696,30 @@ export function createRunTerminal(
       if (findRunSession(sessionId, req)) {
         continue;
       }
-      createRunTerminal(sessionId, req, nextVisiting);
+      const depResult = createRunTerminal(sessionId, req, nextVisiting);
+      // Surface the entire transitive chain so the renderer registers tabs
+      // for every newly-spawned terminal, not just the direct dependency.
+      for (const transitive of depResult.dependencies) {
+        dependencies.push(transitive);
+      }
+      if (depResult.started) {
+        dependencies.push({
+          sessionId: depResult.sessionId,
+          title: depResult.title,
+        });
+      }
     }
   }
 
   const existing = findRunSession(sessionId, runCmd.title);
   if (existing) {
     if (!runCmd.restartOnRerun) {
-      return { sessionId: existing.id, started: false, title: runCmd.title };
+      return {
+        sessionId: existing.id,
+        started: false,
+        title: runCmd.title,
+        dependencies,
+      };
     }
     try {
       destroyTerminal(existing.id);
@@ -708,7 +739,12 @@ export function createRunTerminal(
     terminal.runTitle = runCmd.title;
   }
 
-  return { sessionId: terminalId, started: true, title: runCmd.title };
+  return {
+    sessionId: terminalId,
+    started: true,
+    title: runCmd.title,
+    dependencies,
+  };
 }
 
 /** Look up an alive run-terminal session for this session + title. */
