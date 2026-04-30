@@ -1,0 +1,54 @@
+.bulb {
+  display: inline-block;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.sm {
+  width: 6px;
+  height: 6px;
+}
+.md {
+  width: 8px;
+  height: 8px;
+}
+.lg {
+  width: 10px;
+  height: 10px;
+}
+
+.success {
+  background: var(--success);
+  color: var(--success);
+}
+.error {
+  background: var(--error);
+  color: var(--error);
+}
+.warning {
+  background: var(--warning);
+  color: var(--warning);
+}
+.pending {
+  background: var(--accent);
+  color: var(--accent);
+}
+.neutral {
+  background: var(--text-secondary);
+  color: var(--text-secondary);
+}
+
+.pulse {
+  animation: bulb-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes bulb-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}

@@ -50,6 +50,7 @@ export * from "./components/ShortcutsRail/ShortcutsRail";
 export * from "./components/SidebarNav/SidebarNav";
 export * from "./components/Spinner/Spinner";
 export * from "./components/StatsStrip/StatsStrip";
+export * from "./components/StatusBulb/StatusBulb";
 export * from "./components/StatusDots/StatusDots";
 export * from "./components/StatusPill/StatusPill";
 export * from "./components/Stepper/Stepper";

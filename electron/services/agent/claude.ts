@@ -386,7 +386,7 @@ export async function startAgent(
   const mcpPort = getMcpPort();
   const mcpToken = getMcpAuthToken();
   if (mcpPort && mcpToken) {
-    const mcpServers = buildMergedMcpServers(worktreePath, {
+    const mcpServers = await buildMergedMcpServers(worktreePath, {
       argus: {
         type: "http",
         url: `http://127.0.0.1:${mcpPort}/mcp`,
