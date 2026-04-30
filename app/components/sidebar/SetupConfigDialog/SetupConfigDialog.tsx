@@ -153,8 +153,19 @@ function useRunListState(initial: RunEntry[]) {
     );
   const remove = (i: number) =>
     setItems((prev) => prev.filter((_, idx) => idx !== i));
+  const move = (i: number, direction: -1 | 1) =>
+    setItems((prev) => {
+      const target = i + direction;
+      if (target < 0 || target >= prev.length) {
+        return prev;
+      }
+      const next = [...prev];
+      [next[i], next[target]] = [next[target], next[i]];
 
-  return { items, setItems, add, update, remove };
+      return next;
+    });
+
+  return { items, setItems, add, update, remove, move };
 }
 
 interface BrowserPresetEntry {
@@ -351,6 +362,24 @@ function RunCommandsField({
                     />
                     Restart on rerun
                   </label>
+                  <div className={sectionStyles.runCommandReorder}>
+                    <button
+                      aria-label="Move up"
+                      className={sectionStyles.reorderBtn}
+                      disabled={i === 0}
+                      onClick={() => list.move(i, -1)}
+                    >
+                      <Icons.ChevronUpIcon size={12} />
+                    </button>
+                    <button
+                      aria-label="Move down"
+                      className={sectionStyles.reorderBtn}
+                      disabled={i === list.items.length - 1}
+                      onClick={() => list.move(i, 1)}
+                    >
+                      <Icons.ChevronDownIcon size={12} />
+                    </button>
+                  </div>
                   <button
                     aria-label="Remove"
                     className={styles.removeBtn}
