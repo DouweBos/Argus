@@ -28,5 +28,12 @@
       "range": 100,
       "strategy": "sequential"
     }
+  ],
+  "release_note_patterns": [
+    {
+      "glob": ".changeset/*.md",
+      "format": "changesets",
+      "labels": []
+    }
   ]
 }
