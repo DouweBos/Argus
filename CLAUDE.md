@@ -85,6 +85,8 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **Worktrees:** `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`. Post-`git worktree add` setup (copy dirs, symlink files, run commands) configured in `.argus.json`.
 
+**Plan files:** write to `plan/` in the repo root, never `docs/` (which is published to the website).
+
 **Commit messages:** one short single-sentence subject line. No body paragraphs, no bullet lists, no `Co-Authored-By` trailer.
 
 **Changesets:** every user-visible change gets one in `.changeset/`. Written for end users: 1–2 short sentences, present tense, no internals/file paths/type names. Bump `argus` for app changes, `@argus/peacock` for public design-system changes. `patch` for fixes, `minor` for new behavior. Skip for pure refactors/tests/tooling.
