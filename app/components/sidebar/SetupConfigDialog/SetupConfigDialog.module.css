@@ -54,6 +54,36 @@
   flex-wrap: wrap;
 }
 
+.runCommandReorder {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.reorderBtn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.reorderBtn:hover:not(:disabled) {
+  background: var(--glass-bg-hover);
+  color: var(--text-primary);
+}
+
+.reorderBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .runCommandRequiresRow {
   display: flex;
   gap: var(--space-3);
