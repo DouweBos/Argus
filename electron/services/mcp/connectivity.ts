@@ -10,11 +10,17 @@
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { getActiveAccessToken } from "./oauth";
 
 const PROTOCOL_VERSION = "2025-06-18";
 const REQUEST_TIMEOUT_MS = 8_000;
 
 export type McpTransport = "http" | "stdio" | "unknown";
+
+export interface McpTool {
+  name: string;
+  description?: string;
+}
 
 export interface McpTestResult {
   ok: boolean;
@@ -22,7 +28,73 @@ export interface McpTestResult {
   latencyMs?: number;
   protocolVersion?: string;
   serverInfo?: { name?: string; version?: string };
+  /** Tools advertised by the server (HTTP transport only, best-effort). */
+  tools?: McpTool[];
   error?: string;
+  /** HTTP status code, when the failure came from the transport layer. */
+  status?: number;
+  /** Raw `WWW-Authenticate` header from a 401/403, if any. */
+  wwwAuthenticate?: string;
+  /**
+   * URL the server pointed at for OAuth resource metadata
+   * (parsed out of `WWW-Authenticate: Bearer resource_metadata="…"`).
+   */
+  resourceMetadataUrl?: string;
+  /** Truncated response body for diagnosis (max ~500 chars). */
+  bodySnippet?: string;
+  /** Short, human-friendly next-step suggestion. */
+  hint?: string;
+}
+
+const BODY_SNIPPET_MAX = 500;
+
+/**
+ * Parse `resource_metadata="…"` out of a `WWW-Authenticate` header. The
+ * MCP/OAuth 2.1 protected-resource flow uses this to point clients at the
+ * authorization-server discovery document.
+ */
+function parseResourceMetadata(header: string | null): string | undefined {
+  if (!header) {
+    return undefined;
+  }
+  const m = /resource_metadata\s*=\s*"([^"]+)"/i.exec(header);
+
+  return m ? m[1] : undefined;
+}
+
+function hintForStatus(status: number): string | undefined {
+  if (status === 401) {
+    return "Server requires authentication. Sign in to obtain a bearer token, then add it under `headers.Authorization`.";
+  }
+  if (status === 403) {
+    return "Authenticated but not authorized. Check that the token has access to this resource.";
+  }
+  if (status === 404) {
+    return "Endpoint not found. Double-check the URL — most MCP servers expect a path like `/mcp`.";
+  }
+  if (status === 429) {
+    return "Rate-limited. Wait a moment and retry.";
+  }
+  if (status >= 500) {
+    return "Server error. The MCP server is reachable but failing — try again or check its status page.";
+  }
+
+  return undefined;
+}
+
+async function readBodySnippet(res: Response): Promise<string | undefined> {
+  try {
+    const text = await res.text();
+    if (!text) {
+      return undefined;
+    }
+
+    return text.length > BODY_SNIPPET_MAX
+      ? `${text.slice(0, BODY_SNIPPET_MAX)}…`
+      : text;
+  } catch {
+    return undefined;
+  }
 }
 
 interface JsonRpcResponse {
@@ -30,6 +102,7 @@ interface JsonRpcResponse {
   result?: {
     protocolVersion?: string;
     serverInfo?: { name?: string; version?: string };
+    tools?: { name: string; description?: string }[];
   };
   error?: { code?: number; message?: string };
 }
@@ -71,6 +144,57 @@ function parseSseFirstJson(body: string): JsonRpcResponse | null {
   return null;
 }
 
+/**
+ * Best-effort `tools/list` follow-up after a successful initialize. Returns
+ * undefined when the server doesn't respond cleanly — tool discovery is a
+ * bonus, not a precondition for "ok".
+ */
+async function listTools(
+  url: string,
+  headers: Record<string, string>,
+  sessionId: string | null,
+): Promise<McpTool[] | undefined> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        ...headers,
+        ...(sessionId ? { "mcp-session-id": sessionId } : {}),
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/list",
+        params: {},
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      return undefined;
+    }
+    const ct = (res.headers.get("content-type") ?? "").toLowerCase();
+    let payload: JsonRpcResponse | null;
+    if (ct.includes("text/event-stream")) {
+      payload = parseSseFirstJson(await res.text());
+    } else {
+      payload = (await res.json()) as JsonRpcResponse;
+    }
+    const list = payload?.result?.tools;
+    if (!Array.isArray(list)) {
+      return undefined;
+    }
+
+    return list.map((t) => ({ name: t.name, description: t.description }));
+  } catch {
+    return undefined;
+  }
+}
+
 async function testHttp(
   url: string,
   headers: Record<string, string>,
@@ -93,11 +217,22 @@ async function testHttp(
     const latencyMs = Date.now() - start;
 
     if (!res.ok) {
+      const wwwAuthenticate = res.headers.get("www-authenticate") ?? undefined;
+      const resourceMetadataUrl = parseResourceMetadata(
+        wwwAuthenticate ?? null,
+      );
+      const bodySnippet = await readBodySnippet(res);
+
       return {
         ok: false,
         transport: "http",
         latencyMs,
+        status: res.status,
         error: `HTTP ${res.status} ${res.statusText || ""}`.trim(),
+        wwwAuthenticate,
+        resourceMetadataUrl,
+        bodySnippet,
+        hint: hintForStatus(res.status),
       };
     }
 
@@ -137,12 +272,16 @@ async function testHttp(
       };
     }
 
+    const sessionId = res.headers.get("mcp-session-id") ?? null;
+    const tools = await listTools(url, headers, sessionId);
+
     return {
       ok: true,
       transport: "http",
       latencyMs,
       protocolVersion: payload.result?.protocolVersion,
       serverInfo: payload.result?.serverInfo,
+      tools,
     };
   } catch (err) {
     clearTimeout(timer);
@@ -304,10 +443,20 @@ export async function testMcpServer(
   const command = typeof config.command === "string" ? config.command : null;
 
   if (url && (type === "http" || type === "sse" || type === null)) {
-    const headers =
-      config.headers && typeof config.headers === "object"
+    const headers: Record<string, string> = {
+      ...(config.headers && typeof config.headers === "object"
         ? (config.headers as Record<string, string>)
-        : {};
+        : {}),
+    };
+    const hasAuth = Object.keys(headers).some(
+      (k) => k.toLowerCase() === "authorization",
+    );
+    if (!hasAuth) {
+      const token = await getActiveAccessToken(url);
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
 
     return testHttp(url, headers);
   }

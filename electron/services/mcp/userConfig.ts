@@ -15,6 +15,7 @@ import path from "node:path";
 import { warn } from "../../../app/lib/logger";
 import { loadAppMcpServers } from "../appSettings/store";
 import { loadArgusConfig } from "../session/setup";
+import { getActiveAccessToken } from "./oauth";
 
 type McpServerConfig = Record<string, unknown>;
 export type McpServers = Record<string, McpServerConfig>;
@@ -216,17 +217,61 @@ export function listInheritedMcpServers(
 }
 
 /**
+ * Inject any Argus-managed OAuth bearer tokens into HTTP MCP server entries.
+ * Mutates the input map in place and returns it. We only fill in
+ * `headers.Authorization` when the entry doesn't already specify one — so
+ * a config that hard-codes a token wins.
+ */
+async function injectStoredTokens(servers: McpServers): Promise<McpServers> {
+  for (const [, config] of Object.entries(servers)) {
+    if (!config || typeof config !== "object") {
+      continue;
+    }
+    const url = (config as { url?: unknown }).url;
+    if (typeof url !== "string") {
+      continue;
+    }
+    const existingHeaders =
+      (config as { headers?: Record<string, unknown> }).headers ?? {};
+    const hasAuth = Object.keys(existingHeaders).some(
+      (k) => k.toLowerCase() === "authorization",
+    );
+    if (hasAuth) {
+      continue;
+    }
+    try {
+      const token = await getActiveAccessToken(url);
+      if (token) {
+        (config as { headers?: Record<string, unknown> }).headers = {
+          ...existingHeaders,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+    } catch (err) {
+      warn(
+        `[mcp] failed to load stored token for ${url}: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  return servers;
+}
+
+/**
  * Build the merged `mcpServers` map for a spawned agent.
  *
  * Precedence (later wins): plugins < user ~/.claude.json < worktree .mcp.json
  * < app settings (~/.argus/app-settings.json) < project .argus.json mcp_servers
  * < explicit overrides (e.g. the Argus MCP server itself).
+ *
+ * Async because we transparently inject any OAuth bearer tokens the user
+ * has stored via the Argus auth flow.
  */
-export function buildMergedMcpServers(
+export async function buildMergedMcpServers(
   worktreePath: string,
   overrides: McpServers = {},
-): McpServers {
-  return {
+): Promise<McpServers> {
+  const merged: McpServers = {
     ...collectFromEnabledPlugins(),
     ...collectFromUserClaudeJson(worktreePath),
     ...collectFromWorktree(worktreePath),
@@ -234,4 +279,6 @@ export function buildMergedMcpServers(
     ...collectFromArgusConfig(worktreePath),
     ...overrides,
   };
+
+  return injectStoredTokens(merged);
 }

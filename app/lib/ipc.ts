@@ -41,6 +41,7 @@ import type {
   SimulatorDevice,
   AppSettings,
   InheritedMcpServer,
+  McpOAuthStatus,
   McpTestResult,
   Session,
   UserProjectSettings,
@@ -611,6 +612,33 @@ export const listInheritedMcpServers = (
 export const testMcpServer = (
   config: Record<string, unknown>,
 ): Promise<McpTestResult> => invoke("test_mcp_server", { config });
+
+/**
+ * Drive the OAuth 2.1 sign-in flow for an MCP HTTP server. Opens the
+ * system browser, waits for the user to complete auth, then persists the
+ * resulting bearer token. Resolves to the stored status on success.
+ */
+export const signInToMcpServer = (params: {
+  resourceMetadataUrl?: string | null;
+  serverUrl: string;
+}): Promise<McpOAuthStatus> =>
+  invoke("mcp_oauth_sign_in", {
+    serverUrl: params.serverUrl,
+    resourceMetadataUrl: params.resourceMetadataUrl ?? null,
+  });
+
+export const signOutFromMcpServer = (serverUrl: string): Promise<void> =>
+  invoke("mcp_oauth_sign_out", { serverUrl });
+
+export const cancelMcpSignIn = (serverUrl: string): Promise<boolean> =>
+  invoke("mcp_oauth_cancel_sign_in", { serverUrl });
+
+export const getMcpOAuthStatus = (
+  serverUrl: string,
+): Promise<McpOAuthStatus | null> => invoke("mcp_oauth_status", { serverUrl });
+
+export const listAuthorizedMcpServers = (): Promise<string[]> =>
+  invoke("mcp_oauth_list_authorized", {});
 
 // Command metrics (per-project slash command popularity)
 export const getCommandMetrics = (

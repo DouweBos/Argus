@@ -108,6 +108,12 @@ import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
 import { generateChatTitle } from "./services/llm/titleGenerator";
 import { testMcpServer } from "./services/mcp/connectivity";
+import {
+  authenticate,
+  cancelAuthentication,
+  signOut,
+} from "./services/mcp/oauth";
+import { listAuthorized, loadToken } from "./services/mcp/oauthStore";
 import { collectAllProjects } from "./services/mcp/projects";
 import { listInheritedMcpServers } from "./services/mcp/userConfig";
 import {
@@ -600,6 +606,35 @@ export function registerIpcHandlers(): void {
   handle("test_mcp_server", (a) =>
     testMcpServer(a.config as Record<string, unknown>),
   );
+  handle("mcp_oauth_sign_in", (a) =>
+    authenticate({
+      serverUrl: a.serverUrl as string,
+      resourceMetadataUrl: (a.resourceMetadataUrl as string | null) ?? null,
+    }).then((t) => ({
+      resource: t.resource,
+      hasRefreshToken: Boolean(t.refreshToken),
+      expiresAt: t.expiresAt ?? null,
+      scope: t.scope ?? null,
+    })),
+  );
+  handle("mcp_oauth_sign_out", (a) => signOut(a.serverUrl as string));
+  handle("mcp_oauth_cancel_sign_in", (a) =>
+    Promise.resolve(cancelAuthentication(a.serverUrl as string)),
+  );
+  handle("mcp_oauth_status", async (a) => {
+    const t = await loadToken(a.serverUrl as string);
+    if (!t) {
+      return null;
+    }
+
+    return {
+      resource: t.resource,
+      hasRefreshToken: Boolean(t.refreshToken),
+      expiresAt: t.expiresAt ?? null,
+      scope: t.scope ?? null,
+    };
+  });
+  handle("mcp_oauth_list_authorized", () => listAuthorized());
   handle("get_command_metrics", (a) =>
     loadCommandMetrics(a.repoRoot as string),
   );
