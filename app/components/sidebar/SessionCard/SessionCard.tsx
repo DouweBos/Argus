@@ -54,7 +54,6 @@ function renderSessionIcon(
   kind: Session["kind"],
   isRunning: boolean,
   isAgentRunning: boolean,
-  runningIconClass: string,
   agentRunningIconClass: string,
   runningCount: number,
   iconOverride?: ReactNode,
@@ -82,8 +81,17 @@ function renderSessionIcon(
     return base;
   }
   if (isRunning) {
+    const agentTitle = `${runningCount} agent${runningCount > 1 ? "s" : ""} running`;
+
     return (
-      <span className={runningIconClass} title="Run command is executing">
+      <span
+        className={agentRunningIconClass}
+        title={
+          isAgentRunning
+            ? `${agentTitle}; run command is executing`
+            : "Run command is executing"
+        }
+      >
         {iconOverride ?? <Icons.PlayIcon size={13} />}
       </span>
     );
@@ -208,7 +216,6 @@ export function SessionCard({
               session.kind,
               isRunning,
               runningCount > 0,
-              styles.runningIcon,
               styles.agentRunningIcon,
               runningCount,
               iconOverride,
