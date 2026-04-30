@@ -1231,12 +1231,35 @@ export async function deleteSession(
   // Run the heavy work in the background.
   (async () => {
     try {
-      await git(taskRepoRoot, [
-        "worktree",
-        "remove",
-        "--force",
-        taskSessionPath,
-      ]);
+      // The session may have failed to create its worktree, in which case
+      // git won't know about `taskSessionPath` and `worktree remove` will
+      // fail with "'' is not a working tree". Detect that up front and skip
+      // the remove step — fall back to deleting any leftover directory.
+      let isRegistered = false;
+      try {
+        const raw = await git(taskRepoRoot, [
+          "worktree",
+          "list",
+          "--porcelain",
+        ]);
+        isRegistered = raw
+          .split("\n")
+          .filter((l) => l.startsWith("worktree "))
+          .some((l) => l.slice("worktree ".length).trim() === taskSessionPath);
+      } catch {
+        // Ignore — treat as not registered.
+      }
+
+      if (isRegistered) {
+        await git(taskRepoRoot, [
+          "worktree",
+          "remove",
+          "--force",
+          taskSessionPath,
+        ]);
+      } else if (taskSessionPath && fs.existsSync(taskSessionPath)) {
+        fs.rmSync(taskSessionPath, { recursive: true, force: true });
+      }
       await git(taskRepoRoot, ["worktree", "prune"]);
     } catch (e) {
       const errMsg = typeof e === "string" ? e : String(e);
