@@ -162,15 +162,7 @@
   min-width: 24px;
 }
 
-/* Swaps in for BranchIcon when the session has a run command executing. */
-.runningIcon {
-  display: inline-flex;
-  align-items: center;
-  color: var(--success);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-/* Wraps the branch/repo icon when one or more agents are running. */
+/* Wraps the branch/repo icon (or play icon for active runtimes) so it pulses green. */
 .agentRunningIcon {
   display: inline-flex;
   align-items: center;
