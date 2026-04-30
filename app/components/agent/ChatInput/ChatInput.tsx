@@ -31,7 +31,7 @@ import {
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useSessions } from "../../../stores/sessionStore";
-import { FileMentionPicker } from "../FileMentionPicker";
+import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { type ModelOption, ModelPicker } from "../ModelPicker";
 import { ProjectPicker } from "../ProjectPicker";
 import styles from "./ChatInput.module.css";

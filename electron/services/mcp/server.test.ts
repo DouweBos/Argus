@@ -251,6 +251,7 @@ describe("add_related_project", () => {
       run: [],
       browser_presets: [],
       protected_branches: [],
+      release_note_patterns: [],
       related_projects: [{ path: "../backend", description: "Backend" }],
     });
 
@@ -277,6 +278,7 @@ describe("add_related_project", () => {
       run: [],
       browser_presets: [],
       protected_branches: [],
+      release_note_patterns: [],
       related_projects: [],
     });
 

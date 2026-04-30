@@ -16,6 +16,10 @@ import {
   type BrowserPresetConfig,
   defaultArgusConfig,
   type RelatedProject,
+  type ReleaseNoteFormat,
+  type ReleaseNoteLabelConfig,
+  type ReleaseNoteLabelTone,
+  type ReleaseNotePatternConfig,
   type RunCommand,
   type SetupConfig,
   type ArgusConfig,
@@ -115,7 +119,137 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       parsed.min_argus_version,
       repoRoot,
     ),
+    release_note_patterns: normalizeReleaseNotePatterns(
+      parsed.release_note_patterns,
+      repoRoot,
+    ),
   };
+}
+
+/**
+ * Normalise `release_note_patterns`. Each entry is either a bare glob
+ * string (no labels, regex-format default) or a structured object
+ * `{ glob, format?, labels? }`. Returns `[]` when absent so the session
+ * home screen falls back to changesets.
+ */
+function normalizeReleaseNotePatterns(
+  raw: unknown,
+  repoRoot: string,
+): ReleaseNotePatternConfig[] {
+  if (raw == null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw `release_note_patterns in ${repoRoot}/.argus.json must be an array.`;
+  }
+  const out: ReleaseNotePatternConfig[] = [];
+  const seen = new Set<string>();
+  raw.forEach((entry, i) => {
+    const normalized = normalizeReleaseNotePattern(entry, repoRoot, i);
+    if (!normalized || seen.has(normalized.glob)) {
+      return;
+    }
+    seen.add(normalized.glob);
+    out.push(normalized);
+  });
+
+  return out;
+}
+
+function normalizeReleaseNotePattern(
+  raw: unknown,
+  repoRoot: string,
+  i: number,
+): ReleaseNotePatternConfig | null {
+  if (typeof raw === "string") {
+    const glob = raw.trim();
+
+    return glob ? { glob, format: "changesets", labels: [] } : null;
+  }
+  if (raw == null || typeof raw !== "object") {
+    throw `release_note_patterns[${i}] in ${repoRoot}/.argus.json must be a glob string or { glob, format?, labels? } object.`;
+  }
+  const obj = raw as Record<string, unknown>;
+  const glob = typeof obj.glob === "string" ? obj.glob.trim() : "";
+  if (!glob) {
+    throw `release_note_patterns[${i}].glob in ${repoRoot}/.argus.json must be a non-empty string.`;
+  }
+  const format = normalizeReleaseNoteFormat(obj.format, repoRoot, i);
+  const labels = normalizeReleaseNoteLabels(obj.labels, repoRoot, i);
+
+  return { glob, format, labels };
+}
+
+function normalizeReleaseNoteFormat(
+  raw: unknown,
+  repoRoot: string,
+  i: number,
+): ReleaseNoteFormat {
+  if (raw == null) {
+    return "changesets";
+  }
+  if (
+    raw === "regex" ||
+    raw === "json" ||
+    raw === "yaml" ||
+    raw === "xml" ||
+    raw === "changesets"
+  ) {
+    return raw;
+  }
+  throw `release_note_patterns[${i}].format in ${repoRoot}/.argus.json must be one of "regex", "json", "yaml", "xml", "changesets".`;
+}
+
+function normalizeReleaseNoteLabels(
+  raw: unknown,
+  repoRoot: string,
+  i: number,
+): ReleaseNoteLabelConfig[] {
+  if (raw == null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw `release_note_patterns[${i}].labels in ${repoRoot}/.argus.json must be an array.`;
+  }
+
+  return raw.map((entry, j) => {
+    if (entry == null || typeof entry !== "object") {
+      throw `release_note_patterns[${i}].labels[${j}] in ${repoRoot}/.argus.json must be an object.`;
+    }
+    const obj = entry as Record<string, unknown>;
+    const name = typeof obj.name === "string" ? obj.name.trim() : "";
+    const selector =
+      typeof obj.selector === "string" ? obj.selector.trim() : "";
+    if (!name) {
+      throw `release_note_patterns[${i}].labels[${j}].name in ${repoRoot}/.argus.json must be a non-empty string.`;
+    }
+    if (!selector) {
+      throw `release_note_patterns[${i}].labels[${j}].selector in ${repoRoot}/.argus.json must be a non-empty string.`;
+    }
+    const tone = normalizeReleaseNoteTone(obj.tone, repoRoot, i, j);
+
+    return tone ? { name, selector, tone } : { name, selector };
+  });
+}
+
+function normalizeReleaseNoteTone(
+  raw: unknown,
+  repoRoot: string,
+  i: number,
+  j: number,
+): ReleaseNoteLabelTone | null {
+  if (raw == null) {
+    return null;
+  }
+  if (
+    raw === "accent" ||
+    raw === "neutral" ||
+    raw === "success" ||
+    raw === "warning"
+  ) {
+    return raw;
+  }
+  throw `release_note_patterns[${i}].labels[${j}].tone in ${repoRoot}/.argus.json must be one of "accent", "neutral", "success", "warning".`;
 }
 
 /**
@@ -384,7 +518,22 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
         : null,
     min_argus_version:
       local.min_argus_version ?? base.min_argus_version ?? null,
+    release_note_patterns: dedupReleaseNotePatterns(
+      base.release_note_patterns,
+      local.release_note_patterns,
+    ),
   };
+}
+
+/** Merge release-note pattern lists, deduplicating by glob (local wins on collision). */
+function dedupReleaseNotePatterns(
+  base: ReleaseNotePatternConfig[],
+  local: ReleaseNotePatternConfig[],
+): ReleaseNotePatternConfig[] {
+  const localGlobs = new Set(local.map((p) => p.glob));
+  const result = base.filter((p) => !localGlobs.has(p.glob));
+
+  return [...result, ...local];
 }
 
 /**

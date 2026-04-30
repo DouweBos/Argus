@@ -18,6 +18,12 @@
   scrollbar-color: var(--surface-5) transparent;
 }
 
+/* Anchor below the input instead of above — used by forms inside dialogs. */
+.placementBelow {
+  bottom: auto;
+  top: calc(100% + 4px);
+}
+
 .header {
   position: sticky;
   top: 0;

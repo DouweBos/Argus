@@ -1,4 +1,4 @@
-import type { ChangesetEntry } from "../lib/types";
+import type { ReleaseNoteEntry } from "../lib/types";
 import { useCallback, useState } from "react";
 import {
   sendUserMessageToAgent,
@@ -7,7 +7,8 @@ import {
 
 interface UseValidateChangesetsArgs {
   baseBranch?: string | null;
-  changesets: ChangesetEntry[];
+  /** Subset of release-note entries with `format === "changesets"`. */
+  changesets: ReleaseNoteEntry[];
   sessionBranch?: string | null;
   sessionId: string | null;
 }
@@ -21,13 +22,13 @@ interface UseValidateChangesetsResult {
 function buildValidationPrompt(
   baseBranch: string,
   sessionBranch: string,
-  changesets: ChangesetEntry[],
+  changesets: ReleaseNoteEntry[],
 ): string {
   const list = changesets.length
     ? changesets
         .map(
           (c) =>
-            `- \`.changeset/${c.filename}\` — ${c.summary.split("\n")[0] || "(no summary)"}`,
+            `- \`${c.filename}\` — ${c.content.split("\n")[0] || "(no summary)"}`,
         )
         .join("\n")
     : "(none detected)";
