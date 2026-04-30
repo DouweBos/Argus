@@ -49,8 +49,6 @@
 }
 
 .list {
-  /* Cap the list so a branch with many changesets can't push the merge
-     buttons off screen — overflow scrolls inside the card. */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -83,22 +81,26 @@
 .filename {
   color: var(--text-muted);
   font: var(--type-code);
+  word-break: break-all;
 }
 
-.bumps {
+.badges {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.summary {
+.content {
   color: var(--text-secondary);
-  font: var(--type-body);
+  font: var(--type-code);
   margin: 0;
+  max-height: 240px;
+  overflow-y: auto;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.summaryEmpty {
+.empty {
   color: var(--text-muted);
   font: var(--type-body);
   font-style: italic;

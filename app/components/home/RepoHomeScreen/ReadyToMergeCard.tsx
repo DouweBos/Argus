@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalloutCard, DiffStat, IconBadge, Icons } from "@argus/peacock";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
-import { useSessionChangesets } from "../../../hooks/useSessionChangesets";
+import { useSessionReleaseNotes } from "../../../hooks/useSessionReleaseNotes";
 import { useValidateChangesetsInChat } from "../../../hooks/useValidateChangesetsInChat";
 import { listen } from "../../../lib/events";
 import {
@@ -14,7 +14,7 @@ import {
 } from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
 import { pushError } from "../../../stores/notificationsStore";
-import { SessionChangesetsList } from "../SessionChangesetsCard/SessionChangesetsCard";
+import { SessionReleaseNotesList } from "../SessionReleaseNotesCard/SessionReleaseNotesCard";
 import styles from "./ReadyToMergeCard.module.css";
 
 interface DiffStats {
@@ -97,7 +97,10 @@ export function ReadyToMergeCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProtectedBase, setIsProtectedBase] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
-  const changesets = useSessionChangesets(sessionId);
+  const releaseNotes = useSessionReleaseNotes(sessionId);
+  const changesetEntries = releaseNotes.filter(
+    (e) => e.format === "changesets",
+  );
   const {
     dispatch: validateChangesets,
     isDispatching: isValidatingChangesets,
@@ -105,7 +108,7 @@ export function ReadyToMergeCard({
     sessionId,
     baseBranch,
     sessionBranch,
-    changesets,
+    changesets: changesetEntries,
   });
   const {
     dispatch: handleFixConflictsInChat,
@@ -203,7 +206,7 @@ export function ReadyToMergeCard({
   const hasUncommitted = (diffStats?.files ?? 0) > 0;
   const hasWork = commitsAhead > 0 || hasStaged || hasUncommitted;
   const needsRebase = commitsBehind > 0 && conflicts.length === 0;
-  const hasFooter = Boolean(description) || changesets.length > 0;
+  const hasFooter = Boolean(description) || releaseNotes.length > 0;
   if (!hasWork && !needsRebase && !justMerged && !hasFooter) {
     return null;
   }
@@ -378,8 +381,8 @@ export function ReadyToMergeCard({
   const footerNode = hasFooter ? (
     <div className={styles.footer}>
       {description && <p className={styles.description}>{description}</p>}
-      <SessionChangesetsList
-        changesets={changesets}
+      <SessionReleaseNotesList
+        entries={releaseNotes}
         isValidating={isValidatingChangesets}
         onValidate={validateChangesets}
       />

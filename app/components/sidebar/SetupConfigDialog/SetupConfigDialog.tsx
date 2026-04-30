@@ -31,7 +31,13 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../../shared/McpServersField";
+import { ReleaseNotesField } from "./ReleaseNotesField";
 import sectionStyles from "./SetupConfigDialog.module.css";
+import {
+  entriesToPatternConfig,
+  patternsToEntries,
+  useReleaseNotesListState,
+} from "./releaseNotesFieldState";
 
 interface SetupConfigDialogProps {
   onClose: () => void;
@@ -607,6 +613,7 @@ export function SetupConfigDialog({
   const browserPresetList = useBrowserPresetListState([]);
   const runList = useRunListState([]);
   const protectedBranchList = useListState([]);
+  const releaseNotesList = useReleaseNotesListState([]);
   const [browserUrl, setBrowserUrl] = useState("");
   const [platforms, setPlatforms] = useState<RuntimePlatform[]>([]);
   const [agentPrompt, setAgentPrompt] = useState("");
@@ -629,6 +636,7 @@ export function SetupConfigDialog({
   const setBrowserPresets = browserPresetList.setItems;
   const setRuns = runList.setItems;
   const setProtectedBranches = protectedBranchList.setItems;
+  const setReleaseNotes = releaseNotesList.setItems;
 
   useEffect(() => {
     let cancelled = false;
@@ -719,6 +727,9 @@ export function SetupConfigDialog({
         if (config.mcp_servers) {
           setMcpEntries(mapToEntries(config.mcp_servers));
         }
+        if (config.release_note_patterns?.length) {
+          setReleaseNotes(patternsToEntries(config.release_note_patterns));
+        }
       } catch {
         // No config file or not readable — start with empty fields
       }
@@ -753,6 +764,7 @@ export function SetupConfigDialog({
     setBrowserPresets,
     setRuns,
     setProtectedBranches,
+    setReleaseNotes,
   ]);
 
   const buildConfig = (): ArgusConfig => {
@@ -857,6 +869,10 @@ export function SetupConfigDialog({
     if (Object.keys(mcpServers).length > 0) {
       config.mcp_servers = mcpServers;
     }
+    const releasePatterns = entriesToPatternConfig(releaseNotesList.items);
+    if (releasePatterns.length > 0) {
+      config.release_note_patterns = releasePatterns;
+    }
 
     return config;
   };
@@ -882,6 +898,7 @@ export function SetupConfigDialog({
       pullRequestTemplate,
       minArgusVersion,
       mcpEntries,
+      releaseNotesList.items,
     ],
   );
 
@@ -1151,6 +1168,26 @@ export function SetupConfigDialog({
                     </p>
                   </div>
                 </details>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "release-notes",
+          label: "Release notes",
+          description: "Glob patterns + labels",
+          icon: <Icons.FileIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Glob patterns surfaced on the session home screen as release notes. Pick a format per pattern (changesets / regex / json / yaml / xml). The preview shows every file in the repo currently matching your globs so you can verify the config — only files added or modified on a session branch are listed at runtime."
+                title="Release notes"
+              />
+              <SettingsScreenDetailBody>
+                <ReleaseNotesField
+                  list={releaseNotesList}
+                  repoRoot={repoRoot}
+                />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),

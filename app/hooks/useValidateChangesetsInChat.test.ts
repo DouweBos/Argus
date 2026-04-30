@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { ChangesetEntry } from "../lib/types";
+import type { ReleaseNoteEntry } from "../lib/types";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useValidateChangesetsInChat } from "./useValidateChangesetsInChat";
@@ -35,8 +35,14 @@ vi.mock("../lib/agentLifecycle", () => ({
   ) => mockSendUserMessageToAgent(agentId, prompt, attachments, opts),
 }));
 
-function cs(filename: string, summary = "summary"): ChangesetEntry {
-  return { filename, packages: [{ bump: "patch", name: "argus" }], summary };
+function cs(filename: string, summary = "summary"): ReleaseNoteEntry {
+  return {
+    filename: `.changeset/${filename}`,
+    format: "changesets",
+    content: summary,
+    status: "added",
+    labels: [{ name: "argus", value: "patch", tone: "success" }],
+  };
 }
 
 // ---------------------------------------------------------------------------

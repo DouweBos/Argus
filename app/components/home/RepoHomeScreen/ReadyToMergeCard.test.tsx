@@ -48,7 +48,6 @@ interface MergeStatus {
 }
 
 const mockUseMergeStatus = vi.fn<(id: string | null) => MergeStatus>();
-const mockUseSessionChangesets = vi.fn<(id: string) => unknown[]>(() => []);
 const mockUseFixConflictsInChat = vi.fn<
   (...args: unknown[]) => { dispatch: () => void; isDispatching: boolean }
 >(() => ({
@@ -71,8 +70,10 @@ vi.mock("../../../hooks/useMergeStatus", () => ({
   useMergeStatus: (id: string | null) => mockUseMergeStatus(id),
 }));
 
-vi.mock("../../../hooks/useSessionChangesets", () => ({
-  useSessionChangesets: (id: string) => mockUseSessionChangesets(id),
+const mockUseSessionReleaseNotes = vi.fn<(id: string) => unknown[]>(() => []);
+
+vi.mock("../../../hooks/useSessionReleaseNotes", () => ({
+  useSessionReleaseNotes: (id: string) => mockUseSessionReleaseNotes(id),
 }));
 
 vi.mock("../../../hooks/useFixConflictsInChat", () => ({
@@ -141,7 +142,7 @@ describe("readyToMergeCard", () => {
   beforeEach(() => {
     eventListeners.clear();
     mockUseMergeStatus.mockReturnValue(baseStatus());
-    mockUseSessionChangesets.mockReturnValue([]);
+    mockUseSessionReleaseNotes.mockReturnValue([]);
     mockUseFixConflictsInChat.mockReturnValue({
       dispatch: vi.fn(),
       isDispatching: false,
@@ -328,11 +329,13 @@ describe("readyToMergeCard", () => {
       isDispatching: false,
     });
     mockUseMergeStatus.mockReturnValue(baseStatus({ commitsAhead: 1 }));
-    mockUseSessionChangesets.mockReturnValue([
+    mockUseSessionReleaseNotes.mockReturnValue([
       {
-        filename: "silly-cats-dance.md",
-        packages: [{ bump: "patch", name: "argus" }],
-        summary: "Prevent a double-merge bug.",
+        filename: ".changeset/silly-cats-dance.md",
+        format: "changesets",
+        content: "Prevent a double-merge bug.",
+        status: "added",
+        labels: [{ name: "argus", value: "patch", tone: "success" }],
       },
     ]);
 
@@ -358,11 +361,13 @@ describe("readyToMergeCard", () => {
 
   it("renders description and changesets inside the footer", () => {
     mockUseMergeStatus.mockReturnValue(baseStatus({ commitsAhead: 1 }));
-    mockUseSessionChangesets.mockReturnValue([
+    mockUseSessionReleaseNotes.mockReturnValue([
       {
-        filename: "silly-cats-dance.md",
-        packages: [{ bump: "patch", name: "argus" }],
-        summary: "Prevent a double-merge bug.",
+        filename: ".changeset/silly-cats-dance.md",
+        format: "changesets",
+        content: "Prevent a double-merge bug.",
+        status: "added",
+        labels: [{ name: "argus", value: "patch", tone: "success" }],
       },
     ]);
 
@@ -378,6 +383,6 @@ describe("readyToMergeCard", () => {
 
     expect(screen.getByText("Short description of the session.")).toBeTruthy();
     expect(screen.getByText(/1 changeset ready to merge/)).toBeTruthy();
-    expect(screen.getByText("silly-cats-dance.md")).toBeTruthy();
+    expect(screen.getByText(".changeset/silly-cats-dance.md")).toBeTruthy();
   });
 });

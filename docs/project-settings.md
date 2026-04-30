@@ -43,6 +43,7 @@ Two ways to change project settings:
 | `agent_prompt`, `save_chat_history`           | yes (Agent)                      |
 | `protected_branches`, `pull_request_template` | yes (Branch protection)          |
 | `mcp_servers`                                 | yes (MCP servers)                |
+| `release_note_patterns`                       | yes (Release notes)              |
 | `related_projects`                            | **no** — hand-edit `.argus.json` |
 
 ---
@@ -288,6 +289,81 @@ When `true`, the project may only have one `run` command alive across
 already running prompts you to stop the other runtime or cancel.
 Useful when your run command claims a fixed port that can't be
 remapped via `workspace_env`.
+
+---
+
+## `release_note_patterns` — surface text-file release notes
+
+Glob patterns (repo-root relative) describing release-note files that
+Argus surfaces on the session home screen. Drives the single
+**Ready-to-merge** release-notes list — every release-note style is
+expressed as a pattern with a `format` (including `@changesets/cli`).
+
+When set, every file matching one of the patterns that was added or
+modified on the session's branch versus its base is listed with its
+content rendered inline and any configured labels shown as Badges next
+to the filename.
+
+```jsonc
+"release_note_patterns": [
+  // @changesets/cli — labels come from YAML frontmatter automatically
+  { "glob": ".changeset/*.md", "format": "changesets" },
+
+  // bare glob — file content shown, no extracted labels
+  "apps/foo/release-notes/next/*.md",
+
+  // structured form — extract labels via regex
+  {
+    "glob":   "apps/plex/app/release-notes/next/*.txt",
+    "format": "regex",
+    "labels": [
+      { "name": "type",     "selector": "^Type:\\s*(.+)$",     "tone": "accent" },
+      { "name": "platform", "selector": "^Platform:\\s*(.+)$", "tone": "neutral" },
+      { "name": "issue",    "selector": "^Issue:\\s*(.+)$",    "tone": "success" }
+    ]
+  },
+
+  // structured form — extract labels via JSON path
+  {
+    "glob":   "release-notes/pending/*.json",
+    "format": "json",
+    "labels": [
+      { "name": "type",      "selector": "type",     "tone": "accent" },
+      { "name": "platforms", "selector": "platforms"                  }
+    ]
+  }
+]
+```
+
+| Field    | Type                                                   | Default   | Description                                                                                                                    |
+| -------- | ------------------------------------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `glob`   | `string`                                               | required  | Glob pattern, repo-root relative. `**` crosses directories, `*` does not cross `/` — matches git's `:(glob)` pathspec rules.   |
+| `format` | `"regex" \| "json" \| "yaml" \| "xml" \| "changesets"` | `"regex"` | How to parse the file. `changesets` reads YAML frontmatter; the others are described below.                                    |
+| `labels` | `{ name, selector, tone? }[]`                          | `[]`      | Fields to extract and render as Badges in the card header. Ignored when `format: "changesets"` (labels derived automatically). |
+
+### Label selectors
+
+- **`format: "regex"`** — `selector` is a regex applied with `m` and `i`
+  flags. The first capture group is the badge value; if no group is
+  present, the whole match is used. Example: `^Type:\\s*(.+)$`.
+- **`format: "json" | "yaml" | "xml"`** — `selector` is a dotted path
+  into the parsed object. Use numeric segments to index arrays (e.g.
+  `meta.tags.0`). Array values at the leaf are rendered comma-joined.
+- **`format: "changesets"`** — no `labels` config needed. Each
+  `"<package>": <bump>` entry in the YAML frontmatter becomes a Badge
+  (major → warning tone, minor → accent, patch → success), and the body
+  after the closing `---` is the entry's content. The
+  **Validate with agent** button appears when at least one entry is in
+  this format.
+
+`tone` controls the Badge colour and is one of `"accent"`, `"neutral"`
+(default), `"success"`, or `"warning"`.
+
+| Behaviour                         | Effect                                                                                                                                                |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Empty / unset, no `.changeset/`   | No release-notes section is shown.                                                                                                                    |
+| Empty / unset, `.changeset/` repo | Argus auto-injects a `{ glob: ".changeset/*.md", format: "changesets" }` entry so existing `@changesets/cli` projects keep working with no migration. |
+| Configured                        | Only the configured patterns drive the list — the changesets auto-fallback is skipped, so projects can opt out of changesets entirely.                |
 
 ---
 

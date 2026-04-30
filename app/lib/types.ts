@@ -30,18 +30,52 @@ export interface BranchList {
   remote: string[];
 }
 
-export interface ChangesetEntry {
-  /** File name within `.changeset/`, e.g. `silly-cats-dance.md`. */
-  filename: string;
-  /** Packages + bump types declared in the frontmatter. */
-  packages: { bump: string; name: string }[];
-  /** Body of the changeset (release note text), trimmed. */
-  summary: string;
+export type ReleaseNoteLabelTone = "accent" | "neutral" | "success" | "warning";
+
+export interface ReleaseNoteLabel {
+  name: string;
+  tone?: ReleaseNoteLabelTone;
+  value: string;
 }
 
-export interface SessionChangesetsResult {
-  changesets: ChangesetEntry[];
-  usesChangesets: boolean;
+export interface ReleaseNoteEntry {
+  /** Full text content of the file as it lives on this branch (trimmed). */
+  content: string;
+  /** Path relative to the repo root, e.g. `apps/foo/release-notes/next/PLAY-27.txt`. */
+  filename: string;
+  /** Format used to parse this entry — surfaces format-specific UI affordances. */
+  format: ReleaseNoteFormat;
+  /** Labels extracted via the matching pattern's `labels` config. */
+  labels: ReleaseNoteLabel[];
+  /** "added" if the file is new on this branch, "modified" if it existed at the merge-base. */
+  status: "added" | "modified";
+}
+
+export type ReleaseNoteFormat =
+  | "changesets"
+  | "json"
+  | "regex"
+  | "xml"
+  | "yaml";
+
+export interface ReleaseNoteLabelConfig {
+  name: string;
+  selector: string;
+  tone?: ReleaseNoteLabelTone | null;
+}
+
+export interface ReleaseNotePatternConfig {
+  format: ReleaseNoteFormat;
+  glob: string;
+  labels: ReleaseNoteLabelConfig[];
+}
+
+export interface SessionReleaseNotesResult {
+  entries: ReleaseNoteEntry[];
+  /** Patterns the project configured in `.argus.json#release_note_patterns`. */
+  patterns: ReleaseNotePatternConfig[];
+  /** True when the project declares any patterns. False = fall back to changesets. */
+  usesReleaseNotes: boolean;
 }
 
 /** Check if session is ready. */
@@ -272,6 +306,14 @@ export interface ArgusConfig {
    * template alphabetically.
    */
   pull_request_template?: string;
+  /**
+   * Glob-driven release-note patterns surfaced on the session home screen
+   * as an alternative to `@changesets/cli`. Each entry can be either a
+   * bare glob string or a `{ glob, format, labels }` object that also
+   * tells Argus how to parse the file (regex / json / yaml / xml) and
+   * which fields to render as Badges next to the filename.
+   */
+  release_note_patterns?: ReleaseNotePatternConfig[];
   /** Ordered list of run commands shown in the app's run menu. */
   run?: RunCommand[];
   /** Whether to save chat history when agents stop. Defaults to true. */

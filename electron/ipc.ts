@@ -147,7 +147,6 @@ import {
   cancelOrgTask,
   startOrgTask,
 } from "./services/organizationTask/orchestrator";
-import { getSessionChangesets } from "./services/session/changesets";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
 import {
   addRepoRoot,
@@ -161,6 +160,10 @@ import {
   renameSessionBranch,
   clearSessionSetupError,
 } from "./services/session/manager";
+import {
+  getSessionReleaseNotes,
+  previewReleaseNotes,
+} from "./services/session/releaseNotes";
 import {
   getRepoBranch,
   listBranches,
@@ -607,7 +610,15 @@ export function registerIpcHandlers(): void {
   handle("get_session_merge_blockers", (a) =>
     getSessionMergeBlockers(a.id as string),
   );
-  handle("get_session_changesets", (a) => getSessionChangesets(a.id as string));
+  handle("get_session_release_notes", (a) =>
+    getSessionReleaseNotes(a.id as string),
+  );
+  handle("preview_release_notes", (a) =>
+    previewReleaseNotes(
+      a.repoRoot as string,
+      a.patterns as Parameters<typeof previewReleaseNotes>[1],
+    ),
+  );
   handle("get_session_commits_ahead", (a) =>
     getSessionCommitsAhead(a.id as string),
   );

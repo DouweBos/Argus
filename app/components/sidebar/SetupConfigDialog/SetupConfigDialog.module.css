@@ -70,3 +70,55 @@
   letter-spacing: 0.04em;
   margin: 0;
 }
+
+.releaseNoteSelect {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font: var(--type-body);
+  padding: 6px 8px;
+  min-width: 100px;
+}
+
+.releaseNoteSelect:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.releaseNoteLabels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--border);
+}
+
+.releaseNoteLabelRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.releaseNotePreview {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.releaseNotePreviewLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.releaseNotePreviewCard {
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  padding: var(--space-3);
+  background: var(--bg-primary);
+}

@@ -26,7 +26,9 @@ import type {
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
-  SessionChangesetsResult,
+  ReleaseNoteEntry,
+  ReleaseNotePatternConfig,
+  SessionReleaseNotesResult,
   OnboardingConfigFile,
   OnboardingDefaults,
   OnboardingStep,
@@ -393,9 +395,16 @@ export const getSessionConflicts = (id: string): Promise<string[]> =>
 export const getSessionMergeBlockers = (id: string): Promise<string[]> =>
   invoke("get_session_merge_blockers", { id });
 
-export const getSessionChangesets = (
+export const getSessionReleaseNotes = (
   id: string,
-): Promise<SessionChangesetsResult> => invoke("get_session_changesets", { id });
+): Promise<SessionReleaseNotesResult> =>
+  invoke("get_session_release_notes", { id });
+
+export const previewReleaseNotes = (
+  repoRoot: string,
+  patterns: ReleaseNotePatternConfig[],
+): Promise<{ entries: ReleaseNoteEntry[] }> =>
+  invoke("preview_release_notes", { repoRoot, patterns });
 
 export const getSessionCommitsAhead = (id: string): Promise<number> =>
   invoke("get_session_commits_ahead", { id });
@@ -430,6 +439,14 @@ export const listDirectory = (
 
 export const listSessionFiles = (id: string): Promise<string[]> =>
   invoke("list_session_files", { id });
+
+/**
+ * List the entries of a directory at an absolute path. The backend rejects
+ * paths that aren't inside a registered session/project root. Used by the
+ * project-settings dialog's glob autocomplete.
+ */
+export const listPath = (path: string): Promise<DirEntry[]> =>
+  invoke("list_path", { path });
 
 export const resolveMentionPath = (
   id: string,

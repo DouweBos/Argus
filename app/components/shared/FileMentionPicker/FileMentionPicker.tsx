@@ -1,12 +1,34 @@
-import type { MentionPickerItem } from "../ChatInput/useMentionPicker";
 import { useEffect, useRef } from "react";
 import styles from "./FileMentionPicker.module.css";
+
+/**
+ * One row in the picker. Owned here so consumers don't need to depend on
+ * agent-internal types — the shared picker is the canonical source of
+ * this shape.
+ */
+export interface MentionPickerItem {
+  /** Display name (filename or directory name). */
+  display: string;
+  /** Secondary hint text (parent path in search mode). */
+  hint?: string;
+  /** Whether this entry is a directory. */
+  isDir: boolean;
+  /** Special "link this directory" action row. Optional — picker callers
+   *  that don't have an agent context to link to can simply omit it. */
+  isLinkAction?: boolean;
+}
 
 interface FileMentionPickerProps {
   headerText: string;
   items: MentionPickerItem[];
   onSelect: (index: number) => void;
   onSelectedIndexChange: (index: number) => void;
+  /**
+   * Where to anchor the popup relative to its parent input. Defaults to
+   * `"above"` to match ChatInput's bottom-of-screen layout. Forms inside
+   * dialogs typically want `"below"`.
+   */
+  placement?: "above" | "below";
   selectedIndex: number;
 }
 
@@ -14,6 +36,7 @@ export function FileMentionPicker({
   items,
   headerText,
   selectedIndex,
+  placement = "above",
   onSelectedIndexChange,
   onSelect,
 }: FileMentionPickerProps) {
@@ -33,7 +56,10 @@ export function FileMentionPicker({
 
   if (items.length === 0) {
     return (
-      <div ref={containerRef} className={styles.picker}>
+      <div
+        ref={containerRef}
+        className={`${styles.picker} ${placement === "below" ? styles.placementBelow : ""}`}
+      >
         <div className={styles.header}>{headerText}</div>
         <div className={styles.empty}>No matching files</div>
       </div>
@@ -41,7 +67,10 @@ export function FileMentionPicker({
   }
 
   return (
-    <div ref={containerRef} className={styles.picker}>
+    <div
+      ref={containerRef}
+      className={`${styles.picker} ${placement === "below" ? styles.placementBelow : ""}`}
+    >
       <div className={styles.header}>{headerText}</div>
       {items.map((item, i) => (
         <button

@@ -1,0 +1,4 @@
+/* Anchor for the absolutely-positioned FileMentionPicker popup. */
+.wrap {
+  position: relative;
+}

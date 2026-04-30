@@ -1,5 +1,10 @@
+import type { MentionPickerItem } from "../../shared/FileMentionPicker";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listSessionFiles, resolveMentionPath } from "../../../lib/ipc";
+
+// Re-export so existing `import { MentionPickerItem } from "./useMentionPicker"`
+// sites keep working — the canonical definition lives next to the picker.
+export type { MentionPickerItem };
 
 // ---------------------------------------------------------------------------
 // Types
@@ -8,17 +13,6 @@ import { listSessionFiles, resolveMentionPath } from "../../../lib/ipc";
 interface MentionContext {
   query: string;
   startIndex: number;
-}
-
-export interface MentionPickerItem {
-  /** Display name (filename or directory name). */
-  display: string;
-  /** Secondary hint text (parent path in search mode). */
-  hint?: string;
-  /** Whether this entry is a directory. */
-  isDir: boolean;
-  /** Special "link this directory" action row. */
-  isLinkAction?: boolean;
 }
 
 // ---------------------------------------------------------------------------

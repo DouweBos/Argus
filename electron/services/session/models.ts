@@ -211,6 +211,67 @@ export interface ArgusConfig {
    * want the entries co-located with the rest of `.argus.json`.
    */
   mcp_servers?: Record<string, Record<string, unknown>> | null;
+  /**
+   * Glob-driven release-note patterns surfaced on the session home screen.
+   * An alternative to `@changesets/cli` for projects that keep release
+   * notes as plain text / structured files (e.g. one `.txt` per ticket).
+   *
+   * Each entry is either a bare glob string or a `{ glob, format, labels }`
+   * object that also tells Argus how to parse the file and which fields to
+   * surface as Badges next to the filename.
+   */
+  release_note_patterns: ReleaseNotePatternConfig[];
+}
+
+/** Tone for label badges, mirrored from Peacock's `Badge.tone`. */
+export type ReleaseNoteLabelTone = "accent" | "neutral" | "success" | "warning";
+
+/**
+ * Format used to parse a release-note file before extracting labels.
+ *
+ * - `regex` — line-anchored regex per label.
+ * - `json` / `yaml` / `xml` — parse, then resolve dotted paths into the tree.
+ * - `changesets` — `@changesets/cli` format. YAML frontmatter declaring
+ *   `"<package>": <bump>` entries becomes the badge labels (one per
+ *   package), and the body after the closing `---` becomes the entry's
+ *   visible content. Any user-provided `labels` are ignored — they're
+ *   derived from the frontmatter instead.
+ */
+export type ReleaseNoteFormat =
+  | "changesets"
+  | "json"
+  | "regex"
+  | "xml"
+  | "yaml";
+
+/** A single label extracted from a release-note file and shown as a Badge. */
+export interface ReleaseNoteLabelConfig {
+  /** Display name shown on the badge (e.g. "type", "platform"). */
+  name: string;
+  /**
+   * For `format: "regex"` — a regex with one capture group, applied with
+   * `m`/`i` flags. The capture is the badge value. Example: `^Type:\s*(.+)$`.
+   *
+   * For `format: "json" | "yaml" | "xml"` — a dotted path into the parsed
+   * object. Array indices use numeric segments (e.g. `meta.tags.0`).
+   */
+  selector: string;
+  /** Optional Peacock badge tone. Defaults to "neutral". */
+  tone?: ReleaseNoteLabelTone | null;
+}
+
+/** Structured form of a single `release_note_patterns` entry. */
+export interface ReleaseNotePatternConfig {
+  /** Glob pattern (repo-root relative). Uses git's `:(glob)` pathspec semantics. */
+  glob: string;
+  /**
+   * How to parse the file before extracting labels. Defaults to `"regex"`,
+   * which is also the only format that does not depend on the file being
+   * valid JSON/YAML/XML — labels are extracted line-by-line with regex.
+   */
+  format: ReleaseNoteFormat;
+  /** Labels to extract and show as Badges. Empty = filename + status only. */
+  labels: ReleaseNoteLabelConfig[];
 }
 
 /** Default/empty `SetupConfig`. */
@@ -235,5 +296,6 @@ export function defaultArgusConfig(): ArgusConfig {
     single_runtime: false,
     mcp_servers: null,
     min_argus_version: null,
+    release_note_patterns: [],
   };
 }
