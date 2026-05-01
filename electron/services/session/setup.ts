@@ -112,6 +112,7 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
         : true,
     platforms: normalizePlatforms(parsed.platforms),
     protected_branches: normalizeProtectedBranches(parsed.protected_branches),
+    default_base_branch: normalizeDefaultBaseBranch(parsed.default_base_branch),
     single_runtime:
       parsed.single_runtime != null ? Boolean(parsed.single_runtime) : false,
     mcp_servers: normalizeMcpServers(parsed.mcp_servers),
@@ -301,6 +302,19 @@ function normalizeMcpServers(
  * of branch names that cannot be merged into directly from the app. Empty /
  * missing / malformed values return `[]` (no protection).
  */
+/**
+ * Normalise `default_base_branch`. Accepts a non-empty string; anything else
+ * (missing, empty, non-string) returns `null`.
+ */
+function normalizeDefaultBaseBranch(raw: unknown): string | null {
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const trimmed = raw.trim();
+
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function normalizeProtectedBranches(raw: unknown): string[] {
   if (!Array.isArray(raw)) {
     return [];
@@ -511,6 +525,8 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       local.protected_branches.length > 0
         ? local.protected_branches
         : base.protected_branches,
+    default_base_branch:
+      local.default_base_branch ?? base.default_base_branch ?? null,
     single_runtime: local.single_runtime ?? base.single_runtime ?? false,
     mcp_servers:
       local.mcp_servers || base.mcp_servers

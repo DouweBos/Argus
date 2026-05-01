@@ -31,6 +31,7 @@ import {
   type ImageAttachment,
   listAllBranches,
   listProjects,
+  readArgusConfig,
   setUserProjectSettings,
 } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
@@ -68,12 +69,25 @@ function filterBranches(branches: string[], query: string): string[] {
   return branches.filter((b) => b.toLowerCase().includes(q));
 }
 
-function pickDefaultSource(local: string[]): string | null {
-  if (local.includes("main")) {
-    return "main";
+/**
+ * Pick the branch to preselect as the source branch for a new session.
+ *
+ * Priority:
+ *   1. The project's `.argus.json` `default_base_branch`, when set and present locally.
+ *   2. Common base-branch names (`staging`, `develop`, `dev`, `main`, `master`).
+ *   3. The first local branch.
+ */
+function pickDefaultSource(
+  local: string[],
+  configured: string | null,
+): string | null {
+  if (configured && local.includes(configured)) {
+    return configured;
   }
-  if (local.includes("master")) {
-    return "master";
+  for (const candidate of ["staging", "develop", "dev", "main", "master"]) {
+    if (local.includes(candidate)) {
+      return candidate;
+    }
   }
 
   return local[0] ?? null;
@@ -521,15 +535,19 @@ export function CreateSessionDialog({
 
   useEffect(() => {
     let cancelled = false;
-    listAllBranches(repoRoot)
-      .then((list) => {
+    Promise.all([
+      listAllBranches(repoRoot),
+      readArgusConfig(repoRoot).catch(() => null),
+    ])
+      .then(([list, config]) => {
         if (cancelled) {
           return;
         }
         setLocalBranches(list.local);
         setRemoteBranches(list.remote);
+        const configured = config?.default_base_branch?.trim() || null;
         if (!sourceSession && !sourceBranch) {
-          const def = pickDefaultSource(list.local);
+          const def = pickDefaultSource(list.local, configured);
           if (def) {
             setSourceBranch(def);
           }

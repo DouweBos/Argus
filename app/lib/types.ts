@@ -274,6 +274,13 @@ export interface ArgusConfig {
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
   browser_url?: string;
   /**
+   * Preferred default source branch for new sessions (e.g. `"staging"`,
+   * `"develop"`). When set and the branch exists locally, the
+   * Create-Session dialog preselects it. Falls back to a
+   * staging/develop/dev/main/master probe otherwise.
+   */
+  default_base_branch?: string | null;
+  /**
    * Project-level MCP servers, merged into every spawned agent. Map of
    * server name to its `.mcp.json`-style config. Use `.mcp.json` for the
    * Claude Code standard discovery path; this field keeps entries
