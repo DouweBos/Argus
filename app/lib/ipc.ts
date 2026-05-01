@@ -88,6 +88,66 @@ export function send(channel: string, args?: Record<string, unknown>): void {
 // Window
 export const closeWindow = (): Promise<void> => invoke("close_window");
 
+// Global session launcher
+export const launcherShow = (): Promise<void> => invoke("launcher_show");
+export const launcherHide = (): Promise<void> => invoke("launcher_hide");
+export const launcherToggle = (): Promise<void> => invoke("launcher_toggle");
+export const launcherReady = (): Promise<void> => invoke("launcher_ready");
+
+export interface LauncherStatus {
+  accessibilityGranted: boolean | null;
+  enabled: boolean;
+  lastError: string | null;
+  running: boolean;
+}
+
+export const getLauncherStatus = (): Promise<LauncherStatus> =>
+  invoke("launcher_status");
+
+export const setLauncherEnabled = (enabled: boolean): Promise<boolean> =>
+  invoke("launcher_set_enabled", { enabled });
+
+export const getLauncherEnabled = (): Promise<boolean> =>
+  invoke("launcher_get_enabled");
+
+export const openAccessibilitySettings = (): Promise<void> =>
+  invoke("launcher_open_accessibility_settings");
+
+export const focusMainWindow = (): Promise<void> => invoke("focus_main_window");
+export const navigateMainWindow = (
+  path: string,
+  agentId?: string,
+): Promise<void> =>
+  invoke("navigate_main_window", {
+    path,
+    ...(agentId ? { agentId } : {}),
+  });
+
+export interface PendingSessionPromptPayload {
+  images?: ImageAttachment[];
+  linkedProjects?: string[];
+  model?: string;
+  prompt: string;
+  sessionId: string;
+}
+
+export const setPendingSessionPromptViaBroadcast = (
+  payload: PendingSessionPromptPayload,
+): Promise<void> => invoke("set_pending_session_prompt", { ...payload });
+
+// Area screenshot capture
+export interface AreaRect {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+export const completeAreaCapture = (
+  rect: AreaRect | null,
+  displayId: string,
+): Promise<void> => invoke("area_capture_complete", { rect, displayId });
+
 // Quit-with-running-agents flow.
 export const appConfirmQuit = (): Promise<void> => invoke("app_confirm_quit");
 export const appCancelQuit = (): Promise<void> => invoke("app_cancel_quit");

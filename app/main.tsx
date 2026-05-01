@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/global.css";
+import { LauncherPopout } from "./components/launcher/LauncherPopout";
 import { AgentPopout } from "./components/popout/AgentPopout";
 import { SimulatorPopout } from "./components/popout/SimulatorPopout";
 import { seedPopoutStore } from "./components/popout/seedPopoutStore";
@@ -56,7 +57,17 @@ async function bootTelemetry(): Promise<void> {
 
 bootTelemetry().catch(() => undefined);
 
-if (popoutMode === "agent") {
+if (popoutMode === "launcher") {
+  // Global session launcher floating window — minimal renderer, doesn't load
+  // the full app shell. Mirrors the AgentPopout pattern. Body class is
+  // applied by the inline bootstrap in index.html so the very first paint is
+  // already transparent.
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      <LauncherPopout />
+    </React.StrictMode>,
+  );
+} else if (popoutMode === "agent") {
   // Minimal popout renderer for a single detached agent. Hydration happens
   // inside the component so we can show a loading state while the session +
   // agent are fetched from the backend.

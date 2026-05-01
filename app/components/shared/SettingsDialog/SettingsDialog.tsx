@@ -13,9 +13,14 @@ import {
 } from "@argus/peacock";
 import {
   getAppSettings,
+  getLauncherStatus,
   gitGetConfig,
   gitSetConfig,
+  launcherShow,
+  openAccessibilitySettings,
   setAppSettings,
+  setLauncherEnabled,
+  type LauncherStatus,
 } from "../../../lib/ipc";
 import { setTelemetryEnabled } from "../../../lib/telemetry";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
@@ -138,6 +143,13 @@ function SettingsDialogContent() {
           description: "Commit signing keys",
           icon: <Icons.BranchIcon size={12} />,
           render: () => <GitSigningSection />,
+        },
+        {
+          id: "launcher",
+          label: "Session launcher",
+          description: "Global shortcut",
+          icon: <Icons.AgentStartIcon size={12} />,
+          render: () => <LauncherSection />,
         },
         {
           id: "privacy",
@@ -843,6 +855,111 @@ function GitSigningSection() {
             </div>
           </div>
         </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
+
+function launcherCaption(
+  running: boolean,
+  accessibility: boolean | null | undefined,
+): string {
+  if (!running) {
+    return "The native helper isn't running. Cmd+Shift+Space still works.";
+  }
+  if (accessibility) {
+    return "Active. Double-tap right Option anywhere to summon the launcher.";
+  }
+
+  return "Argus needs Accessibility permission to observe the right Option key. Open System Settings → Privacy & Security → Accessibility and add Argus.";
+}
+
+function LauncherSection() {
+  const [status, setStatus] = useState<LauncherStatus | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      getLauncherStatus()
+        .then((s) => {
+          if (!cancelled) {
+            setStatus(s);
+          }
+        })
+        .catch(() => undefined);
+    };
+    refresh();
+    const id = window.setInterval(refresh, 2000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  const accessibility = status?.accessibilityGranted;
+  const running = status?.running ?? false;
+  const enabled = status?.enabled ?? false;
+
+  const handleToggle = async (next: boolean) => {
+    try {
+      await setLauncherEnabled(next);
+      const s = await getLauncherStatus();
+      setStatus(s);
+    } catch {
+      // Ignore — refresh tick will recover state.
+    }
+  };
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Summon a floating prompt anywhere on your machine to start an agent in any project or session."
+        title="Global session launcher"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField
+          label="Enable launcher"
+          caption="Off by default. When on, registers Cmd+Shift+Space and (with Accessibility permission) double-tap right Option as global hotkeys."
+        >
+          <Toggle
+            checked={enabled}
+            onChange={(checked) => {
+              handleToggle(checked).catch(() => undefined);
+            }}
+          />
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Keyboard shortcut"
+          caption={
+            enabled
+              ? "Press Cmd+Shift+Space anywhere to toggle the launcher."
+              : "Enable the launcher above to register the global shortcut."
+          }
+        >
+          <Button
+            variant="secondary"
+            onClick={() => launcherShow().catch(() => undefined)}
+          >
+            Open launcher now
+          </Button>
+        </SettingsScreenField>
+
+        {enabled && (
+          <SettingsScreenField
+            label="Double-tap right Option"
+            caption={launcherCaption(running, accessibility)}
+          >
+            <Button
+              variant="secondary"
+              disabled={accessibility === true}
+              onClick={() => openAccessibilitySettings().catch(() => undefined)}
+            >
+              Open System Settings
+            </Button>
+          </SettingsScreenField>
+        )}
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

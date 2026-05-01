@@ -1024,6 +1024,10 @@ export function createHeadSession(repoRoot: string): Session {
     // Config parse failure is non-fatal here.
   }
 
+  // Notify the main window so a HEAD session created from another renderer
+  // (e.g. the global launcher) shows up in the sidebar without a refresh.
+  getMainWindow()?.webContents.send("session:created", { ...ws });
+
   info(`Created repo-root (HEAD) session ${ws.id}`);
 
   return { ...ws };

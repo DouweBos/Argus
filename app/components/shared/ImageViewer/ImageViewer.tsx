@@ -135,12 +135,13 @@ function ImageViewerOverlay({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        e.stopPropagation();
         closeImageViewer();
       }
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
 
-    return () => document.removeEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, []);
 
   const onMinimapPan = useCallback(

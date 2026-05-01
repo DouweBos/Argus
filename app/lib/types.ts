@@ -676,6 +676,7 @@ export const ONBOARDING_STEPS = [
   "preflight",
   "claude_auth",
   "defaults",
+  "launcher",
   "telemetry",
   "completion",
 ] as const;
