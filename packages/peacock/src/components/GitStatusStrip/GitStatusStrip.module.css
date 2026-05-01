@@ -1,0 +1,163 @@
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 var(--space-8);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  min-height: 34px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Divider between logical chip groups */
+.groupDivider {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+  margin: 0 var(--space-3);
+  flex-shrink: 0;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+  padding-left: var(--space-6);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font: var(--type-caption);
+  white-space: nowrap;
+  cursor: default;
+  margin-right: var(--space-2);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* Branch chip is slightly more prominent */
+.chip:first-child {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+
+.chip.interactive {
+  cursor: pointer;
+}
+.chip.interactive:hover {
+  background: var(--surface-4);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.chip.muted {
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+  background: transparent;
+}
+
+.chip.warning {
+  background: var(--warning-overlay-sm);
+  border-color: var(--warning-overlay-lg);
+  color: var(--warning);
+}
+
+.chip.error {
+  background: var(--error-overlay-sm);
+  border-color: var(--error-overlay-lg);
+  color: var(--error);
+}
+
+.chip.accent {
+  background: var(--accent-overlay-md);
+  border-color: var(--accent-border-soft);
+  color: var(--accent);
+}
+
+.branchName {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.aheadBehind {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-right: var(--space-2);
+}
+
+.ahead,
+.behind {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 5px;
+  border-radius: var(--border-radius-xs);
+}
+
+.ahead {
+  color: var(--success);
+  background: var(--success-overlay-sm);
+}
+
+.behind {
+  color: var(--warning);
+  background: var(--warning-overlay-sm);
+}
+
+.arrow {
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.fetchTime {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.7;
+}

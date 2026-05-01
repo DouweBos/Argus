@@ -1,34 +1,18 @@
 import type { Session } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { stopAgentListening } from "../lib/agentEventService";
 import { listen } from "../lib/events";
+import { listSessions } from "../lib/ipc";
 import {
-  addRepoRoot as apiAddRepoRoot,
-  createHeadSession as apiCreateHeadSession,
-  createSession as apiCreateSession,
-  deleteSession as apiDeleteSession,
-  removeRepoRoot as apiRemoveRepoRoot,
-  getRepoBranch,
-  listSessions,
-} from "../lib/ipc";
-import { seedReviewStateForSession } from "../lib/reviewQueueService";
+  closeProject as closeProjectService,
+  createSessionInProject,
+  deleteSessionById,
+  openProject as openProjectService,
+} from "../lib/projectsService";
+import { refreshRepoBranch } from "../lib/repoBranchSync";
 import { startListening } from "../lib/terminalBufferService";
-import { getAgentState, removeAgent } from "../stores/agentStore";
-import { pushError } from "../stores/notificationsStore";
 import {
-  addOpenProject,
-  addRecentProject,
-  getOpenProjects,
-  removeOpenProject,
-} from "../stores/recentProjectsStore";
-import {
-  addProject,
-  addSession,
-  getSelectedSessionId,
   getSessionState,
   mergeSessionsForProject,
-  removeProject,
-  removeSession,
   selectSession,
   setProjectBranch,
   setSetupProgress,
@@ -108,7 +92,7 @@ function setupSessionProgressListener(sessionId: string): Promise<() => void> {
 }
 
 // ---------------------------------------------------------------------------
-// useProjects — top-level hook for managing open projects
+// useProjects — selectors + stable mutator references
 // ---------------------------------------------------------------------------
 
 export function useProjects() {
@@ -116,204 +100,12 @@ export function useProjects() {
   const selectedId = useSelectedSessionId();
   const isLoading = useSessionLoading();
 
-  const openProject = useCallback(
-    async (
-      path: string,
-      options?: { autoSelect?: boolean; skipRecent?: boolean },
-    ) => {
-      try {
-        await apiAddRepoRoot(path);
-        addProject(path);
-
-        await apiCreateHeadSession(path);
-
-        const sessions = await listSessions(path);
-        mergeSessionsForProject(path, sessions);
-
-        // Seed the review queue with the current commits-ahead count for each
-        // worktree — worktrees may have accumulated changes in a previous
-        // session. repo_root sessions are skipped upstream in the backend.
-        for (const ws of sessions) {
-          if (ws.kind === "worktree") {
-            seedReviewStateForSession(ws.id).catch(() => {});
-          }
-        }
-
-        try {
-          const branch = await getRepoBranch(path);
-          setProjectBranch(path, branch);
-        } catch {
-          setProjectBranch(path, null);
-        }
-
-        const shouldAutoSelect = options?.autoSelect !== false;
-        const projectSessions = getSessionState().sessions.filter(
-          (w) => w.repo_root === path,
-        );
-        if (
-          shouldAutoSelect &&
-          projectSessions.length > 0 &&
-          getSelectedSessionId() === null
-        ) {
-          const repoRootWs = projectSessions.find(
-            (w) => w.kind === "project_root",
-          );
-          selectSession((repoRootWs ?? projectSessions[0]).id);
-        }
-
-        if (!options?.skipRecent) {
-          addRecentProject(path);
-        }
-        addOpenProject(path);
-      } catch (err) {
-        pushError(
-          err instanceof Error ? err.message : String(err),
-          "open_project",
-        );
-        throw err;
-      }
-    },
-    [],
-  );
-
-  const closeProject = useCallback(async (repoRoot: string) => {
-    try {
-      await apiRemoveRepoRoot(repoRoot);
-      removeProject(repoRoot);
-      removeOpenProject(repoRoot);
-    } catch (err) {
-      pushError(
-        err instanceof Error ? err.message : String(err),
-        "close_project",
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    const open = getOpenProjects();
-    if (open.length > 0) {
-      (async () => {
-        for (const p of open) {
-          try {
-            await openProject(p.path, { autoSelect: false, skipRecent: true });
-          } catch {
-            removeOpenProject(p.path);
-          }
-        }
-      })();
-    }
-  }, [openProject]);
-
-  useEffect(() => {
-    const unlisten = listen<{ error: string; id: string }>(
-      "session:delete-failed",
-      (event) => {
-        const { error: message } = event.payload;
-        pushError(`Failed to delete session: ${message}`, "delete_session");
-      },
-    );
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  useEffect(() => {
-    const unlisten = listen<string>("project:added", (event) => {
-      const repoRoot = event.payload;
-      openProject(repoRoot, { autoSelect: false, skipRecent: true }).catch(
-        () => {},
-      );
-    });
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [openProject]);
-
-  useEffect(() => {
-    const unlisten = listen<Session>("session:created", (event) => {
-      const ws = event.payload;
-      if (!getSessionState().sessions.some((w) => w.id === ws.id)) {
-        addSession(ws);
-      }
-      if (ws.kind === "worktree") {
-        seedReviewStateForSession(ws.id).catch(() => {});
-      }
-    });
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  useEffect(() => {
-    const unlisten = listen<{
-      base_branch?: string | null;
-      branch?: string;
-      display_name?: string | null;
-      id: string;
-      path?: string;
-      status?: Session["status"];
-    }>("session:updated", (event) => {
-      const { id, display_name, branch, path, base_branch, status } =
-        event.payload;
-      if (!getSessionState().sessions.some((w) => w.id === id)) {
-        return;
-      }
-      const patch: Partial<Session> = {};
-      if (display_name !== undefined) {
-        patch.display_name = display_name ?? null;
-      }
-      if (branch !== undefined) {
-        patch.branch = branch;
-      }
-      if (path !== undefined) {
-        patch.path = path;
-      }
-      if (base_branch !== undefined) {
-        patch.base_branch = base_branch;
-      }
-      if (status !== undefined) {
-        patch.status = status;
-      }
-      updateSession(id, patch);
-    });
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  useEffect(() => {
-    const unlisten = listen<string>("session:deleted", (event) => {
-      const wsId = event.payload;
-      // Purge any agents tracked for this session — the backend has
-      // already killed their processes, but the renderer store would
-      // otherwise keep showing them indefinitely.
-      const agents = getAgentState().agents;
-      for (const agent of Object.values(agents)) {
-        if (agent.session_id === wsId) {
-          stopAgentListening(agent.agent_id);
-          removeAgent(agent.agent_id);
-        }
-      }
-      if (getSessionState().sessions.some((w) => w.id === wsId)) {
-        removeSession(wsId);
-      }
-    });
-
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
   return {
     projects,
     selectedId,
     selectSession,
-    openProject,
-    closeProject,
+    openProject: openProjectService,
+    closeProject: closeProjectService,
     isLoading,
   };
 }
@@ -341,12 +133,7 @@ export function useProjectSessions(repoRoot: string) {
     try {
       const ws = await listSessions(repoRoot);
       mergeSessionsForProject(repoRoot, ws);
-      try {
-        const branch = await getRepoBranch(repoRoot);
-        setProjectBranch(repoRoot, branch);
-      } catch {
-        setProjectBranch(repoRoot, null);
-      }
+      refreshRepoBranch(repoRoot).catch(() => {});
     } catch {
       // Ignore refresh errors
     }
@@ -448,68 +235,34 @@ export function useProjectSessions(repoRoot: string) {
       useExistingBranch?: boolean,
       baseBranch?: string,
     ) => {
-      try {
-        // The backend mints the id, inserts an `initializing` session into state,
-        // and broadcasts `session:created` before returning. Branch-name
-        // generation and worktree setup then happen in the background, with
-        // progress reported via `session:updated` / `session:status:{id}`.
-        // The returned session is the same id we'll see in subsequent
-        // events — no placeholder / hot-swap needed.
-        const session = await apiCreateSession(
-          repoRoot,
-          branch,
-          description,
-          useExistingBranch,
-          baseBranch,
-        );
+      const session = await createSessionInProject(
+        repoRoot,
+        branch,
+        description,
+        useExistingBranch,
+        baseBranch,
+      );
 
-        // The sibling `session:created` listener in useSessions handles
-        // store insertion; guard against a missed event by inserting here
-        // too if needed.
-        if (!getSessionState().sessions.some((w) => w.id === session.id)) {
-          addSession(session);
-        }
+      const [unlistenStatus, unlistenProgress, unlistenTerminal] =
+        await Promise.all([
+          setupSessionStatusListener(session.id),
+          setupSessionProgressListener(session.id),
+          setupSessionTerminalListener(session.id),
+        ]);
+      listenersRef.current.set(session.id, () => {
+        unlistenStatus();
+        unlistenProgress();
+        unlistenTerminal();
+      });
 
-        const [unlistenStatus, unlistenProgress, unlistenTerminal] =
-          await Promise.all([
-            setupSessionStatusListener(session.id),
-            setupSessionProgressListener(session.id),
-            setupSessionTerminalListener(session.id),
-          ]);
-        listenersRef.current.set(session.id, () => {
-          unlistenStatus();
-          unlistenProgress();
-          unlistenTerminal();
-        });
-
-        return session;
-      } catch (err) {
-        pushError(
-          err instanceof Error ? err.message : String(err),
-          "create_session",
-        );
-        throw err;
-      }
+      return session;
     },
     [repoRoot],
   );
 
   const deleteSession = useCallback(
     async (id: string, deleteBranch?: boolean) => {
-      try {
-        // The backend marks the session as "deleting" and emits
-        // `session:deleted` once the worktree is fully removed. Don't
-        // remove locally or refresh here — doing so would either flash the
-        // session out-and-back-in (refresh sees it still on disk) or race
-        // ahead of the actual filesystem deletion.
-        await apiDeleteSession(id, deleteBranch);
-      } catch (err) {
-        pushError(
-          err instanceof Error ? err.message : String(err),
-          "delete_session",
-        );
-        throw err;
-      }
+      await deleteSessionById(id, deleteBranch);
     },
     [],
   );

@@ -1,6 +1,6 @@
 /* ============================================================
-   DiffViewer — Tower-style layout
-   Top: header bar | Below: file list (left) + diff (right)
+   DiffViewer — working copy
+   Left: single-column file list   Right: diff detail
    ============================================================ */
 
 .container {
@@ -12,170 +12,72 @@
   background: var(--bg-primary);
 }
 
-.contentRow {
+/* Two columns:
+   - centerCol owns the inline branch header, commit composer, and file list
+   - diffDetail owns the diff toolbar + per-file diff view */
+.workingCopyLayout {
   flex: 1;
-  display: flex;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: 360px 1fr;
   min-height: 0;
+  overflow: hidden;
+  position: relative;
 }
 
-/* --- Empty / loading states --- */
+/* DnD drop indicator for stash / file applies onto the working copy. */
+.workingCopyLayoutDropOver::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
 
-.loadingFull {
+.centerCol {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-secondary-50);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.diffDetail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.diffBody {
   flex: 1;
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--glass-border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.errorMsg {
-  padding: 16px;
-  font-size: var(--font-size-sm);
-  color: var(--error);
-}
-
+/* Empty state — uses Peacock EmptyState component; this wraps the container */
 .emptyState {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-5);
   color: var(--text-muted);
-  font-size: var(--font-size-sm);
-}
-
-/* ============================================================
-   Breadcrumb bar (inside file list panel)
-   ============================================================ */
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: var(--font-size-xs);
-  border-bottom: 1px solid var(--glass-border);
-  flex-shrink: 0;
-}
-
-.breadcrumbBranch {
-  color: var(--text-primary);
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.breadcrumbSep {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.breadcrumbTracking {
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* ============================================================
-   File list container
-   ============================================================ */
-
-.fileList {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-secondary-50);
-  overflow: hidden;
+  font: var(--type-caption);
+  opacity: 0.5;
+  user-select: none;
 }
 
 .conflictBanner {
-  padding: 4px 12px;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
+  padding: var(--space-2) var(--space-6);
+  font: var(--type-caption);
   color: var(--warning);
   background: color-mix(in srgb, var(--warning) 10%, transparent);
   border-bottom: 1px solid var(--border);
-}
-
-/* ============================================================
-   Bottom bar
-   ============================================================ */
-
-.bottomBar {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 4px 8px;
-  border-top: 1px solid var(--glass-border);
-  background: transparent;
-  flex-shrink: 0;
-}
-
-.bottomBarBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--border-radius-sm);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    background var(--transition-fast),
-    color var(--transition-fast);
-}
-
-.bottomBarBtn:hover:not(:disabled) {
-  background: var(--surface-4);
-  color: var(--text-primary);
-}
-
-.bottomBarBtn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.bottomBarSpacer {
-  flex: 1;
-}
-
-/* ============================================================
-   Diff detail (right panel)
-   ============================================================ */
-
-.diffDetail {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.diffScroll {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.diffScrollItem {
-  border-bottom: 2px solid var(--glass-border);
 }

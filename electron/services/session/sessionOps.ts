@@ -14,6 +14,8 @@ import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { git, worktreesRoot } from "./git";
+import { withGitLock } from "./gitLock";
+import { attachGitWatcher } from "./gitWatcher";
 import {
   checkMergeConflicts,
   abortSessionMerge as doAbortSessionMerge,
@@ -131,7 +133,10 @@ export async function getSessionFullDiff(id: string): Promise<string> {
  *
  * Returns an empty string when the session has no base branch.
  */
-export async function getSessionBranchDiff(id: string): Promise<string> {
+export async function getSessionBranchDiff(
+  id: string,
+  opts?: DiffOpts,
+): Promise<string> {
   const ws = appState.sessions.get(id);
   if (!ws || ws.kind === "project_root" || !ws.base_branch) {
     return "";
@@ -149,12 +154,33 @@ export async function getSessionBranchDiff(id: string): Promise<string> {
     return "";
   }
 
-  return git(wtPath, ["diff", mergeBase]);
+  return git(wtPath, ["diff", ...diffFlags(opts), mergeBase]);
 }
 
 /** Return `git diff --cached` output (staged only) for a session. */
-export async function getSessionStagedDiff(id: string): Promise<string> {
-  return git(sessionPath(id), ["diff", "--cached"]);
+export async function getSessionStagedDiff(
+  id: string,
+  opts?: DiffOpts,
+): Promise<string> {
+  return git(sessionPath(id), ["diff", "--cached", ...diffFlags(opts)]);
+}
+
+/** Optional flags for diff fetches. */
+export interface DiffOpts {
+  ignoreWhitespace?: boolean;
+  wordDiff?: boolean;
+}
+
+function diffFlags(opts?: DiffOpts): string[] {
+  const args: string[] = [];
+  if (opts?.ignoreWhitespace) {
+    args.push("-w");
+  }
+  if (opts?.wordDiff) {
+    args.push("--word-diff=plain");
+  }
+
+  return args;
 }
 
 /**
@@ -214,12 +240,18 @@ export async function getSessionStatus(id: string): Promise<string> {
 
 /** Stage an entire file in a session. */
 export async function stageFile(id: string, filePath: string): Promise<void> {
-  await git(sessionPath(id), ["add", "--", filePath]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, async () => {
+    await git(wt, ["add", "--", filePath]);
+  });
 }
 
 /** Unstage an entire file (reset to HEAD) in a session. */
 export async function unstageFile(id: string, filePath: string): Promise<void> {
-  await git(sessionPath(id), ["reset", "HEAD", "--", filePath]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, async () => {
+    await git(wt, ["reset", "HEAD", "--", filePath]);
+  });
 }
 
 /**
@@ -228,12 +260,18 @@ export async function unstageFile(id: string, filePath: string): Promise<void> {
  * `.git/index.lock` with each other and with the diff watcher’s polling.
  */
 export async function stageAll(id: string): Promise<void> {
-  await git(sessionPath(id), ["add", "-A"]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, async () => {
+    await git(wt, ["add", "-A"]);
+  });
 }
 
 /** Unstage all index entries in one `git reset HEAD`. */
 export async function unstageAll(id: string): Promise<void> {
-  await git(sessionPath(id), ["reset", "HEAD"]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, async () => {
+    await git(wt, ["reset", "HEAD"]);
+  });
 }
 
 /**
@@ -242,17 +280,19 @@ export async function unstageAll(id: string): Promise<void> {
  */
 export async function discardFile(id: string, filePath: string): Promise<void> {
   const wtPath = sessionPath(id);
-  try {
-    await git(wtPath, ["checkout", "HEAD", "--", filePath]);
+  await withGitLock(wtPath, async () => {
+    try {
+      await git(wtPath, ["checkout", "HEAD", "--", filePath]);
 
-    return;
-  } catch {
-    // Checkout failed — likely an untracked file.
-  }
-  const fullPath = `${wtPath}/${filePath}`;
-  if (fs.existsSync(fullPath)) {
-    fs.unlinkSync(fullPath);
-  }
+      return;
+    } catch {
+      // Checkout failed — likely an untracked file.
+    }
+    const fullPath = `${wtPath}/${filePath}`;
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -285,17 +325,20 @@ async function applyPatch(
 
 /** Stage a hunk (patch string) in a session. */
 export async function stageHunk(id: string, patch: string): Promise<void> {
-  await applyPatch(sessionPath(id), patch, ["--cached"]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, () => applyPatch(wt, patch, ["--cached"]));
 }
 
 /** Unstage a hunk (patch string) in a session. */
 export async function unstageHunk(id: string, patch: string): Promise<void> {
-  await applyPatch(sessionPath(id), patch, ["--cached", "--reverse"]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, () => applyPatch(wt, patch, ["--cached", "--reverse"]));
 }
 
 /** Discard a hunk (reverse-apply patch) in a session. */
 export async function discardHunk(id: string, patch: string): Promise<void> {
-  await applyPatch(sessionPath(id), patch, ["--reverse"]);
+  const wt = sessionPath(id);
+  await withGitLock(wt, () => applyPatch(wt, patch, ["--reverse"]));
 }
 
 // ---------------------------------------------------------------------------
@@ -317,7 +360,8 @@ export async function gitCommit(
     args.push("--amend");
   }
 
-  const output = await git(sessionPath(id), args);
+  const wt = sessionPath(id);
+  const output = await withGitLock(wt, () => git(wt, args));
 
   // Emit a commit-landed activity event. Best-effort — lookup failures should
   // not abort the commit.
@@ -387,6 +431,7 @@ export interface GitCommit {
   treeHash: string;
   subject: string;
   refs: string;
+  body: string;
 }
 
 export interface GitStashEntry {
@@ -420,6 +465,7 @@ export async function gitLog(
     "%T",
     "%s",
     "%D",
+    "%b",
   ].join("%n");
   const args = [
     "log",
@@ -428,7 +474,7 @@ export async function gitLog(
     `-${count}`,
   ];
   if (allBranches) {
-    args.splice(1, 0, "--all");
+    args.splice(1, 0, "--exclude=refs/stash", "--all");
   }
   const raw = await git(sessionPath(id), args);
   const entries = raw.split(COMMIT_SEP).filter((s) => s.trim());
@@ -449,6 +495,7 @@ export async function gitLog(
       treeHash: lines[9] ?? "",
       subject: lines[10] ?? "",
       refs: lines[11] ?? "",
+      body: lines.slice(12).join("\n").trim(),
     };
   });
 }
@@ -520,28 +567,91 @@ export async function gitPull(
   if (remoteBranch) {
     args.push("origin", remoteBranch);
   }
+  const wt = sessionPath(id);
 
-  return git(sessionPath(id), args);
+  return withGitLock(wt, () => git(wt, args));
 }
 
 /** Push to the remote for a session. */
 export async function gitPush(id: string): Promise<string> {
-  return git(sessionPath(id), ["push"]);
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () => git(wt, ["push"]));
 }
 
 /** Fetch from all remotes for a session. */
 export async function gitFetch(id: string): Promise<string> {
-  return git(sessionPath(id), ["fetch", "--all"]);
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () => git(wt, ["fetch", "--all"]));
 }
 
 /** Stash working directory changes in a session. */
 export async function gitStash(id: string): Promise<string> {
-  return git(sessionPath(id), ["stash"]);
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () => git(wt, ["stash"]));
+}
+
+export interface GitStashSaveOptions {
+  includeUntracked?: boolean;
+  keepIndex?: boolean;
+  message?: string;
+  /** Restrict the stash to these pathspecs (`git stash push -- <paths>`). */
+  paths?: string[];
+}
+
+/**
+ * Stash working directory changes with optional message and flags.
+ *
+ * Maps to `git stash push [-m <msg>] [-u] [--keep-index] [-- <paths>]`.
+ */
+export async function gitStashSave(
+  id: string,
+  options: GitStashSaveOptions = {},
+): Promise<string> {
+  const wt = sessionPath(id);
+  const args: string[] = ["stash", "push"];
+  if (options.includeUntracked) {
+    args.push("-u");
+  }
+  if (options.keepIndex) {
+    args.push("--keep-index");
+  }
+  const trimmed = options.message?.trim();
+  if (trimmed) {
+    args.push("-m", trimmed);
+  }
+  if (options.paths && options.paths.length > 0) {
+    args.push("--", ...options.paths);
+  }
+
+  return withGitLock(wt, () => git(wt, args));
+}
+
+/**
+ * Create a new branch from a stash entry.
+ *
+ * Maps to `git stash branch <name> <ref>`. On success, the stash is dropped
+ * automatically by git.
+ */
+export async function gitStashBranch(
+  id: string,
+  stashRef: string,
+  branchName: string,
+): Promise<string> {
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () =>
+    git(wt, ["stash", "branch", branchName, stashRef]),
+  );
 }
 
 /** Pop the most recent stash in a session. */
 export async function gitStashPop(id: string): Promise<string> {
-  return git(sessionPath(id), ["stash", "pop"]);
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () => git(wt, ["stash", "pop"]));
 }
 
 /** Apply a specific stash by index without removing it. */
@@ -549,7 +659,30 @@ export async function gitStashApply(
   id: string,
   stashIndex: number,
 ): Promise<string> {
-  return git(sessionPath(id), ["stash", "apply", `stash@{${stashIndex}}`]);
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () =>
+    git(wt, ["stash", "apply", `stash@{${stashIndex}}`]),
+  );
+}
+
+/**
+ * Restore one or more paths from a ref (commit hash, `stash@{N}`, etc.) into
+ * the working tree. Equivalent to `git checkout <ref> -- <paths>`. Used by the
+ * working-copy drop targets to apply individual files from a stash or a
+ * historical commit. Updates the index for the given paths as well.
+ */
+export async function gitCheckoutPaths(
+  id: string,
+  ref: string,
+  paths: string[],
+): Promise<string> {
+  if (paths.length === 0) {
+    return "";
+  }
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () => git(wt, ["checkout", ref, "--", ...paths]));
 }
 
 /** Drop a specific stash by index. */
@@ -557,7 +690,11 @@ export async function gitStashDrop(
   id: string,
   stashIndex: number,
 ): Promise<string> {
-  return git(sessionPath(id), ["stash", "drop", `stash@{${stashIndex}}`]);
+  const wt = sessionPath(id);
+
+  return withGitLock(wt, () =>
+    git(wt, ["stash", "drop", `stash@{${stashIndex}}`]),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -594,6 +731,11 @@ export function watchSession(id: string): void {
 
   const handle: WatcherHandle = startWatcher(id, ws.path);
   appState.watchers.set(id, handle);
+
+  // Also attach the git-status FS watcher (idempotent — safe to call again).
+  attachGitWatcher(id, ws.path).catch(() => {
+    // Non-fatal — gitWatcher module already logs.
+  });
 }
 
 /** Stop watching a session directory for file system changes. */
@@ -604,6 +746,11 @@ export function unwatchSession(id: string): void {
     appState.watchers.delete(id);
     info(`Stopped file watcher for session ${id}`);
   }
+  // The git-status watcher is owned by gitWatcher's internal map; we
+  // intentionally do NOT detach it here — the diff-stats watcher's lifecycle
+  // is per-mounted-consumer, but the git watcher should live as long as the
+  // session does, so consumers of useGitStatus don't have to coordinate.
+  // Detach happens in deleteSession / removeRepoRoot.
 }
 
 /** Pause all active file watchers (skip diff computation while window is unfocused). */
@@ -812,11 +959,8 @@ export async function mergeSessionIntoBase(id: string): Promise<void> {
     );
   }
 
-  await doMergeSessionIntoBase(
-    ws.repo_root,
-    ws.path,
-    ws.branch,
-    ws.base_branch,
+  await withGitLock(ws.path, () =>
+    doMergeSessionIntoBase(ws.repo_root, ws.path, ws.branch, ws.base_branch!),
   );
 
   getMainWindow()?.webContents.send("session:merged", {
@@ -1026,7 +1170,9 @@ export async function rebaseSessionOnBase(id: string): Promise<void> {
     throw "No base branch set for this session";
   }
 
-  await doRebaseSessionOnBase(ws.path, ws.branch ?? "", ws.base_branch);
+  await withGitLock(ws.path, () =>
+    doRebaseSessionOnBase(ws.path, ws.branch ?? "", ws.base_branch!),
+  );
 
   emitReviewState(id).catch(() => {});
 }
@@ -1121,13 +1267,6 @@ export async function pushSessionBranch(id: string): Promise<{
     throw `Cannot push a ${ws.kind} session`;
   }
 
-  // Commit staged changes first, so the push is meaningful.
-  try {
-    await git(ws.path, ["diff", "--cached", "--quiet"]);
-  } catch {
-    await git(ws.path, ["commit", "-m", `chore: wip on ${ws.branch}`]);
-  }
-
   // Prefer `origin`; fall back to the first configured remote.
   const remoteList = (await git(ws.repo_root, ["remote"]))
     .split("\n")
@@ -1138,7 +1277,15 @@ export async function pushSessionBranch(id: string): Promise<{
   }
   const remoteName = remoteList.includes("origin") ? "origin" : remoteList[0];
 
-  await git(ws.path, ["push", "-u", remoteName, ws.branch]);
+  await withGitLock(ws.path, async () => {
+    // Commit staged changes first, so the push is meaningful.
+    try {
+      await git(ws.path, ["diff", "--cached", "--quiet"]);
+    } catch {
+      await git(ws.path, ["commit", "-m", `chore: wip on ${ws.branch}`]);
+    }
+    await git(ws.path, ["push", "-u", remoteName, ws.branch]);
+  });
 
   const remoteUrl = (
     await git(ws.repo_root, ["remote", "get-url", remoteName])

@@ -30,22 +30,23 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field                                                                | Editable in dialog?     |
-| -------------------------------------------------------------------- | ----------------------- |
-| `setup.copy` / `symlink` / `commands`                                | yes (Setup)             |
-| `min_argus_version`                                                  | yes (Setup)             |
-| `terminals`                                                          | yes (Terminals)         |
-| `run`                                                                | yes (Run commands)      |
-| `workspace_env`                                                      | yes (Workspace env)     |
-| `platforms`                                                          | yes (Platforms)         |
-| `browser_url`, `browser_presets`                                     | yes (Browser)           |
-| `single_runtime`                                                     | yes (Run commands)      |
-| `agent_prompt`, `save_chat_history`                                  | yes (Agent)             |
-| `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection) |
-| `mcp_servers`                                                        | yes (MCP servers)       |
-| `release_note_patterns`                                              | yes (Release notes)     |
-| `simulator_deeplinks`                                                | yes (Deep links)        |
-| `related_projects`                                                   | yes (Related projects)  |
+| Field                                                                | Editable in dialog?      |
+| -------------------------------------------------------------------- | ------------------------ |
+| `setup.copy` / `symlink` / `commands`                                | yes (Setup)              |
+| `min_argus_version`                                                  | yes (Setup)              |
+| `terminals`                                                          | yes (Terminals)          |
+| `run`                                                                | yes (Run commands)       |
+| `workspace_env`                                                      | yes (Workspace env)      |
+| `platforms`                                                          | yes (Platforms)          |
+| `browser_url`, `browser_presets`                                     | yes (Browser)            |
+| `single_runtime`                                                     | yes (Run commands)       |
+| `agent_prompt`, `save_chat_history`                                  | yes (Agent)              |
+| `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)  |
+| `mcp_servers`                                                        | yes (MCP servers)        |
+| `release_note_patterns`                                              | yes (Release notes)      |
+| `simulator_deeplinks`                                                | yes (Deep links)         |
+| `auto_fetch_minutes`                                                 | yes (Git settings panel) |
+| `related_projects`                                                   | yes (Related projects)   |
 
 ---
 
@@ -69,7 +70,8 @@ Two ways to change project settings:
   "default_base_branch": "staging",
   "single_runtime":     false,
   "min_argus_version":  "0.10.0",
-  "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } }
+  "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } },
+  "auto_fetch_minutes": 15
 }
 ```
 
@@ -428,6 +430,30 @@ to the filename.
 | Empty / unset, no `.changeset/`   | No release-notes section is shown.                                                                                                                    |
 | Empty / unset, `.changeset/` repo | Argus auto-injects a `{ glob: ".changeset/*.md", format: "changesets" }` entry so existing `@changesets/cli` projects keep working with no migration. |
 | Configured                        | Only the configured patterns drive the list — the changesets auto-fallback is skipped, so projects can opt out of changesets entirely.                |
+
+---
+
+## `auto_fetch_minutes` — background auto-fetch interval
+
+When set, Argus runs `git fetch --prune` in the background at this
+interval (in minutes) for every active session in the project. The
+status strip's "Last fetched" timestamp updates automatically after
+each fetch.
+
+```jsonc
+"auto_fetch_minutes": 15
+```
+
+Valid values: any positive integer. Omit or set to `0` to disable
+auto-fetch entirely (the default).
+
+The field can also be changed from **Git Settings** in the project's
+git panel — the change takes effect immediately for all open sessions
+and is written back to `.argus.json`.
+
+> Note: `suppress_lfs_warning` is the personal counterpart that lives
+> in `~/.argus/user-project-settings.json`. It hides the git-lfs
+> banners without touching the repo.
 
 ---
 

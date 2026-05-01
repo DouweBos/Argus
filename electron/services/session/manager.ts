@@ -21,6 +21,7 @@ import {
   applyBranchPrefix,
   loadUserProjectSettings,
 } from "../userProjectSettings/store";
+import { reconfigureAutoFetch, stopAutoFetch } from "./autoFetch";
 import {
   branchToDir,
   git,
@@ -28,6 +29,7 @@ import {
   titleToBranchSlug,
   worktreesRoot,
 } from "./git";
+import { attachGitWatcher, detachGitWatcher } from "./gitWatcher";
 import {
   getMeta,
   isValidWorktree,
@@ -49,6 +51,9 @@ import { startBranchWatcher } from "./watcher";
 export function addRepoRoot(dirPath: string): void {
   if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
     throw `Path is not a directory: ${dirPath}`;
+  }
+  if (appState.repoRoots.has(dirPath)) {
+    return;
   }
   info(`Adding repo root: ${dirPath}`);
   appState.repoRoots.add(dirPath);
@@ -95,13 +100,15 @@ export function removeRepoRoot(dirPath: string): void {
     }
   }
 
-  // Stop file watchers.
+  // Stop file watchers and auto-fetch timers.
   for (const wsId of wsIds) {
     const handle = appState.watchers.get(wsId);
     if (handle) {
       handle.stop();
       appState.watchers.delete(wsId);
     }
+    detachGitWatcher(wsId);
+    stopAutoFetch(wsId);
   }
 
   // Remove sessions from state.
@@ -539,6 +546,7 @@ async function finalizeSession(
           appState.sessions.set(id, current);
         }
         getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+        reconfigureAutoFetch(id, repoRoot, config.auto_fetch_minutes);
       })
       .catch((e: unknown) => {
         const errMsg = typeof e === "string" ? e : String(e);
@@ -1004,6 +1012,18 @@ export function createHeadSession(repoRoot: string): Session {
   const branchHandle = startBranchWatcher(repoRoot, ws.id);
   appState.watchers.set(ws.id, branchHandle);
 
+  // Attach git-status FS watcher (independent of the per-consumer diff-stats
+  // watcher — see `attachGitWatcher`).
+  attachGitWatcher(ws.id, ws.path).catch(() => {});
+
+  // Start auto-fetch if configured.
+  try {
+    const argusConfig = loadArgusConfig(repoRoot);
+    reconfigureAutoFetch(ws.id, repoRoot, argusConfig.auto_fetch_minutes);
+  } catch {
+    // Config parse failure is non-fatal here.
+  }
+
   info(`Created repo-root (HEAD) session ${ws.id}`);
 
   return { ...ws };
@@ -1181,6 +1201,7 @@ export async function deleteSession(
     watcher.stop();
     appState.watchers.delete(id);
   }
+  detachGitWatcher(id);
 
   const win = getMainWindow();
 

@@ -10,23 +10,26 @@ No Zustand store mirrors the route. Reads go through URL-derived hooks
 
 ## URL inventory
 
-| URL                                   | Screen                       | Notes                                                 |
-| ------------------------------------- | ---------------------------- | ----------------------------------------------------- |
-| `/`                                   | Home / project picker        | Default route on launch.                              |
-| `/agents`                             | Agents overview              | All agents across all sessions.                       |
-| `/devices`                            | Devices                      | iOS simulators + Android emulators.                   |
-| `/notifications`                      | Notifications                | Warnings & errors.                                    |
-| `/organizations`                      | Organizations list           | All organizations.                                    |
-| `/organizations/:organizationId`      | Single organization          | Org detail + tasks.                                   |
-| `/pull-requests`                      | Pull requests                | GitHub PRs of interest across open projects.          |
-| `/pull-requests/:owner/:repo/:number` | Pull request detail          | Single PR view: description, checks, files, comments. |
-| `/review-queue`                       | Review queue                 | Sessions ready to merge.                              |
-| `/runtimes`                           | Runtimes overview            | All running dev servers / terminals.                  |
-| `/sessions/:sessionId`                | Session (defaults to agents) | Equivalent to `/sessions/:sessionId/agents`.          |
-| `/sessions/:sessionId/agents`         | Session → Agents panel       | Claude Code agents for this session.                  |
-| `/sessions/:sessionId/editor`         | Session → Editor panel       | Monaco / VS Code editor.                              |
-| `/sessions/:sessionId/git`            | Session → Git panel          | Commit log, stashes, diffs.                           |
-| `/sessions/:sessionId/home`           | Session → Home panel         | Per-session overview.                                 |
+| URL                                             | Screen                             | Notes                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                             | Home / project picker              | Default route on launch.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `/agents`                                       | Agents overview                    | All agents across all sessions.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `/devices`                                      | Devices                            | iOS simulators + Android emulators.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `/notifications`                                | Notifications                      | Warnings & errors.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `/organizations`                                | Organizations list                 | All organizations.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `/organizations/:organizationId`                | Single organization                | Org detail + tasks.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `/pull-requests`                                | Pull requests                      | GitHub PRs of interest across open projects.                                                                                                                                                                                                                                                                                                                                                                                      |
+| `/pull-requests/:owner/:repo/:number`           | Pull request detail                | Single PR view: description, checks, files, comments.                                                                                                                                                                                                                                                                                                                                                                             |
+| `/review-queue`                                 | Review queue                       | Sessions ready to merge.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `/runtimes`                                     | Runtimes overview                  | All running dev servers / terminals.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/sessions/:sessionId`                          | Session (defaults to agents)       | Equivalent to `/sessions/:sessionId/agents`.                                                                                                                                                                                                                                                                                                                                                                                      |
+| `/sessions/:sessionId/agents`                   | Session → Agents panel             | Claude Code agents for this session.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/sessions/:sessionId/editor`                   | Session → Editor panel             | Monaco / VS Code editor.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `/sessions/:sessionId/git`                      | Session → Git panel                | Commit log, stashes, diffs.                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `/sessions/:sessionId/git/:gitView`             | Session → Git sub-view             | `working`, `branch`, `history`, `stashes`, `reflog`, `conflicts`, `branches`, `submodules`, `bisect`, `hooks`, `compare` (?left=&right=), `blame` (?path=&ref=), `settings`. Also `tags` as a ref-route prefix (`/git/tags/:name`). Project-scope sub-views (`branches`, `submodules`, `bisect`, `hooks`, `compare`, `blame`, `settings`) only render when the session is `kind === "project_root"` or are universally available. |
+| `/sessions/:sessionId/git/branches/:branchName` | Session → Git, focused on a branch | Renders the history view filtered to `:branchName`. The sidebar highlights the matching branch row; top-nav items stay deselected. Use `setGitRef("branches", name)`.                                                                                                                                                                                                                                                             |
+| `/sessions/:sessionId/git/tags/:tagName`        | Session → Git, focused on a tag    | Renders the history view filtered to `:tagName`. The sidebar highlights the matching tag row. Use `setGitRef("tags", name)`.                                                                                                                                                                                                                                                                                                      |
+| `/sessions/:sessionId/home`                     | Session → Home panel               | Per-session overview.                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 `/settings` is not a route — the settings dialog is overlaid on top of the
 current URL.
@@ -51,6 +54,25 @@ interface ParsedRoute {
   sessionId: string | null; // set when view === "session"
   organizationId: string | null; // set on /organizations/:organizationId
   panel: "agents" | "editor" | "git" | "home"; // only meaningful when view === "session"
+  gitView:
+    | "working"
+    | "branch"
+    | "history"
+    | "stashes"
+    | "reflog"
+    | "conflicts"
+    | "branches"
+    | "tags"
+    | "submodules"
+    | "bisect"
+    | "blame"
+    | "compare"
+    | "hooks"
+    | "pull-requests"
+    | "branches-review"
+    | "settings"
+    | null; // only meaningful when panel === "git"
+  gitRefName: string | null; // set when gitView is "branches"/"tags" and a name segment follows
 }
 ```
 

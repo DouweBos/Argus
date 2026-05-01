@@ -1,0 +1,239 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 14px;
+}
+
+/* ---- Tab bar ---- */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 4px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  padding: 4px 10px;
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+}
+
+.tabActive {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ---- Scrollable list ---- */
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: min(48vh, 380px);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-secondary-50);
+}
+
+/* ---- Row ---- */
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px 1fr auto auto auto;
+  gap: 7px;
+  align-items: center;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowActive {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--text-primary);
+}
+
+.rowIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hash {
+  font: var(--type-mono-badge);
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.hint {
+  font: var(--type-eyebrow);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ---- Branch-specific ---- */
+
+.currentBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font: var(--type-eyebrow);
+  font-size: 9px;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.aheadBehind {
+  font: var(--type-mono-badge);
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ---- File-specific ---- */
+
+.dirHint {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  margin-left: 2px;
+}
+
+/* ---- Submodule-specific ---- */
+
+.subPath {
+  font: var(--type-mono-badge);
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusClean {
+  background: var(--success);
+}
+
+.statusModified {
+  background: var(--warning);
+}
+
+.statusUninitialized {
+  background: var(--text-muted);
+}
+
+/* ---- Expand chevron button ---- */
+
+.expandBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+}
+
+.expandBtn:hover {
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-secondary);
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+/* ---- Alternate actions ---- */
+
+.altList {
+  /* spans all columns */
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.altItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.altItem:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text-primary);
+}
+
+.altItemDestructive {
+  color: var(--danger);
+}
+
+.altItemDestructive:hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+/* ---- Empty state ---- */
+
+.empty {
+  padding: 18px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ---- Footer hint ---- */
+
+.footer {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}

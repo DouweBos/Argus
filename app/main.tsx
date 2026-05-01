@@ -14,7 +14,10 @@ import { getTelemetryInit, setTelemetryEnabledOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initPrewarm } from "./lib/prewarmService";
+import { bootstrapProjects } from "./lib/projectsService";
+import { initRepoBranchSync } from "./lib/repoBranchSync";
 import { initReviewQueueListener } from "./lib/reviewQueueService";
+import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
@@ -101,6 +104,16 @@ if (popoutMode === "agent") {
   initDevicePolling();
   // Maintain the Review queue from backend `session:review-state` events.
   initReviewQueueListener();
+  // Subscribe to project/session lifecycle events once for the whole app —
+  // components no longer install their own listeners on mount.
+  initSessionEventListeners();
+  // Refetch the repo branch whenever the project_root session's git state
+  // changes — replaces per-component getRepoBranch polls.
+  initRepoBranchSync();
+  // Hydrate previously-open projects exactly once. Lives outside React so
+  // StrictMode / HMR / multiple `useProjects()` consumers can't re-trigger
+  // the open-project pipeline.
+  bootstrapProjects().catch(() => undefined);
   // Surface backend `notification` events (e.g. failed title generation)
   // as user-visible toasts in the notifications panel.
   initNotificationsListener();

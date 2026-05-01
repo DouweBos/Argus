@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { warn } from "../../../app/lib/logger";
+import { classifyGitStderr } from "./gitError";
 
 const execFileAsync = promisify(execFile);
 
@@ -125,11 +126,17 @@ function truncateSlug(slug: string, max: number): string {
 /**
  * Run a `git` command in `cwd`, capturing stdout + stderr.
  *
- * Returns stdout on success; throws a descriptive string on non-zero exit.
+ * Returns stdout on success; throws a typed `GitError` (classified from
+ * stderr) on non-zero exit.
  */
 export async function git(cwd: string, args: string[]): Promise<string> {
+  // `--no-optional-locks` prevents read-only commands (diff, status, log) from
+  // taking `.git/index.lock` to refresh the index. Without it, two concurrent
+  // reads — or a read racing a stage/commit — fail with "Another git process
+  // is holding the index lock". Equivalent to `GIT_OPTIONAL_LOCKS=0`.
+  const finalArgs = ["--no-optional-locks", ...args];
   try {
-    const { stdout } = await execFileAsync("git", args, { cwd });
+    const { stdout } = await execFileAsync("git", finalArgs, { cwd });
 
     return stdout;
   } catch (err: unknown) {
@@ -138,7 +145,9 @@ export async function git(cwd: string, args: string[]): Promise<string> {
     const e = err as { stdout?: string; stderr?: string; message?: string };
     const stdout = e.stdout ?? "";
     const stderr = e.stderr ?? "";
-    throw `git ${args.join(" ")} failed:\nstdout: ${stdout}\nstderr: ${stderr}`;
+    const combined =
+      stderr || stdout || e.message || `git ${args.join(" ")} failed`;
+    throw classifyGitStderr(combined, { op: args[0] ?? "" });
   }
 }
 

@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Icons } from "@argus/peacock";
+import {
+  ContextMenu,
+  DestructiveConfirm,
+  Icons,
+  type ContextMenuItem,
+} from "@argus/peacock";
 import { type DiffFile, gitIndexPath } from "../../../lib/diffParser";
-import { stageFile, unstageFile } from "../../../lib/ipc";
+import {
+  addToGitignore,
+  gitDiscardFile,
+  gitUntrackFile,
+  revealInFinder,
+  stageFile,
+  unstageFile,
+} from "../../../lib/ipc";
+import { openFileHistory } from "../../../stores/gitUiStore";
+import {
+  getConfirmPreference,
+  setConfirmPreference,
+} from "../../../stores/settingsStore";
 import styles from "./FileList.module.css";
 
 export interface FileListProps {
@@ -14,6 +31,22 @@ export interface FileListProps {
 }
 
 type SortField = "filename" | "status";
+
+function computeFileStats(file: DiffFile): { add: number; del: number } {
+  let add = 0;
+  let del = 0;
+  for (const hunk of file.hunks) {
+    for (const line of hunk.lines) {
+      if (line.type === "add") {
+        add++;
+      } else if (line.type === "remove") {
+        del++;
+      }
+    }
+  }
+
+  return { add, del };
+}
 
 function stagedIconClassForFile(staged: DiffFile["staged"]): string {
   if (staged === "full") {
@@ -49,6 +82,12 @@ export function FileList({
   const baseSelectionRef = useRef<Set<number>>(new Set());
   const prevSessionIdRef = useRef<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [menuState, setMenuState] = useState<{
+    file: DiffFile;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [discardConfirm, setDiscardConfirm] = useState<DiffFile | null>(null);
 
   const toggleSort = useCallback(
     (field: SortField) => {
@@ -290,6 +329,74 @@ export function FileList({
     headListIndexRef.current = Math.min(headListIndexRef.current, max);
   }, [sortedEntries.length]);
 
+  const buildMenuItems = (file: DiffFile): ContextMenuItem[] => {
+    const idxPath = gitIndexPath(file);
+    const isStaged = file.staged === "full" || file.staged === "partial";
+    const isUnstaged = file.staged === "none" || file.staged === "partial";
+    const items: ContextMenuItem[] = [
+      {
+        label: "Stage file",
+        disabled: !isUnstaged,
+        onClick: () => {
+          onAction(() => stageFile(sessionId, idxPath));
+        },
+      },
+      {
+        label: "Unstage file",
+        disabled: !isStaged,
+        onClick: () => {
+          onAction(() => unstageFile(sessionId, idxPath));
+        },
+      },
+    ];
+    items.push({ separator: true });
+    items.push({
+      label: "Discard changes…",
+      danger: true,
+      onClick: () => {
+        if (getConfirmPreference("discard-file")) {
+          onAction(() => gitDiscardFile(sessionId, idxPath));
+        } else {
+          setDiscardConfirm(file);
+        }
+      },
+    });
+    items.push({ separator: true });
+    items.push({
+      label: "Reveal in Finder",
+      onClick: () => {
+        revealInFinder(idxPath).catch(() => undefined);
+      },
+    });
+    items.push({
+      label: "Copy path",
+      onClick: () => {
+        navigator.clipboard?.writeText(idxPath).catch(() => undefined);
+      },
+    });
+    items.push({
+      label: "Show File History",
+      onClick: () => {
+        openFileHistory(sessionId, idxPath);
+      },
+    });
+    items.push({ separator: true });
+    items.push({
+      label: "Add to .gitignore",
+      onClick: () => {
+        onAction(() => addToGitignore(sessionId, idxPath));
+      },
+    });
+    items.push({
+      label: "Stop tracking",
+      onClick: () => {
+        onAction(() => gitUntrackFile(sessionId, idxPath));
+      },
+    });
+
+    return items;
+  };
+
   return (
     <div ref={containerRef} className={styles.fileListScroll} tabIndex={-1}>
       <div className={styles.fileListColumns}>
@@ -299,7 +406,13 @@ export function FileList({
         >
           Status
           {sortField === "status" && (
-            <span className={styles.sortIcon}>{sortAsc ? "▲" : "▼"}</span>
+            <span className={styles.sortIcon}>
+              {sortAsc ? (
+                <Icons.ChevronUpIcon size={11} />
+              ) : (
+                <Icons.ChevronDownIcon size={11} />
+              )}
+            </span>
           )}
         </button>
         <button
@@ -308,7 +421,13 @@ export function FileList({
         >
           <span>Filename</span>
           {sortField === "filename" && (
-            <span className={styles.sortIcon}>{sortAsc ? "▲" : "▼"}</span>
+            <span className={styles.sortIcon}>
+              {sortAsc ? (
+                <Icons.ChevronUpIcon size={11} />
+              ) : (
+                <Icons.ChevronDownIcon size={11} />
+              )}
+            </span>
           )}
         </button>
       </div>
@@ -324,6 +443,10 @@ export function FileList({
             }}
             className={`${styles.fileListItem} ${isSelected ? styles.fileListItemActive : ""}`}
             onClick={(e) => handleClick(i, originalIndex, e)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenuState({ file, x: e.clientX, y: e.clientY });
+            }}
             onKeyDown={(e) => {
               if (e.key === " " || e.code === "Space") {
                 e.preventDefault();
@@ -421,9 +544,49 @@ export function FileList({
             <span className={styles.fileItemPath}>
               <span className={styles.fileItemPathInner}>{path}</span>
             </span>
+            {(() => {
+              const { add, del } = computeFileStats(file);
+              if (add === 0 && del === 0) {
+                return null;
+              }
+
+              return (
+                <span className={styles.fileItemStats}>
+                  {add > 0 && <span className={styles.statAdd}>+{add}</span>}
+                  {del > 0 && <span className={styles.statDel}>−{del}</span>}
+                </span>
+              );
+            })()}
           </button>
         );
       })}
+      {menuState && (
+        <ContextMenu
+          items={buildMenuItems(menuState.file)}
+          position={{ x: menuState.x, y: menuState.y }}
+          onClose={() => setMenuState(null)}
+        />
+      )}
+      {discardConfirm && (
+        <DestructiveConfirm
+          open
+          tone="destructive"
+          title={`Discard changes to ${gitIndexPath(discardConfirm)}?`}
+          description="This permanently discards your working-tree changes for this file."
+          confirmLabel="Discard"
+          rememberKey="discard-file"
+          rememberLabel="discarding files"
+          onConfirm={(skip) => {
+            if (skip) {
+              setConfirmPreference("discard-file", true);
+            }
+            const target = discardConfirm;
+            setDiscardConfirm(null);
+            onAction(() => gitDiscardFile(sessionId, gitIndexPath(target)));
+          }}
+          onCancel={() => setDiscardConfirm(null)}
+        />
+      )}
     </div>
   );
 }

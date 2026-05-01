@@ -1,0 +1,145 @@
+/* CommitComposer — typeahead-aware commit message textarea */
+
+.root {
+  position: relative;
+}
+
+/* Subject input — styled to match the existing .commitSubject */
+.subjectInput {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font: var(--type-body);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.subjectInput:focus {
+  border-color: var(--accent-border-soft);
+  box-shadow: 0 0 0 2px var(--accent-overlay-sm);
+}
+
+.subjectInput::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.subjectWarn {
+  border-color: var(--warning, var(--accent));
+}
+
+.subjectError {
+  border-color: var(--error);
+}
+
+/* Body textarea */
+.bodyTextarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font: var(--type-caption);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  resize: vertical;
+  min-height: 48px;
+  box-sizing: border-box;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  background-image: linear-gradient(
+    to right,
+    transparent calc(72ch),
+    color-mix(in srgb, var(--warning) 18%, transparent) calc(72ch),
+    color-mix(in srgb, var(--warning) 18%, transparent) calc(72ch + 1px),
+    transparent calc(72ch + 1px)
+  );
+}
+
+.bodyTextarea:focus {
+  border-color: var(--accent-border-soft);
+  box-shadow: 0 0 0 2px var(--accent-overlay-sm);
+}
+
+.bodyTextarea::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---- Typeahead popover ---- */
+
+.popover {
+  position: fixed;
+  z-index: 9000;
+  min-width: 240px;
+  max-width: 400px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-1) 0;
+}
+
+.popoverHeader {
+  padding: var(--space-1) var(--space-3);
+  font: var(--type-eyebrow);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.popoverItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: var(--type-caption);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  transition: background var(--transition-fast);
+}
+
+.popoverItem:hover,
+.popoverItemActive {
+  background: var(--surface-4);
+}
+
+.popoverItemIcon {
+  flex-shrink: 0;
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+}
+
+.popoverItemLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popoverItemSub {
+  font: var(--type-eyebrow);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+  flex-shrink: 0;
+}

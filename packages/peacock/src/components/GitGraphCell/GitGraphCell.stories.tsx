@@ -40,6 +40,138 @@ export const Linear: Story = {
   ),
 };
 
+export const SimpleMerge: Story = {
+  render: () => {
+    const colorMap = new Map([
+      [0, 3],
+      [1, 0],
+    ]);
+
+    return (
+      <div style={{ background: "var(--bg-1, #111)", padding: 12 }}>
+        <GitGraphCell
+          row={row({
+            column: 0,
+            laneCount: 2,
+            laneColorMap: colorMap,
+            isMerge: true,
+            lanesToTop: [0, 1],
+            lanesToBottom: [0, 1],
+            merges: [{ fromCol: 1, toCol: 0 }],
+          })}
+          rowHeight={rowHeight}
+        />
+      </div>
+    );
+  },
+};
+
+export const Octopus: Story = {
+  render: () => {
+    const colorMap = new Map([
+      [0, 3],
+      [1, 0],
+      [2, 4],
+      [3, 2],
+    ]);
+
+    return (
+      <div style={{ background: "var(--bg-1, #111)", padding: 12 }}>
+        <GitGraphCell
+          row={row({
+            column: 0,
+            laneCount: 4,
+            laneColorMap: colorMap,
+            isMerge: true,
+            lanesToTop: [0, 1, 2, 3],
+            lanesToBottom: [0],
+            merges: [
+              { fromCol: 1, toCol: 0 },
+              { fromCol: 2, toCol: 0 },
+              { fromCol: 3, toCol: 0 },
+            ],
+          })}
+          rowHeight={rowHeight}
+        />
+      </div>
+    );
+  },
+};
+
+export const CrissCross: Story = {
+  render: () => {
+    const colorMap = new Map([
+      [0, 3],
+      [1, 0],
+    ]);
+
+    return (
+      <div style={{ background: "var(--bg-1, #111)", padding: 12 }}>
+        <GitGraphCell
+          row={row({
+            column: 0,
+            laneCount: 2,
+            laneColorMap: colorMap,
+            isMerge: true,
+            lanesToTop: [0, 1],
+            lanesToBottom: [0, 1],
+            forks: [{ fromCol: 0, toCol: 1 }],
+            merges: [{ fromCol: 1, toCol: 0 }],
+          })}
+          rowHeight={rowHeight}
+        />
+      </div>
+    );
+  },
+};
+
+export const BranchAndMerge: Story = {
+  render: () => {
+    const colorMap = new Map([
+      [0, 3],
+      [1, 0],
+    ]);
+
+    return (
+      <div style={{ background: "var(--bg-1, #111)", padding: 12 }}>
+        <GitGraphCell
+          row={row({
+            column: 0,
+            laneCount: 2,
+            laneColorMap: colorMap,
+            lanesToTop: [0],
+            lanesToBottom: [0, 1],
+            forks: [{ fromCol: 0, toCol: 1 }],
+          })}
+          rowHeight={rowHeight}
+        />
+        <GitGraphCell
+          row={row({
+            column: 0,
+            laneCount: 2,
+            laneColorMap: colorMap,
+            lanesToTop: [0, 1],
+            lanesToBottom: [0, 1],
+          })}
+          rowHeight={rowHeight}
+        />
+        <GitGraphCell
+          row={row({
+            column: 0,
+            laneCount: 2,
+            laneColorMap: colorMap,
+            isMerge: true,
+            lanesToTop: [0, 1],
+            lanesToBottom: [0],
+            merges: [{ fromCol: 1, toCol: 0 }],
+          })}
+          rowHeight={rowHeight}
+        />
+      </div>
+    );
+  },
+};
+
 export const MergeAndFork: Story = {
   render: () => {
     const colorMap = new Map([

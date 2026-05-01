@@ -6,15 +6,9 @@ import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { useSessionReleaseNotes } from "../../../hooks/useSessionReleaseNotes";
 import { useValidateChangesetsInChat } from "../../../hooks/useValidateChangesetsInChat";
 import { listen } from "../../../lib/events";
-import {
-  deleteSession,
-  openExternalUrl,
-  pushSessionBranch,
-  readArgusConfig,
-  watchSession,
-} from "../../../lib/ipc";
+import { deleteSession, readArgusConfig, watchSession } from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
-import { pushError } from "../../../stores/notificationsStore";
+import { CreatePullRequestDialog } from "../../pullRequests/CreatePullRequestDialog";
 import { SessionReleaseNotesList } from "../SessionReleaseNotesCard/SessionReleaseNotesCard";
 import styles from "./ReadyToMergeCard.module.css";
 
@@ -98,7 +92,7 @@ export function ReadyToMergeCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProtectedBase, setIsProtectedBase] = useState(false);
   const configVersion = useArgusConfigVersion(repoRoot ?? null);
-  const [isPushing, setIsPushing] = useState(false);
+  const [createPrOpen, setCreatePrOpen] = useState(false);
   const releaseNotes = useSessionReleaseNotes(sessionId);
   const changesetEntries = releaseNotes.filter(
     (e) => e.format === "changesets",
@@ -143,10 +137,13 @@ export function ReadyToMergeCard({
   // Detect whether the base branch is listed as protected in `.argus.json`.
   // Protected branches can't be merged into from the app — the UI flips to a
   // "Push & open PR" flow instead.
+  // Reset protected-base flag at render time when inputs clear (React 19 pattern).
+  if ((!repoRoot || !baseBranch) && isProtectedBase) {
+    setIsProtectedBase(false);
+  }
+
   useEffect(() => {
     if (!repoRoot || !baseBranch) {
-      setIsProtectedBase(false);
-
       return;
     }
     let cancelled = false;
@@ -178,21 +175,6 @@ export function ReadyToMergeCard({
       setJustMerged(true);
     }
   }, [performMerge]);
-
-  const handlePushAndOpenPr = useCallback(async () => {
-    setIsPushing(true);
-    try {
-      const { prUrl } = await pushSessionBranch(sessionId);
-      if (prUrl) {
-        await openExternalUrl(prUrl);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      pushError(message, "Push failed");
-    } finally {
-      setIsPushing(false);
-    }
-  }, [sessionId]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -356,13 +338,12 @@ export function ReadyToMergeCard({
       {baseBranch && !hasConflicts && hasWork && isProtectedBase && (
         <button
           className={`${styles.actionBtn} ${styles.merge}`}
-          disabled={isPushing}
-          title={`${baseBranch} is protected — push ${sessionBranch ?? "this branch"} and open a pull request`}
+          title={`${baseBranch} is protected — open a pull request`}
           type="button"
-          onClick={handlePushAndOpenPr}
+          onClick={() => setCreatePrOpen(true)}
         >
           <Icons.PushIcon size={11} />
-          {isPushing ? "Pushing…" : "Push & open PR"}
+          Open PR
         </button>
       )}
       {baseBranch && !hasConflicts && hasWork && !isProtectedBase && (
@@ -392,19 +373,30 @@ export function ReadyToMergeCard({
   ) : null;
 
   const content = (
-    <CalloutCard
-      tone={tone === "warn" ? "accent" : "neutral"}
-      leading={
-        <IconBadge tone={tone === "warn" ? "accent" : "success"}>
-          <Icons.MergeIcon size={14} />
-        </IconBadge>
-      }
-      title={titleNode}
-      meta={metaNode}
-      actions={actionsNode}
-    >
-      {footerNode}
-    </CalloutCard>
+    <>
+      {createPrOpen && repoRoot && sessionBranch && (
+        <CreatePullRequestDialog
+          sessionId={sessionId}
+          repoRoot={repoRoot}
+          headBranch={sessionBranch}
+          baseBranch={baseBranch}
+          onClose={() => setCreatePrOpen(false)}
+        />
+      )}
+      <CalloutCard
+        tone={tone === "warn" ? "accent" : "neutral"}
+        leading={
+          <IconBadge tone={tone === "warn" ? "accent" : "success"}>
+            <Icons.MergeIcon size={14} />
+          </IconBadge>
+        }
+        title={titleNode}
+        meta={metaNode}
+        actions={actionsNode}
+      >
+        {footerNode}
+      </CalloutCard>
+    </>
   );
 
   if (sectionClassName || titleClassName) {

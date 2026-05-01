@@ -1,211 +1,92 @@
-.headerBar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--glass-border);
-  background: var(--bg-secondary-50);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  flex-shrink: 0;
+.shell {
   position: relative;
-}
-
-.titleArea {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  margin-right: auto;
-}
-
-.subtitle {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Action buttons */
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
   flex-shrink: 0;
 }
 
-.toolbarBtn {
+.toolbarRow {
   display: flex;
+  align-items: stretch;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* GitToolbar primitive renders its own background + border-bottom; remove
+   them here so the row reads as one continuous strip. */
+.toolbarRow > :first-child {
+  flex: 1;
+  background: transparent;
+  border-bottom: none;
+}
+
+.viewOptionsAnchor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.viewOptionsBtn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--border-radius-sm);
   color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
   transition:
-    background var(--transition-base),
-    color var(--transition-base);
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
-.toolbarBtn:hover:not(:disabled) {
-  background: var(--surface-4);
+.viewOptionsBtn:hover {
+  background: var(--surface-3);
   color: var(--text-primary);
 }
 
-.toolbarBtn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.separator {
-  width: 1px;
-  height: 16px;
-  background: var(--glass-border);
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-
-/* Search */
-.searchBox {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: var(--border-radius-sm);
-  background: var(--surface-2);
-  border: 1px solid var(--glass-border);
-  flex-shrink: 0;
-  color: var(--text-muted);
-  transition: border-color var(--transition-base);
-}
-
-.searchBox:focus-within {
-  border-color: var(--accent-border-soft);
-}
-
-.searchInput {
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--text-primary);
-  font-size: var(--font-size-xs);
-  font-family: var(--font-ui);
-  width: 110px;
-}
-
-.searchInput::placeholder {
-  color: var(--text-muted);
-}
-
-/* Dropdowns — glass panels */
-.dropdownAnchor {
-  position: relative;
-}
-
-.dropdown {
+/* View options popover */
+.viewOptionsPanel {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   right: 0;
   z-index: 100;
-  min-width: 240px;
-  max-height: 300px;
-  overflow-y: auto;
+  min-width: 220px;
   background: var(--bg-secondary-90);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   box-shadow: var(--glass-shadow);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  padding-bottom: var(--space-2);
 }
 
-.dropdownTitle {
-  padding: 6px 12px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
+.viewOptionsPanelTitle {
+  padding: var(--space-3) var(--space-5);
+  font: var(--type-eyebrow);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.dropdownLoading,
-.dropdownEmpty {
-  padding: 10px;
-  font-size: var(--font-size-xs);
   color: var(--text-muted);
-  text-align: center;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: var(--space-1);
 }
 
-.dropdownItem {
-  display: block;
-  width: 100%;
-  padding: 6px 12px;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  text-align: left;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  transition: background var(--transition-base);
-}
-
-.dropdownItem:hover {
-  background: var(--surface-3);
-  color: var(--text-primary);
-}
-
-.dropdownBranchRow {
+.viewOptionsRow {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.dropdownBranchRow:last-child {
-  border-bottom: none;
-}
-
-.dropdownBranchName {
-  flex: 1;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dropdownAction {
-  padding: 2px 10px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--surface-3);
-  border-radius: var(--border-radius-pill);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5);
   cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background var(--transition-base),
-    color var(--transition-base);
 }
 
-.dropdownAction:hover {
-  background: var(--surface-5);
-  color: var(--text-primary);
+.viewOptionsRow:hover {
+  background: var(--surface-2);
 }
 
-/* Error toast */
-.errorToast {
-  position: absolute;
-  bottom: -24px;
-  left: 12px;
-  right: 12px;
-  font-size: var(--font-size-xs);
-  color: var(--error);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  z-index: 10;
+.viewOptionsLabel {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  user-select: none;
 }

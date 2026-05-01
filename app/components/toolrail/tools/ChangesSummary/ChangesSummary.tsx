@@ -7,7 +7,7 @@ import { useSessions } from "../../../../stores/sessionStore";
 import { FileTypeIcon } from "../../../shared/Icons";
 import styles from "./ChangesSummary.module.css";
 
-type DiffLineType = "add" | "context" | "remove";
+type DiffLineType = "add" | "context" | "no-newline" | "remove";
 
 function diffLineToneClass(type: DiffLineType): string {
   if (type === "add") {
@@ -321,22 +321,35 @@ function ChangesSummaryInner({ sessionId, session }: InnerProps) {
                         </span>
                       </div>
                     )}
-                    {hunk.lines.map((line, li) => (
-                      <div
-                        key={li}
-                        className={`${styles.line} ${diffLineToneClass(line.type)}`}
-                      >
-                        <span className={styles.lineNum}>
-                          {line.type === "remove"
-                            ? (line.oldNum ?? "")
-                            : (line.newNum ?? "")}
-                        </span>
-                        <span className={styles.lineText}>
-                          {diffLineGutterPrefix(line.type)}
-                          {line.content || " "}
-                        </span>
-                      </div>
-                    ))}
+                    {hunk.lines.map((line, li) => {
+                      if (line.type === "no-newline") {
+                        return (
+                          <div key={li} className={styles.line}>
+                            <span className={styles.lineNum} />
+                            <span className={styles.lineText}>
+                              ↵ No newline at end of file
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={li}
+                          className={`${styles.line} ${diffLineToneClass(line.type)}`}
+                        >
+                          <span className={styles.lineNum}>
+                            {line.type === "remove"
+                              ? (line.oldNum ?? "")
+                              : (line.newNum ?? "")}
+                          </span>
+                          <span className={styles.lineText}>
+                            {diffLineGutterPrefix(line.type)}
+                            {line.content || " "}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>

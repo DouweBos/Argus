@@ -2,10 +2,15 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { CommitIcon } from "../../icons/HomeIcons";
 import {
   ArgusLogo,
+  BranchIcon,
+  ClockIcon,
   FolderIcon,
+  HistoryIcon,
   HomeIcon,
   PlusIcon,
   ReviewQueueIcon,
+  StashIcon,
+  WorkingCopyIcon,
 } from "../../icons/Icons";
 import { SessionCard } from "../SessionCard/SessionCard";
 import {
@@ -210,6 +215,35 @@ export const FramedCollapsed: Story = {
     >
       <SidebarNav framed collapsed aria-label="Home sidebar collapsed">
         <SidebarHeader brand={<ArgusLogo size={20} />} />
+      </SidebarNav>
+      <div style={{ flex: 1 }} />
+    </div>
+  ),
+};
+
+export const GitSourceSidebar: Story = {
+  name: "Git · Source sidebar",
+  render: () => (
+    <div
+      style={{ height: 480, display: "flex", background: "var(--bg-primary)" }}
+    >
+      <SidebarNav
+        framed
+        style={{ width: 180, minWidth: 180 }}
+        aria-label="Git source sidebar"
+      >
+        <SidebarSection>Workspace</SidebarSection>
+        <SidebarItem active leading={<WorkingCopyIcon size={13} />} count={3}>
+          Working Copy
+        </SidebarItem>
+        <SidebarItem leading={<ClockIcon size={13} />}>History</SidebarItem>
+        <SidebarItem leading={<StashIcon size={13} />} count={1}>
+          Stashes
+        </SidebarItem>
+        <SidebarItem leading={<HistoryIcon size={13} />}>Reflog</SidebarItem>
+        <SidebarSection>Project</SidebarSection>
+        <SidebarItem leading={<BranchIcon size={13} />}>Branches</SidebarItem>
+        <SidebarItem leading={<FolderIcon size={13} />}>Worktrees</SidebarItem>
       </SidebarNav>
       <div style={{ flex: 1 }} />
     </div>

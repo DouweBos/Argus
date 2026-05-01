@@ -1,4 +1,5 @@
 import { MemoryRouter } from "react-router-dom";
+import { DragLayer } from "@argus/peacock";
 import { AppShell } from "./components/layout/AppShell";
 import { NavigationDeepLinkBridge } from "./components/layout/NavigationDeepLinkBridge";
 import { OnboardingRoot } from "./components/onboarding/OnboardingRoot";
@@ -41,6 +42,7 @@ export default function App() {
       <StopAgentGuard />
       <QuitGuard />
       <UpdaterHost />
+      <DragLayer />
     </MemoryRouter>
   );
 }

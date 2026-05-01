@@ -256,6 +256,12 @@ export interface ArgusConfig {
    * currently connected simulator/emulator.
    */
   simulator_deeplinks: SimulatorDeeplinkConfig[];
+  /**
+   * How often (in minutes) Argus should automatically run `git fetch --prune`
+   * in the background for this project. Set to 0 or omit to disable
+   * auto-fetch entirely.
+   */
+  auto_fetch_minutes?: number | null;
 }
 
 /** Tone for label badges, mirrored from Peacock's `Badge.tone`. */
@@ -334,5 +340,6 @@ export function defaultArgusConfig(): ArgusConfig {
     min_argus_version: null,
     release_note_patterns: [],
     simulator_deeplinks: [],
+    auto_fetch_minutes: null,
   };
 }

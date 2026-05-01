@@ -1,0 +1,224 @@
+/* ================================================================
+   SidebarRefSection — collapsible project-scope ref sections
+   ================================================================ */
+
+/* ── Section header (collapsible toggle) ─────────────────────────
+   Matches the app shell's `SidebarSection` styling: left-aligned
+   uppercase eyebrow label, trailing collapse chevron, full-width
+   button hit target. */
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px 10px 3px;
+  margin-top: var(--space-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: var(--type-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.sectionHeader:hover {
+  opacity: 1;
+}
+
+.sectionLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sectionChevron {
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sectionChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+/* ── Item list ───────────────────────────────────────────────── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+/* ── Ref row ─────────────────────────────────────────────────── */
+
+.refRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  min-width: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.refRow:hover {
+  background: var(--surface-3);
+}
+
+.refRowCurrent {
+  background: var(--accent-overlay-md);
+}
+
+.refRowCurrent:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* Plain text label (submodules, worktrees) */
+.refLabel {
+  font: var(--type-ui);
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refRowCurrent .refLabel {
+  color: var(--accent);
+}
+
+/* HEAD / main badges */
+.mainBadge {
+  flex-shrink: 0;
+  font: var(--type-mono-badge);
+}
+
+/* ── Remote group sub-header ─────────────────────────────────── */
+
+.remoteGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Archived rows (dimmed) ──────────────────────────────────── */
+
+.archivedRow {
+  opacity: 0.55;
+}
+
+.archivedRow:hover {
+  opacity: 1;
+}
+
+.archivedGhost {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  opacity: 0.5;
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.archivedGhost:hover {
+  opacity: 0.85;
+  background: var(--surface-3);
+}
+
+.ghostHint {
+  font: var(--type-mono-badge);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ── Empty hint ──────────────────────────────────────────────── */
+
+.emptyHint {
+  font: var(--type-caption);
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-4);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* ── Pin icon on pinned branch rows ─────────────────────────── */
+
+.pinIndicator {
+  color: var(--accent);
+  opacity: 0.7;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Drag-and-drop target highlight states ───────────────────── */
+
+.sectionHeaderOver {
+  opacity: 1;
+  background: var(--accent-overlay-sm);
+  border-radius: var(--border-radius-sm);
+  outline: 1px dashed var(--accent-border-soft);
+  outline-offset: -1px;
+}
+
+.remoteFolderOver {
+  background: var(--accent-overlay-sm);
+  border-radius: var(--border-radius-sm);
+  outline: 1px dashed var(--accent-border-soft);
+  outline-offset: -1px;
+}
+
+.branchRowOver {
+  outline: 1px dashed var(--accent-border-soft);
+  outline-offset: -1px;
+  background: var(--accent-overlay-sm) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── Inline dialogs (dirty-checkout, upstream) ───────────────── */
+
+.dialogBody {
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dialogDesc {
+  font: var(--type-ui);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.dialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}

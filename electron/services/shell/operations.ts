@@ -9,6 +9,14 @@ export function revealInFinder(fullPath: string): void {
   shell.showItemInFolder(fullPath);
 }
 
+/** Open a file/path with the system's default handler. */
+export async function openPath(fullPath: string): Promise<void> {
+  const err = await shell.openPath(fullPath);
+  if (err) {
+    throw err;
+  }
+}
+
 /** Open an http/https URL in the user's default browser. */
 export function openExternalUrl(url: string): void {
   if (!/^https?:\/\//i.test(url)) {

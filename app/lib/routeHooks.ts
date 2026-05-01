@@ -6,6 +6,7 @@
 
 import type {
   AppView,
+  GitSubView,
   ParsedRoute,
   PullRequestRef,
   SessionPanel,
@@ -38,4 +39,12 @@ export function useRouteSessionPanel(): SessionPanel {
 
 export function useRoutePR(): PullRequestRef | null {
   return useCurrentRoute().pr;
+}
+
+export function useRouteGitView(): GitSubView | null {
+  return useCurrentRoute().gitView;
+}
+
+export function useRouteGitRefName(): string | null {
+  return useCurrentRoute().gitRefName;
 }

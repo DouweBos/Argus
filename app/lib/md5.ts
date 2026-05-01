@@ -1,3 +1,19 @@
+/** Build a Gravatar avatar URL for the given email. Returns null for empty input. */
+export function gravatarUrl(
+  email: string | null | undefined,
+  size = 80,
+): string | null {
+  if (!email) {
+    return null;
+  }
+  const trimmed = email.trim().toLowerCase();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  return `https://www.gravatar.com/avatar/${md5Hex(trimmed)}?s=${size}&d=identicon`;
+}
+
 /** Minimal MD5 hex digest for Gravatar URLs. */
 export function md5Hex(input: string): string {
   // Simple MD5 implementation for browser (no crypto dependency needed for Gravatar)

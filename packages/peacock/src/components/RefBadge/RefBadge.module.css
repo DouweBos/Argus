@@ -1,0 +1,76 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  max-width: 240px;
+  white-space: nowrap;
+}
+
+.badge.sm {
+  padding: 1px 6px;
+  font-size: 10px;
+  gap: 3px;
+}
+
+.icon {
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.type-local-branch {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--accent);
+}
+
+.type-remote-branch {
+  background: color-mix(
+    in srgb,
+    var(--info, var(--accent-secondary)) 12%,
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--info, var(--accent-secondary)) 35%,
+    transparent
+  );
+  color: var(--text-secondary);
+}
+
+.type-tag {
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--success) 35%, transparent);
+  color: var(--success);
+}
+
+.type-head {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.type-stash {
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
+  color: var(--warning);
+}
+
+.current {
+  box-shadow: 0 0 0 1px var(--accent-border-strong);
+  font-weight: 600;
+}

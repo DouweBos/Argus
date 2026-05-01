@@ -134,6 +134,49 @@ describe("parseDiff", () => {
     expect(lines[1].oldNum).toBeUndefined();
   });
 
+  it("numbers lines correctly across consecutive removes then adds", () => {
+    const diff = `diff --git a/f.txt b/f.txt
+--- a/f.txt
++++ b/f.txt
+@@ -90,5 +79,4 @@
+ ctx-a
+ ctx-b
+ ctx-c
+-removed-1
+-removed-2
++added-1
+`;
+    const files = parseDiff(diff);
+    const lines = files[0].hunks[0].lines;
+    expect(lines[0]).toMatchObject({ type: "context", oldNum: 90, newNum: 79 });
+    expect(lines[1]).toMatchObject({ type: "context", oldNum: 91, newNum: 80 });
+    expect(lines[2]).toMatchObject({ type: "context", oldNum: 92, newNum: 81 });
+    expect(lines[3]).toMatchObject({ type: "remove", oldNum: 93 });
+    expect(lines[3].newNum).toBeUndefined();
+    expect(lines[4]).toMatchObject({ type: "remove", oldNum: 94 });
+    expect(lines[5]).toMatchObject({ type: "add", newNum: 82 });
+    expect(lines[5].oldNum).toBeUndefined();
+  });
+
+  it("parses the no-newline-at-end-of-file marker", () => {
+    const diff = `diff --git a/f.txt b/f.txt
+--- a/f.txt
++++ b/f.txt
+@@ -1,2 +1,2 @@
+ first
+-second
+\\ No newline at end of file
++second updated
+`;
+    const files = parseDiff(diff);
+    const lines = files[0].hunks[0].lines;
+    expect(lines[1]).toMatchObject({ type: "remove", oldNum: 2 });
+    expect(lines[2]).toMatchObject({ type: "no-newline" });
+    expect(lines[2].oldNum).toBeUndefined();
+    expect(lines[2].newNum).toBeUndefined();
+    expect(lines[3]).toMatchObject({ type: "add", newNum: 2 });
+  });
+
   it("generates per-hunk patches", () => {
     const files = parseDiff(MULTI_HUNK_DIFF);
     const patch = files[0].hunks[0].patch;

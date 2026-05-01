@@ -9,10 +9,10 @@ import {
   SidebarRepoAction,
   SidebarRepoGroup,
 } from "@argus/peacock";
-import { useSessionDiffStats } from "../../../hooks/useSessionDiffStats";
+import { useGitObservation } from "../../../hooks/useGitObservation";
 import { useProjectSessions } from "../../../hooks/useSessions";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
-import { sessionStatusLabel } from "../../../lib/types";
+import { isSessionReady, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import {
@@ -321,7 +321,9 @@ export function ProjectSegment({
 }
 
 function RepoHeaderMeta({ session }: { session: Session }) {
-  const diffStats = useSessionDiffStats(session.id, session.status);
+  const { diffStats } = useGitObservation(session.id, {
+    enabled: isSessionReady(session.status),
+  });
   const reviewQueue = useReviewQueueMap();
   const commitsAhead = reviewQueue[session.id]?.commitsAhead ?? 0;
 

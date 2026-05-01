@@ -120,6 +120,49 @@ For the full per-event catalogue and exhaustive property list, see
 
 ---
 
+## Git
+
+Defaults for the git panel. Each setting also has an inline toggle in
+the relevant toolbar — use the dialog when you want to set the
+default for every project on this machine.
+
+| Setting                                | Default   | Description                                                                                                   |
+| -------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------- |
+| **Working copy view**                  | `flat`    | `flat` shows changed files as a list; `tree` groups them by directory.                                        |
+| **Diff layout**                        | `unified` | `unified` stacks removed/added lines; `split` shows them side-by-side.                                        |
+| **Ignore whitespace in diffs**         | `false`   | Hide pure-whitespace changes when comparing files.                                                            |
+| **Highlight word-level changes**       | `false`   | Inline word-diff inside changed lines.                                                                        |
+| **Conventional Commits picker**        | `false`   | Show a commit-type prefix picker (`feat`, `fix`, `chore`, …) in the commit composer.                          |
+| **Default pull strategy**              | `ff-only` | Used by the project-scope pull dialog when you don't pick a strategy. One of `ff-only`, `merge`, or `rebase`. |
+| **Show ignored files**                 | `false`   | Include files matched by `.gitignore` in the working copy list.                                               |
+| **Show assume-unchanged files**        | `false`   | Include files marked with `git update-index --assume-unchanged`.                                              |
+| **Show unmodified files in tree view** | `false`   | Only applies when the working copy view is set to Tree — shows tracked files that aren't currently modified.  |
+
+A few git-panel preferences are intentionally _not_ in this dialog
+because they're pure layout state: the source-sidebar collapsed state
+and width, which sub-sections are collapsed, and the
+"don't-ask-again" map for confirm dialogs. Those persist
+automatically as you use the panel.
+
+---
+
+## Git signing
+
+Per-repo commit-signing toggles. Read and written to the local git config of
+the currently selected session worktree, so each project keeps its own
+preferences.
+
+| Setting            | Git config key    | Description                                                            |
+| ------------------ | ----------------- | ---------------------------------------------------------------------- |
+| **Enable signing** | `commit.gpgsign`  | When on, every commit is signed (Argus relies on git's own machinery). |
+| **Signing format** | `gpg.format`      | `gpg` or `ssh`.                                                        |
+| **Signing key**    | `user.signingkey` | GPG key id, fingerprint, or path to an SSH key.                        |
+
+Signing failures are surfaced via `<GitErrorBanner kind="signing-failed">`
+with a "Configure signing" recovery action that re-opens this section.
+
+---
+
 ## Per-project personal settings
 
 These are machine-local settings _about_ a specific project. They live

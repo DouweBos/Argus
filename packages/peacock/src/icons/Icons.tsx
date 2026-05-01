@@ -445,6 +445,27 @@ export function DownloadIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function UploadIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 14V6" />
+      <path d="M4.5 9 8 5.5 11.5 9" />
+      <path d="M2.5 3.5v-1A1.5 1.5 0 0 1 4 1h8a1.5 1.5 0 0 1 1.5 1.5v1" />
+    </svg>
+  );
+}
+
 export function ChevronLeftIcon({ size = 8, className, ...rest }: IconProps) {
   return (
     <svg
@@ -1379,6 +1400,45 @@ export function LinkIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function TagIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M2 1a1 1 0 0 0-1 1v4.586a1 1 0 0 0 .293.707l7 7a1 1 0 0 0 1.414 0l4.586-4.586a1 1 0 0 0 0-1.414l-7-7A1 1 0 0 0 6.586 1H2zm4 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+    </svg>
+  );
+}
+
+export function SlidersIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <line x1="2" x2="14" y1="4" y2="4" />
+      <line x1="2" x2="14" y1="8" y2="8" />
+      <line x1="2" x2="14" y1="12" y2="12" />
+      <circle cx="5" cy="4" fill="currentColor" r="1.5" stroke="none" />
+      <circle cx="10" cy="8" fill="currentColor" r="1.5" stroke="none" />
+      <circle cx="6" cy="12" fill="currentColor" r="1.5" stroke="none" />
+    </svg>
+  );
+}
+
 export function TaskIcon({
   size = 12,
   className,
@@ -1421,6 +1481,110 @@ export function GripDotsIcon({ size = 12, className, ...rest }: IconProps) {
       <circle cx="10.5" cy="8" r="1.25" />
       <circle cx="5.5" cy="12" r="1.25" />
       <circle cx="10.5" cy="12" r="1.25" />
+    </svg>
+  );
+}
+
+/** Vertical two-headed arrow used as the image-diff slider handle. */
+export function ImageDiffSliderIcon({
+  size = 16,
+  className,
+  ...rest
+}: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 1.5 L5 5 H7.25 V11 H5 L8 14.5 L11 11 H8.75 V5 H11 Z" />
+    </svg>
+  );
+}
+
+/** Pushpin icon — used to mark pinned branches in the sidebar. */
+export function PinIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M9.5 1.5 L14.5 6.5 L10.5 10.5 L10.5 12.5 L8 15 L5.5 12.5 L5.5 10.5 L1.5 6.5 L5.5 2.5 Z" />
+      <line x1="8" y1="8" x2="2" y2="14" />
+    </svg>
+  );
+}
+
+export function BlameIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.5"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <circle cx="6" cy="5" r="2.5" />
+      <path d="M1.5 13.5c0-2.485 2.015-4.5 4.5-4.5s4.5 2.015 4.5 4.5" />
+      <line x1="11" y1="3" x2="14.5" y2="3" />
+      <line x1="11" y1="6" x2="14.5" y2="6" />
+      <line x1="11" y1="9" x2="14.5" y2="9" />
+    </svg>
+  );
+}
+
+export function UndoIcon({ size = 13, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M2.5 6.5h7a3.5 3.5 0 0 1 0 7H6" />
+      <path d="M5.5 3.5 2.5 6.5l3 3" />
+    </svg>
+  );
+}
+
+export function RedoIcon({ size = 13, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M13.5 6.5h-7a3.5 3.5 0 0 0 0 7H10" />
+      <path d="M10.5 3.5l3 3-3 3" />
     </svg>
   );
 }

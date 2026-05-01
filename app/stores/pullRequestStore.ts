@@ -72,6 +72,55 @@ const store = create<PullRequestStoreData>(() => ({
 
 export const usePrList = () => store((s) => s.list);
 
+/**
+ * Hook returning the cached list of PRs whose `repoRoot` matches the given
+ * project. Returns an empty array while the list is still loading.
+ */
+export function usePrsForRepo(repoRoot: string): InterestingPullRequest[] {
+  // Subscribe to the underlying list (stable identity except on real change),
+  // then derive the filtered slice via useMemo so subscribers don't re-render
+  // when unrelated parts of the store (details/diffs) churn.
+  const data = store((s) => s.list.data);
+
+  return useMemo(() => {
+    if (!data) {
+      return EMPTY_PR_LIST;
+    }
+    const filtered = data.filter((pr) => pr.repoRoot === repoRoot);
+
+    return filtered.length === 0 ? EMPTY_PR_LIST : filtered;
+  }, [data, repoRoot]);
+}
+
+/**
+ * Hook returning a Map keyed by branch (`headRefName`) → PR for the given
+ * repo. Lets the sidebar look up "is there an open PR for branch X?" in O(1).
+ * The map is recomputed only when the underlying list changes.
+ */
+export function usePrsByBranch(
+  repoRoot: string,
+): Map<string, InterestingPullRequest> {
+  const list = usePrsForRepo(repoRoot);
+
+  return useMemo(() => {
+    const m = new Map<string, InterestingPullRequest>();
+    for (const pr of list) {
+      // If GitHub reports two open PRs from the same head ref (rare but
+      // possible across forks), keep the most recently updated one.
+      const existing = m.get(pr.headRefName);
+      if (!existing || existing.updatedAt < pr.updatedAt) {
+        m.set(pr.headRefName, pr);
+      }
+    }
+
+    return m;
+  }, [list]);
+}
+
+// Module-level singleton so `usePrsForRepo` returns a stable reference when
+// nothing matches — prevents subscriber re-renders on every store change.
+const EMPTY_PR_LIST: InterestingPullRequest[] = [];
+
 /** Count of PRs currently classified as "Awaiting my review". Used by the
  *  sidebar nav item to show a badge next to the Pull requests entry. */
 export const useAwaitingMyReviewCount = (): number =>
@@ -166,6 +215,28 @@ export async function refreshPullRequestList(
  */
 export function clearPullRequestList(): void {
   store.setState({ list: emptyList });
+}
+
+/**
+ * Wipe both the detail and diff caches for a single PR so the next view
+ * refresh fetches fresh data from GitHub. Call after a write action (merge,
+ * close, comment) to ensure stale state is not presented to the user.
+ */
+export function invalidatePullRequest(
+  owner: string,
+  repo: string,
+  number: number,
+): void {
+  const key = detailKey(owner, repo, number);
+  const { details, diffs } = store.getState();
+  // Build new record objects without the invalidated key by omitting it.
+  const { [key]: _d, ...nextDetails } = details;
+  const { [key]: _df, ...nextDiffs } = diffs;
+  store.setState({ details: nextDetails, diffs: nextDiffs });
+  // Also cancel any in-flight requests for this PR so they don't overwrite
+  // the cleared state on completion.
+  detailsInFlight.delete(key);
+  diffsInFlight.delete(key);
 }
 
 export function detailKey(owner: string, repo: string, number: number): string {

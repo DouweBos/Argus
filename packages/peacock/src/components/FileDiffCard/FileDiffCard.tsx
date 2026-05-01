@@ -102,6 +102,18 @@ function HunkBlock({ hunk, actions }: HunkBlockProps) {
         {actions && <div className={styles.hunkActions}>{actions}</div>}
       </div>
       {hunk.lines.map((line, li) => {
+        if (line.type === "no-newline") {
+          return (
+            <div key={li} className={`${styles.line} ${styles.noNewline}`}>
+              <span className={styles.gutter}>
+                <span className={styles.num} />
+                <span className={styles.num} />
+              </span>
+              <span className={styles.text}>↵ No newline at end of file</span>
+            </div>
+          );
+        }
+
         let cls = styles.line;
         let prefix = " ";
         if (line.type === "add") {

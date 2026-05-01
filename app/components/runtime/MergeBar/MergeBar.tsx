@@ -8,11 +8,10 @@ import {
   getSessionMergeBlockers,
   getSessionStagedDiff,
   mergeSessionIntoBase,
-  openExternalUrl,
-  pushSessionBranch,
   readArgusConfig,
 } from "../../../lib/ipc";
 import { useSessions } from "../../../stores/sessionStore";
+import { CreatePullRequestDialog } from "../../pullRequests/CreatePullRequestDialog";
 import styles from "./MergeBar.module.css";
 
 interface MergeBarProps {
@@ -35,7 +34,7 @@ export function MergeBar({ sessionId }: MergeBarProps) {
   const [isMerging, setIsMerging] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
   const [isProtectedBase, setIsProtectedBase] = useState(false);
-  const [isPushing, setIsPushing] = useState(false);
+  const [createPrOpen, setCreatePrOpen] = useState(false);
 
   const fetchStatus = useCallback(async () => {
     if (!sessionId) {
@@ -100,24 +99,6 @@ export function MergeBar({ sessionId }: MergeBarProps) {
     fetchStatus,
   );
 
-  const handlePushAndOpenPr = useCallback(async () => {
-    if (!sessionId) {
-      return;
-    }
-    setIsPushing(true);
-    setMergeError(null);
-    try {
-      const { prUrl } = await pushSessionBranch(sessionId);
-      if (prUrl) {
-        await openExternalUrl(prUrl);
-      }
-    } catch (err) {
-      setMergeError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsPushing(false);
-    }
-  }, [sessionId]);
-
   const handleMerge = useCallback(async () => {
     if (!sessionId) {
       return;
@@ -144,10 +125,10 @@ export function MergeBar({ sessionId }: MergeBarProps) {
     hasMergeableWork && !hasConflicts && !hasBlockers && !isMerging;
 
   if (isProtectedBase) {
-    const canPush = hasMergeableWork && !isPushing;
+    const canOpenPr = hasMergeableWork;
     const pushBtnTitle = hasMergeableWork
-      ? `Push ${session.branch} to origin and open a pull request against ${session.base_branch}`
-      : `Stage or commit changes in this session, then push ${session.branch} and open a pull request`;
+      ? `Push ${session.branch} and open a pull request against ${session.base_branch}`
+      : `Stage or commit changes in this session, then open a pull request`;
     const statusLabel = hasMergeableWork
       ? `${session.base_branch} is protected — open a PR`
       : `Stage changes to open a PR into ${session.base_branch}`;
@@ -158,19 +139,28 @@ export function MergeBar({ sessionId }: MergeBarProps) {
 
     return (
       <>
+        {createPrOpen && (
+          <CreatePullRequestDialog
+            sessionId={session.id}
+            repoRoot={session.repo_root}
+            headBranch={session.branch}
+            baseBranch={session.base_branch}
+            onClose={() => setCreatePrOpen(false)}
+          />
+        )}
         <div className={`${styles.bar} ${toneClass}`}>
           <span className={`${styles.statusText} ${textToneClass}`}>
             {statusLabel}
           </span>
           <Button
-            disabled={!canPush}
+            disabled={!canOpenPr}
             leading={<Icons.PushIcon size={11} />}
             size="sm"
             variant="primary"
             title={pushBtnTitle}
-            onClick={handlePushAndOpenPr}
+            onClick={() => setCreatePrOpen(true)}
           >
-            {isPushing ? "Pushing..." : "Push & open PR"}
+            Open PR
           </Button>
         </div>
         {mergeError && <div className={styles.error}>{mergeError}</div>}
