@@ -23,7 +23,10 @@ import {
   useNewSessionPickerOpen,
   useOpenProjectVisible,
 } from "../../../stores/dialogStore";
-import { setActiveCenterView } from "../../../stores/editorStore";
+import {
+  setActiveCenterView,
+  useTrackSessionPanel,
+} from "../../../stores/editorStore";
 import {
   setLeftPanelWidth,
   toggleBottomPanel,
@@ -134,6 +137,7 @@ export function AppShell() {
   useSuppressSpacePageScroll();
   useOrgTaskSync();
   usePullRequestsSync();
+  useTrackSessionPanel();
 
   const startNewAgentInCurrent = useCallback(async () => {
     const id = getSelectedSessionId();
