@@ -252,6 +252,7 @@ describe("add_related_project", () => {
       browser_presets: [],
       protected_branches: [],
       release_note_patterns: [],
+      simulator_deeplinks: [],
       related_projects: [{ path: "../backend", description: "Backend" }],
     });
 
@@ -279,6 +280,7 @@ describe("add_related_project", () => {
       browser_presets: [],
       protected_branches: [],
       release_note_patterns: [],
+      simulator_deeplinks: [],
       related_projects: [],
     });
 

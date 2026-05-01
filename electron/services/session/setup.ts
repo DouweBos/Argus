@@ -22,6 +22,7 @@ import {
   type ReleaseNotePatternConfig,
   type RunCommand,
   type SetupConfig,
+  type SimulatorDeeplinkConfig,
   type ArgusConfig,
   type WorkspaceEnvConfig,
 } from "./models";
@@ -124,7 +125,77 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       parsed.release_note_patterns,
       repoRoot,
     ),
+    simulator_deeplinks: normalizeSimulatorDeeplinks(
+      parsed.simulator_deeplinks,
+      repoRoot,
+    ),
   };
+}
+
+/**
+ * Normalise `simulator_deeplinks`. Each entry is either a leaf
+ * `{ label, url }` link or a folder `{ label, children: [...] }` grouping
+ * nested entries (folders may contain folders). Empty/missing field is
+ * fine (returns `[]`); malformed entries throw a descriptive error.
+ */
+function normalizeSimulatorDeeplinks(
+  raw: unknown,
+  repoRoot: string,
+): SimulatorDeeplinkConfig[] {
+  if (raw == null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw `simulator_deeplinks in ${repoRoot}/.argus.json must be an array.`;
+  }
+
+  return raw.map((entry, i) =>
+    normalizeSimulatorDeeplinkEntry(
+      entry,
+      repoRoot,
+      `simulator_deeplinks[${i}]`,
+    ),
+  );
+}
+
+function normalizeSimulatorDeeplinkEntry(
+  entry: unknown,
+  repoRoot: string,
+  trail: string,
+): SimulatorDeeplinkConfig {
+  if (entry == null || typeof entry !== "object") {
+    throw `${trail} in ${repoRoot}/.argus.json must be a { label, url } or { label, children } object.`;
+  }
+  const obj = entry as Record<string, unknown>;
+  const label = typeof obj.label === "string" ? obj.label.trim() : "";
+  if (!label) {
+    throw `${trail}.label in ${repoRoot}/.argus.json must be a non-empty string.`;
+  }
+  const hasChildren = obj.children !== undefined;
+  const hasUrl = obj.url !== undefined;
+  if (hasChildren && hasUrl) {
+    throw `${trail} in ${repoRoot}/.argus.json must have either "url" (leaf) or "children" (folder), not both.`;
+  }
+  if (hasChildren) {
+    if (!Array.isArray(obj.children)) {
+      throw `${trail}.children in ${repoRoot}/.argus.json must be an array.`;
+    }
+    const children = (obj.children as unknown[]).map((child, j) =>
+      normalizeSimulatorDeeplinkEntry(
+        child,
+        repoRoot,
+        `${trail}.children[${j}]`,
+      ),
+    );
+
+    return { label, children };
+  }
+  const url = typeof obj.url === "string" ? obj.url.trim() : "";
+  if (!url) {
+    throw `${trail}.url in ${repoRoot}/.argus.json must be a non-empty string (or use "children" for a folder).`;
+  }
+
+  return { label, url };
 }
 
 /**
@@ -538,6 +609,10 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       base.release_note_patterns,
       local.release_note_patterns,
     ),
+    simulator_deeplinks:
+      local.simulator_deeplinks.length > 0
+        ? local.simulator_deeplinks
+        : base.simulator_deeplinks,
   };
 }
 

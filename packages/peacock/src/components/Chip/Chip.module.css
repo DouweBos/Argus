@@ -26,6 +26,18 @@
   color: var(--text-primary);
 }
 
+.selected {
+  background: var(--accent-overlay-xl);
+  border-color: var(--accent-border-strong);
+  color: var(--accent);
+  font-weight: 600;
+}
+.selected:hover {
+  background: var(--accent-overlay-2xl);
+  border-color: var(--accent-border-strong);
+  color: var(--accent);
+}
+
 .mono {
   font-family: var(--font-mono);
 }

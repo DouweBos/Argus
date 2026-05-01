@@ -19,6 +19,7 @@ import {
 import { useAndroidDeviceSimulatorState } from "../../../stores/simulatorStore";
 import chrome from "../RuntimeChrome.module.css";
 import { AndroidDeviceStreamView } from "./AndroidDeviceStreamView";
+import { RuntimeLinkButton } from "./RuntimeLinkButton";
 import styles from "./RuntimeView.module.css";
 
 interface AndroidDeviceViewProps {
@@ -350,6 +351,12 @@ export function AndroidDeviceView({
           >
             <Icons.AndroidRecentsIcon size={12} />
           </button>
+          {selectedSerial && (
+            <RuntimeLinkButton
+              deviceKey={selectedSerial}
+              sessionId={sessionId}
+            />
+          )}
         </>
       )}
       {(isOnline || androidCapturing) && selectedSerial && (

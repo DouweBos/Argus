@@ -30,21 +30,22 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field                                                                | Editable in dialog?              |
-| -------------------------------------------------------------------- | -------------------------------- |
-| `setup.copy` / `symlink` / `commands`                                | yes (Setup)                      |
-| `min_argus_version`                                                  | yes (Setup)                      |
-| `terminals`                                                          | yes (Terminals)                  |
-| `run`                                                                | yes (Run commands)               |
-| `workspace_env`                                                      | yes (Workspace env)              |
-| `platforms`                                                          | yes (Platforms)                  |
-| `browser_url`, `browser_presets`                                     | yes (Browser)                    |
-| `single_runtime`                                                     | yes (Run commands)               |
-| `agent_prompt`, `save_chat_history`                                  | yes (Agent)                      |
-| `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)          |
-| `mcp_servers`                                                        | yes (MCP servers)                |
-| `release_note_patterns`                                              | yes (Release notes)              |
-| `related_projects`                                                   | **no** — hand-edit `.argus.json` |
+| Field                                                                | Editable in dialog?     |
+| -------------------------------------------------------------------- | ----------------------- |
+| `setup.copy` / `symlink` / `commands`                                | yes (Setup)             |
+| `min_argus_version`                                                  | yes (Setup)             |
+| `terminals`                                                          | yes (Terminals)         |
+| `run`                                                                | yes (Run commands)      |
+| `workspace_env`                                                      | yes (Workspace env)     |
+| `platforms`                                                          | yes (Platforms)         |
+| `browser_url`, `browser_presets`                                     | yes (Browser)           |
+| `single_runtime`                                                     | yes (Run commands)      |
+| `agent_prompt`, `save_chat_history`                                  | yes (Agent)             |
+| `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection) |
+| `mcp_servers`                                                        | yes (MCP servers)       |
+| `release_note_patterns`                                              | yes (Release notes)     |
+| `simulator_deeplinks`                                                | yes (Deep links)        |
+| `related_projects`                                                   | yes (Related projects)  |
 
 ---
 
@@ -61,6 +62,7 @@ Two ways to change project settings:
   "related_projects":   [{ "path": "../other-repo", "description": "..." }],
   "browser_url":        "http://localhost:3000",
   "browser_presets":    [{ "id": "...", "label": "...", "width": 390, "height": 844, "user_agent": "..." }],
+  "simulator_deeplinks": [{ "label": "Profile", "url": "myapp://profile/123" }],
   "save_chat_history":  true,
   "protected_branches": ["main", "master"],
   "pull_request_template": "feature.md",
@@ -232,6 +234,49 @@ built-in list.
 | `width`      | `number`  | required       | Viewport width in CSS pixels.  |
 | `height`     | `number`  | required       | Viewport height in CSS pixels. |
 | `user_agent` | `string?` | desktop Chrome | Custom UA string.              |
+
+---
+
+## `simulator_deeplinks` — runtime toolbar deep links
+
+Surfaces a **Link** button in the runtime toolbar (next to Home / Disconnect)
+when a simulator or emulator is connected. Clicking it opens a dropdown of
+URLs the team has configured, and the chosen entry is fired into the device
+via `conductor open-link <url>`.
+
+Entries are either **leaf links** (`{ label, url }`) or **folders**
+(`{ label, children: [...] }`). Folders may contain folders, so long lists
+can be organised hierarchically.
+
+```jsonc
+"simulator_deeplinks": [
+  { "label": "Profile",  "url": "myapp://profile/123" },
+  { "label": "Checkout", "url": "myapp://checkout?cart=demo" },
+  {
+    "label": "Onboarding",
+    "children": [
+      { "label": "Welcome",  "url": "myapp://onboarding/welcome" },
+      { "label": "Sign up",  "url": "myapp://onboarding/signup" },
+      {
+        "label": "Verify",
+        "children": [
+          { "label": "Email", "url": "myapp://onboarding/verify/email" },
+          { "label": "Phone", "url": "myapp://onboarding/verify/phone" }
+        ]
+      }
+    ]
+  }
+]
+```
+
+| Field      | Type                        | Default                     | Description                                                              |
+| ---------- | --------------------------- | --------------------------- | ------------------------------------------------------------------------ |
+| `label`    | `string`                    | required                    | Display name shown in the dropdown.                                      |
+| `url`      | `string`                    | required for leaf entries   | URL or custom-scheme deep link. Mutually exclusive with `children`.      |
+| `children` | `SimulatorDeeplinkConfig[]` | required for folder entries | Nested entries grouped under this folder. Mutually exclusive with `url`. |
+
+Works for iOS simulators and Android emulators alike — any device
+`conductor open-link` recognises.
 
 ---
 

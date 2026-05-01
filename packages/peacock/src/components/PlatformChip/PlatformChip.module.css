@@ -27,7 +27,14 @@
 }
 
 .chipActive {
-  color: var(--text-primary);
-  background: var(--surface-5);
-  border-color: var(--surface-7);
+  color: var(--accent);
+  background: var(--accent-overlay-xl);
+  border-color: var(--accent-border-strong);
+  font-weight: 600;
+}
+
+.chipActive.chipInteractive:hover {
+  color: var(--accent);
+  background: var(--accent-overlay-2xl);
+  border-color: var(--accent-border-strong);
 }

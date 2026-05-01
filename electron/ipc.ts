@@ -83,6 +83,7 @@ import {
   type DevicePlatform,
 } from "./services/conductor/devices";
 import { conductorLogStore, execConductor } from "./services/conductor/logger";
+import { openDeepLink } from "./services/conductor/openLink";
 import { checkDependencies } from "./services/dependencies/check";
 import { discoverExtensions } from "./services/extensions/loader";
 import {
@@ -860,6 +861,9 @@ export function registerIpcHandlers(): void {
   );
   handle("simulator_button", (a) =>
     simulatorButton(a.udid as string, a.button as string),
+  );
+  handle("device_open_link", (a) =>
+    openDeepLink(a.deviceKey as string, a.url as string),
   );
   handle("simulator_keyboard", (a) =>
     simulatorKeyboard(

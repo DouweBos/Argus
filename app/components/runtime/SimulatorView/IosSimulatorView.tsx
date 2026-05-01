@@ -20,6 +20,7 @@ import {
 import chrome from "../RuntimeChrome.module.css";
 import { AppleTVRemote } from "./AppleTVRemote";
 import { IosDeviceStreamView } from "./IosDeviceStreamView";
+import { RuntimeLinkButton } from "./RuntimeLinkButton";
 import styles from "./RuntimeView.module.css";
 
 interface IosSimulatorViewProps {
@@ -382,6 +383,9 @@ export function IosSimulatorView({
         >
           <Icons.HomeIcon size={12} />
         </button>
+      )}
+      {capturing && selectedUdid && (
+        <RuntimeLinkButton deviceKey={selectedUdid} sessionId={sessionId} />
       )}
       {(isBooted || capturing) && selectedUdid && (
         <button

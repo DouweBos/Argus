@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
+import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { readArgusConfig } from "../../../lib/ipc";
 import { useSessions } from "../../../stores/sessionStore";
@@ -19,6 +20,7 @@ export function MergeAction({ sessionId }: MergeActionProps) {
     useMergeStatus(sessionId);
 
   const [isProtectedBase, setIsProtectedBase] = useState(false);
+  const configVersion = useArgusConfigVersion(session?.repo_root ?? null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +54,7 @@ export function MergeAction({ sessionId }: MergeActionProps) {
     return () => {
       cancelled = true;
     };
-  }, [session?.repo_root, session?.base_branch]);
+  }, [session?.repo_root, session?.base_branch, configVersion]);
 
   if (!session || session.kind !== "worktree" || !session.base_branch) {
     return null;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalloutCard, DiffStat, IconBadge, Icons } from "@argus/peacock";
+import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
 import { useFixConflictsInChat } from "../../../hooks/useFixConflictsInChat";
 import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { useSessionReleaseNotes } from "../../../hooks/useSessionReleaseNotes";
@@ -96,6 +97,7 @@ export function ReadyToMergeCard({
   const [justMerged, setJustMerged] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProtectedBase, setIsProtectedBase] = useState(false);
+  const configVersion = useArgusConfigVersion(repoRoot ?? null);
   const [isPushing, setIsPushing] = useState(false);
   const releaseNotes = useSessionReleaseNotes(sessionId);
   const changesetEntries = releaseNotes.filter(
@@ -165,7 +167,7 @@ export function ReadyToMergeCard({
     return () => {
       cancelled = true;
     };
-  }, [repoRoot, baseBranch]);
+  }, [repoRoot, baseBranch, configVersion]);
 
   const handleMerge = useCallback(async () => {
     const ok = await performMerge();

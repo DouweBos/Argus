@@ -2,6 +2,7 @@ import type { RunCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, ConfirmDialog, ContextMenu, Icons } from "@argus/peacock";
 import { error as logError } from "@logger";
+import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
 import {
   createRunTerminal,
   listTerminals,
@@ -13,7 +14,7 @@ import {
   stopListening,
 } from "../../../lib/terminalBufferService";
 import { setActiveTool } from "../../../stores/layoutStore";
-import { getSessionState } from "../../../stores/sessionStore";
+import { getSessionState, useSessions } from "../../../stores/sessionStore";
 import {
   addSession,
   clearBuffer,
@@ -57,6 +58,10 @@ export function RunControl({ sessionId }: RunControlProps) {
   } | null>(null);
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const runningTerminals = useRunningTerminalsForSession(sessionId);
+  const allSessions = useSessions();
+  const repoRoot =
+    allSessions.find((w) => w.id === sessionId)?.repo_root ?? null;
+  const configVersion = useArgusConfigVersion(repoRoot);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,7 +88,7 @@ export function RunControl({ sessionId }: RunControlProps) {
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, configVersion]);
 
   // Rehydrate the running-run marker after a window reload. PTYs persist in
   // main, so a dev server kicked off before the reload is still alive — but

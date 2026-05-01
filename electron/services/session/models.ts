@@ -79,6 +79,28 @@ export interface WorkspaceEnvConfig {
   strategy: WorkspaceEnvStrategy;
 }
 
+/**
+ * A single entry in the simulator/device "Link" dropdown — either a leaf
+ * link fired via `conductor open-link <url>`, or a folder grouping nested
+ * entries underneath a label. Folders may themselves contain folders so
+ * teams can organise long lists hierarchically (e.g. "Onboarding" →
+ * "First-run" → "Step 2").
+ */
+export interface SimulatorDeeplinkConfig {
+  /** Display name shown in the dropdown (e.g. "Settings", "Profile"). */
+  label: string;
+  /**
+   * URL or custom-scheme deep link. Required for leaf entries; must be
+   * absent on folder entries (which use `children` instead).
+   */
+  url?: string;
+  /**
+   * Nested entries when this is a folder. Mutually exclusive with `url`.
+   * An empty array is treated as no children (folder hidden).
+   */
+  children?: SimulatorDeeplinkConfig[];
+}
+
 /** JSON-facing shape for custom browser device presets in `.argus.json`. */
 export interface BrowserPresetConfig {
   /** Viewport height in CSS pixels. */
@@ -228,6 +250,12 @@ export interface ArgusConfig {
    * surface as Badges next to the filename.
    */
   release_note_patterns: ReleaseNotePatternConfig[];
+  /**
+   * Deep links surfaced as a dropdown on the runtime toolbar's "Link" button.
+   * Each entry fires `conductor open-link <url> --device <id>` against the
+   * currently connected simulator/emulator.
+   */
+  simulator_deeplinks: SimulatorDeeplinkConfig[];
 }
 
 /** Tone for label badges, mirrored from Peacock's `Badge.tone`. */
@@ -305,5 +333,6 @@ export function defaultArgusConfig(): ArgusConfig {
     mcp_servers: null,
     min_argus_version: null,
     release_note_patterns: [],
+    simulator_deeplinks: [],
   };
 }

@@ -1,19 +1,27 @@
 import type {
   BrowserPresetConfig,
+  RelatedProject,
   RuntimePlatform,
+  SimulatorDeeplinkConfig,
   ArgusConfig,
   WorkspaceEnvConfig,
 } from "../../../lib/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Badge,
   Button,
+  Chip,
+  CodeBlock,
+  EmptyState,
   Icons,
   Input,
+  PlatformChip,
   SettingsDialogShell,
   SettingsScreenDetail,
   SettingsScreenDetailBody,
   SettingsScreenDetailHeader,
   TextArea,
+  TreeNode,
   type SettingsDialogGroup,
 } from "@argus/peacock";
 import {
@@ -31,6 +39,7 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../../shared/McpServersField";
+import { GlobPathInput } from "./GlobPathInput";
 import { ReleaseNotesField } from "./ReleaseNotesField";
 import sectionStyles from "./SetupConfigDialog.module.css";
 import {
@@ -48,20 +57,6 @@ interface SetupConfigDialogProps {
 /* ------------------------------------------------------------------ */
 /*  Hooks                                                              */
 /* ------------------------------------------------------------------ */
-
-function platformLabel(p: string): string {
-  if (p === "ios") {
-    return "iOS";
-  }
-  if (p === "android") {
-    return "Android";
-  }
-  if (p === "tvos") {
-    return "tvOS";
-  }
-
-  return "Web";
-}
 
 function useListState(initial: string[]) {
   const [items, setItems] = useState<string[]>(initial);
@@ -176,6 +171,260 @@ interface BrowserPresetEntry {
   width: string;
 }
 
+interface DeeplinkEntry {
+  /** Folder children. `undefined` means this entry is a leaf. */
+  children?: DeeplinkEntry[];
+  label: string;
+  /** Leaf URL. `undefined` means this entry is a folder. */
+  url?: string;
+}
+
+/** Path of indices into a nested DeeplinkEntry[] tree. */
+type DeeplinkPath = number[];
+
+function deeplinkConfigToEntries(
+  configs: SimulatorDeeplinkConfig[],
+): DeeplinkEntry[] {
+  return configs.map((c) => {
+    if (Array.isArray(c.children)) {
+      return {
+        label: c.label ?? "",
+        children: deeplinkConfigToEntries(c.children),
+      };
+    }
+
+    return { label: c.label ?? "", url: c.url ?? "" };
+  });
+}
+
+function deeplinkEntriesToConfig(
+  entries: DeeplinkEntry[],
+): SimulatorDeeplinkConfig[] {
+  const out: SimulatorDeeplinkConfig[] = [];
+  for (const e of entries) {
+    const label = e.label.trim();
+    if (!label) {
+      continue;
+    }
+    if (e.children !== undefined) {
+      const kids = deeplinkEntriesToConfig(e.children);
+      if (kids.length > 0) {
+        out.push({ label, children: kids });
+      }
+    } else if (e.url && e.url.trim()) {
+      out.push({ label, url: e.url.trim() });
+    }
+  }
+
+  return out;
+}
+
+function updateAtPath(
+  entries: DeeplinkEntry[],
+  path: DeeplinkPath,
+  mutator: (siblings: DeeplinkEntry[]) => DeeplinkEntry[],
+): DeeplinkEntry[] {
+  if (path.length === 0) {
+    return mutator(entries);
+  }
+  const [head, ...rest] = path;
+
+  return entries.map((entry, idx) => {
+    if (idx !== head) {
+      return entry;
+    }
+    if (entry.children === undefined) {
+      return entry;
+    }
+
+    return { ...entry, children: updateAtPath(entry.children, rest, mutator) };
+  });
+}
+
+function readAtPath(
+  entries: DeeplinkEntry[],
+  path: DeeplinkPath,
+): DeeplinkEntry | null {
+  if (path.length === 0) {
+    return null;
+  }
+  let arr: DeeplinkEntry[] | undefined = entries;
+  for (let i = 0; i < path.length - 1; i++) {
+    const child: DeeplinkEntry | undefined = arr?.[path[i]];
+    if (!child || !child.children) {
+      return null;
+    }
+    arr = child.children;
+  }
+
+  return arr?.[path[path.length - 1]] ?? null;
+}
+
+function pathsEqual(a: DeeplinkPath, b: DeeplinkPath): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
+/** True if `prefix` equals `path` or is a strict ancestor of it. */
+function isAncestorOrSelf(prefix: DeeplinkPath, path: DeeplinkPath): boolean {
+  if (prefix.length > path.length) {
+    return false;
+  }
+  for (let i = 0; i < prefix.length; i++) {
+    if (prefix[i] !== path[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Adjust a target path under the assumption that the entry at `removed` has
+ * been spliced out of the tree. Only paths that point into the same sibling
+ * array as `removed`, at an index after it, need their corresponding segment
+ * decremented.
+ */
+function adjustPathForRemoval(
+  target: DeeplinkPath,
+  removed: DeeplinkPath,
+): DeeplinkPath {
+  if (removed.length === 0) {
+    return target;
+  }
+  const removedParent = removed.slice(0, -1);
+  const removedIdx = removed[removed.length - 1];
+  if (target.length <= removedParent.length) {
+    return target;
+  }
+  for (let i = 0; i < removedParent.length; i++) {
+    if (target[i] !== removedParent[i]) {
+      return target;
+    }
+  }
+  if (target[removedParent.length] > removedIdx) {
+    const adj = target.slice();
+    adj[removedParent.length] -= 1;
+
+    return adj;
+  }
+
+  return target;
+}
+
+function useDeeplinkListState(initial: DeeplinkEntry[]) {
+  const [items, setItems] = useState<DeeplinkEntry[]>(initial);
+
+  const addLink = (parentPath: DeeplinkPath) =>
+    setItems((prev) =>
+      updateAtPath(prev, parentPath, (siblings) => [
+        ...siblings,
+        { label: "", url: "" },
+      ]),
+    );
+  const addFolder = (parentPath: DeeplinkPath) =>
+    setItems((prev) =>
+      updateAtPath(prev, parentPath, (siblings) => [
+        ...siblings,
+        { label: "", children: [] },
+      ]),
+    );
+  const updateField = (
+    path: DeeplinkPath,
+    field: "label" | "url",
+    val: string,
+  ) => {
+    if (path.length === 0) {
+      return;
+    }
+    const parent = path.slice(0, -1);
+    const idx = path[path.length - 1];
+    setItems((prev) =>
+      updateAtPath(prev, parent, (siblings) =>
+        siblings.map((e, i) => (i === idx ? { ...e, [field]: val } : e)),
+      ),
+    );
+  };
+  const remove = (path: DeeplinkPath) => {
+    if (path.length === 0) {
+      return;
+    }
+    const parent = path.slice(0, -1);
+    const idx = path[path.length - 1];
+    setItems((prev) =>
+      updateAtPath(prev, parent, (siblings) =>
+        siblings.filter((_, i) => i !== idx),
+      ),
+    );
+  };
+  const move = (
+    fromPath: DeeplinkPath,
+    toParent: DeeplinkPath,
+    toIndex: number,
+  ) => {
+    if (fromPath.length === 0) {
+      return;
+    }
+    // Forbid dropping a folder onto itself or one of its descendants.
+    if (isAncestorOrSelf(fromPath, toParent)) {
+      return;
+    }
+    setItems((prev) => {
+      const entry = readAtPath(prev, fromPath);
+      if (!entry) {
+        return prev;
+      }
+      const fromParent = fromPath.slice(0, -1);
+      const fromIdx = fromPath[fromPath.length - 1];
+
+      // Adjust target parent for the removal.
+      const adjParent = adjustPathForRemoval(toParent, fromPath);
+
+      // Adjust insertion index when reordering within the same array.
+      let adjIndex = toIndex;
+      if (pathsEqual(fromParent, adjParent) && toIndex > fromIdx) {
+        adjIndex -= 1;
+      }
+
+      // Remove source.
+      const removed = updateAtPath(prev, fromParent, (siblings) =>
+        siblings.filter((_, i) => i !== fromIdx),
+      );
+
+      // Insert at adjusted target.
+      return updateAtPath(removed, adjParent, (siblings) => {
+        const next = siblings.slice();
+        const clamped = Math.max(0, Math.min(adjIndex, next.length));
+        next.splice(clamped, 0, entry);
+
+        return next;
+      });
+    });
+  };
+
+  return { items, setItems, addLink, addFolder, updateField, remove, move };
+}
+
+interface RelatedProjectEntry {
+  description: string;
+  path: string;
+}
+
+function useRelatedProjectListState(initial: RelatedProjectEntry[]) {
+  const [items, setItems] = useState<RelatedProjectEntry[]>(initial);
+  const add = () =>
+    setItems((prev) => [...prev, { path: "", description: "" }]);
+  const update = (i: number, field: keyof RelatedProjectEntry, val: string) =>
+    setItems((prev) =>
+      prev.map((entry, idx) =>
+        idx === i ? { ...entry, [field]: val } : entry,
+      ),
+    );
+  const remove = (i: number) =>
+    setItems((prev) => prev.filter((_, idx) => idx !== i));
+
+  return { items, setItems, add, update, remove };
+}
+
 function useBrowserPresetListState(initial: BrowserPresetEntry[]) {
   const [items, setItems] = useState<BrowserPresetEntry[]>(initial);
   const add = () =>
@@ -213,34 +462,50 @@ function ListField({ label, placeholder, emptyLabel, list }: ListFieldProps) {
     <div className={styles.field}>
       <p className={styles.sectionTitle}>{label}</p>
       {list.items.length === 0 ? (
-        <div className={styles.emptyState}>
-          <span>{emptyLabel}</span>
-          <button className={styles.addRowBtn} onClick={handleListAdd}>
-            + Add
-          </button>
-        </div>
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleListAdd}
+            >
+              Add
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          title={emptyLabel}
+        />
       ) : (
         <div className={styles.listEditor}>
           {list.items.map((item, i) => (
-            <div key={i} className={styles.listRow}>
+            <div key={i} className={sectionStyles.rowCard}>
               <Input
                 placeholder={placeholder}
+                style={{ flex: 1 }}
                 type="text"
                 value={item}
                 onChange={(e) => list.update(i, e.target.value)}
               />
               <button
                 aria-label="Remove"
-                className={styles.removeBtn}
+                className={[styles.removeBtn, sectionStyles.rowCardAction].join(
+                  " ",
+                )}
                 onClick={() => list.remove(i)}
               >
                 <Icons.CloseIcon size={12} />
               </button>
             </div>
           ))}
-          <button className={styles.addRowBtn} onClick={handleListAdd}>
-            + Add
-          </button>
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleListAdd}
+          >
+            Add
+          </Button>
         </div>
       )}
     </div>
@@ -249,24 +514,35 @@ function ListField({ label, placeholder, emptyLabel, list }: ListFieldProps) {
 
 function TerminalField({
   list,
+  repoRoot,
 }: {
   list: ReturnType<typeof useTerminalListState>;
+  repoRoot: string;
 }) {
   const handleAdd = list.add;
 
   return (
     <div className={styles.field}>
       {list.items.length === 0 ? (
-        <div className={styles.emptyState}>
-          <span>No terminals configured</span>
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
-        </div>
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleAdd}
+            >
+              Add terminal
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          icon={<Icons.TerminalIcon size={18} />}
+          title="No terminals configured"
+        />
       ) : (
         <div className={styles.listEditor}>
           {list.items.map((entry, i) => (
-            <div key={i} className={styles.listRow}>
+            <div key={i} className={sectionStyles.rowCard}>
               <Input
                 placeholder="Name (e.g. Frontend)"
                 style={{ flex: 1 }}
@@ -274,25 +550,32 @@ function TerminalField({
                 value={entry.name}
                 onChange={(e) => list.update(i, "name", e.target.value)}
               />
-              <Input
+              <GlobPathInput
                 placeholder="Dir (e.g. packages/web)"
-                style={{ flex: 1 }}
-                type="text"
+                repoRoot={repoRoot}
+                style={{ flex: 1, minWidth: 0 }}
                 value={entry.dir}
-                onChange={(e) => list.update(i, "dir", e.target.value)}
+                onChange={(value) => list.update(i, "dir", value)}
               />
               <button
                 aria-label="Remove"
-                className={styles.removeBtn}
+                className={[styles.removeBtn, sectionStyles.rowCardAction].join(
+                  " ",
+                )}
                 onClick={() => list.remove(i)}
               >
                 <Icons.CloseIcon size={12} />
               </button>
             </div>
           ))}
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleAdd}
+          >
+            Add
+          </Button>
         </div>
       )}
     </div>
@@ -309,59 +592,61 @@ function RunCommandsField({
   return (
     <div className={styles.field}>
       {list.items.length === 0 ? (
-        <div className={styles.emptyState}>
-          <span>No run commands configured</span>
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
-        </div>
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleAdd}
+            >
+              Add command
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          icon={<Icons.PlayIcon size={18} />}
+          title="No run commands configured"
+        />
       ) : (
         <div className={sectionStyles.runCommandList}>
           {list.items.map((entry, i) => {
             const otherTitles = list.items
               .map((e, idx) => ({ title: e.title.trim(), idx }))
               .filter((e) => e.idx !== i && e.title.length > 0);
-            const toggleRequires = (req: string, checked: boolean) => {
-              const next = checked
-                ? [...entry.requires, req]
-                : entry.requires.filter((r) => r !== req);
+            const toggleRequires = (req: string) => {
+              const active = entry.requires.includes(req);
+              const next = active
+                ? entry.requires.filter((r) => r !== req)
+                : [...entry.requires, req];
               list.update(i, "requires", next);
             };
+
+            const hasFooter = entry.restartOnRerun || otherTitles.length > 0;
 
             return (
               <div key={i} className={sectionStyles.runCommandCard}>
                 <div className={sectionStyles.runCommandTopRow}>
                   <Input
                     placeholder="Title (e.g. Dev)"
-                    style={{ flex: 1, minWidth: 100 }}
+                    style={{ flex: 1, minWidth: 90 }}
                     type="text"
                     value={entry.title}
                     onChange={(e) => list.update(i, "title", e.target.value)}
                   />
                   <Input
                     placeholder="Command (e.g. pnpm dev)"
-                    style={{ flex: 2, minWidth: 160 }}
+                    style={{ flex: 2, minWidth: 140 }}
                     type="text"
                     value={entry.command}
                     onChange={(e) => list.update(i, "command", e.target.value)}
                   />
                   <Input
                     placeholder="cwd (optional)"
-                    style={{ flex: 1, minWidth: 100 }}
+                    style={{ flex: 1, minWidth: 80 }}
                     type="text"
                     value={entry.cwd}
                     onChange={(e) => list.update(i, "cwd", e.target.value)}
                   />
-                  <label className={styles.checkboxRow}>
-                    <input
-                      checked={entry.restartOnRerun}
-                      type="checkbox"
-                      onChange={(e) =>
-                        list.update(i, "restartOnRerun", e.target.checked)
-                      }
-                    />
-                    Restart on rerun
-                  </label>
                   <div className={sectionStyles.runCommandReorder}>
                     <button
                       aria-label="Move up"
@@ -382,46 +667,61 @@ function RunCommandsField({
                   </div>
                   <button
                     aria-label="Remove"
-                    className={styles.removeBtn}
+                    className={[
+                      styles.removeBtn,
+                      sectionStyles.rowCardAction,
+                    ].join(" ")}
                     onClick={() => list.remove(i)}
                   >
                     <Icons.CloseIcon size={12} />
                   </button>
                 </div>
+                {hasFooter && (
+                  <div className={sectionStyles.runCommandRestartRow}>
+                    <label className={sectionStyles.cardCheckbox}>
+                      <input
+                        checked={entry.restartOnRerun}
+                        type="checkbox"
+                        onChange={(e) =>
+                          list.update(i, "restartOnRerun", e.target.checked)
+                        }
+                      />
+                      Restart on rerun
+                    </label>
+                  </div>
+                )}
                 {otherTitles.length > 0 && (
                   <div className={sectionStyles.runCommandRequiresRow}>
                     <span className={sectionStyles.runCommandRequiresLabel}>
-                      Requires running
+                      Requires
                     </span>
-                    {otherTitles.map((o) => (
-                      <label key={o.idx} className={styles.checkboxRow}>
-                        <input
-                          checked={entry.requires.includes(o.title)}
-                          type="checkbox"
-                          onChange={(e) =>
-                            toggleRequires(o.title, e.target.checked)
-                          }
-                        />
-                        {o.title}
-                      </label>
-                    ))}
+                    <div className={sectionStyles.runCommandRequiresChips}>
+                      {otherTitles.map((o) => (
+                        <Chip
+                          key={o.idx}
+                          interactive
+                          selected={entry.requires.includes(o.title)}
+                          onClick={() => toggleRequires(o.title)}
+                        >
+                          {o.title}
+                        </Chip>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             );
           })}
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleAdd}
+          >
+            Add
+          </Button>
         </div>
       )}
-      <p className={styles.helpText}>
-        Shown in the app&apos;s run menu. Title identifies each entry; enable
-        &quot;Restart on rerun&quot; to kill an existing session before starting
-        a new one. Use &quot;Requires running&quot; to declare dependencies on
-        other commands (e.g. a frontend that needs the backend up first) — Argus
-        will start any that aren&apos;t already running.
-      </p>
     </div>
   );
 }
@@ -432,19 +732,30 @@ function EnvField({ list }: { list: ReturnType<typeof useEnvListState> }) {
   return (
     <div className={styles.field}>
       {list.items.length === 0 ? (
-        <div className={styles.emptyState}>
-          <span>No env variables configured</span>
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
-        </div>
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleAdd}
+            >
+              Add variable
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          icon={<Icons.GearIcon size={18} />}
+          title="No env variables configured"
+        />
       ) : (
-        <div className={styles.listEditor}>
+        <div className={sectionStyles.cardList}>
           {list.items.map((entry, i) => (
-            <div key={i}>
-              <div className={styles.envGrid}>
-                <div className={styles.field}>
-                  <label className={styles.label}>Env var name</label>
+            <div key={i} className={sectionStyles.card}>
+              <div className={sectionStyles.cardTopRow}>
+                <div className={styles.field} style={{ flex: 2 }}>
+                  <label className={sectionStyles.fieldLabel}>
+                    Env var name
+                  </label>
                   <Input
                     placeholder="e.g. ARGUS_PORT"
                     type="text"
@@ -452,33 +763,8 @@ function EnvField({ list }: { list: ReturnType<typeof useEnvListState> }) {
                     onChange={(e) => list.update(i, "name", e.target.value)}
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Strategy</label>
-                  <div
-                    style={{ display: "flex", gap: 6, alignItems: "center" }}
-                  >
-                    <select
-                      className={styles.input}
-                      style={{ flex: 1 }}
-                      value={entry.strategy}
-                      onChange={(e) =>
-                        list.update(i, "strategy", e.target.value)
-                      }
-                    >
-                      <option value="hash">Hash</option>
-                      <option value="sequential">Sequential</option>
-                    </select>
-                    <button
-                      aria-label="Remove env variable"
-                      className={styles.removeBtn}
-                      onClick={() => list.remove(i)}
-                    >
-                      <Icons.CloseIcon size={12} />
-                    </button>
-                  </div>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Base value</label>
+                <div className={styles.field} style={{ flex: 1 }}>
+                  <label className={sectionStyles.fieldLabel}>Base value</label>
                   <Input
                     placeholder="8081"
                     type="text"
@@ -488,8 +774,8 @@ function EnvField({ list }: { list: ReturnType<typeof useEnvListState> }) {
                     }
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Range</label>
+                <div className={styles.field} style={{ flex: 1 }}>
+                  <label className={sectionStyles.fieldLabel}>Range</label>
                   <Input
                     placeholder="1000"
                     type="text"
@@ -497,27 +783,41 @@ function EnvField({ list }: { list: ReturnType<typeof useEnvListState> }) {
                     onChange={(e) => list.update(i, "range", e.target.value)}
                   />
                 </div>
+                <div className={styles.field} style={{ flex: 1 }}>
+                  <label className={sectionStyles.fieldLabel}>Strategy</label>
+                  <select
+                    className={styles.input}
+                    value={entry.strategy}
+                    onChange={(e) => list.update(i, "strategy", e.target.value)}
+                  >
+                    <option value="hash">Hash</option>
+                    <option value="sequential">Sequential</option>
+                  </select>
+                </div>
+                <button
+                  aria-label="Remove env variable"
+                  className={[
+                    styles.removeBtn,
+                    sectionStyles.rowCardAction,
+                  ].join(" ")}
+                  style={{ alignSelf: "flex-end", marginBottom: 1 }}
+                  onClick={() => list.remove(i)}
+                >
+                  <Icons.CloseIcon size={12} />
+                </button>
               </div>
-              {i < list.items.length - 1 && (
-                <hr
-                  style={{
-                    border: "none",
-                    borderTop: "1px solid var(--border-subtle)",
-                    margin: "10px 0",
-                  }}
-                />
-              )}
             </div>
           ))}
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleAdd}
+          >
+            Add
+          </Button>
         </div>
       )}
-      <p className={styles.helpText}>
-        Unique integer per session for port allocation. Hash: base_value + hash
-        % range. Sequential: base_value + index.
-      </p>
     </div>
   );
 }
@@ -531,20 +831,29 @@ function BrowserPresetField({
 
   return (
     <div className={styles.field}>
+      <p className={styles.sectionTitle}>Device presets</p>
       {list.items.length === 0 ? (
-        <div className={styles.emptyState}>
-          <span>No custom presets</span>
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
-        </div>
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleAdd}
+            >
+              Add preset
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          title="No custom presets"
+        />
       ) : (
-        <div className={styles.listEditor}>
+        <div className={sectionStyles.cardList}>
           {list.items.map((entry, i) => (
-            <div key={i}>
-              <div className={styles.envGrid}>
-                <div className={styles.field}>
-                  <label className={styles.label}>ID</label>
+            <div key={i} className={sectionStyles.card}>
+              <div className={sectionStyles.cardTopRow}>
+                <div className={styles.field} style={{ flex: 1 }}>
+                  <label className={sectionStyles.fieldLabel}>ID</label>
                   <Input
                     placeholder="e.g. iphone-15-pro"
                     type="text"
@@ -552,29 +861,17 @@ function BrowserPresetField({
                     onChange={(e) => list.update(i, "id", e.target.value)}
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Label</label>
-                  <div
-                    style={{ display: "flex", gap: 6, alignItems: "center" }}
-                  >
-                    <Input
-                      placeholder="e.g. iPhone 15 Pro"
-                      style={{ flex: 1 }}
-                      type="text"
-                      value={entry.label}
-                      onChange={(e) => list.update(i, "label", e.target.value)}
-                    />
-                    <button
-                      aria-label="Remove preset"
-                      className={styles.removeBtn}
-                      onClick={() => list.remove(i)}
-                    >
-                      <Icons.CloseIcon size={12} />
-                    </button>
-                  </div>
+                <div className={styles.field} style={{ flex: 1 }}>
+                  <label className={sectionStyles.fieldLabel}>Label</label>
+                  <Input
+                    placeholder="e.g. iPhone 15 Pro"
+                    type="text"
+                    value={entry.label}
+                    onChange={(e) => list.update(i, "label", e.target.value)}
+                  />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Width</label>
+                <div className={styles.field} style={{ flex: "0 0 70px" }}>
+                  <label className={sectionStyles.fieldLabel}>Width</label>
                   <Input
                     placeholder="393"
                     type="text"
@@ -582,8 +879,8 @@ function BrowserPresetField({
                     onChange={(e) => list.update(i, "width", e.target.value)}
                   />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Height</label>
+                <div className={styles.field} style={{ flex: "0 0 70px" }}>
+                  <label className={sectionStyles.fieldLabel}>Height</label>
                   <Input
                     placeholder="852"
                     type="text"
@@ -591,9 +888,22 @@ function BrowserPresetField({
                     onChange={(e) => list.update(i, "height", e.target.value)}
                   />
                 </div>
+                <button
+                  aria-label="Remove preset"
+                  className={[
+                    styles.removeBtn,
+                    sectionStyles.rowCardAction,
+                  ].join(" ")}
+                  style={{ alignSelf: "flex-end", marginBottom: 1 }}
+                  onClick={() => list.remove(i)}
+                >
+                  <Icons.CloseIcon size={12} />
+                </button>
               </div>
-              <div className={styles.field} style={{ marginTop: 4 }}>
-                <label className={styles.label}>User Agent (optional)</label>
+              <div className={styles.field}>
+                <label className={sectionStyles.fieldLabel}>
+                  User agent (optional)
+                </label>
                 <Input
                   placeholder="Defaults to desktop Chrome UA"
                   type="text"
@@ -601,26 +911,717 @@ function BrowserPresetField({
                   onChange={(e) => list.update(i, "user_agent", e.target.value)}
                 />
               </div>
-              {i < list.items.length - 1 && (
-                <hr
-                  style={{
-                    border: "none",
-                    borderTop: "1px solid var(--border-subtle)",
-                    margin: "10px 0",
-                  }}
-                />
-              )}
             </div>
           ))}
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleAdd}
+          >
+            Add
+          </Button>
         </div>
       )}
-      <p className={styles.helpText}>
-        Custom device presets for the web browser panel. Width and height are
-        CSS pixels.
-      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Deep link tree editor                                              */
+/* ------------------------------------------------------------------ */
+
+type DropPosition = "after" | "before" | "into";
+
+interface DropTargetState {
+  path: DeeplinkPath;
+  position: DropPosition;
+}
+
+const DEEPLINK_DRAG_MIME = "application/x-deeplink-path";
+
+function useDeeplinkDnD(list: ReturnType<typeof useDeeplinkListState>) {
+  const draggedPathRef = useRef<DeeplinkPath | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTargetState | null>(null);
+
+  const handleGripDragStart = (
+    e: React.DragEvent<HTMLElement>,
+    path: DeeplinkPath,
+    rowEl: HTMLElement | null,
+  ) => {
+    draggedPathRef.current = path;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData(DEEPLINK_DRAG_MIME, JSON.stringify(path));
+    if (rowEl) {
+      const rect = rowEl.getBoundingClientRect();
+      e.dataTransfer.setDragImage(
+        rowEl,
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+      );
+    }
+  };
+
+  const handleDragEnd = () => {
+    draggedPathRef.current = null;
+    setDropTarget(null);
+  };
+
+  const computeLeafPosition = (
+    e: React.DragEvent<HTMLElement>,
+  ): DropPosition => {
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    return e.clientY - rect.top < rect.height / 2 ? "before" : "after";
+  };
+
+  const computeFolderPosition = (
+    e: React.DragEvent<HTMLElement>,
+  ): DropPosition => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (y < rect.height * 0.25) {
+      return "before";
+    }
+    if (y > rect.height * 0.75) {
+      return "after";
+    }
+
+    return "into";
+  };
+
+  const handleRowDragOver = (
+    e: React.DragEvent<HTMLElement>,
+    path: DeeplinkPath,
+    isFolder: boolean,
+  ) => {
+    const dragged = draggedPathRef.current;
+    if (!dragged) {
+      return;
+    }
+    // Disallow dropping a folder into itself or its descendants.
+    if (isAncestorOrSelf(dragged, path)) {
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const position = isFolder
+      ? computeFolderPosition(e)
+      : computeLeafPosition(e);
+    setDropTarget((prev) =>
+      prev && prev.position === position && pathsEqual(prev.path, path)
+        ? prev
+        : { path, position },
+    );
+  };
+
+  const handleRowDragLeave = (e: React.DragEvent<HTMLElement>) => {
+    // Only clear the indicator if leaving the row entirely (not entering a
+    // child element). relatedTarget is the element being entered.
+    const next = e.relatedTarget as Node | null;
+    if (next && e.currentTarget.contains(next)) {
+      return;
+    }
+    setDropTarget((prev) => prev);
+  };
+
+  const handleRowDrop = (
+    e: React.DragEvent<HTMLElement>,
+    path: DeeplinkPath,
+    isFolder: boolean,
+  ) => {
+    const dragged = draggedPathRef.current;
+    setDropTarget(null);
+    draggedPathRef.current = null;
+    if (!dragged) {
+      return;
+    }
+    if (isAncestorOrSelf(dragged, path)) {
+      return;
+    }
+    e.preventDefault();
+    const position = isFolder
+      ? computeFolderPosition(e)
+      : computeLeafPosition(e);
+    const targetParent = path.slice(0, -1);
+    const targetIdx = path[path.length - 1];
+
+    if (position === "before") {
+      list.move(dragged, targetParent, targetIdx);
+    } else if (position === "after") {
+      list.move(dragged, targetParent, targetIdx + 1);
+    } else {
+      // into folder — append at end of children
+      const children = readAtPath(list.items, path)?.children ?? [];
+      list.move(dragged, path, children.length);
+    }
+  };
+
+  const handleEmptyFolderDrop = (
+    e: React.DragEvent<HTMLElement>,
+    folderPath: DeeplinkPath,
+  ) => {
+    const dragged = draggedPathRef.current;
+    setDropTarget(null);
+    draggedPathRef.current = null;
+    if (!dragged) {
+      return;
+    }
+    if (isAncestorOrSelf(dragged, folderPath)) {
+      return;
+    }
+    e.preventDefault();
+    list.move(dragged, folderPath, 0);
+  };
+
+  const handleEmptyFolderDragOver = (
+    e: React.DragEvent<HTMLElement>,
+    folderPath: DeeplinkPath,
+  ) => {
+    const dragged = draggedPathRef.current;
+    if (!dragged) {
+      return;
+    }
+    if (isAncestorOrSelf(dragged, folderPath)) {
+      return;
+    }
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropTarget({ path: folderPath, position: "into" });
+  };
+
+  return {
+    dropTarget,
+    handleGripDragStart,
+    handleDragEnd,
+    handleRowDragOver,
+    handleRowDragLeave,
+    handleRowDrop,
+    handleEmptyFolderDragOver,
+    handleEmptyFolderDrop,
+  };
+}
+
+type DeeplinkDnD = ReturnType<typeof useDeeplinkDnD>;
+
+interface DeeplinkLeafRowProps {
+  dnd: DeeplinkDnD;
+  entry: DeeplinkEntry;
+  list: ReturnType<typeof useDeeplinkListState>;
+  path: DeeplinkPath;
+}
+
+function dropTargetClass(
+  dropTarget: DropTargetState | null,
+  path: DeeplinkPath,
+  allowInto: boolean,
+): string {
+  if (!dropTarget || !pathsEqual(dropTarget.path, path)) {
+    return "";
+  }
+  if (dropTarget.position === "before") {
+    return sectionStyles.dropBefore;
+  }
+  if (dropTarget.position === "after") {
+    return sectionStyles.dropAfter;
+  }
+  if (allowInto && dropTarget.position === "into") {
+    return sectionStyles.dropInto;
+  }
+
+  return "";
+}
+
+function DeeplinkLeafRow({ entry, path, list, dnd }: DeeplinkLeafRowProps) {
+  const labelEmpty = entry.label.trim() === "";
+  const urlEmpty = (entry.url ?? "").trim() === "";
+  const rowRef = useRef<HTMLDivElement>(null);
+  const dropClass = dropTargetClass(dnd.dropTarget, path, false);
+
+  return (
+    <div
+      ref={rowRef}
+      className={[sectionStyles.deeplinkLeaf, dropClass]
+        .filter(Boolean)
+        .join(" ")}
+      onDragLeave={dnd.handleRowDragLeave}
+      onDragOver={(e) => dnd.handleRowDragOver(e, path, false)}
+      onDrop={(e) => dnd.handleRowDrop(e, path, false)}
+    >
+      <span
+        aria-label="Drag to reorder"
+        className={sectionStyles.deeplinkGripHandle}
+        draggable
+        role="button"
+        onDragEnd={dnd.handleDragEnd}
+        onDragStart={(e) => dnd.handleGripDragStart(e, path, rowRef.current)}
+      >
+        <Icons.GripDotsIcon
+          aria-hidden
+          className={sectionStyles.deeplinkGrip}
+          size={12}
+        />
+      </span>
+      <Input
+        className={labelEmpty ? sectionStyles.deeplinkInputWarn : undefined}
+        placeholder="Label"
+        type="text"
+        value={entry.label}
+        onChange={(e) => list.updateField(path, "label", e.target.value)}
+      />
+      <Input
+        mono
+        className={urlEmpty ? sectionStyles.deeplinkInputWarn : undefined}
+        placeholder="myapp://screen/id"
+        type="text"
+        value={entry.url ?? ""}
+        onChange={(e) => list.updateField(path, "url", e.target.value)}
+      />
+      <button
+        aria-label="Remove deep link"
+        className={[styles.removeBtn, sectionStyles.deeplinkRowDelete]
+          .filter(Boolean)
+          .join(" ")}
+        onClick={() => list.remove(path)}
+      >
+        <Icons.CloseIcon size={12} />
+      </button>
+    </div>
+  );
+}
+
+interface DeeplinkFolderRowProps {
+  dnd: DeeplinkDnD;
+  entry: DeeplinkEntry;
+  expanded: boolean;
+  list: ReturnType<typeof useDeeplinkListState>;
+  onToggle: () => void;
+  path: DeeplinkPath;
+}
+
+function DeeplinkFolderRow({
+  entry,
+  path,
+  list,
+  expanded,
+  onToggle,
+  dnd,
+}: DeeplinkFolderRowProps) {
+  const children = entry.children ?? [];
+  const count = children.length;
+  const labelEmpty = entry.label.trim() === "";
+
+  const peek = !expanded
+    ? children
+        .slice(0, 2)
+        .map((c) => c.label.trim() || (c.url ?? ""))
+        .filter(Boolean)
+        .join(", ")
+    : null;
+
+  const rowRef = useRef<HTMLDivElement>(null);
+  const dropClass = dropTargetClass(dnd.dropTarget, path, true);
+
+  return (
+    <div
+      ref={rowRef}
+      className={[sectionStyles.deeplinkFolderHeader, dropClass]
+        .filter(Boolean)
+        .join(" ")}
+      onDragLeave={dnd.handleRowDragLeave}
+      onDragOver={(e) => dnd.handleRowDragOver(e, path, true)}
+      onDrop={(e) => dnd.handleRowDrop(e, path, true)}
+    >
+      <span
+        aria-label="Drag to reorder"
+        className={sectionStyles.deeplinkGripHandle}
+        draggable
+        role="button"
+        onDragEnd={dnd.handleDragEnd}
+        onDragStart={(e) => dnd.handleGripDragStart(e, path, rowRef.current)}
+      >
+        <Icons.GripDotsIcon
+          aria-hidden
+          className={sectionStyles.deeplinkGrip}
+          size={12}
+        />
+      </span>
+      <button
+        aria-expanded={expanded}
+        aria-label={expanded ? "Collapse folder" : "Expand folder"}
+        className={sectionStyles.deeplinkChevronBtn}
+        onClick={onToggle}
+      >
+        {expanded ? (
+          <Icons.ChevronDownIcon size={10} />
+        ) : (
+          <Icons.ChevronRightIcon size={10} />
+        )}
+      </button>
+      <Icons.FolderIcon
+        className={sectionStyles.deeplinkFolderIcon}
+        size={14}
+      />
+      <Input
+        className={[
+          sectionStyles.deeplinkFolderInput,
+          labelEmpty ? sectionStyles.deeplinkInputWarn : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        placeholder="Folder name"
+        type="text"
+        value={entry.label}
+        onChange={(e) => list.updateField(path, "label", e.target.value)}
+      />
+      <div className={sectionStyles.deeplinkFolderSpacer} />
+      <div className={sectionStyles.deeplinkFolderTrailing}>
+        {!expanded && peek && (
+          <span className={sectionStyles.deeplinkPeek} title={peek}>
+            {peek}
+          </span>
+        )}
+        {count > 0 && (
+          <Badge size="pill" tone="neutralFilled">
+            {count}
+          </Badge>
+        )}
+        <button
+          aria-label="Remove folder"
+          className={[styles.removeBtn, sectionStyles.deeplinkRowDelete]
+            .filter(Boolean)
+            .join(" ")}
+          onClick={() => list.remove(path)}
+        >
+          <Icons.CloseIcon size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface DeeplinkAddRowProps {
+  list: ReturnType<typeof useDeeplinkListState>;
+  parentPath: DeeplinkPath;
+  /** When true, uses the root-level prominent add-row style. */
+  root?: boolean;
+}
+
+function DeeplinkAddRow({ parentPath, list, root }: DeeplinkAddRowProps) {
+  return (
+    <div
+      className={
+        root ? sectionStyles.deeplinkAddRowRoot : sectionStyles.deeplinkAddRow
+      }
+    >
+      <Button
+        leading={<Icons.PlusIcon size={11} />}
+        size="sm"
+        variant="ghost"
+        onClick={() => list.addLink(parentPath)}
+      >
+        Link
+      </Button>
+      <Button
+        leading={<Icons.FolderIcon size={12} />}
+        size="sm"
+        variant="ghost"
+        onClick={() => list.addFolder(parentPath)}
+      >
+        Folder
+      </Button>
+    </div>
+  );
+}
+
+interface DeeplinkTreeProps {
+  dnd: DeeplinkDnD;
+  entries: DeeplinkEntry[];
+  list: ReturnType<typeof useDeeplinkListState>;
+  parentPath: DeeplinkPath;
+}
+
+function DeeplinkFolderEmptyPlaceholder({
+  parentPath,
+  list,
+  dnd,
+}: {
+  dnd: DeeplinkDnD;
+  list: ReturnType<typeof useDeeplinkListState>;
+  parentPath: DeeplinkPath;
+}) {
+  const isDropTarget =
+    dnd.dropTarget &&
+    dnd.dropTarget.position === "into" &&
+    pathsEqual(dnd.dropTarget.path, parentPath);
+
+  return (
+    <div
+      className={[
+        sectionStyles.deeplinkFolderEmpty,
+        isDropTarget ? sectionStyles.dropInto : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      onDragLeave={dnd.handleRowDragLeave}
+      onDragOver={(e) => dnd.handleEmptyFolderDragOver(e, parentPath)}
+      onDrop={(e) => dnd.handleEmptyFolderDrop(e, parentPath)}
+    >
+      <span className={sectionStyles.deeplinkFolderEmptyLabel}>
+        No links yet
+      </span>
+      <div className={sectionStyles.deeplinkFolderEmptyActions}>
+        <Button
+          leading={<Icons.PlusIcon size={11} />}
+          size="sm"
+          variant="ghost"
+          onClick={() => list.addLink(parentPath)}
+        >
+          Link
+        </Button>
+        <Button
+          leading={<Icons.FolderIcon size={12} />}
+          size="sm"
+          variant="ghost"
+          onClick={() => list.addFolder(parentPath)}
+        >
+          Folder
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function DeeplinkTree({ entries, list, parentPath, dnd }: DeeplinkTreeProps) {
+  const [expandedSet, setExpandedSet] = useState<Set<number>>(
+    () => new Set(entries.map((_, i) => i)),
+  );
+
+  const toggleExpanded = (i: number) =>
+    setExpandedSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) {
+        next.delete(i);
+      } else {
+        next.add(i);
+      }
+
+      return next;
+    });
+
+  return (
+    <>
+      {entries.map((entry, i) => {
+        const path = [...parentPath, i];
+        const isFolder = entry.children !== undefined;
+
+        if (isFolder) {
+          const expanded = expandedSet.has(i);
+          const folderChildren = entry.children ?? [];
+          const isEmpty = folderChildren.length === 0;
+
+          return (
+            <TreeNode
+              key={i}
+              collapsed={!expanded}
+              header={
+                <DeeplinkFolderRow
+                  dnd={dnd}
+                  entry={entry}
+                  expanded={expanded}
+                  list={list}
+                  path={path}
+                  onToggle={() => toggleExpanded(i)}
+                />
+              }
+            >
+              {isEmpty ? (
+                <DeeplinkFolderEmptyPlaceholder
+                  dnd={dnd}
+                  list={list}
+                  parentPath={path}
+                />
+              ) : (
+                <>
+                  <DeeplinkTree
+                    dnd={dnd}
+                    entries={folderChildren}
+                    list={list}
+                    parentPath={path}
+                  />
+                  <DeeplinkAddRow list={list} parentPath={path} />
+                </>
+              )}
+            </TreeNode>
+          );
+        }
+
+        return (
+          <DeeplinkLeafRow
+            key={i}
+            dnd={dnd}
+            entry={entry}
+            list={list}
+            path={path}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function DeeplinkField({
+  list,
+}: {
+  list: ReturnType<typeof useDeeplinkListState>;
+}) {
+  const isEmpty = list.items.length === 0;
+  const dnd = useDeeplinkDnD(list);
+
+  return (
+    <div className={styles.field}>
+      {isEmpty ? (
+        <EmptyState
+          action={
+            <div className={sectionStyles.deeplinkEmptyActions}>
+              <Button
+                leading={<Icons.PlusIcon size={10} />}
+                size="sm"
+                variant="secondary"
+                onClick={() => list.addLink([])}
+              >
+                Add link
+              </Button>
+              <Button
+                leading={<Icons.FolderIcon size={11} />}
+                size="sm"
+                variant="secondary"
+                onClick={() => list.addFolder([])}
+              >
+                Add folder
+              </Button>
+            </div>
+          }
+          body="Group simulator deep links to fire from the runtime toolbar."
+          className={sectionStyles.deeplinkEmptyState}
+          icon={<Icons.LinkIcon size={20} />}
+          title="No deep links yet"
+        />
+      ) : (
+        <div className={sectionStyles.deeplinkTree}>
+          <DeeplinkTree
+            dnd={dnd}
+            entries={list.items}
+            list={list}
+            parentPath={[]}
+          />
+          <DeeplinkAddRow root list={list} parentPath={[]} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RelatedProjectField({
+  list,
+}: {
+  list: ReturnType<typeof useRelatedProjectListState>;
+}) {
+  const handleAdd = list.add;
+
+  return (
+    <div className={styles.field}>
+      {list.items.length === 0 ? (
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleAdd}
+            >
+              Add project
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          icon={<Icons.RepoIcon size={18} />}
+          title="No related projects"
+        />
+      ) : (
+        <div className={styles.listEditor}>
+          {list.items.map((entry, i) => (
+            <div key={i} className={sectionStyles.rowCard}>
+              <Input
+                placeholder="../other-repo"
+                style={{ flex: 1 }}
+                type="text"
+                value={entry.path}
+                onChange={(e) => list.update(i, "path", e.target.value)}
+              />
+              <Input
+                placeholder="Short description for spawned agents"
+                style={{ flex: 2 }}
+                type="text"
+                value={entry.description}
+                onChange={(e) => list.update(i, "description", e.target.value)}
+              />
+              <button
+                aria-label="Remove related project"
+                className={[styles.removeBtn, sectionStyles.rowCardAction].join(
+                  " ",
+                )}
+                onClick={() => list.remove(i)}
+              >
+                <Icons.CloseIcon size={12} />
+              </button>
+            </div>
+          ))}
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleAdd}
+          >
+            Add
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Collapsible disclosure                                             */
+/* ------------------------------------------------------------------ */
+
+interface CollapsibleProps {
+  children: React.ReactNode;
+  label: string;
+}
+
+function Collapsible({ label, children }: CollapsibleProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className={sectionStyles.collapsible}>
+      <button
+        aria-expanded={open}
+        className={sectionStyles.collapsibleTrigger}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Icons.ChevronRightIcon
+          className={[
+            sectionStyles.collapsibleChevron,
+            open ? sectionStyles.collapsibleChevronOpen : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          size={10}
+        />
+        {label}
+      </button>
+      {open && <div className={sectionStyles.collapsibleBody}>{children}</div>}
     </div>
   );
 }
@@ -640,6 +1641,8 @@ export function SetupConfigDialog({
   const terminalList = useTerminalListState([]);
   const envList = useEnvListState([]);
   const browserPresetList = useBrowserPresetListState([]);
+  const deeplinkList = useDeeplinkListState([]);
+  const relatedProjectList = useRelatedProjectListState([]);
   const runList = useRunListState([]);
   const protectedBranchList = useListState([]);
   const releaseNotesList = useReleaseNotesListState([]);
@@ -664,6 +1667,8 @@ export function SetupConfigDialog({
   const setTerminals = terminalList.setItems;
   const setEnvs = envList.setItems;
   const setBrowserPresets = browserPresetList.setItems;
+  const setDeeplinks = deeplinkList.setItems;
+  const setRelatedProjects = relatedProjectList.setItems;
   const setRuns = runList.setItems;
   const setProtectedBranches = protectedBranchList.setItems;
   const setReleaseNotes = releaseNotesList.setItems;
@@ -763,6 +1768,17 @@ export function SetupConfigDialog({
         if (config.release_note_patterns?.length) {
           setReleaseNotes(patternsToEntries(config.release_note_patterns));
         }
+        if (config.simulator_deeplinks?.length) {
+          setDeeplinks(deeplinkConfigToEntries(config.simulator_deeplinks));
+        }
+        if (config.related_projects?.length) {
+          setRelatedProjects(
+            config.related_projects.map((rp: RelatedProject) => ({
+              path: rp.path ?? "",
+              description: rp.description ?? "",
+            })),
+          );
+        }
       } catch {
         // No config file or not readable — start with empty fields
       }
@@ -795,6 +1811,8 @@ export function SetupConfigDialog({
     setTerminals,
     setEnvs,
     setBrowserPresets,
+    setDeeplinks,
+    setRelatedProjects,
     setRuns,
     setProtectedBranches,
     setReleaseNotes,
@@ -910,6 +1928,19 @@ export function SetupConfigDialog({
     if (releasePatterns.length > 0) {
       config.release_note_patterns = releasePatterns;
     }
+    const deeplinks = deeplinkEntriesToConfig(deeplinkList.items);
+    if (deeplinks.length > 0) {
+      config.simulator_deeplinks = deeplinks;
+    }
+    const relatedProjects = relatedProjectList.items
+      .filter((rp) => rp.path.trim())
+      .map((rp) => ({
+        path: rp.path.trim(),
+        description: rp.description.trim(),
+      }));
+    if (relatedProjects.length > 0) {
+      config.related_projects = relatedProjects;
+    }
 
     return config;
   };
@@ -937,6 +1968,8 @@ export function SetupConfigDialog({
       minArgusVersion,
       mcpEntries,
       releaseNotesList.items,
+      deeplinkList.items,
+      relatedProjectList.items,
     ],
   );
 
@@ -1000,7 +2033,7 @@ export function SetupConfigDialog({
                 />
                 <div className={styles.field}>
                   <label
-                    className={styles.label}
+                    className={sectionStyles.fieldLabel}
                     htmlFor="setup-min-argus-version"
                   >
                     Minimum Argus version
@@ -1013,7 +2046,7 @@ export function SetupConfigDialog({
                     onChange={(e) => setMinArgusVersion(e.target.value)}
                   />
                   <p className={styles.helpText}>
-                    Optional. Semver string. The project home screen warns
+                    Optional semver string. The project home screen warns
                     teammates running an older Argus build.
                   </p>
                 </div>
@@ -1034,23 +2067,57 @@ export function SetupConfigDialog({
               />
               <SettingsScreenDetailBody>
                 <div className={styles.field}>
-                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                    {(["ios", "android", "tvos", "web"] as const).map((p) => (
-                      <label key={p} className={styles.checkboxRow}>
-                        <input
-                          checked={platforms.includes(p)}
-                          type="checkbox"
-                          onChange={(e) =>
-                            setPlatforms((prev) =>
-                              e.target.checked
-                                ? [...prev, p]
-                                : prev.filter((x) => x !== p),
-                            )
+                  <div className={sectionStyles.platformsRow}>
+                    {(
+                      [
+                        { id: "ios", chip: "ios" },
+                        { id: "android", chip: "android" },
+                        { id: "tvos", label: "tvOS" },
+                        { id: "web", chip: "web" },
+                      ] as const
+                    ).map((p) => {
+                      const active = platforms.includes(
+                        p.id as RuntimePlatform,
+                      );
+                      const toggle = () =>
+                        setPlatforms((prev) =>
+                          active
+                            ? prev.filter((x) => x !== p.id)
+                            : [...prev, p.id as RuntimePlatform],
+                        );
+
+                      if ("chip" in p) {
+                        return (
+                          <PlatformChip
+                            key={p.id}
+                            active={active}
+                            platform={p.chip}
+                            onClick={toggle}
+                          />
+                        );
+                      }
+
+                      // tvOS — no dedicated PlatformChip variant, use Chip
+                      return (
+                        <Chip
+                          key={p.id}
+                          interactive
+                          style={
+                            active
+                              ? {
+                                  borderColor: "var(--accent-border-soft)",
+                                  color: "var(--text-primary)",
+                                  background: "var(--surface-5)",
+                                }
+                              : undefined
                           }
-                        />
-                        {platformLabel(p)}
-                      </label>
-                    ))}
+                          onClick={toggle}
+                        >
+                          <Icons.SimulatorIcon size={10} />
+                          {p.label}
+                        </Chip>
+                      );
+                    })}
                   </div>
                 </div>
               </SettingsScreenDetailBody>
@@ -1087,27 +2154,19 @@ export function SetupConfigDialog({
           render: () => (
             <SettingsScreenDetail>
               <SettingsScreenDetailHeader
-                description="Entries shown in the run menu. Argus tracks each running command per session."
+                description="Entries shown in the run menu. Argus tracks each running command per session. Use 'Requires' chips to declare startup dependencies between commands."
                 title="Run commands"
               />
               <SettingsScreenDetailBody>
                 <RunCommandsField list={runList} />
-                <div className={styles.field}>
-                  <label className={styles.checkboxRow}>
-                    <input
-                      checked={singleRuntime}
-                      type="checkbox"
-                      onChange={(e) => setSingleRuntime(e.target.checked)}
-                    />
-                    Only one runtime active at a time across this project
-                  </label>
-                  <p className={styles.helpText}>
-                    When enabled, starting a run command prompts you to stop any
-                    runtime already active in another session of this project.
-                    Useful when the dev server binds a fixed port or device that
-                    can&apos;t be shared.
-                  </p>
-                </div>
+                <label className={sectionStyles.singleRuntimeCheckbox}>
+                  <input
+                    checked={singleRuntime}
+                    type="checkbox"
+                    onChange={(e) => setSingleRuntime(e.target.checked)}
+                  />
+                  Only one runtime active at a time across this project
+                </label>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),
@@ -1124,7 +2183,7 @@ export function SetupConfigDialog({
                 title="Terminals"
               />
               <SettingsScreenDetailBody>
-                <TerminalField list={terminalList} />
+                <TerminalField list={terminalList} repoRoot={repoRoot} />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),
@@ -1137,13 +2196,16 @@ export function SetupConfigDialog({
           render: () => (
             <SettingsScreenDetail>
               <SettingsScreenDetailHeader
-                description="The web runtime panel loads this URL on first open and exposes the device presets in its picker."
+                description="The web runtime panel loads this URL on first open and exposes the device presets in its picker. Width and height are CSS pixels."
                 title="Browser"
               />
               <SettingsScreenDetailBody>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="setup-browser-url">
-                    Default browser URL
+                  <label
+                    className={sectionStyles.fieldLabel}
+                    htmlFor="setup-browser-url"
+                  >
+                    Default URL
                   </label>
                   <Input
                     autoComplete="url"
@@ -1155,6 +2217,23 @@ export function SetupConfigDialog({
                   />
                 </div>
                 <BrowserPresetField list={browserPresetList} />
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "deeplinks",
+          label: "Deep links",
+          description: "Simulator Link button",
+          icon: <Icons.LinkIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Deep links surfaced by the runtime toolbar's Link dropdown when a simulator or emulator is connected. Each entry fires conductor open-link <url> against the device. Group related entries under folders — folders may contain folders."
+                title="Simulator deep links"
+              />
+              <SettingsScreenDetailBody>
+                <DeeplinkField list={deeplinkList} />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),
@@ -1185,7 +2264,7 @@ export function SetupConfigDialog({
 
                 <div className={styles.field}>
                   <label
-                    className={styles.label}
+                    className={sectionStyles.fieldLabel}
                     htmlFor="setup-default-base-branch"
                   >
                     Default source branch
@@ -1205,12 +2284,12 @@ export function SetupConfigDialog({
                   </p>
                 </div>
 
-                <details className={sectionStyles.advanced}>
-                  <summary className={sectionStyles.advancedSummary}>
-                    Advanced
-                  </summary>
+                <Collapsible label="Advanced">
                   <div className={styles.field}>
-                    <label className={styles.label} htmlFor="setup-pr-template">
+                    <label
+                      className={sectionStyles.fieldLabel}
+                      htmlFor="setup-pr-template"
+                    >
                       Preferred PR template filename
                     </label>
                     <Input
@@ -1227,7 +2306,7 @@ export function SetupConfigDialog({
                       and this field does nothing.
                     </p>
                   </div>
-                </details>
+                </Collapsible>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),
@@ -1260,34 +2339,51 @@ export function SetupConfigDialog({
           render: () => (
             <SettingsScreenDetail>
               <SettingsScreenDetailHeader
-                description="Configuration for Claude agents working in this project."
+                description="Additional instructions appended to every agent's system prompt, plus history and other agent-level options."
                 title="Agent"
               />
               <SettingsScreenDetailBody>
                 <div className={styles.field}>
-                  <p className={styles.sectionTitle}>System prompt</p>
+                  <label
+                    className={sectionStyles.fieldLabel}
+                    htmlFor="setup-agent-prompt"
+                  >
+                    System prompt addition
+                  </label>
                   <TextArea
-                    placeholder="Additional instructions appended to every agent's system prompt..."
+                    id="setup-agent-prompt"
+                    placeholder="Extra instructions appended to every agent's system prompt in this project..."
                     rows={6}
                     style={{ resize: "vertical", fontFamily: "inherit" }}
                     value={agentPrompt}
                     onChange={(e) => setAgentPrompt(e.target.value)}
                   />
-                  <p className={styles.helpText}>
-                    Appended to every agent&apos;s system prompt in this
-                    project.
-                  </p>
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.checkboxRow}>
-                    <input
-                      checked={saveChatHistory}
-                      type="checkbox"
-                      onChange={(e) => setSaveChatHistory(e.target.checked)}
-                    />
-                    Save chat history when agents stop
-                  </label>
-                </div>
+                <label className={sectionStyles.agentCheckboxRow}>
+                  <input
+                    checked={saveChatHistory}
+                    type="checkbox"
+                    onChange={(e) => setSaveChatHistory(e.target.checked)}
+                  />
+                  Save chat history when agents stop
+                </label>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "related-projects",
+          label: "Related projects",
+          description: "Cross-repo agent work",
+          icon: <Icons.RepoIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Other repositories that agents in this project may spawn worktrees in. Paths are repo-root relative. Surfaced via the list_projects MCP tool."
+                title="Related projects"
+              />
+              <SettingsScreenDetailBody>
+                <RelatedProjectField list={relatedProjectList} />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),
@@ -1332,7 +2428,10 @@ export function SetupConfigDialog({
               />
               <SettingsScreenDetailBody>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="setup-branch-prefix">
+                  <label
+                    className={sectionStyles.fieldLabel}
+                    htmlFor="setup-branch-prefix"
+                  >
                     Branch prefix
                   </label>
                   <Input
@@ -1370,7 +2469,7 @@ export function SetupConfigDialog({
                 title="JSON preview"
               />
               <SettingsScreenDetailBody>
-                <pre className={styles.preview}>{previewJson}</pre>
+                <CodeBlock code={previewJson} copyable language="json" />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),
