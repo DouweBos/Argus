@@ -560,6 +560,26 @@ export function ChatInput({
             `data:${img.attachment.media_type};base64,${img.attachment.data}`,
             img.name,
             img.previewUrl,
+            (cropped) => {
+              updatePendingImages((prev) => {
+                const target = prev[i];
+                if (!target) {
+                  return prev;
+                }
+                URL.revokeObjectURL(target.previewUrl);
+                const next = [...prev];
+                next[i] = {
+                  name: target.name,
+                  previewUrl: cropped.previewUrl,
+                  attachment: {
+                    data: cropped.data,
+                    media_type: cropped.mediaType,
+                  },
+                };
+
+                return next;
+              });
+            },
           );
         }}
         onRemove={removeImage}

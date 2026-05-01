@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Icons } from "@argus/peacock";
 import { showImageContextMenu } from "../../../lib/ipc";
 import {
   closeImageViewer,
+  type ImageCropResult,
   useImageViewerAlt,
   useImageViewerFallbackSrc,
+  useImageViewerOnCrop,
   useImageViewerSrc,
 } from "../../../stores/imageViewerStore";
 import { CloseIcon } from "../Icons";
@@ -31,30 +34,49 @@ export function ImageViewer() {
   const src = useImageViewerSrc();
   const alt = useImageViewerAlt();
   const fallbackSrc = useImageViewerFallbackSrc();
+  const onCrop = useImageViewerOnCrop();
 
   if (!src) {
     return null;
   }
 
   return createPortal(
-    <ImageViewerOverlay alt={alt} fallbackSrc={fallbackSrc} src={src} />,
+    <ImageViewerOverlay
+      alt={alt}
+      fallbackSrc={fallbackSrc}
+      onCrop={onCrop}
+      src={src}
+    />,
     document.body,
   );
 }
+
+interface BoxRect {
+  h: number;
+  w: number;
+  x: number;
+  y: number;
+}
+
+type ResizeHandle = "e" | "n" | "ne" | "nw" | "s" | "se" | "sw" | "w";
 
 function ImageViewerOverlay({
   src,
   alt,
   fallbackSrc,
+  onCrop,
 }: {
   alt: string;
   fallbackSrc: string | null;
+  onCrop: ((result: ImageCropResult) => void) | null;
   src: string;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [imgSize, setImgSize] = useState<{ h: number; w: number } | null>(null);
   const [boxSize, setBoxSize] = useState({ w: 0, h: 0 });
+  const [cropping, setCropping] = useState(false);
+  const [cropRect, setCropRect] = useState<BoxRect | null>(null);
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -134,15 +156,101 @@ function ImageViewerOverlay({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        closeImageViewer();
+      if (e.key !== "Escape") {
+        return;
       }
+      e.stopPropagation();
+      if (cropping) {
+        setCropping(false);
+        setCropRect(null);
+
+        return;
+      }
+      closeImageViewer();
     };
     document.addEventListener("keydown", onKey, true);
 
     return () => document.removeEventListener("keydown", onKey, true);
+  }, [cropping]);
+
+  // Image bounds in canvas (box) coordinates.
+  const imageBoxRect = useMemo<BoxRect | null>(() => {
+    if (!imgSize) {
+      return null;
+    }
+
+    return {
+      x: transform.tx,
+      y: transform.ty,
+      w: imgSize.w * transform.scale,
+      h: imgSize.h * transform.scale,
+    };
+  }, [imgSize, transform]);
+
+  const enterCropMode = useCallback(() => {
+    if (!imageBoxRect) {
+      return;
+    }
+    setCropRect({ ...imageBoxRect });
+    setCropping(true);
+  }, [imageBoxRect]);
+
+  const cancelCrop = useCallback(() => {
+    setCropping(false);
+    setCropRect(null);
   }, []);
+
+  const applyCrop = useCallback(async () => {
+    const img = imgRef.current;
+    if (!img || !imgSize || !cropRect || !onCrop) {
+      return;
+    }
+
+    // Convert box coords back to image-pixel coords.
+    const sx = (cropRect.x - transform.tx) / transform.scale;
+    const sy = (cropRect.y - transform.ty) / transform.scale;
+    const sw = cropRect.w / transform.scale;
+    const sh = cropRect.h / transform.scale;
+
+    const clampedX = Math.max(0, Math.min(imgSize.w, sx));
+    const clampedY = Math.max(0, Math.min(imgSize.h, sy));
+    const clampedW = Math.max(1, Math.min(imgSize.w - clampedX, sw));
+    const clampedH = Math.max(1, Math.min(imgSize.h - clampedY, sh));
+
+    const mediaType = src.startsWith("data:")
+      ? (src.match(/^data:([^;]+);/)?.[1] ?? "image/png")
+      : "image/png";
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(clampedW);
+    canvas.height = Math.round(clampedH);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
+    ctx.drawImage(
+      img,
+      clampedX,
+      clampedY,
+      clampedW,
+      clampedH,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+
+    const dataUrl = canvas.toDataURL(mediaType);
+    const data = dataUrl.split(",")[1] ?? "";
+
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, mediaType),
+    );
+    const previewUrl = blob ? URL.createObjectURL(blob) : dataUrl;
+
+    onCrop({ data, mediaType, previewUrl });
+    closeImageViewer();
+  }, [imgSize, cropRect, onCrop, transform, src]);
 
   const onMinimapPan = useCallback(
     (newTx: number, newTy: number) => {
@@ -152,6 +260,7 @@ function ImageViewerOverlay({
   );
 
   const canPan =
+    !cropping &&
     imgSize != null &&
     (imgSize.w * transform.scale > boxSize.w ||
       imgSize.h * transform.scale > boxSize.h);
@@ -163,6 +272,17 @@ function ImageViewerOverlay({
     <>
       <div className={styles.backdrop} onClick={closeImageViewer} />
       <div className={styles.dialog}>
+        {onCrop && !cropping && (
+          <button
+            aria-label="Crop image"
+            className={styles.cropToggleBtn}
+            onClick={enterCropMode}
+            type="button"
+          >
+            <Icons.CropIcon size={12} />
+            Crop
+          </button>
+        )}
         <button
           aria-label="Close"
           className={styles.closeBtn}
@@ -177,7 +297,7 @@ function ImageViewerOverlay({
             wheelRef.current = el;
           }}
           className={`${styles.canvas} ${canPan ? styles.canvasPannable : ""}`}
-          {...handlers}
+          {...(cropping ? {} : handlers)}
         >
           <img
             ref={imgRef}
@@ -188,7 +308,7 @@ function ImageViewerOverlay({
               e.preventDefault();
               showImageContextMenu(e.currentTarget.src, alt || "image");
             }}
-            onDoubleClick={fitToScreen}
+            onDoubleClick={cropping ? undefined : fitToScreen}
             onError={(e) => {
               if (fallbackSrc && e.currentTarget.src !== fallbackSrc) {
                 e.currentTarget.src = fallbackSrc;
@@ -202,6 +322,13 @@ function ImageViewerOverlay({
               height: imgSize ? imgSize.h * transform.scale : undefined,
             }}
           />
+          {cropping && cropRect && imageBoxRect && (
+            <CropOverlay
+              imageRect={imageBoxRect}
+              rect={cropRect}
+              onChange={setCropRect}
+            />
+          )}
           {canPan && imgSize && (
             <Minimap
               boxH={boxSize.h}
@@ -215,21 +342,153 @@ function ImageViewerOverlay({
               ty={transform.ty}
             />
           )}
-          <div className={styles.toolbar}>
-            <span className={styles.zoomLabel}>{pct}%</span>
-            <input
-              className={styles.slider}
-              max="1"
-              min="0"
-              onChange={onSliderChange}
-              step="0.005"
-              type="range"
-              value={sliderValue}
-            />
-          </div>
+          {cropping ? (
+            <div className={styles.actionBar}>
+              <button
+                className={styles.actionBtn}
+                onClick={cancelCrop}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={applyCrop}
+                type="button"
+              >
+                <Icons.CheckIcon size={12} />
+                Apply crop
+              </button>
+            </div>
+          ) : (
+            <div className={styles.toolbar}>
+              <span className={styles.zoomLabel}>{pct}%</span>
+              <input
+                className={styles.slider}
+                max="1"
+                min="0"
+                onChange={onSliderChange}
+                step="0.005"
+                type="range"
+                value={sliderValue}
+              />
+            </div>
+          )}
         </div>
       </div>
     </>
+  );
+}
+
+const HANDLES: ResizeHandle[] = ["n", "s", "e", "w", "nw", "ne", "sw", "se"];
+
+const HANDLE_CLASS: Record<ResizeHandle, string> = {
+  n: styles.cropHandleN,
+  s: styles.cropHandleS,
+  e: styles.cropHandleE,
+  w: styles.cropHandleW,
+  nw: styles.cropHandleNW,
+  ne: styles.cropHandleNE,
+  sw: styles.cropHandleSW,
+  se: styles.cropHandleSE,
+};
+
+function CropOverlay({
+  rect,
+  imageRect,
+  onChange,
+}: {
+  imageRect: BoxRect;
+  onChange: (next: BoxRect) => void;
+  rect: BoxRect;
+}) {
+  const beginDrag = useCallback(
+    (handle: ResizeHandle | "move", e: React.PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const startPointer = { x: e.clientX, y: e.clientY };
+      const startRect: BoxRect = { ...rect };
+      const minSize = 8;
+      const controller = new AbortController();
+
+      const onMove = (ev: PointerEvent) => {
+        const dx = ev.clientX - startPointer.x;
+        const dy = ev.clientY - startPointer.y;
+        const r = startRect;
+        const bounds = imageRect;
+
+        let next: BoxRect;
+        if (handle === "move") {
+          let nx = r.x + dx;
+          let ny = r.y + dy;
+          nx = Math.max(bounds.x, Math.min(bounds.x + bounds.w - r.w, nx));
+          ny = Math.max(bounds.y, Math.min(bounds.y + bounds.h - r.h, ny));
+          next = { x: nx, y: ny, w: r.w, h: r.h };
+        } else {
+          let x1 = r.x;
+          let y1 = r.y;
+          let x2 = r.x + r.w;
+          let y2 = r.y + r.h;
+          if (handle.includes("n")) {
+            y1 = Math.min(y2 - minSize, Math.max(bounds.y, r.y + dy));
+          }
+          if (handle.includes("s")) {
+            y2 = Math.max(
+              y1 + minSize,
+              Math.min(bounds.y + bounds.h, r.y + r.h + dy),
+            );
+          }
+          if (handle.includes("w")) {
+            x1 = Math.min(x2 - minSize, Math.max(bounds.x, r.x + dx));
+          }
+          if (handle.includes("e")) {
+            x2 = Math.max(
+              x1 + minSize,
+              Math.min(bounds.x + bounds.w, r.x + r.w + dx),
+            );
+          }
+          next = { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+        }
+
+        onChange(next);
+      };
+
+      const stop = () => controller.abort();
+
+      window.addEventListener("pointermove", onMove, {
+        signal: controller.signal,
+      });
+      window.addEventListener("pointerup", stop, {
+        signal: controller.signal,
+      });
+      window.addEventListener("pointercancel", stop, {
+        signal: controller.signal,
+      });
+    },
+    [rect, imageRect, onChange],
+  );
+
+  return (
+    <div className={styles.cropLayer}>
+      <div
+        className={styles.cropSelection}
+        onPointerDown={(e) => beginDrag("move", e)}
+        style={{
+          left: rect.x,
+          top: rect.y,
+          width: rect.w,
+          height: rect.h,
+        }}
+      >
+        {HANDLES.map((h) => (
+          <div
+            key={h}
+            className={`${styles.cropHandle} ${HANDLE_CLASS[h]}`}
+            onPointerDown={(e) => beginDrag(h, e)}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 

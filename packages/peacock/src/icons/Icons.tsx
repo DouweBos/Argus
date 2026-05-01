@@ -201,6 +201,26 @@ export function PaperclipIcon({ size = 14, className, ...rest }: IconProps) {
   );
 }
 
+export function CropIcon({ size = 14, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.5}
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M4 1v11h11" />
+      <path d="M1 4h11v11" />
+    </svg>
+  );
+}
+
 export function EllipsisIcon({ size = 12, className, ...rest }: IconProps) {
   return (
     <svg
