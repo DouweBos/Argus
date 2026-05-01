@@ -103,13 +103,33 @@ supported privacy mode.
 
 ## Lifecycle
 
-| Event                | Source   | When                                                                      | Extra props                |
-| -------------------- | -------- | ------------------------------------------------------------------------- | -------------------------- |
-| `app_launched`       | main     | Telemetry transitions off → on (first opt-in, or re-enable after opt-out) | —                          |
-| `app_quit`           | main     | App is quitting                                                           | —                          |
-| `renderer_started`   | renderer | Each renderer (main window or popout) finishes booting                    | `popout: "main" \| string` |
-| `telemetry_enabled`  | main     | User opts in                                                              | —                          |
-| `telemetry_disabled` | main     | User opts out (sent before the off-flip + flush)                          | —                          |
+| Event                | Source   | When                                                                      | Extra props                                         |
+| -------------------- | -------- | ------------------------------------------------------------------------- | --------------------------------------------------- |
+| `app_launched`       | main     | Telemetry transitions off → on (first opt-in, or re-enable after opt-out) | —                                                   |
+| `app_quit`           | main     | App is quitting                                                           | —                                                   |
+| `renderer_started`   | renderer | Each renderer (main window or popout) finishes booting                    | `popout: "main" \| string`                          |
+| `$pageview`          | renderer | The renderer URL changes (initial mount + every navigation)               | `$pathname`, `$current_url` — both sanitised, see ↓ |
+| `telemetry_enabled`  | main     | User opts in                                                              | —                                                   |
+| `telemetry_disabled` | main     | User opts out (sent before the off-flip + flush)                          | —                                                   |
+
+### `$pageview` sanitisation
+
+PostHog magic event used by Web Analytics, DAU, paths and funnels. Argus
+sends the **route template**, never the raw URL — every dynamic segment
+that could carry a project / session / organisation / PR / device
+identifier is replaced with its placeholder name before the event leaves
+the renderer:
+
+| Real path                                | Sent as                               |
+| ---------------------------------------- | ------------------------------------- |
+| `/sessions/abc-123/editor`               | `/sessions/:sessionId/editor`         |
+| `/organizations/houwert`                 | `/organizations/:organizationId`      |
+| `/pull-requests/foo/bar/42`              | `/pull-requests/:owner/:repo/:number` |
+| `/agents`, `/devices`, `/runtimes`, etc. | unchanged (no dynamic segments)       |
+
+Both `$pathname` and `$current_url` carry the template. `$current_url` is
+prefixed with `argus://` so PostHog recognises it as a URL but the host
+is a fixed literal, not the user's machine or any external origin.
 
 ## Sessions
 
