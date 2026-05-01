@@ -3,7 +3,11 @@ import type { Session } from "../lib/types";
 import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
-import { getActiveCenterView } from "./editorStore";
+import {
+  forgetSessionPanel,
+  getActiveCenterView,
+  getLastPanelForSession,
+} from "./editorStore";
 import { forgetSessionTools } from "./layoutStore";
 import { migrateSessions } from "./terminalStore";
 
@@ -99,6 +103,7 @@ export const removeProject = (repoRoot: string) => {
   });
   for (const id of removedIds) {
     forgetSessionTools(id);
+    forgetSessionPanel(id);
   }
 };
 
@@ -211,6 +216,7 @@ export const removeSession = (id: string) => {
     };
   });
   forgetSessionTools(id);
+  forgetSessionPanel(id);
 };
 
 export const updateSession = (id: string, patch: Partial<Session>) => {
@@ -224,7 +230,7 @@ export const selectSession = (id: string | null) => {
     appNavigate({
       view: "session",
       sessionId: id,
-      panel: getActiveCenterView(),
+      panel: getLastPanelForSession(id) ?? getActiveCenterView(),
     });
   } else {
     appNavigate({ view: "home" });
