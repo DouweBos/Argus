@@ -4,6 +4,11 @@
   padding-left: 78px;
 }
 
+/* In native fullscreen macOS hides the traffic lights, so reclaim the space. */
+.barFullscreen {
+  padding-left: var(--space-6);
+}
+
 .bar :global(button),
 .bar :global(input),
 .branchInfo {

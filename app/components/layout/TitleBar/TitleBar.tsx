@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { TitleBar as PeacockTitleBar } from "@argus/peacock";
+import { useIsFullscreen } from "../../../hooks/useIsFullscreen";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { listBranches, setSessionBaseBranch } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";
@@ -41,6 +42,7 @@ export function TitleBar() {
   const selectedId = useSelectedSessionId();
   const sessions = useSessions();
   const location = useLocation();
+  const isFullscreen = useIsFullscreen();
   const session = useMemo(
     () =>
       selectedId ? (sessions.find((w) => w.id === selectedId) ?? null) : null,
@@ -147,7 +149,7 @@ export function TitleBar() {
 
   return (
     <PeacockTitleBar
-      className={styles.bar}
+      className={`${styles.bar} ${isFullscreen ? styles.barFullscreen : ""}`}
       showTraffic={false}
       title={title}
       jumpHotkey={shortcutKeys("command-palette")}
