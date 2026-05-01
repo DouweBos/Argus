@@ -9,10 +9,15 @@
       <stop offset="0%" stop-color="#f5a623" stop-opacity="0.35" />
       <stop offset="100%" stop-color="#f5a623" stop-opacity="0" />
     </radialGradient>
+    <clipPath id="squircle">
+      <rect x="100" y="100" width="824" height="824" rx="185" ry="185" />
+    </clipPath>
   </defs>
-  <rect x="0" y="0" width="1024" height="1024" rx="180" ry="180" fill="url(#bg)" />
-  <circle cx="512" cy="512" r="470" fill="url(#glow)" />
-  <circle cx="512" cy="512" r="188" fill="none" stroke="#f5a623" stroke-width="13" />
-  <circle cx="512" cy="512" r="51" fill="#f5a623" />
-  <circle cx="512" cy="512" r="340" fill="none" stroke="#f5a623" stroke-width="8.5" stroke-dasharray="25 43" opacity="0.6" />
+  <g clip-path="url(#squircle)">
+    <rect x="100" y="100" width="824" height="824" fill="url(#bg)" />
+    <circle cx="512" cy="512" r="378" fill="url(#glow)" />
+    <circle cx="512" cy="512" r="151" fill="none" stroke="#f5a623" stroke-width="10.5" />
+    <circle cx="512" cy="512" r="41" fill="#f5a623" />
+    <circle cx="512" cy="512" r="274" fill="none" stroke="#f5a623" stroke-width="6.8" stroke-dasharray="20 35" opacity="0.6" />
+  </g>
 </svg>
