@@ -350,18 +350,26 @@ export function ChatInput({
       dragDepthRef.current = 0;
       setIsDragOver(false);
 
+      const imageFiles: File[] = [];
       const paths: string[] = [];
       for (const file of Array.from(files)) {
+        if (file.type.startsWith("image/")) {
+          imageFiles.push(file);
+          continue;
+        }
         const p = window.argus.getFilePath?.(file) ?? "";
         if (p) {
           paths.push(p);
         }
       }
+      if (imageFiles.length > 0) {
+        addImageFiles(imageFiles);
+      }
       if (paths.length > 0) {
         insertFilePathMentions(paths);
       }
     },
-    [insertFilePathMentions],
+    [addImageFiles, insertFilePathMentions],
   );
 
   const handlePaste = useCallback(
