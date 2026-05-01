@@ -38,6 +38,46 @@ export interface ReleaseNoteLabel {
   value: string;
 }
 
+// ---------------------------------------------------------------------------
+// Git status (shared with `electron/services/session/gitStatus.ts`)
+// ---------------------------------------------------------------------------
+
+export interface GitInProgress {
+  head: string;
+  kind: "bisect" | "cherry-pick" | "merge" | "rebase";
+  onto?: string;
+}
+
+export interface GitStatus {
+  ahead: number;
+  behind: number;
+  branch: string;
+  conflictCount: number;
+  detached: boolean;
+  dirtyCount: number;
+  inProgress: GitInProgress | null;
+  /** Unix ms timestamp of `.git/FETCH_HEAD` mtime, or null if never fetched. */
+  lastFetchAt: number | null;
+  stashCount: number;
+  upstream: string | null;
+}
+
+/** Channel name for the FS-watcher push event (debounced). */
+export const GIT_STATUS_CHANGED_EVENT = "git_status_changed";
+
+export interface GitStatusChangedPayload {
+  sessionId: string;
+}
+
+export interface ChangesetEntry {
+  /** File name within `.changeset/`, e.g. `silly-cats-dance.md`. */
+  filename: string;
+  /** Packages + bump types declared in the frontmatter. */
+  packages: { bump: string; name: string }[];
+  /** Body of the changeset (release note text), trimmed. */
+  summary: string;
+}
+
 export interface ReleaseNoteEntry {
   /** Full text content of the file as it lives on this branch (trimmed). */
   content: string;
@@ -291,6 +331,11 @@ export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
 export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
+  /**
+   * How often (in minutes) Argus should automatically run `git fetch --prune`
+   * in the background. Set to 0 or omit to disable.
+   */
+  auto_fetch_minutes?: number;
   /** Custom browser device presets for the web browser panel. */
   browser_presets?: BrowserPresetConfig[];
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
@@ -428,10 +473,26 @@ export interface AppSettings {
  */
 export interface UserProjectSettings {
   /**
+   * Branch names hidden from the main sidebar Branches list and surfaced
+   * under "Archived Branches". Pure UI filter — git is untouched.
+   */
+  archived_branches?: string[];
+  /**
    * Required prefix prepended to newly created branches (e.g. "douwe/"). Empty
    * or undefined disables the prefix.
    */
   branch_prefix?: string;
+  /**
+   * Branch names pinned for quick access. Shown in the "Pinned" sidebar
+   * section and also inline in the main Branches list.
+   */
+  pinned_branches?: string[];
+  /**
+   * When true, the git-lfs "not installed" and "tracked files" banners are
+   * hidden for this project regardless of auto-detection. Personal preference;
+   * never written into the repo.
+   */
+  suppress_lfs_warning?: boolean;
 }
 
 // ---------------------------------------------------------------------------

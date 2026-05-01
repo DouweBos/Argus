@@ -1,1 +1,1 @@
-export { GitView, type SourceView } from "./GitView";
+export { GitView, type GitViewScope, type SourceView } from "./GitView";

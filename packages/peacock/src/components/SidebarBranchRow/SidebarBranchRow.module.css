@@ -1,0 +1,141 @@
+/* SidebarBranchRow — flat branch row for the git sidebar. */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px var(--space-3);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  min-width: 0;
+  color: var(--text-secondary);
+  font: var(--type-ui);
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.row:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.row.selected {
+  background: var(--accent-overlay-md);
+  color: var(--accent);
+}
+
+.row.selected:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.leading {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+.row.selected .leading {
+  color: var(--accent);
+}
+
+.name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr {
+  flex-shrink: 0;
+  font: var(--type-mono-badge);
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.row:hover .pr,
+.row.selected .pr {
+  color: var(--text-secondary);
+}
+
+.trailing {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.headBadge {
+  flex-shrink: 0;
+}
+
+.aheadBehind {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--space-2);
+  height: var(--space-5);
+  border-radius: var(--border-radius-pill);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  font: var(--type-mono-badge);
+  white-space: nowrap;
+}
+
+.row.selected .aheadBehind {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+/* ── Folder header ──────────────────────────────────────────── */
+
+.folder {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px var(--space-3);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  min-width: 0;
+  color: var(--text-secondary);
+  font: var(--type-ui);
+  transition: background var(--transition-fast);
+}
+
+.folder:hover {
+  background: var(--surface-3);
+}
+
+.chevron {
+  flex-shrink: 0;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+  width: 12px;
+  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.folderName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -25,6 +25,7 @@ import {
 } from "../../../stores/dialogStore";
 import {
   setActiveCenterView,
+  useActiveCenterView,
   useTrackSessionPanel,
 } from "../../../stores/editorStore";
 import {
@@ -75,6 +76,22 @@ import styles from "./AppShell.module.css";
 
 const PEEK_ENTER_DELAY_MS = 200;
 const PEEK_LEAVE_DELAY_MS = 1000;
+
+// App-wide shortcuts that collide with shortcuts owned by the git panel. When
+// the git panel is active these are silenced at the app layer so the GitView
+// handler is the sole owner of the keypress.
+//   Cmd+Shift+P   command-palette     ↔ git pull
+//   Cmd+Shift+H   go-home             ↔ git show-file-history
+//   Cmd+Shift+T   toggle-terminal     ↔ git new-tag
+//   Cmd+Shift+A   new-agent           ↔ git amend-last / quick-actions
+//   Cmd+B         toggle-left-sidebar ↔ git new-branch
+const GIT_PANEL_SUPPRESSED = new Set<ShortcutId>([
+  "command-palette",
+  "go-home",
+  "toggle-terminal",
+  "new-agent",
+  "toggle-left-sidebar",
+]);
 
 function renderCenter(
   selectedId: string | null,
@@ -198,13 +215,20 @@ export function AppShell() {
     }),
     [startNewAgentInCurrent, cycleAgentTab, goToProjectHome],
   );
+  // When the git panel is active, the GitView keyboard layer owns these combos
+  // (pull, file history, new tag, amend/quick-actions). Suppressing the
+  // app-level handler avoids firing both behaviours on a single keypress.
+  const activeCenterView = useActiveCenterView();
+  const gitPanelActive = selectedId !== null && activeCenterView === "git";
   const shortcuts = useMemo(
     () =>
-      (Object.keys(shortcutHandlers) as ShortcutId[]).map((id) => ({
-        ...SHORTCUTS[id],
-        handler: shortcutHandlers[id],
-      })),
-    [shortcutHandlers],
+      (Object.keys(shortcutHandlers) as ShortcutId[])
+        .filter((id) => !gitPanelActive || !GIT_PANEL_SUPPRESSED.has(id))
+        .map((id) => ({
+          ...SHORTCUTS[id],
+          handler: shortcutHandlers[id],
+        })),
+    [shortcutHandlers, gitPanelActive],
   );
   useGlobalShortcuts(shortcuts);
 

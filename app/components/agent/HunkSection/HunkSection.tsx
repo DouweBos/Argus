@@ -17,6 +17,8 @@ export interface HunkSectionProps {
     hunkIndex: number,
     indices: Set<number>,
   ) => void;
+  /** Hide working-copy actions (Discard/Stage/Unstage); used when viewing historical commits. */
+  readOnly?: boolean;
   selectedLines: Set<number> | undefined;
   sessionId: string;
 }
@@ -30,6 +32,7 @@ export function HunkSection({
   onGutterMouseEnter,
   onLineAction,
   onAction,
+  readOnly = false,
 }: HunkSectionProps) {
   const hasLocalSelection = selectedLines != null && selectedLines.size > 0;
   const selCount = selectedLines?.size ?? 0;
@@ -38,75 +41,91 @@ export function HunkSection({
     <div className={styles.hunk}>
       <div className={styles.hunkHeader}>
         <span className={styles.hunkHeaderText}>{hunk.header}</span>
-        <div
-          className={`${styles.hunkActions} ${hasLocalSelection ? styles.hunkActionsVisible : ""}`}
-        >
-          {hasLocalSelection ? (
-            <>
-              <button
-                className={styles.hunkBtn}
-                onClick={() =>
-                  onLineAction("discard", hunkIndex, selectedLines!)
-                }
-              >
-                Discard {selCount === 1 ? "Line" : `Lines (${selCount})`}
-              </button>
-              {hunk.staged ? (
+        {!readOnly && (
+          <div
+            className={`${styles.hunkActions} ${hasLocalSelection ? styles.hunkActionsVisible : ""}`}
+          >
+            {hasLocalSelection ? (
+              <>
                 <button
                   className={styles.hunkBtn}
                   onClick={() =>
-                    onLineAction("unstage", hunkIndex, selectedLines!)
+                    onLineAction("discard", hunkIndex, selectedLines!)
                   }
                 >
-                  Unstage {selCount === 1 ? "Line" : `Lines (${selCount})`}
+                  Discard {selCount === 1 ? "Line" : `Lines (${selCount})`}
                 </button>
-              ) : (
+                {hunk.staged ? (
+                  <button
+                    className={styles.hunkBtn}
+                    onClick={() =>
+                      onLineAction("unstage", hunkIndex, selectedLines!)
+                    }
+                  >
+                    Unstage {selCount === 1 ? "Line" : `Lines (${selCount})`}
+                  </button>
+                ) : (
+                  <button
+                    className={styles.hunkBtn}
+                    onClick={() =>
+                      onLineAction("stage", hunkIndex, selectedLines!)
+                    }
+                  >
+                    Stage {selCount === 1 ? "Line" : `Lines (${selCount})`}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
                 <button
                   className={styles.hunkBtn}
                   onClick={() =>
-                    onLineAction("stage", hunkIndex, selectedLines!)
+                    onAction(() => discardHunk(sessionId, hunk.patch))
                   }
                 >
-                  Stage {selCount === 1 ? "Line" : `Lines (${selCount})`}
+                  Discard Chunk
                 </button>
-              )}
-            </>
-          ) : (
-            <>
-              <button
-                className={styles.hunkBtn}
-                onClick={() =>
-                  onAction(() => discardHunk(sessionId, hunk.patch))
-                }
-              >
-                Discard Chunk
-              </button>
-              {hunk.staged ? (
-                <button
-                  className={styles.hunkBtn}
-                  onClick={() =>
-                    onAction(() => unstageHunk(sessionId, hunk.patch))
-                  }
-                >
-                  Unstage Chunk
-                </button>
-              ) : (
-                <button
-                  className={styles.hunkBtn}
-                  onClick={() =>
-                    onAction(() => stageHunk(sessionId, hunk.patch))
-                  }
-                >
-                  Stage Chunk
-                </button>
-              )}
-            </>
-          )}
-        </div>
+                {hunk.staged ? (
+                  <button
+                    className={styles.hunkBtn}
+                    onClick={() =>
+                      onAction(() => unstageHunk(sessionId, hunk.patch))
+                    }
+                  >
+                    Unstage Chunk
+                  </button>
+                ) : (
+                  <button
+                    className={styles.hunkBtn}
+                    onClick={() =>
+                      onAction(() => stageHunk(sessionId, hunk.patch))
+                    }
+                  >
+                    Stage Chunk
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
       {hunk.lines.map((line, li) => {
+        if (line.type === "no-newline") {
+          return (
+            <div key={li} className={`${styles.line} ${styles.lineNoNewline}`}>
+              <span className={styles.lineGutter}>
+                <span className={styles.lineNum} />
+                <span className={styles.lineNum} />
+              </span>
+              <span className={styles.lineText}>
+                ↵ No newline at end of file
+              </span>
+            </div>
+          );
+        }
+
         const isSelected = selectedLines?.has(li) ?? false;
-        const isSelectable = line.type !== "context";
+        const isSelectable = !readOnly && line.type !== "context";
 
         let lineTypeClass = "";
         if (line.type === "add") {

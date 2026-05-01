@@ -2,9 +2,13 @@ import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
-import { useSessionDiffStats } from "../../../hooks/useSessionDiffStats";
+import { useGitObservation } from "../../../hooks/useGitObservation";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
-import { type Session, sessionStatusLabel } from "../../../lib/types";
+import {
+  isSessionReady,
+  type Session,
+  sessionStatusLabel,
+} from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useOrgTasks } from "../../../stores/orgTaskStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
@@ -142,7 +146,9 @@ export function SessionCard({
     [agents, session.id],
   );
 
-  const diffStats = useSessionDiffStats(session.id, session.status);
+  const { diffStats } = useGitObservation(session.id, {
+    enabled: isSessionReady(session.status),
+  });
   const isRunning = useSessionIsRunning(session.id);
   const orgTasks = useOrgTasks();
   const orgTask = session.organization_task_id

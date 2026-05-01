@@ -7,22 +7,175 @@ import {
   useRef,
   useState,
 } from "react";
-import { Button, DiffStat, Icons } from "@argus/peacock";
+import {
+  type BlameChunk,
+  BlameGutter,
+  Button,
+  DiffStat,
+  Icons,
+  ImageDiff,
+  type ImageMeta,
+} from "@argus/peacock";
 import { buildPartialPatch } from "../../../lib/diffParser";
 import {
   discardFile,
   discardHunk,
+  gitBlameFile,
+  gitReadBlobAtRef,
   stageHunk,
   unstageHunk,
 } from "../../../lib/ipc";
+import { requestFocusCommit } from "../../../stores/gitUiStore";
 import { HunkSection } from "../HunkSection";
 import styles from "./FileDiffView.module.css";
+
+// ---------------------------------------------------------------------------
+// Image extension detection
+// ---------------------------------------------------------------------------
+
+const IMAGE_EXTENSIONS = new Set([
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "bmp",
+  "tif",
+  "tiff",
+  "heic",
+  "webp",
+  "svg",
+]);
+
+function extensionOf(filePath: string): string {
+  const dot = filePath.lastIndexOf(".");
+
+  return dot >= 0 ? filePath.slice(dot + 1).toLowerCase() : "";
+}
+
+function isImagePath(filePath: string): boolean {
+  return IMAGE_EXTENSIONS.has(extensionOf(filePath));
+}
+
+function mimeTypeFor(filePath: string): string {
+  const ext = extensionOf(filePath);
+  switch (ext) {
+    case "svg":
+      return "image/svg+xml";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "bmp":
+      return "image/bmp";
+    case "tif":
+    case "tiff":
+      return "image/tiff";
+    case "heic":
+      return "image/heic";
+    case "webp":
+      return "image/webp";
+    default:
+      return "image/png";
+  }
+}
+
+function toDataUrl(base64: string, mimeType: string): string {
+  return `data:${mimeType};base64,${base64}`;
+}
+
+// ---------------------------------------------------------------------------
+// Hook: load before/after image blobs
+// ---------------------------------------------------------------------------
+
+interface ImageBlobState {
+  afterDataUrl: string | undefined;
+  afterMeta: ImageMeta | undefined;
+  beforeDataUrl: string | undefined;
+  beforeMeta: ImageMeta | undefined;
+}
+
+function useImageBlobs(
+  sessionId: string,
+  file: DiffFile,
+): ImageBlobState | null {
+  const displayPath = file.newPath || file.oldPath;
+  const [state, setState] = useState<ImageBlobState | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const mime = mimeTypeFor(displayPath);
+    const isAdded = file.status === "A";
+    const isDeleted = file.status === "D";
+
+    async function loadMeta(
+      dataUrl: string,
+    ): Promise<{ height: number; width: number }> {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          resolve({ height: img.naturalHeight, width: img.naturalWidth });
+        };
+        img.onerror = () => {
+          resolve({ height: 0, width: 0 });
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    async function load() {
+      let beforeDataUrl: string | undefined;
+      let afterDataUrl: string | undefined;
+      let beforeMeta: ImageMeta | undefined;
+      let afterMeta: ImageMeta | undefined;
+
+      if (!isAdded) {
+        // "before" = HEAD version of the file
+        const b64 = await gitReadBlobAtRef(sessionId, displayPath, "HEAD");
+        beforeDataUrl = toDataUrl(b64, mime);
+        const dims = await loadMeta(beforeDataUrl);
+        beforeMeta = { height: dims.height, width: dims.width };
+      }
+
+      if (!isDeleted) {
+        // "after" = live worktree file
+        const b64 = await gitReadBlobAtRef(sessionId, displayPath, "WORKTREE");
+        afterDataUrl = toDataUrl(b64, mime);
+        const dims = await loadMeta(afterDataUrl);
+        afterMeta = { width: dims.width, height: dims.height };
+      }
+
+      if (!cancelled) {
+        setState({ beforeDataUrl, afterDataUrl, beforeMeta, afterMeta });
+      }
+    }
+
+    load().catch(() => {
+      if (!cancelled) {
+        setState({
+          beforeDataUrl: undefined,
+          afterDataUrl: undefined,
+          beforeMeta: undefined,
+          afterMeta: undefined,
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, displayPath, file.status]);
+
+  return state;
+}
 
 export interface FileDiffViewProps {
   file: DiffFile;
   /** When true, renders inline (no flex:1, no overflow hidden) for stacking multiple views. */
   inline?: boolean;
   onAction: (action: () => Promise<void>) => Promise<void>;
+  /** Hide working-copy actions (Discard/Stage/Unstage). Used when viewing a historical commit. */
+  readOnly?: boolean;
   sessionId: string;
 }
 
@@ -35,8 +188,66 @@ type LineSelection = Map<number, Set<number>>;
  */
 export function FileDiffView(props: FileDiffViewProps): ReactElement {
   const fileKey = props.file.newPath || props.file.oldPath;
+  const isImage = isImagePath(fileKey);
+
+  if (isImage) {
+    return <ImageFileDiffView key={fileKey} {...props} />;
+  }
 
   return <FileDiffViewInner key={fileKey} {...props} />;
+}
+
+// ---------------------------------------------------------------------------
+// Image file diff view
+// ---------------------------------------------------------------------------
+
+function ImageFileDiffView({
+  file,
+  sessionId,
+  onAction,
+  readOnly = false,
+}: FileDiffViewProps): ReactElement {
+  const displayPath = file.newPath || file.oldPath;
+  const fileName = displayPath.split("/").pop() ?? displayPath;
+  const blobs = useImageBlobs(sessionId, file);
+
+  return (
+    <div className={styles.fileDiffContainer}>
+      {/* File header bar */}
+      <div className={styles.fileDiffHeader}>
+        <Icons.FileIcon className={styles.fileIcon} />
+        <span className={styles.fileDiffName}>{fileName}</span>
+        {!readOnly && (
+          <div className={styles.fileDiffActions}>
+            <Button
+              size="sm"
+              variant="danger"
+              title="Discard all changes to this file"
+              onClick={() =>
+                onAction(() => discardFile(sessionId, displayPath))
+              }
+            >
+              <Icons.TrashIcon size={11} />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Image diff body */}
+      <div className={styles.fileDiffContent}>
+        {blobs === null ? (
+          <div className={styles.fileDiffStats}>Loading image…</div>
+        ) : (
+          <ImageDiff
+            before={blobs.beforeDataUrl}
+            after={blobs.afterDataUrl}
+            beforeMeta={blobs.beforeMeta}
+            afterMeta={blobs.afterMeta}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 function FileDiffViewInner({
@@ -44,6 +255,7 @@ function FileDiffViewInner({
   sessionId,
   onAction,
   inline,
+  readOnly = false,
 }: FileDiffViewProps) {
   const displayPath = file.newPath || file.oldPath;
   const fileName = displayPath.split("/").pop() ?? displayPath;
@@ -241,6 +453,36 @@ function FileDiffViewInner({
     return () => window.removeEventListener("mouseup", onMouseUp);
   }, []);
 
+  // Phase 4 H7 — toggleable blame gutter for the displayed file.
+  const [blameOn, setBlameOn] = useState(false);
+  const [blameChunks, setBlameChunks] = useState<BlameChunk[]>([]);
+  useEffect(() => {
+    if (!blameOn) {
+      /* eslint-disable react-hooks/set-state-in-effect --
+         Toggle clears the cache so re-enabling triggers a fresh fetch. */
+      setBlameChunks([]);
+      /* eslint-enable react-hooks/set-state-in-effect */
+
+      return;
+    }
+    let cancelled = false;
+    gitBlameFile(sessionId, displayPath)
+      .then((c) => {
+        if (!cancelled) {
+          setBlameChunks(c);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBlameChunks([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [blameOn, sessionId, displayPath]);
+
   const clearSelection = useCallback(() => {
     setSelection(new Map());
     lastClickRef.current = null;
@@ -283,30 +525,44 @@ function FileDiffViewInner({
         <Icons.FileIcon className={styles.fileIcon} />
         <span className={styles.fileDiffName}>{fileName}</span>
         <div className={styles.fileDiffActions}>
+          {!readOnly && (
+            <Button
+              size="sm"
+              variant="danger"
+              title="Discard all changes to this file"
+              onClick={() =>
+                onAction(() => discardFile(sessionId, displayPath))
+              }
+            >
+              <Icons.TrashIcon size={11} />
+            </Button>
+          )}
           <Button
             size="sm"
-            variant="danger"
-            title="Discard all changes to this file"
-            onClick={() => onAction(() => discardFile(sessionId, displayPath))}
+            variant={blameOn ? "primary" : "ghost"}
+            title="Toggle blame"
+            onClick={() => setBlameOn((b) => !b)}
           >
-            <Icons.TrashIcon size={11} />
+            Blame
           </Button>
-          <div className={styles.stagedToggle}>
-            <button
-              className={`${styles.stagedBtn} ${viewMode === "staged" ? styles.stagedBtnActive : ""}`}
-              disabled={!hasStaged}
-              onClick={() => setViewModeRaw("staged")}
-            >
-              Staged
-            </button>
-            <button
-              className={`${styles.unstagedBtn} ${viewMode === "unstaged" ? styles.unstagedBtnActive : ""}`}
-              disabled={!hasUnstaged}
-              onClick={() => setViewModeRaw("unstaged")}
-            >
-              Unstaged
-            </button>
-          </div>
+          {!readOnly && (
+            <div className={styles.stagedToggle}>
+              <button
+                className={`${styles.stagedBtn} ${viewMode === "staged" ? styles.stagedBtnActive : ""}`}
+                disabled={!hasStaged}
+                onClick={() => setViewModeRaw("staged")}
+              >
+                Staged
+              </button>
+              <button
+                className={`${styles.unstagedBtn} ${viewMode === "unstaged" ? styles.unstagedBtnActive : ""}`}
+                disabled={!hasUnstaged}
+                onClick={() => setViewModeRaw("unstaged")}
+              >
+                Unstaged
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -318,20 +574,31 @@ function FileDiffViewInner({
         <DiffStat added={stats.adds} removed={stats.removes} />
       </div>
 
+      {blameOn && blameChunks.length > 0 && (
+        <div style={{ display: "flex", gap: 0 }}>
+          <BlameGutter
+            chunks={blameChunks}
+            onChunkClick={(hash) => requestFocusCommit(hash)}
+          />
+        </div>
+      )}
+
       {/* Diff content */}
       <div className={styles.fileDiffContent}>
         {visibleHunks.map((hunk, hi) => (
-          <HunkSection
-            key={hi}
-            hunk={hunk}
-            hunkIndex={hi}
-            selectedLines={selection.get(hi)}
-            sessionId={sessionId}
-            onAction={onAction}
-            onGutterMouseDown={handleGutterMouseDown}
-            onGutterMouseEnter={handleGutterMouseEnter}
-            onLineAction={handleLineAction}
-          />
+          <div key={hi} data-hunk-index={hi}>
+            <HunkSection
+              hunk={hunk}
+              hunkIndex={hi}
+              readOnly={readOnly}
+              selectedLines={selection.get(hi)}
+              sessionId={sessionId}
+              onAction={onAction}
+              onGutterMouseDown={handleGutterMouseDown}
+              onGutterMouseEnter={handleGutterMouseEnter}
+              onLineAction={handleLineAction}
+            />
+          </div>
         ))}
       </div>
 

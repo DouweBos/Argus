@@ -1,8 +1,19 @@
+.outer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  background: var(--bg-primary);
+}
+
 .container {
   flex: 1;
   display: flex;
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
   background: var(--bg-primary);
 }
 
@@ -146,7 +157,6 @@
 
 .detailAvatar {
   width: 48px;
-  height: 48px;
   border-radius: 50%;
   flex-shrink: 0;
   align-self: flex-start;
@@ -163,6 +173,84 @@
 .detailActions {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+.actionsWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.branchPromptRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.branchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+}
+
+.branchInput:focus {
+  border-color: var(--accent);
+}
+
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 8px 14px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+}
+
+.tabActive {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.tabPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.toastRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+  border-radius: var(--border-radius-sm);
 }
 
 .applyBtn {

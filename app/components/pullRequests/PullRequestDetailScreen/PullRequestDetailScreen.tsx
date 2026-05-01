@@ -4,24 +4,31 @@ import type {
   PullRequestDetail,
 } from "../../../lib/types";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Button,
   Card,
   Chip,
+  DestructiveConfirm,
   Dialog,
   DiffStat,
   EmptyState,
   FileDiffCard,
   GridScreen,
   Icons,
+  SegmentedControl,
   Spinner,
+  TextArea,
   parseDiff,
 } from "@argus/peacock";
 import {
   createSession as apiCreateSession,
+  ghPrClose,
+  ghPrComment,
+  ghPrMerge,
   openExternalUrl,
+  type MergeStrategy,
 } from "../../../lib/ipc";
 import { renderHtml } from "../../../lib/markdown";
 import { useRoutePR } from "../../../lib/routeHooks";
@@ -29,8 +36,10 @@ import { appNavigate } from "../../../lib/router";
 import { pushError } from "../../../stores/notificationsStore";
 import {
   detailKey,
+  invalidatePullRequest,
   refreshPullRequestDetail,
   refreshPullRequestDiff,
+  refreshPullRequestList,
   usePrDetailState,
   usePrDiffState,
 } from "../../../stores/pullRequestStore";
@@ -162,6 +171,11 @@ export function PullRequestDetailScreen() {
   const pr = useRoutePR();
   const projects = useSessionProjects();
   const [starting, setStarting] = useState(false);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
+  const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>("squash");
+  const [merging, setMerging] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const key = pr ? detailKey(pr.owner, pr.repo, pr.number) : null;
   const { data: detail, error, loading } = usePrDetailState(key);
@@ -222,6 +236,53 @@ export function PullRequestDetailScreen() {
     }
   }, [detail, projects]);
 
+  const handleMerge = useCallback(async () => {
+    if (!pr) {
+      return;
+    }
+    setMerging(true);
+    setMergeDialogOpen(false);
+    try {
+      await ghPrMerge({
+        owner: pr.owner,
+        repo: pr.repo,
+        number: pr.number,
+        strategy: mergeStrategy,
+      });
+      invalidatePullRequest(pr.owner, pr.repo, pr.number);
+      const repoRoots = projects.map((p) => p.repoRoot);
+      refreshPullRequestList(repoRoots).catch(() => {});
+      // Refresh detail so state shows as merged.
+      refresh().catch(() => {});
+    } catch (err) {
+      pushError(err instanceof Error ? err.message : String(err), "pr_merge");
+    } finally {
+      setMerging(false);
+    }
+  }, [pr, mergeStrategy, projects, refresh]);
+
+  const handleClosePr = useCallback(async () => {
+    if (!pr) {
+      return;
+    }
+    setClosing(true);
+    setCloseDialogOpen(false);
+    try {
+      await ghPrClose({
+        owner: pr.owner,
+        repo: pr.repo,
+        number: pr.number,
+      });
+      invalidatePullRequest(pr.owner, pr.repo, pr.number);
+      const repoRoots = projects.map((p) => p.repoRoot);
+      refreshPullRequestList(repoRoots).catch(() => {});
+      appNavigate({ view: "pull-requests" });
+    } catch (err) {
+      pushError(err instanceof Error ? err.message : String(err), "pr_close");
+      setClosing(false);
+    }
+  }, [pr, projects]);
+
   const handleClose = useCallback(() => {
     appNavigate({ view: "pull-requests" });
   }, []);
@@ -234,7 +295,18 @@ export function PullRequestDetailScreen() {
   if (detail) {
     // Prefer showing cached data even while a background refresh or error
     // is happening, so navigating back to a previously-loaded PR is instant.
-    content = <DetailBody detail={detail} onOpenUrl={handleOpen} />;
+    content = (
+      <DetailBody
+        detail={detail}
+        onOpenUrl={handleOpen}
+        onCommentPosted={() => {
+          if (pr) {
+            invalidatePullRequest(pr.owner, pr.repo, pr.number);
+            refresh().catch(() => {});
+          }
+        }}
+      />
+    );
   } else if (error) {
     content = (
       <EmptyState
@@ -264,98 +336,143 @@ export function PullRequestDetailScreen() {
     </span>
   );
 
+  const isOpen = !detail?.merged && detail?.state === "OPEN";
+
   return (
-    <Dialog
-      title={dialogTitle}
-      titleId={`pr-detail-${pr.owner}-${pr.repo}-${pr.number}`}
-      onClose={handleClose}
-      size="full"
-    >
-      {detail && (
-        <header className={styles.header}>
-          <div className={styles.headerTop}>
-            <div className={styles.titleBlock}>
-              <div className={styles.subLine}>
-                {stateBadge(detail)}
-                {detail.authorAvatarUrl && (
-                  <img
-                    alt=""
-                    className={styles.subAvatar}
-                    src={detail.authorAvatarUrl}
-                  />
+    <>
+      {mergeDialogOpen && pr && (
+        <MergeConfirmDialog
+          strategy={mergeStrategy}
+          onStrategyChange={setMergeStrategy}
+          onConfirm={() => {
+            handleMerge().catch(() => {});
+          }}
+          onCancel={() => setMergeDialogOpen(false)}
+        />
+      )}
+      <DestructiveConfirm
+        open={closeDialogOpen}
+        title="Close pull request"
+        description={`Are you sure you want to close PR #${pr?.number} without merging?`}
+        confirmLabel={closing ? "Closing…" : "Close PR"}
+        onConfirm={() => {
+          handleClosePr().catch(() => {});
+        }}
+        onCancel={() => setCloseDialogOpen(false)}
+      />
+      <Dialog
+        title={dialogTitle}
+        titleId={`pr-detail-${pr.owner}-${pr.repo}-${pr.number}`}
+        onClose={handleClose}
+        size="full"
+      >
+        {detail && (
+          <header className={styles.header}>
+            <div className={styles.headerTop}>
+              <div className={styles.titleBlock}>
+                <div className={styles.subLine}>
+                  {stateBadge(detail)}
+                  {detail.authorAvatarUrl && (
+                    <img
+                      alt=""
+                      className={styles.subAvatar}
+                      src={detail.authorAvatarUrl}
+                    />
+                  )}
+                  <span>
+                    {detail.author ?? "unknown"} wants to merge{" "}
+                    <code>{detail.headRefName}</code> into{" "}
+                    <code>{detail.baseRefName}</code>
+                  </span>
+                  <span>·</span>
+                  <span>updated {relativeTime(detail.updatedAt)}</span>
+                </div>
+              </div>
+              <div className={styles.actionRow}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleOpen(detail.url)}
+                  title="Open in browser"
+                  aria-label="Open in browser"
+                >
+                  <Icons.WebIcon size={14} />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={loading}
+                  onClick={() => {
+                    refresh().catch(() => {});
+                  }}
+                  leading={<Icons.RefreshIcon size={12} />}
+                >
+                  {loading ? "Refreshing…" : "Refresh"}
+                </Button>
+                {isOpen && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={closing}
+                    onClick={() => setCloseDialogOpen(true)}
+                  >
+                    {closing ? "Closing…" : "Close PR"}
+                  </Button>
                 )}
-                <span>
-                  {detail.author ?? "unknown"} wants to merge{" "}
-                  <code>{detail.headRefName}</code> into{" "}
-                  <code>{detail.baseRefName}</code>
-                </span>
-                <span>·</span>
-                <span>updated {relativeTime(detail.updatedAt)}</span>
+                {isOpen && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={merging}
+                    onClick={() => setMergeDialogOpen(true)}
+                    leading={<Icons.MergeIcon size={12} />}
+                  >
+                    {merging ? "Merging…" : "Merge"}
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={starting}
+                  onClick={() => {
+                    handleStart().catch(() => {});
+                  }}
+                  leading={<Icons.PlusIcon size={12} />}
+                >
+                  {starting ? "Starting…" : "New session"}
+                </Button>
               </div>
             </div>
-            <div className={styles.actionRow}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleOpen(detail.url)}
-                title="Open in browser"
-                aria-label="Open in browser"
-              >
-                <Icons.WebIcon size={14} />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={loading}
-                onClick={() => {
-                  refresh().catch(() => {});
-                }}
-                leading={<Icons.RefreshIcon size={12} />}
-              >
-                {loading ? "Refreshing…" : "Refresh"}
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={starting}
-                onClick={() => {
-                  handleStart().catch(() => {});
-                }}
-                leading={<Icons.PlusIcon size={12} />}
-              >
-                {starting ? "Starting…" : "New session"}
-              </Button>
-            </div>
-          </div>
-          <div className={styles.stats}>
-            <span className={styles.statItem}>
-              <Icons.BranchIcon size={12} />
-              <strong>{detail.commits}</strong> commit
-              {detail.commits === 1 ? "" : "s"}
-            </span>
-            <span className={styles.statItem}>
-              <Icons.FileIcon size={12} />
-              <strong>{detail.changedFiles}</strong> file
-              {detail.changedFiles === 1 ? "" : "s"} changed
-            </span>
-            <span className={styles.statItem}>
-              <DiffStat added={detail.additions} removed={detail.deletions} />
-            </span>
-            {detail.labels.length > 0 && (
-              <span className={styles.labels}>
-                {detail.labels.map((name) => (
-                  <Chip key={name} muted>
-                    {name}
-                  </Chip>
-                ))}
+            <div className={styles.stats}>
+              <span className={styles.statItem}>
+                <Icons.BranchIcon size={12} />
+                <strong>{detail.commits}</strong> commit
+                {detail.commits === 1 ? "" : "s"}
               </span>
-            )}
-          </div>
-        </header>
-      )}
+              <span className={styles.statItem}>
+                <Icons.FileIcon size={12} />
+                <strong>{detail.changedFiles}</strong> file
+                {detail.changedFiles === 1 ? "" : "s"} changed
+              </span>
+              <span className={styles.statItem}>
+                <DiffStat added={detail.additions} removed={detail.deletions} />
+              </span>
+              {detail.labels.length > 0 && (
+                <span className={styles.labels}>
+                  {detail.labels.map((name) => (
+                    <Chip key={name} muted>
+                      {name}
+                    </Chip>
+                  ))}
+                </span>
+              )}
+            </div>
+          </header>
+        )}
 
-      <div className={styles.dialogBody}>{content}</div>
-    </Dialog>
+        <div className={styles.dialogBody}>{content}</div>
+      </Dialog>
+    </>
   );
 }
 
@@ -363,6 +480,70 @@ type DetailTab = "checks" | "commits" | "conversation" | "files";
 
 function countChecksPassed(checks: PullRequestCheck[]): number {
   return checks.filter((c) => c.conclusion === "success").length;
+}
+
+function mergeBtnLabel(strategy: MergeStrategy): string {
+  if (strategy === "squash") {
+    return "Squash and merge";
+  }
+  if (strategy === "rebase") {
+    return "Rebase and merge";
+  }
+
+  return "Create a merge commit";
+}
+
+const MERGE_STRATEGY_OPTIONS: {
+  label: string;
+  value: MergeStrategy;
+}[] = [
+  { value: "squash", label: "Squash" },
+  { value: "merge", label: "Merge" },
+  { value: "rebase", label: "Rebase" },
+];
+
+function MergeConfirmDialog({
+  strategy,
+  onStrategyChange,
+  onConfirm,
+  onCancel,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+  onStrategyChange: (s: MergeStrategy) => void;
+  strategy: MergeStrategy;
+}) {
+  return (
+    <Dialog
+      title="Merge pull request"
+      titleId="pr-merge-confirm"
+      onClose={onCancel}
+    >
+      <div className={styles.mergeDialogBody}>
+        <p className={styles.mergeDialogText}>
+          Select a merge strategy and confirm.
+        </p>
+        <SegmentedControl
+          aria-label="Merge strategy"
+          options={MERGE_STRATEGY_OPTIONS}
+          value={strategy}
+          onChange={onStrategyChange}
+        />
+      </div>
+      <div className={styles.mergeDialogFooter}>
+        <Button variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          onClick={onConfirm}
+          leading={<Icons.MergeIcon size={12} />}
+        >
+          {mergeBtnLabel(strategy)}
+        </Button>
+      </div>
+    </Dialog>
+  );
 }
 
 function RichBody({
@@ -397,8 +578,10 @@ function RichBody({
 function DetailBody({
   detail,
   onOpenUrl,
+  onCommentPosted,
 }: {
   detail: PullRequestDetail;
+  onCommentPosted: () => void;
   onOpenUrl: (url: string) => void;
 }) {
   const [tab, setTab] = useState<DetailTab>("conversation");
@@ -439,7 +622,11 @@ function DetailBody({
       </div>
 
       {tab === "conversation" && (
-        <ConversationTab detail={detail} onOpenUrl={onOpenUrl} />
+        <ConversationTab
+          detail={detail}
+          onOpenUrl={onOpenUrl}
+          onCommentPosted={onCommentPosted}
+        />
       )}
       {tab === "commits" && (
         <CommitsTab detail={detail} onOpenUrl={onOpenUrl} />
@@ -462,13 +649,80 @@ function viewOnGitHub(url: string, onOpenUrl: (url: string) => void) {
   );
 }
 
+function CommentComposer({
+  owner,
+  repo,
+  number,
+  onPosted,
+}: {
+  number: number;
+  onPosted: () => void;
+  owner: string;
+  repo: string;
+}) {
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSubmit = useCallback(async () => {
+    const trimmed = body.trim();
+    if (!trimmed) {
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await ghPrComment({ owner, repo, number, body: trimmed });
+      setBody("");
+      onPosted();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubmitting(false);
+      textareaRef.current?.focus();
+    }
+  }, [body, owner, repo, number, onPosted]);
+
+  return (
+    <div className={styles.composerWrap}>
+      <TextArea
+        ref={textareaRef}
+        className={styles.composerTextarea}
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Leave a comment…"
+        rows={3}
+        disabled={submitting}
+      />
+      {error && <p className={styles.composerError}>{error}</p>}
+      <div className={styles.composerFooter}>
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={submitting || !body.trim()}
+          onClick={() => {
+            handleSubmit().catch(() => {});
+          }}
+        >
+          {submitting ? "Posting…" : "Comment"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ConversationTab({
   detail,
   onOpenUrl,
+  onCommentPosted,
 }: {
   detail: PullRequestDetail;
+  onCommentPosted: () => void;
   onOpenUrl: (url: string) => void;
 }) {
+  const [owner, repo] = detail.repoNameWithOwner.split("/");
+
   return (
     <>
       <GridScreen.Section title="Description">
@@ -554,6 +808,17 @@ function ConversationTab({
       <div className={styles.checksSummaryWrap}>
         <ChecksSummary detail={detail} onOpenUrl={onOpenUrl} />
       </div>
+
+      {owner && repo && !detail.merged && detail.state === "OPEN" && (
+        <GridScreen.Section title="Add a comment">
+          <CommentComposer
+            owner={owner}
+            repo={repo}
+            number={detail.number}
+            onPosted={onCommentPosted}
+          />
+        </GridScreen.Section>
+      )}
     </>
   );
 }

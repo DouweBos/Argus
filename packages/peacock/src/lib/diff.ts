@@ -9,7 +9,7 @@ export interface DiffLine {
   newNum?: number;
   oldNum?: number;
   staged?: boolean;
-  type: "add" | "context" | "remove";
+  type: "add" | "context" | "no-newline" | "remove";
 }
 
 export interface DiffHunk {
@@ -202,6 +202,8 @@ export function parseDiff(raw: string): DiffFile[] {
     const hunks: DiffHunk[] = [];
     let currentHunk: DiffHunk | null = null;
     let currentHunkLines: string[] = [];
+    let nextOld = 0;
+    let nextNew = 0;
 
     for (let j = bodyStart; j < lines.length; j++) {
       const line = lines[j];
@@ -223,6 +225,8 @@ export function parseDiff(raw: string): DiffFile[] {
           patch: "",
         };
         currentHunkLines = [line];
+        nextOld = currentHunk.oldStart;
+        nextNew = currentHunk.newStart;
         hunks.push(currentHunk);
         continue;
       }
@@ -232,28 +236,35 @@ export function parseDiff(raw: string): DiffFile[] {
       }
       currentHunkLines.push(line);
 
-      const lastLine = currentHunk.lines[currentHunk.lines.length - 1];
-      const prevOld = lastLine?.oldNum ?? currentHunk.oldStart - 1;
-      const prevNew = lastLine?.newNum ?? currentHunk.newStart - 1;
-
       if (line.startsWith("+")) {
         currentHunk.lines.push({
           type: "add",
           content: line.slice(1),
-          newNum: prevNew + 1,
+          newNum: nextNew,
         });
+        nextNew++;
       } else if (line.startsWith("-")) {
         currentHunk.lines.push({
           type: "remove",
           content: line.slice(1),
-          oldNum: prevOld + 1,
+          oldNum: nextOld,
         });
+        nextOld++;
       } else if (line.startsWith(" ") || line === "") {
         currentHunk.lines.push({
           type: "context",
           content: line.slice(1),
-          oldNum: prevOld + 1,
-          newNum: prevNew + 1,
+          oldNum: nextOld,
+          newNum: nextNew,
+        });
+        nextOld++;
+        nextNew++;
+      } else if (line.startsWith("\\")) {
+        // Git's "\ No newline at end of file" marker — attach to the
+        // preceding line rather than consuming a slot of its own.
+        currentHunk.lines.push({
+          type: "no-newline",
+          content: line.slice(2),
         });
       }
     }
@@ -351,7 +362,7 @@ export function mergeStaged(
     const stagedLineKeys = new Set<string>();
     for (const hunk of stagedFile.hunks) {
       for (const line of hunk.lines) {
-        if (line.type !== "context") {
+        if (line.type === "add" || line.type === "remove") {
           stagedLineKeys.add(
             `${line.type}:${line.oldNum ?? ""}:${line.newNum ?? ""}:${line.content}`,
           );
@@ -367,7 +378,7 @@ export function mergeStaged(
       let hunkAnyStaged = false;
 
       const mergedLines = hunk.lines.map((line) => {
-        if (line.type === "context") {
+        if (line.type === "context" || line.type === "no-newline") {
           return line;
         }
         const lineKey = `${line.type}:${line.oldNum ?? ""}:${line.newNum ?? ""}:${line.content}`;
@@ -446,6 +457,8 @@ export function buildPartialPatch(
         patchLines.push("+" + line.content);
         newCount++;
       }
+    } else if (line.type === "no-newline") {
+      patchLines.push("\\ " + line.content);
     }
   }
 

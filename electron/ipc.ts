@@ -101,6 +101,14 @@ import {
   deletePath,
   renamePath,
 } from "./services/file/operations";
+import { listGhIssues } from "./services/github/issues";
+import {
+  ghPrClose,
+  ghPrComment,
+  ghPrCreate,
+  ghPrMerge,
+  type MergeStrategy,
+} from "./services/github/prActions";
 import {
   getPullRequestDetail,
   getPullRequestDiff,
@@ -154,7 +162,116 @@ import {
   cancelOrgTask,
   startOrgTask,
 } from "./services/organizationTask/orchestrator";
+import { reconfigureAutoFetchForRepo } from "./services/session/autoFetch";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
+import { gitAmendTip, gitCanAmendTip } from "./services/session/gitAmend";
+import {
+  gitBisectBad,
+  gitBisectGood,
+  gitBisectReset,
+  gitBisectSkip,
+  gitBisectStart,
+  gitBisectStatus,
+} from "./services/session/gitBisect";
+import { gitBlameFile } from "./services/session/gitBlame";
+import { gitReadBlobAtRef } from "./services/session/gitBlob";
+import {
+  gitCheckout,
+  gitCreateBranch,
+  gitDeleteBranch,
+  gitDiscardAndCheckout,
+  gitListLocalBranches,
+  gitListRemoteBranches,
+  gitMergeBranch,
+  gitRebaseOnto,
+  gitRenameBranch,
+  gitSetUpstream,
+  gitStashAndCheckout,
+} from "./services/session/gitBranchOps";
+import { gitCompareBranches } from "./services/session/gitCompare";
+import { gitGetConfig, gitSetConfig } from "./services/session/gitConfig";
+import {
+  gitAbortCherryPick,
+  gitAbortMerge,
+  gitAbortRebase,
+  gitContinueCherryPick,
+  gitContinueMerge,
+  gitContinueRebase,
+  gitGetConflict,
+  gitMarkResolved,
+  gitSkipRebase,
+  gitWriteConflictMerged,
+} from "./services/session/gitConflicts";
+import {
+  checkSshKeys,
+  getGlobalCredentialHelper,
+  setGlobalCredentialHelper,
+} from "./services/session/gitCredentials";
+import {
+  addToGitignore,
+  gitDiscardFile,
+  gitDiscardHunk,
+  gitDiscardLines,
+  gitUntrackFile,
+} from "./services/session/gitDiscard";
+import { GitError, serializeGitError } from "./services/session/gitError";
+import {
+  gitCherryPick,
+  gitReset,
+  gitRevert,
+} from "./services/session/gitHistoryOps";
+import { gitListHooks, gitRunHook } from "./services/session/gitHooks";
+import { gitLfsFiles, gitLfsPull } from "./services/session/gitLfs";
+import { gitAm, gitFormatPatch } from "./services/session/gitPatches";
+import {
+  gitPullV2,
+  gitPushV2,
+  type PullV2Opts,
+  type PushV2Opts,
+} from "./services/session/gitPushPull";
+import {
+  gitRebaseInteractivePlan,
+  gitRebaseInteractiveRun,
+  type RebasePlanEntry,
+} from "./services/session/gitRebase";
+import { gitReflog } from "./services/session/gitReflog";
+import {
+  gitAddRemote,
+  gitListRemotes,
+  gitPruneRemote,
+  gitRemoveRemote,
+  gitRenameRemote,
+  gitSetRemoteUrl,
+} from "./services/session/gitRemoteOps";
+import {
+  gitGetRemotes,
+  gitListRecentIssues,
+} from "./services/session/gitRemotes";
+import {
+  gitDiffRange,
+  gitFileHistory,
+  gitSearchLog,
+  type LogSearchCursor,
+  type LogSearchFilters,
+} from "./services/session/gitSearch";
+import { gitStatus } from "./services/session/gitStatus";
+import {
+  gitSubmoduleDeinit,
+  gitSubmoduleInit,
+  gitSubmoduleList,
+  gitSubmoduleUpdate,
+} from "./services/session/gitSubmodules";
+import {
+  gitCreateTag,
+  gitDeleteTag,
+  gitListTags,
+  gitPushTag,
+} from "./services/session/gitTags";
+import {
+  gitListAssumeUnchangedFiles,
+  gitListIgnoredFiles,
+} from "./services/session/gitWorkingCopyFilters";
+import { gitWorktreeList } from "./services/session/gitWorktrees";
 import {
   addRepoRoot,
   removeRepoRoot,
@@ -213,6 +330,8 @@ import {
   gitPush,
   gitFetch,
   gitStash,
+  gitStashSave,
+  gitStashBranch,
   gitStashPop,
   gitLog,
   gitShowCommit,
@@ -220,13 +339,18 @@ import {
   gitStashShow,
   gitStashApply,
   gitStashDrop,
+  gitCheckoutPaths,
 } from "./services/session/sessionOps";
 import {
   listEditors,
   openInCustomEditor,
   openInEditor,
 } from "./services/shell/editors";
-import { openExternalUrl, revealInFinder } from "./services/shell/operations";
+import {
+  openExternalUrl,
+  openPath,
+  revealInFinder,
+} from "./services/shell/operations";
 import {
   checkAndroidTools,
   listAndroidDevices,
@@ -279,8 +403,14 @@ import {
   quitAndInstallUpdate,
 } from "./services/updater";
 import {
+  archiveBranch as archiveBranchSetting,
+  listArchivedBranches as listArchivedBranchesSetting,
+  listPinnedBranches as listPinnedBranchesSetting,
   loadUserProjectSettings,
+  pinBranch as pinBranchSetting,
   saveUserProjectSettings,
+  unarchiveBranch as unarchiveBranchSetting,
+  unpinBranch as unpinBranchSetting,
   type UserProjectSettings,
 } from "./services/userProjectSettings/store";
 import { appState } from "./state";
@@ -353,6 +483,16 @@ function handle(
       return await handler(args);
     } catch (err) {
       createLogger(`ipc:${channel}`).error("handler threw:", err);
+      // GitError needs to survive the IPC boundary as structured data so the
+      // renderer can rehydrate kind/recovery. Electron preserves own
+      // enumerable properties on thrown Error objects across IPC, so we
+      // attach the payload fields as enumerable props on a fresh Error.
+      if (err instanceof GitError) {
+        const payload = serializeGitError(err);
+        const wrapped = new Error(payload.message);
+        Object.assign(wrapped, payload);
+        throw wrapped;
+      }
       throw err;
     }
   });
@@ -456,6 +596,45 @@ export function registerIpcHandlers(): void {
     getPullRequestDiff(a.owner as string, a.repo as string, a.number as number),
   );
 
+  handle("gh_pr_create", (a) =>
+    ghPrCreate({
+      repoRoot: a.repoRoot as string,
+      title: a.title as string,
+      body: a.body as string,
+      base: a.base as string,
+      head: a.head as string,
+      draft: (a.draft as boolean | undefined) ?? false,
+    }),
+  );
+
+  handle("gh_pr_comment", (a) =>
+    ghPrComment({
+      owner: a.owner as string,
+      repo: a.repo as string,
+      number: a.number as number,
+      body: a.body as string,
+    }),
+  );
+
+  handle("gh_pr_merge", (a) =>
+    ghPrMerge({
+      owner: a.owner as string,
+      repo: a.repo as string,
+      number: a.number as number,
+      strategy: a.strategy as MergeStrategy,
+    }),
+  );
+
+  handle("gh_pr_close", (a) =>
+    ghPrClose({
+      owner: a.owner as string,
+      repo: a.repo as string,
+      number: a.number as number,
+    }),
+  );
+
+  handle("gh_list_issues", (a) => listGhIssues(a.repoRoot as string));
+
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
   handle("list_projects", () => collectAllProjects());
@@ -550,18 +729,88 @@ export function registerIpcHandlers(): void {
   handle("checkout_branch", (a) =>
     checkoutBranch(a.repoRoot as string, a.branch as string),
   );
+
+  // Phase 6 P2 / P5 — project-root branch listing + ops (session-keyed,
+  // gated to project_root sessions on the backend for mutating ops).
+  handle("git_list_local_branches", (a) =>
+    gitListLocalBranches(a.id as string),
+  );
+  handle("git_list_remote_branches", (a) =>
+    gitListRemoteBranches(a.id as string),
+  );
+  handle("git_create_branch", (a) =>
+    gitCreateBranch(a.id as string, {
+      name: a.name as string,
+      startPoint: a.startPoint as string | undefined,
+      checkout: a.checkout as boolean | undefined,
+    }),
+  );
+  handle("git_delete_branch", (a) =>
+    gitDeleteBranch(a.id as string, {
+      name: a.name as string,
+      force: a.force as boolean | undefined,
+    }),
+  );
+  handle("git_rename_branch", (a) =>
+    gitRenameBranch(a.id as string, {
+      from: a.from as string,
+      to: a.to as string,
+    }),
+  );
+  handle("git_checkout", (a) =>
+    gitCheckout(a.id as string, {
+      branch: a.branch as string,
+      create: a.create as boolean | undefined,
+    }),
+  );
+  handle("git_set_upstream", (a) =>
+    gitSetUpstream(a.id as string, {
+      branch: a.branch as string,
+      upstream: a.upstream as string,
+    }),
+  );
+  handle("git_merge_branch", (a) =>
+    gitMergeBranch(a.id as string, {
+      from: a.from as string,
+      into: a.into as string | undefined,
+      squash: a.squash as boolean | undefined,
+    }),
+  );
+  handle("git_stash_and_checkout", (a) =>
+    gitStashAndCheckout(a.id as string, { branch: a.branch as string }),
+  );
+  handle("git_discard_and_checkout", (a) =>
+    gitDiscardAndCheckout(a.id as string, { branch: a.branch as string }),
+  );
+  handle("git_rebase_onto", (a) =>
+    gitRebaseOnto(a.id as string, {
+      upstream: a.upstream as string,
+      branch: a.branch as string | undefined,
+    }),
+  );
   handle("get_session_diff", (a) => getSessionDiff(a.id as string));
   handle("get_session_full_diff", (a) => getSessionFullDiff(a.id as string));
   handle("get_session_branch_diff", (a) =>
-    getSessionBranchDiff(a.id as string),
+    getSessionBranchDiff(a.id as string, {
+      ignoreWhitespace: a.ignoreWhitespace as boolean | undefined,
+      wordDiff: a.wordDiff as boolean | undefined,
+    }),
   );
   handle("get_session_staged_diff", (a) =>
-    getSessionStagedDiff(a.id as string),
+    getSessionStagedDiff(a.id as string, {
+      ignoreWhitespace: a.ignoreWhitespace as boolean | undefined,
+      wordDiff: a.wordDiff as boolean | undefined,
+    }),
   );
   handle("get_session_untracked_diff", (a) =>
     getSessionUntrackedDiff(a.id as string),
   );
   handle("get_session_status", (a) => getSessionStatus(a.id as string));
+  handle("git_status", (a) => gitStatus(a.id as string));
+  handle("git_list_ignored_files", (a) => gitListIgnoredFiles(a.id as string));
+  handle("git_list_assume_unchanged_files", (a) =>
+    gitListAssumeUnchangedFiles(a.id as string),
+  );
   handle("stage_file", (a) => stageFile(a.id as string, a.filePath as string));
   handle("stage_all", (a) => stageAll(a.id as string));
   handle("unstage_file", (a) =>
@@ -598,6 +847,24 @@ export function registerIpcHandlers(): void {
       a.repoRoot as string,
       a.settings as UserProjectSettings,
     ),
+  );
+  handle("git_archive_branch", (a) =>
+    archiveBranchSetting(a.repoRoot as string, a.branch as string),
+  );
+  handle("git_unarchive_branch", (a) =>
+    unarchiveBranchSetting(a.repoRoot as string, a.branch as string),
+  );
+  handle("git_list_archived_branches", (a) =>
+    listArchivedBranchesSetting(a.repoRoot as string),
+  );
+  handle("git_pin_branch", (a) =>
+    pinBranchSetting(a.repoRoot as string, a.branch as string),
+  );
+  handle("git_unpin_branch", (a) =>
+    unpinBranchSetting(a.repoRoot as string, a.branch as string),
+  );
+  handle("git_list_pinned_branches", (a) =>
+    listPinnedBranchesSetting(a.repoRoot as string),
   );
   handle("get_app_settings", () => loadAppSettings());
   handle("set_app_settings", (a) => saveAppSettings(a.settings as AppSettings));
@@ -689,6 +956,21 @@ export function registerIpcHandlers(): void {
   handle("git_push", (a) => gitPush(a.id as string));
   handle("git_fetch", (a) => gitFetch(a.id as string));
   handle("git_stash", (a) => gitStash(a.id as string));
+  handle("git_stash_save", (a) =>
+    gitStashSave(a.id as string, {
+      message: a.message as string | undefined,
+      includeUntracked: a.includeUntracked as boolean | undefined,
+      keepIndex: a.keepIndex as boolean | undefined,
+      paths: a.paths as string[] | undefined,
+    }),
+  );
+  handle("git_stash_branch", (a) =>
+    gitStashBranch(
+      a.id as string,
+      a.stashRef as string,
+      a.branchName as string,
+    ),
+  );
   handle("git_stash_pop", (a) => gitStashPop(a.id as string));
   handle("git_log", (a) =>
     gitLog(
@@ -709,6 +991,288 @@ export function registerIpcHandlers(): void {
   );
   handle("git_stash_drop", (a) =>
     gitStashDrop(a.id as string, a.stashIndex as number),
+  );
+  handle("git_checkout_paths", (a) =>
+    gitCheckoutPaths(a.id as string, a.ref as string, a.paths as string[]),
+  );
+
+  // Phase 2 W5 — discard / untrack / .gitignore
+  handle("git_discard_file", (a) =>
+    gitDiscardFile(a.id as string, a.filePath as string),
+  );
+  handle("git_discard_hunk", (a) =>
+    gitDiscardHunk(a.id as string, a.hunkPatch as string),
+  );
+  handle("git_discard_lines", (a) =>
+    gitDiscardLines(
+      a.id as string,
+      a.filePath as string,
+      (a.lines as number[]) ?? [],
+      (a.side as "new" | "old") ?? "new",
+      a.hunkPatch as string,
+    ),
+  );
+  handle("git_untrack_file", (a) =>
+    gitUntrackFile(a.id as string, a.filePath as string),
+  );
+  handle("add_to_gitignore", (a) =>
+    addToGitignore(a.id as string, a.filePath as string),
+  );
+
+  // Phase 2 W9 — conflict resolution
+  handle("git_continue_merge", (a) => gitContinueMerge(a.id as string));
+  handle("git_abort_merge", (a) => gitAbortMerge(a.id as string));
+  handle("git_continue_rebase", (a) => gitContinueRebase(a.id as string));
+  handle("git_abort_rebase", (a) => gitAbortRebase(a.id as string));
+  handle("git_skip_rebase", (a) => gitSkipRebase(a.id as string));
+  handle("git_continue_cherry_pick", (a) =>
+    gitContinueCherryPick(a.id as string),
+  );
+  handle("git_abort_cherry_pick", (a) => gitAbortCherryPick(a.id as string));
+  handle("git_get_conflict", (a) =>
+    gitGetConflict(a.id as string, a.filePath as string),
+  );
+  handle("git_mark_resolved", (a) =>
+    gitMarkResolved(a.id as string, a.filePath as string),
+  );
+  handle("git_write_conflict_merged", (a) =>
+    gitWriteConflictMerged(
+      a.id as string,
+      a.filePath as string,
+      a.contents as string,
+    ),
+  );
+
+  // Phase 2 W10 — git config get/set (per-repo)
+  handle("git_get_config", (a) =>
+    gitGetConfig(a.id as string, a.key as string),
+  );
+  handle("git_set_config", (a) =>
+    gitSetConfig(a.id as string, a.key as string, a.value as string),
+  );
+
+  // Phase 2 W10 — remotes + issue autocomplete scaffold
+  handle("git_get_remotes", (a) => gitGetRemotes(a.id as string));
+  handle("git_list_recent_issues", (a) =>
+    gitListRecentIssues(a.id as string, (a.query as string | undefined) ?? ""),
+  );
+
+  // Phase 2 W11 — amend tip
+  handle("git_can_amend_tip", (a) => gitCanAmendTip(a.id as string));
+  handle("git_amend_tip", (a) =>
+    gitAmendTip(a.id as string, a.subject as string, a.body as string),
+  );
+
+  // Phase 4 H1 / H4 / H8 / H7 / H9 — history depth
+  handle("git_search_log", (a) =>
+    gitSearchLog(a.id as string, {
+      query: a.query as string | undefined,
+      author: a.author as string | undefined,
+      since: a.since as string | undefined,
+      until: a.until as string | undefined,
+      branch: a.branch as string | undefined,
+      paths: a.paths as string[] | undefined,
+      refType: a.refType as LogSearchFilters["refType"],
+      regex: a.regex as boolean | undefined,
+      cursor: (a.cursor as LogSearchCursor | null) ?? null,
+      limit: a.limit as number | undefined,
+    }),
+  );
+  handle("git_diff_range", (a) =>
+    gitDiffRange(a.id as string, a.fromRef as string, a.toRef as string),
+  );
+  handle("git_file_history", (a) =>
+    gitFileHistory(a.id as string, a.path as string),
+  );
+  handle("git_blame_file", (a) =>
+    gitBlameFile(
+      a.id as string,
+      a.path as string,
+      (a.ref as string | undefined) ?? undefined,
+    ),
+  );
+  // Phase 7 image-diff — read binary blob as base64
+  handle("git_read_blob_at_ref", (a) =>
+    gitReadBlobAtRef(a.id as string, a.path as string, a.ref as string),
+  );
+  handle("git_reflog", (a) =>
+    gitReflog(a.id as string, {
+      limit: a.limit as number | undefined,
+      ref: a.ref as string | undefined,
+    }),
+  );
+
+  // Phase 6B P7 — tags
+  handle("git_list_tags", (a) => gitListTags(a.id as string));
+  handle("git_create_tag", (a) =>
+    gitCreateTag(a.id as string, {
+      name: a.name as string,
+      ref: a.ref as string | undefined,
+      message: a.message as string | undefined,
+      sign: a.sign as boolean | undefined,
+      force: a.force as boolean | undefined,
+    }),
+  );
+  handle("git_delete_tag", (a) =>
+    gitDeleteTag(a.id as string, { name: a.name as string }),
+  );
+  handle("git_push_tag", (a) =>
+    gitPushTag(a.id as string, {
+      name: a.name as string | undefined,
+      all: a.all as boolean | undefined,
+      remote: a.remote as string | undefined,
+    }),
+  );
+
+  // Phase 6B P8 — remotes (rich)
+  handle("git_list_remotes", (a) => gitListRemotes(a.id as string));
+  handle("git_add_remote", (a) =>
+    gitAddRemote(a.id as string, {
+      name: a.name as string,
+      url: a.url as string,
+    }),
+  );
+  handle("git_remove_remote", (a) =>
+    gitRemoveRemote(a.id as string, { name: a.name as string }),
+  );
+  handle("git_rename_remote", (a) =>
+    gitRenameRemote(a.id as string, {
+      from: a.from as string,
+      to: a.to as string,
+    }),
+  );
+  handle("git_set_remote_url", (a) =>
+    gitSetRemoteUrl(a.id as string, {
+      name: a.name as string,
+      url: a.url as string,
+      push: a.push as boolean | undefined,
+    }),
+  );
+  handle("git_prune_remote", (a) =>
+    gitPruneRemote(a.id as string, { name: a.name as string }),
+  );
+
+  // Phase 6B P11 — push/pull v2
+  handle("git_push_v2", (a) =>
+    gitPushV2(a.id as string, {
+      remote: a.remote as string | undefined,
+      branch: a.branch as string | undefined,
+      force: a.force as boolean | undefined,
+      forceWithLease: a.forceWithLease as boolean | undefined,
+      setUpstream: a.setUpstream as boolean | undefined,
+      tags: a.tags as PushV2Opts["tags"],
+      ref: a.ref as string | undefined,
+    }),
+  );
+  handle("git_pull_v2", (a) =>
+    gitPullV2(a.id as string, {
+      strategy: a.strategy as PullV2Opts["strategy"],
+      prune: a.prune as boolean | undefined,
+      tags: a.tags as boolean | undefined,
+      remote: a.remote as string | undefined,
+      branch: a.branch as string | undefined,
+    }),
+  );
+
+  // Phase 6B P12 — reset / revert / cherry-pick
+  handle("git_reset", (a) =>
+    gitReset(a.id as string, {
+      ref: a.ref as string,
+      mode: a.mode as "hard" | "mixed" | "soft",
+    }),
+  );
+  handle("git_revert", (a) =>
+    gitRevert(a.id as string, {
+      hash: a.hash as string,
+      noCommit: a.noCommit as boolean | undefined,
+    }),
+  );
+  handle("git_cherry_pick", (a) =>
+    gitCherryPick(a.id as string, {
+      hash: a.hash as string[] | string,
+      noCommit: a.noCommit as boolean | undefined,
+    }),
+  );
+
+  // Phase 6B P9 — submodules
+  handle("git_submodule_list", (a) => gitSubmoduleList(a.id as string));
+  handle("git_submodule_init", (a) =>
+    gitSubmoduleInit(a.id as string, {
+      path: a.path as string | undefined,
+    }),
+  );
+  handle("git_submodule_update", (a) =>
+    gitSubmoduleUpdate(a.id as string, {
+      path: a.path as string | undefined,
+      remote: a.remote as boolean | undefined,
+    }),
+  );
+  handle("git_submodule_deinit", (a) =>
+    gitSubmoduleDeinit(a.id as string, {
+      path: a.path as string,
+      force: a.force as boolean | undefined,
+    }),
+  );
+
+  // Phase 6B P10 — worktrees
+  handle("git_worktree_list", (a) => gitWorktreeList(a.id as string));
+
+  // Phase 7 T1/T2 — interactive rebase
+  handle("git_rebase_interactive_plan", (a) =>
+    gitRebaseInteractivePlan(a.id as string, {
+      upstream: a.upstream as string,
+    }),
+  );
+  handle("git_rebase_interactive_run", (a) =>
+    gitRebaseInteractiveRun(a.id as string, {
+      upstream: a.upstream as string,
+      plan: a.plan as RebasePlanEntry[],
+    }),
+  );
+
+  // Phase 7 T3 — bisect
+  handle("git_bisect_start", (a) =>
+    gitBisectStart(a.id as string, {
+      goodRef: a.goodRef as string,
+      badRef: a.badRef as string,
+    }),
+  );
+  handle("git_bisect_good", (a) => gitBisectGood(a.id as string));
+  handle("git_bisect_bad", (a) => gitBisectBad(a.id as string));
+  handle("git_bisect_skip", (a) => gitBisectSkip(a.id as string));
+  handle("git_bisect_reset", (a) => gitBisectReset(a.id as string));
+  handle("git_bisect_status", (a) => gitBisectStatus(a.id as string));
+
+  // Phase 7 T5 — credential helpers
+  handle("check_ssh_keys", () => checkSshKeys());
+  handle("get_global_credential_helper", () => getGlobalCredentialHelper());
+  handle("set_global_credential_helper", (a) =>
+    setGlobalCredentialHelper(a.name as "osxkeychain" | "store"),
+  );
+
+  // Phase 7 T6 — git LFS
+  handle("git_lfs_files", (a) => gitLfsFiles(a.id as string));
+  handle("git_lfs_pull", (a) =>
+    gitLfsPull(a.id as string, {
+      paths: a.paths as string[] | undefined,
+    }),
+  );
+
+  // Phase 7 T7 — patches
+  handle("git_format_patch", (a) =>
+    gitFormatPatch(a.id as string, {
+      range: a.range as string,
+      outputDir: a.outputDir as string | undefined,
+    }),
+  );
+  handle("git_am", (a) =>
+    gitAm(a.id as string, { patchPaths: a.patchPaths as string[] }),
+  );
+
+  // Phase 7 T8 — hooks
+  handle("git_list_hooks", (a) => gitListHooks(a.id as string));
+  handle("git_run_hook", (a) =>
+    gitRunHook(a.id as string, { name: a.name as string }),
   );
 
   // Dependency / system probes
@@ -1176,6 +1740,7 @@ export function registerIpcHandlers(): void {
 
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));
+  handle("open_path", (a) => openPath(a.path as string));
   handle("open_external_url", (a) => openExternalUrl(a.url as string));
   handle("list_editors", () => listEditors());
   handle("open_in_editor", (a) =>
@@ -1352,4 +1917,20 @@ export function registerIpcHandlers(): void {
   handle("telemetry_capture_feedback", (a) => {
     telemetryCaptureFeedback(String(a.message ?? ""));
   });
+
+  // Phase 10 — auto-fetch reconfiguration. Called by the UI after the user
+  // changes `auto_fetch_minutes` in `.argus.json` via Project Settings.
+  handle("git_reconfigure_auto_fetch", (a) => {
+    const repoRoot = a.repoRoot as string;
+    const minutes = a.minutes as number | null;
+    reconfigureAutoFetchForRepo(repoRoot, minutes);
+  });
+
+  // Phase 5 — compare-branches view.
+  handle("git_compare_branches", (a) =>
+    gitCompareBranches(a.sessionId as string, {
+      left: a.left as string,
+      right: a.right as string,
+    }),
+  );
 }

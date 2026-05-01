@@ -19,6 +19,26 @@ export interface UserProjectSettings {
    * "team/feature-"). Empty string or undefined disables the prefix.
    */
   branch_prefix?: string;
+  /**
+   * Branch full names (`refs/heads/<name>`-stripped, i.e. just `name`) the
+   * user has hidden from the main sidebar Branches list. They still exist in
+   * git; this is purely a UI filter that surfaces them under "Archived
+   * Branches" instead. Persisted per-project so each developer keeps their
+   * own archive state.
+   */
+  archived_branches?: string[];
+  /**
+   * Branch names the user has pinned for quick access. Pinned branches appear
+   * in a dedicated "Pinned" section at the top of the sidebar and are also
+   * shown inline in the main Branches list. Persisted per-project.
+   */
+  pinned_branches?: string[];
+  /**
+   * When true, git-lfs warning banners are suppressed for this project
+   * regardless of auto-detection. Personal preference; never written into
+   * the repo.
+   */
+  suppress_lfs_warning?: boolean;
 }
 
 interface UserProjectSettingsFile {
@@ -95,11 +115,115 @@ export function saveUserProjectSettings(
   if (next.branch_prefix === "" || next.branch_prefix === undefined) {
     delete next.branch_prefix;
   }
+  if (next.archived_branches !== undefined) {
+    if (!Array.isArray(next.archived_branches)) {
+      delete next.archived_branches;
+    } else {
+      // De-dupe + drop empty strings; clear the field if nothing's left.
+      const cleaned = Array.from(
+        new Set(
+          next.archived_branches.filter(
+            (n) => typeof n === "string" && n.length > 0,
+          ),
+        ),
+      );
+      if (cleaned.length === 0) {
+        delete next.archived_branches;
+      } else {
+        next.archived_branches = cleaned;
+      }
+    }
+  }
+
+  if (next.pinned_branches !== undefined) {
+    if (!Array.isArray(next.pinned_branches)) {
+      delete next.pinned_branches;
+    } else {
+      const cleaned = Array.from(
+        new Set(
+          next.pinned_branches.filter(
+            (n) => typeof n === "string" && n.length > 0,
+          ),
+        ),
+      );
+      if (cleaned.length === 0) {
+        delete next.pinned_branches;
+      } else {
+        next.pinned_branches = cleaned;
+      }
+    }
+  }
 
   file.projects[repoRoot] = next;
   writeAll(file);
 
   return next;
+}
+
+/** Add a branch to the archived list. Idempotent. */
+export function archiveBranch(repoRoot: string, branch: string): string[] {
+  const current = loadUserProjectSettings(repoRoot);
+  const list = current.archived_branches ?? [];
+  if (list.includes(branch)) {
+    return list;
+  }
+  const next = saveUserProjectSettings(repoRoot, {
+    archived_branches: [...list, branch],
+  });
+
+  return next.archived_branches ?? [];
+}
+
+/** Remove a branch from the archived list. Idempotent. */
+export function unarchiveBranch(repoRoot: string, branch: string): string[] {
+  const current = loadUserProjectSettings(repoRoot);
+  const list = current.archived_branches ?? [];
+  if (!list.includes(branch)) {
+    return list;
+  }
+  const next = saveUserProjectSettings(repoRoot, {
+    archived_branches: list.filter((n) => n !== branch),
+  });
+
+  return next.archived_branches ?? [];
+}
+
+/** List archived branch names for a project. Always returns an array. */
+export function listArchivedBranches(repoRoot: string): string[] {
+  return loadUserProjectSettings(repoRoot).archived_branches ?? [];
+}
+
+/** Add a branch to the pinned list. Idempotent. */
+export function pinBranch(repoRoot: string, branch: string): string[] {
+  const current = loadUserProjectSettings(repoRoot);
+  const list = current.pinned_branches ?? [];
+  if (list.includes(branch)) {
+    return list;
+  }
+  const next = saveUserProjectSettings(repoRoot, {
+    pinned_branches: [...list, branch],
+  });
+
+  return next.pinned_branches ?? [];
+}
+
+/** Remove a branch from the pinned list. Idempotent. */
+export function unpinBranch(repoRoot: string, branch: string): string[] {
+  const current = loadUserProjectSettings(repoRoot);
+  const list = current.pinned_branches ?? [];
+  if (!list.includes(branch)) {
+    return list;
+  }
+  const next = saveUserProjectSettings(repoRoot, {
+    pinned_branches: list.filter((n) => n !== branch),
+  });
+
+  return next.pinned_branches ?? [];
+}
+
+/** List pinned branch names for a project. Always returns an array. */
+export function listPinnedBranches(repoRoot: string): string[] {
+  return loadUserProjectSettings(repoRoot).pinned_branches ?? [];
 }
 
 /**

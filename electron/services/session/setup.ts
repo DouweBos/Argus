@@ -129,6 +129,7 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       parsed.simulator_deeplinks,
       repoRoot,
     ),
+    auto_fetch_minutes: normalizeAutoFetchMinutes(parsed.auto_fetch_minutes),
   };
 }
 
@@ -366,6 +367,22 @@ function normalizeMcpServers(
   }
 
   return Object.keys(out).length > 0 ? out : null;
+}
+
+/**
+ * Normalise `auto_fetch_minutes` — must be a positive integer when present.
+ * Zero, negative values, and non-numbers are treated as "disabled" (null).
+ */
+function normalizeAutoFetchMinutes(raw: unknown): number | null {
+  if (raw == null) {
+    return null;
+  }
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
+
+  return Math.floor(n);
 }
 
 /**
@@ -613,6 +630,8 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       local.simulator_deeplinks.length > 0
         ? local.simulator_deeplinks
         : base.simulator_deeplinks,
+    auto_fetch_minutes:
+      local.auto_fetch_minutes ?? base.auto_fetch_minutes ?? null,
   };
 }
 

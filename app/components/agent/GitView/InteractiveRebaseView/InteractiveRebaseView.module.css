@@ -1,0 +1,15 @@
+/**
+ * Phase 12 — Interactive rebase view layout.
+ *
+ * The RebaseEditor Peacock primitive renders as a Dialog-sized panel; here
+ * we give it a full-height container so it sits flush in the main content area
+ * rather than as a modal overlay.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}

@@ -1,0 +1,37 @@
+/* DragLayer — floating badge that follows the cursor during drag operations. */
+
+.badge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  white-space: nowrap;
+
+  /* Visual styling — action label pill */
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--border-radius-pill);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: var(--type-caption);
+  box-shadow: var(--shadow-md);
+
+  /* Slight elevation animation on appearance */
+  animation: dnd-appear 100ms ease forwards;
+}
+
+.badge.alt {
+  background: var(--brand-purple);
+  color: var(--text-inverse);
+}
+
+@keyframes dnd-appear {
+  from {
+    opacity: 0;
+    scale: 0.9;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}

@@ -101,6 +101,7 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
             baseBranch={session?.base_branch}
             branchName={session?.branch}
             repoRoot={session?.repo_root ?? ""}
+            scope={session?.kind === "project_root" ? "project" : "session"}
             sessionId={sessionId}
           />
         )}

@@ -23,6 +23,7 @@ import type {
   DirEntry,
   ExampleProject,
   FileStat,
+  GitStatus,
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
@@ -46,6 +47,7 @@ import type {
   Session,
   UserProjectSettings,
 } from "./types";
+import { rehydrateGitError } from "./gitError";
 
 declare global {
   interface Window {
@@ -66,7 +68,16 @@ function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  return window.argus.invoke<T>(channel, args);
+  return window.argus.invoke<T>(channel, args).catch((err) => {
+    // Rehydrate structured GitError payloads — the main process attaches
+    // the `__gitError` envelope as own props on the thrown Error so it
+    // survives Electron's IPC error serialisation.
+    const gitErr = rehydrateGitError(err);
+    if (gitErr) {
+      throw gitErr;
+    }
+    throw err;
+  });
 }
 
 /** Fire-and-forget IPC — skips the invoke reply round-trip. */
@@ -104,6 +115,38 @@ export const getPullRequestDiff = (
   number: number,
 ): Promise<string> => invoke("get_pull_request_diff", { owner, repo, number });
 
+// GitHub PR write actions
+export type MergeStrategy = "merge" | "rebase" | "squash";
+
+export const ghPrCreate = (params: {
+  base: string;
+  body: string;
+  draft: boolean;
+  head: string;
+  repoRoot: string;
+  title: string;
+}): Promise<{ number: number; url: string }> => invoke("gh_pr_create", params);
+
+export const ghPrComment = (params: {
+  body: string;
+  number: number;
+  owner: string;
+  repo: string;
+}): Promise<void> => invoke("gh_pr_comment", params);
+
+export const ghPrMerge = (params: {
+  number: number;
+  owner: string;
+  repo: string;
+  strategy: MergeStrategy;
+}): Promise<void> => invoke("gh_pr_merge", params);
+
+export const ghPrClose = (params: {
+  number: number;
+  owner: string;
+  repo: string;
+}): Promise<void> => invoke("gh_pr_close", params);
+
 // Session commands
 export const addRepoRoot = (path: string): Promise<void> =>
   invoke("add_repo_root", { path });
@@ -131,6 +174,424 @@ export const checkoutBranch = (
   repoRoot: string,
   branch: string,
 ): Promise<void> => invoke("checkout_branch", { repoRoot, branch });
+
+// ---------------------------------------------------------------------------
+// Phase 6 P2 / P5 — project-root branch listing + ops
+// ---------------------------------------------------------------------------
+
+export interface BranchCommitSummary {
+  author: string;
+  hash: string;
+  subject: string;
+  timestamp: number;
+}
+
+export interface EnrichedBranch {
+  ahead: number;
+  behind: number;
+  fullName: string;
+  isCurrent: boolean;
+  lastCommit: BranchCommitSummary | null;
+  name: string;
+  upstream: string | null;
+}
+
+export interface RemoteBranch {
+  branchName: string;
+  lastCommit: BranchCommitSummary | null;
+  name: string;
+  remote: string;
+}
+
+export const gitListLocalBranches = (
+  sessionId: string,
+): Promise<EnrichedBranch[]> =>
+  invoke("git_list_local_branches", { id: sessionId });
+
+export const gitListRemoteBranches = (
+  sessionId: string,
+): Promise<RemoteBranch[]> =>
+  invoke("git_list_remote_branches", { id: sessionId });
+
+export const gitCreateBranch = (
+  sessionId: string,
+  opts: { checkout?: boolean; name: string; startPoint?: string },
+): Promise<void> => invoke("git_create_branch", { id: sessionId, ...opts });
+
+export const gitDeleteBranch = (
+  sessionId: string,
+  opts: { force?: boolean; name: string },
+): Promise<void> => invoke("git_delete_branch", { id: sessionId, ...opts });
+
+export const gitRenameBranch = (
+  sessionId: string,
+  opts: { from: string; to: string },
+): Promise<void> => invoke("git_rename_branch", { id: sessionId, ...opts });
+
+export const gitCheckout = (
+  sessionId: string,
+  opts: { branch: string; create?: boolean },
+): Promise<void> => invoke("git_checkout", { id: sessionId, ...opts });
+
+export const gitSetUpstream = (
+  sessionId: string,
+  opts: { branch: string; upstream: string },
+): Promise<void> => invoke("git_set_upstream", { id: sessionId, ...opts });
+
+export const gitMergeBranch = (
+  sessionId: string,
+  opts: { from: string; into?: string; squash?: boolean },
+): Promise<void> => invoke("git_merge_branch", { id: sessionId, ...opts });
+
+export const gitRebaseOnto = (
+  sessionId: string,
+  opts: { branch?: string; upstream: string },
+): Promise<void> => invoke("git_rebase_onto", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 6B P7 — tags
+// ---------------------------------------------------------------------------
+
+export interface GitTag {
+  commitHash: string;
+  /** ISO-strict date the tag was created (annotated tag date or, for
+   * lightweight tags, the target commit's committer date). */
+  creatorDate: string;
+  isAnnotated: boolean;
+  message?: string;
+  name: string;
+  pushed: boolean | null;
+  subject: string;
+  tagger?: { date: string; email: string; name: string };
+}
+
+export const gitListTags = (sessionId: string): Promise<GitTag[]> =>
+  invoke("git_list_tags", { id: sessionId });
+
+export const gitCreateTag = (
+  sessionId: string,
+  opts: {
+    force?: boolean;
+    message?: string;
+    name: string;
+    ref?: string;
+    sign?: boolean;
+  },
+): Promise<void> => invoke("git_create_tag", { id: sessionId, ...opts });
+
+export const gitDeleteTag = (
+  sessionId: string,
+  opts: { name: string },
+): Promise<void> => invoke("git_delete_tag", { id: sessionId, ...opts });
+
+export const gitPushTag = (
+  sessionId: string,
+  opts: { all?: boolean; name?: string; remote?: string },
+): Promise<void> => invoke("git_push_tag", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 6B P8 — rich remotes
+// ---------------------------------------------------------------------------
+
+export type RemoteScheme = "https" | "other" | "ssh";
+
+export interface GitRemoteRich {
+  fetchUrl: string;
+  host: string;
+  name: string;
+  pushUrl?: string;
+  refs: number;
+  scheme: RemoteScheme;
+}
+
+export const gitListRemotes = (sessionId: string): Promise<GitRemoteRich[]> =>
+  invoke("git_list_remotes", { id: sessionId });
+
+export const gitAddRemote = (
+  sessionId: string,
+  opts: { name: string; url: string },
+): Promise<void> => invoke("git_add_remote", { id: sessionId, ...opts });
+
+export const gitRemoveRemote = (
+  sessionId: string,
+  opts: { name: string },
+): Promise<void> => invoke("git_remove_remote", { id: sessionId, ...opts });
+
+export const gitRenameRemote = (
+  sessionId: string,
+  opts: { from: string; to: string },
+): Promise<void> => invoke("git_rename_remote", { id: sessionId, ...opts });
+
+export const gitSetRemoteUrl = (
+  sessionId: string,
+  opts: { name: string; push?: boolean; url: string },
+): Promise<void> => invoke("git_set_remote_url", { id: sessionId, ...opts });
+
+export const gitPruneRemote = (
+  sessionId: string,
+  opts: { name: string },
+): Promise<void> => invoke("git_prune_remote", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 6B P11 — push/pull v2
+// ---------------------------------------------------------------------------
+
+export interface PushV2Opts {
+  branch?: string;
+  force?: boolean;
+  forceWithLease?: boolean;
+  ref?: string;
+  remote?: string;
+  setUpstream?: boolean;
+  tags?: "all" | "follow" | "none";
+}
+
+export const gitPushV2 = (
+  sessionId: string,
+  opts: PushV2Opts,
+): Promise<string> => invoke("git_push_v2", { id: sessionId, ...opts });
+
+export interface PullV2Opts {
+  branch?: string;
+  prune?: boolean;
+  remote?: string;
+  strategy: "ff-only" | "merge" | "rebase";
+  tags?: boolean;
+}
+
+export const gitPullV2 = (
+  sessionId: string,
+  opts: PullV2Opts,
+): Promise<string> => invoke("git_pull_v2", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 6B P12 — reset / revert / cherry-pick
+// ---------------------------------------------------------------------------
+
+export type ResetMode = "hard" | "mixed" | "soft";
+
+export const gitReset = (
+  sessionId: string,
+  opts: { mode: ResetMode; ref: string },
+): Promise<void> => invoke("git_reset", { id: sessionId, ...opts });
+
+export const gitRevert = (
+  sessionId: string,
+  opts: { hash: string; noCommit?: boolean },
+): Promise<void> => invoke("git_revert", { id: sessionId, ...opts });
+
+export const gitCherryPick = (
+  sessionId: string,
+  opts: { hash: string[] | string; noCommit?: boolean },
+): Promise<void> => invoke("git_cherry_pick", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 6B P9 — submodules
+// ---------------------------------------------------------------------------
+
+export type SubmoduleStatus = "clean" | "modified" | "uninitialized";
+
+export interface GitSubmodule {
+  commitHash: string;
+  name: string;
+  path: string;
+  status: SubmoduleStatus;
+  url: string;
+}
+
+export const gitSubmoduleList = (sessionId: string): Promise<GitSubmodule[]> =>
+  invoke("git_submodule_list", { id: sessionId });
+
+export const gitSubmoduleInit = (
+  sessionId: string,
+  opts: { path?: string },
+): Promise<void> => invoke("git_submodule_init", { id: sessionId, ...opts });
+
+export const gitSubmoduleUpdate = (
+  sessionId: string,
+  opts: { path?: string; remote?: boolean },
+): Promise<void> => invoke("git_submodule_update", { id: sessionId, ...opts });
+
+export const gitSubmoduleDeinit = (
+  sessionId: string,
+  opts: { force?: boolean; path: string },
+): Promise<void> => invoke("git_submodule_deinit", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 6B P10 — worktrees (read-only)
+// ---------------------------------------------------------------------------
+
+export interface GitWorktree {
+  branch: string | null;
+  head: string;
+  isDetached: boolean;
+  isLocked: boolean;
+  isMain: boolean;
+  lockReason?: string;
+  path: string;
+}
+
+export const gitWorktreeList = (sessionId: string): Promise<GitWorktree[]> =>
+  invoke("git_worktree_list", { id: sessionId });
+
+// ---------------------------------------------------------------------------
+// Phase 7 T1/T2 — interactive rebase
+// ---------------------------------------------------------------------------
+
+export type RebaseAction =
+  | "drop"
+  | "edit"
+  | "fixup"
+  | "pick"
+  | "reword"
+  | "squash";
+
+export interface RebasePlanCommit {
+  author: string;
+  hash: string;
+  subject: string;
+}
+
+export interface RebasePlanEntry {
+  action: RebaseAction;
+  hash: string;
+  newSubject?: string;
+}
+
+export const gitRebaseInteractivePlan = (
+  sessionId: string,
+  opts: { upstream: string },
+): Promise<RebasePlanCommit[]> =>
+  invoke("git_rebase_interactive_plan", { id: sessionId, ...opts });
+
+export const gitRebaseInteractiveRun = (
+  sessionId: string,
+  opts: { plan: RebasePlanEntry[]; upstream: string },
+): Promise<void> =>
+  invoke("git_rebase_interactive_run", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 7 T3 — bisect
+// ---------------------------------------------------------------------------
+
+export interface BisectStep {
+  currentRef: string | null;
+  currentSubject: string | null;
+  finished: boolean;
+  firstBadCommit?: { hash: string; subject: string };
+  remaining: number | null;
+}
+
+export interface BisectStatus extends BisectStep {
+  active: boolean;
+}
+
+export const gitBisectStart = (
+  sessionId: string,
+  opts: { badRef: string; goodRef: string },
+): Promise<BisectStep> =>
+  invoke("git_bisect_start", { id: sessionId, ...opts });
+
+export const gitBisectGood = (sessionId: string): Promise<BisectStep> =>
+  invoke("git_bisect_good", { id: sessionId });
+
+export const gitBisectBad = (sessionId: string): Promise<BisectStep> =>
+  invoke("git_bisect_bad", { id: sessionId });
+
+export const gitBisectSkip = (sessionId: string): Promise<BisectStep> =>
+  invoke("git_bisect_skip", { id: sessionId });
+
+export const gitBisectReset = (sessionId: string): Promise<void> =>
+  invoke("git_bisect_reset", { id: sessionId });
+
+export const gitBisectStatus = (sessionId: string): Promise<BisectStatus> =>
+  invoke("git_bisect_status", { id: sessionId });
+
+// ---------------------------------------------------------------------------
+// Phase 7 T5 — credential helpers
+// ---------------------------------------------------------------------------
+
+export type SshKeyType = "dsa" | "ecdsa" | "ed25519" | "other" | "rsa";
+
+export interface SshKey {
+  name: string;
+  type: SshKeyType;
+}
+
+export const checkSshKeys = (): Promise<{ keys: SshKey[] }> =>
+  invoke("check_ssh_keys");
+
+export const getGlobalCredentialHelper = (): Promise<string | null> =>
+  invoke("get_global_credential_helper");
+
+export const setGlobalCredentialHelper = (
+  name: "osxkeychain" | "store",
+): Promise<void> => invoke("set_global_credential_helper", { name });
+
+// ---------------------------------------------------------------------------
+// Phase 7 T6 — LFS
+// ---------------------------------------------------------------------------
+
+export interface LfsFiles {
+  lfsInstalled: boolean;
+  /** True when the repo has tracked files matching `filter=lfs` attributes. */
+  repoUsesLfs: boolean;
+  tracked: string[];
+}
+
+export const gitLfsFiles = (sessionId: string): Promise<LfsFiles> =>
+  invoke("git_lfs_files", { id: sessionId });
+
+export const gitLfsPull = (
+  sessionId: string,
+  opts: { paths?: string[] },
+): Promise<void> => invoke("git_lfs_pull", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 7 T7 — patches
+// ---------------------------------------------------------------------------
+
+export interface FormatPatchResult {
+  patchPaths: string[];
+}
+
+export const gitFormatPatch = (
+  sessionId: string,
+  opts: { outputDir?: string; range: string },
+): Promise<FormatPatchResult> =>
+  invoke("git_format_patch", { id: sessionId, ...opts });
+
+export const gitAm = (
+  sessionId: string,
+  opts: { patchPaths: string[] },
+): Promise<void> => invoke("git_am", { id: sessionId, ...opts });
+
+// ---------------------------------------------------------------------------
+// Phase 7 T8 — hooks
+// ---------------------------------------------------------------------------
+
+export interface HookOutput {
+  exitCode: number;
+  ranAt: number;
+  stderr: string;
+  stdout: string;
+}
+
+export interface Hook {
+  executable: boolean;
+  lastModified: number;
+  lastOutput: HookOutput | null;
+  name: string;
+  path: string;
+}
+
+export const gitListHooks = (sessionId: string): Promise<Hook[]> =>
+  invoke("git_list_hooks", { id: sessionId });
+
+export const gitRunHook = (
+  sessionId: string,
+  opts: { name: string },
+): Promise<HookOutput> => invoke("git_run_hook", { id: sessionId, ...opts });
 
 export const listSessions = (repoRoot: string): Promise<Session[]> =>
   invoke("list_sessions", { repoRoot });
@@ -243,14 +704,43 @@ export const getSessionDiff = (id: string): Promise<string> =>
 export const getSessionStatus = (id: string): Promise<string> =>
   invoke("get_session_status", { id });
 
+/** Structured git status for a session worktree (Phase 0 foundation). */
+export const gitStatus = (id: string): Promise<GitStatus> =>
+  invoke("git_status", { id });
+
+/**
+ * Phase 4 — list files ignored by git for this session's worktree.
+ * Paths are relative to the worktree root.
+ */
+export const gitListIgnoredFiles = (id: string): Promise<string[]> =>
+  invoke("git_list_ignored_files", { id });
+
+/**
+ * Phase 4 — list files marked assume-unchanged (or skip-worktree) via
+ * `git update-index`. Paths are relative to the worktree root.
+ */
+export const gitListAssumeUnchangedFiles = (id: string): Promise<string[]> =>
+  invoke("git_list_assume_unchanged_files", { id });
+
 export const getSessionFullDiff = (id: string): Promise<string> =>
   invoke("get_session_full_diff", { id });
 
-export const getSessionBranchDiff = (id: string): Promise<string> =>
-  invoke("get_session_branch_diff", { id });
+export interface DiffViewOpts {
+  ignoreWhitespace?: boolean;
+  wordDiff?: boolean;
+}
 
-export const getSessionStagedDiff = (id: string): Promise<string> =>
-  invoke("get_session_staged_diff", { id });
+export const getSessionBranchDiff = (
+  id: string,
+  opts?: DiffViewOpts,
+): Promise<string> =>
+  invoke("get_session_branch_diff", { id, ...(opts ?? {}) });
+
+export const getSessionStagedDiff = (
+  id: string,
+  opts?: DiffViewOpts,
+): Promise<string> =>
+  invoke("get_session_staged_diff", { id, ...(opts ?? {}) });
 
 export const getSessionUntrackedDiff = (id: string): Promise<string> =>
   invoke("get_session_untracked_diff", { id });
@@ -314,6 +804,32 @@ export const gitFetch = (id: string): Promise<string> =>
 export const gitStash = (id: string): Promise<string> =>
   invoke("git_stash", { id });
 
+export interface GitStashSaveOptions {
+  includeUntracked?: boolean;
+  keepIndex?: boolean;
+  message?: string;
+  /** Restrict the stash to these pathspecs (relative to repo root). */
+  paths?: string[];
+}
+
+export const gitStashSave = (
+  id: string,
+  options: GitStashSaveOptions = {},
+): Promise<string> =>
+  invoke("git_stash_save", {
+    id,
+    message: options.message,
+    includeUntracked: options.includeUntracked,
+    keepIndex: options.keepIndex,
+    paths: options.paths,
+  });
+
+export const gitStashBranch = (
+  id: string,
+  stashRef: string,
+  branchName: string,
+): Promise<string> => invoke("git_stash_branch", { id, stashRef, branchName });
+
 export const gitStashPop = (id: string): Promise<string> =>
   invoke("git_stash_pop", { id });
 
@@ -321,6 +837,7 @@ export interface GitCommit {
   abbreviatedHash: string;
   author: string;
   authorEmail: string;
+  body: string;
   committer: string;
   committerDate: string;
   committerEmail: string;
@@ -371,6 +888,225 @@ export const gitStashApply = (
 
 export const gitStashDrop = (id: string, stashIndex: number): Promise<string> =>
   invoke("git_stash_drop", { id, stashIndex });
+
+/**
+ * Restore one or more paths in the working tree from a ref (commit hash,
+ * `stash@{N}`, branch name, etc). Used by the working-copy drop targets to
+ * apply files from a stash or a previous commit.
+ */
+export const gitCheckoutPaths = (
+  id: string,
+  ref: string,
+  paths: string[],
+): Promise<string> => invoke("git_checkout_paths", { id, ref, paths });
+
+// Phase 2 W5 — discard / untrack / gitignore
+export const gitDiscardFile = (id: string, filePath: string): Promise<void> =>
+  invoke("git_discard_file", { id, filePath });
+
+export const gitDiscardHunk = (id: string, hunkPatch: string): Promise<void> =>
+  invoke("git_discard_hunk", { id, hunkPatch });
+
+export const gitDiscardLines = (
+  id: string,
+  filePath: string,
+  lines: number[],
+  side: "new" | "old",
+  hunkPatch: string,
+): Promise<void> =>
+  invoke("git_discard_lines", { id, filePath, lines, side, hunkPatch });
+
+export const gitUntrackFile = (id: string, filePath: string): Promise<void> =>
+  invoke("git_untrack_file", { id, filePath });
+
+export const addToGitignore = (id: string, filePath: string): Promise<void> =>
+  invoke("add_to_gitignore", { id, filePath });
+
+// Phase 2 W9 — conflict resolution
+export const gitContinueMerge = (id: string): Promise<void> =>
+  invoke("git_continue_merge", { id });
+
+export const gitAbortMerge = (id: string): Promise<void> =>
+  invoke("git_abort_merge", { id });
+
+export const gitContinueRebase = (id: string): Promise<void> =>
+  invoke("git_continue_rebase", { id });
+
+export const gitAbortRebase = (id: string): Promise<void> =>
+  invoke("git_abort_rebase", { id });
+
+export const gitSkipRebase = (id: string): Promise<void> =>
+  invoke("git_skip_rebase", { id });
+
+export const gitContinueCherryPick = (id: string): Promise<void> =>
+  invoke("git_continue_cherry_pick", { id });
+
+export const gitAbortCherryPick = (id: string): Promise<void> =>
+  invoke("git_abort_cherry_pick", { id });
+
+export interface ConflictBlobs {
+  base: string;
+  merged: string;
+  ours: string;
+  theirs: string;
+}
+
+export const gitGetConflict = (
+  id: string,
+  filePath: string,
+): Promise<ConflictBlobs> => invoke("git_get_conflict", { id, filePath });
+
+export const gitMarkResolved = (id: string, filePath: string): Promise<void> =>
+  invoke("git_mark_resolved", { id, filePath });
+
+export const gitWriteConflictMerged = (
+  id: string,
+  filePath: string,
+  contents: string,
+): Promise<void> =>
+  invoke("git_write_conflict_merged", { id, filePath, contents });
+
+// Phase 2 W10 — git config
+export const gitGetConfig = (id: string, key: string): Promise<string | null> =>
+  invoke("git_get_config", { id, key });
+
+export const gitSetConfig = (
+  id: string,
+  key: string,
+  value: string,
+): Promise<void> => invoke("git_set_config", { id, key, value });
+
+// Phase 2 W10 — remotes + issue autocomplete scaffold
+export interface GitRemote {
+  name: string;
+  url: string;
+}
+
+export const gitGetRemotes = (id: string): Promise<GitRemote[]> =>
+  invoke("git_get_remotes", { id });
+
+export interface RecentIssue {
+  number: number;
+  state: "closed" | "open";
+  title: string;
+}
+
+export const gitListRecentIssues = (
+  id: string,
+  query: string,
+): Promise<RecentIssue[]> => invoke("git_list_recent_issues", { id, query });
+
+// Phase 2 W11 — amend tip
+export interface CanAmendResult {
+  ok: boolean;
+  reason?: string;
+}
+
+export const gitCanAmendTip = (id: string): Promise<CanAmendResult> =>
+  invoke("git_can_amend_tip", { id });
+
+export const gitAmendTip = (
+  id: string,
+  subject: string,
+  body: string,
+): Promise<string> => invoke("git_amend_tip", { id, subject, body });
+
+// ---------------------------------------------------------------------------
+// Phase 4 — History depth (search, compare, blame, file history, reflog)
+// ---------------------------------------------------------------------------
+
+export interface LogSearchCursor {
+  lastCommitHash: string;
+  lastCommitTimestamp: string;
+}
+
+export interface LogSearchFilters {
+  author?: string;
+  branch?: string;
+  cursor?: LogSearchCursor | null;
+  limit?: number;
+  paths?: string[];
+  query?: string;
+  refType?: "all" | "locals" | "remotes" | "tags";
+  regex?: boolean;
+  since?: string;
+  until?: string;
+}
+
+export interface LogSearchResult {
+  commits: GitCommit[];
+  nextCursor: LogSearchCursor | null;
+}
+
+export const gitSearchLog = (
+  id: string,
+  filters: LogSearchFilters = {},
+): Promise<LogSearchResult> => invoke("git_search_log", { id, ...filters });
+
+export interface GitDiffRangeFile {
+  newPath: string;
+  oldPath: string;
+  patch: string;
+  status: string;
+}
+
+export interface GitDiffRangeResult {
+  files: GitDiffRangeFile[];
+}
+
+export const gitDiffRange = (
+  id: string,
+  fromRef: string,
+  toRef: string,
+): Promise<GitDiffRangeResult> =>
+  invoke("git_diff_range", { id, fromRef, toRef });
+
+export const gitFileHistory = (
+  id: string,
+  path: string,
+): Promise<GitCommit[]> => invoke("git_file_history", { id, path });
+
+export interface BlameChunk {
+  author: string;
+  authorEmail: string;
+  authorTime: number;
+  commitHash: string;
+  content?: string[];
+  lineCount: number;
+  lineStart: number;
+  summary: string;
+}
+
+export const gitBlameFile = (
+  id: string,
+  path: string,
+  ref?: string,
+): Promise<BlameChunk[]> =>
+  invoke("git_blame_file", { id, path, ...(ref ? { ref } : {}) });
+
+/**
+ * Read a file at a given git ref as a base64 string.
+ * Pass ref = "WORKTREE" to read the live on-disk file instead of a git object.
+ * Returns the raw bytes encoded as base64 (no data-URL prefix).
+ */
+export const gitReadBlobAtRef = (
+  id: string,
+  path: string,
+  ref: string,
+): Promise<string> => invoke("git_read_blob_at_ref", { id, path, ref });
+
+export interface ReflogEntry {
+  action: string;
+  hash: string;
+  refName: string;
+  subject: string;
+  timestamp: string;
+}
+
+export const gitReflog = (
+  id: string,
+  options: { limit?: number; ref?: string } = {},
+): Promise<ReflogEntry[]> => invoke("git_reflog", { id, ...options });
 
 export const watchSession = (id: string): Promise<void> =>
   invoke("watch_session", { id });
@@ -584,6 +1320,59 @@ export const setUserProjectSettings = (
   settings: UserProjectSettings,
 ): Promise<UserProjectSettings> =>
   invoke("set_user_project_settings", { repoRoot, settings });
+
+/**
+ * Archive a branch (UI-only — git is untouched). Returns the new archived list.
+ */
+export const gitArchiveBranch = (
+  repoRoot: string,
+  branch: string,
+): Promise<string[]> => invoke("git_archive_branch", { repoRoot, branch });
+
+/** Unarchive a branch. Returns the new archived list. */
+export const gitUnarchiveBranch = (
+  repoRoot: string,
+  branch: string,
+): Promise<string[]> => invoke("git_unarchive_branch", { repoRoot, branch });
+
+/** List archived branch names for a project. */
+export const gitListArchivedBranches = (repoRoot: string): Promise<string[]> =>
+  invoke("git_list_archived_branches", { repoRoot });
+
+/** Pin a branch for quick access. Returns the new pinned list. */
+export const gitPinBranch = (
+  repoRoot: string,
+  branch: string,
+): Promise<string[]> => invoke("git_pin_branch", { repoRoot, branch });
+
+/** Unpin a branch. Returns the new pinned list. */
+export const gitUnpinBranch = (
+  repoRoot: string,
+  branch: string,
+): Promise<string[]> => invoke("git_unpin_branch", { repoRoot, branch });
+
+/** List pinned branch names for a project. */
+export const gitListPinnedBranches = (repoRoot: string): Promise<string[]> =>
+  invoke("git_list_pinned_branches", { repoRoot });
+
+/**
+ * Stash uncommitted changes, checkout `branch`, then pop the stash.
+ * Use when `gitCheckout` fails with `dirty-working-tree`.
+ */
+export const gitStashAndCheckout = (
+  sessionId: string,
+  branch: string,
+): Promise<void> => invoke("git_stash_and_checkout", { id: sessionId, branch });
+
+/**
+ * Discard all uncommitted changes then checkout `branch`.
+ * Use when the user explicitly chooses to discard on dirty checkout.
+ */
+export const gitDiscardAndCheckout = (
+  sessionId: string,
+  branch: string,
+): Promise<void> =>
+  invoke("git_discard_and_checkout", { id: sessionId, branch });
 
 // Machine-local app settings (~/.argus/app-settings.json).
 export const getAppSettings = (): Promise<AppSettings> =>
@@ -995,6 +1784,10 @@ export const debugRunCommand = (
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
 
+/** Open a file/folder with the system's default handler. */
+export const openPath = (path: string): Promise<void> =>
+  invoke("open_path", { path });
+
 export const openExternalUrl = (url: string): Promise<void> =>
   invoke("open_external_url", { url });
 
@@ -1220,3 +2013,45 @@ export const telemetryCaptureException = (
   invoke("telemetry_capture_exception", { message, props, stack });
 export const telemetryCaptureFeedback = (message: string): Promise<void> =>
   invoke("telemetry_capture_feedback", { message });
+
+// GitHub issues (Phase 9 — commit message autocomplete)
+export interface GhIssue {
+  number: number;
+  title: string;
+}
+
+/**
+ * List open GitHub issues for the repo root.
+ * Returns an empty array when `gh` is not installed or not authenticated.
+ */
+export const ghListIssues = (repoRoot: string): Promise<GhIssue[]> =>
+  invoke("gh_list_issues", { repoRoot });
+
+// Phase 10 — auto-fetch
+/**
+ * Reconfigure the auto-fetch timer for all active sessions in `repoRoot`.
+ * Call this after writing a new `auto_fetch_minutes` value to `.argus.json`.
+ */
+export const gitReconfigureAutoFetch = (
+  repoRoot: string,
+  minutes: number | null,
+): Promise<void> => invoke("git_reconfigure_auto_fetch", { repoRoot, minutes });
+
+// Phase 5 — compare-branches view.
+export interface CompareResult {
+  leftOnly: BranchCommitSummary[];
+  mergeBase: string | null;
+  rightOnly: BranchCommitSummary[];
+  wouldConflict: boolean;
+}
+
+/**
+ * Return the diverging commit lists, merge-base SHA, and a best-effort
+ * conflict-precheck for the two given refs.
+ */
+export const gitCompareBranches = (
+  sessionId: string,
+  left: string,
+  right: string,
+): Promise<CompareResult> =>
+  invoke("git_compare_branches", { sessionId, left, right });

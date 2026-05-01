@@ -99,6 +99,19 @@ html[data-theme="dark"] {
   --brand-purple-overlay-md: rgba(124, 92, 252, 0.12);
   --brand-purple-overlay-lg: rgba(124, 92, 252, 0.2);
 
+  /* ─── Git file status badges ─── solid-fill chips.
+     Background uses the semantic palette so the badge reads identically
+     across light/dark themes; foreground stays white for contrast on the
+     coloured field. Used by the Working Copy file list and history view. */
+  --peacock-status-modified-bg: var(--accent);
+  --peacock-status-modified-fg: var(--accent-fg);
+  --peacock-status-added-bg: var(--success);
+  --peacock-status-added-fg: var(--success-fg);
+  --peacock-status-deleted-bg: var(--error);
+  --peacock-status-deleted-fg: var(--error-fg);
+  --peacock-status-renamed-bg: var(--brand-purple);
+  --peacock-status-renamed-fg: #ffffff;
+
   /* ─── Media background ─── true black for simulator/video surfaces.
      Always black regardless of theme — matches a powered-off screen. */
   --media-bg: #000000;

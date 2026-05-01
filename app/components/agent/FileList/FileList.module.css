@@ -42,8 +42,10 @@
 }
 
 .sortIcon {
-  font-size: 8px;
+  display: inline-flex;
+  align-items: center;
   margin-right: 4px;
+  color: var(--text-muted);
 }
 
 /* File list items */
@@ -98,7 +100,7 @@
 }
 
 .fileItemBadge {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   width: 18px;
   height: 18px;
@@ -107,26 +109,51 @@
   justify-content: center;
   border-radius: var(--border-radius-xs);
   flex-shrink: 0;
+  letter-spacing: 0.04em;
 }
 
 .badgeM {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--peacock-status-modified-fg);
+  background: var(--peacock-status-modified-bg);
 }
 
 .badgeA {
-  color: var(--success);
-  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--peacock-status-added-fg);
+  background: var(--peacock-status-added-bg);
 }
 
 .badgeD {
-  color: var(--error);
-  background: color-mix(in srgb, var(--error) 15%, transparent);
+  color: var(--peacock-status-deleted-fg);
+  background: var(--peacock-status-deleted-bg);
 }
 
 .badgeR {
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: var(--peacock-status-renamed-fg);
+  background: var(--peacock-status-renamed-bg);
+}
+
+.fileItemStats {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fileItemStats .statAdd {
+  color: var(--success);
+}
+
+.fileItemStats .statDel {
+  color: var(--error);
+}
+
+.fileListItemActive .fileItemStats .statAdd,
+.fileListItemActive .fileItemStats .statDel {
+  opacity: 0.95;
 }
 
 .fileItemPath {

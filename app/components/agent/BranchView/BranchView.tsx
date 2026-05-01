@@ -8,7 +8,11 @@ interface BranchViewProps {
 export function BranchView({ sessionId }: BranchViewProps) {
   return (
     <div className={styles.container}>
-      <CommitLogView allBranches={false} showGraph sessionId={sessionId} />
+      <CommitLogView
+        allBranches={false}
+        showGraph={false}
+        sessionId={sessionId}
+      />
     </div>
   );
 }

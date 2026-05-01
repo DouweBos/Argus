@@ -4,52 +4,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.commitSubject {
-  padding: 8px 10px;
-  font-size: var(--font-size-sm);
-  font-family: var(--font-ui);
-  color: var(--text-primary);
-  background: var(--surface-2);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  outline: none;
-  transition: border-color var(--transition-fast);
-}
-
-.commitSubject:focus {
-  border-color: var(--accent);
-}
-
-.commitSubject::placeholder {
-  color: var(--text-muted);
-}
-
-/* --- Expanded: body textarea --- */
-
-.commitBody {
-  padding: 8px 10px;
-  font-size: var(--font-size-xs);
-  font-family: var(--font-ui);
-  color: var(--text-primary);
-  background: var(--surface-2);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  outline: none;
-  resize: vertical;
-  min-height: 48px;
-  transition: border-color var(--transition-fast);
-}
-
-.commitBody:focus {
-  border-color: var(--accent);
-}
-
-.commitBody::placeholder {
-  color: var(--text-muted);
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  flex-shrink: 0;
 }
 
 /* --- Hints --- */
@@ -58,9 +16,9 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  font-size: 10px;
+  font: var(--type-eyebrow);
   color: var(--text-muted);
-  padding: 0 2px;
+  padding: 0 var(--space-1);
 }
 
 /* --- Options row: checkboxes + author --- */
@@ -69,22 +27,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-4);
 }
 
 .checkboxes {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
 }
 
 .checkLabel {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  font: 11px/1 var(--font-ui);
+  color: var(--text-muted);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .checkbox {
@@ -94,7 +55,7 @@
 .authorArea {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-4);
 }
 
 .authorInfo {
@@ -105,19 +66,18 @@
 }
 
 .authorName {
-  font-size: var(--font-size-xs);
+  font: var(--type-caption);
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .authorEmail {
-  font-size: 10px;
+  font: var(--type-eyebrow);
   color: var(--text-muted);
 }
 
 .authorAvatar {
   width: 32px;
-  height: 32px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -125,9 +85,9 @@
 /* --- Error --- */
 
 .commitError {
-  font-size: var(--font-size-xs);
+  font: var(--type-caption);
   color: var(--error);
-  padding: 2px 0;
+  padding: var(--space-1) 0;
 }
 
 /* --- Actions row --- */
@@ -135,7 +95,46 @@
 .commitActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
 }
 
-/* Stage All and Commit buttons are Peacock Button — no extra overrides needed. */
+/* Push Commit button to the right; Stage All stays left */
+.commitActions > :last-child {
+  margin-left: auto;
+}
+
+/* --- Phase 2 W10: subject row + ruler hint + Conventional Commits picker --- */
+
+.subjectRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.subjectRow > :last-child {
+  flex: 1;
+}
+
+.conventionalPicker {
+  font-family: var(--font-ui);
+  font: var(--type-caption);
+  color: var(--text-primary);
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-2) var(--space-3);
+  outline: none;
+}
+
+.rulerWarn {
+  font: var(--type-eyebrow);
+  color: var(--warning, var(--accent));
+  padding: 0 var(--space-1);
+}
+
+.rulerError {
+  font: var(--type-eyebrow);
+  color: var(--error);
+  padding: 0 var(--space-1);
+}

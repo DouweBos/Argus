@@ -19,10 +19,43 @@ export interface CustomEditor {
   name: string;
 }
 
+export type WorkingCopyView = "flat" | "tree";
+export type DiffViewMode = "split" | "unified";
+export type CommitSigningFormat = "gpg" | "ssh";
+
 interface SettingsState {
+  /** Map of `rememberKey` → user opted out of the corresponding confirm dialog. */
+  confirmPreferences: Record<string, boolean>;
+  /** Conventional Commits prefix picker on/off (Phase 2 W10). */
+  conventionalCommitsPicker: boolean;
   customEditors: CustomEditor[];
   defaultPermissionMode: PermissionMode;
+  /** Default strategy used by the project-scope pull dialog (Phase 6B P11). */
+  defaultPullStrategy: "ff-only" | "merge" | "rebase";
+  diffView: DiffViewMode;
+  diffWhitespace: boolean;
+  diffWordDiff: boolean;
+  /** Phase 3 K4 — collapse the git source sidebar (Working Copy / Branch / …). */
+  gitSidebarCollapsed: boolean;
+  /**
+   * Which collapsible sections in the source sidebar are collapsed.
+   * Keys: "branches" | "tags" | "remotes" | "submodules" | "worktrees".
+   */
+  gitSidebarSectionsCollapsed: Record<string, boolean>;
+  /** Width of the git source sidebar as a fraction of the GitView container. */
+  gitSidebarWidth: number;
+  showAssumeUnchangedFiles: boolean;
+  /**
+   * Working copy view toggles.
+   * showIgnoredFiles: include files listed by `git status --ignored`.
+   * showAssumeUnchangedFiles: include files marked with `git update-index --assume-unchanged`.
+   * showNonModifiedFiles: in tree mode, show unmodified tracked files.
+   */
+  showIgnoredFiles: boolean;
+  showNonModifiedFiles: boolean;
   telemetryEnabled: boolean;
+  /** Working-copy file list — flat list or tree by path (Phase 2 W2). */
+  workingCopyView: WorkingCopyView;
 }
 
 const STORAGE_KEY = "argus:settings";
@@ -66,18 +99,66 @@ function load(): SettingsState {
           typeof parsed.telemetryEnabled === "boolean"
             ? parsed.telemetryEnabled
             : false,
+        confirmPreferences:
+          parsed.confirmPreferences &&
+          typeof parsed.confirmPreferences === "object"
+            ? Object.fromEntries(
+                Object.entries(parsed.confirmPreferences).filter(
+                  ([, v]) => typeof v === "boolean",
+                ),
+              )
+            : {},
+        workingCopyView: parsed.workingCopyView === "tree" ? "tree" : "flat",
+        diffView: parsed.diffView === "split" ? "split" : "unified",
+        diffWhitespace: parsed.diffWhitespace === true,
+        diffWordDiff: parsed.diffWordDiff === true,
+        conventionalCommitsPicker: parsed.conventionalCommitsPicker === true,
+        gitSidebarCollapsed: parsed.gitSidebarCollapsed === true,
+        gitSidebarWidth:
+          typeof parsed.gitSidebarWidth === "number" &&
+          parsed.gitSidebarWidth > 0.05 &&
+          parsed.gitSidebarWidth < 0.6
+            ? parsed.gitSidebarWidth
+            : 0.18,
+        gitSidebarSectionsCollapsed:
+          parsed.gitSidebarSectionsCollapsed &&
+          typeof parsed.gitSidebarSectionsCollapsed === "object" &&
+          !Array.isArray(parsed.gitSidebarSectionsCollapsed)
+            ? (parsed.gitSidebarSectionsCollapsed as Record<string, boolean>)
+            : {},
+        defaultPullStrategy:
+          parsed.defaultPullStrategy === "rebase" ||
+          parsed.defaultPullStrategy === "ff-only"
+            ? parsed.defaultPullStrategy
+            : "merge",
+        showIgnoredFiles: parsed.showIgnoredFiles === true,
+        showAssumeUnchangedFiles: parsed.showAssumeUnchangedFiles === true,
+        showNonModifiedFiles: parsed.showNonModifiedFiles === true,
       };
     }
   } catch {
     // fall through to defaults
   }
 
-  // Default opt-out — consent is collected explicitly during the
+  // Telemetry default opt-out — consent is collected explicitly during the
   // telemetry onboarding step before any analytics events are sent.
   return {
     defaultPermissionMode: "default",
     customEditors: [],
     telemetryEnabled: false,
+    confirmPreferences: {},
+    workingCopyView: "flat",
+    diffView: "unified",
+    diffWhitespace: false,
+    diffWordDiff: false,
+    conventionalCommitsPicker: false,
+    gitSidebarCollapsed: false,
+    gitSidebarWidth: 0.18,
+    gitSidebarSectionsCollapsed: {},
+    defaultPullStrategy: "merge",
+    showIgnoredFiles: false,
+    showAssumeUnchangedFiles: false,
+    showNonModifiedFiles: false,
   };
 }
 
@@ -154,6 +235,153 @@ export const removeCustomEditor = (id: string): void => {
   store.setState((s) => ({
     customEditors: s.customEditors.filter((e) => e.id !== id),
   }));
+  persist(store.getState());
+};
+
+/**
+ * Persisted "don't ask again" map for `<DestructiveConfirm>`. Consumers
+ * should call `getConfirmPreference(key)` before opening the dialog and
+ * `setConfirmPreference(key, true)` when the user ticks the skip-next-time
+ * checkbox.
+ */
+export const getConfirmPreference = (key: string): boolean =>
+  Boolean(store.getState().confirmPreferences[key]);
+
+export const setConfirmPreference = (key: string, skip: boolean): void => {
+  store.setState((s) => ({
+    confirmPreferences: { ...s.confirmPreferences, [key]: skip },
+  }));
+  persist(store.getState());
+};
+
+// Phase 2 W2 / W7 / W10 — git view preferences.
+
+export const useWorkingCopyView = (): WorkingCopyView =>
+  store((s) => s.workingCopyView);
+
+export const setWorkingCopyView = (view: WorkingCopyView): void => {
+  store.setState({ workingCopyView: view });
+  persist(store.getState());
+};
+
+export const useDiffView = (): DiffViewMode => store((s) => s.diffView);
+
+export const setDiffView = (mode: DiffViewMode): void => {
+  store.setState({ diffView: mode });
+  persist(store.getState());
+};
+
+export const useDiffWhitespace = (): boolean => store((s) => s.diffWhitespace);
+
+export const setDiffWhitespace = (on: boolean): void => {
+  store.setState({ diffWhitespace: on });
+  persist(store.getState());
+};
+
+export const useDiffWordDiff = (): boolean => store((s) => s.diffWordDiff);
+
+export const setDiffWordDiff = (on: boolean): void => {
+  store.setState({ diffWordDiff: on });
+  persist(store.getState());
+};
+
+export const useConventionalCommitsPicker = (): boolean =>
+  store((s) => s.conventionalCommitsPicker);
+
+export const setConventionalCommitsPicker = (on: boolean): void => {
+  store.setState({ conventionalCommitsPicker: on });
+  persist(store.getState());
+};
+
+// Phase 3 K4 — git source sidebar collapse state.
+
+export const useGitSidebarCollapsed = (): boolean =>
+  store((s) => s.gitSidebarCollapsed);
+
+export const setGitSidebarCollapsed = (collapsed: boolean): void => {
+  store.setState({ gitSidebarCollapsed: collapsed });
+  persist(store.getState());
+};
+
+export const useDefaultPullStrategy = (): "ff-only" | "merge" | "rebase" =>
+  store((s) => s.defaultPullStrategy);
+
+export const setDefaultPullStrategy = (
+  strategy: "ff-only" | "merge" | "rebase",
+): void => {
+  store.setState({ defaultPullStrategy: strategy });
+  persist(store.getState());
+};
+
+export const getDefaultPullStrategy = (): "ff-only" | "merge" | "rebase" =>
+  store.getState().defaultPullStrategy;
+
+export const toggleGitSidebarCollapsed = (): void => {
+  store.setState((s) => ({ gitSidebarCollapsed: !s.gitSidebarCollapsed }));
+  persist(store.getState());
+};
+
+export const useGitSidebarWidth = (): number => store((s) => s.gitSidebarWidth);
+
+export const setGitSidebarWidth = (width: number): void => {
+  store.setState({ gitSidebarWidth: width });
+  persist(store.getState());
+};
+
+export const useGitSidebarSectionsCollapsed = (): Record<string, boolean> =>
+  store((s) => s.gitSidebarSectionsCollapsed);
+
+export const toggleGitSidebarSection = (key: string): void => {
+  store.setState((s) => ({
+    gitSidebarSectionsCollapsed: {
+      ...s.gitSidebarSectionsCollapsed,
+      [key]: !s.gitSidebarSectionsCollapsed[key],
+    },
+  }));
+  persist(store.getState());
+};
+
+/**
+ * Explicitly set the collapsed state for a sidebar section. Lets callers that
+ * track a default-collapsed flag flip a section to the opposite of its
+ * *visual* state without having to know the persisted value.
+ */
+export const setGitSidebarSectionCollapsed = (
+  key: string,
+  collapsed: boolean,
+): void => {
+  store.setState((s) => ({
+    gitSidebarSectionsCollapsed: {
+      ...s.gitSidebarSectionsCollapsed,
+      [key]: collapsed,
+    },
+  }));
+  persist(store.getState());
+};
+
+// Phase 4 — working copy view toggles.
+
+export const useShowIgnoredFiles = (): boolean =>
+  store((s) => s.showIgnoredFiles);
+
+export const setShowIgnoredFiles = (on: boolean): void => {
+  store.setState({ showIgnoredFiles: on });
+  persist(store.getState());
+};
+
+export const useShowAssumeUnchangedFiles = (): boolean =>
+  store((s) => s.showAssumeUnchangedFiles);
+
+export const setShowAssumeUnchangedFiles = (on: boolean): void => {
+  store.setState({ showAssumeUnchangedFiles: on });
+  persist(store.getState());
+};
+
+export const useShowNonModifiedFiles = (): boolean =>
+  store((s) => s.showNonModifiedFiles);
+
+export const setShowNonModifiedFiles = (on: boolean): void => {
+  store.setState({ showNonModifiedFiles: on });
   persist(store.getState());
 };
 

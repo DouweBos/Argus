@@ -23,6 +23,20 @@
  * - `/sessions/:sessionId/agents`                → session agents view
  * - `/sessions/:sessionId/editor`                → session editor view
  * - `/sessions/:sessionId/git`                   → session git view
+ * - `/sessions/:sessionId/git/:gitView`           → git view sub-screen
+ *                                                  (working|branch|history|stashes|
+ *                                                  reflog|conflicts|branches|tags|
+ *                                                  remotes|submodules|worktrees|
+ *                                                  pull-requests|branches-review|
+ *                                                  compare|blame|interactive-rebase|
+ *                                                  settings)
+ *                                                  ?left=...&right=... for compare
+ *                                                  ?path=...&ref=... for blame
+ *                                                  ?from=... for interactive-rebase
+ *
+ * Project-root git client. Project-root sessions (`session.kind === "project_root"`)
+ * reuse the same `/sessions/:sessionId/git/...` pattern; the `scope="project"`
+ * mount is selected on the renderer side from the session record.
  */
 
 import { useEffect } from "react";
@@ -44,6 +58,45 @@ export type AppView =
 
 export type SessionPanel = "agents" | "editor" | "git" | "home";
 
+export type GitSubView =
+  | "bisect"
+  | "blame"
+  | "branch"
+  | "branches-review"
+  | "branches"
+  | "compare"
+  | "conflicts"
+  | "history"
+  | "hooks"
+  | "interactive-rebase"
+  | "pull-requests"
+  | "reflog"
+  | "settings"
+  | "stashes"
+  | "submodules"
+  | "tags"
+  | "working";
+
+const VALID_GIT_SUB_VIEWS: GitSubView[] = [
+  "bisect",
+  "blame",
+  "branch",
+  "branches",
+  "branches-review",
+  "compare",
+  "conflicts",
+  "history",
+  "hooks",
+  "interactive-rebase",
+  "pull-requests",
+  "reflog",
+  "settings",
+  "stashes",
+  "submodules",
+  "tags",
+  "working",
+];
+
 export interface PullRequestRef {
   number: number;
   owner: string;
@@ -51,6 +104,16 @@ export interface PullRequestRef {
 }
 
 export interface ParsedRoute {
+  /**
+   * Trailing ref name for ref-scoped git sub-views. When `gitView` is
+   * `"branches"` or `"tags"` the URL may carry an additional segment naming
+   * a specific branch/tag (e.g. `/git/branches/feature%2Ffoo`). Drives the
+   * single-selection model in the git sidebar — the highlighted item is the
+   * one whose route exactly matches `gitView` + `gitRefName`.
+   */
+  gitRefName: string | null;
+  /** Sub-view inside the git panel (working/branches/history/…). */
+  gitView: GitSubView | null;
   organizationId: string | null;
   /** Session panel (agents/editor/git). Only meaningful when view=session. */
   panel: SessionPanel;
@@ -73,12 +136,34 @@ export function parseRoute(pathname: string): ParsedRoute {
 
   if (segments[0] === "sessions" && segments[1]) {
     const panel = (segments[2] ?? "agents") as SessionPanel;
+    const validPanel: SessionPanel = VALID_PANELS.includes(panel)
+      ? panel
+      : "agents";
+    let gitView: GitSubView | null = null;
+    let gitRefName: string | null = null;
+    if (validPanel === "git" && segments[3]) {
+      const candidate = segments[3] as GitSubView;
+      if (VALID_GIT_SUB_VIEWS.includes(candidate)) {
+        gitView = candidate;
+        // Ref-scoped sub-views carry an additional URL segment naming the
+        // selected branch/tag. Anything else past segments[3] is ignored.
+        if ((gitView === "branches" || gitView === "tags") && segments[4]) {
+          try {
+            gitRefName = decodeURIComponent(segments[4]);
+          } catch {
+            gitRefName = segments[4];
+          }
+        }
+      }
+    }
 
     return {
       view: "session",
       sessionId: segments[1],
       organizationId: null,
-      panel: VALID_PANELS.includes(panel) ? panel : "agents",
+      panel: validPanel,
+      gitView,
+      gitRefName,
       pr: null,
     };
   }
@@ -89,6 +174,8 @@ export function parseRoute(pathname: string): ParsedRoute {
       sessionId: null,
       organizationId: segments[1] ?? null,
       panel: "agents",
+      gitView: null,
+      gitRefName: null,
       pr: null,
     };
   }
@@ -107,6 +194,8 @@ export function parseRoute(pathname: string): ParsedRoute {
         sessionId: null,
         organizationId: null,
         panel: "agents",
+        gitView: null,
+        gitRefName: null,
         pr: {
           owner: decodeURIComponent(segments[1]),
           repo: decodeURIComponent(segments[2]),
@@ -136,6 +225,8 @@ function emptyRoute(view: AppView): ParsedRoute {
     sessionId: null,
     organizationId: null,
     panel: "agents",
+    gitView: null,
+    gitRefName: null,
     pr: null,
   };
 }
@@ -177,8 +268,16 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
   if (route.view === "session" && route.sessionId) {
     const panel =
       route.panel && route.panel !== "agents" ? `/${route.panel}` : "";
+    const gitView =
+      route.panel === "git" && route.gitView ? `/${route.gitView}` : "";
+    const gitRef =
+      route.panel === "git" &&
+      (route.gitView === "branches" || route.gitView === "tags") &&
+      route.gitRefName
+        ? `/${encodeURIComponent(route.gitRefName)}`
+        : "";
 
-    return `/sessions/${route.sessionId}${panel}`;
+    return `/sessions/${route.sessionId}${panel}${gitView}${gitRef}`;
   }
   if (route.view === "organizations") {
     return route.organizationId

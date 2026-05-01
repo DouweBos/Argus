@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Button,
@@ -11,11 +11,13 @@ import {
 import { useArgusJson } from "../../../hooks/useArgusJson";
 import { useArgusVersionCheck } from "../../../hooks/useArgusVersionCheck";
 import { useChatHistory } from "../../../hooks/useChatHistory";
+import { createHeadSession } from "../../../lib/ipc";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import {
   showCreateSessionDialog,
   triggerNewSession,
 } from "../../../stores/dialogStore";
+import { setActiveCenterView } from "../../../stores/editorStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
@@ -105,6 +107,22 @@ export function RepoHomeScreen({
     }
   };
 
+  const handleOpenGit = useCallback(async () => {
+    if (!repoRoot) {
+      return;
+    }
+    try {
+      const head = await createHeadSession(repoRoot);
+      selectSession(head.id);
+      // Wait one tick for the route to switch to the session before
+      // flipping the panel — `setActiveCenterView` is a no-op outside a
+      // session route.
+      requestAnimationFrame(() => setActiveCenterView("git"));
+    } catch {
+      // Surfaced via the standard error toasts when ipc fails.
+    }
+  }, [repoRoot]);
+
   return (
     <div className={styles.screen}>
       <div className={styles.wrap}>
@@ -134,6 +152,16 @@ export function RepoHomeScreen({
                 title="Edit .argus.json — copy/symlink rules, run commands, ports"
               >
                 Project settings
+              </Button>
+            )}
+            {repoRoot && (
+              <Button
+                variant="ghost"
+                leading={<Icons.BranchIcon size={12} />}
+                onClick={handleOpenGit}
+                title="Open the project-root git client"
+              >
+                Git
               </Button>
             )}
             <Button

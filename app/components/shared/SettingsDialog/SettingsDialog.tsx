@@ -11,21 +11,47 @@ import {
   Toggle,
   type SettingsDialogGroup,
 } from "@argus/peacock";
-import { getAppSettings, setAppSettings } from "../../../lib/ipc";
+import {
+  getAppSettings,
+  gitGetConfig,
+  gitSetConfig,
+  setAppSettings,
+} from "../../../lib/ipc";
 import { setTelemetryEnabled } from "../../../lib/telemetry";
+import { useSelectedSessionId } from "../../../stores/sessionStore";
 import {
   PERMISSION_MODE_LABELS,
   addCustomEditor,
   hideSettingsDialog,
   removeCustomEditor,
+  setConventionalCommitsPicker,
   setDefaultPermissionMode,
+  setDefaultPullStrategy,
+  setDiffView,
+  setDiffWhitespace,
+  setDiffWordDiff,
+  setShowAssumeUnchangedFiles,
+  setShowIgnoredFiles,
+  setShowNonModifiedFiles,
   setTelemetryEnabledSetting,
+  setWorkingCopyView,
   updateCustomEditor,
+  useConventionalCommitsPicker,
   useCustomEditors,
   useDefaultPermissionMode,
+  useDefaultPullStrategy,
+  useDiffView,
+  useDiffWhitespace,
+  useDiffWordDiff,
   useSettingsDialogOpen,
+  useShowAssumeUnchangedFiles,
+  useShowIgnoredFiles,
+  useShowNonModifiedFiles,
   useTelemetryEnabled,
+  useWorkingCopyView,
+  type DiffViewMode,
   type PermissionMode,
+  type WorkingCopyView,
 } from "../../../stores/settingsStore";
 import {
   THEME_PREFERENCE_LABELS,
@@ -98,6 +124,20 @@ function SettingsDialogContent() {
           description: "Personal servers",
           icon: <Icons.GearIcon size={12} />,
           render: () => <McpServersSection />,
+        },
+        {
+          id: "git",
+          label: "Git",
+          description: "Diff, working copy, pull",
+          icon: <Icons.MergeIcon size={12} />,
+          render: () => <GitSection />,
+        },
+        {
+          id: "git-signing",
+          label: "Git signing",
+          description: "Commit signing keys",
+          icon: <Icons.BranchIcon size={12} />,
+          render: () => <GitSigningSection />,
         },
         {
           id: "privacy",
@@ -498,5 +538,312 @@ function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
         </Button>
       </div>
     </div>
+  );
+}
+
+const WORKING_COPY_VIEWS: { label: string; value: WorkingCopyView }[] = [
+  { label: "Flat list", value: "flat" },
+  { label: "Tree", value: "tree" },
+];
+
+const DIFF_VIEWS: { label: string; value: DiffViewMode }[] = [
+  { label: "Unified", value: "unified" },
+  { label: "Side-by-side", value: "split" },
+];
+
+const PULL_STRATEGIES: {
+  label: string;
+  value: "ff-only" | "merge" | "rebase";
+}[] = [
+  { label: "Fast-forward only", value: "ff-only" },
+  { label: "Merge", value: "merge" },
+  { label: "Rebase", value: "rebase" },
+];
+
+function GitSection() {
+  const workingCopyView = useWorkingCopyView();
+  const diffView = useDiffView();
+  const diffWhitespace = useDiffWhitespace();
+  const diffWordDiff = useDiffWordDiff();
+  const conventionalCommits = useConventionalCommitsPicker();
+  const pullStrategy = useDefaultPullStrategy();
+  const showIgnored = useShowIgnoredFiles();
+  const showAssumeUnchanged = useShowAssumeUnchangedFiles();
+  const showNonModified = useShowNonModifiedFiles();
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Defaults for the git panel — working copy view, diff display, and pull strategy. The toolbar in each panel can still override these per session."
+        title="Git"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField label="Working copy view">
+          <div className={styles.segmented}>
+            {WORKING_COPY_VIEWS.map((v) => (
+              <button
+                key={v.value}
+                className={`${styles.segment} ${workingCopyView === v.value ? styles.segmentActive : ""}`}
+                type="button"
+                onClick={() => setWorkingCopyView(v.value)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </SettingsScreenField>
+
+        <SettingsScreenField label="Diff layout">
+          <div className={styles.segmented}>
+            {DIFF_VIEWS.map((v) => (
+              <button
+                key={v.value}
+                className={`${styles.segment} ${diffView === v.value ? styles.segmentActive : ""}`}
+                type="button"
+                onClick={() => setDiffView(v.value)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Ignore whitespace in diffs"
+          caption="Hide pure-whitespace changes when comparing files."
+        >
+          <Toggle checked={diffWhitespace} onChange={setDiffWhitespace}>
+            {diffWhitespace ? "On" : "Off"}
+          </Toggle>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Highlight word-level changes"
+          caption="Inline word-diff inside changed lines."
+        >
+          <Toggle checked={diffWordDiff} onChange={setDiffWordDiff}>
+            {diffWordDiff ? "On" : "Off"}
+          </Toggle>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Conventional Commits picker"
+          caption="Show a commit-type prefix picker (feat, fix, chore, …) in the commit composer."
+        >
+          <Toggle
+            checked={conventionalCommits}
+            onChange={setConventionalCommitsPicker}
+          >
+            {conventionalCommits ? "On" : "Off"}
+          </Toggle>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Default pull strategy"
+          caption="Used when you pull from the project-scope dialog without picking a strategy."
+        >
+          <div className={styles.options}>
+            {PULL_STRATEGIES.map((s) => (
+              <label
+                key={s.value}
+                className={`${styles.option} ${pullStrategy === s.value ? styles.optionActive : ""}`}
+              >
+                <input
+                  checked={pullStrategy === s.value}
+                  className={styles.radio}
+                  name="pull-strategy"
+                  type="radio"
+                  value={s.value}
+                  onChange={() => setDefaultPullStrategy(s.value)}
+                />
+                <span>{s.label}</span>
+              </label>
+            ))}
+          </div>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Show ignored files"
+          caption="Include files matched by .gitignore in the working copy list."
+        >
+          <Toggle checked={showIgnored} onChange={setShowIgnoredFiles}>
+            {showIgnored ? "On" : "Off"}
+          </Toggle>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Show assume-unchanged files"
+          caption="Include files marked with `git update-index --assume-unchanged`."
+        >
+          <Toggle
+            checked={showAssumeUnchanged}
+            onChange={setShowAssumeUnchangedFiles}
+          >
+            {showAssumeUnchanged ? "On" : "Off"}
+          </Toggle>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Show unmodified files in tree view"
+          caption="Only applies when the working copy view is set to Tree."
+        >
+          <Toggle checked={showNonModified} onChange={setShowNonModifiedFiles}>
+            {showNonModified ? "On" : "Off"}
+          </Toggle>
+        </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
+
+/** Phase 7 T4 — per-repo commit-signing toggles. */
+function GitSigningSection() {
+  const sessionId = useSelectedSessionId();
+  const [enabled, setEnabled] = useState(false);
+  const [format, setFormat] = useState<"gpg" | "ssh">("gpg");
+  const [signingKey, setSigningKey] = useState("");
+  const [keyDraft, setKeyDraft] = useState("");
+  const [loading, setLoading] = useState(Boolean(sessionId));
+
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [gpgsign, fmt, key] = await Promise.all([
+          gitGetConfig(sessionId, "commit.gpgsign"),
+          gitGetConfig(sessionId, "gpg.format"),
+          gitGetConfig(sessionId, "user.signingkey"),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setEnabled(gpgsign === "true");
+        setFormat(fmt === "ssh" ? "ssh" : "gpg");
+        setSigningKey(key ?? "");
+        setKeyDraft(key ?? "");
+        setLoading(false);
+      } catch {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
+
+  if (!sessionId) {
+    return (
+      <SettingsScreenDetail>
+        <SettingsScreenDetailHeader
+          description="Open a session to configure per-repo commit signing."
+          title="Git signing"
+        />
+      </SettingsScreenDetail>
+    );
+  }
+
+  const toggleEnabled = async (next: boolean) => {
+    setEnabled(next);
+    try {
+      await gitSetConfig(sessionId, "commit.gpgsign", next ? "true" : "");
+    } catch {
+      setEnabled(!next);
+    }
+  };
+
+  const updateFormat = async (next: "gpg" | "ssh") => {
+    setFormat(next);
+    try {
+      await gitSetConfig(sessionId, "gpg.format", next);
+    } catch {
+      // ignore — best effort
+    }
+  };
+
+  const saveKey = async () => {
+    setSigningKey(keyDraft);
+    try {
+      await gitSetConfig(sessionId, "user.signingkey", keyDraft.trim());
+    } catch {
+      // ignore — best effort
+    }
+  };
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Per-repo commit signing. Argus writes commit.gpgsign / gpg.format / user.signingkey to the local config."
+        title="Git signing"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField label="Enable commit signing">
+          <label className={styles.option}>
+            <input
+              checked={enabled}
+              className={styles.radio}
+              disabled={loading}
+              type="checkbox"
+              onChange={(e) => toggleEnabled(e.target.checked)}
+            />
+            <span>Sign all commits in this repo</span>
+          </label>
+        </SettingsScreenField>
+
+        <SettingsScreenField label="Signing format">
+          <div className={styles.options}>
+            <label
+              className={`${styles.option} ${format === "gpg" ? styles.optionActive : ""}`}
+            >
+              <input
+                checked={format === "gpg"}
+                className={styles.radio}
+                name="signing-format"
+                type="radio"
+                onChange={() => updateFormat("gpg")}
+              />
+              <span>GPG</span>
+            </label>
+            <label
+              className={`${styles.option} ${format === "ssh" ? styles.optionActive : ""}`}
+            >
+              <input
+                checked={format === "ssh"}
+                className={styles.radio}
+                name="signing-format"
+                type="radio"
+                onChange={() => updateFormat("ssh")}
+              />
+              <span>SSH</span>
+            </label>
+          </div>
+        </SettingsScreenField>
+
+        <SettingsScreenField label="Signing key (user.signingkey)">
+          <div className={styles.editorForm}>
+            <Input
+              mono
+              placeholder="key ID, fingerprint, or path"
+              value={keyDraft}
+              onChange={(e) => setKeyDraft(e.target.value)}
+            />
+            <div className={styles.editorFormActions}>
+              <Button
+                disabled={keyDraft === signingKey}
+                variant="primary"
+                onClick={saveKey}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
   );
 }

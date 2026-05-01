@@ -33,24 +33,10 @@ body {
   overflow: hidden;
 }
 
-/* Scrollbars — minimal, transparent */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--surface-5);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--surface-8);
-}
+/* Scrollbars — use native macOS overlay scrollbars (auto-hide, render on
+   top of content, no layout shift when content becomes scrollable). Do not
+   add ::-webkit-scrollbar rules here: any custom styling forces Chromium
+   into "classic" scrollbars that reserve a gutter in the layout. */
 
 /* Focus ring — skipped for text inputs, which get their own focus-within
    styling on their container. */

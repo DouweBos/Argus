@@ -596,3 +596,49 @@
   flex-direction: column;
   gap: 4px;
 }
+
+/* ── Merge confirm dialog ── */
+.mergeDialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.mergeDialogText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.mergeDialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ── Comment composer ── */
+.composerWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.composerTextarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+}
+
+.composerError {
+  font-size: 12px;
+  color: var(--error);
+  margin: 0;
+}
+
+.composerFooter {
+  display: flex;
+  justify-content: flex-end;
+}

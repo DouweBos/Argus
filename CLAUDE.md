@@ -62,6 +62,7 @@ Node.js + TypeScript + Electron.
 2. Navigate via `appNavigate(route)` or semantic wrappers (`selectSession`, `setCenterView`, `openOrganization`, `setActiveCenterView`). Never React Router's `navigate()` from components — bypasses the registered-navigator indirection.
 3. One navigation call per user action (two back-to-back stack history and break the back button).
 4. Read the URL, don't mirror it. Use hooks (`useSelectedSessionId`, `useCenterView`, etc.) or getters (`getSelectedSessionId()`, `getActiveCenterView()`, `getCurrentRoute()`). No Zustand state for "which screen".
+5. **Prefer routes over ad-hoc state for switching views inside a panel/screen.** If a tab, sub-view, sidebar selection, or filtered drill-down (e.g. focused branch/tag/file) changes what the panel shows, give it its own URL — extend `ParsedRoute` (add a field like `gitRefName`) and add a `set…` helper in the relevant store. This makes "which item is selected" a single route-equality check, gets back/forward + deep linking for free, and prevents two pieces of state disagreeing about what's active. Don't introduce a Zustand `selectedX` slice when a route segment or query param can carry it.
 
 **Design system (`@argus/peacock`) — all visuals come from Peacock:**
 

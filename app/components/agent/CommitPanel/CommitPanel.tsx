@@ -1,13 +1,53 @@
+import type { DiffFile } from "../../../lib/diffParser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@argus/peacock";
+import {
+  Button,
+  DestructiveConfirm,
+  GitErrorBanner,
+  type GitErrorKind,
+} from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
-import { getGitAuthor, gitCommit } from "../../../lib/ipc";
+import { GitError } from "../../../lib/gitError";
+import {
+  type GhIssue,
+  type GitCommit,
+  getGitAuthor,
+  getLastCommitHash,
+  getLastCommitMessage,
+  getSession,
+  ghListIssues,
+  gitAmendTip,
+  gitCanAmendTip,
+  gitCommit,
+  gitGetConfig,
+  gitLog,
+  gitSetConfig,
+  pushSessionBranch,
+} from "../../../lib/ipc";
 import { md5Hex } from "../../../lib/md5";
+import { useFocusCommitRequests } from "../../../stores/gitUiStore";
+import {
+  getConfirmPreference,
+  setConfirmPreference,
+  showSettingsDialog,
+  useConventionalCommitsPicker,
+} from "../../../stores/settingsStore";
+import { useGitShortcuts } from "../GitView/useGitShortcuts";
+import { CommitComposer } from "./CommitComposer";
 import styles from "./CommitPanel.module.css";
+
+/** In-memory cache for GitHub issues per repo root. Expires after 5 min. */
+const ghIssueCache = new Map<
+  string,
+  { fetchedAt: number; issues: GhIssue[] }
+>();
+const GH_ISSUE_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export interface CommitPanelProps {
   allStaged: boolean;
   anyStaged: boolean;
+  /** Optional dirty-file list from the parent DiffViewer for \ completions. */
+  diffFiles?: DiffFile[];
   onAction: (action: () => Promise<void>) => Promise<void>;
   onCommitted: () => void;
   onStageAll: () => Promise<void>;
@@ -19,6 +59,7 @@ export function CommitPanel({
   sessionId,
   allStaged,
   anyStaged,
+  diffFiles = [],
   onStageAll,
   onUnstageAll,
   onAction,
@@ -30,39 +71,142 @@ export function CommitPanel({
   const [signOff, setSignOff] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
   const [commitError, setCommitError] = useState<string | null>(null);
+  const [commitErrorBanner, setCommitErrorBanner] = useState<{
+    kind: GitErrorKind;
+    message: string;
+  } | null>(null);
   const [expanded, setExpanded] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const subjectInputRef = useRef<HTMLInputElement>(null);
+  const bodyInputRef = useRef<HTMLTextAreaElement>(null);
+  const isCommittingRef = useRef(false);
+  /** Bumped after each successful commit to trigger a tip-hash refresh effect. */
+  const [commitTick, setCommitTick] = useState(0);
 
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
+  const [canAmend, setCanAmend] = useState<{ ok: boolean; reason?: string }>({
+    ok: true,
+  });
+  const [gpgSign, setGpgSign] = useState(false);
+  const [conventionalPrefix, setConventionalPrefix] = useState<string>("");
+  const [rewordOpen, setRewordOpen] = useState(false);
+  const [pushedAmendConfirm, setPushedAmendConfirm] = useState(false);
+  const showConventionalPicker = useConventionalCommitsPicker();
+  const [hasGithubRemote, setHasGithubRemote] = useState(false);
+  const [issueNumber, setIssueNumber] = useState<string | null>(null);
+  const [tipHash, setTipHash] = useState<string>("");
+  /** Saved subject/body the user had typed before amend prefill, restored on toggle off. */
+  const preAmendDraftRef = useRef<{
+    body: string;
+    prefix: string;
+    subject: string;
+  } | null>(null);
 
-  // Listen for the Shift+Cmd+C shortcut dispatched from the git shortcuts layer.
-  useEffect(() => {
-    const onFocusCommit = () => {
-      const input = subjectInputRef.current;
-      if (!input) {
-        return;
-      }
-      input.focus();
-      input.select();
-      setExpanded(true);
-    };
-    window.addEventListener("argus:git-focus-commit", onFocusCommit);
+  // Autocomplete data feeds.
+  const [recentCommits, setRecentCommits] = useState<GitCommit[]>([]);
+  const [ghIssues, setGhIssues] = useState<GhIssue[]>([]);
 
-    return () =>
-      window.removeEventListener("argus:git-focus-commit", onFocusCommit);
+  // Listen for the Shift+Cmd+C focus-commit request from the shortcut layer.
+  const onFocusCommit = useCallback(() => {
+    const input = subjectInputRef.current;
+    if (!input) {
+      return;
+    }
+    input.focus();
+    input.select();
+    setExpanded(true);
   }, []);
+  useFocusCommitRequests(onFocusCommit);
 
   useEffect(() => {
+    let cancelled = false;
+    const guard =
+      <T,>(fn: (v: T) => void) =>
+      (v: T) => {
+        if (!cancelled) {
+          fn(v);
+        }
+      };
     getGitAuthor(sessionId)
-      .then(([name, email]) => {
-        setAuthorName(name);
-        setAuthorEmail(email);
-      })
+      .then(
+        guard(([name, email]: [string, string]) => {
+          setAuthorName(name);
+          setAuthorEmail(email);
+        }),
+      )
       .catch(() => {});
+    gitCanAmendTip(sessionId)
+      .then(guard(setCanAmend))
+      .catch(() => undefined);
+    gitGetConfig(sessionId, "commit.gpgsign")
+      .then(guard((v: string | null) => setGpgSign(v === "true")))
+      .catch(() => undefined);
+    gitGetConfig(sessionId, "remote.origin.url")
+      .then(
+        guard((url: string | null) =>
+          setHasGithubRemote(Boolean(url && /github\.com/.test(url))),
+        ),
+      )
+      .catch(guard(() => setHasGithubRemote(false)));
+
+    // Load recent commits for autocomplete.
+    gitLog(sessionId, 50, true)
+      .then(guard((commits: GitCommit[]) => setRecentCommits(commits)))
+      .catch(guard(() => setRecentCommits([])));
+
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId]);
+
+  // Tip hash: refreshes on session change AND after every successful commit.
+  useEffect(() => {
+    let cancelled = false;
+    getLastCommitHash(sessionId)
+      .then((h) => {
+        if (!cancelled) {
+          setTipHash(h.slice(0, 8));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTipHash("");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, commitTick]);
+
+  // Load GitHub issues (cached, graceful failure).
+  useEffect(() => {
+    if (!hasGithubRemote) {
+      return;
+    }
+    getSession(sessionId)
+      .then((session) => {
+        if (!session) {
+          return;
+        }
+        const repoRoot = session.repo_root;
+        const cached = ghIssueCache.get(repoRoot);
+        if (cached && Date.now() - cached.fetchedAt < GH_ISSUE_CACHE_TTL_MS) {
+          setGhIssues(cached.issues);
+
+          return;
+        }
+        ghListIssues(repoRoot)
+          .then((issues) => {
+            ghIssueCache.set(repoRoot, { issues, fetchedAt: Date.now() });
+            setGhIssues(issues);
+          })
+          .catch(() => setGhIssues([]));
+      })
+      .catch(() => setGhIssues([]));
+  }, [sessionId, hasGithubRemote]);
 
   const gravatarUrl = useMemo(() => {
     if (!authorEmail) {
@@ -80,84 +224,309 @@ export function CommitPanel({
     (target) => target.closest('[role="separator"]') !== null,
   );
 
-  const handleCommit = useCallback(async () => {
-    if (!commitSubject.trim()) {
-      return;
-    }
-    setIsCommitting(true);
-    setCommitError(null);
-    try {
-      let message = commitSubject.trim();
-      if (commitBody.trim()) {
-        message += `\n\n${commitBody.trim()}`;
+  const handleCommit = useCallback(
+    async (alsoPush?: boolean) => {
+      if (!commitSubject.trim()) {
+        return;
       }
-
-      if (signOff && authorName && authorEmail) {
-        message += `\n\nSigned-off-by: ${authorName} <${authorEmail}>`;
+      if (isCommittingRef.current) {
+        return;
       }
+      isCommittingRef.current = true;
+      setIsCommitting(true);
+      setCommitError(null);
+      try {
+        let message = conventionalPrefix
+          ? `${conventionalPrefix}: ${commitSubject.trim()}`
+          : commitSubject.trim();
+        if (commitBody.trim()) {
+          message += `\n\n${commitBody.trim()}`;
+        }
 
-      await gitCommit(sessionId, message, amend);
-      setCommitSubject("");
-      setCommitBody("");
-      setAmend(false);
-      setExpanded(false);
-      onCommitted();
-    } catch (err) {
-      setCommitError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsCommitting(false);
-    }
-  }, [
-    sessionId,
-    commitSubject,
-    commitBody,
-    amend,
-    signOff,
-    authorName,
-    authorEmail,
-    onCommitted,
-  ]);
+        if (signOff && authorName && authorEmail) {
+          message += `\n\nSigned-off-by: ${authorName} <${authorEmail}>`;
+        }
 
-  let commitBtnTitle = "Commit staged changes";
-  if (!anyStaged) {
+        if (amend) {
+          // Use the dedicated amend-tip command so backend safety checks
+          // (merge-base, pushed) run consistently.
+          const subjectOnly = conventionalPrefix
+            ? `${conventionalPrefix}: ${commitSubject.trim()}`
+            : commitSubject.trim();
+          await gitAmendTip(sessionId, subjectOnly, commitBody.trim());
+        } else {
+          await gitCommit(sessionId, message, false);
+        }
+        if (alsoPush) {
+          try {
+            await pushSessionBranch(sessionId);
+          } catch (pushErr) {
+            setCommitError(
+              pushErr instanceof Error ? pushErr.message : String(pushErr),
+            );
+          }
+        }
+        setCommitSubject("");
+        setCommitBody("");
+        setAmend(false);
+        preAmendDraftRef.current = null;
+        setExpanded(false);
+        // Refresh the tip hash since we just rewrote/added a commit.
+        setCommitTick((n) => n + 1);
+        onCommitted();
+      } catch (err) {
+        if (err instanceof GitError) {
+          if (err.kind === "nothing-to-commit") {
+            // Race: working tree was already clean (e.g. double-submit, or
+            // staged change vanished between disable check and IPC). Treat
+            // as a no-op rather than surfacing an error.
+            setCommitSubject("");
+            setCommitBody("");
+            setAmend(false);
+            preAmendDraftRef.current = null;
+            setExpanded(false);
+            onCommitted();
+          } else {
+            setCommitErrorBanner({ kind: err.kind, message: err.message });
+          }
+        } else {
+          setCommitError(err instanceof Error ? err.message : String(err));
+        }
+      } finally {
+        isCommittingRef.current = false;
+        setIsCommitting(false);
+      }
+    },
+    [
+      sessionId,
+      commitSubject,
+      commitBody,
+      amend,
+      signOff,
+      authorName,
+      authorEmail,
+      conventionalPrefix,
+      onCommitted,
+    ],
+  );
+
+  let commitBtnTitle = amend ? "Amend tip commit" : "Commit staged changes";
+  let commitButtonLabel: string;
+  if (isCommitting) {
+    commitButtonLabel = amend ? "Amending..." : "Committing...";
+  } else {
+    commitButtonLabel = amend ? "Amend" : "Commit";
+  }
+  if (!amend && !anyStaged) {
     commitBtnTitle = "No staged changes to commit";
   } else if (!commitSubject.trim()) {
     commitBtnTitle = "Enter a commit subject";
   }
 
+  const subjectLength =
+    (conventionalPrefix ? conventionalPrefix.length : 0) + commitSubject.length;
+  const subjectWarn = subjectLength > 50;
+  const subjectError = subjectLength > 72;
+
+  const handleReword = useCallback(async () => {
+    if (!canAmend.ok) {
+      return;
+    }
+    try {
+      const last = await getLastCommitMessage(sessionId);
+      const [subj, ...rest] = last.split("\n");
+      setCommitSubject(subj || "");
+      setCommitBody(rest.join("\n").replace(/^\n+/, ""));
+      setAmend(true);
+      setExpanded(true);
+      setRewordOpen(false);
+      subjectInputRef.current?.focus();
+    } catch (err) {
+      setCommitError(err instanceof Error ? err.message : String(err));
+    }
+  }, [sessionId, canAmend]);
+
+  const prefillFromTip = useCallback(async () => {
+    try {
+      const last = await getLastCommitMessage(sessionId);
+      const [subj, ...rest] = last.split("\n");
+      // Save what the user had typed so we can restore it if amend is unchecked.
+      preAmendDraftRef.current = {
+        subject: commitSubject,
+        body: commitBody,
+        prefix: conventionalPrefix,
+      };
+      // The composer's subject is the message minus any conventional prefix.
+      // Reset the prefix dropdown so the prefilled subject isn't double-prefixed.
+      setConventionalPrefix("");
+      setCommitSubject(subj || "");
+      setCommitBody(rest.join("\n").replace(/^\n+/, ""));
+      setExpanded(true);
+    } catch (err) {
+      setCommitError(err instanceof Error ? err.message : String(err));
+    }
+  }, [sessionId, commitSubject, commitBody, conventionalPrefix]);
+
+  const restorePreAmendDraft = useCallback(() => {
+    const saved = preAmendDraftRef.current;
+    if (saved) {
+      setCommitSubject(saved.subject);
+      setCommitBody(saved.body);
+      setConventionalPrefix(saved.prefix);
+      preAmendDraftRef.current = null;
+    }
+  }, []);
+
+  const handleAmendToggle = useCallback(
+    (next: boolean) => {
+      if (!next) {
+        setAmend(false);
+        restorePreAmendDraft();
+
+        return;
+      }
+      if (!canAmend.ok) {
+        // Pushed-tip case → confirm; merge-base case → silently disabled.
+        if (canAmend.reason?.toLowerCase().includes("pushed")) {
+          if (getConfirmPreference("amend-pushed")) {
+            setAmend(true);
+            prefillFromTip().catch(() => undefined);
+          } else {
+            setPushedAmendConfirm(true);
+          }
+        }
+
+        return;
+      }
+      setAmend(true);
+      prefillFromTip().catch(() => undefined);
+    },
+    [canAmend, prefillFromTip, restorePreAmendDraft],
+  );
+
+  // Phase 2 W12 — Cmd+Enter / Opt+Cmd+Enter shortcuts. Fire only when the
+  // composer is expanded so they don't hijack global Enter combos.
+  // Phase 3 K1 — Shift+Cmd+A toggles "amend tip" using the same gating logic.
+  const shortcutHandlers = useMemo(
+    () => ({
+      "commit-now": () => {
+        if (expanded || document.activeElement === subjectInputRef.current) {
+          handleCommit(false);
+        }
+      },
+      "commit-and-push": () => {
+        if (expanded || document.activeElement === subjectInputRef.current) {
+          handleCommit(true);
+        }
+      },
+      "amend-last": () => handleAmendToggle(!amend),
+    }),
+    [expanded, handleCommit, handleAmendToggle, amend],
+  );
+  useGitShortcuts("session", shortcutHandlers);
+
+  const toggleGpgSign = useCallback(
+    async (next: boolean) => {
+      setGpgSign(next);
+      try {
+        await gitSetConfig(sessionId, "commit.gpgsign", next ? "true" : "");
+      } catch {
+        // Best-effort; revert on error.
+        setGpgSign(!next);
+      }
+    },
+    [sessionId],
+  );
+
+  const CONVENTIONAL_PREFIXES = [
+    "",
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "perf",
+    "test",
+    "build",
+    "ci",
+    "chore",
+    "revert",
+  ];
+
+  // Handle subject change — also track issue number hint.
+  const handleSubjectChange = useCallback(
+    (value: string) => {
+      setCommitSubject(value);
+      if (hasGithubRemote) {
+        const match = value.match(/#(\d+)\s*$/);
+        setIssueNumber(match ? (match[1] ?? null) : null);
+      }
+    },
+    [hasGithubRemote],
+  );
+
   return (
     <div ref={panelRef} className={styles.commitPanel}>
-      <input
-        ref={subjectInputRef}
-        className={styles.commitSubject}
-        placeholder="Commit Subject"
-        type="text"
-        value={commitSubject}
-        onChange={(e) => setCommitSubject(e.target.value)}
-        onFocus={() => setExpanded(true)}
-        onKeyDown={(e) => {
-          if (
-            e.key === "Enter" &&
-            !e.shiftKey &&
-            anyStaged &&
-            commitSubject.trim()
-          ) {
-            handleCommit();
-          }
-        }}
-      />
+      <div className={styles.subjectRow}>
+        {showConventionalPicker && (
+          <select
+            aria-label="Conventional Commits prefix"
+            className={styles.conventionalPicker}
+            value={conventionalPrefix}
+            onChange={(e) => setConventionalPrefix(e.target.value)}
+          >
+            {CONVENTIONAL_PREFIXES.map((p) => (
+              <option key={p || "none"} value={p}>
+                {p || "—"}
+              </option>
+            ))}
+          </select>
+        )}
+        <CommitComposer
+          subject={commitSubject}
+          body={commitBody}
+          subjectWarn={subjectWarn}
+          subjectError={subjectError}
+          onSubjectChange={handleSubjectChange}
+          onBodyChange={setCommitBody}
+          onSubjectFocus={() => setExpanded(true)}
+          subjectRef={subjectInputRef}
+          bodyRef={bodyInputRef}
+          diffFiles={diffFiles}
+          recentCommits={recentCommits}
+          ghIssues={ghIssues}
+          showBody={expanded}
+          onSubjectEnter={() => {
+            if (anyStaged && commitSubject.trim()) {
+              handleCommit(false);
+            }
+          }}
+        />
+      </div>
+
+      {expanded && hasGithubRemote && issueNumber && (
+        <div className={styles.hints}>
+          <span>
+            · #{issueNumber} will link issue {issueNumber} on GitHub
+          </span>
+        </div>
+      )}
+      {expanded && subjectWarn && (
+        <div
+          className={subjectError ? styles.rulerError : styles.rulerWarn}
+          aria-live="polite"
+        >
+          {subjectLength}/{subjectError ? 72 : 50} chars
+        </div>
+      )}
 
       {expanded && (
         <>
-          <textarea
-            className={styles.commitBody}
-            placeholder="Detailed description"
-            rows={3}
-            value={commitBody}
-            onChange={(e) => setCommitBody(e.target.value)}
-          />
           <div className={styles.hints}>
-            <span>· Type &quot;/&quot; for commands</span>
+            <span>
+              · Type &quot;\&quot; for files, &quot;c:&quot; for commits,
+              &quot;#&quot; for issues
+            </span>
             <span>
               · Hold &quot;Option&quot; key for quick amend while text field is
               not focused
@@ -166,15 +535,35 @@ export function CommitPanel({
 
           <div className={styles.optionsRow}>
             <div className={styles.checkboxes}>
-              <label className={styles.checkLabel}>
+              <label
+                className={styles.checkLabel}
+                title={canAmend.ok ? "Amend tip commit" : canAmend.reason}
+              >
                 <input
                   checked={amend}
                   className={styles.checkbox}
+                  disabled={
+                    !canAmend.ok &&
+                    !canAmend.reason?.toLowerCase().includes("pushed")
+                  }
                   type="checkbox"
-                  onChange={(e) => setAmend(e.target.checked)}
+                  onChange={(e) => handleAmendToggle(e.target.checked)}
                 />
-                Amend
+                {tipHash ? `Amend ${tipHash}` : "Amend"}
               </label>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!canAmend.ok}
+                title={
+                  canAmend.ok
+                    ? "Reword tip commit message"
+                    : (canAmend.reason ?? "")
+                }
+                onClick={handleReword}
+              >
+                Reword tip
+              </Button>
               <label className={styles.checkLabel}>
                 <input
                   checked={signOff}
@@ -183,6 +572,15 @@ export function CommitPanel({
                   onChange={(e) => setSignOff(e.target.checked)}
                 />
                 Sign Off
+              </label>
+              <label className={styles.checkLabel} title="commit.gpgsign">
+                <input
+                  checked={gpgSign}
+                  className={styles.checkbox}
+                  type="checkbox"
+                  onChange={(e) => toggleGpgSign(e.target.checked)}
+                />
+                GPG sign
               </label>
             </div>
             {authorName && (
@@ -206,6 +604,29 @@ export function CommitPanel({
         </>
       )}
 
+      {commitErrorBanner && (
+        <GitErrorBanner
+          kind={commitErrorBanner.kind}
+          message={commitErrorBanner.message}
+          onAction={(actionId) => {
+            if (actionId === "configure-signing") {
+              setCommitErrorBanner(null);
+              showSettingsDialog();
+
+              return;
+            }
+            if (actionId === "copy-stderr") {
+              navigator.clipboard
+                ?.writeText(commitErrorBanner.message)
+                .catch(() => undefined);
+
+              return;
+            }
+            setCommitErrorBanner(null);
+          }}
+          onDismiss={() => setCommitErrorBanner(null)}
+        />
+      )}
       {commitError && <div className={styles.commitError}>{commitError}</div>}
       <div className={styles.commitActions}>
         <Button
@@ -218,13 +639,37 @@ export function CommitPanel({
         <Button
           size="sm"
           variant="primary"
-          disabled={!anyStaged || !commitSubject.trim() || isCommitting}
+          disabled={
+            (!amend && !anyStaged) || !commitSubject.trim() || isCommitting
+          }
           title={commitBtnTitle}
-          onClick={handleCommit}
+          onClick={() => handleCommit(false)}
         >
-          {isCommitting ? "Committing..." : "Commit"}
+          {commitButtonLabel}
         </Button>
       </div>
+      <DestructiveConfirm
+        open={pushedAmendConfirm}
+        tone="destructive"
+        title="Amend pushed commit?"
+        description="This rewrites a commit that has already been pushed. You will need to force-push afterwards."
+        confirmLabel="Amend anyway"
+        rememberKey="amend-pushed"
+        rememberLabel="amending pushed commits"
+        onConfirm={(skip) => {
+          if (skip) {
+            setConfirmPreference("amend-pushed", true);
+          }
+          setAmend(true);
+          setPushedAmendConfirm(false);
+          prefillFromTip().catch(() => undefined);
+        }}
+        onCancel={() => setPushedAmendConfirm(false)}
+      />
+      {/* Reword UX: clicking "Reword tip" loads the tip's message into the
+          composer and flips amend on. The actual modal popup deferred to
+          a later phase — current flow uses inline edit. */}
+      {rewordOpen && null}
     </div>
   );
 }

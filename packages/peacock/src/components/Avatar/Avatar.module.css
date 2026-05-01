@@ -1,0 +1,16 @@
+.avatar {
+  width: 24px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface-4);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  object-fit: cover;
+  user-select: none;
+  overflow: hidden;
+}
