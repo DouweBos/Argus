@@ -649,6 +649,7 @@ export function SetupConfigDialog({
   const [saveChatHistory, setSaveChatHistory] = useState(true);
   const [singleRuntime, setSingleRuntime] = useState(false);
   const [pullRequestTemplate, setPullRequestTemplate] = useState("");
+  const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
   const [minArgusVersion, setMinArgusVersion] = useState("");
   const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
   const [branchPrefix, setBranchPrefix] = useState("");
@@ -749,6 +750,9 @@ export function SetupConfigDialog({
         }
         if (config.pull_request_template) {
           setPullRequestTemplate(config.pull_request_template);
+        }
+        if (config.default_base_branch) {
+          setDefaultBaseBranch(config.default_base_branch);
         }
         if (config.min_argus_version) {
           setMinArgusVersion(config.min_argus_version);
@@ -890,6 +894,10 @@ export function SetupConfigDialog({
     if (prTemplate) {
       config.pull_request_template = prTemplate;
     }
+    const defaultBase = defaultBaseBranch.trim();
+    if (defaultBase) {
+      config.default_base_branch = defaultBase;
+    }
     const minVersion = minArgusVersion.trim().replace(/^v/i, "");
     if (minVersion) {
       config.min_argus_version = minVersion;
@@ -925,6 +933,7 @@ export function SetupConfigDialog({
       saveChatHistory,
       singleRuntime,
       pullRequestTemplate,
+      defaultBaseBranch,
       minArgusVersion,
       mcpEntries,
       releaseNotesList.items,
@@ -1173,6 +1182,28 @@ export function SetupConfigDialog({
                   list={protectedBranchList}
                   placeholder="main"
                 />
+
+                <div className={styles.field}>
+                  <label
+                    className={styles.label}
+                    htmlFor="setup-default-base-branch"
+                  >
+                    Default source branch
+                  </label>
+                  <Input
+                    id="setup-default-base-branch"
+                    placeholder="staging"
+                    type="text"
+                    value={defaultBaseBranch}
+                    onChange={(e) => setDefaultBaseBranch(e.target.value)}
+                  />
+                  <p className={styles.helpText}>
+                    Branch preselected as the source when creating a new
+                    session. When empty, Argus probes for <code>staging</code>,{" "}
+                    <code>develop</code>, <code>dev</code>, <code>main</code>,
+                    then <code>master</code>.
+                  </p>
+                </div>
 
                 <details className={sectionStyles.advanced}>
                   <summary className={sectionStyles.advancedSummary}>

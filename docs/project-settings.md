@@ -30,21 +30,21 @@ Two ways to change project settings:
 2. **Hand-edit `.argus.json`** at the repo root. The dialog re-reads
    on next open, so the two stay in sync.
 
-| Field                                         | Editable in dialog?              |
-| --------------------------------------------- | -------------------------------- |
-| `setup.copy` / `symlink` / `commands`         | yes (Setup)                      |
-| `min_argus_version`                           | yes (Setup)                      |
-| `terminals`                                   | yes (Terminals)                  |
-| `run`                                         | yes (Run commands)               |
-| `workspace_env`                               | yes (Workspace env)              |
-| `platforms`                                   | yes (Platforms)                  |
-| `browser_url`, `browser_presets`              | yes (Browser)                    |
-| `single_runtime`                              | yes (Run commands)               |
-| `agent_prompt`, `save_chat_history`           | yes (Agent)                      |
-| `protected_branches`, `pull_request_template` | yes (Branch protection)          |
-| `mcp_servers`                                 | yes (MCP servers)                |
-| `release_note_patterns`                       | yes (Release notes)              |
-| `related_projects`                            | **no** — hand-edit `.argus.json` |
+| Field                                                                | Editable in dialog?              |
+| -------------------------------------------------------------------- | -------------------------------- |
+| `setup.copy` / `symlink` / `commands`                                | yes (Setup)                      |
+| `min_argus_version`                                                  | yes (Setup)                      |
+| `terminals`                                                          | yes (Terminals)                  |
+| `run`                                                                | yes (Run commands)               |
+| `workspace_env`                                                      | yes (Workspace env)              |
+| `platforms`                                                          | yes (Platforms)                  |
+| `browser_url`, `browser_presets`                                     | yes (Browser)                    |
+| `single_runtime`                                                     | yes (Run commands)               |
+| `agent_prompt`, `save_chat_history`                                  | yes (Agent)                      |
+| `protected_branches`, `pull_request_template`, `default_base_branch` | yes (Branch protection)          |
+| `mcp_servers`                                                        | yes (MCP servers)                |
+| `release_note_patterns`                                              | yes (Release notes)              |
+| `related_projects`                                                   | **no** — hand-edit `.argus.json` |
 
 ---
 
@@ -64,6 +64,7 @@ Two ways to change project settings:
   "save_chat_history":  true,
   "protected_branches": ["main", "master"],
   "pull_request_template": "feature.md",
+  "default_base_branch": "staging",
   "single_runtime":     false,
   "min_argus_version":  "0.10.0",
   "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } }
@@ -256,6 +257,24 @@ directly — instead they surface a _Push & open PR_ flow.
 ```
 
 The default `.argus.json` Argus generates includes `["main", "master"]`.
+
+---
+
+## `default_base_branch` — preselected source branch for new sessions
+
+The branch preselected as the source when creating a new session in the
+Create-Session dialog. Useful when your team's default integration
+branch is something other than `main` (for example, `staging` or
+`develop`).
+
+```jsonc
+"default_base_branch": "staging"
+```
+
+The branch must exist locally to be picked. When unset (or missing
+locally), Argus walks a built-in fallback chain — `staging` → `develop`
+→ `dev` → `main` → `master` — and finally falls back to the first local
+branch.
 
 ---
 

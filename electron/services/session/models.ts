@@ -190,6 +190,13 @@ export interface ArgusConfig {
    */
   protected_branches: string[];
   /**
+   * Preferred default source branch for new sessions (e.g. `"staging"`,
+   * `"develop"`). When set, the Create-Session dialog preselects this
+   * branch instead of falling back to `main`/`master`. Branch must exist
+   * locally to be picked; otherwise the fallback chain runs.
+   */
+  default_base_branch?: string | null;
+  /**
    * Filename of the preferred pull-request template — used by the
    * "Push & open PR" flow when the repo has multiple templates in
    * `.github/PULL_REQUEST_TEMPLATE/` (where GitHub otherwise requires an
@@ -293,6 +300,7 @@ export function defaultArgusConfig(): ArgusConfig {
     save_chat_history: true,
     platforms: null,
     protected_branches: [],
+    default_base_branch: null,
     single_runtime: false,
     mcp_servers: null,
     min_argus_version: null,
