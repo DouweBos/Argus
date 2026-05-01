@@ -15,6 +15,10 @@ extraResources:
     to: argus-sim-bridge
     filter:
       - "**/*"
+  - from: native/argus-hotkey-bridge/argus-hotkey-bridge
+    to: argus-hotkey-bridge
+    filter:
+      - "**/*"
   - from: build/menu-icons
     to: menu-icons
     filter:

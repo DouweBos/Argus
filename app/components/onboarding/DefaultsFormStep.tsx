@@ -55,7 +55,7 @@ export function DefaultsFormStep() {
         }
       }
       await saveOnboardingDefaults({ model, permissionMode });
-      await advance("telemetry");
+      await advance("launcher");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

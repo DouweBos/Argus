@@ -15,7 +15,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "pnpm ensure:bridge && concurrently -n vite,electron \"vite\" \"pnpm build:electron && electron .\"",
-    "ensure:bridge": "test -x native/argus-sim-bridge/argus-sim-bridge || pnpm build:bridge",
+    "ensure:bridge": "(test -x native/argus-sim-bridge/argus-sim-bridge || pnpm build:bridge) && (test -x native/argus-hotkey-bridge/argus-hotkey-bridge || pnpm build:hotkey-bridge)",
     "dev:vite": "vite",
     "dev:electron": "pnpm build:electron && electron .",
     "build:electron": "node build-electron.mjs",
@@ -28,6 +28,7 @@
     "storybook": "pnpm --filter @argus/peacock storybook",
     "lint": "tsc --noEmit && pnpm typecheck:electron && eslint . && prettier --check . && pnpm run lint:css-modules",
     "build:bridge": "make -C native/argus-sim-bridge",
+    "build:hotkey-bridge": "make -C native/argus-hotkey-bridge",
     "build:icon": "tsx scripts/generate-icon.ts",
     "build:menu-icons": "tsx scripts/rasterize-menu-icons.ts",
     "lint:css-modules": "tsx scripts/check-css-module-usage.ts",
