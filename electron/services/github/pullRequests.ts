@@ -207,7 +207,7 @@ export async function listInterestingPullRequests(
       involves: search(query: "is:pr is:open archived:false involves:@me", type: ISSUE, first: 100) {
         nodes { ... on PullRequest { ${PR_FIELDS} } }
       }
-      reviewRequested: search(query: "is:pr is:open archived:false review-requested:@me", type: ISSUE, first: 100) {
+      reviewRequested: search(query: "is:pr is:open archived:false user-review-requested:@me", type: ISSUE, first: 100) {
         nodes { ... on PullRequest { ${PR_FIELDS} } }
       }
     }
@@ -264,6 +264,9 @@ export async function listInterestingPullRequests(
     if (node.author?.login && node.author.login === viewerLogin) {
       refinedReasons.add("author");
       refinedReasons.delete("commenter");
+    }
+    if (refinedReasons.has("team")) {
+      refinedReasons.delete("reviewer");
     }
 
     results.push({
