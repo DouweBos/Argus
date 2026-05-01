@@ -1358,6 +1358,27 @@ export function BugIcon({ size = 18, className, ...rest }: IconProps) {
   );
 }
 
+export function LinkIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M6.75 9.25 9.25 6.75" />
+      <path d="M7.25 4.75 8.5 3.5a2.475 2.475 0 0 1 3.5 3.5L10.75 8.25" />
+      <path d="M8.75 11.25 7.5 12.5a2.475 2.475 0 0 1-3.5-3.5L5.25 7.75" />
+    </svg>
+  );
+}
+
 export function TaskIcon({
   size = 12,
   className,
@@ -1379,6 +1400,27 @@ export function TaskIcon({
     >
       <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2.25" />
       {done && <path d="M5.25 8.25 L7.25 10.25 L10.75 5.75" />}
+    </svg>
+  );
+}
+
+/** Six dots in a 2×3 grid — decorative drag handle. */
+export function GripDotsIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="currentColor"
+      height={size}
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <circle cx="5.5" cy="4" r="1.25" />
+      <circle cx="10.5" cy="4" r="1.25" />
+      <circle cx="5.5" cy="8" r="1.25" />
+      <circle cx="10.5" cy="8" r="1.25" />
+      <circle cx="5.5" cy="12" r="1.25" />
+      <circle cx="10.5" cy="12" r="1.25" />
     </svg>
   );
 }

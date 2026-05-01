@@ -4,7 +4,7 @@ import type {
   ReleaseNoteLabelTone,
 } from "../../../lib/types";
 import { useEffect, useMemo, useState } from "react";
-import { Icons, Input } from "@argus/peacock";
+import { Button, EmptyState, Icons, Input } from "@argus/peacock";
 import { previewReleaseNotes } from "../../../lib/ipc";
 import { SessionReleaseNotesList } from "../../home/SessionReleaseNotesCard/SessionReleaseNotesCard";
 import { dialogStyles as styles } from "../../shared/Dialog";
@@ -45,12 +45,21 @@ export function ReleaseNotesField({ list, repoRoot }: ReleaseNotesFieldProps) {
   return (
     <div className={styles.field}>
       {list.items.length === 0 ? (
-        <div className={styles.emptyState}>
-          <span>No release-note patterns configured</span>
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
-        </div>
+        <EmptyState
+          action={
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={handleAdd}
+            >
+              Add pattern
+            </Button>
+          }
+          className={sectionStyles.inlineEmptyState}
+          icon={<Icons.FileIcon size={18} />}
+          title="No release-note patterns configured"
+        />
       ) : (
         <div className={sectionStyles.runCommandList}>
           {list.items.map((entry, i) => (
@@ -70,9 +79,14 @@ export function ReleaseNotesField({ list, repoRoot }: ReleaseNotesFieldProps) {
               onRemoveLabel={(j) => list.removeLabel(i, j)}
             />
           ))}
-          <button className={styles.addRowBtn} onClick={handleAdd}>
-            + Add
-          </button>
+          <Button
+            leading={<Icons.PlusIcon size={11} />}
+            size="sm"
+            variant="ghost"
+            onClick={handleAdd}
+          >
+            Add
+          </Button>
         </div>
       )}
 
@@ -176,9 +190,14 @@ function ReleaseNoteCard({
       ) : (
         <div className={sectionStyles.releaseNoteLabels}>
           {entry.labels.length === 0 ? (
-            <button className={styles.addRowBtn} onClick={onAddLabel}>
-              + Add label
-            </button>
+            <Button
+              leading={<Icons.PlusIcon size={11} />}
+              size="sm"
+              variant="ghost"
+              onClick={onAddLabel}
+            >
+              Add label
+            </Button>
           ) : (
             <>
               {entry.labels.map((label, j) => (
@@ -226,9 +245,14 @@ function ReleaseNoteCard({
                   </button>
                 </div>
               ))}
-              <button className={styles.addRowBtn} onClick={onAddLabel}>
-                + Add label
-              </button>
+              <Button
+                leading={<Icons.PlusIcon size={11} />}
+                size="sm"
+                variant="ghost"
+                onClick={onAddLabel}
+              >
+                Add label
+              </Button>
             </>
           )}
         </div>

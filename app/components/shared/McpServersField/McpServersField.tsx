@@ -44,9 +44,14 @@ export function McpServersField({
     return (
       <div className={dialogStyles.emptyState}>
         <span>{emptyLabel}</span>
-        <button className={dialogStyles.addRowBtn} onClick={add}>
-          + Add server
-        </button>
+        <Button
+          leading={<Icons.PlusIcon size={11} />}
+          size="sm"
+          variant="secondary"
+          onClick={add}
+        >
+          Add server
+        </Button>
       </div>
     );
   }
@@ -90,9 +95,14 @@ export function McpServersField({
           </div>
         );
       })}
-      <button className={dialogStyles.addRowBtn} onClick={add}>
-        + Add server
-      </button>
+      <Button
+        leading={<Icons.PlusIcon size={11} />}
+        size="sm"
+        variant="secondary"
+        onClick={add}
+      >
+        Add server
+      </Button>
     </div>
   );
 }

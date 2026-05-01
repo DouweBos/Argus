@@ -832,6 +832,15 @@ export const simulatorTouch = (
 export const simulatorButton = (udid: string, button: string): Promise<void> =>
   invoke("simulator_button", { udid, button });
 
+/**
+ * Open a URL / deep link on the given device via `conductor open-link`.
+ * `deviceKey` is the iOS UDID, Android serial, or web browser deviceId.
+ */
+export const openDeviceDeepLink = (
+  deviceKey: string,
+  url: string,
+): Promise<void> => invoke("device_open_link", { deviceKey, url });
+
 export const simulatorKeyboard = (
   udid: string,
   keyCode: number,

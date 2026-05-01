@@ -1,0 +1,45 @@
+.node {
+  display: flex;
+  flex-direction: column;
+}
+
+.rootNode {
+  /* no extra styles; kept separate so children know they're at root */
+}
+
+.header {
+  display: contents;
+}
+
+/* Children region: guide line + indented slot */
+.body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  padding-top: var(--space-2);
+}
+
+/* Vertical guide line */
+.guide {
+  flex-shrink: 0;
+  width: 1px;
+  background: var(--border);
+  margin: 0 var(--space-4);
+  border-radius: 1px;
+  /* Small fade at the bottom so the line doesn't just hard-stop */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 8px,
+    black calc(100% - 8px),
+    transparent 100%
+  );
+}
+
+.children {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

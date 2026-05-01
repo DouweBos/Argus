@@ -653,6 +653,7 @@ export function writeArgusConfig(repoRoot: string, content: string): void {
   const filePath = `${repoRoot}/.argus.json`;
   fs.writeFileSync(filePath, content, "utf8");
   info(`Wrote .argus.json to ${filePath}`);
+  getMainWindow()?.webContents.send("argus_config:changed", { repoRoot });
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,8 @@ export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
   mono?: boolean;
   muted?: boolean;
   interactive?: boolean;
+  /** Strong active/checked state for togglable chips. */
+  selected?: boolean;
   onDismiss?: MouseEventHandler<HTMLButtonElement>;
 }
 
@@ -15,6 +17,7 @@ export function Chip({
   mono,
   muted,
   interactive,
+  selected,
   onDismiss,
   className,
   children,
@@ -25,13 +28,18 @@ export function Chip({
     mono ? styles.mono : "",
     muted ? styles.muted : "",
     interactive || rest.onClick ? styles.interactive : "",
+    selected ? styles.selected : "",
     className ?? "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <span className={classes} {...rest}>
+    <span
+      aria-pressed={interactive || rest.onClick ? selected : undefined}
+      className={classes}
+      {...rest}
+    >
       {leading}
       {children}
       {onDismiss && (

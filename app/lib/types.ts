@@ -255,6 +255,28 @@ export interface RunCommand {
   title: string;
 }
 
+/** A related project that agents can spawn worktrees in. */
+export interface RelatedProject {
+  /** Human-readable description shown to spawned agents. */
+  description: string;
+  /** Relative path from this repo's root to the related project's root. */
+  path: string;
+}
+
+/**
+ * A deep link entry surfaced by the runtime toolbar's "Link" dropdown.
+ * Either a leaf link fired via `conductor open-link <url>` or a folder
+ * grouping nested entries — folders may themselves contain folders.
+ */
+export interface SimulatorDeeplinkConfig {
+  /** Nested entries when this is a folder. Mutually exclusive with `url`. */
+  children?: SimulatorDeeplinkConfig[];
+  /** Display name shown in the dropdown. */
+  label: string;
+  /** URL or custom-scheme deep link (leaf entries only). */
+  url?: string;
+}
+
 /** JSON-facing shape for custom browser device presets in `.argus.json`. */
 export interface BrowserPresetConfig {
   height: number;
@@ -314,6 +336,11 @@ export interface ArgusConfig {
    */
   pull_request_template?: string;
   /**
+   * Other repos that agents in this project may spawn worktrees in.
+   * Surfaced via the `list_projects` MCP tool.
+   */
+  related_projects?: RelatedProject[];
+  /**
    * Glob-driven release-note patterns surfaced on the session home screen
    * as an alternative to `@changesets/cli`. Each entry can be either a
    * bare glob string or a `{ glob, format, labels }` object that also
@@ -330,6 +357,12 @@ export interface ArgusConfig {
     copy?: string[];
     symlink?: string[];
   };
+  /**
+   * Deep links surfaced as a dropdown on the runtime toolbar's "Link"
+   * button. Each entry fires `conductor open-link <url>` against the
+   * currently connected simulator/emulator.
+   */
+  simulator_deeplinks?: SimulatorDeeplinkConfig[];
   /**
    * When true, only one runtime may be active across all sessions of this
    * project. The run button prompts before starting a second runtime.

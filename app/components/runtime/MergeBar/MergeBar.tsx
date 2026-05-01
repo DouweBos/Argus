@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Icons } from "@argus/peacock";
+import { useArgusConfigVersion } from "../../../hooks/useArgusConfigVersion";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   getSessionCommitsAhead,
@@ -26,6 +27,7 @@ export function MergeBar({ sessionId }: MergeBarProps) {
     [sessionId, sessions],
   );
 
+  const configVersion = useArgusConfigVersion(session?.repo_root ?? null);
   const [conflicts, setConflicts] = useState<string[]>([]);
   const [blockers, setBlockers] = useState<string[]>([]);
   const [hasStaged, setHasStaged] = useState(false);
@@ -91,7 +93,7 @@ export function MergeBar({ sessionId }: MergeBarProps) {
     return () => {
       cancelled = true;
     };
-  }, [session?.repo_root, session?.base_branch]);
+  }, [session?.repo_root, session?.base_branch, configVersion]);
 
   useIpcEvent(
     sessionId ? `session:diff-changed:${sessionId}` : "",

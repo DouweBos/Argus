@@ -63,6 +63,7 @@ export * from "./components/ContextMeter/ContextMeter";
 export * from "./components/SessionCard/SessionCard";
 export * from "./components/SettingsScreen/SettingsScreen";
 export * from "./components/SettingsDialogShell/SettingsDialogShell";
+export * from "./components/TreeNode/TreeNode";
 
 export * as Icons from "./icons/Icons";
 export * from "./icons/HomeIcons";

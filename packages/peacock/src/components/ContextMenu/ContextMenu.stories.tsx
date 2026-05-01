@@ -83,6 +83,59 @@ export const WithDanger: Story = {
   },
 };
 
+export const NestedSubmenus: Story = {
+  render: (args) => (
+    <div style={{ width: 360, height: 320 }}>
+      <ContextMenu {...args} />
+    </div>
+  ),
+  args: {
+    position: centeredPosition,
+    onClose: noop,
+    items: [
+      { label: "Profile", trailing: "myapp://profile/123", onClick: noop },
+      {
+        label: "Onboarding",
+        icon: <Icons.FolderIcon size={12} />,
+        children: [
+          { label: "Welcome", trailing: "myapp://onboarding", onClick: noop },
+          {
+            label: "Sign up",
+            trailing: "myapp://onboarding/signup",
+            onClick: noop,
+          },
+          {
+            label: "Verify",
+            icon: <Icons.FolderIcon size={12} />,
+            children: [
+              {
+                label: "Email",
+                trailing: "myapp://onboarding/verify/email",
+                onClick: noop,
+              },
+              {
+                label: "Phone",
+                trailing: "myapp://onboarding/verify/phone",
+                onClick: noop,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        label: "Checkout",
+        icon: <Icons.FolderIcon size={12} />,
+        children: [
+          { label: "Cart", trailing: "myapp://checkout", onClick: noop },
+          { label: "Payment", trailing: "myapp://checkout/pay", onClick: noop },
+        ],
+      },
+      { separator: true },
+      { label: "Open docs", trailing: "https://docs", onClick: noop },
+    ],
+  },
+};
+
 export const NoIcons: Story = {
   render: (args) => (
     <div style={{ width: 240, height: 220 }}>
