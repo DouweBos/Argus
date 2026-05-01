@@ -114,6 +114,12 @@ vi.mock("../../../stores/layoutStore", () => ({
   setActiveTool: vi.fn(),
 }));
 
+vi.mock("../../pullRequests/CreatePullRequestDialog", () => ({
+  CreatePullRequestDialog: ({ headBranch }: { headBranch: string }) => (
+    <div data-testid="create-pr-dialog">{headBranch}</div>
+  ),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -189,10 +195,10 @@ describe("readyToMergeCard", () => {
     );
 
     expect(screen.getByRole("button", { name: /^Merge$/ })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Push & open PR/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Open PR/ })).toBeNull();
   });
 
-  it("swaps Merge for Push & open PR when the base branch is protected", async () => {
+  it("swaps Merge for Open PR when the base branch is protected", async () => {
     mockReadArgusConfig.mockResolvedValue({ protected_branches: ["main"] });
     mockUseMergeStatus.mockReturnValue(baseStatus({ commitsAhead: 1 }));
 
@@ -206,13 +212,13 @@ describe("readyToMergeCard", () => {
     );
 
     const pushBtn = await screen.findByRole("button", {
-      name: /Push & open PR/,
+      name: /Open PR/,
     });
     expect(pushBtn).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Merge$/ })).toBeNull();
   });
 
-  it("pushes and opens the PR URL when the Push & PR button is clicked", async () => {
+  it("opens the create-PR dialog when Open PR is clicked", async () => {
     mockReadArgusConfig.mockResolvedValue({ protected_branches: ["main"] });
     mockUseMergeStatus.mockReturnValue(baseStatus({ commitsAhead: 1 }));
 
@@ -226,18 +232,17 @@ describe("readyToMergeCard", () => {
     );
 
     const pushBtn = await screen.findByRole("button", {
-      name: /Push & open PR/,
+      name: /Open PR/,
     });
+
+    expect(screen.queryByTestId("create-pr-dialog")).toBeNull();
 
     await act(async () => {
       fireEvent.click(pushBtn);
     });
 
     await waitFor(() => {
-      expect(mockPushSessionBranch).toHaveBeenCalledWith("ws-1");
-      expect(mockOpenExternalUrl).toHaveBeenCalledWith(
-        "https://example.com/pr",
-      );
+      expect(screen.getByTestId("create-pr-dialog")).toBeTruthy();
     });
   });
 
