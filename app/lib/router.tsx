@@ -28,6 +28,7 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
+import { capturePageview } from "./telemetry";
 
 export type AppView =
   | "agents"
@@ -139,6 +140,38 @@ function emptyRoute(view: AppView): ParsedRoute {
   };
 }
 
+/**
+ * Sanitised route template for the current pathname — never contains IDs,
+ * names, or any other dynamic segment that could leak project / session /
+ * org / repo identifiers into telemetry.
+ *
+ * Example: `/sessions/abc-123/editor` → `/sessions/:sessionId/editor`.
+ */
+export function routePattern(pathname: string): string {
+  const route = parseRoute(pathname);
+  switch (route.view) {
+    case "home":
+      return "/";
+    case "agents":
+    case "devices":
+    case "notifications":
+    case "pull-requests":
+    case "review-queue":
+    case "runtimes":
+      return `/${route.view}`;
+    case "session":
+      return route.panel === "agents"
+        ? "/sessions/:sessionId"
+        : `/sessions/:sessionId/${route.panel}`;
+    case "organizations":
+      return route.organizationId
+        ? "/organizations/:organizationId"
+        : "/organizations";
+    case "pull-request-detail":
+      return "/pull-requests/:owner/:repo/:number";
+  }
+}
+
 /** Build a pathname for a given route descriptor. */
 export function routeToPath(route: Partial<ParsedRoute>): string {
   if (route.view === "session" && route.sessionId) {
@@ -214,6 +247,8 @@ export function useRegisterNavigator(): void {
         },
       }),
     );
+
+    capturePageview(routePattern(loc.pathname));
 
     return () => {
       navigator = null;

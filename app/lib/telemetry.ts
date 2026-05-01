@@ -93,6 +93,28 @@ export function capture<N extends EventName>(
   );
 }
 
+/**
+ * Send a `$pageview` event so PostHog's DAU / Web Analytics insights count
+ * navigations. The path passed in must be a sanitised route template
+ * (see `routePattern` in `app/lib/router.tsx`) — never a raw pathname,
+ * since real paths embed session / organisation / PR identifiers that we
+ * never want in telemetry.
+ *
+ * Bypasses the typed event catalog because `$pageview` is a PostHog magic
+ * event with bespoke prop keys (`$current_url`, `$pathname`).
+ */
+export function capturePageview(pattern: string): void {
+  if (!active()) {
+    return;
+  }
+  telemetryCapture("$pageview", {
+    $current_url: `argus://${pattern.replace(/^\//, "")}`,
+    $pathname: pattern,
+    process: "renderer",
+    popout,
+  }).catch((e: unknown) => log.warn("pageview failed", e));
+}
+
 function scrubMessage(msg: string): string {
   return msg
     .replace(/\/Users\/[^/\s'")]+/g, "/Users/<user>")
