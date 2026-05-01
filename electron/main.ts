@@ -581,6 +581,18 @@ function createWindow(): void {
       });
       pendingDeepLink = null;
     }
+    mainWindow?.webContents.send("window:fullscreen", {
+      fullscreen: mainWindow.isFullScreen(),
+    });
+  });
+
+  // Notify renderer when entering/leaving native macOS fullscreen so it can
+  // collapse the traffic-light reservation in the title bar.
+  mainWindow.on("enter-full-screen", () => {
+    mainWindow?.webContents.send("window:fullscreen", { fullscreen: true });
+  });
+  mainWindow.on("leave-full-screen", () => {
+    mainWindow?.webContents.send("window:fullscreen", { fullscreen: false });
   });
 
   mainWindow.webContents.on("did-fail-load", (_e, code, desc, url) => {
