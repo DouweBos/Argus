@@ -591,15 +591,20 @@ async function squashSessionCommits(
 }
 
 /**
- * Commit any staged changes in the session worktree as a conventional commit
- * derived from the staged file set, so a subsequent rebase isn't blocked by
- * git's "Your index contains uncommitted changes" guard. No-op when the index
- * matches HEAD.
+ * Stage everything in the session worktree (tracked changes + untracked files)
+ * and commit it as a conventional commit, so a subsequent rebase isn't blocked
+ * by git's "Your index contains uncommitted changes" guard and so the merge
+ * captures all the agent's work — committed or not. No-op when the worktree
+ * is fully clean.
  */
 async function commitStagedChanges(
   wsPath: string,
   sessionBranch: string,
 ): Promise<void> {
+  // Stage every tracked modification, deletion, and untracked file. Anything
+  // ignored by .gitignore stays out, which matches user expectations.
+  await git(wsPath, ["add", "-A"]);
+
   try {
     // `diff --cached --quiet` exits non-zero when there are staged changes.
     await git(wsPath, ["diff", "--cached", "--quiet"]);
