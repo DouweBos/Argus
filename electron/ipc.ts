@@ -1299,8 +1299,8 @@ export function registerIpcHandlers(): void {
 
   // Agent commands
   handle("check_claude_cli", () => checkClaudeCli());
-  handle("start_agent", (a) =>
-    startAgent(
+  handle("start_agent", async (a) => {
+    const info = await startAgent(
       a.sessionId as string,
       a.model as string | undefined,
       a.permissionMode as string | undefined,
@@ -1310,8 +1310,15 @@ export function registerIpcHandlers(): void {
       undefined,
       undefined, // reuseAgentId — IPC callers are always fresh starts
       a.agentId as string | undefined, // presetAgentId — renderer-minted optimistic id
-    ),
-  );
+    );
+    // Broadcast so other renderers (e.g. the main window when the agent is
+    // started from the global launcher) can register it in their agent
+    // store. The initiating renderer's optimistic-start path already added
+    // the agent before this fires; its listener dedupes by id.
+    broadcastToRenderers("agent:started", info);
+
+    return info;
+  });
   handle("stop_agent", (a) => stopAgent(a.agentId as string));
   handle("restore_agent_at_turn", (a) =>
     restoreAgentAtTurn({
