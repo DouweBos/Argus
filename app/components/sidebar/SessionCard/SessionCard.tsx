@@ -21,6 +21,7 @@ import { BranchSwitcher } from "../BranchSwitcher";
 import styles from "./SessionCard.module.css";
 
 const MAX_SUBTITLE_LEN = 36;
+const EMPTY_CLAIMED_BRANCHES: ReadonlySet<string> = new Set();
 
 function truncateStart(str: string, maxLen: number): string {
   if (str.length <= maxLen) {
@@ -435,6 +436,7 @@ export function SessionCard({
       {isProject && repoRoot && repoBranch && onBranchChanged && isSelected && (
         <div className={styles.branchRow} onClick={(e) => e.stopPropagation()}>
           <BranchSwitcher
+            claimedBranches={EMPTY_CLAIMED_BRANCHES}
             currentBranch={repoBranch}
             repoRoot={repoRoot}
             onBranchChanged={onBranchChanged}
