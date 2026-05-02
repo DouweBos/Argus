@@ -80,7 +80,9 @@ export function HunkSection({
                 <button
                   className={styles.hunkBtn}
                   onClick={() =>
-                    onAction(() => discardHunk(sessionId, hunk.patch))
+                    onAction(() =>
+                      discardHunk(sessionId, hunk.patch, hunk.staged ?? false),
+                    )
                   }
                 >
                   Discard Chunk

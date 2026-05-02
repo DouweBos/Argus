@@ -825,8 +825,11 @@ export const stageHunk = (id: string, patch: string): Promise<void> =>
 export const unstageHunk = (id: string, patch: string): Promise<void> =>
   invoke("unstage_hunk", { id, patch });
 
-export const discardHunk = (id: string, patch: string): Promise<void> =>
-  invoke("discard_hunk", { id, patch });
+export const discardHunk = (
+  id: string,
+  patch: string,
+  staged: boolean,
+): Promise<void> => invoke("discard_hunk", { id, patch, staged });
 
 export const gitCommit = (
   id: string,
