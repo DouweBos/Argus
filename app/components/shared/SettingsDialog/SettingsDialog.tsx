@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Icons,
@@ -22,6 +22,7 @@ import {
   setLauncherEnabled,
   type LauncherStatus,
 } from "../../../lib/ipc";
+import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { setTelemetryEnabled } from "../../../lib/telemetry";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
 import {
@@ -30,6 +31,7 @@ import {
   hideSettingsDialog,
   removeCustomEditor,
   setConventionalCommitsPicker,
+  setDefaultModel,
   setDefaultPermissionMode,
   setDefaultPullStrategy,
   setDiffView,
@@ -43,6 +45,7 @@ import {
   updateCustomEditor,
   useConventionalCommitsPicker,
   useCustomEditors,
+  useDefaultModel,
   useDefaultPermissionMode,
   useDefaultPullStrategy,
   useDiffView,
