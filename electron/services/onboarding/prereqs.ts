@@ -31,12 +31,16 @@ async function runTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 async function checkClaudeCli(): Promise<PrereqResult> {
   const resolved = await resolveBinary("claude");
   if (!resolved) {
+    const npm = await resolveBinary("npm");
+
     return {
       id: "claude_cli",
       status: "fail",
       message: "Claude Code CLI is not on PATH",
-      detail: "Install: npm install -g @anthropic-ai/claude-code",
-      fixable: false,
+      detail: npm
+        ? "Install with: npm install -g @anthropic-ai/claude-code"
+        : "npm not found — install Node.js first, then re-run.",
+      fixable: !!npm,
     };
   }
 
@@ -137,13 +141,18 @@ async function checkNativeBridge(): Promise<PrereqResult> {
     }
   });
   if (!resolved) {
+    const sourceDir = path.join(process.cwd(), "native", "argus-sim-bridge");
+    const buildable = fs.existsSync(path.join(sourceDir, "Package.swift"));
+
     return {
       id: "native_bridge",
       status: "warn",
       message: "Native simulator bridge is not built",
-      detail: "Mobile previews require the bridge binary.",
+      detail: buildable
+        ? "Mobile previews require the bridge binary. Click Fix to build it."
+        : "Mobile previews require the bridge binary.",
       mobileOnly: true,
-      fixable: false,
+      fixable: buildable,
     };
   }
 
@@ -194,7 +203,10 @@ async function checkIosRuntimes(): Promise<PrereqResult> {
         id: "ios_runtimes",
         status: "warn",
         message: "No iOS simulator runtimes installed",
+        detail:
+          "Click Fix to download the iOS simulator runtime via xcodebuild (multi-GB).",
         mobileOnly: true,
+        fixable: true,
       };
     }
 
@@ -281,7 +293,8 @@ async function checkPlaywright(): Promise<PrereqResult> {
       id: "playwright",
       status: "warn",
       message: "Playwright browser cache not found",
-      detail: "Will be installed on first browser use.",
+      detail: "Click Fix to run `npx playwright install`.",
+      fixable: true,
     };
   }
 
@@ -339,12 +352,17 @@ export async function runPrereqChecks(
 
 /**
  * Apply an automated fix for a specific check, where one exists.
- * Returns `{ ok: true }` on success.
+ * Long-running fixers stream a `running` update through `emit` so the UI can
+ * surface progress. Returns `{ ok: true }` on success.
  */
 export async function runPrereqFixer(
   id: PrereqId,
   args?: { gitName?: string; gitEmail?: string },
+  emit?: PrereqEmitter,
 ): Promise<{ ok: boolean; error?: string }> {
+  const progress = (message: string) =>
+    emit?.({ id, status: "running", message });
+
   try {
     if (id === "git_identity") {
       if (!args?.gitName || !args?.gitEmail) {
@@ -362,6 +380,53 @@ export async function runPrereqFixer(
         "user.email",
         args.gitEmail,
       ]);
+
+      return { ok: true };
+    }
+
+    if (id === "claude_cli") {
+      progress("Installing @anthropic-ai/claude-code (npm -g)…");
+      await runTimeout(
+        execFileAsync("npm", ["install", "-g", "@anthropic-ai/claude-code"]),
+        180_000,
+      );
+
+      return { ok: true };
+    }
+
+    if (id === "playwright") {
+      progress("Installing Playwright browsers…");
+      await runTimeout(
+        execFileAsync("npx", ["--yes", "playwright", "install"]),
+        600_000,
+      );
+
+      return { ok: true };
+    }
+
+    if (id === "native_bridge") {
+      const sourceDir = path.join(process.cwd(), "native", "argus-sim-bridge");
+      if (!fs.existsSync(path.join(sourceDir, "Package.swift"))) {
+        return {
+          ok: false,
+          error: "Native bridge source not found (packaged app)",
+        };
+      }
+      progress("Building native simulator bridge…");
+      await runTimeout(
+        execFileAsync("swift", ["build", "-c", "release"], { cwd: sourceDir }),
+        300_000,
+      );
+
+      return { ok: true };
+    }
+
+    if (id === "ios_runtimes") {
+      progress("Downloading iOS simulator runtime (this can take a while)…");
+      await runTimeout(
+        execFileAsync("xcodebuild", ["-downloadPlatform", "iOS"]),
+        1_800_000,
+      );
 
       return { ok: true };
     }

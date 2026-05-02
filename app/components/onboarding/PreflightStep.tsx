@@ -1,6 +1,12 @@
 import type { PrereqId, PrereqResult, PrereqStatus } from "../../lib/types";
 import { useEffect, useState } from "react";
-import { Button, ChecklistRow, CodeBlock } from "@argus/peacock";
+import {
+  Button,
+  ChecklistRow,
+  CodeBlock,
+  FormField,
+  Input,
+} from "@argus/peacock";
 import { useIpcEvent } from "../../hooks/useIpcEvent";
 import { useOnboarding } from "../../hooks/useOnboarding";
 import { checkPrereqs, openExternalUrl, runPrereqFixer } from "../../lib/ipc";
@@ -41,8 +47,6 @@ const META: Record<PrereqId, PrereqMeta> = {
   },
   git_identity: {
     title: "Git identity",
-    installCommand:
-      'git config --global user.name "Your Name" && git config --global user.email "you@example.com"',
   },
   native_bridge: {
     title: "Native sim bridge",
@@ -90,10 +94,55 @@ function allRequiredOk(prereqs: Record<string, PrereqResult>): boolean {
   return REQUIRED.every((id) => prereqs[id]?.status === "pass");
 }
 
+function GitIdentityForm({
+  busy,
+  onSubmit,
+}: {
+  busy: boolean;
+  onSubmit: (name: string, email: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const valid = name.trim().length > 0 && /.+@.+\..+/.test(email.trim());
+
+  return (
+    <div className={styles.identityForm}>
+      <FormField label="Name">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your Name"
+          disabled={busy}
+        />
+      </FormField>
+      <FormField label="Email">
+        <Input
+          value={email}
+          type="email"
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          disabled={busy}
+        />
+      </FormField>
+      <div className={styles.identityActions}>
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={!valid || busy}
+          onClick={() => onSubmit(name.trim(), email.trim())}
+        >
+          {busy ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function PreflightStep() {
   const { advance } = useOnboarding();
   const prereqs = useOnboardingStore((s) => s.prereqs);
   const [busy, setBusy] = useState(false);
+  const [fixing, setFixing] = useState<PrereqId | null>(null);
 
   useIpcEvent<PrereqResult>("onboarding:prereq_update", (r) => {
     setPrereq(r);
@@ -115,9 +164,17 @@ export function PreflightStep() {
 
   const required = allRequiredOk(prereqs);
 
-  const onFix = async (id: PrereqId) => {
-    await runPrereqFixer(id);
-    await runChecks();
+  const onFix = async (
+    id: PrereqId,
+    args?: { gitEmail?: string; gitName?: string },
+  ) => {
+    setFixing(id);
+    try {
+      await runPrereqFixer(id, args);
+      await checkPrereqs([id]).then(setPrereqs);
+    } finally {
+      setFixing(null);
+    }
   };
 
   const skipMobile = () => {
@@ -160,36 +217,52 @@ export function PreflightStep() {
           const result = prereqs[id];
           const meta = META[id];
           const status: PrereqStatus = result?.status ?? "running";
+          const isFixing = fixing === id;
           const showInstall =
-            status === "fail" ||
-            status === "warn" ||
-            (status === "skipped" && meta.mobileOnly);
+            !isFixing &&
+            (status === "fail" ||
+              status === "warn" ||
+              (status === "skipped" && meta.mobileOnly));
+          const isGitIdentity = id === "git_identity";
+          const showIdentityForm =
+            isGitIdentity && status !== "pass" && status !== "running";
 
           return (
             <ChecklistRow
               key={id}
               title={meta.title + (meta.mobileOnly ? " (mobile)" : "")}
-              message={result?.message}
-              tone={status}
+              message={isFixing ? "Installing…" : result?.message}
+              tone={isFixing ? "running" : status}
               detail={result?.detail}
               action={
-                result?.fixable ? (
+                result?.fixable && !isGitIdentity ? (
                   <Button
                     variant="secondary"
                     size="sm"
+                    disabled={isFixing}
                     onClick={() => {
                       onFix(id).catch(() => {});
                     }}
                   >
-                    Fix
+                    {isFixing ? "Installing…" : "Install"}
                   </Button>
                 ) : undefined
               }
             >
-              {showInstall && meta.installCommand ? (
+              {showIdentityForm ? (
+                <GitIdentityForm
+                  busy={isFixing}
+                  onSubmit={(gitName, gitEmail) => {
+                    onFix("git_identity", { gitName, gitEmail }).catch(
+                      () => {},
+                    );
+                  }}
+                />
+              ) : null}
+              {!showIdentityForm && showInstall && meta.installCommand ? (
                 <CodeBlock code={meta.installCommand} />
               ) : null}
-              {showInstall && meta.installUrl ? (
+              {!showIdentityForm && showInstall && meta.installUrl ? (
                 <div className={styles.installLine}>
                   <span>How to install:</span>
                   <button
