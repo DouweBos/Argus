@@ -40,3 +40,15 @@
 .installLink:hover {
   color: var(--text-primary);
 }
+
+.identityForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.identityActions {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -7,9 +7,7 @@
       "native/scrcpy-server",
       "native/argus-sim-bridge/argus-sim-bridge"
     ],
-    "commands": [
-      "mise trust mise.toml"
-    ]
+    "commands": ["mise trust mise.toml"]
   },
   "run": [
     {

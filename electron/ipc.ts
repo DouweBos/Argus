@@ -1924,10 +1924,16 @@ export function registerIpcHandlers(): void {
     }, ids);
   });
   handle("onboarding_run_fixer", (a) =>
-    runPrereqFixer(a.id as PrereqId, {
-      gitName: a.gitName as string | undefined,
-      gitEmail: a.gitEmail as string | undefined,
-    }),
+    runPrereqFixer(
+      a.id as PrereqId,
+      {
+        gitName: a.gitName as string | undefined,
+        gitEmail: a.gitEmail as string | undefined,
+      },
+      (update: PrereqResult) => {
+        getMainWindow()?.webContents.send("onboarding:prereq_update", update);
+      },
+    ),
   );
   handle("onboarding_claude_ping", () => onboardingClaudePing());
   handle("onboarding_save_defaults", (a) =>
