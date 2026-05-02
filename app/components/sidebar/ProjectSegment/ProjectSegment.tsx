@@ -94,6 +94,10 @@ export function ProjectSegment({
     [agents, projectSessionIds],
   );
   const isRunCommandRunning = useSessionIsRunning(repoRootSession?.id ?? "");
+  const claimedBranches = useMemo(
+    () => new Set(worktrees.map((s) => s.branch).filter((b) => b.length > 0)),
+    [worktrees],
+  );
 
   return (
     <>
@@ -135,6 +139,7 @@ export function ProjectSegment({
               onClick={(e) => e.stopPropagation()}
             >
               <BranchSwitcher
+                claimedBranches={claimedBranches}
                 currentBranch={repoBranch}
                 repoRoot={repoRoot}
                 onBranchChanged={refresh}

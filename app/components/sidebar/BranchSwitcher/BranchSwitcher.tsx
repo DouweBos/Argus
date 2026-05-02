@@ -2,16 +2,23 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { Icons } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
-import { checkoutBranch, listBranches } from "../../../lib/ipc";
+import {
+  checkoutBranch,
+  getUserProjectSettings,
+  listBranches,
+  readArgusConfig,
+} from "../../../lib/ipc";
 import styles from "./BranchSwitcher.module.css";
 
 interface BranchSwitcherProps {
+  claimedBranches: ReadonlySet<string>;
   currentBranch: string;
   disabled?: boolean;
   onBranchChanged: () => void;
@@ -24,14 +31,81 @@ interface DropdownRect {
   width: number;
 }
 
+interface BranchGroup {
+  branches: string[];
+  key: string;
+  label: string;
+}
+
+const BUILTIN_PROTECTED_ORDER = [
+  "main",
+  "master",
+  "staging",
+  "development",
+  "dev",
+  "develop",
+];
+
+function buildGroups(
+  branches: string[],
+  currentBranch: string,
+  protectedBranches: string[],
+  branchPrefix: string,
+  claimedBranches: ReadonlySet<string>,
+): BranchGroup[] {
+  const seen = new Set<string>();
+  const all = new Set(branches);
+
+  const current: string[] = [];
+  if (all.has(currentBranch)) {
+    current.push(currentBranch);
+    seen.add(currentBranch);
+  }
+
+  const protectedOrder = [
+    ...BUILTIN_PROTECTED_ORDER,
+    ...protectedBranches.filter((b) => !BUILTIN_PROTECTED_ORDER.includes(b)),
+  ];
+  const protectedList: string[] = [];
+  for (const b of protectedOrder) {
+    if (!seen.has(b) && all.has(b) && !claimedBranches.has(b)) {
+      protectedList.push(b);
+      seen.add(b);
+    }
+  }
+
+  const prefixed: string[] = [];
+  const others: string[] = [];
+  const remaining = branches
+    .filter((b) => !seen.has(b) && !claimedBranches.has(b))
+    .sort((a, b) => a.localeCompare(b));
+  for (const b of remaining) {
+    if (branchPrefix && b.startsWith(branchPrefix)) {
+      prefixed.push(b);
+    } else {
+      others.push(b);
+    }
+  }
+
+  return [
+    { key: "current", label: "Current", branches: current },
+    { key: "protected", label: "Protected", branches: protectedList },
+    { key: "yours", label: "Yours", branches: prefixed },
+    { key: "other", label: "Other", branches: others },
+  ].filter((g) => g.branches.length > 0);
+}
+
 export function BranchSwitcher({
   repoRoot,
   currentBranch,
   onBranchChanged,
   disabled,
+  claimedBranches,
 }: BranchSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
+  const [protectedBranches, setProtectedBranches] = useState<string[]>([]);
+  const [branchPrefix, setBranchPrefix] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rect, setRect] = useState<DropdownRect | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,8 +125,14 @@ export function BranchSwitcher({
     setIsOpen(true);
     setIsLoading(true);
     try {
-      const list = await listBranches(repoRoot);
+      const [list, config, settings] = await Promise.all([
+        listBranches(repoRoot),
+        readArgusConfig(repoRoot).catch(() => null),
+        getUserProjectSettings(repoRoot).catch(() => null),
+      ]);
       setBranches(list);
+      setProtectedBranches(config?.protected_branches ?? []);
+      setBranchPrefix(settings?.branch_prefix ?? "");
     } catch {
       setIsOpen(false);
     } finally {
@@ -89,6 +169,18 @@ export function BranchSwitcher({
       }
     },
     [repoRoot, currentBranch, close, onBranchChanged],
+  );
+
+  const groups = useMemo(
+    () =>
+      buildGroups(
+        branches,
+        currentBranch,
+        protectedBranches,
+        branchPrefix,
+        claimedBranches,
+      ),
+    [branches, currentBranch, protectedBranches, branchPrefix, claimedBranches],
   );
 
   useOutsideClick(dropdownRef, isOpen, close, (target) => {
@@ -151,24 +243,32 @@ export function BranchSwitcher({
               width: rect.width,
             }}
           >
-            {isLoading ? (
-              <div
-                className={styles.branchItem}
-                style={{ color: "var(--text-muted)" }}
-              >
+            {isLoading && (
+              <div className={`${styles.branchItem} ${styles.loading}`}>
                 Loading...
               </div>
-            ) : (
-              branches.map((branch) => (
-                <button
-                  key={branch}
-                  className={`${styles.branchItem} ${branch === currentBranch ? styles.branchItemActive : ""}`}
-                  onClick={() => handleSelect(branch)}
-                >
-                  {branch}
-                </button>
-              ))
             )}
+            {!isLoading && groups.length === 0 && (
+              <div className={`${styles.branchItem} ${styles.loading}`}>
+                No branches
+              </div>
+            )}
+            {!isLoading &&
+              groups.length > 0 &&
+              groups.map((group) => (
+                <div key={group.key} className={styles.group}>
+                  <div className={styles.groupLabel}>{group.label}</div>
+                  {group.branches.map((branch) => (
+                    <button
+                      key={branch}
+                      className={`${styles.branchItem} ${branch === currentBranch ? styles.branchItemActive : ""}`}
+                      onClick={() => handleSelect(branch)}
+                    >
+                      {branch}
+                    </button>
+                  ))}
+                </div>
+              ))}
           </div>,
           document.body,
         )}
