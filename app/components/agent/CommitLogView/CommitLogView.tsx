@@ -883,6 +883,93 @@ export function CommitLogView({
     [commits, showGraph],
   );
 
+  // Ahead/behind sets for commits relative to the upstream tracking branch.
+  // Computed by walking parents within the visible commit list from each tip;
+  // commits reachable from local but not remote are "ahead", and vice versa.
+  const { aheadSet, behindSet } = useMemo(() => {
+    const empty = {
+      aheadSet: new Set<string>(),
+      behindSet: new Set<string>(),
+    };
+    let localBranch: string | null = null;
+    let localTipHash: string | null = null;
+    for (const c of commits) {
+      if (!c.refs) {
+        continue;
+      }
+      const refs = c.refs.split(",").map((r) => r.trim());
+      const headRef = refs.find((r) => r.startsWith("HEAD ->"));
+      if (headRef) {
+        localBranch = headRef.replace(/^HEAD ->\s*/, "").trim();
+        localTipHash = c.hash;
+        break;
+      }
+    }
+    if (!localBranch || !localTipHash) {
+      return empty;
+    }
+    let remoteTipHash: string | null = null;
+    for (const c of commits) {
+      if (!c.refs) {
+        continue;
+      }
+      const refs = c.refs.split(",").map((r) => r.trim());
+      const remoteRef = refs.find(
+        (r) =>
+          !r.startsWith("HEAD") &&
+          !r.startsWith("tag:") &&
+          r.includes("/") &&
+          r.endsWith(`/${localBranch}`),
+      );
+      if (remoteRef) {
+        remoteTipHash = c.hash;
+        break;
+      }
+    }
+    if (!remoteTipHash || remoteTipHash === localTipHash) {
+      return empty;
+    }
+    const byHash = new Map(commits.map((c) => [c.hash, c]));
+    const walk = (start: string) => {
+      const visited = new Set<string>();
+      const stack = [start];
+      while (stack.length > 0) {
+        const h = stack.pop()!;
+        if (visited.has(h)) {
+          continue;
+        }
+        visited.add(h);
+        const c = byHash.get(h);
+        if (!c?.parentHash) {
+          continue;
+        }
+        for (const p of c.parentHash.split(" ").filter(Boolean)) {
+          if (!visited.has(p)) {
+            stack.push(p);
+          }
+        }
+      }
+
+      return visited;
+    };
+    const localReach = walk(localTipHash);
+    const remoteReach = walk(remoteTipHash);
+    const ahead = new Set<string>();
+    const behind = new Set<string>();
+    for (const h of localReach) {
+      if (!remoteReach.has(h)) {
+        ahead.add(h);
+      }
+    }
+    for (const h of remoteReach) {
+      if (!localReach.has(h)) {
+        behind.add(h);
+      }
+    }
+
+    return { aheadSet: ahead, behindSet: behind };
+  }, [commits]);
+
   const selected = selectedIdx >= 0 ? commits[selectedIdx] : null;
 
   const gravatarUrl = useMemo(
@@ -1487,6 +1574,24 @@ export function CommitLogView({
                       <span className={styles.commitHash}>
                         {formatShortDate(commit.date)}
                       </span>
+                      {aheadSet.has(commit.hash) && (
+                        <span
+                          className={styles.commitSyncIndicator}
+                          title="Ahead of upstream — not yet pushed"
+                          aria-label="Ahead of upstream"
+                        >
+                          <Icons.ArrowUpRightIcon size={12} />
+                        </span>
+                      )}
+                      {behindSet.has(commit.hash) && (
+                        <span
+                          className={styles.commitSyncIndicator}
+                          title="Behind upstream — not yet pulled"
+                          aria-label="Behind upstream"
+                        >
+                          <Icons.ArrowDownLeftIcon size={12} />
+                        </span>
+                      )}
                     </CommitRow>
                   );
                 })}
