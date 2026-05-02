@@ -1533,10 +1533,7 @@ export function CommitLogView({
                                   return {
                                     name: refDisplayName(r),
                                     type,
-                                    current:
-                                      type === "head" ||
-                                      (tipHash !== null &&
-                                        commit.hash === tipHash),
+                                    current: type === "head",
                                   };
                                 });
 
