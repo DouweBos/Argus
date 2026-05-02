@@ -198,9 +198,13 @@ export const mergeSessionsForProject = (
 };
 
 export const addSession = (session: Session) => {
-  sessionStore.setState((state) => ({
-    sessions: [...state.sessions, session],
-  }));
+  sessionStore.setState((state) => {
+    if (state.sessions.some((w) => w.id === session.id)) {
+      return state;
+    }
+
+    return { sessions: [...state.sessions, session] };
+  });
 };
 
 export const removeSession = (id: string) => {
