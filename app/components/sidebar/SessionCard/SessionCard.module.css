@@ -95,10 +95,6 @@
   opacity: 0;
 }
 
-.diffFileCount {
-  color: var(--text-muted);
-}
-
 .diffAdd {
   color: var(--success);
 }

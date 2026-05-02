@@ -332,15 +332,17 @@ function RepoHeaderMeta({ session }: { session: Session }) {
   const reviewQueue = useReviewQueueMap();
   const commitsAhead = reviewQueue[session.id]?.commitsAhead ?? 0;
 
-  if ((!diffStats || diffStats.files === 0) && commitsAhead === 0) {
+  const hasLineChanges = Boolean(
+    diffStats && (diffStats.additions > 0 || diffStats.deletions > 0),
+  );
+  if (!hasLineChanges && commitsAhead === 0) {
     return null;
   }
 
   return (
     <>
-      {diffStats && diffStats.files > 0 && (
+      {diffStats && hasLineChanges && (
         <span className={styles.diffStats}>
-          <span className={styles.diffFileCount}>{diffStats.files}f</span>
           {diffStats.additions > 0 && (
             <span className={styles.diffAdd}>+{diffStats.additions}</span>
           )}
