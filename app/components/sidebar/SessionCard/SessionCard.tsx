@@ -241,23 +241,22 @@ export function SessionCard({
           )}
           {!isProject && (
             <span className={styles.subtitleTrailing}>
-              {!isDeletingStatus && diffStats && diffStats.files > 0 && (
-                <span className={styles.diffStats}>
-                  <span className={styles.diffFileCount}>
-                    {diffStats.files}f
+              {!isDeletingStatus &&
+                diffStats &&
+                (diffStats.additions > 0 || diffStats.deletions > 0) && (
+                  <span className={styles.diffStats}>
+                    {diffStats.additions > 0 && (
+                      <span className={styles.diffAdd}>
+                        +{diffStats.additions}
+                      </span>
+                    )}
+                    {diffStats.deletions > 0 && (
+                      <span className={styles.diffRemove}>
+                        -{diffStats.deletions}
+                      </span>
+                    )}
                   </span>
-                  {diffStats.additions > 0 && (
-                    <span className={styles.diffAdd}>
-                      +{diffStats.additions}
-                    </span>
-                  )}
-                  {diffStats.deletions > 0 && (
-                    <span className={styles.diffRemove}>
-                      -{diffStats.deletions}
-                    </span>
-                  )}
-                </span>
-              )}
+                )}
               {!isDeletingStatus && commitsAhead > 0 && (
                 <span
                   className={styles.aheadBadge}
