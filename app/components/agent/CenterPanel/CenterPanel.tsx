@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Chip } from "@argus/peacock";
+import { Chip, Icons } from "@argus/peacock";
 import {
   setActiveCenterView,
   useActiveCenterView,
@@ -12,6 +12,7 @@ import { RunControl } from "../../layout/RunControl";
 import { TaskBanner } from "../../organizations/TaskBanner";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
+import { HomePanel } from "../HomePanel";
 import styles from "./CenterPanel.module.css";
 
 interface CenterPanelProps {
@@ -47,12 +48,23 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
       {/* View switcher */}
       <div className={styles.navRow}>
         <div className={styles.viewSwitcher}>
+          {!isOrgHost && (
+            <Chip
+              interactive
+              leading={<Icons.HomeIcon size={12} />}
+              className={
+                effectiveView === "home" ? styles.chipActive : undefined
+              }
+              onClick={() => setActiveView("home")}
+            >
+              Home
+            </Chip>
+          )}
           <Chip
             interactive
+            leading={<Icons.AgentIcon size={12} />}
             className={
-              effectiveView === "agents" || effectiveView === "home"
-                ? styles.chipActive
-                : undefined
+              effectiveView === "agents" ? styles.chipActive : undefined
             }
             onClick={() => setActiveView("agents")}
           >
@@ -62,6 +74,7 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
             <>
               <Chip
                 interactive
+                leading={<Icons.FileIcon size={12} />}
                 className={
                   effectiveView === "editor" ? styles.chipActive : undefined
                 }
@@ -71,6 +84,7 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
               </Chip>
               <Chip
                 interactive
+                leading={<Icons.BranchIcon size={12} />}
                 className={
                   effectiveView === "git" ? styles.chipActive : undefined
                 }
@@ -90,9 +104,9 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
 
       {/* Content area */}
       <div className={styles.body}>
-        {(effectiveView === "agents" || effectiveView === "home") && (
-          <AgentView sessionId={sessionId} />
-        )}
+        {effectiveView === "home" && <HomePanel sessionId={sessionId} />}
+
+        {effectiveView === "agents" && <AgentView sessionId={sessionId} />}
 
         {effectiveView === "editor" && <EditorPanel sessionId={sessionId} />}
 

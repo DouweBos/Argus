@@ -47,8 +47,6 @@ export function AgentView({ sessionId }: AgentViewProps) {
     }
   }, [activeAgent, poppedOut, sessionId]);
 
-  const isHomeActive =
-    !activeAgent || !!(activeAgent && poppedOut[activeAgent.agent_id]);
   const splitPair = useSplitPair(sessionId);
 
   const openOnRight = useCallback(
@@ -189,11 +187,9 @@ export function AgentView({ sessionId }: AgentViewProps) {
         <AgentTabBar
           activeAgentId={activeAgent?.agent_id ?? null}
           agents={agents}
-          isHomeActive={isHomeActive}
           splitPair={splitPair}
           onClose={(agentId) => stopAgent(agentId)}
           onSelect={(agentId) => setActive(agentId)}
-          onSelectHome={() => setActiveAgent(sessionId, null)}
           onUnpair={() => setSplitPair(sessionId, null)}
         />
         <button
