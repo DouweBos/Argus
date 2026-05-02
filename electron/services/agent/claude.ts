@@ -940,12 +940,6 @@ export async function startAgent(
     model: agentSession.model,
   };
 
-  // Broadcast so renderers that didn't initiate this start (e.g. the main
-  // window when the agent is spawned from the global launcher) can register
-  // it in their agent store. The main-window optimistic-start path adds the
-  // agent to the store before this fires; its listener dedupes by id.
-  broadcastToRenderers("agent:started", agentInfo);
-
   return agentInfo;
 }
 
