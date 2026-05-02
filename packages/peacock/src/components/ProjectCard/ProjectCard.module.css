@@ -64,21 +64,6 @@
   z-index: -1;
 }
 
-.badgeRunning {
-  background: var(--success);
-  animation: badgePulse 2s ease-in-out infinite;
-}
-
-@keyframes badgePulse {
-  0%,
-  100% {
-    opacity: 0.9;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
 .name {
   font-size: var(--font-size-base);
   font-weight: 600;

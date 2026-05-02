@@ -83,7 +83,6 @@ export function ProjectCard({
   const pillClass = pickPillClass(pillStatus, styles);
 
   const running = agents.filter((a) => a.status === "running").length;
-  const isAnyRunning = running > 0;
 
   const mergedStyle: CSSProperties = accent
     ? ({ ...style, ["--card-accent" as string]: accent } as CSSProperties)
@@ -97,11 +96,9 @@ export function ProjectCard({
     >
       <div className={styles.head}>
         <div
-          className={[styles.badge, isAnyRunning ? styles.badgeRunning : ""]
-            .filter(Boolean)
-            .join(" ")}
+          className={styles.badge}
           title={
-            isAnyRunning
+            running > 0
               ? `${running} agent${running > 1 ? "s" : ""} running`
               : undefined
           }
