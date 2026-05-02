@@ -832,7 +832,9 @@ export function registerIpcHandlers(): void {
   );
   handle("stage_hunk", (a) => stageHunk(a.id as string, a.patch as string));
   handle("unstage_hunk", (a) => unstageHunk(a.id as string, a.patch as string));
-  handle("discard_hunk", (a) => discardHunk(a.id as string, a.patch as string));
+  handle("discard_hunk", (a) =>
+    discardHunk(a.id as string, a.patch as string, a.staged as boolean),
+  );
   handle("git_commit", (a) =>
     gitCommit(a.id as string, a.message as string, a.amend as boolean),
   );

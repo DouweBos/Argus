@@ -335,10 +335,26 @@ export async function unstageHunk(id: string, patch: string): Promise<void> {
   await withGitLock(wt, () => applyPatch(wt, patch, ["--cached", "--reverse"]));
 }
 
-/** Discard a hunk (reverse-apply patch) in a session. */
-export async function discardHunk(id: string, patch: string): Promise<void> {
+/**
+ * Discard a hunk (reverse-apply patch) in a session.
+ *
+ * When `staged` is true the patch represents content that exists in the
+ * index, so it's also reverse-applied with `--cached` — otherwise the staged
+ * copy survives the discard and downstream consumers (merge-conflict
+ * prediction, diff view) keep seeing it.
+ */
+export async function discardHunk(
+  id: string,
+  patch: string,
+  staged: boolean,
+): Promise<void> {
   const wt = sessionPath(id);
-  await withGitLock(wt, () => applyPatch(wt, patch, ["--reverse"]));
+  await withGitLock(wt, async () => {
+    await applyPatch(wt, patch, ["--reverse"]);
+    if (staged) {
+      await applyPatch(wt, patch, ["--cached", "--reverse"]);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -499,13 +499,20 @@ function FileDiffViewInner({
         return;
       }
       const patch = buildPartialPatch(file, hunk, indices);
+      // Treat the discard as targeting staged content only when every selected
+      // line is staged — a mixed selection would fail `git apply --cached
+      // --reverse`, and the working-tree reverse alone is the right
+      // approximation for the unstaged portion.
+      const allSelectedStaged = Array.from(indices).every(
+        (i) => hunk.lines[i]?.staged ?? false,
+      );
       const action = async () => {
         if (mode === "stage") {
           await stageHunk(sessionId, patch);
         } else if (mode === "unstage") {
           await unstageHunk(sessionId, patch);
         } else {
-          await discardHunk(sessionId, patch);
+          await discardHunk(sessionId, patch, allSelectedStaged);
         }
 
         clearSelection();
