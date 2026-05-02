@@ -772,6 +772,16 @@ export async function startAgent(
 
       return;
     }
+    // restoreAgentAtTurn awaits the old child's exit *before* respawning, so
+    // when its close fires the slot still references this same child — the
+    // mismatch guard above doesn't catch this window. Honor suppressStatus
+    // here too: skip the stopped/error transition and the exit broadcast so
+    // the frontend's running indicator stays lit until the new child is up.
+    if (agentEntry?.suppressStatus) {
+      info(`[agent:${agentId}] old child closed during restore — suppressed`);
+
+      return;
+    }
     if (agentEntry) {
       agentEntry.status = exitCode === 0 ? "stopped" : "error";
 

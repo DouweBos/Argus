@@ -181,6 +181,7 @@ export default tseslint.config(
       "**/storybook-static/**",
       "packages/peacock/vite.config.ts",
       "packages/peacock/.storybook/**",
+      ".claude/worktrees/**",
     ],
   },
   js.configs.recommended,
