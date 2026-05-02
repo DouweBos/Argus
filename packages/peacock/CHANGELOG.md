@@ -1,5 +1,12 @@
 # @argus/peacock
 
+## 0.7.1
+
+### Patch Changes
+
+- 9e403af: Polish git status badges: ahead-of-base badge in the sidebar matches the height of branch badges, and ref badges no longer show a stray accent glow on the active branch.
+- ed2f3c3: Project folder badges on the home screen now keep their accent color when agents are running, instead of turning green.
+
 ## 0.7.0
 
 ### Minor Changes
