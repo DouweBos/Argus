@@ -199,13 +199,13 @@ export function initLauncher(): void {
 
 function activate(): void {
   setLauncherAccelerator(DEFAULT_LAUNCHER_ACCELERATOR);
-  // Surface the macOS Accessibility prompt from the Electron main process so
-  // the dialog identifies Argus.app (not the unsigned helper child) as the
-  // requestor. Without this, the helper's own `AXIsProcessTrustedWithOptions`
-  // call silently returns false — the OS won't dialog for an ad-hoc child
-  // binary, so the user has no way to grant permission until they manage to
-  // open the launcher some other way (e.g. Cmd+Shift+Space). Calling here
-  // means enabling the launcher is enough to trigger the prompt.
+  // Surface the Accessibility prompt for Argus.app too. macOS TCC is per-binary
+  // by code signature, so granting AX to Argus.app does NOT cover the helper —
+  // the helper has its own entry under `dev.houwert.argus.hotkey-bridge` and
+  // surfaces its own prompt via NSApplication when it starts. We still ask for
+  // Argus.app's own AX trust here because the in-app local monitor (used while
+  // Argus is frontmost) lives in the helper too, but having the parent listed
+  // in AX makes the permission relationship discoverable from System Settings.
   if (process.platform === "darwin") {
     try {
       systemPreferences.isTrustedAccessibilityClient(true);
