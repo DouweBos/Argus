@@ -1,11 +1,12 @@
+import type { ParsedAnswer } from "./parseAnswerSelections";
 import type { Question } from "./parseQuestions";
 import { AnsweredQuestion } from "@argus/peacock";
 import styles from "./AnsweredQuestionView.module.css";
 
 interface AnsweredQuestionViewProps {
   questions: Question[];
-  /** Map of question index → set of selected option labels. */
-  selections: Set<string>[];
+  /** Per-question parsed answer (selected option labels + free-form note). */
+  selections: ParsedAnswer[];
 }
 
 export function AnsweredQuestionView({
@@ -15,9 +16,9 @@ export function AnsweredQuestionView({
   return (
     <div className={styles.wrap}>
       {questions.map((q, qi) => {
-        const selected = selections[qi] ?? new Set<string>();
+        const parsed = selections[qi] ?? { picks: new Set<string>(), note: "" };
         const answers = q.options
-          .filter((opt) => selected.has(opt.label))
+          .filter((opt) => parsed.picks.has(opt.label))
           .map((opt) => ({
             label: opt.label,
             description: opt.description,
@@ -28,6 +29,7 @@ export function AnsweredQuestionView({
             answers={answers}
             header={q.header ?? q.question}
             key={qi}
+            note={parsed.note}
           />
         );
       })}
