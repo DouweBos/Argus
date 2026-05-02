@@ -24,6 +24,7 @@
   display: flex;
   align-items: flex-end;
   gap: var(--space-8);
+  flex-wrap: wrap;
 }
 
 .brandMark {
@@ -70,6 +71,19 @@
 .ctas {
   display: flex;
   gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .heroSpacer {
+    display: none;
+  }
+
+  .ctas {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
 }
 
 .grid {
