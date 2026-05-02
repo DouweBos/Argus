@@ -37,23 +37,30 @@ func emit(_ obj: [String: Any]) {
 // Right-Option detection
 // ---------------------------------------------------------------------------
 //
-// Apple uses key code 61 for Right Option. We watch flagsChanged events and
-// treat each "right-option flag turned on" as a press. Two presses inside
-// `doublePressWindow` fire a `trigger`.
+// Apple uses key code 61 for Right Option (58 = Left Option). flagsChanged
+// fires once when the modifier goes down and once when it comes back up — we
+// detect the down-edge by checking whether the shared `.option` bit is set
+// after the change. Two down-edges within `doublePressWindow` fire `trigger`.
 //
-// The `NSEvent.ModifierFlags.option` bit is shared between left and right
-// Option, so we filter on the device-dependent flag bit `0x40`
-// (NX_DEVICERALTKEYMASK) for reliable side discrimination.
+// We intentionally do NOT filter on the device-dependent right-option bit
+// (`NX_DEVICERALTKEYMASK = 0x40`): on recent macOS versions
+// `NSEvent.modifierFlags` may strip device-dependent bits depending on
+// keyboard model, which silently broke detection (event.keyCode is the
+// authoritative right/left discriminator anyway).
 
 let rightOptionKeyCode: UInt16 = 61
-let rightOptionFlagBit: UInt = 0x40
 let doublePressWindow: TimeInterval = 0.35
 
 var lastPressAt: TimeInterval = 0
 
+func logStderr(_ msg: String) {
+    FileHandle.standardError.write(Data((msg + "\n").utf8))
+}
+
 func handleFlagsChanged(_ event: NSEvent) {
     guard event.keyCode == rightOptionKeyCode else { return }
-    let pressed = (event.modifierFlags.rawValue & rightOptionFlagBit) != 0
+    // Down-edge = option flag is set after this flagsChanged.
+    let pressed = event.modifierFlags.contains(.option)
     guard pressed else { return }
 
     let now = Date().timeIntervalSince1970
