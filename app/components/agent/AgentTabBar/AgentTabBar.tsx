@@ -39,10 +39,8 @@ import styles from "./AgentTabBar.module.css";
 interface AgentTabBarProps {
   activeAgentId: string | null;
   agents: AgentStatus[];
-  isHomeActive: boolean;
   onClose: (agentId: string) => void;
   onSelect: (agentId: string) => void;
-  onSelectHome: () => void;
   onUnpair?: () => void;
   splitPair?: SplitPair | null;
 }
@@ -282,10 +280,8 @@ function MergedAgentTab({
 export function AgentTabBar({
   agents: rawAgents,
   activeAgentId,
-  isHomeActive,
   splitPair = null,
   onSelect,
-  onSelectHome,
   onClose,
   onUnpair,
 }: AgentTabBarProps) {
@@ -515,45 +511,9 @@ export function AgentTabBar({
   }, [allAgents]);
 
   const tabsRef = useRef<HTMLDivElement | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    const el = tabsRef.current;
-    if (!el) {
-      return;
-    }
-    const update = () => setIsScrolled(el.scrollLeft > 0);
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-
-    return () => {
-      el.removeEventListener("scroll", update);
-      ro.disconnect();
-    };
-  }, [agents.length]);
-
-  const homeClasses = [
-    styles.tab,
-    styles.homeTab,
-    isHomeActive ? styles.active : null,
-    isScrolled ? styles.homeTabScrolled : null,
-  ]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <div ref={tabsRef} className={styles.tabs}>
-      <div
-        className={homeClasses}
-        title="Home"
-        aria-label="Home"
-        onClick={onSelectHome}
-      >
-        <Icons.HomeIcon size={12} />
-        <span className={styles.label}>Home</span>
-      </div>
       {agents.map((agent, index) => {
         const indicator = getIndicator(agent.agent_id);
         // Number by position in the full session order, not the filtered
