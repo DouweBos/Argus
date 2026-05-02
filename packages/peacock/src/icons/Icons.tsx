@@ -981,6 +981,50 @@ export function ArrowForwardIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function ArrowUpRightIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.75"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M4.5 11.5 11.5 4.5" />
+      <path d="M5.25 4.5h6.25v6.25" />
+    </svg>
+  );
+}
+
+export function ArrowDownLeftIcon({
+  size = 12,
+  className,
+  ...rest
+}: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.75"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M11.5 4.5 4.5 11.5" />
+      <path d="M10.75 11.5H4.5V5.25" />
+    </svg>
+  );
+}
+
 export function EnlargeIcon({ size = 12, className, ...rest }: IconProps) {
   return (
     <svg
