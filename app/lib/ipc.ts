@@ -31,7 +31,6 @@ import type {
   ReleaseNotePatternConfig,
   SessionReleaseNotesResult,
   OnboardingConfigFile,
-  OnboardingDefaults,
   OnboardingStep,
   OrgTask,
   Organization,
@@ -1972,11 +1971,6 @@ export const runPrereqFixer = (
 
 export const claudePing = (): Promise<{ error?: string; ok: boolean }> =>
   invoke("onboarding_claude_ping");
-
-export const saveOnboardingDefaults = (
-  updates: Partial<OnboardingDefaults>,
-): Promise<OnboardingDefaults> =>
-  invoke("onboarding_save_defaults", updates as Record<string, unknown>);
 
 export const listOnboardingExamples = (): Promise<ExampleProject[]> =>
   invoke("onboarding_list_examples");

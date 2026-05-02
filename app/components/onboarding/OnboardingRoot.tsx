@@ -1,7 +1,6 @@
 import { useOnboarding } from "../../hooks/useOnboarding";
 import { ClaudeAuthStep } from "./ClaudeAuthStep";
 import { CompletionStep } from "./CompletionStep";
-import { DefaultsFormStep } from "./DefaultsFormStep";
 import { LauncherStep } from "./LauncherStep";
 import { PermissionsStep } from "./PermissionsStep";
 import { PreflightStep } from "./PreflightStep";
@@ -24,8 +23,6 @@ export function OnboardingRoot() {
       return <PreflightStep />;
     case "claude_auth":
       return <ClaudeAuthStep />;
-    case "defaults":
-      return <DefaultsFormStep />;
     case "launcher":
       return <LauncherStep />;
     case "telemetry":

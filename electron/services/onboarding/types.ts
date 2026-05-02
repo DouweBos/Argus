@@ -3,19 +3,12 @@ export const ONBOARDING_STEPS = [
   "permissions",
   "preflight",
   "claude_auth",
-  "defaults",
   "launcher",
   "telemetry",
   "completion",
 ] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
-
-export interface OnboardingDefaults {
-  model: string;
-  permissionMode: string;
-  worktreeRoot: string;
-}
 
 export interface OnboardingStateData {
   completed: boolean;
@@ -27,7 +20,6 @@ export interface OnboardingStateData {
 
 export interface OnboardingConfigFile {
   onboarding: OnboardingStateData;
-  defaults: OnboardingDefaults;
   recentProjects: string[];
 }
 

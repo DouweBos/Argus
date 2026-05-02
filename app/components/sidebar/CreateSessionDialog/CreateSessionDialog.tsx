@@ -38,6 +38,7 @@ import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { selectSession, setPendingPrompt } from "../../../stores/sessionStore";
+import { getDefaultModel } from "../../../stores/settingsStore";
 import { ModelPicker } from "../../agent/ModelPicker";
 import { ProjectPicker } from "../../agent/ProjectPicker";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
@@ -395,7 +396,9 @@ export function CreateSessionDialog({
   // conversation's reported capabilities — first-launch with no prior agent
   // means the picker stays hidden.
   const { models: knownModels } = useMemo(() => getLastKnownCapabilities(), []);
-  const [modelValue, setModelValue] = useState<string>("default");
+  const [modelValue, setModelValue] = useState<string>(
+    () => getDefaultModel() || "default",
+  );
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const modelChipRef = useRef<HTMLDivElement>(null);
 

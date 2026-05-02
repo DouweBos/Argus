@@ -29,6 +29,8 @@ interface SettingsState {
   /** Conventional Commits prefix picker on/off (Phase 2 W10). */
   conventionalCommitsPicker: boolean;
   customEditors: CustomEditor[];
+  /** Model id seeded into the launcher / new-session dialog. Empty = CLI default. */
+  defaultModel: string;
   defaultPermissionMode: PermissionMode;
   /** Default strategy used by the project-scope pull dialog (Phase 6B P11). */
   defaultPullStrategy: "ff-only" | "merge" | "rebase";
@@ -94,6 +96,8 @@ function load(): SettingsState {
           parsed.defaultPermissionMode === "bypassPermissions"
             ? parsed.defaultPermissionMode
             : "default",
+        defaultModel:
+          typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
         telemetryEnabled:
           typeof parsed.telemetryEnabled === "boolean"
@@ -144,6 +148,7 @@ function load(): SettingsState {
   // telemetry onboarding step before any analytics events are sent.
   return {
     defaultPermissionMode: "default",
+    defaultModel: "",
     customEditors: [],
     telemetryEnabled: false,
     confirmPreferences: {},
@@ -182,6 +187,15 @@ export const useDefaultPermissionMode = () =>
 
 export const getDefaultPermissionMode = () =>
   store.getState().defaultPermissionMode;
+
+export const setDefaultModel = (model: string) => {
+  store.setState({ defaultModel: model });
+  persist(store.getState());
+};
+
+export const useDefaultModel = () => store((s) => s.defaultModel);
+
+export const getDefaultModel = () => store.getState().defaultModel;
 
 export const useCustomEditors = () => store((s) => s.customEditors);
 
