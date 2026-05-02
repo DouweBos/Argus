@@ -71,6 +71,5 @@
 }
 
 .current {
-  box-shadow: 0 0 0 1px var(--accent-border-strong);
   font-weight: 600;
 }
