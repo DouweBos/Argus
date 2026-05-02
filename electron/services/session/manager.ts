@@ -247,12 +247,33 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
  * via `session:updated` (branch/path/display_name/status) and
  * `session:status:{id}` events. The id is stable from the first response.
  */
+export interface CreateSessionOptions {
+  useExistingBranch?: boolean;
+  explicitBaseBranch?: string;
+  /**
+   * If set, createSession's promise resolves only once the worktree exists
+   * (path/branch populated). The setup pipeline still runs in the background
+   * after the returned promise resolves.
+   */
+  awaitWorktreeReady?: boolean;
+  /**
+   * Runs after the worktree has been created and `session:updated` has been
+   * emitted, but before the setup pipeline starts. Used by `forkSession` to
+   * reset the new worktree to the fork commit and replay tool ops.
+   *
+   * If `awaitWorktreeReady` is set, createSession awaits this hook before
+   * resolving.
+   */
+  postWorktreeReady?: (session: Session) => Promise<void>;
+}
+
 export async function createSession(
   repoRoot: string,
   branch: string,
   description: string,
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
+  opts?: Pick<CreateSessionOptions, "awaitWorktreeReady" | "postWorktreeReady">,
 ): Promise<Session> {
   const id = crypto.randomUUID();
 
@@ -291,14 +312,30 @@ export async function createSession(
     has_explicit_base_branch: Boolean(explicitBaseBranch),
   });
 
-  // Kick off the real work in the background. Don't await — callers get the
-  // pending session back immediately.
+  let signalReady: ((s: Session) => void) | undefined;
+  let signalReadyError: ((err: unknown) => void) | undefined;
+  const ready = new Promise<Session>((resolve, reject) => {
+    signalReady = resolve;
+    signalReadyError = reject;
+  });
+  // Suppress unhandled rejection if no one awaits this promise.
+  ready.catch(() => {});
+
+  // Kick off the real work in the background. Don't await — callers without
+  // `awaitWorktreeReady` get the pending session back immediately.
   finalizeSession(id, repoRoot, branch, description, {
     useExistingBranch,
     explicitBaseBranch,
+    postWorktreeReady: opts?.postWorktreeReady,
+    signalWorktreeReady: signalReady,
+    signalWorktreeFailed: signalReadyError,
   }).catch((e: unknown) => {
     error(`finalizeSession unhandled: ${String(e)}`);
   });
+
+  if (opts?.awaitWorktreeReady) {
+    return await ready;
+  }
 
   return { ...pending };
 }
@@ -316,9 +353,21 @@ async function finalizeSession(
   repoRoot: string,
   branch: string,
   description: string,
-  opts: { useExistingBranch?: boolean; explicitBaseBranch?: string },
+  opts: {
+    useExistingBranch?: boolean;
+    explicitBaseBranch?: string;
+    postWorktreeReady?: (session: Session) => Promise<void>;
+    signalWorktreeReady?: (session: Session) => void;
+    signalWorktreeFailed?: (err: unknown) => void;
+  },
 ): Promise<void> {
-  const { useExistingBranch, explicitBaseBranch } = opts;
+  const {
+    useExistingBranch,
+    explicitBaseBranch,
+    postWorktreeReady,
+    signalWorktreeReady,
+    signalWorktreeFailed,
+  } = opts;
 
   const emitError = (msg: string) => {
     const ws = appState.sessions.get(id);
@@ -328,6 +377,7 @@ async function finalizeSession(
     ws.status = { error: msg };
     appState.sessions.set(id, ws);
     getMainWindow()?.webContents.send(`session:status:${id}`, `error:${msg}`);
+    signalWorktreeFailed?.(msg);
   };
 
   try {
@@ -448,6 +498,24 @@ async function finalizeSession(
       display_name: ws.display_name,
       status: ws.status,
     });
+
+    // --- Phase 6b: post-worktree hook (e.g. fork reset/replay) ----------
+    if (postWorktreeReady) {
+      try {
+        await postWorktreeReady({ ...ws });
+      } catch (e) {
+        const msg =
+          typeof e === "string" ? e : (e as Error).message || String(e);
+        error(`postWorktreeReady failed for ${id}: ${msg}`);
+        emitError(msg);
+
+        return;
+      }
+      if (!appState.sessions.has(id)) {
+        return;
+      }
+    }
+    signalWorktreeReady?.({ ...ws });
 
     // --- Phase 7: persist metadata --------------------------------------
     const worktreesDir = worktreesRoot(repoRoot);
@@ -670,64 +738,70 @@ export async function forkSession(
     }
   }
 
+  let newClaudeSessionId: string | null = null;
+
+  // Wait for the new session's worktree to be created, then reset to the
+  // fork commit, replay uncommitted edits, and copy/truncate the Claude
+  // JSONL — all before the setup pipeline (and the agent) starts.
   const session = await createSession(
     repoRoot,
     newBranch,
     description,
     false,
     srcBranch,
-  );
-
-  if (forkCommit) {
-    try {
-      await git(session.path, ["reset", "--hard", forkCommit]);
-    } catch (e) {
-      info(`forkSession: reset to fork commit failed: ${String(e)}`);
-    }
-  }
-
-  // Replay Edit/Write/MultiEdit tool calls between the fork commit and the
-  // fork message to reconstruct uncommitted working-tree state.
-  if (replayOps && replayOps.length > 0) {
-    let commitTimeMs = 0;
-    if (forkCommit) {
-      try {
-        const ct = (
-          await git(session.path, ["show", "-s", "--format=%ct", forkCommit])
-        ).trim();
-        const secs = Number.parseInt(ct, 10);
-        if (!Number.isNaN(secs)) {
-          commitTimeMs = secs * 1000;
+    {
+      awaitWorktreeReady: true,
+      postWorktreeReady: async (s) => {
+        if (forkCommit) {
+          try {
+            await git(s.path, ["reset", "--hard", forkCommit]);
+          } catch (e) {
+            info(`forkSession: reset to fork commit failed: ${String(e)}`);
+          }
         }
-      } catch {
-        commitTimeMs = 0;
-      }
-    }
-    applyReplayOps(
-      replayOps,
-      srcPath,
-      session.path,
-      commitTimeMs,
-      forkTimestampMs,
-    );
-  }
 
-  let newClaudeSessionId: string | null = null;
-  if (sourceClaudeSessionId) {
-    try {
-      newClaudeSessionId = await forkClaudeSessionFile({
-        sourceCwd: srcPath,
-        sourceSessionId: sourceClaudeSessionId,
-        destCwd: session.path,
-        destBranch: session.branch,
-        forkTimestampMs,
-        forkTurnNumber,
-      });
-    } catch (e) {
-      info(`forkSession: JSONL truncation failed: ${String(e)}`);
-      newClaudeSessionId = null;
-    }
-  }
+        if (replayOps && replayOps.length > 0) {
+          let commitTimeMs = 0;
+          if (forkCommit) {
+            try {
+              const ct = (
+                await git(s.path, ["show", "-s", "--format=%ct", forkCommit])
+              ).trim();
+              const secs = Number.parseInt(ct, 10);
+              if (!Number.isNaN(secs)) {
+                commitTimeMs = secs * 1000;
+              }
+            } catch {
+              commitTimeMs = 0;
+            }
+          }
+          applyReplayOps(
+            replayOps,
+            srcPath,
+            s.path,
+            commitTimeMs,
+            forkTimestampMs,
+          );
+        }
+
+        if (sourceClaudeSessionId) {
+          try {
+            newClaudeSessionId = await forkClaudeSessionFile({
+              sourceCwd: srcPath,
+              sourceSessionId: sourceClaudeSessionId,
+              destCwd: s.path,
+              destBranch: s.branch,
+              forkTimestampMs,
+              forkTurnNumber,
+            });
+          } catch (e) {
+            info(`forkSession: JSONL truncation failed: ${String(e)}`);
+            newClaudeSessionId = null;
+          }
+        }
+      },
+    },
+  );
 
   info(
     `Forked session ${sourceSessionId} → ${session.id} (branch ${session.branch}, commit ${forkCommit || "<none>"}, claude ${newClaudeSessionId ?? "<none>"})`,
