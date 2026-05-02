@@ -44,7 +44,7 @@ export function ClaudeAuthStep() {
   useEffect(() => {
     if (preflightPassed && !autoAdvanced.current) {
       autoAdvanced.current = true;
-      advance("defaults").catch(() => {});
+      advance("launcher").catch(() => {});
     }
   }, [preflightPassed, advance]);
 
@@ -74,7 +74,7 @@ export function ClaudeAuthStep() {
         <Button
           variant="ghost"
           onClick={() => {
-            skipStep("claude_auth", "defaults").catch(() => {});
+            skipStep("claude_auth", "launcher").catch(() => {});
           }}
         >
           I&apos;ll do this later
@@ -85,7 +85,7 @@ export function ClaudeAuthStep() {
           variant="primary"
           disabled={state !== "ok"}
           onClick={() => {
-            advance("defaults").catch(() => {});
+            advance("launcher").catch(() => {});
           }}
         >
           Continue

@@ -151,7 +151,6 @@ import {
   resetOnboarding,
   runPrereqChecks,
   runPrereqFixer,
-  saveDefaults as onboardingSaveDefaults,
   setLastStep,
   suggestArgusJson as onboardingSuggestArgusJson,
   writeArgusJson as onboardingWriteArgusJson,
@@ -1936,13 +1935,6 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("onboarding_claude_ping", () => onboardingClaudePing());
-  handle("onboarding_save_defaults", (a) =>
-    onboardingSaveDefaults({
-      model: a.model as string | undefined,
-      permissionMode: a.permissionMode as string | undefined,
-      worktreeRoot: a.worktreeRoot as string | undefined,
-    }),
-  );
   handle("onboarding_list_examples", () => onboardingListExamples());
   handle("onboarding_clone_example", (a) =>
     onboardingCloneExample(a.slug as string),

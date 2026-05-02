@@ -7,7 +7,6 @@
 
 import type {
   OnboardingConfigFile,
-  OnboardingDefaults,
   OnboardingStateData,
   OnboardingStep,
 } from "./types";
@@ -19,12 +18,6 @@ import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { ONBOARDING_STEPS } from "./types";
 
 const SCHEMA_VERSION = 1;
-
-const DEFAULT_DEFAULTS: OnboardingDefaults = {
-  model: "claude-opus-4-7",
-  permissionMode: "plan",
-  worktreeRoot: path.join(os.homedir(), ".argus", "worktrees"),
-};
 
 const DEFAULT_STATE: OnboardingStateData = {
   completed: false,
@@ -65,7 +58,6 @@ export function loadConfig(): OnboardingConfigFile {
     // and never saw it.
     return {
       onboarding: { ...DEFAULT_STATE },
-      defaults: { ...DEFAULT_DEFAULTS },
       recentProjects: [],
     };
   }
@@ -91,10 +83,6 @@ export function loadConfig(): OnboardingConfigFile {
 
   return {
     onboarding,
-    defaults: {
-      ...DEFAULT_DEFAULTS,
-      ...(parsed.defaults ?? {}),
-    },
     recentProjects: parsed.recentProjects ?? [],
   };
 }
@@ -124,16 +112,6 @@ export function addSkipped(id: string): void {
     cfg.onboarding.skipped.push(id);
     saveConfig(cfg);
   }
-}
-
-export function saveDefaults(
-  updates: Partial<OnboardingDefaults>,
-): OnboardingDefaults {
-  const cfg = loadConfig();
-  cfg.defaults = { ...cfg.defaults, ...updates };
-  saveConfig(cfg);
-
-  return cfg.defaults;
 }
 
 export function registerProject(repoPath: string): void {

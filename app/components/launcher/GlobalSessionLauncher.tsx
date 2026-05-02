@@ -28,6 +28,7 @@ import {
 } from "../../lib/ipc";
 import { getLastKnownCapabilities } from "../../lib/lastKnownCapabilities";
 import { openImageViewer } from "../../stores/imageViewerStore";
+import { getDefaultModel } from "../../stores/settingsStore";
 import { ModelPicker } from "../agent/ModelPicker";
 import styles from "./GlobalSessionLauncher.module.css";
 import {
@@ -82,7 +83,9 @@ export function GlobalSessionLauncher() {
   const [prompt, setPrompt] = useState("");
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [linkedProjects, setLinkedProjects] = useState<string[]>([]);
-  const [modelValue, setModelValue] = useState<string>("default");
+  const [modelValue, setModelValue] = useState<string>(
+    () => getDefaultModel() || "default",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
