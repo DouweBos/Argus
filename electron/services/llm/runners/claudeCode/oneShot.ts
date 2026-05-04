@@ -95,11 +95,12 @@ export async function runClaudePrint(
   opts: RunClaudePrintOptions,
 ): Promise<string | null> {
   try {
-    // Strip project context so haiku produces a title in one turn instead of
-    // loading the worktree's CLAUDE.md / MCP / hooks / skills and trying to
-    // "fix" the project with Bash. Without these flags a title call commonly
-    // ran 30-90s and tripped the timeout, which surfaced as a misleading
-    // "login expired" notification.
+    // Strip all setting sources (project AND user) so haiku produces a title
+    // in one turn instead of loading CLAUDE.md / MCP / hooks / skills /
+    // auto-memory and trying to "fix" the project with Bash. Loading `user`
+    // also pulled in the user-level memory bank, which routinely pushed the
+    // prompt past haiku's input limit and surfaced as a "Prompt is too long"
+    // error.
     const child = execFileAsync(
       CLAUDE_BIN,
       [
@@ -111,7 +112,7 @@ export async function runClaudePrint(
         "--tools",
         "",
         "--setting-sources",
-        "user",
+        "",
         "--disable-slash-commands",
         "--system-prompt",
         "You generate short titles and slugs. Reply with only what the user asks for, no tools, no explanation.",
