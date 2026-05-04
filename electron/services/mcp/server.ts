@@ -635,7 +635,7 @@ export function createMcpServer(): McpServer {
         .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
         .optional()
         .describe(
-          "Permission mode for the agent. Use 'plan' to start the agent in plan mode — read-only exploration plus AskUserQuestion/ExitPlanMode, with the agent required to present a plan for user approval before any writes. 'default' prompts per tool; 'auto'/'acceptEdits' auto-accept edits; 'bypassPermissions' skips prompts. Defaults to the app's setting.",
+          "Permission mode for the agent. 'auto' uses Claude's smart classifier to auto-approve safe actions and ask for risky ones. 'default' prompts per tool; 'acceptEdits' auto-accepts file edits; 'plan' is read-only exploration plus AskUserQuestion/ExitPlanMode requiring an approved plan before writes; 'bypassPermissions' skips all prompts. Defaults to the app's setting.",
         ),
       model: z
         .string()

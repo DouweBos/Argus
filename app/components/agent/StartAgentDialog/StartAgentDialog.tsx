@@ -51,6 +51,7 @@ interface StartAgentDialogProps {
 
 const MODE_BLURBS: Record<CanonicalPermissionMode, string> = {
   auto: "Describe what the agent should work on.",
+  ask: "Every edit, command, and write asks for approval first.",
   plan: "The agent must present a plan for approval before any writes.",
   review: "File edits are auto-approved; shell + network still ask.",
   trusted: "Every tool call is auto-approved. Use with caution.",
@@ -343,7 +344,7 @@ export function StartAgentDialog({
       const info = await startAgentInSession(sessionId, {
         focus: true,
         model: modelValue !== "default" ? modelValue : undefined,
-        permissionMode: permissionMode === "auto" ? undefined : permissionMode,
+        permissionMode,
       });
       await sendUserMessageToAgent(
         info.agent_id,

@@ -640,7 +640,7 @@ export function AgentChat({
       try {
         await ipcSetAgentPermissionMode(agentId, mode);
         updateAgent(agentId, {
-          permission_mode: mode === "auto" ? undefined : mode,
+          permission_mode: mode,
         });
       } catch {
         // Best-effort — agent may have exited.

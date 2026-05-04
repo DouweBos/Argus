@@ -10,17 +10,20 @@
 import type { CanonicalPermissionMode } from "../types";
 
 const CANONICAL_TO_CLAUDE: Record<CanonicalPermissionMode, string> = {
-  auto: "default",
+  auto: "auto",
+  ask: "default",
   review: "acceptEdits",
   plan: "plan",
   trusted: "bypassPermissions",
 };
 
 const CLAUDE_NATIVE = new Set([
+  "auto",
   "default",
   "acceptEdits",
   "plan",
   "bypassPermissions",
+  "dontAsk",
 ]);
 
 export function toClaudePermissionMode(

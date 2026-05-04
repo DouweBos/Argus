@@ -72,7 +72,7 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
       try {
         const info = await startAgentInSession(sessionId, {
           focus: true,
-          permissionMode: mode === "auto" ? undefined : mode,
+          permissionMode: mode,
         });
         await sendUserMessageToAgent(info.agent_id, message, undefined, {
           assumeIdle: true,
