@@ -57,6 +57,25 @@ jobs:
             # Don't commit the .changeset/pre.json side files.
             git checkout .changeset/pre.json 2>/dev/null || true
             rm -f .changeset/pre.json
+
+            # changeset always restarts the pre-release counter at 0 because
+            # the source branch never carries pre.json forward. Bump the
+            # trailing index past any existing v<base>-<channel>.N tag so we
+            # don't collide with prior alpha/beta cuts of the same base.
+            git fetch --tags --quiet
+            BUMPED=$(node -p "require('./package.json').version")
+            BASE="${BUMPED%-*}"
+            HIGHEST=$(git tag -l "v${BASE}-${CHANNEL}.*" \
+              | sed -n "s/^v${BASE}-${CHANNEL}\.\([0-9][0-9]*\)$/\1/p" \
+              | sort -n | tail -1)
+            if [ -n "$HIGHEST" ]; then
+              NEXT=$((HIGHEST + 1))
+              NEW_VERSION="${BASE}-${CHANNEL}.${NEXT}"
+              echo "Bumping ${BUMPED} → ${NEW_VERSION} (highest existing tag: v${BASE}-${CHANNEL}.${HIGHEST})"
+              node -e "const fs=require('fs');const p=require('./package.json');p.version='${NEW_VERSION}';fs.writeFileSync('./package.json',JSON.stringify(p,null,2)+'\n');"
+            else
+              echo "No existing v${BASE}-${CHANNEL}.* tag — keeping ${BUMPED}"
+            fi
           fi
 
       - name: Extract release notes
