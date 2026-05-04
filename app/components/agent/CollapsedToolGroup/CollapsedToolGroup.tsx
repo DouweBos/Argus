@@ -40,6 +40,26 @@ export function CollapsedToolGroup({
   const messageCount = messages.length;
   const categories = categorizeTools(messages);
 
+  const firstTimestamp = messages[0]?.timestamp;
+  const lastTimestamp = messages[messages.length - 1]?.timestamp;
+  const formatTime = (t: number) =>
+    new Date(t).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  const timestampLabel =
+    firstTimestamp !== undefined
+      ? lastTimestamp !== undefined && lastTimestamp !== firstTimestamp
+        ? `${formatTime(firstTimestamp)}–${formatTime(lastTimestamp)}`
+        : formatTime(firstTimestamp)
+      : null;
+  const timestampTitle =
+    firstTimestamp !== undefined
+      ? lastTimestamp !== undefined && lastTimestamp !== firstTimestamp
+        ? `${new Date(firstTimestamp).toLocaleString()} – ${new Date(lastTimestamp).toLocaleString()}`
+        : new Date(firstTimestamp).toLocaleString()
+      : undefined;
+
   return (
     <div className={styles.group}>
       <button
@@ -94,6 +114,15 @@ export function CollapsedToolGroup({
             <span className={styles.icon} title={`${categories.agent} agents`}>
               <Icons.AgentIcon size={14} />
             </span>
+          )}
+          {timestampLabel && (
+            <time
+              className={styles.timestamp}
+              dateTime={new Date(firstTimestamp!).toISOString()}
+              title={timestampTitle}
+            >
+              {timestampLabel}
+            </time>
           )}
         </span>
       </button>
