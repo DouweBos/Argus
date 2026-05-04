@@ -4,6 +4,7 @@ import { StatusBulb, type StatusBulbTone } from "@argus/peacock";
 import { listInheritedMcpServers } from "../../../lib/ipc";
 import styles from "./InheritedMcpList.module.css";
 import { McpTestButton, type McpProbeStatus } from "./McpTestButton";
+import { ToolList } from "./ToolList";
 
 interface InheritedMcpListProps {
   /** Pass null/undefined for the global (app-level) view. */
@@ -88,56 +89,6 @@ interface RowProps {
     React.SetStateAction<Record<string, McpProbeStatus>>
   >;
   status: McpProbeStatus;
-}
-
-const TOOL_COLLAPSE_AT = 10;
-
-function ToolList({ tools }: { tools: McpTool[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const overflow = tools.length - TOOL_COLLAPSE_AT;
-  const visible =
-    expanded || overflow <= 0 ? tools : tools.slice(0, TOOL_COLLAPSE_AT);
-
-  return (
-    <div className={styles.tools}>
-      <div className={styles.toolsLabel}>
-        {tools.length} tool{tools.length === 1 ? "" : "s"}
-      </div>
-      <div className={styles.toolChips}>
-        {visible.map((t) => (
-          <span
-            key={t.name}
-            className={styles.toolChip}
-            title={t.description ?? t.name}
-          >
-            {t.name}
-          </span>
-        ))}
-        {overflow > 0 && !expanded ? (
-          <button
-            type="button"
-            className={styles.toolChipMore}
-            onClick={() => {
-              setExpanded(true);
-            }}
-          >
-            +{overflow} more
-          </button>
-        ) : null}
-        {overflow > 0 && expanded ? (
-          <button
-            type="button"
-            className={styles.toolChipMore}
-            onClick={() => {
-              setExpanded(false);
-            }}
-          >
-            Show less
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
 }
 
 function summarizeConfig(config: Record<string, unknown>): string | null {
