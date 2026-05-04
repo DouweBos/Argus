@@ -52,6 +52,21 @@
   opacity: 0.5;
 }
 
+.timestamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.toggle:hover .timestamp {
+  opacity: 1;
+}
+
 .expandedList {
   display: flex;
   flex-direction: column;
