@@ -44,6 +44,7 @@ export * from "./components/GridScreen/GridScreen";
 export * from "./lib/diff";
 export * from "./components/HomeCTA/HomeCTA";
 export * from "./components/HoverActionBar/HoverActionBar";
+export * from "./components/HoverTimestamp/HoverTimestamp";
 export * from "./components/IconBadge/IconBadge";
 export * from "./components/ImageAttachmentStrip/ImageAttachmentStrip";
 export * from "./components/ImageDiff/ImageDiff";

@@ -3,7 +3,7 @@ import type {
   ToolCallInfo,
 } from "../../../stores/conversationStore";
 import { useEffect, useRef, useState } from "react";
-import { Icons } from "@argus/peacock";
+import { HoverTimestamp, Icons } from "@argus/peacock";
 import { findScrollParent } from "../../../lib/findScrollParent";
 import {
   markMessageRead,
@@ -82,29 +82,9 @@ export function CollapsedToolGroup({
 
   const firstTimestamp = messages[0]?.timestamp;
   const lastTimestamp = messages[messages.length - 1]?.timestamp;
-  const formatTime = (t: number) =>
-    new Date(t).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  const hasRange =
-    firstTimestamp !== undefined &&
-    lastTimestamp !== undefined &&
-    lastTimestamp !== firstTimestamp;
-  let timestampLabel: string | null = null;
-  let timestampTitle: string | undefined;
-  if (firstTimestamp !== undefined) {
-    if (hasRange && lastTimestamp !== undefined) {
-      timestampLabel = `${formatTime(firstTimestamp)}–${formatTime(lastTimestamp)}`;
-      timestampTitle = `${new Date(firstTimestamp).toLocaleString()} – ${new Date(lastTimestamp).toLocaleString()}`;
-    } else {
-      timestampLabel = formatTime(firstTimestamp);
-      timestampTitle = new Date(firstTimestamp).toLocaleString();
-    }
-  }
 
-  return (
-    <div ref={groupRef} className={styles.group}>
+  const body = (
+    <>
       <button
         aria-expanded={expanded}
         className={styles.toggle}
@@ -160,16 +140,6 @@ export function CollapsedToolGroup({
           )}
         </span>
       </button>
-      {timestampLabel && (
-        <time
-          className={styles.timestamp}
-          dateTime={new Date(firstTimestamp!).toISOString()}
-          title={timestampTitle}
-        >
-          {timestampLabel}
-        </time>
-      )}
-
       {expanded && (
         <div className={styles.expandedList}>
           {messages.map((msg) =>
@@ -185,6 +155,25 @@ export function CollapsedToolGroup({
           )}
         </div>
       )}
-    </div>
+    </>
+  );
+
+  if (firstTimestamp === undefined) {
+    return (
+      <div ref={groupRef} className={styles.group}>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <HoverTimestamp
+      ref={groupRef}
+      className={styles.group}
+      timestamp={firstTimestamp}
+      endTimestamp={lastTimestamp}
+    >
+      {body}
+    </HoverTimestamp>
   );
 }
