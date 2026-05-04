@@ -89,9 +89,7 @@
 .card:hover .diffStats,
 .card:focus-within .diffStats,
 .card:hover .statusBadge,
-.card:focus-within .statusBadge,
-.card:hover .aheadBadge,
-.card:focus-within .aheadBadge {
+.card:focus-within .statusBadge {
   opacity: 0;
 }
 
@@ -101,18 +99,6 @@
 
 .diffRemove {
   color: var(--error);
-}
-
-.aheadBadge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 10px;
-  font-weight: 600;
-  font-family: var(--font-mono);
-  color: var(--accent);
-  flex-shrink: 0;
-  transition: opacity var(--transition-fast);
-  pointer-events: none;
 }
 
 .subtitleRow {
