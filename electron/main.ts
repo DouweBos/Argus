@@ -1000,8 +1000,8 @@ app.whenReady().then(() => {
     },
   });
 
-  // Global session launcher — registers Cmd+Shift+Space (configurable) so
-  // the user can summon the launcher from anywhere on the system.
+  // Global session launcher — registers Cmd+Shift+/ (configurable) so the
+  // user can summon the launcher from anywhere on the system.
   try {
     initLauncher();
   } catch (e) {

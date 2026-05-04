@@ -96,10 +96,8 @@ export const launcherToggle = (): Promise<void> => invoke("launcher_toggle");
 export const launcherReady = (): Promise<void> => invoke("launcher_ready");
 
 export interface LauncherStatus {
-  accessibilityGranted: boolean | null;
+  accelerator: string;
   enabled: boolean;
-  lastError: string | null;
-  running: boolean;
 }
 
 export const getLauncherStatus = (): Promise<LauncherStatus> =>
@@ -111,8 +109,15 @@ export const setLauncherEnabled = (enabled: boolean): Promise<boolean> =>
 export const getLauncherEnabled = (): Promise<boolean> =>
   invoke("launcher_get_enabled");
 
-export const openAccessibilitySettings = (): Promise<void> =>
-  invoke("launcher_open_accessibility_settings");
+/**
+ * Persist a new accelerator string (Electron format, e.g. `CommandOrControl+Shift+/`)
+ * and re-register the global hotkey. Empty string restores the default.
+ * Returns the accelerator actually registered, or `null` if the OS rejected it.
+ */
+export const setLauncherAccelerator = (
+  accelerator: string,
+): Promise<string | null> =>
+  invoke("launcher_set_accelerator", { accelerator });
 
 export const focusMainWindow = (): Promise<void> => invoke("focus_main_window");
 export const navigateMainWindow = (

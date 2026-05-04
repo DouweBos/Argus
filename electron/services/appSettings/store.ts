@@ -21,6 +21,12 @@ export interface AppSettings {
    * under Settings → Session launcher.
    */
   launcher_enabled?: boolean;
+  /**
+   * Electron accelerator string for the global session launcher hotkey
+   * (e.g. `CommandOrControl+Shift+/`). Falls back to the built-in default
+   * when absent. The double-tap right Option binding is independent of this.
+   */
+  launcher_accelerator?: string;
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: McpServers;
   /**

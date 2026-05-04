@@ -14,7 +14,6 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   tools: "Tools",
   preflight: "Preflight",
   claude_auth: "Claude",
-  launcher: "Launcher",
   telemetry: "Telemetry",
   completion: "Done",
 };

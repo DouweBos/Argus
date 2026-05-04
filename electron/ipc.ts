@@ -127,10 +127,10 @@ import {
   isLauncherEnabled,
   launcherStatus,
   markLauncherRendererReady,
-  openAccessibilitySettings,
   setLauncherEnabled,
   showLauncher,
   toggleLauncher,
+  updateLauncherAccelerator,
 } from "./services/launcher";
 import {
   listRunnerOnboardingSteps,
@@ -1601,11 +1601,9 @@ export function registerIpcHandlers(): void {
     Promise.resolve(setLauncherEnabled(a.enabled === true)),
   );
   handle("launcher_get_enabled", () => Promise.resolve(isLauncherEnabled()));
-  handle("launcher_open_accessibility_settings", () => {
-    openAccessibilitySettings();
-
-    return Promise.resolve();
-  });
+  handle("launcher_set_accelerator", (a) =>
+    Promise.resolve(updateLauncherAccelerator(String(a.accelerator ?? ""))),
+  );
   registerAreaCaptureHandlers();
   handle("focus_main_window", () => {
     const win = getMainWindow();
