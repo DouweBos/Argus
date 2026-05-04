@@ -20,6 +20,7 @@ import {
   Avatar,
   BranchDialog,
   Button,
+  CalloutCard,
   ContextMenu,
   DestructiveConfirm,
   GitErrorBanner,
@@ -52,6 +53,7 @@ import {
   gitCreateTag,
   gitGetRemotes,
   gitLog,
+  gitRebaseAutosquash,
   gitRebaseInteractivePlan,
   gitRebaseInteractiveRun,
   gitReset,
@@ -81,6 +83,7 @@ import { CommitContextMenu } from "./CommitContextMenu";
 import { CompareView } from "./CompareView";
 import { FileHistoryView } from "./FileHistoryView";
 import { HistoryFilters } from "./HistoryFilters";
+import { detectAutosquash } from "./autosquash";
 import { useCursorLog } from "./useCursorLog";
 
 const ROW_HEIGHT = 42;
@@ -505,11 +508,19 @@ export function CommitLogView({
     [sessionId],
   );
 
+  // Hash of the autosquash-set the user has dismissed (joined fixup hashes).
+  // Cleared on session change and whenever the set of fixup commits changes,
+  // so dismissing only suppresses the *current* set.
+  const [autosquashDismissed, setAutosquashDismissed] = useState<string | null>(
+    null,
+  );
+
   // Reset filters when session id changes.
   const [prevSession, setPrevSession] = useState(sessionId);
   if (prevSession !== sessionId) {
     setPrevSession(sessionId);
     setHistoryFilters(sessionId, EMPTY_HISTORY_FILTERS);
+    setAutosquashDismissed(null);
   }
 
   const ipcFilters = useMemo(
@@ -591,6 +602,7 @@ export function CommitLogView({
   // commits in HEAD's history. Refetched whenever the visible commit list
   // changes so the gate stays accurate after any mutation.
   const [headHashes, setHeadHashes] = useState<Set<string>>(() => new Set());
+  const [autosquashRunning, setAutosquashRunning] = useState(false);
   const [rebaseState, setRebaseState] = useState<{
     baseRef: string;
     commits: RebasePlanCommit[];
@@ -1059,10 +1071,8 @@ export function CommitLogView({
       (c) => c.hash === focusCommitHash || c.hash.startsWith(focusCommitHash),
     );
     if (idx >= 0) {
-      /* eslint-disable react-hooks/set-state-in-effect --
-         Imperative scroll-and-select tied to a focus request from the URL/store. */
       selectCommit(idx);
-      /* eslint-enable react-hooks/set-state-in-effect */
+
       const node = listRef.current?.querySelectorAll(`.${styles.commitItem}`)[
         idx
       ];
@@ -1375,6 +1385,54 @@ export function CommitLogView({
     [sessionId, commits],
   );
 
+  // Autosquash banner --------------------------------------------------------
+
+  const autosquash = useMemo(
+    () => detectAutosquash(commits, headHashes),
+    [commits, headHashes],
+  );
+  const autosquashSignature = useMemo(() => {
+    if (!autosquash) {
+      return null;
+    }
+    const hashes: string[] = [];
+    for (const c of commits) {
+      if (
+        headHashes.has(c.hash) &&
+        /^(?:fixup|squash|amend)!\s+/.test(c.subject)
+      ) {
+        hashes.push(c.hash);
+      }
+    }
+
+    return hashes.sort().join(",");
+  }, [commits, headHashes, autosquash]);
+
+  const handleAutosquash = useCallback(async () => {
+    if (!autosquash) {
+      return;
+    }
+    setOpBanner(null);
+    const upstream = autosquash.oldestTarget.parentHash
+      ? autosquash.oldestTarget.parentHash
+      : `${autosquash.oldestTarget.hash}^`;
+    setAutosquashRunning(true);
+    try {
+      await gitRebaseAutosquash(sessionId, { upstream });
+    } catch (err) {
+      if (err instanceof GitError) {
+        setOpBanner({ kind: err.kind, message: err.message });
+      } else {
+        setOpBanner({
+          kind: "unknown",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } finally {
+      setAutosquashRunning(false);
+    }
+  }, [autosquash, sessionId]);
+
   // Render -----------------------------------------------------------------
 
   if (loading) {
@@ -1436,9 +1494,46 @@ export function CommitLogView({
       all: "All Branches, Remotes, Tags",
     }[filters.refType] ?? "All Branches, Remotes, Tags";
 
+  const showAutosquash =
+    autosquash !== null && autosquashDismissed !== autosquashSignature;
+
   return (
     <>
       <div className={styles.layoutColumn}>
+        {showAutosquash && autosquash && (
+          <div className={styles.autosquashBannerWrap}>
+            <CalloutCard
+              tone="warning"
+              leading={<Icons.DownloadIcon size={16} />}
+              title="Autosquash Commits"
+              meta={
+                autosquash.count === 1
+                  ? "Found 1 fixup/squash commit that can be automatically combined with its target commit."
+                  : `Found ${autosquash.count} fixup/squash commits that can be automatically combined with their target commits.`
+              }
+              actions={
+                <>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleAutosquash}
+                    disabled={autosquashRunning}
+                  >
+                    {autosquashRunning ? "Autosquashing…" : "Autosquash…"}
+                  </Button>
+                  <button
+                    type="button"
+                    className={styles.autosquashDismiss}
+                    aria-label="Dismiss autosquash banner"
+                    onClick={() => setAutosquashDismissed(autosquashSignature)}
+                  >
+                    <Icons.CloseIcon size={12} />
+                  </button>
+                </>
+              }
+            />
+          </div>
+        )}
         <div className={styles.historyToolbar}>
           <span className={styles.historyScopeLabel}>
             <Icons.BranchIcon size={11} />

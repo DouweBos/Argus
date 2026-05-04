@@ -271,3 +271,46 @@ export async function gitRebaseInteractiveRun(
     }
   });
 }
+
+/**
+ * Run `git rebase -i --autosquash <upstream>` non-interactively, accepting
+ * the auto-generated todo. Used by the autosquash banner to fold any
+ * `fixup!` / `squash!` commits into their targets in one click.
+ */
+export async function gitRebaseAutosquash(
+  id: string,
+  opts: { upstream: string },
+): Promise<void> {
+  const { path: cwd } = requireProjectScope(id);
+  if (!opts.upstream.trim()) {
+    throw new GitError("unknown", "Upstream ref is required");
+  }
+
+  await withGitLock(cwd, async () => {
+    try {
+      await execFileAsync(
+        "git",
+        [
+          "-c",
+          "sequence.editor=true",
+          "-c",
+          "rebase.autosquash=true",
+          "rebase",
+          "-i",
+          opts.upstream,
+        ],
+        {
+          cwd,
+          env: { ...process.env, GIT_EDITOR: "true" },
+        },
+      );
+    } catch (err: unknown) {
+      const e = err as { stdout?: string; stderr?: string; message?: string };
+      const stderr = e.stderr ?? "";
+      const stdout = e.stdout ?? "";
+      const combined =
+        stderr || stdout || e.message || "git rebase --autosquash failed";
+      throw classifyGitStderr(combined, { op: "rebase" });
+    }
+  });
+}

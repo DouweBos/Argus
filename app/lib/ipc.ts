@@ -531,6 +531,11 @@ export const gitRebaseInteractiveRun = (
 ): Promise<void> =>
   invoke("git_rebase_interactive_run", { id: sessionId, ...opts });
 
+export const gitRebaseAutosquash = (
+  sessionId: string,
+  opts: { upstream: string },
+): Promise<void> => invoke("git_rebase_autosquash", { id: sessionId, ...opts });
+
 // ---------------------------------------------------------------------------
 // Phase 7 T3 — bisect
 // ---------------------------------------------------------------------------
