@@ -1,13 +1,37 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .row {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-subtle);
 }
 
 .head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+}
+
+.nameWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nameWrap > :last-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .error {
@@ -20,10 +44,4 @@
   display: flex;
   justify-content: flex-end;
   margin-top: 2px;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid var(--border-subtle);
-  margin: 10px 0 0;
 }
