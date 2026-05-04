@@ -209,6 +209,10 @@ export const getEffectivePluginEnabled = (id: PluginId): boolean =>
 export const usePluginEnabled = (id: PluginId): boolean =>
   store((s) => isUserEnabled(s, id));
 
+/** Snapshot of user-enabled state for a stable list of plugin ids. */
+export const useUserEnabledMany = (ids: readonly PluginId[]): boolean[] =>
+  store(useShallow((s) => ids.map((id) => isUserEnabled(s, id))));
+
 export const useEffectivePluginEnabled = (id: PluginId): boolean =>
   store((s) => effectiveEnabled(s, id));
 
