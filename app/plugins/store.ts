@@ -254,31 +254,32 @@ interface SettingsSectionContributionWithPluginId extends SettingsSectionContrib
 export const useEnabledToolRailContributions = (): {
   bottom: ToolRailContributionWithPluginId[];
   right: ToolRailContributionWithPluginId[];
-} =>
-  store(
-    useShallow((s) => {
-      const bottom: ToolRailContributionWithPluginId[] = [];
-      const right: ToolRailContributionWithPluginId[] = [];
-      for (const plugin of PLUGINS) {
-        if (!effectiveEnabled(s, plugin.id)) {
-          continue;
-        }
-        for (const entry of plugin.contributes?.toolRail ?? []) {
-          const placed: ToolRailContributionWithPluginId = {
-            ...entry,
-            pluginId: plugin.id,
-          };
-          if (entry.placement === "bottom") {
-            bottom.push(placed);
-          } else {
-            right.push(placed);
-          }
+} => {
+  const enabledIds = useEnabledPluginIds();
+
+  return useMemo(() => {
+    const bottom: ToolRailContributionWithPluginId[] = [];
+    const right: ToolRailContributionWithPluginId[] = [];
+    for (const plugin of PLUGINS) {
+      if (!enabledIds.includes(plugin.id)) {
+        continue;
+      }
+      for (const entry of plugin.contributes?.toolRail ?? []) {
+        const placed: ToolRailContributionWithPluginId = {
+          ...entry,
+          pluginId: plugin.id,
+        };
+        if (entry.placement === "bottom") {
+          bottom.push(placed);
+        } else {
+          right.push(placed);
         }
       }
+    }
 
-      return { bottom, right };
-    }),
-  );
+    return { bottom, right };
+  }, [enabledIds]);
+};
 
 export function getToolRailPlacement(id: string): ToolPlacement | undefined {
   for (const plugin of PLUGINS) {
@@ -293,40 +294,42 @@ export function getToolRailPlacement(id: string): ToolPlacement | undefined {
 }
 
 export const useEnabledRuntimeModes =
-  (): RuntimeModeContributionWithPluginId[] =>
-    store(
-      useShallow((s) => {
-        const out: RuntimeModeContributionWithPluginId[] = [];
-        for (const plugin of PLUGINS) {
-          if (!effectiveEnabled(s, plugin.id)) {
-            continue;
-          }
-          for (const mode of plugin.contributes?.runtimeMode ?? []) {
-            out.push({ ...mode, pluginId: plugin.id });
-          }
-        }
+  (): RuntimeModeContributionWithPluginId[] => {
+    const enabledIds = useEnabledPluginIds();
 
-        return out;
-      }),
-    );
+    return useMemo(() => {
+      const out: RuntimeModeContributionWithPluginId[] = [];
+      for (const plugin of PLUGINS) {
+        if (!enabledIds.includes(plugin.id)) {
+          continue;
+        }
+        for (const mode of plugin.contributes?.runtimeMode ?? []) {
+          out.push({ ...mode, pluginId: plugin.id });
+        }
+      }
+
+      return out;
+    }, [enabledIds]);
+  };
 
 export const useEnabledSettingsSections =
-  (): SettingsSectionContributionWithPluginId[] =>
-    store(
-      useShallow((s) => {
-        const out: SettingsSectionContributionWithPluginId[] = [];
-        for (const plugin of PLUGINS) {
-          if (!effectiveEnabled(s, plugin.id)) {
-            continue;
-          }
-          for (const section of plugin.contributes?.settingsSection ?? []) {
-            out.push({ ...section, pluginId: plugin.id });
-          }
-        }
+  (): SettingsSectionContributionWithPluginId[] => {
+    const enabledIds = useEnabledPluginIds();
 
-        return out;
-      }),
-    );
+    return useMemo(() => {
+      const out: SettingsSectionContributionWithPluginId[] = [];
+      for (const plugin of PLUGINS) {
+        if (!enabledIds.includes(plugin.id)) {
+          continue;
+        }
+        for (const section of plugin.contributes?.settingsSection ?? []) {
+          out.push({ ...section, pluginId: plugin.id });
+        }
+      }
+
+      return out;
+    }, [enabledIds]);
+  };
 
 // ---------- testing helpers ----------
 
