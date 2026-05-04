@@ -54,6 +54,37 @@ export interface Session {
    * event. Not persisted; absent on subsequent session listings.
    */
   setup_terminal_id?: string | null;
+  /**
+   * LLM runner this session is bound to (e.g. `"claude-code"`). Stamped at
+   * `create_session` time by `resolveRunnerForSession` and immutable for the
+   * session's lifetime — every agent spawned in this session inherits this
+   * runner, and the runner cannot be overridden at spawn time. Legacy
+   * sessions persisted before this field existed default to
+   * {@link DEFAULT_RUNNER_ID} via {@link sessionRunnerId} on read.
+   */
+  runner_id?: string | null;
+  /**
+   * Default model id (runner-specific shape) for agents spawned in this
+   * session. `null` lets the cascade fall through to the project default,
+   * app default, then runner default. Editable post-create via the
+   * Runner+Model picker.
+   */
+  model?: string | null;
+}
+
+/**
+ * Fallback runner id used when reading a Session that pre-dates the
+ * `runner_id` field.
+ */
+export const DEFAULT_RUNNER_ID = "claude-code";
+
+/**
+ * Read the session's runner id, defaulting legacy sessions to
+ * {@link DEFAULT_RUNNER_ID}. Use this everywhere you need a runner id —
+ * never read `session.runner_id` directly.
+ */
+export function sessionRunnerId(session: Pick<Session, "runner_id">): string {
+  return session.runner_id ?? DEFAULT_RUNNER_ID;
 }
 
 /** A terminal to auto-open when loading a session. */
@@ -172,6 +203,22 @@ export interface SetupConfig {
  * appear in the agent system prompt. */
 export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
 
+/**
+ * Project-level default LLM runner + model. Either field may be absent —
+ * the resolver cascade (agent override → session → project → app default)
+ * fills in whichever the user hasn't pinned. An unknown `runner` id is
+ * tolerated at parse time (logged as a warning) so the resolver can fall
+ * back gracefully if a runner is removed/renamed in a future release.
+ */
+export interface LlmConfig {
+  /** Runner id, e.g. "claude-code". When null/absent, falls back to the
+   * app-level default runner. */
+  runner?: string | null;
+  /** Default model id for this project, in whatever shape the runner
+   * accepts. When null/absent, the runner picks its own default. */
+  model?: string | null;
+}
+
 /** Parsed representation of `.argus.json` found at the repo root. */
 export interface ArgusConfig {
   /**
@@ -262,6 +309,13 @@ export interface ArgusConfig {
    * auto-fetch entirely.
    */
   auto_fetch_minutes?: number | null;
+  /**
+   * Project-level default LLM runner + model. Used as the cascade step
+   * between agent/session overrides and the app-level default. The runner
+   * is bound at session creation; the model is re-resolved per agent
+   * spawn. Either field may be absent.
+   */
+  llm?: LlmConfig | null;
 }
 
 /** Tone for label badges, mirrored from Peacock's `Badge.tone`. */
@@ -341,5 +395,6 @@ export function defaultArgusConfig(): ArgusConfig {
     release_note_patterns: [],
     simulator_deeplinks: [],
     auto_fetch_minutes: null,
+    llm: null,
   };
 }

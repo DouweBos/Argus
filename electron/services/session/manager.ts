@@ -4,11 +4,12 @@
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
+import { forkClaudeSessionFile } from "../llm/runners/claudeCode/transcriptFork";
 import {
   generateBranchAndTitle,
   generateSessionTitle,
@@ -40,7 +41,6 @@ import {
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
 import { loadArgusConfig, runSetupPipeline } from "./setup";
-import { truncateClaudeJsonl } from "./truncateClaudeJsonl";
 import { startBranchWatcher } from "./watcher";
 
 // ---------------------------------------------------------------------------
@@ -74,11 +74,9 @@ export function removeRepoRoot(dirPath: string): void {
   // Kill agents for those sessions.
   for (const [key, session] of appState.agents.entries()) {
     if (wsIds.includes(session.sessionId)) {
-      try {
-        session.child.kill();
-      } catch (e) {
+      session.handle.kill().catch((e) => {
         info(`removeRepoRoot: kill agent ${key} returned:`, e);
-      }
+      });
       appState.agents.delete(key);
     }
   }
@@ -188,6 +186,8 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.description = m.description;
       ws.base_branch = m.base_branch;
       ws.organization_task_id = m.organization_task_id ?? null;
+      ws.runner_id = m.runner_id ?? null;
+      ws.model = m.model ?? null;
     }
 
     if (!appState.sessions.has(ws.id)) {
@@ -207,6 +207,8 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         description: w.description,
         base_branch: w.base_branch,
         organization_task_id: w.organization_task_id ?? null,
+        runner_id: w.runner_id ?? null,
+        model: w.model ?? null,
       });
     }
   }
@@ -273,9 +275,30 @@ export async function createSession(
   description: string,
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
+  appDefaultLlm?: AppDefaultLlm,
   opts?: Pick<CreateSessionOptions, "awaitWorktreeReady" | "postWorktreeReady">,
 ): Promise<Session> {
   const id = crypto.randomUUID();
+
+  // Resolve the runner *now* — it's immutable for the session's lifetime.
+  // The cascade (project → app → single registered) is shared with future
+  // sessions; throwing here means create_session fails fast with a clear
+  // message instead of every later spawn_agent erroring.
+  let argusConfig:
+    | { llm?: { runner?: string | null; model?: string | null } | null }
+    | undefined;
+  try {
+    argusConfig = loadArgusConfig(repoRoot);
+  } catch {
+    argusConfig = undefined;
+  }
+  const { runner: chosenRunner, defaultModel } = resolveRunnerForSession({
+    repoRoot,
+    argusConfig,
+    appDefault: appDefaultLlm,
+  });
+  const initialModel =
+    defaultModel ?? (appDefaultLlm?.model ? appDefaultLlm.model.trim() : null);
 
   // Provisional display name so the sidebar row has something readable before
   // branch generation returns. Prefer the user-typed branch, then the first
@@ -301,6 +324,8 @@ export async function createSession(
     env_index: nextIndex,
     base_branch: explicitBaseBranch ?? null,
     organization_task_id: null,
+    runner_id: chosenRunner.id,
+    model: initialModel,
   };
   appState.sessions.set(id, { ...pending });
   getMainWindow()?.webContents.send("session:created", { ...pending });
@@ -525,6 +550,8 @@ async function finalizeSession(
       display_name: ws.display_name,
       description: ws.description,
       base_branch: ws.base_branch,
+      runner_id: ws.runner_id ?? null,
+      model: ws.model ?? null,
     });
     try {
       saveMetadata(worktreesDir, meta);
@@ -749,6 +776,7 @@ export async function forkSession(
     description,
     false,
     srcBranch,
+    undefined,
     {
       awaitWorktreeReady: true,
       postWorktreeReady: async (s) => {
@@ -922,78 +950,6 @@ function applyReplayOps(
       info(`forkSession: replay op on ${op.filePath} failed: ${String(e)}`);
     }
   }
-}
-
-/** Slug rule used by the Claude Code CLI for `~/.claude/projects/<slug>/`. */
-function claudeProjectSlug(cwd: string): string {
-  return cwd.replace(/[^a-zA-Z0-9]/g, "-");
-}
-
-/**
- * Copy a Claude Code session JSONL into a new project directory, truncated at
- * the Nth user turn (inclusive) and rewritten so `sessionId` / `cwd` /
- * `gitBranch` all reflect the fork.
- *
- * We count "real" user turns by looking for user-role entries whose content
- * starts with a text block — tool_result entries are encoded as user-role in
- * JSONL but belong to the prior turn and must NOT trigger the cutoff.
- */
-export async function forkClaudeSessionFile(args: {
-  destBranch: string;
-  destCwd: string;
-  forkTimestampMs: number;
-  forkTurnNumber: number;
-  sourceCwd: string;
-  sourceSessionId: string;
-}): Promise<string | null> {
-  const {
-    destBranch,
-    destCwd,
-    forkTimestampMs,
-    forkTurnNumber,
-    sourceCwd,
-    sourceSessionId,
-  } = args;
-
-  const srcFile = path.join(
-    os.homedir(),
-    ".claude",
-    "projects",
-    claudeProjectSlug(sourceCwd),
-    `${sourceSessionId}.jsonl`,
-  );
-  if (!fs.existsSync(srcFile)) {
-    return null;
-  }
-
-  const destDir = path.join(
-    os.homedir(),
-    ".claude",
-    "projects",
-    claudeProjectSlug(destCwd),
-  );
-  fs.mkdirSync(destDir, { recursive: true });
-
-  const newSessionId = crypto.randomUUID();
-  const destFile = path.join(destDir, `${newSessionId}.jsonl`);
-
-  const raw = fs.readFileSync(srcFile, "utf8");
-  const kept = truncateClaudeJsonl({
-    destBranch,
-    destCwd,
-    forkTimestampMs,
-    forkTurnNumber,
-    newSessionId,
-    raw,
-  });
-
-  if (!kept) {
-    return null;
-  }
-
-  fs.writeFileSync(destFile, kept.join("\n") + "\n", "utf8");
-
-  return newSessionId;
 }
 
 // ---------------------------------------------------------------------------
@@ -1248,11 +1204,9 @@ export async function deleteSession(
   const killedAgentIds: string[] = [];
   for (const [key, agentEntry] of appState.agents.entries()) {
     if (agentEntry.sessionId === id) {
-      try {
-        agentEntry.child.kill();
-      } catch (e) {
+      agentEntry.handle.kill().catch((e) => {
         info(`deleteSession: kill agent ${key} returned:`, e);
-      }
+      });
       appState.agents.delete(key);
       killedAgentIds.push(key);
     }

@@ -46,6 +46,7 @@ Two ways to change project settings:
 | `release_note_patterns`                                              | yes (Release notes)      |
 | `simulator_deeplinks`                                                | yes (Deep links)         |
 | `auto_fetch_minutes`                                                 | yes (Git settings panel) |
+| `llm`                                                                | yes (LLM)                |
 | `related_projects`                                                   | yes (Related projects)   |
 
 ---
@@ -71,7 +72,8 @@ Two ways to change project settings:
   "single_runtime":     false,
   "min_argus_version":  "0.10.0",
   "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } },
-  "auto_fetch_minutes": 15
+  "auto_fetch_minutes": 15,
+  "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" }
 }
 ```
 
@@ -485,6 +487,36 @@ Use the project-level entry for things the team should share; use the
 
 ---
 
+## `llm` — default LLM runner and model
+
+Project-level default for the LLM runner (e.g. Claude Code) and the
+model agents in this project should use. Sits between agent/session
+overrides and your app-level default in the resolver cascade:
+
+> agent override → session → **project (`llm`)** → app default
+
+The **runner** is bound at session creation and immutable for the
+session's lifetime. The **model** is re-resolved every time an agent
+spawns, so changing it in `.argus.json` takes effect on the next agent.
+
+```jsonc
+"llm": {
+  "runner": "claude-code",
+  "model": "claude-opus-4-7"
+}
+```
+
+Both fields are optional. Omit either to let the cascade fall through
+to the next level. An unknown `runner` id is logged as a warning and
+the resolver falls back to the app default — handy if a runner is
+removed or renamed across releases.
+
+Today only the `claude-code` runner is registered. The field exists so
+projects can pin a model per-team without each developer configuring
+their machine.
+
+---
+
 ## A complete example
 
 ```jsonc
@@ -514,5 +546,6 @@ Use the project-level entry for things the team should share; use the
   "platforms": ["web"],
   "browser_url": "http://localhost:1420",
   "protected_branches": ["main"],
+  "llm": { "runner": "claude-code", "model": "claude-opus-4-7" },
 }
 ```

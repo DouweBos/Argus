@@ -24,6 +24,7 @@ import {
 } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { setTelemetryEnabled } from "../../../lib/telemetry";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
 import {
   PERMISSION_MODE_LABELS,
@@ -31,6 +32,8 @@ import {
   hideSettingsDialog,
   removeCustomEditor,
   setConventionalCommitsPicker,
+  setDefaultLlmModel,
+  setDefaultLlmRunner,
   setDefaultModel,
   setDefaultPermissionMode,
   setDefaultPullStrategy,
@@ -45,6 +48,7 @@ import {
   updateCustomEditor,
   useConventionalCommitsPicker,
   useCustomEditors,
+  useDefaultLlm,
   useDefaultModel,
   useDefaultPermissionMode,
   useDefaultPullStrategy,
@@ -118,6 +122,13 @@ function SettingsDialogContent() {
           description: "Default permissions",
           icon: <Icons.AgentIcon size={12} />,
           render: () => <PermissionsSection />,
+        },
+        {
+          id: "llm",
+          label: "LLM",
+          description: "Default runner & model",
+          icon: <Icons.OrchestrationIcon size={12} />,
+          render: () => <LlmSection />,
         },
         {
           id: "open-in",
@@ -282,6 +293,65 @@ function PermissionsSection() {
               </label>
             ))}
           </div>
+        </SettingsScreenField>
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
+
+function LlmSection() {
+  const llm = useDefaultLlm();
+  const registered = useRegisteredRunners();
+  // Fall back to a local "claude-code" entry if the IPC hasn't returned
+  // yet — the picker can never render an empty list. The list is replaced
+  // by the registry's display names as soon as the IPC resolves.
+  const runnerOptions =
+    registered.length > 0
+      ? registered.map((r) => ({ id: r.id, label: r.displayName }))
+      : [{ id: "claude-code", label: "Claude Code" }];
+  const runner = llm.runner ?? runnerOptions[0]?.id ?? null;
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Pick the LLM runner and default model used for new sessions. Projects (.argus.json) and individual sessions can override these."
+        title="Default LLM"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField
+          label="Runner"
+          caption="The CLI/agent that drives sessions. The runner is fixed once a session is created."
+        >
+          <div className={styles.options}>
+            {runnerOptions.map((opt) => (
+              <label
+                key={opt.id}
+                className={`${styles.option} ${runner === opt.id ? styles.optionActive : ""}`}
+              >
+                <input
+                  checked={runner === opt.id}
+                  className={styles.radio}
+                  name="default-llm-runner"
+                  type="radio"
+                  value={opt.id}
+                  onChange={() => setDefaultLlmRunner(opt.id)}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </SettingsScreenField>
+
+        <SettingsScreenField
+          label="Default model"
+          caption="Optional. Leave blank to let the runner pick its default model. Project and session settings override this."
+        >
+          <Input
+            mono
+            placeholder="e.g. claude-opus-4-7 (leave blank for runner default)"
+            value={llm.model ?? ""}
+            onChange={(e) => setDefaultLlmModel(e.target.value || null)}
+          />
         </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>

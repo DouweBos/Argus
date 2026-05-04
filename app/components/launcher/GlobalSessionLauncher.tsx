@@ -28,8 +28,9 @@ import {
 } from "../../lib/ipc";
 import { getLastKnownCapabilities } from "../../lib/lastKnownCapabilities";
 import { openImageViewer } from "../../stores/imageViewerStore";
-import { getDefaultModel } from "../../stores/settingsStore";
-import { ModelPicker } from "../agent/ModelPicker";
+import { useRegisteredRunners } from "../../stores/runnersStore";
+import { getDefaultModel, useDefaultLlm } from "../../stores/settingsStore";
+import { ModelPicker, type RunnerSelection } from "../agent/ModelPicker";
 import styles from "./GlobalSessionLauncher.module.css";
 import {
   LauncherLinkedPopover,
@@ -107,6 +108,38 @@ export function GlobalSessionLauncher() {
   const modelChipRef = useRef<HTMLDivElement>(null);
 
   const { models: knownModels } = useMemo(() => getLastKnownCapabilities(), []);
+
+  // Runner selection. Existing-session targets inherit (and lock) the
+  // session's runner; new-session targets propose the app default and let
+  // the user switch (single-option dropdown today).
+  const registeredRunners = useRegisteredRunners();
+  const defaultLlm = useDefaultLlm();
+  const [newSessionRunnerId, setNewSessionRunnerId] = useState<string>(
+    () => defaultLlm.runner ?? "claude-code",
+  );
+  useEffect(() => {
+    if (defaultLlm.runner && newSessionRunnerId === "claude-code") {
+      setNewSessionRunnerId(defaultLlm.runner);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultLlm.runner]);
+  const targetSession =
+    sessionMode.kind === "existing"
+      ? (sessions.find((s) => s.id === sessionMode.sessionId) ?? null)
+      : null;
+  const runnerSelection: RunnerSelection =
+    targetSession != null
+      ? {
+          currentId: targetSession.runner_id ?? "claude-code",
+          locked: true,
+          available: registeredRunners,
+        }
+      : {
+          currentId: newSessionRunnerId,
+          locked: false,
+          available: registeredRunners,
+          onSelect: setNewSessionRunnerId,
+        };
 
   // Initial project load.
   useEffect(() => {
@@ -482,6 +515,7 @@ export function GlobalSessionLauncher() {
                 triggerRef={modelChipRef}
                 currentModel={modelValue}
                 models={knownModels}
+                runner={runnerSelection}
                 onClose={() => setModelPickerOpen(false)}
                 onSelect={(m) => {
                   setModelPickerOpen(false);

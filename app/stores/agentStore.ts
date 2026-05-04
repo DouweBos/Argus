@@ -8,8 +8,8 @@ export interface SplitPair {
 
 export interface RecentlyClosedAgent {
   agentId: string;
-  claudeSessionId?: string;
   closedAt: number;
+  runnerSessionId?: string;
   title: string;
 }
 

@@ -126,6 +126,10 @@ import {
   showLauncher,
   toggleLauncher,
 } from "./services/launcher";
+import {
+  listRunnerOnboardingSteps,
+  listRunners as listLlmRunners,
+} from "./services/llm/registry";
 import { generateChatTitle } from "./services/llm/titleGenerator";
 import { testMcpServer } from "./services/mcp/connectivity";
 import {
@@ -656,6 +660,9 @@ export function registerIpcHandlers(): void {
       a.description as string,
       a.useExistingBranch as boolean | undefined,
       a.baseBranch as string | undefined,
+      a.appDefaultLlm as
+        | { runner?: string | null; model?: string | null }
+        | undefined,
     ),
   );
   handle("create_project_root_session", (a) =>
@@ -1967,6 +1974,17 @@ export function registerIpcHandlers(): void {
     resetOnboarding();
   });
   handle("onboarding_argus_dir_path", () => argusDirPath());
+
+  // LLM runner registry — surfaced to the renderer so onboarding can render
+  // each registered runner's contributed steps without hard-coding runner ids.
+  handle("llm_list_onboarding_steps", () => listRunnerOnboardingSteps());
+  handle("llm_list_runners", () =>
+    listLlmRunners().map((r) => ({
+      id: r.id,
+      displayName: r.displayName,
+      capabilities: r.capabilities(),
+    })),
+  );
 
   // Telemetry — anonymous PostHog. Renderer asks for the install id + current
   // enable state at boot, and pushes opt-in/opt-out toggles back here.

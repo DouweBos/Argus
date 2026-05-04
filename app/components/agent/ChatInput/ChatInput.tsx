@@ -30,9 +30,14 @@ import {
   usePendingImages,
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
-import { type ModelOption, ModelPicker } from "../ModelPicker";
+import {
+  type ModelOption,
+  ModelPicker,
+  type RunnerSelection,
+} from "../ModelPicker";
 import { ProjectPicker } from "../ProjectPicker";
 import styles from "./ChatInput.module.css";
 import { useMentionPicker } from "./useMentionPicker";
@@ -104,9 +109,18 @@ export function ChatInput({
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const linkedProjects = useLinkedProjects(agentId);
   const sessions = useSessions();
-  const currentRepoRoot = sessionId
-    ? (sessions.find((s) => s.id === sessionId)?.repo_root ?? null)
+  const currentSession = sessionId
+    ? (sessions.find((s) => s.id === sessionId) ?? null)
     : null;
+  const currentRepoRoot = currentSession?.repo_root ?? null;
+  const registeredRunners = useRegisteredRunners();
+  const sessionRunnerId = currentSession?.runner_id ?? "claude-code";
+  // Existing-session picker: runner is locked per Resolved Decision 4.
+  const runnerSelection: RunnerSelection = {
+    currentId: sessionRunnerId,
+    locked: true,
+    available: registeredRunners,
+  };
   const pendingImages = usePendingImages(agentId);
   const updatePendingImages = useCallback(
     (updater: (prev: PendingImage[]) => PendingImage[]) => {
@@ -620,6 +634,7 @@ export function ChatInput({
               triggerRef={modelChipRef}
               currentModel={modelValue ?? model}
               models={models}
+              runner={runnerSelection}
               onClose={() => setModelPickerOpen(false)}
               onSelect={(m) => {
                 setModelPickerOpen(false);

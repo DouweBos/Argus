@@ -23,12 +23,23 @@ export type WorkingCopyView = "flat" | "tree";
 export type DiffViewMode = "split" | "unified";
 export type CommitSigningFormat = "gpg" | "ssh";
 
+export interface DefaultLlm {
+  /** Optional model id passed to the runner. `null` lets the runner pick. */
+  model: string | null;
+  /** Runner id (e.g. "claude-code"). Defaults to the only registered runner today. */
+  runner: string | null;
+}
+
+export const DEFAULT_LLM_RUNNER = "claude-code";
+
 interface SettingsState {
   /** Map of `rememberKey` → user opted out of the corresponding confirm dialog. */
   confirmPreferences: Record<string, boolean>;
   /** Conventional Commits prefix picker on/off (Phase 2 W10). */
   conventionalCommitsPicker: boolean;
   customEditors: CustomEditor[];
+  /** App-level default LLM runner + model used when project/session don't specify one. */
+  defaultLlm: DefaultLlm;
   /** Model id seeded into the launcher / new-session dialog. Empty = CLI default. */
   defaultModel: string;
   defaultPermissionMode: PermissionMode;
@@ -61,6 +72,21 @@ interface SettingsState {
 }
 
 const STORAGE_KEY = "argus:settings";
+
+function sanitizeDefaultLlm(input: unknown): DefaultLlm {
+  if (!input || typeof input !== "object") {
+    return { runner: DEFAULT_LLM_RUNNER, model: null };
+  }
+  const obj = input as Record<string, unknown>;
+  const runner =
+    typeof obj.runner === "string" && obj.runner.trim()
+      ? obj.runner.trim()
+      : DEFAULT_LLM_RUNNER;
+  const model =
+    typeof obj.model === "string" && obj.model.trim() ? obj.model.trim() : null;
+
+  return { runner, model };
+}
 
 function sanitizeCustomEditors(input: unknown): CustomEditor[] {
   if (!Array.isArray(input)) {
@@ -99,6 +125,7 @@ function load(): SettingsState {
         defaultModel:
           typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
+        defaultLlm: sanitizeDefaultLlm(parsed.defaultLlm),
         telemetryEnabled:
           typeof parsed.telemetryEnabled === "boolean"
             ? parsed.telemetryEnabled
@@ -150,6 +177,7 @@ function load(): SettingsState {
     defaultPermissionMode: "default",
     defaultModel: "",
     customEditors: [],
+    defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
     telemetryEnabled: false,
     confirmPreferences: {},
     workingCopyView: "flat",
@@ -396,6 +424,24 @@ export const useShowNonModifiedFiles = (): boolean =>
 
 export const setShowNonModifiedFiles = (on: boolean): void => {
   store.setState({ showNonModifiedFiles: on });
+  persist(store.getState());
+};
+
+// LLM — app-level default runner + model (Phase 2A of llm-routing-abstraction).
+
+export const useDefaultLlm = (): DefaultLlm => store((s) => s.defaultLlm);
+
+export const getDefaultLlm = (): DefaultLlm => store.getState().defaultLlm;
+
+export const setDefaultLlmRunner = (runner: string | null): void => {
+  const next = runner && runner.trim() ? runner.trim() : null;
+  store.setState((s) => ({ defaultLlm: { ...s.defaultLlm, runner: next } }));
+  persist(store.getState());
+};
+
+export const setDefaultLlmModel = (model: string | null): void => {
+  const next = model && model.trim() ? model.trim() : null;
+  store.setState((s) => ({ defaultLlm: { ...s.defaultLlm, model: next } }));
   persist(store.getState());
 };
 

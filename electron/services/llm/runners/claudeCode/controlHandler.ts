@@ -14,13 +14,13 @@ import type {
   InitializeResponse,
   PermissionDecision,
 } from "./protocol";
-import { info, warn } from "../../../app/lib/logger";
+import { info, warn } from "../../../../../app/lib/logger";
 import {
   type AllowRule,
   parseAllowRule,
   extractSpecifier,
   globMatch,
-} from "./allowRules";
+} from "../../../agent/allowRules";
 
 // ---------------------------------------------------------------------------
 // Types
