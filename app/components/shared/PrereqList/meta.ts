@@ -35,10 +35,6 @@ export const PREREQ_META: Record<PrereqId, PrereqMeta> = {
   git_identity: {
     title: "Git identity",
   },
-  native_bridge: {
-    title: "Native sim bridge",
-    installCommand: "pnpm --filter argus build:native",
-  },
   xcode: {
     title: "Xcode",
     installLabel: "App Store",

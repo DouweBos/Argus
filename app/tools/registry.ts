@@ -17,13 +17,7 @@ export const TOOLS: readonly ToolManifest[] = [
       "Stream iOS Simulator and Android emulator screens into Argus's runtime panel.",
     group: "Device",
     defaultEnabled: true,
-    prereqs: [
-      "native_bridge",
-      "xcode",
-      "ios_runtimes",
-      "android_sdk",
-      "android_avd",
-    ],
+    prereqs: ["xcode", "ios_runtimes", "android_sdk", "android_avd"],
     contributes: {
       ipcGroup: "device-recording",
       toolRail: [
