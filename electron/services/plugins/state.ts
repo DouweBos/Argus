@@ -49,39 +49,6 @@ const DEFAULT_ENABLED: Record<PluginId, boolean> = {
   "device-debug": false,
 };
 
-/**
- * One-shot migration for installs that existed before the plugin system
- * landed: if `~/.argus/plugins.json` is missing AND the user has clearly used
- * Argus before (their `config.json` shows onboarding completed), seed every
- * plugin to `enabled` so their simulator/debug/inspect surfaces stay where
- * they expect. Fresh installs hit the default-disabled path through
- * onboarding's Plugins step and keep that experience.
- */
-function migrateExistingInstall(): Partial<Record<PluginId, boolean>> | null {
-  const configPath = path.join(argusDirPath(), "config.json");
-  let raw: string;
-  try {
-    raw = fs.readFileSync(configPath, "utf8");
-  } catch {
-    return null;
-  }
-  let parsed: { onboarding?: { completed?: boolean } };
-  try {
-    parsed = JSON.parse(raw) as { onboarding?: { completed?: boolean } };
-  } catch {
-    return null;
-  }
-  if (parsed.onboarding?.completed !== true) {
-    return null;
-  }
-  const seeded: Partial<Record<PluginId, boolean>> = {};
-  for (const id of PLUGIN_IDS) {
-    seeded[id] = true;
-  }
-
-  return seeded;
-}
-
 function load(): PluginsConfigFile {
   if (cache) {
     return cache;
@@ -90,18 +57,6 @@ function load(): PluginsConfigFile {
   try {
     raw = fs.readFileSync(pluginsFilePath(), "utf8");
   } catch {
-    // No plugins.json yet. Either a fresh install (defaults are off,
-    // onboarding will turn on what the user picks) or an existing install
-    // upgrading across the plugin-system boundary (migrate to "all on" so
-    // they don't lose surfaces).
-    const seeded = migrateExistingInstall();
-    if (seeded) {
-      cache = { version: SCHEMA_VERSION, userEnabled: seeded };
-      // Persist the seed so the migration only runs once.
-      save(cache);
-
-      return cache;
-    }
     cache = { version: SCHEMA_VERSION, userEnabled: {} };
 
     return cache;
