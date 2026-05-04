@@ -2125,3 +2125,25 @@ export const gitCompareBranches = (
   right: string,
 ): Promise<CompareResult> =>
   invoke("git_compare_branches", { sessionId, left, right });
+
+// Plugins — renderer ↔ main mirror.
+export const getEnabledPluginsIpc = (): Promise<
+  Partial<Record<string, boolean>>
+> => invoke("get_enabled_plugins");
+
+export const setEnabledPluginsIpc = (
+  userEnabled: Partial<Record<string, boolean>>,
+): Promise<void> => invoke("set_enabled_plugins", { userEnabled });
+
+export interface PluginDownloadProgress {
+  assetName: string;
+  bytesDownloaded: number;
+  bytesTotal: number | null;
+  pluginId: string;
+}
+
+export const downloadPluginAssets = (pluginId: string): Promise<void> =>
+  invoke("download_plugin_assets", { pluginId });
+
+export const clearPluginAssets = (pluginId: string): Promise<void> =>
+  invoke("clear_plugin_assets", { pluginId });

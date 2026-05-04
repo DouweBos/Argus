@@ -7,9 +7,9 @@
 
 import type { Organization } from "./models";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 
 const SCHEMA_VERSION = 1;
 
@@ -20,7 +20,7 @@ interface OrganizationsFile {
 
 /** Absolute path to the organizations registry file. */
 export function organizationsFilePath(): string {
-  return path.join(os.homedir(), ".argus", "organizations.json");
+  return path.join(argusHomeDir(), "organizations.json");
 }
 
 /**

@@ -1,10 +1,11 @@
-import { useState, type SVGProps } from "react";
+import { useMemo, useState, type SVGProps } from "react";
 import { FeedbackDialog, Icons } from "@argus/peacock";
 import { createLogger } from "../../../lib/logger";
 import {
   captureFeedback,
   getFeedbackUnavailableReason,
 } from "../../../lib/telemetry";
+import { useEnabledToolRailContributions } from "../../../plugins/store";
 import {
   type ToolId,
   TOOL_PLACEMENT,
@@ -30,14 +31,14 @@ interface ToolDef {
   label: string;
 }
 
-const TOP_TOOLS: ToolDef[] = [
+// Core tools — always available, not plugins. Plugins contribute additional
+// rail entries via `useEnabledToolRailContributions()`.
+const CORE_TOP_TOOLS: ToolDef[] = [
   { id: "changes", label: "Changes", icon: Icons.GitChangesIcon },
-  { id: "simulator", label: "Simulator", icon: Icons.SimulatorIcon },
 ];
 
-const BOTTOM_TOOLS: ToolDef[] = [
+const CORE_BOTTOM_TOOLS: ToolDef[] = [
   { id: "terminal", label: "Terminal", icon: Icons.TerminalToolIcon },
-  { id: "debug", label: "Debug", icon: Icons.BugIcon },
   { id: "notifications", label: "Warnings & errors", icon: Icons.WarningIcon },
 ];
 
@@ -48,6 +49,38 @@ export function ToolRail() {
   const notifications = useNotifications();
   const unseen = useUnseenNotificationCount();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const pluginContributions = useEnabledToolRailContributions();
+
+  // Merge core tools with plugin contributions, preserving the original
+  // visual order: core-top first, then plugin-contributed right entries; then
+  // (in the bottom group) core entries with plugin debug-style entries
+  // interleaved before notifications. Notifications always sits last.
+  const topTools = useMemo<ToolDef[]>(
+    () => [
+      ...CORE_TOP_TOOLS,
+      ...pluginContributions.right.map(({ id, label, icon }) => ({
+        id: id as ToolId,
+        label,
+        icon,
+      })),
+    ],
+    [pluginContributions.right],
+  );
+  const bottomTools = useMemo<ToolDef[]>(() => {
+    const notificationsTool = CORE_BOTTOM_TOOLS.find(
+      (t) => t.id === "notifications",
+    );
+    const otherCore = CORE_BOTTOM_TOOLS.filter((t) => t.id !== "notifications");
+    const pluginBottom: ToolDef[] = pluginContributions.bottom.map(
+      ({ id, label, icon }) => ({ id: id as ToolId, label, icon }),
+    );
+
+    return [
+      ...otherCore,
+      ...pluginBottom,
+      ...(notificationsTool ? [notificationsTool] : []),
+    ];
+  }, [pluginContributions.bottom]);
 
   const hasEntries = notifications.length > 0;
   const hasError = notifications.some((n) => n.level === "error");
@@ -82,11 +115,11 @@ export function ToolRail() {
   // Without a session most tools have no context — only the notifications
   // tool is global. Keep the rail and the notifications button visible so
   // the home screen still surfaces background warnings/errors.
-  const topTools = selectedSessionId === null ? [] : TOP_TOOLS;
-  const bottomTools =
+  const visibleTopTools = selectedSessionId === null ? [] : topTools;
+  const visibleBottomTools =
     selectedSessionId === null
-      ? BOTTOM_TOOLS.filter((t) => t.id === "notifications")
-      : BOTTOM_TOOLS;
+      ? bottomTools.filter((t) => t.id === "notifications")
+      : bottomTools;
 
   const feedbackButton = (
     <button
@@ -104,9 +137,9 @@ export function ToolRail() {
 
   return (
     <div className={styles.rail}>
-      {topTools.map(renderTool)}
+      {visibleTopTools.map(renderTool)}
       <div className={styles.spacer} />
-      {bottomTools.map(renderTool)}
+      {visibleBottomTools.map(renderTool)}
       {feedbackButton}
       {feedbackOpen && (
         <FeedbackDialog

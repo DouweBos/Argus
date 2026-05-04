@@ -15,11 +15,10 @@
  *           "modifierFlags":0,"isDown":true}                → {"ok":true}
  */
 
-import { app } from "electron";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import path from "node:path";
 import * as readline from "node:readline";
 import { error, warn } from "../../../app/lib/logger";
+import { resolveAssetPath } from "../plugins/assets";
 
 // ---------------------------------------------------------------------------
 // Binary path resolution
@@ -28,20 +27,14 @@ import { error, warn } from "../../../app/lib/logger";
 const BINARY_NAME = "argus-sim-bridge";
 
 /**
- * Resolve the path to the bridge binary.
+ * Resolve the path to the bridge binary via the plugin asset resolver.
  *
- * - Packaged app: `<app>/Contents/Resources/argus-sim-bridge`
- *   (process.resourcesPath is set by Electron for packaged builds)
- * - Development: relative to this compiled file inside the electron output
- *   directory — `electron/native/argus-sim-bridge/argus-sim-bridge`
+ * The resolver checks the per-version cache first (chunk 11 download path),
+ * then falls back to the bundled copy in `extraResources` (packaged) or the
+ * dev tree (`native/argus-sim-bridge/`). Owned by `device-recording`.
  */
 function bridgeBinaryPath(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, BINARY_NAME);
-  }
-
-  // In dev, resolve from the project root (cwd).
-  return path.join(process.cwd(), "native", "argus-sim-bridge", BINARY_NAME);
+  return resolveAssetPath("device-recording", BINARY_NAME);
 }
 
 // ---------------------------------------------------------------------------

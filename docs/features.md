@@ -133,8 +133,15 @@ Organisations are configured in App settings.
 
 ## Onboarding
 
-- **Preflight** — checks `git`, `claude`, simulator support, and other
-  prerequisites with one-click hints to fix anything missing.
+- **Plugins picker** — choose which device-tooling plugins you want
+  bundled into your install (recording, control, debug, inspector). The
+  base install is small; assets only download for the plugins you turn
+  on. Skippable — every plugin can be enabled later in **Settings →
+  Plugins**.
+- **Preflight** — checks `git`, `claude`, and the prerequisites for the
+  plugins you picked, with one-click hints to fix anything missing. A
+  user who picked zero plugins sees only the four core checks
+  (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`).
 - **`.argus.json` generation** — Argus inspects your project and either
   writes a sensible default (Quick generate) or asks the `claude` CLI
   for a tailored config (Generate with Claude). Both modes show the
@@ -142,10 +149,37 @@ Organisations are configured in App settings.
 
 ---
 
+## Plugins
+
+Argus's device tooling ships as opt-in plugins so the base install stays
+lean. Each plugin's assets — native bridge binaries, the conductor CLI
+tree, the scrcpy server — are pinned to the running app version and
+fetched from the GitHub release on first enable. Updating Argus updates
+the plugin assets atomically; there are no separate plugin versions or
+update prompts.
+
+| Plugin                  | What it adds                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Device recording**    | iOS Simulator + Android emulator screen capture in the runtime panel.                                    |
+| **Device UI inspector** | View hierarchy, accessibility, and layout overlays on whatever device is connected. Builds on recording. |
+| **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation.                                  |
+| **Device debug**        | Live device log streams and one-shot probes in the Debug panel. Builds on control.                       |
+
+Toggle plugins under **Settings → Plugins**. A project that doesn't use
+any device tooling can mask plugins off for the whole team via
+`.argus.json#plugins.disabled` — see
+[Project settings](./project-settings.md).
+
+---
+
 ## Auto-update
 
 Argus checks for updates in the background and prompts you to relaunch
-when one is ready.
+when one is ready. Three release channels are available — `latest`
+(stable), `beta` (release candidates), and `alpha` (pre-releases from
+any branch). Stable users see only stable builds; switch channels under
+**Settings → Advanced → Update channel** (internal testers only — alpha
+and beta builds can break your install).
 
 ---
 

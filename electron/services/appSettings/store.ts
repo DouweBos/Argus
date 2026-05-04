@@ -8,9 +8,9 @@
 
 import type { McpServers } from "../mcp/userConfig";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 
 const SCHEMA_VERSION = 1;
 
@@ -23,6 +23,12 @@ export interface AppSettings {
   launcher_enabled?: boolean;
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: McpServers;
+  /**
+   * Auto-updater feed channel. `latest` is stable; `alpha` and `beta` are
+   * pre-release feeds for internal testing. Defaults to `latest`. Mirrored
+   * to/from the renderer settings store.
+   */
+  updater_channel?: "alpha" | "beta" | "latest";
 }
 
 interface AppSettingsFile {
@@ -31,7 +37,7 @@ interface AppSettingsFile {
 }
 
 function filePath(): string {
-  return path.join(os.homedir(), ".argus", "app-settings.json");
+  return path.join(argusHomeDir(), "app-settings.json");
 }
 
 function readFile(): AppSettingsFile {

@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Icons } from "@argus/peacock";
+import { useEffectivePluginEnabled } from "../../../plugins/store";
 import {
   type ToolId,
   TOOL_PLACEMENT,
@@ -45,6 +47,14 @@ interface BottomPanelProps {
 export function BottomPanel({ sessionId }: BottomPanelProps) {
   const activeToolId = useActiveToolId("bottom");
   const mountedToolIds = useMountedToolIds();
+  const debugEnabled = useEffectivePluginEnabled("device-debug");
+
+  // Auto-close the debug panel when the user disables `device-debug`.
+  useEffect(() => {
+    if (activeToolId === "debug" && !debugEnabled) {
+      toggleTool("debug");
+    }
+  }, [activeToolId, debugEnabled]);
 
   if (!activeToolId) {
     return null;

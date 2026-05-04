@@ -12,6 +12,7 @@ import { autoUpdater } from "electron-updater";
 import type { UpdateInfo } from "electron-updater";
 import { createLogger } from "../../../app/lib/logger";
 import { broadcastToRenderers } from "../../broadcast";
+import { loadAppSettings } from "../appSettings/store";
 
 const logger = createLogger("updater");
 
@@ -108,10 +109,15 @@ export function initUpdater(): void {
   // `publish:` resolves to in the packaged app-update.yml. The Argus repo
   // on GitHub is private, so falling back to the github provider yields
   // a 404 on `releases.atom`.
+  //
+  // Channel is configurable for internal testers — pre-release builds
+  // publish under `alpha-mac.yml` / `beta-mac.yml`. Stable users on the
+  // default never see them. See `app/stores/settingsStore.ts`.
+  const channel = loadAppSettings().updater_channel ?? "latest";
   autoUpdater.setFeedURL({
     provider: "generic",
     url: "https://houwert.dev/argus/updates",
-    channel: "latest",
+    channel,
     useMultipleRangeRequest: true,
   });
 

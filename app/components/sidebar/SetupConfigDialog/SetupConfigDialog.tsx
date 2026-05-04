@@ -43,6 +43,7 @@ import {
   type McpEntry,
 } from "../../shared/McpServersField";
 import { GlobPathInput } from "./GlobPathInput";
+import { ProjectPluginsField } from "./ProjectPluginsField";
 import { ReleaseNotesField } from "./ReleaseNotesField";
 import sectionStyles from "./SetupConfigDialog.module.css";
 import {
@@ -1775,6 +1776,7 @@ export function SetupConfigDialog({
   const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
   const [llmRunner, setLlmRunner] = useState("");
   const [llmModel, setLlmModel] = useState("");
+  const [disabledPlugins, setDisabledPlugins] = useState<string[]>([]);
   const [branchPrefix, setBranchPrefix] = useState("");
   const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1910,6 +1912,9 @@ export function SetupConfigDialog({
               description: rp.description ?? "",
             })),
           );
+        }
+        if (config.plugins?.disabled?.length) {
+          setDisabledPlugins(config.plugins.disabled);
         }
       } catch {
         // No config file or not readable — start with empty fields
@@ -2085,6 +2090,10 @@ export function SetupConfigDialog({
       };
     }
 
+    if (disabledPlugins.length > 0) {
+      config.plugins = { disabled: [...disabledPlugins] };
+    }
+
     return config;
   };
 
@@ -2115,6 +2124,7 @@ export function SetupConfigDialog({
       relatedProjectList.items,
       llmRunner,
       llmModel,
+      disabledPlugins,
     ],
   );
 
@@ -2587,6 +2597,18 @@ export function SetupConfigDialog({
                 />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "plugins",
+          label: "Plugins",
+          description: "Mask off plugins for this project",
+          icon: <Icons.SimulatorIcon size={12} />,
+          render: () => (
+            <ProjectPluginsField
+              disabled={disabledPlugins}
+              onChange={setDisabledPlugins}
+            />
           ),
         },
       ],

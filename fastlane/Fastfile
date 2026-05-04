@@ -39,12 +39,21 @@ platform :mac do
     UI.success("Built release/mac-arm64/Argus.app")
   end
 
-  desc "Release build: signed with Developer ID, notarized, stapled, uploaded to a GitHub release."
+  desc "Release build: signed with Developer ID, notarized, stapled, uploaded to a GitHub release. Pass channel:alpha or channel:rc to publish a pre-release from any branch."
   lane :release do |options|
     publish = options.fetch(:publish, true)
+    channel = options.fetch(:channel, "stable")
+    unless ["stable", "alpha", "rc"].include?(channel)
+      UI.user_error!("Unknown channel #{channel.inspect} — expected stable | alpha | rc")
+    end
 
     ensure_git_status_clean unless options[:allow_dirty]
-    ensure_git_branch(branch: "main") unless options[:allow_any_branch]
+    # Stable cuts must come from main; pre-release builds can come from any
+    # branch (CI passes allow_any_branch:true unconditionally; this guard is
+    # for local invocations).
+    if channel == "stable"
+      ensure_git_branch(branch: "main") unless options[:allow_any_branch]
+    end
 
     api_key = load_app_store_connect_api_key
     match(
@@ -89,8 +98,36 @@ platform :mac do
       notes_flag = " --config.releaseInfo.releaseNotesFile=#{notes_file.shellescape}"
     end
 
+    # Channel routing for electron-builder + electron-updater:
+    #   stable → latest-mac.yml,  releaseType=release
+    #   alpha  → alpha-mac.yml,   releaseType=prerelease
+    #   rc     → beta-mac.yml,    releaseType=prerelease
+    # electron-builder reads EP_CHANNEL and EP_PRE_RELEASE env vars.
+    if channel == "alpha"
+      ENV["EP_CHANNEL"]      = "alpha"
+      ENV["EP_PRE_RELEASE"]  = "true"
+    elsif channel == "rc"
+      ENV["EP_CHANNEL"]      = "beta"
+      ENV["EP_PRE_RELEASE"]  = "true"
+    else
+      ENV["EP_CHANNEL"]      = "latest"
+      ENV["EP_PRE_RELEASE"]  = "false"
+    end
+
     publish_flag = publish ? "--publish always" : "--publish never"
     sh("cd .. && pnpm build && pnpm exec electron-builder --config electron-builder.release.yml #{publish_flag}#{notes_flag}")
+
+    # Package and upload the plugin assets to the same release tag. The
+    # renderer's asset resolver fetches them on first plugin enable. Skipped
+    # locally when the user passes publish:false — there's no GH release to
+    # upload to in that case.
+    if publish
+      sh("cd .. && pnpm exec tsx scripts/release-plugins.ts")
+    end
+
+    # Stable-only side effects: the website-changelog dispatch and main-branch
+    # commit/tag bump are driven from the workflow, not this lane. Pre-release
+    # builds skip those upstream.
   end
 
   # ---------------------------------------------------------------

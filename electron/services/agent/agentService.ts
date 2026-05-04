@@ -43,6 +43,7 @@ import os from "node:os";
 import path from "node:path";
 import { info, warn } from "../../../app/lib/logger";
 import { broadcastToRenderers } from "../../broadcast";
+import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
 import { getConductorBinDir, getConductorSkillPath } from "../cli/conductor";
@@ -314,7 +315,7 @@ export async function startAgent(
   });
 
   // Per-agent debug log.
-  const agentLogsDir = path.join(os.homedir(), ".argus", "agents");
+  const agentLogsDir = path.join(argusHomeDir(), "agents");
   mkdirSync(agentLogsDir, { recursive: true });
   const debugLogPath = path.join(agentLogsDir, `${agentId}.debug.log`);
 

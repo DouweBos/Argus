@@ -6,6 +6,7 @@ import { listRunnerOnboardingSteps } from "../../lib/ipc";
 import { CompletionStep } from "./CompletionStep";
 import { LauncherStep } from "./LauncherStep";
 import { PermissionsStep } from "./PermissionsStep";
+import { PluginsStep } from "./PluginsStep";
 import { PreflightStep } from "./PreflightStep";
 import { TelemetryStep } from "./TelemetryStep";
 import { WelcomeStep } from "./WelcomeStep";
@@ -57,6 +58,8 @@ export function OnboardingRoot() {
       return <WelcomeStep />;
     case "permissions":
       return <PermissionsStep />;
+    case "plugins":
+      return <PluginsStep />;
     case "preflight":
       return <PreflightStep />;
     case "launcher":

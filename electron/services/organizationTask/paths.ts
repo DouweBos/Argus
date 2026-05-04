@@ -8,11 +8,11 @@
  * ```
  */
 
-import os from "node:os";
 import path from "node:path";
+import { argusHomeDir } from "../../lib/argusHome";
 
 export function orgHostsRoot(): string {
-  return path.join(os.homedir(), ".argus", "org-hosts");
+  return path.join(argusHomeDir(), "org-hosts");
 }
 
 export function orgHostOrgDir(organizationId: string): string {

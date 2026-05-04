@@ -6,9 +6,9 @@
 
 import type { OrgTask } from "./models";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { info, warn } from "../../../app/lib/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 
 const SCHEMA_VERSION = 2;
 
@@ -18,7 +18,7 @@ interface OrgTasksFile {
 }
 
 export function orgTasksFilePath(): string {
-  return path.join(os.homedir(), ".argus", "organization-tasks.json");
+  return path.join(argusHomeDir(), "organization-tasks.json");
 }
 
 export function loadOrgTasks(): OrgTask[] {

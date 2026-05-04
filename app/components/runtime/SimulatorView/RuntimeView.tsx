@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Icons, SegmentedControl } from "@argus/peacock";
 import { InspectionPanel } from "../../../features/inspection/InspectionPanel";
 import { NodeMetadataPanel } from "../../../features/inspection/NodeMetadataPanel";
 import { useDragResize } from "../../../hooks/useDragResize";
 import { openSimulatorPopout } from "../../../lib/ipc";
+import { useEffectivePluginEnabled } from "../../../plugins/store";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {
   useActiveDeviceKey,
@@ -64,12 +65,35 @@ export function RuntimeView({
   } = useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId("right");
   const activeDeviceKey = useActiveDeviceKey(sessionId, platform);
+  const inspectorEnabled = useEffectivePluginEnabled("device-inspector");
+
+  // Modes contributed by plugins. `Simulate` is core. `Inspect` is contributed
+  // by `device-inspector`; when the plugin is off we hide the toggle and
+  // ensure the active mode falls back to simulate.
+  const runtimeModeOptions = useMemo(
+    () =>
+      inspectorEnabled
+        ? [
+            { label: "Simulate" as const, value: "simulate" as const },
+            { label: "Inspect" as const, value: "inspect" as const },
+          ]
+        : [{ label: "Simulate" as const, value: "simulate" as const }],
+    [inspectorEnabled],
+  );
 
   useEffect(() => {
     if (activeToolId !== "simulator") {
       setRuntimeDialogOpen(false);
     }
   }, [activeToolId, setRuntimeDialogOpen]);
+
+  // If the inspector plugin gets disabled while inspect mode is active,
+  // snap back to simulate so the segmented control matches reality.
+  useEffect(() => {
+    if (!inspectorEnabled && runtimeMode === "inspect") {
+      setRuntimeMode("simulate");
+    }
+  }, [inspectorEnabled, runtimeMode, setRuntimeMode]);
 
   const toggleRuntimeDialog = useCallback(() => {
     setRuntimeDialogOpen(!runtimeDialogOpen);
@@ -105,16 +129,15 @@ export function RuntimeView({
   const toggle = (
     <>
       <RuntimeTargetPicker sessionId={sessionId} />
-      <SegmentedControl
-        aria-label="Runtime mode"
-        className={styles.modeSegment}
-        value={runtimeMode}
-        onChange={setRuntimeMode}
-        options={[
-          { label: "Simulate", value: "simulate" },
-          { label: "Inspect", value: "inspect" },
-        ]}
-      />
+      {runtimeModeOptions.length > 1 && (
+        <SegmentedControl
+          aria-label="Runtime mode"
+          className={styles.modeSegment}
+          value={runtimeMode}
+          onChange={setRuntimeMode}
+          options={runtimeModeOptions}
+        />
+      )}
     </>
   );
 
@@ -214,22 +237,24 @@ export function RuntimeView({
                 {toggle}
               </WebBrowserViewStack>
             </div>
-            <div
-              className={
-                runtimeMode === "inspect"
-                  ? styles.inspectionLayer
-                  : styles.inspectionLayerHidden
-              }
-              aria-hidden={runtimeMode !== "inspect"}
-            >
-              <InspectionPanel
-                deviceKey={activeDeviceKey}
-                showSidebar={runtimeDialogOpen || isPopout}
-              />
-            </div>
+            {inspectorEnabled && (
+              <div
+                className={
+                  runtimeMode === "inspect"
+                    ? styles.inspectionLayer
+                    : styles.inspectionLayerHidden
+                }
+                aria-hidden={runtimeMode !== "inspect"}
+              >
+                <InspectionPanel
+                  deviceKey={activeDeviceKey}
+                  showSidebar={runtimeDialogOpen || isPopout}
+                />
+              </div>
+            )}
           </div>
         </div>
-        {runtimeDialogOpen && runtimeMode === "inspect" && (
+        {inspectorEnabled && runtimeDialogOpen && runtimeMode === "inspect" && (
           <div className={styles.sidePanel} style={{ width: sidePanelWidth }}>
             <div
               role="separator"
