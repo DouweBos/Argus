@@ -80,8 +80,11 @@
   color: var(--text-secondary);
 }
 
+.customOption {
+  align-items: stretch;
+}
+
 .customInput {
-  margin-top: 6px;
   width: 100%;
   resize: vertical;
 }
