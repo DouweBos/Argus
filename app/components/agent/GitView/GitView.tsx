@@ -9,11 +9,13 @@ import {
   PullDialog,
   PushDialog,
   ShortcutCheatsheet,
+  StashDialog,
   TagDialog,
   type BranchDialogResult,
   type GitErrorKind,
   type PullDialogResult,
   type PushDialogResult,
+  type StashDialogResult,
   type TagDialogConfirm,
 } from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
@@ -21,14 +23,20 @@ import { GitError } from "../../../lib/gitError";
 import {
   gitCreateBranch,
   gitCreateTag,
+  gitFetch,
   gitListLocalBranches,
   gitListRemotes,
   gitPullV2,
   gitPushV2,
+  gitStash,
+  gitStashApply,
+  gitStashList,
+  gitStashSave,
   pushSessionBranch,
   renameSessionBranch,
   type EnrichedBranch,
   type GitRemoteRich,
+  type GitStashSaveOptions,
 } from "../../../lib/ipc";
 import { useRouteGitRefName, useRouteGitView } from "../../../lib/routeHooks";
 import { setGitView } from "../../../stores/editorStore";
@@ -207,6 +215,7 @@ export function GitView({
   );
   const [pushDialogOpen, setPushDialogOpen] = useState(false);
   const [pullDialogOpen, setPullDialogOpen] = useState(false);
+  const [stashDialogOpen, setStashDialogOpen] = useState(false);
   const [newBranchStartPoint, setNewBranchStartPoint] = useState<string | null>(
     null,
   );
@@ -240,6 +249,26 @@ export function GitView({
       .catch(() => setTagDialogBranches([]));
     setTagDialogOpen(true);
   }, [sessionId]);
+
+  const runRemoteOp = useCallback(async (op: () => Promise<unknown>) => {
+    setBanner(null);
+    try {
+      await op();
+    } catch (err) {
+      if (err instanceof GitError) {
+        setBanner({
+          kind: err.kind,
+          message: err.message,
+          recovery: err.recovery,
+        });
+      } else {
+        setBanner({
+          kind: "unknown",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+  }, []);
 
   // Cmd+1..6 sub-view switching.
   const handlers = useMemo(
@@ -287,8 +316,60 @@ export function GitView({
       "new-branch": () => {
         setNewBranchStartPoint(status?.branch ?? "HEAD");
       },
+      push: () => {
+        if (scope === "project") {
+          setForceConfirmStage(false);
+          setPushDialogOpen(true);
+        } else if (status && status.upstream == null) {
+          setPublishConfirmOpen(true);
+        } else {
+          runRemoteOp(() => pushSessionBranch(sessionId));
+        }
+      },
+      pull: () => {
+        if (scope === "project") {
+          setPullDialogOpen(true);
+        } else {
+          runRemoteOp(() =>
+            gitPullV2(sessionId, { strategy: defaultPullStrategy }),
+          );
+        }
+      },
+      fetch: () => {
+        runRemoteOp(() => gitFetch(sessionId));
+      },
+      refresh: () => {
+        refreshStatus().catch(() => undefined);
+      },
+      "stash-save": () => {
+        runRemoteOp(() => gitStash(sessionId)).then(() => {
+          refreshStatus().catch(() => undefined);
+        });
+      },
+      "stash-apply-latest": () => {
+        runRemoteOp(async () => {
+          const stashes = await gitStashList(sessionId);
+          if (stashes.length === 0) {
+            throw "No stashes to apply";
+          }
+          await gitStashApply(sessionId, 0);
+        }).then(() => {
+          refreshStatus().catch(() => undefined);
+        });
+      },
+      "quick-stash": () => {
+        setStashDialogOpen(true);
+      },
     }),
-    [status, scope, openTagDialog],
+    [
+      status,
+      scope,
+      sessionId,
+      openTagDialog,
+      runRemoteOp,
+      refreshStatus,
+      defaultPullStrategy,
+    ],
   );
   useGitShortcuts(scope, handlers);
 
@@ -301,26 +382,6 @@ export function GitView({
       .then(setRemotes)
       .catch(() => undefined);
   }, [scope, sessionId]);
-
-  const runRemoteOp = useCallback(async (op: () => Promise<unknown>) => {
-    setBanner(null);
-    try {
-      await op();
-    } catch (err) {
-      if (err instanceof GitError) {
-        setBanner({
-          kind: err.kind,
-          message: err.message,
-          recovery: err.recovery,
-        });
-      } else {
-        setBanner({
-          kind: "unknown",
-          message: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-  }, []);
 
   const onToolbarPullDialog = useCallback(() => {
     if (scope === "project") {
@@ -345,6 +406,7 @@ export function GitView({
   const onToolbarRefresh = useCallback(() => {
     refreshStatus().catch(() => undefined);
   }, [refreshStatus]);
+  const onToolbarStash = useCallback(() => setStashDialogOpen(true), []);
 
   const publishBranch = useCallback(async () => {
     setPublishConfirmOpen(false);
@@ -417,6 +479,7 @@ export function GitView({
           onPullDialog={onToolbarPullDialog}
           onPushDialog={onToolbarPushDialog}
           onRenameBranch={onToolbarRenameBranch}
+          onStashDialog={onToolbarStash}
           onTagSignal={onToolbarTagSignal}
         />
 
@@ -631,6 +694,22 @@ export function GitView({
           }}
         />
       )}
+
+      <StashDialog
+        open={stashDialogOpen}
+        onCancel={() => setStashDialogOpen(false)}
+        onConfirm={(r: StashDialogResult) => {
+          setStashDialogOpen(false);
+          const opts: GitStashSaveOptions = {
+            message: r.message || undefined,
+            includeUntracked: r.includeUntracked,
+            keepIndex: r.keepIndex,
+          };
+          runRemoteOp(() => gitStashSave(sessionId, opts)).then(() => {
+            refreshStatus().catch(() => undefined);
+          });
+        }}
+      />
 
       {scope === "project" && tagDialogOpen && (
         <TagDialog

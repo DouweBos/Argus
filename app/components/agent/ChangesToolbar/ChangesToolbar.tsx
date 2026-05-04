@@ -4,7 +4,6 @@ import {
   GitErrorBanner,
   GitToolbar,
   Icons,
-  StashDialog,
   Toggle,
   defaultGitToolbarGroups,
   type GitErrorKind,
@@ -12,7 +11,7 @@ import {
 } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { GitError } from "../../../lib/gitError";
-import { gitFetch, gitStash, gitStashSave } from "../../../lib/ipc";
+import { gitFetch, gitStash } from "../../../lib/ipc";
 import {
   setShowAssumeUnchangedFiles,
   setShowIgnoredFiles,
@@ -87,6 +86,7 @@ interface ChangesToolbarProps {
   onRenameBranch?: () => void;
   onSearchChange: (query: string) => void;
   onSearchSubmit?: () => void;
+  onStashDialog?: () => void;
   onTagSignal?: () => void;
   repoRoot: string;
   scope: GitViewScope;
@@ -116,10 +116,10 @@ export function ChangesToolbar({
   onPullDialog,
   onPushDialog,
   onRenameBranch,
+  onStashDialog,
   onTagSignal,
 }: ChangesToolbarProps) {
   const [banner, setBanner] = useState<BannerState | null>(null);
-  const [stashDialogOpen, setStashDialogOpen] = useState(false);
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false);
 
   const runAction = useCallback(
@@ -160,7 +160,7 @@ export function ChangesToolbar({
     }
   }, [onPushDialog]);
 
-  const onStash = useCallback(() => setStashDialogOpen(true), []);
+  const onStash = useCallback(() => onStashDialog?.(), [onStashDialog]);
 
   const onBranch = useCallback(() => {
     if (scope === "project") {
@@ -231,14 +231,6 @@ export function ChangesToolbar({
 
   return (
     <>
-      <StashDialog
-        open={stashDialogOpen}
-        onCancel={() => setStashDialogOpen(false)}
-        onConfirm={(opts) => {
-          setStashDialogOpen(false);
-          runAction("stash", () => gitStashSave(sessionId, opts));
-        }}
-      />
       <div className={styles.shell}>
         <div className={styles.toolbarRow}>
           <GitToolbar
