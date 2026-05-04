@@ -1,55 +1,29 @@
 /**
  * Plugin asset resolver.
  *
- * Single read path for every plugin-owned binary, jar, or node tree. Today
- * it returns the existing bundled (`extraResources` / dev-tree) paths so the
- * resolver is in place without any behavior change. Chunk 11 layers a
- * downloaded-asset cache on top: `<userData>/plugins/<app-version>/<plugin>/`
- * is checked first, then the bundled fallback.
+ * Single read path for every plugin-owned binary, jar, or node tree. The cache
+ * at `<userData>/plugins/<app-version>/<plugin>/` is checked first, then the
+ * bundled (`extraResources` / dev-tree) fallback.
  *
  * After chunk 12 the bundled paths go away — `extraResources` no longer ships
  * the plugin assets, and the user toggles the plugin on (in onboarding or
  * Settings) to trigger the download.
+ *
+ * Asset specs (name, kind, source, executability) live in
+ * `app/plugins/assets-manifest.ts` so the renderer, this resolver, and the CI
+ * release script all share one source of truth.
  */
 
 import type { PluginId } from "./types";
+import type { PluginAssetSpec } from "../../../app/plugins/assets-manifest";
 import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
-
-/**
- * Static map of asset name → bundled path. We hand-author this rather than
- * deriving from the registry because the dev-tree layouts are heterogeneous
- * (`native/argus-sim-bridge/argus-sim-bridge`, `native/scrcpy-server/scrcpy-server.jar`,
- * `native/conductor/`) and the registry shouldn't carry that knowledge.
- */
-interface AssetBundledLocator {
-  /** Path relative to `process.resourcesPath` in packaged apps. */
-  packaged: string;
-  /** Path relative to `process.cwd()` in dev builds. */
-  dev: string;
-}
-
-const BUNDLED: Record<PluginId, Record<string, AssetBundledLocator>> = {
-  "device-recording": {
-    "argus-sim-bridge": {
-      packaged: "argus-sim-bridge",
-      dev: path.join("native", "argus-sim-bridge", "argus-sim-bridge"),
-    },
-    "scrcpy-server.jar": {
-      packaged: "scrcpy-server.jar",
-      dev: path.join("native", "scrcpy-server", "scrcpy-server.jar"),
-    },
-  },
-  "device-inspector": {},
-  "device-control": {
-    conductor: {
-      packaged: "conductor",
-      dev: path.join("native", "conductor"),
-    },
-  },
-  "device-debug": {},
-};
+import {
+  PLUGIN_ASSETS,
+  needsArchSuffix,
+  pluginAssets,
+} from "../../../app/plugins/assets-manifest";
 
 /** Per-app-version cache root for downloaded assets (chunk 11 onwards). */
 function cacheRoot(): string {
@@ -60,16 +34,29 @@ function cachedPath(pluginId: PluginId, assetName: string): string {
   return path.join(cacheRoot(), pluginId, assetName);
 }
 
-function bundledPath(pluginId: PluginId, assetName: string): string | null {
-  const locator = BUNDLED[pluginId]?.[assetName];
-  if (!locator) {
-    return null;
-  }
+function findSpec(
+  pluginId: PluginId,
+  assetName: string,
+): PluginAssetSpec | null {
+  return (
+    PLUGIN_ASSETS.find(
+      (a) => a.pluginId === pluginId && a.name === assetName,
+    ) ?? null
+  );
+}
+
+/**
+ * Path to the bundled copy of the asset (`extraResources` in packaged builds,
+ * the in-repo build output in dev). After the chunk-12 flip `extraResources`
+ * stops shipping these, so the packaged path will only resolve while the user
+ * still has a pre-flip build — but the dev path remains valid forever.
+ */
+function bundledPath(spec: PluginAssetSpec): string {
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, locator.packaged);
+    return path.join(process.resourcesPath, spec.name);
   }
 
-  return path.join(process.cwd(), locator.dev);
+  return path.join(process.cwd(), spec.source);
 }
 
 function exists(p: string): boolean {
@@ -99,18 +86,19 @@ export function resolveAssetPath(
   if (exists(cached)) {
     return cached;
   }
+  const spec = findSpec(pluginId, assetName);
+  if (!spec) {
+    throw new Error(
+      `Plugin asset not registered: ${pluginId}/${assetName} (no resolver entry)`,
+    );
+  }
+
   // Fall back to the bundled candidate path even if it doesn't currently
   // exist on disk. After chunk 12 the bundled path is the dev-tree only —
   // packaged builds won't have it. Callers that need to verify availability
   // before exec'ing should call `isAssetAvailable` first; everyone else gets
   // the candidate and will fail at exec time with a clear ENOENT.
-  const bundled = bundledPath(pluginId, assetName);
-  if (bundled) {
-    return bundled;
-  }
-  throw new Error(
-    `Plugin asset not registered: ${pluginId}/${assetName} (no resolver entry)`,
-  );
+  return bundledPath(spec);
 }
 
 /** True if the asset is currently usable (cached or bundled) without download. */
@@ -121,9 +109,9 @@ export function isAssetAvailable(
   if (exists(cachedPath(pluginId, assetName))) {
     return true;
   }
-  const bundled = bundledPath(pluginId, assetName);
+  const spec = findSpec(pluginId, assetName);
 
-  return Boolean(bundled && exists(bundled));
+  return Boolean(spec && exists(bundledPath(spec)));
 }
 
 /**
@@ -150,49 +138,6 @@ function archSlug(): string {
   return process.arch;
 }
 
-interface AssetSpec {
-  pluginId: PluginId;
-  /** File or dir name as it appears under the cache dir. */
-  name: string;
-  /**
-   * Asset class — drives whether we extract a tarball, mark executable, etc.
-   * Mirrors `PluginAsset["kind"]` in the renderer types.
-   */
-  kind: "data" | "jar" | "native" | "node";
-  /** When true, chmod +x the resolved file after download. */
-  executable?: boolean;
-}
-
-/**
- * Static map of plugin id → assets to fetch when that plugin is enabled.
- * Hand-authored to mirror `app/plugins/registry.ts`. The release pipeline
- * (chunk 14) emits files matching the URL template below.
- */
-const ASSETS_BY_PLUGIN: Record<PluginId, AssetSpec[]> = {
-  "device-recording": [
-    {
-      pluginId: "device-recording",
-      name: "argus-sim-bridge",
-      kind: "native",
-      executable: true,
-    },
-    {
-      pluginId: "device-recording",
-      name: "scrcpy-server.jar",
-      kind: "jar",
-    },
-  ],
-  "device-inspector": [],
-  "device-control": [
-    {
-      pluginId: "device-control",
-      name: "conductor",
-      kind: "node",
-    },
-  ],
-  "device-debug": [],
-};
-
 interface DownloadProgress {
   pluginId: PluginId;
   assetName: string;
@@ -202,23 +147,23 @@ interface DownloadProgress {
 
 export type DownloadProgressEmitter = (p: DownloadProgress) => void;
 
-function assetUrl(spec: AssetSpec): string {
+function assetUrl(spec: PluginAssetSpec): string {
   const version = `v${app.getVersion()}`;
   // e.g. https://argus.houwert.dev/releases/v0.18.0/device-recording/argus-sim-bridge-arm64-darwin.zip
-  // For node/jar/data the arch/platform suffix is ignored; the release script
+  // For node/jar/data the arch/platform suffix is omitted; the release script
   // emits a single platform-neutral artifact.
-  if (spec.kind === "native") {
-    return `${RELEASE_ASSET_BASE}/${version}/${spec.pluginId}/${spec.name}-${archSlug()}-${platformSlug()}.zip`;
-  }
+  const suffix = needsArchSuffix(spec.kind)
+    ? `-${archSlug()}-${platformSlug()}`
+    : "";
 
-  return `${RELEASE_ASSET_BASE}/${version}/${spec.pluginId}/${spec.name}.zip`;
+  return `${RELEASE_ASSET_BASE}/${version}/${spec.pluginId}/${spec.name}${suffix}.zip`;
 }
 
 async function fetchToFile(
   url: string,
   destZip: string,
   emit: DownloadProgressEmitter,
-  spec: AssetSpec,
+  spec: PluginAssetSpec,
 ): Promise<void> {
   const res = await fetch(url);
   if (!res.ok || !res.body) {
@@ -281,7 +226,7 @@ export async function ensureAssetCached(
     return existing;
   }
   const promise = (async () => {
-    const specs = ASSETS_BY_PLUGIN[pluginId];
+    const specs = pluginAssets(pluginId);
     const noop: DownloadProgressEmitter = () => {};
     const onProgress = emit ?? noop;
     for (const spec of specs) {

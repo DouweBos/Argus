@@ -29,10 +29,6 @@ export const PLUGINS: readonly PluginManifest[] = [
       "android_sdk",
       "android_avd",
     ],
-    assets: [
-      { kind: "native", name: "argus-sim-bridge", executable: true },
-      { kind: "jar", name: "scrcpy-server.jar" },
-    ],
     bundled: false,
     lazy: true,
     contributes: {
@@ -69,7 +65,6 @@ export const PLUGINS: readonly PluginManifest[] = [
     group: "Device",
     defaultEnabled: false,
     prereqs: ["android_sdk", "playwright"],
-    assets: [{ kind: "node", name: "conductor" }],
     bundled: false,
     lazy: true,
     contributes: {
