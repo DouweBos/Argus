@@ -1,12 +1,17 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Button, IconBadge, Icons, TextArea } from "@argus/peacock";
+import { Button, Chip, IconBadge, Icons, TextArea } from "@argus/peacock";
 import {
   sendUserMessageToAgent,
   startAgentInSession,
 } from "../../../lib/agentLifecycle";
+import {
+  type CanonicalPermissionMode,
+  permissionModeDisplayName,
+} from "../../../lib/permissionModes";
 import { isSessionReady } from "../../../lib/types";
 import { pushError } from "../../../stores/notificationsStore";
 import { useSessions } from "../../../stores/sessionStore";
+import { PermissionModePicker } from "../PermissionModePicker";
 import { StartAgentDialog } from "../StartAgentDialog";
 import styles from "./AgentsEmptyState.module.css";
 
@@ -36,16 +41,29 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
 
   const [prompt, setPrompt] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [advancedMode, setAdvancedMode] = useState<"default" | "plan" | null>(
-    null,
-  );
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [permissionMode, setPermissionMode] =
+    useState<CanonicalPermissionMode>("auto");
+  const [permissionPickerOpen, setPermissionPickerOpen] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement>(null);
+  const permissionChipRef = useRef<HTMLDivElement>(null);
 
   const trimmed = prompt.trim();
   const canSubmit = trimmed.length > 0 && canStart && ready && !submitting;
 
+  const submitLabel = (() => {
+    if (submitting) {
+      return "Starting…";
+    }
+    if (permissionMode === "auto") {
+      return "Start agent";
+    }
+
+    return `Start in ${permissionModeDisplayName(permissionMode).toLowerCase()} mode`;
+  })();
+
   const spawn = useCallback(
-    async (mode: "default" | "plan") => {
+    async (mode: CanonicalPermissionMode) => {
       if (!canSubmit) {
         return;
       }
@@ -54,7 +72,7 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
       try {
         const info = await startAgentInSession(sessionId, {
           focus: true,
-          permissionMode: mode === "plan" ? "plan" : undefined,
+          permissionMode: mode === "auto" ? undefined : mode,
         });
         await sendUserMessageToAgent(info.agent_id, message, undefined, {
           assumeIdle: true,
@@ -76,10 +94,10 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        spawn("default");
+        spawn(permissionMode);
       }
     },
-    [spawn],
+    [spawn, permissionMode],
   );
 
   return (
@@ -100,7 +118,7 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
           className={styles.composer}
           onSubmit={(e) => {
             e.preventDefault();
-            spawn("default");
+            spawn(permissionMode);
           }}
         >
           <TextArea
@@ -114,31 +132,46 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
             onKeyDown={handleKeyDown}
           />
           <div className={styles.composerFooter}>
-            <button
-              type="button"
-              className={styles.advancedLink}
-              onClick={() => setAdvancedMode("default")}
-              title="Open the full Start agent dialog (model, linked projects, images)"
-            >
-              Advanced…
-            </button>
-            <div className={styles.composerActions}>
-              <Button
-                variant="ghost"
-                leading={<Icons.AgentStartIcon size={12} />}
-                disabled={!canSubmit}
-                onClick={() => spawn("plan")}
-                title="Start in plan mode — agent must present a plan before any writes"
+            <div className={styles.composerLeft}>
+              <button
+                type="button"
+                className={styles.advancedLink}
+                onClick={() => setAdvancedOpen(true)}
+                title="Open the full Start agent dialog (model, linked projects, images)"
               >
-                Plan mode
-              </Button>
+                Advanced…
+              </button>
+              <div ref={permissionChipRef} className={styles.permissionAnchor}>
+                <Chip
+                  interactive
+                  muted={permissionMode === "auto"}
+                  aria-label="Switch permission mode"
+                  title={`Permission mode: ${permissionModeDisplayName(permissionMode)}`}
+                  onClick={() => setPermissionPickerOpen((o) => !o)}
+                >
+                  {permissionModeDisplayName(permissionMode)}
+                </Chip>
+                {permissionPickerOpen && (
+                  <PermissionModePicker
+                    triggerRef={permissionChipRef}
+                    currentMode={permissionMode}
+                    onClose={() => setPermissionPickerOpen(false)}
+                    onSelect={(m) => {
+                      setPermissionPickerOpen(false);
+                      setPermissionMode(m);
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            <div className={styles.composerActions}>
               <Button
                 variant="primary"
                 type="submit"
                 leading={<Icons.AgentStartIcon size={12} />}
                 disabled={!canSubmit}
               >
-                {submitting ? "Starting…" : "Start agent"}
+                {submitLabel}
               </Button>
             </div>
           </div>
@@ -150,11 +183,11 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
         </form>
       </div>
 
-      {advancedMode && (
+      {advancedOpen && (
         <StartAgentDialog
-          mode={advancedMode}
+          initialMode={permissionMode}
           sessionId={sessionId}
-          onClose={() => setAdvancedMode(null)}
+          onClose={() => setAdvancedOpen(false)}
         />
       )}
     </div>

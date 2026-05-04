@@ -67,6 +67,16 @@
   margin-left: auto;
 }
 
+.composerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.permissionAnchor {
+  position: relative;
+}
+
 .advancedLink {
   background: none;
   border: none;

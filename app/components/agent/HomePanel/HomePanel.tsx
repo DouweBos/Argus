@@ -124,11 +124,11 @@ export function HomePanel({ sessionId }: HomePanelProps) {
   const isRepoHome = session?.kind === "project_root";
 
   const [startDialogMode, setStartDialogMode] = useState<
-    "default" | "plan" | null
+    "auto" | "plan" | null
   >(null);
 
   const handleStart = () => {
-    setStartDialogMode("default");
+    setStartDialogMode("auto");
   };
 
   const handleStartPlan = () => {
@@ -162,7 +162,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
       )}
       {startDialogMode && (
         <StartAgentDialog
-          mode={startDialogMode}
+          initialMode={startDialogMode}
           sessionId={sessionId}
           onClose={() => setStartDialogMode(null)}
         />

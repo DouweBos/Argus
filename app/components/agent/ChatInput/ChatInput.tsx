@@ -18,6 +18,12 @@ import {
 import { listProjects } from "../../../lib/ipc";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
+  type CanonicalPermissionMode,
+  nextPermissionMode,
+  permissionModeDisplayName,
+  toCanonicalPermissionMode,
+} from "../../../lib/permissionModes";
+import {
   clearDraft,
   getDraft,
   getLinkedProjects,
@@ -38,6 +44,7 @@ import {
   ModelPicker,
   type RunnerSelection,
 } from "../ModelPicker";
+import { PermissionModePicker } from "../PermissionModePicker";
 import { ProjectPicker } from "../ProjectPicker";
 import styles from "./ChatInput.module.css";
 import { useMentionPicker } from "./useMentionPicker";
@@ -67,8 +74,13 @@ interface ChatInputProps {
   onModelPickerOpenChange?: (open: boolean) => void;
   onModelSelect?: (model: string) => void;
   onSend: (message: string, images?: ImageAttachment[]) => void;
-  onTogglePlanMode?: () => void;
-  planMode?: boolean;
+  /**
+   * Set the agent's permission mode. Omit to hide the picker (e.g. read-only
+   * historical conversations).
+   */
+  onSetPermissionMode?: (mode: CanonicalPermissionMode) => void;
+  /** Current permission mode in any vocabulary; normalised to canonical for display. */
+  permissionMode?: string;
   sessionId?: string;
   slashCommands?: SlashCommand[];
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
@@ -90,11 +102,12 @@ export function ChatInput({
   modelPickerOpen: controlledPickerOpen,
   onModelPickerOpenChange,
   onModelSelect,
-  planMode = false,
-  onTogglePlanMode,
+  permissionMode,
+  onSetPermissionMode,
   textareaRef: externalTextareaRef,
   sessionId,
 }: ChatInputProps) {
+  const canonicalMode = toCanonicalPermissionMode(permissionMode);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const combinedRef = useCombinedRef(textareaRef, externalTextareaRef);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,7 +117,9 @@ export function ChatInput({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const projectChipRef = useRef<HTMLDivElement>(null);
   const modelChipRef = useRef<HTMLDivElement>(null);
+  const permissionChipRef = useRef<HTMLDivElement>(null);
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
+  const [permissionPickerOpen, setPermissionPickerOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const linkedProjects = useLinkedProjects(agentId);
@@ -494,6 +509,13 @@ export function ChatInput({
         }
       }
 
+      if (e.key === "Tab" && e.shiftKey && onSetPermissionMode) {
+        e.preventDefault();
+        onSetPermissionMode(nextPermissionMode(canonicalMode));
+
+        return;
+      }
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         submit();
@@ -511,6 +533,8 @@ export function ChatInput({
       selectMentionItem,
       dismissMention,
       adjustHeight,
+      canonicalMode,
+      onSetPermissionMode,
     ],
   );
 
@@ -644,21 +668,34 @@ export function ChatInput({
           )}
         </div>
       )}
-      {onTogglePlanMode && (
-        <Chip
-          interactive
-          muted={!planMode}
-          className={planMode ? styles.planModeActive : undefined}
-          aria-label="Toggle plan mode"
-          title={
-            planMode
-              ? "Plan mode on — click to disable (restarts agent)"
-              : "Enable plan mode (restarts agent)"
-          }
-          onClick={onTogglePlanMode}
-        >
-          Plan
-        </Chip>
+      {onSetPermissionMode && (
+        <div ref={permissionChipRef} className={styles.modelPickerAnchor}>
+          <Chip
+            interactive
+            muted={canonicalMode === "auto"}
+            className={
+              canonicalMode === "auto" ? undefined : styles.planModeActive
+            }
+            aria-label="Switch permission mode"
+            title={`Permission mode: ${permissionModeDisplayName(canonicalMode)} — click to switch (Shift+Tab to cycle)`}
+            onClick={() => setPermissionPickerOpen((o) => !o)}
+          >
+            <ChatInputShell.CollapseLabel>
+              {permissionModeDisplayName(canonicalMode)}
+            </ChatInputShell.CollapseLabel>
+          </Chip>
+          {permissionPickerOpen && (
+            <PermissionModePicker
+              triggerRef={permissionChipRef}
+              currentMode={canonicalMode}
+              onClose={() => setPermissionPickerOpen(false)}
+              onSelect={(m) => {
+                setPermissionPickerOpen(false);
+                onSetPermissionMode(m);
+              }}
+            />
+          )}
+        </div>
       )}
       <div ref={projectChipRef} className={styles.modelPickerAnchor}>
         <Chip

@@ -20,6 +20,10 @@ import {
 import { listProjects } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
+import {
+  type CanonicalPermissionMode,
+  permissionModeDisplayName,
+} from "../../../lib/permissionModes";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { usePrewarmSlot } from "../../../stores/prewarmStore";
@@ -29,15 +33,23 @@ import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { useMentionPicker } from "../ChatInput/useMentionPicker";
 import { ModelPicker, type RunnerSelection } from "../ModelPicker";
+import { PermissionModePicker } from "../PermissionModePicker";
 import { ProjectPicker } from "../ProjectPicker";
 import dialogExtra from "./StartAgentDialog.module.css";
 
 interface StartAgentDialogProps {
-  /** When `"plan"`, the agent starts in plan-mode; otherwise default mode. */
-  mode: "default" | "plan";
+  /** Initial permission mode the dialog opens with. Defaults to `"auto"`. */
+  initialMode?: CanonicalPermissionMode;
   onClose: () => void;
   sessionId: string;
 }
+
+const MODE_BLURBS: Record<CanonicalPermissionMode, string> = {
+  auto: "Describe what the agent should work on.",
+  plan: "The agent must present a plan for approval before any writes.",
+  review: "File edits are auto-approved; shell + network still ask.",
+  trusted: "Every tool call is auto-approved. Use with caution.",
+};
 
 function buildMessage(prompt: string, linkedProjects: string[]): string {
   return buildLinkedProjectsPreamble(
@@ -48,9 +60,13 @@ function buildMessage(prompt: string, linkedProjects: string[]): string {
 
 export function StartAgentDialog({
   sessionId,
-  mode,
+  initialMode = "auto",
   onClose,
 }: StartAgentDialogProps) {
+  const [permissionMode, setPermissionMode] =
+    useState<CanonicalPermissionMode>(initialMode);
+  const [permissionPickerOpen, setPermissionPickerOpen] = useState(false);
+  const permissionChipRef = useRef<HTMLDivElement>(null);
   // Prefer capabilities from the prewarmed Claude subprocess for this
   // session — those are guaranteed to match the CLI we're about to claim.
   // Fall back to whatever the most recent conversation reported (or the
@@ -307,7 +323,7 @@ export function StartAgentDialog({
       const info = await startAgentInSession(sessionId, {
         focus: true,
         model: modelValue !== "default" ? modelValue : undefined,
-        permissionMode: mode === "plan" ? "plan" : undefined,
+        permissionMode: permissionMode === "auto" ? undefined : permissionMode,
       });
       await sendUserMessageToAgent(
         info.agent_id,
@@ -324,7 +340,7 @@ export function StartAgentDialog({
   }, [
     canSubmit,
     linkedProjects,
-    mode,
+    permissionMode,
     modelValue,
     onClose,
     pendingImages,
@@ -417,7 +433,12 @@ export function StartAgentDialog({
     handleSubmit();
   };
 
-  const title = mode === "plan" ? "Start agent in plan mode" : "Start agent";
+  const title =
+    permissionMode === "auto"
+      ? "Start agent"
+      : `Start agent (${permissionModeDisplayName(permissionMode)})`;
+
+  const modeBlurb = MODE_BLURBS[permissionMode];
 
   return (
     <Dialog
@@ -427,11 +448,7 @@ export function StartAgentDialog({
       onClose={onClose}
     >
       <form className={styles.form} onSubmit={onFormSubmit}>
-        <p className={styles.bodyText}>
-          {mode === "plan"
-            ? "The agent must present a plan for approval before any writes."
-            : "Describe what the agent should work on."}
-        </p>
+        <p className={styles.bodyText}>{modeBlurb}</p>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="start-agent-prompt">
@@ -531,6 +548,28 @@ export function StartAgentDialog({
           />
 
           <div className={styles.promptChips}>
+            <div ref={permissionChipRef} className={styles.chipAnchor}>
+              <Chip
+                interactive
+                muted={permissionMode === "auto"}
+                aria-label="Switch permission mode"
+                title={`Permission mode: ${permissionModeDisplayName(permissionMode)}`}
+                onClick={() => setPermissionPickerOpen((o) => !o)}
+              >
+                {permissionModeDisplayName(permissionMode)}
+              </Chip>
+              {permissionPickerOpen && (
+                <PermissionModePicker
+                  triggerRef={permissionChipRef}
+                  currentMode={permissionMode}
+                  onClose={() => setPermissionPickerOpen(false)}
+                  onSelect={(m) => {
+                    setPermissionPickerOpen(false);
+                    setPermissionMode(m);
+                  }}
+                />
+              )}
+            </div>
             {knownModels.length > 0 && modelDisplayName && (
               <div ref={modelChipRef} className={styles.chipAnchor}>
                 <Chip
@@ -602,7 +641,9 @@ export function StartAgentDialog({
             Cancel
           </Button>
           <Button variant="primary" disabled={!canSubmit} type="submit">
-            {mode === "plan" ? "Start in plan mode" : "Start agent"}
+            {permissionMode === "auto"
+              ? "Start agent"
+              : `Start in ${permissionModeDisplayName(permissionMode).toLowerCase()} mode`}
           </Button>
         </div>
       </form>
