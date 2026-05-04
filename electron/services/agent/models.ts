@@ -1,11 +1,9 @@
 /**
- * Data types for the Claude Code agent lifecycle.
+ * Data types for the LLM agent lifecycle.
  */
 
-import type { ControlHandler } from "./controlHandler";
-import type { InitializeResponse } from "./protocol";
-import type { ChildProcess } from "node:child_process";
-import type { Writable } from "node:stream";
+import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
+import type { LlmRunner, LlmRunnerHandle } from "../llm/runners/types";
 
 // ---------------------------------------------------------------------------
 // AgentStatus
@@ -32,24 +30,23 @@ export interface AgentResult {
 }
 
 /**
- * A live session wrapping a `claude --output-format stream-json` subprocess.
+ * A live session wrapping an LLM runner subprocess (Claude Code today).
  *
- * `stdin` is kept as a plain `Writable` reference. Because Node.js IPC
- * handlers are single-threaded there is no need for a Mutex wrapper.
+ * The runner-specific child process, stdin pipe, and control protocol live
+ * behind {@link LlmRunnerHandle}. Because Node.js IPC handlers are
+ * single-threaded there is no need for a Mutex wrapper around the handle.
  */
 export interface AgentSession {
   /** Unique identifier for this agent instance. */
   agentId: string;
   /** Session this agent is attached to. */
   sessionId: string;
-  /** Write end of the child's stdin pipe. */
-  stdin: Writable;
-  /** The child process; used for `kill()` on stop. */
-  child: ChildProcess;
+  /** The runner that spawned this agent. */
+  runner: LlmRunner;
+  /** Runtime handle owning the subprocess + wire protocol. */
+  handle: LlmRunnerHandle;
   /** Current status, updated when the process exits. */
   status: AgentStatusValue;
-  /** Handles the control protocol for interactive permission prompts. */
-  controlHandler: ControlHandler | null;
   /** Agent that spawned this one via MCP `spawn_agent` (null for user-initiated). */
   parentAgentId: string | null;
   /**

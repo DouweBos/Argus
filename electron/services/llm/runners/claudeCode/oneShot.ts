@@ -10,8 +10,8 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { warn } from "../../../app/lib/logger";
-import { broadcastNotification } from "../notifications/broadcast";
+import { warn } from "../../../../../app/lib/logger";
+import { broadcastNotification } from "../../../notifications/broadcast";
 
 const execFileAsync = promisify(execFile);
 

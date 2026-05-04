@@ -37,9 +37,10 @@ import {
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { selectSession, setPendingPrompt } from "../../../stores/sessionStore";
-import { getDefaultModel } from "../../../stores/settingsStore";
-import { ModelPicker } from "../../agent/ModelPicker";
+import { getDefaultModel, useDefaultLlm } from "../../../stores/settingsStore";
+import { ModelPicker, type RunnerSelection } from "../../agent/ModelPicker";
 import { ProjectPicker } from "../../agent/ProjectPicker";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -401,6 +402,30 @@ export function CreateSessionDialog({
   );
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const modelChipRef = useRef<HTMLDivElement>(null);
+
+  // New-session runner picker. Today only "claude-code" is registered, so
+  // the dropdown collapses to a single non-interactive entry — but we
+  // drive it from `list_runners` so adding a runner later is purely
+  // additive.
+  const registeredRunners = useRegisteredRunners();
+  const defaultLlm = useDefaultLlm();
+  const [runnerId, setRunnerId] = useState<string>(
+    () => defaultLlm.runner ?? "claude-code",
+  );
+  useEffect(() => {
+    // Sync from app default once it loads, but never override an explicit
+    // user pick.
+    if (defaultLlm.runner && runnerId === "claude-code") {
+      setRunnerId(defaultLlm.runner);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultLlm.runner]);
+  const runnerSelection: RunnerSelection = {
+    currentId: runnerId,
+    locked: false,
+    available: registeredRunners,
+    onSelect: setRunnerId,
+  };
 
   const [linkedProjects, setLinkedProjects] = useState<string[]>([]);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
@@ -890,6 +915,7 @@ export function CreateSessionDialog({
                       triggerRef={modelChipRef}
                       currentModel={modelValue}
                       models={knownModels}
+                      runner={runnerSelection}
                       onClose={() => setModelPickerOpen(false)}
                       onSelect={(m) => {
                         setModelPickerOpen(false);

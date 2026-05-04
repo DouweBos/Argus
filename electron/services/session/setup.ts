@@ -8,13 +8,14 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-import { info } from "../../../app/lib/logger";
+import { info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { createTerminal } from "../terminal/multiplexer";
 import {
   type BrowserPresetConfig,
   defaultArgusConfig,
+  type LlmConfig,
   type RelatedProject,
   type ReleaseNoteFormat,
   type ReleaseNoteLabelConfig,
@@ -130,6 +131,63 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
       repoRoot,
     ),
     auto_fetch_minutes: normalizeAutoFetchMinutes(parsed.auto_fetch_minutes),
+    llm: normalizeLlmConfig(parsed.llm, repoRoot),
+  };
+}
+
+/**
+ * Known runner ids for parse-time validation. Unknown ids are NOT a hard
+ * fail — the resolver falls back to the app default — but we log a warning
+ * so users notice typos before an agent fails to spawn.
+ */
+const KNOWN_RUNNER_IDS = new Set<string>(["claude-code"]);
+
+/**
+ * Normalise the optional `llm` block. Both `runner` and `model` are
+ * optional strings; any other shape is rejected with a clear error.
+ * Returns `null` when the block is absent or both fields are empty so
+ * the resolver cascade can fall through cleanly.
+ */
+function normalizeLlmConfig(raw: unknown, repoRoot: string): LlmConfig | null {
+  if (raw == null) {
+    return null;
+  }
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw `llm in ${repoRoot}/.argus.json must be an object with optional "runner" and "model" string fields.`;
+  }
+  const obj = raw as Record<string, unknown>;
+  let runner: string | null = null;
+  if (obj.runner != null) {
+    if (typeof obj.runner !== "string") {
+      throw `llm.runner in ${repoRoot}/.argus.json must be a string (e.g. "claude-code").`;
+    }
+    const trimmed = obj.runner.trim();
+    if (trimmed) {
+      runner = trimmed;
+      if (!KNOWN_RUNNER_IDS.has(trimmed)) {
+        warn(
+          `llm.runner "${trimmed}" in ${repoRoot}/.argus.json is not a known runner id — the resolver will fall back to the app default.`,
+        );
+      }
+    }
+  }
+  let model: string | null = null;
+  if (obj.model != null) {
+    if (typeof obj.model !== "string") {
+      throw `llm.model in ${repoRoot}/.argus.json must be a string.`;
+    }
+    const trimmed = obj.model.trim();
+    if (trimmed) {
+      model = trimmed;
+    }
+  }
+  if (runner == null && model == null) {
+    return null;
+  }
+
+  return {
+    ...(runner != null ? { runner } : {}),
+    ...(model != null ? { model } : {}),
   };
 }
 
@@ -632,6 +690,27 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
         : base.simulator_deeplinks,
     auto_fetch_minutes:
       local.auto_fetch_minutes ?? base.auto_fetch_minutes ?? null,
+    llm: mergeLlmConfig(base.llm ?? null, local.llm ?? null),
+  };
+}
+
+/** Per-field override: local wins on `runner`/`model` if set. */
+function mergeLlmConfig(
+  base: LlmConfig | null,
+  local: LlmConfig | null,
+): LlmConfig | null {
+  if (!base && !local) {
+    return null;
+  }
+  const runner = local?.runner ?? base?.runner ?? null;
+  const model = local?.model ?? base?.model ?? null;
+  if (runner == null && model == null) {
+    return null;
+  }
+
+  return {
+    ...(runner != null ? { runner } : {}),
+    ...(model != null ? { model } : {}),
   };
 }
 

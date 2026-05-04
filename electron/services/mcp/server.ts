@@ -637,6 +637,12 @@ export function createMcpServer(): McpServer {
         .describe(
           "Permission mode for the agent. Use 'plan' to start the agent in plan mode — read-only exploration plus AskUserQuestion/ExitPlanMode, with the agent required to present a plan for user approval before any writes. 'default' prompts per tool; 'auto'/'acceptEdits' auto-accept edits; 'bypassPermissions' skips prompts. Defaults to the app's setting.",
         ),
+      model: z
+        .string()
+        .optional()
+        .describe(
+          "Optional model id override for this agent (runner-specific shape). When omitted the cascade falls through to the session, project, and app defaults — set this only when delegating a child to a different model than its parent. The session's runner is fixed at session creation and is *not* overridable here.",
+        ),
       platforms: z
         .array(z.enum(["ios", "android", "web"]))
         .optional()
@@ -660,6 +666,7 @@ export function createMcpServer(): McpServer {
       session,
       prompt,
       permission_mode,
+      model,
       platforms,
       parent_agent_id,
       attachments,
@@ -702,7 +709,7 @@ export function createMcpServer(): McpServer {
 
       const agentInfo = await startAgent(
         ws.id,
-        undefined, // model — use default
+        model, // model override — undefined falls through to session/project/app default
         permission_mode,
         undefined, // resumeSessionId
         undefined, // appendSystemPrompt
@@ -792,6 +799,12 @@ export function createMcpServer(): McpServer {
               .array(z.enum(["ios", "android", "web"]))
               .optional()
               .describe("Runtime platforms this agent targets"),
+            model: z
+              .string()
+              .optional()
+              .describe(
+                "Optional model id override for this agent (runner-specific shape). When omitted the cascade falls through to the session/project/app defaults. The runner is fixed at session creation and is not overridable here.",
+              ),
             attachments: z
               .array(mcpAttachmentSchema)
               .optional()
@@ -931,7 +944,7 @@ export function createMcpServer(): McpServer {
 
           const agentInfo = await startAgent(
             ws.id,
-            undefined,
+            spec.model,
             permission_mode,
             undefined,
             undefined,

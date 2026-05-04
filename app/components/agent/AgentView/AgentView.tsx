@@ -166,7 +166,7 @@ export function AgentView({ sessionId }: AgentViewProps) {
       label: entry.title,
       onClick: () => {
         removeRecentlyClosed(sessionId, entry.agentId);
-        startNew(undefined, undefined, entry.claudeSessionId).catch(() => {});
+        startNew(undefined, undefined, entry.runnerSessionId).catch(() => {});
       },
     }));
   }, [recentlyClosed, sessionId, startNew]);

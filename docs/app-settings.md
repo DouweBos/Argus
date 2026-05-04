@@ -37,6 +37,35 @@ Permission modes are passed through to Claude Code:
 
 ---
 
+## LLM
+
+App-level default for which LLM runner and model power new sessions. The
+runner is fixed at session creation; the model can still be overridden by
+[`.argus.json`](./project-settings.md), individual sessions, or the
+new-agent picker.
+
+| Setting           | Default       | Description                                                                                                                            |
+| ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Runner**        | `claude-code` | The CLI/agent that drives sessions. Today only Claude Code is registered; additional runners (Codex, Gemini, …) will appear over time. |
+| **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default.                   |
+
+Resolution order for the runner (at session creation):
+
+1. Project default — the `llm.runner` field in
+   [`.argus.json`](./project-settings.md).
+2. App default — this setting.
+
+Resolution order for the model (at every agent spawn):
+
+1. Agent override (set in the new-agent picker).
+2. Session model (carried on the session, defaulted from project/app at
+   create time).
+3. Project default — `llm.model` in `.argus.json`.
+4. App default — this setting.
+5. Whatever the runner picks if none of the above specify a model.
+
+---
+
 ## Open in apps
 
 | Setting            | Default | Description                                                    |
@@ -188,6 +217,7 @@ Argus keeps everything under `~/.argus/`:
   telemetry-id                ← Anonymous install id (only present if telemetry is on)
 ```
 
-UI preferences (theme, display size, default permission mode, custom
-editors) live in the app's `localStorage`. Delete a file or wipe the
+UI preferences (theme, display size, default permission mode, default
+LLM runner/model, custom editors) live in the app's `localStorage`.
+Delete a file or wipe the
 directory at any time — Argus recreates what it needs on next launch.

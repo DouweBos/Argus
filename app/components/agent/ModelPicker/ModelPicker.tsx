@@ -1,3 +1,4 @@
+import type { RegisteredRunner } from "../../../lib/types";
 import {
   useEffect,
   useLayoutEffect,
@@ -18,11 +19,36 @@ export interface ModelOption {
   value: string;
 }
 
+/**
+ * Runner state surfaced at the top of the picker.
+ *
+ * - `locked: true` (existing session): the runner is read-only — Resolved
+ *   Decision 4 of the LLM-routing plan pins runner at session creation.
+ * - `locked: false` + `available` provided: the user can switch between
+ *   registered runners. Today only `claude-code` is registered, so the
+ *   list collapses to a single non-interactive entry.
+ */
+export interface RunnerSelection {
+  /** Registered runners surfaced as choices. Required when `locked` is false. */
+  available?: RegisteredRunner[];
+  /** Currently bound or proposed runner id. */
+  currentId: string;
+  /** When true, the runner is fixed for this session and cannot change. */
+  locked: boolean;
+  /** Callback fired when a different runner is picked (only when not locked). */
+  onSelect?: (runnerId: string) => void;
+}
+
 interface ModelPickerProps {
   currentModel: string | undefined;
   models: ModelOption[];
   onClose: () => void;
   onSelect: (modelValue: string) => void;
+  /**
+   * Runner displayed above the model list. When omitted, the picker behaves
+   * like a model-only switcher (legacy callers).
+   */
+  runner?: RunnerSelection;
   /** Element the picker should anchor to. Picker opens above and aligned to its left. */
   triggerRef: RefObject<HTMLElement | null>;
 }
@@ -37,6 +63,7 @@ export function ModelPicker({
   currentModel,
   onSelect,
   onClose,
+  runner,
   triggerRef,
 }: ModelPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -87,6 +114,8 @@ export function ModelPicker({
       className={styles.picker}
       style={{ left: rect.left, bottom: rect.bottom }}
     >
+      {runner && <RunnerSection runner={runner} />}
+
       <div className={styles.header}>Switch model</div>
       {models.map((model) => {
         const isActive = model.value === currentModel;
@@ -113,4 +142,63 @@ export function ModelPicker({
     </div>,
     document.body,
   );
+}
+
+function RunnerSection({ runner }: { runner: RunnerSelection }) {
+  const available = runner.available ?? [];
+  const current =
+    available.find((r) => r.id === runner.currentId) ??
+    fallbackRunner(runner.currentId);
+
+  // Locked (existing session) or only one registered runner: render a
+  // single read-only row. Resolved Decision 4 forbids changing the runner
+  // on an existing session.
+  const selectable = !runner.locked && available.length > 1;
+
+  if (!selectable) {
+    return (
+      <>
+        <div className={styles.header}>Runner</div>
+        <div className={styles.runnerStatic} aria-label="Runner">
+          <div className={styles.optionLabel}>
+            <span className={styles.optionName}>{current.displayName}</span>
+            {runner.locked && (
+              <span className={styles.optionDesc}>Fixed for this session</span>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.header}>Runner</div>
+      {available.map((opt) => {
+        const isActive = opt.id === runner.currentId;
+
+        return (
+          <button
+            key={opt.id}
+            className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              runner.onSelect?.(opt.id);
+            }}
+          >
+            <div className={styles.optionLabel}>
+              <span className={styles.optionName}>{opt.displayName}</span>
+            </div>
+            {isActive && <span className={styles.optionCheck}>✓</span>}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+function fallbackRunner(id: string): { displayName: string; id: string } {
+  // Render an id-derived label when the registry hasn't been read yet.
+  // The displayName is replaced as soon as `list_runners` returns.
+  return { id, displayName: id };
 }

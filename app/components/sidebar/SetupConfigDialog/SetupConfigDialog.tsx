@@ -20,6 +20,7 @@ import {
   SettingsScreenDetail,
   SettingsScreenDetailBody,
   SettingsScreenDetailHeader,
+  SettingsScreenField,
   TextArea,
   TreeNode,
   type SettingsDialogGroup,
@@ -30,6 +31,7 @@ import {
   setUserProjectSettings,
   writeArgusConfig,
 } from "../../../lib/ipc";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { dialogStyles as styles } from "../../shared/Dialog";
 import {
   InheritedMcpList,
@@ -52,6 +54,72 @@ interface SetupConfigDialogProps {
   onClose: () => void;
   onSaved?: () => void;
   repoRoot: string;
+}
+
+interface RunnerOptionsProps {
+  onChange: (runnerId: string) => void;
+  /** Empty string means "inherit app-level default". */
+  selected: string;
+}
+
+/**
+ * Registry-driven runner picker for the project-level LLM section. Mirrors
+ * the app-level Settings dialog. Always includes an "Inherit" option (empty
+ * string) so the project can fall back to the app default; if `selected` is
+ * a value not in the registry — e.g. set by a teammate whose app has a
+ * runner this app doesn't — we surface it as an extra "(unknown)" option so
+ * saving doesn't silently change it.
+ */
+function RunnerOptions({ onChange, selected }: RunnerOptionsProps) {
+  const registered = useRegisteredRunners();
+  const baseOptions =
+    registered.length > 0
+      ? registered.map((r) => ({
+          id: r.id,
+          label: r.displayName,
+          unknown: false,
+        }))
+      : [{ id: "claude-code", label: "Claude Code", unknown: false }];
+  const options: { id: string; label: string; unknown: boolean }[] = [
+    { id: "", label: "Inherit app default", unknown: false },
+    ...baseOptions,
+  ];
+  if (selected && !options.some((o) => o.id === selected)) {
+    options.push({
+      id: selected,
+      label: `${selected} (unknown)`,
+      unknown: true,
+    });
+  }
+
+  return (
+    <div className={sectionStyles.runnerOptions}>
+      {options.map((opt) => {
+        const active = selected === opt.id;
+        const className = [
+          sectionStyles.runnerOption,
+          active ? sectionStyles.runnerOptionActive : "",
+          opt.unknown ? sectionStyles.runnerOptionUnknown : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        return (
+          <label key={opt.id || "__inherit__"} className={className}>
+            <input
+              checked={active}
+              className={sectionStyles.runnerRadio}
+              name="setup-llm-runner"
+              type="radio"
+              value={opt.id}
+              onChange={() => onChange(opt.id)}
+            />
+            <span>{opt.label}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -1655,6 +1723,8 @@ export function SetupConfigDialog({
   const [defaultBaseBranch, setDefaultBaseBranch] = useState("");
   const [minArgusVersion, setMinArgusVersion] = useState("");
   const [mcpEntries, setMcpEntries] = useState<McpEntry[]>([]);
+  const [llmRunner, setLlmRunner] = useState("");
+  const [llmModel, setLlmModel] = useState("");
   const [branchPrefix, setBranchPrefix] = useState("");
   const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1764,6 +1834,14 @@ export function SetupConfigDialog({
         }
         if (config.mcp_servers) {
           setMcpEntries(mapToEntries(config.mcp_servers));
+        }
+        if (config.llm) {
+          if (config.llm.runner) {
+            setLlmRunner(config.llm.runner);
+          }
+          if (config.llm.model) {
+            setLlmModel(config.llm.model);
+          }
         }
         if (config.release_note_patterns?.length) {
           setReleaseNotes(patternsToEntries(config.release_note_patterns));
@@ -1941,6 +2019,14 @@ export function SetupConfigDialog({
     if (relatedProjects.length > 0) {
       config.related_projects = relatedProjects;
     }
+    const trimmedRunner = llmRunner.trim();
+    const trimmedModel = llmModel.trim();
+    if (trimmedRunner || trimmedModel) {
+      config.llm = {
+        ...(trimmedRunner ? { runner: trimmedRunner } : {}),
+        ...(trimmedModel ? { model: trimmedModel } : {}),
+      };
+    }
 
     return config;
   };
@@ -1970,6 +2056,8 @@ export function SetupConfigDialog({
       releaseNotesList.items,
       deeplinkList.items,
       relatedProjectList.items,
+      llmRunner,
+      llmModel,
     ],
   );
 
@@ -2367,6 +2455,40 @@ export function SetupConfigDialog({
                   />
                   Save chat history when agents stop
                 </label>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "llm",
+          label: "LLM",
+          description: "Default runner & model",
+          icon: <Icons.AgentIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Project-level default LLM runner and model. Used when an agent or session does not pin its own. The runner is bound at session creation; the model is re-resolved per agent spawn. Leave blank to fall back to your app-level default."
+                title="LLM"
+              />
+              <SettingsScreenDetailBody>
+                <SettingsScreenField
+                  caption="The CLI/agent that drives sessions. Leave blank to fall back to your app-level default. Unknown ids also fall back to the app default."
+                  label="Runner"
+                >
+                  <RunnerOptions selected={llmRunner} onChange={setLlmRunner} />
+                </SettingsScreenField>
+                <SettingsScreenField
+                  caption="Default model id, in whatever shape the runner expects. Leave blank to let the runner pick."
+                  label="Model"
+                >
+                  <Input
+                    id="setup-llm-model"
+                    placeholder="claude-opus-4-7"
+                    type="text"
+                    value={llmModel}
+                    onChange={(e) => setLlmModel(e.target.value)}
+                  />
+                </SettingsScreenField>
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),

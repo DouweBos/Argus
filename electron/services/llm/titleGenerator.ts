@@ -6,7 +6,7 @@
  */
 
 import { tmpdir } from "node:os";
-import { runClaudePrint } from "./claudePrint";
+import { runClaudePrint } from "./oneShot";
 
 const MAX_TITLE_CHARS = 60;
 const MAX_CHAT_TITLE_CHARS = 80;

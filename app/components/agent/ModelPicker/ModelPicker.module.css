@@ -74,3 +74,18 @@
   color: var(--accent);
   flex-shrink: 0;
 }
+
+/* Read-only runner row shown when the runner is locked (existing session)
+   or there's only one registered runner. Mirrors `.option` layout but
+   without hover/cursor affordances. */
+.runnerStatic {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px 6px 14px;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  border-left: 2px solid transparent;
+  line-height: 1.4;
+  user-select: none;
+}

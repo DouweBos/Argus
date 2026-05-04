@@ -7,10 +7,21 @@ export interface Session {
   display_name?: string | null;
   id: string;
   kind: "org_host" | "project_root" | "worktree";
+  /**
+   * Default model id (runner-specific) for agents spawned in this session.
+   * `null` lets the cascade fall through to project / app / runner defaults.
+   */
+  model?: string | null;
   /** OrgTask that owns this session (if spawned from a cross-repo task). */
   organization_task_id?: string | null;
   path: string;
   repo_root: string;
+  /**
+   * LLM runner this session is bound to (e.g. `"claude-code"`). Stamped at
+   * create-time and immutable for the session's lifetime. Legacy sessions
+   * persisted before this field existed default to `"claude-code"` on read.
+   */
+  runner_id?: string | null;
   /** Transient terminal id for the setup PTY; only present on create_session. */
   setup_terminal_id?: string | null;
   status: "deleting" | "initializing" | "ready" | { error: string };
@@ -328,6 +339,37 @@ export interface BrowserPresetConfig {
 
 export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
 
+/**
+ * A registered LLM runner surfaced to the renderer via `list_runners`.
+ * Mirrors the small subset of `LlmRunner` the UI needs.
+ */
+export interface RegisteredRunner {
+  /** Capability flags (e.g. `supportsMcp`, `supportsSetModel`). */
+  capabilities: {
+    supportsInterrupt: boolean;
+    supportsMcp: boolean;
+    supportsSetModel: boolean;
+    supportsSetPermissionMode: boolean;
+    supportsTranscriptFork: boolean;
+  };
+  /** Human-readable label, e.g. "Claude Code". */
+  displayName: string;
+  /** Stable id, e.g. `"claude-code"`. */
+  id: string;
+}
+
+/**
+ * Project-level default LLM runner + model. Either field may be absent —
+ * the resolver cascade fills in whichever isn't pinned here. Mirrors the
+ * `LlmConfig` shape in `electron/services/session/models.ts`.
+ */
+export interface LlmConfig {
+  /** Default model id for this project. */
+  model?: string | null;
+  /** Runner id, e.g. "claude-code". */
+  runner?: string | null;
+}
+
 export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
@@ -347,6 +389,11 @@ export interface ArgusConfig {
    * staging/develop/dev/main/master probe otherwise.
    */
   default_base_branch?: string | null;
+  /**
+   * Project-level default LLM runner + model. Used as the cascade step
+   * between agent/session overrides and the app-level default.
+   */
+  llm?: LlmConfig | null;
   /**
    * Project-level MCP servers, merged into every spawned agent. Map of
    * server name to its `.mcp.json`-style config. Use `.mcp.json` for the
@@ -499,7 +546,7 @@ export interface UserProjectSettings {
 // Claude Code stream-json event types
 // ---------------------------------------------------------------------------
 
-export type ClaudeStreamEvent =
+export type LlmStreamEvent =
   | {
       /** Authoritative idle/running signal from the CLI. */
       state: "idle" | "requires_action" | "running";
@@ -531,7 +578,7 @@ export type ClaudeStreamEvent =
     }
   | {
       message: {
-        content: ClaudeContentBlock[];
+        content: LlmContentBlock[];
         model: string;
         usage: TokenUsage;
       };
@@ -540,7 +587,7 @@ export type ClaudeStreamEvent =
       type: "assistant";
     }
   | {
-      message: { content: ClaudeToolResult[] };
+      message: { content: LlmToolResult[] };
       /** Present when this tool_result is from a sub-agent (Task/Agent tool). */
       parent_tool_use_id?: string | null;
       type: "user";
@@ -557,7 +604,7 @@ export type ClaudeStreamEvent =
       type: "system";
     };
 
-export type ClaudeContentBlock =
+export type LlmContentBlock =
   | {
       id: string;
       input: Record<string, unknown>;
@@ -566,7 +613,7 @@ export type ClaudeContentBlock =
     }
   | { text: string; type: "text" };
 
-export interface ClaudeToolResult {
+export interface LlmToolResult {
   /** May be a plain string or a structured content block from the Claude API. */
   content: unknown;
   is_error?: boolean;
@@ -693,6 +740,18 @@ export interface OnboardingStateData {
 export interface OnboardingConfigFile {
   onboarding: OnboardingStateData;
   recentProjects: string[];
+}
+
+/**
+ * Onboarding step contributed by a registered LLM runner. Mirrors the
+ * electron-side `RunnerOnboardingStep`; the renderer maps `kind` to a
+ * concrete component via {@link runnerOnboardingComponents}.
+ */
+export interface RunnerOnboardingStep {
+  id: string;
+  kind: string;
+  runnerId: string;
+  title: string;
 }
 
 export type PrereqId =

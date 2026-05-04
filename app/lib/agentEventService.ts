@@ -2,7 +2,7 @@ import type { SavedConversation } from "./chatHistory";
 import type {
   AgentCapabilities,
   AgentStatus,
-  ClaudeStreamEvent,
+  LlmStreamEvent,
   PermissionCancellation,
   PermissionRequest,
 } from "./types";
@@ -267,7 +267,7 @@ export async function stopAgentById(agentId: string): Promise<void> {
       conv?.title?.trim() || firstUserText?.trim() || "Untitled agent";
     recordRecentlyClosed(agent.session_id, {
       agentId,
-      claudeSessionId: conv?.sessionId,
+      runnerSessionId: conv?.sessionId,
       closedAt: Date.now(),
       title: title.length > 60 ? title.slice(0, 60) + "…" : title,
     });
@@ -317,7 +317,7 @@ export function startAgentListening(agentId: string): void {
 
   listen<string>(`agent:event:${agentId}`, (event) => {
     try {
-      const parsed: ClaudeStreamEvent = JSON.parse(event.payload);
+      const parsed: LlmStreamEvent = JSON.parse(event.payload);
       appendEvent(agentId, parsed);
       scheduleAgentSave(agentId);
 

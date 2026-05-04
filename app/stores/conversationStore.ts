@@ -1,8 +1,8 @@
 import type { ImageAttachment } from "../lib/ipc";
 import type {
   AgentCapabilities,
-  ClaudeContentBlock,
-  ClaudeStreamEvent,
+  LlmContentBlock,
+  LlmStreamEvent,
   PermissionRequest,
   SlashCommand,
   TokenUsage,
@@ -404,7 +404,7 @@ export function addUserMessage(
   });
 }
 
-export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
+export function appendEvent(agentId: string, event: LlmStreamEvent) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
 
@@ -498,7 +498,7 @@ export function appendEvent(agentId: string, event: ClaudeStreamEvent) {
     }
 
     if (event.type === "assistant") {
-      const content: ClaudeContentBlock[] = event.message.content ?? [];
+      const content: LlmContentBlock[] = event.message.content ?? [];
 
       // Sub-agent messages: nest under the parent Task/Agent tool call.
       if (event.parent_tool_use_id) {

@@ -23,10 +23,12 @@ import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { usePrewarmSlot } from "../../../stores/prewarmStore";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
+import { useSessions } from "../../../stores/sessionStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { useMentionPicker } from "../ChatInput/useMentionPicker";
-import { ModelPicker } from "../ModelPicker";
+import { ModelPicker, type RunnerSelection } from "../ModelPicker";
 import { ProjectPicker } from "../ProjectPicker";
 import dialogExtra from "./StartAgentDialog.module.css";
 
@@ -72,6 +74,17 @@ export function StartAgentDialog({
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [modelValue, setModelValue] = useState<string>("default");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+
+  // The runner is locked to whatever this session was created with —
+  // Resolved Decision 4 of the LLM-routing plan.
+  const sessions = useSessions();
+  const session = sessions.find((s) => s.id === sessionId) ?? null;
+  const registeredRunners = useRegisteredRunners();
+  const runnerSelection: RunnerSelection = {
+    currentId: session?.runner_id ?? "claude-code",
+    locked: true,
+    available: registeredRunners,
+  };
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
 
@@ -534,6 +547,7 @@ export function StartAgentDialog({
                     triggerRef={modelChipRef}
                     currentModel={modelValue}
                     models={knownModels}
+                    runner={runnerSelection}
                     onClose={() => setModelPickerOpen(false)}
                     onSelect={(m) => {
                       setModelPickerOpen(false);

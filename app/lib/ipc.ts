@@ -43,6 +43,8 @@ import type {
   InheritedMcpServer,
   McpOAuthStatus,
   McpTestResult,
+  RegisteredRunner,
+  RunnerOnboardingStep,
   Session,
   UserProjectSettings,
 } from "./types";
@@ -655,12 +657,20 @@ export const gitRunHook = (
 export const listSessions = (repoRoot: string): Promise<Session[]> =>
   invoke("list_sessions", { repoRoot });
 
+export interface CreateSessionLlmDefault {
+  /** App-level default model id. `null` lets the runner pick. */
+  model?: string | null;
+  /** App-level default runner id (e.g. `"claude-code"`). `null` defers to fallback. */
+  runner?: string | null;
+}
+
 export const createSession = (
   repoRoot: string,
   branch: string,
   description: string,
   useExistingBranch?: boolean,
   baseBranch?: string,
+  appDefaultLlm?: CreateSessionLlmDefault,
 ): Promise<Session> =>
   invoke("create_session", {
     repoRoot,
@@ -668,6 +678,7 @@ export const createSession = (
     description,
     useExistingBranch: useExistingBranch ?? false,
     baseBranch,
+    appDefaultLlm,
   });
 
 export const createHeadSession = (repoRoot: string): Promise<Session> =>
@@ -1965,6 +1976,12 @@ export const runPrereqFixer = (
 
 export const claudePing = (): Promise<{ error?: string; ok: boolean }> =>
   invoke("onboarding_claude_ping");
+
+export const listRunnerOnboardingSteps = (): Promise<RunnerOnboardingStep[]> =>
+  invoke("llm_list_onboarding_steps");
+
+export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
+  invoke("llm_list_runners");
 
 export const listOnboardingExamples = (): Promise<ExampleProject[]> =>
   invoke("onboarding_list_examples");
