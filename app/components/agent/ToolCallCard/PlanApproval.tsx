@@ -1,5 +1,10 @@
-import { type KeyboardEvent, useCallback, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useState } from "react";
 import { Dialog, Icons } from "@argus/peacock";
+import {
+  clearToolDraft,
+  getToolDraft,
+  setToolDraft,
+} from "../../../stores/conversationStore";
 import { Markdown } from "../../shared/Markdown";
 import styles from "./PlanApproval.module.css";
 
@@ -8,6 +13,12 @@ interface PlanApprovalProps {
   onReject: () => void;
   onSubmitFeedback: (feedback: string) => void;
   plan: string;
+  /** Tool-use id used to persist feedback text across view switches. */
+  toolUseId?: string;
+}
+
+interface PlanApprovalDraft {
+  feedback: string;
 }
 
 export function PlanApproval({
@@ -15,12 +26,33 @@ export function PlanApproval({
   onApprove,
   onReject,
   onSubmitFeedback,
+  toolUseId,
 }: PlanApprovalProps) {
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<string>(
+    () =>
+      (toolUseId ? getToolDraft<PlanApprovalDraft>(toolUseId) : undefined)
+        ?.feedback ?? "",
+  );
   const [expanded, setExpanded] = useState(false);
 
-  const handleApprove = useCallback(() => onApprove(), [onApprove]);
-  const handleReject = useCallback(() => onReject(), [onReject]);
+  useEffect(() => {
+    if (!toolUseId) {
+      return;
+    }
+    setToolDraft(toolUseId, { feedback } satisfies PlanApprovalDraft);
+  }, [toolUseId, feedback]);
+
+  const handleApprove = useCallback(() => {
+    if (toolUseId) {
+      clearToolDraft(toolUseId);
+    }
+    onApprove();
+  }, [onApprove, toolUseId]);
+  const handleReject = useCallback(() => {
+    // Keep the feedback draft — "Keep planning" sends them back to refining,
+    // and they may want to reuse what they already typed.
+    onReject();
+  }, [onReject]);
 
   const handleSend = useCallback(() => {
     const trimmed = feedback.trim();
@@ -30,7 +62,10 @@ export function PlanApproval({
     onSubmitFeedback(trimmed);
     setFeedback("");
     setExpanded(false);
-  }, [feedback, onSubmitFeedback]);
+    if (toolUseId) {
+      clearToolDraft(toolUseId);
+    }
+  }, [feedback, onSubmitFeedback, toolUseId]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {

@@ -133,6 +133,13 @@ interface ConversationStoreData {
   linkedProjects: Record<string, string[]>;
   /** Pending image attachments per agent, preserved across tab switches. */
   pendingImages: Record<string, PendingImage[]>;
+  /**
+   * Per-tool-call draft state for interactive permission prompts
+   * (AskUserQuestion, ExitPlanMode). Keyed by toolUseId so input survives
+   * agent/view switches while the prompt is still pending. The shape is
+   * form-specific — each form picks the type when reading.
+   */
+  toolDrafts: Record<string, unknown>;
 }
 
 function emptyConversation(): AgentConversation {
@@ -238,6 +245,7 @@ const conversationStore = create<ConversationStoreData>(() => ({
   drafts: {},
   linkedProjects: {},
   pendingImages: {},
+  toolDrafts: {},
 }));
 
 const useConversationStore = conversationStore;
@@ -1022,6 +1030,27 @@ export function clearDraft(agentId: string) {
     const { [agentId]: _removed, ...drafts } = state.drafts;
 
     return { drafts };
+  });
+}
+
+export function getToolDraft<T>(toolUseId: string): T | undefined {
+  return conversationStore.getState().toolDrafts[toolUseId] as T | undefined;
+}
+
+export function setToolDraft(toolUseId: string, draft: unknown) {
+  conversationStore.setState((state) => ({
+    toolDrafts: { ...state.toolDrafts, [toolUseId]: draft },
+  }));
+}
+
+export function clearToolDraft(toolUseId: string) {
+  conversationStore.setState((state) => {
+    if (!(toolUseId in state.toolDrafts)) {
+      return state;
+    }
+    const { [toolUseId]: _removed, ...toolDrafts } = state.toolDrafts;
+
+    return { toolDrafts };
   });
 }
 

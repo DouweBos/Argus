@@ -652,6 +652,7 @@ export function ToolCallCard({
               onReject={handleRejectPlan}
               onSubmitFeedback={handlePlanFeedback}
               plan={planText}
+              toolUseId={toolCall.id}
             />
           )}
           {isPending && isAskUserQuestion && questions.length > 0 && (
@@ -659,6 +660,7 @@ export function ToolCallCard({
               onCancel={handleCancelQuestion}
               onSubmit={handleSubmitAnswers}
               questions={questions}
+              toolUseId={toolCall.id}
             />
           )}
           {!(
