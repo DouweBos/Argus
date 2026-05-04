@@ -12,7 +12,7 @@ import type {
   PrereqResult,
 } from "./services/onboarding/types";
 import type { OrganizationMember } from "./services/organization/models";
-import type { PluginId } from "./services/plugins/types";
+import type { ToolId } from "./services/tools/types";
 import { Menu, app, clipboard, dialog, ipcMain, nativeImage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -182,16 +182,6 @@ import {
   cancelOrgTask,
   startOrgTask,
 } from "./services/organizationTask/orchestrator";
-import {
-  clearAssetCache,
-  ensureAssetCached,
-  gcOldVersions,
-} from "./services/plugins/assets";
-import {
-  getEnabledPluginsForRenderer,
-  pluginEnabled,
-  setEnabledPluginsFromRenderer,
-} from "./services/plugins/state";
 import { reconfigureAutoFetchForRepo } from "./services/session/autoFetch";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
 import { gitAmendTip } from "./services/session/gitAmend";
@@ -426,6 +416,11 @@ import {
   terminalResize,
   updateTerminalTitle,
 } from "./services/terminal/multiplexer";
+import {
+  getEnabledToolsForRenderer,
+  toolEnabled,
+  setEnabledToolsFromRenderer,
+} from "./services/tools/state";
 import { getUiState, setUiState } from "./services/uiState";
 import {
   checkForUpdates as updaterCheck,
@@ -505,21 +500,21 @@ function ensureExt(name: string, ext: string): string {
 }
 
 /**
- * Helper: register a plugin-gated handler. The body only runs when the
- * specified plugin is currently enabled; otherwise the IPC call rejects with
- * "plugin disabled". UI surfaces that depend on a plugin are filtered upstream
- * via `useEffectivePluginEnabled`, so this is defense-in-depth — it also
+ * Helper: register a tool-gated handler. The body only runs when the
+ * specified tool is currently enabled; otherwise the IPC call rejects with
+ * "tool disabled". UI surfaces that depend on a tool are filtered upstream
+ * via `useEffectiveToolEnabled`, so this is defense-in-depth — it also
  * stops other agents/scripts that hold a renderer handle from poking at
  * disabled features.
  */
-function pluginHandle(
+function toolHandle(
   channel: string,
-  pluginId: PluginId,
+  toolId: ToolId,
   handler: (args: Args) => Promise<unknown> | unknown,
 ): void {
   handle(channel, (args) => {
-    if (!pluginEnabled(pluginId)) {
-      throw `plugin disabled: ${pluginId}`;
+    if (!toolEnabled(toolId)) {
+      throw `tool disabled: ${toolId}`;
     }
 
     return handler(args);
@@ -1483,19 +1478,19 @@ export function registerIpcHandlers(): void {
 
   // Simulator commands. The picker (`list_simulators`) and Xcode probe stay
   // ungated — they're cheap, and the renderer uses them to show "Install
-  // Xcode" hints regardless of plugin state. Capture and HID input are gated.
+  // Xcode" hints regardless of tool state. Capture and HID input are gated.
   handle("check_ios_tools", () => checkIosTools());
   handle("list_simulators", () => listSimulators());
   handle("boot_simulator", (a) => bootSimulator(a.udid as string));
   handle("disconnect_simulator", (a) => disconnectSimulator(a.udid as string));
   handle("active_simulator", () => activeSimulator());
-  pluginHandle("start_simulator_capture", "device-recording", (a) =>
+  toolHandle("start_simulator_capture", "device-recording", (a) =>
     startSimulatorCapture(a.udid as string),
   );
-  pluginHandle("stop_simulator_capture", "device-recording", (a) =>
+  toolHandle("stop_simulator_capture", "device-recording", (a) =>
     Promise.resolve(stopSimulatorCapture(a.udid as string)),
   );
-  pluginHandle("simulator_touch", "device-control", (a) =>
+  toolHandle("simulator_touch", "device-control", (a) =>
     simulatorTouch(
       a.udid as string,
       a.x as number,
@@ -1503,13 +1498,13 @@ export function registerIpcHandlers(): void {
       a.eventType as number,
     ),
   );
-  pluginHandle("simulator_button", "device-control", (a) =>
+  toolHandle("simulator_button", "device-control", (a) =>
     simulatorButton(a.udid as string, a.button as string),
   );
-  pluginHandle("device_open_link", "device-control", (a) =>
+  toolHandle("device_open_link", "device-control", (a) =>
     openDeepLink(a.deviceKey as string, a.url as string),
   );
-  pluginHandle("simulator_keyboard", "device-control", (a) =>
+  toolHandle("simulator_keyboard", "device-control", (a) =>
     simulatorKeyboard(
       a.udid as string,
       a.keyCode as number,
@@ -1517,7 +1512,7 @@ export function registerIpcHandlers(): void {
       a.isDown as boolean,
     ),
   );
-  pluginHandle("open_simulator_popout", "device-recording", async (a) => {
+  toolHandle("open_simulator_popout", "device-recording", async (a) => {
     const udid = a.udid as string;
     const existing = appState.simulatorPopouts.get(udid);
     if (existing && !existing.isDestroyed()) {
@@ -1556,7 +1551,7 @@ export function registerIpcHandlers(): void {
       booted,
     });
   });
-  pluginHandle("close_simulator_popout", "device-recording", (a) => {
+  toolHandle("close_simulator_popout", "device-recording", (a) => {
     closeFloatingSimulatorWindow(a.udid as string);
 
     return Promise.resolve();
@@ -1695,16 +1690,16 @@ export function registerIpcHandlers(): void {
   handle("boot_android_emulator", (a) =>
     bootAndroidEmulator(a.avdName as string),
   );
-  pluginHandle("start_android_capture", "device-recording", (a) =>
+  toolHandle("start_android_capture", "device-recording", (a) =>
     startAndroidCapture(a.serial as string),
   );
-  pluginHandle("stop_android_capture", "device-recording", () =>
+  toolHandle("stop_android_capture", "device-recording", () =>
     stopAndroidCapture(),
   );
-  pluginHandle("disconnect_android_device", "device-recording", (a) =>
+  toolHandle("disconnect_android_device", "device-recording", (a) =>
     disconnectAndroidDevice(a.serial as string),
   );
-  pluginHandle("android_touch", "device-control", (a) =>
+  toolHandle("android_touch", "device-control", (a) =>
     androidTouch(
       a.serial as string,
       a.x as number,
@@ -1712,14 +1707,14 @@ export function registerIpcHandlers(): void {
       a.eventType as number,
     ),
   );
-  pluginHandle("android_keyboard", "device-control", (a) =>
+  toolHandle("android_keyboard", "device-control", (a) =>
     androidKeyboard(
       a.keyCode as number,
       a.metaState as number,
       a.isDown as boolean,
     ),
   );
-  pluginHandle("android_button", "device-control", (a) =>
+  toolHandle("android_button", "device-control", (a) =>
     androidButton(a.button as string),
   );
 
@@ -1791,7 +1786,7 @@ export function registerIpcHandlers(): void {
     appState.browserSessions.delete(sessionId);
     await webBrowserPool.releaseBrowser(sessionId);
   });
-  pluginHandle("browser_mouse_event", "device-control", async (a) => {
+  toolHandle("browser_mouse_event", "device-control", async (a) => {
     const reservation = webBrowserPool.getReservation(a.sessionId as string);
     if (reservation) {
       await conductorMouseEvent(
@@ -1803,7 +1798,7 @@ export function registerIpcHandlers(): void {
       );
     }
   });
-  pluginHandle("browser_keyboard_event", "device-control", async (a) => {
+  toolHandle("browser_keyboard_event", "device-control", async (a) => {
     const reservation = webBrowserPool.getReservation(a.sessionId as string);
     if (reservation) {
       await conductorKeyboardEvent(
@@ -1813,7 +1808,7 @@ export function registerIpcHandlers(): void {
       );
     }
   });
-  pluginHandle("browser_wheel_event", "device-control", async (a) => {
+  toolHandle("browser_wheel_event", "device-control", async (a) => {
     const reservation = webBrowserPool.getReservation(a.sessionId as string);
     if (reservation) {
       await conductorWheelEvent(
@@ -1857,13 +1852,13 @@ export function registerIpcHandlers(): void {
   handle("stop_device", (a) =>
     stopDevice(a.platform as DevicePlatform, a.deviceKey as string),
   );
-  pluginHandle("list_conductor_logs", "device-control", (a) =>
+  toolHandle("list_conductor_logs", "device-control", (a) =>
     conductorLogStore.list(a.deviceKey as string),
   );
-  pluginHandle("inspection_capture", "device-inspector", (a) =>
+  toolHandle("inspection_capture", "device-inspector", (a) =>
     captureUi({ deviceKey: a.deviceKey as string }),
   );
-  pluginHandle("run_conductor_command", "device-control", async (a) => {
+  toolHandle("run_conductor_command", "device-control", async (a) => {
     const deviceKey = a.deviceKey as string;
     const args = a.args as string[];
     const hasDeviceFlag = args.some((x) => x === "--device" || x === "-d");
@@ -1872,7 +1867,7 @@ export function registerIpcHandlers(): void {
   });
 
   // Debug panel — streaming conductor subprocesses + one-shot probes.
-  pluginHandle("debug_start_stream", "device-debug", (a) => {
+  toolHandle("debug_start_stream", "device-debug", (a) => {
     startDebugStream({
       streamId: a.streamId as string,
       deviceKey: a.deviceKey as string,
@@ -1881,13 +1876,13 @@ export function registerIpcHandlers(): void {
 
     return null;
   });
-  pluginHandle("debug_stop_stream", "device-debug", (a) => {
+  toolHandle("debug_stop_stream", "device-debug", (a) => {
     stopDebugStream(a.streamId as string);
 
     return null;
   });
-  pluginHandle("debug_list_streams", "device-debug", () => listDebugStreams());
-  pluginHandle("debug_run_command", "device-debug", (a) =>
+  toolHandle("debug_list_streams", "device-debug", () => listDebugStreams());
+  toolHandle("debug_run_command", "device-debug", (a) =>
     runDebugCommand(a.deviceKey as string, a.args as string[]),
   );
 
@@ -1906,26 +1901,13 @@ export function registerIpcHandlers(): void {
   // Extensions
   handle("discover_extensions", () => discoverExtensions());
 
-  // Plugins — backend mirror of the renderer's enable map.
-  handle("get_enabled_plugins", () => getEnabledPluginsForRenderer());
-  handle("set_enabled_plugins", (a) => {
-    setEnabledPluginsFromRenderer(
+  // Tools — backend mirror of the renderer's enable map.
+  handle("get_enabled_tools", () => getEnabledToolsForRenderer());
+  handle("set_enabled_tools", (a) => {
+    setEnabledToolsFromRenderer(
       (a.userEnabled ?? {}) as Partial<Record<string, boolean>>,
     );
   });
-  // Plugin asset lifecycle. The renderer calls `download_plugin_assets` when
-  // the user toggles a plugin on; we stream `plugin:download` events as
-  // bytes flow.
-  handle("download_plugin_assets", async (a) => {
-    const pluginId = a.pluginId as PluginId;
-    await ensureAssetCached(pluginId, (progress) => {
-      getMainWindow()?.webContents.send("plugin:download", progress);
-    });
-  });
-  handle("clear_plugin_assets", (a) => clearAssetCache(a.pluginId as PluginId));
-  // Run once at boot — drop cached assets from prior app versions.
-  gcOldVersions().catch(() => undefined);
-
   // Image context menu
   handle("show_image_context_menu", async (a) => {
     const win = getMainWindow();

@@ -135,18 +135,16 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     ),
     auto_fetch_minutes: normalizeAutoFetchMinutes(parsed.auto_fetch_minutes),
     llm: normalizeLlmConfig(parsed.llm, repoRoot),
-    plugins: normalizePluginsConfig(parsed.plugins),
+    tools: normalizeToolsConfig(parsed.tools),
   };
 }
 
 /**
- * Normalise the optional `plugins.disabled` list. Anything that isn't a
+ * Normalise the optional `tools.disabled` list. Anything that isn't a
  * non-empty string is dropped; we don't validate against the registry here
  * because the renderer is what consumes this and unknown ids are harmless.
  */
-function normalizePluginsConfig(
-  input: unknown,
-): { disabled?: string[] } | null {
+function normalizeToolsConfig(input: unknown): { disabled?: string[] } | null {
   if (!input || typeof input !== "object") {
     return null;
   }
@@ -783,7 +781,7 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     auto_fetch_minutes:
       local.auto_fetch_minutes ?? base.auto_fetch_minutes ?? null,
     llm: mergeLlmConfig(base.llm ?? null, local.llm ?? null),
-    plugins: local.plugins ?? base.plugins ?? null,
+    tools: local.tools ?? base.tools ?? null,
   };
 }
 

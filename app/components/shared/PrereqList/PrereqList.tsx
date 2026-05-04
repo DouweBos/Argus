@@ -1,6 +1,6 @@
 /**
  * Self-managed prereq checklist. Used by both the onboarding Preflight step
- * and Settings → Plugins row. Takes a filtered list of prereq ids, runs them
+ * and Settings → Tools row. Takes a filtered list of prereq ids, runs them
  * once on mount, and renders Peacock `ChecklistRow`s with Fix actions where
  * the backend supports an automated fixer.
  *

@@ -1,27 +1,22 @@
 /**
- * The plugin registry. One manifest per first-party plugin Argus ships.
+ * The tool registry. One manifest per first-party tool Argus ships.
  *
- * Adding a plugin: append a manifest here, add the id to `PluginId` in
- * `types.ts`, and (in chunks 5/6) populate the `contributes` field with the
- * actual UI surfaces.
- *
- * `defaultEnabled`, `bundled`, and `lazy` are temporarily set to preserve
- * current behavior while the plumbing lands. The chunk-12 commit flips them
- * to the end-state values (`defaultEnabled: false`, `bundled: false`,
- * `lazy: true`).
+ * Adding a tool: append a manifest here, add the id to `ToolId` in
+ * `types.ts`, and populate the `contributes` field with the actual UI
+ * surfaces.
  */
 
-import type { PluginManifest } from "./types";
+import type { ToolManifest } from "./types";
 import { Icons } from "@argus/peacock";
 
-export const PLUGINS: readonly PluginManifest[] = [
+export const TOOLS: readonly ToolManifest[] = [
   {
     id: "device-recording",
     name: "Device recording",
     description:
       "Stream iOS Simulator and Android emulator screens into Argus's runtime panel.",
     group: "Device",
-    defaultEnabled: false,
+    defaultEnabled: true,
     prereqs: [
       "native_bridge",
       "xcode",
@@ -29,8 +24,6 @@ export const PLUGINS: readonly PluginManifest[] = [
       "android_sdk",
       "android_avd",
     ],
-    bundled: false,
-    lazy: true,
     contributes: {
       ipcGroup: "device-recording",
       toolRail: [
@@ -49,10 +42,8 @@ export const PLUGINS: readonly PluginManifest[] = [
     description:
       "Inspect view hierarchy, accessibility, and layout on a connected device.",
     group: "Device",
-    defaultEnabled: false,
+    defaultEnabled: true,
     requires: ["device-recording"],
-    bundled: false,
-    lazy: true,
     contributes: {
       ipcGroup: "device-inspector",
     },
@@ -63,10 +54,8 @@ export const PLUGINS: readonly PluginManifest[] = [
     description:
       "Drive devices with the conductor CLI: deep links, taps, keyboard, navigation.",
     group: "Device",
-    defaultEnabled: false,
+    defaultEnabled: true,
     prereqs: ["android_sdk", "playwright"],
-    bundled: false,
-    lazy: true,
     contributes: {
       ipcGroup: "device-control",
     },
@@ -77,10 +66,8 @@ export const PLUGINS: readonly PluginManifest[] = [
     description:
       "Tail device logs, memory, and other conductor probes from the Debug panel.",
     group: "Device",
-    defaultEnabled: false,
+    defaultEnabled: true,
     requires: ["device-control"],
-    bundled: false,
-    lazy: true,
     contributes: {
       ipcGroup: "device-debug",
       toolRail: [
@@ -96,11 +83,11 @@ export const PLUGINS: readonly PluginManifest[] = [
 ];
 
 /** Lookup a manifest by id. Throws if id is not registered. */
-export function getPlugin(id: PluginManifest["id"]): PluginManifest {
-  const plugin = PLUGINS.find((p) => p.id === id);
-  if (!plugin) {
-    throw new Error(`Unknown plugin id: ${id}`);
+export function getTool(id: ToolManifest["id"]): ToolManifest {
+  const tool = TOOLS.find((t) => t.id === id);
+  if (!tool) {
+    throw new Error(`Unknown tool id: ${id}`);
   }
 
-  return plugin;
+  return tool;
 }

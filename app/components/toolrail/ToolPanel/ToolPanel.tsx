@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
-import { useEffectivePluginEnabled } from "../../../plugins/store";
 import {
-  type ToolId,
+  type ToolRailId,
   TOOL_PLACEMENT,
   setRightPanelWidth,
   toggleTool,
@@ -10,12 +9,13 @@ import {
   useLastActiveToolId,
   useMountedToolIds,
 } from "../../../stores/layoutStore";
+import { useEffectiveToolEnabled } from "../../../tools/store";
 import { ResizablePanel } from "../../layout/ResizablePanel";
 import { ChangesSummary } from "../tools/ChangesSummary";
 import { SimulatorTool } from "../tools/SimulatorTool";
 import styles from "./ToolPanel.module.css";
 
-const TOOL_LABELS: Record<ToolId, string> = {
+const TOOL_LABELS: Record<ToolRailId, string> = {
   changes: "Changes",
   terminal: "Terminal",
   simulator: "Simulator",
@@ -23,11 +23,11 @@ const TOOL_LABELS: Record<ToolId, string> = {
   notifications: "Notifications",
 };
 
-const RIGHT_TOOL_IDS: ToolId[] = (
-  ["changes", "terminal", "simulator", "debug"] as ToolId[]
+const RIGHT_TOOL_IDS: ToolRailId[] = (
+  ["changes", "terminal", "simulator", "debug"] as ToolRailId[]
 ).filter((id) => TOOL_PLACEMENT[id] === "right");
 
-function renderToolContent(id: ToolId, sessionId: string | null) {
+function renderToolContent(id: ToolRailId, sessionId: string | null) {
   switch (id) {
     case "changes":
       return <ChangesSummary sessionId={sessionId} />;
@@ -46,7 +46,7 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
   const activeToolId = useActiveToolId("right");
   const setWidth = setRightPanelWidth;
   const mountedToolIds = useMountedToolIds();
-  const recordingEnabled = useEffectivePluginEnabled("device-recording");
+  const recordingEnabled = useEffectiveToolEnabled("device-recording");
 
   // Auto-close the simulator panel when the user disables `device-recording`.
   // The toolrail button itself disappears via ToolRail's contribution filter,

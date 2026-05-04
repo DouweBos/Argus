@@ -117,14 +117,6 @@ platform :mac do
     publish_flag = publish ? "--publish always" : "--publish never"
     sh("cd .. && pnpm build && pnpm exec electron-builder --config electron-builder.release.yml #{publish_flag}#{notes_flag}")
 
-    # Package and upload the plugin assets to the same release tag. The
-    # renderer's asset resolver fetches them on first plugin enable. Skipped
-    # locally when the user passes publish:false — there's no GH release to
-    # upload to in that case.
-    if publish
-      sh("cd .. && pnpm exec tsx scripts/release-plugins.ts")
-    end
-
     # Stable-only side effects: the website-changelog dispatch and main-branch
     # commit/tag bump are driven from the workflow, not this lane. Pre-release
     # builds skip those upstream.

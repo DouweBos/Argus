@@ -3,10 +3,7 @@ import type { Session } from "../lib/types";
 import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
-import {
-  forgetSessionPanel,
-  getLastPanelForSession,
-} from "./editorStore";
+import { forgetSessionPanel, getLastPanelForSession } from "./editorStore";
 import { forgetSessionTools } from "./layoutStore";
 import { migrateSessions } from "./terminalStore";
 

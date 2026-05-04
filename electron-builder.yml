@@ -11,7 +11,6 @@ files:
 extraResources:
   - from: build/icon.png
     to: icon.png
-  # argus-hotkey-bridge stays bundled — it's not a plugin (the launcher is core).
   - from: native/argus-hotkey-bridge/argus-hotkey-bridge
     to: argus-hotkey-bridge
     filter:
@@ -20,9 +19,15 @@ extraResources:
     to: menu-icons
     filter:
       - "**/*.png"
-  # NOTE: Plugin assets (argus-sim-bridge, scrcpy-server.jar, conductor tree)
-  # are NOT bundled. They're fetched from the GH release for the running app
-  # version on first plugin enable — see `electron/services/plugins/assets.ts`.
+  # Tool assets — bundled into the app. The tool store gates *use* behind
+  # the user's enable toggle, but the binaries always ship with Argus.
+  # (The conductor tree is copied in via the `afterPack` hook because
+  # electron-builder's default matcher strips nested `node_modules` even
+  # with explicit filters.)
+  - from: native/argus-sim-bridge/argus-sim-bridge
+    to: argus-sim-bridge
+  - from: native/scrcpy-server/scrcpy-server.jar
+    to: scrcpy-server.jar
   - from: electron/prompts/worktree-agent-system-prompt.md
     to: worktree-agent-system-prompt.md
   - from: electron/prompts/root-agent-system-prompt.md

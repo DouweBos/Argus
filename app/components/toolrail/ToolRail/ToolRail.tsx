@@ -5,9 +5,8 @@ import {
   captureFeedback,
   getFeedbackUnavailableReason,
 } from "../../../lib/telemetry";
-import { useEnabledToolRailContributions } from "../../../plugins/store";
 import {
-  type ToolId,
+  type ToolRailId,
   TOOL_PLACEMENT,
   toggleTool,
   useActiveToolId,
@@ -17,6 +16,7 @@ import {
   useUnseenNotificationCount,
 } from "../../../stores/notificationsStore";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
+import { useEnabledToolRailContributions } from "../../../tools/store";
 import styles from "./ToolRail.module.css";
 
 const log = createLogger("feedback");
@@ -27,11 +27,11 @@ type IconComponent = React.ComponentType<
 
 interface ToolDef {
   icon: IconComponent;
-  id: ToolId;
+  id: ToolRailId;
   label: string;
 }
 
-// Core tools — always available, not plugins. Plugins contribute additional
+// Core tools — always available, not contributed. Tools contribute additional
 // rail entries via `useEnabledToolRailContributions()`.
 const CORE_TOP_TOOLS: ToolDef[] = [
   { id: "changes", label: "Changes", icon: Icons.GitChangesIcon },
@@ -49,38 +49,38 @@ export function ToolRail() {
   const notifications = useNotifications();
   const unseen = useUnseenNotificationCount();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const pluginContributions = useEnabledToolRailContributions();
+  const toolContributions = useEnabledToolRailContributions();
 
-  // Merge core tools with plugin contributions, preserving the original
-  // visual order: core-top first, then plugin-contributed right entries; then
-  // (in the bottom group) core entries with plugin debug-style entries
+  // Merge core tools with tool contributions, preserving the original
+  // visual order: core-top first, then tool-contributed right entries; then
+  // (in the bottom group) core entries with tool debug-style entries
   // interleaved before notifications. Notifications always sits last.
   const topTools = useMemo<ToolDef[]>(
     () => [
       ...CORE_TOP_TOOLS,
-      ...pluginContributions.right.map(({ id, label, icon }) => ({
-        id: id as ToolId,
+      ...toolContributions.right.map(({ id, label, icon }) => ({
+        id: id as ToolRailId,
         label,
         icon,
       })),
     ],
-    [pluginContributions.right],
+    [toolContributions.right],
   );
   const bottomTools = useMemo<ToolDef[]>(() => {
     const notificationsTool = CORE_BOTTOM_TOOLS.find(
       (t) => t.id === "notifications",
     );
     const otherCore = CORE_BOTTOM_TOOLS.filter((t) => t.id !== "notifications");
-    const pluginBottom: ToolDef[] = pluginContributions.bottom.map(
-      ({ id, label, icon }) => ({ id: id as ToolId, label, icon }),
+    const contributedBottom: ToolDef[] = toolContributions.bottom.map(
+      ({ id, label, icon }) => ({ id: id as ToolRailId, label, icon }),
     );
 
     return [
       ...otherCore,
-      ...pluginBottom,
+      ...contributedBottom,
       ...(notificationsTool ? [notificationsTool] : []),
     ];
-  }, [pluginContributions.bottom]);
+  }, [toolContributions.bottom]);
 
   const hasEntries = notifications.length > 0;
   const hasError = notifications.some((n) => n.level === "error");

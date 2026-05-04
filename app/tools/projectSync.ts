@@ -1,6 +1,6 @@
 /**
- * Bridges the active session's `ArgusConfig.plugins.disabled` list into the
- * plugin store's project mask. Mounted once at the app shell level.
+ * Bridges the active session's `ArgusConfig.tools.disabled` list into the
+ * tool store's project mask. Mounted once at the app shell level.
  */
 
 import { useEffect, useMemo } from "react";
@@ -8,11 +8,11 @@ import { useArgusConfigVersion } from "../hooks/useArgusConfigVersion";
 import { readArgusConfig } from "../lib/ipc";
 import { useSelectedSessionId, useSessions } from "../stores/sessionStore";
 import { setProjectDisabled } from "./store";
-import { PLUGIN_IDS, type PluginId } from "./types";
+import { TOOL_IDS, type ToolId } from "./types";
 
-const KNOWN = new Set<string>(PLUGIN_IDS);
+const KNOWN = new Set<string>(TOOL_IDS);
 
-export function usePluginProjectMaskSync(): void {
+export function useToolProjectMaskSync(): void {
   const sessions = useSessions();
   const sessionId = useSelectedSessionId();
   const session = useMemo(
@@ -35,10 +35,10 @@ export function usePluginProjectMaskSync(): void {
         if (cancelled) {
           return;
         }
-        const disabled = (cfg.plugins?.disabled ?? []).filter(
-          (id: string): id is PluginId => KNOWN.has(id),
+        const rawDisabled = (cfg.tools?.disabled ?? []).filter(
+          (id: string): id is ToolId => KNOWN.has(id),
         );
-        setProjectDisabled(disabled);
+        setProjectDisabled(rawDisabled);
       })
       .catch(() => {
         // Best-effort. Leave the prior mask in place.

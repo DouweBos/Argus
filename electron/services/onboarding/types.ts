@@ -1,7 +1,7 @@
 export const ONBOARDING_STEPS = [
   "welcome",
   "permissions",
-  "plugins",
+  "tools",
   "preflight",
   "claude_auth",
   "launcher",

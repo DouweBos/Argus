@@ -4,13 +4,13 @@ import type {
 } from "../../../stores/conversationStore";
 import { useEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
+import { findScrollParent } from "../../../lib/findScrollParent";
 import {
   markMessageRead,
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
 import { ToolCallCard } from "../ToolCallCard";
 import { categorizeTools } from "../categorizeTools";
-import { findScrollParent } from "../ChatMessage/ChatMessage";
 import styles from "./CollapsedToolGroup.module.css";
 
 interface CollapsedToolGroupProps {

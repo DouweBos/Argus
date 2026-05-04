@@ -85,8 +85,8 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../McpServersField";
-import { PluginsSection } from "./PluginsSection";
 import styles from "./SettingsDialog.module.css";
+import { ToolsSection } from "./ToolsSection";
 
 const MODES: PermissionMode[] = [
   "default",
@@ -125,11 +125,11 @@ function SettingsDialogContent() {
           render: () => <PermissionsSection />,
         },
         {
-          id: "plugins",
-          label: "Plugins",
+          id: "tools",
+          label: "Tools",
           description: "Bundled tools",
           icon: <Icons.SimulatorIcon size={12} />,
-          render: () => <PluginsSection />,
+          render: () => <ToolsSection />,
         },
         {
           id: "llm",
