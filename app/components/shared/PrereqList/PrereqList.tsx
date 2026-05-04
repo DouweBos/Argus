@@ -46,13 +46,12 @@ export function PrereqList({ ids, onResults }: PrereqListProps) {
     if (!idSet.has(r.id)) {
       return;
     }
-    setResults((prev) => {
-      const next = { ...prev, [r.id]: r };
-      onResults?.(next as Record<PrereqId, PrereqResult>);
-
-      return next;
-    });
+    setResults((prev) => ({ ...prev, [r.id]: r }));
   });
+
+  useEffect(() => {
+    onResults?.(results as Record<PrereqId, PrereqResult>);
+  }, [results, onResults]);
 
   // Restart checks when the id-set changes by content, not by array
   // reference — callers commonly pass a freshly-built `ids` each render.
@@ -66,14 +65,14 @@ export function PrereqList({ ids, onResults }: PrereqListProps) {
         PrereqResult
       >;
       setResults(asMap);
-      onResults?.(asMap as Record<PrereqId, PrereqResult>);
     } finally {
       setBusy(false);
     }
     // `ids` is reduced to its content via `idsKey` so we don't refetch on every
-    // render when the caller passes a freshly-built array.
+    // render when the caller passes a freshly-built array. `onResults` is
+    // mirrored from `results` via the useEffect above, so it's not a dep here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey, onResults]);
+  }, [idsKey]);
 
   useEffect(() => {
     runChecks().catch(() => {});
@@ -90,12 +89,7 @@ export function PrereqList({ ids, onResults }: PrereqListProps) {
       const refreshedMap = Object.fromEntries(
         refreshed.map((r) => [r.id, r]),
       ) as Record<string, PrereqResult>;
-      setResults((prev) => {
-        const next = { ...prev, ...refreshedMap };
-        onResults?.(next as Record<PrereqId, PrereqResult>);
-
-        return next;
-      });
+      setResults((prev) => ({ ...prev, ...refreshedMap }));
     } finally {
       setFixing(null);
     }
