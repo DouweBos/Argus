@@ -153,6 +153,7 @@
 .right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   flex-shrink: 0;
   min-width: 24px;
