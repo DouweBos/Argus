@@ -31,7 +31,7 @@ import styles from "./ChatMessage.module.css";
  * to root an IntersectionObserver on the chat's scrolling container without
  * threading a ref through every caller.
  */
-function findScrollParent(el: HTMLElement): HTMLElement | null {
+export function findScrollParent(el: HTMLElement): HTMLElement | null {
   let node: HTMLElement | null = el.parentElement;
   while (node) {
     const overflowY = window.getComputedStyle(node).overflowY;
