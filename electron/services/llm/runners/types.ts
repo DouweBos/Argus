@@ -28,11 +28,7 @@ import type { McpServers } from "../../mcp/userConfig";
  * - `trusted` → `bypassPermissions`
  */
 export type CanonicalPermissionMode =
-  | "auto"
-  | "ask"
-  | "plan"
-  | "review"
-  | "trusted";
+  "ask" | "auto" | "plan" | "review" | "trusted";
 
 // ---------------------------------------------------------------------------
 // Spawn args
