@@ -4,7 +4,6 @@ import { error as logError } from "@logger";
 import { useOnboarding } from "../../hooks/useOnboarding";
 import { listRunnerOnboardingSteps } from "../../lib/ipc";
 import { CompletionStep } from "./CompletionStep";
-import { LauncherStep } from "./LauncherStep";
 import { PermissionsStep } from "./PermissionsStep";
 import { PreflightStep } from "./PreflightStep";
 import { TelemetryStep } from "./TelemetryStep";
@@ -62,8 +61,6 @@ export function OnboardingRoot() {
       return <ToolsStep />;
     case "preflight":
       return <PreflightStep />;
-    case "launcher":
-      return <LauncherStep />;
     case "telemetry":
       return <TelemetryStep />;
     case "completion":

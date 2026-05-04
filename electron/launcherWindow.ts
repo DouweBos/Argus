@@ -41,6 +41,12 @@ export function createLauncherWindow(): BrowserWindow {
     alwaysOnTop: true,
     fullscreenable: false,
     focusable: true,
+    // NSPanel-style window: can become key (accept keyboard) without
+    // activating the Argus app process. Without this, `show()` + `focus()`
+    // activates Argus, which on macOS pulls the user back to whatever Space
+    // the main window lives on — breaking the launcher when summoned from a
+    // fullscreen app, and re-showing the main window on first invocation.
+    type: process.platform === "darwin" ? "panel" : undefined,
     // `transparent: true` alone leaves the WebContents at its default opaque
     // white. The `.backdrop` element paints `rgba(0,0,0,0.2)` over that and
     // the user sees light grey (255×0.8 ≈ 204 = #CCC) instead of the desktop.

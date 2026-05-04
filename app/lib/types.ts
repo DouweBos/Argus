@@ -523,6 +523,11 @@ export interface McpOAuthStatus {
 
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
+  /**
+   * Electron accelerator string for the global session launcher hotkey
+   * (e.g. `CommandOrControl+Shift+/`). Empty/absent = the built-in default.
+   */
+  launcher_accelerator?: string;
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: Record<string, Record<string, unknown>>;
   /**
@@ -741,7 +746,6 @@ export const ONBOARDING_STEPS = [
   "tools",
   "preflight",
   "claude_auth",
-  "launcher",
   "telemetry",
   "completion",
 ] as const;

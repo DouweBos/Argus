@@ -5,38 +5,19 @@
  * dim 20%-black capture backdrop and the centered launcher card. The window
  * itself is the area-capture surface; no separate overlay windows.
  *
- * Two trigger sources:
- *   1. Electron's `globalShortcut` API (default: `Cmd+Shift+Space`). Works
- *      out of the box without any OS permission prompt.
- *   2. The `argus-hotkey-bridge` Swift helper, which monitors raw NSEvents
- *      for a double-press of right Option. Requires Accessibility permission;
- *      degrades to "shortcut only" if the user denies or the helper fails.
- *
- * Both triggers eventually call `toggleLauncher()`.
+ * Triggered by an Electron `globalShortcut` accelerator (default
+ * `Cmd+Shift+/`, configurable in Settings), which calls `toggleLauncher()`.
  */
 
-import {
-  type BrowserWindow,
-  app,
-  globalShortcut,
-  screen,
-  shell,
-  systemPreferences,
-} from "electron";
+import { type BrowserWindow, app, globalShortcut, screen } from "electron";
 import { createLogger } from "../../../app/lib/logger";
 import { createLauncherWindow } from "../../launcherWindow";
 import { loadAppSettings, saveAppSettings } from "../appSettings/store";
-import {
-  type HotkeyBridgeStatus,
-  getHotkeyBridgeStatus,
-  startHotkeyBridge,
-} from "./hotkeyBridge";
 
 const log = createLogger("launcher");
 
 let launcherWindow: BrowserWindow | null = null;
 let registeredAccelerator: string | null = null;
-let stopBridge: (() => void) | null = null;
 let enabled = false;
 // `ready-to-show` fires before Vite's module graph (CSS modules in particular)
 // has finished injecting styles, so the very first show flashes unstyled
@@ -46,13 +27,13 @@ let enabled = false;
 let rendererReady = false;
 let pendingShow = false;
 
-/** The default fallback accelerator; bare-modifier double-tap lives elsewhere. */
-export const DEFAULT_LAUNCHER_ACCELERATOR = "CommandOrControl+Shift+Space";
+/** The default accelerator when the user hasn't customized it. */
+export const DEFAULT_LAUNCHER_ACCELERATOR = "CommandOrControl+Shift+/";
 
 /**
  * Open the launcher (creating the window if needed) or hide it if already
  * visible and focused. Idempotent — safe to call from menu items, IPC, or
- * the native hotkey bridge.
+ * the global shortcut.
  */
 export function toggleLauncher(): void {
   if (launcherWindow && !launcherWindow.isDestroyed()) {
@@ -149,7 +130,7 @@ export function hideLauncherWindowOnly(): void {
 }
 
 /**
- * Register the fallback `globalShortcut` accelerator. Re-registers on change.
+ * Register the global accelerator. Re-registers on change.
  * Returns the accelerator that ended up registered (may differ from the
  * requested one if the requested one was already taken by another app).
  */
@@ -198,29 +179,7 @@ export function initLauncher(): void {
 }
 
 function activate(): void {
-  setLauncherAccelerator(DEFAULT_LAUNCHER_ACCELERATOR);
-  // Surface the Accessibility prompt for Argus.app too. macOS TCC is per-binary
-  // by code signature, so granting AX to Argus.app does NOT cover the helper —
-  // the helper has its own entry under `dev.houwert.argus.hotkey-bridge` and
-  // surfaces its own prompt via NSApplication when it starts. We still ask for
-  // Argus.app's own AX trust here because the in-app local monitor (used while
-  // Argus is frontmost) lives in the helper too, but having the parent listed
-  // in AX makes the permission relationship discoverable from System Settings.
-  if (process.platform === "darwin") {
-    try {
-      systemPreferences.isTrustedAccessibilityClient(true);
-    } catch (e) {
-      log.warn("isTrustedAccessibilityClient threw:", e);
-    }
-  }
-  // Native bridge for double-press right Option. Returns null on non-mac
-  // or when the binary is missing — the Cmd+Shift+Space chord still works.
-  const bridge = startHotkeyBridge(() => {
-    toggleLauncher();
-  });
-  if (bridge) {
-    stopBridge = bridge.stop;
-  }
+  setLauncherAccelerator(effectiveAccelerator());
 }
 
 function deactivate(): void {
@@ -232,10 +191,6 @@ function deactivate(): void {
     }
     registeredAccelerator = null;
   }
-  if (stopBridge) {
-    stopBridge();
-    stopBridge = null;
-  }
   if (launcherWindow && !launcherWindow.isDestroyed()) {
     launcherWindow.close();
   }
@@ -243,8 +198,8 @@ function deactivate(): void {
 }
 
 /**
- * Persist the on/off state and (de)activate the global shortcut + bridge.
- * Wired through the `set_launcher_enabled` IPC and the onboarding step.
+ * Persist the on/off state and (de)activate the global shortcut.
+ * Wired through the `launcher_set_enabled` IPC.
  */
 export function setLauncherEnabled(next: boolean): boolean {
   saveAppSettings({ launcher_enabled: next });
@@ -265,9 +220,38 @@ export function isLauncherEnabled(): boolean {
   return enabled;
 }
 
-/** Read the latest cached bridge status — for the Settings dialog. */
-export function launcherStatus(): HotkeyBridgeStatus & { enabled: boolean } {
-  return { ...getHotkeyBridgeStatus(), enabled };
+export interface LauncherStatusSnapshot {
+  accelerator: string;
+  enabled: boolean;
+}
+
+/** Latest launcher state — for the Settings dialog. */
+export function launcherStatus(): LauncherStatusSnapshot {
+  return {
+    enabled,
+    accelerator: registeredAccelerator ?? effectiveAccelerator(),
+  };
+}
+
+function effectiveAccelerator(): string {
+  const stored = loadAppSettings().launcher_accelerator;
+
+  return stored && stored.trim() ? stored : DEFAULT_LAUNCHER_ACCELERATOR;
+}
+
+/**
+ * Persist a new accelerator and (if the launcher is enabled) re-register it.
+ * Empty string falls back to the built-in default. Returns the accelerator
+ * actually registered, or `null` if registration failed.
+ */
+export function updateLauncherAccelerator(next: string): string | null {
+  const trimmed = next.trim();
+  saveAppSettings({ launcher_accelerator: trimmed });
+  if (!enabled) {
+    return trimmed || DEFAULT_LAUNCHER_ACCELERATOR;
+  }
+
+  return setLauncherAccelerator(trimmed || DEFAULT_LAUNCHER_ACCELERATOR);
 }
 
 /** Get the launcher's current display id (for area-capture cropping). */
@@ -279,20 +263,4 @@ export function launcherDisplayId(): number | null {
   const display = screen.getDisplayMatching(bounds);
 
   return display.id;
-}
-
-/**
- * Deep-link into macOS System Settings → Privacy & Security → Accessibility
- * so the user can grant Argus the permission needed by the right-Option
- * helper. No-op on non-mac.
- */
-export function openAccessibilitySettings(): void {
-  if (process.platform !== "darwin") {
-    return;
-  }
-  shell
-    .openExternal(
-      "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
-    )
-    .catch((e) => log.warn("openExternal Accessibility failed:", e));
 }

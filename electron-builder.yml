@@ -11,10 +11,6 @@ files:
 extraResources:
   - from: build/icon.png
     to: icon.png
-  - from: native/argus-hotkey-bridge/argus-hotkey-bridge
-    to: argus-hotkey-bridge
-    filter:
-      - "**/*"
   - from: build/menu-icons
     to: menu-icons
     filter:
