@@ -25,6 +25,7 @@ import {
 } from "../../../stores/agentStore";
 import {
   getConversationState,
+  useAgentHasUnread,
   useConversation,
 } from "../../../stores/conversationStore";
 import { getSessionState } from "../../../stores/sessionStore";
@@ -124,6 +125,7 @@ function AgentTab({
     `Agent ${index + 1}`,
     agent.status,
   );
+  const hasUnread = useAgentHasUnread(agent.agent_id);
 
   const classes = [
     styles.tab,
@@ -157,6 +159,13 @@ function AgentTab({
         </span>
       )}
       <span className={styles.label}>{label}</span>
+      {hasUnread && (
+        <span
+          aria-label="Unread messages"
+          className={styles.unreadDot}
+          title="Unread messages"
+        />
+      )}
       {childCount > 0 && (
         <Badge
           tone="accent"
@@ -217,6 +226,8 @@ function MergedAgentTab({
     `Agent ${(rightIndex >= 0 ? rightIndex : leftIndex + 1) + 1}`,
     right.status,
   );
+  const leftUnread = useAgentHasUnread(left.agent_id);
+  const rightUnread = useAgentHasUnread(right.agent_id);
 
   const anyActive =
     activeAgentId === left.agent_id || activeAgentId === right.agent_id;
@@ -249,6 +260,13 @@ function MergedAgentTab({
       >
         <StatusDots state={leftMeta.state} className={styles.statusDots} />
         <span className={styles.label}>{leftMeta.label}</span>
+        {leftUnread && (
+          <span
+            aria-label="Unread messages"
+            className={styles.unreadDot}
+            title="Unread messages"
+          />
+        )}
       </div>
       <span className={styles.mergedDivider} aria-hidden />
       <div
@@ -260,6 +278,13 @@ function MergedAgentTab({
       >
         <StatusDots state={rightMeta.state} className={styles.statusDots} />
         <span className={styles.label}>{rightMeta.label}</span>
+        {rightUnread && (
+          <span
+            aria-label="Unread messages"
+            className={styles.unreadDot}
+            title="Unread messages"
+          />
+        )}
       </div>
       {onUnpair && (
         <button

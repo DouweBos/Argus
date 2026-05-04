@@ -82,6 +82,7 @@ export * from "./components/ThinkingDots/ThinkingDots";
 export * from "./components/TitleBar/TitleBar";
 export * from "./components/Toggle/Toggle";
 export * from "./components/ToolCallRow/ToolCallRow";
+export * from "./components/UnreadDivider/UnreadDivider";
 export * from "./components/UsageMeter/UsageMeter";
 export * from "./components/ContextMeter/ContextMeter";
 export * from "./components/SessionCard/SessionCard";

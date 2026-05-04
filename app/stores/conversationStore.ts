@@ -134,12 +134,25 @@ interface ConversationStoreData {
   /** Pending image attachments per agent, preserved across tab switches. */
   pendingImages: Record<string, PendingImage[]>;
   /**
+   * Assistant message IDs streamed during the current turn. They become unread
+   * only once the turn finishes (the `result` event), so an actively-streaming
+   * agent doesn't keep re-asserting unread state as each chunk arrives.
+   */
+  pendingUnread: Record<string, ReadonlySet<string>>;
+  /**
    * Per-tool-call draft state for interactive permission prompts
    * (AskUserQuestion, ExitPlanMode). Keyed by toolUseId so input survives
    * agent/view switches while the prompt is still pending. The shape is
    * form-specific — each form picks the type when reading.
    */
   toolDrafts: Record<string, unknown>;
+  /**
+   * Set of assistant message IDs currently marked unread, per agent. New
+   * assistant messages are added on turn completion and removed when the user
+   * scrolls them into view. Users can also manually toggle a message back to
+   * unread.
+   */
+  unreadMessages: Record<string, ReadonlySet<string>>;
 }
 
 function emptyConversation(): AgentConversation {
@@ -246,15 +259,104 @@ const conversationStore = create<ConversationStoreData>(() => ({
   linkedProjects: {},
   pendingImages: {},
   toolDrafts: {},
+  pendingUnread: {},
+  unreadMessages: {},
 }));
+
+const EMPTY_UNREAD_SET: ReadonlySet<string> = new Set<string>();
+
+function addUnreadId(
+  unread: Record<string, ReadonlySet<string>>,
+  agentId: string,
+  messageId: string,
+): Record<string, ReadonlySet<string>> {
+  const existing = unread[agentId];
+  const next = new Set(existing ?? EMPTY_UNREAD_SET);
+  if (next.has(messageId)) {
+    return unread;
+  }
+  next.add(messageId);
+
+  return { ...unread, [agentId]: next };
+}
+
+function removeUnreadId(
+  unread: Record<string, ReadonlySet<string>>,
+  agentId: string,
+  messageId: string,
+): Record<string, ReadonlySet<string>> {
+  const existing = unread[agentId];
+  if (!existing || !existing.has(messageId)) {
+    return unread;
+  }
+  const next = new Set(existing);
+  next.delete(messageId);
+  if (next.size === 0) {
+    const { [agentId]: _removed, ...rest } = unread;
+
+    return rest;
+  }
+
+  return { ...unread, [agentId]: next };
+}
 
 const useConversationStore = conversationStore;
 
 export function clearConversation(agentId: string) {
   conversationStore.setState((state) => {
     const { [agentId]: _removed, ...next } = state.conversations;
+    const { [agentId]: _removedUnread, ...nextUnread } = state.unreadMessages;
+    const { [agentId]: _removedPending, ...nextPending } = state.pendingUnread;
 
-    return { conversations: next };
+    return {
+      conversations: next,
+      unreadMessages: nextUnread,
+      pendingUnread: nextPending,
+    };
+  });
+}
+
+export function markMessageRead(agentId: string, messageId: string) {
+  conversationStore.setState((state) => {
+    const next = removeUnreadId(state.unreadMessages, agentId, messageId);
+    const nextPending = removeUnreadId(state.pendingUnread, agentId, messageId);
+    if (next === state.unreadMessages && nextPending === state.pendingUnread) {
+      return state;
+    }
+
+    return { unreadMessages: next, pendingUnread: nextPending };
+  });
+}
+
+export function markMessageUnread(agentId: string, messageId: string) {
+  conversationStore.setState((state) => {
+    const next = addUnreadId(state.unreadMessages, agentId, messageId);
+    if (next === state.unreadMessages) {
+      return state;
+    }
+
+    return { unreadMessages: next };
+  });
+}
+
+export function clearAgentUnread(agentId: string) {
+  conversationStore.setState((state) => {
+    const hasUnread = agentId in state.unreadMessages;
+    const hasPending = agentId in state.pendingUnread;
+    if (!hasUnread && !hasPending) {
+      return state;
+    }
+    const next: Partial<ConversationStoreData> = {};
+    if (hasUnread) {
+      const { [agentId]: _removed, ...rest } = state.unreadMessages;
+      next.unreadMessages = rest;
+    }
+    if (hasPending) {
+      const { [agentId]: _removed, ...rest } = state.pendingUnread;
+      next.pendingUnread = rest;
+    }
+
+    return next;
   });
 }
 
@@ -283,7 +385,23 @@ export function migrateConversation(oldAgentId: string, newAgentId: string) {
     const { [oldAgentId]: _removed, ...rest } = state.conversations;
     const next = { ...rest, [newAgentId]: { ...existing, resuming: true } };
 
-    return { conversations: next };
+    const oldUnread = state.unreadMessages[oldAgentId];
+    let unreadMessages = state.unreadMessages;
+    if (oldUnread) {
+      const { [oldAgentId]: _droppedUnread, ...remaining } =
+        state.unreadMessages;
+      unreadMessages = { ...remaining, [newAgentId]: oldUnread };
+    }
+
+    const oldPending = state.pendingUnread[oldAgentId];
+    let pendingUnread = state.pendingUnread;
+    if (oldPending) {
+      const { [oldAgentId]: _droppedPending, ...remainingPending } =
+        state.pendingUnread;
+      pendingUnread = { ...remainingPending, [newAgentId]: oldPending };
+    }
+
+    return { conversations: next, unreadMessages, pendingUnread };
   });
 }
 
@@ -581,6 +699,17 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
       // reflects the most recent agent-authored state.
       const newTodos = extractTodos(toolCalls);
 
+      // Stash the new assistant message as pending-unread for this turn.
+      // It only graduates to the unread set on the `result` event, so an
+      // actively-streaming agent doesn't keep re-asserting unread state as
+      // each chunk arrives. Tool-call-only turns are skipped — the user has
+      // nothing to "read" in those.
+      const hasReadable =
+        textBlocks.some((t) => t.trim().length > 0) || toolCalls.length === 0;
+      const nextPending = hasReadable
+        ? addUnreadId(state.pendingUnread, agentId, assistantMsg.id)
+        : state.pendingUnread;
+
       return {
         conversations: {
           ...state.conversations,
@@ -594,6 +723,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             todos: newTodos ?? existing.todos,
           },
         },
+        pendingUnread: nextPending,
       };
     }
 
@@ -708,6 +838,21 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
       const newDuration =
         (existing.totalDuration ?? 0) + (event.duration_ms ?? 0);
 
+      // Flush this turn's pending-unread messages into the unread set now
+      // that the agent has finished responding.
+      const pending = state.pendingUnread[agentId];
+      let unreadMessages = state.unreadMessages;
+      let pendingUnread = state.pendingUnread;
+      if (pending && pending.size > 0) {
+        const merged = new Set(unreadMessages[agentId] ?? EMPTY_UNREAD_SET);
+        for (const id of pending) {
+          merged.add(id);
+        }
+        unreadMessages = { ...unreadMessages, [agentId]: merged };
+        const { [agentId]: _drop, ...rest } = pendingUnread;
+        pendingUnread = rest;
+      }
+
       return {
         conversations: {
           ...state.conversations,
@@ -720,6 +865,8 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             totalDuration: newDuration,
           },
         },
+        unreadMessages,
+        pendingUnread,
       };
     }
 
@@ -1053,6 +1200,31 @@ export function clearToolDraft(toolUseId: string) {
     return { toolDrafts };
   });
 }
+
+export const useUnreadMessageIds = (agentId: string | null | undefined) =>
+  useConversationStore((state) =>
+    agentId
+      ? (state.unreadMessages[agentId] ?? EMPTY_UNREAD_SET)
+      : EMPTY_UNREAD_SET,
+  );
+
+export const useIsMessageUnread = (
+  agentId: string | null | undefined,
+  messageId: string,
+): boolean =>
+  useConversationStore((state) =>
+    agentId ? (state.unreadMessages[agentId]?.has(messageId) ?? false) : false,
+  );
+
+export const useAgentHasUnread = (
+  agentId: string | null | undefined,
+): boolean =>
+  useConversationStore((state) =>
+    agentId ? (state.unreadMessages[agentId]?.size ?? 0) > 0 : false,
+  );
+
+export const useUnreadByAgent = (): Record<string, ReadonlySet<string>> =>
+  useConversationStore((state) => state.unreadMessages);
 
 export const useConversation = (agentId: string | null | undefined) =>
   useConversationStore((state) =>

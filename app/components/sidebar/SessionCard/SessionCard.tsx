@@ -10,6 +10,7 @@ import {
   sessionStatusLabel,
 } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useUnreadByAgent } from "../../../stores/conversationStore";
 import { useOrgTasks } from "../../../stores/orgTaskStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import {
@@ -139,12 +140,22 @@ export function SessionCard({
   const reviewQueue = useReviewQueueMap();
   const commitsAhead = reviewQueue[session.id]?.commitsAhead ?? 0;
   const agents = useAgentsRecord();
+  const unreadByAgent = useUnreadByAgent();
   const runningCount = useMemo(
     () =>
       Object.values(agents).filter(
         (a) => a.session_id === session.id && a.status === "running",
       ).length,
     [agents, session.id],
+  );
+  const hasUnread = useMemo(
+    () =>
+      Object.values(agents).some(
+        (a) =>
+          a.session_id === session.id &&
+          (unreadByAgent[a.agent_id]?.size ?? 0) > 0,
+      ),
+    [agents, session.id, unreadByAgent],
   );
 
   const { diffStats } = useGitObservation(session.id, {
@@ -228,6 +239,13 @@ export function SessionCard({
               iconOverride,
             )}
             <span className={styles.projectName}>{projectName}</span>
+            {hasUnread && (
+              <span
+                aria-label="Unread messages"
+                className={styles.unreadDot}
+                title="Unread agent messages"
+              />
+            )}
           </div>
         </div>
         <div className={styles.right}>

@@ -1,11 +1,19 @@
 import type { SlashCommand } from "../../../lib/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Button,
   ConfirmDialog,
   Icons,
   StatusDot,
   ThinkingDots,
+  UnreadDivider,
 } from "@argus/peacock";
 import { deriveActivity } from "../../../lib/activityDescription";
 import {
@@ -45,8 +53,10 @@ import {
   clearAgentTodos,
   clearConversation,
   clearPermission,
+  markMessageRead,
   queueMessage,
   useConversation,
+  useUnreadMessageIds,
 } from "../../../stores/conversationStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { ChatInput } from "../ChatInput";
@@ -211,6 +221,27 @@ export function AgentChat({
   // Group consecutive tool-call-only assistant messages into collapsed segments
   const segments = useMemo(() => groupMessages(messages), [messages]);
 
+  // Find the first segment whose message(s) contain an unread assistant message;
+  // a single divider is rendered above it instead of per-message indicators.
+  const unreadMessageIds = useUnreadMessageIds(agentId);
+  const firstUnreadSegmentIndex = useMemo(() => {
+    if (unreadMessageIds.size === 0) {
+      return -1;
+    }
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const inSegment =
+        segment.type === "single"
+          ? unreadMessageIds.has(segment.message.id)
+          : segment.messages.some((m) => unreadMessageIds.has(m.id));
+      if (inSegment) {
+        return i;
+      }
+    }
+
+    return -1;
+  }, [segments, unreadMessageIds]);
+
   // The agent's current todo list lives on the conversation in the store —
   // updated by every TodoWrite tool call and cleared to null when the user
   // dismisses it. A subsequent TodoWrite repopulates it.
@@ -307,6 +338,39 @@ export function AgentChat({
   useEffect(() => {
     recheckAtBottom();
   }, [segments, recheckAtBottom]);
+
+  // Auto-mark unread assistant messages as read when scrolled into view.
+  // Observer uses the messages container as root so visibility tracks the
+  // chat's internal scroll, not the page viewport.
+  useEffect(() => {
+    if (!agentId || unreadMessageIds.size === 0) {
+      return;
+    }
+    const container = messagesContainerRef.current;
+    if (!container) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) {
+            continue;
+          }
+          const id = (entry.target as HTMLElement).dataset.messageId;
+          if (id) {
+            markMessageRead(agentId, id);
+          }
+        }
+      },
+      { root: container, threshold: 0.5 },
+    );
+    const nodes = container.querySelectorAll<HTMLElement>("[data-unread]");
+    for (const el of Array.from(nodes)) {
+      observer.observe(el);
+    }
+
+    return () => observer.disconnect();
+  }, [agentId, unreadMessageIds, segments]);
 
   // Cmd+L / Ctrl+L to focus the input, Cmd+F / Ctrl+F to open find-in-chat.
   useEffect(() => {
@@ -687,36 +751,44 @@ export function AgentChat({
           </div>
         )}
 
-        {segments.map((segment) =>
-          segment.type === "collapsed" ? (
-            <CollapsedToolGroup
-              key={segment.messages[0].id}
-              agentId={agentId ?? undefined}
-              messages={segment.messages}
-              onPermissionRespond={
-                readOnly ? undefined : handlePermissionRespond
-              }
-              onSaveToolCallToDisk={
-                readOnly ? undefined : handleSaveToolCallToDisk
-              }
-            />
-          ) : (
-            <ChatMessage
-              key={segment.message.id}
-              agentId={agentId ?? undefined}
-              message={segment.message}
-              onCopy={readOnly ? undefined : handleCopyMessage}
-              onEdit={readOnly ? undefined : handleEditMessage}
-              onFork={readOnly ? undefined : handleForkMessage}
-              onPermissionRespond={
-                readOnly ? undefined : handlePermissionRespond
-              }
-              onSaveToolCallToDisk={
-                readOnly ? undefined : handleSaveToolCallToDisk
-              }
-            />
-          ),
-        )}
+        {segments.map((segment, index) => {
+          const key =
+            segment.type === "collapsed"
+              ? segment.messages[0].id
+              : segment.message.id;
+
+          return (
+            <Fragment key={key}>
+              {index === firstUnreadSegmentIndex && <UnreadDivider />}
+              {segment.type === "collapsed" ? (
+                <CollapsedToolGroup
+                  agentId={agentId ?? undefined}
+                  messages={segment.messages}
+                  onPermissionRespond={
+                    readOnly ? undefined : handlePermissionRespond
+                  }
+                  onSaveToolCallToDisk={
+                    readOnly ? undefined : handleSaveToolCallToDisk
+                  }
+                />
+              ) : (
+                <ChatMessage
+                  agentId={agentId ?? undefined}
+                  message={segment.message}
+                  onCopy={readOnly ? undefined : handleCopyMessage}
+                  onEdit={readOnly ? undefined : handleEditMessage}
+                  onFork={readOnly ? undefined : handleForkMessage}
+                  onPermissionRespond={
+                    readOnly ? undefined : handlePermissionRespond
+                  }
+                  onSaveToolCallToDisk={
+                    readOnly ? undefined : handleSaveToolCallToDisk
+                  }
+                />
+              )}
+            </Fragment>
+          );
+        })}
 
         {!readOnly &&
           activity &&
