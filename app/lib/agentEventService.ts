@@ -21,6 +21,7 @@ import {
   cancelPermission,
   clearConversation,
   dequeueMessage,
+  flushPendingUnread,
   getConversationState,
   setCapabilities,
   setConversationTitle,
@@ -386,6 +387,7 @@ export function startAgentListening(agentId: string): void {
     saveAgentConversation(agentId);
     updateAgent(agentId, { status });
     inflight.delete(agentId);
+    flushPendingUnread(agentId);
   }).then((unlisten) => {
     if (!exitListeners.has(agentId)) {
       unlisten();
@@ -612,6 +614,7 @@ function trySetIdle(agentId: string): void {
     return;
   }
   updateAgent(agentId, { status: "idle" });
+  flushPendingUnread(agentId);
 }
 
 /** Unsubscribe all listeners for an agent and clean up tracking state. */

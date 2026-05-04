@@ -339,6 +339,31 @@ export function markMessageUnread(agentId: string, messageId: string) {
   });
 }
 
+/**
+ * Promote this turn's pending-unread messages into the visible unread set.
+ * Called when the agent transitions to `idle`, so the chat tab only flags
+ * unread once the agent has actually stopped working — not on every `result`
+ * event (which can be followed by another queued turn).
+ */
+export function flushPendingUnread(agentId: string) {
+  conversationStore.setState((state) => {
+    const pending = state.pendingUnread[agentId];
+    if (!pending || pending.size === 0) {
+      return state;
+    }
+    const merged = new Set(state.unreadMessages[agentId] ?? EMPTY_UNREAD_SET);
+    for (const id of pending) {
+      merged.add(id);
+    }
+    const { [agentId]: _drop, ...rest } = state.pendingUnread;
+
+    return {
+      unreadMessages: { ...state.unreadMessages, [agentId]: merged },
+      pendingUnread: rest,
+    };
+  });
+}
+
 export function clearAgentUnread(agentId: string) {
   conversationStore.setState((state) => {
     const hasUnread = agentId in state.unreadMessages;
@@ -838,20 +863,10 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
       const newDuration =
         (existing.totalDuration ?? 0) + (event.duration_ms ?? 0);
 
-      // Flush this turn's pending-unread messages into the unread set now
-      // that the agent has finished responding.
-      const pending = state.pendingUnread[agentId];
-      let unreadMessages = state.unreadMessages;
-      let pendingUnread = state.pendingUnread;
-      if (pending && pending.size > 0) {
-        const merged = new Set(unreadMessages[agentId] ?? EMPTY_UNREAD_SET);
-        for (const id of pending) {
-          merged.add(id);
-        }
-        unreadMessages = { ...unreadMessages, [agentId]: merged };
-        const { [agentId]: _drop, ...rest } = pendingUnread;
-        pendingUnread = rest;
-      }
+      // pendingUnread is flushed when the agent actually transitions to idle
+      // (see flushPendingUnread). A `result` only marks the end of a single
+      // turn — if a queued message drains immediately, the agent goes back to
+      // running and shouldn't show an unread badge yet.
 
       return {
         conversations: {
@@ -865,8 +880,6 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             totalDuration: newDuration,
           },
         },
-        unreadMessages,
-        pendingUnread,
       };
     }
 
