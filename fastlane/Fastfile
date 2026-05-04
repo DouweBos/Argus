@@ -39,19 +39,19 @@ platform :mac do
     UI.success("Built release/mac-arm64/Argus.app")
   end
 
-  desc "Release build: signed with Developer ID, notarized, stapled, uploaded to a GitHub release. Pass channel:alpha or channel:rc to publish a pre-release from any branch."
+  desc "Release build: signed with Developer ID, notarized, stapled, uploaded to a GitHub release. Pass channel:beta (main only) or channel:alpha (any branch) for pre-release builds."
   lane :release do |options|
     publish = options.fetch(:publish, true)
-    channel = options.fetch(:channel, "stable")
-    unless ["stable", "alpha", "rc"].include?(channel)
-      UI.user_error!("Unknown channel #{channel.inspect} — expected stable | alpha | rc")
+    channel = options.fetch(:channel, "production")
+    unless ["production", "beta", "alpha"].include?(channel)
+      UI.user_error!("Unknown channel #{channel.inspect} — expected production | beta | alpha")
     end
 
     ensure_git_status_clean unless options[:allow_dirty]
-    # Stable cuts must come from main; pre-release builds can come from any
+    # Production and beta cuts must come from main; alpha can come from any
     # branch (CI passes allow_any_branch:true unconditionally; this guard is
     # for local invocations).
-    if channel == "stable"
+    if channel == "production" || channel == "beta"
       ensure_git_branch(branch: "main") unless options[:allow_any_branch]
     end
 
@@ -99,14 +99,14 @@ platform :mac do
     end
 
     # Channel routing for electron-builder + electron-updater:
-    #   stable → latest-mac.yml,  releaseType=release
-    #   alpha  → alpha-mac.yml,   releaseType=prerelease
-    #   rc     → beta-mac.yml,    releaseType=prerelease
+    #   production → latest-mac.yml, releaseType=release
+    #   beta       → beta-mac.yml,   releaseType=prerelease
+    #   alpha      → alpha-mac.yml,  releaseType=prerelease
     # electron-builder reads EP_CHANNEL and EP_PRE_RELEASE env vars.
     if channel == "alpha"
       ENV["EP_CHANNEL"]      = "alpha"
       ENV["EP_PRE_RELEASE"]  = "true"
-    elsif channel == "rc"
+    elsif channel == "beta"
       ENV["EP_CHANNEL"]      = "beta"
       ENV["EP_PRE_RELEASE"]  = "true"
     else

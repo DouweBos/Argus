@@ -131,11 +131,13 @@ The preflight onboarding step is filtered to your enabled plugins' prereqs plus 
 
 ## Advanced — Update channel
 
-| Setting     | Default  | Description                                                                                                                                                                                                |
-| ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Channel** | `latest` | Auto-updater feed. `latest` is stable. `beta` subscribes to release-candidate builds. `alpha` subscribes to pre-release builds from any branch. Off-stable channels can break your install — testers only. |
+| Setting     | Default  | Description                                                                                                                                                                                                               |
+| ----------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Channel** | `latest` | Auto-updater feed. **Production** (`latest`) tracks the public releases. **Beta** subscribes to in-development builds of upcoming features cut from `main` — should work, but may contain bugs that haven't surfaced yet. |
 
-Stable users on `latest` never see alpha or beta builds — they're published under different `*-mac.yml` feed files. Switching channels takes effect on next app restart.
+Production users never see beta builds — they're published under a separate `beta-mac.yml` feed file. Switching channels takes effect on next app restart.
+
+> Alpha builds (one-off cuts from any branch) are not exposed in this dialog. Repo collaborators install them manually by downloading the `.dmg` from the corresponding GitHub release.
 
 What we send (when the toggle is on):
 

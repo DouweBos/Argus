@@ -1084,20 +1084,15 @@ function LauncherSection() {
   );
 }
 
-const UPDATER_CHANNEL_LABELS: Record<"alpha" | "beta" | "latest", string> = {
-  latest: "Stable (latest)",
-  beta: "Release candidate (beta)",
-  alpha: "Alpha",
+const UPDATER_CHANNEL_LABELS: Record<"beta" | "latest", string> = {
+  latest: "Production",
+  beta: "Beta",
 };
 
-const UPDATER_CHANNELS: ("alpha" | "beta" | "latest")[] = [
-  "latest",
-  "beta",
-  "alpha",
-];
+const UPDATER_CHANNELS: ("beta" | "latest")[] = ["latest", "beta"];
 
 function AdvancedSection() {
-  const [channel, setChannel] = useState<"alpha" | "beta" | "latest">("latest");
+  const [channel, setChannel] = useState<"beta" | "latest">("latest");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -1107,7 +1102,10 @@ function AdvancedSection() {
         if (cancelled) {
           return;
         }
-        setChannel(settings.updater_channel ?? "latest");
+        // Tolerate legacy "alpha" values from earlier builds — alpha is no
+        // longer subscribable in-app, so collapse it to "latest" on display.
+        const stored = settings.updater_channel;
+        setChannel(stored === "beta" ? "beta" : "latest");
         setLoaded(true);
       })
       .catch(() => {
@@ -1121,7 +1119,7 @@ function AdvancedSection() {
     };
   }, []);
 
-  const handleChange = async (next: "alpha" | "beta" | "latest") => {
+  const handleChange = async (next: "beta" | "latest") => {
     setChannel(next);
     try {
       const current = await getAppSettings();
@@ -1134,7 +1132,7 @@ function AdvancedSection() {
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Auto-updater feed. Stable users should leave this on Stable. Switch to Alpha or RC only if you're testing pre-release builds — those channels publish unfinished work and can break your install. The change takes effect after the next app restart."
+        description="Auto-updater feed. Leave on Production for stable releases. Switch to Beta to receive in-development builds of upcoming features — Beta builds should work, but they may contain bugs that haven't surfaced yet. The change takes effect after the next app restart."
         title="Update channel"
       />
       <SettingsScreenDetailBody>
