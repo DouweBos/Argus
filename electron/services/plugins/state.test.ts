@@ -9,8 +9,8 @@ import {
   setEnabledPluginsFromRenderer,
 } from "./state";
 
-// Redirect `~/.argus` to a per-test scratch dir so the migration probe and
-// the persisted `plugins.json` don't touch the developer's real config.
+// Redirect `~/.argus` to a per-test scratch dir so the persisted
+// `plugins.json` doesn't touch the developer's real config.
 let scratchHome: string;
 vi.mock("../onboarding/state", () => ({
   argusDirPath: () => scratchHome,
@@ -45,48 +45,6 @@ describe("plugin state — fresh install", () => {
       JSON.stringify({ onboarding: { completed: false } }),
     );
     expect(pluginEnabled("device-control")).toBe(false);
-  });
-});
-
-describe("plugin state — migration for existing installs", () => {
-  beforeEach(setUpScratch);
-  afterEach(tearDownScratch);
-
-  it("seeds every plugin to enabled when prior onboarding completed", () => {
-    fs.mkdirSync(scratchHome, { recursive: true });
-    fs.writeFileSync(
-      path.join(scratchHome, "config.json"),
-      JSON.stringify({ onboarding: { completed: true } }),
-    );
-
-    expect(pluginEnabled("device-recording")).toBe(true);
-    expect(pluginEnabled("device-control")).toBe(true);
-    expect(pluginEnabled("device-debug")).toBe(true);
-    expect(pluginEnabled("device-inspector")).toBe(true);
-
-    // Migration must persist so it doesn't run again on the next launch.
-    const persisted = JSON.parse(
-      fs.readFileSync(path.join(scratchHome, "plugins.json"), "utf8"),
-    ) as { userEnabled: Record<string, boolean> };
-    expect(persisted.userEnabled["device-recording"]).toBe(true);
-  });
-
-  it("does not re-seed if plugins.json already exists", () => {
-    fs.mkdirSync(scratchHome, { recursive: true });
-    fs.writeFileSync(
-      path.join(scratchHome, "config.json"),
-      JSON.stringify({ onboarding: { completed: true } }),
-    );
-    // The user has previously turned `device-recording` off.
-    fs.writeFileSync(
-      path.join(scratchHome, "plugins.json"),
-      JSON.stringify({
-        version: 1,
-        userEnabled: { "device-recording": false },
-      }),
-    );
-
-    expect(pluginEnabled("device-recording")).toBe(false);
   });
 });
 
