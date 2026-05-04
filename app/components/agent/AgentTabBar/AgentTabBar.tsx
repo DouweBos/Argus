@@ -24,6 +24,7 @@ import {
   usePoppedOutAgents,
 } from "../../../stores/agentStore";
 import {
+  clearAgentUnread,
   getConversationState,
   useAgentHasUnread,
   useConversation,
@@ -50,22 +51,28 @@ function useTabMeta(
   agentId: string,
   fallback: string,
   status: AgentStatus["status"],
+  hasUnread: boolean,
 ): { fullLabel: string; label: string; state: StatusDotsState } {
   const conv = useConversation(agentId);
   const messages = conv?.messages ?? [];
+
+  // When the unread dot is shown, drop the trailing ellipsis on truncated
+  // titles \u2014 the dot already indicates the tab needs attention and the
+  // dot+ellipsis pairing reads as visual noise.
+  const truncationSuffix = hasUnread ? "" : "\u2026";
 
   let label = fallback;
   let fullLabel = fallback;
   if (conv?.title) {
     const title = conv.title.trim();
     fullLabel = title;
-    label = title.length > 24 ? title.slice(0, 24) + "\u2026" : title;
+    label = title.length > 24 ? title.slice(0, 24) + truncationSuffix : title;
   } else {
     const firstUser = messages.find((m) => m.role === "user");
     if (firstUser && firstUser.textBlocks.length > 0) {
       const text = firstUser.textBlocks[0].trim();
       fullLabel = text;
-      label = text.length > 20 ? text.slice(0, 20) + "\u2026" : text;
+      label = text.length > 20 ? text.slice(0, 20) + truncationSuffix : text;
     }
   }
 
@@ -120,12 +127,13 @@ function AgentTab({
   onSelect: (id: string) => void;
   tabRef: (el: HTMLDivElement | null) => void;
 }) {
+  const hasUnread = useAgentHasUnread(agent.agent_id);
   const { fullLabel, label, state } = useTabMeta(
     agent.agent_id,
     `Agent ${index + 1}`,
     agent.status,
+    hasUnread,
   );
-  const hasUnread = useAgentHasUnread(agent.agent_id);
 
   const classes = [
     styles.tab,
@@ -216,18 +224,20 @@ function MergedAgentTab({
   rightIndex: number;
   tabRef: (el: HTMLDivElement | null) => void;
 }) {
+  const leftUnread = useAgentHasUnread(left.agent_id);
+  const rightUnread = useAgentHasUnread(right.agent_id);
   const leftMeta = useTabMeta(
     left.agent_id,
     `Agent ${leftIndex + 1}`,
     left.status,
+    leftUnread,
   );
   const rightMeta = useTabMeta(
     right.agent_id,
     `Agent ${(rightIndex >= 0 ? rightIndex : leftIndex + 1) + 1}`,
     right.status,
+    rightUnread,
   );
-  const leftUnread = useAgentHasUnread(left.agent_id);
-  const rightUnread = useAgentHasUnread(right.agent_id);
 
   const anyActive =
     activeAgentId === left.agent_id || activeAgentId === right.agent_id;
@@ -430,6 +440,10 @@ export function AgentTabBar({
       (w) => w.id === target.session_id,
     );
     const isRunning = target.status === "running";
+    const convState = getConversationState();
+    const hasUnreadForTarget =
+      (convState.unreadMessages[targetId]?.size ?? 0) > 0 ||
+      (convState.pendingUnread[targetId]?.size ?? 0) > 0;
 
     return [
       {
@@ -441,6 +455,11 @@ export function AgentTabBar({
         onClick: () => {
           navigator.clipboard.writeText(targetId).catch(() => {});
         },
+      },
+      {
+        label: "Mark as Read",
+        disabled: !hasUnreadForTarget,
+        onClick: () => clearAgentUnread(targetId),
       },
       { separator: true },
       {

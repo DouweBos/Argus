@@ -16,6 +16,7 @@ import {
   parseLinkedProjectsPreamble,
 } from "../../../lib/linkedProjectsPreamble";
 import {
+  markMessageRead,
   markMessageUnread,
   useIsMessageUnread,
 } from "../../../stores/conversationStore";
@@ -24,6 +25,24 @@ import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
+
+/**
+ * Walk up the DOM to find the nearest ancestor that scrolls vertically. Used
+ * to root an IntersectionObserver on the chat's scrolling container without
+ * threading a ref through every caller.
+ */
+function findScrollParent(el: HTMLElement): HTMLElement | null {
+  let node: HTMLElement | null = el.parentElement;
+  while (node) {
+    const overflowY = window.getComputedStyle(node).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return node;
+    }
+    node = node.parentElement;
+  }
+
+  return null;
+}
 
 function TimestampGutter({ timestamp }: { timestamp: number }) {
   const d = new Date(timestamp);
@@ -126,6 +145,7 @@ export function ChatMessage({
   } | null>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
   const userMsgRef = useRef<HTMLDivElement>(null);
+  const assistantMsgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isEditing && editRef.current) {
@@ -136,6 +156,36 @@ export function ChatMessage({
   }, [isEditing]);
 
   const isUnread = useIsMessageUnread(agentId, message.id);
+
+  // Self-mark as read when this message becomes visible inside the chat's
+  // scroll viewport. Each unread assistant message owns its own observer —
+  // keeping this colocated avoids the timing fragility of a parent-level
+  // observer that re-creates on every dep change. The observer roots on the
+  // nearest scrolling ancestor so visibility tracks the chat's internal
+  // scroll, not the document viewport.
+  useEffect(() => {
+    if (!agentId || !isUnread) {
+      return;
+    }
+    const el = assistantMsgRef.current;
+    if (!el) {
+      return;
+    }
+    const root = findScrollParent(el);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            markMessageRead(agentId, message.id);
+          }
+        }
+      },
+      { root, threshold: 0 },
+    );
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [agentId, isUnread, message.id]);
   const handleCopy = onCopy ? () => onCopy(message) : undefined;
   const handleFork = onFork ? () => onFork(message) : undefined;
   const handleMarkUnread =
@@ -436,6 +486,7 @@ export function ChatMessage({
 
   return (
     <div
+      ref={assistantMsgRef}
       className={`${styles.assistantMsg} ${toolOnly ? styles.assistantMsgToolOnly : ""}`}
       data-message-id={message.id}
       data-unread={isUnread ? "" : undefined}

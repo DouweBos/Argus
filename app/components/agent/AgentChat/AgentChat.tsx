@@ -53,7 +53,6 @@ import {
   clearAgentTodos,
   clearConversation,
   clearPermission,
-  markMessageRead,
   queueMessage,
   useConversation,
   useUnreadMessageIds,
@@ -339,38 +338,10 @@ export function AgentChat({
     recheckAtBottom();
   }, [segments, recheckAtBottom]);
 
-  // Auto-mark unread assistant messages as read when scrolled into view.
-  // Observer uses the messages container as root so visibility tracks the
-  // chat's internal scroll, not the page viewport.
-  useEffect(() => {
-    if (!agentId || unreadMessageIds.size === 0) {
-      return;
-    }
-    const container = messagesContainerRef.current;
-    if (!container) {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) {
-            continue;
-          }
-          const id = (entry.target as HTMLElement).dataset.messageId;
-          if (id) {
-            markMessageRead(agentId, id);
-          }
-        }
-      },
-      { root: container, threshold: 0.5 },
-    );
-    const nodes = container.querySelectorAll<HTMLElement>("[data-unread]");
-    for (const el of Array.from(nodes)) {
-      observer.observe(el);
-    }
-
-    return () => observer.disconnect();
-  }, [agentId, unreadMessageIds, segments]);
+  // Each ChatMessage owns its own IntersectionObserver to mark itself read
+  // when it enters the viewport — see ChatMessage.tsx. We deliberately don't
+  // run a parent-level observer: deps churn (segments/unreadMessageIds)
+  // disconnects observers before their async callbacks can fire.
 
   // Cmd+L / Ctrl+L to focus the input, Cmd+F / Ctrl+F to open find-in-chat.
   useEffect(() => {
