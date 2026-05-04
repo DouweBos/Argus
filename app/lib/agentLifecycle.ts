@@ -18,6 +18,7 @@ import { selectSession } from "../stores/sessionStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
 import {
   claimPrewarmAgent,
+  createCheckpoint,
   type ImageAttachment,
   sendAgentMessage,
   startAgent as apiStartAgent,
@@ -208,7 +209,19 @@ export async function sendUserMessageToAgent(
     return;
   }
 
-  addUserMessage(agentId, text, images);
+  // Snapshot the worktree before dispatching so the user can revert files
+  // to the pre-prompt state from the chat. Best-effort — never blocks send.
+  const sessionId = getAgent(agentId)?.session_id;
+  let checkpointId: string | undefined;
+  if (sessionId) {
+    try {
+      const cp = await createCheckpoint(sessionId);
+      checkpointId = cp.id;
+    } catch {
+      // Skip checkpoint.
+    }
+  }
+  addUserMessage(agentId, text, images, checkpointId);
   notifyMessageSent(agentId);
   updateAgent(agentId, { status: "running" });
   await sendAgentMessage(agentId, text, images);

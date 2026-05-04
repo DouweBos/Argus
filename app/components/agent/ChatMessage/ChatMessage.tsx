@@ -74,6 +74,7 @@ interface ChatMessageProps {
     allowRule?: string,
     allowAll?: boolean,
   ) => void;
+  onRestore?: (message: ConversationMessage) => void;
   onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
 
@@ -82,15 +83,17 @@ function MessageActions({
   onEdit,
   onFork,
   onMarkUnread,
+  onRestore,
   placement,
 }: {
   onCopy?: () => void;
   onEdit?: () => void;
   onFork?: () => void;
   onMarkUnread?: () => void;
+  onRestore?: () => void;
   placement: "top-left" | "top-right";
 }) {
-  if (!onCopy && !onFork && !onEdit && !onMarkUnread) {
+  if (!onCopy && !onFork && !onEdit && !onMarkUnread && !onRestore) {
     return null;
   }
 
@@ -108,6 +111,13 @@ function MessageActions({
           icon={<Icons.PencilIcon size={12} />}
           label="Edit message"
           onClick={onEdit}
+        />
+      )}
+      {onRestore && (
+        <HoverActionButton
+          icon={<Icons.HistoryIcon size={12} />}
+          label="Restore files and chat to this point"
+          onClick={onRestore}
         />
       )}
       {onFork && (
@@ -135,6 +145,7 @@ export function ChatMessage({
   onEdit,
   onFork,
   onPermissionRespond,
+  onRestore,
   onSaveToolCallToDisk,
 }: ChatMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -188,6 +199,8 @@ export function ChatMessage({
   }, [agentId, isUnread, message.id]);
   const handleCopy = onCopy ? () => onCopy(message) : undefined;
   const handleFork = onFork ? () => onFork(message) : undefined;
+  const handleRestore =
+    onRestore && message.checkpointId ? () => onRestore(message) : undefined;
   const handleMarkUnread =
     agentId && message.role === "assistant" && !isUnread
       ? () => markMessageUnread(agentId, message.id)
@@ -412,6 +425,7 @@ export function ChatMessage({
           onCopy={handleCopy}
           onEdit={handleStartEdit}
           onFork={handleFork}
+          onRestore={handleRestore}
           placement="top-right"
         />
         {trimmedUserBlocks.length > 0 && (

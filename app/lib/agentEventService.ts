@@ -36,6 +36,7 @@ import {
 import { deriveTitle } from "./chatHistory";
 import { type UnlistenFn, listen } from "./events";
 import {
+  createCheckpoint,
   generateSessionTitle,
   publishAgentSnapshot,
   saveChatHistory,
@@ -596,11 +597,27 @@ function trySendNextQueued(agentId: string): boolean {
   if (!next) {
     return false;
   }
-  addUserMessage(agentId, next.text, next.images);
   inflight.add(agentId);
   updateAgent(agentId, { status: "running" });
-  sendAgentMessage(agentId, next.text, next.images).catch(() => {});
-  scheduleAgentSave(agentId);
+
+  // Capture a checkpoint right before the prompt is dispatched so the user
+  // can later revert the worktree to its pre-prompt state. Best-effort —
+  // a git failure shouldn't block the queued send.
+  const sessionId = getAgentState().agents[agentId]?.session_id;
+  (async () => {
+    let checkpointId: string | undefined;
+    if (sessionId) {
+      try {
+        const cp = await createCheckpoint(sessionId);
+        checkpointId = cp.id;
+      } catch {
+        // Skip checkpoint.
+      }
+    }
+    addUserMessage(agentId, next.text, next.images, checkpointId);
+    sendAgentMessage(agentId, next.text, next.images).catch(() => {});
+    scheduleAgentSave(agentId);
+  })().catch(() => {});
 
   return true;
 }

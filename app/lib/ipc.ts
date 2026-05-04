@@ -760,6 +760,28 @@ export const forkSession = (
  * under the same agentId. Returns the new Claude session UUID (or null for
  * a fresh-start when `keepTurnNumber === 0`).
  */
+/** Snapshot the session worktree's files. Returned id is what `restoreCheckpoint` accepts. */
+export const createCheckpoint = (
+  sessionId: string,
+): Promise<{
+  createdAt: number;
+  hasChanges: boolean;
+  id: string;
+  sha: string;
+}> => invoke("create_checkpoint", { sessionId });
+
+/** Revert the session worktree to a previously created checkpoint. */
+export const restoreCheckpoint = (
+  sessionId: string,
+  checkpointId: string,
+): Promise<void> => invoke("restore_checkpoint", { sessionId, checkpointId });
+
+/** Drop a checkpoint ref. Best-effort. */
+export const deleteCheckpoint = (
+  sessionId: string,
+  checkpointId: string,
+): Promise<void> => invoke("delete_checkpoint", { sessionId, checkpointId });
+
 export const restoreAgentAtTurn = (
   agentId: string,
   sourceClaudeSessionId: string,

@@ -34,6 +34,11 @@ import {
   searchChatHistory,
 } from "./services/agent/chatHistory";
 import {
+  createCheckpoint,
+  deleteCheckpoint,
+  restoreCheckpoint,
+} from "./services/agent/checkpoints";
+import {
   checkClaudeCli,
   claimPrewarmAgent,
   discardPrewarmAgent,
@@ -1407,6 +1412,16 @@ export function registerIpcHandlers(): void {
   );
   handle("discard_prewarm_agent", (a) =>
     discardPrewarmAgent(a.agentId as string),
+  );
+
+  // Checkpoint commands — snapshot the worktree before each user prompt so
+  // it can later be restored from a chat message.
+  handle("create_checkpoint", (a) => createCheckpoint(a.sessionId as string));
+  handle("restore_checkpoint", (a) =>
+    restoreCheckpoint(a.sessionId as string, a.checkpointId as string),
+  );
+  handle("delete_checkpoint", (a) =>
+    deleteCheckpoint(a.sessionId as string, a.checkpointId as string),
   );
 
   // Chat history commands
