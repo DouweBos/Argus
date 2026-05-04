@@ -20,58 +20,18 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  PLUGIN_ASSETS,
+  needsArchSuffix,
+  needsNotarization,
+  type PluginAssetSpec,
+} from "../app/plugins/assets-manifest";
 
-interface PluginAssetSpec {
-  pluginId: string;
-  /** Source file or directory in the repo. */
-  source: string;
-  /** Output asset name (chunk 11's resolver uses this verbatim). */
-  outputName: string;
-  /** When true, codesign + notarize. False = JVM/Node payload, no signing. */
-  notarize: boolean;
-  /** When true, name the zip with arch/platform suffix. False = portable. */
-  perArch: boolean;
-  /** chmod +x the source before zipping (Mach-O binaries). */
-  executable?: boolean;
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const STAGING = path.join(REPO_ROOT, "release", "plugin-staging");
-
-const ASSETS: PluginAssetSpec[] = [
-  {
-    pluginId: "device-recording",
-    source: path.join(
-      REPO_ROOT,
-      "native",
-      "argus-sim-bridge",
-      "argus-sim-bridge",
-    ),
-    outputName: "argus-sim-bridge",
-    notarize: true,
-    perArch: true,
-    executable: true,
-  },
-  {
-    pluginId: "device-recording",
-    source: path.join(
-      REPO_ROOT,
-      "native",
-      "scrcpy-server",
-      "scrcpy-server.jar",
-    ),
-    outputName: "scrcpy-server.jar",
-    notarize: false,
-    perArch: false,
-  },
-  {
-    pluginId: "device-control",
-    source: path.join(REPO_ROOT, "native", "conductor"),
-    outputName: "conductor",
-    notarize: false,
-    perArch: false,
-  },
-];
 
 function readVersion(): string {
   const pkg = JSON.parse(
@@ -106,12 +66,16 @@ function run(cmd: string, args: string[], cwd?: string): void {
   });
 }
 
+function sourcePath(spec: PluginAssetSpec): string {
+  return path.join(REPO_ROOT, spec.source);
+}
+
 function zipName(spec: PluginAssetSpec): string {
-  if (spec.perArch) {
-    return `${spec.outputName}-${archSlug()}-${platformSlug()}.zip`;
+  if (needsArchSuffix(spec.kind)) {
+    return `${spec.name}-${archSlug()}-${platformSlug()}.zip`;
   }
 
-  return `${spec.outputName}.zip`;
+  return `${spec.name}.zip`;
 }
 
 function ditto(args: string[]): void {
@@ -172,22 +136,23 @@ async function packageAsset(spec: PluginAssetSpec): Promise<{
   const dest = path.join(STAGING, spec.pluginId);
   fs.mkdirSync(dest, { recursive: true });
 
-  const stagedSource = path.join(dest, spec.outputName);
+  const stagedSource = path.join(dest, spec.name);
   // Copy the source into staging so we can chmod / sign without mutating the
   // checked-in tree.
-  fs.cpSync(spec.source, stagedSource, { recursive: true });
+  fs.cpSync(sourcePath(spec), stagedSource, { recursive: true });
 
   if (spec.executable) {
     fs.chmodSync(stagedSource, 0o755);
   }
-  if (spec.notarize) {
+  const notarize = needsNotarization(spec.kind);
+  if (notarize) {
     codesignBinary(stagedSource);
   }
 
   const outZip = path.join(dest, zipName(spec));
   ditto(["-c", "-k", "--keepParent", stagedSource, outZip]);
 
-  if (spec.notarize) {
+  if (notarize) {
     notarizeZip(outZip);
     // Single-binary stapling is no-op; ignore failure.
     try {
@@ -236,11 +201,10 @@ async function main(): Promise<void> {
   fs.rmSync(STAGING, { recursive: true, force: true });
   fs.mkdirSync(STAGING, { recursive: true });
 
-  for (const spec of ASSETS) {
-    if (!fs.existsSync(spec.source)) {
-      console.warn(
-        `Skipping ${spec.outputName}: source missing at ${spec.source}`,
-      );
+  for (const spec of PLUGIN_ASSETS) {
+    const src = sourcePath(spec);
+    if (!fs.existsSync(src)) {
+      console.warn(`Skipping ${spec.name}: source missing at ${src}`);
       continue;
     }
     const { zipPath } = await packageAsset(spec);

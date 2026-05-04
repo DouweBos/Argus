@@ -88,25 +88,6 @@ export interface SettingsSectionContribution {
   render: () => ReactNode;
 }
 
-/**
- * Asset descriptor. Versions live with the app — never on the manifest. The
- * resolver derives URLs from `app.getVersion()` and the running platform/arch.
- */
-export type PluginAsset =
-  | {
-      executable: true;
-      kind: "native";
-      /** File name inside the plugin's user-data dir (e.g. `argus-sim-bridge`). */
-      name: string;
-    }
-  | {
-      kind: "node";
-      /** Tarball name without the `.tgz` suffix; expanded into the plugin dir. */
-      name: string;
-    }
-  | { kind: "data"; name: string }
-  | { kind: "jar"; name: string };
-
 export interface PluginContributions {
   /**
    * Logical IPC group name. Backend handlers gate themselves on this id via
@@ -119,8 +100,6 @@ export interface PluginContributions {
 }
 
 export interface PluginManifest {
-  /** Downloadable assets fetched from the GH release for the running app version. */
-  assets?: PluginAsset[];
   /** When true, assets are also packaged into `extraResources` (default: true today, false after the flip). */
   bundled?: boolean;
   contributes?: PluginContributions;
