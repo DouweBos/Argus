@@ -244,6 +244,7 @@ import {
   type PushV2Opts,
 } from "./services/session/gitPushPull";
 import {
+  gitRebaseAutosquash,
   gitRebaseInteractivePlan,
   gitRebaseInteractiveRun,
   type RebasePlanEntry,
@@ -1244,6 +1245,11 @@ export function registerIpcHandlers(): void {
     gitRebaseInteractiveRun(a.id as string, {
       upstream: a.upstream as string,
       plan: a.plan as RebasePlanEntry[],
+    }),
+  );
+  handle("git_rebase_autosquash", (a) =>
+    gitRebaseAutosquash(a.id as string, {
+      upstream: a.upstream as string,
     }),
   );
 
