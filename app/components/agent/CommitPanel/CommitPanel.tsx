@@ -1,11 +1,6 @@
 import type { DiffFile } from "../../../lib/diffParser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Button,
-  DestructiveConfirm,
-  GitErrorBanner,
-  type GitErrorKind,
-} from "@argus/peacock";
+import { Button, GitErrorBanner, type GitErrorKind } from "@argus/peacock";
 import { useOutsideClick } from "../../../hooks/useOutsideClick";
 import { GitError } from "../../../lib/gitError";
 import {
@@ -17,7 +12,6 @@ import {
   getSession,
   ghListIssues,
   gitAmendTip,
-  gitCanAmendTip,
   gitCommit,
   gitGetConfig,
   gitLog,
@@ -27,8 +21,6 @@ import {
 import { md5Hex } from "../../../lib/md5";
 import { useFocusCommitRequests } from "../../../stores/gitUiStore";
 import {
-  getConfirmPreference,
-  setConfirmPreference,
   showSettingsDialog,
   useConventionalCommitsPicker,
 } from "../../../stores/settingsStore";
@@ -86,13 +78,9 @@ export function CommitPanel({
 
   const [authorName, setAuthorName] = useState("");
   const [authorEmail, setAuthorEmail] = useState("");
-  const [canAmend, setCanAmend] = useState<{ ok: boolean; reason?: string }>({
-    ok: true,
-  });
   const [gpgSign, setGpgSign] = useState(false);
   const [conventionalPrefix, setConventionalPrefix] = useState<string>("");
   const [rewordOpen, setRewordOpen] = useState(false);
-  const [pushedAmendConfirm, setPushedAmendConfirm] = useState(false);
   const showConventionalPicker = useConventionalCommitsPicker();
   const [hasGithubRemote, setHasGithubRemote] = useState(false);
   const [issueNumber, setIssueNumber] = useState<string | null>(null);
@@ -137,9 +125,6 @@ export function CommitPanel({
         }),
       )
       .catch(() => {});
-    gitCanAmendTip(sessionId)
-      .then(guard(setCanAmend))
-      .catch(() => undefined);
     gitGetConfig(sessionId, "commit.gpgsign")
       .then(guard((v: string | null) => setGpgSign(v === "true")))
       .catch(() => undefined);
@@ -329,9 +314,6 @@ export function CommitPanel({
   const subjectError = subjectLength > 72;
 
   const handleReword = useCallback(async () => {
-    if (!canAmend.ok) {
-      return;
-    }
     try {
       const last = await getLastCommitMessage(sessionId);
       const [subj, ...rest] = last.split("\n");
@@ -344,7 +326,7 @@ export function CommitPanel({
     } catch (err) {
       setCommitError(err instanceof Error ? err.message : String(err));
     }
-  }, [sessionId, canAmend]);
+  }, [sessionId]);
 
   const prefillFromTip = useCallback(async () => {
     try {
@@ -385,28 +367,14 @@ export function CommitPanel({
 
         return;
       }
-      if (!canAmend.ok) {
-        // Pushed-tip case → confirm; merge-base case → silently disabled.
-        if (canAmend.reason?.toLowerCase().includes("pushed")) {
-          if (getConfirmPreference("amend-pushed")) {
-            setAmend(true);
-            prefillFromTip().catch(() => undefined);
-          } else {
-            setPushedAmendConfirm(true);
-          }
-        }
-
-        return;
-      }
       setAmend(true);
       prefillFromTip().catch(() => undefined);
     },
-    [canAmend, prefillFromTip, restorePreAmendDraft],
+    [prefillFromTip, restorePreAmendDraft],
   );
 
   // Phase 2 W12 — Cmd+Enter / Opt+Cmd+Enter shortcuts. Fire only when the
   // composer is expanded so they don't hijack global Enter combos.
-  // Phase 3 K1 — Shift+Cmd+A toggles "amend tip" using the same gating logic.
   const shortcutHandlers = useMemo(
     () => ({
       "commit-now": () => {
@@ -535,35 +503,25 @@ export function CommitPanel({
 
           <div className={styles.optionsRow}>
             <div className={styles.checkboxes}>
-              <label
-                className={styles.checkLabel}
-                title={canAmend.ok ? "Amend tip commit" : canAmend.reason}
-              >
-                <input
-                  checked={amend}
-                  className={styles.checkbox}
-                  disabled={
-                    !canAmend.ok &&
-                    !canAmend.reason?.toLowerCase().includes("pushed")
-                  }
-                  type="checkbox"
-                  onChange={(e) => handleAmendToggle(e.target.checked)}
-                />
-                {tipHash ? `Amend ${tipHash}` : "Amend"}
-              </label>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={!canAmend.ok}
-                title={
-                  canAmend.ok
-                    ? "Reword tip commit message"
-                    : (canAmend.reason ?? "")
-                }
-                onClick={handleReword}
-              >
-                Reword tip
-              </Button>
+              <div className={styles.amendRow}>
+                <label className={styles.checkLabel} title="Amend tip commit">
+                  <input
+                    checked={amend}
+                    className={styles.checkbox}
+                    type="checkbox"
+                    onChange={(e) => handleAmendToggle(e.target.checked)}
+                  />
+                  {amend && tipHash ? `Amend ${tipHash}` : "Amend"}
+                </label>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="Reword tip commit message"
+                  onClick={handleReword}
+                >
+                  Reword tip
+                </Button>
+              </div>
               <label className={styles.checkLabel}>
                 <input
                   checked={signOff}
@@ -648,24 +606,6 @@ export function CommitPanel({
           {commitButtonLabel}
         </Button>
       </div>
-      <DestructiveConfirm
-        open={pushedAmendConfirm}
-        tone="destructive"
-        title="Amend pushed commit?"
-        description="This rewrites a commit that has already been pushed. You will need to force-push afterwards."
-        confirmLabel="Amend anyway"
-        rememberKey="amend-pushed"
-        rememberLabel="amending pushed commits"
-        onConfirm={(skip) => {
-          if (skip) {
-            setConfirmPreference("amend-pushed", true);
-          }
-          setAmend(true);
-          setPushedAmendConfirm(false);
-          prefillFromTip().catch(() => undefined);
-        }}
-        onCancel={() => setPushedAmendConfirm(false)}
-      />
       {/* Reword UX: clicking "Reword tip" loads the tip's message into the
           composer and flips amend on. The actual modal popup deferred to
           a later phase — current flow uses inline edit. */}

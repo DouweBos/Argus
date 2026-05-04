@@ -174,7 +174,7 @@ import {
 } from "./services/organizationTask/orchestrator";
 import { reconfigureAutoFetchForRepo } from "./services/session/autoFetch";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
-import { gitAmendTip, gitCanAmendTip } from "./services/session/gitAmend";
+import { gitAmendTip } from "./services/session/gitAmend";
 import {
   gitBisectBad,
   gitBisectGood,
@@ -1069,8 +1069,6 @@ export function registerIpcHandlers(): void {
     gitListRecentIssues(a.id as string, (a.query as string | undefined) ?? ""),
   );
 
-  // Phase 2 W11 — amend tip
-  handle("git_can_amend_tip", (a) => gitCanAmendTip(a.id as string));
   handle("git_amend_tip", (a) =>
     gitAmendTip(a.id as string, a.subject as string, a.body as string),
   );
