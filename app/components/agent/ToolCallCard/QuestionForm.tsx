@@ -1,12 +1,24 @@
 import type { Question } from "./parseQuestions";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, TextArea } from "@argus/peacock";
+import {
+  clearToolDraft,
+  getToolDraft,
+  setToolDraft,
+} from "../../../stores/conversationStore";
 import styles from "./QuestionForm.module.css";
 
 interface QuestionFormProps {
   onCancel: () => void;
   onSubmit: (formattedAnswer: string) => void;
   questions: Question[];
+  /** Tool-use id used to persist the in-progress answer across view switches. */
+  toolUseId?: string;
+}
+
+interface QuestionFormDraft {
+  customAnswers: string[];
+  selections: string[][];
 }
 
 const CUSTOM_KEY = "__argus_custom__";
@@ -15,16 +27,33 @@ export function QuestionForm({
   questions,
   onSubmit,
   onCancel,
+  toolUseId,
 }: QuestionFormProps) {
-  const initial = useMemo(
-    () => questions.map(() => new Set<string>()),
-    [questions],
-  );
-  const [selections, setSelections] = useState<Set<string>[]>(initial);
-  const [customAnswers, setCustomAnswers] = useState<string[]>(() =>
-    questions.map(() => ""),
-  );
+  const [selections, setSelections] = useState<Set<string>[]>(() => {
+    const draft = toolUseId
+      ? getToolDraft<QuestionFormDraft>(toolUseId)
+      : undefined;
+
+    return questions.map((_, i) => new Set<string>(draft?.selections[i] ?? []));
+  });
+  const [customAnswers, setCustomAnswers] = useState<string[]>(() => {
+    const draft = toolUseId
+      ? getToolDraft<QuestionFormDraft>(toolUseId)
+      : undefined;
+
+    return questions.map((_, i) => draft?.customAnswers[i] ?? "");
+  });
   const customInputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+
+  useEffect(() => {
+    if (!toolUseId) {
+      return;
+    }
+    setToolDraft(toolUseId, {
+      selections: selections.map((s) => Array.from(s)),
+      customAnswers,
+    } satisfies QuestionFormDraft);
+  }, [toolUseId, selections, customAnswers]);
 
   const toggle = useCallback((qIdx: number, label: string, multi: boolean) => {
     setSelections((prev) => {
@@ -104,7 +133,17 @@ export function QuestionForm({
       lines.push(`- ${label}: ${parts.join(" — ")}`);
     });
     onSubmit(lines.join("\n"));
-  }, [allAnswered, customAnswers, questions, selections, onSubmit]);
+    if (toolUseId) {
+      clearToolDraft(toolUseId);
+    }
+  }, [allAnswered, customAnswers, questions, selections, onSubmit, toolUseId]);
+
+  const handleCancel = useCallback(() => {
+    if (toolUseId) {
+      clearToolDraft(toolUseId);
+    }
+    onCancel();
+  }, [onCancel, toolUseId]);
 
   return (
     <div className={styles.wrap}>
@@ -192,7 +231,7 @@ export function QuestionForm({
         >
           Submit answers
         </Button>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
+        <Button variant="ghost" size="sm" onClick={handleCancel}>
           Cancel
         </Button>
       </div>
