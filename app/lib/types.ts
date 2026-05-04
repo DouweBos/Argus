@@ -370,6 +370,14 @@ export interface LlmConfig {
   runner?: string | null;
 }
 
+/**
+ * A `setup.copy` / `setup.symlink` entry: either a bare path/glob string or
+ * `{ path, exclude? }` to prune subdirectories from the copy/symlink
+ * expansion. Mirrors `SetupCopyEntry` in
+ * `electron/services/session/models.ts`.
+ */
+export type SetupCopyEntry = string | { exclude?: string[]; path: string };
+
 export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
@@ -446,8 +454,8 @@ export interface ArgusConfig {
   save_chat_history?: boolean;
   setup?: {
     commands?: string[];
-    copy?: string[];
-    symlink?: string[];
+    copy?: SetupCopyEntry[];
+    symlink?: SetupCopyEntry[];
   };
   /**
    * Deep links surfaced as a dropdown on the runtime toolbar's "Link"

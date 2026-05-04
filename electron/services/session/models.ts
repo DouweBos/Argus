@@ -180,23 +180,50 @@ export interface RunCommand {
   requires?: string[];
 }
 
+/**
+ * A single entry in `setup.copy` / `setup.symlink`. Either a bare path/glob
+ * string or a structured object that pairs the path with `exclude` patterns
+ * pruned from the copy/symlink expansion.
+ *
+ * `exclude` patterns are forwarded to `rsync --exclude=<pattern>` for copy
+ * entries (so subdirectories are pruned mid-tree, not just at expansion
+ * time) and applied as `fast-glob` ignore patterns for symlink entries
+ * (which only matters for glob-shaped paths — symlinking a literal
+ * directory is a single link, so excludes have no effect there).
+ */
+export type SetupCopyEntry = string | { path: string; exclude?: string[] };
+
 /** The `setup` block inside `.argus.json`. */
 export interface SetupConfig {
   /**
    * Directories/files to copy from the main repo into the new worktree.
-   * Supports glob patterns (e.g. "*.env", "packages/*\/node_modules").
+   * Supports glob patterns (e.g. "*.env", "packages/*\/node_modules") and,
+   * when expressed as an object, per-entry `exclude` patterns (e.g.
+   * `{ path: ".claude", exclude: ["projects/**\/worktrees/**"] }`).
    */
-  copy: string[];
+  copy: SetupCopyEntry[];
   /**
    * Files to symlink from the main repo into the new worktree.
-   * Supports glob patterns (e.g. "*.env", "**\/.env.local").
+   * Supports glob patterns (e.g. "*.env", "**\/.env.local") and the same
+   * object form as `copy` — although `exclude` is only meaningful for
+   * glob-shaped entries.
    */
-  symlink: string[];
+  symlink: SetupCopyEntry[];
   /**
    * Shell commands to execute inside the new worktree after copy/symlink.
    * Each entry is passed verbatim to `sh -c`.
    */
   commands: string[];
+}
+
+/** Read the path string from a `SetupCopyEntry` regardless of its shape. */
+export function setupEntryPath(entry: SetupCopyEntry): string {
+  return typeof entry === "string" ? entry : entry.path;
+}
+
+/** Read the exclude list from a `SetupCopyEntry` (empty for bare strings). */
+export function setupEntryExcludes(entry: SetupCopyEntry): string[] {
+  return typeof entry === "string" ? [] : (entry.exclude ?? []);
 }
 
 /** Runtime platform a session targets. Drives which device-specific sections

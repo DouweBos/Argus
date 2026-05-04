@@ -119,14 +119,14 @@ Drop this in any repo root to make it Argus-ready:
 }
 ```
 
-| Field            | Purpose                                                   |
-| ---------------- | --------------------------------------------------------- |
-| `setup.copy`     | Dirs/files copied into each new worktree (supports globs) |
-| `setup.symlink`  | Files symlinked from the main repo (supports globs)       |
-| `setup.commands` | Shell commands run after copy/symlink                     |
-| `terminals`      | Tabs auto-opened per session (name + working dir)         |
-| `workspace_env`  | Env var set per-session with a unique port/offset         |
-| `run`            | Command executed by the Run button                        |
+| Field            | Purpose                                                                        |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `setup.copy`     | Dirs/files copied into each new worktree (globs; `{ path, exclude }` to prune) |
+| `setup.symlink`  | Files symlinked from the main repo (globs; same object form as `copy`)         |
+| `setup.commands` | Shell commands run after copy/symlink                                          |
+| `terminals`      | Tabs auto-opened per session (name + working dir)                              |
+| `workspace_env`  | Env var set per-session with a unique port/offset                              |
+| `run`            | Command executed by the Run button                                             |
 
 `.argus.local.json` (gitignored) overrides or extends the base config.
 
