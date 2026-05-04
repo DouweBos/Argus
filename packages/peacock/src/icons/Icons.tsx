@@ -1652,3 +1652,23 @@ export function RedoIcon({ size = 13, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+export function EnvelopeIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="9" rx="1.5" width="12" x="2" y="3.5" />
+      <path d="M2.5 4.5 8 9l5.5-4.5" />
+    </svg>
+  );
+}

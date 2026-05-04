@@ -14,6 +14,7 @@ import { useProjectSessions } from "../../../hooks/useSessions";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
 import { isSessionReady, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useUnreadByAgent } from "../../../stores/conversationStore";
 import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import {
   selectSession,
@@ -93,6 +94,16 @@ export function ProjectSegment({
       ),
     [agents, projectSessionIds],
   );
+  const unreadByAgent = useUnreadByAgent();
+  const hasUnread = useMemo(
+    () =>
+      Object.values(agents).some(
+        (a) =>
+          projectSessionIds.has(a.session_id) &&
+          (unreadByAgent[a.agent_id]?.size ?? 0) > 0,
+      ),
+    [agents, projectSessionIds, unreadByAgent],
+  );
   const isRunCommandRunning = useSessionIsRunning(repoRootSession?.id ?? "");
   const claimedBranches = useMemo(
     () => new Set(worktrees.map((s) => s.branch).filter((b) => b.length > 0)),
@@ -131,7 +142,18 @@ export function ProjectSegment({
           e.stopPropagation();
           setMenuPosition({ x: e.clientX, y: e.clientY });
         }}
-        meta={repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
+        meta={
+          <>
+            {hasUnread && (
+              <span
+                aria-label="Unread messages"
+                className={styles.unreadDot}
+                title="Unread agent messages"
+              />
+            )}
+            {repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
+          </>
+        }
         subtitle={
           isProjectSelected && repoBranch ? (
             <div
