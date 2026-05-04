@@ -27,6 +27,7 @@ import {
 import { editAndRestoreFromMessage } from "../../../lib/editRestoreChat";
 import {
   type ImageAttachment,
+  createCheckpoint,
   getCommandMetrics,
   interruptAgent,
   setAgentModel as ipcSetAgentModel,
@@ -40,6 +41,7 @@ import {
   type CanonicalPermissionMode,
   toCanonicalPermissionMode,
 } from "../../../lib/permissionModes";
+import { restoreFromMessage } from "../../../lib/restoreCheckpointChat";
 import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
   getAgent,
@@ -54,6 +56,7 @@ import {
   clearConversation,
   clearPermission,
   queueMessage,
+  setDraft,
   useConversation,
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
@@ -476,6 +479,9 @@ export function AgentChat({
     messageId: string;
     newText: string;
   } | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<{
+    messageId: string;
+  } | null>(null);
 
   const handleEditMessage = useCallback(
     (message: ConversationMessage, newText: string) => {
@@ -504,6 +510,37 @@ export function AgentChat({
       // Restore failed — leave the original conversation intact.
     }
   }, [agentId, pendingEdit, sessionId]);
+
+  const handleRestoreMessage = useCallback(
+    (message: ConversationMessage) => {
+      if (!agentId) {
+        return;
+      }
+      setPendingRestore({ messageId: message.id });
+    },
+    [agentId],
+  );
+
+  const handleConfirmRestore = useCallback(async () => {
+    if (!agentId || !pendingRestore) {
+      return;
+    }
+    const { messageId } = pendingRestore;
+    setPendingRestore(null);
+    try {
+      const { restoredPrompt } = await restoreFromMessage(
+        sessionId,
+        agentId,
+        messageId,
+      );
+      // Mirror Claude Code's UX: drop the original prompt back into the
+      // input so the user can re-send or edit it.
+      setDraft(agentId, restoredPrompt);
+      chatInputRef.current?.focus();
+    } catch {
+      // Restore failed — leave conversation intact.
+    }
+  }, [agentId, pendingRestore, sessionId]);
 
   const handleForkMessage = useCallback(
     (message: ConversationMessage) => {
@@ -655,8 +692,17 @@ export function AgentChat({
         return;
       }
 
-      // Agent is idle — send directly.
-      addUserMessage(agentId, message, images);
+      // Agent is idle — snapshot the worktree, then send. Checkpoint is
+      // best-effort: a git failure (e.g. detached state, no HEAD) shouldn't
+      // block the user from chatting.
+      let checkpointId: string | undefined;
+      try {
+        const cp = await createCheckpoint(sessionId);
+        checkpointId = cp.id;
+      } catch {
+        // Skip checkpoint — the message still goes through.
+      }
+      addUserMessage(agentId, message, images, checkpointId);
       notifyMessageSent(agentId);
       updateAgent(agentId, { status: "running" });
       try {
@@ -672,7 +718,7 @@ export function AgentChat({
         // Message failed — user sees the optimistic message
       }
     },
-    [agentId, permissionMode, repoRoot, handleSetPermissionMode],
+    [agentId, sessionId, permissionMode, repoRoot, handleSetPermissionMode],
   );
 
   if (!agentId) {
@@ -752,6 +798,7 @@ export function AgentChat({
                   onPermissionRespond={
                     readOnly ? undefined : handlePermissionRespond
                   }
+                  onRestore={readOnly ? undefined : handleRestoreMessage}
                   onSaveToolCallToDisk={
                     readOnly ? undefined : handleSaveToolCallToDisk
                   }
@@ -861,6 +908,20 @@ export function AgentChat({
         >
           Your edit will replace this message and the conversation will be
           rewound to this point. All messages after it will be discarded.
+        </ConfirmDialog>
+      )}
+      {pendingRestore != null && (
+        <ConfirmDialog
+          title="Restore from this message?"
+          titleId="restore-checkpoint-title"
+          confirmLabel="Restore"
+          cancelLabel="Cancel"
+          onCancel={() => setPendingRestore(null)}
+          onConfirm={handleConfirmRestore}
+        >
+          Files will be reverted to their state when this message was sent, and
+          all later chat messages will be discarded. Your prompt will be
+          returned to the input so you can re-send or edit it.
         </ConfirmDialog>
       )}
     </div>

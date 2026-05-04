@@ -69,6 +69,12 @@ export interface SystemMessageSource {
 }
 
 export interface ConversationMessage {
+  /**
+   * Worktree snapshot captured immediately before this user message was sent
+   * to the agent. Set only on user messages, and only when the snapshot
+   * succeeded. Lets the user revert all file changes made after this turn.
+   */
+  checkpointId?: string;
   id: string;
   /** Image attachments accompanying this message. */
   images?: ImageAttachment[];
@@ -529,6 +535,7 @@ export function addUserMessage(
   agentId: string,
   text: string,
   images?: ImageAttachment[],
+  checkpointId?: string,
 ) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
@@ -539,6 +546,7 @@ export function addUserMessage(
       toolCalls: [],
       timestamp: Date.now(),
       images: images?.length ? images : undefined,
+      checkpointId,
     };
 
     return {
