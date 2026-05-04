@@ -1,5 +1,5 @@
 import type { Question } from "./parseQuestions";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Button, TextArea } from "@argus/peacock";
 import styles from "./QuestionForm.module.css";
 
@@ -8,6 +8,8 @@ interface QuestionFormProps {
   onSubmit: (formattedAnswer: string) => void;
   questions: Question[];
 }
+
+const CUSTOM_KEY = "__argus_custom__";
 
 export function QuestionForm({
   questions,
@@ -22,6 +24,7 @@ export function QuestionForm({
   const [customAnswers, setCustomAnswers] = useState<string[]>(() =>
     questions.map(() => ""),
   );
+  const customInputRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
 
   const toggle = useCallback((qIdx: number, label: string, multi: boolean) => {
     setSelections((prev) => {
@@ -34,29 +37,51 @@ export function QuestionForm({
           current.add(label);
         }
       } else {
+        const wasSelected = current.has(label);
         current.clear();
-        current.add(label);
+        if (!wasSelected) {
+          current.add(label);
+        }
       }
 
       return next;
     });
   }, []);
 
-  const setCustomAnswer = useCallback((qIdx: number, value: string) => {
-    setCustomAnswers((prev) => {
-      const next = [...prev];
-      next[qIdx] = value;
+  const setCustomAnswer = useCallback(
+    (qIdx: number, value: string) => {
+      setCustomAnswers((prev) => {
+        const next = [...prev];
+        next[qIdx] = value;
 
-      return next;
-    });
-  }, []);
+        return next;
+      });
+      if (value.trim().length > 0) {
+        setSelections((prev) => {
+          const next = prev.map((s) => new Set(s));
+          const multi = questions[qIdx]?.multiSelect;
+          if (!multi) {
+            next[qIdx].clear();
+          }
+          next[qIdx].add(CUSTOM_KEY);
 
-  // Each question is "answered" if the user picked at least one option *or*
-  // typed a free-form reply. Free-form replies are sent verbatim alongside
-  // any selections so the model sees both signals.
-  const allAnswered = selections.every(
-    (s, i) => s.size > 0 || customAnswers[i].trim().length > 0,
+          return next;
+        });
+      }
+    },
+    [questions],
   );
+
+  const allAnswered = selections.every((s, i) => {
+    if (s.size === 0) {
+      return false;
+    }
+    if (s.has(CUSTOM_KEY) && customAnswers[i].trim().length === 0) {
+      return false;
+    }
+
+    return true;
+  });
 
   const handleSubmit = useCallback(() => {
     if (!allAnswered) {
@@ -65,14 +90,15 @@ export function QuestionForm({
 
     const lines: string[] = ["The user answered:"];
     questions.forEach((q, i) => {
-      const picks = Array.from(selections[i]);
+      const picks = Array.from(selections[i]).filter((p) => p !== CUSTOM_KEY);
+      const useCustom = selections[i].has(CUSTOM_KEY);
       const custom = customAnswers[i].trim();
       const label = q.header ?? q.question;
       const parts: string[] = [];
       if (picks.length > 0) {
         parts.push(picks.join(", "));
       }
-      if (custom) {
+      if (useCustom && custom) {
         parts.push(picks.length > 0 ? `note: ${custom}` : custom);
       }
       lines.push(`- ${label}: ${parts.join(" — ")}`);
@@ -82,53 +108,81 @@ export function QuestionForm({
 
   return (
     <div className={styles.wrap}>
-      {questions.map((q, qi) => (
-        <div className={styles.question} key={qi}>
-          <div className={styles.header}>
-            {q.header ?? `Question ${qi + 1}`}
-          </div>
-          <div className={styles.prompt}>{q.question}</div>
-          <div className={styles.options}>
-            {q.options.map((opt, oi) => {
-              const checked = selections[qi].has(opt.label);
-              const inputType = q.multiSelect ? "checkbox" : "radio";
+      {questions.map((q, qi) => {
+        const inputType = q.multiSelect ? "checkbox" : "radio";
+        const customChecked = selections[qi].has(CUSTOM_KEY);
 
-              return (
-                <label
-                  className={`${styles.option} ${checked ? styles.optionChecked : ""}`}
-                  key={oi}
-                >
-                  <input
-                    checked={checked}
-                    name={`q-${qi}`}
-                    onChange={() => toggle(qi, opt.label, !!q.multiSelect)}
-                    type={inputType}
+        return (
+          <div className={styles.question} key={qi}>
+            <div className={styles.header}>
+              {q.header ?? `Question ${qi + 1}`}
+            </div>
+            <div className={styles.prompt}>{q.question}</div>
+            <div className={styles.options}>
+              {q.options.map((opt, oi) => {
+                const checked = selections[qi].has(opt.label);
+
+                return (
+                  <label
+                    className={`${styles.option} ${checked ? styles.optionChecked : ""}`}
+                    key={oi}
+                  >
+                    <input
+                      checked={checked}
+                      name={`q-${qi}`}
+                      onChange={() => toggle(qi, opt.label, !!q.multiSelect)}
+                      type={inputType}
+                    />
+                    <div className={styles.optionBody}>
+                      <div className={styles.optionLabel}>{opt.label}</div>
+                      {opt.description && (
+                        <div className={styles.optionDesc}>
+                          {opt.description}
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+              <label
+                className={`${styles.option} ${styles.customOption} ${customChecked ? styles.optionChecked : ""}`}
+              >
+                <input
+                  checked={customChecked}
+                  name={`q-${qi}`}
+                  onChange={() => {
+                    toggle(qi, CUSTOM_KEY, !!q.multiSelect);
+                    if (!customChecked) {
+                      requestAnimationFrame(() => {
+                        customInputRefs.current[qi]?.focus();
+                      });
+                    }
+                  }}
+                  type={inputType}
+                />
+                <div className={styles.optionBody}>
+                  <TextArea
+                    className={styles.customInput}
+                    placeholder="Type your own answer…"
+                    rows={2}
+                    ref={(el) => {
+                      customInputRefs.current[qi] = el;
+                    }}
+                    value={customAnswers[qi]}
+                    onChange={(e) => setCustomAnswer(qi, e.target.value)}
+                    onKeyDown={(e) => {
+                      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                        e.preventDefault();
+                        handleSubmit();
+                      }
+                    }}
                   />
-                  <div className={styles.optionBody}>
-                    <div className={styles.optionLabel}>{opt.label}</div>
-                    {opt.description && (
-                      <div className={styles.optionDesc}>{opt.description}</div>
-                    )}
-                  </div>
-                </label>
-              );
-            })}
+                </div>
+              </label>
+            </div>
           </div>
-          <TextArea
-            className={styles.customInput}
-            placeholder="Or type your own answer…"
-            rows={2}
-            value={customAnswers[qi]}
-            onChange={(e) => setCustomAnswer(qi, e.target.value)}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
-          />
-        </div>
-      ))}
+        );
+      })}
       <div className={styles.actions}>
         <Button
           variant="primary"
