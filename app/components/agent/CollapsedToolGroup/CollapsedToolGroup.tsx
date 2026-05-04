@@ -158,17 +158,17 @@ export function CollapsedToolGroup({
               <Icons.AgentIcon size={14} />
             </span>
           )}
-          {timestampLabel && (
-            <time
-              className={styles.timestamp}
-              dateTime={new Date(firstTimestamp!).toISOString()}
-              title={timestampTitle}
-            >
-              {timestampLabel}
-            </time>
-          )}
         </span>
       </button>
+      {timestampLabel && (
+        <time
+          className={styles.timestamp}
+          dateTime={new Date(firstTimestamp!).toISOString()}
+          title={timestampTitle}
+        >
+          {timestampLabel}
+        </time>
+      )}
 
       {expanded && (
         <div className={styles.expandedList}>
