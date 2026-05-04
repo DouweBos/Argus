@@ -19,7 +19,7 @@
  * - `/review-queue`                              → review queue
  * - `/runtimes`                                  → runtimes overview
  * - `/settings`                                  → settings (opened as dialog)
- * - `/sessions/:sessionId`                       → session (default agent tab)
+ * - `/sessions/:sessionId`                       → session (default home tab)
  * - `/sessions/:sessionId/agents`                → session agents view
  * - `/sessions/:sessionId/editor`                → session editor view
  * - `/sessions/:sessionId/git`                   → session git view
@@ -135,10 +135,10 @@ export function parseRoute(pathname: string): ParsedRoute {
   }
 
   if (segments[0] === "sessions" && segments[1]) {
-    const panel = (segments[2] ?? "agents") as SessionPanel;
+    const panel = (segments[2] ?? "home") as SessionPanel;
     const validPanel: SessionPanel = VALID_PANELS.includes(panel)
       ? panel
-      : "agents";
+      : "home";
     let gitView: GitSubView | null = null;
     let gitRefName: string | null = null;
     if (validPanel === "git" && segments[3]) {
@@ -173,7 +173,7 @@ export function parseRoute(pathname: string): ParsedRoute {
       view: "organizations",
       sessionId: null,
       organizationId: segments[1] ?? null,
-      panel: "agents",
+      panel: "home",
       gitView: null,
       gitRefName: null,
       pr: null,
@@ -251,7 +251,7 @@ export function routePattern(pathname: string): string {
     case "runtimes":
       return `/${route.view}`;
     case "session":
-      return route.panel === "agents"
+      return route.panel === "home"
         ? "/sessions/:sessionId"
         : `/sessions/:sessionId/${route.panel}`;
     case "organizations":
@@ -267,7 +267,7 @@ export function routePattern(pathname: string): string {
 export function routeToPath(route: Partial<ParsedRoute>): string {
   if (route.view === "session" && route.sessionId) {
     const panel =
-      route.panel && route.panel !== "agents" ? `/${route.panel}` : "";
+      route.panel && route.panel !== "home" ? `/${route.panel}` : "";
     const gitView =
       route.panel === "git" && route.gitView ? `/${route.gitView}` : "";
     const gitRef =
