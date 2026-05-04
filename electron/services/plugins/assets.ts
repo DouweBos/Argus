@@ -119,7 +119,7 @@ export function isAssetAvailable(
  * `https://github.com/<org>/<repo>/releases/download/v<version>/...` to
  * keep the asset URL pinned to the running app version.
  */
-const RELEASE_ASSET_BASE = "https://argus.houwert.dev/releases";
+const RELEASE_ASSET_BASE = "https://houwert.dev/argus/releases";
 
 function platformSlug(): string {
   switch (process.platform) {
@@ -149,7 +149,7 @@ export type DownloadProgressEmitter = (p: DownloadProgress) => void;
 
 function assetUrl(spec: PluginAssetSpec): string {
   const version = `v${app.getVersion()}`;
-  // e.g. https://argus.houwert.dev/releases/v0.18.0/device-recording/argus-sim-bridge-arm64-darwin.zip
+  // e.g. https://houwert.dev/argus/releases/v0.18.0/device-recording/argus-sim-bridge-arm64-darwin.zip
   // For node/jar/data the arch/platform suffix is omitted; the release script
   // emits a single platform-neutral artifact.
   const suffix = needsArchSuffix(spec.kind)
