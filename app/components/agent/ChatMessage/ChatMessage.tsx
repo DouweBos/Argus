@@ -312,24 +312,27 @@ export function ChatMessage({
           <TimestampGutter timestamp={message.timestamp} />
           <div
             className={styles.userEdit}
-            style={bubbleSize ? { width: bubbleSize.width } : undefined}
+            style={bubbleSize ? { minWidth: bubbleSize.width } : undefined}
           >
-            <textarea
-              ref={editRef}
-              className={styles.userEditArea}
-              style={bubbleSize ? { minHeight: bubbleSize.height } : undefined}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  setIsEditing(false);
-                } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-                  e.preventDefault();
-                  submitEdit();
-                }
-              }}
-            />
+            <div className={styles.userEditGrow} data-value={draft}>
+              <textarea
+                ref={editRef}
+                cols={1}
+                rows={1}
+                className={styles.userEditArea}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    setIsEditing(false);
+                  } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    submitEdit();
+                  }
+                }}
+              />
+            </div>
             <div className={styles.userEditActions}>
               <Button
                 variant="secondary"

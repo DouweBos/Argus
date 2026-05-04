@@ -194,18 +194,42 @@
   align-self: flex-end;
 }
 
-.userEditArea {
-  width: 100%;
-  min-height: 72px;
-  resize: vertical;
+/* Auto-grow wrapper: an inline-grid that sizes itself to the longer of the
+   textarea's content (mirrored via the ::after pseudo) or the textarea's
+   intrinsic size. The bubble starts at the original message width
+   (min-width on .userEdit) and expands horizontally as the user types
+   until it hits the 75% max-width on .userEdit, then wraps. */
+.userEditGrow {
+  display: inline-grid;
+  align-self: flex-end;
+  max-width: 100%;
+}
+
+.userEditGrow::after {
+  content: attr(data-value) " ";
+  visibility: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.userEditGrow > .userEditArea,
+.userEditGrow::after {
+  grid-area: 1 / 1;
   background: var(--accent-overlay-md);
   border: 1px solid var(--accent);
   border-radius: 16px 16px 4px 16px;
   padding: 10px 16px;
   font: inherit;
   font-size: var(--font-size-sm);
-  color: var(--text-primary);
   line-height: 1.6;
+  color: var(--text-primary);
+  min-width: 0;
+}
+
+.userEditArea {
+  width: 100%;
+  resize: none;
+  overflow: hidden;
   outline: none;
 }
 
