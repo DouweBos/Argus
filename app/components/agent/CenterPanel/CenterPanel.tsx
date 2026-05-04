@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Chip, Icons } from "@argus/peacock";
+import { Chip, EmptyState, Icons } from "@argus/peacock";
 import {
   setActiveCenterView,
   useActiveCenterView,
@@ -110,15 +110,22 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
 
         {effectiveView === "editor" && <EditorPanel sessionId={sessionId} />}
 
-        {effectiveView === "git" && (
-          <GitView
-            baseBranch={session?.base_branch}
-            branchName={session?.branch}
-            repoRoot={session?.repo_root ?? ""}
-            scope={session?.kind === "project_root" ? "project" : "session"}
-            sessionId={sessionId}
-          />
-        )}
+        {effectiveView === "git" &&
+          (session.status === "initializing" ? (
+            <EmptyState
+              icon={<Icons.BranchIcon size={20} />}
+              title="Setting up worktree…"
+              body="The git view becomes available once the session finishes initializing."
+            />
+          ) : (
+            <GitView
+              baseBranch={session?.base_branch}
+              branchName={session?.branch}
+              repoRoot={session?.repo_root ?? ""}
+              scope={session?.kind === "project_root" ? "project" : "session"}
+              sessionId={sessionId}
+            />
+          ))}
       </div>
     </div>
   );
