@@ -1058,15 +1058,6 @@ export const gitListRecentIssues = (
   query: string,
 ): Promise<RecentIssue[]> => invoke("git_list_recent_issues", { id, query });
 
-// Phase 2 W11 — amend tip
-export interface CanAmendResult {
-  ok: boolean;
-  reason?: string;
-}
-
-export const gitCanAmendTip = (id: string): Promise<CanAmendResult> =>
-  invoke("git_can_amend_tip", { id });
-
 export const gitAmendTip = (
   id: string,
   subject: string,
