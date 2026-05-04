@@ -491,8 +491,9 @@ export function startAgentListening(agentId: string): void {
   permModeListeners.set(agentId, () => {});
 
   listen<string>(`agent:permission-mode-changed:${agentId}`, (event) => {
+    const isDefault = event.payload === "default" || event.payload === "auto";
     updateAgent(agentId, {
-      permission_mode: event.payload === "default" ? undefined : event.payload,
+      permission_mode: isDefault ? undefined : event.payload,
     });
   }).then((unlisten) => {
     if (!permModeListeners.has(agentId)) {

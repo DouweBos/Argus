@@ -28,6 +28,10 @@ import {
   sendAgentMessage,
   writeFile,
 } from "../../../lib/ipc";
+import {
+  type CanonicalPermissionMode,
+  toCanonicalPermissionMode,
+} from "../../../lib/permissionModes";
 import { randomSpinnerVerb } from "../../../lib/spinnerVerbs";
 import {
   getAgent,
@@ -543,6 +547,23 @@ export function AgentChat({
     }
   }, [agentId]);
 
+  const handleSetPermissionMode = useCallback(
+    async (mode: CanonicalPermissionMode) => {
+      if (!agentId) {
+        return;
+      }
+      try {
+        await ipcSetAgentPermissionMode(agentId, mode);
+        updateAgent(agentId, {
+          permission_mode: mode === "auto" ? undefined : mode,
+        });
+      } catch {
+        // Best-effort — agent may have exited.
+      }
+    },
+    [agentId],
+  );
+
   const handleSend = useCallback(
     async (message: string, images?: ImageAttachment[]) => {
       if (!agentId) {
@@ -563,15 +584,8 @@ export function AgentChat({
         }
 
         if (cmd === "plan") {
-          const newMode = permissionMode === "plan" ? "default" : "plan";
-          try {
-            await ipcSetAgentPermissionMode(agentId, newMode);
-            updateAgent(agentId, {
-              permission_mode: newMode === "default" ? undefined : newMode,
-            });
-          } catch {
-            // Best-effort — agent may have exited.
-          }
+          const current = toCanonicalPermissionMode(permissionMode);
+          await handleSetPermissionMode(current === "plan" ? "auto" : "plan");
 
           return;
         }
@@ -623,7 +637,7 @@ export function AgentChat({
         // Message failed — user sees the optimistic message
       }
     },
-    [agentId, permissionMode, repoRoot],
+    [agentId, permissionMode, repoRoot, handleSetPermissionMode],
   );
 
   if (!agentId) {
@@ -774,27 +788,14 @@ export function AgentChat({
           modelPickerOpen={modelPickerOpen}
           modelValue={modelValue}
           models={modelOptions}
-          planMode={permissionMode === "plan"}
+          permissionMode={permissionMode}
           slashCommands={allCommands}
           textareaRef={chatInputRef}
           onInterrupt={handleInterrupt}
           onModelPickerOpenChange={setModelPickerOpen}
           onModelSelect={handleModelSelect}
           onSend={handleSend}
-          onTogglePlanMode={async () => {
-            if (!agentId) {
-              return;
-            }
-            const newMode = permissionMode === "plan" ? "default" : "plan";
-            try {
-              await ipcSetAgentPermissionMode(agentId, newMode);
-              updateAgent(agentId, {
-                permission_mode: newMode === "default" ? undefined : newMode,
-              });
-            } catch {
-              // Best-effort
-            }
-          }}
+          onSetPermissionMode={handleSetPermissionMode}
         />
       )}
       {forkDialogMessageId != null && agentId != null && repoRoot != null && (
