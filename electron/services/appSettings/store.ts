@@ -24,11 +24,13 @@ export interface AppSettings {
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: McpServers;
   /**
-   * Auto-updater feed channel. `latest` is stable; `alpha` and `beta` are
-   * pre-release feeds for internal testing. Defaults to `latest`. Mirrored
-   * to/from the renderer settings store.
+   * Auto-updater feed channel. `latest` is the public production feed; `beta`
+   * subscribes to in-development builds cut from `main`. Defaults to `latest`.
+   * Mirrored to/from the renderer settings store. Alpha builds (one-off
+   * builds from any branch) are not subscribable here — they're installed
+   * manually from the GitHub release page by repo collaborators.
    */
-  updater_channel?: "alpha" | "beta" | "latest";
+  updater_channel?: "beta" | "latest";
 }
 
 interface AppSettingsFile {

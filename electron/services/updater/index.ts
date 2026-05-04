@@ -110,9 +110,11 @@ export function initUpdater(): void {
   // on GitHub is private, so falling back to the github provider yields
   // a 404 on `releases.atom`.
   //
-  // Channel is configurable for internal testers — pre-release builds
-  // publish under `alpha-mac.yml` / `beta-mac.yml`. Stable users on the
-  // default never see them. See `app/stores/settingsStore.ts`.
+  // Channel is configurable for beta testers — beta builds publish under
+  // `beta-mac.yml`. Production users on the default `latest` feed never see
+  // them. Alpha builds (`alpha-mac.yml`) exist but are not exposed in the
+  // settings dialog; they're installed manually from the GitHub release
+  // page by repo collaborators. See `app/components/shared/SettingsDialog`.
   const channel = loadAppSettings().updater_channel ?? "latest";
   autoUpdater.setFeedURL({
     provider: "generic",

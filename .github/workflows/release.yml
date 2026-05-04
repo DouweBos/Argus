@@ -7,15 +7,15 @@ on:
         description: "Release channel"
         type: choice
         options:
-          - stable
+          - production
+          - beta
           - alpha
-          - rc
-        default: stable
+        default: production
 
 concurrency:
   # Each channel gets its own concurrency group so an alpha cut doesn't queue
-  # behind a stable cut.
-  group: release-${{ github.event.inputs.channel || 'stable' }}
+  # behind a production cut.
+  group: release-${{ github.event.inputs.channel || 'production' }}
   cancel-in-progress: false
 
 jobs:
@@ -25,10 +25,10 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    # Stable cuts must come from main; alpha/rc can come from any branch.
-    if: ${{ github.event.inputs.channel != 'stable' || github.ref == 'refs/heads/main' }}
+    # Production and beta cuts must come from main; alpha can come from any branch.
+    if: ${{ github.event.inputs.channel == 'alpha' || github.ref == 'refs/heads/main' }}
     env:
-      CHANNEL: ${{ github.event.inputs.channel || 'stable' }}
+      CHANNEL: ${{ github.event.inputs.channel || 'production' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +42,7 @@ jobs:
 
       - name: Apply changesets
         run: |
-          if [ "$CHANNEL" = "stable" ]; then
+          if [ "$CHANNEL" = "production" ]; then
             pnpm changeset version
           else
             # Pre-release versioning: enter pre-release mode, run version, then
@@ -78,7 +78,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ "$CHANNEL" = "stable" ]; then
+          if [ "$CHANNEL" = "production" ]; then
             git add -A
             if git diff --staged --quiet; then
               echo "No changesets to release"
@@ -93,7 +93,7 @@ jobs:
           else
             # Pre-release: only push the tag, not the bumped commit. The
             # source branch's changeset state stays unchanged so the next
-            # stable cut picks up the same set of unconsumed changesets.
+            # production cut picks up the same set of unconsumed changesets.
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
             git tag "v${VERSION}"
             git push origin "v${VERSION}"
@@ -161,7 +161,7 @@ jobs:
             channel:${{ env.CHANNEL }}
 
       - name: Mark release as pre-release
-        if: ${{ steps.stage.outputs.has_changes == 'true' && env.CHANNEL != 'stable' }}
+        if: ${{ steps.stage.outputs.has_changes == 'true' && env.CHANNEL != 'production' }}
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           VERSION: ${{ steps.stage.outputs.version }}
@@ -193,9 +193,9 @@ jobs:
         # Cloudflare Pages rebuild — keeps the repo and the deployed site
         # in lockstep. WEBSITE_DISPATCH_TOKEN is a fine-grained PAT with
         # `Actions: Read and write` on DouweBos/houwert.dev. Skipped silently
-        # if not configured. Pre-releases skip this — alphas/RCs don't
-        # belong in the public changelog.
-        if: ${{ steps.stage.outputs.has_changes == 'true' && env.CHANNEL == 'stable' }}
+        # if not configured. Pre-releases skip this — beta/alpha builds
+        # don't belong in the public changelog.
+        if: ${{ steps.stage.outputs.has_changes == 'true' && env.CHANNEL == 'production' }}
         env:
           GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
           VERSION: ${{ steps.stage.outputs.version }}

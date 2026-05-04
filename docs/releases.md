@@ -61,19 +61,23 @@ The workflow pushes the version-bump commit + tag directly to `main`. The PAT
 behind `RELEASE_TOKEN` must be either issued by an account that bypasses the
 protection rule, or the rule must allow that account to push directly.
 
-## Channels — stable, alpha, RC
+## Channels — production, beta, alpha
 
-The release workflow takes a **channel** input: `stable`, `alpha`, or `rc`.
+The release workflow takes a **channel** input: `production`, `beta`, or `alpha`.
 
-| Channel  | Branch      | Tag format        | Feed file        | Pre-release flag | Side effects                             |
-| -------- | ----------- | ----------------- | ---------------- | ---------------- | ---------------------------------------- |
-| `stable` | `main` only | `v0.20.0`         | `latest-mac.yml` | no               | Pushes commit + tag, syncs `houwert.dev` |
-| `alpha`  | any branch  | `v0.20.0-alpha.0` | `alpha-mac.yml`  | yes              | Pushes tag only; nothing else            |
-| `rc`     | any branch  | `v0.20.0-rc.0`    | `beta-mac.yml`   | yes              | Pushes tag only; nothing else            |
+| Channel      | Branch      | Tag format        | Feed file        | Pre-release flag | Subscribable in app | Side effects                             |
+| ------------ | ----------- | ----------------- | ---------------- | ---------------- | ------------------- | ---------------------------------------- |
+| `production` | `main` only | `v0.20.0`         | `latest-mac.yml` | no               | yes (default)       | Pushes commit + tag, syncs `houwert.dev` |
+| `beta`       | `main` only | `v0.20.0-beta.0`  | `beta-mac.yml`   | yes              | yes                 | Pushes tag only; nothing else            |
+| `alpha`      | any branch  | `v0.20.0-alpha.0` | `alpha-mac.yml`  | yes              | no — manual install | Pushes tag only; nothing else            |
 
-Pre-release versioning runs `pnpm changeset pre enter <channel>` → `version` → `pre exit` (without committing the exit), so the source branch's changeset state stays untouched. Bumped versions only live in tag-space; the next `stable` cut consumes the same set of unconsumed changesets.
+**Production** cuts are the public releases — they push the changeset version-bump commit + tag to `main` and notify `houwert.dev` so the marketing site rebuilds its public changelog.
 
-Stable users on the `latest` feed never see alpha/RC builds. Internal testers can switch their auto-updater channel under **Settings → Advanced → Update channel**.
+**Beta** cuts are in-development builds of upcoming features, intended to work but not yet vetted. They can only be cut from `main` so the beta feed always tracks ahead of production along the same line of history. Anyone can subscribe by switching to **Beta** under **Settings → Advanced → Update channel**.
+
+**Alpha** cuts are one-off builds from any branch, used to share a work-in-progress with someone else. They are **not** exposed as a subscribable channel in the settings dialog — repo collaborators install the `.dmg` manually from the GitHub release page. The `alpha-mac.yml` feed file is still published, but no in-app UI selects it.
+
+Pre-release versioning (beta/alpha) runs `pnpm changeset pre enter <channel>` → `version` → `pre exit` (without committing the exit), so the source branch's changeset state stays untouched. Bumped versions only live in tag-space; the next `production` cut consumes the same set of unconsumed changesets.
 
 ## Plugin assets
 
