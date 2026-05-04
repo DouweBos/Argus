@@ -79,6 +79,7 @@ function ViewOptionsPopover({ onClose }: { onClose: () => void }) {
 interface ChangesToolbarProps {
   /** Active sub-view drives the search placeholder + which actions are enabled. */
   activeView: SourceView;
+  onCreateBranch?: () => void;
   onNavigate: (view: SourceView) => void;
   onPullDialog?: () => void;
   onPushDialog?: () => void;
@@ -110,6 +111,7 @@ export function ChangesToolbar({
   onSearchChange,
   onSearchSubmit,
   onRefresh,
+  onCreateBranch,
   onNavigate,
   onPullDialog,
   onPushDialog,
@@ -162,11 +164,15 @@ export function ChangesToolbar({
 
   const onBranch = useCallback(() => {
     if (scope === "project") {
-      onNavigate("history");
+      if (onCreateBranch) {
+        onCreateBranch();
+      } else {
+        onNavigate("history");
+      }
     } else if (onRenameBranch) {
       onRenameBranch();
     }
-  }, [scope, onNavigate, onRenameBranch]);
+  }, [scope, onCreateBranch, onNavigate, onRenameBranch]);
 
   const onTag = useCallback(() => {
     if (scope === "project" && onTagSignal) {

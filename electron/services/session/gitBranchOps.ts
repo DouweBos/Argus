@@ -223,6 +223,16 @@ export async function gitCreateBranch(
     throw new GitError("unknown", "Branch name cannot be empty");
   }
   await withGitLock(path, async () => {
+    // Detect unborn HEAD (fresh repo, no commits) — `git branch <name>` and
+    // `git checkout -b <name> <startPoint>` both fail because HEAD doesn't
+    // resolve. `git checkout -b <name>` (no start point) works: it just
+    // renames the unborn branch the worktree is sitting on.
+    const isUnborn = await isUnbornHead(path);
+    if (isUnborn) {
+      await git(path, ["checkout", "-b", opts.name]);
+
+      return;
+    }
     if (opts.checkout) {
       const args = ["checkout", "-b", opts.name];
       if (opts.startPoint) {
@@ -237,6 +247,16 @@ export async function gitCreateBranch(
       await git(path, args);
     }
   });
+}
+
+async function isUnbornHead(cwd: string): Promise<boolean> {
+  try {
+    await git(cwd, ["rev-parse", "--verify", "--quiet", "HEAD"]);
+
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 export interface DeleteBranchOpts {

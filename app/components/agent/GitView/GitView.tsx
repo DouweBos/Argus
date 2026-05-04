@@ -336,6 +336,9 @@ export function GitView({
     }
   }, [scope, status]);
   const onToolbarRenameBranch = useCallback(() => setRenameOpen(true), []);
+  const onToolbarCreateBranch = useCallback(() => {
+    setNewBranchStartPoint(status?.branch ?? "HEAD");
+  }, [status]);
   const onToolbarTagSignal = useCallback(() => {
     openTagDialog();
   }, [openTagDialog]);
@@ -408,6 +411,9 @@ export function GitView({
           onSearchSubmit={() => setJumpOpen(true)}
           onRefresh={onToolbarRefresh}
           onNavigate={setActiveView}
+          onCreateBranch={
+            scope === "project" ? onToolbarCreateBranch : undefined
+          }
           onPullDialog={onToolbarPullDialog}
           onPushDialog={onToolbarPushDialog}
           onRenameBranch={onToolbarRenameBranch}
