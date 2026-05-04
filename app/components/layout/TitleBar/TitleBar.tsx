@@ -28,7 +28,6 @@ const ROUTE_TITLES: Record<string, string> = {
   runtimes: "Runtimes",
   organizations: "Organizations",
   "pull-requests": "Pull requests",
-  "review-queue": "Review queue",
   notifications: "Notifications",
 };
 

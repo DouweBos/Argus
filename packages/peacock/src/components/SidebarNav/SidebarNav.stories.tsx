@@ -8,7 +8,6 @@ import {
   HistoryIcon,
   HomeIcon,
   PlusIcon,
-  ReviewQueueIcon,
   StashIcon,
   WorkingCopyIcon,
 } from "../../icons/Icons";
@@ -40,9 +39,6 @@ export const Default: Story = {
     <SidebarNav style={{ width: 240 }}>
       <SidebarItem active leading={<HomeIcon size={12} />} count="—">
         Home
-      </SidebarItem>
-      <SidebarItem leading={<ReviewQueueIcon size={12} />} count={4}>
-        Review queue
       </SidebarItem>
       <SidebarSection count={5}>Sessions</SidebarSection>
       <SessionCard
@@ -83,9 +79,6 @@ export const FramedHome: Story = {
         <SidebarNavGroup>
           <SidebarItem active leading={<HomeIcon size={12} />} count="—">
             Home
-          </SidebarItem>
-          <SidebarItem leading={<ReviewQueueIcon size={12} />} count={4}>
-            Review queue
           </SidebarItem>
           <SidebarItem leading={<CommitIcon size={12} />} count="∞">
             Activity

@@ -12,7 +12,6 @@ import {
 } from "../stores/sessionStore";
 import { listen } from "./events";
 import { openProject, purgeAgentsForSession } from "./projectsService";
-import { seedReviewStateForSession } from "./reviewQueueService";
 
 let initialized = false;
 
@@ -38,9 +37,6 @@ export function initSessionEventListeners(): void {
     const ws = event.payload;
     if (!getSessionState().sessions.some((w) => w.id === ws.id)) {
       addSession(ws);
-    }
-    if (ws.kind === "worktree") {
-      seedReviewStateForSession(ws.id).catch(() => {});
     }
   });
 

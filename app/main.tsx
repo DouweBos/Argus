@@ -17,7 +17,6 @@ import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initPrewarm } from "./lib/prewarmService";
 import { bootstrapProjects } from "./lib/projectsService";
 import { initRepoBranchSync } from "./lib/repoBranchSync";
-import { initReviewQueueListener } from "./lib/reviewQueueService";
 import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
 import { initConductorLogListener } from "./stores/conductorLogStore";
@@ -113,8 +112,6 @@ if (popoutMode === "launcher") {
   // Poll the device list so the sidebar count updates even before the
   // Devices screen has been opened.
   initDevicePolling();
-  // Maintain the Review queue from backend `session:review-state` events.
-  initReviewQueueListener();
   // Subscribe to project/session lifecycle events once for the whole app —
   // components no longer install their own listeners on mount.
   initSessionEventListeners();

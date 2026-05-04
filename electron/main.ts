@@ -431,18 +431,13 @@ function buildAppMenu(): Menu {
           click: () => goto("/pull-requests"),
         },
         {
-          label: "Review Queue",
-          accelerator: "CmdOrCtrl+5",
-          click: () => goto("/review-queue"),
-        },
-        {
           label: "Notifications",
-          accelerator: "CmdOrCtrl+6",
+          accelerator: "CmdOrCtrl+5",
           click: () => goto("/notifications"),
         },
         {
           label: "Organizations",
-          accelerator: "CmdOrCtrl+7",
+          accelerator: "CmdOrCtrl+6",
           click: () => goto("/organizations"),
         },
         { type: "separator" },

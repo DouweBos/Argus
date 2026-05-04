@@ -36,7 +36,6 @@ import {
   listSessions,
 } from "./ipc";
 import { refreshRepoBranch } from "./repoBranchSync";
-import { seedReviewStateForSession } from "./reviewQueueService";
 
 /** Repo roots that have been registered with the backend in this process. */
 const knownRepoRoots = new Set<string>();
@@ -63,15 +62,6 @@ export async function openProject(
 
     const sessions = await listSessions(path);
     mergeSessionsForProject(path, sessions);
-
-    // Seed the review queue with the current commits-ahead count for each
-    // worktree — worktrees may have accumulated changes in a previous
-    // session. repo_root sessions are skipped upstream in the backend.
-    for (const ws of sessions) {
-      if (ws.kind === "worktree") {
-        seedReviewStateForSession(ws.id).catch(() => {});
-      }
-    }
 
     await refreshRepoBranch(path);
 

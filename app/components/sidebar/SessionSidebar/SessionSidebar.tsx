@@ -22,7 +22,6 @@ import {
   usePrList,
 } from "../../../stores/pullRequestStore";
 import { reorderOpenProjects } from "../../../stores/recentProjectsStore";
-import { useReviewQueueCount } from "../../../stores/reviewQueueStore";
 import {
   reorderProjects,
   toggleProjectCollapsed,
@@ -45,7 +44,6 @@ export function SessionSidebar() {
   const runningAgents = Object.values(agentsRecord).filter(
     (a) => a.status === "running",
   ).length;
-  const reviewQueueCount = useReviewQueueCount();
   const awaitingMyReviewCount = useAwaitingMyReviewCount();
   const prList = usePrList();
   // Show a spinner until the first fetch has landed; swapping to `0`
@@ -192,13 +190,6 @@ export function SessionSidebar() {
           count={prNavCount}
         >
           Pull requests
-        </SidebarNavItem>
-        <SidebarNavItem
-          view="review-queue"
-          leading={<Icons.ReviewQueueIcon size={12} />}
-          count={reviewQueueCount}
-        >
-          Review queue
         </SidebarNavItem>
       </SidebarNavGroup>
 

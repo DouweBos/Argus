@@ -15,7 +15,6 @@ import { createTerminal, revealInFinder } from "../../../lib/ipc";
 import { isSessionReady, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useUnreadByAgent } from "../../../stores/conversationStore";
-import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import {
   selectSession,
   useSelectedSessionId,
@@ -351,13 +350,11 @@ function RepoHeaderMeta({ session }: { session: Session }) {
   const { diffStats } = useGitObservation(session.id, {
     enabled: isSessionReady(session.status),
   });
-  const reviewQueue = useReviewQueueMap();
-  const commitsAhead = reviewQueue[session.id]?.commitsAhead ?? 0;
 
   const hasLineChanges = Boolean(
     diffStats && (diffStats.additions > 0 || diffStats.deletions > 0),
   );
-  if (!hasLineChanges && commitsAhead === 0) {
+  if (!hasLineChanges) {
     return null;
   }
 
@@ -371,18 +368,6 @@ function RepoHeaderMeta({ session }: { session: Session }) {
           {diffStats.deletions > 0 && (
             <span className={styles.diffRemove}>-{diffStats.deletions}</span>
           )}
-        </span>
-      )}
-      {commitsAhead > 0 && (
-        <span
-          className={styles.aheadBadge}
-          title={
-            session.base_branch
-              ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${session.base_branch}`
-              : `${commitsAhead} unmerged commit${commitsAhead === 1 ? "" : "s"}`
-          }
-        >
-          ↑{commitsAhead}
         </span>
       )}
     </>

@@ -61,7 +61,6 @@ import { NotificationsScreen } from "../../notifications";
 import { OrganizationsScreen } from "../../organizations";
 import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
 import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
-import { ReviewQueueScreen } from "../../reviewQueue/ReviewQueueScreen";
 import { RuntimeScreen } from "../../runtimes";
 import { BranchPickerDialog } from "../../shared/BranchPickerDialog";
 import { CommandPalette } from "../../shared/CommandPalette";
@@ -108,7 +107,6 @@ function renderCenter(
     | "organizations"
     | "pull-request-detail"
     | "pull-requests"
-    | "review-queue"
     | "runtimes",
   isNotificationsRoute: boolean,
 ) {
@@ -129,9 +127,6 @@ function renderCenter(
   }
   if (centerView === "organizations") {
     return <OrganizationsScreen />;
-  }
-  if (centerView === "review-queue") {
-    return <ReviewQueueScreen />;
   }
   if (centerView === "pull-requests" || centerView === "pull-request-detail") {
     // Detail is an overlay on top of the list — the list stays mounted behind
