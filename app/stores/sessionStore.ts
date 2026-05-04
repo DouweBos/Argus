@@ -5,7 +5,6 @@ import { useRouteSessionId } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
 import {
   forgetSessionPanel,
-  getActiveCenterView,
   getLastPanelForSession,
 } from "./editorStore";
 import { forgetSessionTools } from "./layoutStore";
@@ -234,7 +233,7 @@ export const selectSession = (id: string | null) => {
     appNavigate({
       view: "session",
       sessionId: id,
-      panel: getLastPanelForSession(id) ?? getActiveCenterView(),
+      panel: getLastPanelForSession(id) ?? "home",
     });
   } else {
     appNavigate({ view: "home" });
