@@ -56,9 +56,7 @@
   font-size: var(--font-size-sm);
   line-height: 1.6;
   color: var(--text-primary);
-  background: var(--scrim-sm);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius-sm);
+  background: transparent;
   padding: 16px 20px;
 }
 
