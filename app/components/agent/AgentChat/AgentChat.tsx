@@ -53,6 +53,7 @@ import {
   type ToolCallInfo,
   addUserMessage,
   clearAgentTodos,
+  clearAgentUnread,
   clearConversation,
   clearPermission,
   queueMessage,
@@ -293,6 +294,18 @@ export function AgentChat({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
     // The scroll handler will update isAtBottom from the new position.
+  }, [agentId]);
+
+  // Opening a chat clears its unread state outright. The auto-scroll lands
+  // the user at the bottom, so anything they missed is being acknowledged by
+  // the act of switching to this tab. Per-message IntersectionObservers stay
+  // responsible for the live case — when the user is already in this chat
+  // and a new turn arrives below the current scroll position.
+  useEffect(() => {
+    if (!agentId) {
+      return;
+    }
+    clearAgentUnread(agentId);
   }, [agentId]);
 
   useEffect(() => {
