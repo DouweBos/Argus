@@ -88,6 +88,6 @@ Each release also publishes per-plugin asset zips, which the running app fetches
 3. Node trees / JARs: `ditto -c -k --keepParent` only.
 4. Upload each `.zip` to the same GH release tag as `<plugin>__<filename>`.
 
-The reverse proxy at `argus.houwert.dev` rewrites `/releases/v<version>/<plugin>/<file>` → flat GH download URL. The renderer's resolver constructs the URL deterministically from `app.getVersion()` so every release is self-contained — no separate plugin versioning, no update prompts. Updating Argus = updating its plugin assets atomically.
+The reverse proxy at `houwert.dev/argus/releases` rewrites `/releases/v<version>/<plugin>/<file>` → flat GH download URL. The renderer's resolver constructs the URL deterministically from `app.getVersion()` so every release is self-contained — no separate plugin versioning, no update prompts. Updating Argus = updating its plugin assets atomically.
 
 Required env vars for `scripts/release-plugins.ts` (set automatically inside the fastlane release lane): `CSC_NAME`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APPLE_API_KEY`, `GITHUB_TOKEN`. Pass `SKIP_UPLOAD=1` to leave the staged zips on disk for inspection without uploading.
