@@ -1,7 +1,11 @@
 import type { OnboardingStep } from "../../lib/types";
 import type { ReactNode } from "react";
-import { Stepper } from "@argus/peacock";
-import { ONBOARDING_STEPS_ORDER } from "../../stores/onboardingStore";
+import { Button, Stepper } from "@argus/peacock";
+import { useOnboarding } from "../../hooks/useOnboarding";
+import {
+  ONBOARDING_STEPS_ORDER,
+  previousStepOf,
+} from "../../stores/onboardingStore";
 import styles from "./OnboardingLayout.module.css";
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
@@ -36,11 +40,27 @@ export function OnboardingLayout({
   showStepper = true,
   children,
 }: OnboardingLayoutProps) {
+  const { advance } = useOnboarding();
   const currentIndex = ONBOARDING_STEPS_ORDER.indexOf(currentStep);
   const steps = ONBOARDING_STEPS_ORDER.map((id) => ({
     id,
     label: STEP_LABELS[id],
   }));
+  const canGoBack =
+    currentStep !== "welcome" &&
+    currentStep !== "completion" &&
+    previousStepOf(currentStep) !== currentStep;
+  const backButton = canGoBack ? (
+    <Button
+      variant="ghost"
+      onClick={() => {
+        advance(previousStepOf(currentStep)).catch(() => {});
+      }}
+    >
+      Back
+    </Button>
+  ) : null;
+  const hasFooter = Boolean(backButton || footerLeft || footerRight);
 
   return (
     <div className={styles.root}>
@@ -58,9 +78,12 @@ export function OnboardingLayout({
             {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
           </div>
           <div className={styles.body}>{children}</div>
-          {(footerLeft || footerRight) && (
+          {hasFooter && (
             <div className={styles.footer}>
-              <div className={styles.footerLeft}>{footerLeft}</div>
+              <div className={styles.footerLeft}>
+                {backButton}
+                {footerLeft}
+              </div>
               <div className={styles.footerRight}>{footerRight}</div>
             </div>
           )}
