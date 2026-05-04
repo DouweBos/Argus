@@ -156,14 +156,26 @@ export async function git(cwd: string, args: string[]): Promise<string> {
 // ---------------------------------------------------------------------------
 
 /**
- * Scan the managed worktrees directory for directories that exist on disk
- * (with a valid `.git` file) but are not registered with git. Re-register
- * them using `git worktree repair`.
+ * Reconcile git's worktree metadata with the managed worktrees directory:
  *
- * This handles the case where `git worktree prune` (or a failed delete)
- * removed git's back-reference but left the directory intact.
+ * 1. `git worktree prune` — drop metadata for worktrees whose directory is
+ *    gone (e.g. external tools deleting `.claude/worktrees/<name>` by hand).
+ * 2. `git worktree repair` — re-register directories that exist on disk with
+ *    a valid `.git` file but are not known to git, fixing the case where the
+ *    back-reference was removed but the working directory was left intact.
  */
 export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
+  // Drop git's metadata for worktrees whose directory is gone — e.g. when an
+  // external tool (Claude Code's Agent tool, a script, manual `rm -rf`) deletes
+  // the working dir without `git worktree remove`. The leftover entries under
+  // `.git/worktrees/<name>/` cause every later git invocation in any sibling
+  // worktree to fail with `fatal: not a git repository: …/.git/worktrees/<name>`.
+  try {
+    await git(repoRoot, ["worktree", "prune"]);
+  } catch {
+    // Non-fatal — if prune fails we still attempt the orphan-repair below.
+  }
+
   const root = worktreesRoot(repoRoot);
   if (!fs.existsSync(root)) {
     return;
