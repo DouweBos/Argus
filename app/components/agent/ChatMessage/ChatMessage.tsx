@@ -10,6 +10,7 @@ import {
   HoverActionButton,
   Icons,
 } from "@argus/peacock";
+import { findScrollParent } from "../../../lib/findScrollParent";
 import { showImageContextMenu } from "../../../lib/ipc";
 import {
   buildLinkedProjectsPreamble,
@@ -25,24 +26,6 @@ import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
-
-/**
- * Walk up the DOM to find the nearest ancestor that scrolls vertically. Used
- * to root an IntersectionObserver on the chat's scrolling container without
- * threading a ref through every caller.
- */
-export function findScrollParent(el: HTMLElement): HTMLElement | null {
-  let node: HTMLElement | null = el.parentElement;
-  while (node) {
-    const overflowY = window.getComputedStyle(node).overflowY;
-    if (overflowY === "auto" || overflowY === "scroll") {
-      return node;
-    }
-    node = node.parentElement;
-  }
-
-  return null;
-}
 
 function TimestampGutter({ timestamp }: { timestamp: number }) {
   const d = new Date(timestamp);

@@ -15,7 +15,7 @@ import * as net from "node:net";
 import { promisify } from "node:util";
 import { log } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
-import { resolveAssetPath } from "../plugins/assets";
+import { resolveAssetPath } from "../tools/assets";
 import { H264AccessUnitParser } from "./h264-parser";
 
 const execFileAsync = promisify(execFile);
@@ -27,7 +27,7 @@ const execFileAsync = promisify(execFile);
 const JAR_NAME = "scrcpy-server.jar";
 
 function scrcpyServerPath(): string {
-  return resolveAssetPath("device-recording", JAR_NAME);
+  return resolveAssetPath(JAR_NAME);
 }
 
 // ---------------------------------------------------------------------------

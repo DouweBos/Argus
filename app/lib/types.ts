@@ -424,11 +424,6 @@ export interface ArgusConfig {
    */
   platforms?: RuntimePlatform[];
   /**
-   * Plugins disabled for everyone working on this project. Strings — see
-   * `app/plugins/types.ts` for valid `PluginId`s. Unknown ids are ignored.
-   */
-  plugins?: { disabled?: string[] } | null;
-  /**
    * Branch names that cannot be merged into directly from the app — the UI
    * shows a "Push & open PR" flow instead. Typical values: `["main"]`.
    */
@@ -474,6 +469,11 @@ export interface ArgusConfig {
    */
   single_runtime?: boolean;
   terminals?: TerminalConfigEntry[];
+  /**
+   * Tools disabled for everyone working on this project. Strings — see
+   * `app/tools/types.ts` for valid `ToolId`s. Unknown ids are ignored.
+   */
+  tools?: { disabled?: string[] } | null;
   /** Env vars set in each session's terminals with a unique integer per session. */
   workspace_env?: WorkspaceEnvConfig[];
 }
@@ -738,7 +738,7 @@ export interface OrgTaskScopeEntry {
 export const ONBOARDING_STEPS = [
   "welcome",
   "permissions",
-  "plugins",
+  "tools",
   "preflight",
   "claude_auth",
   "launcher",

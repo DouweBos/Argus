@@ -71,7 +71,7 @@ export function PermissionsStep() {
         <Button
           variant="primary"
           onClick={() => {
-            advance("plugins").catch(() => {});
+            advance("tools").catch(() => {});
           }}
         >
           Continue

@@ -34,7 +34,7 @@ const DEFAULT_STATE: OnboardingStateData = {
  *
  *   ARGUS_HOME="$HOME/.argus-dev" pnpm dev
  *
- * Every file under this directory — `config.json`, `plugins.json`, agent
+ * Every file under this directory — `config.json`, `tools.json`, agent
  * logs, organizations, worktrees — is keyed off this single helper. Override
  * it once and the whole install switches to the parallel home.
  */

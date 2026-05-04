@@ -1,21 +1,21 @@
 import { useEffect } from "react";
 import { Icons } from "@argus/peacock";
-import { useEffectivePluginEnabled } from "../../../plugins/store";
 import {
-  type ToolId,
+  type ToolRailId,
   TOOL_PLACEMENT,
   setBottomPanelHeight,
   toggleTool,
   useActiveToolId,
   useMountedToolIds,
 } from "../../../stores/layoutStore";
+import { useEffectiveToolEnabled } from "../../../tools/store";
 import { DebugTool } from "../../toolrail/tools/DebugTool";
 import { NotificationsTool } from "../../toolrail/tools/NotificationsTool";
 import { TerminalTool } from "../../toolrail/tools/TerminalTool";
 import { ResizablePanel } from "../ResizablePanel";
 import styles from "./BottomPanel.module.css";
 
-const TOOL_LABELS: Record<ToolId, string> = {
+const TOOL_LABELS: Record<ToolRailId, string> = {
   changes: "Changes",
   terminal: "Terminal",
   simulator: "Simulator",
@@ -23,11 +23,11 @@ const TOOL_LABELS: Record<ToolId, string> = {
   notifications: "Notifications",
 };
 
-const BOTTOM_TOOL_IDS: ToolId[] = (
-  ["terminal", "debug", "notifications"] as ToolId[]
+const BOTTOM_TOOL_IDS: ToolRailId[] = (
+  ["terminal", "debug", "notifications"] as ToolRailId[]
 ).filter((id) => TOOL_PLACEMENT[id] === "bottom");
 
-function renderToolContent(id: ToolId, sessionId: string | null) {
+function renderToolContent(id: ToolRailId, sessionId: string | null) {
   switch (id) {
     case "terminal":
       return <TerminalTool sessionId={sessionId} />;
@@ -47,7 +47,7 @@ interface BottomPanelProps {
 export function BottomPanel({ sessionId }: BottomPanelProps) {
   const activeToolId = useActiveToolId("bottom");
   const mountedToolIds = useMountedToolIds();
-  const debugEnabled = useEffectivePluginEnabled("device-debug");
+  const debugEnabled = useEffectiveToolEnabled("device-debug");
 
   // Auto-close the debug panel when the user disables `device-debug`.
   useEffect(() => {

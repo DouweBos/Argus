@@ -79,15 +79,6 @@ The release workflow takes a **channel** input: `production`, `beta`, or `alpha`
 
 Pre-release versioning (beta/alpha) runs `pnpm changeset pre enter <channel>` → `version` → `pre exit` (without committing the exit), so the source branch's changeset state stays untouched. Bumped versions only live in tag-space; the next `production` cut consumes the same set of unconsumed changesets.
 
-## Plugin assets
+## Tool assets
 
-Each release also publishes per-plugin asset zips, which the running app fetches when the user enables a plugin. The release workflow runs `scripts/release-plugins.ts` after the main `.app` has been signed and notarized:
-
-1. Stage each plugin source under `release/plugin-staging/<plugin>/`.
-2. Native binaries: `codesign --options runtime`, then `ditto -c -k --keepParent` into a `.zip`, then `xcrun notarytool submit … --wait`.
-3. Node trees / JARs: `ditto -c -k --keepParent` only.
-4. Upload each `.zip` to the same GH release tag as `<plugin>__<filename>`.
-
-The reverse proxy at `houwert.dev/argus/releases` rewrites `/releases/v<version>/<plugin>/<file>` → flat GH download URL. The renderer's resolver constructs the URL deterministically from `app.getVersion()` so every release is self-contained — no separate plugin versioning, no update prompts. Updating Argus = updating its plugin assets atomically.
-
-Required env vars for `scripts/release-plugins.ts` (set automatically inside the fastlane release lane): `CSC_NAME`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APPLE_API_KEY`, `GITHUB_TOKEN`. Pass `SKIP_UPLOAD=1` to leave the staged zips on disk for inspection without uploading.
+Tool assets (`argus-sim-bridge`, `scrcpy-server.jar`, the conductor tree) ship bundled with the app via electron-builder's `extraResources`. Toggling tools on or off in onboarding/Settings affects whether their UI surfaces and IPC handlers are active — it doesn't move binaries around. Updating Argus updates its tool assets atomically as part of the standard auto-update flow.

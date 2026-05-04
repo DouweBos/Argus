@@ -133,14 +133,14 @@ Organisations are configured in App settings.
 
 ## Onboarding
 
-- **Plugins picker** — choose which device-tooling plugins you want
-  bundled into your install (recording, control, debug, inspector). The
-  base install is small; assets only download for the plugins you turn
-  on. Skippable — every plugin can be enabled later in **Settings →
-  Plugins**.
+- **Tools picker** — choose which device-tooling tools you want
+  active (recording, control, debug, inspector). Turning a tool off
+  hides its UI surfaces and disables its IPC handlers so Argus stays
+  focused on what you use. Skippable — every tool can be toggled
+  later in **Settings → Tools**.
 - **Preflight** — checks `git`, `claude`, and the prerequisites for the
-  plugins you picked, with one-click hints to fix anything missing. A
-  user who picked zero plugins sees only the four core checks
+  tools you picked, with one-click hints to fix anything missing. A
+  user who picked zero tools sees only the four core checks
   (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`).
 - **`.argus.json` generation** — Argus inspects your project and either
   writes a sensible default (Quick generate) or asks the `claude` CLI
@@ -149,25 +149,24 @@ Organisations are configured in App settings.
 
 ---
 
-## Plugins
+## Tools
 
-Argus's device tooling ships as opt-in plugins so the base install stays
-lean. Each plugin's assets — native bridge binaries, the conductor CLI
-tree, the scrcpy server — are pinned to the running app version and
-fetched from the GitHub release on first enable. Updating Argus updates
-the plugin assets atomically; there are no separate plugin versions or
-update prompts.
+Argus's device tooling ships as opt-in tools so the base install stays
+lean. Each tool's assets — native bridge binaries, the conductor CLI
+tree, the scrcpy server — ship bundled with the app. Updating Argus
+updates the tool assets atomically; there are no separate tool versions
+or update prompts.
 
-| Plugin                  | What it adds                                                                                             |
+| Tool                    | What it adds                                                                                             |
 | ----------------------- | -------------------------------------------------------------------------------------------------------- |
 | **Device recording**    | iOS Simulator + Android emulator screen capture in the runtime panel.                                    |
 | **Device UI inspector** | View hierarchy, accessibility, and layout overlays on whatever device is connected. Builds on recording. |
 | **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation.                                  |
 | **Device debug**        | Live device log streams and one-shot probes in the Debug panel. Builds on control.                       |
 
-Toggle plugins under **Settings → Plugins**. A project that doesn't use
-any device tooling can mask plugins off for the whole team via
-`.argus.json#plugins.disabled` — see
+Toggle tools under **Settings → Tools**. A project that doesn't use
+any device tooling can mask tools off for the whole team via
+`.argus.json#tools.disabled` — see
 [Project settings](./project-settings.md).
 
 ---

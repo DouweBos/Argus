@@ -9,11 +9,6 @@ import { startAgentInSession } from "../../../lib/agentLifecycle";
 import { runCloseIntent } from "../../../lib/closeIntent";
 import { closeWindow } from "../../../lib/ipc";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
-import { usePluginProjectMaskSync } from "../../../plugins/projectSync";
-import {
-  bootstrapPluginStore,
-  useEffectivePluginEnabled,
-} from "../../../plugins/store";
 import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
@@ -51,6 +46,11 @@ import {
   useSelectedSessionId,
 } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
+import { useToolProjectMaskSync } from "../../../tools/projectSync";
+import {
+  bootstrapToolStore,
+  useEffectiveToolEnabled,
+} from "../../../tools/store";
 import { CenterPanel } from "../../agent/CenterPanel";
 import { AgentsScreen } from "../../agents/AgentsScreen";
 import { DevicesScreen } from "../../devices/DevicesScreen";
@@ -160,11 +160,11 @@ export function AppShell() {
   useOrgTaskSync();
   usePullRequestsSync();
   useTrackSessionPanel();
-  usePluginProjectMaskSync();
-  // Reconcile the plugin store against the persisted backend state once at
-  // app start. Idempotent — see `bootstrapPluginStore`.
+  useToolProjectMaskSync();
+  // Reconcile the tool store against the persisted backend state once at
+  // app start. Idempotent — see `bootstrapToolStore`.
   useEffect(() => {
-    bootstrapPluginStore();
+    bootstrapToolStore();
   }, []);
 
   const startNewAgentInCurrent = useCallback(async () => {
@@ -202,8 +202,8 @@ export function AppShell() {
     }
   }, []);
 
-  const recordingPluginEnabled = useEffectivePluginEnabled("device-recording");
-  const debugPluginEnabled = useEffectivePluginEnabled("device-debug");
+  const recordingToolEnabled = useEffectiveToolEnabled("device-recording");
+  const debugToolEnabled = useEffectiveToolEnabled("device-debug");
   const shortcutHandlers = useMemo<Record<ShortcutId, () => void>>(
     () => ({
       "command-palette": toggleCommandPalette,
@@ -211,16 +211,16 @@ export function AppShell() {
       "toggle-right-panel": toggleRightPanel,
       "toggle-bottom-panel": toggleBottomPanel,
       "toggle-terminal": () => toggleTool("terminal"),
-      // Plugin-gated shortcuts no-op when the plugin is off — same behaviour
+      // Tool-gated shortcuts no-op when the tool is off — same behaviour
       // as the missing rail entry, just via the keyboard surface.
       "toggle-debug": () => {
-        if (debugPluginEnabled) {
+        if (debugToolEnabled) {
           toggleTool("debug");
         }
       },
       "toggle-changes": () => toggleTool("changes"),
       "toggle-simulator": () => {
-        if (recordingPluginEnabled) {
+        if (recordingToolEnabled) {
           toggleTool("simulator");
         }
       },
@@ -240,8 +240,8 @@ export function AppShell() {
       startNewAgentInCurrent,
       cycleAgentTab,
       goToProjectHome,
-      recordingPluginEnabled,
-      debugPluginEnabled,
+      recordingToolEnabled,
+      debugToolEnabled,
     ],
   );
   // When the git panel is active, the GitView keyboard layer owns these combos

@@ -2,7 +2,7 @@
  * Resolves Argus's per-user state directory. Defaults to `~/.argus` but can
  * be overridden by `ARGUS_HOME` in the environment, which is how a developer
  * runs a dev build alongside their production install without colliding on
- * `plugins.json`, worktrees, organizations, etc.:
+ * `tools.json`, worktrees, organizations, etc.:
  *
  *   ARGUS_HOME="$HOME/.argus-dev" pnpm dev
  *

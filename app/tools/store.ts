@@ -1,16 +1,17 @@
 /**
- * Plugin enable/disable store. Persists per-user toggles to localStorage and
+ * Tool enable/disable store. Persists per-user toggles to localStorage and
  * provides the hooks the rest of the app reads to gate UI surfaces.
  *
- * Effective enabled state = userEnabled[id] AND every plugin in
+ * Effective enabled state = userEnabled[id] AND every tool in
  * `requires` is also effective-enabled AND the project hasn't masked the
- * plugin off. Project masking is wired in chunk 9; this store exposes the
- * shape now so consumers can rely on `useEffectivePluginEnabled` immediately.
+ * tool off. Project masking is wired in via `setProjectDisabled`; this store
+ * exposes the shape now so consumers can rely on `useEffectiveToolEnabled`
+ * immediately.
  */
 
 import type {
-  PluginId,
-  PluginManifest,
+  ToolId,
+  ToolManifest,
   RuntimeModeContribution,
   SettingsSectionContribution,
   ToolPlacement,
@@ -19,31 +20,31 @@ import type {
 import { useMemo } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
-import { getEnabledPluginsIpc, setEnabledPluginsIpc } from "../lib/ipc";
-import { getPlugin, PLUGINS } from "./registry";
+import { getEnabledToolsIpc, setEnabledToolsIpc } from "../lib/ipc";
+import { getTool, TOOLS } from "./registry";
 
-const STORAGE_KEY = "argus:plugins";
+const STORAGE_KEY = "argus:tools";
 
-interface PluginStoreState {
+interface ToolStoreState {
   /** Project-level mask (active session's project). Updated by the project bridge. */
-  projectDisabled: PluginId[];
-  /** Per-plugin user-toggle state. Missing entries fall back to `defaultEnabled`. */
-  userEnabled: Partial<Record<PluginId, boolean>>;
+  projectDisabled: ToolId[];
+  /** Per-tool user-toggle state. Missing entries fall back to `defaultEnabled`. */
+  userEnabled: Partial<Record<ToolId, boolean>>;
 }
 
 interface PersistedState {
-  userEnabled: Partial<Record<PluginId, boolean>>;
+  userEnabled: Partial<Record<ToolId, boolean>>;
 }
 
-function load(): PluginStoreState {
-  let userEnabled: Partial<Record<PluginId, boolean>> = {};
+function load(): ToolStoreState {
+  let userEnabled: Partial<Record<ToolId, boolean>> = {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<PersistedState>;
       if (parsed.userEnabled && typeof parsed.userEnabled === "object") {
         for (const [id, value] of Object.entries(parsed.userEnabled)) {
-          if (typeof value === "boolean" && isPluginId(id)) {
+          if (typeof value === "boolean" && isToolId(id)) {
             userEnabled[id] = value;
           }
         }
@@ -56,7 +57,7 @@ function load(): PluginStoreState {
   return { userEnabled, projectDisabled: [] };
 }
 
-function persist(state: PluginStoreState): void {
+function persist(state: ToolStoreState): void {
   try {
     const data: PersistedState = { userEnabled: state.userEnabled };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -68,7 +69,7 @@ function persist(state: PluginStoreState): void {
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 
-function pushToBackend(userEnabled: Partial<Record<PluginId, boolean>>): void {
+function pushToBackend(userEnabled: Partial<Record<ToolId, boolean>>): void {
   // Debounce 100ms — clicking through several toggles in quick succession
   // collapses to a single round trip.
   if (pushTimer) {
@@ -76,7 +77,7 @@ function pushToBackend(userEnabled: Partial<Record<PluginId, boolean>>): void {
   }
   pushTimer = setTimeout(() => {
     pushTimer = null;
-    setEnabledPluginsIpc(userEnabled).catch(() => {
+    setEnabledToolsIpc(userEnabled).catch(() => {
       // Best-effort. The renderer's localStorage is the source of truth.
     });
   }, 100);
@@ -86,28 +87,26 @@ function pushToBackend(userEnabled: Partial<Record<PluginId, boolean>>): void {
  * Reconcile against the backend's persisted view at app start. Disk wins —
  * the main process boots before the renderer and may have been updated by an
  * earlier session. Called once from `OnboardingRoot` (or any top-level
- * mount) via `bootstrapPluginStore`.
+ * mount) via `bootstrapToolStore`.
  */
 let bootstrapPromise: Promise<void> | null = null;
-export function bootstrapPluginStore(): Promise<void> {
+export function bootstrapToolStore(): Promise<void> {
   if (bootstrapPromise) {
     return bootstrapPromise;
   }
-  bootstrapPromise = getEnabledPluginsIpc()
+  bootstrapPromise = getEnabledToolsIpc()
     .then((diskState) => {
       // Diff to avoid an unnecessary re-render when disk matches localStorage.
-      const sanitized: Partial<Record<PluginId, boolean>> = {};
+      const sanitized: Partial<Record<ToolId, boolean>> = {};
       for (const [id, value] of Object.entries(diskState)) {
-        if (typeof value === "boolean" && isPluginId(id)) {
+        if (typeof value === "boolean" && isToolId(id)) {
           sanitized[id] = value;
         }
       }
       const current = store.getState().userEnabled;
       const same =
         Object.keys(sanitized).length === Object.keys(current).length &&
-        Object.entries(sanitized).every(
-          ([k, v]) => current[k as PluginId] === v,
-        );
+        Object.entries(sanitized).every(([k, v]) => current[k as ToolId] === v);
       if (!same) {
         store.setState({ userEnabled: sanitized });
         try {
@@ -125,42 +124,42 @@ export function bootstrapPluginStore(): Promise<void> {
   return bootstrapPromise;
 }
 
-function isPluginId(id: string): id is PluginId {
-  return PLUGINS.some((p) => p.id === id);
+function isToolId(id: string): id is ToolId {
+  return TOOLS.some((t) => t.id === id);
 }
 
-const store = create<PluginStoreState>(() => load());
+const store = create<ToolStoreState>(() => load());
 
-/** Has the user explicitly toggled this plugin (regardless of requires)? */
-function isUserEnabled(state: PluginStoreState, id: PluginId): boolean {
+/** Has the user explicitly toggled this tool (regardless of requires)? */
+function isUserEnabled(state: ToolStoreState, id: ToolId): boolean {
   const explicit = state.userEnabled[id];
   if (typeof explicit === "boolean") {
     return explicit;
   }
 
-  return getPlugin(id).defaultEnabled;
+  return getTool(id).defaultEnabled;
 }
 
 /**
- * Walks `requires` to determine if the plugin is actually usable. A plugin is
+ * Walks `requires` to determine if the tool is actually usable. A tool is
  * effectively enabled iff:
  *   1. The user has it toggled on (explicit or default).
- *   2. Every base plugin in `requires` is effectively enabled.
+ *   2. Every base tool in `requires` is effectively enabled.
  *   3. The active project hasn't masked it off.
  *
  * Memoization: `requires` graphs are tiny so a fresh recursive walk per call
  * is fine. Hooks below select `userEnabled` + `projectDisabled` so the result
  * is stable across renders that don't mutate either.
  */
-function effectiveEnabled(state: PluginStoreState, id: PluginId): boolean {
+function effectiveEnabled(state: ToolStoreState, id: ToolId): boolean {
   if (state.projectDisabled.includes(id)) {
     return false;
   }
   if (!isUserEnabled(state, id)) {
     return false;
   }
-  const plugin = getPlugin(id);
-  for (const dep of plugin.requires ?? []) {
+  const tool = getTool(id);
+  for (const dep of tool.requires ?? []) {
     if (!effectiveEnabled(state, dep)) {
       return false;
     }
@@ -171,7 +170,7 @@ function effectiveEnabled(state: PluginStoreState, id: PluginId): boolean {
 
 // ---------- mutators ----------
 
-export function setPluginEnabled(id: PluginId, on: boolean): void {
+export function setToolEnabled(id: ToolId, on: boolean): void {
   store.setState((s) => ({
     userEnabled: { ...s.userEnabled, [id]: on },
   }));
@@ -180,7 +179,7 @@ export function setPluginEnabled(id: PluginId, on: boolean): void {
 
 /** Project mask hook: called by the session/project bridge as the user
  *  changes which session is active. Pass an empty array to clear the mask. */
-export function setProjectDisabled(ids: PluginId[]): void {
+export function setProjectDisabled(ids: ToolId[]): void {
   // Skip writes that don't change the array — avoids cascading rerenders
   // when re-selecting the same session.
   const current = store.getState().projectDisabled;
@@ -190,48 +189,46 @@ export function setProjectDisabled(ids: PluginId[]): void {
   store.setState({ projectDisabled: [...ids] });
 }
 
-/** Bulk seed (used by the backend-mirror reconciler in chunk 4). */
-export function seedUserEnabled(
-  next: Partial<Record<PluginId, boolean>>,
-): void {
+/** Bulk seed (used by the backend-mirror reconciler). */
+export function seedUserEnabled(next: Partial<Record<ToolId, boolean>>): void {
   store.setState({ userEnabled: { ...next } });
   persist(store.getState());
 }
 
 // ---------- selectors / hooks ----------
 
-export const getUserEnabled = (id: PluginId): boolean =>
+export const getUserEnabled = (id: ToolId): boolean =>
   isUserEnabled(store.getState(), id);
 
-export const getEffectivePluginEnabled = (id: PluginId): boolean =>
+export const getEffectiveToolEnabled = (id: ToolId): boolean =>
   effectiveEnabled(store.getState(), id);
 
-export const usePluginEnabled = (id: PluginId): boolean =>
+export const useToolEnabled = (id: ToolId): boolean =>
   store((s) => isUserEnabled(s, id));
 
-/** Snapshot of user-enabled state for a stable list of plugin ids. */
-export const useUserEnabledMany = (ids: readonly PluginId[]): boolean[] =>
+/** Snapshot of user-enabled state for a stable list of tool ids. */
+export const useUserEnabledMany = (ids: readonly ToolId[]): boolean[] =>
   store(useShallow((s) => ids.map((id) => isUserEnabled(s, id))));
 
-export const useEffectivePluginEnabled = (id: PluginId): boolean =>
+export const useEffectiveToolEnabled = (id: ToolId): boolean =>
   store((s) => effectiveEnabled(s, id));
 
-export const useEnabledPluginIds = (): PluginId[] =>
+export const useEnabledToolIds = (): ToolId[] =>
   store(
     useShallow((s) =>
-      PLUGINS.filter((p) => effectiveEnabled(s, p.id)).map((p) => p.id),
+      TOOLS.filter((t) => effectiveEnabled(s, t.id)).map((t) => t.id),
     ),
   );
 
-export const useProjectDisabled = (): readonly PluginId[] =>
+export const useProjectDisabled = (): readonly ToolId[] =>
   store((s) => s.projectDisabled);
 
-/** All plugins, sorted by group then by registration order. */
-export function usePluginsForDisplay(): PluginManifest[] {
+/** All tools, sorted by group then by registration order. */
+export function useToolsForDisplay(): ToolManifest[] {
   return useMemo(
     () =>
-      [...PLUGINS]
-        .filter((p) => !p.hidden)
+      [...TOOLS]
+        .filter((t) => !t.hidden)
         .sort((a, b) => a.group.localeCompare(b.group)),
     [],
   );
@@ -239,35 +236,35 @@ export function usePluginsForDisplay(): PluginManifest[] {
 
 // ---------- contribution selectors ----------
 
-interface ToolRailContributionWithPluginId extends ToolRailContribution {
-  pluginId: PluginId;
+interface ToolRailContributionWithToolId extends ToolRailContribution {
+  toolId: ToolId;
 }
 
-interface RuntimeModeContributionWithPluginId extends RuntimeModeContribution {
-  pluginId: PluginId;
+interface RuntimeModeContributionWithToolId extends RuntimeModeContribution {
+  toolId: ToolId;
 }
 
-interface SettingsSectionContributionWithPluginId extends SettingsSectionContribution {
-  pluginId: PluginId;
+interface SettingsSectionContributionWithToolId extends SettingsSectionContribution {
+  toolId: ToolId;
 }
 
 export const useEnabledToolRailContributions = (): {
-  bottom: ToolRailContributionWithPluginId[];
-  right: ToolRailContributionWithPluginId[];
+  bottom: ToolRailContributionWithToolId[];
+  right: ToolRailContributionWithToolId[];
 } => {
-  const enabledIds = useEnabledPluginIds();
+  const enabledIds = useEnabledToolIds();
 
   return useMemo(() => {
-    const bottom: ToolRailContributionWithPluginId[] = [];
-    const right: ToolRailContributionWithPluginId[] = [];
-    for (const plugin of PLUGINS) {
-      if (!enabledIds.includes(plugin.id)) {
+    const bottom: ToolRailContributionWithToolId[] = [];
+    const right: ToolRailContributionWithToolId[] = [];
+    for (const tool of TOOLS) {
+      if (!enabledIds.includes(tool.id)) {
         continue;
       }
-      for (const entry of plugin.contributes?.toolRail ?? []) {
-        const placed: ToolRailContributionWithPluginId = {
+      for (const entry of tool.contributes?.toolRail ?? []) {
+        const placed: ToolRailContributionWithToolId = {
           ...entry,
-          pluginId: plugin.id,
+          toolId: tool.id,
         };
         if (entry.placement === "bottom") {
           bottom.push(placed);
@@ -282,8 +279,8 @@ export const useEnabledToolRailContributions = (): {
 };
 
 export function getToolRailPlacement(id: string): ToolPlacement | undefined {
-  for (const plugin of PLUGINS) {
-    for (const entry of plugin.contributes?.toolRail ?? []) {
+  for (const tool of TOOLS) {
+    for (const entry of tool.contributes?.toolRail ?? []) {
       if (entry.id === id) {
         return entry.placement;
       }
@@ -294,17 +291,17 @@ export function getToolRailPlacement(id: string): ToolPlacement | undefined {
 }
 
 export const useEnabledRuntimeModes =
-  (): RuntimeModeContributionWithPluginId[] => {
-    const enabledIds = useEnabledPluginIds();
+  (): RuntimeModeContributionWithToolId[] => {
+    const enabledIds = useEnabledToolIds();
 
     return useMemo(() => {
-      const out: RuntimeModeContributionWithPluginId[] = [];
-      for (const plugin of PLUGINS) {
-        if (!enabledIds.includes(plugin.id)) {
+      const out: RuntimeModeContributionWithToolId[] = [];
+      for (const tool of TOOLS) {
+        if (!enabledIds.includes(tool.id)) {
           continue;
         }
-        for (const mode of plugin.contributes?.runtimeMode ?? []) {
-          out.push({ ...mode, pluginId: plugin.id });
+        for (const mode of tool.contributes?.runtimeMode ?? []) {
+          out.push({ ...mode, toolId: tool.id });
         }
       }
 
@@ -313,17 +310,17 @@ export const useEnabledRuntimeModes =
   };
 
 export const useEnabledSettingsSections =
-  (): SettingsSectionContributionWithPluginId[] => {
-    const enabledIds = useEnabledPluginIds();
+  (): SettingsSectionContributionWithToolId[] => {
+    const enabledIds = useEnabledToolIds();
 
     return useMemo(() => {
-      const out: SettingsSectionContributionWithPluginId[] = [];
-      for (const plugin of PLUGINS) {
-        if (!enabledIds.includes(plugin.id)) {
+      const out: SettingsSectionContributionWithToolId[] = [];
+      for (const tool of TOOLS) {
+        if (!enabledIds.includes(tool.id)) {
           continue;
         }
-        for (const section of plugin.contributes?.settingsSection ?? []) {
-          out.push({ ...section, pluginId: plugin.id });
+        for (const section of tool.contributes?.settingsSection ?? []) {
+          out.push({ ...section, toolId: tool.id });
         }
       }
 
@@ -334,11 +331,8 @@ export const useEnabledSettingsSections =
 // ---------- testing helpers ----------
 
 /** @internal Reset state for tests. Not exported via index. */
-export function __resetPluginStoreForTests(): void {
-  store.setState({ userEnabled: {}, projectDisabled: [] });
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // ignore
-  }
+export function __resetToolStoreForTests(): void {
+  // Re-run load() so legacy-key migration is exercised with whatever
+  // localStorage state the test set up.
+  store.setState(load());
 }

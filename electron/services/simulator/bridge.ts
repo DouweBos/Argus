@@ -18,7 +18,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import * as readline from "node:readline";
 import { error, warn } from "../../../app/lib/logger";
-import { resolveAssetPath } from "../plugins/assets";
+import { resolveAssetPath } from "../tools/assets";
 
 // ---------------------------------------------------------------------------
 // Binary path resolution
@@ -27,14 +27,13 @@ import { resolveAssetPath } from "../plugins/assets";
 const BINARY_NAME = "argus-sim-bridge";
 
 /**
- * Resolve the path to the bridge binary via the plugin asset resolver.
+ * Resolve the path to the bridge binary via the tool asset resolver.
  *
- * The resolver checks the per-version cache first (chunk 11 download path),
- * then falls back to the bundled copy in `extraResources` (packaged) or the
- * dev tree (`native/argus-sim-bridge/`). Owned by `device-recording`.
+ * The resolver uses the bundled copy in `extraResources` (packaged) or the
+ * dev tree (`native/argus-sim-bridge/`).
  */
 function bridgeBinaryPath(): string {
-  return resolveAssetPath("device-recording", BINARY_NAME);
+  return resolveAssetPath(BINARY_NAME);
 }
 
 // ---------------------------------------------------------------------------

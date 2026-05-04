@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
 import { getCurrentRoute } from "../lib/router";
 
-export type ToolId =
+export type ToolRailId =
   | "changes"
   | "debug"
   | "notifications"
@@ -10,7 +10,7 @@ export type ToolId =
   | "terminal";
 export type ToolPlacement = "bottom" | "right";
 
-export const TOOL_PLACEMENT: Record<ToolId, ToolPlacement> = {
+export const TOOL_PLACEMENT: Record<ToolRailId, ToolPlacement> = {
   changes: "right",
   simulator: "right",
   terminal: "bottom",
@@ -18,25 +18,25 @@ export const TOOL_PLACEMENT: Record<ToolId, ToolPlacement> = {
   notifications: "bottom",
 };
 
-const DEFAULT_RIGHT_TOOL: ToolId = "changes";
-const DEFAULT_BOTTOM_TOOL: ToolId = "terminal";
+const DEFAULT_RIGHT_TOOL: ToolRailId = "changes";
+const DEFAULT_BOTTOM_TOOL: ToolRailId = "terminal";
 
 interface LayoutStoreData {
   /** Active bottom tool per session (null / missing = no tool open). */
-  activeBottomToolBySessionId: Record<string, ToolId | null>;
+  activeBottomToolBySessionId: Record<string, ToolRailId | null>;
   /** Active right tool per session (null / missing = no tool open). */
-  activeRightToolBySessionId: Record<string, ToolId | null>;
+  activeRightToolBySessionId: Record<string, ToolRailId | null>;
   /** Bottom panel height fraction (0–1). */
   bottomPanelHeight: number;
   /** Last non-null bottom tool per session. */
-  lastActiveBottomToolBySessionId: Record<string, ToolId>;
+  lastActiveBottomToolBySessionId: Record<string, ToolRailId>;
   /** Last non-null right tool per session. */
-  lastActiveRightToolBySessionId: Record<string, ToolId>;
+  lastActiveRightToolBySessionId: Record<string, ToolRailId>;
   /** Left sidebar width fraction (0–1). */
   leftPanelWidth: number;
   leftSidebarVisible: boolean;
   /** Tools whose panel content has been mounted at least once. */
-  mountedToolIds: Record<ToolId, boolean>;
+  mountedToolIds: Record<ToolRailId, boolean>;
   /** Right tool panel width fraction (0–1). */
   rightPanelWidth: number;
 }
@@ -63,7 +63,7 @@ const useLayoutStore = layoutStore;
 
 const currentSessionId = (): string | null => getCurrentRoute().sessionId;
 
-const defaultForPlacement = (placement: ToolPlacement): ToolId =>
+const defaultForPlacement = (placement: ToolPlacement): ToolRailId =>
   placement === "right" ? DEFAULT_RIGHT_TOOL : DEFAULT_BOTTOM_TOOL;
 
 const activeKeyForPlacement = (placement: ToolPlacement) =>
@@ -113,7 +113,7 @@ export const toggleRightPanel = () => togglePanel("right");
 /** Toggle the bottom tool panel — closes if open, otherwise restores last active bottom tool. */
 export const toggleBottomPanel = () => togglePanel("bottom");
 
-export const toggleTool = (id: ToolId) => {
+export const toggleTool = (id: ToolRailId) => {
   const sessionId = currentSessionId();
   if (!sessionId) {
     return;
@@ -138,7 +138,7 @@ export const toggleTool = (id: ToolId) => {
 };
 
 /** Unconditionally open a tool in its placement panel (no-op if already open). */
-export const setActiveTool = (id: ToolId) => {
+export const setActiveTool = (id: ToolRailId) => {
   const sessionId = currentSessionId();
   if (!sessionId) {
     return;
@@ -192,7 +192,7 @@ export const useLeftPanelWidth = () => useLayoutStore((s) => s.leftPanelWidth);
 
 export const useActiveToolId = (
   placement: ToolPlacement = "right",
-): ToolId | null => {
+): ToolRailId | null => {
   const sessionId = useRouteSessionId();
   const activeKey = activeKeyForPlacement(placement);
 
@@ -203,7 +203,7 @@ export const useActiveToolId = (
 
 export const useLastActiveToolId = (
   placement: ToolPlacement = "right",
-): ToolId => {
+): ToolRailId => {
   const sessionId = useRouteSessionId();
   const lastKey = lastKeyForPlacement(placement);
   const fallback = defaultForPlacement(placement);

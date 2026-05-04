@@ -25,10 +25,10 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { resolveAssetPath } from "../plugins/assets";
+import { resolveAssetPath } from "../tools/assets";
 
 export function getConductorDir(): string {
-  return resolveAssetPath("device-control", "conductor");
+  return resolveAssetPath("conductor");
 }
 
 export function getConductorBinDir(): string {

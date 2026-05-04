@@ -5,12 +5,12 @@ import { InspectionPanel } from "../../../features/inspection/InspectionPanel";
 import { NodeMetadataPanel } from "../../../features/inspection/NodeMetadataPanel";
 import { useDragResize } from "../../../hooks/useDragResize";
 import { openSimulatorPopout } from "../../../lib/ipc";
-import { useEffectivePluginEnabled } from "../../../plugins/store";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {
   useActiveDeviceKey,
   useRuntimeViewSimulatorState,
 } from "../../../stores/simulatorStore";
+import { useEffectiveToolEnabled } from "../../../tools/store";
 import { RuntimeTargetPicker } from "../RuntimeTargetPicker/RuntimeTargetPicker";
 import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
@@ -65,10 +65,10 @@ export function RuntimeView({
   } = useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId("right");
   const activeDeviceKey = useActiveDeviceKey(sessionId, platform);
-  const inspectorEnabled = useEffectivePluginEnabled("device-inspector");
+  const inspectorEnabled = useEffectiveToolEnabled("device-inspector");
 
-  // Modes contributed by plugins. `Simulate` is core. `Inspect` is contributed
-  // by `device-inspector`; when the plugin is off we hide the toggle and
+  // Modes contributed by tools. `Simulate` is core. `Inspect` is contributed
+  // by `device-inspector`; when the tool is off we hide the toggle and
   // ensure the active mode falls back to simulate.
   const runtimeModeOptions = useMemo(
     () =>
@@ -87,7 +87,7 @@ export function RuntimeView({
     }
   }, [activeToolId, setRuntimeDialogOpen]);
 
-  // If the inspector plugin gets disabled while inspect mode is active,
+  // If the inspector tool gets disabled while inspect mode is active,
   // snap back to simulate so the segmented control matches reality.
   useEffect(() => {
     if (!inspectorEnabled && runtimeMode === "inspect") {

@@ -12,7 +12,6 @@ import {
   revealInFinder,
 } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";
-import { useEffectivePluginEnabled } from "../../../plugins/store";
 import {
   cycleActiveAgent,
   getActiveAgent,
@@ -33,7 +32,7 @@ import {
   toggleLeftSidebar,
   toggleRightPanel,
   toggleTool,
-  type ToolId,
+  type ToolRailId,
 } from "../../../stores/layoutStore";
 import { openOpenPalette } from "../../../stores/openPaletteStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
@@ -43,6 +42,7 @@ import {
   useSessions,
 } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
+import { useEffectiveToolEnabled } from "../../../tools/store";
 import styles from "./CommandPalette.module.css";
 
 type PaletteGroup =
@@ -107,8 +107,8 @@ function CommandPaletteContent() {
   const inputRef = useRef<HTMLInputElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
   useDismissOnEscape(closeCommandPalette);
-  const recordingEnabled = useEffectivePluginEnabled("device-recording");
-  const debugEnabled = useEffectivePluginEnabled("device-debug");
+  const recordingEnabled = useEffectiveToolEnabled("device-recording");
+  const debugEnabled = useEffectiveToolEnabled("device-debug");
 
   const selectedSession = useMemo(
     () => sessions.find((w) => w.id === selectedId) ?? null,
@@ -269,7 +269,7 @@ function CommandPaletteContent() {
               ? [{ id: "debug" as const, shortcut: "toggle-debug" as const }]
               : []),
           ] satisfies {
-            id: ToolId;
+            id: ToolRailId;
             shortcut: Parameters<typeof shortcutKeys>[0];
           }[]
         ).map<PaletteItem>(({ id, shortcut }) => ({

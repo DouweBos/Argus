@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  __resetPluginStoreForTests,
-  getEffectivePluginEnabled,
+  __resetToolStoreForTests,
+  getEffectiveToolEnabled,
   getUserEnabled,
-  setPluginEnabled,
+  setToolEnabled,
   setProjectDisabled,
 } from "./store";
 
@@ -19,61 +19,61 @@ vi.stubGlobal("localStorage", {
   },
 });
 
-describe("plugin store", () => {
+describe("tool store", () => {
   beforeEach(() => {
     for (const key of Object.keys(mockStorage)) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete -- test reset
       delete mockStorage[key];
     }
-    __resetPluginStoreForTests();
+    __resetToolStoreForTests();
   });
 
-  it("falls back to defaultEnabled (false) when the user hasn't toggled", () => {
-    expect(getUserEnabled("device-recording")).toBe(false);
+  it("falls back to defaultEnabled (true) when the user hasn't toggled", () => {
+    expect(getUserEnabled("device-recording")).toBe(true);
   });
 
   it("respects an explicit user toggle", () => {
-    setPluginEnabled("device-recording", true);
+    setToolEnabled("device-recording", true);
     expect(getUserEnabled("device-recording")).toBe(true);
   });
 
   it("persists user toggles to localStorage", () => {
-    setPluginEnabled("device-control", true);
-    expect(mockStorage["argus:plugins"]).toContain("device-control");
+    setToolEnabled("device-control", true);
+    expect(mockStorage["argus:tools"]).toContain("device-control");
   });
 
   it("force-disables dependents when a base is off", () => {
-    setPluginEnabled("device-recording", true);
-    setPluginEnabled("device-inspector", true);
-    expect(getEffectivePluginEnabled("device-inspector")).toBe(true);
-    setPluginEnabled("device-recording", false);
-    expect(getEffectivePluginEnabled("device-inspector")).toBe(false);
+    setToolEnabled("device-recording", true);
+    setToolEnabled("device-inspector", true);
+    expect(getEffectiveToolEnabled("device-inspector")).toBe(true);
+    setToolEnabled("device-recording", false);
+    expect(getEffectiveToolEnabled("device-inspector")).toBe(false);
     // The user toggle on the dependent itself is unchanged.
     expect(getUserEnabled("device-inspector")).toBe(true);
   });
 
-  it("project mask hides plugins from effective state", () => {
-    setPluginEnabled("device-control", true);
-    setPluginEnabled("device-debug", true);
-    expect(getEffectivePluginEnabled("device-debug")).toBe(true);
+  it("project mask hides tools from effective state", () => {
+    setToolEnabled("device-control", true);
+    setToolEnabled("device-debug", true);
+    expect(getEffectiveToolEnabled("device-debug")).toBe(true);
     setProjectDisabled(["device-debug"]);
-    expect(getEffectivePluginEnabled("device-debug")).toBe(false);
+    expect(getEffectiveToolEnabled("device-debug")).toBe(false);
     expect(getUserEnabled("device-debug")).toBe(true);
   });
 
   it("project mask cascades through `requires` like user toggles", () => {
-    setPluginEnabled("device-control", true);
-    setPluginEnabled("device-debug", true);
+    setToolEnabled("device-control", true);
+    setToolEnabled("device-debug", true);
     setProjectDisabled(["device-control"]);
-    expect(getEffectivePluginEnabled("device-debug")).toBe(false);
+    expect(getEffectiveToolEnabled("device-debug")).toBe(false);
   });
 
   it("clearing the project mask restores effective state", () => {
-    setPluginEnabled("device-recording", true);
-    setPluginEnabled("device-inspector", true);
+    setToolEnabled("device-recording", true);
+    setToolEnabled("device-inspector", true);
     setProjectDisabled(["device-recording"]);
-    expect(getEffectivePluginEnabled("device-inspector")).toBe(false);
+    expect(getEffectiveToolEnabled("device-inspector")).toBe(false);
     setProjectDisabled([]);
-    expect(getEffectivePluginEnabled("device-inspector")).toBe(true);
+    expect(getEffectiveToolEnabled("device-inspector")).toBe(true);
   });
 });
