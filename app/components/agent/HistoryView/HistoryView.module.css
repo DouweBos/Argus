@@ -342,6 +342,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  width: 12px;
   color: var(--text-muted);
   opacity: 0.85;
 }
