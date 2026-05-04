@@ -21,12 +21,18 @@ import type { McpServers } from "../../mcp/userConfig";
  * Argus-canonical permission mode names. Each runner ships a translation
  * table to its native vocabulary; the Claude Code runner maps:
  *
- * - `auto` → `default`
+ * - `auto` → `auto` (smart classifier)
+ * - `ask` → `default`
  * - `review` → `acceptEdits`
  * - `plan` → `plan`
  * - `trusted` → `bypassPermissions`
  */
-export type CanonicalPermissionMode = "auto" | "plan" | "review" | "trusted";
+export type CanonicalPermissionMode =
+  | "auto"
+  | "ask"
+  | "plan"
+  | "review"
+  | "trusted";
 
 // ---------------------------------------------------------------------------
 // Spawn args

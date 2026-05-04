@@ -1,16 +1,21 @@
 /**
- * Renderer-side helpers for the four canonical permission modes that the
- * runner abstraction exposes (`auto`, `plan`, `review`, `trusted`).
+ * Renderer-side helpers for the canonical permission modes that the
+ * runner abstraction exposes (`auto`, `ask`, `plan`, `review`, `trusted`).
  *
  * The Claude Code runner accepts both canonical names and its native
- * vocabulary (`default`, `acceptEdits`, `plan`, `bypassPermissions`), so the
- * UI sticks to canonical names and lets the runner translate. The agent's
- * `permission_mode` field on the front-end may still carry runner-native
- * values from older sessions; {@link toCanonicalPermissionMode} normalises
- * either form down to the canonical key the picker compares against.
+ * vocabulary (`auto`, `default`, `acceptEdits`, `plan`, `bypassPermissions`),
+ * so the UI sticks to canonical names and lets the runner translate. The
+ * agent's `permission_mode` field on the front-end may still carry
+ * runner-native values; {@link toCanonicalPermissionMode} normalises either
+ * form down to the canonical key the picker compares against.
  */
 
-export type CanonicalPermissionMode = "auto" | "plan" | "review" | "trusted";
+export type CanonicalPermissionMode =
+  | "auto"
+  | "ask"
+  | "plan"
+  | "review"
+  | "trusted";
 
 export interface PermissionModeOption {
   description: string;
@@ -22,6 +27,12 @@ export const PERMISSION_MODE_OPTIONS: PermissionModeOption[] = [
   {
     value: "auto",
     displayName: "Auto",
+    description:
+      "Smart classifier auto-approves safe actions; risky ones still ask.",
+  },
+  {
+    value: "ask",
+    displayName: "Ask",
     description: "Ask before edits, commands, and other writes.",
   },
   {
@@ -43,6 +54,7 @@ export const PERMISSION_MODE_OPTIONS: PermissionModeOption[] = [
 
 const CANONICAL_SET = new Set<CanonicalPermissionMode>([
   "auto",
+  "ask",
   "plan",
   "review",
   "trusted",
@@ -64,7 +76,7 @@ export function toCanonicalPermissionMode(
   }
   switch (mode) {
     case "default":
-      return "auto";
+      return "ask";
     case "acceptEdits":
       return "review";
     case "bypassPermissions":
@@ -78,14 +90,27 @@ export function toCanonicalPermissionMode(
  * Cycle to the next canonical mode in display order. Used by the
  * `Shift+Tab` keybinding (Claude Code's own convention) to flip through
  * modes without leaving the keyboard.
+ *
+ * `trusted` is excluded from the cycle because Claude CLI rejects switching
+ * to `bypassPermissions` on a running session — it can only be set at agent
+ * startup. The picker still exposes it for launch-time selection.
  */
+const CYCLE_ORDER: CanonicalPermissionMode[] = [
+  "auto",
+  "ask",
+  "plan",
+  "review",
+];
+
 export function nextPermissionMode(
   mode: CanonicalPermissionMode,
 ): CanonicalPermissionMode {
-  const order = PERMISSION_MODE_OPTIONS.map((o) => o.value);
-  const idx = order.indexOf(mode);
+  const idx = CYCLE_ORDER.indexOf(mode);
+  if (idx === -1) {
+    return "auto";
+  }
 
-  return order[(idx + 1) % order.length] ?? "auto";
+  return CYCLE_ORDER[(idx + 1) % CYCLE_ORDER.length];
 }
 
 export function permissionModeDisplayName(
