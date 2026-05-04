@@ -8,7 +8,7 @@
  */
 
 import type { PrereqId, PrereqResult, PrereqStatus } from "../../../lib/types";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   ChecklistRow,
@@ -54,7 +54,10 @@ export function PrereqList({ ids, onResults }: PrereqListProps) {
     });
   });
 
-  const runChecks = async () => {
+  // Restart checks when the id-set changes by content, not by array
+  // reference — callers commonly pass a freshly-built `ids` each render.
+  const idsKey = ids.join(",");
+  const runChecks = useCallback(async () => {
     setBusy(true);
     try {
       const fresh = await checkPrereqs(ids);
@@ -67,16 +70,14 @@ export function PrereqList({ ids, onResults }: PrereqListProps) {
     } finally {
       setBusy(false);
     }
-  };
+    // `ids` is reduced to its content via `idsKey` so we don't refetch on every
+    // render when the caller passes a freshly-built array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, onResults]);
 
-  // Restart checks when the id-set changes by content, not by array
-  // reference — callers commonly pass a freshly-built `ids` each render.
-  const idsKey = ids.join(",");
   useEffect(() => {
     runChecks().catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runChecks closes
-    // over `ids`; rerunning on `idsKey` change is the intended behaviour.
-  }, [idsKey]);
+  }, [runChecks]);
 
   const onFix = async (
     id: PrereqId,

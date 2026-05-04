@@ -21,6 +21,8 @@ export interface CommitContextMenuProps {
   onCreateBranch?: (commit: GitCommit) => void;
   /** Phase 3 — opens the tag-create dialog with this commit as the target ref. */
   onCreateTag?: (commit: GitCommit) => void;
+  /** Removes the commit from history via interactive rebase drop. */
+  onDelete?: (commit: GitCommit) => void;
   /** Phase 7 T2 — opens the rebase editor pre-filled with the chosen action. */
   onInteractiveRebase?: (commit: GitCommit, action: RebaseSingleAction) => void;
   /** Phase 12 — navigate to the standalone interactive-rebase view from this commit. */
@@ -61,6 +63,7 @@ export function CommitContextMenu({
   onResetHard,
   onResetHere,
   onRevert,
+  onDelete,
   onCherryPick,
   onCreateBranch,
   onCreateTag,
@@ -220,6 +223,14 @@ export function CommitContextMenu({
         label: "Edit (interactive rebase)",
         disabled: !onInteractiveRebase,
         onClick: () => onInteractiveRebase?.(commit, "edit"),
+      },
+      { separator: true },
+      {
+        icon: <Icons.TrashIcon size={11} />,
+        label: "Delete commit",
+        danger: true,
+        disabled: !onDelete,
+        onClick: () => onDelete?.(commit),
       },
     );
   }

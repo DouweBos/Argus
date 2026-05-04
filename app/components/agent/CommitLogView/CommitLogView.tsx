@@ -585,6 +585,7 @@ export function CommitLogView({
     mode: "hard" | "mixed" | "soft";
   } | null>(null);
   const [revertTarget, setRevertTarget] = useState<GitCommit | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<GitCommit | null>(null);
   const [cherryPickTarget, setCherryPickTarget] = useState<GitCommit | null>(
     null,
   );
@@ -2081,6 +2082,14 @@ export function CommitLogView({
                 }
               : undefined
           }
+          onDelete={
+            scope === "project"
+              ? (c) => {
+                  setDeleteTarget(c);
+                  setContextMenu(null);
+                }
+              : undefined
+          }
           onCherryPick={
             scope === "project"
               ? (c) => {
@@ -2318,6 +2327,50 @@ export function CommitLogView({
           }
         }}
         onCancel={() => setRevertTarget(null)}
+      />
+
+      <DestructiveConfirm
+        open={Boolean(deleteTarget)}
+        title="Delete commit?"
+        description={
+          deleteTarget
+            ? `Remove ${deleteTarget.abbreviatedHash} — ${deleteTarget.subject} — from history. This rewrites history; later commits will be replayed on top.`
+            : ""
+        }
+        confirmLabel="Delete"
+        tone="destructive"
+        onConfirm={async () => {
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          if (!target) {
+            return;
+          }
+          setOpBanner(null);
+          try {
+            const upstream = `${target.hash}^`;
+            const plan = await gitRebaseInteractivePlan(sessionId, {
+              upstream,
+            });
+            const planEntries: RebasePlanEntry[] = plan.map((c) => ({
+              hash: c.hash,
+              action: c.hash === target.hash ? "drop" : "pick",
+            }));
+            await gitRebaseInteractiveRun(sessionId, {
+              upstream,
+              plan: planEntries,
+            });
+          } catch (err) {
+            if (err instanceof GitError) {
+              setOpBanner({ kind: err.kind, message: err.message });
+            } else {
+              setOpBanner({
+                kind: "unknown",
+                message: err instanceof Error ? err.message : String(err),
+              });
+            }
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
       />
 
       <DestructiveConfirm
