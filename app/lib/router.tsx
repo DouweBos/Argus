@@ -16,7 +16,6 @@
  * - `/organizations/:organizationId`             → single organization detail
  * - `/pull-requests`                             → outstanding PRs of interest
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
- * - `/review-queue`                              → review queue
  * - `/runtimes`                                  → runtimes overview
  * - `/settings`                                  → settings (opened as dialog)
  * - `/sessions/:sessionId`                       → session (default home tab)
@@ -52,7 +51,6 @@ export type AppView =
   | "organizations"
   | "pull-request-detail"
   | "pull-requests"
-  | "review-queue"
   | "runtimes"
   | "session";
 
@@ -210,7 +208,6 @@ export function parseRoute(pathname: string): ParsedRoute {
     segments[0] === "devices" ||
     segments[0] === "notifications" ||
     segments[0] === "pull-requests" ||
-    segments[0] === "review-queue" ||
     segments[0] === "runtimes"
   ) {
     return emptyRoute(segments[0] as AppView);
@@ -247,7 +244,6 @@ export function routePattern(pathname: string): string {
     case "devices":
     case "notifications":
     case "pull-requests":
-    case "review-queue":
     case "runtimes":
       return `/${route.view}`;
     case "session":
@@ -294,7 +290,6 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
     route.view === "devices" ||
     route.view === "notifications" ||
     route.view === "pull-requests" ||
-    route.view === "review-queue" ||
     route.view === "runtimes"
   ) {
     return `/${route.view}`;

@@ -21,4 +21,4 @@ Prefer option 1 unless parallelism is clearly worth the coordination cost. Spawn
 
 ## Finishing your work
 
-Write a short summary for the user: what changed in which repo, which worktrees you created, and anything they need to review or decide. `git add` in any repo you edited directly so the user sees them in their review queue. **Do not merge anything unless explicitly asked.**
+Write a short summary for the user: what changed in which repo, which worktrees you created, and anything they need to review or decide. `git add` in any repo you edited directly so the user can review the changes. **Do not merge anything unless explicitly asked.**

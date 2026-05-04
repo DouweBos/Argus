@@ -119,7 +119,7 @@ export function SidebarHeaderAction({
   );
 }
 
-/** Top-level nav cluster (Home / Review queue / Activity). */
+/** Top-level nav cluster (Home / Activity). */
 export function SidebarNavGroup({
   className,
   ...rest

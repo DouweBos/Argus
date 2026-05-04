@@ -55,7 +55,6 @@ import { organizationsForRepo } from "../organization/manager";
 import { findOrgTaskForSession } from "../organizationTask/manager";
 import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
-import { emitReviewState } from "../session/sessionOps";
 import { loadArgusConfig } from "../session/setup";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
@@ -594,8 +593,6 @@ export async function startAgent(
         duration_ms: Date.now() - agentEntry.createdAt,
       });
     }
-
-    emitReviewState(sessionId).catch(() => {});
   });
 
   if (!reuseAgentId) {

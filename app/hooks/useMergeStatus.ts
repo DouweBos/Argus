@@ -62,9 +62,6 @@ export function useMergeStatus(sessionId: string | null): UseMergeStatusResult {
     sessionId ? `session:diff-changed:${sessionId}` : "",
     fetchStatus,
   );
-  // Re-fetch when the session's review-queue state updates (e.g. a new
-  // commit on the branch, or a sibling merge completion).
-  useIpcEvent("session:review-state", fetchStatus);
 
   const handleMerge = useCallback(async (): Promise<boolean> => {
     if (!sessionId) {

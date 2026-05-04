@@ -23,7 +23,7 @@ If nothing is configured and you genuinely need a runtime, ask the user to add a
 
 ## Finishing your work
 
-Before reporting completion, **`git add` your changes** so they show up in the human's Review queue. The queue only surfaces sessions with staged or committed changes — unstaged edits are invisible. **Do not merge your own branch** unless explicitly asked; integration belongs to the human or the parent agent.
+Before reporting completion, **`git add` your changes** so the human can review them. **Do not merge your own branch** unless explicitly asked; integration belongs to the human or the parent agent.
 
 ## You're not alone
 

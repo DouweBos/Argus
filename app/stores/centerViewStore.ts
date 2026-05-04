@@ -15,7 +15,6 @@ export type CenterView =
   | "organizations"
   | "pull-request-detail"
   | "pull-requests"
-  | "review-queue"
   | "runtimes";
 
 export const setCenterView = (view: CenterView): void => {

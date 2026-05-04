@@ -1237,14 +1237,6 @@ export const previewReleaseNotes = (
 export const getSessionCommitsAhead = (id: string): Promise<number> =>
   invoke("get_session_commits_ahead", { id });
 
-export const getSessionReviewState = (
-  id: string,
-): Promise<{
-  commitsAhead: number;
-  hasStaged: boolean;
-  hasUncommitted: boolean;
-}> => invoke("get_session_review_state", { id });
-
 export const mergeSessionIntoBase = (id: string): Promise<void> =>
   invoke("merge_session_into_base", { id });
 

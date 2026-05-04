@@ -341,7 +341,6 @@ import {
   setSessionBaseBranch,
   getSessionCommitsAhead,
   getSessionCommitsBehind,
-  getSessionWorkingTreeState,
   getSessionConflicts,
   getSessionMergeBlockers,
   mergeSessionIntoBase,
@@ -978,19 +977,6 @@ export function registerIpcHandlers(): void {
   handle("get_session_commits_ahead", (a) =>
     getSessionCommitsAhead(a.id as string),
   );
-  handle("get_session_review_state", async (a) => {
-    const id = a.id as string;
-    const [commitsAhead, treeState] = await Promise.all([
-      getSessionCommitsAhead(id),
-      getSessionWorkingTreeState(id),
-    ]);
-
-    return {
-      commitsAhead,
-      hasStaged: treeState.hasStaged,
-      hasUncommitted: treeState.hasUncommitted,
-    };
-  });
   handle("merge_session_into_base", (a) =>
     mergeSessionIntoBase(a.id as string),
   );

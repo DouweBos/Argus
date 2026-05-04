@@ -984,8 +984,6 @@ export async function mergeSessionIntoBase(id: string): Promise<void> {
     branch: ws.branch,
     baseBranch: ws.base_branch,
   });
-
-  emitReviewState(id).catch(() => {});
 }
 
 /** Resumable-merge entrypoint: attempt rebase, leaving worktree paused on conflict. */
@@ -1017,7 +1015,6 @@ export async function attemptSessionMerge(id: string) {
       branch: ws.branch,
       baseBranch: ws.base_branch,
     });
-    emitReviewState(id).catch(() => {});
   }
 
   return result;
@@ -1045,7 +1042,6 @@ export async function continueSessionMerge(id: string) {
       branch: ws.branch,
       baseBranch: ws.base_branch,
     });
-    emitReviewState(id).catch(() => {});
   }
 
   return result;
@@ -1189,72 +1185,6 @@ export async function rebaseSessionOnBase(id: string): Promise<void> {
   await withGitLock(ws.path, () =>
     doRebaseSessionOnBase(ws.path, ws.branch ?? "", ws.base_branch!),
   );
-
-  emitReviewState(id).catch(() => {});
-}
-
-/**
- * Return `{ hasStaged, hasUncommitted }` for a session.
- *
- * - `hasStaged` is true when there are index-vs-HEAD changes (ready for the
- *   merge flow, which commits staged changes before merging).
- * - `hasUncommitted` is true when *any* working-tree changes exist — staged,
- *   unstaged, or untracked — so the review queue can surface sessions the
- *   user still needs to finish preparing.
- */
-export async function getSessionWorkingTreeState(
-  id: string,
-): Promise<{ hasStaged: boolean; hasUncommitted: boolean }> {
-  const ws = appState.sessions.get(id);
-  if (!ws || ws.kind === "project_root") {
-    return { hasStaged: false, hasUncommitted: false };
-  }
-  try {
-    const [stagedNumstat, fullNumstat, untracked] = await Promise.all([
-      git(ws.repo_root, ["diff", "--cached", "--numstat"]),
-      git(ws.repo_root, ["diff", "HEAD", "--numstat"]),
-      git(ws.repo_root, ["ls-files", "--others", "--exclude-standard"]),
-    ]);
-    const hasStaged = stagedNumstat.trim().length > 0;
-    const hasUncommitted =
-      hasStaged || fullNumstat.trim().length > 0 || untracked.trim().length > 0;
-
-    return { hasStaged, hasUncommitted };
-  } catch {
-    return { hasStaged: false, hasUncommitted: false };
-  }
-}
-
-/**
- * Emit the current review-queue state for a session to the renderer.
- * The frontend uses this to add/remove the session from the Review queue.
- *
- * `stateHint` lets callers (like the file watcher) pass already-known flags
- * to skip redundant git calls.
- */
-export async function emitReviewState(
-  id: string,
-  stateHint?: { hasStaged: boolean; hasUncommitted: boolean },
-): Promise<void> {
-  const ws = appState.sessions.get(id);
-  if (!ws) {
-    return;
-  }
-  // Repo-root sessions aren't part of the review queue — their "base
-  // branch" IS themselves, so there's nothing to merge.
-  if (ws.kind === "project_root") {
-    return;
-  }
-  const [commitsAhead, treeState] = await Promise.all([
-    getSessionCommitsAhead(id),
-    stateHint ? Promise.resolve(stateHint) : getSessionWorkingTreeState(id),
-  ]);
-  getMainWindow()?.webContents.send("session:review-state", {
-    sessionId: id,
-    commitsAhead,
-    hasStaged: treeState.hasStaged,
-    hasUncommitted: treeState.hasUncommitted,
-  });
 }
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,6 @@ import {
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useUnreadByAgent } from "../../../stores/conversationStore";
 import { useOrgTasks } from "../../../stores/orgTaskStore";
-import { useReviewQueueMap } from "../../../stores/reviewQueueStore";
 import {
   selectSession,
   useSetupProgressBySessionId,
@@ -137,8 +136,6 @@ export function SessionCard({
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const setupProgressById = useSetupProgressBySessionId();
   const setupProgress = setupProgressById[session.id];
-  const reviewQueue = useReviewQueueMap();
-  const commitsAhead = reviewQueue[session.id]?.commitsAhead ?? 0;
   const agents = useAgentsRecord();
   const unreadByAgent = useUnreadByAgent();
   const runningCount = useMemo(
@@ -275,18 +272,6 @@ export function SessionCard({
                     )}
                   </span>
                 )}
-              {!isDeletingStatus && commitsAhead > 0 && (
-                <span
-                  className={styles.aheadBadge}
-                  title={
-                    session.base_branch
-                      ? `${commitsAhead} commit${commitsAhead === 1 ? "" : "s"} ahead of ${session.base_branch}`
-                      : `${commitsAhead} unmerged commit${commitsAhead === 1 ? "" : "s"}`
-                  }
-                >
-                  ↑{commitsAhead}
-                </span>
-              )}
               <span
                 className={styles.menuAnchor}
                 onClick={(e) => e.stopPropagation()}
