@@ -40,8 +40,6 @@ export interface CommitContextMenuProps {
   /** First parseable GitHub remote URL, if any. */
   remoteUrl?: string | null;
   scope: "project" | "session";
-  /** Whether the multi-selection is contiguous in the history (required for squash). */
-  selectionContiguous?: boolean;
   /** Multi-select: number of commits currently selected (>= 2 enables multi mode). */
   selectionCount?: number;
 }
@@ -69,7 +67,6 @@ export function CommitContextMenu({
   onInteractiveRebase,
   onInteractiveRebaseFromHere,
   selectionCount = 1,
-  selectionContiguous = true,
   onSquashSelection,
 }: CommitContextMenuProps) {
   const items: ContextMenuItem[] = [];
@@ -80,10 +77,8 @@ export function CommitContextMenu({
       { header: `${selectionCount} commits selected` },
       {
         icon: <Icons.MergeIcon size={11} />,
-        label: selectionContiguous
-          ? `Squash ${selectionCount} commits into one`
-          : `Squash ${selectionCount} commits — selection must be contiguous`,
-        disabled: !onSquashSelection || !selectionContiguous,
+        label: `Squash ${selectionCount} commits into one`,
+        disabled: !onSquashSelection,
         onClick: () => onSquashSelection?.(),
       },
       { separator: true },

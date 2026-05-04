@@ -730,23 +730,46 @@ export function CommitLogView({
         setSelectedHashes(next);
         headIdxRef.current = idx;
       } else {
-        setSelectedHashes((prev) => {
-          const next = new Set(prev);
-          if (next.has(commit.hash)) {
-            next.delete(commit.hash);
+        const wasSelected = selectedHashes.has(commit.hash);
+        const next = new Set(selectedHashes);
+        if (wasSelected) {
+          next.delete(commit.hash);
+        } else {
+          next.add(commit.hash);
+        }
+        setSelectedHashes(next);
+        if (wasSelected) {
+          // Deselect: pick a remaining hash as active (or clear if none left).
+          let fallbackIdx = -1;
+          if (next.size > 0) {
+            for (let k = 0; k < commits.length; k++) {
+              const c = commits[k];
+              if (c && next.has(c.hash)) {
+                fallbackIdx = k;
+                break;
+              }
+            }
+          }
+          setSelectedIdx(fallbackIdx);
+          pivotIdxRef.current = fallbackIdx;
+          headIdxRef.current = fallbackIdx;
+          const fallback = fallbackIdx >= 0 ? commits[fallbackIdx] : undefined;
+          if (fallback) {
+            await loadCommitDiff(fallback);
           } else {
-            next.add(commit.hash);
+            setDiffFiles([]);
+            setExpandedFiles(new Set());
           }
 
-          return next;
-        });
+          return;
+        }
         pivotIdxRef.current = idx;
         headIdxRef.current = idx;
       }
       setSelectedIdx(idx);
       await loadCommitDiff(commit);
     },
-    [commits, loadCommitDiff, selectedIdx],
+    [commits, loadCommitDiff, selectedHashes, selectedIdx],
   );
 
   const focusCommitRow = useCallback((idx: number) => {
@@ -1140,23 +1163,13 @@ export function CommitLogView({
     return out;
   }, [commits, visibleSelectedHashes]);
 
-  const selectionContiguous = (() => {
-    if (selectedIndices.length < 2) {
-      return true;
-    }
-    const first = selectedIndices[0] ?? 0;
-    const last = selectedIndices[selectedIndices.length - 1] ?? 0;
-
-    return last - first === selectedIndices.length - 1;
-  })();
-
   const requestSquashSelection = useCallback(() => {
-    if (selectedIndices.length < 2 || !selectionContiguous) {
+    if (selectedIndices.length < 2) {
       return;
     }
     const picked = selectedIndices.map((i) => commits[i]!).filter(Boolean);
     setSquashConfirm({ commits: picked });
-  }, [commits, selectedIndices, selectionContiguous]);
+  }, [commits, selectedIndices]);
 
   const runSquashSelection = useCallback(
     async (picked: GitCommit[]) => {
@@ -1170,14 +1183,28 @@ export function CommitLogView({
       try {
         const plan = await gitRebaseInteractivePlan(sessionId, { upstream });
         const selectedSet = new Set(picked.map((c) => c.hash));
-        const planEntries: RebasePlanEntry[] = plan.map((c) => {
-          const action: RebaseAction =
-            selectedSet.has(c.hash) && c.hash !== oldest.hash
-              ? "squash"
-              : "pick";
-
-          return { hash: c.hash, action };
-        });
+        // Reorder the rebase plan so the squash works for non-contiguous
+        // selections too: the oldest selected commit stays as `pick`, every
+        // other selected commit follows immediately as `squash`, then the
+        // unselected commits replay on top in their original order. If
+        // replaying an unselected commit on top of the squashed result
+        // conflicts, git halts the rebase and we surface the error.
+        const selectedEntries: RebasePlanEntry[] = [];
+        const unselectedEntries: RebasePlanEntry[] = [];
+        for (const c of plan) {
+          if (selectedSet.has(c.hash)) {
+            selectedEntries.push({
+              hash: c.hash,
+              action: c.hash === oldest.hash ? "pick" : "squash",
+            });
+          } else {
+            unselectedEntries.push({ hash: c.hash, action: "pick" });
+          }
+        }
+        const planEntries: RebasePlanEntry[] = [
+          ...selectedEntries,
+          ...unselectedEntries,
+        ];
         await gitRebaseInteractiveRun(sessionId, {
           upstream,
           plan: planEntries,
@@ -1899,7 +1926,6 @@ export function CommitLogView({
               ? visibleSelectedHashes.size
               : 1
           }
-          selectionContiguous={selectionContiguous}
           onSquashSelection={
             scope === "project" && visibleSelectedHashes.size >= 2
               ? () => {
