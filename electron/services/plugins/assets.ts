@@ -230,10 +230,13 @@ export async function ensureAssetCached(
     const noop: DownloadProgressEmitter = () => {};
     const onProgress = emit ?? noop;
     for (const spec of specs) {
-      const finalPath = cachedPath(pluginId, spec.name);
-      if (exists(finalPath)) {
+      // Skip if a cached or bundled copy already resolves. In dev the bundled
+      // path is the in-repo build output, so plugins toggled on never need to
+      // hit the network.
+      if (isAssetAvailable(pluginId, spec.name)) {
         continue;
       }
+      const finalPath = cachedPath(pluginId, spec.name);
       const stagingDir = path.join(cacheRoot(), pluginId, ".staging");
       await fs.promises.mkdir(stagingDir, { recursive: true });
       const zipPath = path.join(stagingDir, `${spec.name}.zip`);
