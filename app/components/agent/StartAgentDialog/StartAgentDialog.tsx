@@ -40,7 +40,12 @@ import dialogExtra from "./StartAgentDialog.module.css";
 interface StartAgentDialogProps {
   /** Initial permission mode the dialog opens with. Defaults to `"auto"`. */
   initialMode?: CanonicalPermissionMode;
+  /** Initial prompt the dialog opens with. */
+  initialPrompt?: string;
   onClose: () => void;
+  /** Notified whenever the prompt changes — lets callers keep their own
+   *  composer in sync with the dialog. */
+  onPromptChange?: (prompt: string) => void;
   sessionId: string;
 }
 
@@ -61,7 +66,9 @@ function buildMessage(prompt: string, linkedProjects: string[]): string {
 export function StartAgentDialog({
   sessionId,
   initialMode = "auto",
+  initialPrompt = "",
   onClose,
+  onPromptChange,
 }: StartAgentDialogProps) {
   const [permissionMode, setPermissionMode] =
     useState<CanonicalPermissionMode>(initialMode);
@@ -82,7 +89,14 @@ export function StartAgentDialog({
       ? prewarmSlot.slashCommands
       : cached.slashCommands;
 
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPromptState] = useState(initialPrompt);
+  const setPrompt = useCallback(
+    (next: string) => {
+      setPromptState(next);
+      onPromptChange?.(next);
+    },
+    [onPromptChange],
+  );
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [linkedProjects, setLinkedProjects] = useState<string[]>([]);

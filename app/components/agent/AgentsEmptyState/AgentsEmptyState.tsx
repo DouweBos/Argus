@@ -186,8 +186,10 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
       {advancedOpen && (
         <StartAgentDialog
           initialMode={permissionMode}
+          initialPrompt={prompt}
           sessionId={sessionId}
           onClose={() => setAdvancedOpen(false)}
+          onPromptChange={setPrompt}
         />
       )}
     </div>
