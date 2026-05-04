@@ -256,6 +256,15 @@ export async function gitRebaseInteractiveRun(
       const stderr = e.stderr ?? "";
       const stdout = e.stdout ?? "";
       const combined = stderr || stdout || e.message || "git rebase -i failed";
+      // If the rebase halted mid-flight (e.g. a conflict while replaying a
+      // commit on top of a squash), abort it so the working tree is restored
+      // rather than leaving the user stranded in a detached rebase state.
+      try {
+        await execFileAsync("git", ["rebase", "--abort"], { cwd });
+      } catch {
+        // Either no rebase in progress or abort failed — surface the
+        // original error either way.
+      }
       throw classifyGitStderr(combined, { op: "rebase" });
     } finally {
       shims.cleanup();
