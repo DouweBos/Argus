@@ -368,12 +368,33 @@ export function DiffViewer({
           openFileHistory(sessionId, highlighted);
         }
       },
+      "toggle-staged-focused": () => {
+        if (!highlighted) {
+          return;
+        }
+        const file = files.find((f) => gitIndexPath(f) === highlighted);
+        if (!file) {
+          return;
+        }
+        if (file.staged === "none") {
+          handleAction(() => stageFile(sessionId, highlighted));
+        } else {
+          handleAction(() => unstageFile(sessionId, highlighted));
+        }
+      },
+      "discard-focused": () => {
+        if (!highlighted) {
+          return;
+        }
+        startDiscard([highlighted]);
+      },
     }),
     [
       handleAction,
       handleStageAll,
       handleUnstageAll,
       fetchDiff,
+      files,
       highlighted,
       sessionId,
       startDiscard,
