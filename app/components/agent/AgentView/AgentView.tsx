@@ -15,8 +15,8 @@ import { useSessions } from "../../../stores/sessionStore";
 import { AgentChat } from "../AgentChat";
 import { AgentSplitDropZone } from "../AgentChatDropZone";
 import { AgentTabBar } from "../AgentTabBar";
+import { AgentsEmptyState } from "../AgentsEmptyState";
 import { ChildAgentPills } from "../ChildAgentPills";
-import { HomePanel } from "../HomePanel";
 import { SplitAgentPanes } from "../SplitAgentPanes";
 import styles from "./AgentView.module.css";
 
@@ -216,7 +216,7 @@ export function AgentView({ sessionId }: AgentViewProps) {
 
       {activeAgent && <ChildAgentPills parentAgentId={activeAgent.agent_id} />}
 
-      {!activeAgent && <HomePanel sessionId={sessionId} />}
+      {!activeAgent && <AgentsEmptyState sessionId={sessionId} />}
       {activeAgent && showSplit && resolvedPair && (
         <SplitAgentPanes
           left={resolvedPair.left}
