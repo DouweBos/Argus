@@ -47,18 +47,21 @@ export function CollapsedToolGroup({
       hour: "2-digit",
       minute: "2-digit",
     });
-  const timestampLabel =
-    firstTimestamp !== undefined
-      ? lastTimestamp !== undefined && lastTimestamp !== firstTimestamp
-        ? `${formatTime(firstTimestamp)}–${formatTime(lastTimestamp)}`
-        : formatTime(firstTimestamp)
-      : null;
-  const timestampTitle =
-    firstTimestamp !== undefined
-      ? lastTimestamp !== undefined && lastTimestamp !== firstTimestamp
-        ? `${new Date(firstTimestamp).toLocaleString()} – ${new Date(lastTimestamp).toLocaleString()}`
-        : new Date(firstTimestamp).toLocaleString()
-      : undefined;
+  const hasRange =
+    firstTimestamp !== undefined &&
+    lastTimestamp !== undefined &&
+    lastTimestamp !== firstTimestamp;
+  let timestampLabel: string | null = null;
+  let timestampTitle: string | undefined;
+  if (firstTimestamp !== undefined) {
+    if (hasRange && lastTimestamp !== undefined) {
+      timestampLabel = `${formatTime(firstTimestamp)}–${formatTime(lastTimestamp)}`;
+      timestampTitle = `${new Date(firstTimestamp).toLocaleString()} – ${new Date(lastTimestamp).toLocaleString()}`;
+    } else {
+      timestampLabel = formatTime(firstTimestamp);
+      timestampTitle = new Date(firstTimestamp).toLocaleString();
+    }
+  }
 
   return (
     <div className={styles.group}>

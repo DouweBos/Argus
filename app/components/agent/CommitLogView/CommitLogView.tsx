@@ -1694,28 +1694,37 @@ export function CommitLogView({
                       <span className={styles.commitHash}>
                         {formatShortDate(commit.date)}
                       </span>
-                      {aheadSet.has(commit.hash) ? (
-                        <span
-                          className={styles.commitSyncIndicator}
-                          title="Ahead of upstream — not yet pushed"
-                          aria-label="Ahead of upstream"
-                        >
-                          <Icons.ArrowUpRightIcon size={12} />
-                        </span>
-                      ) : behindSet.has(commit.hash) ? (
-                        <span
-                          className={styles.commitSyncIndicator}
-                          title="Behind upstream — not yet pulled"
-                          aria-label="Behind upstream"
-                        >
-                          <Icons.ArrowDownLeftIcon size={12} />
-                        </span>
-                      ) : (
-                        <span
-                          className={styles.commitSyncIndicator}
-                          aria-hidden="true"
-                        />
-                      )}
+                      {(() => {
+                        if (aheadSet.has(commit.hash)) {
+                          return (
+                            <span
+                              className={styles.commitSyncIndicator}
+                              title="Ahead of upstream — not yet pushed"
+                              aria-label="Ahead of upstream"
+                            >
+                              <Icons.ArrowUpRightIcon size={12} />
+                            </span>
+                          );
+                        }
+                        if (behindSet.has(commit.hash)) {
+                          return (
+                            <span
+                              className={styles.commitSyncIndicator}
+                              title="Behind upstream — not yet pulled"
+                              aria-label="Behind upstream"
+                            >
+                              <Icons.ArrowDownLeftIcon size={12} />
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <span
+                            className={styles.commitSyncIndicator}
+                            aria-hidden="true"
+                          />
+                        );
+                      })()}
                     </CommitRow>
                   );
                 })}

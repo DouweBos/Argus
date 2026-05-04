@@ -89,10 +89,10 @@ export function StartAgentDialog({
       ? prewarmSlot.slashCommands
       : cached.slashCommands;
 
-  const [prompt, setPromptState] = useState(initialPrompt);
-  const setPrompt = useCallback(
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const updatePrompt = useCallback(
     (next: string) => {
-      setPromptState(next);
+      setPrompt(next);
       onPromptChange?.(next);
     },
     [onPromptChange],
@@ -208,47 +208,53 @@ export function StartAgentDialog({
     [slashCommands],
   );
 
-  const applySuggestion = useCallback((cmd: SlashCommand) => {
-    const next = `/${cmd.name} `;
-    setPrompt(next);
-    setSuggestions([]);
-    promptRef.current?.focus();
-  }, []);
+  const applySuggestion = useCallback(
+    (cmd: SlashCommand) => {
+      const next = `/${cmd.name} `;
+      updatePrompt(next);
+      setSuggestions([]);
+      promptRef.current?.focus();
+    },
+    [updatePrompt],
+  );
 
   const handlePromptChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const next = e.target.value;
-      setPrompt(next);
+      updatePrompt(next);
       updateSuggestions(next);
       updateMentions(promptRef.current);
     },
-    [updateSuggestions, updateMentions],
+    [updateSuggestions, updateMentions, updatePrompt],
   );
 
-  const insertFilePathMentions = useCallback((paths: string[]) => {
-    const el = promptRef.current;
-    if (!el || paths.length === 0) {
-      return;
-    }
-    const cursor = el.selectionStart ?? el.value.length;
-    const before = el.value.slice(0, cursor);
-    const after = el.value.slice(cursor);
-    const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
-    const mentions = paths.map((p) => `@${p}`).join(" ");
-    const insertion = `${needsLeadingSpace ? " " : ""}${mentions} `;
-    const next = `${before}${insertion}${after}`;
-    setPrompt(next);
-    requestAnimationFrame(() => {
-      const node = promptRef.current;
-      if (!node) {
+  const insertFilePathMentions = useCallback(
+    (paths: string[]) => {
+      const el = promptRef.current;
+      if (!el || paths.length === 0) {
         return;
       }
-      const newCursor = before.length + insertion.length;
-      node.selectionStart = newCursor;
-      node.selectionEnd = newCursor;
-      node.focus();
-    });
-  }, []);
+      const cursor = el.selectionStart ?? el.value.length;
+      const before = el.value.slice(0, cursor);
+      const after = el.value.slice(cursor);
+      const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
+      const mentions = paths.map((p) => `@${p}`).join(" ");
+      const insertion = `${needsLeadingSpace ? " " : ""}${mentions} `;
+      const next = `${before}${insertion}${after}`;
+      updatePrompt(next);
+      requestAnimationFrame(() => {
+        const node = promptRef.current;
+        if (!node) {
+          return;
+        }
+        const newCursor = before.length + insertion.length;
+        node.selectionStart = newCursor;
+        node.selectionEnd = newCursor;
+        node.focus();
+      });
+    },
+    [updatePrompt],
+  );
 
   const addImageFiles = useCallback(async (files: File[]) => {
     const newImages = await filesToPendingImages(files);
