@@ -7,9 +7,9 @@
  */
 
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 
 const SCHEMA_VERSION = 1;
 
@@ -47,7 +47,7 @@ interface UserProjectSettingsFile {
 }
 
 function filePath(): string {
-  return path.join(os.homedir(), ".argus", "user-project-settings.json");
+  return path.join(argusHomeDir(), "user-project-settings.json");
 }
 
 function readAll(): UserProjectSettingsFile {

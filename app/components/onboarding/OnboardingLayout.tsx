@@ -7,6 +7,7 @@ import styles from "./OnboardingLayout.module.css";
 const STEP_LABELS: Record<OnboardingStep, string> = {
   welcome: "Welcome",
   permissions: "Permissions",
+  plugins: "Plugins",
   preflight: "Preflight",
   claude_auth: "Claude",
   launcher: "Launcher",

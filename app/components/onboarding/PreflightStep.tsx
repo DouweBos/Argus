@@ -1,205 +1,51 @@
-import type { PrereqId, PrereqResult, PrereqStatus } from "../../lib/types";
-import { useEffect, useState } from "react";
-import {
-  Button,
-  ChecklistRow,
-  CodeBlock,
-  FormField,
-  Input,
-} from "@argus/peacock";
-import { useIpcEvent } from "../../hooks/useIpcEvent";
+import type { PrereqId, PrereqResult } from "../../lib/types";
+import { useMemo, useState } from "react";
+import { Button } from "@argus/peacock";
 import { useOnboarding } from "../../hooks/useOnboarding";
-import { checkPrereqs, openExternalUrl, runPrereqFixer } from "../../lib/ipc";
-import {
-  setPrereq,
-  setPrereqs,
-  useOnboardingStore,
-} from "../../stores/onboardingStore";
+import { PLUGINS } from "../../plugins/registry";
+import { getEffectivePluginEnabled } from "../../plugins/store";
+import { PrereqList } from "../shared/PrereqList";
 import { OnboardingLayout } from "./OnboardingLayout";
-import styles from "./PreflightStep.module.css";
-
-interface PrereqMeta {
-  installCommand?: string;
-  installLabel?: string;
-  installUrl?: string;
-  mobileOnly?: boolean;
-  title: string;
-}
-
-const META: Record<PrereqId, PrereqMeta> = {
-  claude_cli: {
-    title: "Claude Code CLI",
-    installCommand: "npm install -g @anthropic-ai/claude-code",
-    installLabel: "Install guide",
-    installUrl: "https://docs.claude.com/en/docs/claude-code/quickstart",
-  },
-  claude_auth: {
-    title: "Claude authentication",
-    installCommand: "claude login",
-    installLabel: "Sign-in help",
-    installUrl: "https://docs.claude.com/en/docs/claude-code/quickstart",
-  },
-  git_cli: {
-    title: "Git on PATH",
-    installCommand: "xcode-select --install",
-    installLabel: "git-scm.com",
-    installUrl: "https://git-scm.com/downloads/mac",
-  },
-  git_identity: {
-    title: "Git identity",
-  },
-  native_bridge: {
-    title: "Native sim bridge",
-    mobileOnly: true,
-    installCommand: "pnpm --filter argus build:native",
-  },
-  xcode: {
-    title: "Xcode",
-    mobileOnly: true,
-    installLabel: "App Store",
-    installUrl: "https://apps.apple.com/app/xcode/id497799835",
-  },
-  ios_runtimes: {
-    title: "iOS simulator runtimes",
-    mobileOnly: true,
-    installCommand: "xcodebuild -downloadPlatform iOS",
-    installLabel: "Apple docs",
-    installUrl:
-      "https://developer.apple.com/documentation/xcode/installing-additional-simulator-runtimes",
-  },
-  android_sdk: {
-    title: "Android SDK",
-    mobileOnly: true,
-    installCommand: "brew install --cask android-platform-tools",
-    installLabel: "Android Studio",
-    installUrl: "https://developer.android.com/studio",
-  },
-  android_avd: {
-    title: "Android AVDs",
-    mobileOnly: true,
-    installLabel: "AVD Manager guide",
-    installUrl: "https://developer.android.com/studio/run/managing-avds",
-  },
-  playwright: {
-    title: "Playwright browsers",
-    installCommand: "npx playwright install",
-    installLabel: "Playwright docs",
-    installUrl: "https://playwright.dev/docs/browsers",
-  },
-};
 
 const REQUIRED: PrereqId[] = ["claude_cli", "git_cli", "git_identity"];
+
+/**
+ * Core prereqs that always run regardless of which plugins are enabled. The
+ * `claude_auth` step has its own dedicated onboarding step so it's also
+ * checked here as part of the broader preflight set.
+ */
+const CORE_PREREQS: PrereqId[] = [
+  "claude_cli",
+  "claude_auth",
+  "git_cli",
+  "git_identity",
+];
 
 function allRequiredOk(prereqs: Record<string, PrereqResult>): boolean {
   return REQUIRED.every((id) => prereqs[id]?.status === "pass");
 }
 
-function GitIdentityForm({
-  busy,
-  onSubmit,
-}: {
-  busy: boolean;
-  onSubmit: (name: string, email: string) => void;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const valid = name.trim().length > 0 && /.+@.+\..+/.test(email.trim());
-
-  return (
-    <div className={styles.identityForm}>
-      <FormField label="Name">
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your Name"
-          disabled={busy}
-        />
-      </FormField>
-      <FormField label="Email">
-        <Input
-          value={email}
-          type="email"
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          disabled={busy}
-        />
-      </FormField>
-      <div className={styles.identityActions}>
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={!valid || busy}
-          onClick={() => onSubmit(name.trim(), email.trim())}
-        >
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export function PreflightStep() {
   const { advance } = useOnboarding();
-  const prereqs = useOnboardingStore((s) => s.prereqs);
-  const [busy, setBusy] = useState(false);
-  const [fixing, setFixing] = useState<PrereqId | null>(null);
+  const [results, setResults] = useState<Record<string, PrereqResult>>({});
 
-  useIpcEvent<PrereqResult>("onboarding:prereq_update", (r) => {
-    setPrereq(r);
-  });
+  // Filter prereqs to core + the union of every enabled plugin's declared
+  // prereqs. A user who picked zero plugins sees only the four core checks;
+  // full picker = today's full list.
+  const ids = useMemo<PrereqId[]>(() => {
+    const enabled = PLUGINS.filter((p) => getEffectivePluginEnabled(p.id));
+    const pluginPrereqs = enabled.flatMap((p) => p.prereqs ?? []);
 
-  useEffect(() => {
-    runChecks().catch(() => {});
+    return Array.from(new Set([...CORE_PREREQS, ...pluginPrereqs]));
   }, []);
 
-  const runChecks = async () => {
-    setBusy(true);
-    try {
-      const results = await checkPrereqs();
-      setPrereqs(results);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const required = allRequiredOk(prereqs);
-
-  const onFix = async (
-    id: PrereqId,
-    args?: { gitEmail?: string; gitName?: string },
-  ) => {
-    setFixing(id);
-    try {
-      await runPrereqFixer(id, args);
-      await checkPrereqs([id]).then(setPrereqs);
-    } finally {
-      setFixing(null);
-    }
-  };
-
-  const skipMobile = () => {
-    const mobileIds: PrereqId[] = [
-      "native_bridge",
-      "xcode",
-      "ios_runtimes",
-      "android_sdk",
-      "android_avd",
-    ];
-    mobileIds.forEach((id) => {
-      setPrereq({ id, status: "skipped", mobileOnly: true });
-    });
-  };
+  const required = allRequiredOk(results);
 
   return (
     <OnboardingLayout
       currentStep="preflight"
       title="Preflight check"
-      subtitle="Verifying tooling on your Mac. Required items must pass; mobile-only items are optional."
-      footerLeft={
-        <Button variant="ghost" onClick={skipMobile}>
-          Skip mobile for now
-        </Button>
-      }
+      subtitle="Verifying tooling on your Mac. Required items must pass; plugin-only items are optional but their plugins won't work without them."
       footerRight={
         <Button
           variant="primary"
@@ -212,86 +58,7 @@ export function PreflightStep() {
         </Button>
       }
     >
-      <div className={styles.grid}>
-        {(Object.keys(META) as PrereqId[]).map((id) => {
-          const result = prereqs[id];
-          const meta = META[id];
-          const status: PrereqStatus = result?.status ?? "running";
-          const isFixing = fixing === id;
-          const showInstall =
-            !isFixing &&
-            (status === "fail" ||
-              status === "warn" ||
-              (status === "skipped" && meta.mobileOnly));
-          const isGitIdentity = id === "git_identity";
-          const showIdentityForm =
-            isGitIdentity && status !== "pass" && status !== "running";
-
-          return (
-            <ChecklistRow
-              key={id}
-              title={meta.title + (meta.mobileOnly ? " (mobile)" : "")}
-              message={isFixing ? "Installing…" : result?.message}
-              tone={isFixing ? "running" : status}
-              detail={result?.detail}
-              action={
-                result?.fixable && !isGitIdentity ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={isFixing}
-                    onClick={() => {
-                      onFix(id).catch(() => {});
-                    }}
-                  >
-                    {isFixing ? "Installing…" : "Install"}
-                  </Button>
-                ) : undefined
-              }
-            >
-              {showIdentityForm ? (
-                <GitIdentityForm
-                  busy={isFixing}
-                  onSubmit={(gitName, gitEmail) => {
-                    onFix("git_identity", { gitName, gitEmail }).catch(
-                      () => {},
-                    );
-                  }}
-                />
-              ) : null}
-              {!showIdentityForm && showInstall && meta.installCommand ? (
-                <CodeBlock code={meta.installCommand} />
-              ) : null}
-              {!showIdentityForm && showInstall && meta.installUrl ? (
-                <div className={styles.installLine}>
-                  <span>How to install:</span>
-                  <button
-                    type="button"
-                    className={styles.installLink}
-                    onClick={() => {
-                      openExternalUrl(meta.installUrl!).catch(() => {});
-                    }}
-                  >
-                    {meta.installLabel ?? meta.installUrl}
-                  </button>
-                </div>
-              ) : null}
-            </ChecklistRow>
-          );
-        })}
-      </div>
-      <div className={styles.rerun}>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={() => {
-            runChecks().catch(() => {});
-          }}
-        >
-          Re-run checks
-        </Button>
-      </div>
+      <PrereqList ids={ids} onResults={setResults} />
     </OnboardingLayout>
   );
 }

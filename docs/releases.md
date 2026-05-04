@@ -60,3 +60,30 @@ and variables → Actions**:
 The workflow pushes the version-bump commit + tag directly to `main`. The PAT
 behind `RELEASE_TOKEN` must be either issued by an account that bypasses the
 protection rule, or the rule must allow that account to push directly.
+
+## Channels — stable, alpha, RC
+
+The release workflow takes a **channel** input: `stable`, `alpha`, or `rc`.
+
+| Channel  | Branch      | Tag format        | Feed file        | Pre-release flag | Side effects                             |
+| -------- | ----------- | ----------------- | ---------------- | ---------------- | ---------------------------------------- |
+| `stable` | `main` only | `v0.20.0`         | `latest-mac.yml` | no               | Pushes commit + tag, syncs `houwert.dev` |
+| `alpha`  | any branch  | `v0.20.0-alpha.0` | `alpha-mac.yml`  | yes              | Pushes tag only; nothing else            |
+| `rc`     | any branch  | `v0.20.0-rc.0`    | `beta-mac.yml`   | yes              | Pushes tag only; nothing else            |
+
+Pre-release versioning runs `pnpm changeset pre enter <channel>` → `version` → `pre exit` (without committing the exit), so the source branch's changeset state stays untouched. Bumped versions only live in tag-space; the next `stable` cut consumes the same set of unconsumed changesets.
+
+Stable users on the `latest` feed never see alpha/RC builds. Internal testers can switch their auto-updater channel under **Settings → Advanced → Update channel**.
+
+## Plugin assets
+
+Each release also publishes per-plugin asset zips, which the running app fetches when the user enables a plugin. The release workflow runs `scripts/release-plugins.ts` after the main `.app` has been signed and notarized:
+
+1. Stage each plugin source under `release/plugin-staging/<plugin>/`.
+2. Native binaries: `codesign --options runtime`, then `ditto -c -k --keepParent` into a `.zip`, then `xcrun notarytool submit … --wait`.
+3. Node trees / JARs: `ditto -c -k --keepParent` only.
+4. Upload each `.zip` to the same GH release tag as `<plugin>__<filename>`.
+
+The reverse proxy at `argus.houwert.dev` rewrites `/releases/v<version>/<plugin>/<file>` → flat GH download URL. The renderer's resolver constructs the URL deterministically from `app.getVersion()` so every release is self-contained — no separate plugin versioning, no update prompts. Updating Argus = updating its plugin assets atomically.
+
+Required env vars for `scripts/release-plugins.ts` (set automatically inside the fastlane release lane): `CSC_NAME`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`, `APPLE_API_KEY`, `GITHUB_TOKEN`. Pass `SKIP_UPLOAD=1` to leave the staged zips on disk for inspection without uploading.

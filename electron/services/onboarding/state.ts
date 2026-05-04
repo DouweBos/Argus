@@ -11,9 +11,9 @@ import type {
   OnboardingStep,
 } from "./types";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { ONBOARDING_STEPS } from "./types";
 
@@ -27,8 +27,20 @@ const DEFAULT_STATE: OnboardingStateData = {
   completedAt: null,
 };
 
+/**
+ * Absolute path to Argus's per-user state directory. Defaults to `~/.argus`
+ * but can be overridden by setting `ARGUS_HOME` in the environment. Useful
+ * for running a dev build alongside the production install:
+ *
+ *   ARGUS_HOME="$HOME/.argus-dev" pnpm dev
+ *
+ * Every file under this directory — `config.json`, `plugins.json`, agent
+ * logs, organizations, worktrees — is keyed off this single helper. Override
+ * it once and the whole install switches to the parallel home.
+ */
+/** @deprecated Prefer `argusHomeDir` from `electron/lib/argusHome.ts` directly. */
 export function argusDirPath(): string {
-  return path.join(os.homedir(), ".argus");
+  return argusHomeDir();
 }
 
 export function configFilePath(): string {

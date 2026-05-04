@@ -24,6 +24,7 @@ import { pathToFileURL } from "node:url";
 import { log as emitLog } from "../app/lib/logger";
 import { broadcastToRenderers } from "./broadcast";
 import { registerIpcHandlers } from "./ipc";
+import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import { setColorScheme } from "./services/browser/conductorInput";
@@ -847,7 +848,7 @@ app.whenReady().then(() => {
   const extensionRoots = [
     path.join(os.homedir(), ".vscode", "extensions"),
     path.join(os.homedir(), ".cursor", "extensions"),
-    path.join(os.homedir(), ".argus", "extensions"),
+    path.join(argusHomeDir(), "extensions"),
   ];
 
   /** Validate that a file path falls within an allowed extension directory. */

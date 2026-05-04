@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
+import { useEffectivePluginEnabled } from "../../../plugins/store";
 import {
   type ToolId,
   TOOL_PLACEMENT,
@@ -45,6 +46,16 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
   const activeToolId = useActiveToolId("right");
   const setWidth = setRightPanelWidth;
   const mountedToolIds = useMountedToolIds();
+  const recordingEnabled = useEffectivePluginEnabled("device-recording");
+
+  // Auto-close the simulator panel when the user disables `device-recording`.
+  // The toolrail button itself disappears via ToolRail's contribution filter,
+  // but a stale `activeToolId` would leave the panel open with a broken tool.
+  useEffect(() => {
+    if (activeToolId === "simulator" && !recordingEnabled) {
+      toggleTool("simulator");
+    }
+  }, [activeToolId, recordingEnabled]);
 
   const lastActiveToolId = useLastActiveToolId("right");
   const displayToolId = activeToolId ?? lastActiveToolId;

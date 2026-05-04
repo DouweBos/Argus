@@ -523,6 +523,24 @@ their machine.
 
 ---
 
+## `plugins` — mask plugins off for this project
+
+Plugins (Device recording, Device control, Device debug, UI inspector) are an opt-in app-level setting. A project can additionally **mask plugins off** for everyone working on it — useful for repos that don't use device tooling at all (server-only projects, CLI tools).
+
+```jsonc
+"plugins": {
+  "disabled": ["device-recording", "device-debug"]
+}
+```
+
+Effective enable = the user has the plugin on **and** this list doesn't contain it. The mask is one-way: a project cannot force-enable a plugin a developer has turned off in their personal settings.
+
+Edit via **Project Settings → Plugins** — the dialog lists every plugin and toggles them straight into this field. The list is checked into `.argus.json` so the mask travels with the repo.
+
+Valid ids: `device-recording`, `device-inspector`, `device-control`, `device-debug`. Unknown ids are ignored (no error, no warning) so the field tolerates renames across releases.
+
+---
+
 ## A complete example
 
 ```jsonc

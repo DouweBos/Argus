@@ -424,6 +424,11 @@ export interface ArgusConfig {
    */
   platforms?: RuntimePlatform[];
   /**
+   * Plugins disabled for everyone working on this project. Strings — see
+   * `app/plugins/types.ts` for valid `PluginId`s. Unknown ids are ignored.
+   */
+  plugins?: { disabled?: string[] } | null;
+  /**
    * Branch names that cannot be merged into directly from the app — the UI
    * shows a "Push & open PR" flow instead. Typical values: `["main"]`.
    */
@@ -520,6 +525,11 @@ export interface McpOAuthStatus {
 export interface AppSettings {
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: Record<string, Record<string, unknown>>;
+  /**
+   * Auto-updater feed channel. `latest` is stable; `alpha` and `beta` are
+   * pre-release feeds for internal testing. Defaults to `latest`.
+   */
+  updater_channel?: "alpha" | "beta" | "latest";
 }
 
 /**
@@ -728,6 +738,7 @@ export interface OrgTaskScopeEntry {
 export const ONBOARDING_STEPS = [
   "welcome",
   "permissions",
+  "plugins",
   "preflight",
   "claude_auth",
   "launcher",

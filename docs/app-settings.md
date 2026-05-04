@@ -108,6 +108,35 @@ should get, use the project-level `mcp_servers` in
 | ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Send anonymous telemetry** | `false` | Sends anonymous usage and crash events to PostHog so we can find bugs and prioritise features. Consent is collected once during onboarding (telemetry step); flip it any time here. |
 
+---
+
+## Plugins
+
+Argus's device tooling — recording, control, debug streams, the UI inspector — ships as opt-in **plugins**. The base install is materially smaller; assets only download for plugins you turn on.
+
+| Plugin                  | What it does                                                               | Needs                                                         |
+| ----------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **Device recording**    | Stream iOS Simulator and Android emulator screens into the runtime panel.  | Native sim bridge, Xcode + iOS runtimes, Android SDK + an AVD |
+| **Device UI inspector** | Inspect view hierarchy, accessibility, and layout on a connected device.   | Device recording (auto)                                       |
+| **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation.    | Android SDK (for Android), Playwright (for web)               |
+| **Device debug**        | Tail device logs, memory, and other conductor probes from the Debug panel. | Device control (auto)                                         |
+
+Pick plugins during onboarding (the **Plugins** step before Preflight) or at any time from **Settings → Plugins**. Toggling a plugin on downloads its assets from the GitHub release for your running app version into `<userData>/plugins/v<version>/<plugin>/`. Disabling drops the cache; re-enabling re-downloads.
+
+Each plugin row in Settings runs its declared prereq checks live and surfaces **Install** buttons for the ones we know how to fix. Failed prereqs don't block the toggle — assets still download — but the surfaces that depend on a missing prereq will error gracefully when used.
+
+The preflight onboarding step is filtered to your enabled plugins' prereqs plus the four core checks (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`). A user who picks zero plugins sees only the four core checks.
+
+---
+
+## Advanced — Update channel
+
+| Setting     | Default  | Description                                                                                                                                                                                                |
+| ----------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Channel** | `latest` | Auto-updater feed. `latest` is stable. `beta` subscribes to release-candidate builds. `alpha` subscribes to pre-release builds from any branch. Off-stable channels can break your install — testers only. |
+
+Stable users on `latest` never see alpha or beta builds — they're published under different `*-mac.yml` feed files. Switching channels takes effect on next app restart.
+
 What we send (when the toggle is on):
 
 - Anonymous install id (random UUID). Wiping it rotates the id. The id

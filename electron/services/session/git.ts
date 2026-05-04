@@ -4,10 +4,10 @@
 
 import { execFile } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { warn } from "../../../app/lib/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 import { classifyGitStderr } from "./gitError";
 
 const execFileAsync = promisify(execFile);
@@ -27,12 +27,7 @@ const execFileAsync = promisify(execFile);
 export function worktreesRoot(repoRoot: string): string {
   const name = path.basename(repoRoot) || "repo";
 
-  return path.join(
-    os.homedir(),
-    ".argus",
-    "worktrees",
-    `${name}-argus-worktrees`,
-  );
+  return path.join(argusHomeDir(), "worktrees", `${name}-argus-worktrees`);
 }
 
 /**

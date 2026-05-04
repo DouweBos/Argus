@@ -6,10 +6,10 @@
  */
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { argusHomeDir } from "../../lib/argusHome";
 
-const ID_FILE = path.join(os.homedir(), ".argus", "telemetry-id");
+const ID_FILE = path.join(argusHomeDir(), "telemetry-id");
 
 let cached: string | null = null;
 

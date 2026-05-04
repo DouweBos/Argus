@@ -6,10 +6,10 @@
  */
 
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { argusHomeDir } from "../lib/argusHome";
 
-const FILE = path.join(os.homedir(), ".argus", "ui-state.json");
+const FILE = path.join(argusHomeDir(), "ui-state.json");
 
 function readAll(): Record<string, string> {
   try {

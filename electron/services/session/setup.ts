@@ -135,7 +135,33 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     ),
     auto_fetch_minutes: normalizeAutoFetchMinutes(parsed.auto_fetch_minutes),
     llm: normalizeLlmConfig(parsed.llm, repoRoot),
+    plugins: normalizePluginsConfig(parsed.plugins),
   };
+}
+
+/**
+ * Normalise the optional `plugins.disabled` list. Anything that isn't a
+ * non-empty string is dropped; we don't validate against the registry here
+ * because the renderer is what consumes this and unknown ids are harmless.
+ */
+function normalizePluginsConfig(
+  input: unknown,
+): { disabled?: string[] } | null {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+  const disabled = (input as { disabled?: unknown }).disabled;
+  if (!Array.isArray(disabled)) {
+    return null;
+  }
+  const cleaned = disabled
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .map((v) => v.trim());
+  if (cleaned.length === 0) {
+    return null;
+  }
+
+  return { disabled: cleaned };
 }
 
 /**
@@ -757,6 +783,7 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     auto_fetch_minutes:
       local.auto_fetch_minutes ?? base.auto_fetch_minutes ?? null,
     llm: mergeLlmConfig(base.llm ?? null, local.llm ?? null),
+    plugins: local.plugins ?? base.plugins ?? null,
   };
 }
 

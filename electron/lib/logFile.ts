@@ -10,13 +10,13 @@
  */
 
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { argusHomeDir } from "./argusHome";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_FILES = 5;
 
-const baseDir = path.join(os.homedir(), ".argus");
+const baseDir = argusHomeDir();
 const logDir = path.join(baseDir, "logs");
 const currentPath = path.join(logDir, "main.log");
 const legacyPath = path.join(baseDir, "main.log");

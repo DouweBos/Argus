@@ -9,10 +9,7 @@ files:
   - "!node_modules/**/*"
   - node_modules/node-pty/**/*
 extraResources:
-  - from: native/argus-sim-bridge/argus-sim-bridge
-    to: argus-sim-bridge
-    filter:
-      - "**/*"
+  # argus-hotkey-bridge stays bundled — launcher is core, not a plugin.
   - from: native/argus-hotkey-bridge/argus-hotkey-bridge
     to: argus-hotkey-bridge
     filter:
@@ -21,8 +18,9 @@ extraResources:
     to: menu-icons
     filter:
       - "**/*.png"
-  - from: native/scrcpy-server/scrcpy-server.jar
-    to: scrcpy-server.jar
+  # Plugin assets (argus-sim-bridge, scrcpy-server.jar, conductor tree) are
+  # not bundled — they're fetched from the GH release per-version. See
+  # `electron/services/plugins/assets.ts` and `scripts/release-plugins.ts`.
   - from: electron/prompts/worktree-agent-system-prompt.md
     to: worktree-agent-system-prompt.md
   - from: electron/prompts/root-agent-system-prompt.md

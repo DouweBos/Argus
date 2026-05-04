@@ -12,7 +12,7 @@
   "run": [
     {
       "title": "Dev",
-      "command": "pnpm dev",
+      "command": "ARGUS_HOME=\"$HOME/.argus-dev-$ARGUS_PORT\" pnpm dev",
       "restartOnRerun": true
     },
     {

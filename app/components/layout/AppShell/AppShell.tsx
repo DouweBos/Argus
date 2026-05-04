@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
@@ -9,6 +9,11 @@ import { startAgentInSession } from "../../../lib/agentLifecycle";
 import { runCloseIntent } from "../../../lib/closeIntent";
 import { closeWindow } from "../../../lib/ipc";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
+import { usePluginProjectMaskSync } from "../../../plugins/projectSync";
+import {
+  bootstrapPluginStore,
+  useEffectivePluginEnabled,
+} from "../../../plugins/store";
 import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
@@ -155,6 +160,12 @@ export function AppShell() {
   useOrgTaskSync();
   usePullRequestsSync();
   useTrackSessionPanel();
+  usePluginProjectMaskSync();
+  // Reconcile the plugin store against the persisted backend state once at
+  // app start. Idempotent — see `bootstrapPluginStore`.
+  useEffect(() => {
+    bootstrapPluginStore();
+  }, []);
 
   const startNewAgentInCurrent = useCallback(async () => {
     const id = getSelectedSessionId();
@@ -191,6 +202,8 @@ export function AppShell() {
     }
   }, []);
 
+  const recordingPluginEnabled = useEffectivePluginEnabled("device-recording");
+  const debugPluginEnabled = useEffectivePluginEnabled("device-debug");
   const shortcutHandlers = useMemo<Record<ShortcutId, () => void>>(
     () => ({
       "command-palette": toggleCommandPalette,
@@ -198,9 +211,19 @@ export function AppShell() {
       "toggle-right-panel": toggleRightPanel,
       "toggle-bottom-panel": toggleBottomPanel,
       "toggle-terminal": () => toggleTool("terminal"),
-      "toggle-debug": () => toggleTool("debug"),
+      // Plugin-gated shortcuts no-op when the plugin is off — same behaviour
+      // as the missing rail entry, just via the keyboard surface.
+      "toggle-debug": () => {
+        if (debugPluginEnabled) {
+          toggleTool("debug");
+        }
+      },
       "toggle-changes": () => toggleTool("changes"),
-      "toggle-simulator": () => toggleTool("simulator"),
+      "toggle-simulator": () => {
+        if (recordingPluginEnabled) {
+          toggleTool("simulator");
+        }
+      },
       "open-repo": showOpenProjectDialog,
       "open-palette": openOpenPalette,
       "new-session": triggerNewSession,
@@ -213,7 +236,13 @@ export function AppShell() {
       "go-home": () => selectSession(null),
       "go-project-home": goToProjectHome,
     }),
-    [startNewAgentInCurrent, cycleAgentTab, goToProjectHome],
+    [
+      startNewAgentInCurrent,
+      cycleAgentTab,
+      goToProjectHome,
+      recordingPluginEnabled,
+      debugPluginEnabled,
+    ],
   );
   // When the git panel is active, the GitView keyboard layer owns these combos
   // (pull, file history, new tag, amend/quick-actions). Suppressing the

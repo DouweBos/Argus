@@ -12,6 +12,7 @@ import {
   revealInFinder,
 } from "../../../lib/ipc";
 import { shortcutKeys } from "../../../lib/shortcuts";
+import { useEffectivePluginEnabled } from "../../../plugins/store";
 import {
   cycleActiveAgent,
   getActiveAgent,
@@ -106,6 +107,8 @@ function CommandPaletteContent() {
   const inputRef = useRef<HTMLInputElement>(null);
   const activeItemRef = useRef<HTMLButtonElement>(null);
   useDismissOnEscape(closeCommandPalette);
+  const recordingEnabled = useEffectivePluginEnabled("device-recording");
+  const debugEnabled = useEffectivePluginEnabled("device-debug");
 
   const selectedSession = useMemo(
     () => sessions.find((w) => w.id === selectedId) ?? null,
@@ -254,8 +257,17 @@ function CommandPaletteContent() {
           [
             { id: "terminal", shortcut: "toggle-terminal" as const },
             { id: "changes", shortcut: "toggle-changes" as const },
-            { id: "simulator", shortcut: "toggle-simulator" as const },
-            { id: "debug", shortcut: "toggle-debug" as const },
+            ...(recordingEnabled
+              ? [
+                  {
+                    id: "simulator" as const,
+                    shortcut: "toggle-simulator" as const,
+                  },
+                ]
+              : []),
+            ...(debugEnabled
+              ? [{ id: "debug" as const, shortcut: "toggle-debug" as const }]
+              : []),
           ] satisfies {
             id: ToolId;
             shortcut: Parameters<typeof shortcutKeys>[0];
@@ -483,6 +495,8 @@ function CommandPaletteContent() {
     openProject,
     agentsRecord,
     conversations,
+    recordingEnabled,
+    debugEnabled,
   ]);
 
   const filtered = useMemo(() => {

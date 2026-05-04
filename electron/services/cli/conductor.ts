@@ -23,14 +23,12 @@
  * conductor bin dir to the spawned agent's environment.
  */
 
-import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
+import { resolveAssetPath } from "../plugins/assets";
 
 export function getConductorDir(): string {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, "conductor")
-    : path.join(process.cwd(), "native", "conductor");
+  return resolveAssetPath("device-control", "conductor");
 }
 
 export function getConductorBinDir(): string {

@@ -343,6 +343,14 @@ export interface ArgusConfig {
    * spawn. Either field may be absent.
    */
   llm?: LlmConfig | null;
+  /**
+   * Plugins disabled for everyone working on this project. Effective enable =
+   * userToggle AND !projectDisabled. A project can mask plugins off (e.g. a
+   * server-only repo turning off device-* plugins) but cannot force a plugin
+   * on if the user has it off. List the plugin id strings; unknown ids are
+   * ignored. Set/parsed in `electron/services/session/setup.ts`.
+   */
+  plugins?: { disabled?: string[] } | null;
 }
 
 /** Tone for label badges, mirrored from Peacock's `Badge.tone`. */
@@ -423,5 +431,6 @@ export function defaultArgusConfig(): ArgusConfig {
     simulator_deeplinks: [],
     auto_fetch_minutes: null,
     llm: null,
+    plugins: null,
   };
 }

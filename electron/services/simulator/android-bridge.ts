@@ -10,13 +10,12 @@
  *   5. Send touch/key events via the scrcpy binary control protocol
  */
 
-import { app } from "electron";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as net from "node:net";
-import path from "node:path";
 import { promisify } from "node:util";
 import { log } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
+import { resolveAssetPath } from "../plugins/assets";
 import { H264AccessUnitParser } from "./h264-parser";
 
 const execFileAsync = promisify(execFile);
@@ -28,11 +27,7 @@ const execFileAsync = promisify(execFile);
 const JAR_NAME = "scrcpy-server.jar";
 
 function scrcpyServerPath(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, JAR_NAME);
-  }
-
-  return path.join(process.cwd(), "native", "scrcpy-server", JAR_NAME);
+  return resolveAssetPath("device-recording", JAR_NAME);
 }
 
 // ---------------------------------------------------------------------------

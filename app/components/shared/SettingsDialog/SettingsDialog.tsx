@@ -85,6 +85,7 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../McpServersField";
+import { PluginsSection } from "./PluginsSection";
 import styles from "./SettingsDialog.module.css";
 
 const MODES: PermissionMode[] = [
@@ -122,6 +123,13 @@ function SettingsDialogContent() {
           description: "Default permissions",
           icon: <Icons.AgentIcon size={12} />,
           render: () => <PermissionsSection />,
+        },
+        {
+          id: "plugins",
+          label: "Plugins",
+          description: "Bundled tools",
+          icon: <Icons.SimulatorIcon size={12} />,
+          render: () => <PluginsSection />,
         },
         {
           id: "llm",
@@ -171,6 +179,13 @@ function SettingsDialogContent() {
           description: "Telemetry",
           icon: <Icons.HomeIcon size={12} />,
           render: () => <PrivacySection />,
+        },
+        {
+          id: "advanced",
+          label: "Advanced",
+          description: "Update channel",
+          icon: <Icons.GearIcon size={12} />,
+          render: () => <AdvancedSection />,
         },
       ],
     },
@@ -1064,6 +1079,86 @@ function LauncherSection() {
             </Button>
           </SettingsScreenField>
         )}
+      </SettingsScreenDetailBody>
+    </SettingsScreenDetail>
+  );
+}
+
+const UPDATER_CHANNEL_LABELS: Record<"alpha" | "beta" | "latest", string> = {
+  latest: "Stable (latest)",
+  beta: "Release candidate (beta)",
+  alpha: "Alpha",
+};
+
+const UPDATER_CHANNELS: ("alpha" | "beta" | "latest")[] = [
+  "latest",
+  "beta",
+  "alpha",
+];
+
+function AdvancedSection() {
+  const [channel, setChannel] = useState<"alpha" | "beta" | "latest">("latest");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAppSettings()
+      .then((settings) => {
+        if (cancelled) {
+          return;
+        }
+        setChannel(settings.updater_channel ?? "latest");
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleChange = async (next: "alpha" | "beta" | "latest") => {
+    setChannel(next);
+    try {
+      const current = await getAppSettings();
+      await setAppSettings({ ...current, updater_channel: next });
+    } catch {
+      // ignore — local state already reflects the user's choice
+    }
+  };
+
+  return (
+    <SettingsScreenDetail>
+      <SettingsScreenDetailHeader
+        description="Auto-updater feed. Stable users should leave this on Stable. Switch to Alpha or RC only if you're testing pre-release builds — those channels publish unfinished work and can break your install. The change takes effect after the next app restart."
+        title="Update channel"
+      />
+      <SettingsScreenDetailBody>
+        <SettingsScreenField label="Channel">
+          <div className={styles.options}>
+            {UPDATER_CHANNELS.map((c) => (
+              <label
+                key={c}
+                className={`${styles.option} ${channel === c ? styles.optionActive : ""}`}
+              >
+                <input
+                  checked={channel === c}
+                  className={styles.radio}
+                  disabled={!loaded}
+                  name="updater-channel"
+                  type="radio"
+                  value={c}
+                  onChange={() => handleChange(c).catch(() => undefined)}
+                />
+                <span>{UPDATER_CHANNEL_LABELS[c]}</span>
+              </label>
+            ))}
+          </div>
+        </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );
