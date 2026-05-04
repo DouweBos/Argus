@@ -691,7 +691,19 @@ export function BranchesSection({
         dropProps={headerDrop}
       >
         {visible.length === 0 && (
-          <span className={styles.emptyHint}>No branches</span>
+          <div className={styles.emptyState}>
+            <span className={styles.emptyStateText}>No branches yet</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              leading={<Icons.PlusIcon size={11} />}
+              onClick={() =>
+                setDialog({ kind: "new-branch-from-drop", startPoint: "HEAD" })
+              }
+            >
+              Create branch
+            </Button>
+          </div>
         )}
         {pinned && (
           <BranchLeaf
