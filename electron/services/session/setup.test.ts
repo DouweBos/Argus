@@ -310,6 +310,74 @@ describe("loadArgusConfig", () => {
     expect(config.browser_url).toBe("http://localhost:3000");
   });
 
+  it("parses object-form copy entries with excludes", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        setup: {
+          copy: [
+            ".env",
+            { path: ".claude", exclude: ["projects/**/worktrees/**"] },
+          ],
+          symlink: [{ path: ".env" }],
+        },
+      }),
+    );
+
+    const config = loadArgusConfig("/repo");
+    expect(config.setup.copy).toEqual([
+      ".env",
+      { path: ".claude", exclude: ["projects/**/worktrees/**"] },
+    ]);
+    // No `exclude` → object form is preserved (still an object) so the rest
+    // of the pipeline can treat all entries uniformly.
+    expect(config.setup.symlink).toEqual([{ path: ".env" }]);
+  });
+
+  it("throws when a copy entry's path is missing", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({ setup: { copy: [{ exclude: ["foo"] }] } }),
+    );
+    expect(() => loadArgusConfig("/repo")).toThrow(/setup\.copy\[0]\.path/);
+  });
+
+  it("throws when a copy entry's exclude is not an array of strings", () => {
+    mockExistsSync.mockImplementation((p: fs.PathLike) => {
+      return String(p).endsWith(".argus.json") && !String(p).includes("local");
+    });
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({ setup: { copy: [{ path: ".claude", exclude: "x" }] } }),
+    );
+    expect(() => loadArgusConfig("/repo")).toThrow(/exclude/);
+  });
+
+  it("dedupes setup entries by path when merging local config", () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
+      if (String(p).includes("local")) {
+        return JSON.stringify({
+          setup: {
+            copy: [{ path: ".claude", exclude: ["projects/**"] }],
+          },
+        });
+      }
+
+      return JSON.stringify({ setup: { copy: [".claude", "node_modules"] } });
+    });
+
+    const config = loadArgusConfig("/repo");
+    // Local's structured `.claude` replaces base's bare `.claude`; node_modules survives.
+    expect(config.setup.copy).toEqual([
+      "node_modules",
+      { path: ".claude", exclude: ["projects/**"] },
+    ]);
+  });
+
   it("throws on invalid JSON", () => {
     mockExistsSync.mockImplementation((p: fs.PathLike) => {
       return String(p).endsWith(".argus.json") && !String(p).includes("local");

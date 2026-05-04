@@ -2,6 +2,7 @@ import type {
   BrowserPresetConfig,
   RelatedProject,
   RuntimePlatform,
+  SetupCopyEntry,
   SimulatorDeeplinkConfig,
   ArgusConfig,
   WorkspaceEnvConfig,
@@ -125,6 +126,49 @@ function RunnerOptions({ onChange, selected }: RunnerOptionsProps) {
 /* ------------------------------------------------------------------ */
 /*  Hooks                                                              */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Split a `setup.copy` / `setup.symlink` array into the path strings
+ * displayed in the dialog and a side map of `path -> exclude[]` so we can
+ * round-trip the structured form on save (the dialog UI itself only edits
+ * paths today).
+ */
+function splitSetupEntries(entries: SetupCopyEntry[]): {
+  excludes: Map<string, string[]>;
+  paths: string[];
+} {
+  const paths: string[] = [];
+  const excludes = new Map<string, string[]>();
+  for (const entry of entries) {
+    if (typeof entry === "string") {
+      paths.push(entry);
+    } else {
+      paths.push(entry.path);
+      if (entry.exclude && entry.exclude.length > 0) {
+        excludes.set(entry.path, entry.exclude);
+      }
+    }
+  }
+
+  return { paths, excludes };
+}
+
+/**
+ * Re-attach the round-tripped excludes from `splitSetupEntries` onto the
+ * current dialog path list. Paths the user added in the dialog stay as bare
+ * strings; paths that originally had excludes get re-emitted as
+ * `{ path, exclude }` so hand-authored config isn't silently flattened.
+ */
+function mergeSetupEntries(
+  paths: string[],
+  excludes: Map<string, string[]>,
+): SetupCopyEntry[] {
+  return paths.map((path) => {
+    const exclude = excludes.get(path);
+
+    return exclude && exclude.length > 0 ? { path, exclude } : path;
+  });
+}
 
 function useListState(initial: string[]) {
   const [items, setItems] = useState<string[]>(initial);
@@ -1705,6 +1749,12 @@ export function SetupConfigDialog({
 }: SetupConfigDialogProps) {
   const copyList = useListState([]);
   const symlinkList = useListState([]);
+  // Excludes for `setup.copy` / `setup.symlink` entries are not editable in
+  // the dialog (yet) — but we round-trip them so users who hand-author
+  // `{ path, exclude }` entries in `.argus.json` don't silently lose the
+  // excludes when they open + save the dialog.
+  const copyExcludesRef = useRef<Map<string, string[]>>(new Map());
+  const symlinkExcludesRef = useRef<Map<string, string[]>>(new Map());
   const commandList = useListState([]);
   const terminalList = useTerminalListState([]);
   const envList = useEnvListState([]);
@@ -1752,10 +1802,14 @@ export function SetupConfigDialog({
           return;
         }
         if (config.setup?.copy?.length) {
-          setCopies(config.setup.copy);
+          const { paths, excludes } = splitSetupEntries(config.setup.copy);
+          copyExcludesRef.current = excludes;
+          setCopies(paths);
         }
         if (config.setup?.symlink?.length) {
-          setSymlinks(config.setup.symlink);
+          const { paths, excludes } = splitSetupEntries(config.setup.symlink);
+          symlinkExcludesRef.current = excludes;
+          setSymlinks(paths);
         }
         if (config.setup?.commands?.length) {
           setCommands(config.setup.commands);
@@ -1902,10 +1956,13 @@ export function SetupConfigDialog({
     const symlinks = symlinkList.items.filter(Boolean);
     const commands = commandList.items.filter(Boolean);
     if (copies.length) {
-      config.setup!.copy = copies;
+      config.setup!.copy = mergeSetupEntries(copies, copyExcludesRef.current);
     }
     if (symlinks.length) {
-      config.setup!.symlink = symlinks;
+      config.setup!.symlink = mergeSetupEntries(
+        symlinks,
+        symlinkExcludesRef.current,
+      );
     }
     if (commands.length) {
       config.setup!.commands = commands;

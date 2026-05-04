@@ -23,9 +23,12 @@ import {
   type ReleaseNotePatternConfig,
   type RunCommand,
   type SetupConfig,
+  type SetupCopyEntry,
   type SimulatorDeeplinkConfig,
   type ArgusConfig,
   type WorkspaceEnvConfig,
+  setupEntryExcludes,
+  setupEntryPath,
 } from "./models";
 
 const execFileAsync = promisify(execFile);
@@ -95,8 +98,8 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
 
   return {
     setup: {
-      copy: (setup.copy as string[]) ?? [],
-      symlink: (setup.symlink as string[]) ?? [],
+      copy: normalizeSetupEntries(setup.copy, repoRoot, "setup.copy"),
+      symlink: normalizeSetupEntries(setup.symlink, repoRoot, "setup.symlink"),
       commands: (setup.commands as string[]) ?? [],
     },
     terminals: (parsed.terminals as ArgusConfig["terminals"]) ?? [],
@@ -479,6 +482,56 @@ function normalizeProtectedBranches(raw: unknown): string[] {
 }
 
 /**
+ * Normalise a `setup.copy` / `setup.symlink` array. Each entry may be a bare
+ * string (path or glob) or `{ path, exclude? }`. Returns `[]` when absent;
+ * throws on malformed entries (so typos in `path`/`exclude` surface at
+ * parse time instead of being silently dropped).
+ */
+function normalizeSetupEntries(
+  raw: unknown,
+  repoRoot: string,
+  field: string,
+): SetupCopyEntry[] {
+  if (raw == null) {
+    return [];
+  }
+  if (!Array.isArray(raw)) {
+    throw `${field} in ${repoRoot}/.argus.json must be an array of strings or { path, exclude? } objects.`;
+  }
+
+  return raw.map((entry, i) => {
+    if (typeof entry === "string") {
+      return entry;
+    }
+    if (entry == null || typeof entry !== "object" || Array.isArray(entry)) {
+      throw `${field}[${i}] in ${repoRoot}/.argus.json must be a string or { path, exclude? } object.`;
+    }
+    const obj = entry as Record<string, unknown>;
+    if (typeof obj.path !== "string" || !obj.path.trim()) {
+      throw `${field}[${i}].path in ${repoRoot}/.argus.json must be a non-empty string.`;
+    }
+    const entryPath = obj.path;
+    if (obj.exclude == null) {
+      return { path: entryPath };
+    }
+    if (!Array.isArray(obj.exclude)) {
+      throw `${field}[${i}].exclude in ${repoRoot}/.argus.json must be an array of glob strings.`;
+    }
+    const exclude: string[] = [];
+    for (const e of obj.exclude) {
+      if (typeof e !== "string" || !e.trim()) {
+        throw `${field}[${i}].exclude in ${repoRoot}/.argus.json must contain non-empty strings.`;
+      }
+      exclude.push(e);
+    }
+
+    return exclude.length > 0
+      ? { path: entryPath, exclude }
+      : { path: entryPath };
+  });
+}
+
+/**
  * Normalise the `run` field. Must be an array of objects shaped like
  * `RunCommand`. Throws a descriptive error for the legacy string / single
  * object forms so users migrate explicitly.
@@ -645,10 +698,23 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
     return result;
   }
 
+  // Setup entries dedupe by path (so a `.argus.local.json` override that adds
+  // an `exclude` to an entry from the base config replaces the base entry
+  // instead of producing two copies of the same path).
+  function dedupExtendSetup(
+    target: SetupCopyEntry[],
+    source: SetupCopyEntry[],
+  ): SetupCopyEntry[] {
+    const sourcePaths = new Set(source.map(setupEntryPath));
+    const result = target.filter((e) => !sourcePaths.has(setupEntryPath(e)));
+
+    return [...result, ...source];
+  }
+
   return {
     setup: {
-      copy: dedupExtend(base.setup.copy, local.setup.copy),
-      symlink: dedupExtend(base.setup.symlink, local.setup.symlink),
+      copy: dedupExtendSetup(base.setup.copy, local.setup.copy),
+      symlink: dedupExtendSetup(base.setup.symlink, local.setup.symlink),
       commands: dedupExtend(base.setup.commands, local.setup.commands),
     },
     terminals: [...base.terminals, ...local.terminals],
@@ -798,10 +864,16 @@ function filterNestedPaths(paths: string[]): string[] {
  * Expand a copy/symlink entry into relative paths (relative to repoRoot).
  * If the entry is a glob pattern, returns all matching paths.
  * Otherwise returns the single entry if it exists on disk.
+ *
+ * `excludes` are forwarded to fast-glob's `ignore` for glob entries (so
+ * matched paths inside excluded directories are pruned during expansion)
+ * and matched against literal paths so an excluded directory entry never
+ * surfaces as a top-level match either.
  */
 async function expandPatterns(
   repoRoot: string,
   rel: string,
+  excludes: string[] = [],
 ): Promise<string[]> {
   if (!isGlobPattern(rel)) {
     const full = path.join(repoRoot, rel);
@@ -817,7 +889,7 @@ async function expandPatterns(
     cwd: repoRoot,
     dot: true,
     onlyFiles: false,
-    ignore: ["**/.git/**", ".git"],
+    ignore: ["**/.git/**", ".git", ...excludes],
   });
 
   return matches.filter((m) => !m.split("/").includes(".git")).sort();
@@ -982,10 +1054,14 @@ export async function runSetupPipeline(
     const allItems: string[] = [];
 
     info("Setup pipeline: expanding copy patterns");
-    for (const rel of config.setup.copy) {
+    for (const entry of config.setup.copy) {
+      const rel = setupEntryPath(entry);
+      const excludes = setupEntryExcludes(entry);
       emitProgressItem(`Matching: ${rel}`, 0, 0, "matching");
       emit(`[argus] Matching pattern ${rel}...\r\n`);
-      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+      const expanded = filterNestedPaths(
+        await expandPatterns(repoRoot, rel, excludes),
+      );
       if (expanded.length === 0) {
         emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
       } else {
@@ -994,10 +1070,14 @@ export async function runSetupPipeline(
     }
 
     info("Setup pipeline: expanding symlink patterns");
-    for (const rel of config.setup.symlink) {
+    for (const entry of config.setup.symlink) {
+      const rel = setupEntryPath(entry);
+      const excludes = setupEntryExcludes(entry);
       emitProgressItem(`Matching: ${rel}`, 0, 0, "matching");
       emit(`[argus] Matching pattern ${rel}...\r\n`);
-      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+      const expanded = filterNestedPaths(
+        await expandPatterns(repoRoot, rel, excludes),
+      );
       if (expanded.length === 0) {
         emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
       } else {
@@ -1018,8 +1098,12 @@ export async function runSetupPipeline(
 
     // -- Copy phase ------------------------------------------------------------
     info("Setup pipeline: starting copy phase");
-    for (const rel of config.setup.copy) {
-      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+    for (const entry of config.setup.copy) {
+      const rel = setupEntryPath(entry);
+      const excludes = setupEntryExcludes(entry);
+      const expanded = filterNestedPaths(
+        await expandPatterns(repoRoot, rel, excludes),
+      );
       if (expanded.length === 0) {
         continue;
       }
@@ -1035,7 +1119,7 @@ export async function runSetupPipeline(
         try {
           const stat = await fs.promises.stat(src);
           if (stat.isDirectory()) {
-            await copyDirAll(src, dst);
+            await copyDirAll(src, dst, excludes);
           } else if (stat.isFile()) {
             await fs.promises.mkdir(path.dirname(dst), { recursive: true });
             await fs.promises.copyFile(src, dst);
@@ -1050,8 +1134,12 @@ export async function runSetupPipeline(
 
     // -- Symlink phase ---------------------------------------------------------
     info("Setup pipeline: starting symlink phase");
-    for (const rel of config.setup.symlink) {
-      const expanded = filterNestedPaths(await expandPatterns(repoRoot, rel));
+    for (const entry of config.setup.symlink) {
+      const rel = setupEntryPath(entry);
+      const excludes = setupEntryExcludes(entry);
+      const expanded = filterNestedPaths(
+        await expandPatterns(repoRoot, rel, excludes),
+      );
       if (expanded.length === 0) {
         emit(`[argus] Warning: ${rel} matched nothing, skipping.\r\n`);
         continue;
@@ -1143,7 +1231,11 @@ export async function runSetupPipeline(
  * `node_modules/`, not inside it) into a frozen snapshot — edits to the
  * workspace source never reach the worktree.
  */
-async function copyDirAll(src: string, dst: string): Promise<void> {
+async function copyDirAll(
+  src: string,
+  dst: string,
+  excludes: string[] = [],
+): Promise<void> {
   await fs.promises.mkdir(path.dirname(dst), { recursive: true });
   // If dst exists, remove it first so the copy overwrites cleanly rather than
   // landing src *inside* dst.
@@ -1152,7 +1244,12 @@ async function copyDirAll(src: string, dst: string): Promise<void> {
   }
   // Trailing slash on src tells rsync to copy the contents of src into dst
   // (matching `cp -R src dst` semantics where dst doesn't yet exist).
-  await execFileAsync("rsync", ["-a", `${src}/`, dst]);
+  // `--exclude=<pattern>` prunes during traversal — unlike fast-glob's
+  // post-expansion `ignore`, this stops rsync from descending into
+  // directories like `.claude/projects/.../worktrees` that the user
+  // explicitly opted out of.
+  const args = ["-a", ...excludes.map((p) => `--exclude=${p}`), `${src}/`, dst];
+  await execFileAsync("rsync", args);
 }
 
 /** Returns true if `p` is a symlink (without throwing on missing path). */

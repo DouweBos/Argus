@@ -88,17 +88,23 @@ Order: copy → symlink → commands.
 
 ```jsonc
 "setup": {
-  "copy":     [".claude", "node_modules", "ios/Pods"],
+  "copy": [
+    "node_modules",
+    "ios/Pods",
+    // Object form: copy `.claude` but skip Claude Code's own per-session
+    // worktrees so they don't leak from the source branch into new ones.
+    { "path": ".claude", "exclude": ["projects/**/worktrees/**"] }
+  ],
   "symlink":  [".env.local", "**/.env.local"],
   "commands": ["pnpm install", "cd ios && pod install"]
 }
 ```
 
-| Field      | Type       | Default | Description                                                                                                                                                                                       |
-| ---------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `copy`     | `string[]` | `[]`    | Files/dirs to copy from the main repo into the worktree. Glob patterns supported. Useful for `node_modules`, `.claude/`, native build artefacts, anything you don't want to rebuild from scratch. |
-| `symlink`  | `string[]` | `[]`    | Files to symlink into the worktree (changes flow both ways). Glob patterns supported. Use for shared secrets like `.env.local`.                                                                   |
-| `commands` | `string[]` | `[]`    | Shell commands run in the worktree after copy/symlink. Each entry is passed to `sh -c`.                                                                                                           |
+| Field      | Type                               | Default | Description                                                                                                                                                                                                                                                                                |
+| ---------- | ---------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `copy`     | `(string \| { path, exclude? })[]` | `[]`    | Files/dirs to copy from the main repo into the worktree. Each entry is either a path/glob string or `{ path, exclude }` — `exclude` patterns are forwarded to `rsync --exclude`, so they prune mid-tree (e.g. excluding Claude Code's per-session worktrees nested deep inside `.claude`). |
+| `symlink`  | `(string \| { path, exclude? })[]` | `[]`    | Files to symlink into the worktree (changes flow both ways). Glob patterns supported. The object form is accepted for symmetry, but `exclude` only filters glob expansions — symlinking a literal directory is a single link with no subtree to prune.                                     |
+| `commands` | `string[]`                         | `[]`    | Shell commands run in the worktree after copy/symlink. Each entry is passed to `sh -c`.                                                                                                                                                                                                    |
 
 ---
 
