@@ -781,7 +781,6 @@ export type PrereqId =
   | "git_cli"
   | "git_identity"
   | "ios_runtimes"
-  | "native_bridge"
   | "playwright"
   | "xcode";
 

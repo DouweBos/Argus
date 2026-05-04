@@ -29,7 +29,6 @@ export const PREREQ_IDS = [
   "claude_auth",
   "git_cli",
   "git_identity",
-  "native_bridge",
   "xcode",
   "ios_runtimes",
   "android_sdk",

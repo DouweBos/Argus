@@ -119,46 +119,6 @@ async function checkGitIdentity(): Promise<PrereqResult> {
   }
 }
 
-async function checkNativeBridge(): Promise<PrereqResult> {
-  const repoCandidate = path.join(
-    process.resourcesPath || process.cwd(),
-    "argus-sim-bridge",
-  );
-  const devCandidate = path.join(
-    process.cwd(),
-    "native",
-    "argus-sim-bridge",
-    ".build",
-    "release",
-    "argus-sim-bridge",
-  );
-  const candidates = [repoCandidate, devCandidate];
-  const resolved = candidates.find((p) => {
-    try {
-      return fs.statSync(p).isFile();
-    } catch {
-      return false;
-    }
-  });
-  if (!resolved) {
-    const sourceDir = path.join(process.cwd(), "native", "argus-sim-bridge");
-    const buildable = fs.existsSync(path.join(sourceDir, "Package.swift"));
-
-    return {
-      id: "native_bridge",
-      status: "warn",
-      message: "Native simulator bridge is not built",
-      detail: buildable
-        ? "Mobile previews require the bridge binary. Click Fix to build it."
-        : "Mobile previews require the bridge binary.",
-      mobileOnly: true,
-      fixable: buildable,
-    };
-  }
-
-  return { id: "native_bridge", status: "pass", message: resolved };
-}
-
 async function checkXcode(): Promise<PrereqResult> {
   if (process.platform !== "darwin") {
     return { id: "xcode", status: "skipped", mobileOnly: true };
@@ -306,7 +266,6 @@ const CHECKS: Record<PrereqId, () => Promise<PrereqResult>> = {
   claude_auth: checkClaudeAuth,
   git_cli: checkGitCli,
   git_identity: checkGitIdentity,
-  native_bridge: checkNativeBridge,
   xcode: checkXcode,
   ios_runtimes: checkIosRuntimes,
   android_sdk: checkAndroidSdk,
@@ -399,23 +358,6 @@ export async function runPrereqFixer(
       await runTimeout(
         execFileAsync("npx", ["--yes", "playwright", "install"]),
         600_000,
-      );
-
-      return { ok: true };
-    }
-
-    if (id === "native_bridge") {
-      const sourceDir = path.join(process.cwd(), "native", "argus-sim-bridge");
-      if (!fs.existsSync(path.join(sourceDir, "Package.swift"))) {
-        return {
-          ok: false,
-          error: "Native bridge source not found (packaged app)",
-        };
-      }
-      progress("Building native simulator bridge…");
-      await runTimeout(
-        execFileAsync("swift", ["build", "-c", "release"], { cwd: sourceDir }),
-        300_000,
       );
 
       return { ok: true };
