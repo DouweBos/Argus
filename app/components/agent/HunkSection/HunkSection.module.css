@@ -66,6 +66,7 @@
 
 .line {
   display: flex;
+  align-items: flex-start;
   min-height: 20px;
   line-height: 20px;
 }
@@ -75,6 +76,10 @@
   display: flex;
   flex-shrink: 0;
   user-select: none;
+  /* Keep gutter pinned to the first visual row when the content wraps. */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
 }
 
 .lineGutterSelectable {
@@ -108,7 +113,9 @@
 
 .lineText {
   flex: 1;
-  white-space: pre;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   padding-right: 12px;
   padding-left: 2px;
 }
