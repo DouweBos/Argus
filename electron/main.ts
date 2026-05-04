@@ -963,7 +963,7 @@ app.whenReady().then(() => {
     if (details.resourceType === "mainFrame") {
       const csp = [
         "default-src 'self' argus-ext:",
-        "script-src 'self' argus-ext: https://*.i.posthog.com" +
+        "script-src 'self' argus-ext: https://*.i.posthog.com 'sha256-PSPsfpU4uc1//0GK5lM0KrdHS2UBpy5pXU7hQYefIyI='" +
           (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
         "style-src 'self' 'unsafe-inline' argus-ext:",
         "font-src 'self' argus-ext: data:",
