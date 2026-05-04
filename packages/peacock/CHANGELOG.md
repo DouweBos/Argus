@@ -1,5 +1,15 @@
 # @argus/peacock
 
+## 0.8.0
+
+### Minor Changes
+
+- e0de455: Chat now shows a single "Unread" divider above the first unread message instead of marking each message individually. The divider clears as soon as you scroll past it, and the hover "Mark as unread" action moves it back to that point. Agent tabs, session cards, and project cards still show an accent dot when any of their agents have unread messages.
+
+### Patch Changes
+
+- 304c032: Fix AskUserQuestion answers that contained commas or free-form text being shown as "No answer" after submission. Selected option labels are now matched by substring scan rather than comma splitting, and any free-form note is rendered alongside the picks.
+
 ## 0.7.1
 
 ### Patch Changes
