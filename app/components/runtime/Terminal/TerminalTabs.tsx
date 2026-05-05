@@ -310,6 +310,13 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
                 key={session.id}
                 className={classes}
                 draggable={!isRun && !isRenaming}
+                onAuxClick={(e) => {
+                  if (e.button !== 1 || isRun || isRenaming) {
+                    return;
+                  }
+                  e.preventDefault();
+                  handleClose(e, session.id);
+                }}
                 onClick={() => setActiveSession(sessionId, session.id)}
                 onDoubleClick={
                   isRun

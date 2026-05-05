@@ -152,6 +152,14 @@ function AgentTab({
       className={classes}
       draggable
       title={fullLabel}
+      onAuxClick={(e) => {
+        if (e.button !== 1) {
+          return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        onClose(agent.agent_id);
+      }}
       onClick={() => onSelect(agent.agent_id)}
       onContextMenu={(e) => onContextMenu(e, agent.agent_id)}
       onDragStart={(e) => onDragStart(e, agent.agent_id)}
