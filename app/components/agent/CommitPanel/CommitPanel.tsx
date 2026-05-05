@@ -136,8 +136,8 @@ export function CommitPanel({
       )
       .catch(guard(() => setHasGithubRemote(false)));
 
-    // Load recent commits for autocomplete.
-    gitLog(sessionId, 50, true)
+    // Load recent commits for autocomplete (HEAD only — no other branches or stashes).
+    gitLog(sessionId, 50, false)
       .then(guard((commits: GitCommit[]) => setRecentCommits(commits)))
       .catch(guard(() => setRecentCommits([])));
 
