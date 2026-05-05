@@ -30,10 +30,12 @@ import {
   Dialog,
   Icons,
   Input,
+  PushDialog,
   SidebarBranchFolder,
   SidebarBranchRow,
   type BranchDialogResult,
   type ContextMenuItem,
+  type PushDialogResult,
   useDraggable,
   useDropTarget,
 } from "@argus/peacock";
@@ -58,7 +60,6 @@ import {
   gitUnarchiveBranch,
   gitUnpinBranch,
   openExternalUrl,
-  pushSessionBranch,
   setSessionBaseBranch,
 } from "../../../lib/ipc";
 import { useRouteGitRefName, useRouteGitView } from "../../../lib/routeHooks";
@@ -305,6 +306,7 @@ interface ContextMenuState {
 type DialogState =
   | { branch: EnrichedBranch; kind: "delete" }
   | { branch: EnrichedBranch; kind: "dirty-checkout" }
+  | { branch: EnrichedBranch; kind: "push" }
   | { branch: EnrichedBranch; kind: "upstream" }
   | { kind: "new-branch-from-drop"; startPoint: string };
 
@@ -590,18 +592,10 @@ export function BranchesSection({
       },
       { separator: true },
       {
-        label: branch.upstream ? "Push" : "Publish branch",
+        label: branch.upstream ? "Push…" : "Publish branch…",
         onClick: () => {
           setMenu(null);
-          if (branch.upstream) {
-            gitPushV2(sessionId, { branch: branch.name }).catch((err) =>
-              pushError(errorMessage(err), "Push branch"),
-            );
-          } else {
-            pushSessionBranch(sessionId).catch((err) =>
-              pushError(errorMessage(err), "Publish branch"),
-            );
-          }
+          setDialog({ kind: "push", branch });
         },
       },
       {
@@ -798,6 +792,26 @@ export function BranchesSection({
               branch: branch.name,
               upstream,
             }).catch((err) => pushError(errorMessage(err), "Set upstream"));
+          }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+
+      {dialog?.kind === "push" && (
+        <PushDialog
+          open
+          currentBranch={dialog.branch.name}
+          hasUpstream={Boolean(dialog.branch.upstream)}
+          onConfirm={(r: PushDialogResult) => {
+            setDialog(null);
+            gitPushV2(sessionId, {
+              remote: r.remote,
+              branch: r.branch,
+              forceWithLease: r.forceWithLease,
+              setUpstream: r.setUpstream,
+              tags: r.tags,
+              ref: r.ref,
+            }).catch((err) => pushError(errorMessage(err), "Push branch"));
           }}
           onCancel={() => setDialog(null)}
         />
