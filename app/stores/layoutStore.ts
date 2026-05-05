@@ -137,6 +137,29 @@ export const toggleTool = (id: ToolRailId) => {
   });
 };
 
+/**
+ * Unconditionally open a tool in its placement panel for a specific session.
+ * No-op if already open. The session need not be the currently routed one,
+ * so background triggers (MCP `trigger_run`, etc.) can pre-open the tool for
+ * the targeted session even when the user is viewing a different one.
+ */
+export const setActiveToolForSession = (sessionId: string, id: ToolRailId) => {
+  const placement = TOOL_PLACEMENT[id];
+  const activeKey = activeKeyForPlacement(placement);
+  const lastKey = lastKeyForPlacement(placement);
+  layoutStore.setState((s) => {
+    if (s[activeKey][sessionId] === id) {
+      return s;
+    }
+
+    return {
+      [activeKey]: { ...s[activeKey], [sessionId]: id },
+      [lastKey]: { ...s[lastKey], [sessionId]: id },
+      mountedToolIds: { ...s.mountedToolIds, [id]: true },
+    } as Partial<LayoutStoreData>;
+  });
+};
+
 /** Unconditionally open a tool in its placement panel (no-op if already open). */
 export const setActiveTool = (id: ToolRailId) => {
   const sessionId = currentSessionId();
