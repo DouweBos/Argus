@@ -45,7 +45,11 @@ import {
   shutdownTelemetry,
   capture as telemetryCapture,
 } from "./services/telemetry/telemetry";
-import { destroyAllTerminals } from "./services/terminal/multiplexer";
+import {
+  destroyAllTerminals,
+  destroyAllTerminalsAndWait,
+} from "./services/terminal/multiplexer";
+import { reapOrphanedSpawnHelpers } from "./services/terminal/reapOrphans";
 import { fixProcessPath } from "./services/terminal/shellEnv";
 import { destroyTray, initTray } from "./services/tray";
 import {
@@ -687,9 +691,6 @@ app.on("before-quit", (e) => {
   stopMjpegServer();
   stopAllScreencasts();
   destroyTray();
-  // Tear down every PTY so run-commands (dev servers, Metro, watchers) and
-  // any detached grandchildren they spawned don't linger after Argus exits.
-  destroyAllTerminals();
   webBrowserPool.releaseAll().catch((err) => {
     log("webBrowserPool.releaseAll failed: %s", err);
   });
@@ -699,7 +700,17 @@ app.on("before-quit", (e) => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     e.preventDefault();
     mainWindow.webContents.send("app:will-quit");
-    setTimeout(() => {
+  }
+  // Tear down every PTY so run-commands (dev servers, Metro, watchers) and
+  // any detached grandchildren they spawned don't linger after Argus exits.
+  // Await the kill→onExit cycle so node-pty's spawn-helper shims actually
+  // get reaped before we call app.quit() — otherwise they reparent to
+  // launchd and accumulate over restarts.
+  destroyAllTerminalsAndWait(1500)
+    .catch((err) => {
+      log("destroyAllTerminalsAndWait failed: %s", err);
+    })
+    .finally(() => {
       // The @codingame/monaco-vscode-api registers a beforeunload handler via
       // addEventListener that cancels the first close. Destroy the window
       // directly to bypass it — we handle our own save state, not VS Code's.
@@ -707,9 +718,29 @@ app.on("before-quit", (e) => {
         mainWindow.destroy();
       }
       app.quit();
-    }, 300);
-  }
+    });
 });
+
+// Fallback cleanup for shutdown paths that bypass `before-quit`:
+// `window-all-closed` (non-macOS), POSIX signals, and uncaught exits. These
+// run synchronously so they're effective even when the event loop is about
+// to be torn down.
+function syncShutdownCleanup(): void {
+  try {
+    destroyAllTerminals();
+  } catch {
+    // Best-effort; we're on the way out.
+  }
+}
+app.on("will-quit", syncShutdownCleanup);
+process.on("exit", syncShutdownCleanup);
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+  process.on(sig, () => {
+    syncShutdownCleanup();
+    // Re-raise default behavior so Electron exits.
+    app.quit();
+  });
+}
 
 // macOS: re-show window when dock icon is clicked.
 app.on("activate", () => {
@@ -790,6 +821,13 @@ app.whenReady().then(() => {
   // consent state (collected during onboarding, kept in localStorage) once
   // it boots. Until that arrives, no events are sent.
   initTelemetry();
+
+  // Sweep up node-pty spawn-helpers from prior Argus runs that didn't get a
+  // chance to clean up (SIGKILL'd dev process, OS crash, etc.) — they
+  // reparent to launchd and would otherwise pile up across restarts.
+  reapOrphanedSpawnHelpers().catch((err) => {
+    log("reapOrphanedSpawnHelpers failed: %s", err);
+  });
 
   if (process.platform === "darwin" && app.dock) {
     const iconPath = resolveAppIconPath();
