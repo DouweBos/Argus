@@ -1785,6 +1785,19 @@ export function createMcpServer(): McpServer {
         }
         startTerminal(result.sessionId, 120, 40);
 
+        // Surface the run in the bottom terminal panel as if the user had
+        // pressed the Run button themselves: the renderer subscribes to this
+        // event and registers tabs / opens the panel for `ws.id`.
+        getMainWindow()?.webContents.send("run:triggered", {
+          sessionId: ws.id,
+          title: result.title,
+          terminalSessionId: result.sessionId,
+          dependencies: result.dependencies.map((d) => ({
+            sessionId: d.sessionId,
+            title: d.title,
+          })),
+        });
+
         return {
           content: [
             {

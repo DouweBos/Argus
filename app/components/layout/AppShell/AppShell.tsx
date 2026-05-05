@@ -8,6 +8,10 @@ import { useWindowFocus } from "../../../hooks/useWindowFocus";
 import { startAgentInSession } from "../../../lib/agentLifecycle";
 import { runCloseIntent } from "../../../lib/closeIntent";
 import { closeWindow } from "../../../lib/ipc";
+import {
+  registerRunTerminal,
+  type RunRegistrationDependency,
+} from "../../../lib/runRegistration";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
 import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
@@ -263,6 +267,18 @@ export function AppShell() {
   // Cmd+W: let view-level handlers consume the intent first (e.g. the agent
   // view closes the active agent tab). Fall through to closing the window
   // when no view claims it.
+  // Background-triggered runs (MCP `trigger_run`) surface in the bottom
+  // terminal panel exactly like a user-pressed Run: register the tab, mark
+  // it running, focus it, open the panel for the targeted session.
+  useIpcEvent<{
+    dependencies: RunRegistrationDependency[];
+    sessionId: string;
+    terminalSessionId: string;
+    title: string;
+  }>("run:triggered", (payload) => {
+    registerRunTerminal(payload);
+  });
+
   useIpcEvent<undefined>("menu:close-intent", () => {
     if (runCloseIntent()) {
       return;
