@@ -958,8 +958,10 @@ app.whenReady().then(() => {
     if (details.resourceType === "mainFrame") {
       const csp = [
         "default-src 'self' argus-ext:",
-        "script-src 'self' argus-ext: https://*.i.posthog.com 'sha256-PSPsfpU4uc1//0GK5lM0KrdHS2UBpy5pXU7hQYefIyI='" +
-          (isDev ? " 'unsafe-inline' 'unsafe-eval'" : ""),
+        "script-src 'self' argus-ext: https://*.i.posthog.com" +
+          (isDev
+            ? " 'unsafe-inline' 'unsafe-eval'"
+            : " 'sha256-PSPsfpU4uc1//0GK5lM0KrdHS2UBpy5pXU7hQYefIyI='"),
         "style-src 'self' 'unsafe-inline' argus-ext:",
         "font-src 'self' argus-ext: data:",
         "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
