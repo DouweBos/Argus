@@ -43,6 +43,15 @@ export interface TerminalSession {
   id: string;
   /** The underlying node-pty instance. */
   pty: IPty;
+  /**
+   * OS pid captured at spawn time. Kept separately from `pty.pid` so we can
+   * still issue a backstop `process.kill(pid, 'SIGKILL')` after `pty.kill()`
+   * — node-pty's kill closes the master fd, which sends SIGHUP to the shell
+   * but doesn't reap the spawn-helper shim if it hasn't exec'd yet. Without
+   * the backstop those helpers reparent to launchd and accumulate over
+   * Argus restarts.
+   */
+  pid: number;
   /** UUID of the session this session belongs to. */
   sessionId: string;
   /**
@@ -337,6 +346,7 @@ export function createTerminal(
   const terminal: TerminalSession = {
     id: terminalId,
     pty: ptyProcess,
+    pid: ptyProcess.pid,
     sessionId,
     title,
     outputLog: "",
@@ -862,6 +872,14 @@ export function destroyTerminal(sessionId: string): void {
   } catch {
     // The process may have already exited; treat as non-fatal.
   }
+  // Backstop: if the spawn-helper hasn't exec'd into the shell yet, the
+  // PTY-master close above won't reach it and it will reparent to launchd.
+  // Send SIGKILL directly to the captured pid so the helper exits too.
+  try {
+    process.kill(session.pid, "SIGKILL");
+  } catch {
+    // ESRCH: process already gone — expected in the common case.
+  }
 
   appState.terminals.delete(sessionId);
 
@@ -949,6 +967,54 @@ export function destroyAllTerminals(): void {
       destroyTerminal(id);
     } catch {
       // non-fatal — best-effort cleanup during shutdown.
+    }
+  }
+}
+
+/**
+ * Async variant of {@link destroyAllTerminals} that waits up to `timeoutMs`
+ * for each PTY's `onExit` to fire after the kill, then SIGKILLs by pid as a
+ * final backstop for any helpers still alive. Use this from `before-quit`
+ * so we don't `app.quit()` before node-pty has a chance to reap children.
+ */
+export async function destroyAllTerminalsAndWait(
+  timeoutMs = 1500,
+): Promise<void> {
+  const sessions = Array.from(appState.terminals.values());
+  const pids = sessions.map((s) => s.pid);
+
+  const exitPromises = sessions.map(
+    (s) =>
+      new Promise<void>((resolve) => {
+        if (s.exitCode !== null) {
+          resolve();
+
+          return;
+        }
+        const sub = s.pty.onExit(() => {
+          try {
+            sub.dispose();
+          } catch {
+            // node-pty dispose is best-effort; ignore.
+          }
+          resolve();
+        });
+      }),
+  );
+
+  destroyAllTerminals();
+
+  await Promise.race([
+    Promise.all(exitPromises),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs).unref?.()),
+  ]);
+
+  // Final backstop: SIGKILL anything that's still around by pid.
+  for (const pid of pids) {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // ESRCH: process already gone — expected in the common case.
     }
   }
 }
