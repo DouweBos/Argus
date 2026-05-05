@@ -2,6 +2,7 @@ import { CommitLogView } from "../CommitLogView";
 import styles from "./HistoryView.module.css";
 
 interface HistoryViewProps {
+  baseBranch?: string | null;
   scope?: "project" | "session";
   sessionId: string;
 }
@@ -9,6 +10,7 @@ interface HistoryViewProps {
 export function HistoryView({
   sessionId,
   scope = "session",
+  baseBranch,
 }: HistoryViewProps) {
   return (
     <div className={styles.column}>
@@ -16,6 +18,7 @@ export function HistoryView({
         <CommitLogView
           allBranches
           showGraph
+          baseBranch={baseBranch}
           scope={scope}
           sessionId={sessionId}
         />

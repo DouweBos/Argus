@@ -54,6 +54,7 @@ import { useHeadAndRemote } from "./useHeadAndRemote";
 
 interface CommitLogViewProps {
   allBranches: boolean;
+  baseBranch?: string | null;
   scope?: "project" | "session";
   sessionId: string;
   showGraph?: boolean;
@@ -68,6 +69,7 @@ interface CommitMenuState {
 export function CommitLogView({
   sessionId,
   allBranches,
+  baseBranch,
   scope = "session",
   showGraph = true,
 }: CommitLogViewProps) {
@@ -141,7 +143,11 @@ export function CommitLogView({
   const { tipHash, headHashes, remoteUrl, isOtherCommitOnHead } =
     useHeadAndRemote(sessionId, commits);
 
-  const { aheadSet, behindSet } = useAheadBehind(commits);
+  const { aheadSet, behindSet } = useAheadBehind(
+    sessionId,
+    commits,
+    baseBranch,
+  );
 
   // selectCommit ref to break the circular dep: useCommitDiff needs selectCommit
   // but useCommitSelection (which provides selectCommit) needs loadCommitDiff/
