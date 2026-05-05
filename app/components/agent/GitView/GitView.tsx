@@ -298,10 +298,8 @@ export function GitView({
       "quick-actions": () => setJumpOpen(true),
       cheatsheet: () => setCheatsheetOpen(true),
       "push-with-options": () => {
-        if (scope === "project") {
-          setForceConfirmStage(false);
-          setPushDialogOpen(true);
-        }
+        setForceConfirmStage(false);
+        setPushDialogOpen(true);
       },
       "pull-with-options": () => {
         if (scope === "project") {
@@ -317,14 +315,8 @@ export function GitView({
         setNewBranchStartPoint(status?.branch ?? "HEAD");
       },
       push: () => {
-        if (scope === "project") {
-          setForceConfirmStage(false);
-          setPushDialogOpen(true);
-        } else if (status && status.upstream == null) {
-          setPublishConfirmOpen(true);
-        } else {
-          runRemoteOp(() => pushSessionBranch(sessionId));
-        }
+        setForceConfirmStage(false);
+        setPushDialogOpen(true);
       },
       pull: () => {
         if (scope === "project") {
@@ -373,15 +365,12 @@ export function GitView({
   );
   useGitShortcuts(scope, handlers);
 
-  // Load remotes for the push dialog when project-scope.
+  // Load remotes for the push dialog.
   useMemo(() => {
-    if (scope !== "project") {
-      return;
-    }
     gitListRemotes(sessionId)
       .then(setRemotes)
       .catch(() => undefined);
-  }, [scope, sessionId]);
+  }, [sessionId]);
 
   const onToolbarPullDialog = useCallback(() => {
     if (scope === "project") {
@@ -389,13 +378,9 @@ export function GitView({
     }
   }, [scope]);
   const onToolbarPushDialog = useCallback(() => {
-    if (scope === "project") {
-      setForceConfirmStage(false);
-      setPushDialogOpen(true);
-    } else if (status && status.upstream == null) {
-      setPublishConfirmOpen(true);
-    }
-  }, [scope, status]);
+    setForceConfirmStage(false);
+    setPushDialogOpen(true);
+  }, []);
   const onToolbarRenameBranch = useCallback(() => setRenameOpen(true), []);
   const onToolbarCreateBranch = useCallback(() => {
     setNewBranchStartPoint(status?.branch ?? "HEAD");
@@ -658,7 +643,7 @@ export function GitView({
         />
       )}
 
-      {scope === "project" && pushDialogOpen && status && (
+      {pushDialogOpen && status && (
         <PushDialog
           open
           currentBranch={status.branch}
