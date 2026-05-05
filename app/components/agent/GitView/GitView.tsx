@@ -539,10 +539,16 @@ export function GitView({
             />
           )}
 
-          {activeView === "branch" && <BranchView sessionId={sessionId} />}
+          {activeView === "branch" && (
+            <BranchView baseBranch={baseBranch} sessionId={sessionId} />
+          )}
 
           {activeView === "history" && (
-            <HistoryView scope={scope} sessionId={sessionId} />
+            <HistoryView
+              baseBranch={baseBranch}
+              scope={scope}
+              sessionId={sessionId}
+            />
           )}
 
           {activeView === "stashes" && (
