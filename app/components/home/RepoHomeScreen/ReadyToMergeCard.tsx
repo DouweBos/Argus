@@ -6,8 +6,14 @@ import { useMergeStatus } from "../../../hooks/useMergeStatus";
 import { useSessionReleaseNotes } from "../../../hooks/useSessionReleaseNotes";
 import { useValidateChangesetsInChat } from "../../../hooks/useValidateChangesetsInChat";
 import { listen } from "../../../lib/events";
-import { deleteSession, readArgusConfig, watchSession } from "../../../lib/ipc";
+import {
+  deleteSession,
+  openExternalUrl,
+  readArgusConfig,
+  watchSession,
+} from "../../../lib/ipc";
 import { setActiveTool } from "../../../stores/layoutStore";
+import { usePrsByBranch } from "../../../stores/pullRequestStore";
 import { CreatePullRequestDialog } from "../../pullRequests/CreatePullRequestDialog";
 import { SessionReleaseNotesList } from "../SessionReleaseNotesCard/SessionReleaseNotesCard";
 import styles from "./ReadyToMergeCard.module.css";
@@ -93,6 +99,8 @@ export function ReadyToMergeCard({
   const [isProtectedBase, setIsProtectedBase] = useState(false);
   const configVersion = useArgusConfigVersion(repoRoot ?? null);
   const [createPrOpen, setCreatePrOpen] = useState(false);
+  const prsByBranch = usePrsByBranch(repoRoot ?? "");
+  const existingPr = sessionBranch ? prsByBranch.get(sessionBranch) : undefined;
   const releaseNotes = useSessionReleaseNotes(sessionId);
   const changesetEntries = releaseNotes.filter(
     (e) => e.format === "changesets",
@@ -335,17 +343,33 @@ export function ReadyToMergeCard({
           {getRebaseLabel(isRebasing, hasWork, baseBranch)}
         </button>
       )}
-      {baseBranch && !hasConflicts && hasWork && isProtectedBase && (
-        <button
-          className={`${styles.actionBtn} ${styles.merge}`}
-          title={`${baseBranch} is protected — open a pull request`}
-          type="button"
-          onClick={() => setCreatePrOpen(true)}
-        >
-          <Icons.PushIcon size={11} />
-          Open PR
-        </button>
-      )}
+      {baseBranch &&
+        !hasConflicts &&
+        hasWork &&
+        isProtectedBase &&
+        (existingPr ? (
+          <button
+            className={`${styles.actionBtn} ${styles.merge}`}
+            title={`Open pull request #${existingPr.number} on GitHub`}
+            type="button"
+            onClick={() => {
+              openExternalUrl(existingPr.url).catch(() => {});
+            }}
+          >
+            <Icons.ArrowUpRightIcon size={11} />
+            View PR
+          </button>
+        ) : (
+          <button
+            className={`${styles.actionBtn} ${styles.merge}`}
+            title={`${baseBranch} is protected — open a pull request`}
+            type="button"
+            onClick={() => setCreatePrOpen(true)}
+          >
+            <Icons.PushIcon size={11} />
+            Open PR
+          </button>
+        ))}
       {baseBranch && !hasConflicts && hasWork && !isProtectedBase && (
         <button
           className={`${styles.actionBtn} ${styles.merge}`}

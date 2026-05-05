@@ -11,7 +11,11 @@
  */
 
 export type CanonicalPermissionMode =
-  "ask" | "auto" | "plan" | "review" | "trusted";
+  | "ask"
+  | "auto"
+  | "plan"
+  | "review"
+  | "trusted";
 
 export interface PermissionModeOption {
   description: string;
