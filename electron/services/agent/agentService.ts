@@ -694,8 +694,13 @@ function onStreamLine(agentId: string, line: string): void {
         if (prev !== parsed.state) {
           emitAgentStatus(agentId, parsed.state);
         }
+        // Don't increment turnsCompleted here: the CLI can flip to `idle`
+        // multiple times within a single turn (between tool calls), so this
+        // signal is unreliable as a turn counter. Authoritative increment
+        // happens in the `result` handler below. We still wake waiters on
+        // any idle transition so callers blocking purely on "is the agent
+        // idle right now" don't have to wait for the result event.
         if (parsed.state === "idle" && prev !== "idle") {
-          session.turnsCompleted += 1;
           for (const resolve of session.turnWaiters) {
             resolve("idle");
           }
@@ -726,6 +731,25 @@ function onStreamLine(agentId: string, line: string): void {
         };
         if (session.inflightPrompts > 0) {
           session.inflightPrompts -= 1;
+        }
+        // The `result` event is the authoritative signal that the turn
+        // finished. We cannot rely solely on `session_state_changed(idle)`:
+        // it may arrive before `result` (so we'd race), or not arrive at
+        // all for text-only responses. The renderer applies the same
+        // workaround in `agentEventService.ts`. Without this, waiters and
+        // turn counters can stall on a finished agent — wait_for_agent /
+        // wait_for_any_agent would never resolve.
+        if (session.status !== "stopped" && session.status !== "error") {
+          const prev = session.status;
+          session.status = "idle";
+          session.turnsCompleted += 1;
+          if (prev !== "idle") {
+            emitAgentStatus(agentId, "idle");
+          }
+          for (const resolve of session.turnWaiters) {
+            resolve("idle");
+          }
+          session.turnWaiters.length = 0;
         }
       }
     } catch {
