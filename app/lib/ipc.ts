@@ -184,6 +184,15 @@ export const getPullRequestDiff = (
 // GitHub PR write actions
 export type MergeStrategy = "merge" | "rebase" | "squash";
 
+export const readPrTemplate = (repoRoot: string): Promise<string | null> =>
+  invoke("read_pr_template", { repoRoot });
+
+export const autofillPrTemplate = (params: {
+  baseBranch: string;
+  sessionId: string;
+  title: string;
+}): Promise<string | null> => invoke("autofill_pr_template", params);
+
 export const ghPrCreate = (params: {
   base: string;
   body: string;

@@ -29,6 +29,17 @@ export interface RunClaudePrintOptions {
   timeoutMs?: number;
   cwd?: string;
   source: string;
+  /**
+   * Override the haiku system prompt. Defaults to a terse "generate titles
+   * and slugs" instruction; longer-form one-shots (PR descriptions, etc.)
+   * should pass their own.
+   */
+  systemPrompt?: string;
+  /**
+   * Override the model. Defaults to `haiku`. Use `sonnet` for tasks that
+   * benefit from longer reasoning (e.g. summarizing a diff into a PR body).
+   */
+  model?: string;
 }
 
 let lastBroadcastAt = 0;
@@ -106,7 +117,7 @@ export async function runClaudePrint(
       [
         "-p",
         "--model",
-        "haiku",
+        opts.model ?? "haiku",
         "--output-format",
         "json",
         "--tools",
@@ -115,7 +126,8 @@ export async function runClaudePrint(
         "",
         "--disable-slash-commands",
         "--system-prompt",
-        "You generate short titles and slugs. Reply with only what the user asks for, no tools, no explanation.",
+        opts.systemPrompt ??
+          "You generate short titles and slugs. Reply with only what the user asks for, no tools, no explanation.",
         opts.prompt,
       ],
       {

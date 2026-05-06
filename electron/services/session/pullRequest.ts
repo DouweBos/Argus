@@ -39,6 +39,70 @@ const PR_TEMPLATE_DIR_LOCATIONS: string[] = [
 ];
 
 /**
+ * Resolve the textual content of the pull-request template for `repoRoot`,
+ * if any. Honors the same `.argus.json` `pull_request_template` override as
+ * {@link pickPullRequestTemplate} and falls back to the standard GitHub
+ * locations (single-file templates and the first template in a directory,
+ * alphabetically).
+ *
+ * Returns `null` when no template is found or the override points at a file
+ * that doesn't exist on disk — callers should treat that as "no prefill".
+ */
+export function readPullRequestTemplate(repoRoot: string): string | null {
+  let override: string | null = null;
+  try {
+    const raw = fs.readFileSync(path.join(repoRoot, ".argus.json"), "utf8");
+    const cfg = JSON.parse(raw) as { pull_request_template?: unknown };
+    if (
+      typeof cfg.pull_request_template === "string" &&
+      cfg.pull_request_template.trim().length > 0
+    ) {
+      override = cfg.pull_request_template.trim();
+    }
+  } catch {
+    // ignore
+  }
+
+  if (override) {
+    for (const dir of PR_TEMPLATE_DIR_LOCATIONS) {
+      const full = path.join(repoRoot, dir, override);
+      if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+        return fs.readFileSync(full, "utf8");
+      }
+    }
+    const direct = path.join(repoRoot, override);
+    if (fs.existsSync(direct) && fs.statSync(direct).isFile()) {
+      return fs.readFileSync(direct, "utf8");
+    }
+
+    return null;
+  }
+
+  for (const file of PR_TEMPLATE_FILE_LOCATIONS) {
+    const full = path.join(repoRoot, file);
+    if (fs.existsSync(full) && fs.statSync(full).isFile()) {
+      return fs.readFileSync(full, "utf8");
+    }
+  }
+
+  for (const dir of PR_TEMPLATE_DIR_LOCATIONS) {
+    const full = path.join(repoRoot, dir);
+    if (!fs.existsSync(full) || !fs.statSync(full).isDirectory()) {
+      continue;
+    }
+    const files = fs
+      .readdirSync(full)
+      .filter((name) => name.toLowerCase().endsWith(".md"))
+      .sort();
+    if (files.length > 0) {
+      return fs.readFileSync(path.join(full, files[0]), "utf8");
+    }
+  }
+
+  return null;
+}
+
+/**
  * Find the filename of the pull-request template to apply when opening a
  * compare URL. Returns `null` when the repo either has no template or has
  * exactly one single-file template (GitHub auto-applies single templates —

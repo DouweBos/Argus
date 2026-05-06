@@ -306,6 +306,8 @@ import {
   renameSessionBranch,
   clearSessionSetupError,
 } from "./services/session/manager";
+import { autofillPullRequestBody } from "./services/session/prAutofill";
+import { readPullRequestTemplate } from "./services/session/pullRequest";
 import {
   getSessionReleaseNotes,
   previewReleaseNotes,
@@ -642,6 +644,18 @@ export function registerIpcHandlers(): void {
 
   handle("get_pull_request_diff", (a) =>
     getPullRequestDiff(a.owner as string, a.repo as string, a.number as number),
+  );
+
+  handle("read_pr_template", (a) =>
+    Promise.resolve(readPullRequestTemplate(a.repoRoot as string)),
+  );
+
+  handle("autofill_pr_template", (a) =>
+    autofillPullRequestBody({
+      sessionId: a.sessionId as string,
+      title: a.title as string,
+      baseBranch: a.baseBranch as string,
+    }),
   );
 
   handle("gh_pr_create", (a) =>
