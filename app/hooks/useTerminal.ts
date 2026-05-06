@@ -90,6 +90,7 @@ function terminalThemeFor(theme: ResolvedTheme) {
 
 interface UseTerminalOptions {
   onExit?: (code: number) => void;
+  onNewTab?: () => void;
   sessionId: string | null;
 }
 
@@ -113,6 +114,7 @@ interface UseTerminalResult {
 export function useTerminal({
   sessionId,
   onExit,
+  onNewTab,
 }: UseTerminalOptions): UseTerminalResult {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const terminalInstanceRef = useRef<Terminal | null>(null);
@@ -120,6 +122,7 @@ export function useTerminal({
   const searchAddonRef = useRef<SearchAddon | null>(null);
   const fontSizeRef = useRef(DEFAULT_FONT_SIZE);
   const onExitRef = useRef(onExit);
+  const onNewTabRef = useRef(onNewTab);
   const listenersRef = useRef(new Set<() => void>());
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchState, setSearchState] = useState<SearchState>({
@@ -129,6 +132,7 @@ export function useTerminal({
 
   useEffect(() => {
     onExitRef.current = onExit;
+    onNewTabRef.current = onNewTab;
   });
 
   const subscribe = useCallback((cb: () => void) => {
@@ -328,6 +332,15 @@ export function useTerminal({
         // Cmd+F — find in terminal
         case "f":
           setSearchVisible(true);
+
+          return false;
+
+        // Cmd+T — open a new terminal tab
+        case "t":
+          if (e.shiftKey) {
+            return true;
+          }
+          onNewTabRef.current?.();
 
           return false;
 

@@ -434,6 +434,7 @@ export function TerminalTabs({ sessionId }: TerminalTabsProps) {
                   isActive={isActive}
                   sessionId={session.id}
                   onExit={() => handleExit(session.id)}
+                  onNewTab={handleCreate}
                 />
               </div>
             );
