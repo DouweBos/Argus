@@ -32,8 +32,12 @@ export function RuntimeTitleBar({
       <div className={chrome.titleBar}>
         {children}
         {picker}
-        {trailing}
-        {toggles && <div className={chrome.titleBarToggles}>{toggles}</div>}
+        {(trailing || toggles) && (
+          <div className={chrome.titleBarToggles}>
+            {trailing}
+            {toggles}
+          </div>
+        )}
       </div>
       {showActionBar && actionBar && (
         <div
