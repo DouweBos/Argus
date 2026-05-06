@@ -417,6 +417,20 @@ export class ControlHandler {
     return this.buildOutboundRequest({ subtype: "set_permission_mode", mode });
   }
 
+  /**
+   * Build a `control_request` with `subtype: "apply_flag_settings"` carrying
+   * the reasoning-effort level. Pass `null` to clear back to the model's
+   * default. Returns `[jsonString, promise]`.
+   */
+  buildSetEffortRequest(
+    level: string | null,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    return this.buildOutboundRequest({
+      subtype: "apply_flag_settings",
+      settings: { effortLevel: level },
+    });
+  }
+
   private buildOutboundRequest(
     request: Record<string, unknown>,
   ): [string, Promise<Record<string, unknown> | undefined>] {

@@ -1273,6 +1273,28 @@ export async function setAgentPermissionMode(
 }
 
 // ---------------------------------------------------------------------------
+// set_agent_effort
+// ---------------------------------------------------------------------------
+
+export async function setAgentEffort(
+  agentId: string,
+  level: string | null,
+): Promise<void> {
+  const session = appState.agents.get(agentId);
+  if (!session) {
+    throw `No agent found: ${agentId}`;
+  }
+  if (session.status === "stopped" || session.status === "error") {
+    throw `Agent is not running: ${agentId}`;
+  }
+
+  await session.handle.setEffort(level);
+
+  broadcastToRenderers(`agent:effort-changed:${agentId}`, level);
+  info(`[agent:${agentId}] effort changed to ${level ?? "(default)"}`);
+}
+
+// ---------------------------------------------------------------------------
 // list_agents
 // ---------------------------------------------------------------------------
 

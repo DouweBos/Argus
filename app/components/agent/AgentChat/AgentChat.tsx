@@ -30,6 +30,7 @@ import {
   createCheckpoint,
   getCommandMetrics,
   interruptAgent,
+  setAgentEffort as ipcSetAgentEffort,
   setAgentModel as ipcSetAgentModel,
   setAgentPermissionMode as ipcSetAgentPermissionMode,
   readFile,
@@ -192,6 +193,23 @@ export function AgentChat({
     return undefined;
   }, [messages]);
   const contextTokens = tokensInContext(lastUsage);
+
+  // Effort levels supported by the active model, advertised in the
+  // initialize-response capabilities. Empty when the model doesn't expose
+  // effort or when capabilities haven't arrived yet — the ChatInput hides
+  // the pill in that case.
+  const supportedEffortLevels = useMemo(() => {
+    if (!capabilitiesModels?.length) {
+      return undefined;
+    }
+    const match = capabilitiesModels.find((m) => m.value === modelValue);
+    const active = match ?? capabilitiesModels[0];
+    if (!active?.supportsEffort || !active.supportedEffortLevels?.length) {
+      return undefined;
+    }
+
+    return active.supportedEffortLevels;
+  }, [capabilitiesModels, modelValue]);
 
   // Model options for the picker, derived from capabilities.
   const modelOptions = useMemo(() => {
@@ -649,6 +667,21 @@ export function AgentChat({
     [agentId],
   );
 
+  const handleSetEffort = useCallback(
+    async (level: string | null) => {
+      if (!agentId) {
+        return;
+      }
+      try {
+        await ipcSetAgentEffort(agentId, level);
+        updateAgent(agentId, { effort: level });
+      } catch {
+        // Best-effort — agent may have exited.
+      }
+    },
+    [agentId],
+  );
+
   const handleSend = useCallback(
     async (message: string, images?: ImageAttachment[]) => {
       if (!agentId) {
@@ -892,12 +925,15 @@ export function AgentChat({
           modelValue={modelValue}
           models={modelOptions}
           permissionMode={permissionMode}
+          effort={agentSnapshot?.effort ?? null}
+          supportedEffortLevels={supportedEffortLevels}
           slashCommands={allCommands}
           textareaRef={chatInputRef}
           onInterrupt={handleInterrupt}
           onModelPickerOpenChange={setModelPickerOpen}
           onModelSelect={handleModelSelect}
           onSend={handleSend}
+          onSetEffort={handleSetEffort}
           onSetPermissionMode={handleSetPermissionMode}
         />
       )}
