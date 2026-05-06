@@ -15,10 +15,7 @@ import {
   buildLinkedProjectsPreamble,
   parseLinkedProjectsPreamble,
 } from "../../../lib/linkedProjectsPreamble";
-import {
-  markMessageUnread,
-  useIsMessageUnread,
-} from "../../../stores/conversationStore";
+import { useIsMessageUnread } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
@@ -63,18 +60,16 @@ function MessageActions({
   onCopy,
   onEdit,
   onFork,
-  onMarkUnread,
   onRestore,
   placement,
 }: {
   onCopy?: () => void;
   onEdit?: () => void;
   onFork?: () => void;
-  onMarkUnread?: () => void;
   onRestore?: () => void;
   placement: "top-left" | "top-right";
 }) {
-  if (!onCopy && !onFork && !onEdit && !onMarkUnread && !onRestore) {
+  if (!onCopy && !onFork && !onEdit && !onRestore) {
     return null;
   }
 
@@ -106,13 +101,6 @@ function MessageActions({
           icon={<Icons.BranchIcon size={12} />}
           label="Fork workspace and chat from here"
           onClick={onFork}
-        />
-      )}
-      {onMarkUnread && (
-        <HoverActionButton
-          icon={<Icons.EnvelopeIcon size={12} />}
-          label="Mark as unread"
-          onClick={onMarkUnread}
         />
       )}
     </HoverActionBar>
@@ -152,10 +140,6 @@ export function ChatMessage({
   const handleFork = onFork ? () => onFork(message) : undefined;
   const handleRestore =
     onRestore && message.checkpointId ? () => onRestore(message) : undefined;
-  const handleMarkUnread =
-    agentId && message.role === "assistant" && !isUnread
-      ? () => markMessageUnread(agentId, message.id)
-      : undefined;
   const handleStartEdit = onEdit
     ? () => {
         const root = userMsgRef.current;
@@ -460,7 +444,6 @@ export function ChatMessage({
         <MessageActions
           onCopy={handleCopy}
           onFork={handleFork}
-          onMarkUnread={handleMarkUnread}
           placement="top-right"
         />
       )}
