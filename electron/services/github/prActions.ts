@@ -41,8 +41,6 @@ export async function ghPrCreate(params: {
     base,
     "--head",
     head,
-    "--json",
-    "url,number",
   ];
   if (draft) {
     args.push("--draft");
@@ -70,9 +68,20 @@ export async function ghPrCreate(params: {
     throw msg;
   }
 
-  const parsed = JSON.parse(stdout.trim()) as { number: number; url: string };
+  const url = stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => /^https?:\/\/[^\s]+\/pull\/\d+/.test(line));
+  if (!url) {
+    throw `gh pr create did not return a PR URL. Output: ${stdout.trim()}`;
+  }
+  const match = /\/pull\/(\d+)/.exec(url);
+  if (!match) {
+    throw `Could not parse PR number from URL: ${url}`;
+  }
+  const number = Number(match[1]);
 
-  return { url: parsed.url, number: parsed.number };
+  return { url, number };
 }
 
 /**
