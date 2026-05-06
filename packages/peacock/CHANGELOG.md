@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.9.0
+
+### Minor Changes
+
+- a5d5448: Add `HoverTimestamp` — a wrapper that overlays a hover-revealed time gutter on its children, supporting both single timestamps and time ranges.
+
 ## 0.8.0
 
 ### Minor Changes
