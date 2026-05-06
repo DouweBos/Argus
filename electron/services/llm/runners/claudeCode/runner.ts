@@ -39,6 +39,7 @@ export class ClaudeCodeRunner implements LlmRunner {
       supportsTranscriptFork: true,
       supportsSetModel: true,
       supportsSetPermissionMode: true,
+      supportsSetEffort: true,
       supportsInterrupt: true,
     };
   }

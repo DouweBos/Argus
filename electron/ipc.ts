@@ -50,6 +50,7 @@ import {
   sendAgentMessage,
   listAgents,
   respondToPermission,
+  setAgentEffort,
   setAgentModel,
   setAgentPermissionMode,
 } from "./services/agent/claude";
@@ -1383,6 +1384,9 @@ export function registerIpcHandlers(): void {
   );
   handle("set_agent_permission_mode", (a) =>
     setAgentPermissionMode(a.agentId as string, a.mode as string),
+  );
+  handle("set_agent_effort", (a) =>
+    setAgentEffort(a.agentId as string, (a.level as string | null) ?? null),
   );
   handle("prewarm_agent", (a) => prewarmAgent(a.sessionId as string));
   handle("claim_prewarm_agent", (a) =>

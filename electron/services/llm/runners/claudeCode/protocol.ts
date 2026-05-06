@@ -63,6 +63,14 @@ export interface SetPermissionModePayload {
   mode: string;
 }
 
+export interface ApplyFlagSettingsPayload {
+  subtype: "apply_flag_settings";
+  settings: {
+    effortLevel?: string | null;
+    [key: string]: unknown;
+  };
+}
+
 export interface McpStatusPayload {
   subtype: "mcp_status";
 }
@@ -85,6 +93,7 @@ export interface HookCallbackPayload {
 }
 
 export type ControlRequestPayload =
+  | ApplyFlagSettingsPayload
   | CanUseToolPayload
   | ElicitationPayload
   | HookCallbackPayload

@@ -155,6 +155,12 @@ export interface AgentStatus {
    */
   created_at?: number;
   /**
+   * Reasoning-effort level (e.g. "low", "medium", "high", "xhigh", "max").
+   * `null` / undefined means the model's default. Frontend-only field; the
+   * runner's `apply_flag_settings` control message is the source of truth.
+   */
+  effort?: string | null;
+  /**
    * Prompt sent to an externally-spawned agent (e.g. via the MCP `spawn_agent`
    * tool). Present only on the `agent:started` event — used by the renderer
    * to derive a session title, since the UI never sees the first user
@@ -348,6 +354,7 @@ export interface RegisteredRunner {
   capabilities: {
     supportsInterrupt: boolean;
     supportsMcp: boolean;
+    supportsSetEffort: boolean;
     supportsSetModel: boolean;
     supportsSetPermissionMode: boolean;
     supportsTranscriptFork: boolean;

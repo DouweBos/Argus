@@ -291,6 +291,7 @@ const permCancelListeners = new Map<string, UnlistenFn>();
 const capListeners = new Map<string, UnlistenFn>();
 const modelListeners = new Map<string, UnlistenFn>();
 const permModeListeners = new Map<string, UnlistenFn>();
+const effortListeners = new Map<string, UnlistenFn>();
 const stderrListeners = new Map<string, UnlistenFn>();
 const mcpMessageListeners = new Map<string, UnlistenFn>();
 
@@ -507,6 +508,23 @@ export function startAgentListening(agentId: string): void {
     permModeListeners.set(agentId, unlisten);
   });
 
+  // Watch for reasoning-effort changes via the control protocol.
+  effortListeners.set(agentId, () => {});
+
+  listen<string | null>(`agent:effort-changed:${agentId}`, (event) => {
+    updateAgent(agentId, {
+      effort: event.payload ?? null,
+    });
+  }).then((unlisten) => {
+    if (!effortListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+
+    effortListeners.set(agentId, unlisten);
+  });
+
   // Watch for stderr output from the CLI process (auth errors, diagnostics).
   stderrListeners.set(agentId, () => {});
 
@@ -677,6 +695,12 @@ export function stopAgentListening(agentId: string): void {
     permModeUnlisten();
   }
   permModeListeners.delete(agentId);
+
+  const effortUnlisten = effortListeners.get(agentId);
+  if (effortUnlisten) {
+    effortUnlisten();
+  }
+  effortListeners.delete(agentId);
 
   const stderrUnlisten = stderrListeners.get(agentId);
   if (stderrUnlisten) {

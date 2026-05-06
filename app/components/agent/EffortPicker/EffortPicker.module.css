@@ -1,0 +1,73 @@
+.picker {
+  position: fixed;
+  width: clamp(240px, 36vw, 360px);
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-secondary-90);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 -4px 24px var(--scrim-lg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  z-index: 2100;
+}
+
+.header {
+  padding: var(--space-3) var(--space-6) var(--space-2);
+  font: var(--type-eyebrow);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--glass-border);
+  user-select: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 8px 14px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: background var(--transition-base);
+  border-left: 2px solid transparent;
+  line-height: 1.4;
+}
+
+.option:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.optionActive {
+  background: var(--accent-overlay-md);
+  border-left-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.optionLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.optionName {
+  font: var(--type-ui);
+}
+
+.optionDesc {
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.optionCheck {
+  font-size: var(--font-size-xs);
+  color: var(--accent);
+  flex-shrink: 0;
+}

@@ -1351,6 +1351,11 @@ export const setAgentPermissionMode = (
   mode: string,
 ): Promise<void> => invoke("set_agent_permission_mode", { agentId, mode });
 
+export const setAgentEffort = (
+  agentId: string,
+  level: string | null,
+): Promise<void> => invoke("set_agent_effort", { agentId, level });
+
 export const prewarmAgent = (sessionId: string): Promise<AgentStatus> =>
   invoke("prewarm_agent", { sessionId });
 

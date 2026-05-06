@@ -22,6 +22,7 @@ export {
   respondToPermission,
   restoreAgentAtTurn,
   sendAgentMessage,
+  setAgentEffort,
   setAgentModel,
   setAgentPermissionMode,
   startAgent,

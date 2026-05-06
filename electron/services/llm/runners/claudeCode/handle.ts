@@ -135,6 +135,12 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
     await promise;
   }
 
+  async setEffort(level: string | null): Promise<void> {
+    const [json, promise] = this.controlHandler.buildSetEffortRequest(level);
+    this.safeWriteLine(json);
+    await promise;
+  }
+
   respondToPermission(decision: PermissionDecisionInput): void {
     const response = this.controlHandler.respond(
       decision.toolUseId,

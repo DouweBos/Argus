@@ -120,6 +120,8 @@ export interface RunnerCapabilities {
   supportsSetModel: boolean;
   /** Whether the runner supports mid-session permission-mode switching. */
   supportsSetPermissionMode: boolean;
+  /** Whether the runner supports mid-session reasoning-effort switching. */
+  supportsSetEffort: boolean;
   /** Whether the runner supports a graceful interrupt without killing. */
   supportsInterrupt: boolean;
 }
@@ -170,6 +172,12 @@ export interface LlmRunnerHandle {
   setModel: (model: string) => Promise<void>;
   /** Switch the permission mode mid-session. */
   setPermissionMode: (mode: CanonicalPermissionMode | string) => Promise<void>;
+  /**
+   * Switch the reasoning-effort level mid-session. Pass `null` to clear back
+   * to the model's default. Runners that don't support effort should treat
+   * this as a no-op.
+   */
+  setEffort: (level: string | null) => Promise<void>;
   /** Respond to a previously-emitted permission request. */
   respondToPermission: (decision: PermissionDecisionInput) => void;
   /** Kill the underlying child process; resolves once it exits. */

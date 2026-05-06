@@ -39,6 +39,7 @@ import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
+import { EffortPicker, effortDisplayName } from "../EffortPicker";
 import {
   type ModelOption,
   ModelPicker,
@@ -65,6 +66,8 @@ interface ChatInputProps {
   contextTokens?: number;
   disabled?: boolean;
   disabledPlaceholder?: string;
+  /** Current reasoning-effort level (e.g. "high"). `null`/undefined = model default. */
+  effort?: string | null;
   model?: string;
   modelPickerOpen?: boolean;
   models?: ModelOption[];
@@ -74,6 +77,8 @@ interface ChatInputProps {
   onModelPickerOpenChange?: (open: boolean) => void;
   onModelSelect?: (model: string) => void;
   onSend: (message: string, images?: ImageAttachment[]) => void;
+  /** Set the agent's effort level. Omit to hide the effort pill. */
+  onSetEffort?: (level: string | null) => void;
   /**
    * Set the agent's permission mode. Omit to hide the picker (e.g. read-only
    * historical conversations).
@@ -83,6 +88,8 @@ interface ChatInputProps {
   permissionMode?: string;
   sessionId?: string;
   slashCommands?: SlashCommand[];
+  /** Effort levels the active model advertises in its capabilities. */
+  supportedEffortLevels?: string[];
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -104,6 +111,9 @@ export function ChatInput({
   onModelSelect,
   permissionMode,
   onSetPermissionMode,
+  effort,
+  supportedEffortLevels,
+  onSetEffort,
   textareaRef: externalTextareaRef,
   sessionId,
 }: ChatInputProps) {
@@ -118,8 +128,10 @@ export function ChatInput({
   const projectChipRef = useRef<HTMLDivElement>(null);
   const modelChipRef = useRef<HTMLDivElement>(null);
   const permissionChipRef = useRef<HTMLDivElement>(null);
+  const effortChipRef = useRef<HTMLDivElement>(null);
   const [internalPickerOpen, setInternalPickerOpen] = useState(false);
   const [permissionPickerOpen, setPermissionPickerOpen] = useState(false);
+  const [effortPickerOpen, setEffortPickerOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
   const linkedProjects = useLinkedProjects(agentId);
@@ -697,6 +709,36 @@ export function ChatInput({
           )}
         </div>
       )}
+      {onSetEffort &&
+        supportedEffortLevels &&
+        supportedEffortLevels.length > 0 && (
+          <div ref={effortChipRef} className={styles.modelPickerAnchor}>
+            <Chip
+              interactive
+              muted={!effort}
+              className={effort ? styles.planModeActive : undefined}
+              aria-label="Switch reasoning effort"
+              title={`Reasoning effort: ${effortDisplayName(effort)} — click to switch`}
+              onClick={() => setEffortPickerOpen((o) => !o)}
+            >
+              <ChatInputShell.CollapseLabel>
+                {effortDisplayName(effort)}
+              </ChatInputShell.CollapseLabel>
+            </Chip>
+            {effortPickerOpen && (
+              <EffortPicker
+                triggerRef={effortChipRef}
+                currentLevel={effort ?? null}
+                supportedLevels={supportedEffortLevels}
+                onClose={() => setEffortPickerOpen(false)}
+                onSelect={(level) => {
+                  setEffortPickerOpen(false);
+                  onSetEffort(level);
+                }}
+              />
+            )}
+          </div>
+        )}
       <div ref={projectChipRef} className={styles.modelPickerAnchor}>
         <Chip
           interactive
