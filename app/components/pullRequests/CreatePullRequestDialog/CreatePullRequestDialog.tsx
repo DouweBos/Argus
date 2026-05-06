@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { Button, Dialog, Input, TextArea, Toggle } from "@argus/peacock";
+import { Button, Dialog, Icons, Input, TextArea, Toggle } from "@argus/peacock";
 import {
+  autofillPrTemplate,
   ghPrCreate,
   gitListLocalBranches,
   pushSessionBranch,
+  readPrTemplate,
 } from "../../../lib/ipc";
 import { appNavigate } from "../../../lib/router";
 import { refreshPullRequestList } from "../../../stores/pullRequestStore";
@@ -50,7 +52,27 @@ export function CreatePullRequestDialog({
   const [branches, setBranches] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [pushing, setPushing] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill the body from `.github/PULL_REQUEST_TEMPLATE` when no
+  // initial body was provided. Never overwrite anything the user has
+  // already typed.
+  useEffect(() => {
+    let cancelled = false;
+    readPrTemplate(repoRoot)
+      .then((tpl) => {
+        if (cancelled || !tpl) {
+          return;
+        }
+        setBody((current) => (current.length > 0 ? current : tpl));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repoRoot]);
 
   // Load local branch list for the selectors.
   useEffect(() => {
@@ -118,7 +140,30 @@ export function CreatePullRequestDialog({
     }
   }, [title, body, base, head, draft, repoRoot, sessionId, onClose, projects]);
 
-  const busy = submitting;
+  const handleAutofill = useCallback(async () => {
+    setAutofilling(true);
+    setError(null);
+    try {
+      const filled = await autofillPrTemplate({
+        sessionId,
+        title: title.trim() || headBranch,
+        baseBranch: base,
+      });
+      if (filled) {
+        setBody(filled);
+      } else {
+        setError(
+          "Auto-fill failed — Claude Code returned no result. Check that `claude` is installed and authenticated.",
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAutofilling(false);
+    }
+  }, [sessionId, title, headBranch, base]);
+
+  const busy = submitting || autofilling;
 
   return (
     <Dialog
@@ -143,15 +188,28 @@ export function CreatePullRequestDialog({
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label} htmlFor={`${titleId}-body`}>
-            Description
-          </label>
+          <div className={styles.descriptionHeader}>
+            <label className={styles.label} htmlFor={`${titleId}-body`}>
+              Description
+            </label>
+            <Button
+              variant="secondary"
+              size="sm"
+              leading={<Icons.AgentIcon size={12} />}
+              disabled={busy}
+              onClick={() => {
+                handleAutofill().catch(() => {});
+              }}
+            >
+              {autofilling ? "Auto-filling…" : "Auto-fill"}
+            </Button>
+          </div>
           <TextArea
             id={`${titleId}-body`}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Add a description (optional)"
-            rows={6}
+            rows={8}
             disabled={busy}
           />
         </div>
