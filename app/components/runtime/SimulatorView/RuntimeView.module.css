@@ -297,10 +297,10 @@
   outline: none;
 }
 
-/* tvOS body — stream + remote side by side */
+/* tvOS body — remote stacks underneath the stream by default. */
 .tvBody {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   flex: 1;
   min-height: 0;
@@ -312,16 +312,18 @@
 .tvBody .canvasContainer {
   flex: 1;
   min-width: 0;
+  align-self: stretch;
 }
 
-/* In the enlarged dialog, stretch the canvas to fill the larger area and pin
- * the remote to the top so it doesn't get stretched to dialog height. */
+/* In the enlarged dialog, place the remote alongside the stream and
+ * vertically center it so it doesn't get stretched to dialog height. */
 .runtimeDialog .tvBody {
+  flex-direction: row;
   align-items: stretch;
 }
 
 .runtimeDialog .tvBody > :last-child {
-  align-self: flex-start;
+  align-self: center;
 }
 
 /* Live canvas container */
