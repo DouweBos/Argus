@@ -41,14 +41,7 @@ export function registerRunTerminal({
 }: RunRegistrationInput): void {
   for (const dep of dependencies) {
     setRunningTerminal(sessionId, dep.title, dep.sessionId);
-    const depSessions = getSessionsForSession(sessionId);
-    if (!depSessions.some((s) => s.id === dep.sessionId)) {
-      addSession({
-        id: dep.sessionId,
-        session_id: sessionId,
-        title: dep.title,
-      });
-    }
+    attachTerminalTab(sessionId, dep.title, dep.sessionId);
     startListening(dep.sessionId);
     const depTitle = dep.title;
     const depId = dep.sessionId;
@@ -63,10 +56,30 @@ export function registerRunTerminal({
   }
 
   setRunningTerminal(sessionId, title, terminalSessionId);
+  attachTerminalTab(sessionId, title, terminalSessionId);
+  startListening(terminalSessionId);
+  setActiveSession(sessionId, terminalSessionId);
+  setActiveToolForSession(sessionId, "terminal");
 
-  // Reuse the tab from a previous run of the same title: swap the old (stale)
-  // terminal id in place with the freshly spawned one, keeping the tab and
-  // its position intact.
+  const unlisten = window.argus.on<number>(
+    `terminal:exit:${terminalSessionId}`,
+    () => {
+      clearRunningTerminalIfMatches(sessionId, title, terminalSessionId);
+      unlisten();
+      stopListening(terminalSessionId);
+    },
+  );
+}
+
+/**
+ * Reuse an existing tab with the same title (swapping its terminal id in
+ * place to keep tab order intact), or add a fresh tab if none exists.
+ */
+function attachTerminalTab(
+  sessionId: string,
+  title: string,
+  terminalSessionId: string,
+): void {
   const sessions = getSessionsForSession(sessionId);
   const sameTitle = sessions.find(
     (s) => s.title === title && s.id !== terminalSessionId,
@@ -82,16 +95,4 @@ export function registerRunTerminal({
       title,
     });
   }
-  startListening(terminalSessionId);
-  setActiveSession(sessionId, terminalSessionId);
-  setActiveToolForSession(sessionId, "terminal");
-
-  const unlisten = window.argus.on<number>(
-    `terminal:exit:${terminalSessionId}`,
-    () => {
-      clearRunningTerminalIfMatches(sessionId, title, terminalSessionId);
-      unlisten();
-      stopListening(terminalSessionId);
-    },
-  );
 }
