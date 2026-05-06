@@ -46,6 +46,7 @@ import {
 import {
   selectSession,
   useSessionProjects,
+  useSessions,
 } from "../../../stores/sessionStore";
 import { Markdown } from "../../shared/Markdown";
 import styles from "./PullRequestDetailScreen.module.css";
@@ -170,6 +171,7 @@ function reviewStateLabel(state: string | undefined): string {
 export function PullRequestDetailScreen() {
   const pr = useRoutePR();
   const projects = useSessionProjects();
+  const sessions = useSessions();
   const [starting, setStarting] = useState(false);
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
@@ -198,16 +200,41 @@ export function PullRequestDetailScreen() {
     openExternalUrl(url).catch(() => {});
   }, []);
 
+  const matchingProject = useMemo(() => {
+    if (!detail) {
+      return null;
+    }
+    const slug = detail.repoNameWithOwner.toLowerCase();
+
+    return (
+      projects.find((p) => {
+        const tail = p.repoRoot.split(/[/\\]/).filter(Boolean).pop() ?? "";
+
+        return slug.endsWith(`/${tail.toLowerCase()}`);
+      }) ?? null
+    );
+  }, [detail, projects]);
+
+  const existingSessionId = useMemo(() => {
+    if (!detail || !matchingProject) {
+      return null;
+    }
+
+    return (
+      sessions.find(
+        (s) =>
+          s.kind === "worktree" &&
+          s.repo_root === matchingProject.repoRoot &&
+          s.branch === detail.headRefName,
+      )?.id ?? null
+    );
+  }, [detail, matchingProject, sessions]);
+
   const handleStart = useCallback(async () => {
     if (!detail) {
       return;
     }
-    const slug = detail.repoNameWithOwner.toLowerCase();
-    const project = projects.find((p) => {
-      const tail = p.repoRoot.split(/[/\\]/).filter(Boolean).pop() ?? "";
-
-      return slug.endsWith(`/${tail.toLowerCase()}`);
-    });
+    const project = matchingProject;
     if (!project) {
       pushError(
         `No Argus project open for ${detail.repoNameWithOwner}.`,
@@ -234,7 +261,7 @@ export function PullRequestDetailScreen() {
     } finally {
       setStarting(false);
     }
-  }, [detail, projects]);
+  }, [detail, matchingProject]);
 
   const handleMerge = useCallback(async () => {
     if (!pr) {
@@ -430,17 +457,28 @@ export function PullRequestDetailScreen() {
                     {merging ? "Merging…" : "Merge"}
                   </Button>
                 )}
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={starting}
-                  onClick={() => {
-                    handleStart().catch(() => {});
-                  }}
-                  leading={<Icons.PlusIcon size={12} />}
-                >
-                  {starting ? "Starting…" : "New session"}
-                </Button>
+                {existingSessionId ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => selectSession(existingSessionId)}
+                    leading={<Icons.ArrowUpRightIcon size={12} />}
+                  >
+                    Open session
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={starting}
+                    onClick={() => {
+                      handleStart().catch(() => {});
+                    }}
+                    leading={<Icons.PlusIcon size={12} />}
+                  >
+                    {starting ? "Starting…" : "New session"}
+                  </Button>
+                )}
               </div>
             </div>
             <div className={styles.stats}>
