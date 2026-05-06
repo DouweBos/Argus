@@ -6,12 +6,14 @@ import styles from "./ShellTerminal.module.css";
 interface ShellTerminalProps {
   isActive?: boolean;
   onExit?: (code: number) => void;
+  onNewTab?: () => void;
   sessionId: string;
 }
 
 export function ShellTerminal({
   sessionId,
   onExit,
+  onNewTab,
   isActive = true,
 }: ShellTerminalProps) {
   const {
@@ -23,7 +25,7 @@ export function ShellTerminal({
     hideSearch,
     searchNext,
     searchPrevious,
-  } = useTerminal({ sessionId, onExit });
+  } = useTerminal({ sessionId, onExit, onNewTab });
 
   useEffect(() => {
     const id = requestAnimationFrame(() => fit());
