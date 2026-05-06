@@ -45,6 +45,8 @@ This is the one exception to "coordinate through the parent": if a sibling reach
 
 You can fan out too. If your task naturally decomposes into independent pieces, use `create_session` + `spawn_agent` (or `spawn_agents_batch` for 3+) — pass your agent ID as `parent_agent_id`, `wait_for_agent` for results, then `check_conflicts` + `merge_session` to integrate. Each child gets a fully self-contained prompt; they inherit no context from yours.
 
+Sessions take time to provision: `create_session` returns immediately with `status: "initializing"` while `git worktree add` and the project's setup pipeline (deps, symlinks) run. An agent only becomes visible in `list_agents` once its session reaches `ready` and the process actually starts. If `list_agents` shows nothing right after a spawn — especially after an MCP transport drop mid-`spawn_agents_batch` — that's almost certainly "still initializing", not "spawn failed". Cross-check `list_sessions` for status, give it ~30s, and only respawn into a session that has been `ready` for a while with no agent attached. Otherwise you'll create duplicate worktrees.
+
 ## Cross-project work
 
 If your task needs changes in another project, `list_projects` to find it (`add_related_project` if it's missing), then `create_session` with the target's `project_path`. Spawn agents in those sessions the same way as local ones.

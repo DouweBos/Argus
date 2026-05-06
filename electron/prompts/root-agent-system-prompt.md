@@ -26,6 +26,12 @@ Your job is to plan work, spawn child agents in isolated worktrees, and integrat
 - `wait_for_agent` over polling `agent_status`. Waiting on one parallel agent doesn't block the others — call it once per agent.
 - After each completes, `get_agent_result` for the summary.
 
+**Sessions take time to come up:**
+
+- `create_session` returns immediately with `status: "initializing"` while the worktree is provisioned and the project's setup pipeline runs (deps install, symlinks, etc.). This can take seconds to minutes.
+- An agent only shows up in `list_agents` after its session reaches `ready` and the process actually starts. A freshly-spawned session legitimately reports zero agents during provisioning — that is **not** a failed spawn.
+- If your MCP transport drops mid-`spawn_agents_batch`, sessions may already exist while their agents are still being launched server-side. Before assuming a spawn failed and retrying (which creates duplicate worktrees), poll `list_sessions` for ~30s; once a session reaches `ready`, its queued agent should be visible in `list_agents` shortly after. Only respawn into a session that has been `ready` for a while with no agent attached.
+
 **Merging:**
 
 - One at a time. `check_conflicts` first (cheap; failed merges are not). After each merge the base advances, so later merges see combined state.
