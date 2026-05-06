@@ -539,7 +539,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_sessions",
-    "List all sessions (worktrees and project root) for a project. Returns session IDs, branches, paths, and statuses.",
+    'List all sessions (worktrees and project root) for a project. Returns session IDs, branches, paths, and statuses. The `status` field is `"initializing"` while `git worktree add` and the project\'s setup pipeline run, `"ready"` once provisioning completes, or an error object if setup failed. Sessions in `initializing` cannot host agents yet — spawning into them is queued by `spawn_agent`/`spawn_agents_batch` until ready, so freshly-created sessions may legitimately show no agents in `list_agents` for several seconds (or longer if dependency installs are running).',
     {
       project_path: z
         .string()
@@ -768,7 +768,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agents_batch",
-    "Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Agents may target different projects — set `project_path` per-agent to spawn across projects in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once.",
+    'Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Agents may target different projects — set `project_path` per-agent to spawn across projects in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once after each session has finished provisioning. If your MCP transport drops mid-call, sessions may already exist while their agents are still being started server-side; treat absent agents as "not yet visible" rather than "failed" and verify by polling `list_sessions` (status → ready) and `list_agents` for ~30s before respawning.',
     {
       project_path: z
         .string()
@@ -1019,7 +1019,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_agents",
-    "List all running agents across all sessions, or for a specific session.",
+    "List all running agents across all sessions, or for a specific session. Note: an agent only appears here once its session has finished initializing and the agent process has actually started. If you just called `create_session` or `spawn_agents_batch`, the worktree may still be running setup (`git worktree add`, dependency installs, etc.) — during that window the session exists but `list_agents` will show nothing for it. Empty results immediately after a spawn do **not** mean the spawn failed; cross-check with `list_sessions` and look at each session's `status`. Sessions in `initializing` will spawn their queued agent automatically once ready.",
     {
       session: z
         .string()
