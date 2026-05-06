@@ -1,36 +1,49 @@
 
 ### Minor Changes
 
-- ba0eee0: The Agents view now shows a focused launcher when no agent is running — type a prompt and hit ⌘↵ to spawn an agent in one step, instead of repeating the Home screen.
-- 8b07008: When the commit history contains `fixup!` or `squash!` commits with matching targets on the current branch, a banner now offers a one-click autosquash to fold them in.
-- 88c23da: The project branch switcher now groups branches by priority — current, protected (main/master/staging/develop and project-configured), branches matching your personal prefix, then everything else — and hides branches already checked out in another session.
-- 7d997fb: Settings now has an LLM section where you can pick the default runner and model used for new sessions. Today Claude Code is the only registered runner; the model field is optional and falls back to the runner's default.
-- 52a2383: Removed the "Defaults" onboarding step. Git identity is collected inline in Preflight when missing, and the default Claude model is now editable under Settings → Agents.
-- fa20b22: Home is now a session-level tab alongside Agents, Editor, and Git instead of a tab inside the agents bar, and each tab now shows a leading icon.
-- 0c5acf9: Pick from all four runner permission modes (Auto, Plan, Accept edits, Trusted) when starting an agent or while a conversation is running. The chat input replaces the binary Plan toggle with a chip that opens a mode picker, and Shift+Tab cycles through modes without leaving the keyboard.
-- 4aa2277: Preflight now installs missing tooling on your behalf. The Claude CLI, Playwright browsers, the iOS simulator runtime, and the native sim bridge all gain an Install button, and missing git identity is collected via an inline form instead of a copy-paste command.
-- 7d997fb: Project settings now include an LLM section where you can pin the default runner and model for everyone working in the repo via `.argus.json`.
-- dc7554f: `setup.copy` and `setup.symlink` entries can now be objects of the form `{ "path": ".claude", "exclude": ["projects/**/worktrees/**"] }` to prune subdirectories from the copy/symlink expansion. Bare path strings still work — useful for keeping `.claude` cached without dragging Claude Code's per-session worktrees from the source branch into every new session.
-- 1f1fdaa: Squashing selected commits no longer requires the selection to be contiguous. Non-selected commits in between replay on top of the squash; if that conflicts, the rebase is aborted and the error surfaced. Cmd-clicking an already selected commit in the git history now deselects it.
-- e0de455: Chat now shows a single "Unread" divider above the first unread message instead of marking each message individually. The divider clears as soon as you scroll past it, and the hover "Mark as unread" action moves it back to that point. Agent tabs, session cards, and project cards still show an accent dot when any of their agents have unread messages.
+- eb9e89b: Add chat checkpoints. Each user message now snapshots the worktree before the agent runs, and a "Restore" action on the message reverts files and rewinds the chat to that point — the original prompt is dropped back into the input so you can edit and resend.
+- 5089470: Press Cmd+T while a terminal is focused to open a new terminal tab.
+- 3957f5c: Right-click any commit in the git history to delete it from the branch. Works on HEAD and any earlier commit, replaying later commits on top.
+- cc9f24e: Argus's device tooling — recording, control, debug streams, and the UI inspector — is now organised as togglable tools. Pick which ones you want during onboarding (or in Settings → Tools) and turn off the rest to keep the UI focused on the tools you actually use.
+- 345b1f9: Wire up the previously inert git keyboard shortcuts: Cmd+Shift+U pushes, Cmd+Shift+P pulls, Cmd+Shift+F fetches, Cmd+R refreshes the working copy, Cmd+Shift+S saves a stash, Opt+Cmd+Shift+S applies the latest stash, Cmd+Shift+Opt+L opens the stash dialog, Space toggles staged on the focused file, and Delete discards it.
+- eb3c2d1: The Argus MCP `read_agent_transcript` tool now supports paging through long transcripts via `head_messages`, `offset`, and `limit` (in addition to the existing `tail_messages`), and reports `start_index`/`end_index` so agents can fetch the next slice.
+- cb5ab6c: When an agent triggers a run command via MCP, the resulting terminal now appears in the bottom panel just like a manually-pressed Run, so you can watch the dev server (or whatever was started) live instead of only seeing it via `read_terminal`.
+- 9abb040: Close a terminal tab or agent tab by middle-clicking it.
+- 8277b90: Onboarding now has a Back button on every step after Welcome, so you can revisit earlier choices without restarting the flow.
+- d33eb7b: The onboarding plugin picker now groups related plugins (e.g. Device) into one card. Toggling the group enables every plugin inside; expand the card to opt out of individual plugins.
+- 205a1ee: Pushing a branch now opens a dialog with options for remote, upstream, force-with-lease, tags, and ref override — including from agent worktrees and from the branch context menu.
+- 6d746f9: Reworked release channels. The Update channel setting now offers **Production** (the public releases) and **Beta** (in-development builds of upcoming features). One-off alpha builds from feature branches are no longer subscribable in-app — collaborators install them manually from the GitHub release page.
+- dc35106: Remove the Review Queue screen and its sidebar entry. Use the per-session merge view instead.
+- 3af3b8f: Show an active agents overview on the project home screen, with a row per running agent that jumps straight into the agent's chat.
+- bd3335e: Session git history and branch views now show ahead/behind arrows on each commit. When the session branch hasn't been pushed yet, sync state is computed against the base branch's upstream so unpushed work surfaces as ahead and new base-branch commits surface as behind.
 
 ### Patch Changes
 
-- c89c11c: Amend now works on pushed commits without a confirmation prompt or backend block. Force-push policy is left to your remote's branch protections.
-- 304c032: Fix AskUserQuestion answers that contained commas or free-form text being shown as "No answer" after submission. Selected option labels are now matched by substring scan rather than comma splitting, and any free-form note is rendered alongside the picks.
-- e10ce39: AskUserQuestion now lets you switch from a selected option back to the free-text answer. The custom answer field has its own radio button, so picking it deselects other choices (and vice versa).
-- 3a82e5a: Preserve in-progress answers and plan feedback when switching agents or views. The free-text inputs in AskUserQuestion and ExitPlanMode prompts no longer reset to empty when you navigate away and come back.
-- 09f373e: Discarding a staged hunk now also removes it from the index, so the merge-conflict button no longer lingers after you discard your conflicting changes.
-- 5820efe: Fix the running indicator disappearing after editing the last message in a chat. The agent restart triggered an exit event that flipped the indicator to stopped before the new run could light it up again.
-- e1e00b7: Forking a session no longer shows a duplicate row in the sidebar, gets stuck in "initializing", or starts the new agent with an empty conversation. The fork's reset, working-tree replay, and conversation truncation now run after the new worktree exists, so the resumed agent picks up where you left off.
-- e10ae8a: The git panel now lets you create the first branch in a fresh repo. The branches sidebar shows a "Create branch" button when the list is empty, the toolbar's Branch action opens the new-branch dialog in project scope, and creating a branch on an unborn HEAD no longer fails.
-- c3d6663: Fix double-tap right Option launcher trigger in signed builds. The native helper now registers properly with macOS Accessibility so the permission prompt actually appears, and granting it makes the global hotkey work.
-- df21a83: Remove the grey background behind the markdown in the proposed plan dialog so it sits flush on the dialog surface.
-- 7d997fb: Project Settings now picks the LLM runner from the registered runners (matching app-level Settings) instead of a free-form text field.
-- f28496d: Stale worktrees deleted outside Argus (e.g. by Claude Code's Agent tool) are now pruned automatically, so the git view no longer fails to load with a "fatal: not a git repository" error after a sibling worktree directory was removed by hand.
-- 44a891e: The session options (…) button now stays pinned to the right of the session card when the title is truncated.
-- 5047f18: Drop the file-count badge from session and project cards in the sidebar — only line additions and deletions are shown now.
-- Updated dependencies [304c032]
-- Updated dependencies [e0de455]
-  - @argus/peacock@0.8.0
+- eeee88a: Reliably mark chat messages as read once they scroll into view, only flag a chat tab as having unread messages when the agent has finished working, drop the trailing ellipsis on a truncated tab title when the unread dot is showing, and add a "Mark as Read" entry to the agent tab context menu.
+- b3b285b: Mark unread chat messages as read when they sit inside a collapsed tool-call group that scrolls into view.
+- 08ff5d8: Hovering a collapsed tool-call group in the agent transcript now reveals the time range of the grouped messages.
+- e98b4c2: Align commit dates in the history list whether or not the ahead/behind arrow is shown.
+- 5f0944d: Long lines in the git diff view now soft-wrap instead of forcing horizontal scrolling.
+- 3d881e7: Editing a short chat message now grows the bubble horizontally as you type instead of wrapping every word inside a narrow box.
+  </content>
+- 79f969b: Fix terminal subprocesses leaking on app shutdown — node-pty spawn helpers no longer reparent to launchd and accumulate across Argus restarts.
+- 12e442e: Fix a render loop that crashed the tool rail when plugins were enabled.
+- 7330f9c: Fix `fixup!` autocomplete in the commit composer to suggest only commits on the current branch, instead of including commits from other branches and stash entries.
+- 92de525: The git view now shows a friendly placeholder while a session is still initializing instead of erroring out.
+- 20102f7: Stop the global launcher from yanking you back to Argus's Space when summoned over a fullscreen app, and stop it from re-showing the main window the first time it's triggered. Change the default shortcut to ⌘⇧? and let you record a custom one in Settings → Session launcher. The double-tap right Option binding (and its Accessibility prompt) has been removed.
+- 1544c36: Project MCP servers in the Project settings dialog now render in the same card layout as inherited servers, with a connection status bulb and the advertised tool list when probed.
+- 0846c06: Mark visible unread chat messages as read when opening a chat, including messages that sit inside a collapsed tool-call group.
+- e258c7e: Add Claude's new smart Auto permission mode (auto-approves safe actions, asks for risky ones) and a separate Ask mode for the previous "ask before every write" behavior. Shift+Tab now reliably cycles through Auto, Ask, Plan, and Accept Edits — Trusted stays available in the picker but is skipped by the keyboard cycle since it cannot be enabled on a running agent.
+- cbfff41: In the pull requests list and detail view, if a session for the PR's branch already exists, the "New session" button is replaced with "Open session" that jumps straight to it.
+- 417283c: Fix the onboarding Preflight step and Settings → Plugins prereq list crashing with an infinite update loop.
+- d08501d: Fix popout windows failing to render correctly on release builds because their bootstrap script was blocked by Content Security Policy.
+- b9c72b9: Remove the redundant "Native sim bridge" preflight check. The bridge ships inside the app bundle, so the check always passed in release builds.
+- f0b9754: Open projects and sessions on their Home tab even when navigating from another screen that was on Agents.
+- c53398c: Default to a session's Home tab instead of Agents when opening a project or session.
+- edd059b: Carry the prompt over when opening the advanced Start agent dialog from the empty agents view, and keep edits in either place in sync.
+- 9e072b0: Stop loading user-level Claude Code settings when generating session and chat titles, so a large user CLAUDE.md or memory bank no longer pushes the prompt past Haiku's input limit.
+- 75b7e95: When a session against a protected branch already has an open pull request, the home screen now shows a "View PR" button that opens it on GitHub instead of offering to open another one.
+- e0c66da: Fix `wait_for_agent` and `wait_for_any_agent` hanging on children that have already finished. The CLI doesn't always emit a final `session_state_changed(idle)` event (it can race with the `result` event or be skipped entirely for text-only responses), so the turn counter could stay at zero on a child that was clearly done. Orchestrator waits now key off the authoritative `result` event and resolve as soon as any waited-on child completes.
+- Updated dependencies [a5d5448]
+  - @argus/peacock@0.9.0
 
