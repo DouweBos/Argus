@@ -334,17 +334,6 @@ export function markMessageRead(agentId: string, messageId: string) {
   });
 }
 
-export function markMessageUnread(agentId: string, messageId: string) {
-  conversationStore.setState((state) => {
-    const next = addUnreadId(state.unreadMessages, agentId, messageId);
-    if (next === state.unreadMessages) {
-      return state;
-    }
-
-    return { unreadMessages: next };
-  });
-}
-
 /**
  * Promote this turn's pending-unread messages into the visible unread set.
  * Called when the agent transitions to `idle`, so the chat tab only flags
