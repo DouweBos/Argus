@@ -10,14 +10,12 @@ import {
   HoverActionButton,
   Icons,
 } from "@argus/peacock";
-import { findScrollParent } from "../../../lib/findScrollParent";
 import { showImageContextMenu } from "../../../lib/ipc";
 import {
   buildLinkedProjectsPreamble,
   parseLinkedProjectsPreamble,
 } from "../../../lib/linkedProjectsPreamble";
 import {
-  markMessageRead,
   markMessageUnread,
   useIsMessageUnread,
 } from "../../../stores/conversationStore";
@@ -139,7 +137,6 @@ export function ChatMessage({
   } | null>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
   const userMsgRef = useRef<HTMLDivElement>(null);
-  const assistantMsgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isEditing && editRef.current) {
@@ -151,35 +148,6 @@ export function ChatMessage({
 
   const isUnread = useIsMessageUnread(agentId, message.id);
 
-  // Self-mark as read when this message becomes visible inside the chat's
-  // scroll viewport. Each unread assistant message owns its own observer —
-  // keeping this colocated avoids the timing fragility of a parent-level
-  // observer that re-creates on every dep change. The observer roots on the
-  // nearest scrolling ancestor so visibility tracks the chat's internal
-  // scroll, not the document viewport.
-  useEffect(() => {
-    if (!agentId || !isUnread) {
-      return;
-    }
-    const el = assistantMsgRef.current;
-    if (!el) {
-      return;
-    }
-    const root = findScrollParent(el);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            markMessageRead(agentId, message.id);
-          }
-        }
-      },
-      { root, threshold: 0 },
-    );
-    observer.observe(el);
-
-    return () => observer.disconnect();
-  }, [agentId, isUnread, message.id]);
   const handleCopy = onCopy ? () => onCopy(message) : undefined;
   const handleFork = onFork ? () => onFork(message) : undefined;
   const handleRestore =
@@ -483,7 +451,6 @@ export function ChatMessage({
 
   return (
     <div
-      ref={assistantMsgRef}
       className={`${styles.assistantMsg} ${toolOnly ? styles.assistantMsgToolOnly : ""}`}
       data-message-id={message.id}
       data-unread={isUnread ? "" : undefined}

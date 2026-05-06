@@ -2,13 +2,8 @@ import type {
   ConversationMessage,
   ToolCallInfo,
 } from "../../../stores/conversationStore";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { HoverTimestamp, Icons } from "@argus/peacock";
-import { findScrollParent } from "../../../lib/findScrollParent";
-import {
-  markMessageRead,
-  useUnreadMessageIds,
-} from "../../../stores/conversationStore";
 import { ToolCallCard } from "../ToolCallCard";
 import { categorizeTools } from "../categorizeTools";
 import styles from "./CollapsedToolGroup.module.css";
@@ -35,40 +30,6 @@ export function CollapsedToolGroup({
     m.toolCalls.some((tc) => tc.pendingPermission),
   );
   const [userExpanded, setUserExpanded] = useState(false);
-  const groupRef = useRef<HTMLDivElement>(null);
-
-  // Self-mark contained messages as read when the collapsed group becomes
-  // visible — mirrors the per-message observer in ChatMessage. Without this,
-  // unread messages folded into a collapsed group never clear.
-  const unreadMessageIds = useUnreadMessageIds(agentId);
-  const unreadInGroup = messages.some((m) => unreadMessageIds.has(m.id));
-  useEffect(() => {
-    if (!agentId || !unreadInGroup) {
-      return;
-    }
-    const el = groupRef.current;
-    if (!el) {
-      return;
-    }
-    const root = findScrollParent(el);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            for (const m of messages) {
-              if (unreadMessageIds.has(m.id)) {
-                markMessageRead(agentId, m.id);
-              }
-            }
-          }
-        }
-      },
-      { root, threshold: 0 },
-    );
-    observer.observe(el);
-
-    return () => observer.disconnect();
-  }, [agentId, unreadInGroup, messages, unreadMessageIds]);
 
   // Auto-expand when a permission request is pending; user toggle applies otherwise.
   const expanded = hasPendingPermission || userExpanded;
@@ -159,16 +120,11 @@ export function CollapsedToolGroup({
   );
 
   if (firstTimestamp === undefined) {
-    return (
-      <div ref={groupRef} className={styles.group}>
-        {body}
-      </div>
-    );
+    return <div className={styles.group}>{body}</div>;
   }
 
   return (
     <HoverTimestamp
-      ref={groupRef}
       className={styles.group}
       timestamp={firstTimestamp}
       endTimestamp={lastTimestamp}

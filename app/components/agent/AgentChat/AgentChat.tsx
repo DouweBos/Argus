@@ -314,17 +314,15 @@ export function AgentChat({
     // The scroll handler will update isAtBottom from the new position.
   }, [agentId]);
 
-  // Opening a chat clears its unread state outright. The auto-scroll lands
-  // the user at the bottom, so anything they missed is being acknowledged by
-  // the act of switching to this tab. Per-message IntersectionObservers stay
-  // responsible for the live case — when the user is already in this chat
-  // and a new turn arrives below the current scroll position.
+  // While a chat is open, unread messages for it never accumulate: we clear
+  // on initial open and again whenever new unread state appears (e.g. the
+  // agent finishes a turn while the user is already viewing this chat).
   useEffect(() => {
     if (!agentId) {
       return;
     }
     clearAgentUnread(agentId);
-  }, [agentId]);
+  }, [agentId, unreadMessageIds]);
 
   useEffect(() => {
     if (!agentId || readOnly) {
@@ -371,11 +369,6 @@ export function AgentChat({
   useEffect(() => {
     recheckAtBottom();
   }, [segments, recheckAtBottom]);
-
-  // Each ChatMessage owns its own IntersectionObserver to mark itself read
-  // when it enters the viewport — see ChatMessage.tsx. We deliberately don't
-  // run a parent-level observer: deps churn (segments/unreadMessageIds)
-  // disconnects observers before their async callbacks can fire.
 
   // Cmd+L / Ctrl+L to focus the input, Cmd+F / Ctrl+F to open find-in-chat.
   useEffect(() => {
