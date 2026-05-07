@@ -33,6 +33,25 @@
   user-select: none;
 }
 
+.forceRow {
+  align-items: flex-start;
+}
+
+.forceText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.forceLabel {
+  color: var(--text-primary);
+}
+
+.forceDescription {
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
 .checkbox {
   width: 14px;
   height: 14px;

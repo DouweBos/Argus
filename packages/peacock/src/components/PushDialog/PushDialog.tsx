@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
 import { Input } from "../Input/Input";
@@ -58,8 +58,9 @@ export function PushDialog({
   const [ref, setRef] = useState("");
   const [confirmingForce, setConfirmingForce] = useState(forceConfirmStage);
 
+  const wasOpen = useRef(open);
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpen.current) {
       setBranch(currentBranch);
       setRemote(remoteList[0] ?? "origin");
       setSetUpstream(!hasUpstream);
@@ -68,14 +69,8 @@ export function PushDialog({
       setRef("");
       setConfirmingForce(forceConfirmStage);
     }
-  }, [
-    open,
-    currentBranch,
-    defaultTags,
-    forceConfirmStage,
-    hasUpstream,
-    remotes,
-  ]);
+    wasOpen.current = open;
+  });
 
   if (!open) {
     return null;
@@ -103,7 +98,7 @@ export function PushDialog({
   const title = confirmingForce ? "Confirm force push" : "Push";
   let confirmLabel: string;
   if (confirmingForce) {
-    confirmLabel = "Force push (with lease)";
+    confirmLabel = "Force push";
   } else if (forceWithLease) {
     confirmLabel = "Continue…";
   } else {
@@ -115,8 +110,9 @@ export function PushDialog({
       <div className={styles.body}>
         {confirmingForce ? (
           <div className={styles.warning}>
-            Force-with-lease will rewrite the remote branch. The push aborts if
-            anyone else has pushed since your last fetch.
+            This will rewrite the history of the remote branch. The push aborts
+            if anyone else has pushed since your last fetch, but commits already
+            on the remote can be lost. Use with care!
           </div>
         ) : (
           <>
@@ -160,7 +156,10 @@ export function PushDialog({
               </span>
             </label>
 
-            <label className={styles.checkRow} htmlFor={forceId}>
+            <label
+              className={`${styles.checkRow} ${styles.forceRow}`}
+              htmlFor={forceId}
+            >
               <input
                 id={forceId}
                 type="checkbox"
@@ -168,7 +167,14 @@ export function PushDialog({
                 checked={forceWithLease}
                 onChange={(e) => setForceWithLease(e.target.checked)}
               />
-              <span>Force-with-lease</span>
+              <span className={styles.forceText}>
+                <span className={styles.forceLabel}>Force Push</span>
+                <span className={styles.forceDescription}>
+                  Enforces a new history on the remote branch if fast-forward is
+                  not possible. This can cause losing commits on the remote –
+                  please use with care!
+                </span>
+              </span>
             </label>
 
             <label className={styles.fieldLabel} htmlFor={tagsId}>
