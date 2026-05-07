@@ -239,7 +239,7 @@ export function StartAgentDialog({
       const before = el.value.slice(0, cursor);
       const after = el.value.slice(cursor);
       const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
-      const mentions = paths.map((p) => `@${p}`).join(" ");
+      const mentions = paths.map((p) => `@${p.replace(/ /g, "\\ ")}`).join(" ");
       const insertion = `${needsLeadingSpace ? " " : ""}${mentions} `;
       const next = `${before}${insertion}${after}`;
       updatePrompt(next);
