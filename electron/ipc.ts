@@ -2092,7 +2092,13 @@ export function registerIpcHandlers(): void {
   handle("git_reconfigure_auto_fetch", (a) => {
     const repoRoot = a.repoRoot as string;
     const minutes = a.minutes as number | null;
-    reconfigureAutoFetchForRepo(repoRoot, minutes);
+    let protectedBranches: string[] = [];
+    try {
+      protectedBranches = readArgusConfig(repoRoot).protected_branches ?? [];
+    } catch {
+      // Config unreadable — fall back to no protected branches.
+    }
+    reconfigureAutoFetchForRepo(repoRoot, minutes, protectedBranches);
   });
 
   // Phase 5 — compare-branches view.

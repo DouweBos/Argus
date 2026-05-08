@@ -12,10 +12,19 @@
  *   - `auto_fetch_minutes` is 0 / null (via `reconfigureAutoFetch`).
  */
 
+import type { Session } from "./models";
 import { info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { git } from "./git";
+
+/**
+ * When a project_root session has a protected branch checked out, we keep its
+ * remote refs warm even if the user hasn't opted into `auto_fetch_minutes`.
+ * Protected branches are the trunks the user typically forks new sessions from
+ * — without periodic fetches, those sessions get created on a stale base.
+ */
+const DEFAULT_PROTECTED_BRANCH_AUTO_FETCH_MINUTES = 5;
 
 interface FetchTimer {
   interval: ReturnType<typeof setInterval>;
@@ -115,10 +124,42 @@ export function stopAutoFetch(sessionId: string): void {
 export function reconfigureAutoFetchForRepo(
   repoRoot: string,
   minutes: number | null | undefined,
+  protectedBranches: string[] = [],
 ): void {
   for (const ws of appState.sessions.values()) {
     if (ws.repo_root === repoRoot && ws.status === "ready") {
-      reconfigureAutoFetch(ws.id, repoRoot, minutes);
+      reconfigureAutoFetch(
+        ws.id,
+        repoRoot,
+        effectiveAutoFetchMinutes(ws, minutes, protectedBranches),
+      );
     }
   }
+}
+
+/**
+ * Resolve the effective auto-fetch interval for a session.
+ *
+ *   - Explicit `auto_fetch_minutes` from `.argus.json` wins when set.
+ *   - Otherwise, project_root sessions sitting on a protected branch fall back
+ *     to a default cadence so the trunk's ahead/behind doesn't go stale.
+ *   - All other cases: no auto-fetch.
+ */
+export function effectiveAutoFetchMinutes(
+  session: Session,
+  configured: number | null | undefined,
+  protectedBranches: string[],
+): number | null {
+  if (configured && configured > 0) {
+    return configured;
+  }
+  if (
+    session.kind === "project_root" &&
+    session.branch &&
+    protectedBranches.includes(session.branch)
+  ) {
+    return DEFAULT_PROTECTED_BRANCH_AUTO_FETCH_MINUTES;
+  }
+
+  return null;
 }

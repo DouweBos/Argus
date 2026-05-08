@@ -22,7 +22,11 @@ import {
   applyBranchPrefix,
   loadUserProjectSettings,
 } from "../userProjectSettings/store";
-import { reconfigureAutoFetch, stopAutoFetch } from "./autoFetch";
+import {
+  effectiveAutoFetchMinutes,
+  reconfigureAutoFetch,
+  stopAutoFetch,
+} from "./autoFetch";
 import {
   branchToDir,
   git,
@@ -641,7 +645,18 @@ async function finalizeSession(
           appState.sessions.set(id, current);
         }
         getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
-        reconfigureAutoFetch(id, repoRoot, config.auto_fetch_minutes);
+        const session = appState.sessions.get(id);
+        if (session) {
+          reconfigureAutoFetch(
+            id,
+            repoRoot,
+            effectiveAutoFetchMinutes(
+              session,
+              config.auto_fetch_minutes,
+              config.protected_branches,
+            ),
+          );
+        }
       })
       .catch((e: unknown) => {
         const errMsg = typeof e === "string" ? e : String(e);
@@ -1046,10 +1061,20 @@ export function createHeadSession(repoRoot: string): Session {
   // watcher — see `attachGitWatcher`).
   attachGitWatcher(ws.id, ws.path).catch(() => {});
 
-  // Start auto-fetch if configured.
+  // Start auto-fetch if configured — or, for project_root sessions on a
+  // protected branch, kick off a default-cadence timer so the trunk's
+  // ahead/behind stays current even without explicit `auto_fetch_minutes`.
   try {
     const argusConfig = loadArgusConfig(repoRoot);
-    reconfigureAutoFetch(ws.id, repoRoot, argusConfig.auto_fetch_minutes);
+    reconfigureAutoFetch(
+      ws.id,
+      repoRoot,
+      effectiveAutoFetchMinutes(
+        ws,
+        argusConfig.auto_fetch_minutes,
+        argusConfig.protected_branches,
+      ),
+    );
   } catch {
     // Config parse failure is non-fatal here.
   }
@@ -1127,7 +1152,15 @@ export function retrySessionSetup(id: string): void {
         appState.sessions.set(id, current);
       }
       getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
-      reconfigureAutoFetch(id, session.repo_root, config.auto_fetch_minutes);
+      reconfigureAutoFetch(
+        id,
+        session.repo_root,
+        effectiveAutoFetchMinutes(
+          session,
+          config.auto_fetch_minutes,
+          config.protected_branches,
+        ),
+      );
     })
     .catch((e: unknown) => {
       const errMsg = typeof e === "string" ? e : String(e);

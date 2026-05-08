@@ -108,6 +108,32 @@
   color: var(--error);
 }
 
+.syncBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.syncBadgeBehind {
+  color: var(--warning);
+}
+
+.syncCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.syncArrow {
+  font-size: 11px;
+  line-height: 1;
+}
+
 .aheadBadge {
   display: inline-flex;
   align-items: center;

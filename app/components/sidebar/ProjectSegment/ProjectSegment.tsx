@@ -347,26 +347,58 @@ export function ProjectSegment({
 }
 
 function RepoHeaderMeta({ session }: { session: Session }) {
-  const { diffStats } = useGitObservation(session.id, {
+  const { diffStats, status } = useGitObservation(session.id, {
     enabled: isSessionReady(session.status),
   });
 
   const hasLineChanges = Boolean(
     diffStats && (diffStats.additions > 0 || diffStats.deletions > 0),
   );
-  if (!hasLineChanges) {
+  // Only project_root sessions surface remote-tracking ahead/behind here; for
+  // worktree sessions the SourceSidebar already renders their own counters.
+  const showSync =
+    session.kind === "project_root" &&
+    status?.upstream != null &&
+    ((status.ahead ?? 0) > 0 || (status.behind ?? 0) > 0);
+
+  if (!hasLineChanges && !showSync) {
     return null;
   }
 
   return (
     <>
-      {diffStats && hasLineChanges && (
+      {hasLineChanges && diffStats && (
         <span className={styles.diffStats}>
           {diffStats.additions > 0 && (
             <span className={styles.diffAdd}>+{diffStats.additions}</span>
           )}
           {diffStats.deletions > 0 && (
             <span className={styles.diffRemove}>-{diffStats.deletions}</span>
+          )}
+        </span>
+      )}
+      {showSync && status && (
+        <span
+          className={`${styles.syncBadge} ${
+            status.behind > 0 ? styles.syncBadgeBehind : ""
+          }`}
+          title={
+            status.behind > 0
+              ? `Behind ${status.upstream} by ${status.behind} commit${status.behind === 1 ? "" : "s"} — pull to update`
+              : `Ahead of ${status.upstream} by ${status.ahead} commit${status.ahead === 1 ? "" : "s"}`
+          }
+        >
+          {status.behind > 0 && (
+            <span className={styles.syncCount}>
+              <span className={styles.syncArrow}>↓</span>
+              {status.behind}
+            </span>
+          )}
+          {status.ahead > 0 && (
+            <span className={styles.syncCount}>
+              <span className={styles.syncArrow}>↑</span>
+              {status.ahead}
+            </span>
           )}
         </span>
       )}
