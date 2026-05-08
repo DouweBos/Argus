@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.9.1
+
+### Patch Changes
+
+- 2ce69f8: Fix the Force Push checkbox in the Push dialog unchecking itself, and clarify its wording so it matches what force-pushing actually does.
+
 ## 0.9.0
 
 ### Minor Changes
