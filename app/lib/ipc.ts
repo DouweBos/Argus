@@ -723,6 +723,9 @@ export const renameSessionBranch = (
 export const clearSessionSetupError = (id: string): Promise<void> =>
   invoke("clear_session_setup_error", { id });
 
+export const retrySessionSetup = (id: string): Promise<void> =>
+  invoke("retry_session_setup", { id });
+
 export interface ForkSessionResult {
   claude_session_id: string | null;
   session: Session;
