@@ -8,6 +8,7 @@ import {
   useDropTarget,
 } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
+import { useSessionSync } from "../../../hooks/useSessionSync";
 import {
   gitListArchivedBranches,
   gitListLocalBranches,
@@ -76,6 +77,38 @@ export function SourceSidebar({
 }: SourceSidebarProps) {
   const collapsed = useGitSidebarCollapsed();
   const isProject = scope === "project";
+
+  // Session-scope only: surface ahead/behind vs the session branch's effective
+  // upstream (own upstream when set, otherwise `origin/<baseBranch>`). Project
+  // scope already shows per-branch sync state in the Branches section.
+  const sessionSync = useSessionSync(
+    isProject ? "" : sessionId,
+    isProject ? null : defaultBranch,
+  );
+  const branchCount =
+    !isProject && (sessionSync.ahead > 0 || sessionSync.behind > 0) ? (
+      <span
+        className={styles.aheadBehind}
+        title={
+          sessionSync.upstreamRef
+            ? `${sessionSync.ahead} ahead, ${sessionSync.behind} behind ${sessionSync.upstreamRef}`
+            : `${sessionSync.ahead} ahead, ${sessionSync.behind} behind upstream`
+        }
+      >
+        {sessionSync.ahead > 0 && (
+          <span>
+            <span className={styles.arrow}>↑</span>
+            {sessionSync.ahead}
+          </span>
+        )}
+        {sessionSync.behind > 0 && (
+          <span>
+            <span className={styles.arrow}>↓</span>
+            {sessionSync.behind}
+          </span>
+        )}
+      </span>
+    ) : undefined;
 
   // Top-nav highlights are driven purely by the URL: a button is active iff
   // its target gitView matches the current route's gitView. Ref-scoped routes
@@ -229,19 +262,22 @@ export function SourceSidebar({
           {!isProject && (
             <SidebarItem
               active={navActive("branch")}
+              count={branchCount}
               leading={<Icons.BranchIcon size={13} />}
               onClick={() => onViewChange("branch")}
             >
               Branch
             </SidebarItem>
           )}
-          <SidebarItem
-            active={navActive("history")}
-            leading={<Icons.ClockIcon size={13} />}
-            onClick={() => onViewChange("history")}
-          >
-            History
-          </SidebarItem>
+          {isProject && (
+            <SidebarItem
+              active={navActive("history")}
+              leading={<Icons.ClockIcon size={13} />}
+              onClick={() => onViewChange("history")}
+            >
+              History
+            </SidebarItem>
+          )}
           <SidebarItem
             active={navActive("stashes")}
             count={stashCount && stashCount > 0 ? stashCount : undefined}

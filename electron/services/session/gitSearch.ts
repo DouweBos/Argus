@@ -102,6 +102,11 @@ export async function gitSearchLog(
   const args: string[] = [
     "log",
     "--date-order",
+    // `--decorate` is required for `%D` to populate refs when stdout isn't a
+    // TTY (the default via `execFile`). Without it the in-memory ahead/behind
+    // scan can't find `HEAD ->` or `origin/<base>` decorations and the per-
+    // commit sync indicators silently disappear.
+    "--decorate=short",
     `--format=${FORMAT}${COMMIT_SEP}`,
   ];
 

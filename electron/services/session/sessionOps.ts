@@ -486,6 +486,7 @@ export async function gitLog(
   const args = [
     "log",
     "--date-order",
+    "--decorate=short",
     `--format=${format}${COMMIT_SEP}`,
     `-${count}`,
   ];
