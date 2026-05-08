@@ -134,6 +134,11 @@ export async function getSessionFullDiff(id: string): Promise<string> {
  * changes that happened on the base branch after divergence don't appear
  * inverted.
  *
+ * When the base branch is protected, anchors against `origin/<base_branch>`
+ * instead of the local copy. Protected branches don't get merged back
+ * locally, so what matters for review/PR is the total diff against the
+ * remote tip — not against an arbitrarily stale local checkout.
+ *
  * Returns an empty string when the session has no base branch.
  */
 export async function getSessionBranchDiff(
@@ -145,11 +150,21 @@ export async function getSessionBranchDiff(
     return "";
   }
   const wtPath = sessionPath(id);
+
+  let baseRef = ws.base_branch;
+  if (isBranchProtected(ws.repo_root, ws.base_branch)) {
+    const remoteRef = `origin/${ws.base_branch}`;
+    try {
+      await git(wtPath, ["rev-parse", "--verify", remoteRef]);
+      baseRef = remoteRef;
+    } catch {
+      // Remote tracking ref missing — fall back to the local branch.
+    }
+  }
+
   let mergeBase: string;
   try {
-    mergeBase = (
-      await git(wtPath, ["merge-base", ws.base_branch, "HEAD"])
-    ).trim();
+    mergeBase = (await git(wtPath, ["merge-base", baseRef, "HEAD"])).trim();
   } catch {
     return "";
   }
