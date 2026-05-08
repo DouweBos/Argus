@@ -61,7 +61,6 @@ interface CommitDialogsProps {
   } | null;
   resetTarget: GitCommit | null;
   revertTarget: GitCommit | null;
-  scope: "project" | "session";
   selectCommit: (idx: number) => Promise<void> | void;
   sessionId: string;
   setCherryPickTarget: (c: GitCommit | null) => void;
@@ -92,7 +91,6 @@ export function CommitDialogs({
   resetDirectTarget,
   resetTarget,
   revertTarget,
-  scope,
   selectCommit,
   sessionId,
   setCherryPickTarget,
@@ -143,14 +141,13 @@ export function CommitDialogs({
           commit={commits[contextMenu.commitIndex]!}
           position={{ x: contextMenu.x, y: contextMenu.y }}
           remoteUrl={remoteUrl}
-          scope={scope}
           selectionCount={
             visibleSelectedHashes.has(commits[contextMenu.commitIndex]!.hash)
               ? visibleSelectedHashes.size
               : 1
           }
           onSquashSelection={
-            scope === "project" && visibleSelectedHashes.size >= 2
+            visibleSelectedHashes.size >= 2
               ? () => {
                   setContextMenu(null);
                   requestSquashSelection();
@@ -169,94 +166,50 @@ export function CommitDialogs({
             }
             setContextMenu(null);
           }}
-          onResetHere={
-            scope === "project"
-              ? (c) => {
-                  setResetTarget(c);
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onResetSoft={
-            scope === "project"
-              ? (c) => {
-                  setResetDirectTarget({ commit: c, mode: "soft" });
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onResetMixed={
-            scope === "project"
-              ? (c) => {
-                  setResetDirectTarget({ commit: c, mode: "mixed" });
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onResetHard={
-            scope === "project"
-              ? (c) => {
-                  setResetDirectTarget({ commit: c, mode: "hard" });
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onRevert={
-            scope === "project"
-              ? (c) => {
-                  setRevertTarget(c);
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onDelete={
-            scope === "project"
-              ? (c) => {
-                  setDeleteTarget(c);
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onCherryPick={
-            scope === "project"
-              ? (c) => {
-                  setCherryPickTarget(c);
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onCreateBranch={
-            scope === "project"
-              ? (c) => {
-                  setCreateBranchTarget(c);
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onCreateTag={
-            scope === "project"
-              ? (c) => {
-                  setCreateTagTarget(c);
-                  setContextMenu(null);
-                }
-              : undefined
-          }
-          onInteractiveRebase={
-            scope === "project"
-              ? (c, action) => {
-                  setContextMenu(null);
-                  ops.openRebaseEditor(c, action);
-                }
-              : undefined
-          }
-          onInteractiveRebaseFromHere={
-            scope === "project"
-              ? (c) => {
-                  setContextMenu(null);
-                  setGitInteractiveRebaseView(`${c.hash}^`);
-                }
-              : undefined
-          }
+          onResetHere={(c) => {
+            setResetTarget(c);
+            setContextMenu(null);
+          }}
+          onResetSoft={(c) => {
+            setResetDirectTarget({ commit: c, mode: "soft" });
+            setContextMenu(null);
+          }}
+          onResetMixed={(c) => {
+            setResetDirectTarget({ commit: c, mode: "mixed" });
+            setContextMenu(null);
+          }}
+          onResetHard={(c) => {
+            setResetDirectTarget({ commit: c, mode: "hard" });
+            setContextMenu(null);
+          }}
+          onRevert={(c) => {
+            setRevertTarget(c);
+            setContextMenu(null);
+          }}
+          onDelete={(c) => {
+            setDeleteTarget(c);
+            setContextMenu(null);
+          }}
+          onCherryPick={(c) => {
+            setCherryPickTarget(c);
+            setContextMenu(null);
+          }}
+          onCreateBranch={(c) => {
+            setCreateBranchTarget(c);
+            setContextMenu(null);
+          }}
+          onCreateTag={(c) => {
+            setCreateTagTarget(c);
+            setContextMenu(null);
+          }}
+          onInteractiveRebase={(c, action) => {
+            setContextMenu(null);
+            ops.openRebaseEditor(c, action);
+          }}
+          onInteractiveRebaseFromHere={(c) => {
+            setContextMenu(null);
+            setGitInteractiveRebaseView(`${c.hash}^`);
+          }}
         />
       )}
 

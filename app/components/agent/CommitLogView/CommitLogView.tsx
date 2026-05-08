@@ -399,7 +399,6 @@ export function CommitLogView({
         resetDirectTarget={resetDirectTarget}
         resetTarget={resetTarget}
         revertTarget={revertTarget}
-        scope={scope}
         selectCommit={selectCommit}
         sessionId={sessionId}
         setCherryPickTarget={setCherryPickTarget}
