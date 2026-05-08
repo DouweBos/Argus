@@ -305,6 +305,7 @@ import {
   renameSession,
   renameSessionBranch,
   clearSessionSetupError,
+  retrySessionSetup,
 } from "./services/session/manager";
 import { autofillPullRequestBody } from "./services/session/prAutofill";
 import { readPullRequestTemplate } from "./services/session/pullRequest";
@@ -728,6 +729,7 @@ export function registerIpcHandlers(): void {
   handle("clear_session_setup_error", (a) =>
     clearSessionSetupError(a.id as string),
   );
+  handle("retry_session_setup", (a) => retrySessionSetup(a.id as string));
   handle("fork_session", (a) =>
     forkSession(
       a.sourceSessionId as string,

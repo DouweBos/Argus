@@ -1092,6 +1092,58 @@ export function clearSessionSetupError(id: string): void {
   getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
 }
 
+/**
+ * Re-run the setup pipeline for a session whose initial setup failed. Flips
+ * status back to `initializing`, spawns a fresh Setup terminal, and updates
+ * status to `ready` or `{ error }` based on the outcome — mirroring the same
+ * status transitions as the initial create_session flow.
+ */
+export function retrySessionSetup(id: string): void {
+  const session = appState.sessions.get(id);
+  if (!session) {
+    throw `Session not found: ${id}`;
+  }
+  if (typeof session.status !== "object" || !("error" in session.status)) {
+    throw `Session ${id} is not in a failed-setup state`;
+  }
+
+  session.status = "initializing";
+  appState.sessions.set(id, session);
+  getMainWindow()?.webContents.send(`session:status:${id}`, "initializing");
+
+  const config = loadArgusConfig(session.repo_root) ?? defaultArgusConfig();
+
+  runSetupPipeline(
+    session.repo_root,
+    session.path,
+    config,
+    id,
+    session.setup_terminal_id ?? null,
+  )
+    .then(() => {
+      const current = appState.sessions.get(id);
+      if (current) {
+        current.status = "ready";
+        appState.sessions.set(id, current);
+      }
+      getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+      reconfigureAutoFetch(id, session.repo_root, config.auto_fetch_minutes);
+    })
+    .catch((e: unknown) => {
+      const errMsg = typeof e === "string" ? e : String(e);
+      error(`Setup retry failed for session ${id}: ${errMsg}`);
+      const current = appState.sessions.get(id);
+      if (current) {
+        current.status = { error: errMsg };
+        appState.sessions.set(id, current);
+      }
+      getMainWindow()?.webContents.send(
+        `session:status:${id}`,
+        `error:${errMsg}`,
+      );
+    });
+}
+
 export function renameSession(id: string, displayName: string): void {
   const session = appState.sessions.get(id);
   if (!session) {

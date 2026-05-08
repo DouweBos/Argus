@@ -7,7 +7,7 @@ import {
   projectAccent,
 } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
-import { clearSessionSetupError } from "../../../lib/ipc";
+import { clearSessionSetupError, retrySessionSetup } from "../../../lib/ipc";
 import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
@@ -67,6 +67,7 @@ export function SessionHomeScreen({
   const [isRenamingBranch, setIsRenamingBranch] = useState(false);
   const [isChangingBaseBranch, setIsChangingBaseBranch] = useState(false);
   const [isClearingSetupError, setIsClearingSetupError] = useState(false);
+  const [isRetryingSetup, setIsRetryingSetup] = useState(false);
 
   const setupError =
     session && typeof session.status === "object" && "error" in session.status
@@ -185,25 +186,42 @@ export function SessionHomeScreen({
             title="Setup failed"
             meta={setupError}
             actions={
-              <Button
-                variant="ghost"
-                disabled={isClearingSetupError}
-                onClick={async () => {
-                  setIsClearingSetupError(true);
-                  try {
-                    const initialPrompt = session?.description.trim();
-                    if (initialPrompt) {
-                      setPendingPrompt(sessionId, initialPrompt);
+              <>
+                <Button
+                  variant="ghost"
+                  disabled={isRetryingSetup || isClearingSetupError}
+                  onClick={async () => {
+                    setIsRetryingSetup(true);
+                    try {
+                      await retrySessionSetup(sessionId);
+                    } finally {
+                      setIsRetryingSetup(false);
                     }
-                    await clearSessionSetupError(sessionId);
-                  } finally {
-                    setIsClearingSetupError(false);
-                  }
-                }}
-                title="Mark setup as complete and unblock this session. Use this after you've fixed the failing step yourself in a terminal."
-              >
-                {isClearingSetupError ? "Clearing…" : "Mark as ready"}
-              </Button>
+                  }}
+                  title="Re-run the setup commands for this session."
+                >
+                  {isRetryingSetup ? "Retrying…" : "Retry"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={isClearingSetupError || isRetryingSetup}
+                  onClick={async () => {
+                    setIsClearingSetupError(true);
+                    try {
+                      const initialPrompt = session?.description.trim();
+                      if (initialPrompt) {
+                        setPendingPrompt(sessionId, initialPrompt);
+                      }
+                      await clearSessionSetupError(sessionId);
+                    } finally {
+                      setIsClearingSetupError(false);
+                    }
+                  }}
+                  title="Mark setup as complete and unblock this session. Use this after you've fixed the failing step yourself in a terminal."
+                >
+                  {isClearingSetupError ? "Clearing…" : "Mark as ready"}
+                </Button>
+              </>
             }
           />
         )}
