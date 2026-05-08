@@ -102,21 +102,20 @@ platform :mac do
     #   production → latest-mac.yml, releaseType=release
     #   beta       → beta-mac.yml,   releaseType=prerelease
     #   alpha      → alpha-mac.yml,  releaseType=prerelease
-    # electron-builder has no `EP_CHANNEL` env var — the channel must be
-    # injected via `--config.publish.0.channel`, which overrides the
-    # generic publish entry's hardcoded value. EP_PRE_RELEASE flips the
-    # github provider's releaseType.
+    # The release config (`electron-builder.release.cjs`) reads ARGUS_CHANNEL
+    # to set the generic provider's channel and the github provider's
+    # releaseType. EP_PRE_RELEASE flips electron-updater's pre-release flag at
+    # runtime.
     channel_name = case channel
                    when "alpha" then "alpha"
                    when "beta"  then "beta"
                    else              "latest"
                    end
+    ENV["ARGUS_CHANNEL"]  = channel_name
     ENV["EP_PRE_RELEASE"] = (channel == "production") ? "false" : "true"
-    channel_flag = " --config.publish.0.channel=#{channel_name}"
-    release_type_flag = (channel == "production") ? "" : " --config.publish.1.releaseType=prerelease"
 
     publish_flag = publish ? "--publish always" : "--publish never"
-    sh("cd .. && pnpm build && pnpm exec electron-builder --config electron-builder.release.yml #{publish_flag}#{notes_flag}#{channel_flag}#{release_type_flag}")
+    sh("cd .. && pnpm build && pnpm exec electron-builder --config electron-builder.release.cjs #{publish_flag}#{notes_flag}")
 
     # Stable-only side effects: the website-changelog dispatch and main-branch
     # commit/tag bump are driven from the workflow, not this lane. Pre-release

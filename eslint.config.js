@@ -296,6 +296,16 @@ export default tseslint.config(
     },
   },
   {
+    files: ["*.cjs"],
+    languageOptions: {
+      globals: globals.node,
+      sourceType: "commonjs",
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
     files: ["scripts/**/*.{ts,mts,js,mjs,cjs}"],
     languageOptions: {
       globals: globals.node,

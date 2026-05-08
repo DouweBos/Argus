@@ -3,7 +3,7 @@
  * states the renderer actually needs to drive the home banner, the menu bar
  * "Check for Updates…" item, and the "Update ready — restart now?" prompt.
  *
- * Update feed is configured in `electron-builder.release.yml` (publish: generic
+ * Update feed is configured in `electron-builder.release.cjs` (publish: generic
  * pointing at houwert.dev/argus/updates). Only runs in packaged builds.
  */
 
