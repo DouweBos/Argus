@@ -30,6 +30,25 @@
   background: var(--surface-3);
 }
 
+/* ── Ahead/behind cluster (session-scope branch indicator) ──────────── */
+
+.aheadBehind {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--space-2);
+  height: var(--space-5);
+  border-radius: var(--border-radius-pill);
+  background: var(--surface-3);
+  color: var(--text-secondary);
+  font: var(--type-mono-badge);
+  white-space: nowrap;
+}
+
+.aheadBehind .arrow {
+  opacity: 0.7;
+}
+
 /* ── Drag-and-drop target states ─────────────────────────────────────── */
 
 .navItemOver {
