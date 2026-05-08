@@ -38,6 +38,12 @@ export function sessionStatusLabel(status: Session["status"]): string {
 
 export interface BranchList {
   local: string[];
+  /**
+   * All origin-tracking refs as `origin/<name>`, including those whose name
+   * also exists locally. Use this when you need to distinguish a local branch
+   * from its origin counterpart (e.g. picking a base branch).
+   */
+  originRefs: string[];
   remote: string[];
 }
 
