@@ -71,24 +71,49 @@ function filterBranches(branches: string[], query: string): string[] {
   return branches.filter((b) => b.toLowerCase().includes(q));
 }
 
+const COMMON_BASE_BRANCHES = ["staging", "develop", "dev", "main", "master"];
+
 /**
  * Pick the branch to preselect as the source branch for a new session.
  *
  * Priority:
- *   1. The project's `.argus.json` `default_base_branch`, when set and present locally.
- *   2. Common base-branch names (`staging`, `develop`, `dev`, `main`, `master`).
- *   3. The first local branch.
+ *   1. The project's `.argus.json` `default_base_branch`, then `protected_branches`,
+ *      then common base-branch names (`staging`, `develop`, `dev`, `main`, `master`).
+ *      For each candidate, prefer `origin/<name>` over the local branch when
+ *      the project root has `<name>` checked out — the local copy may have
+ *      drifted, so the remote tip is a more reliable base.
+ *   2. The first local branch.
  */
 function pickDefaultSource(
   local: string[],
+  originRefs: string[],
   configured: string | null,
+  protectedBranches: string[],
+  projectRootBranch: string | null,
 ): string | null {
-  if (configured && local.includes(configured)) {
-    return configured;
-  }
-  for (const candidate of ["staging", "develop", "dev", "main", "master"]) {
-    if (local.includes(candidate)) {
-      return candidate;
+  const originSet = new Set(originRefs);
+  const candidates = [
+    ...(configured ? [configured] : []),
+    ...protectedBranches,
+    ...COMMON_BASE_BRANCHES,
+  ];
+  const seen = new Set<string>();
+  for (const name of candidates) {
+    if (seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    const originRef = `origin/${name}`;
+    const hasOrigin = originSet.has(originRef);
+    const hasLocal = local.includes(name);
+    if (hasOrigin && projectRootBranch === name) {
+      return originRef;
+    }
+    if (hasLocal) {
+      return name;
+    }
+    if (hasOrigin) {
+      return originRef;
     }
   }
 
@@ -367,7 +392,7 @@ export function CreateSessionDialog({
   sourceSession,
   forkContext,
 }: CreateSessionDialogProps) {
-  const { sessions, createSession } = useProjectSessions(repoRoot);
+  const { sessions, createSession, repoBranch } = useProjectSessions(repoRoot);
 
   const [flow, setFlow] = useState<Flow>(sourceSession ? "branch-off" : "pick");
 
@@ -384,6 +409,8 @@ export function CreateSessionDialog({
 
   const [localBranches, setLocalBranches] = useState<string[]>([]);
   const [remoteBranches, setRemoteBranches] = useState<string[]>([]);
+  const [originRefs, setOriginRefs] = useState<string[]>([]);
+  const [protectedBranches, setProtectedBranches] = useState<string[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
@@ -573,9 +600,18 @@ export function CreateSessionDialog({
         }
         setLocalBranches(list.local);
         setRemoteBranches(list.remote);
+        setOriginRefs(list.originRefs ?? []);
+        const protectedList = config?.protected_branches ?? [];
+        setProtectedBranches(protectedList);
         const configured = config?.default_base_branch?.trim() || null;
         if (!sourceSession && !sourceBranch) {
-          const def = pickDefaultSource(list.local, configured);
+          const def = pickDefaultSource(
+            list.local,
+            list.originRefs ?? [],
+            configured,
+            protectedList,
+            repoBranch,
+          );
           if (def) {
             setSourceBranch(def);
           }
@@ -587,6 +623,8 @@ export function CreateSessionDialog({
         }
         setLocalBranches([]);
         setRemoteBranches([]);
+        setOriginRefs([]);
+        setProtectedBranches([]);
       })
       .finally(() => {
         if (!cancelled) {
@@ -597,7 +635,7 @@ export function CreateSessionDialog({
     return () => {
       cancelled = true;
     };
-  }, [repoRoot, sourceSession, sourceBranch]);
+  }, [repoRoot, sourceSession, sourceBranch, repoBranch]);
 
   // Branches already claimed by an existing worktree-kind session.
   const claimedBranches = useMemo(
@@ -607,6 +645,19 @@ export function CreateSessionDialog({
       ),
     [sessions],
   );
+
+  // Origin refs to surface as source-branch candidates. The dropdown is for
+  // picking a base to fork from — flooding it with every `origin/*` ref would
+  // be noise. Restrict to the project's protected branches (configured in
+  // `.argus.json`), the configured default base, and common defaults.
+  const sourceOriginRefs = useMemo(() => {
+    const hints = new Set<string>([
+      ...protectedBranches,
+      ...COMMON_BASE_BRANCHES,
+    ]);
+
+    return originRefs.filter((ref) => hints.has(ref.replace(/^origin\//, "")));
+  }, [originRefs, protectedBranches]);
 
   const adoptableLocal = useMemo(
     () => localBranches.filter((b) => !claimedBranches.has(b)),
@@ -1031,6 +1082,7 @@ export function CreateSessionDialog({
               <label className={styles.label}>Source branch</label>
               <BranchDropdown
                 sections={[
+                  { label: "Origin", branches: sourceOriginRefs },
                   { label: "Local", branches: localBranches },
                   { label: "Remote", branches: remoteBranches },
                 ]}
