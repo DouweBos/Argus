@@ -1,8 +1,8 @@
 /**
  * Right-click menu for a commit row. Includes Reset (Soft/Mixed/Hard),
- * Revert, Cherry-pick, Create branch, Create tag, Copy SHA. Reset / Revert /
- * Cherry-pick and the interactive-rebase entries (Drop, Squash with previous,
- * Reword, Edit) are project-scope only.
+ * Revert, Cherry-pick, Create branch, Create tag, Copy SHA, and the
+ * interactive-rebase entries (Drop, Squash with previous, Reword, Edit).
+ * Available in both project and session scope.
  */
 
 import type { GitCommit } from "../../../lib/ipc";
@@ -41,7 +41,6 @@ export interface CommitContextMenuProps {
   position: { x: number; y: number };
   /** First parseable GitHub remote URL, if any. */
   remoteUrl?: string | null;
-  scope: "project" | "session";
   /** Multi-select: number of commits currently selected (>= 2 enables multi mode). */
   selectionCount?: number;
 }
@@ -53,7 +52,6 @@ function copy(text: string): void {
 export function CommitContextMenu({
   commit,
   position,
-  scope,
   remoteUrl,
   onClose,
   onViewFiles,
@@ -75,7 +73,7 @@ export function CommitContextMenu({
   const items: ContextMenuItem[] = [];
   const multi = selectionCount >= 2;
 
-  if (multi && scope === "project") {
+  if (multi) {
     items.push(
       { header: `${selectionCount} commits selected` },
       {
@@ -134,106 +132,104 @@ export function CommitContextMenu({
     });
   }
 
-  if (scope === "project") {
-    // Reset HEAD section — three direct mode entries so the user doesn't need
-    // to open a separate dialog when they already know the mode they want.
-    items.push(
-      { separator: true },
-      { header: "Reset HEAD to this commit" },
-      {
-        icon: <Icons.HistoryIcon size={11} />,
-        label: "Soft — keep staged changes",
-        disabled: !onResetSoft && !onResetHere,
-        onClick: () =>
-          onResetSoft ? onResetSoft(commit) : onResetHere?.(commit),
-      },
-      {
-        icon: <Icons.HistoryIcon size={11} />,
-        label: "Mixed — keep unstaged changes",
-        disabled: !onResetMixed && !onResetHere,
-        onClick: () =>
-          onResetMixed ? onResetMixed(commit) : onResetHere?.(commit),
-      },
-      {
-        icon: <Icons.WarningIcon size={11} />,
-        label: "Hard — discard all changes",
-        danger: true,
-        disabled: !onResetHard && !onResetHere,
-        onClick: () =>
-          onResetHard ? onResetHard(commit) : onResetHere?.(commit),
-      },
-    );
+  // Reset HEAD section — three direct mode entries so the user doesn't need
+  // to open a separate dialog when they already know the mode they want.
+  items.push(
+    { separator: true },
+    { header: "Reset HEAD to this commit" },
+    {
+      icon: <Icons.HistoryIcon size={11} />,
+      label: "Soft — keep staged changes",
+      disabled: !onResetSoft && !onResetHere,
+      onClick: () =>
+        onResetSoft ? onResetSoft(commit) : onResetHere?.(commit),
+    },
+    {
+      icon: <Icons.HistoryIcon size={11} />,
+      label: "Mixed — keep unstaged changes",
+      disabled: !onResetMixed && !onResetHere,
+      onClick: () =>
+        onResetMixed ? onResetMixed(commit) : onResetHere?.(commit),
+    },
+    {
+      icon: <Icons.WarningIcon size={11} />,
+      label: "Hard — discard all changes",
+      danger: true,
+      disabled: !onResetHard && !onResetHere,
+      onClick: () =>
+        onResetHard ? onResetHard(commit) : onResetHere?.(commit),
+    },
+  );
 
-    items.push(
-      { separator: true },
-      {
-        icon: <Icons.BranchIcon size={11} />,
-        label: "Revert commit",
-        disabled: !onRevert,
-        onClick: () => onRevert?.(commit),
-      },
-      {
-        icon: <Icons.BranchIcon size={11} />,
-        // TODO: Phase 2 DnD — extend to multi-select once Cmd-click builds a
-        // selection set rather than opening the compare view.
-        label: "Cherry-pick to current branch",
-        disabled: !onCherryPick,
-        onClick: () => onCherryPick?.(commit),
-      },
-      { separator: true },
-      {
-        icon: <Icons.BranchIcon size={11} />,
-        label: `Create New Branch from "${commit.abbreviatedHash}"…`,
-        disabled: !onCreateBranch,
-        onClick: () => onCreateBranch?.(commit),
-      },
-      {
-        icon: <Icons.TagIcon size={11} />,
-        label: "Create tag here…",
-        disabled: !onCreateTag,
-        onClick: () => onCreateTag?.(commit),
-      },
-      { separator: true },
-      {
-        icon: <Icons.HistoryIcon size={11} />,
-        label: "Interactive rebase from here",
-        disabled: !onInteractiveRebaseFromHere,
-        onClick: () => onInteractiveRebaseFromHere?.(commit),
-      },
-      {
-        icon: <Icons.WarningIcon size={11} />,
-        label: "Drop",
-        disabled: !onInteractiveRebase,
-        onClick: () => onInteractiveRebase?.(commit, "drop"),
-      },
-      {
-        icon: <Icons.MergeIcon size={11} />,
-        label: "Squash with previous",
-        disabled: !onInteractiveRebase,
-        onClick: () => onInteractiveRebase?.(commit, "squash"),
-      },
-      {
-        icon: <Icons.PencilIcon size={11} />,
-        label: "Reword",
-        disabled: !onInteractiveRebase,
-        onClick: () => onInteractiveRebase?.(commit, "reword"),
-      },
-      {
-        icon: <Icons.PencilIcon size={11} />,
-        label: "Edit (interactive rebase)",
-        disabled: !onInteractiveRebase,
-        onClick: () => onInteractiveRebase?.(commit, "edit"),
-      },
-      { separator: true },
-      {
-        icon: <Icons.TrashIcon size={11} />,
-        label: "Delete commit",
-        danger: true,
-        disabled: !onDelete,
-        onClick: () => onDelete?.(commit),
-      },
-    );
-  }
+  items.push(
+    { separator: true },
+    {
+      icon: <Icons.BranchIcon size={11} />,
+      label: "Revert commit",
+      disabled: !onRevert,
+      onClick: () => onRevert?.(commit),
+    },
+    {
+      icon: <Icons.BranchIcon size={11} />,
+      // TODO: Phase 2 DnD — extend to multi-select once Cmd-click builds a
+      // selection set rather than opening the compare view.
+      label: "Cherry-pick to current branch",
+      disabled: !onCherryPick,
+      onClick: () => onCherryPick?.(commit),
+    },
+    { separator: true },
+    {
+      icon: <Icons.BranchIcon size={11} />,
+      label: `Create New Branch from "${commit.abbreviatedHash}"…`,
+      disabled: !onCreateBranch,
+      onClick: () => onCreateBranch?.(commit),
+    },
+    {
+      icon: <Icons.TagIcon size={11} />,
+      label: "Create tag here…",
+      disabled: !onCreateTag,
+      onClick: () => onCreateTag?.(commit),
+    },
+    { separator: true },
+    {
+      icon: <Icons.HistoryIcon size={11} />,
+      label: "Interactive rebase from here",
+      disabled: !onInteractiveRebaseFromHere,
+      onClick: () => onInteractiveRebaseFromHere?.(commit),
+    },
+    {
+      icon: <Icons.WarningIcon size={11} />,
+      label: "Drop",
+      disabled: !onInteractiveRebase,
+      onClick: () => onInteractiveRebase?.(commit, "drop"),
+    },
+    {
+      icon: <Icons.MergeIcon size={11} />,
+      label: "Squash with previous",
+      disabled: !onInteractiveRebase,
+      onClick: () => onInteractiveRebase?.(commit, "squash"),
+    },
+    {
+      icon: <Icons.PencilIcon size={11} />,
+      label: "Reword",
+      disabled: !onInteractiveRebase,
+      onClick: () => onInteractiveRebase?.(commit, "reword"),
+    },
+    {
+      icon: <Icons.PencilIcon size={11} />,
+      label: "Edit (interactive rebase)",
+      disabled: !onInteractiveRebase,
+      onClick: () => onInteractiveRebase?.(commit, "edit"),
+    },
+    { separator: true },
+    {
+      icon: <Icons.TrashIcon size={11} />,
+      label: "Delete commit",
+      danger: true,
+      disabled: !onDelete,
+      onClick: () => onDelete?.(commit),
+    },
+  );
 
   return <ContextMenu items={items} position={position} onClose={onClose} />;
 }
