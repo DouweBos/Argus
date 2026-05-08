@@ -15,7 +15,9 @@ import path from "node:path";
 import { warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import { effectiveAutoFetchMinutes, reconfigureAutoFetch } from "./autoFetch";
 import { git } from "./git";
+import { loadArgusConfig } from "./setup";
 
 /** Diff statistics emitted to the frontend. */
 export interface DiffStats {
@@ -250,6 +252,26 @@ export async function refreshBranchForSession(
     }
 
     await emitBranchAndDiff(repoRoot, sessionId, branch);
+
+    // Project_root branch swaps cross protected/non-protected boundaries —
+    // re-apply the auto-fetch policy so a checkout of e.g. `main` starts the
+    // default-cadence timer (and switching away stops it).
+    if (ws?.kind === "project_root") {
+      try {
+        const config = loadArgusConfig(repoRoot);
+        reconfigureAutoFetch(
+          sessionId,
+          repoRoot,
+          effectiveAutoFetchMinutes(
+            ws,
+            config.auto_fetch_minutes,
+            config.protected_branches,
+          ),
+        );
+      } catch {
+        // Config parse failure is non-fatal here.
+      }
+    }
 
     return branch;
   } catch {
