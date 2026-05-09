@@ -182,6 +182,20 @@ export class ClaudeCodeHandle extends EventEmitter implements LlmRunnerHandle {
       exited,
       new Promise<void>((resolve) => setTimeout(resolve, 2000)),
     ]);
+    // Backstop: if SIGTERM didn't take, SIGKILL by pid. The Claude CLI
+    // sometimes blocks in MCP HTTP I/O and ignores SIGTERM, leaving zombies
+    // parented to Argus that keep ticking event loops.
+    if (this.child.exitCode === null && this.child.pid !== undefined) {
+      try {
+        process.kill(this.child.pid, "SIGKILL");
+      } catch {
+        // ESRCH: already gone — race-resolved between the check and kill.
+      }
+      await Promise.race([
+        exited,
+        new Promise<void>((resolve) => setTimeout(resolve, 1000)),
+      ]);
+    }
   }
 
   // -------------------------------------------------------------------------
