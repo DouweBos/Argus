@@ -5,8 +5,11 @@
  * - Distinct id is a random UUID stored under `~/.argus/telemetry-id`.
  *   Never linked to any user account or system identifier.
  * - No autocapture, no session recording, no IP, no PII in props.
- * - Off when `enabled` is false (renderer mirrors via the
- *   `telemetry_set_enabled` IPC).
+ * - Three modes (`off` / `presence` / `full`) — the renderer mirrors the
+ *   user's choice via the `telemetry_set_mode` IPC. In `off` nothing leaves
+ *   the process; in `presence` only a single `app_heartbeat` per launch is
+ *   sent (no baseProps merge, no errors, no feedback); in `full` the whole
+ *   event catalogue is enabled.
  * - Off when `POSTHOG_KEY` is not configured. The key is inlined into the
  *   main bundle at build time by `build-electron.mjs` via esbuild `define`
  *   (matching how Vite inlines `VITE_POSTHOG_KEY` for the renderer); reading
@@ -29,11 +32,18 @@ const log = createLogger("telemetry");
 const API_KEY = process.env.POSTHOG_KEY ?? "";
 const HOST = process.env.POSTHOG_HOST || "https://eu.i.posthog.com";
 
+export type TelemetryMode = "full" | "off" | "presence";
+
 let client: PostHog | null = null;
 // Default opt-out — the renderer pushes the user's consent state via
-// `telemetry_set_enabled` once it boots. Until then, no events are sent.
-let enabled = false;
+// `telemetry_set_mode` once it boots. Until then, no events are sent.
+let mode: TelemetryMode = "off";
 let distinctId = "";
+// A single `$pageview` is fired at most once per process lifetime (the very
+// first time mode flips from `off` to anything else). PostHog's DAU /
+// Web Analytics insights are defined as "users with a `$pageview` event",
+// so this is what makes presence-only users countable as DAUs at all.
+let heartbeatSent = false;
 
 function baseProps(): Record<string, boolean | number | string> {
   return {
@@ -110,28 +120,55 @@ export function initTelemetry(): void {
   });
 }
 
-export function setTelemetryEnabled(next: boolean): void {
-  if (next === enabled) {
+export function setTelemetryMode(next: TelemetryMode): void {
+  if (next === mode) {
     return;
   }
-  log.info(`setTelemetryEnabled(${next})`);
-  if (!next) {
-    // Capture the off-event while still enabled, then flip + flush.
-    capture("telemetry_disabled");
-    enabled = false;
+  const prev = mode;
+  log.info(`setTelemetryMode(${prev} -> ${next})`);
+  if (next === "off") {
+    // Capture the off-event while still on the previous mode, then flip + flush.
+    if (prev === "full") {
+      capture("telemetry_disabled");
+    }
+    mode = "off";
     client?.flush().catch(() => undefined);
 
     return;
   }
-  enabled = true;
-  // First time we go from off → on (incl. post-consent), record a launch
-  // event so the install shows up in PostHog.
-  capture("app_launched");
-  capture("telemetry_enabled");
+
+  mode = next;
+
+  // Heartbeat: once per process, on the first arrival at any non-off mode.
+  // Sent for both presence and full users — single source of DAU truth.
+  if (!heartbeatSent) {
+    captureHeartbeat();
+    heartbeatSent = true;
+  }
+
+  if (next === "full") {
+    if (prev === "off") {
+      // First time we go from off → full (incl. post-consent), record a
+      // launch event so the install shows up in PostHog under the legacy
+      // event name dashboards may already filter on.
+      capture("app_launched");
+      capture("telemetry_enabled");
+    }
+    // presence → full: no extra event; the user is opting up but already
+    // counted in DAU via the heartbeat.
+  } else if (next === "presence" && prev === "off") {
+    // Presence is itself an "opt-in" relative to off, but only for DAU. No
+    // `telemetry_enabled` event — that signal is reserved for full mode so
+    // dashboards keep their existing meaning.
+  }
+}
+
+export function getTelemetryMode(): TelemetryMode {
+  return mode;
 }
 
 export function isTelemetryEnabled(): boolean {
-  return enabled;
+  return mode === "full";
 }
 
 /**
@@ -153,8 +190,16 @@ export function capture<N extends EventName>(
 
     return;
   }
-  if (!enabled) {
-    log.info(`drop ${event}: telemetry disabled`);
+  if (mode === "off") {
+    log.info(`drop ${event}: telemetry off`);
+
+    return;
+  }
+  if (mode === "presence") {
+    // Presence-only mode: nothing escapes except the once-per-launch
+    // heartbeat, which goes through `captureHeartbeat()` directly (it's a
+    // `$pageview`, not a typed catalog event).
+    log.info(`drop ${event}: presence mode`);
 
     return;
   }
@@ -168,6 +213,38 @@ export function capture<N extends EventName>(
     log.info(`capture ${event}`);
   } catch (e) {
     log.warn("capture failed", e);
+  }
+}
+
+/**
+ * Send the once-per-launch DAU heartbeat. PostHog defines DAU as the count
+ * of users with a `$pageview` event, so the heartbeat has to be a
+ * `$pageview` (not a custom event) to make presence-only users countable.
+ *
+ * Bypasses `baseProps()` so we don't leak OS / arch / electron version for
+ * presence-only users — the only property attached is `app_version`,
+ * which is the minimum useful signal for "are old builds still in the
+ * wild?". The path is a fixed `argus:///` literal that contains no
+ * project / session / org / PR identifiers.
+ */
+function captureHeartbeat(): void {
+  if (!client || mode === "off") {
+    return;
+  }
+  try {
+    client.capture({
+      distinctId,
+      event: "$pageview",
+      properties: {
+        $current_url: "argus:///",
+        $pathname: "/",
+        app_version: app.getVersion(),
+        source: "heartbeat",
+      },
+    });
+    log.info("capture $pageview (heartbeat)");
+  } catch (e) {
+    log.warn("captureHeartbeat failed", e);
   }
 }
 
@@ -210,7 +287,10 @@ export function captureException(
   err: unknown,
   props: Record<string, unknown> = {},
 ): void {
-  if (!enabled || !client) {
+  // Errors only flow in full mode — presence-only users explicitly chose to
+  // not share usage details, and stack traces can leak file paths even after
+  // scrubbing.
+  if (mode !== "full" || !client) {
     return;
   }
   const error = err instanceof Error ? err : new Error(String(err));
@@ -245,8 +325,8 @@ export function captureFeedback(message: string): void {
 
     return;
   }
-  if (!enabled) {
-    log.info("drop user_feedback: telemetry disabled");
+  if (mode !== "full") {
+    log.info("drop user_feedback: telemetry not in full mode");
 
     return;
   }

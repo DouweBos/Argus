@@ -2097,16 +2097,17 @@ export const updaterQuitAndInstall = (): Promise<void> =>
   invoke("updater_quit_and_install");
 
 // Telemetry
+export type TelemetryMode = "full" | "off" | "presence";
 export interface TelemetryInit {
   appVersion: string;
   configured: boolean;
   distinctId: string;
-  enabled: boolean;
+  mode: TelemetryMode;
 }
 export const getTelemetryInit = (): Promise<TelemetryInit> =>
   invoke("telemetry_get_init");
-export const setTelemetryEnabledOnMain = (enabled: boolean): Promise<void> =>
-  invoke("telemetry_set_enabled", { enabled });
+export const setTelemetryModeOnMain = (mode: TelemetryMode): Promise<void> =>
+  invoke("telemetry_set_mode", { mode });
 export const telemetryCapture = (
   event: string,
   props: Record<string, unknown>,

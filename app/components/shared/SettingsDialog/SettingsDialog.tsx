@@ -4,6 +4,7 @@ import {
   Icons,
   Input,
   Kbd,
+  SegmentedControl,
   SettingsDialogShell,
   SettingsScreenDetail,
   SettingsScreenDetailBody,
@@ -24,7 +25,7 @@ import {
   type LauncherStatus,
 } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
-import { setTelemetryEnabled } from "../../../lib/telemetry";
+import { setTelemetryMode } from "../../../lib/telemetry";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSelectedSessionId } from "../../../stores/sessionStore";
 import {
@@ -44,7 +45,7 @@ import {
   setShowAssumeUnchangedFiles,
   setShowIgnoredFiles,
   setShowNonModifiedFiles,
-  setTelemetryEnabledSetting,
+  setTelemetryModeSetting,
   setWorkingCopyView,
   updateCustomEditor,
   useConventionalCommitsPicker,
@@ -60,10 +61,11 @@ import {
   useShowAssumeUnchangedFiles,
   useShowIgnoredFiles,
   useShowNonModifiedFiles,
-  useTelemetryEnabled,
+  useTelemetryMode,
   useWorkingCopyView,
   type DiffViewMode,
   type PermissionMode,
+  type TelemetryMode,
   type WorkingCopyView,
 } from "../../../stores/settingsStore";
 import {
@@ -470,32 +472,47 @@ function McpServersSection() {
 }
 
 function PrivacySection() {
-  const enabled = useTelemetryEnabled();
+  const mode = useTelemetryMode();
 
-  const onChange = (next: boolean) => {
-    setTelemetryEnabledSetting(next);
-    setTelemetryEnabled(next);
+  const onChange = (next: TelemetryMode) => {
+    setTelemetryModeSetting(next);
+    setTelemetryMode(next);
   };
+
+  const description = (() => {
+    switch (mode) {
+      case "off":
+        return "Nothing leaves your machine. We can't see this install at all.";
+      case "presence":
+        return "One anonymous heartbeat per launch — install id and app version, nothing else. Lets us count daily active users without learning what anyone does.";
+      case "full":
+        return "Anonymous install id, app/OS info, feature usage, errors, and crashes. Never file contents, prompts, project names, branch names, or paths.";
+    }
+  })();
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
         description={
           <>
-            Argus can send anonymous usage and crash data to help us find bugs
-            and prioritize features. We never collect file contents, prompts,
-            project names, paths, or anything that identifies you. An anonymous
-            install id (random UUID) is used so we can group events from the
-            same install. Toggle off to disable entirely.
+            Choose how much Argus shares with us. The full event catalogue is
+            documented in <code>docs/telemetry-events.md</code>. {description}
           </>
         }
         title="Anonymous usage & crash reports"
       />
       <SettingsScreenDetailBody>
-        <SettingsScreenField label="Send anonymous telemetry">
-          <Toggle checked={enabled} onChange={onChange}>
-            {enabled ? "Enabled" : "Disabled"}
-          </Toggle>
+        <SettingsScreenField label="Telemetry">
+          <SegmentedControl<TelemetryMode>
+            aria-label="Telemetry mode"
+            value={mode}
+            onChange={onChange}
+            options={[
+              { value: "off", label: "Off" },
+              { value: "presence", label: "Just count me" },
+              { value: "full", label: "Full analytics" },
+            ]}
+          />
         </SettingsScreenField>
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
