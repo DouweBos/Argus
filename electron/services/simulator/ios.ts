@@ -243,6 +243,25 @@ const bridgesByUdid = new Map<string, SimBridge>();
 const captureRefsByUdid = new Map<string, number>();
 
 /**
+ * Per-UDID deferred-teardown timers. When the last view holding a capture
+ * unmounts, refs hit zero and we *schedule* a tear-down instead of running
+ * it immediately — so a quick close/reopen reuses the existing bridge.
+ * Cancelled when {@link startSimulatorCapture} sees a pending entry for the
+ * same UDID; fires {@link forceStopSimulatorCapture} after the grace period.
+ */
+const pendingTeardownByUdid = new Map<string, ReturnType<typeof setTimeout>>();
+
+const TEARDOWN_GRACE_MS = 10 * 60 * 1000;
+
+function cancelPendingTeardown(udid: string): void {
+  const timer = pendingTeardownByUdid.get(udid);
+  if (timer) {
+    clearTimeout(timer);
+    pendingTeardownByUdid.delete(udid);
+  }
+}
+
+/**
  * Return the bridge handling the given UDID, or null if none is running.
  *
  * Exposed so HID commands (touch/button/keyboard) can route their requests
@@ -261,6 +280,10 @@ export function getBridgeForUdid(udid: string): SimBridge | null {
  * unaffected.
  */
 export async function startSimulatorCapture(udid: string): Promise<number> {
+  // A previous holder dropped to zero refs but the grace timer hasn't fired
+  // yet — reclaim the bridge instead of letting it be torn down.
+  cancelPendingTeardown(udid);
+
   // Fast path: reuse existing capture for the same device.
   const existing = appState.simulators.get(udid);
   const existingBridge = bridgesByUdid.get(udid);
@@ -314,7 +337,10 @@ export async function startSimulatorCapture(udid: string): Promise<number> {
 
 /**
  * Release one reference to the capture session for the given UDID. If this
- * was the last holder, tear down that UDID's bridge and clear its state.
+ * was the last holder, schedule a deferred teardown — the bridge stays
+ * alive for {@link TEARDOWN_GRACE_MS} so a re-mounting view (route change,
+ * dialog reopen) can reclaim it without respawning the native binary. If
+ * no view comes back within the grace period, the bridge is force-stopped.
  * No-ops if nothing is active for this UDID.
  */
 export function stopSimulatorCapture(udid: string): void {
@@ -324,8 +350,18 @@ export function stopSimulatorCapture(udid: string): void {
 
     return;
   }
+  if (refs === 0) {
+    return;
+  }
+  captureRefsByUdid.set(udid, 0);
 
-  forceStopSimulatorCapture(udid);
+  cancelPendingTeardown(udid);
+  const timer = setTimeout(() => {
+    pendingTeardownByUdid.delete(udid);
+    forceStopSimulatorCapture(udid);
+  }, TEARDOWN_GRACE_MS);
+  timer.unref?.();
+  pendingTeardownByUdid.set(udid, timer);
 }
 
 /**
@@ -344,6 +380,7 @@ export function forceStopSimulatorCapture(udid: string): void {
 
   appState.simulators.delete(udid);
   captureRefsByUdid.delete(udid);
+  cancelPendingTeardown(udid);
 }
 
 /**

@@ -58,6 +58,18 @@ export function SimulatorControls({ sessionId }: SimulatorControlsProps) {
   useEffect(() => {
     prevUdidRef.current = selectedUdid;
   }, [selectedUdid]);
+
+  // Release the capture ref on unmount. Without this, dismissing the
+  // runtime panel leaks the ref and the bridge never tears down.
+  useEffect(() => {
+    return () => {
+      const udid = prevUdidRef.current;
+      if (udid) {
+        stopSimulatorCapture(udid).catch(() => {});
+      }
+    };
+  }, []);
+
   const isBooted = selectedDevice?.booted ?? false;
 
   const refreshDevices = useCallback(() => {

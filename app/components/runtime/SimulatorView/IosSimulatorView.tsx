@@ -128,6 +128,17 @@ export function IosSimulatorView({
     prevUdidRef.current = selectedUdid;
   }, [selectedUdid]);
 
+  // Release the capture ref on unmount. Without this, dismissing the
+  // runtime panel leaks the ref and the bridge never tears down.
+  useEffect(() => {
+    return () => {
+      const udid = prevUdidRef.current;
+      if (udid) {
+        stopSimulatorCapture(udid).catch(() => {});
+      }
+    };
+  }, []);
+
   const startCapture = useCallback(
     async (udid: string) => {
       const port = await startSimulatorCapture(udid);
