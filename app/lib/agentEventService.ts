@@ -306,7 +306,11 @@ interface McpSystemMessagePayload {
   parentAgentId?: string;
   parentLabel?: string;
   timestamp: number;
-  tool: "send_agent_message" | "spawn_agent" | "spawn_agents_batch";
+  tool:
+    | "create_session"
+    | "send_agent_message"
+    | "spawn_agent"
+    | "spawn_agents_batch";
 }
 
 /** Subscribe to all agent event channels. */
