@@ -1209,7 +1209,11 @@ export function sendAgentMessage(
 // ---------------------------------------------------------------------------
 
 export interface McpSystemMessagePayload {
-  tool: "send_agent_message" | "spawn_agent" | "spawn_agents_batch";
+  tool:
+    | "create_session"
+    | "send_agent_message"
+    | "spawn_agent"
+    | "spawn_agents_batch";
   message: string;
   images?: ImageAttachment[];
   parentAgentId?: string;

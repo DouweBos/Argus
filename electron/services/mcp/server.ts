@@ -211,6 +211,76 @@ async function waitForSessionReady(
 }
 
 /**
+ * Wait for a session to finish initializing, then start a Claude Code agent
+ * in it and dispatch the initial prompt. Shared by `create_session` (when a
+ * prompt is supplied), `spawn_agent`, and `spawn_agents_batch`.
+ *
+ * Returns the spawned agent info on success. Throws on session-ready timeout
+ * or agent startup failure — callers translate that into MCP error content.
+ */
+async function spawnAgentInSession(
+  sessionId: string,
+  prompt: string,
+  opts: {
+    images?: ReturnType<typeof resolveAttachments>;
+    model?: string;
+    permission_mode?:
+      | "acceptEdits"
+      | "auto"
+      | "bypassPermissions"
+      | "default"
+      | "plan";
+    platforms?: ("android" | "ios" | "web")[];
+    parentAgentId?: string;
+    sourceTool: "create_session" | "spawn_agent" | "spawn_agents_batch";
+  },
+): Promise<{
+  agent_id: string;
+  session_id: string;
+  status: string;
+  parent_agent_id?: string;
+}> {
+  await waitForSessionReady(sessionId);
+
+  const agentInfo = await startAgent(
+    sessionId,
+    opts.model,
+    opts.permission_mode,
+    undefined,
+    undefined,
+    opts.platforms,
+    opts.parentAgentId,
+  );
+
+  getMainWindow()?.webContents.send("agent:started", {
+    agent_id: agentInfo.agent_id,
+    session_id: agentInfo.session_id,
+    status: agentInfo.status,
+    permission_mode: opts.permission_mode,
+    parent_agent_id: agentInfo.parent_agent_id,
+    created_at: agentInfo.created_at,
+    initial_prompt: prompt,
+    model: agentInfo.model,
+  });
+
+  sendAgentMessage(agentInfo.agent_id, prompt, opts.images);
+
+  emitMcpSystemMessage(agentInfo.agent_id, {
+    tool: opts.sourceTool,
+    message: prompt,
+    images: opts.images,
+    parentAgentId: opts.parentAgentId,
+  });
+
+  return {
+    agent_id: agentInfo.agent_id,
+    session_id: agentInfo.session_id,
+    status: agentInfo.status,
+    parent_agent_id: agentInfo.parent_agent_id ?? undefined,
+  };
+}
+
+/**
  * Read a JSON request body and parse it. Returns an empty object on empty
  * bodies and throws on parse errors.
  */
@@ -453,7 +523,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "create_session",
-    "Create a new isolated git worktree session. Returns the session ID and branch name. The session will be initialized with the project's setup pipeline (dependency installs, symlinks, etc.). Requires project_path — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
+    "Create a new isolated git worktree session. Returns the session ID and branch name. The session is initialized with the project's setup pipeline (dependency installs, symlinks, etc.) in the background. Pass `prompt` to also spawn an agent with that prompt as soon as setup completes — equivalent to a follow-up `spawn_agent` call but lets you do it in one round-trip. Requires project_path — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
     {
       name: z
         .string()
@@ -475,8 +545,55 @@ export function createMcpServer(): McpServer {
         .describe(
           "Branch to fork from. Defaults to the project's HEAD. Use this to create a child worktree off another worktree's branch.",
         ),
+      prompt: z
+        .string()
+        .optional()
+        .describe(
+          "If provided, also spawn an agent in the new session with this initial prompt — combining `create_session` and `spawn_agent` in one call. The call blocks until the worktree's setup pipeline completes and the agent has been started. Returned payload then includes `agent_id`. Omit if you want a session without an agent (rare for orchestrators).",
+        ),
+      permission_mode: z
+        .enum(["default", "auto", "acceptEdits", "bypassPermissions", "plan"])
+        .optional()
+        .describe(
+          "Permission mode for the spawned agent. Ignored when `prompt` is omitted. See spawn_agent for values.",
+        ),
+      model: z
+        .string()
+        .optional()
+        .describe(
+          "Optional model id override for the spawned agent. Ignored when `prompt` is omitted. See spawn_agent.",
+        ),
+      platforms: z
+        .array(z.enum(["ios", "android", "web"]))
+        .optional()
+        .describe(
+          "Runtime platforms for the spawned agent. Ignored when `prompt` is omitted. See spawn_agent.",
+        ),
+      parent_agent_id: z
+        .string()
+        .optional()
+        .describe(
+          "Orchestrator agent id for the spawned agent. Ignored when `prompt` is omitted.",
+        ),
+      attachments: z
+        .array(mcpAttachmentSchema)
+        .optional()
+        .describe(
+          "Attachments to forward to the spawned agent's first message. Ignored when `prompt` is omitted. See spawn_agent.attachments.",
+        ),
     },
-    async ({ name, description, project_path, base_branch }) => {
+    async ({
+      name,
+      description,
+      project_path,
+      base_branch,
+      prompt,
+      permission_mode,
+      model,
+      platforms,
+      parent_agent_id,
+      attachments,
+    }) => {
       const repoRoot = project_path;
 
       // Auto-register the repo root if targeting a cross-project session.
@@ -512,6 +629,37 @@ export function createMcpServer(): McpServer {
         base_branch: ws.base_branch,
       });
 
+      let agentResult:
+        | { agent_id: string; status: string; parent_agent_id?: string }
+        | undefined;
+      if (prompt !== undefined) {
+        let images;
+        try {
+          images = resolveAttachments(attachments);
+        } catch (e) {
+          return {
+            content: [{ type: "text" as const, text: (e as Error).message }],
+            isError: true,
+          };
+        }
+
+        try {
+          agentResult = await spawnAgentInSession(ws.id, prompt, {
+            images,
+            model,
+            permission_mode,
+            platforms,
+            parentAgentId: parent_agent_id,
+            sourceTool: "create_session",
+          });
+        } catch (e) {
+          return {
+            content: [{ type: "text" as const, text: String(e) }],
+            isError: true,
+          };
+        }
+      }
+
       return {
         content: [
           {
@@ -523,6 +671,13 @@ export function createMcpServer(): McpServer {
                 path: ws.path,
                 status: ws.status,
                 base_branch: ws.base_branch,
+                ...(agentResult
+                  ? {
+                      agent_id: agentResult.agent_id,
+                      agent_status: agentResult.status,
+                      parent_agent_id: agentResult.parent_agent_id,
+                    }
+                  : {}),
               },
               null,
               2,
@@ -621,7 +776,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agent",
-    "Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. Pass your own agent_id as parent_agent_id so the relationship is tracked.",
+    "Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. Pass your own agent_id as parent_agent_id so the relationship is tracked. This call blocks internally until the session's setup pipeline (worktree provisioning, dependency installs) completes — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created. If you're spawning into a session you just made, prefer `create_session` with a `prompt` to do both in one round-trip.",
     {
       session: z
         .string()
@@ -694,12 +849,16 @@ export function createMcpServer(): McpServer {
         };
       }
 
-      // Sessions created by `create_session` return immediately with status
-      // `initializing` — the worktree is still being provisioned in the
-      // background. Block here until it's ready so `startAgent` finds a real
-      // working directory.
+      let agentResult;
       try {
-        await waitForSessionReady(ws.id);
+        agentResult = await spawnAgentInSession(ws.id, prompt, {
+          images,
+          model,
+          permission_mode,
+          platforms,
+          parentAgentId: parent_agent_id,
+          sourceTool: "spawn_agent",
+        });
       } catch (e) {
         return {
           content: [{ type: "text" as const, text: String(e) }],
@@ -707,51 +866,17 @@ export function createMcpServer(): McpServer {
         };
       }
 
-      const agentInfo = await startAgent(
-        ws.id,
-        model, // model override — undefined falls through to session/project/app default
-        permission_mode,
-        undefined, // resumeSessionId
-        undefined, // appendSystemPrompt
-        platforms, // platformsOverride
-        parent_agent_id, // parentAgentId
-      );
-
-      // Notify the renderer so the agent store and event listeners pick up
-      // the new agent — normally done by the UI-initiated start_agent path.
-      getMainWindow()?.webContents.send("agent:started", {
-        agent_id: agentInfo.agent_id,
-        session_id: agentInfo.session_id,
-        status: agentInfo.status,
-        permission_mode,
-        parent_agent_id: agentInfo.parent_agent_id,
-        created_at: agentInfo.created_at,
-        initial_prompt: prompt,
-        model: agentInfo.model,
-      });
-
-      // Send the initial prompt after startup.
-      sendAgentMessage(agentInfo.agent_id, prompt, images);
-
-      // Surface the orchestrator's prompt in the child agent's conversation UI.
-      emitMcpSystemMessage(agentInfo.agent_id, {
-        tool: "spawn_agent",
-        message: prompt,
-        images,
-        parentAgentId: parent_agent_id,
-      });
-
       return {
         content: [
           {
             type: "text" as const,
             text: JSON.stringify(
               {
-                agent_id: agentInfo.agent_id,
+                agent_id: agentResult.agent_id,
                 session_id: ws.id,
                 branch: ws.branch,
-                status: agentInfo.status,
-                parent_agent_id: agentInfo.parent_agent_id,
+                status: agentResult.status,
+                parent_agent_id: agentResult.parent_agent_id,
               },
               null,
               2,
@@ -938,42 +1063,17 @@ export function createMcpServer(): McpServer {
         }
 
         try {
-          // Wait for the freshly-created worktree to land on disk before
-          // spawning the agent — otherwise Claude would launch with `cwd: ""`.
-          await waitForSessionReady(ws.id);
-
-          const agentInfo = await startAgent(
-            ws.id,
-            spec.model,
-            permission_mode,
-            undefined,
-            undefined,
-            spec.platforms,
-            parent_agent_id,
-          );
-
-          getMainWindow()?.webContents.send("agent:started", {
-            agent_id: agentInfo.agent_id,
-            session_id: agentInfo.session_id,
-            status: agentInfo.status,
-            permission_mode,
-            parent_agent_id: agentInfo.parent_agent_id,
-            created_at: agentInfo.created_at,
-            initial_prompt: spec.prompt,
-            model: agentInfo.model,
-          });
-
-          sendAgentMessage(agentInfo.agent_id, spec.prompt, images);
-
-          emitMcpSystemMessage(agentInfo.agent_id, {
-            tool: "spawn_agents_batch",
-            message: spec.prompt,
+          const agentResult = await spawnAgentInSession(ws.id, spec.prompt, {
             images,
+            model: spec.model,
+            permission_mode,
+            platforms: spec.platforms,
             parentAgentId: parent_agent_id,
+            sourceTool: "spawn_agents_batch",
           });
 
           results.push({
-            agent_id: agentInfo.agent_id,
+            agent_id: agentResult.agent_id,
             session_id: ws.id,
             branch: ws.branch,
             name: spec.name,

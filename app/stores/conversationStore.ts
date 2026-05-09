@@ -65,7 +65,11 @@ export interface SystemMessageSource {
   /** Human-readable label for the originating agent (session display name). */
   parentLabel?: string;
   /** MCP tool that injected the message. */
-  tool: "send_agent_message" | "spawn_agent" | "spawn_agents_batch";
+  tool:
+    | "create_session"
+    | "send_agent_message"
+    | "spawn_agent"
+    | "spawn_agents_batch";
 }
 
 export interface ConversationMessage {
