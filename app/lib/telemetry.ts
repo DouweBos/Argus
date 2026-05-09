@@ -12,9 +12,10 @@
  * Privacy posture is unchanged: anonymous distinct id, no autocapture,
  * scrubbed messages, opt-out via Settings.
  */
+import type { TelemetryMode } from "./ipc";
 import type { EventArgs, EventMap, EventName } from "./telemetryEvents";
 import {
-  setTelemetryEnabledOnMain,
+  setTelemetryModeOnMain,
   telemetryCapture,
   telemetryCaptureException,
   telemetryCaptureFeedback,
@@ -24,12 +25,17 @@ import { createLogger, setErrorSink } from "./logger";
 const log = createLogger("telemetry");
 
 let initialized = false;
-let enabled = true;
+let mode: TelemetryMode = "off";
 let configured = false;
 let popout = "main";
 
+/**
+ * Renderer events flow only in `full` mode. Presence-only users get exactly
+ * one event per launch — the `app_heartbeat` — and that's owned by the
+ * main process; the renderer never participates.
+ */
 function active(): boolean {
-  return initialized && enabled && configured;
+  return initialized && mode === "full" && configured;
 }
 
 /**
@@ -39,10 +45,10 @@ function active(): boolean {
  */
 export function initTelemetry(opts: {
   configured: boolean;
-  enabled: boolean;
+  mode: TelemetryMode;
   popout: string;
 }): void {
-  enabled = opts.enabled;
+  mode = opts.mode;
   configured = opts.configured;
   popout = opts.popout;
   initialized = true;
@@ -73,11 +79,11 @@ export function initTelemetry(opts: {
   });
 }
 
-export function setTelemetryEnabled(next: boolean): void {
-  enabled = next;
+export function setTelemetryMode(next: TelemetryMode): void {
+  mode = next;
   // Source of truth lives in main; this just keeps the renderer's local
   // gate in sync with the IPC roundtrip below.
-  setTelemetryEnabledOnMain(next).catch(() => undefined);
+  setTelemetryModeOnMain(next).catch(() => undefined);
 }
 
 export function capture<N extends EventName>(
@@ -151,8 +157,8 @@ export function getFeedbackUnavailableReason(): string | null {
   if (!configured) {
     return "Feedback isn't configured in this build, so messages can't be delivered. Please reach out through another channel.";
   }
-  if (!enabled) {
-    return "Telemetry is turned off in Settings, so feedback can't be sent. Enable telemetry to send feedback.";
+  if (mode !== "full") {
+    return "Full analytics is turned off in Settings, so feedback can't be sent. Switch to Full analytics to send feedback.";
   }
   if (!initialized) {
     return "Feedback isn't ready yet — telemetry hasn't finished initializing. Try again in a moment.";

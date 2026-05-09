@@ -1,18 +1,34 @@
 # Telemetry events
 
-Catalog of every event Argus sends to PostHog when telemetry is opted in.
-Telemetry is **off by default** and gated by a one-time consent step during
-first-launch onboarding. See [`app-settings.md`](app-settings.md) for the
-toggle and the storage details.
+Catalog of every event Argus sends to PostHog. Telemetry has **three
+levels**, picked during the one-time consent step on first launch and
+changeable any time under Settings → Privacy:
+
+| Mode       | What gets sent                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `off`      | Nothing. The privacy-maximum mode — even heartbeat `$pageview` is suppressed, so PostHog never sees this install at all.                                           |
+| `presence` | Exactly one event per app launch: a [heartbeat `$pageview`](#presence) with a fixed `argus:///` path. No baseProps, no errors, no feedback, no other `$pageview`s. |
+| `full`     | The whole catalogue below — lifecycle, sessions, merges, agents, org tasks, errors, feedback. Same as before.                                                      |
+
+The default for new installs is `off` until the user makes an explicit
+choice in onboarding. Existing installs that opted out under the old
+on/off toggle keep behaving as `off`; existing opt-ins map to `full`.
 
 Events come from two channels: **main** (the Argus app process,
 covering lifecycle, sessions, merges, agents, org tasks) and
 **renderer** (the UI, covering renderer lifecycle and feedback). Both
-funnel into the same PostHog project.
+funnel into the same PostHog project. In `presence` mode the renderer
+SDK is initialised but emits nothing — the heartbeat is sent from main
+only.
 
 ## What's attached to every event
 
-When you opt in, every event PostHog receives carries the catalogue below.
+The "every event" rules below describe what `full` mode sends. **Presence
+mode is different** — see the dedicated [Presence](#presence) section: it
+attaches only `app_version` and the unavoidable GeoIP / SDK bookkeeping,
+nothing else.
+
+When you opt in to full mode, every event PostHog receives carries the catalogue below.
 Some of these come from our explicit `baseProps()`; some are added
 automatically by PostHog's SDKs; some are enriched server-side at PostHog
 from the request IP. We list all three so the picture is complete.
@@ -101,7 +117,28 @@ supported privacy mode.
 - Development builds. Our own development sessions never appear in
   PostHog.
 
+## Presence
+
+Sent in both `presence` and `full` modes. This is the single source of
+DAU truth — PostHog defines a Daily Active User as a `distinct_id` with
+at least one `$pageview` event in the day, so the heartbeat **has to be
+a `$pageview`** (not a custom event) for presence-only users to count.
+
+| Event       | Source | When                                                                                              | Extra props                                                                         |
+| ----------- | ------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `$pageview` | main   | Once per process lifetime, the first time the active mode flips from `off` to either non-off mode | `$current_url: "argus:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"` |
+
+The heartbeat deliberately **bypasses `baseProps()`** — no platform,
+arch, OS release, Electron or Node version is attached. The only
+property beyond the `$pageview` magic keys is `app_version`, kept so we
+can answer "are old builds still in the wild?" without learning
+anything else about the device. The `source: "heartbeat"` property lets
+analytics distinguish the main-process heartbeat from the
+renderer-route `$pageview` events that `full` users also emit.
+
 ## Lifecycle
+
+Sent only in `full` mode.
 
 | Event                | Source   | When                                                                      | Extra props                                         |
 | -------------------- | -------- | ------------------------------------------------------------------------- | --------------------------------------------------- |

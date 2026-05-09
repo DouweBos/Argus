@@ -23,6 +23,21 @@ export type WorkingCopyView = "flat" | "tree";
 export type DiffViewMode = "split" | "unified";
 export type CommitSigningFormat = "gpg" | "ssh";
 
+/**
+ * Three telemetry levels:
+ * - `off`: nothing is sent, ever. The privacy-maximum mode.
+ * - `presence`: a single `app_heartbeat` event per launch carrying just the
+ *   app version. Lets us count DAU without seeing what anyone does.
+ * - `full`: the full event catalogue documented in `docs/telemetry-events.md`.
+ */
+export type TelemetryMode = "full" | "off" | "presence";
+
+export const TELEMETRY_MODE_LABELS: Record<TelemetryMode, string> = {
+  off: "Off",
+  presence: "Presence only",
+  full: "Full analytics",
+};
+
 export interface DefaultLlm {
   /** Optional model id passed to the runner. `null` lets the runner pick. */
   model: string | null;
@@ -66,7 +81,7 @@ interface SettingsState {
    */
   showIgnoredFiles: boolean;
   showNonModifiedFiles: boolean;
-  telemetryEnabled: boolean;
+  telemetryMode: TelemetryMode;
   /** Working-copy file list — flat list or tree by path (Phase 2 W2). */
   workingCopyView: WorkingCopyView;
 }
@@ -86,6 +101,26 @@ function sanitizeDefaultLlm(input: unknown): DefaultLlm {
     typeof obj.model === "string" && obj.model.trim() ? obj.model.trim() : null;
 
   return { runner, model };
+}
+
+/**
+ * Map persisted telemetry state to a `TelemetryMode`. Honours the new
+ * `telemetryMode` field if present; otherwise falls back to the legacy
+ * `telemetryEnabled` boolean (true → `full`, false → `off` — preserves the
+ * privacy promise that opting out meant zero events).
+ */
+function sanitizeTelemetryMode(
+  mode: unknown,
+  legacyEnabled: unknown,
+): TelemetryMode {
+  if (mode === "off" || mode === "presence" || mode === "full") {
+    return mode;
+  }
+  if (typeof legacyEnabled === "boolean") {
+    return legacyEnabled ? "full" : "off";
+  }
+
+  return "off";
 }
 
 function sanitizeCustomEditors(input: unknown): CustomEditor[] {
@@ -126,10 +161,10 @@ function load(): SettingsState {
           typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
         defaultLlm: sanitizeDefaultLlm(parsed.defaultLlm),
-        telemetryEnabled:
-          typeof parsed.telemetryEnabled === "boolean"
-            ? parsed.telemetryEnabled
-            : false,
+        telemetryMode: sanitizeTelemetryMode(
+          parsed.telemetryMode,
+          (parsed as { telemetryEnabled?: unknown }).telemetryEnabled,
+        ),
         confirmPreferences:
           parsed.confirmPreferences &&
           typeof parsed.confirmPreferences === "object"
@@ -178,7 +213,7 @@ function load(): SettingsState {
     defaultModel: "",
     customEditors: [],
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
-    telemetryEnabled: false,
+    telemetryMode: "off",
     confirmPreferences: {},
     workingCopyView: "flat",
     diffView: "unified",
@@ -264,12 +299,12 @@ export const updateCustomEditor = (
   persist(store.getState());
 };
 
-export const useTelemetryEnabled = () => store((s) => s.telemetryEnabled);
+export const useTelemetryMode = () => store((s) => s.telemetryMode);
 
-export const getTelemetryEnabled = () => store.getState().telemetryEnabled;
+export const getTelemetryMode = () => store.getState().telemetryMode;
 
-export const setTelemetryEnabledSetting = (enabled: boolean): void => {
-  store.setState({ telemetryEnabled: enabled });
+export const setTelemetryModeSetting = (mode: TelemetryMode): void => {
+  store.setState({ telemetryMode: mode });
   persist(store.getState());
 };
 

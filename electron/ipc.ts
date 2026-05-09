@@ -404,9 +404,9 @@ import {
   capture as telemetryCapture,
   captureException as telemetryCaptureException,
   captureFeedback as telemetryCaptureFeedback,
+  getTelemetryMode,
   isTelemetryConfigured,
-  isTelemetryEnabled,
-  setTelemetryEnabled,
+  setTelemetryMode,
 } from "./services/telemetry/telemetry";
 import {
   createTerminal,
@@ -2057,12 +2057,15 @@ export function registerIpcHandlers(): void {
   handle("get_app_version", () => app.getVersion());
   handle("telemetry_get_init", () => ({
     distinctId: getAnonymousId(),
-    enabled: isTelemetryEnabled(),
+    mode: getTelemetryMode(),
     configured: isTelemetryConfigured(),
     appVersion: app.getVersion(),
   }));
-  handle("telemetry_set_enabled", (a) => {
-    setTelemetryEnabled(Boolean(a.enabled));
+  handle("telemetry_set_mode", (a) => {
+    const next = a.mode;
+    if (next === "off" || next === "presence" || next === "full") {
+      setTelemetryMode(next);
+    }
   });
   handle("telemetry_capture", (a) => {
     // The renderer is responsible for matching the event catalog (typed on

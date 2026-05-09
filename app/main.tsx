@@ -11,7 +11,7 @@ import {
   initExternalAgentStarted,
 } from "./lib/agentEventService";
 import { initAgentPopoutSync } from "./lib/agentPopoutService";
-import { getTelemetryInit, setTelemetryEnabledOnMain } from "./lib/ipc";
+import { getTelemetryInit, setTelemetryModeOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initPrewarm } from "./lib/prewarmService";
@@ -21,7 +21,7 @@ import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
-import { getTelemetryEnabled } from "./stores/settingsStore";
+import { getTelemetryMode } from "./stores/settingsStore";
 import { initTheme } from "./stores/themeStore";
 import { initUiScale } from "./stores/uiScaleStore";
 
@@ -37,16 +37,18 @@ const popoutMode = params.get("popout");
 async function bootTelemetry(): Promise<void> {
   try {
     const init = await getTelemetryInit();
-    const userEnabled = getTelemetryEnabled();
+    const userMode = getTelemetryMode();
     initTelemetry({
       configured: init.configured,
-      enabled: userEnabled,
+      mode: userMode,
       popout: popoutMode ?? "main",
     });
-    if (userEnabled !== init.enabled) {
-      await setTelemetryEnabledOnMain(userEnabled);
+    if (userMode !== init.mode) {
+      // Push the persisted user choice to main — this is what triggers the
+      // once-per-launch heartbeat (and, for `full`, `app_launched`).
+      await setTelemetryModeOnMain(userMode);
     }
-    if (userEnabled) {
+    if (userMode === "full") {
       telemetryCapture("renderer_started", { popout: popoutMode ?? "main" });
     }
   } catch {
