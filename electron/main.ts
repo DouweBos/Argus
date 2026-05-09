@@ -26,6 +26,8 @@ import { broadcastToRenderers } from "./broadcast";
 import { registerIpcHandlers } from "./ipc";
 import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
+import { destroyAllAgents } from "./services/agent/agentService";
+import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
 import { setColorScheme } from "./services/browser/conductorInput";
 import {
@@ -706,19 +708,20 @@ app.on("before-quit", (e) => {
   // Await the kill→onExit cycle so node-pty's spawn-helper shims actually
   // get reaped before we call app.quit() — otherwise they reparent to
   // launchd and accumulate over restarts.
-  destroyAllTerminalsAndWait(1500)
-    .catch((err) => {
-      log("destroyAllTerminalsAndWait failed: %s", err);
-    })
-    .finally(() => {
-      // The @codingame/monaco-vscode-api registers a beforeunload handler via
-      // addEventListener that cancels the first close. Destroy the window
-      // directly to bypass it — we handle our own save state, not VS Code's.
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.destroy();
-      }
-      app.quit();
-    });
+  Promise.allSettled([
+    destroyAllTerminalsAndWait(1500),
+    // Kill claude agent subprocesses too — handle.kill() escalates to
+    // SIGKILL on a 2 s timeout for any child that ignored SIGTERM.
+    destroyAllAgents(),
+  ]).finally(() => {
+    // The @codingame/monaco-vscode-api registers a beforeunload handler via
+    // addEventListener that cancels the first close. Destroy the window
+    // directly to bypass it — we handle our own save state, not VS Code's.
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.destroy();
+    }
+    app.quit();
+  });
 });
 
 // Fallback cleanup for shutdown paths that bypass `before-quit`:
@@ -827,6 +830,12 @@ app.whenReady().then(() => {
   // reparent to launchd and would otherwise pile up across restarts.
   reapOrphanedSpawnHelpers().catch((err) => {
     log("reapOrphanedSpawnHelpers failed: %s", err);
+  });
+
+  // Same idea for claude CLI agent subprocesses — they occasionally ignore
+  // SIGTERM (blocked in MCP HTTP I/O) and outlive the Argus process.
+  reapOrphanedAgentProcesses().catch((err) => {
+    log("reapOrphanedAgentProcesses failed: %s", err);
   });
 
   if (process.platform === "darwin" && app.dock) {

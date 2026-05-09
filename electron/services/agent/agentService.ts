@@ -924,6 +924,32 @@ export async function stopAgent(agentId: string): Promise<void> {
   telemetryCapture("agent_stopped");
 }
 
+/**
+ * Kill every live agent's runner subprocess. Intended for `before-quit`
+ * cleanup so claude CLI children don't linger after Argus exits — they
+ * occasionally ignore SIGTERM (blocked in MCP HTTP I/O) and pile up across
+ * sessions. Best-effort and bounded by `handle.kill()`'s own backstop.
+ */
+export async function destroyAllAgents(): Promise<void> {
+  const sessions = Array.from(appState.agents.values());
+  if (sessions.length === 0) {
+    return;
+  }
+  info("destroyAllAgents: killing %d agent(s)", sessions.length);
+  await Promise.all(
+    sessions.map(async (s) => {
+      try {
+        await s.handle.kill();
+        s.handle.cleanup();
+      } catch {
+        // best-effort; we're shutting down
+      }
+    }),
+  );
+  appState.agents.clear();
+  appState.agentSnapshots.clear();
+}
+
 // ---------------------------------------------------------------------------
 // interrupt_agent
 // ---------------------------------------------------------------------------
