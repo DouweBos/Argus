@@ -10,8 +10,9 @@
  * pre-baked todo file over the path git invokes the editor with. A second
  * shim swaps in `reword` subjects via `GIT_EDITOR`.
  *
- * Both endpoints gate on `kind === "project_root"` — running an interactive
- * rebase from a session worktree would corrupt the agent's branch.
+ * Interactive rebase runs against the session's checked-out branch (project
+ * root or worktree) — `withGitLock` serializes against concurrent agent git
+ * activity in the same path.
  */
 
 import { execFile } from "node:child_process";
@@ -26,16 +27,10 @@ import { withGitLock } from "./gitLock";
 
 const execFileAsync = promisify(execFile);
 
-function requireProjectScope(id: string): { path: string } {
+function requireSession(id: string): { path: string } {
   const ws = appState.sessions.get(id);
   if (!ws) {
     throw new GitError("unknown", `Session not found: ${id}`);
-  }
-  if (ws.kind !== "project_root") {
-    throw new GitError(
-      "unknown",
-      "Interactive rebase is only available on the project root",
-    );
   }
 
   return { path: ws.path };
@@ -72,7 +67,7 @@ export async function gitRebaseInteractivePlan(
   id: string,
   opts: { upstream: string },
 ): Promise<RebasePlanCommit[]> {
-  const { path: cwd } = requireProjectScope(id);
+  const { path: cwd } = requireSession(id);
   if (!opts.upstream.trim()) {
     throw new GitError("unknown", "Upstream ref is required");
   }
@@ -209,7 +204,7 @@ export async function gitRebaseInteractiveRun(
   id: string,
   opts: { plan: RebasePlanEntry[]; upstream: string },
 ): Promise<void> {
-  const { path: cwd } = requireProjectScope(id);
+  const { path: cwd } = requireSession(id);
   if (!opts.upstream.trim()) {
     throw new GitError("unknown", "Upstream ref is required");
   }
@@ -281,7 +276,7 @@ export async function gitRebaseAutosquash(
   id: string,
   opts: { upstream: string },
 ): Promise<void> {
-  const { path: cwd } = requireProjectScope(id);
+  const { path: cwd } = requireSession(id);
   if (!opts.upstream.trim()) {
     throw new GitError("unknown", "Upstream ref is required");
   }
