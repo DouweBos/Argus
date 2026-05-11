@@ -60,7 +60,7 @@ export async function listBranches(repoRoot: string): Promise<string[]> {
 
   return raw
     .split("\n")
-    .map((l) => l.replace(/^\*\s+/, "").trim())
+    .map((l) => l.replace(/^[*+]?\s+/, "").trim())
     .filter((b) => b.length > 0)
     .sort();
 }
