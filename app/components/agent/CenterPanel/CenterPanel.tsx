@@ -104,7 +104,9 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
 
       {/* Content area */}
       <div className={styles.body}>
-        {effectiveView === "home" && <HomePanel sessionId={sessionId} />}
+        {effectiveView === "home" && (
+          <HomePanel key={sessionId} sessionId={sessionId} />
+        )}
 
         {effectiveView === "agents" && <AgentView sessionId={sessionId} />}
 
