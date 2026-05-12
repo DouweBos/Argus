@@ -72,6 +72,11 @@ interface SettingsState {
   gitSidebarSectionsCollapsed: Record<string, boolean>;
   /** Width of the git source sidebar as a fraction of the GitView container. */
   gitSidebarWidth: number;
+  /**
+   * Last reasoning-effort level chosen by the user, keyed by runner id.
+   * Replayed as the default for new agents on the same runner.
+   */
+  lastEffortByRunner: Record<string, string | null>;
   showAssumeUnchangedFiles: boolean;
   /**
    * Working copy view toggles.
@@ -121,6 +126,27 @@ function sanitizeTelemetryMode(
   }
 
   return "off";
+}
+
+function sanitizeLastEffortByRunner(
+  input: unknown,
+): Record<string, string | null> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return {};
+  }
+  const result: Record<string, string | null> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (!key.trim()) {
+      continue;
+    }
+    if (value === null) {
+      result[key] = null;
+    } else if (typeof value === "string" && value.trim()) {
+      result[key] = value;
+    }
+  }
+
+  return result;
 }
 
 function sanitizeCustomEditors(input: unknown): CustomEditor[] {
@@ -200,6 +226,9 @@ function load(): SettingsState {
         showIgnoredFiles: parsed.showIgnoredFiles === true,
         showAssumeUnchangedFiles: parsed.showAssumeUnchangedFiles === true,
         showNonModifiedFiles: parsed.showNonModifiedFiles === true,
+        lastEffortByRunner: sanitizeLastEffortByRunner(
+          parsed.lastEffortByRunner,
+        ),
       };
     }
   } catch {
@@ -227,6 +256,7 @@ function load(): SettingsState {
     showIgnoredFiles: false,
     showAssumeUnchangedFiles: false,
     showNonModifiedFiles: false,
+    lastEffortByRunner: {},
   };
 }
 
@@ -477,6 +507,30 @@ export const setDefaultLlmRunner = (runner: string | null): void => {
 export const setDefaultLlmModel = (model: string | null): void => {
   const next = model && model.trim() ? model.trim() : null;
   store.setState((s) => ({ defaultLlm: { ...s.defaultLlm, model: next } }));
+  persist(store.getState());
+};
+
+// Reasoning-effort defaults — last picked level per runner, replayed on new agents.
+
+export const getLastEffortForRunner = (runnerId: string): string | null => {
+  const map = store.getState().lastEffortByRunner;
+
+  return Object.prototype.hasOwnProperty.call(map, runnerId)
+    ? map[runnerId]
+    : null;
+};
+
+export const setLastEffortForRunner = (
+  runnerId: string,
+  level: string | null,
+): void => {
+  const id = runnerId.trim();
+  if (!id) {
+    return;
+  }
+  store.setState((s) => ({
+    lastEffortByRunner: { ...s.lastEffortByRunner, [id]: level },
+  }));
   persist(store.getState());
 };
 
