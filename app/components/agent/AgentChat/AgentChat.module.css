@@ -164,6 +164,16 @@
   background: var(--surface-6);
 }
 
+.queuedLinkedProjects {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 6px;
+  max-width: 75%;
+  align-self: flex-end;
+}
+
 .queuedAttachments {
   display: flex;
   flex-wrap: wrap;

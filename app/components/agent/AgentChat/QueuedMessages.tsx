@@ -1,6 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Icons } from "@argus/peacock";
+import { Chip, Icons } from "@argus/peacock";
+import {
+  buildLinkedProjectsPreamble,
+  parseLinkedProjectsPreamble,
+} from "../../../lib/linkedProjectsPreamble";
 import {
   type QueuedMessage,
   removeQueuedMessage,
@@ -55,6 +59,15 @@ function QueuedMessageItem({
 }: QueuedMessageItemProps) {
   const images = message.images ?? [];
 
+  const { linkedPaths, displayText } = useMemo(() => {
+    const parsed = parseLinkedProjectsPreamble(message.text);
+    if (!parsed) {
+      return { linkedPaths: [] as string[], displayText: message.text };
+    }
+
+    return { linkedPaths: parsed.paths, displayText: parsed.rest };
+  }, [message.text]);
+
   const handleDelete = useCallback(() => {
     removeQueuedMessage(agentId, message.id);
   }, [agentId, message.id]);
@@ -65,11 +78,15 @@ function QueuedMessageItem({
         {editing ? (
           <QueuedMessageEditor
             agentId={agentId}
+            initialText={displayText}
+            linkedPaths={linkedPaths}
             message={message}
             onDone={onStopEdit}
           />
         ) : (
-          <div className={styles.queuedMessage}>{message.text}</div>
+          displayText.length > 0 && (
+            <div className={styles.queuedMessage}>{displayText}</div>
+          )
         )}
         {!editing && (
           <div className={styles.queuedActions}>
@@ -94,6 +111,24 @@ function QueuedMessageItem({
           </div>
         )}
       </div>
+      {linkedPaths.length > 0 && (
+        <div className={styles.queuedLinkedProjects}>
+          {linkedPaths.map((path) => {
+            const label = path.split("/").filter(Boolean).pop() ?? path;
+
+            return (
+              <Chip
+                key={path}
+                muted
+                title={path}
+                leading={<Icons.FolderIcon size={11} />}
+              >
+                {label}
+              </Chip>
+            );
+          })}
+        </div>
+      )}
       {images.length > 0 && (
         <div className={styles.queuedAttachments}>
           {images.map((img, i) => {
@@ -123,16 +158,20 @@ function QueuedMessageItem({
 
 interface QueuedMessageEditorProps {
   agentId: string;
+  initialText: string;
+  linkedPaths: readonly string[];
   message: QueuedMessage;
   onDone: () => void;
 }
 
 function QueuedMessageEditor({
   agentId,
+  initialText,
+  linkedPaths,
   message,
   onDone,
 }: QueuedMessageEditorProps) {
-  const [draft, setDraft] = useState(message.text);
+  const [draft, setDraft] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -145,13 +184,16 @@ function QueuedMessageEditor({
 
   const handleSave = useCallback(() => {
     const trimmed = draft.trim();
-    if (trimmed.length === 0) {
+    if (trimmed.length === 0 && linkedPaths.length === 0) {
       removeQueuedMessage(agentId, message.id);
-    } else if (trimmed !== message.text) {
-      updateQueuedMessage(agentId, message.id, trimmed);
+    } else {
+      const next = buildLinkedProjectsPreamble(linkedPaths, trimmed);
+      if (next !== message.text) {
+        updateQueuedMessage(agentId, message.id, next);
+      }
     }
     onDone();
-  }, [agentId, draft, message.id, message.text, onDone]);
+  }, [agentId, draft, linkedPaths, message.id, message.text, onDone]);
 
   const handleKeyDown = useCallback(
     (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
