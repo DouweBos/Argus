@@ -99,17 +99,25 @@ export function CommitLogView({
     setAutosquashDismissed(null);
   }
 
-  const ipcFilters = useMemo(
-    () => ({
+  const ipcFilters = useMemo(() => {
+    // For the branch view we still want to scope to the local branch, but we
+    // also include upstream candidates so the graph can visualize divergence
+    // (ahead/behind) as a split. Unknown refs are silently dropped by the
+    // backend. `@{u}` covers branches with their own tracking upstream;
+    // `origin/<baseBranch>` covers session branches that aren't pushed yet.
+    const scopedBranch = baseBranch
+      ? `HEAD @{u} origin/${baseBranch}`
+      : "HEAD @{u}";
+
+    return {
       query: filters.query || undefined,
       author: filters.author || undefined,
       since: filters.since || undefined,
       until: filters.until || undefined,
-      branch: allBranches ? filters.branch || undefined : "HEAD",
+      branch: allBranches ? filters.branch || undefined : scopedBranch,
       refType: filters.refType,
-    }),
-    [filters, allBranches],
-  );
+    };
+  }, [filters, allBranches, baseBranch]);
 
   const log = useCursorLog(sessionId, ipcFilters);
   const { commits, loading, loadingMore, hasMore, error } = log;
