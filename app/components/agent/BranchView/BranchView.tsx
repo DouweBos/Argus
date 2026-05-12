@@ -12,7 +12,7 @@ export function BranchView({ sessionId, baseBranch }: BranchViewProps) {
       <CommitLogView
         allBranches={false}
         baseBranch={baseBranch}
-        showGraph={false}
+        showGraph
         sessionId={sessionId}
       />
     </div>

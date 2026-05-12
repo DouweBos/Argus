@@ -112,7 +112,29 @@ export async function gitSearchLog(
 
   // Branch / ref-type scoping ----------------------------------------------
   if (filters.branch) {
-    args.push(filters.branch);
+    // Allow whitespace-separated ref lists so callers can walk a branch
+    // alongside its upstream (e.g. "HEAD @{u} origin/main") to visualize
+    // divergence. Unknown refs are dropped — sessions often lack @{u} or a
+    // pushed remote, and `git log` errors out if any ref doesn't resolve.
+    const refs = filters.branch.split(/\s+/).filter(Boolean);
+    if (refs.length === 1) {
+      args.push(refs[0]!);
+    } else {
+      const valid: string[] = [];
+      for (const ref of refs) {
+        try {
+          await git(wt, ["rev-parse", "--verify", "--quiet", ref]);
+          valid.push(ref);
+        } catch {
+          // ref doesn't resolve in this worktree — skip it
+        }
+      }
+      if (valid.length > 0) {
+        args.push(...valid);
+      } else {
+        args.push("HEAD");
+      }
+    }
   } else if (filters.refType === "tags") {
     args.push("--tags");
   } else if (filters.refType === "remotes") {
@@ -164,6 +186,9 @@ export async function gitSearchLog(
       // Plain hash query: log <hash>^..<hash> — bound by the hash itself.
       // Replace branch positional with the range.
       const ref = rawQuery;
+      const branchRefs = new Set(
+        (filters.branch ?? "").split(/\s+/).filter(Boolean),
+      );
       // Drop branch / --all etc. — we want a hash-scoped range.
       const filtered = args.filter(
         (a) =>
@@ -172,7 +197,7 @@ export async function gitSearchLog(
           a !== "--tags" &&
           a !== "--remotes" &&
           a !== "--branches" &&
-          a !== filters.branch,
+          !branchRefs.has(a),
       );
       filtered.push(`${ref}^..${ref}`);
 
