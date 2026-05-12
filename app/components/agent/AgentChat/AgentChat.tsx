@@ -63,6 +63,10 @@ import {
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
 import { useSessions } from "../../../stores/sessionStore";
+import {
+  getLastEffortForRunner,
+  setLastEffortForRunner,
+} from "../../../stores/settingsStore";
 import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { ChatSearchBar } from "../ChatSearchBar";
@@ -660,6 +664,11 @@ export function AgentChat({
     [agentId],
   );
 
+  const sessionRunnerId = useMemo(
+    () => sessions.find((s) => s.id === sessionId)?.runner_id ?? "claude-code",
+    [sessions, sessionId],
+  );
+
   const handleSetEffort = useCallback(
     async (level: string | null) => {
       if (!agentId) {
@@ -668,12 +677,47 @@ export function AgentChat({
       try {
         await ipcSetAgentEffort(agentId, level);
         updateAgent(agentId, { effort: level });
+        setLastEffortForRunner(sessionRunnerId, level);
       } catch {
         // Best-effort — agent may have exited.
       }
     },
-    [agentId],
+    [agentId, sessionRunnerId],
   );
+
+  // Apply the persisted per-runner default once capabilities for a fresh agent
+  // arrive. Skips if the agent already has an effort set or if the persisted
+  // level isn't supported by the active model.
+  const appliedDefaultEffortRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!agentId) {
+      return;
+    }
+    if (!supportedEffortLevels?.length) {
+      return;
+    }
+    if (appliedDefaultEffortRef.current.has(agentId)) {
+      return;
+    }
+    appliedDefaultEffortRef.current.add(agentId);
+
+    const current = getAgent(agentId)?.effort;
+    if (current != null) {
+      return;
+    }
+    const persisted = getLastEffortForRunner(sessionRunnerId);
+    if (persisted == null) {
+      return;
+    }
+    if (!supportedEffortLevels.includes(persisted)) {
+      return;
+    }
+    ipcSetAgentEffort(agentId, persisted)
+      .then(() => updateAgent(agentId, { effort: persisted }))
+      .catch(() => {
+        // Best-effort — agent may have exited before defaults applied.
+      });
+  }, [agentId, sessionRunnerId, supportedEffortLevels]);
 
   const handleSend = useCallback(
     async (message: string, images?: ImageAttachment[]) => {
