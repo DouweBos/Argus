@@ -124,6 +124,35 @@ export const reorderProjects = (
   });
 };
 
+export const reorderSessions = (
+  fromId: string,
+  toId: string,
+  position: "after" | "before",
+) => {
+  if (fromId === toId) {
+    return;
+  }
+  sessionStore.setState((state) => {
+    const fromIdx = state.sessions.findIndex((s) => s.id === fromId);
+    const toIdx = state.sessions.findIndex((s) => s.id === toId);
+    if (fromIdx === -1 || toIdx === -1) {
+      return state;
+    }
+    const from = state.sessions[fromIdx];
+    const to = state.sessions[toIdx];
+    if (from.repo_root !== to.repo_root) {
+      return state;
+    }
+    const next = [...state.sessions];
+    const [moved] = next.splice(fromIdx, 1);
+    const insertIdx = next.findIndex((s) => s.id === toId);
+    const anchor = position === "after" ? insertIdx + 1 : insertIdx;
+    next.splice(anchor, 0, moved);
+
+    return { sessions: next };
+  });
+};
+
 export const setProjectBranch = (repoRoot: string, branch: string | null) => {
   sessionStore.setState((state) => ({
     projects: state.projects.map((p) =>
@@ -163,6 +192,26 @@ export const mergeSessionsForProject = (
       }
 
       return backend;
+    });
+
+    // Preserve user-defined ordering: sort merged sessions by their previous
+    // index in the local store. New sessions (not present before) keep their
+    // backend-provided order and are appended at the end.
+    const prevOrder = new Map(existing.map((w, idx) => [w.id, idx]));
+    merged.sort((a, b) => {
+      const ai = prevOrder.get(a.id);
+      const bi = prevOrder.get(b.id);
+      if (ai === undefined && bi === undefined) {
+        return 0;
+      }
+      if (ai === undefined) {
+        return 1;
+      }
+      if (bi === undefined) {
+        return -1;
+      }
+
+      return ai - bi;
     });
 
     const mergedIds = new Set(merged.map((w) => w.id));

@@ -4,6 +4,35 @@
   gap: 1px;
 }
 
+.sessionSlot {
+  position: relative;
+}
+
+.sessionSlotDragging {
+  opacity: 0.4;
+}
+
+.sessionSlotDropBefore::before,
+.sessionSlotDropAfter::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sessionSlotDropBefore::before {
+  top: -1px;
+}
+
+.sessionSlotDropAfter::after {
+  bottom: -1px;
+}
+
 .sessionsGroupLabel {
   display: flex;
   align-items: center;

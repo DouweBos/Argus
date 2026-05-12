@@ -16,6 +16,7 @@ import { isSessionReady, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useUnreadByAgent } from "../../../stores/conversationStore";
 import {
+  reorderSessions,
   selectSession,
   useSelectedSessionId,
   useSetupProgressBySessionId,
@@ -63,6 +64,55 @@ export function ProjectSegment({
     x: number;
     y: number;
   } | null>(null);
+  const [dragSessionId, setDragSessionId] = useState<string | null>(null);
+  const [sessionDropTarget, setSessionDropTarget] = useState<{
+    id: string;
+    position: "after" | "before";
+  } | null>(null);
+
+  const handleSessionDragStart =
+    (sessionId: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      setDragSessionId(sessionId);
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", sessionId);
+    };
+
+  const handleSessionDragOver =
+    (sessionId: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      if (!dragSessionId || dragSessionId === sessionId) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+      const rect = e.currentTarget.getBoundingClientRect();
+      const position =
+        e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+      setSessionDropTarget((prev) =>
+        prev?.id === sessionId && prev.position === position
+          ? prev
+          : { id: sessionId, position },
+      );
+    };
+
+  const handleSessionDrop =
+    (sessionId: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const from = dragSessionId;
+      const target = sessionDropTarget;
+      setDragSessionId(null);
+      setSessionDropTarget(null);
+      if (!from || from === sessionId || !target) {
+        return;
+      }
+      reorderSessions(from, target.id, target.position);
+    };
+
+  const handleSessionDragEnd = () => {
+    setDragSessionId(null);
+    setSessionDropTarget(null);
+  };
 
   const repoRootSession = sessions.find((w) => w.kind === "project_root");
   const worktrees = sessions.filter((w) => w.kind !== "project_root");
@@ -283,16 +333,42 @@ export function ProjectSegment({
           {worktrees.length === 0 ? (
             <p className={styles.emptyHint}>No sessions yet.</p>
           ) : (
-            worktrees.map((session) => (
-              <SessionCard
-                key={session.id}
-                isSelected={session.id === selectedId}
-                session={session}
-                onDelete={async () => setSessionToDelete(session)}
-                onRename={() => setSessionToRename(session)}
-                onSelect={() => selectSession(session.id)}
-              />
-            ))
+            worktrees.map((session) => {
+              const isDragging = dragSessionId === session.id;
+              const isTarget = sessionDropTarget?.id === session.id;
+              const slotClass = [
+                styles.sessionSlot,
+                isDragging ? styles.sessionSlotDragging : "",
+                isTarget && sessionDropTarget?.position === "before"
+                  ? styles.sessionSlotDropBefore
+                  : "",
+                isTarget && sessionDropTarget?.position === "after"
+                  ? styles.sessionSlotDropAfter
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <div
+                  key={session.id}
+                  className={slotClass}
+                  draggable
+                  onDragStart={handleSessionDragStart(session.id)}
+                  onDragOver={handleSessionDragOver(session.id)}
+                  onDrop={handleSessionDrop(session.id)}
+                  onDragEnd={handleSessionDragEnd}
+                >
+                  <SessionCard
+                    isSelected={session.id === selectedId}
+                    session={session}
+                    onDelete={async () => setSessionToDelete(session)}
+                    onRename={() => setSessionToRename(session)}
+                    onSelect={() => selectSession(session.id)}
+                  />
+                </div>
+              );
+            })
           )}
         </div>
         <button
