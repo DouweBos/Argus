@@ -185,11 +185,45 @@ const URL_TRAILING = /[.,;:!?)\]}>'"]+$/;
 /**
  * Split plain text on `@mention` tokens (user-typed file references from the
  * chat input). A mention is `@` followed by non-whitespace, preceded by start
- * of input or whitespace. Trailing punctuation (`.,;:!?)`]`) is excluded so
+ * of input or whitespace. Backslash-escaped whitespace (e.g. `path\ name`,
+ * as produced by drag-dropping a path with spaces from Finder) is treated as
+ * part of the token. Trailing punctuation (`.,;:!?)`]`) is excluded so
  * `@foo/bar.ts.` links only `@foo/bar.ts`.
  */
-const MENTION_REGEX = /(^|\s)@([^\s]+)/g;
+const MENTION_REGEX = /(^|\s)@((?:\\\s|\S)+)/g;
 const MENTION_TRAILING = /[.,;:!?)\]}>'"]+$/;
+
+/** Unescape shell-style backslash escapes (e.g. `\ ` → ` `) in a path. */
+function unescapeShellPath(path: string): string {
+  return path.replace(/\\(\s)/g, "$1");
+}
+
+/**
+ * Strip trailing punctuation matching `pattern`, but keep paired closers
+ * (`)`, `]`, `}`) when their opener appears earlier in the token. This makes
+ * `path/to/dir (3)` link the whole `(3)` rather than chopping off the `)`.
+ */
+function trimTrailingPunctuation(token: string, pattern: RegExp): string {
+  const pairs: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
+  while (token.length > 0) {
+    const last = token[token.length - 1];
+    if (!pattern.test(last)) {
+      break;
+    }
+    const opener = pairs[last];
+    if (opener) {
+      const inner = token.slice(0, -1);
+      const opens = (inner.match(new RegExp(`\\${opener}`, "g")) ?? []).length;
+      const closes = (inner.match(new RegExp(`\\${last}`, "g")) ?? []).length;
+      if (opens > closes) {
+        break;
+      }
+    }
+    token = token.slice(0, -1);
+  }
+
+  return token;
+}
 
 export function splitTextForMentions(text: string): LinkSegment[] {
   interface Marker {
@@ -204,10 +238,7 @@ export function splitTextForMentions(text: string): LinkSegment[] {
     const start = match.index ?? 0;
     const leading = match[1];
     let token = match[2];
-    const trailMatch = token.match(MENTION_TRAILING);
-    if (trailMatch) {
-      token = token.slice(0, token.length - trailMatch[0].length);
-    }
+    token = trimTrailingPunctuation(token, MENTION_TRAILING);
     if (!token) {
       continue;
     }
@@ -219,7 +250,7 @@ export function splitTextForMentions(text: string): LinkSegment[] {
       segment: {
         type: "link",
         label: `@${token}`,
-        path: ref.path,
+        path: unescapeShellPath(ref.path),
         line: ref.line,
       },
     });
@@ -265,10 +296,7 @@ function findUrlRanges(text: string): UrlRange[] {
   for (const match of text.matchAll(URL_REGEX)) {
     const start = match.index ?? 0;
     let url = match[0];
-    const trail = url.match(URL_TRAILING);
-    if (trail) {
-      url = url.slice(0, url.length - trail[0].length);
-    }
+    url = trimTrailingPunctuation(url, URL_TRAILING);
     if (!url) {
       continue;
     }
