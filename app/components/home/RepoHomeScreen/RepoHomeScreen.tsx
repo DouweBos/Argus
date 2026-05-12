@@ -1,9 +1,6 @@
-import type { AgentStatus } from "../../../lib/types";
-import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  AgentRow,
   Button,
   IconBadge,
   Icons,
@@ -15,8 +12,7 @@ import { useArgusJson } from "../../../hooks/useArgusJson";
 import { useArgusVersionCheck } from "../../../hooks/useArgusVersionCheck";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { createHeadSession } from "../../../lib/ipc";
-import { setActiveAgent, useAgentsRecord } from "../../../stores/agentStore";
-import { useConversations } from "../../../stores/conversationStore";
+import { useAgentsRecord } from "../../../stores/agentStore";
 import {
   showCreateSessionDialog,
   triggerNewSession,
@@ -26,6 +22,7 @@ import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { SetupConfigDialog } from "../../sidebar/SetupConfigDialog";
+import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
 import styles from "../homeLayout.module.css";
@@ -47,33 +44,6 @@ function basename(p: string): string {
   return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
 }
 
-function mapAgentStatus(status: AgentStatus["status"]): PeacockAgentStatus {
-  switch (status) {
-    case "running":
-      return "running";
-    case "error":
-      return "error";
-    case "stopped":
-      return "done";
-    default:
-      return "idle";
-  }
-}
-
-function agentMetaLabel(status: AgentStatus["status"]): string {
-  if (status === "running") {
-    return "running";
-  }
-  if (status === "error") {
-    return "blocked";
-  }
-  if (status === "requires_action") {
-    return "needs input";
-  }
-
-  return "idle";
-}
-
 export function RepoHomeScreen({
   sessionId,
   repoRoot,
@@ -85,7 +55,6 @@ export function RepoHomeScreen({
   onViewHistory,
 }: RepoHomeScreenProps) {
   const agentsRecord = useAgentsRecord();
-  const conversations = useConversations();
   const sessions = useSessions();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
@@ -115,46 +84,6 @@ export function RepoHomeScreen({
         repoSessionIds.has(a.session_id),
       ),
     [agentsRecord, repoSessionIds],
-  );
-
-  const activeAgents = useMemo(() => {
-    return repoAgents
-      .filter((a) => a.status !== "stopped")
-      .map((a) => {
-        const ws = repoSessions.find((w) => w.id === a.session_id);
-        const conv = conversations[a.agent_id];
-        const convTitle = conv?.title?.trim();
-        const firstUserText = conv?.messages
-          ?.find((m) => m.role === "user")
-          ?.textBlocks?.[0]?.trim();
-        const displayName =
-          convTitle ||
-          firstUserText ||
-          ws?.display_name ||
-          ws?.branch ||
-          "Agent";
-        const branchLabel = ws?.display_name ?? ws?.branch ?? "";
-
-        return {
-          agentId: a.agent_id,
-          sessionId: a.session_id,
-          displayName,
-          branchLabel,
-          model: a.model ?? null,
-          status: a.status,
-          createdAt: a.created_at ?? 0,
-        };
-      })
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }, [repoAgents, repoSessions, conversations]);
-
-  const handleOpenAgent = useCallback(
-    (targetSessionId: string, agentId: string) => {
-      selectSession(targetSessionId);
-      setActiveAgent(targetSessionId, agentId);
-      requestAnimationFrame(() => setActiveCenterView("agents"));
-    },
-    [],
   );
 
   const projectName = useMemo(() => {
@@ -328,29 +257,7 @@ export function RepoHomeScreen({
           )}
         </SectionPanel>
 
-        {activeAgents.length > 0 && (
-          <SectionPanel
-            title="Active agents"
-            meta={`${activeAgents.length} ${activeAgents.length === 1 ? "agent" : "agents"}`}
-          >
-            <div className={styles.rowList}>
-              {activeAgents.map((a) => (
-                <AgentRow
-                  key={a.agentId}
-                  name={a.displayName}
-                  project={a.branchLabel || undefined}
-                  status={mapAgentStatus(a.status)}
-                  model={a.model ?? undefined}
-                  meta={agentMetaLabel(a.status)}
-                  role="button"
-                  tabIndex={0}
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleOpenAgent(a.sessionId, a.agentId)}
-                />
-              ))}
-            </div>
-          </SectionPanel>
-        )}
+        <ActiveAgentsPanel repoRoot={repoRoot} />
 
         {repoRoot && history.loaded && history.entries.length > 0 && (
           <ChatHistoryList

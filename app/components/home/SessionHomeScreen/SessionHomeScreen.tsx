@@ -13,6 +13,7 @@ import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
 import { TaskWidgets } from "../../organizations/TaskWidgets";
+import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
 import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
 import { PathLink } from "../PathLink/PathLink";
@@ -227,6 +228,8 @@ export function SessionHomeScreen({
         )}
 
         {orgTask && <TaskWidgets task={orgTask} />}
+
+        <ActiveAgentsPanel repoRoot={repoRoot} sessionId={sessionId} />
 
         <ReadyToMergeCard
           baseBranch={session?.base_branch}
