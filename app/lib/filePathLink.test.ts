@@ -109,4 +109,28 @@ describe("splitTextForMentions", () => {
     const segs = splitTextForMentions("email foo@bar.ts there");
     expect(segs.every((s) => s.type === "text")).toBe(true);
   });
+
+  it("includes backslash-escaped spaces in the mention", () => {
+    const segs = splitTextForMentions(
+      "see @/Users/douwe/Downloads/maestro-results-android-phone\\ (3) please",
+    );
+    const link = segs.find((s) => s.type === "link");
+    expect(link).toEqual({
+      type: "link",
+      label: "@/Users/douwe/Downloads/maestro-results-android-phone\\ (3)",
+      path: "/Users/douwe/Downloads/maestro-results-android-phone (3)",
+      line: undefined,
+    });
+  });
+
+  it("keeps balanced parentheses inside a mention token", () => {
+    const segs = splitTextForMentions("see @foo/bar(1).ts now");
+    const link = segs.find((s) => s.type === "link");
+    expect(link).toEqual({
+      type: "link",
+      label: "@foo/bar(1).ts",
+      path: "foo/bar(1).ts",
+      line: undefined,
+    });
+  });
 });
