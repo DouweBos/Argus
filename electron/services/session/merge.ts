@@ -163,15 +163,7 @@ export async function mergeSessionIntoBase(
   // Squash all session commits into a single conventional commit.
   await squashSessionCommits(wsPath, sessionBranch, baseBranch);
 
-  // Fast-forward the base branch to the rebased tip. If the base branch is
-  // checked out in a worktree, update it there; otherwise update the ref
-  // directly (safe because the rebase guarantees a fast-forward).
-  const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
-  if (existingCheckout) {
-    await git(existingCheckout, ["merge", "--ff-only", sessionBranch]);
-  } else {
-    await git(repoRoot, ["branch", "-f", baseBranch, sessionBranch]);
-  }
+  await fastForwardBase(repoRoot, sessionBranch, baseBranch);
 }
 
 // ---------------------------------------------------------------------------
@@ -507,12 +499,50 @@ async function fastForwardBase(
   sessionBranch: string,
   baseBranch: string,
 ): Promise<void> {
+  await assertLocalBranch(repoRoot, baseBranch);
+
   const existingCheckout = await findWorktreeForBranch(repoRoot, baseBranch);
   if (existingCheckout) {
     await git(existingCheckout, ["merge", "--ff-only", sessionBranch]);
   } else {
     await git(repoRoot, ["branch", "-f", baseBranch, sessionBranch]);
   }
+}
+
+/**
+ * Throw if `baseBranch` is not an existing local branch.
+ *
+ * Why: downstream we run `git branch -f <baseBranch> <sessionBranch>` to
+ * fast-forward the base. Git accepts `/` in branch names, so passing a
+ * remote-qualified name like `origin/main` silently creates a bogus local
+ * branch literally named `origin/main` instead of moving the real base.
+ * Catching this here turns the silent corruption into a clear error.
+ */
+async function assertLocalBranch(
+  repoRoot: string,
+  baseBranch: string,
+): Promise<void> {
+  const localExists = await refExists(repoRoot, `refs/heads/${baseBranch}`);
+  if (localExists) {
+    return;
+  }
+  const remoteExists = await refExists(repoRoot, `refs/remotes/${baseBranch}`);
+  if (remoteExists) {
+    const stripped = baseBranch.split("/").slice(1).join("/");
+    throw `Base branch "${baseBranch}" is a remote-tracking ref, not a local branch. Set the base to "${stripped}" instead.`;
+  }
+  throw `Base branch "${baseBranch}" does not exist locally.`;
+}
+
+function refExists(repoRoot: string, ref: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(
+      "git",
+      ["show-ref", "--verify", "--quiet", ref],
+      { cwd: repoRoot },
+      (err) => resolve(!err),
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------

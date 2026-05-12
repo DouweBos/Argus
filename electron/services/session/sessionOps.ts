@@ -35,6 +35,28 @@ import { startWatcher, type WatcherHandle } from "./watcher";
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * True when `name` refers to a remote-tracking ref (`refs/remotes/<name>`)
+ * but no local branch with that name exists. Used to refuse remote-qualified
+ * names like `origin/main` at base-branch entry points.
+ */
+function isRemoteOnlyRef(repoRoot: string, name: string): Promise<boolean> {
+  const check = (ref: string) =>
+    new Promise<boolean>((resolve) => {
+      execFile(
+        "git",
+        ["show-ref", "--verify", "--quiet", ref],
+        { cwd: repoRoot },
+        (err) => resolve(!err),
+      );
+    });
+
+  return Promise.all([
+    check(`refs/heads/${name}`),
+    check(`refs/remotes/${name}`),
+  ]).then(([local, remote]) => !local && remote);
+}
+
 /** Look up a session's path by ID, or throw. */
 function sessionPath(id: string): string {
   const ws = appState.sessions.get(id);
@@ -843,10 +865,21 @@ export function writeArgusConfig(repoRoot: string, content: string): void {
 // ---------------------------------------------------------------------------
 
 /** Update the base branch for a session (persisted to metadata). */
-export function setSessionBaseBranch(id: string, baseBranch: string): void {
+export async function setSessionBaseBranch(
+  id: string,
+  baseBranch: string,
+): Promise<void> {
   const ws = appState.sessions.get(id);
   if (!ws) {
     throw `Session not found: ${id}`;
+  }
+
+  // Reject remote-qualified names like `origin/main`. The merge path runs
+  // `git branch -f <base>`, which would silently create a bogus local branch
+  // with a `/` in its name instead of moving the real local base.
+  if (await isRemoteOnlyRef(ws.repo_root, baseBranch)) {
+    const stripped = baseBranch.split("/").slice(1).join("/");
+    throw `"${baseBranch}" is a remote-tracking ref, not a local branch. Use "${stripped}" instead.`;
   }
 
   ws.base_branch = baseBranch;
