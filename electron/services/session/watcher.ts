@@ -41,9 +41,10 @@ export class WatcherHandle {
 
   /** Start polling at the given interval (ms). */
   start(intervalMs = 2000): void {
-    // Fire immediately, then poll.
-    this.poll();
-    this.timer = setInterval(() => this.poll(), intervalMs);
+    // Fire immediately to seed initial stats; subsequent ticks gate on an
+    // active agent (files don't change on their own).
+    this.poll(true);
+    this.timer = setInterval(() => this.poll(false), intervalMs);
   }
 
   stop(): void {
@@ -68,11 +69,33 @@ export class WatcherHandle {
   /** Re-emit current stats (for newly mounted listeners). */
   emitCurrent(): void {
     this.lastFingerprint = "";
-    this.poll();
+    this.poll(true);
   }
 
-  private async poll(): Promise<void> {
+  private hasActiveAgent(): boolean {
+    for (const a of appState.agents.values()) {
+      if (
+        a.sessionId === this.sessionId &&
+        !a.prewarmed &&
+        a.status !== "stopped" &&
+        a.status !== "error"
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private async poll(force = false): Promise<void> {
     if (this.paused) {
+      return;
+    }
+    // Periodic ticks skip sessions with no active agent — files can't change
+    // on their own, so re-running `git diff` just burns CPU. `force` is set
+    // by `start()` and `emitCurrent()` so the sidebar still gets a one-shot
+    // seed when a watcher first attaches.
+    if (!force && !this.hasActiveAgent()) {
       return;
     }
 
