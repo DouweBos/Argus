@@ -24,6 +24,7 @@ import {
   type GitStatus,
   type GitStatusChangedPayload,
 } from "../lib/types";
+import { getAgentsBySession } from "./agentStore";
 
 const POLL_INTERVAL_MS = 5_000;
 /** How long cached observations linger after the last consumer leaves. */
@@ -135,6 +136,13 @@ function startSession(sessionId: string): void {
     timers.set(
       sessionId,
       setInterval(() => {
+        // The 5s safety-poll only matters when something might mutate the
+        // worktree out-of-band (an active agent). Idle sessions rely on the
+        // `git_status_changed` FS event for refreshes, so skip the shell-out
+        // when no agent is attached — keeps idle workspaces quiet.
+        if (getAgentsBySession(sessionId).length === 0) {
+          return;
+        }
         refreshStatus(sessionId).catch(() => {});
       }, POLL_INTERVAL_MS),
     );
