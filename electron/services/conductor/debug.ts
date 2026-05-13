@@ -60,7 +60,14 @@ export function startDebugStream(input: StartDebugStreamInput): void {
     `starting debug stream ${streamId}: conductor ${finalArgs.join(" ")}`,
   );
 
-  const proc = spawn(bin, finalArgs, { stdio: ["ignore", "pipe", "pipe"] });
+  // `detached: true` puts the child in its own process group so we can
+  // signal the whole tree on stop. Conductor spawns `simctl ... log stream`
+  // as a grandchild and SIGTERM on the parent alone leaves the grandchild
+  // reparented to launchd.
+  const proc = spawn(bin, finalArgs, {
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+  });
   const entry: DebugStream = {
     streamId,
     deviceKey,
@@ -125,12 +132,38 @@ export function stopDebugStream(streamId: string): void {
     return;
   }
   log.info(`stopping debug stream ${streamId}`);
-  try {
-    entry.proc.kill("SIGTERM");
-  } catch (e) {
-    log.error(`failed to kill stream ${streamId}:`, e);
-  }
+  killProcessGroup(entry.proc, "SIGTERM");
+  // Escalate to SIGKILL if the tree is still alive after 1 s — conductor
+  // doesn't always propagate SIGTERM to its `simctl log stream` grandchild.
+  setTimeout(() => {
+    if (streams.has(streamId)) {
+      log.info(`debug stream ${streamId} still alive after SIGTERM, SIGKILL`);
+      killProcessGroup(entry.proc, "SIGKILL");
+    }
+  }, 1000).unref();
   // `exit` handler clears the map.
+}
+
+function killProcessGroup(proc: ChildProcess, signal: NodeJS.Signals): void {
+  const pid = proc.pid;
+  if (pid === undefined) {
+    return;
+  }
+  try {
+    // Negative pid signals the whole process group — kills conductor and
+    // any `simctl` grandchildren it spawned.
+    process.kill(-pid, signal);
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === "ESRCH") {
+      return;
+    }
+    try {
+      proc.kill(signal);
+    } catch (err) {
+      log.error(`failed to kill stream ${pid}:`, err);
+    }
+  }
 }
 
 export function listDebugStreams(): {
