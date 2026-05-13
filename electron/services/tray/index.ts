@@ -80,6 +80,9 @@ function loadTrayImage(active: boolean): Electron.NativeImage {
  * `inflight` tracking so the tray view agrees with the agents screen.
  */
 function isAgentActive(a: AgentSession): boolean {
+  if (a.prewarmed) {
+    return false;
+  }
   if (a.status === "stopped" || a.status === "error") {
     return false;
   }
@@ -159,6 +162,9 @@ function buildMenu(): Menu {
   // one live agent), and sessions tell us which project bucket they fall in.
   const sessionAgents = new Map<string, AgentSession[]>();
   for (const agent of appState.agents.values()) {
+    if (agent.prewarmed) {
+      continue;
+    }
     const list = sessionAgents.get(agent.sessionId) ?? [];
     list.push(agent);
     sessionAgents.set(agent.sessionId, list);
@@ -182,9 +188,13 @@ function buildMenu(): Menu {
 
   const template: Electron.MenuItemConstructorOptions[] = [];
   let runningCount = 0;
-  for (const a of appState.agents.values()) {
-    if (isAgentActive(a)) {
-      runningCount += 1;
+  let totalAgentCount = 0;
+  for (const agents of sessionAgents.values()) {
+    for (const a of agents) {
+      totalAgentCount += 1;
+      if (isAgentActive(a)) {
+        runningCount += 1;
+      }
     }
   }
 
@@ -192,7 +202,7 @@ function buildMenu(): Menu {
     label:
       sessionAgents.size === 0
         ? "No agents running"
-        : `${appState.agents.size} agent${appState.agents.size === 1 ? "" : "s"} · ${runningCount} active`,
+        : `${totalAgentCount} agent${totalAgentCount === 1 ? "" : "s"} · ${runningCount} active`,
     enabled: false,
   });
   template.push({ type: "separator" });
@@ -275,9 +285,13 @@ function refreshTray(): void {
     lastActive = active;
   }
 
-  const total = appState.agents.size;
+  let total = 0;
   let running = 0;
   for (const a of appState.agents.values()) {
+    if (a.prewarmed) {
+      continue;
+    }
+    total += 1;
     if (isAgentActive(a)) {
       running += 1;
     }
