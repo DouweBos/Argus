@@ -19,6 +19,7 @@ vi.mock("./git", () => ({
 vi.mock("../../state", () => ({
   appState: {
     sessions: new Map(),
+    agents: new Map(),
   },
 }));
 
@@ -41,6 +42,16 @@ describe("watcherHandle", () => {
     mockSend.mockClear();
     gitMock.mockReset();
     appState.sessions.clear();
+    appState.agents.clear();
+    // Seed an active agent so the periodic-poll agent gate doesn't short-
+    // circuit. Tests that specifically exercise the gate set this up
+    // themselves.
+    appState.agents.set("agent-1", {
+      agentId: "agent-1",
+      sessionId: "ws-1",
+      status: "idle",
+      prewarmed: false,
+    } as never);
   });
 
   afterEach(() => {

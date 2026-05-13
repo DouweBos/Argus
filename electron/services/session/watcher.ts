@@ -61,8 +61,10 @@ export class WatcherHandle {
   resume(): void {
     if (this.paused) {
       this.paused = false;
-      // Immediately check for changes that happened while paused.
-      this.poll();
+      // Force a poll on resume — an explicit refresh signal, same semantics
+      // as `emitCurrent()`. Skipping the agent gate here means a pause/resume
+      // cycle always re-syncs stats even on agent-less sessions.
+      this.poll(true);
     }
   }
 
