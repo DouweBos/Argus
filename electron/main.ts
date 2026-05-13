@@ -35,6 +35,7 @@ import {
   stopMjpegServer,
 } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
+import { stopAllDebugStreams } from "./services/conductor/debug";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { initLauncher, toggleLauncher } from "./services/launcher";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
@@ -692,6 +693,7 @@ app.on("before-quit", (e) => {
   stopMcpServer();
   stopMjpegServer();
   stopAllScreencasts();
+  stopAllDebugStreams();
   destroyTray();
   webBrowserPool.releaseAll().catch((err) => {
     log("webBrowserPool.releaseAll failed: %s", err);
