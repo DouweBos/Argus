@@ -129,9 +129,10 @@ if (popoutMode === "launcher") {
   initNotificationsListener();
   // Dispatch captured initial prompts once their session's worktree is ready.
   initPendingSessionPrompts();
-  // Eagerly spawn one Claude subprocess per ready session so dialogs have
-  // real model + slash-command lists ahead of time and the user-facing
-  // "send" path skips the spawn + initialize wait on first prompt.
+  // Keep at most one Claude subprocess warmed up — for the currently
+  // selected, agent-less session — so its StartAgentDialog gets real
+  // model + slash-command lists ahead of time and the first send skips
+  // the spawn + initialize wait.
   initPrewarm();
   // Keep the poppedOut-agents set in sync with the backend so every window's
   // tab bar hides agents that are currently detached.

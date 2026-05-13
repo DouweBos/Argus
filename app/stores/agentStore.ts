@@ -370,3 +370,4 @@ export const usePoppedOutAgents = () => useAgentStore((s) => s.poppedOut);
 /** For tests and imperative access */
 export const getAgentState = () => agentStore.getState();
 export const setAgentState = agentStore.setState.bind(agentStore);
+export const subscribeAgentStore = agentStore.subscribe.bind(agentStore);
