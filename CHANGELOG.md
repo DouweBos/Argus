@@ -1,5 +1,11 @@
 # argus
 
+## 0.24.2
+
+### Patch Changes
+
+- 81dcbc9: The renderer's 5-second git-status safety poll now skips sessions without an attached agent — idle workspaces rely on filesystem events instead of constant shell-outs.
+
 ## 0.24.1
 
 ### Patch Changes
