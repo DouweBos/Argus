@@ -37,6 +37,9 @@ interface BranchGroup {
   label: string;
 }
 
+const DROPDOWN_MAX_HEIGHT = 200;
+const VIEWPORT_MARGIN = 8;
+
 const BUILTIN_PROTECTED_ORDER = [
   "main",
   "master",
@@ -117,7 +120,19 @@ export function BranchSwitcher({
       return;
     }
     const r = node.getBoundingClientRect();
-    setRect({ left: r.left, top: r.bottom + 2, width: r.width });
+    const dropdownHeight =
+      dropdownRef.current?.offsetHeight ?? DROPDOWN_MAX_HEIGHT;
+    const gap = 2;
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top;
+    const flipAbove =
+      spaceBelow < dropdownHeight + gap && spaceAbove > spaceBelow;
+    const top = flipAbove ? r.top - dropdownHeight - gap : r.bottom + gap;
+    const left = Math.max(
+      VIEWPORT_MARGIN,
+      Math.min(r.left, window.innerWidth - r.width - VIEWPORT_MARGIN),
+    );
+    setRect({ left, top, width: r.width });
   }, []);
 
   const open = useCallback(async () => {
@@ -192,6 +207,12 @@ export function BranchSwitcher({
       return;
     }
     updateRect();
+  }, [isOpen, isLoading, groups, updateRect]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
     const handle = () => updateRect();
     window.addEventListener("resize", handle);
     window.addEventListener("scroll", handle, true);
