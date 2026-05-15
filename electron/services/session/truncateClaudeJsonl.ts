@@ -8,11 +8,23 @@
  *   - keeps any pre-turn meta entries (summary, system init, etc.)
  *   - rewrites `sessionId` / `cwd` / `gitBranch` on every kept entry so the
  *     file stands alone as a resumable session
+ *   - ends with a `last-prompt` entry whose `leafUuid` points at the actual
+ *     conversation tip of the truncated file
  *
  * Real user turns are identified by `type === "user"` where the first
  * content block is `type === "text"`. `tool_result` entries are also stored
  * with role=user but belong to the previous turn and must NOT trigger the
  * cutoff.
+ *
+ * The Claude Code CLI writes `last-prompt` entries periodically as a turn
+ * progresses, each carrying a `leafUuid` snapshot of the chain tip at that
+ * moment. On `--resume`, it walks the parent chain backwards from the most
+ * recent `last-prompt`. If we kept a stale `last-prompt` whose leaf is in
+ * the middle of a completed turn (e.g. between tool calls), the assistant
+ * entries written *after* that snapshot but still inside the kept range are
+ * invisible to the resumed CLI — the previous turn appears to vanish. We
+ * defend against this by stripping any kept `last-prompt` entries and
+ * appending a fresh one pinned to the real tip.
  *
  * Returns the list of rewritten lines, or `null` if nothing was kept.
  */
@@ -32,6 +44,8 @@ export function truncateClaudeJsonl(args: {
 
   let userTurnsSeen = 0;
   let afterCutoff = false;
+  let tipUuid: string | null = null;
+  let lastPromptText: string | null = null;
   const cutoffMs = forkTimestampMs;
   // Small buffer: frontend timestamps are set at event-receipt time and may
   // lead the JSONL timestamp by a few hundred ms. 2s is more than enough.
@@ -84,6 +98,16 @@ export function truncateClaudeJsonl(args: {
       break;
     }
 
+    // Drop kept `last-prompt` entries — they carry leafUuids that may point
+    // mid-turn. We re-emit one fresh entry at the end pinned to the real
+    // tip. Remember the most recent prompt text so we can preserve it.
+    if (type === "last-prompt") {
+      if (typeof parsed.lastPrompt === "string") {
+        lastPromptText = parsed.lastPrompt;
+      }
+      continue;
+    }
+
     // Rewrite identity fields so the new JSONL stands alone as a resumable
     // session tied to the forked worktree.
     if ("sessionId" in parsed) {
@@ -96,11 +120,28 @@ export function truncateClaudeJsonl(args: {
       parsed.gitBranch = destBranch;
     }
 
+    // Track the most recent UUID-bearing entry — that's the chain tip of
+    // the truncated transcript and where the resumed CLI must pick up from.
+    if (typeof parsed.uuid === "string") {
+      tipUuid = parsed.uuid;
+    }
+
     kept.push(JSON.stringify(parsed));
   }
 
   if (kept.length === 0) {
     return null;
+  }
+
+  if (tipUuid) {
+    const lastPrompt: Record<string, unknown> = {
+      type: "last-prompt",
+      leafUuid: tipUuid,
+    };
+    if (lastPromptText !== null) {
+      lastPrompt.lastPrompt = lastPromptText;
+    }
+    kept.push(JSON.stringify(lastPrompt));
   }
 
   return kept;
