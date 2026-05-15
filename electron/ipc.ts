@@ -302,6 +302,7 @@ import {
   createHeadSession,
   deleteSession,
   forkSession,
+  forkChatInSession,
   renameSession,
   renameSessionBranch,
   clearSessionSetupError,
@@ -739,6 +740,14 @@ export function registerIpcHandlers(): void {
       a.forkTurnNumber as number,
       a.sourceClaudeSessionId as string | null | undefined,
       a.replayOps as Parameters<typeof forkSession>[6],
+    ),
+  );
+  handle("fork_chat_in_session", (a) =>
+    forkChatInSession(
+      a.sourceSessionId as string,
+      a.sourceClaudeSessionId as string,
+      a.forkTimestampMs as number,
+      a.forkTurnNumber as number,
     ),
   );
 

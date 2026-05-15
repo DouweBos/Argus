@@ -5,7 +5,7 @@ import {
 } from "../stores/conversationStore";
 import { addSession, selectSession } from "../stores/sessionStore";
 import { startAgentInSession } from "./agentLifecycle";
-import { type ForkReplayOp, forkSession } from "./ipc";
+import { type ForkReplayOp, forkChatInSession, forkSession } from "./ipc";
 
 /**
  * Count the number of real user turns in `messages[0..idx]` (inclusive).
@@ -173,6 +173,55 @@ export async function forkChatFromMessage(
   // tells the store to drop replay events that Claude re-emits on --resume
   // (it replays the most recent turn). The model's own context is already
   // primed by the truncated JSONL, so we just need the UI to stay in sync.
+  loadSavedMessages(
+    agent.agent_id,
+    backfill,
+    conversation.model,
+    newClaudeSessionId ?? undefined,
+    newClaudeSessionId != null,
+    conversation.title,
+  );
+}
+
+/**
+ * Fork a chat into a new agent within the *existing* session — keeps the
+ * same worktree and creates a fresh agent with the conversation truncated
+ * at the fork message.
+ */
+export async function forkChatIntoNewAgent(
+  sessionId: string,
+  agentId: string,
+  forkMessageId: string,
+): Promise<void> {
+  const conversation = getConversationState().conversations[agentId];
+  if (!conversation) {
+    throw new Error("Conversation not found");
+  }
+  if (!conversation.sessionId) {
+    throw new Error("Conversation has no Claude session id to fork from");
+  }
+  const idx = conversation.messages.findIndex((m) => m.id === forkMessageId);
+  if (idx < 0) {
+    throw new Error("Message not found");
+  }
+  const forkMessage = conversation.messages[idx];
+  const backfill: ConversationMessage[] = conversation.messages
+    .slice(0, idx + 1)
+    .map((m) => ({ ...m }));
+  const turnNumber = countUserTurns(conversation.messages, idx);
+
+  const { claude_session_id: newClaudeSessionId } = await forkChatInSession(
+    sessionId,
+    conversation.sessionId,
+    forkMessage.timestamp,
+    turnNumber,
+  );
+
+  const agent = await startAgentInSession(sessionId, {
+    focus: true,
+    resumeSessionId: newClaudeSessionId ?? undefined,
+  });
+
   loadSavedMessages(
     agent.agent_id,
     backfill,

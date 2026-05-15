@@ -772,6 +772,19 @@ export const forkSession = (
     replayOps: replayOps ?? null,
   });
 
+export const forkChatInSession = (
+  sourceSessionId: string,
+  sourceClaudeSessionId: string,
+  forkTimestampMs: number,
+  forkTurnNumber: number,
+): Promise<{ claude_session_id: string | null }> =>
+  invoke("fork_chat_in_session", {
+    sourceSessionId,
+    sourceClaudeSessionId,
+    forkTimestampMs,
+    forkTurnNumber,
+  });
+
 /**
  * Restore an agent's conversation in place — kills and respawns the child
  * under the same agentId. Returns the new Claude session UUID (or null for
