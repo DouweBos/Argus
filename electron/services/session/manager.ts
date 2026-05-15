@@ -854,6 +854,43 @@ export async function forkSession(
 }
 
 /**
+ * Fork the Claude Code transcript only — same session, same worktree.
+ *
+ * Produces a new truncated JSONL inside the existing session's Claude
+ * project directory so a fresh agent can `--resume` into it. The workspace
+ * is left untouched (the new agent inherits whatever uncommitted state is
+ * currently there); this is the "fork the conversation, not the workspace"
+ * path.
+ */
+export async function forkChatInSession(
+  sourceSessionId: string,
+  sourceClaudeSessionId: string,
+  forkTimestampMs: number,
+  forkTurnNumber: number,
+): Promise<{ claude_session_id: string | null }> {
+  const source = appState.sessions.get(sourceSessionId);
+  if (!source) {
+    throw `Session not found: ${sourceSessionId}`;
+  }
+  if (source.kind !== "worktree" && source.kind !== "project_root") {
+    throw `Cannot fork a session of kind "${source.kind}"`;
+  }
+  const newClaudeSessionId = await forkClaudeSessionFile({
+    sourceCwd: source.path,
+    sourceSessionId: sourceClaudeSessionId,
+    destCwd: source.path,
+    destBranch: source.branch,
+    forkTimestampMs,
+    forkTurnNumber,
+  });
+  info(
+    `Forked chat in session ${sourceSessionId} (claude ${newClaudeSessionId ?? "<none>"})`,
+  );
+
+  return { claude_session_id: newClaudeSessionId };
+}
+
+/**
  * Rebase a file path captured against the source worktree onto the new
  * worktree. Leaves paths pointing outside the source worktree untouched —
  * those are filtered out by the caller.

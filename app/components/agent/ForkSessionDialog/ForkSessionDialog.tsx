@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Button, Input, TextArea } from "@argus/peacock";
-import { forkChatFromMessage } from "../../../lib/forkChat";
+import { Button, Input, SegmentedControl, TextArea } from "@argus/peacock";
+import {
+  forkChatFromMessage,
+  forkChatIntoNewAgent,
+} from "../../../lib/forkChat";
 import {
   getUserProjectSettings,
   listAllBranches,
@@ -43,6 +46,7 @@ export function ForkSessionDialog({
   agentId,
   messageId,
 }: ForkSessionDialogProps) {
+  const [mode, setMode] = useState<"agent" | "session">("session");
   const [description, setDescription] = useState("");
   const [newBranch, setNewBranch] = useState("");
   const [isForking, setIsForking] = useState(false);
@@ -123,7 +127,8 @@ export function ForkSessionDialog({
       remoteBranches.includes(effectiveSlug) ||
       claimedBranches.has(effectiveSlug));
 
-  const canSubmit = !!trimmedDescription && !branchCollision;
+  const canSubmit =
+    mode === "agent" ? true : !!trimmedDescription && !branchCollision;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,16 +138,20 @@ export function ForkSessionDialog({
     setIsForking(true);
     setError(null);
     try {
-      await forkChatFromMessage(
-        sourceSessionId,
-        agentId,
-        messageId,
-        effectiveBranch,
-        trimmedDescription,
-      );
+      if (mode === "agent") {
+        await forkChatIntoNewAgent(sourceSessionId, agentId, messageId);
+      } else {
+        await forkChatFromMessage(
+          sourceSessionId,
+          agentId,
+          messageId,
+          effectiveBranch,
+          trimmedDescription,
+        );
+      }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fork session");
+      setError(err instanceof Error ? err.message : "Failed to fork");
     } finally {
       setIsForking(false);
     }
@@ -172,97 +181,124 @@ export function ForkSessionDialog({
   return (
     <Dialog
       size="medium"
-      title="Fork Session"
+      title="Fork chat"
       titleId="fork-session-title"
       onClose={onClose}
     >
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="fork-description-input">
-            Description
-          </label>
-          <TextArea
-            ref={descriptionRef}
-            autoFocus
-            id="fork-description-input"
-            placeholder="What's this fork for?"
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={(e) => {
-              if (
-                (e.metaKey || e.ctrlKey) &&
-                e.key === "Enter" &&
-                canSubmit &&
-                !isForking
-              ) {
-                e.preventDefault();
-                handleSubmit(e as unknown as React.FormEvent).catch(() => {});
-              }
-            }}
+          <SegmentedControl
+            aria-label="Fork target"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "session", label: "New session" },
+              { value: "agent", label: "New agent here" },
+            ]}
           />
+          <span className={styles.labelHint}>
+            {mode === "session"
+              ? "Create a fresh worktree branched from this point. The new agent starts in an isolated workspace pinned to the fork commit."
+              : "Start a new agent in this session, sharing the current workspace, with the conversation truncated to this message."}
+          </span>
         </div>
 
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor="fork-branch-input">
-            Branch name{" "}
-            <span className={styles.labelHint}>
-              (optional — generated from description)
-            </span>
-          </label>
-          <Input
-            autoComplete="off"
-            id="fork-branch-input"
-            placeholder="e.g. feat/my-feature"
-            type="text"
-            value={newBranch}
-            onChange={(e) => setNewBranch(e.target.value)}
-          />
-          {branchHint}
-          <div className={styles.prefixRow}>
-            {editingPrefix ? (
-              <>
-                <Input
-                  autoComplete="off"
-                  placeholder="e.g. douwe/"
-                  type="text"
-                  value={prefixDraft}
-                  onChange={(e) => setPrefixDraft(e.target.value)}
-                />
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => {
-                    setPrefixDraft(branchPrefix);
-                    setEditingPrefix(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="primary" type="button" onClick={savePrefix}>
-                  Save
-                </Button>
-              </>
-            ) : (
-              <span className={styles.labelHint}>
-                {branchPrefix ? (
+        {mode === "session" && (
+          <>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="fork-description-input">
+                Description
+              </label>
+              <TextArea
+                ref={descriptionRef}
+                autoFocus
+                id="fork-description-input"
+                placeholder="What's this fork for?"
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    (e.metaKey || e.ctrlKey) &&
+                    e.key === "Enter" &&
+                    canSubmit &&
+                    !isForking
+                  ) {
+                    e.preventDefault();
+                    handleSubmit(e as unknown as React.FormEvent).catch(
+                      () => {},
+                    );
+                  }
+                }}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="fork-branch-input">
+                Branch name{" "}
+                <span className={styles.labelHint}>
+                  (optional — generated from description)
+                </span>
+              </label>
+              <Input
+                autoComplete="off"
+                id="fork-branch-input"
+                placeholder="e.g. feat/my-feature"
+                type="text"
+                value={newBranch}
+                onChange={(e) => setNewBranch(e.target.value)}
+              />
+              {branchHint}
+              <div className={styles.prefixRow}>
+                {editingPrefix ? (
                   <>
-                    Personal prefix: <strong>{branchPrefix}</strong>
+                    <Input
+                      autoComplete="off"
+                      placeholder="e.g. douwe/"
+                      type="text"
+                      value={prefixDraft}
+                      onChange={(e) => setPrefixDraft(e.target.value)}
+                    />
+                    <Button
+                      variant="secondary"
+                      type="button"
+                      onClick={() => {
+                        setPrefixDraft(branchPrefix);
+                        setEditingPrefix(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      type="button"
+                      onClick={savePrefix}
+                    >
+                      Save
+                    </Button>
                   </>
                 ) : (
-                  <>No personal branch prefix set.</>
-                )}{" "}
-                <button
-                  className={styles.linkButton}
-                  type="button"
-                  onClick={() => setEditingPrefix(true)}
-                >
-                  {branchPrefix ? "Change" : "Set one"}
-                </button>
-              </span>
-            )}
-          </div>
-        </div>
+                  <span className={styles.labelHint}>
+                    {branchPrefix ? (
+                      <>
+                        Personal prefix: <strong>{branchPrefix}</strong>
+                      </>
+                    ) : (
+                      <>No personal branch prefix set.</>
+                    )}{" "}
+                    <button
+                      className={styles.linkButton}
+                      type="button"
+                      onClick={() => setEditingPrefix(true)}
+                    >
+                      {branchPrefix ? "Change" : "Set one"}
+                    </button>
+                  </span>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {error && <p className={styles.errorMsg}>{error}</p>}
 
@@ -275,7 +311,15 @@ export function ForkSessionDialog({
             disabled={isForking || !canSubmit}
             type="submit"
           >
-            {isForking ? "Forking…" : "Fork Session"}
+            {(() => {
+              if (isForking) {
+                return "Forking…";
+              }
+
+              return mode === "agent"
+                ? "Fork into new agent"
+                : "Fork into new session";
+            })()}
           </Button>
         </div>
       </form>
