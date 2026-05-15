@@ -219,4 +219,87 @@ describe("truncateClaudeJsonl", () => {
     expect(result!).toHaveLength(1);
     expect((JSON.parse(result![0]) as { type: string }).type).toBe("summary");
   });
+
+  it("appends a fresh last-prompt pinned to the actual tip, discarding stale ones", () => {
+    // Simulates the bug scenario: Claude wrote a `last-prompt` mid-turn 1
+    // pointing at an intermediate node (`a1-mid`), then the turn continued
+    // with another assistant entry (`a1-end`). Without the fix, `a1-end`
+    // would be invisible to `--resume` because the kept `last-prompt` would
+    // still point at `a1-mid`.
+    const entries = [
+      entry({
+        type: "user",
+        sessionId: "old",
+        cwd: "/old",
+        gitBranch: "old-branch",
+        uuid: "u1-uuid",
+        timestamp: "2026-04-01T00:00:00.000Z",
+        message: { content: [{ type: "text", text: "u1" }] },
+      }),
+      entry({
+        type: "assistant",
+        sessionId: "old",
+        cwd: "/old",
+        gitBranch: "old-branch",
+        uuid: "a1-mid",
+        parentUuid: "u1-uuid",
+        timestamp: "2026-04-01T00:00:01.000Z",
+        message: { content: [{ type: "tool_use", id: "t1", name: "X" }] },
+      }),
+      entry({
+        type: "last-prompt",
+        lastPrompt: "u1",
+        leafUuid: "a1-mid",
+      }),
+      entry({
+        type: "user",
+        sessionId: "old",
+        cwd: "/old",
+        gitBranch: "old-branch",
+        uuid: "tr1",
+        parentUuid: "a1-mid",
+        timestamp: "2026-04-01T00:00:02.000Z",
+        message: {
+          content: [{ type: "tool_result", tool_use_id: "t1", content: "ok" }],
+        },
+      }),
+      entry({
+        type: "assistant",
+        sessionId: "old",
+        cwd: "/old",
+        gitBranch: "old-branch",
+        uuid: "a1-end",
+        parentUuid: "tr1",
+        timestamp: "2026-04-01T00:00:03.000Z",
+        message: { content: [{ type: "text", text: "done" }] },
+      }),
+    ];
+
+    const result = truncateClaudeJsonl({
+      ...baseArgs,
+      forkTurnNumber: 1,
+      raw: entries.join("\n"),
+    });
+
+    expect(result).not.toBeNull();
+    const parsed = result!.map((l) => JSON.parse(l) as Record<string, unknown>);
+    const lastPrompts = parsed.filter((p) => p.type === "last-prompt");
+    expect(lastPrompts).toHaveLength(1);
+    expect(lastPrompts[0].leafUuid).toBe("a1-end");
+    expect(lastPrompts[0].lastPrompt).toBe("u1");
+    // The fresh last-prompt is the final line.
+    expect(parsed[parsed.length - 1].type).toBe("last-prompt");
+  });
+
+  it("does not emit a last-prompt when nothing kept has a uuid", () => {
+    // Meta-only files (e.g. summary entries) have no uuid-bearing nodes —
+    // there is no tip to anchor a last-prompt to.
+    const result = truncateClaudeJsonl({
+      ...baseArgs,
+      forkTurnNumber: 1,
+      raw: summaryEntry(),
+    });
+
+    expect(result).toEqual([summaryEntry()]);
+  });
 });
