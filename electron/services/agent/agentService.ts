@@ -511,6 +511,7 @@ export async function startAgent(
     lastToolName: previous?.lastToolName ?? null,
     inflightPrompts: 0,
     model: effectiveModel,
+    permissionMode: permissionMode ?? null,
   };
   appState.agents.set(agentId, agentSession);
 
@@ -1298,6 +1299,8 @@ export async function setAgentPermissionMode(
 
   await session.handle.setPermissionMode(mode);
 
+  session.permissionMode = mode;
+
   broadcastToRenderers(`agent:permission-mode-changed:${agentId}`, mode);
   info(`[agent:${agentId}] permission mode changed to ${mode}`);
 }
@@ -1353,8 +1356,19 @@ export function listAgents(sessionId: string): AgentInfo[] {
 // prewarm_agent / claim_prewarm_agent / discard_prewarm_agent
 // ---------------------------------------------------------------------------
 
+// Prewarms spawn with this permission mode so the CLI starts with the
+// matching `--permission-mode` flag. `auto` is the UI default and is the
+// most-common mode users land in — modes like `auto` and `bypassPermissions`
+// are spawn-time-only in the Claude CLI, so getting this right at spawn
+// avoids a runtime switch that silently no-ops.
+const PREWARM_DEFAULT_PERMISSION_MODE = "auto";
+
 export async function prewarmAgent(sessionId: string): Promise<AgentInfo> {
-  const spawned = await startAgent(sessionId);
+  const spawned = await startAgent(
+    sessionId,
+    undefined,
+    PREWARM_DEFAULT_PERMISSION_MODE,
+  );
   const session = appState.agents.get(spawned.agent_id);
   if (session) {
     session.prewarmed = true;
@@ -1374,15 +1388,17 @@ export async function claimPrewarmAgent(
   if (!session.prewarmed) {
     throw `Agent ${agentId} is not prewarmed`;
   }
+  // Flip prewarmed off up front so a concurrent reconcile() → discardSlot()
+  // (e.g. the user navigating away mid-claim) doesn't stopAgent() the
+  // subprocess out from under us and leave the just-claimed agent in error.
+  session.prewarmed = false;
 
   if (opts.model && opts.model !== session.model) {
     await setAgentModel(agentId, opts.model);
   }
-  if (opts.permissionMode) {
+  if (opts.permissionMode && opts.permissionMode !== session.permissionMode) {
     await setAgentPermissionMode(agentId, opts.permissionMode);
   }
-
-  session.prewarmed = false;
 
   return {
     agent_id: session.agentId,
