@@ -137,6 +137,15 @@ export interface AgentSession {
    * the flag flips to false and the slot becomes a normal agent.
    */
   prewarmed?: boolean;
+  /**
+   * Permission mode the agent was last spawned with (canonical name, e.g.
+   * `auto` / `ask` / `plan` / `review` / `trusted`). Recorded so the prewarm
+   * claim path can skip a redundant runtime `set_permission_mode` when the
+   * claimed mode matches the spawn-time mode — the Claude CLI doesn't always
+   * honour runtime switches to modes like `auto` / `bypassPermissions`, so
+   * spawning with the correct flag from the start is the only reliable path.
+   */
+  permissionMode?: string | null;
 }
 
 // ---------------------------------------------------------------------------

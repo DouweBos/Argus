@@ -606,11 +606,16 @@ async function finalizeSession(
     }
 
     // --- Phase 9: spawn setup terminal ---------------------------------
-    // `exec` replaces the outer `sh -c` with the inner sh in the same pid,
-    // so we end up with exactly one non-interactive sh reading from the PTY.
+    // Use the user's default shell (same as a normal terminal tab) so the
+    // shell's rc files load — without that, version-manager shims (mise,
+    // asdf, rbenv, nvm) aren't on PATH and setup commands fall back to the
+    // system Ruby/Node/etc. The PTY is a tty, so the shell auto-enables
+    // interactive mode and sources `.zshrc` / `.bashrc`. We still run
+    // commands non-interactively by writing them with a sentinel and
+    // parsing exit codes.
     let setupTerminalId: string | null = null;
     try {
-      setupTerminalId = createTerminal(id, undefined, "exec /bin/sh");
+      setupTerminalId = createTerminal(id);
       const t = appState.terminals.get(setupTerminalId);
       if (t) {
         t.locked = true;
