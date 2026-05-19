@@ -348,17 +348,26 @@ async function latestWorktreeMtime(
   return latest > 0 ? latest : null;
 }
 
-/** Resolve the project_path for a call, or fall back to the first registered project. */
+/**
+ * Resolve the project_path for a call. Falls back to the sole registered
+ * project when exactly one is registered; otherwise requires the caller to
+ * pass `project_path` explicitly so cross-project agents can't silently
+ * receive another project's data.
+ */
 function resolveRepoRoot(projectPath?: string): string {
   if (projectPath) {
     return projectPath;
   }
-  const first = appState.repoRoots.values().next();
-  if (first.done) {
+  if (appState.repoRoots.size === 0) {
     throw new Error("No projects registered");
   }
+  if (appState.repoRoots.size > 1) {
+    throw new Error(
+      "Multiple projects are registered — pass `project_path` explicitly. Use `list_projects` to see available paths.",
+    );
+  }
 
-  return first.value;
+  return appState.repoRoots.values().next().value as string;
 }
 
 // ---------------------------------------------------------------------------
