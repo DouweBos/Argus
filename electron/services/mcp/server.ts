@@ -149,42 +149,52 @@ function authorizeRequest(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a session by ID or branch name. Agents typically know the branch
- * name, not the UUID, so we search both.
+ * Reusable required `project_path` argument for session-scoped tools. Agents
+ * typically reference a session by branch or display name, neither of which is
+ * unique across projects — the project scopes the lookup so a shared name
+ * can't resolve to the wrong project's session.
  */
-function resolveSession(idOrBranch: string) {
-  // Try by ID first — session IDs are UUIDs, globally unique across projects.
+const sessionProjectPathArg = z
+  .string()
+  .describe(
+    "Absolute path to the project root the session belongs to. Use the project_path from your system prompt for the current project, or a path from list_projects for another. Required: branch and display names are only unique within a project.",
+  );
+
+/**
+ * Resolve a session by ID, branch name, or display name within a single
+ * project. Agents typically know the branch name, not the UUID — `projectPath`
+ * scopes the branch/display-name search so a name shared across projects
+ * resolves unambiguously.
+ */
+function resolveSession(idOrBranch: string, projectPath: string) {
+  // Try by ID first — session IDs are UUIDs. Validate it belongs to the
+  // given project so a stale/cross-project ID surfaces as an error rather
+  // than acting on the wrong project.
   const byId = appState.sessions.get(idOrBranch);
   if (byId) {
+    if (byId.repo_root !== projectPath) {
+      throw new Error(
+        `Session "${idOrBranch}" belongs to project ${byId.repo_root}, not ${projectPath}. Pass the matching project_path.`,
+      );
+    }
+
     return byId;
   }
 
-  // Search by branch name. Branch names are only unique within a project, so
-  // a match in more than one project is ambiguous — fail rather than silently
-  // returning whichever the Map happened to iterate first.
-  const byBranch = [...appState.sessions.values()].filter(
-    (ws) => ws.branch === idOrBranch,
+  const inProject = [...appState.sessions.values()].filter(
+    (ws) => ws.repo_root === projectPath,
   );
-  if (byBranch.length === 1) {
-    return byBranch[0];
-  }
-  if (byBranch.length > 1) {
-    throw new Error(
-      `Ambiguous session "${idOrBranch}" — ${byBranch.length} projects have a session on this branch. Pass the session_id instead (see list_sessions).`,
-    );
+
+  // Search by branch name — unique within a project.
+  const byBranch = inProject.find((ws) => ws.branch === idOrBranch);
+  if (byBranch) {
+    return byBranch;
   }
 
-  // Search by display_name — also not globally unique.
-  const byName = [...appState.sessions.values()].filter(
-    (ws) => ws.display_name === idOrBranch,
-  );
-  if (byName.length === 1) {
-    return byName[0];
-  }
-  if (byName.length > 1) {
-    throw new Error(
-      `Ambiguous session "${idOrBranch}" — ${byName.length} projects have a session with this display name. Pass the session_id instead (see list_sessions).`,
-    );
+  // Search by display_name — last resort.
+  const byName = inProject.find((ws) => ws.display_name === idOrBranch);
+  if (byName) {
+    return byName;
   }
 
   return null;
@@ -760,13 +770,14 @@ export function createMcpServer(): McpServer {
     "Delete a session (git worktree). Kills any running agent and terminals, removes the worktree from disk.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
       delete_branch: z
         .boolean()
         .optional()
         .describe("Also delete the git branch (default: false)"),
     },
-    async ({ session, delete_branch }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path, delete_branch }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -806,6 +817,7 @@ export function createMcpServer(): McpServer {
         .describe(
           "Session ID, branch name, or display name to run the agent in",
         ),
+      project_path: sessionProjectPathArg,
       prompt: z
         .string()
         .describe("Initial message/instructions to send to the agent"),
@@ -842,6 +854,7 @@ export function createMcpServer(): McpServer {
     },
     async ({
       session,
+      project_path,
       prompt,
       permission_mode,
       model,
@@ -849,7 +862,7 @@ export function createMcpServer(): McpServer {
       parent_agent_id,
       attachments,
     }) => {
-      const ws = resolveSession(session);
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -1142,19 +1155,20 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_agents",
-    "List all running agents across all sessions, or for a specific session. Note: an agent only appears here once its session has finished initializing and the agent process has actually started. If you just called `create_session` or `spawn_agents_batch`, the worktree may still be running setup (`git worktree add`, dependency installs, etc.) — during that window the session exists but `list_agents` will show nothing for it. Empty results immediately after a spawn do **not** mean the spawn failed; cross-check with `list_sessions` and look at each session's `status`. Sessions in `initializing` will spawn their queued agent automatically once ready.",
+    "List all running agents across the project's sessions, or for a specific session. Note: an agent only appears here once its session has finished initializing and the agent process has actually started. If you just called `create_session` or `spawn_agents_batch`, the worktree may still be running setup (`git worktree add`, dependency installs, etc.) — during that window the session exists but `list_agents` will show nothing for it. Empty results immediately after a spawn do **not** mean the spawn failed; cross-check with `list_sessions` and look at each session's `status`. Sessions in `initializing` will spawn their queued agent automatically once ready.",
     {
+      project_path: sessionProjectPathArg,
       session: z
         .string()
         .optional()
         .describe(
-          "Optional session ID, branch name, or display name to filter by",
+          "Optional session ID, branch name, or display name to filter by. Omit to list every agent in the project.",
         ),
     },
-    async ({ session }) => {
+    async ({ project_path, session }) => {
       let agents;
       if (session) {
-        const ws = resolveSession(session);
+        const ws = resolveSession(session, project_path);
         if (!ws) {
           return {
             content: [
@@ -1168,10 +1182,12 @@ export function createMcpServer(): McpServer {
         }
         agents = listAgents(ws.id);
       } else {
-        // Collect agents across all sessions.
+        // Collect agents across every session in the project.
         agents = [];
         for (const ws of appState.sessions.values()) {
-          agents.push(...listAgents(ws.id));
+          if (ws.repo_root === project_path) {
+            agents.push(...listAgents(ws.id));
+          }
         }
       }
 
@@ -1815,9 +1831,10 @@ export function createMcpServer(): McpServer {
     "List the run commands configured in a session's .argus.json. Use this to discover what `trigger_run` can launch (dev server, watcher, test runner, etc.) before deciding whether to start a runtime — the user has likely already configured the right command. Returns each entry's title, shell command, working dir, and restart-on-rerun flag.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -1877,6 +1894,7 @@ export function createMcpServer(): McpServer {
     "Start (or restart) one of the project's configured run commands from .argus.json — its dev server, watcher, test runner, simulator boot script, etc. ALWAYS use this instead of running `npm run dev`, `pnpm start`, `expo start`, `bun run`, `next dev`, `vite`, `cargo run`, `python manage.py runserver`, or any equivalent long-running process via the Bash tool. The user already has the runtime open in the Argus UI on the project's configured port; spawning your own copy from Bash collides on that port, fragments output the user can't see, and leaves orphaned processes. The command runs in a visible UI terminal the user can inspect. Pass `title` to pick a specific entry; omit to run the first configured command. If you don't know what's configured, call `list_run_commands` first. Returns a `terminal_session_id` — pair it with `wait_for_terminal` (block until a 'ready' regex appears or the process exits) and `read_terminal` (snapshot captured output) to observe the run.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
       title: z
         .string()
         .optional()
@@ -1884,8 +1902,8 @@ export function createMcpServer(): McpServer {
           "Title of the run command from .argus.json. Defaults to the first entry.",
         ),
     },
-    async ({ session, title }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path, title }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2095,9 +2113,10 @@ export function createMcpServer(): McpServer {
     "Check whether a session's branch would conflict if merged into its base branch. Returns a list of conflicting files, or an empty list if the merge would be clean.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2145,6 +2164,7 @@ export function createMcpServer(): McpServer {
       session: z
         .string()
         .describe("Session ID, branch name, or display name to diff"),
+      project_path: sessionProjectPathArg,
       scope: z
         .enum(["branch", "unstaged", "staged", "head", "untracked"])
         .optional()
@@ -2159,8 +2179,8 @@ export function createMcpServer(): McpServer {
           "Maximum bytes of diff to return. Defaults to 65536. Pass 0 for unbounded (use sparingly — large diffs blow out context).",
         ),
     },
-    async ({ session, scope, max_bytes }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path, scope, max_bytes }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2236,9 +2256,10 @@ export function createMcpServer(): McpServer {
     "List the files changed in a session's worktree (`git status --short`). Cheap, structured overview of what a child agent has touched — use before pulling full diffs or reading individual files. Returns parsed entries with index/worktree status codes (e.g. `M` modified, `A` added, `??` untracked, `D` deleted).",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2313,6 +2334,7 @@ export function createMcpServer(): McpServer {
     "Read a file from a session's worktree. Use this to inspect a child agent's work in detail without spawning Bash or another agent — verify implementations, check generated configs, audit migrations, etc. The path must resolve inside the session's worktree (no traversal outside). Output is truncated to `max_bytes` (default 64KB).",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
       file_path: z
         .string()
         .describe(
@@ -2326,8 +2348,8 @@ export function createMcpServer(): McpServer {
           "Maximum bytes to return. Defaults to 65536. Pass 0 for unbounded.",
         ),
     },
-    async ({ session, file_path, max_bytes }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path, file_path, max_bytes }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2422,9 +2444,10 @@ export function createMcpServer(): McpServer {
     "Comprehensive merge-readiness report for a session. Returns ahead/behind commit counts vs the base branch, uncommitted/staged/untracked counts, predicted conflicts (from a `git merge-tree` dry-run), and whether the worktree is currently mid-merge or mid-rebase (with the conflicting file list). Use this before deciding whether to call `merge_session` (clean), `attempt_merge` (resumable), or `continue_merge` (resolve in-flight).",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2471,9 +2494,10 @@ export function createMcpServer(): McpServer {
     'Try to merge a session\'s branch into its base branch. On a clean rebase the merge completes (squash + fast-forward base) and returns `{ state: "merged" }`. If a conflict appears during the rebase the worktree is LEFT PAUSED with conflict markers in place — returns `{ state: "conflicted", conflicting_files: [...] }`. The orchestrator can then read each conflicted file via `read_session_file`, write a resolution via `write_session_file` (with `stage: true`), and call `continue_merge` to finish. Call `abort_merge` to give up and roll back. Use plain `merge_session` instead when you want clean-only behaviour that throws on conflict.',
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2521,9 +2545,10 @@ export function createMcpServer(): McpServer {
     'Continue an in-progress session merge after the orchestrator wrote conflict resolutions. Stages all worktree changes, runs `git rebase --continue` (or `git commit --no-edit` for a plain merge), and finalises with squash + fast-forward base on success. If git still reports unresolved conflicts the call returns `{ state: "conflicted", conflicting_files: [...] }` and the orchestrator can iterate. Returns `{ state: "no-merge-in-progress" }` if nothing is paused.',
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2571,9 +2596,10 @@ export function createMcpServer(): McpServer {
     "Abort an in-progress merge or rebase, restoring the worktree to a clean state. No-op when nothing is paused. Use after `attempt_merge` returned `conflicted` and the orchestrator decides resolution is too risky to attempt automatically.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2612,6 +2638,7 @@ export function createMcpServer(): McpServer {
     "Write content to a file inside a session's worktree. Creates parent directories as needed. Path must resolve inside the worktree (no traversal). Set `stage: true` to also `git add` the file — required for the merge-conflict-resolution flow so the next `continue_merge` picks up the resolution. For ordinary editing inside an agent's own session, prefer spawning an agent or using `Edit/Write` tools — this is for orchestrator-level intervention (resolving a conflict in a child's worktree, dropping a config file, etc).",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
       file_path: z
         .string()
         .describe(
@@ -2625,8 +2652,8 @@ export function createMcpServer(): McpServer {
           "Run `git add` on the file after writing. Defaults to false. Pass true when resolving a merge conflict so `continue_merge` picks up the resolution.",
         ),
     },
-    async ({ session, file_path, content, stage }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path, file_path, content, stage }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2679,9 +2706,10 @@ export function createMcpServer(): McpServer {
     "Merge a session's branch into its base branch. Commits any staged changes first, checks for conflicts, then performs a --no-ff merge. The session's base branch was set when the worktree was created.",
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
     },
-    async ({ session }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
@@ -2716,6 +2744,7 @@ export function createMcpServer(): McpServer {
     'Finish off a child session in one shot: clean-merge it into base, then delete the worktree (and optionally the branch). Throws on conflict — call `attempt_merge` + `continue_merge` first if you need to resolve. Use this for the happy-path "child finished, ship it" flow at the end of a fan-out.',
     {
       session: z.string().describe("Session ID, branch name, or display name"),
+      project_path: sessionProjectPathArg,
       delete_branch: z
         .boolean()
         .optional()
@@ -2723,8 +2752,8 @@ export function createMcpServer(): McpServer {
           "Also delete the merged branch (default: true — the branch is fully reachable from base after a successful merge so keeping it around is rarely useful).",
         ),
     },
-    async ({ session, delete_branch }) => {
-      const ws = resolveSession(session);
+    async ({ session, project_path, delete_branch }) => {
+      const ws = resolveSession(session, project_path);
       if (!ws) {
         return {
           content: [
