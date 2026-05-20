@@ -405,7 +405,7 @@ describe("delete_session", () => {
   it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "nonexistent" },
+      arguments: { session: "nonexistent", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Session not found");
@@ -418,7 +418,7 @@ describe("delete_session", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("Deleted session");
@@ -433,7 +433,10 @@ describe("delete_session", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "feat/cool-thing" },
+      arguments: {
+        session: "feat/cool-thing",
+        project_path: "/projects/frontend",
+      },
     });
     expect(result.isError).toBeFalsy();
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", false);
@@ -446,7 +449,7 @@ describe("delete_session", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "Cool Thing" },
+      arguments: { session: "Cool Thing", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", false);
@@ -459,7 +462,11 @@ describe("delete_session", () => {
 
     await client.callTool({
       name: "delete_session",
-      arguments: { session: "ws-1", delete_branch: true },
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        delete_branch: true,
+      },
     });
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-1", true);
   });
@@ -473,7 +480,11 @@ describe("spawn_agent", () => {
   it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "spawn_agent",
-      arguments: { session: "ghost", prompt: "do stuff" },
+      arguments: {
+        session: "ghost",
+        project_path: "/projects/frontend",
+        prompt: "do stuff",
+      },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Session not found");
@@ -493,7 +504,11 @@ describe("spawn_agent", () => {
 
     const result = await client.callTool({
       name: "spawn_agent",
-      arguments: { session: "ws-1", prompt: "Build the thing" },
+      arguments: {
+        session: "ws-1",
+        project_path: "/projects/frontend",
+        prompt: "Build the thing",
+      },
     });
     const parsed = jsonOf(result) as { agent_id: string; status: string };
     expect(parsed.agent_id).toBe("agent-42");
@@ -531,6 +546,7 @@ describe("spawn_agent", () => {
       name: "spawn_agent",
       arguments: {
         session: "ws-1",
+        project_path: "/projects/frontend",
         prompt: "test",
         permission_mode: "auto",
       },
@@ -549,7 +565,7 @@ describe("spawn_agent", () => {
   it("requires `session` to be present", async () => {
     const result = await client.callTool({
       name: "spawn_agent",
-      arguments: { prompt: "no target" },
+      arguments: { project_path: "/projects/frontend", prompt: "no target" },
     });
     expect(result.isError).toBe(true);
   });
@@ -563,7 +579,7 @@ describe("list_agents", () => {
   it("returns error when session filter is not found", async () => {
     const result = await client.callTool({
       name: "list_agents",
-      arguments: { session: "nope" },
+      arguments: { session: "nope", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Session not found");
@@ -585,7 +601,7 @@ describe("list_agents", () => {
 
     const result = await client.callTool({
       name: "list_agents",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     const parsed = jsonOf(result) as { agent_id: string }[];
     expect(parsed).toHaveLength(1);
@@ -594,7 +610,7 @@ describe("list_agents", () => {
     expect(mockListAgents).toHaveBeenCalledWith("ws-1");
   });
 
-  it("returns agents across all sessions when no filter", async () => {
+  it("returns every agent in the project when no session filter", async () => {
     const ws1 = mockSession({ id: "ws-1" });
     const ws2 = mockSession({ id: "ws-2", branch: "feat/other" });
     appState.sessions.set("ws-1", ws1);
@@ -630,7 +646,7 @@ describe("list_agents", () => {
 
     const result = await client.callTool({
       name: "list_agents",
-      arguments: {},
+      arguments: { project_path: "/projects/frontend" },
     });
     const parsed = jsonOf(result) as { agent_id: string }[];
     expect(parsed).toHaveLength(2);
@@ -644,7 +660,7 @@ describe("list_agents", () => {
 
     const result = await client.callTool({
       name: "list_agents",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     expect(textOf(result)).toBe("No agents running.");
   });
@@ -727,7 +743,7 @@ describe("trigger_run", () => {
   it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { session: "ghost" },
+      arguments: { session: "ghost", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Session not found");
@@ -742,7 +758,7 @@ describe("trigger_run", () => {
 
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("No 'run' command configured");
@@ -760,7 +776,7 @@ describe("trigger_run", () => {
 
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     const parsed = jsonOf(result) as {
       terminal_session_id: string;
@@ -781,7 +797,7 @@ describe("trigger_run", () => {
 
     const result = await client.callTool({
       name: "trigger_run",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("bad config");
@@ -796,7 +812,7 @@ describe("check_conflicts", () => {
   it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "check_conflicts",
-      arguments: { session: "nope" },
+      arguments: { session: "nope", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Session not found");
@@ -809,7 +825,7 @@ describe("check_conflicts", () => {
 
     const result = await client.callTool({
       name: "check_conflicts",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("No conflicts");
@@ -824,7 +840,7 @@ describe("check_conflicts", () => {
 
     const result = await client.callTool({
       name: "check_conflicts",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     const parsed = jsonOf(result) as {
       conflicting_files: string[];
@@ -843,7 +859,7 @@ describe("merge_session", () => {
   it("returns error when session not found", async () => {
     const result = await client.callTool({
       name: "merge_session",
-      arguments: { session: "gone" },
+      arguments: { session: "gone", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("Session not found");
@@ -856,7 +872,7 @@ describe("merge_session", () => {
 
     const result = await client.callTool({
       name: "merge_session",
-      arguments: { session: "ws-1" },
+      arguments: { session: "ws-1", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
     expect(textOf(result)).toContain("Successfully merged");
@@ -1041,7 +1057,7 @@ describe("resolveSession (via delete_session)", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "uuid-abc" },
+      arguments: { session: "uuid-abc", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
   });
@@ -1055,7 +1071,7 @@ describe("resolveSession (via delete_session)", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "fix/bug-123" },
+      arguments: { session: "fix/bug-123", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-x", false);
@@ -1074,7 +1090,7 @@ describe("resolveSession (via delete_session)", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "My Feature" },
+      arguments: { session: "My Feature", project_path: "/projects/frontend" },
     });
     expect(result.isError).toBeFalsy();
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-y", false);
@@ -1085,12 +1101,15 @@ describe("resolveSession (via delete_session)", () => {
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "completely-unknown" },
+      arguments: {
+        session: "completely-unknown",
+        project_path: "/projects/frontend",
+      },
     });
     expect(result.isError).toBe(true);
   });
 
-  it("errors on a branch name shared across projects", async () => {
+  it("scopes a branch name lookup to the given project", async () => {
     appState.sessions.set(
       "ws-a",
       mockSession({ id: "ws-a", branch: "main", repo_root: "/projects/one" }),
@@ -1099,40 +1118,42 @@ describe("resolveSession (via delete_session)", () => {
       "ws-b",
       mockSession({ id: "ws-b", branch: "main", repo_root: "/projects/two" }),
     );
+    mockDeleteSession.mockResolvedValue(undefined);
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "main" },
+      arguments: { session: "main", project_path: "/projects/two" },
+    });
+    expect(result.isError).toBeFalsy();
+    // The branch "main" exists in both projects — project_path picks ws-b.
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-b", false);
+  });
+
+  it("errors when a session ID belongs to a different project", async () => {
+    appState.sessions.set(
+      "ws-a",
+      mockSession({ id: "ws-a", repo_root: "/projects/one" }),
+    );
+
+    const result = await client.callTool({
+      name: "delete_session",
+      arguments: { session: "ws-a", project_path: "/projects/two" },
     });
     expect(result.isError).toBe(true);
-    expect(JSON.stringify(result.content)).toContain("Ambiguous session");
+    expect(JSON.stringify(result.content)).toContain(
+      "belongs to project /projects/one",
+    );
     expect(mockDeleteSession).not.toHaveBeenCalled();
   });
 
-  it("errors on a display name shared across projects", async () => {
-    appState.sessions.set(
-      "ws-c",
-      mockSession({
-        id: "ws-c",
-        branch: "feat/a",
-        display_name: "Shared Name",
-      }),
-    );
-    appState.sessions.set(
-      "ws-d",
-      mockSession({
-        id: "ws-d",
-        branch: "feat/b",
-        display_name: "Shared Name",
-      }),
-    );
+  it("requires project_path", async () => {
+    appState.sessions.set("ws-1", mockSession());
 
     const result = await client.callTool({
       name: "delete_session",
-      arguments: { session: "Shared Name" },
+      arguments: { session: "ws-1" },
     });
     expect(result.isError).toBe(true);
-    expect(JSON.stringify(result.content)).toContain("Ambiguous session");
     expect(mockDeleteSession).not.toHaveBeenCalled();
   });
 });

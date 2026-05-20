@@ -2,4 +2,4 @@
 "argus": patch
 ---
 
-Fix MCP session tools (`trigger_run`, `list_run_commands`, and others) silently picking the wrong project when a branch or display name is shared across projects — these now error and ask for the session ID instead of guessing.
+MCP session and orchestration tools (`trigger_run`, `spawn_agent`, `merge_session`, `session_diff`, and the rest) now require a `project_path` argument. This stops a branch or display name shared across projects from silently resolving to the wrong project's session.
