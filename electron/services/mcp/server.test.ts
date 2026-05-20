@@ -1089,4 +1089,50 @@ describe("resolveSession (via delete_session)", () => {
     });
     expect(result.isError).toBe(true);
   });
+
+  it("errors on a branch name shared across projects", async () => {
+    appState.sessions.set(
+      "ws-a",
+      mockSession({ id: "ws-a", branch: "main", repo_root: "/projects/one" }),
+    );
+    appState.sessions.set(
+      "ws-b",
+      mockSession({ id: "ws-b", branch: "main", repo_root: "/projects/two" }),
+    );
+
+    const result = await client.callTool({
+      name: "delete_session",
+      arguments: { session: "main" },
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain("Ambiguous session");
+    expect(mockDeleteSession).not.toHaveBeenCalled();
+  });
+
+  it("errors on a display name shared across projects", async () => {
+    appState.sessions.set(
+      "ws-c",
+      mockSession({
+        id: "ws-c",
+        branch: "feat/a",
+        display_name: "Shared Name",
+      }),
+    );
+    appState.sessions.set(
+      "ws-d",
+      mockSession({
+        id: "ws-d",
+        branch: "feat/b",
+        display_name: "Shared Name",
+      }),
+    );
+
+    const result = await client.callTool({
+      name: "delete_session",
+      arguments: { session: "Shared Name" },
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain("Ambiguous session");
+    expect(mockDeleteSession).not.toHaveBeenCalled();
+  });
 });
