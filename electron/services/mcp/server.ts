@@ -153,24 +153,38 @@ function authorizeRequest(
  * name, not the UUID, so we search both.
  */
 function resolveSession(idOrBranch: string) {
-  // Try by ID first.
+  // Try by ID first — session IDs are UUIDs, globally unique across projects.
   const byId = appState.sessions.get(idOrBranch);
   if (byId) {
     return byId;
   }
 
-  // Search by branch name.
-  for (const ws of appState.sessions.values()) {
-    if (ws.branch === idOrBranch) {
-      return ws;
-    }
+  // Search by branch name. Branch names are only unique within a project, so
+  // a match in more than one project is ambiguous — fail rather than silently
+  // returning whichever the Map happened to iterate first.
+  const byBranch = [...appState.sessions.values()].filter(
+    (ws) => ws.branch === idOrBranch,
+  );
+  if (byBranch.length === 1) {
+    return byBranch[0];
+  }
+  if (byBranch.length > 1) {
+    throw new Error(
+      `Ambiguous session "${idOrBranch}" — ${byBranch.length} projects have a session on this branch. Pass the session_id instead (see list_sessions).`,
+    );
   }
 
-  // Search by display_name.
-  for (const ws of appState.sessions.values()) {
-    if (ws.display_name === idOrBranch) {
-      return ws;
-    }
+  // Search by display_name — also not globally unique.
+  const byName = [...appState.sessions.values()].filter(
+    (ws) => ws.display_name === idOrBranch,
+  );
+  if (byName.length === 1) {
+    return byName[0];
+  }
+  if (byName.length > 1) {
+    throw new Error(
+      `Ambiguous session "${idOrBranch}" — ${byName.length} projects have a session with this display name. Pass the session_id instead (see list_sessions).`,
+    );
   }
 
   return null;
