@@ -23,17 +23,23 @@ targets, related projects, …) see
 
 ## Agents
 
-| Setting                     | Default   | Description                                                                          |
-| --------------------------- | --------- | ------------------------------------------------------------------------------------ |
-| **Default permission mode** | `default` | The permission mode applied to new agents unless overridden in the new-agent picker. |
+| Setting                     | Default | Description                                                                                            |
+| --------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
+| **Default permission mode** | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker. |
 
-Permission modes are passed through to Claude Code:
+Permission modes:
 
-- **`default`** — agent asks before each tool call that isn't already
-  allow-listed.
-- **`acceptEdits`** — auto-approves file edits.
+- **`auto`** — smart classifier auto-approves safe actions; risky ones still
+  ask.
+- **`ask`** — agent asks before each edit, command, or write that isn't
+  already allow-listed.
 - **`plan`** — plan-only mode; no edits or shell.
-- **`bypassPermissions`** ("yolo") — runs every tool without prompting.
+- **`review`** — auto-approves file edits; still asks for shell + network.
+- **`trusted`** ("yolo") — runs every tool without prompting.
+
+The mode is applied at spawn time, so it takes effect for the agent's very
+first action. Agents restored to an earlier turn keep the mode they were
+running with.
 
 ---
 

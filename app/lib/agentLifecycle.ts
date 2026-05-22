@@ -15,6 +15,7 @@ import { setActiveCenterView } from "../stores/editorStore";
 import { pushError } from "../stores/notificationsStore";
 import { clearPrewarm, getPrewarmSlot } from "../stores/prewarmStore";
 import { selectSession } from "../stores/sessionStore";
+import { getDefaultPermissionMode } from "../stores/settingsStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
 import {
   claimPrewarmAgent,
@@ -41,7 +42,12 @@ export async function startAgentInSession(
   sessionId: string,
   options: StartAgentOptions = {},
 ): Promise<AgentStatus> {
-  const { focus = true, model, permissionMode, resumeSessionId } = options;
+  const { focus = true, model, resumeSessionId } = options;
+  // Resolve the permission mode for every spawn — the app-level default
+  // applies unless the caller (launcher picker, restart, etc.) passed an
+  // explicit one, so an agent never silently falls back to the CLI's
+  // prompt-for-everything default.
+  const permissionMode = options.permissionMode ?? getDefaultPermissionMode();
 
   // Prefer claiming a prewarmed slot — the Claude subprocess is already
   // alive and past initialize, so the user-facing path is sub-second.

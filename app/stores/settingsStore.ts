@@ -1,16 +1,18 @@
+import type { CanonicalPermissionMode } from "../lib/permissionModes";
 import { create } from "zustand";
 
-export type PermissionMode =
-  | "acceptEdits"
-  | "bypassPermissions"
-  | "default"
-  | "plan";
+/**
+ * App-level default permission mode for new agents. Canonical names — the
+ * runner abstraction translates them to runner-native vocabulary.
+ */
+export type PermissionMode = CanonicalPermissionMode;
 
 export const PERMISSION_MODE_LABELS: Record<PermissionMode, string> = {
-  default: "Default (ask before each tool)",
-  acceptEdits: "Accept edits automatically",
+  auto: "Auto (smart approvals)",
+  ask: "Ask before each tool",
   plan: "Plan mode",
-  bypassPermissions: "Bypass permissions (yolo)",
+  review: "Accept edits automatically",
+  trusted: "Bypass permissions (yolo)",
 };
 
 export interface CustomEditor {
@@ -149,6 +151,29 @@ function sanitizeLastEffortByRunner(
   return result;
 }
 
+/**
+ * Normalise a persisted permission mode to a canonical value. Pre-canonical
+ * builds stored Claude-native names — migrate them. The legacy `"default"`
+ * (the old fallback nobody explicitly picked) and any unrecognised value
+ * become `"auto"`, the current default.
+ */
+function sanitizeDefaultPermissionMode(raw: unknown): CanonicalPermissionMode {
+  switch (raw) {
+    case "auto":
+    case "ask":
+    case "plan":
+    case "review":
+    case "trusted":
+      return raw;
+    case "acceptEdits":
+      return "review";
+    case "bypassPermissions":
+      return "trusted";
+    default:
+      return "auto";
+  }
+}
+
 function sanitizeCustomEditors(input: unknown): CustomEditor[] {
   if (!Array.isArray(input)) {
     return [];
@@ -177,12 +202,9 @@ function load(): SettingsState {
       const parsed = JSON.parse(raw) as Partial<SettingsState>;
 
       return {
-        defaultPermissionMode:
-          parsed.defaultPermissionMode === "acceptEdits" ||
-          parsed.defaultPermissionMode === "plan" ||
-          parsed.defaultPermissionMode === "bypassPermissions"
-            ? parsed.defaultPermissionMode
-            : "default",
+        defaultPermissionMode: sanitizeDefaultPermissionMode(
+          parsed.defaultPermissionMode,
+        ),
         defaultModel:
           typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
@@ -238,7 +260,7 @@ function load(): SettingsState {
   // Telemetry default opt-out — consent is collected explicitly during the
   // telemetry onboarding step before any analytics events are sent.
   return {
-    defaultPermissionMode: "default",
+    defaultPermissionMode: "auto",
     defaultModel: "",
     customEditors: [],
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },

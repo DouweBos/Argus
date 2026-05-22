@@ -29,6 +29,7 @@ import { pushError } from "../../../stores/notificationsStore";
 import { usePrewarmSlot } from "../../../stores/prewarmStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
+import { getDefaultPermissionMode } from "../../../stores/settingsStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { useMentionPicker } from "../ChatInput/useMentionPicker";
@@ -38,7 +39,10 @@ import { ProjectPicker } from "../ProjectPicker";
 import dialogExtra from "./StartAgentDialog.module.css";
 
 interface StartAgentDialogProps {
-  /** Initial permission mode the dialog opens with. Defaults to `"auto"`. */
+  /**
+   * Initial permission mode the dialog opens with. Defaults to the
+   * app-level default permission mode from settings.
+   */
   initialMode?: CanonicalPermissionMode;
   /** Initial prompt the dialog opens with. */
   initialPrompt?: string;
@@ -66,7 +70,7 @@ function buildMessage(prompt: string, linkedProjects: string[]): string {
 
 export function StartAgentDialog({
   sessionId,
-  initialMode = "auto",
+  initialMode = getDefaultPermissionMode(),
   initialPrompt = "",
   onClose,
   onPromptChange,
