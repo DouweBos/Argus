@@ -23,6 +23,18 @@ export interface TodoItem {
   status: "completed" | "in_progress" | "pending";
 }
 
+export interface Task {
+  activeForm?: string;
+  blockedBy?: string[];
+  blocks?: string[];
+  description?: string;
+  id: string;
+  metadata?: Record<string, unknown>;
+  owner?: string;
+  status: "completed" | "in_progress" | "pending";
+  subject: string;
+}
+
 export type ToolResultBlock =
   | {
       source: { data: string; media_type: string; type: "base64" };
@@ -112,6 +124,18 @@ export interface AgentConversation {
   sessionId?: string;
   /** Slash commands — rich objects from initialize, or bare strings from init event. */
   slashCommands?: SlashCommand[];
+  /**
+   * Stable creation order of `tasks` ids so the list renders deterministically
+   * across re-folds. Tasks marked `deleted` are removed from both maps.
+   */
+  taskOrder?: string[];
+  /**
+   * Task list authored via the stateful Task* tool family (TaskCreate /
+   * TaskUpdate / TaskList / TaskGet). Folded from tool inputs + results across
+   * the message history. `null` when the user dismisses; a subsequent Task*
+   * call repopulates it.
+   */
+  tasks?: Record<string, Task> | null;
   /** Generated short title summarising the conversation (async). */
   title?: string;
   /**
@@ -195,6 +219,261 @@ function findLatestTodosInMessages(
   }
 
   return null;
+}
+
+const TASK_TOOL_NAMES = new Set([
+  "TaskCreate",
+  "TaskGet",
+  "TaskList",
+  "TaskUpdate",
+]);
+
+function resultText(result: ToolCallInfo["result"] | undefined): string | null {
+  if (!result) {
+    return null;
+  }
+  if (typeof result === "string") {
+    return result;
+  }
+  const parts: string[] = [];
+  for (const block of result) {
+    if (block.type === "text") {
+      parts.push(block.text);
+    }
+  }
+
+  return parts.length > 0 ? parts.join("\n") : null;
+}
+
+function tryParseJson(text: string | null): unknown {
+  if (!text) {
+    return null;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function coerceStatus(raw: unknown): Task["status"] | "deleted" | null {
+  if (raw === "completed" || raw === "in_progress" || raw === "pending") {
+    return raw;
+  }
+  if (raw === "deleted") {
+    return "deleted";
+  }
+
+  return null;
+}
+
+function coerceTask(raw: unknown): Task | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const r = raw as Record<string, unknown>;
+  const id = typeof r.id === "string" ? r.id : null;
+  const subject = typeof r.subject === "string" ? r.subject : null;
+  if (!id || !subject) {
+    return null;
+  }
+  const status = coerceStatus(r.status) ?? "pending";
+  if (status === "deleted") {
+    return null;
+  }
+
+  return {
+    id,
+    subject,
+    status,
+    description: typeof r.description === "string" ? r.description : undefined,
+    activeForm: typeof r.activeForm === "string" ? r.activeForm : undefined,
+    owner: typeof r.owner === "string" ? r.owner : undefined,
+    blocks: Array.isArray(r.blocks)
+      ? (r.blocks.filter((x) => typeof x === "string") as string[])
+      : undefined,
+    blockedBy: Array.isArray(r.blockedBy)
+      ? (r.blockedBy.filter((x) => typeof x === "string") as string[])
+      : undefined,
+    metadata:
+      r.metadata && typeof r.metadata === "object"
+        ? (r.metadata as Record<string, unknown>)
+        : undefined,
+  };
+}
+
+function upsertTask(tasks: Map<string, Task>, order: string[], task: Task) {
+  if (!tasks.has(task.id)) {
+    order.push(task.id);
+  }
+  tasks.set(task.id, { ...tasks.get(task.id), ...task });
+}
+
+function deleteTask(tasks: Map<string, Task>, order: string[], id: string) {
+  if (tasks.delete(id)) {
+    const idx = order.indexOf(id);
+    if (idx !== -1) {
+      order.splice(idx, 1);
+    }
+  }
+}
+
+function applyTaskCall(
+  tc: ToolCallInfo,
+  tasks: Map<string, Task>,
+  order: string[],
+) {
+  const parsedResult = tryParseJson(resultText(tc.result));
+
+  if (tc.name === "TaskList") {
+    // Authoritative snapshot when the agent calls TaskList. Replace everything
+    // it returns; keep any locally-tracked tasks not in the snapshot (they may
+    // have been created by a sibling call not yet folded).
+    if (Array.isArray(parsedResult)) {
+      for (const raw of parsedResult) {
+        const t = coerceTask(raw);
+        if (t) {
+          upsertTask(tasks, order, t);
+        }
+      }
+    }
+
+    return;
+  }
+
+  if (tc.name === "TaskGet") {
+    const t = coerceTask(parsedResult);
+    if (t) {
+      upsertTask(tasks, order, t);
+    }
+
+    return;
+  }
+
+  if (tc.name === "TaskCreate") {
+    // Input lacks an id (server-assigned). Try the parsed result first.
+    const fromResult = coerceTask(parsedResult);
+    if (fromResult) {
+      upsertTask(tasks, order, fromResult);
+
+      return;
+    }
+    // Fall back to a synthetic id keyed on the tool_use id so later TaskList
+    // snapshots can supersede it without leaving an orphan.
+    const input = tc.input as {
+      activeForm?: unknown;
+      description?: unknown;
+      subject?: unknown;
+    };
+    const subject = typeof input.subject === "string" ? input.subject : null;
+    if (!subject) {
+      return;
+    }
+    upsertTask(tasks, order, {
+      id: `pending:${tc.id}`,
+      subject,
+      status: "pending",
+      description:
+        typeof input.description === "string" ? input.description : undefined,
+      activeForm:
+        typeof input.activeForm === "string" ? input.activeForm : undefined,
+    });
+
+    return;
+  }
+
+  if (tc.name === "TaskUpdate") {
+    const input = tc.input as {
+      activeForm?: unknown;
+      addBlockedBy?: unknown;
+      addBlocks?: unknown;
+      description?: unknown;
+      owner?: unknown;
+      status?: unknown;
+      subject?: unknown;
+      taskId?: unknown;
+    };
+    const taskId = typeof input.taskId === "string" ? input.taskId : null;
+    if (!taskId) {
+      return;
+    }
+    const status = coerceStatus(input.status);
+    if (status === "deleted") {
+      deleteTask(tasks, order, taskId);
+
+      return;
+    }
+    const existing = tasks.get(taskId);
+    const merged: Task = {
+      id: taskId,
+      subject:
+        typeof input.subject === "string"
+          ? input.subject
+          : (existing?.subject ?? taskId),
+      status: status ?? existing?.status ?? "pending",
+      description:
+        typeof input.description === "string"
+          ? input.description
+          : existing?.description,
+      activeForm:
+        typeof input.activeForm === "string"
+          ? input.activeForm
+          : existing?.activeForm,
+      owner: typeof input.owner === "string" ? input.owner : existing?.owner,
+      blocks: Array.isArray(input.addBlocks)
+        ? [
+            ...(existing?.blocks ?? []),
+            ...(input.addBlocks.filter(
+              (x) => typeof x === "string",
+            ) as string[]),
+          ]
+        : existing?.blocks,
+      blockedBy: Array.isArray(input.addBlockedBy)
+        ? [
+            ...(existing?.blockedBy ?? []),
+            ...(input.addBlockedBy.filter(
+              (x) => typeof x === "string",
+            ) as string[]),
+          ]
+        : existing?.blockedBy,
+    };
+    upsertTask(tasks, order, merged);
+  }
+}
+
+function extractTasksFromMessages(messages: ConversationMessage[]): {
+  order: string[];
+  tasks: Record<string, Task>;
+} | null {
+  const tasks = new Map<string, Task>();
+  const order: string[] = [];
+  let sawAny = false;
+
+  const walk = (calls: ToolCallInfo[]) => {
+    for (const tc of calls) {
+      if (TASK_TOOL_NAMES.has(tc.name)) {
+        sawAny = true;
+        applyTaskCall(tc, tasks, order);
+      }
+      if (tc.children) {
+        for (const child of tc.children) {
+          if (child.kind === "tool_use") {
+            walk([child.toolCall]);
+          }
+        }
+      }
+    }
+  };
+
+  for (const msg of messages) {
+    walk(msg.toolCalls);
+  }
+
+  if (!sawAny) {
+    return null;
+  }
+
+  return { tasks: Object.fromEntries(tasks), order };
 }
 
 /**
@@ -725,6 +1004,9 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
       // reflects the most recent agent-authored state.
       const newTodos = extractTodos(toolCalls);
 
+      const nextMessagesForTasks = [...existing.messages, assistantMsg];
+      const tasksSnapshot = extractTasksFromMessages(nextMessagesForTasks);
+
       // Stash the new assistant message as pending-unread for this turn.
       // It only graduates to the unread set on the `result` event, so an
       // actively-streaming agent doesn't keep re-asserting unread state as
@@ -743,9 +1025,13 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             ...existing,
             lastEventType: event.type,
             model: existing.model ?? event.message.model,
-            messages: [...existing.messages, assistantMsg],
+            messages: nextMessagesForTasks,
             pendingToolName: lastTool?.name ?? null,
             pendingToolInput: lastTool?.input ?? null,
+            taskOrder: tasksSnapshot?.order ?? existing.taskOrder,
+            tasks: tasksSnapshot
+              ? tasksSnapshot.tasks
+              : (existing.tasks ?? null),
             todos: newTodos ?? existing.todos,
           },
         },
@@ -794,6 +1080,8 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
           return state;
         }
 
+        const tasksSnapshot = extractTasksFromMessages(messages);
+
         return {
           conversations: {
             ...state.conversations,
@@ -801,6 +1089,10 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
               ...existing,
               lastEventType: event.type,
               messages,
+              taskOrder: tasksSnapshot?.order ?? existing.taskOrder,
+              tasks: tasksSnapshot
+                ? tasksSnapshot.tasks
+                : (existing.tasks ?? null),
             },
           },
         };
@@ -845,6 +1137,8 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
         }
       }
 
+      const tasksSnapshot = extractTasksFromMessages(messages);
+
       return {
         conversations: {
           ...state.conversations,
@@ -854,6 +1148,10 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             messages,
             pendingToolName: null,
             pendingToolInput: null,
+            taskOrder: tasksSnapshot?.order ?? existing.taskOrder,
+            tasks: tasksSnapshot
+              ? tasksSnapshot.tasks
+              : (existing.tasks ?? null),
           },
         },
       };
@@ -1061,20 +1359,42 @@ export function loadSavedMessages(
   resuming?: boolean,
   title?: string,
 ) {
-  conversationStore.setState((state) => ({
-    conversations: {
-      ...state.conversations,
-      [agentId]: {
-        messages,
-        queuedMessages: [],
-        model,
-        sessionId,
-        resuming,
-        title,
-        todos: findLatestTodosInMessages(messages),
+  conversationStore.setState((state) => {
+    const tasksSnapshot = extractTasksFromMessages(messages);
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: {
+          messages,
+          queuedMessages: [],
+          model,
+          sessionId,
+          resuming,
+          title,
+          todos: findLatestTodosInMessages(messages),
+          tasks: tasksSnapshot?.tasks ?? null,
+          taskOrder: tasksSnapshot?.order,
+        },
       },
-    },
-  }));
+    };
+  });
+}
+
+export function clearAgentTasks(agentId: string) {
+  conversationStore.setState((state) => {
+    const existing = state.conversations[agentId];
+    if (!existing) {
+      return state;
+    }
+
+    return {
+      conversations: {
+        ...state.conversations,
+        [agentId]: { ...existing, tasks: null, taskOrder: undefined },
+      },
+    };
+  });
 }
 
 export function clearAgentTodos(agentId: string) {
