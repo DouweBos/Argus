@@ -53,6 +53,7 @@ import {
   type ConversationMessage,
   type ToolCallInfo,
   addUserMessage,
+  clearAgentTasks,
   clearAgentTodos,
   clearAgentUnread,
   clearConversation,
@@ -72,6 +73,7 @@ import { ChatMessage } from "../ChatMessage";
 import { ChatSearchBar } from "../ChatSearchBar";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
 import { ForkSessionDialog } from "../ForkSessionDialog";
+import { TaskList } from "../TaskList";
 import { TodoList } from "../TodoList";
 import styles from "./AgentChat.module.css";
 import { QueuedMessages } from "./QueuedMessages";
@@ -271,6 +273,23 @@ export function AgentChat({
   // updated by every TodoWrite tool call and cleared to null when the user
   // dismisses it. A subsequent TodoWrite repopulates it.
   const activeTodos = conversation?.todos ?? null;
+
+  // Task* tool family produces a separate, stateful task list. Render in
+  // creation order; both panels can show simultaneously if the agent mixes
+  // TodoWrite and Task* calls.
+  const tasksMap = conversation?.tasks;
+  const taskOrder = conversation?.taskOrder;
+  const activeTasks = useMemo(() => {
+    if (!tasksMap) {
+      return null;
+    }
+    const order = taskOrder ?? Object.keys(tasksMap);
+    const list = order
+      .map((id) => tasksMap[id])
+      .filter((t): t is NonNullable<typeof t> => Boolean(t));
+
+    return list.length > 0 ? list : null;
+  }, [tasksMap, taskOrder]);
 
   // Merge built-in commands with backend-reported commands, deduplicating by
   // name and preferring richer objects (ones with a description).
@@ -946,6 +965,13 @@ export function AgentChat({
         <TodoList
           todos={activeTodos}
           onDismiss={() => clearAgentTodos(agentId)}
+        />
+      )}
+
+      {activeTasks && agentId && (
+        <TaskList
+          tasks={activeTasks}
+          onDismiss={() => clearAgentTasks(agentId)}
         />
       )}
 
