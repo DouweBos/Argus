@@ -358,8 +358,6 @@ function applyTaskCall(
 
       return;
     }
-    // Fall back to a synthetic id keyed on the tool_use id so later TaskList
-    // snapshots can supersede it without leaving an orphan.
     const input = tc.input as {
       activeForm?: unknown;
       description?: unknown;
@@ -369,8 +367,12 @@ function applyTaskCall(
     if (!subject) {
       return;
     }
+    // The result text from the harness is "Task #<id> created successfully: ..."
+    // — pull the id from there so later TaskUpdate(taskId) calls find this task.
+    const idMatch = (resultText(tc.result) ?? "").match(/Task #(\S+) created/);
+    const id = idMatch?.[1] ?? `pending:${tc.id}`;
     upsertTask(tasks, order, {
-      id: `pending:${tc.id}`,
+      id,
       subject,
       status: "pending",
       description:
