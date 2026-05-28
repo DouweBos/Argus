@@ -479,6 +479,29 @@ function extractTasksFromMessages(messages: ConversationMessage[]): {
 }
 
 /**
+ * Apply a batch of Task* tool calls on top of the existing snapshot. Used on
+ * the live event path so the task list updates incrementally — never by
+ * re-deriving from full message history, which would resurrect entries the
+ * user has explicitly cleared.
+ */
+function applyTaskCallsLive(
+  existingTasks: Record<string, Task> | null | undefined,
+  existingOrder: string[] | undefined,
+  calls: ToolCallInfo[],
+): { order: string[]; tasks: Record<string, Task> } | null {
+  if (calls.length === 0) {
+    return null;
+  }
+  const tasks = new Map<string, Task>(Object.entries(existingTasks ?? {}));
+  const order = [...(existingOrder ?? [])];
+  for (const tc of calls) {
+    applyTaskCall(tc, tasks, order);
+  }
+
+  return { tasks: Object.fromEntries(tasks), order };
+}
+
+/**
  * Walk a tool call tree and apply `updater` to the call whose id matches.
  * Returns a new tool call with updated descendants, or null if not found.
  */
@@ -1006,8 +1029,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
       // reflects the most recent agent-authored state.
       const newTodos = extractTodos(toolCalls);
 
-      const nextMessagesForTasks = [...existing.messages, assistantMsg];
-      const tasksSnapshot = extractTasksFromMessages(nextMessagesForTasks);
+      const nextMessages = [...existing.messages, assistantMsg];
 
       // Stash the new assistant message as pending-unread for this turn.
       // It only graduates to the unread set on the `result` event, so an
@@ -1027,13 +1049,9 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             ...existing,
             lastEventType: event.type,
             model: existing.model ?? event.message.model,
-            messages: nextMessagesForTasks,
+            messages: nextMessages,
             pendingToolName: lastTool?.name ?? null,
             pendingToolInput: lastTool?.input ?? null,
-            taskOrder: tasksSnapshot?.order ?? existing.taskOrder,
-            tasks: tasksSnapshot
-              ? tasksSnapshot.tasks
-              : (existing.tasks ?? null),
             todos: newTodos ?? existing.todos,
           },
         },
@@ -1050,6 +1068,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
       // Sub-agent tool_results: attach to matching children within the parent.
       if (event.parent_tool_use_id) {
         let messages = existing.messages;
+        const taskCallsWithResults: ToolCallInfo[] = [];
         for (const match of results) {
           const next = updateToolCallInMessages(
             messages,
@@ -1066,12 +1085,16 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
               }
               const isDenyAnswerFlow =
                 tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
-
-              return {
+              const nextTc: ToolCallInfo = {
                 ...tc,
                 result,
                 isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
               };
+              if (TASK_TOOL_NAMES.has(nextTc.name)) {
+                taskCallsWithResults.push(nextTc);
+              }
+
+              return nextTc;
             },
           );
           if (next) {
@@ -1082,7 +1105,11 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
           return state;
         }
 
-        const tasksSnapshot = extractTasksFromMessages(messages);
+        const tasksUpdate = applyTaskCallsLive(
+          existing.tasks,
+          existing.taskOrder,
+          taskCallsWithResults,
+        );
 
         return {
           conversations: {
@@ -1091,16 +1118,15 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
               ...existing,
               lastEventType: event.type,
               messages,
-              taskOrder: tasksSnapshot?.order ?? existing.taskOrder,
-              tasks: tasksSnapshot
-                ? tasksSnapshot.tasks
-                : (existing.tasks ?? null),
+              taskOrder: tasksUpdate?.order ?? existing.taskOrder,
+              tasks: tasksUpdate ? tasksUpdate.tasks : (existing.tasks ?? null),
             },
           },
         };
       }
 
       const messages = [...existing.messages];
+      const taskCallsWithResults: ToolCallInfo[] = [];
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].role === "assistant") {
           const updated: ConversationMessage = {
@@ -1127,11 +1153,16 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
               const isDenyAnswerFlow =
                 tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
 
-              return {
+              const nextTc: ToolCallInfo = {
                 ...tc,
                 result,
                 isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
               };
+              if (TASK_TOOL_NAMES.has(nextTc.name)) {
+                taskCallsWithResults.push(nextTc);
+              }
+
+              return nextTc;
             }),
           };
           messages[i] = updated;
@@ -1139,7 +1170,11 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
         }
       }
 
-      const tasksSnapshot = extractTasksFromMessages(messages);
+      const tasksUpdate = applyTaskCallsLive(
+        existing.tasks,
+        existing.taskOrder,
+        taskCallsWithResults,
+      );
 
       return {
         conversations: {
@@ -1150,10 +1185,8 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
             messages,
             pendingToolName: null,
             pendingToolInput: null,
-            taskOrder: tasksSnapshot?.order ?? existing.taskOrder,
-            tasks: tasksSnapshot
-              ? tasksSnapshot.tasks
-              : (existing.tasks ?? null),
+            taskOrder: tasksUpdate?.order ?? existing.taskOrder,
+            tasks: tasksUpdate ? tasksUpdate.tasks : (existing.tasks ?? null),
           },
         },
       };
