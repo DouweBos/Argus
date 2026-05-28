@@ -239,6 +239,15 @@ export async function checkClaudeCli(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Permission mode a spawn falls back to when neither the caller nor a reused
+ * slot specifies one. `auto` keeps the smart classifier in charge so that
+ * back-end-initiated spawns (MCP `spawn_agent`, restore-at-turn) never drop
+ * to the CLI's prompt-for-everything default. Renderer-initiated spawns pass
+ * the app-level default permission mode explicitly.
+ */
+const DEFAULT_AGENT_PERMISSION_MODE = "auto";
+
+/**
  * Spawn a new agent process for the given session. See claude.ts for the
  * full lifecycle docs — Phase 1 preserves the legacy signature exactly so
  * callers (`ipc.ts`, `mcp/server.ts`, `organizationTask/orchestrator.ts`)
@@ -274,6 +283,16 @@ export async function startAgent(
   const previousAgentForModel = reuseAgentId
     ? appState.agents.get(reuseAgentId)
     : null;
+
+  // Resolve the permission mode: explicit caller override → the mode the
+  // reused slot ran with (restore-at-turn / restart) → app-wide default.
+  // Applied at spawn time via `--permission-mode`, which is the only way the
+  // Claude CLI honours spawn-only modes like `auto`. Every agent gets a
+  // deliberate mode here — not just prewarms.
+  const effectivePermissionMode =
+    permissionMode ??
+    previousAgentForModel?.permissionMode ??
+    DEFAULT_AGENT_PERMISSION_MODE;
 
   // Resolve the runner. Runner is fixed at session creation
   // (`session.runner_id`) and immutable for the session's lifetime — every
@@ -480,7 +499,7 @@ export async function startAgent(
     sessionId,
     cwd: worktreePath,
     model: effectiveModel,
-    permissionMode: permissionMode ?? null,
+    permissionMode: effectivePermissionMode,
     resumeRef: resumeSessionId ?? null,
     systemPrompt: combinedPrompt,
     mcpServers,
@@ -511,7 +530,7 @@ export async function startAgent(
     lastToolName: previous?.lastToolName ?? null,
     inflightPrompts: 0,
     model: effectiveModel,
-    permissionMode: permissionMode ?? null,
+    permissionMode: effectivePermissionMode,
   };
   appState.agents.set(agentId, agentSession);
 
@@ -829,7 +848,8 @@ export async function restoreAgentAtTurn(args: {
     }
   }
 
-  // Respawn under the same agent slot.
+  // Respawn under the same agent slot. Passing `undefined` for model and
+  // permission mode lets `startAgent` inherit both from the reused slot.
   await startAgent(
     sessionId,
     undefined,
@@ -1356,19 +1376,13 @@ export function listAgents(sessionId: string): AgentInfo[] {
 // prewarm_agent / claim_prewarm_agent / discard_prewarm_agent
 // ---------------------------------------------------------------------------
 
-// Prewarms spawn with this permission mode so the CLI starts with the
-// matching `--permission-mode` flag. `auto` is the UI default and is the
-// most-common mode users land in — modes like `auto` and `bypassPermissions`
-// are spawn-time-only in the Claude CLI, so getting this right at spawn
-// avoids a runtime switch that silently no-ops.
-const PREWARM_DEFAULT_PERMISSION_MODE = "auto";
-
 export async function prewarmAgent(sessionId: string): Promise<AgentInfo> {
-  const spawned = await startAgent(
-    sessionId,
-    undefined,
-    PREWARM_DEFAULT_PERMISSION_MODE,
-  );
+  // Prewarms spawn before the user picks a mode, so they take the spawn-time
+  // default (DEFAULT_AGENT_PERMISSION_MODE). The claim only needs a runtime
+  // `set_permission_mode` when the user actually chose a different mode —
+  // and only modes the Claude CLI honours at runtime (`ask` / `plan` /
+  // `review`) can be applied that way.
+  const spawned = await startAgent(sessionId);
   const session = appState.agents.get(spawned.agent_id);
   if (session) {
     session.prewarmed = true;

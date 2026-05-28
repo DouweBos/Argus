@@ -11,6 +11,7 @@ import {
 import { isSessionReady } from "../../../lib/types";
 import { pushError } from "../../../stores/notificationsStore";
 import { useSessions } from "../../../stores/sessionStore";
+import { getDefaultPermissionMode } from "../../../stores/settingsStore";
 import { PermissionModePicker } from "../PermissionModePicker";
 import { StartAgentDialog } from "../StartAgentDialog";
 import styles from "./AgentsEmptyState.module.css";
@@ -42,8 +43,9 @@ export function AgentsEmptyState({ sessionId }: AgentsEmptyStateProps) {
   const [prompt, setPrompt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [permissionMode, setPermissionMode] =
-    useState<CanonicalPermissionMode>("auto");
+  const [permissionMode, setPermissionMode] = useState<CanonicalPermissionMode>(
+    getDefaultPermissionMode,
+  );
   const [permissionPickerOpen, setPermissionPickerOpen] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement>(null);
   const permissionChipRef = useRef<HTMLDivElement>(null);

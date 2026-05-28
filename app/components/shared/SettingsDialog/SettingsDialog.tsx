@@ -91,12 +91,7 @@ import {
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
 
-const MODES: PermissionMode[] = [
-  "default",
-  "acceptEdits",
-  "plan",
-  "bypassPermissions",
-];
+const MODES: PermissionMode[] = ["auto", "ask", "plan", "review", "trusted"];
 
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
