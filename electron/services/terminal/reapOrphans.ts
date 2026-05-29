@@ -19,6 +19,14 @@ const execFileAsync = promisify(execFile);
  * them. Best-effort; failures are logged but never thrown.
  */
 export async function reapOrphanedSpawnHelpers(): Promise<void> {
+  // No-op on Windows: there's no `ps`, and the launchd/ppid-1 reparenting that
+  // strands spawn-helpers doesn't apply — node-pty uses ConPTY, not a forked
+  // spawn-helper. Revisit with a tasklist/Job-object sweep if Windows turns out
+  // to leak helpers.
+  if (process.platform === "win32") {
+    return;
+  }
+
   let stdout: string;
   try {
     // ps with no width limit; ppid first so awk can filter cheaply.
