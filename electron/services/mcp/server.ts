@@ -507,8 +507,13 @@ export function createMcpServer(): McpServer {
         };
       }
 
-      // Compute relative path from repoRoot to the target.
-      const relativePath = path.relative(repoRoot, related_project_path);
+      // Compute relative path from repoRoot to the target. Normalize to forward
+      // slashes so the value written into the checked-in .argus.json is portable
+      // across platforms (a Windows `..\backend` would be misread on POSIX).
+      const relativePath = path
+        .relative(repoRoot, related_project_path)
+        .split(path.sep)
+        .join("/");
 
       // Read existing config, add the entry, write back.
       const config = readArgusConfig(repoRoot);
