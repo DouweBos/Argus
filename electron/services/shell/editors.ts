@@ -11,6 +11,7 @@ import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { promisify } from "node:util";
+import { resolveBinaryOnPath } from "../../lib/whichBinary";
 
 const execFileP = promisify(execFile);
 
@@ -92,13 +93,7 @@ function appExists(appName: string): boolean {
 }
 
 async function cliExists(cli: string): Promise<boolean> {
-  try {
-    await execFileP("/usr/bin/env", ["which", cli]);
-
-    return true;
-  } catch {
-    return false;
-  }
+  return (await resolveBinaryOnPath(cli)) !== null;
 }
 
 async function isAvailable(def: EditorDef): Promise<boolean> {
