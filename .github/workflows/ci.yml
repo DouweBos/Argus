@@ -26,3 +26,31 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  # Windows lane — verifies typecheck/lint/unit tests on windows-latest.
+  # Uses setup-node + pnpm directly (not mise) to avoid installing ruby 3.3,
+  # which mise.toml pins only for fastlane (macOS release) and isn't needed here.
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      # `pnpm test` is intentionally not gated on Windows yet: the suite surfaces
+      # real path-normalization bugs (tracked in #5) that must land first — the
+      # Windows Test step is enabled there. `pnpm build` is also macOS-only here,
+      # since ensure:bridge (make + swiftc) builds the iOS simulator bridge.

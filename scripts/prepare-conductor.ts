@@ -48,6 +48,13 @@ const VERSION_FILE = path.join(OUT, ".version");
 const BIN_DIR = path.join(OUT, "bin");
 const BIN_PATH = path.join(BIN_DIR, "conductor");
 
+// On Windows, npm is a `.cmd` shim, and Node refuses to execFile `.cmd`/`.bat`
+// files directly (EINVAL, since the spawn-security fix) — they must run through
+// a shell. So we set `shell: true` on Windows. Under `shell: true` Node does not
+// quote arguments, so wrap any path that might contain spaces ourselves.
+const NPM_USE_SHELL = process.platform === "win32";
+const npmPathArg = (p: string): string => (NPM_USE_SHELL ? `"${p}"` : p);
+
 // ---------------------------------------------------------------------------
 // Shim generation
 // ---------------------------------------------------------------------------
@@ -239,7 +246,7 @@ function installFromRegistry(): void {
       "install",
       `@houwert/conductor@${CONDUCTOR_VERSION}`,
       "--prefix",
-      OUT,
+      npmPathArg(OUT),
       "--ignore-scripts",
       "--no-package-lock",
     ],
@@ -247,6 +254,7 @@ function installFromRegistry(): void {
       stdio: "inherit",
       cwd: ROOT,
       timeout: 60_000,
+      shell: NPM_USE_SHELL,
     },
   );
 
@@ -271,9 +279,9 @@ function installFromLocal(sourceDir: string): void {
     "npm",
     [
       "install",
-      sourceDir,
+      npmPathArg(sourceDir),
       "--prefix",
-      OUT,
+      npmPathArg(OUT),
       "--ignore-scripts",
       "--no-package-lock",
       "--install-links=true", // copy instead of symlink so electron-builder bundles real files
@@ -282,6 +290,7 @@ function installFromLocal(sourceDir: string): void {
       stdio: "inherit",
       cwd: ROOT,
       timeout: 120_000,
+      shell: NPM_USE_SHELL,
     },
   );
 

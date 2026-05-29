@@ -1,0 +1,4 @@
+# Force LF line endings in the working tree on every platform so tooling
+# (Prettier, ESLint, etc.) behaves identically on Windows checkouts, where Git
+# would otherwise convert to CRLF. Binary files are auto-detected and left as-is.
+* text=auto eol=lf
