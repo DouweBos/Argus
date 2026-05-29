@@ -6,6 +6,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "app"),
       "@logger": path.resolve(__dirname, "app/lib/logger.ts"),
+      // Main-process unit tests transitively value-import `electron`, whose real
+      // entry point throws when the binary isn't resolvable in a plain Node/CI
+      // context (notably Windows). Stub it so tests don't need the runtime.
+      electron: path.resolve(__dirname, "test/electron-stub.ts"),
     },
   },
   test: {
