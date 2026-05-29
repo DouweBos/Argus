@@ -44,6 +44,14 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      # The staged-changes merge pre-check synthesises a commit via
+      # `git commit-tree`, which needs a committer identity. The Windows runner
+      # has none by default (macOS does), so set one for the job.
+      - name: Configure git identity
+        run: |
+          git config --global user.email "ci@argus.local"
+          git config --global user.name "Argus CI"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
