@@ -98,26 +98,6 @@ describe("checkMergeConflicts (integration)", () => {
     write("README.md", "hello from feat staged\n");
     git(repoRoot, ["add", "-A"]);
 
-    // TEMP DIAGNOSTIC (remove after root-causing on Windows CI): surface the
-    // git state so we can see why effectiveSessionRef returns null on Windows.
-    const safe = (args: string[]): string => {
-      try {
-        return git(repoRoot, args).trim();
-      } catch (e) {
-        return `ERR: ${e instanceof Error ? e.message : String(e)}`;
-      }
-    };
-    const diag = {
-      staged: safe(["diff", "--cached", "--name-only"]),
-      stagedQuietExit: safe(["diff", "--cached", "--quiet"]),
-      porcelain: safe(["status", "--porcelain=v1"]),
-      writeTree: safe(["write-tree"]),
-      autocrlf: safe(["config", "--get", "core.autocrlf"]),
-    };
-    expect(diag).toEqual({
-      DIAGNOSTIC: "expected mismatch dumps actual values",
-    });
-
     // Without wsPath the check only sees committed history on the branch
     // → no conflict is reported.
     const committedOnly = await checkMergeConflicts(repoRoot, "feat", "main");
