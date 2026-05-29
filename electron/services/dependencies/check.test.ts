@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import type NodeFs from "node:fs";
+import path from "node:path";
 import type { Mock } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -121,7 +122,7 @@ describe("resolveAndroidBinary", () => {
     const out = await resolveAndroidBinary("adb", "platform-tools", {
       ANDROID_HOME: "/opt/android",
     });
-    expect(out).toBe("/opt/android/platform-tools/adb");
+    expect(out).toBe(path.join("/opt/android", "platform-tools", "adb"));
   });
 
   it("falls back to ANDROID_SDK_ROOT when ANDROID_HOME is unset", async () => {
@@ -129,7 +130,7 @@ describe("resolveAndroidBinary", () => {
     const out = await resolveAndroidBinary("adb", "platform-tools", {
       ANDROID_SDK_ROOT: "/opt/sdk",
     });
-    expect(out).toBe("/opt/sdk/platform-tools/adb");
+    expect(out).toBe(path.join("/opt/sdk", "platform-tools", "adb"));
   });
 
   it("falls back to PATH when the SDK dir lacks the binary", async () => {
@@ -149,8 +150,12 @@ describe("resolveAndroidBinary", () => {
     ).resolves.toBeNull();
   });
 
-  it("finds binary under the default macOS SDK path when no env vars set", async () => {
-    const expected = defaultAndroidSdkRoots()[0] + "/emulator/emulator";
+  it("finds binary under the default SDK path when no env vars set", async () => {
+    const expected = path.join(
+      defaultAndroidSdkRoots()[0],
+      "emulator",
+      "emulator",
+    );
     (fs.existsSync as unknown as Mock).mockImplementation(
       (p: string) => p === expected,
     );
@@ -162,13 +167,13 @@ describe("resolveAndroidBinary", () => {
 describe("defaultAndroidSdkRoots", () => {
   it("returns ~/Library/Android/sdk on darwin", () => {
     expect(defaultAndroidSdkRoots("/Users/test", "darwin")).toEqual([
-      "/Users/test/Library/Android/sdk",
+      path.join("/Users/test", "Library", "Android", "sdk"),
     ]);
   });
 
   it("returns ~/Android/Sdk on linux", () => {
     expect(defaultAndroidSdkRoots("/home/test", "linux")).toEqual([
-      "/home/test/Android/Sdk",
+      path.join("/home/test", "Android", "Sdk"),
     ]);
   });
 });
