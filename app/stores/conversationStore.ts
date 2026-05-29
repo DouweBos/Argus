@@ -318,10 +318,95 @@ function deleteTask(tasks: Map<string, Task>, order: string[], id: string) {
   }
 }
 
+/**
+ * Resolve a `TaskCreate` tool call to a `Task` object. The id can live in
+ * one of two places:
+ *  - the parsed JSON result (when the harness echoes a full task back), or
+ *  - the result text `"Task #<id> created successfully: ..."` (regex), in
+ *    which case we synthesize the rest from the input.
+ *
+ * Returns `null` if neither path yields enough to build a task.
+ */
+function coerceTaskFromCreateCall(tc: ToolCallInfo): Task | null {
+  if (tc.name !== "TaskCreate") {
+    return null;
+  }
+  const parsedResult = tryParseJson(resultText(tc.result));
+  const fromResult = coerceTask(parsedResult);
+  if (fromResult) {
+    return fromResult;
+  }
+  const input = tc.input as {
+    activeForm?: unknown;
+    description?: unknown;
+    subject?: unknown;
+  };
+  const subject = typeof input.subject === "string" ? input.subject : null;
+  if (!subject) {
+    return null;
+  }
+  const idMatch = (resultText(tc.result) ?? "").match(/Task #(\S+) created/);
+  const id = idMatch?.[1] ?? `pending:${tc.id}`;
+
+  return {
+    id,
+    subject,
+    status: "pending",
+    description:
+      typeof input.description === "string" ? input.description : undefined,
+    activeForm:
+      typeof input.activeForm === "string" ? input.activeForm : undefined,
+  };
+}
+
+/**
+ * Walk the agent's message history looking for the `TaskCreate` whose
+ * resolved id matches `taskId`. Used to recover a single task entry when a
+ * later `TaskUpdate` fires for an id that's missing from the live map
+ * (typically because the user cleared the task list in between).
+ */
+function findTaskCreateForId(
+  messages: ConversationMessage[],
+  taskId: string,
+): Task | null {
+  const walk = (calls: ToolCallInfo[]): Task | null => {
+    for (const tc of calls) {
+      if (tc.name === "TaskCreate") {
+        const t = coerceTaskFromCreateCall(tc);
+        if (t && t.id === taskId) {
+          return t;
+        }
+      }
+      if (tc.children) {
+        for (const child of tc.children) {
+          if (child.kind === "tool_use") {
+            const found = walk([child.toolCall]);
+            if (found) {
+              return found;
+            }
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  for (const msg of messages) {
+    const found = walk(msg.toolCalls);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
 function applyTaskCall(
   tc: ToolCallInfo,
   tasks: Map<string, Task>,
   order: string[],
+  messages?: ConversationMessage[],
 ) {
   const parsedResult = tryParseJson(resultText(tc.result));
 
@@ -351,35 +436,10 @@ function applyTaskCall(
   }
 
   if (tc.name === "TaskCreate") {
-    // Input lacks an id (server-assigned). Try the parsed result first.
-    const fromResult = coerceTask(parsedResult);
-    if (fromResult) {
-      upsertTask(tasks, order, fromResult);
-
-      return;
+    const created = coerceTaskFromCreateCall(tc);
+    if (created) {
+      upsertTask(tasks, order, created);
     }
-    const input = tc.input as {
-      activeForm?: unknown;
-      description?: unknown;
-      subject?: unknown;
-    };
-    const subject = typeof input.subject === "string" ? input.subject : null;
-    if (!subject) {
-      return;
-    }
-    // The result text from the harness is "Task #<id> created successfully: ..."
-    // — pull the id from there so later TaskUpdate(taskId) calls find this task.
-    const idMatch = (resultText(tc.result) ?? "").match(/Task #(\S+) created/);
-    const id = idMatch?.[1] ?? `pending:${tc.id}`;
-    upsertTask(tasks, order, {
-      id,
-      subject,
-      status: "pending",
-      description:
-        typeof input.description === "string" ? input.description : undefined,
-      activeForm:
-        typeof input.activeForm === "string" ? input.activeForm : undefined,
-    });
 
     return;
   }
@@ -405,7 +465,20 @@ function applyTaskCall(
 
       return;
     }
-    const existing = tasks.get(taskId);
+    let existing = tasks.get(taskId);
+    if (!existing && messages) {
+      // The task was likely cleared by the user; recover just this one entry
+      // from the originating TaskCreate in history so the update merges onto
+      // a real subject instead of fabricating a row labelled with the raw id.
+      const recovered = findTaskCreateForId(messages, taskId);
+      if (!recovered) {
+        return;
+      }
+      upsertTask(tasks, order, recovered);
+      existing = tasks.get(taskId);
+    } else if (!existing) {
+      return;
+    }
     const merged: Task = {
       id: taskId,
       subject:
@@ -488,6 +561,7 @@ function applyTaskCallsLive(
   existingTasks: Record<string, Task> | null | undefined,
   existingOrder: string[] | undefined,
   calls: ToolCallInfo[],
+  messages?: ConversationMessage[],
 ): { order: string[]; tasks: Record<string, Task> } | null {
   if (calls.length === 0) {
     return null;
@@ -495,7 +569,7 @@ function applyTaskCallsLive(
   const tasks = new Map<string, Task>(Object.entries(existingTasks ?? {}));
   const order = [...(existingOrder ?? [])];
   for (const tc of calls) {
-    applyTaskCall(tc, tasks, order);
+    applyTaskCall(tc, tasks, order, messages);
   }
 
   return { tasks: Object.fromEntries(tasks), order };
@@ -1109,6 +1183,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
           existing.tasks,
           existing.taskOrder,
           taskCallsWithResults,
+          messages,
         );
 
         return {
@@ -1174,6 +1249,7 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
         existing.tasks,
         existing.taskOrder,
         taskCallsWithResults,
+        messages,
       );
 
       return {
