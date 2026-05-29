@@ -141,6 +141,12 @@ async function claimPrewarm(
   opts: { focus: boolean; model?: string; permissionMode?: string },
 ): Promise<AgentStatus> {
   startAgentListening(agentId);
+  // Drop the prewarm slot *before* registering the agent. `addAgent` fires
+  // the agentStore subscriber synchronously, which re-runs the prewarm
+  // reconcile loop; if the slot is still there it sees `shouldPrewarm=false`
+  // (a real agent now exists for this session) and discards the very slot
+  // we're mid-claim of, SIGTERM'ing the backing Claude process.
+  clearPrewarm(sessionId);
   const optimistic: AgentStatus = {
     agent_id: agentId,
     session_id: sessionId,
@@ -167,12 +173,10 @@ async function claimPrewarm(
     if (info.capabilities) {
       setCapabilities(agentId, info.capabilities);
     }
-    clearPrewarm(sessionId);
 
     return info;
   } catch (err) {
     removeAgent(agentId);
-    clearPrewarm(sessionId);
     throw err;
   }
 }
