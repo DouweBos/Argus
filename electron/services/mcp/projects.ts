@@ -50,10 +50,13 @@ export interface ProjectEntry {
 export function collectAllProjects(): ProjectEntry[] {
   const seen = new Map<string, ProjectEntry>();
 
-  // All registered repo roots.
+  // All registered repo roots. Key the dedup map by the canonical absolute path
+  // (`path.resolve`) so a related project pointing here via a relative path
+  // matches regardless of separator/drive form — `path.resolve` is idempotent
+  // for already-absolute roots, so this is a no-op in normal use.
   for (const repoRoot of appState.repoRoots) {
     const dirName = path.basename(repoRoot);
-    seen.set(repoRoot, {
+    seen.set(path.resolve(repoRoot), {
       path: repoRoot,
       description: `Registered project: ${dirName}`,
       registered: true,

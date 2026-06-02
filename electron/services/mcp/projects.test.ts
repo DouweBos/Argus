@@ -169,7 +169,7 @@ describe("projects service", () => {
         return s.endsWith(".argus.json") && !s.includes("local");
       });
       mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
-        if (String(p).startsWith("/projects/frontend")) {
+        if (String(p).replace(/\\/g, "/").startsWith("/projects/frontend")) {
           return JSON.stringify({
             related_projects: [
               { path: "../backend", description: "Backend API" },
@@ -202,7 +202,7 @@ describe("projects service", () => {
         return s.endsWith(".argus.json") && !s.includes("local");
       });
       mockReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
-        if (String(p).startsWith("/projects/frontend")) {
+        if (String(p).replace(/\\/g, "/").startsWith("/projects/frontend")) {
           return JSON.stringify({
             related_projects: [
               { path: "../backend", description: "Backend API" },
