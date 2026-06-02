@@ -44,13 +44,23 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      # The staged-changes merge pre-check synthesises a commit via
+      # `git commit-tree`, which needs a committer identity. The Windows runner
+      # has none by default (macOS does), so set one for the job.
+      - name: Configure git identity
+        run: |
+          git config --global user.email "ci@argus.local"
+          git config --global user.name "Argus CI"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm lint
 
-      # `pnpm test` is intentionally not gated on Windows yet: the suite surfaces
-      # real path-normalization bugs (tracked in #5) that must land first — the
-      # Windows Test step is enabled there. `pnpm build` is also macOS-only here,
-      # since ensure:bridge (make + swiftc) builds the iOS simulator bridge.
+      - name: Test
+        run: pnpm test
+
+      # `pnpm build` is intentionally omitted on Windows: it runs ensure:bridge
+      # (make + swiftc) to build the macOS-only iOS simulator bridge, which can't
+      # compile off macOS. Full-build coverage stays on the macos-14 job.
