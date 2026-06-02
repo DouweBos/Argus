@@ -14,6 +14,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { warn } from "../../../app/lib/logger";
 import { resolveBinary } from "../dependencies/check";
 
 const execFileAsync = promisify(execFile);
@@ -62,14 +63,21 @@ async function checkClaudeAuth(): Promise<PrereqResult> {
         "json",
         "ping",
       ]),
-      12_000,
+      // Generous: this makes a real API round-trip and the CLI can be slow to
+      // cold-start (notably on Windows/arm64), where 12s was right at the edge
+      // and produced false "not authenticated" results.
+      30_000,
     );
     if (!stdout.trim()) {
       throw new Error("empty response");
     }
 
     return { id: "claude_auth", status: "pass", message: "authenticated" };
-  } catch {
+  } catch (err) {
+    // Surface the real cause — the probe failing is otherwise indistinguishable
+    // from genuine unauthentication.
+    warn("[prereqs] claude auth probe failed: %s", String(err));
+
     return {
       id: "claude_auth",
       status: "warn",
