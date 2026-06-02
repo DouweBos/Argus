@@ -30,8 +30,21 @@ import { warn } from "../../../app/lib/logger";
  * same PATH as the current process.
  *
  * No-ops if the resolved PATH is identical to the current one.
+ *
+ * On Windows this is skipped entirely: GUI processes inherit the full user
+ * PATH/env from the registry (there's no minimal-PATH `.app`-bundle problem to
+ * fix), and there's no POSIX login shell to source — `$SHELL -ilc` / `/bin/zsh`
+ * would just error. The `platform` parameter is injectable for testing.
  */
-export function fixProcessPath(): string[] {
+export function fixProcessPath(
+  platform: NodeJS.Platform = process.platform,
+): string[] {
+  if (platform === "win32") {
+    return [
+      "windows: inheriting process environment as-is (no login-shell PATH resolution)",
+    ];
+  }
+
   const diagnostics: string[] = [];
   const current = process.env.PATH ?? "";
   diagnostics.push(`SHELL=${process.env.SHELL ?? "(unset)"}`);
