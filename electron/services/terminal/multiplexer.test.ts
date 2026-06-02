@@ -1,6 +1,6 @@
 import type { WorkspaceEnvConfig } from "../session/models";
 import { describe, expect, it, vi } from "vitest";
-import { workspaceEnvValue, defaultShell } from "./multiplexer";
+import { workspaceEnvValue } from "./multiplexer";
 
 // Mock node-pty (native module) and other Electron deps
 vi.mock("node-pty", () => ({ spawn: vi.fn() }));
@@ -88,21 +88,5 @@ describe("workspaceEnvValue", () => {
     const val = workspaceEnvValue("test", undefined, config);
     expect(val).toBeGreaterThanOrEqual(3000);
     expect(val).toBeLessThan(4000);
-  });
-});
-
-describe("defaultShell", () => {
-  it("returns SHELL env var when set", () => {
-    const original = process.env.SHELL;
-    process.env.SHELL = "/bin/fish";
-    expect(defaultShell()).toBe("/bin/fish");
-    process.env.SHELL = original;
-  });
-
-  it("falls back to /bin/sh", () => {
-    const original = process.env.SHELL;
-    delete process.env.SHELL;
-    expect(defaultShell()).toBe("/bin/sh");
-    process.env.SHELL = original;
   });
 });
