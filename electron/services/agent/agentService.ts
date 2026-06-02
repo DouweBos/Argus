@@ -355,7 +355,10 @@ export async function startAgent(
   // Build env. Conductor shim on PATH; resolver URL/token for lazy device
   // acquisition; long MCP timeouts so wait_for_agent etc. don't time out.
   const env = { ...process.env };
-  env.PATH = `${getConductorBinDir()}:${env.PATH ?? ""}`;
+  // Use the platform PATH separator (`;` on Windows) — a hardcoded `:` fuses
+  // the conductor-bin dir into the first real PATH entry on Windows, corrupting
+  // PATH so the spawned `claude` can't be found (spawn ENOENT).
+  env.PATH = `${getConductorBinDir()}${path.delimiter}${env.PATH ?? ""}`;
   env.ARGUS_AGENT_ID = agentId;
   if (supportsMcp && mcpPort && mcpToken) {
     env.ARGUS_RESOLVER_URL = `http://127.0.0.1:${mcpPort}/argus/acquire-device`;
