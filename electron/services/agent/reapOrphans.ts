@@ -18,6 +18,13 @@ import { info, warn } from "../../../app/lib/logger";
 const execFileAsync = promisify(execFile);
 
 export async function reapOrphanedAgentProcesses(): Promise<void> {
+  // No-op on Windows: there's no `ps`, and the launchd/ppid-1 reparenting these
+  // reapers rely on doesn't apply. Revisit with a tasklist/Job-object sweep if
+  // orphaned Claude CLI processes turn out to accumulate on Windows.
+  if (process.platform === "win32") {
+    return;
+  }
+
   let stdout: string;
   try {
     const result = await execFileAsync("ps", ["-eo", "pid=,ppid=,command="]);
