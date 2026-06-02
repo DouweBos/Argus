@@ -29,6 +29,7 @@ import path from "node:path";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
 import { loadArgusConfig } from "../session/setup";
+import { resolveTerminalSpawn } from "./terminalShell";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty") as typeof NodePty;
@@ -160,13 +161,6 @@ export function stripAnsi(s: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Return the user's preferred shell, falling back to `/bin/sh`.
- */
-export function defaultShell(): string {
-  return process.env.SHELL ?? "/bin/sh";
-}
-
-/**
  * Compute a deterministic per-session integer from `sessionId` using a
  * simple djb2-style hash, bounded by `range`.
  *
@@ -289,10 +283,8 @@ export function createTerminal(
     ws.repo_root,
   );
 
-  // Determine the program and arguments.
-  const [program, args]: [string, string[]] = command
-    ? ["sh", ["-c", command]]
-    : [defaultShell(), []];
+  // Determine the program and arguments (platform-aware: POSIX shell vs ConPTY).
+  const [program, args] = resolveTerminalSpawn(command);
 
   const terminalId = crypto.randomUUID();
 
