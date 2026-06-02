@@ -64,19 +64,34 @@ function registerLocalExtension(ext: DiscoveredExtension): void {
     ? ExtensionHostKind.LocalWebWorker
     : ExtensionHostKind.LocalWebWorker;
 
-  const result = registerExtension(manifest, hostKind, {
-    path: ext.extensionPath,
-  });
+  // monaco-vscode-api builds the extension's location as
+  // `URI.from({ scheme, authority: id, path })`. A URI that carries an
+  // authority requires its path to begin with "/", so a raw Windows path
+  // (C:\Users\...) throws "[UriError]: ...path...must begin with a slash".
+  // Normalize separators and prefix a slash → /C:/Users/...; POSIX paths
+  // (/Users/...) already satisfy this and pass through unchanged.
+  const locationPath = toUriPath(ext.extensionPath);
+
+  const result = registerExtension(manifest, hostKind, { path: locationPath });
 
   // Map every file in the extension to an argus-ext:// URL so VS Code can fetch
-  // them (grammars, themes, icons, etc.). The URL path must use forward slashes
-  // and begin with "/": on Windows extensionPath starts with a drive letter
-  // (C:\...), which isn't a valid URI path on its own, so normalize separators
-  // and prefix a slash. POSIX paths already start with "/" (unchanged).
+  // them (grammars, themes, icons, etc.). `file` is already forward-slashed and
+  // relative; the URL reuses the normalized location path so the drive letter
+  // sits after the leading slash (argus-ext://ext/C:/Users/.../file).
   for (const file of ext.files) {
-    const absolutePath = `${ext.extensionPath}/${file}`;
-    const uriPath = absolutePath.replace(/\\/g, "/");
-    const url = `argus-ext://ext${uriPath.startsWith("/") ? "" : "/"}${uriPath}`;
+    const url = `argus-ext://ext${locationPath}/${file}`;
     result.registerFileUrl(file, url);
   }
+}
+
+/**
+ * Convert an absolute filesystem path into a URI path component. Backslashes
+ * become forward slashes and a leading slash is added when missing (Windows
+ * drive-letter paths) so the result is a valid path for a URI that has an
+ * authority. POSIX paths already begin with "/" and are returned unchanged.
+ */
+function toUriPath(fsPath: string): string {
+  const forward = fsPath.replace(/\\/g, "/");
+
+  return forward.startsWith("/") ? forward : `/${forward}`;
 }
