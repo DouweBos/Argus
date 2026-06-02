@@ -904,28 +904,38 @@ app.whenReady().then(() => {
     );
   }
 
+  // Convert an argus-ext:// / extension-file:// request URL to a filesystem
+  // path. On Windows the URL pathname is "/C:/Users/..." — strip the leading
+  // slash so it's a drive-absolute path; POSIX pathnames ("/Users/...") pass
+  // through unchanged.
+  function extUrlToFsPath(rawUrl: string): string {
+    const pathname = decodeURIComponent(new URL(rawUrl).pathname);
+
+    return process.platform === "win32" && /^\/[A-Za-z]:/.test(pathname)
+      ? pathname.slice(1)
+      : pathname;
+  }
+
   // Serve extension files via argus-ext:// protocol.
   // URL format: argus-ext://ext/<absolute-path-to-file>
   protocol.handle("argus-ext", (request) => {
-    const url = new URL(request.url);
-    const filePath = decodeURIComponent(url.pathname);
+    const filePath = extUrlToFsPath(request.url);
     if (!isAllowedExtensionPath(filePath)) {
       return new Response("Forbidden", { status: 403 });
     }
 
-    return net.fetch(`file://${filePath}`);
+    return net.fetch(pathToFileURL(filePath).href);
   });
 
   // Serve extension-file:// URIs (used by VS Code extension icon references).
   // URL format: extension-file://<publisher.name>/<absolute-path-to-file>
   protocol.handle("extension-file", (request) => {
-    const url = new URL(request.url);
-    const filePath = decodeURIComponent(url.pathname);
+    const filePath = extUrlToFsPath(request.url);
     if (!isAllowedExtensionPath(filePath)) {
       return new Response("Forbidden", { status: 403 });
     }
 
-    return net.fetch(`file://${filePath}`);
+    return net.fetch(pathToFileURL(filePath).href);
   });
 
   // Serve local files via argus-file:// protocol.

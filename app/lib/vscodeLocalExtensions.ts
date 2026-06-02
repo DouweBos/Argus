@@ -68,11 +68,15 @@ function registerLocalExtension(ext: DiscoveredExtension): void {
     path: ext.extensionPath,
   });
 
-  // Map every file in the extension to a argus-ext:// URL so VS Code
-  // can fetch them (grammars, themes, icons, etc.)
+  // Map every file in the extension to an argus-ext:// URL so VS Code can fetch
+  // them (grammars, themes, icons, etc.). The URL path must use forward slashes
+  // and begin with "/": on Windows extensionPath starts with a drive letter
+  // (C:\...), which isn't a valid URI path on its own, so normalize separators
+  // and prefix a slash. POSIX paths already start with "/" (unchanged).
   for (const file of ext.files) {
     const absolutePath = `${ext.extensionPath}/${file}`;
-    const url = `argus-ext://ext${absolutePath}`;
+    const uriPath = absolutePath.replace(/\\/g, "/");
+    const url = `argus-ext://ext${uriPath.startsWith("/") ? "" : "/"}${uriPath}`;
     result.registerFileUrl(file, url);
   }
 }
