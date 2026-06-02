@@ -17,15 +17,13 @@ import type {
   RunnerCapabilities,
   RunnerOnboardingStep,
 } from "../types";
-import { spawn, execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { spawn } from "node:child_process";
 import { info } from "../../../../../app/lib/logger";
+import { resolveBinaryOnPath } from "../../../../lib/whichBinary";
 import { ClaudeCodeHandle } from "./handle";
 import { runClaudePrint } from "./oneShot";
 import { toClaudePermissionMode } from "./permissionModes";
 import { forkClaudeSessionFile } from "./transcriptFork";
-
-const execFileAsync = promisify(execFile);
 
 const CLAUDE_BIN = "claude";
 
@@ -45,23 +43,15 @@ export class ClaudeCodeRunner implements LlmRunner {
   }
 
   async preflight(): Promise<PreflightResult> {
-    try {
-      const { stdout } = await execFileAsync("which", [CLAUDE_BIN]);
-      const resolved = stdout.trim();
-      if (!resolved) {
-        return {
-          ok: false,
-          reason: `Claude Code CLI (\`${CLAUDE_BIN}\`) not found on PATH. Install it first: https://docs.anthropic.com/en/docs/claude-code`,
-        };
-      }
-
-      return { ok: true, binPath: resolved };
-    } catch {
+    const resolved = await resolveBinaryOnPath(CLAUDE_BIN);
+    if (!resolved) {
       return {
         ok: false,
         reason: `Claude Code CLI (\`${CLAUDE_BIN}\`) not found on PATH. Install it first: https://docs.anthropic.com/en/docs/claude-code`,
       };
     }
+
+    return { ok: true, binPath: resolved };
   }
 
   async spawn(args: LlmRunnerSpawnArgs): Promise<LlmRunnerHandle> {

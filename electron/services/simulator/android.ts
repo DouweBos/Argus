@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { error } from "../../../app/lib/logger";
+import { resolveBinaryOnPath } from "../../lib/whichBinary";
 import { appState } from "../../state";
 import { AndroidBridge } from "./android-bridge";
 
@@ -51,14 +52,9 @@ async function findAndroidBinary(
   }
 
   // Fall back to PATH
-  try {
-    const { stdout } = await execFileAsync("which", [binary]);
-    const resolved = stdout.trim();
-    if (resolved) {
-      return resolved;
-    }
-  } catch {
-    // not found
+  const resolved = await resolveBinaryOnPath(binary);
+  if (resolved) {
+    return resolved;
   }
 
   throw `Could not find '${binary}'. Ensure Android SDK is installed and ANDROID_HOME is set, or add ${binary} to your PATH.`;

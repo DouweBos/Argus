@@ -7,14 +7,11 @@
  * screen so users know exactly what they need to install.
  */
 
-import { execFile } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
+import { resolveBinaryOnPath } from "../../lib/whichBinary";
 import { getConductorBin } from "../conductor/logger";
-
-const execFileAsync = promisify(execFile);
 
 export type DependencySeverity = "optional" | "required";
 
@@ -55,17 +52,7 @@ export interface DependencyReport {
  * swallow errors — a non-zero exit means "not on PATH", not a failure of
  * the probe.
  */
-export async function resolveBinary(binary: string): Promise<string | null> {
-  const cmd = process.platform === "win32" ? "where" : "which";
-  try {
-    const { stdout } = await execFileAsync(cmd, [binary]);
-    const resolved = stdout.split(/\r?\n/)[0]?.trim();
-
-    return resolved ? resolved : null;
-  } catch {
-    return null;
-  }
-}
+export const resolveBinary = resolveBinaryOnPath;
 
 /**
  * Common default Android SDK roots per platform. Checked when
