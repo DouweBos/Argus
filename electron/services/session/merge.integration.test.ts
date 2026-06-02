@@ -39,10 +39,6 @@ describe("checkMergeConflicts (integration)", () => {
   beforeEach(() => {
     repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "argus-merge-test-"));
     git(repoRoot, ["init", "-q", "-b", "main"]);
-    // Pin line-ending behaviour so this self-contained repo doesn't inherit the
-    // host's global core.autocrlf (true on Windows), which would normalize the
-    // staged blob to match HEAD and hide staged changes from the conflict check.
-    git(repoRoot, ["config", "core.autocrlf", "false"]);
 
     write("README.md", "hello\n");
     git(repoRoot, ["add", "-A"]);
