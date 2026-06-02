@@ -85,7 +85,13 @@ export class ClaudeCodeRunner implements LlmRunner {
       );
     }
 
-    const child = spawn(CLAUDE_BIN, cliArgs, {
+    // Spawn the resolved absolute path, not the bare name. Node's spawn on
+    // Windows doesn't apply PATHEXT, so `spawn("claude")` ENOENTs even when
+    // `claude.exe` is on PATH; `resolveBinaryOnPath` (where/which) gives the
+    // full path. Falls back to the bare name if resolution fails.
+    const bin = (await resolveBinaryOnPath(CLAUDE_BIN)) ?? CLAUDE_BIN;
+
+    const child = spawn(bin, cliArgs, {
       cwd: args.cwd,
       stdio: ["pipe", "pipe", "pipe"],
       env: args.env,
