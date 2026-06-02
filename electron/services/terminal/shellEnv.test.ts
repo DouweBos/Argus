@@ -87,7 +87,7 @@ describe("fixProcessPath", () => {
       "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" as never,
     );
 
-    fixProcessPath();
+    fixProcessPath("darwin");
 
     expect(process.env.PATH).toBe(
       "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
@@ -100,7 +100,7 @@ describe("fixProcessPath", () => {
 
     mockExecFileSync.mockReturnValue("/usr/bin:/bin" as never);
 
-    fixProcessPath();
+    fixProcessPath("darwin");
 
     expect(process.env.PATH).toBe("/usr/bin:/bin");
   });
@@ -114,7 +114,7 @@ describe("fixProcessPath", () => {
     });
 
     // Should not throw
-    fixProcessPath();
+    fixProcessPath("darwin");
 
     expect(process.env.PATH).toBe("/usr/bin:/bin");
   });
@@ -130,7 +130,7 @@ describe("fixProcessPath", () => {
       })
       .mockReturnValueOnce("/opt/homebrew/bin:/usr/bin:/bin" as never);
 
-    fixProcessPath();
+    fixProcessPath("darwin");
 
     expect(mockExecFileSync).toHaveBeenCalledTimes(2);
     expect(process.env.PATH).toBe("/opt/homebrew/bin:/usr/bin:/bin");
@@ -157,7 +157,7 @@ describe("fixProcessPath", () => {
       ].join("\n") as never;
     }) as unknown as typeof execFileSync);
 
-    fixProcessPath();
+    fixProcessPath("darwin");
 
     expect(process.env.ANDROID_HOME).toBe("/Users/me/Library/Android/sdk");
     expect(process.env.JAVA_HOME).toBe("/opt/java");
@@ -171,8 +171,19 @@ describe("fixProcessPath", () => {
 
     mockExecFileSync.mockReturnValue("/usr/bin:/bin" as never);
 
-    fixProcessPath();
+    fixProcessPath("darwin");
 
     expect(process.env.PATH).toBe("/usr/bin:/bin");
+  });
+
+  it("skips login-shell resolution on Windows", () => {
+    process.env.PATH = "C:\\Windows;C:\\Windows\\System32";
+
+    const diagnostics = fixProcessPath("win32");
+
+    // No POSIX shell is spawned and PATH is left exactly as inherited.
+    expect(mockExecFileSync).not.toHaveBeenCalled();
+    expect(process.env.PATH).toBe("C:\\Windows;C:\\Windows\\System32");
+    expect(diagnostics.join(" ")).toMatch(/windows/i);
   });
 });
