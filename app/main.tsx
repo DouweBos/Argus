@@ -16,6 +16,7 @@ import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
 import { initPrewarm } from "./lib/prewarmService";
 import { bootstrapProjects } from "./lib/projectsService";
+import { initPushNotificationsListener } from "./lib/pushNotificationsService";
 import { initRepoBranchSync } from "./lib/repoBranchSync";
 import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
@@ -127,6 +128,9 @@ if (popoutMode === "launcher") {
   // Surface backend `notification` events (e.g. failed title generation)
   // as user-visible toasts in the notifications panel.
   initNotificationsListener();
+  // Focus the right agent when the user clicks a native push notification
+  // sent by the MCP `push_notification` tool.
+  initPushNotificationsListener();
   // Dispatch captured initial prompts once their session's worktree is ready.
   initPendingSessionPrompts();
   // Keep at most one Claude subprocess warmed up — for the currently

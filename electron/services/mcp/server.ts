@@ -34,6 +34,7 @@ import {
   ensureWebBrowserForAgent,
   emitMcpSystemMessage,
 } from "../agent/claude";
+import { sendPushNotification } from "../notifications/push";
 import {
   addRepoToOrganization,
   createOrganization,
@@ -3000,6 +3001,55 @@ export function createMcpServer(): McpServer {
         content: [
           { type: "text" as const, text: JSON.stringify(org, null, 2) },
         ],
+      };
+    },
+  );
+
+  // -------------------------------------------------------------------------
+  // push_notification
+  // -------------------------------------------------------------------------
+
+  server.tool(
+    "push_notification",
+    "Send a native OS push notification to the user. Use this when you are monitoring something (a build, a deploy, a long-running process, a watched file, an external service) and an event happens that the user should be alerted to even if the Argus window is in the background. Pass your own `agent_id` so the notification is tagged with the project/session it came from and clicking it focuses your tab. Keep `title` short (a few words) and put the actionable detail in `body`. Set `urgency` to `critical` only for events the user truly needs to react to right now — most notifications should stay `normal`. Do NOT use this for chatty status updates; reserve it for state changes the user asked you to watch for.",
+    {
+      title: z
+        .string()
+        .min(1)
+        .describe("Short headline (a few words). Shown bold by the OS."),
+      body: z
+        .string()
+        .min(1)
+        .describe("Notification body — the actionable detail."),
+      agent_id: z
+        .string()
+        .optional()
+        .describe(
+          "Your own agent_id, so the notification can be tagged with your project/session and clicking it can focus your tab.",
+        ),
+      urgency: z
+        .enum(["normal", "critical"])
+        .optional()
+        .describe(
+          "Linux-only urgency hint. 'critical' notifications stay on screen until dismissed on supporting desktops. Defaults to 'normal'.",
+        ),
+    },
+    async ({ title, body, agent_id, urgency }) => {
+      const result = sendPushNotification({
+        title,
+        body,
+        agentId: agent_id,
+        urgency,
+      });
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+        isError: !result.delivered,
       };
     },
   );
