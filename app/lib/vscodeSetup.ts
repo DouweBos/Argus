@@ -143,14 +143,20 @@ window.MonacoEnvironment = {
         throw err;
       }
     };
+    // NOTE: these labels must match the exact strings monaco-vscode-api passes
+    // to getWorker (see each service-override's worker factory). The casing is
+    // PascalCase ("TextMateWorker"), not camelCase — an older API version used
+    // camelCase, so a version bump silently routed TextMate/output-link/
+    // language-detection through the editor-worker fallback, which lacks their
+    // RPC channels ("Missing method $init on worker thread channel default").
     switch (label) {
       case "editorWorkerService":
         return mkWorker(editorWorkerUrl, "editor");
-      case "textMateWorker":
+      case "TextMateWorker":
         return mkWorker(textMateWorkerUrl, "textmate");
-      case "outputLinkDetection":
+      case "OutputLinkDetectionWorker":
         return mkWorker(outputLinkDetectionWorkerUrl, "output-link");
-      case "languageDetectionWorkerService":
+      case "LanguageDetectionWorker":
         return mkWorker(languageDetectionWorkerUrl, "language-detection");
       case "workerExtensionHost":
         return mkWorker(extensionHostWorkerUrl, "extension-host");
