@@ -6,21 +6,11 @@ import {
   clearPendingPrompt,
   consumePendingPrompt,
   getSessionState,
-  setPendingPrompt,
   subscribeSessionStore,
 } from "../stores/sessionStore";
 import { maybeGenerateTitle } from "./agentEventService";
 import { startAgentInSession, sendUserMessageToAgent } from "./agentLifecycle";
-import { listen } from "./events";
 import { buildLinkedProjectsPreamble } from "./linkedProjectsPreamble";
-
-interface PendingPromptBroadcast {
-  images?: ImageAttachment[];
-  linkedProjects?: string[];
-  model?: string;
-  prompt: string;
-  sessionId: string;
-}
 
 /**
  * Pending prompts are captured at session-creation time. The backend creates
@@ -120,30 +110,7 @@ export function initPendingSessionPrompts(): () => void {
   // Run once in case sessions are already ready at init time.
   tryDispatch();
 
-  // Listen for prompts pushed in from the global session launcher (which
-  // lives in its own BrowserWindow and therefore has a separate sessionStore).
-  // The backend rebroadcasts launcher submissions on `session:pending-prompt`
-  // and we apply them to this window's store.
-  const unlistenBroadcastPromise = listen<PendingPromptBroadcast>(
-    "session:pending-prompt",
-    ({ payload }) => {
-      if (!payload?.sessionId) {
-        return;
-      }
-      setPendingPrompt(payload.sessionId, payload.prompt, {
-        images: payload.images,
-        model: payload.model,
-        linkedProjects: payload.linkedProjects,
-      });
-      // Trigger immediately in case the session is already ready.
-      tryDispatch();
-    },
-  );
-
   const unsubscribe = subscribeSessionStore(tryDispatch);
 
-  return () => {
-    unsubscribe();
-    unlistenBroadcastPromise.then((un) => un()).catch(() => {});
-  };
+  return unsubscribe;
 }
