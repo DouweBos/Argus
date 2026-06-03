@@ -44,9 +44,8 @@ export async function startAgentInSession(
 ): Promise<AgentStatus> {
   const { focus = true, model, resumeSessionId } = options;
   // Resolve the permission mode for every spawn — the app-level default
-  // applies unless the caller (launcher picker, restart, etc.) passed an
-  // explicit one, so an agent never silently falls back to the CLI's
-  // prompt-for-everything default.
+  // applies unless the caller passed an explicit one, so an agent never
+  // silently falls back to the CLI's prompt-for-everything default.
   const permissionMode = options.permissionMode ?? getDefaultPermissionMode();
 
   // Prefer claiming a prewarmed slot — the Claude subprocess is already

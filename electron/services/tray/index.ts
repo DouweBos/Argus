@@ -17,7 +17,6 @@ import { Menu, Tray, app, nativeImage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { appState } from "../../state";
-import { showLauncher } from "../launcher";
 
 let tray: Tray | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
@@ -260,11 +259,6 @@ function buildMenu(): Menu {
   }
 
   template.push({ type: "separator" });
-  template.push({
-    label: "Open Session Launcher",
-    accelerator: "Shift+Cmd+Space",
-    click: () => showLauncher(),
-  });
   template.push({
     label: "Show Argus",
     click: () => hooks?.navigateMainWindow("/"),

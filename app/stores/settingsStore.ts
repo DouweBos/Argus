@@ -57,7 +57,7 @@ interface SettingsState {
   customEditors: CustomEditor[];
   /** App-level default LLM runner + model used when project/session don't specify one. */
   defaultLlm: DefaultLlm;
-  /** Model id seeded into the launcher / new-session dialog. Empty = CLI default. */
+  /** Model id seeded into the new-session dialog. Empty = CLI default. */
   defaultModel: string;
   defaultPermissionMode: PermissionMode;
   /** Default strategy used by the project-scope pull dialog (Phase 6B P11). */

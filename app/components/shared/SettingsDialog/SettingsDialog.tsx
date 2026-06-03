@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Button,
   Icons,
   Input,
-  Kbd,
   SegmentedControl,
   SettingsDialogShell,
   SettingsScreenDetail,
@@ -15,14 +14,9 @@ import {
 } from "@argus/peacock";
 import {
   getAppSettings,
-  getLauncherStatus,
   gitGetConfig,
   gitSetConfig,
-  launcherShow,
   setAppSettings,
-  setLauncherAccelerator,
-  setLauncherEnabled,
-  type LauncherStatus,
 } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { setTelemetryMode } from "../../../lib/telemetry";
@@ -163,13 +157,6 @@ function SettingsDialogContent() {
           description: "Commit signing keys",
           icon: <Icons.BranchIcon size={12} />,
           render: () => <GitSigningSection />,
-        },
-        {
-          id: "launcher",
-          label: "Session launcher",
-          description: "Global shortcut",
-          icon: <Icons.AgentStartIcon size={12} />,
-          render: () => <LauncherSection />,
         },
         {
           id: "privacy",
@@ -985,286 +972,6 @@ function GitSigningSection() {
                 Save
               </Button>
             </div>
-          </div>
-        </SettingsScreenField>
-      </SettingsScreenDetailBody>
-    </SettingsScreenDetail>
-  );
-}
-
-const DEFAULT_LAUNCHER_ACCELERATOR = "CommandOrControl+Shift+/";
-
-/** Render an Electron accelerator string as the symbols printed on a Mac keyboard. */
-function acceleratorToKeys(accel: string): string[] {
-  return accel
-    .split("+")
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => {
-      switch (p) {
-        case "Cmd":
-        case "CmdOrCtrl":
-        case "Command":
-        case "CommandOrControl":
-        case "Meta":
-        case "Super":
-          return "⌘";
-        case "Control":
-        case "Ctrl":
-          return "⌃";
-        case "Alt":
-        case "Option":
-          return "⌥";
-        case "Shift":
-          return "⇧";
-        case "Plus":
-          return "+";
-        case "Return":
-        case "Enter":
-          return "↩";
-        case "Tab":
-          return "⇥";
-        case "Escape":
-        case "Esc":
-          return "Esc";
-        case "Space":
-          return "Space";
-        case "Backspace":
-          return "⌫";
-        case "Delete":
-          return "⌦";
-        case "Up":
-          return "↑";
-        case "Down":
-          return "↓";
-        case "Left":
-          return "←";
-        case "Right":
-          return "→";
-        default:
-          return p.length === 1 ? p.toUpperCase() : p;
-      }
-    });
-}
-
-/**
- * Convert a KeyboardEvent into an Electron accelerator string, or null if
- * the chord isn't a valid global shortcut (no modifier, or only modifiers).
- */
-function eventToAccelerator(e: KeyboardEvent): string | null {
-  const MODIFIER_KEYS = new Set([
-    "Alt",
-    "AltGraph",
-    "Command",
-    "Control",
-    "Meta",
-    "Option",
-    "Shift",
-  ]);
-  if (MODIFIER_KEYS.has(e.key)) {
-    return null;
-  }
-
-  const mods: string[] = [];
-  if (e.metaKey || e.ctrlKey) {
-    mods.push("CommandOrControl");
-  }
-  if (e.altKey) {
-    mods.push("Alt");
-  }
-  if (e.shiftKey) {
-    mods.push("Shift");
-  }
-  if (mods.length === 0) {
-    return null;
-  }
-
-  let key: string;
-  const k = e.key;
-  if (k === " " || e.code === "Space") {
-    key = "Space";
-  } else if (k === "Escape") {
-    key = "Esc";
-  } else if (k === "Enter") {
-    key = "Return";
-  } else if (k.length === 1) {
-    // Use the unmodified physical letter/digit when available so Shift modifies
-    // it cleanly (e.g. Shift+/ stays "/"+Shift, not "?"+Shift).
-    if (e.code.startsWith("Key") && e.code.length === 4) {
-      key = e.code.slice(3);
-    } else if (e.code.startsWith("Digit") && e.code.length === 6) {
-      key = e.code.slice(5);
-    } else {
-      key = k.toUpperCase();
-    }
-  } else {
-    key = k;
-  }
-
-  return [...mods, key].join("+");
-}
-
-function launcherShortcutCaption(
-  recordError: string | null,
-  recording: boolean,
-  enabled: boolean,
-): string {
-  if (recordError) {
-    return recordError;
-  }
-  if (recording) {
-    return "Press the new shortcut, or Esc to cancel.";
-  }
-  if (!enabled) {
-    return "Enable the launcher above to register the global shortcut.";
-  }
-
-  return "Press it anywhere to toggle the launcher. Click Change to record a new chord.";
-}
-
-function LauncherSection() {
-  const [status, setStatus] = useState<LauncherStatus | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [recordError, setRecordError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const refresh = () => {
-      getLauncherStatus()
-        .then((s) => {
-          if (!cancelled) {
-            setStatus(s);
-          }
-        })
-        .catch(() => undefined);
-    };
-    refresh();
-    const id = window.setInterval(refresh, 2000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, []);
-
-  const enabled = status?.enabled ?? false;
-  const accelerator = status?.accelerator ?? DEFAULT_LAUNCHER_ACCELERATOR;
-
-  const handleToggle = async (next: boolean) => {
-    try {
-      await setLauncherEnabled(next);
-      const s = await getLauncherStatus();
-      setStatus(s);
-    } catch {
-      // Ignore — refresh tick will recover state.
-    }
-  };
-
-  const applyAccelerator = useCallback(async (next: string) => {
-    setRecordError(null);
-    try {
-      const registered = await setLauncherAccelerator(next);
-      const s = await getLauncherStatus();
-      setStatus(s);
-      if (next && registered === null) {
-        setRecordError(
-          "macOS rejected that shortcut — it may already be taken by another app.",
-        );
-      }
-    } catch (e) {
-      setRecordError(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!recording) {
-      return;
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        setRecording(false);
-
-        return;
-      }
-      const accel = eventToAccelerator(e);
-      if (!accel) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      setRecording(false);
-      applyAccelerator(accel).catch(() => undefined);
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [recording, applyAccelerator]);
-
-  return (
-    <SettingsScreenDetail>
-      <SettingsScreenDetailHeader
-        description="Summon a floating prompt anywhere on your machine to start an agent in any project or session."
-        title="Global session launcher"
-      />
-      <SettingsScreenDetailBody>
-        <SettingsScreenField
-          label="Enable launcher"
-          caption="Off by default. When on, registers the keyboard shortcut below as a global hotkey."
-        >
-          <Toggle
-            checked={enabled}
-            onChange={(checked) => {
-              handleToggle(checked).catch(() => undefined);
-            }}
-          />
-        </SettingsScreenField>
-
-        <SettingsScreenField
-          label="Keyboard shortcut"
-          caption={launcherShortcutCaption(recordError, recording, enabled)}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {recording ? (
-              <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>
-                Recording…
-              </span>
-            ) : (
-              <Kbd keys={acceleratorToKeys(accelerator)} />
-            )}
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setRecordError(null);
-                setRecording((r) => !r);
-              }}
-            >
-              {recording ? "Cancel" : "Change"}
-            </Button>
-            {!recording && accelerator !== DEFAULT_LAUNCHER_ACCELERATOR && (
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  applyAccelerator("").catch(() => undefined);
-                }}
-              >
-                Reset to default
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              onClick={() => launcherShow().catch(() => undefined)}
-            >
-              Open launcher now
-            </Button>
           </div>
         </SettingsScreenField>
       </SettingsScreenDetailBody>

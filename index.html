@@ -4,43 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Argus</title>
-    <style>
-      /* Applied during HTML parsing — before global.css loads — so the very
-         first paint of a transparent popout window doesn't flash the default
-         solid `--bg-primary` body background. The bootstrap script below adds
-         the `argus-popout-transparent` class on <html> synchronously based on
-         the `?popout=` URL param. */
-      html.argus-popout-transparent,
-      html.argus-popout-transparent body {
-        background: transparent !important;
-      }
-    </style>
-    <script>
-      // Popout windows (launcher, area-capture) ride on transparent
-      // BrowserWindows. Tag <body> *before* any CSS or module loads so the
-      // very first paint already inherits the transparent override in
-      // global.css, instead of flashing the default solid `--bg-primary`.
-      (function () {
-        try {
-          var p = new URLSearchParams(location.search).get("popout");
-          if (p === "launcher" || p === "area-capture") {
-            document.documentElement.classList.add("argus-popout-transparent");
-            var apply = function () {
-              document.body.classList.add(
-                "argus-popout",
-                p === "launcher" ? "argus-launcher" : "argus-area-capture",
-              );
-              document.body.style.background = "transparent";
-            };
-            if (document.body) apply();
-            else
-              document.addEventListener("DOMContentLoaded", apply, {
-                once: true,
-              });
-          }
-        } catch (e) {}
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -59,7 +59,6 @@ import {
   saveAppSettings,
   type AppSettings,
 } from "./services/appSettings/store";
-import { registerAreaCaptureHandlers } from "./services/areaCapture";
 import {
   startScreencast,
   stopScreencast,
@@ -123,16 +122,6 @@ import {
 } from "./services/github/prDetail";
 import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
-import {
-  hideLauncher,
-  isLauncherEnabled,
-  launcherStatus,
-  markLauncherRendererReady,
-  setLauncherEnabled,
-  showLauncher,
-  toggleLauncher,
-  updateLauncherAccelerator,
-} from "./services/launcher";
 import {
   listRunnerOnboardingSteps,
   listRunners as listLlmRunners,
@@ -1368,10 +1357,6 @@ export function registerIpcHandlers(): void {
       undefined, // reuseAgentId — IPC callers are always fresh starts
       a.agentId as string | undefined, // presetAgentId — renderer-minted optimistic id
     );
-    // Broadcast so other renderers (e.g. the main window when the agent is
-    // started from the global launcher) can register it in their agent
-    // store. The initiating renderer's optimistic-start path already added
-    // the agent before this fires; its listener dedupes by id.
     broadcastToRenderers("agent:started", info);
 
     return info;
@@ -1605,72 +1590,6 @@ export function registerIpcHandlers(): void {
     Promise.resolve(Array.from(appState.agentPopouts.keys())),
   );
 
-  handle("launcher_show", () => {
-    showLauncher();
-
-    return Promise.resolve();
-  });
-  handle("launcher_hide", () => {
-    hideLauncher();
-
-    return Promise.resolve();
-  });
-  handle("launcher_toggle", () => {
-    toggleLauncher();
-
-    return Promise.resolve();
-  });
-  handle("launcher_ready", () => {
-    markLauncherRendererReady();
-
-    return Promise.resolve();
-  });
-  handle("launcher_status", () => Promise.resolve(launcherStatus()));
-  handle("launcher_set_enabled", (a) =>
-    Promise.resolve(setLauncherEnabled(a.enabled === true)),
-  );
-  handle("launcher_get_enabled", () => Promise.resolve(isLauncherEnabled()));
-  handle("launcher_set_accelerator", (a) =>
-    Promise.resolve(updateLauncherAccelerator(String(a.accelerator ?? ""))),
-  );
-  registerAreaCaptureHandlers();
-  handle("focus_main_window", () => {
-    const win = getMainWindow();
-    if (win && !win.isDestroyed()) {
-      win.show();
-      win.focus();
-    }
-
-    return Promise.resolve();
-  });
-  handle("navigate_main_window", (a) => {
-    const win = getMainWindow();
-    if (win && !win.isDestroyed()) {
-      win.show();
-      win.focus();
-      win.webContents.send("navigation:goto", {
-        path: a.path as string,
-        agentId:
-          typeof a.agentId === "string" ? (a.agentId as string) : undefined,
-      });
-    }
-
-    return Promise.resolve();
-  });
-  handle("set_pending_session_prompt", (a) => {
-    // Broadcast to all renderers — the main window listens via
-    // `app/lib/pendingSessionPrompts.ts` and applies the prompt to its
-    // local sessionStore so the agent boots once the session reaches `ready`.
-    broadcastToRenderers("session:pending-prompt", {
-      sessionId: a.sessionId as string,
-      prompt: (a.prompt as string) ?? "",
-      images: a.images,
-      model: a.model,
-      linkedProjects: a.linkedProjects,
-    });
-
-    return Promise.resolve();
-  });
   handle("publish_agent_snapshot", (a) => {
     const agentId = a.agentId as string;
     const snapshot = a.snapshot as string;

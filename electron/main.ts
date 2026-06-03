@@ -37,7 +37,6 @@ import {
 import { webBrowserPool } from "./services/browser/pool";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
-import { initLauncher, toggleLauncher } from "./services/launcher";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
@@ -376,12 +375,6 @@ function buildAppMenu(): Menu {
           accelerator: "CmdOrCtrl+Shift+O",
           registerAccelerator: false,
           click: () => invoke("open-palette"),
-        },
-        {
-          label: "Open Session Launcher…",
-          accelerator: "CmdOrCtrl+Shift+Space",
-          registerAccelerator: false,
-          click: () => toggleLauncher(),
         },
         { type: "separator" },
         isMac ? { role: "close" } : { role: "quit" },
@@ -1050,14 +1043,6 @@ app.whenReady().then(() => {
       }
     },
   });
-
-  // Global session launcher — registers Cmd+Shift+/ (configurable) so the
-  // user can summon the launcher from anywhere on the system.
-  try {
-    initLauncher();
-  } catch (e) {
-    log("initLauncher failed: %s", String(e));
-  }
 
   // Auto-updater. Skips itself in dev; in packaged builds it kicks off an
   // initial feed check after a short delay and re-checks hourly.
