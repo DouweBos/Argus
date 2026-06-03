@@ -46,7 +46,7 @@ import { broadcastToRenderers } from "../../broadcast";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
-import { getConductorBinDir, getConductorSkillPath } from "../cli/conductor";
+import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
@@ -105,7 +105,6 @@ const cachedPrompts: Record<string, string | null> = {
   worktree: null,
   repo_root: null,
   org_host: null,
-  conductor: null,
 };
 
 function loadPromptFile(filename: string): string {
@@ -136,24 +135,6 @@ function getSystemPromptForKind(
   }
 
   return cachedPrompts[kind] ?? "";
-}
-
-function getConductorSkill(): string {
-  if (cachedPrompts.conductor === null) {
-    const skillPath = getConductorSkillPath();
-    if (skillPath) {
-      try {
-        cachedPrompts.conductor = readFileSync(skillPath, "utf-8");
-      } catch (e) {
-        warn(`Failed to load conductor skill: ${String(e)}`);
-        cachedPrompts.conductor = "";
-      }
-    } else {
-      cachedPrompts.conductor = "";
-    }
-  }
-
-  return cachedPrompts.conductor ?? "";
 }
 
 function buildOrganizationContext(repoRoot: string, sessionId: string): string {
@@ -370,7 +351,7 @@ export async function startAgent(
   const previous = reuseAgentId ? appState.agents.get(reuseAgentId) : null;
 
   // Combine prompts: kind-specific → project context → org context →
-  // conductor skill → project-level → runtime → caller-provided.
+  // project-level → runtime → caller-provided.
   let projectPrompt: string | null = null;
   let browserUrl: string | null = null;
   let configPlatforms: RuntimePlatform[] | null = null;
@@ -396,7 +377,6 @@ export async function startAgent(
   });
 
   const systemPrompt = getSystemPromptForKind(argusSession.kind);
-  const conductorSkill = getConductorSkill();
   const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
   const orgContext = buildOrganizationContext(
     argusSession.repo_root,
@@ -406,7 +386,6 @@ export async function startAgent(
     systemPrompt,
     projectContext,
     orgContext,
-    conductorSkill,
     projectPrompt,
     runtimeSection,
     appendSystemPrompt,
@@ -1547,10 +1526,12 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       "",
       "To interact with the web browser view, use `conductor` with `--device web`:",
       "- `conductor inspect --device web` — see what's on the web page (ARIA tree, element names)",
-      "- `conductor take-screenshot --device web` — capture the web browser view",
+      "- `conductor capture-ui --device web` — screenshot + ARIA tree in one call (prefer this when you need both)",
+      "- `conductor take-screenshot --device web` — viewport screenshot. Add `--full-page` to capture the entire scrollable document in one image.",
       '- `conductor tap-on "element" --device web` — click an element in the web page',
       '- `conductor input-text "text" --device web` — type text into the focused field',
       "- `conductor open-link <url> --device web` — navigate the web browser to a URL",
+      "- `conductor set-viewport --preset mobile|tablet|desktop --device web` (or explicit `--width N --height N`) — resize the browser viewport. Useful for responsive checks; the current URL is preserved across the resize, so one browser session can be screenshotted at multiple form factors.",
       "",
       "Argus wires `--device web` directly to this session's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
     );
@@ -1558,7 +1539,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
 
   lines.push("", "### Using conductor", "");
   lines.push(
-    "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor --help` for usage.",
+    "Use the `conductor` CLI to interact with and observe all runtime views. Run `conductor --help` for usage, or `conductor workspace info` to auto-detect the project type, bundle IDs, Metro port, and available devices before you start.",
     "",
     "Device targeting:",
   );
@@ -1589,16 +1570,26 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
     lines.push(
       "",
       "Common commands for mobile UI validation:",
-      "- `conductor take-screenshot --output <path>` — capture the current screen (PNG). Read the file back to see it.",
-      "- `conductor inspect` — print the accessibility tree (element IDs, labels, text) for the current screen.",
-      '- `conductor tap-on "<element>"` — tap a visible element by text/accessibility label.',
+      "- `conductor capture-ui --output <path>` — one shot: screenshot + accessibility hierarchy + a11y snapshot. **Prefer this over separate `take-screenshot` + `inspect` calls** when you need both the image and the element tree; it's faster and one round-trip.",
+      "- `conductor take-screenshot --output <path>` — just the image. Read the file back to see it.",
+      "- `conductor inspect` — just the accessibility tree (element IDs, labels, text). Add `--at <x,y>` to query the topmost element at a point.",
+      '- `conductor tap-on "<element>"` — tap by text/accessibility label. Supports relational matchers (`--below`, `--right-of`, …) and state filters (`--enabled`, `--focused`).',
       '- `conductor input-text "<text>"` — type into the focused text field.',
-      "- `conductor swipe <direction>` / `conductor scroll <direction>` — navigate lists and scroll views.",
+      "- `conductor swipe <direction>` / `conductor scroll <direction>` / `conductor scroll-until-visible <element>` — navigate lists and scroll views.",
       "- `conductor foreground-app` — print the bundle ID / package name of the app currently in foreground.",
+      "- `conductor launch-app <bundleId>` — launch. Add `--clear-state` to reset app data, `--clear-keychain` (iOS) to wipe credentials, `--argument key=value` to pass launch args.",
       '- `conductor assert-visible "<element>"` / `assert-not-visible "<element>"` — quick invariants for tests.',
       "- `conductor hide-keyboard` — dismiss the on-screen keyboard.",
       "",
-      "When validating UI changes, screenshot the before/after state and compare. If the project has reference screenshots or a design spec (commonly under `legacy/`, `docs/`, or referenced in the project config), compare against those rather than relying on memory.",
+      '**Batching multi-step interactions:** when you need to drive several steps in a row (tap → tap → input → assert), prefer `conductor run-sequence --file plan.json` over a chain of individual Bash calls. The JSON shape is `{"steps":[{"cmd":"tap-on","args":["Login"]}, …]}`; it runs serially against one session and stops on the first failure. Many fewer process spawns, much cheaper on tokens, and the failure point is unambiguous.',
+      "",
+      "**React Native projects:** after editing JS, run `conductor metro reload` to refresh the bundle without restarting native — much faster than rebuilding. `conductor metro stop` kills the bundler if you need a clean restart. For debugging the running app, `conductor debug evaluate '<expr>'` runs JS in the Hermes/Fusebox runtime, `conductor debug component-tree` prints the React tree, and `conductor network logs` shows recent HTTP traffic.",
+      "",
+      "**When something breaks:** `conductor logs --recent 200` (or `--source metro` / `--source device`) for app/device logs without leaving anything streaming. `conductor crashes list` / `conductor crashes show <id>` for native crashes. `conductor capture-ui` to confirm what's actually on screen right now.",
+      "",
+      "**Recording flows:** if you want to capture an interaction as a reproducible YAML flow, `conductor flow record start --out path.yaml`, drive the app (manually or via more conductor commands), then `conductor flow record finish`. Replay later with `conductor run-flow path.yaml`.",
+      "",
+      "When validating UI changes, capture the before/after state and compare. If the project has reference screenshots or a design spec (commonly under `legacy/`, `docs/`, or referenced in the project config), compare against those rather than relying on memory.",
     );
   }
 

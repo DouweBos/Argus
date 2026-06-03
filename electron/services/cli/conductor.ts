@@ -23,7 +23,6 @@
  * conductor bin dir to the spawned agent's environment.
  */
 
-import fs from "node:fs";
 import path from "node:path";
 import { resolveAssetPath } from "../tools/assets";
 
@@ -37,22 +36,4 @@ export function getConductorBinDir(): string {
 
 export function getConductorBinPath(): string {
   return path.join(getConductorBinDir(), "conductor");
-}
-
-/**
- * Absolute path to the conductor SKILL.md, or `null` when the bundled
- * conductor package is unavailable (e.g. `prepare-conductor.ts` hasn't run).
- */
-export function getConductorSkillPath(): string | null {
-  const skillPath = path.join(
-    getConductorDir(),
-    "node_modules",
-    "@houwert",
-    "conductor",
-    "skills",
-    "conductor",
-    "SKILL.md",
-  );
-
-  return fs.existsSync(skillPath) ? skillPath : null;
 }
