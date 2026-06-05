@@ -141,11 +141,20 @@ export interface AgentSession {
    * Permission mode the agent was last spawned with (canonical name, e.g.
    * `auto` / `ask` / `plan` / `review` / `trusted`). Recorded so the prewarm
    * claim path can skip a redundant runtime `set_permission_mode` when the
-   * claimed mode matches the spawn-time mode — the Claude CLI doesn't always
-   * honour runtime switches to modes like `auto` / `bypassPermissions`, so
-   * spawning with the correct flag from the start is the only reliable path.
+   * claimed mode matches the spawn-time mode. Most modes (including `auto`)
+   * can be switched at runtime via the control protocol; `trusted`
+   * (`bypassPermissions`) is still spawn-only.
    */
   permissionMode?: string | null;
+  /**
+   * Mode the agent was in immediately before transitioning into `plan` —
+   * stashed so that approving `ExitPlanMode` can restore the pre-plan mode
+   * (e.g. `auto`) instead of leaving the agent stuck in the CLI's post-plan
+   * default ("ask"). Cleared when the agent leaves plan mode by any path.
+   * Null when the agent was spawned directly in `plan`, in which case
+   * exit-plan-restore falls back to the system default.
+   */
+  prePlanPermissionMode?: string | null;
 }
 
 // ---------------------------------------------------------------------------

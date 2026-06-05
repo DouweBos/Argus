@@ -1298,10 +1298,47 @@ export async function setAgentPermissionMode(
 
   await session.handle.setPermissionMode(mode);
 
+  // Track plan-mode transitions so ExitPlanMode approval can restore the
+  // mode the user was in beforehand. Without this, the CLI internally drops
+  // to "default" after ExitPlanMode and the user gets prompted for every
+  // edit until they re-toggle.
+  const enteringPlan = mode === "plan" && session.permissionMode !== "plan";
+  const leavingPlan = mode !== "plan" && session.permissionMode === "plan";
+  if (enteringPlan) {
+    session.prePlanPermissionMode = session.permissionMode ?? null;
+  } else if (leavingPlan) {
+    session.prePlanPermissionMode = null;
+  }
+
   session.permissionMode = mode;
 
   broadcastToRenderers(`agent:permission-mode-changed:${agentId}`, mode);
   info(`[agent:${agentId}] permission mode changed to ${mode}`);
+}
+
+// ---------------------------------------------------------------------------
+// exit_plan_mode_restore
+// ---------------------------------------------------------------------------
+
+/**
+ * Called after the user approves an `ExitPlanMode` tool call. The Claude CLI
+ * internally drops to its "default" (ask-per-tool) mode on plan exit, which
+ * surprises users who launched the agent in `auto`. Restore the mode the
+ * agent was in before it entered plan; fall back to the system default if
+ * the agent was spawned directly in plan and never had a pre-plan mode.
+ *
+ * Returns the mode that was restored, so the caller can update UI state.
+ */
+export async function exitPlanModeRestore(agentId: string): Promise<string> {
+  const session = appState.agents.get(agentId);
+  if (!session) {
+    throw `No agent found: ${agentId}`;
+  }
+  const restored =
+    session.prePlanPermissionMode ?? DEFAULT_AGENT_PERMISSION_MODE;
+  await setAgentPermissionMode(agentId, restored);
+
+  return restored;
 }
 
 // ---------------------------------------------------------------------------
@@ -1358,9 +1395,9 @@ export function listAgents(sessionId: string): AgentInfo[] {
 export async function prewarmAgent(sessionId: string): Promise<AgentInfo> {
   // Prewarms spawn before the user picks a mode, so they take the spawn-time
   // default (DEFAULT_AGENT_PERMISSION_MODE). The claim only needs a runtime
-  // `set_permission_mode` when the user actually chose a different mode —
-  // and only modes the Claude CLI honours at runtime (`ask` / `plan` /
-  // `review`) can be applied that way.
+  // `set_permission_mode` when the user actually chose a different mode.
+  // The Claude CLI accepts runtime switches to every mode except `trusted`
+  // (`bypassPermissions`), which remains spawn-only.
   const spawned = await startAgent(sessionId);
   const session = appState.agents.get(spawned.agent_id);
   if (session) {

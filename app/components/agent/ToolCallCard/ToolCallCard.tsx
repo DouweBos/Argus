@@ -10,7 +10,7 @@ import {
   HoverActionButton,
   Icons,
 } from "@argus/peacock";
-import { updateAgent } from "../../../stores/agentStore";
+import { exitPlanModeRestore } from "../../../lib/ipc";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { Markdown } from "../../shared/Markdown";
 import { EditDiffView } from "../EditDiffView";
@@ -430,13 +430,13 @@ export function ToolCallCard({
   const allowRule = alwaysAllowRule(toolCall.name, toolCall.input);
 
   const handleAllow = useCallback(() => {
-    // Approving ExitPlanMode causes the CLI to leave plan mode internally,
-    // but it doesn't notify us. Clear our local flag so the chip reflects
-    // reality — otherwise the user toggles it manually mid-implementation,
-    // which sends a `set_permission_mode` control request that interrupts
-    // the in-flight turn.
+    // Approving ExitPlanMode causes the CLI to drop to "ask" internally,
+    // regardless of what mode the agent was launched in. Restore the
+    // pre-plan mode (e.g. `auto`) so the user doesn't get prompted for
+    // every edit until they re-toggle the chip. The backend's broadcast
+    // updates the chip's display value.
     if (toolCall.name === "ExitPlanMode" && agentId) {
-      updateAgent(agentId, { permission_mode: undefined });
+      exitPlanModeRestore(agentId).catch(() => {});
     }
     onPermissionRespond?.(toolCall.id, "allow");
   }, [agentId, onPermissionRespond, toolCall.id, toolCall.name]);
