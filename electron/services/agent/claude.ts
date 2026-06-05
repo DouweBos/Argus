@@ -16,6 +16,7 @@ export {
   emitMcpSystemMessage,
   ensureSimulatorForAgent,
   ensureWebBrowserForAgent,
+  exitPlanModeRestore,
   interruptAgent,
   listAgents,
   prewarmAgent,

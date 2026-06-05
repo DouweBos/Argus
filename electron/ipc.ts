@@ -42,6 +42,7 @@ import {
   checkClaudeCli,
   claimPrewarmAgent,
   discardPrewarmAgent,
+  exitPlanModeRestore,
   prewarmAgent,
   restoreAgentAtTurn,
   startAgent,
@@ -1394,6 +1395,9 @@ export function registerIpcHandlers(): void {
   );
   handle("set_agent_permission_mode", (a) =>
     setAgentPermissionMode(a.agentId as string, a.mode as string),
+  );
+  handle("exit_plan_mode_restore", (a) =>
+    exitPlanModeRestore(a.agentId as string),
   );
   handle("set_agent_effort", (a) =>
     setAgentEffort(a.agentId as string, (a.level as string | null) ?? null),
