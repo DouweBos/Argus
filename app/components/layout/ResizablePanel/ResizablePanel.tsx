@@ -8,7 +8,7 @@ interface ResizablePanelProps {
   children: React.ReactNode;
   /** Animate panel off-screen — stays in DOM but slides out via margin + transform. Left/right only. */
   collapsed?: boolean;
-  /** Initial size fraction (width for left/right; height for bottom). */
+  /** Initial size — fraction (0–1) or pixels, depending on `unit`. */
   defaultWidth: number;
   maxWidth?: number;
   minWidth?: number;
@@ -16,11 +16,13 @@ interface ResizablePanelProps {
   noAnimate?: boolean;
   onMouseEnter?: React.MouseEventHandler;
   onMouseLeave?: React.MouseEventHandler;
-  /** Called when size fraction changes (for syncing to external state) */
+  /** Called when size changes (for syncing to external state) */
   onResize?: (size: number) => void;
   /** Show the collapsed panel as a floating overlay (left/right peek). */
   peeking?: boolean;
   side: PanelSide;
+  /** Size unit. "fraction" (default) sizes as a percentage of parent; "pixel" sizes in CSS pixels. */
+  unit?: "fraction" | "pixel";
 }
 
 export function ResizablePanel({
@@ -35,13 +37,18 @@ export function ResizablePanel({
   onMouseLeave,
   peeking = false,
   noAnimate = false,
+  unit = "fraction",
 }: ResizablePanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   const isVertical = side === "bottom";
+  const isPixel = unit === "pixel";
 
   const mapDelta = useCallback(
     (delta: number) => {
+      if (isPixel) {
+        return delta;
+      }
       const parent = panelRef.current?.parentElement;
       if (isVertical) {
         return delta / (parent?.offsetHeight ?? window.innerHeight);
@@ -49,7 +56,7 @@ export function ResizablePanel({
 
       return delta / (parent?.offsetWidth ?? window.innerWidth);
     },
-    [isVertical],
+    [isVertical, isPixel],
   );
 
   const { size: sizeFraction, onMouseDown } = useDragResize({
@@ -83,7 +90,10 @@ export function ResizablePanel({
     onResize?.(sizeFraction);
   }, [sizeFraction, onResize]);
 
-  const sizePercent = `${sizeFraction * 100}%`;
+  const sizeValue = isPixel ? `${sizeFraction}px` : `${sizeFraction * 100}%`;
+  const collapsedMargin = isPixel
+    ? `-${sizeFraction}px`
+    : `-${sizeFraction * 100}%`;
 
   let transform = "none";
   if (collapsed && peeking && !isVertical) {
@@ -97,11 +107,14 @@ export function ResizablePanel({
 
   const style: React.CSSProperties = { transform };
   if (isVertical) {
-    style.height = sizePercent;
+    style.height = sizeValue;
   } else {
-    style.width = sizePercent;
+    style.width = sizeValue;
+    if (isPixel) {
+      style.flex = "0 0 auto";
+    }
     const marginProp = side === "left" ? "marginLeft" : "marginRight";
-    style[marginProp] = collapsed ? `-${sizeFraction * 100}%` : "0";
+    style[marginProp] = collapsed ? collapsedMargin : "0";
   }
 
   let dividerSideClass = styles.right;

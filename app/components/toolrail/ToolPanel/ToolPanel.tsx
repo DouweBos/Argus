@@ -81,11 +81,12 @@ export function ToolPanel({ sessionId }: ToolPanelProps) {
   return (
     <ResizablePanel
       collapsed={!activeToolId}
-      defaultWidth={0.3}
-      maxWidth={0.5}
-      minWidth={0.15}
+      defaultWidth={420}
+      maxWidth={800}
+      minWidth={280}
       noAnimate={noAnimate}
       side="right"
+      unit="pixel"
       onResize={setWidth}
     >
       <div className={styles.panel}>

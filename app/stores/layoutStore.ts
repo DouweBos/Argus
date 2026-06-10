@@ -32,18 +32,18 @@ interface LayoutStoreData {
   lastActiveBottomToolBySessionId: Record<string, ToolRailId>;
   /** Last non-null right tool per session. */
   lastActiveRightToolBySessionId: Record<string, ToolRailId>;
-  /** Left sidebar width fraction (0–1). */
+  /** Left sidebar width in pixels. */
   leftPanelWidth: number;
   leftSidebarVisible: boolean;
   /** Tools whose panel content has been mounted at least once. */
   mountedToolIds: Record<ToolRailId, boolean>;
-  /** Right tool panel width fraction (0–1). */
+  /** Right tool panel width in pixels. */
   rightPanelWidth: number;
 }
 
 const layoutStore = create<LayoutStoreData>(() => ({
   leftSidebarVisible: true,
-  leftPanelWidth: 0.18,
+  leftPanelWidth: 280,
   activeRightToolBySessionId: {},
   activeBottomToolBySessionId: {},
   lastActiveRightToolBySessionId: {},
@@ -55,7 +55,7 @@ const layoutStore = create<LayoutStoreData>(() => ({
     simulator: false,
     terminal: false,
   },
-  rightPanelWidth: 0.3,
+  rightPanelWidth: 420,
   bottomPanelHeight: 0.3,
 }));
 

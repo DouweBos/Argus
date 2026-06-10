@@ -83,7 +83,7 @@ import { TitleBar } from "../TitleBar";
 import styles from "./AppShell.module.css";
 
 const PEEK_ENTER_DELAY_MS = 200;
-const PEEK_LEAVE_DELAY_MS = 1000;
+const PEEK_LEAVE_DELAY_MS = 500;
 
 // App-wide shortcuts that collide with shortcuts owned by the git panel. When
 // the git panel is active these are silenced at the app layer so the GitView
@@ -330,11 +330,12 @@ export function AppShell() {
       <div className={styles.body}>
         <ResizablePanel
           collapsed={!leftVisible}
-          defaultWidth={0.18}
-          maxWidth={0.35}
-          minWidth={0.1}
+          defaultWidth={280}
+          maxWidth={520}
+          minWidth={200}
           peeking={!leftVisible && leftPeeking}
           side="left"
+          unit="pixel"
           onMouseEnter={!leftVisible ? handleLeftPeekEnter : undefined}
           onMouseLeave={!leftVisible ? handleLeftPeekLeave : undefined}
           onResize={setLeftWidth}
