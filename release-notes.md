@@ -1,5 +1,9 @@
 
+### Minor Changes
+
+- 850e660: Update Conductor to 0.19.0
+
 ### Patch Changes
 
-- a197aef: Restore the agent's previous permission mode after approving Exit Plan Mode. Agents launched in Auto no longer drop to Ask after planning, so you stop getting prompted for every edit.
+- 5ef2b41: Left sidebar now has a fixed pixel width by default and stays put when the window resizes. Drag the divider to resize it.
 
