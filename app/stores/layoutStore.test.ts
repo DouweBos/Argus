@@ -27,7 +27,7 @@ describe("layoutStore", () => {
   beforeEach(() => {
     setLayoutState({
       leftSidebarVisible: true,
-      leftPanelWidth: 0.18,
+      leftPanelWidth: 280,
       activeRightToolBySessionId: {},
       activeBottomToolBySessionId: {},
       lastActiveRightToolBySessionId: {},
@@ -39,7 +39,7 @@ describe("layoutStore", () => {
         simulator: false,
         terminal: false,
       },
-      rightPanelWidth: 0.3,
+      rightPanelWidth: 420,
       bottomPanelHeight: 0.3,
     });
   });
@@ -47,10 +47,10 @@ describe("layoutStore", () => {
   it("has sensible defaults", () => {
     const state = getLayoutState();
     expect(state.leftSidebarVisible).toBe(true);
-    expect(state.leftPanelWidth).toBe(0.18);
+    expect(state.leftPanelWidth).toBe(280);
     expect(state.activeRightToolBySessionId).toEqual({});
     expect(state.activeBottomToolBySessionId).toEqual({});
-    expect(state.rightPanelWidth).toBe(0.3);
+    expect(state.rightPanelWidth).toBe(420);
     expect(state.bottomPanelHeight).toBe(0.3);
   });
 
@@ -62,8 +62,8 @@ describe("layoutStore", () => {
   });
 
   it("sets left panel width", () => {
-    setLeftPanelWidth(0.25);
-    expect(getLayoutState().leftPanelWidth).toBe(0.25);
+    setLeftPanelWidth(320);
+    expect(getLayoutState().leftPanelWidth).toBe(320);
   });
 
   it("opens a bottom tool in the bottom slot", () => {
