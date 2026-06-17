@@ -328,7 +328,13 @@ export async function startAgent(
           argus: {
             type: "http",
             url: `http://127.0.0.1:${mcpPort}/mcp`,
-            headers: { Authorization: `Bearer ${mcpToken}` },
+            headers: {
+              Authorization: `Bearer ${mcpToken}`,
+              // Identifies this agent to the MCP server so parent-relationship
+              // tools (spawn_agent, etc.) can attribute spawns to it without
+              // the agent having to know its own ID.
+              "X-Argus-Agent-Id": agentId,
+            },
           },
         })
       : {};
@@ -377,7 +383,7 @@ export async function startAgent(
   });
 
   const systemPrompt = getSystemPromptForKind(argusSession.kind);
-  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.`;
+  const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.\n\nYour own agent ID is \`${agentId}\`. The Argus MCP already knows who you are, so you normally don't need to pass it — \`parent_agent_id\` on \`spawn_agent\`/\`create_session\`/\`send_agent_message\` defaults to you automatically.`;
   const orgContext = buildOrganizationContext(
     argusSession.repo_root,
     argusSession.id,
