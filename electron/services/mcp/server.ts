@@ -399,8 +399,22 @@ function resolveRepoRoot(projectPath?: string): string {
 // Tool registration
 // ---------------------------------------------------------------------------
 
-/** Exported for testing via InMemoryTransport. */
-export function createMcpServer(): McpServer {
+/**
+ * Build an MCP server bound to a single agent connection.
+ *
+ * `callerAgentId` is the agent that owns this connection — read from the
+ * `X-Argus-Agent-Id` header on the connection's first request and fixed for
+ * its lifetime. Tools that record a parent relationship (`spawn_agent`,
+ * `spawn_agents_batch`, `create_session`, `send_agent_message`) default
+ * `parent_agent_id` to it, so an agent's spawns are attributed to it without
+ * the agent having to know (or pass) its own ID. An explicit `parent_agent_id`
+ * argument still wins.
+ *
+ * Exported for testing via InMemoryTransport (call with no caller).
+ */
+export function createMcpServer(
+  callerAgentId: string | null = null,
+): McpServer {
   const server = new McpServer({
     name: "argus",
     version: "1.0.0",
@@ -607,7 +621,7 @@ export function createMcpServer(): McpServer {
         .string()
         .optional()
         .describe(
-          "Orchestrator agent id for the spawned agent. Ignored when `prompt` is omitted.",
+          "Optional override for the parent agent id. Defaults to the calling agent automatically. Ignored when `prompt` is omitted.",
         ),
       attachments: z
         .array(mcpAttachmentSchema)
@@ -683,7 +697,7 @@ export function createMcpServer(): McpServer {
             model,
             permission_mode,
             platforms,
-            parentAgentId: parent_agent_id,
+            parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
             sourceTool: "create_session",
           });
         } catch (e) {
@@ -811,7 +825,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "spawn_agent",
-    "Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. Pass your own agent_id as parent_agent_id so the relationship is tracked. This call blocks internally until the session's setup pipeline (worktree provisioning, dependency installs) completes — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created. If you're spawning into a session you just made, prefer `create_session` with a `prompt` to do both in one round-trip.",
+    "Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don't need to pass parent_agent_id. This call blocks internally until the session's setup pipeline (worktree provisioning, dependency installs) completes — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created. If you're spawning into a session you just made, prefer `create_session` with a `prompt` to do both in one round-trip.",
     {
       session: z
         .string()
@@ -844,7 +858,7 @@ export function createMcpServer(): McpServer {
         .string()
         .optional()
         .describe(
-          "Agent ID of the orchestrator/parent agent spawning this child. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
+          "Optional override for the parent agent id. Defaults to the calling agent automatically, so you normally don't need to set this — only pass it to attribute the spawn to a different agent. Used for tracking the parent-child relationship in the UI and for cascade cleanup.",
         ),
       attachments: z
         .array(mcpAttachmentSchema)
@@ -893,7 +907,7 @@ export function createMcpServer(): McpServer {
           model,
           permission_mode,
           platforms,
-          parentAgentId: parent_agent_id,
+          parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
           sourceTool: "spawn_agent",
         });
       } catch (e) {
@@ -985,7 +999,9 @@ export function createMcpServer(): McpServer {
       parent_agent_id: z
         .string()
         .optional()
-        .describe("Agent ID of the orchestrator spawning these agents."),
+        .describe(
+          "Optional override for the parent agent id. Defaults to the calling agent automatically; only set it to attribute these spawns to a different agent.",
+        ),
       base_branch: z
         .string()
         .optional()
@@ -1105,7 +1121,7 @@ export function createMcpServer(): McpServer {
             model: spec.model,
             permission_mode,
             platforms: spec.platforms,
-            parentAgentId: parent_agent_id,
+            parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
             sourceTool: "spawn_agents_batch",
           });
 
@@ -1582,7 +1598,7 @@ export function createMcpServer(): McpServer {
         .string()
         .optional()
         .describe(
-          "Your own agent_id, so the recipient's UI can show who the message came from. Optional but strongly recommended.",
+          "Optional override for the sender agent id, shown in the recipient's UI. Defaults to the calling agent automatically.",
         ),
     },
     async ({ agent_id, message, attachments, parent_agent_id }) => {
@@ -1602,7 +1618,7 @@ export function createMcpServer(): McpServer {
         tool: "send_agent_message",
         message,
         images,
-        parentAgentId: parent_agent_id,
+        parentAgentId: parent_agent_id ?? callerAgentId ?? undefined,
       });
 
       return {
@@ -3161,7 +3177,12 @@ export async function startMcpServer(): Promise<number> {
         // New session — create a fresh McpServer + transport pair.
         // Each session needs its own McpServer because the MCP SDK's
         // Server class only supports one active transport at a time.
-        const mcpServer = createMcpServer();
+        // Bind the connection to the calling agent (set by agentService in the
+        // per-agent MCP config) so parent-relationship tools can attribute
+        // spawns without the agent knowing its own ID.
+        const callerAgentId =
+          (req.headers["x-argus-agent-id"] as string | undefined) ?? null;
+        const mcpServer = createMcpServer(callerAgentId);
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => crypto.randomUUID(),
         });
