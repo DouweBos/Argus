@@ -16,7 +16,7 @@ interface CollapsedToolGroupProps {
     decision: "allow" | "deny",
     allowRule?: string,
     allowAll?: boolean,
-  ) => void;
+  ) => Promise<void> | void;
   onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
 

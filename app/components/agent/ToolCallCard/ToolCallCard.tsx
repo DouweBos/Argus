@@ -40,7 +40,7 @@ interface ToolCallCardProps {
     allowAll?: boolean,
     /** Optional custom message for deny (used by AskUserQuestion answers). */
     denyMessage?: string,
-  ) => void;
+  ) => Promise<void> | void;
   /**
    * Save the file the tool would write to disk — entire file contents, not
    * just the diff. Only rendered for Write / Edit / MultiEdit.
@@ -429,16 +429,20 @@ export function ToolCallCard({
   const isPending = toolCall.pendingPermission;
   const allowRule = alwaysAllowRule(toolCall.name, toolCall.input);
 
-  const handleAllow = useCallback(() => {
+  const handleAllow = useCallback(async () => {
     // Approving ExitPlanMode causes the CLI to drop to "ask" internally,
     // regardless of what mode the agent was launched in. Restore the
     // pre-plan mode (e.g. `auto`) so the user doesn't get prompted for
     // every edit until they re-toggle the chip. The backend's broadcast
     // updates the chip's display value.
+    //
+    // Order matters: the restore must reach the CLI *after* the approval, or
+    // the CLI's plan-exit reset to "default" clobbers it. Await the allow
+    // (its stdin write completes) before sending `set_permission_mode`.
+    await onPermissionRespond?.(toolCall.id, "allow");
     if (toolCall.name === "ExitPlanMode" && agentId) {
       exitPlanModeRestore(agentId).catch(() => {});
     }
-    onPermissionRespond?.(toolCall.id, "allow");
   }, [agentId, onPermissionRespond, toolCall.id, toolCall.name]);
 
   const handleAllowAll = useCallback(() => {

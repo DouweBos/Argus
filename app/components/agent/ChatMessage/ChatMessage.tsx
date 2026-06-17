@@ -51,7 +51,7 @@ interface ChatMessageProps {
     decision: "allow" | "deny",
     allowRule?: string,
     allowAll?: boolean,
-  ) => void;
+  ) => Promise<void> | void;
   onRestore?: (message: ConversationMessage) => void;
   onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
