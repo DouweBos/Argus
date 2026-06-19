@@ -745,6 +745,20 @@ export interface OrgTaskScopeEntry {
 }
 
 // ---------------------------------------------------------------------------
+// Claude account
+// ---------------------------------------------------------------------------
+
+/** Current Claude CLI account, mirrors `claude auth status --json`. */
+export interface ClaudeAuthStatus {
+  apiProvider?: string;
+  authMethod?: string;
+  email?: string;
+  loggedIn: boolean;
+  orgId?: string;
+  orgName?: string;
+  subscriptionType?: string;
+}
+
 // Onboarding
 // ---------------------------------------------------------------------------
 

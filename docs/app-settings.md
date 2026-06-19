@@ -21,6 +21,23 @@ targets, related projects, …) see
 
 ---
 
+## Claude account
+
+Sign in to Claude, sign out, or switch the account Argus uses to run agents —
+without leaving the app.
+
+- **Signed in as** — shows the current account (email, organization, plan, and
+  auth method), read from `claude auth status`.
+- **Log out** — runs `claude auth logout`, clearing the stored credentials.
+- **Log in / switch account** — pick **Claude subscription** or **Anthropic
+  Console**, then click Log in. Argus opens your browser to authenticate; paste
+  the authorization code back into the dialog to finish signing in.
+
+This drives the same Claude CLI credentials used everywhere else, so changes
+apply to every session and runner on this machine.
+
+---
+
 ## Agents
 
 | Setting                     | Default | Description                                                                                            |
