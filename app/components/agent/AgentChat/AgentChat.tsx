@@ -184,10 +184,11 @@ export function AgentChat({
   // usage payload. Each assistant turn reports cumulative input-side tokens
   // (input + cache_read + cache_creation) plus the output tokens it emitted,
   // which together approximate the tokens now resident in context.
-  const contextLimit = useMemo(
-    () => contextLimitForModel(modelValue),
-    [modelValue],
-  );
+  const contextLimit = useMemo(() => {
+    const match = capabilitiesModels?.find((m) => m.value === modelValue);
+
+    return contextLimitForModel(modelValue, match);
+  }, [capabilitiesModels, modelValue]);
   const lastUsage = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
