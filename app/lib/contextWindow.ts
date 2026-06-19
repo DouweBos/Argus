@@ -3,17 +3,29 @@ import type { TokenUsage } from "./types";
 const DEFAULT_CONTEXT = 200_000;
 const ONE_MILLION_CONTEXT = 1_000_000;
 
+/** Matches a 1M-context advertisement in model id or capability metadata. */
+const ONE_MILLION_HINT = /\[1m\]|\b1\s*m(?:illion)?\s*context\b/i;
+
 /**
- * Best-effort max context-window size (in tokens) for a given Claude model id.
+ * Best-effort max context-window size (in tokens) for a Claude model.
  *
- * Claude Code marks 1M-context variants with a `[1m]` suffix on the model id
- * (e.g. `claude-opus-4-7[1m]`). Everything else is treated as a 200k window.
+ * Older Claude Code releases marked 1M-context variants with a `[1m]` suffix
+ * on the model id (e.g. `claude-opus-4-7[1m]`). Newer models (e.g. Opus 4.8)
+ * default to a 1M window with no suffix, so the id alone is no longer enough —
+ * we also inspect the capability metadata (`displayName`/`description`), which
+ * advertises "1M context" for those models. Everything else is 200k.
  */
-export function contextLimitForModel(modelId?: string | null): number {
-  if (!modelId) {
-    return DEFAULT_CONTEXT;
-  }
-  if (/\[1m\]/i.test(modelId)) {
+export function contextLimitForModel(
+  modelId?: string | null,
+  modelInfo?: { description?: string; displayName?: string } | null,
+): number {
+  const haystack = [
+    modelId ?? "",
+    modelInfo?.displayName ?? "",
+    modelInfo?.description ?? "",
+  ].join(" ");
+
+  if (ONE_MILLION_HINT.test(haystack)) {
     return ONE_MILLION_CONTEXT;
   }
 
