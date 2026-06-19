@@ -1,0 +1,73 @@
+.muted {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.row dt {
+  flex: 0 0 96px;
+  color: var(--text-secondary);
+}
+
+.row dd {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.loginStart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.loginFlow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loginActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.urlLink {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.error {
+  margin: 0;
+  color: var(--error);
+  font-size: 12px;
+}

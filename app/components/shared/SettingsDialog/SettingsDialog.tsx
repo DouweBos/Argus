@@ -82,6 +82,7 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../McpServersField";
+import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
 
@@ -108,6 +109,13 @@ function SettingsDialogContent() {
           description: "Theme",
           icon: <Icons.HomeIcon size={12} />,
           render: () => <AppearanceSection />,
+        },
+        {
+          id: "claude-account",
+          label: "Claude account",
+          description: "Sign in & switch accounts",
+          icon: <Icons.OrganizationIcon size={12} />,
+          render: () => <ClaudeAccountSection />,
         },
         {
           id: "permissions",

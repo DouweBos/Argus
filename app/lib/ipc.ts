@@ -16,6 +16,7 @@ import type {
   ArgusConfig,
   ArgusConfigSuggestion,
   BranchList,
+  ClaudeAuthStatus,
   ConductorLogEntry,
   DependencyReport,
   DeviceInfo,
@@ -1974,6 +1975,25 @@ export const runPrereqFixer = (
 
 export const claudePing = (): Promise<{ error?: string; ok: boolean }> =>
   invoke("onboarding_claude_ping");
+
+export const getClaudeAuthStatus = (): Promise<ClaudeAuthStatus> =>
+  invoke("claude_auth_status");
+
+export const claudeAuthLogout = (): Promise<void> =>
+  invoke("claude_auth_logout");
+
+export const claudeAuthLoginStart = (
+  useConsole: boolean,
+): Promise<{ url: string }> =>
+  invoke("claude_auth_login_start", { useConsole });
+
+export const claudeAuthLoginSubmitCode = (
+  code: string,
+): Promise<{ error?: string; ok: boolean }> =>
+  invoke("claude_auth_login_submit_code", { code });
+
+export const claudeAuthLoginCancel = (): Promise<void> =>
+  invoke("claude_auth_login_cancel");
 
 export const listRunnerOnboardingSteps = (): Promise<RunnerOnboardingStep[]> =>
   invoke("llm_list_onboarding_steps");

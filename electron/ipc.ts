@@ -80,6 +80,13 @@ import {
 import { getMjpegPort } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
 import {
+  claudeLoginCancel,
+  claudeLoginStart,
+  claudeLoginSubmitCode,
+  claudeLogout,
+  getClaudeAuthStatus,
+} from "./services/claudeAuth/claudeAuth";
+import {
   listDebugStreams,
   runDebugCommand,
   startDebugStream,
@@ -1940,6 +1947,19 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("onboarding_claude_ping", () => onboardingClaudePing());
+  handle("claude_auth_status", () => getClaudeAuthStatus());
+  handle("claude_auth_logout", () => claudeLogout());
+  handle("claude_auth_login_start", (a) =>
+    claudeLoginStart({ useConsole: a.useConsole as boolean | undefined }),
+  );
+  handle("claude_auth_login_submit_code", (a) =>
+    claudeLoginSubmitCode({ code: a.code as string }),
+  );
+  handle("claude_auth_login_cancel", () => {
+    claudeLoginCancel();
+
+    return null;
+  });
   handle("onboarding_list_examples", () => onboardingListExamples());
   handle("onboarding_clone_example", (a) =>
     onboardingCloneExample(a.slug as string),
