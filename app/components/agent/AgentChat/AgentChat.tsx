@@ -38,6 +38,7 @@ import {
   sendAgentMessage,
   writeFile,
 } from "../../../lib/ipc";
+import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import {
   type CanonicalPermissionMode,
   toCanonicalPermissionMode,
@@ -185,10 +186,16 @@ export function AgentChat({
   // (input + cache_read + cache_creation) plus the output tokens it emitted,
   // which together approximate the tokens now resident in context.
   const contextLimit = useMemo(() => {
-    const match = capabilitiesModels?.find((m) => m.value === modelValue);
+    // Prefer the agent's selected variant (e.g. `opus[1m]`, preserved across
+    // restarts) over the resolved id from stream events (`claude-opus-4-8`),
+    // which loses the variant suffix — notably on resume. Capabilities fall
+    // back to the last-known set so resumed agents (whose live capabilities
+    // may not have arrived yet) still resolve their window.
+    const selectedModel = agentSnapshot?.model ?? modelValue;
+    const models = capabilitiesModels ?? getLastKnownCapabilities().models;
 
-    return contextLimitForModel(modelValue, match);
-  }, [capabilitiesModels, modelValue]);
+    return contextLimitForModel(selectedModel, models);
+  }, [capabilitiesModels, modelValue, agentSnapshot?.model]);
   const lastUsage = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
