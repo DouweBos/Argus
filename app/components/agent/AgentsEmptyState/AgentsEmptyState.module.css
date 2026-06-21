@@ -52,6 +52,47 @@
   width: 100%;
 }
 
+.promptWrap {
+  position: relative;
+}
+
+.promptAttachBtn {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.promptAttachBtn:hover {
+  background: var(--surface-4);
+  color: var(--text-secondary);
+}
+
+.promptAttachBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hiddenFileInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .composerFooter {
   display: flex;
   align-items: center;
