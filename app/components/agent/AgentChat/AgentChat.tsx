@@ -3,6 +3,7 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -130,6 +131,14 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
 ];
 const EMPTY_MESSAGES: ConversationMessage[] = [];
 
+// Render only the most recent messages initially, then lazily reveal older
+// ones as the user scrolls toward the top. Keeps long conversations (thousands
+// of messages) from rendering everything at once.
+const INITIAL_VISIBLE_MESSAGES = 100;
+const VISIBLE_MESSAGES_STEP = 100;
+// Distance from the top (px) at which we reveal the next page of older messages.
+const LOAD_MORE_THRESHOLD = 300;
+
 interface AgentChatProps {
   agentId: string | null;
   onClose?: () => void;
@@ -157,6 +166,9 @@ export function AgentChat({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  // How many of the most recent messages are currently rendered. Grows as the
+  // user scrolls up; reset when switching agents.
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const [commandMetrics, setCommandMetrics] = useState<Record<string, number>>(
     {},
   );
@@ -253,8 +265,22 @@ export function AgentChat({
       .catch(() => {});
   }, [repoRoot]);
 
+  // Only render the tail of the conversation; older messages are revealed as
+  // the user scrolls toward the top (see the load-more scroll handler).
+  const hasMoreMessages = messages.length > visibleCount;
+  const visibleMessages = useMemo(
+    () =>
+      hasMoreMessages
+        ? messages.slice(messages.length - visibleCount)
+        : messages,
+    [messages, visibleCount, hasMoreMessages],
+  );
+
   // Group consecutive tool-call-only assistant messages into collapsed segments
-  const segments = useMemo(() => groupMessages(messages), [messages]);
+  const segments = useMemo(
+    () => groupMessages(visibleMessages),
+    [visibleMessages],
+  );
 
   // Find the first segment whose message(s) contain an unread assistant message;
   // a single divider is rendered above it instead of per-message indicators.
@@ -338,6 +364,15 @@ export function AgentChat({
     }
   }, [messages.length, queuedMessages.length, isAtBottom]);
 
+  // Reset the visible window so a freshly-opened chat only renders its tail.
+  // Done during render (not in an effect) so the first paint already shows the
+  // trimmed window — the React-recommended "adjust state on prop change" form.
+  const [windowAgentId, setWindowAgentId] = useState(agentId);
+  if (agentId !== windowAgentId) {
+    setWindowAgentId(agentId);
+    setVisibleCount(INITIAL_VISIBLE_MESSAGES);
+  }
+
   // Scroll to bottom when switching to this agent tab. Dismissal state is
   // already scoped to agentId, so no cross-agent reset is needed here.
   useEffect(() => {
@@ -375,6 +410,22 @@ export function AgentChat({
     }
   }, [hasPendingPermission]);
 
+  // Scroll metrics captured just before a load-more, so the layout effect can
+  // restore the visual position after older messages are prepended.
+  const pendingScrollRestoreRef = useRef<{
+    scrollHeight: number;
+    scrollTop: number;
+  } | null>(null);
+
+  // Keep mutable copies for the stable scroll handler to read without
+  // reattaching the listener on every message/visibleCount change.
+  const messagesLengthRef = useRef(messages.length);
+  const visibleCountRef = useRef(visibleCount);
+  useEffect(() => {
+    messagesLengthRef.current = messages.length;
+    visibleCountRef.current = visibleCount;
+  }, [messages.length, visibleCount]);
+
   // Track scroll position to show/hide scroll-to-bottom button
   const recheckAtBottom = useCallback(() => {
     const container = messagesContainerRef.current;
@@ -385,15 +436,51 @@ export function AgentChat({
     setIsAtBottom(scrollHeight - scrollTop - clientHeight < 40);
   }, []);
 
+  const handleScroll = useCallback(() => {
+    recheckAtBottom();
+    const container = messagesContainerRef.current;
+    if (!container) {
+      return;
+    }
+    // Near the top with older messages still hidden → reveal the next page.
+    if (
+      container.scrollTop < LOAD_MORE_THRESHOLD &&
+      visibleCountRef.current < messagesLengthRef.current
+    ) {
+      pendingScrollRestoreRef.current = {
+        scrollHeight: container.scrollHeight,
+        scrollTop: container.scrollTop,
+      };
+      setVisibleCount((c) =>
+        Math.min(c + VISIBLE_MESSAGES_STEP, messagesLengthRef.current),
+      );
+    }
+  }, [recheckAtBottom]);
+
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) {
       return;
     }
-    container.addEventListener("scroll", recheckAtBottom, { passive: true });
+    container.addEventListener("scroll", handleScroll, { passive: true });
 
-    return () => container.removeEventListener("scroll", recheckAtBottom);
-  }, [recheckAtBottom]);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  // After prepending older messages, restore the scroll position so the
+  // content the user was looking at stays put instead of jumping.
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    const pending = pendingScrollRestoreRef.current;
+    if (!container || !pending) {
+      return;
+    }
+    pendingScrollRestoreRef.current = null;
+    const delta = container.scrollHeight - pending.scrollHeight;
+    if (delta > 0) {
+      container.scrollTop = pending.scrollTop + delta;
+    }
+  }, [visibleCount]);
 
   // Recheck when content collapses/expands (segments change) — the scroll
   // container height shrinks but no scroll event fires.
@@ -868,6 +955,13 @@ export function AgentChat({
       )}
 
       <div ref={messagesContainerRef} className={styles.messages}>
+        {hasMoreMessages && (
+          <div className={styles.loadMoreIndicator}>
+            <ThinkingDots />
+            <span>Loading earlier messages…</span>
+          </div>
+        )}
+
         {messages.length === 0 && queuedMessages.length === 0 && (
           <div className={styles.emptyMessages}>
             <p className={styles.emptyText}>
