@@ -74,6 +74,7 @@ import { ChatInput } from "../ChatInput";
 import { ChatMessage } from "../ChatMessage";
 import { ChatSearchBar } from "../ChatSearchBar";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
+import { ULTRACODE_EFFORT } from "../EffortPicker";
 import { ForkSessionDialog } from "../ForkSessionDialog";
 import { TaskList } from "../TaskList";
 import { TodoList } from "../TodoList";
@@ -126,7 +127,7 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
   {
     name: "effort",
     description: "Set reasoning effort level",
-    argumentHint: "[low|medium|high|max]",
+    argumentHint: "[low|medium|high|xhigh|max|ultracode]",
   },
 ];
 const EMPTY_MESSAGES: ConversationMessage[] = [];
@@ -234,7 +235,12 @@ export function AgentChat({
       return undefined;
     }
 
-    return active.supportedEffortLevels;
+    // `ultracode` (xhigh effort + workflow orchestration) is never advertised;
+    // append it as a synthetic option when the model supports xhigh, matching
+    // the CLI's picker. The runner translates it into an `ultracode` flag.
+    const levels = active.supportedEffortLevels;
+
+    return levels.includes("xhigh") ? [...levels, ULTRACODE_EFFORT] : levels;
   }, [capabilitiesModels, modelValue]);
 
   // Model options for the picker, derived from capabilities.

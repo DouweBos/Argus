@@ -421,13 +421,22 @@ export class ControlHandler {
    * Build a `control_request` with `subtype: "apply_flag_settings"` carrying
    * the reasoning-effort level. Pass `null` to clear back to the model's
    * default. Returns `[jsonString, promise]`.
+   *
+   * `"ultracode"` is not a model effort level — it's a session mode (xhigh +
+   * workflow orchestration), so it maps to the `ultracode` flag. Every other
+   * value clears `ultracode` alongside setting the effort level.
    */
   buildSetEffortRequest(
     level: string | null,
   ): [string, Promise<Record<string, unknown> | undefined>] {
+    const settings =
+      level === "ultracode"
+        ? { ultracode: true }
+        : { effortLevel: level, ultracode: false };
+
     return this.buildOutboundRequest({
       subtype: "apply_flag_settings",
-      settings: { effortLevel: level },
+      settings,
     });
   }
 
