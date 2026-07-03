@@ -67,6 +67,8 @@ export interface ApplyFlagSettingsPayload {
   subtype: "apply_flag_settings";
   settings: {
     effortLevel?: string | null;
+    /** Session mode: xhigh effort + standing workflow orchestration. */
+    ultracode?: boolean;
     [key: string]: unknown;
   };
 }
