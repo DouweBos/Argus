@@ -1,0 +1,47 @@
+.wrap {
+  position: relative;
+  margin-bottom: 10px;
+  border: 1px solid var(--surface-4);
+  border-radius: var(--border-radius-sm);
+  background: var(--scrim-md);
+  padding: 14px 16px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.diagram {
+  /* Diagram fills the padded box; fallback code keeps its own styling. */
+  margin-bottom: 0;
+}
+
+.expandBtn {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.wrap:hover .expandBtn {
+  opacity: 1;
+}
+
+.expandBtn:hover {
+  background: var(--surface-4);
+  color: var(--text-secondary);
+}

@@ -8,6 +8,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { SKIP, visit } from "unist-util-visit";
 import { splitTextForLinks } from "../../../lib/filePathLink";
+import { MermaidChart } from "../../agent/MermaidChart/MermaidChart";
 
 const URI_ALLOW =
   /^(?:(?:https?|mailto|tel|argus-file|argus-ext|extension-file|file|vscode):|[#/])/i;
@@ -71,7 +72,34 @@ function rehypeFileLinks() {
   };
 }
 
+// Pull the raw text out of a ```mermaid fenced code node, or null if the
+// <pre> isn't a mermaid block.
+function mermaidCode(node: Element | undefined): string | null {
+  const codeNode = node?.children?.[0];
+  if (!codeNode || codeNode.type !== "element" || codeNode.tagName !== "code") {
+    return null;
+  }
+  const cls = codeNode.properties?.className;
+  const classes = Array.isArray(cls) ? cls.map(String) : [];
+  if (!classes.includes("language-mermaid")) {
+    return null;
+  }
+  const text = codeNode.children[0];
+
+  return text?.type === "text" ? text.value.replace(/\n$/, "") : "";
+}
+
 const components: Components = {
+  // Swap ```mermaid fenced blocks for an interactive diagram; other code
+  // blocks render as the default <pre>.
+  pre: ({ node, children, ...rest }) => {
+    const code = mermaidCode(node);
+    if (code !== null) {
+      return <MermaidChart code={code} />;
+    }
+
+    return <pre {...rest}>{children}</pre>;
+  },
   // GFM task-list checkbox → span with data-task-check, matching the
   // global [data-task-check] CSS so every markdown surface renders checkboxes
   // identically.
