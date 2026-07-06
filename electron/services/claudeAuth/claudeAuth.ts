@@ -5,16 +5,19 @@
  * current account, log out, and log in/switch accounts from inside Argus —
  * instead of dropping to a terminal to run `claude auth login`.
  *
- * `status` and `logout` are non-interactive (plain execFile). `login` is
- * interactive: the CLI opens a browser, then waits on stdin for a pasted
- * authorization code. We keep that child process alive between
- * {@link claudeLoginStart} (returns the auth URL) and
- * {@link claudeLoginSubmitCode} (writes the code, waits for exit).
+ * `status` and `logout` are non-interactive (plain execFile). `login` opens a
+ * browser and completes over an OAuth loopback callback: the child exits on its
+ * own once the browser redirects, no pasted code required. We keep the child
+ * alive after {@link claudeLoginStart} returns the URL and emit a
+ * `claude-auth:login-result` event when it exits. Some headless environments
+ * still prompt for a code on stdin — we detect that and emit
+ * `claude-auth:login-needs-code`, then {@link claudeLoginSubmitCode} writes it.
  */
 
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { promisify } from "node:util";
 import { info } from "../../../app/lib/logger";
+import { getMainWindow } from "../../main";
 
 const execFileAsync = promisify(execFile);
 
@@ -61,26 +64,43 @@ export async function claudeLogout(): Promise<void> {
 }
 
 // Only one interactive login can be in flight at a time. The `claude auth
-// login` child lives here between start and code submission.
+// login` child lives here between start and completion (browser callback or
+// pasted code).
 let loginChild: ChildProcess | null = null;
+// Set while we're deliberately tearing a login down (cancel / restart) so its
+// exit doesn't surface as a spurious login-result event.
+let loginSuppressed = false;
+
+function emitLoginResult(ok: boolean, error?: string): void {
+  getMainWindow()?.webContents.send("claude-auth:login-result", { ok, error });
+}
 
 function killLoginChild(): void {
   if (loginChild && !loginChild.killed) {
+    loginSuppressed = true;
     loginChild.kill("SIGTERM");
   }
   loginChild = null;
 }
 
+/** Trailing lines of CLI output, used to build an error message on failure. */
+function outputTail(output: string): string {
+  return output.trim().split("\n").slice(-3).join(" ").trim();
+}
+
 /**
- * Begin an interactive login. Spawns `claude auth login`, reads its stdout
- * until the authorization URL appears, and returns it. The child stays alive
- * waiting on stdin for the code submitted via {@link claudeLoginSubmitCode}.
+ * Begin a login. Spawns `claude auth login`, reads its output until the
+ * authorization URL appears, and returns it — the CLI has already opened the
+ * browser. The child stays alive and completes over an OAuth loopback callback;
+ * we emit `claude-auth:login-result` when it exits. If the CLI instead prompts
+ * for a pasted code (headless), we emit `claude-auth:login-needs-code`.
  */
 export async function claudeLoginStart(args: {
   useConsole?: boolean;
 }): Promise<{ url: string }> {
   // Abandon any previous in-flight attempt.
   killLoginChild();
+  loginSuppressed = false;
 
   const cliArgs = [
     "auth",
@@ -92,59 +112,115 @@ export async function claudeLoginStart(args: {
   });
   loginChild = child;
 
-  return new Promise<{ url: string }>((resolve, reject) => {
-    let buffer = "";
-    let settled = false;
+  // Persistent listeners: outlive the URL promise so completion/failure of the
+  // browser callback flow reaches the renderer.
+  let output = "";
+  let urlSettled = false;
+  let needsCodeEmitted = false;
 
+  const onOutput = (chunk: Buffer) => {
+    output += chunk.toString();
+    if (
+      !needsCodeEmitted &&
+      /paste|authorization code|enter the code/i.test(output)
+    ) {
+      needsCodeEmitted = true;
+      getMainWindow()?.webContents.send("claude-auth:login-needs-code", {});
+    }
+  };
+
+  const onExit = (code: number | null) => {
+    detach();
+    if (loginChild === child) {
+      loginChild = null;
+    }
+    if (loginSuppressed) {
+      loginSuppressed = false;
+
+      return;
+    }
+    if (code === 0) {
+      emitLoginResult(true);
+    } else {
+      emitLoginResult(
+        false,
+        outputTail(output) || `Login failed (exit code ${code ?? "null"}).`,
+      );
+    }
+  };
+
+  const onError = (err: Error) => {
+    detach();
+    if (loginChild === child) {
+      loginChild = null;
+    }
+    if (loginSuppressed) {
+      loginSuppressed = false;
+
+      return;
+    }
+    emitLoginResult(false, `claude auth login failed: ${err.message}`);
+  };
+
+  const detach = () => {
+    child.stdout?.off("data", onOutput);
+    child.stderr?.off("data", onOutput);
+    child.off("exit", onExit);
+    child.off("error", onError);
+  };
+
+  child.stdout?.on("data", onOutput);
+  child.stderr?.on("data", onOutput);
+  child.on("exit", onExit);
+  child.on("error", onError);
+
+  return new Promise<{ url: string }>((resolve, reject) => {
     const onChunk = (chunk: Buffer) => {
-      buffer += chunk.toString();
-      const match = buffer.match(/https?:\/\/\S+/);
-      if (match && !settled) {
-        settled = true;
-        cleanup();
+      const match = (output + chunk.toString()).match(/https?:\/\/\S+/);
+      if (match && !urlSettled) {
+        urlSettled = true;
+        stopWaiting();
         resolve({ url: match[0] });
       }
     };
 
-    const onExit = (code: number | null) => {
-      if (!settled) {
-        settled = true;
-        cleanup();
-        loginChild = null;
-        reject(`claude auth login exited early (code ${code ?? "null"})`);
+    const onEarlyExit = () => {
+      if (!urlSettled) {
+        urlSettled = true;
+        stopWaiting();
+        reject("claude auth login exited before returning a URL.");
       }
     };
 
-    const onError = (err: Error) => {
-      if (!settled) {
-        settled = true;
-        cleanup();
-        loginChild = null;
+    const onEarlyError = (err: Error) => {
+      if (!urlSettled) {
+        urlSettled = true;
+        stopWaiting();
         reject(`Failed to start claude auth login: ${err.message}`);
       }
     };
 
     const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        cleanup();
+      if (!urlSettled) {
+        urlSettled = true;
+        stopWaiting();
         killLoginChild();
         reject("Timed out waiting for the Claude login URL.");
       }
     }, 20_000);
 
-    const cleanup = () => {
+    const stopWaiting = () => {
       clearTimeout(timer);
       child.stdout?.off("data", onChunk);
       child.stderr?.off("data", onChunk);
-      child.off("exit", onExit);
-      child.off("error", onError);
+      child.off("exit", onEarlyExit);
+      child.off("error", onEarlyError);
     };
 
     child.stdout?.on("data", onChunk);
     child.stderr?.on("data", onChunk);
-    child.on("exit", onExit);
-    child.on("error", onError);
+    child.on("exit", onEarlyExit);
+    child.on("error", onEarlyError);
   });
 }
 

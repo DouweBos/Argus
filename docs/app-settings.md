@@ -30,8 +30,9 @@ without leaving the app.
   auth method), read from `claude auth status`.
 - **Log out** — runs `claude auth logout`, clearing the stored credentials.
 - **Log in / switch account** — pick **Claude subscription** or **Anthropic
-  Console**, then click Log in. Argus opens your browser to authenticate; paste
-  the authorization code back into the dialog to finish signing in.
+  Console**, then click Log in. Argus opens your browser to authenticate; approve
+  access there and the dialog signs in automatically — no code to copy. (If the
+  browser can't open, the dialog falls back to asking for a pasted code.)
 
 This drives the same Claude CLI credentials used everywhere else, so changes
 apply to every session and runner on this machine.
