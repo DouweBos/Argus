@@ -5,6 +5,7 @@ import { NavigationDeepLinkBridge } from "./components/layout/NavigationDeepLink
 import { OnboardingRoot } from "./components/onboarding/OnboardingRoot";
 import { QuitGuard } from "./components/shared/ConfirmStopAgent/QuitGuard";
 import { StopAgentGuard } from "./components/shared/ConfirmStopAgent/stopAgentGuard";
+import { DiagramViewer } from "./components/shared/DiagramViewer/DiagramViewer";
 import { ImageViewer } from "./components/shared/ImageViewer/ImageViewer";
 import { UpdaterHost } from "./components/shared/Updater/UpdaterHost";
 import { useOnboarding } from "./hooks/useOnboarding";
@@ -39,6 +40,7 @@ export default function App() {
       <RouterGlue />
       <AppShell />
       <ImageViewer />
+      <DiagramViewer />
       <StopAgentGuard />
       <QuitGuard />
       <UpdaterHost />
