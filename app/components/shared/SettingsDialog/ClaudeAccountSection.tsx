@@ -9,6 +9,7 @@ import {
   SettingsScreenDetailHeader,
   SettingsScreenField,
 } from "@argus/peacock";
+import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   claudeAuthLoginCancel,
   claudeAuthLoginStart,
@@ -19,7 +20,12 @@ import {
 } from "../../../lib/ipc";
 import styles from "./ClaudeAccountSection.module.css";
 
-type LoginPhase = "awaiting-code" | "idle" | "starting" | "submitting";
+type LoginPhase =
+  | "awaiting-browser"
+  | "awaiting-code"
+  | "idle"
+  | "starting"
+  | "submitting";
 type AccountType = "claudeai" | "console";
 
 const ACCOUNT_TYPE_OPTIONS = [
@@ -123,6 +129,27 @@ export function ClaudeAccountSection() {
     setCode("");
   };
 
+  // Login completes over an OAuth loopback callback once the browser redirects;
+  // the backend fires this when the CLI child exits. No code paste needed.
+  useIpcEvent<{ error?: string; ok: boolean }>(
+    "claude-auth:login-result",
+    (payload) => {
+      if (payload.ok) {
+        resetLogin();
+        refresh();
+      } else {
+        setError(payload.error ?? "Login failed.");
+        resetLogin();
+      }
+    },
+  );
+
+  // Headless fallback: the CLI couldn't open a browser and is asking for a
+  // pasted code, so reveal the input.
+  useIpcEvent("claude-auth:login-needs-code", () => {
+    setPhase((p) => (p === "awaiting-browser" ? "awaiting-code" : p));
+  });
+
   const startLogin = async () => {
     setError(null);
     setPhase("starting");
@@ -131,7 +158,7 @@ export function ClaudeAccountSection() {
       // "Reopen sign-in page" fallback rather than opening a duplicate tab.
       const { url } = await claudeAuthLoginStart(accountType === "console");
       setLoginUrl(url);
-      setPhase("awaiting-code");
+      setPhase("awaiting-browser");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       resetLogin();
@@ -194,7 +221,7 @@ export function ClaudeAccountSection() {
         {phase === "idle" ? (
           <SettingsScreenField
             label={loggedIn ? "Switch account" : "Sign in"}
-            caption="Opens your browser to authenticate, then paste the code back here."
+            caption="Opens your browser to authenticate — approve access there and Argus signs in automatically."
           >
             <div className={styles.loginStart}>
               <SegmentedControl<AccountType>
@@ -211,7 +238,11 @@ export function ClaudeAccountSection() {
         ) : (
           <SettingsScreenField
             label="Complete sign-in"
-            caption="A browser window should have opened. Approve access, then paste the code shown there."
+            caption={
+              phase === "awaiting-code"
+                ? "Approve access in the browser, then paste the code shown there."
+                : "A browser window should have opened. Approve access and this will finish on its own."
+            }
           >
             <div className={styles.loginFlow}>
               {phase === "starting" ? (
@@ -227,29 +258,44 @@ export function ClaudeAccountSection() {
                       Reopen sign-in page
                     </button>
                   )}
-                  <Input
-                    autoFocus
-                    placeholder="Paste authorization code"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        submitCode().catch(() => {});
-                      }
-                    }}
-                  />
-                  <div className={styles.loginActions}>
-                    <Button variant="ghost" onClick={cancelLogin}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="primary"
-                      disabled={!code.trim() || phase === "submitting"}
-                      onClick={submitCode}
-                    >
-                      {phase === "submitting" ? "Signing in…" : "Sign in"}
-                    </Button>
-                  </div>
+                  {phase === "awaiting-browser" ? (
+                    <>
+                      <p className={styles.muted}>
+                        Waiting for you to approve in your browser…
+                      </p>
+                      <div className={styles.loginActions}>
+                        <Button variant="ghost" onClick={cancelLogin}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Input
+                        autoFocus
+                        placeholder="Paste authorization code"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            submitCode().catch(() => {});
+                          }
+                        }}
+                      />
+                      <div className={styles.loginActions}>
+                        <Button variant="ghost" onClick={cancelLogin}>
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          disabled={!code.trim() || phase === "submitting"}
+                          onClick={submitCode}
+                        >
+                          {phase === "submitting" ? "Signing in…" : "Sign in"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
