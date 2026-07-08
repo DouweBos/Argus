@@ -42,3 +42,29 @@ export function toClaudePermissionMode(
   // Unknown — pass through so the CLI surfaces its own error message.
   return mode;
 }
+
+/**
+ * Normalise a Claude-native permission mode (as reported by the CLI's
+ * `system` events) back to the Argus-canonical name. Mirrors the renderer's
+ * `toCanonicalPermissionMode`. Unrecognised values fall back to `auto`.
+ */
+export function toCanonicalPermissionMode(
+  mode: string | null | undefined,
+): CanonicalPermissionMode {
+  if (!mode) {
+    return "auto";
+  }
+  if (mode in CANONICAL_TO_CLAUDE) {
+    return mode as CanonicalPermissionMode;
+  }
+  switch (mode) {
+    case "default":
+      return "ask";
+    case "acceptEdits":
+      return "review";
+    case "bypassPermissions":
+      return "trusted";
+    default:
+      return "auto";
+  }
+}
