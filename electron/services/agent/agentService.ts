@@ -49,6 +49,7 @@ import { webBrowserPool } from "../browser/pool";
 import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
+import { toCanonicalPermissionMode } from "../llm/runners/claudeCode/permissionModes";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { buildMergedMcpServers } from "../mcp/userConfig";
 import { organizationsForRepo } from "../organization/manager";
@@ -717,6 +718,50 @@ function onStreamLine(agentId: string, line: string): void {
     }
   }
 
+  // permissionMode changes reported by the CLI. The CLI owns its own mode and
+  // announces every change here (e.g. it silently resets to "default" when a
+  // plan is approved). Mirror it onto the session so the chip never drifts.
+  // When the reset is the CLI's post-plan drop to "default", re-apply the mode
+  // the user had before entering plan instead — a user who launched in `auto`
+  // should not get demoted to ask-per-tool. Driving this off the CLI's own
+  // signal (rather than a fire-and-forget call after the approval click) makes
+  // it race-free.
+  if (line.includes('"permissionMode"')) {
+    try {
+      const parsed = JSON.parse(line) as {
+        type?: string;
+        permissionMode?: string;
+      };
+      if (
+        parsed.type === "system" &&
+        typeof parsed.permissionMode === "string"
+      ) {
+        const canonical = toCanonicalPermissionMode(parsed.permissionMode);
+        const leftPlan =
+          session.permissionMode === "plan" && canonical === "ask";
+        if (leftPlan) {
+          const restore =
+            session.prePlanPermissionMode ?? DEFAULT_AGENT_PERMISSION_MODE;
+          session.prePlanPermissionMode = null;
+          session.permissionMode = restore;
+          broadcastToRenderers(
+            `agent:permission-mode-changed:${agentId}`,
+            restore,
+          );
+          session.handle.setPermissionMode(restore).catch(() => {});
+        } else if (canonical !== session.permissionMode) {
+          session.permissionMode = canonical;
+          broadcastToRenderers(
+            `agent:permission-mode-changed:${agentId}`,
+            canonical,
+          );
+        }
+      }
+    } catch {
+      // Non-fatal.
+    }
+  }
+
   // Capture final result event.
   if (line.includes('"result"') && line.includes('"type"')) {
     try {
@@ -1320,31 +1365,6 @@ export async function setAgentPermissionMode(
 
   broadcastToRenderers(`agent:permission-mode-changed:${agentId}`, mode);
   info(`[agent:${agentId}] permission mode changed to ${mode}`);
-}
-
-// ---------------------------------------------------------------------------
-// exit_plan_mode_restore
-// ---------------------------------------------------------------------------
-
-/**
- * Called after the user approves an `ExitPlanMode` tool call. The Claude CLI
- * internally drops to its "default" (ask-per-tool) mode on plan exit, which
- * surprises users who launched the agent in `auto`. Restore the mode the
- * agent was in before it entered plan; fall back to the system default if
- * the agent was spawned directly in plan and never had a pre-plan mode.
- *
- * Returns the mode that was restored, so the caller can update UI state.
- */
-export async function exitPlanModeRestore(agentId: string): Promise<string> {
-  const session = appState.agents.get(agentId);
-  if (!session) {
-    throw `No agent found: ${agentId}`;
-  }
-  const restored =
-    session.prePlanPermissionMode ?? DEFAULT_AGENT_PERMISSION_MODE;
-  await setAgentPermissionMode(agentId, restored);
-
-  return restored;
 }
 
 // ---------------------------------------------------------------------------

@@ -1312,15 +1312,6 @@ export const setAgentPermissionMode = (
   mode: string,
 ): Promise<void> => invoke("set_agent_permission_mode", { agentId, mode });
 
-/**
- * Call after the user approves an `ExitPlanMode` tool call. Restores the
- * permission mode the agent was in before entering plan (so a user who
- * launched in `auto` returns to `auto` instead of the CLI's post-plan
- * "ask" default). Returns the mode that was restored.
- */
-export const exitPlanModeRestore = (agentId: string): Promise<string> =>
-  invoke("exit_plan_mode_restore", { agentId });
-
 export const setAgentEffort = (
   agentId: string,
   level: string | null,
