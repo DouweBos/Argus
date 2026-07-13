@@ -51,6 +51,11 @@ module.exports = {
       to: "org-host-agent-system-prompt.md",
     },
     { from: "docs/project-settings.md", to: "docs/project-settings.md" },
+    // The LAN web client bundle, served by the remote gateway from
+    // `process.resourcesPath/argus-web`. Built by `pnpm build:web-client`
+    // before packaging; without this entry the gateway has no static dir and
+    // answers every request with "426 upgrade required".
+    { from: "clients/argus-web/dist", to: "argus-web" },
   ],
   afterPack: "scripts/electron-after-pack.cjs",
   mac: {
