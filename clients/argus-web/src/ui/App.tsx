@@ -18,7 +18,7 @@ import {
   Spinner,
 } from "@argus/peacock";
 import { PairingClient, parsePairingInput } from "../lib/pairingClient";
-import type { RemoteAgentStatus } from "../lib/protocol";
+import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
 import type { ConnectionState } from "../lib/transport";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
@@ -82,8 +82,8 @@ function Pair() {
       {sas ? (
         <div className="aw-card">
           <p className="aw-muted">
-            Confirm this matches the code in Argus, then tap “Codes match — pair”
-            on your computer:
+            Confirm this matches the code in Argus, then tap “Codes match —
+            pair” on your computer:
           </p>
           <div className="aw-sas">{sas}</div>
           <div className="aw-inline">
@@ -138,7 +138,9 @@ function Monitor() {
   const hasControl = useAppStore((s) => s.hasControl());
   const stopAgentProcess = useAppStore((s) => s.stopAgentProcess);
   const agentSessionId = useAppStore((s) =>
-    view.name === "agent" ? s.statusByAgent[view.agentId]?.session_id : undefined,
+    view.name === "agent"
+      ? s.statusByAgent[view.agentId]?.session_id
+      : undefined,
   );
 
   const heading =
@@ -159,7 +161,11 @@ function Monitor() {
         brand={
           <>
             {canGoBack ? (
-              <SidebarHeaderAction onClick={back} title="Back" aria-label="Back">
+              <SidebarHeaderAction
+                onClick={back}
+                title="Back"
+                aria-label="Back"
+              >
                 <Icons.ChevronLeftIcon size={14} />
               </SidebarHeaderAction>
             ) : (
@@ -360,6 +366,45 @@ function useLiveRefresh(enabled: boolean, refresh: () => void) {
   }, [enabled, refresh]);
 }
 
+/** Most-recently-active agents across all projects — a quick jump back to what
+ *  you're driving. Shown on Home and inside a project's session view. */
+function RecentAgents({
+  onOpenAgent,
+}: {
+  onOpenAgent: (agentId: string, label: string) => void;
+}) {
+  const recentAgents = useAppStore((s) => s.recentAgents);
+  const recent = [...recentAgents]
+    .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
+    .slice(0, 8);
+
+  if (recent.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="aw-group">
+      <SidebarSection count={recent.length}>Recent agents</SidebarSection>
+      {recent.map((a) => {
+        const name = a.title?.trim() || `Agent ${a.agent_id.slice(0, 8)}`;
+
+        return (
+          <AgentRow
+            key={a.agent_id}
+            name={name}
+            status={mapAgentStatus(a.status)}
+            meta={a.session_label ?? agentMetaLabel(a.status)}
+            role="button"
+            tabIndex={0}
+            style={{ cursor: "pointer" }}
+            onClick={() => onOpenAgent(a.agent_id, name)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function Projects({
   onOpen,
   onOpenAgent,
@@ -369,7 +414,6 @@ function Projects({
 }) {
   const connection = useAppStore((s) => s.connection);
   const projects = useAppStore((s) => s.projects);
-  const recentAgents = useAppStore((s) => s.recentAgents);
   const refreshProjects = useAppStore((s) => s.refreshProjects);
   const loadRecentAgents = useAppStore((s) => s.loadRecentAgents);
   const [loaded, setLoaded] = useState(false);
@@ -395,34 +439,9 @@ function Projects({
     );
   }
 
-  // Most-recently-created first — a quick jump back to agents you're driving.
-  const recent = [...recentAgents]
-    .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
-    .slice(0, 8);
-
   return (
     <div className="aw-sidebar">
-      {recent.length > 0 && (
-        <div className="aw-group">
-          <SidebarSection count={recent.length}>Recent agents</SidebarSection>
-          {recent.map((a) => {
-            const name = a.title?.trim() || `Agent ${a.agent_id.slice(0, 8)}`;
-
-            return (
-              <AgentRow
-                key={a.agent_id}
-                name={name}
-                status={mapAgentStatus(a.status)}
-                meta={a.session_label ?? agentMetaLabel(a.status)}
-                role="button"
-                tabIndex={0}
-                style={{ cursor: "pointer" }}
-                onClick={() => onOpenAgent(a.agent_id, name)}
-              />
-            );
-          })}
-        </div>
-      )}
+      <RecentAgents onOpenAgent={onOpenAgent} />
       <SidebarSection count={projects.length}>Projects</SidebarSection>
       {projects.map((p) => (
         <SidebarRepoGroup
@@ -457,13 +476,15 @@ function Project({
   const sessions = useAppStore((s) => s.sessionsByRepo[repoRoot]);
   const loadAgents = useAppStore((s) => s.loadAgents);
   const loadSessions = useAppStore((s) => s.loadSessions);
+  const loadRecentAgents = useAppStore((s) => s.loadRecentAgents);
   const hasControl = useAppStore((s) => s.hasControl());
   const spawnAgent = useAppStore((s) => s.spawnAgent);
 
   const refresh = useCallback(() => {
     loadAgents(repoRoot).catch(() => {});
     loadSessions(repoRoot).catch(() => {});
-  }, [loadAgents, loadSessions, repoRoot]);
+    loadRecentAgents().catch(() => {});
+  }, [loadAgents, loadSessions, loadRecentAgents, repoRoot]);
   useLiveRefresh(connection === "ready", refresh);
 
   const spawn = useCallback(
@@ -485,7 +506,10 @@ function Project({
   }
 
   // Group by session id (stable), carrying a label + its agents.
-  const groups = new Map<string, { agents: RemoteAgentStatus[]; label: string }>();
+  const groups = new Map<
+    string,
+    { agents: RemoteAgentStatus[]; label: string }
+  >();
   for (const a of agents) {
     const g = groups.get(a.session_id) ?? {
       label: a.session_label ?? "Session",
@@ -499,6 +523,7 @@ function Project({
       groups.set(s.id, { label: s.display_name ?? s.branch, agents: [] });
     }
   }
+  const sessionById = new Map((sessions ?? []).map((s) => [s.id, s]));
   const entries = [...groups.entries()];
 
   return (
@@ -526,6 +551,7 @@ function Project({
           key={sessionId}
           sessionId={sessionId}
           label={g.label}
+          session={sessionById.get(sessionId)}
           agents={g.agents}
           repoRoot={repoRoot}
           hasControl={hasControl}
@@ -535,6 +561,8 @@ function Project({
           onChanged={refresh}
         />
       ))}
+
+      <RecentAgents onOpenAgent={onOpenAgent} />
     </div>
   );
 }
@@ -544,6 +572,7 @@ function Project({
 function SessionGroup({
   sessionId,
   label,
+  session,
   agents,
   repoRoot,
   hasControl,
@@ -554,6 +583,7 @@ function SessionGroup({
 }: {
   sessionId: string;
   label: string;
+  session?: RemoteSession;
   agents: RemoteAgentStatus[];
   repoRoot: string;
   hasControl: boolean;
@@ -576,7 +606,11 @@ function SessionGroup({
   }, [sessionId, loadGitStatus]);
 
   const doDelete = () => {
-    if (!window.confirm(`Delete session “${label}”? This stops its agents and removes the worktree.`)) {
+    if (
+      !window.confirm(
+        `Delete session “${label}”? This stops its agents and removes the worktree.`,
+      )
+    ) {
       return;
     }
     const alsoBranch = window.confirm("Also delete the git branch?");
@@ -635,10 +669,40 @@ function SessionGroup({
           .join(" ")
       : null;
 
+  const kind = session?.kind;
+  const isRoot = kind === "project_root";
+  const branch = session?.branch;
+  const showBranch = branch && branch !== label;
+  const status = session?.status;
+  const showStatus = Boolean(status) && status !== "ready";
+
   return (
-    <div className="aw-group">
+    <div className="aw-session-card">
       <div className="aw-session-head">
+        <span className="aw-session-icon">
+          {isRoot ? (
+            <Icons.RepoIcon size={13} />
+          ) : (
+            <Icons.BranchIcon size={13} />
+          )}
+        </span>
         <span className="aw-session-label">{label}</span>
+        {isRoot && (
+          <span
+            className="aw-session-kind aw-session-kind-root"
+            title="Runs on the project root, not an isolated worktree"
+          >
+            root
+          </span>
+        )}
+        {kind === "worktree" && (
+          <span
+            className="aw-session-kind aw-session-kind-worktree"
+            title="Runs in an isolated git worktree"
+          >
+            worktree
+          </span>
+        )}
         {gitSummary && <span className="aw-session-git">{gitSummary}</span>}
         <button
           className="aw-icon-btn"
@@ -652,11 +716,20 @@ function SessionGroup({
         </button>
       </div>
 
+      {(showBranch || showStatus) && (
+        <div className="aw-session-sub">
+          {showBranch && <span className="aw-session-branch">{branch}</span>}
+          {showStatus && <span className="aw-session-status">{status}</span>}
+        </div>
+      )}
+
       {renaming && (
         <div className="aw-new-session">
           <Input
             autoFocus
-            placeholder={renaming === "branch" ? "new-branch-name" : "Session name"}
+            placeholder={
+              renaming === "branch" ? "new-branch-name" : "Session name"
+            }
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {

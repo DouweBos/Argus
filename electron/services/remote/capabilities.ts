@@ -203,6 +203,12 @@ interface RawSource {
   parentAgentId?: string;
   parentLabel?: string;
 }
+interface RawTokenUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+}
 interface RawMessage {
   id?: string;
   role?: string;
@@ -212,6 +218,7 @@ interface RawMessage {
   source?: RawSource;
   isError?: boolean;
   timestamp?: number;
+  usage?: RawTokenUsage;
 }
 interface RawTask {
   id?: string;
@@ -337,6 +344,16 @@ function toRemoteMessage(m: RawMessage): RemoteMessage {
     ),
     ...(images.length > 0 ? { images } : {}),
     ...(source ? { source } : {}),
+    ...(m.usage && typeof m.usage.input_tokens === "number"
+      ? {
+          usage: {
+            input_tokens: m.usage.input_tokens,
+            output_tokens: m.usage.output_tokens ?? 0,
+            cache_read_input_tokens: m.usage.cache_read_input_tokens,
+            cache_creation_input_tokens: m.usage.cache_creation_input_tokens,
+          },
+        }
+      : {}),
     is_error: m.isError,
     timestamp: m.timestamp,
   };

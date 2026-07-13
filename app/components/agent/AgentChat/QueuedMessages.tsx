@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { Chip, Icons } from "@argus/peacock";
+import {
+  Chip,
+  Icons,
+  QueuedMessage,
+  QueuedMessageAction,
+  QueuedMessageList,
+} from "@argus/peacock";
 import {
   buildLinkedProjectsPreamble,
   parseLinkedProjectsPreamble,
 } from "../../../lib/linkedProjectsPreamble";
 import {
-  type QueuedMessage,
+  type QueuedMessage as QueuedMessageData,
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../../../stores/conversationStore";
@@ -15,7 +21,7 @@ import styles from "./AgentChat.module.css";
 
 interface QueuedMessagesProps {
   agentId: string;
-  messages: QueuedMessage[];
+  messages: QueuedMessageData[];
 }
 
 export function QueuedMessages({ agentId, messages }: QueuedMessagesProps) {
@@ -26,8 +32,7 @@ export function QueuedMessages({ agentId, messages }: QueuedMessagesProps) {
   }
 
   return (
-    <div className={styles.queuedSection}>
-      <span className={styles.queuedLabel}>Queued</span>
+    <QueuedMessageList className={styles.queuedSection}>
       {messages.map((qm) => (
         <QueuedMessageItem
           key={qm.id}
@@ -38,14 +43,14 @@ export function QueuedMessages({ agentId, messages }: QueuedMessagesProps) {
           onStopEdit={() => setEditingId(null)}
         />
       ))}
-    </div>
+    </QueuedMessageList>
   );
 }
 
 interface QueuedMessageItemProps {
   agentId: string;
   editing: boolean;
-  message: QueuedMessage;
+  message: QueuedMessageData;
   onStartEdit: () => void;
   onStopEdit: () => void;
 }
@@ -73,86 +78,80 @@ function QueuedMessageItem({
   }, [agentId, message.id]);
 
   return (
-    <div className={styles.queuedMessageWrap}>
-      <div className={styles.queuedMessageRow}>
-        {editing ? (
-          <QueuedMessageEditor
-            agentId={agentId}
-            initialText={displayText}
-            linkedPaths={linkedPaths}
-            message={message}
-            onDone={onStopEdit}
-          />
-        ) : (
-          displayText.length > 0 && (
-            <div className={styles.queuedMessage}>{displayText}</div>
-          )
-        )}
-        {!editing && (
-          <div className={styles.queuedActions}>
-            <button
-              aria-label="Edit queued message"
-              className={styles.queuedActionButton}
-              title="Edit"
-              type="button"
+    <QueuedMessage
+      text={editing ? undefined : displayText || undefined}
+      actions={
+        editing ? undefined : (
+          <>
+            <QueuedMessageAction
+              icon={<Icons.PencilIcon size={11} />}
+              label="Edit queued message"
               onClick={onStartEdit}
-            >
-              <Icons.PencilIcon size={11} />
-            </button>
-            <button
-              aria-label="Delete queued message"
-              className={styles.queuedActionButton}
-              title="Delete"
-              type="button"
+            />
+            <QueuedMessageAction
+              icon={<Icons.TrashIcon size={12} />}
+              label="Delete queued message"
               onClick={handleDelete}
-            >
-              <Icons.TrashIcon size={12} />
-            </button>
-          </div>
-        )}
-      </div>
-      {linkedPaths.length > 0 && (
-        <div className={styles.queuedLinkedProjects}>
-          {linkedPaths.map((path) => {
-            const label = path.split("/").filter(Boolean).pop() ?? path;
+            />
+          </>
+        )
+      }
+      footer={
+        <>
+          {linkedPaths.length > 0 && (
+            <div className={styles.queuedLinkedProjects}>
+              {linkedPaths.map((path) => {
+                const label = path.split("/").filter(Boolean).pop() ?? path;
 
-            return (
-              <Chip
-                key={path}
-                muted
-                title={path}
-                leading={<Icons.FolderIcon size={11} />}
-              >
-                {label}
-              </Chip>
-            );
-          })}
-        </div>
-      )}
-      {images.length > 0 && (
-        <div className={styles.queuedAttachments}>
-          {images.map((img, i) => {
-            const src = `data:${img.media_type};base64,${img.data}`;
+                return (
+                  <Chip
+                    key={path}
+                    muted
+                    title={path}
+                    leading={<Icons.FolderIcon size={11} />}
+                  >
+                    {label}
+                  </Chip>
+                );
+              })}
+            </div>
+          )}
+          {images.length > 0 && (
+            <div className={styles.queuedAttachments}>
+              {images.map((img, i) => {
+                const src = `data:${img.media_type};base64,${img.data}`;
 
-            return (
-              <button
-                key={i}
-                className={styles.queuedAttachment}
-                title={`Image ${i + 1}`}
-                type="button"
-                onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
-              >
-                <img
-                  alt={`Attachment ${i + 1}`}
-                  className={styles.queuedAttachmentImg}
-                  src={src}
-                />
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+                return (
+                  <button
+                    key={i}
+                    className={styles.queuedAttachment}
+                    title={`Image ${i + 1}`}
+                    type="button"
+                    onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
+                  >
+                    <img
+                      alt={`Attachment ${i + 1}`}
+                      className={styles.queuedAttachmentImg}
+                      src={src}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      }
+    >
+      {editing ? (
+        <QueuedMessageEditor
+          agentId={agentId}
+          initialText={displayText}
+          linkedPaths={linkedPaths}
+          message={message}
+          onDone={onStopEdit}
+        />
+      ) : undefined}
+    </QueuedMessage>
   );
 }
 
@@ -160,7 +159,7 @@ interface QueuedMessageEditorProps {
   agentId: string;
   initialText: string;
   linkedPaths: readonly string[];
-  message: QueuedMessage;
+  message: QueuedMessageData;
   onDone: () => void;
 }
 

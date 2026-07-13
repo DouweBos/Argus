@@ -161,6 +161,13 @@ export interface RemoteMessageSource {
   parent_label?: string | null;
 }
 
+export interface RemoteTokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+}
+
 export interface RemoteMessage {
   id: string;
   role: "assistant" | "system" | "user";
@@ -170,6 +177,7 @@ export interface RemoteMessage {
   source?: RemoteMessageSource;
   is_error?: boolean;
   timestamp?: number;
+  usage?: RemoteTokenUsage;
 }
 
 export interface RemoteTask {

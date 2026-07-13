@@ -35,6 +35,7 @@ import type {
   BrowserSession,
   SimulatorReservation,
 } from "../../state";
+import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
 import type { RuntimePlatform } from "../session/models";
 import { app } from "electron";
@@ -531,10 +532,23 @@ export async function startAgent(
   });
 
   handle.on("permission-request", (payload: unknown) => {
+    const p = payload as PermissionRequestPayload;
+    if (p?.tool_use_id) {
+      let pending = appState.agentPendingPermissions.get(agentId);
+      if (!pending) {
+        pending = new Map();
+        appState.agentPendingPermissions.set(agentId, pending);
+      }
+      pending.set(p.tool_use_id, p);
+    }
     broadcastToRenderers(`agent:permission:${agentId}`, payload);
   });
 
   handle.on("permission-cancel", (payload: unknown) => {
+    const p = payload as { tool_use_id?: string };
+    if (p?.tool_use_id) {
+      appState.agentPendingPermissions.get(agentId)?.delete(p.tool_use_id);
+    }
     broadcastToRenderers(`agent:permission-cancel:${agentId}`, payload);
   });
 
@@ -969,6 +983,7 @@ export async function stopAgent(agentId: string): Promise<void> {
 
   appState.agents.delete(agentId);
   appState.agentSnapshots.delete(agentId);
+  appState.agentPendingPermissions.delete(agentId);
 
   emitAgentStatus(agentId, "stopped");
   info(`[agent:${agentId}] stopped`);
@@ -1253,6 +1268,15 @@ export function sendAgentMessage(
   }
 
   agentEntry.inflightPrompts += 1;
+
+  // Mark the agent busy as soon as the prompt is injected. The CLI's
+  // `session_state_changed(running)` is unreliable (often absent), so without
+  // this the backend status — and every remote client reading it — stays
+  // "idle" through the whole turn. The `result` handler flips it back to idle.
+  if (agentEntry.status !== "running") {
+    agentEntry.status = "running";
+    emitAgentStatus(agentId, "running");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1503,6 +1527,8 @@ export function respondToPermission(
   } catch (e) {
     throw `Failed to write permission response to agent stdin: ${String(e)}`;
   }
+
+  appState.agentPendingPermissions.get(agentId)?.delete(toolUseId);
 
   // Tell the renderer the prompt was answered so it clears the pending state
   // and republishes the snapshot. Essential when a remote (web) client answers:

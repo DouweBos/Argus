@@ -1,4 +1,5 @@
 import {
+  memo,
   type ReactNode,
   useCallback,
   useEffect,
@@ -17,6 +18,9 @@ import {
   parseQuestions,
   PlanApproval,
   QuestionForm,
+  QueuedMessage,
+  QueuedMessageAction,
+  QueuedMessageList,
   Spinner,
   TaskList,
   TodoList,
@@ -164,7 +168,13 @@ function pendingActions(
   };
 }
 
-function Message({ agentId, msg }: { agentId: string; msg: RemoteMessage }) {
+const Message = memo(function Message({
+  agentId,
+  msg,
+}: {
+  agentId: string;
+  msg: RemoteMessage;
+}) {
   const imageCache = useAppStore((s) => s.imageCache);
   const prompts = useAppStore((s) => s.prompts);
   const answered = useAppStore((s) => s.answered);
@@ -235,7 +245,7 @@ function Message({ agentId, msg }: { agentId: string; msg: RemoteMessage }) {
       images={images}
     />
   );
-}
+});
 
 export function AgentTranscript({ agentId }: { agentId: string }) {
   const connection = useAppStore((s) => s.connection);
@@ -247,6 +257,8 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
   const loadImage = useAppStore((s) => s.loadImage);
   const watchAgent = useAppStore((s) => s.watchAgent);
+  const queued = useAppStore((s) => s.queuedByAgent[agentId]);
+  const removeQueued = useAppStore((s) => s.removeQueued);
   const endRef = useRef<HTMLDivElement>(null);
   const loadingOlderRef = useRef(false);
   // Scroll height captured just before prepending older messages, so we can
@@ -256,11 +268,16 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const [loadingOlder, setLoadingOlder] = useState(false);
 
   // Combine the authoritative snapshot with any not-yet-confirmed optimistic
-  // user messages so a just-sent message shows instantly.
-  const messages =
-    serverMessages === undefined
-      ? undefined
-      : [...serverMessages, ...(optimistic ?? [])];
+  // user messages so a just-sent message shows instantly. Memoized so unrelated
+  // re-renders don't hand the scroll/image effects a fresh array identity.
+  const messages = useMemo(
+    () =>
+      serverMessages === undefined
+        ? undefined
+        : [...serverMessages, ...(optimistic ?? [])],
+    [serverMessages, optimistic],
+  );
+  const hasTranscript = messages !== undefined;
 
   const scrollToBottom = useCallback(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
@@ -328,7 +345,10 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
     scroller.addEventListener("scroll", onScroll, { passive: true });
 
     return () => scroller.removeEventListener("scroll", onScroll);
-  }, [agentId, loadOlderMessages]);
+    // `hasTranscript` re-runs this once the transcript actually mounts — on the
+    // first render the loading branch has no endRef, so the listener would never
+    // attach (breaking lazy-load + the scroll-to-bottom pill).
+  }, [agentId, loadOlderMessages, hasTranscript]);
 
   // After older messages prepend, keep the viewport anchored on what the user
   // was reading by offsetting scrollTop by the newly-added height.
@@ -356,9 +376,15 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
 
   // Keep the newest message in view as the transcript streams — but only when
   // the user is already at the bottom, so scrolling up to read isn't yanked.
-  useEffect(() => {
-    if (isAtBottom) {
-      endRef.current?.scrollIntoView({ block: "end" });
+  // useLayoutEffect + direct scrollTop pins to the bottom *before* paint, so a
+  // streamed message never flashes in at the old scroll position first.
+  useLayoutEffect(() => {
+    if (!isAtBottom) {
+      return;
+    }
+    const scroller = endRef.current?.closest(".aw-main");
+    if (scroller) {
+      scroller.scrollTop = scroller.scrollHeight;
     }
   }, [messages, isAtBottom]);
 
@@ -398,6 +424,23 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         <Message key={m.id} agentId={agentId} msg={m} />
       ))}
       <WorkingIndicator agentId={agentId} />
+      {queued && queued.length > 0 && (
+        <QueuedMessageList>
+          {queued.map((q) => (
+            <QueuedMessage
+              key={q.id}
+              text={q.displayText}
+              actions={
+                <QueuedMessageAction
+                  icon={<Icons.CloseIcon size={12} />}
+                  label="Remove queued message"
+                  onClick={() => removeQueued(agentId, q.id)}
+                />
+              }
+            />
+          ))}
+        </QueuedMessageList>
+      )}
       <div ref={endRef} />
       {!isAtBottom && (
         <button

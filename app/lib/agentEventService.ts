@@ -298,6 +298,7 @@ const effortListeners = new Map<string, UnlistenFn>();
 const stderrListeners = new Map<string, UnlistenFn>();
 const mcpMessageListeners = new Map<string, UnlistenFn>();
 const remoteMessageListeners = new Map<string, UnlistenFn>();
+const statusListeners = new Map<string, UnlistenFn>();
 
 /**
  * Payload emitted by the Electron main process when the MCP server injects
@@ -406,6 +407,25 @@ export function startAgentListening(agentId: string): void {
     }
 
     exitListeners.set(agentId, unlisten);
+  });
+
+  // Reflect the backend's authoritative "running" transition — set when a
+  // prompt is injected from anywhere (remote web client, MCP), which the
+  // renderer would otherwise miss since it only marks running on its own sends.
+  // Running-only on purpose: idle/stopped stay with the queue-aware handlers.
+  statusListeners.set(agentId, () => {});
+  listen<string>(`agent:status:${agentId}`, (event) => {
+    if (event.payload === "running") {
+      updateAgent(agentId, { status: "running" });
+    }
+  }).then((unlisten) => {
+    if (!statusListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+
+    statusListeners.set(agentId, unlisten);
   });
 
   // Watch for permission requests from the control protocol.
@@ -718,6 +738,12 @@ export function stopAgentListening(agentId: string): void {
     exitUnlisten();
   }
   exitListeners.delete(agentId);
+
+  const statusUnlisten = statusListeners.get(agentId);
+  if (statusUnlisten) {
+    statusUnlisten();
+  }
+  statusListeners.delete(agentId);
 
   const permUnlisten = permListeners.get(agentId);
   if (permUnlisten) {
