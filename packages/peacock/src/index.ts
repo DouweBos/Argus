@@ -98,6 +98,7 @@ export * from "./components/ToolCallRow/ToolCallRow";
 export * from "./components/UnreadDivider/UnreadDivider";
 export * from "./components/UsageMeter/UsageMeter";
 export * from "./components/ContextMeter/ContextMeter";
+export * from "./components/QueuedMessage/QueuedMessage";
 export * from "./components/SessionCard/SessionCard";
 export * from "./components/SettingsScreen/SettingsScreen";
 export * from "./components/SettingsDialogShell/SettingsDialogShell";

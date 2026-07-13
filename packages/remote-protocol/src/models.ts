@@ -111,6 +111,15 @@ export const RemoteMessageSource = z.object({
 });
 export type RemoteMessageSource = z.infer<typeof RemoteMessageSource>;
 
+/** Anthropic token usage for an assistant turn, used to gauge context fill. */
+export const RemoteTokenUsage = z.object({
+  input_tokens: z.number(),
+  output_tokens: z.number(),
+  cache_read_input_tokens: z.number().optional(),
+  cache_creation_input_tokens: z.number().optional(),
+});
+export type RemoteTokenUsage = z.infer<typeof RemoteTokenUsage>;
+
 /** A structured transcript message mirroring the desktop conversation. */
 export const RemoteMessage = z.object({
   id: z.string(),
@@ -122,6 +131,8 @@ export const RemoteMessage = z.object({
   source: RemoteMessageSource.optional(),
   is_error: z.boolean().optional(),
   timestamp: z.number().optional(),
+  /** Token usage (assistant turns only) — drives the context-window meter. */
+  usage: RemoteTokenUsage.optional(),
 });
 export type RemoteMessage = z.infer<typeof RemoteMessage>;
 

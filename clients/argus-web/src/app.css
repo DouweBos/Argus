@@ -2,12 +2,22 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  /* Stop the whole page from rubber-banding; the transcript pane owns scroll. */
+  overscroll-behavior: none;
+  height: 100%;
+}
+
 body {
   margin: 0;
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
+  /* No grey tap flash, and don't let the page itself scroll/select as chrome. */
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
 }
 
 /* Baseline button reset the Peacock chat kit assumes (desktop provides it
@@ -37,6 +47,10 @@ button {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* Keep scroll (and rubber-band/pull-to-refresh) contained to this pane so a
+     streaming transcript never bounces the page or chains to the body. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -206,7 +220,29 @@ button {
   flex-direction: column;
   gap: 0;
   flex: 1;
+  min-width: 0;
   padding-bottom: 12px;
+}
+
+/* Never let the whole chat scroll sideways — long tokens (file paths, URLs)
+   wrap; fenced code keeps its own contained horizontal scroll. */
+.aw-main {
+  overflow-x: hidden;
+}
+
+.aw-transcript-list :where(p, li, span, a, code, h1, h2, h3, h4, td, th) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.aw-transcript-list pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.aw-transcript-list pre code {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 /* Scroll-to-bottom pill — sticky to the bottom of the transcript scroll area;
@@ -214,6 +250,7 @@ button {
 .aw-scroll-bottom {
   position: sticky;
   bottom: 12px;
+  overflow-anchor: none;
   align-self: center;
   margin-top: -32px;
   display: flex;
@@ -441,33 +478,136 @@ button {
   white-space: nowrap;
 }
 
+/* "Use this directory" action pinned atop the browse list — accented and
+   separated so selecting the current dir (and closing the picker) is obvious. */
+.aw-suggestion-link {
+  border-bottom: 1px solid var(--glass-border, var(--border));
+  border-radius: 0;
+  color: var(--accent);
+}
+
+.aw-suggestion-link svg {
+  color: var(--accent);
+}
+
+.aw-suggestion-link .aw-suggestion-name {
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.aw-suggestion-link .aw-suggestion-desc {
+  font-family: var(--font-mono, monospace);
+}
+
+/* Context-window meter sitting alongside the input chips. */
+.aw-context-meter {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 /* Control affordances on the project screen. */
 .aw-control-bar {
   padding: 8px 0;
 }
 
-/* Session group header: label + git badge + actions menu. */
+/* One session rendered as a card: header, subtitle, its agents, and actions. */
+.aw-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px 8px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  background: var(--surface-2);
+}
+
+/* Session card header: icon + label + kind badge + git badge + actions menu. */
 .aw-session-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 4px 4px;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.aw-session-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .aw-session-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
 }
 
+/* Distinguishes project-root from worktree sessions. */
+.aw-session-kind {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-pill);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.aw-session-kind-root {
+  background: var(--accent-overlay-md);
+  color: var(--accent);
+}
+
+.aw-session-kind-worktree {
+  background: var(--surface-4);
+  color: var(--text-secondary);
+}
+
 .aw-session-git {
   font-family: var(--font-mono, monospace);
   font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Secondary line under the header: branch name + status. */
+.aw-session-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px 2px 21px;
+  min-width: 0;
+}
+
+.aw-session-branch {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-session-status {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 14px;
+  padding: 0 6px;
+  border-radius: var(--border-radius-pill);
+  text-transform: uppercase;
+  background: var(--surface-4);
   color: var(--text-secondary);
 }
 

@@ -5,15 +5,21 @@
  * for devices holding the "control" grant (gated by the caller).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Button,
   ChatInputShell,
   Chip,
+  ContextMeter,
   Icons,
   ImageAttachmentStrip,
 } from "@argus/peacock";
+import {
+  contextLimitForModel,
+  formatTokenCount,
+  tokensInContext,
+} from "../lib/contextWindow";
 import {
   ACCEPTED_IMAGE_TYPES,
   extractImageFilesFromClipboard,
@@ -21,7 +27,11 @@ import {
   type PendingImage,
 } from "../lib/images";
 import { buildLinkedProjectsPreamble } from "../lib/linkedProjects";
-import type { RemotePermissionMode, RemoteSlashCommand } from "../lib/protocol";
+import type {
+  RemoteModelInfo,
+  RemotePermissionMode,
+  RemoteSlashCommand,
+} from "../lib/protocol";
 import { useAppStore } from "../lib/store";
 import { useMentionPicker } from "./useMentionPicker";
 
@@ -134,6 +144,51 @@ function Dropdown({
   );
 }
 
+/**
+ * Context-window meter, isolated so its subscription to the (frequently
+ * changing) transcript doesn't re-render the whole ChatInput — that caused the
+ * chips and input to flash while typing as messages streamed in.
+ */
+function ContextMeterChip({
+  agentId,
+  modelValue,
+  models,
+}: {
+  agentId: string;
+  modelValue: string | null;
+  models: RemoteModelInfo[];
+}) {
+  const messages = useAppStore((s) => s.messagesByAgent[agentId]);
+  const contextTokens = useMemo(() => {
+    if (!messages) {
+      return 0;
+    }
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role === "assistant" && m.usage) {
+        return tokensInContext(m.usage);
+      }
+    }
+
+    return 0;
+  }, [messages]);
+
+  if (contextTokens <= 0) {
+    return null;
+  }
+  const contextLimit = contextLimitForModel(modelValue, models);
+  const pct = contextLimit > 0 ? (contextTokens / contextLimit) * 100 : 0;
+
+  return (
+    <span
+      className="aw-context-meter"
+      title={`Context: ${Math.round(pct)}% of ${formatTokenCount(contextLimit)} tokens (${formatTokenCount(contextTokens)} used)`}
+    >
+      <ContextMeter progress={contextTokens / contextLimit} size={16} />
+    </span>
+  );
+}
+
 export function ChatInput({
   agentId,
   sessionId,
@@ -147,6 +202,7 @@ export function ChatInput({
   const loadCapabilities = useAppStore((s) => s.loadCapabilities);
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const sendMessage = useAppStore((s) => s.sendMessage);
+  const queueMessage = useAppStore((s) => s.queueMessage);
   const interrupt = useAppStore((s) => s.interrupt);
   const setModel = useAppStore((s) => s.setModel);
   const setPermissionMode = useAppStore((s) => s.setPermissionMode);
@@ -168,6 +224,9 @@ export function ChatInput({
   >(null);
   const [linked, setLinked] = useState<string[]>(() => readLinked(agentId));
   const [dragOver, setDragOver] = useState(false);
+  // Whether the textarea has content — the textarea is uncontrolled, so this
+  // mirror lets the buttons react (e.g. show "queue" while the agent is busy).
+  const [hasText, setHasText] = useState(false);
   const dragDepth = useRef(0);
 
   const {
@@ -234,6 +293,7 @@ export function ChatInput({
       return;
     }
     el.value = localStorage.getItem(draftKey(agentId)) ?? "";
+    setHasText(el.value.trim().length > 0);
     const raf = requestAnimationFrame(() => {
       adjustHeight();
       el.focus();
@@ -267,6 +327,7 @@ export function ChatInput({
     adjustHeight();
     updateSuggestions();
     updateMentions(textareaRef.current);
+    setHasText((textareaRef.current?.value.trim().length ?? 0) > 0);
     localStorage.setItem(draftKey(agentId), textareaRef.current?.value ?? "");
   }, [adjustHeight, updateSuggestions, updateMentions, agentId]);
 
@@ -279,11 +340,18 @@ export function ChatInput({
       pending.length > 0 ? pending.map((p) => p.attachment) : undefined;
     const displayText = value || "(see attached images)";
     const message = buildLinkedProjectsPreamble(linked, displayText);
-    sendMessage(agentId, message, images, displayText).catch(() => {});
+    // Busy agent → hold the message and flush it when the turn ends, mirroring
+    // the desktop. Idle → send straight away.
+    if (isRunning) {
+      queueMessage(agentId, message, images, displayText);
+    } else {
+      sendMessage(agentId, message, images, displayText).catch(() => {});
+    }
     if (textareaRef.current) {
       textareaRef.current.value = "";
       adjustHeight();
     }
+    setHasText(false);
     localStorage.removeItem(draftKey(agentId));
     localStorage.removeItem(linkedKey(agentId));
     setLinked([]);
@@ -291,7 +359,16 @@ export function ChatInput({
     setPending([]);
     setSuggestions([]);
     dismissMention();
-  }, [agentId, pending, sendMessage, adjustHeight, dismissMention, linked]);
+  }, [
+    agentId,
+    pending,
+    sendMessage,
+    queueMessage,
+    isRunning,
+    adjustHeight,
+    dismissMention,
+    linked,
+  ]);
 
   const applySuggestion = useCallback(
     (cmd: RemoteSlashCommand) => {
@@ -385,7 +462,9 @@ export function ChatInput({
         return;
       }
 
-      if (e.key === "Enter" && !e.shiftKey) {
+      // Enter inserts a newline (native textarea behavior); send with the
+      // button or ⌘/Ctrl+Enter, so multi-line messages are easy on a phone.
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         submit();
       }
@@ -439,7 +518,13 @@ export function ChatInput({
           {mentionItems.map((item, i) => (
             <button
               key={`${item.display}-${i}`}
-              className={`aw-suggestion${i === mentionSelectedIndex ? " aw-suggestion-active" : ""}`}
+              className={[
+                "aw-suggestion",
+                i === mentionSelectedIndex ? "aw-suggestion-active" : "",
+                item.isLinkAction ? "aw-suggestion-link" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onMouseDown={(e) => {
                 e.preventDefault();
                 selectMentionItem(textareaRef.current, i);
@@ -452,11 +537,18 @@ export function ChatInput({
               ) : (
                 <Icons.FileIcon size={12} />
               )}
-              <span className="aw-suggestion-name">
-                {item.isLinkAction ? `Use ${item.display}` : item.display}
-              </span>
-              {item.hint && (
-                <span className="aw-suggestion-desc">{item.hint}</span>
+              {item.isLinkAction ? (
+                <>
+                  <span className="aw-suggestion-name">Use this directory</span>
+                  <span className="aw-suggestion-desc">{item.display}</span>
+                </>
+              ) : (
+                <>
+                  <span className="aw-suggestion-name">{item.display}</span>
+                  {item.hint && (
+                    <span className="aw-suggestion-desc">{item.hint}</span>
+                  )}
+                </>
               )}
             </button>
           ))}
@@ -482,6 +574,7 @@ export function ChatInput({
 
   const actions = (
     <>
+      <ContextMeterChip agentId={agentId} modelValue={modelValue} models={models} />
       {(models.length > 0 || modelValue) && (
         <div className="aw-picker-anchor" ref={modelChipRef}>
           <Chip
@@ -603,6 +696,16 @@ export function ChatInput({
       >
         <Icons.PaperclipIcon />
       </button>
+      {isRunning && hasText && (
+        <Button
+          variant="send"
+          aria-label="Queue message"
+          title="Queue — sends when the agent is idle"
+          onClick={submit}
+        >
+          <Icons.SendIcon />
+        </Button>
+      )}
       {isRunning ? (
         <Button
           variant="stop"
@@ -664,7 +767,7 @@ export function ChatInput({
         ref={textareaRef}
         aria-label="Message the agent"
         className="aw-chat-textarea"
-        placeholder="Message the agent… (Enter to send, / for commands, @ for files)"
+        placeholder="Message the agent… (⌘/Ctrl+Enter to send, / for commands, @ for files)"
         rows={1}
         onInput={handleInput}
         onKeyDown={handleKeyDown}

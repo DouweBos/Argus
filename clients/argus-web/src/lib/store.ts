@@ -31,6 +31,14 @@ import type {
 } from "./protocol";
 import { Transport, type ConnectionState } from "./transport";
 
+/** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
+const jsonEq = (a: unknown, b: unknown): boolean =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+/** True when two arrays hold the same element references in order. */
+const sameRefs = <T>(a: readonly T[], b: readonly T[]): boolean =>
+  a.length === b.length && a.every((x, i) => x === b[i]);
+
 interface AppState {
   identity: DeviceIdentity | null;
   deviceName: string;
@@ -44,6 +52,8 @@ interface AppState {
   messagesByAgent: Record<string, RemoteMessage[]>;
   /** Locally-appended user messages awaiting confirmation in the next snapshot. */
   optimisticByAgent: Record<string, RemoteMessage[]>;
+  /** Messages typed while the agent is busy, flushed in order once it goes idle. */
+  queuedByAgent: Record<string, QueuedMessage[]>;
   tasksByAgent: Record<string, RemoteTask[] | null>;
   todosByAgent: Record<string, RemoteTodo[] | null>;
   /** Name of the tool currently executing per agent (drives the activity row). */
@@ -99,6 +109,17 @@ interface AppState {
     /** Text to show in the optimistic bubble (message minus any preamble). */
     displayText?: string,
   ) => Promise<void>;
+  /** Hold a message until the agent is idle, then flush it (in order). */
+  queueMessage: (
+    agentId: string,
+    message: string,
+    images: RemoteImageAttachment[] | undefined,
+    displayText: string,
+  ) => void;
+  /** Drop a still-queued message before it's sent. */
+  removeQueued: (agentId: string, id: string) => void;
+  /** Send the oldest queued message if the agent is idle (called on idle). */
+  flushQueue: (agentId: string) => void;
   interrupt: (agentId: string) => Promise<void>;
   setModel: (agentId: string, model: string) => Promise<void>;
   setPermissionMode: (
@@ -143,6 +164,14 @@ interface AppState {
 
 export function imageKey(agentId: string, imageId: string): string {
   return `${agentId}:${imageId}`;
+}
+
+/** A message typed while the agent was busy, awaiting flush on idle. */
+export interface QueuedMessage {
+  id: string;
+  message: string;
+  displayText: string;
+  images?: RemoteImageAttachment[];
 }
 
 /** Messages fetched per transcript page (tail on open, older on scroll-up). */
@@ -202,6 +231,10 @@ export const useAppStore = create<AppState>((set, get) => {
           statusByAgent: { ...s.statusByAgent, [a.agent_id]: a },
         };
       });
+      // Flush the next queued message once the agent goes idle.
+      if (a.status === "idle") {
+        get().flushQueue(a.agent_id);
+      }
     } else if (ev.event === "agent.capabilities" && ev.agent_id) {
       // Pickers become available once the CLI handshake completes.
       set((s) => ({
@@ -253,6 +286,7 @@ export const useAppStore = create<AppState>((set, get) => {
     recentAgents: [],
     messagesByAgent: {},
     optimisticByAgent: {},
+    queuedByAgent: {},
     tasksByAgent: {},
     todosByAgent: {},
     pendingToolByAgent: {},
@@ -322,6 +356,7 @@ export const useAppStore = create<AppState>((set, get) => {
         recentAgents: [],
         messagesByAgent: {},
         optimisticByAgent: {},
+        queuedByAgent: {},
         tasksByAgent: {},
         todosByAgent: {},
         pendingToolByAgent: {},
@@ -411,10 +446,28 @@ export const useAppStore = create<AppState>((set, get) => {
         // Merge the fetched tail into any older pages already loaded — keeping
         // scrolled-in history across live refreshes. Existing messages not in
         // the tail are older, so they stay ahead of it (ascending order).
+        // Reuse prior references for unchanged slices so a poll that returns the
+        // same data doesn't re-render the transcript (which would reset scroll).
         const tail = res.messages;
         const tailIds = new Set(tail.map((m) => m.id));
-        const existing = s.messagesByAgent[agentId] ?? [];
-        const merged = [...existing.filter((m) => !tailIds.has(m.id)), ...tail];
+        const existingStored = s.messagesByAgent[agentId];
+        const existing = existingStored ?? [];
+        const prevById = new Map(existing.map((m) => [m.id, m]));
+        // Keep the previous object for messages whose content is identical, so
+        // memoized rows stay put and only genuinely new content re-renders.
+        const keep = (m: RemoteMessage): RemoteMessage => {
+          const prev = prevById.get(m.id);
+
+          return prev && jsonEq(prev, m) ? prev : m;
+        };
+        const mergedNext = [
+          ...existing.filter((m) => !tailIds.has(m.id)),
+          ...tail.map(keep),
+        ];
+        const merged =
+          existingStored !== undefined && sameRefs(mergedNext, existingStored)
+            ? existingStored
+            : mergedNext;
 
         // Drop optimistic bubbles the snapshot now includes (a server user
         // message whose text contains the optimistic text — tolerates the
@@ -422,24 +475,46 @@ export const useAppStore = create<AppState>((set, get) => {
         const serverUserText = tail
           .filter((m) => m.role === "user")
           .map((m) => m.text_blocks.join("\n"));
-        const stillPending = (s.optimisticByAgent[agentId] ?? []).filter((o) => {
+        const prevOptimistic = s.optimisticByAgent[agentId] ?? [];
+        const stillPendingNext = prevOptimistic.filter((o) => {
           const txt = o.text_blocks.join("\n").trim();
 
           return txt.length > 0 && !serverUserText.some((st) => st.includes(txt));
         });
+        const stillPending = sameRefs(stillPendingNext, prevOptimistic)
+          ? prevOptimistic
+          : stillPendingNext;
+
+        const nextTasks = res.tasks ?? null;
+        const tasks = jsonEq(s.tasksByAgent[agentId], nextTasks)
+          ? (s.tasksByAgent[agentId] ?? null)
+          : nextTasks;
+        const nextTodos = res.todos ?? null;
+        const todos = jsonEq(s.todosByAgent[agentId], nextTodos)
+          ? (s.todosByAgent[agentId] ?? null)
+          : nextTodos;
 
         return {
-          messagesByAgent: { ...s.messagesByAgent, [agentId]: merged },
-          optimisticByAgent: {
-            ...s.optimisticByAgent,
-            [agentId]: stillPending,
-          },
+          messagesByAgent:
+            merged === existingStored
+              ? s.messagesByAgent
+              : { ...s.messagesByAgent, [agentId]: merged },
+          optimisticByAgent:
+            stillPending === prevOptimistic
+              ? s.optimisticByAgent
+              : { ...s.optimisticByAgent, [agentId]: stillPending },
           // Set the older-cursor on first load only; scroll-up moves it back.
           prevBeforeByAgent: firstLoad
             ? { ...s.prevBeforeByAgent, [agentId]: res.prev_before ?? null }
             : s.prevBeforeByAgent,
-          tasksByAgent: { ...s.tasksByAgent, [agentId]: res.tasks ?? null },
-          todosByAgent: { ...s.todosByAgent, [agentId]: res.todos ?? null },
+          tasksByAgent:
+            tasks === s.tasksByAgent[agentId]
+              ? s.tasksByAgent
+              : { ...s.tasksByAgent, [agentId]: tasks },
+          todosByAgent:
+            todos === s.todosByAgent[agentId]
+              ? s.todosByAgent
+              : { ...s.todosByAgent, [agentId]: todos },
           pendingToolByAgent: {
             ...s.pendingToolByAgent,
             [agentId]: res.pending_tool_name ?? null,
@@ -613,6 +688,51 @@ export const useAppStore = create<AppState>((set, get) => {
       // Nudge a transcript refresh so the real message reconciles promptly.
       get()
         .loadTranscript(agentId)
+        .catch(() => {});
+    },
+
+    queueMessage: (agentId, message, images, displayText) => {
+      const id = `queued-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+      set((s) => ({
+        queuedByAgent: {
+          ...s.queuedByAgent,
+          [agentId]: [
+            ...(s.queuedByAgent[agentId] ?? []),
+            { id, message, images, displayText },
+          ],
+        },
+      }));
+    },
+
+    removeQueued: (agentId, id) => {
+      set((s) => ({
+        queuedByAgent: {
+          ...s.queuedByAgent,
+          [agentId]: (s.queuedByAgent[agentId] ?? []).filter(
+            (q) => q.id !== id,
+          ),
+        },
+      }));
+    },
+
+    flushQueue: (agentId) => {
+      const queue = get().queuedByAgent[agentId] ?? [];
+      const next = queue[0];
+      if (!next) {
+        return;
+      }
+      // Drop it from the queue first so the agent.status → idle that this send
+      // triggers can't double-send the same message.
+      set((s) => ({
+        queuedByAgent: {
+          ...s.queuedByAgent,
+          [agentId]: (s.queuedByAgent[agentId] ?? []).filter(
+            (q) => q.id !== next.id,
+          ),
+        },
+      }));
+      get()
+        .sendMessage(agentId, next.message, next.images, next.displayText)
         .catch(() => {});
     },
 

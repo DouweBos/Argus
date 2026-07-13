@@ -89,6 +89,7 @@ export class DeviceConnection {
     if (envelope.type === "sub") {
       if (envelope.action === "subscribe") {
         this.subscriptions.add(envelope.agent_id);
+        this.replayPendingPermissions(envelope.agent_id);
       } else {
         this.subscriptions.delete(envelope.agent_id);
       }
@@ -183,6 +184,30 @@ export class DeviceConnection {
         });
         break;
       }
+    }
+  }
+
+  /**
+   * Re-forward prompts already pending when this device (re)subscribes so a
+   * late-joining or reconnected device can answer them; without this the reply
+   * is rejected as "no such outstanding prompt" since `outstandingPermissions`
+   * is per-connection and only filled by live events.
+   */
+  private replayPendingPermissions(agentId: string): void {
+    const pending = appState.agentPendingPermissions.get(agentId);
+    if (!pending) {
+      return;
+    }
+    for (const p of pending.values()) {
+      this.ctx.outstandingPermissions.add(
+        permissionKey(agentId, p.tool_use_id),
+      );
+      this.pushEvent("permission.request", agentId, {
+        agent_id: agentId,
+        tool_use_id: p.tool_use_id,
+        tool_name: p.tool_name,
+        tool_input: p.tool_input,
+      });
     }
   }
 
