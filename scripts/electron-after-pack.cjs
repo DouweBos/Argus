@@ -80,4 +80,15 @@ exports.default = async function afterPack(context) {
       `afterPack: copy succeeded but entry point missing at ${copiedEntry}`,
     );
   }
+
+  // Fail loudly if the LAN web client didn't make it into the bundle — a
+  // missing `argus-web` resource means the remote gateway serves nothing but
+  // "426 upgrade required". Guards against dropping the extraResources entry or
+  // forgetting `pnpm build:web-client` before packaging.
+  const webClientIndex = path.join(resourcesDir, "argus-web", "index.html");
+  if (!fs.existsSync(webClientIndex)) {
+    throw new Error(
+      `afterPack: web client missing at ${webClientIndex} — run \`pnpm build:web-client\` before packaging and ensure the \`argus-web\` extraResource is configured`,
+    );
+  }
 };
