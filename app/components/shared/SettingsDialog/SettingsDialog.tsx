@@ -52,6 +52,7 @@ import {
   useDiffWhitespace,
   useDiffWordDiff,
   useSettingsDialogOpen,
+  useSettingsInitialSection,
   useShowAssumeUnchangedFiles,
   useShowIgnoredFiles,
   useShowNonModifiedFiles,
@@ -83,6 +84,7 @@ import {
   type McpEntry,
 } from "../McpServersField";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
+import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
 
@@ -100,6 +102,7 @@ export function SettingsDialog() {
 }
 
 function SettingsDialogContent() {
+  const initialSection = useSettingsInitialSection();
   const groups: SettingsDialogGroup[] = [
     {
       sections: [
@@ -153,6 +156,13 @@ function SettingsDialogContent() {
           render: () => <McpServersSection />,
         },
         {
+          id: "remote-access",
+          label: "Remote access",
+          description: "Phone & web control",
+          icon: <Icons.SimulatorIcon size={12} />,
+          render: () => <RemoteAccessSection />,
+        },
+        {
           id: "git",
           label: "Git",
           description: "Diff, working copy, pull",
@@ -189,6 +199,7 @@ function SettingsDialogContent() {
       groups={groups}
       title="Settings"
       titleId="settings-dialog-title"
+      initialSectionId={initialSection}
       onClose={hideSettingsDialog}
     />
   );

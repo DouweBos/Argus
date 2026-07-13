@@ -45,6 +45,9 @@ import type {
   McpOAuthStatus,
   McpTestResult,
   RegisteredRunner,
+  RemoteDevice,
+  RemotePairingStart,
+  RemoteStatus,
   RunnerOnboardingStep,
   Session,
   UserProjectSettings,
@@ -1434,6 +1437,41 @@ export const getAppSettings = (): Promise<AppSettings> =>
 
 export const setAppSettings = (settings: AppSettings): Promise<AppSettings> =>
   invoke("set_app_settings", { settings });
+
+// Remote access (phone/web control).
+export const remoteGetStatus = (): Promise<RemoteStatus> =>
+  invoke("remote_get_status", {});
+
+export const remoteSetConfig = (config: {
+  enabled?: boolean;
+  lanWeb?: boolean;
+  provider?: "cloudflare" | "none" | "tailscale";
+  publicUrl?: string;
+  tunnelMode?: "quick" | "token";
+  tunnelToken?: string;
+}): Promise<RemoteStatus> => invoke("remote_set_config", { config });
+
+export const remoteListDevices = (): Promise<RemoteDevice[]> =>
+  invoke("remote_list_devices", {});
+
+export const remoteRevokeDevice = (deviceId: string): Promise<RemoteStatus> =>
+  invoke("remote_revoke_device", { deviceId });
+
+export const remoteStartPairing = (): Promise<RemotePairingStart> =>
+  invoke("remote_start_pairing", {});
+
+export const remoteConfirmPairing = (control = false): Promise<void> =>
+  invoke("remote_confirm_pairing", { control });
+
+export const remoteCancelPairing = (): Promise<void> =>
+  invoke("remote_cancel_pairing", {});
+
+/** Grant or revoke the "control" capability for an already-paired device. */
+export const remoteSetDeviceControl = (
+  deviceId: string,
+  control: boolean,
+): Promise<RemoteDevice[]> =>
+  invoke("remote_set_device_control", { deviceId, control });
 
 /**
  * Enumerate MCP servers Argus inherits from Claude Code (plugins,

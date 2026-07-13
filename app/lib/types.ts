@@ -977,3 +977,38 @@ export interface OrgTask {
   title: string;
   updated_at: number;
 }
+
+// ---------------------------------------------------------------------------
+// Remote access (phone/web control)
+// ---------------------------------------------------------------------------
+
+export interface RemoteDevice {
+  capabilities: string[];
+  created_at: number;
+  dev_static_pub: string;
+  device_id: string;
+  label: string;
+  last_seen: number | null;
+}
+
+export type RemoteTunnelMode = "quick" | "token";
+export type RemoteTunnelProvider = "cloudflare" | "none" | "tailscale";
+
+export interface RemoteStatus {
+  connectedDeviceIds: string[];
+  devices: RemoteDevice[];
+  enabled: boolean;
+  hasTunnelToken: boolean;
+  lanUrl: string | null;
+  lanWebEnabled: boolean;
+  provider: RemoteTunnelProvider;
+  publicUrl: string | null;
+  tunnelError: string | null;
+  tunnelMode: RemoteTunnelMode;
+  tunnelStatus: string;
+}
+
+export interface RemotePairingStart {
+  pairingCode: string;
+  qrPayload: string;
+}

@@ -36,6 +36,7 @@ import {
 } from "../../../stores/organizationStore";
 import { removeRecentProject } from "../../../stores/recentProjectsStore";
 import { selectSession } from "../../../stores/sessionStore";
+import { showSettingsDialog } from "../../../stores/settingsStore";
 import {
   openChangelogDialog,
   useUpdaterState,
@@ -317,6 +318,13 @@ export function HomeScreen() {
                 </div>
                 <div className={styles.heroSpacer} />
                 <div className={styles.ctas}>
+                  <Button
+                    variant="ghost"
+                    leading={<Icons.SimulatorIcon size={12} />}
+                    onClick={() => showSettingsDialog("remote-access")}
+                  >
+                    Remote access
+                  </Button>
                   <Button
                     variant="ghost"
                     leading={<Icons.FolderIcon size={12} />}

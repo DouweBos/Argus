@@ -337,6 +337,26 @@ export function TerminalIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+export function CodeIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M5.5 4 2 8l3.5 4" />
+      <path d="M10.5 4 14 8l-3.5 4" />
+    </svg>
+  );
+}
+
 export function LogsIcon({ size = 14, className, ...rest }: IconProps) {
   return (
     <svg

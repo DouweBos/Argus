@@ -40,6 +40,11 @@ import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
 import { initOrgTasks } from "./services/organizationTask/manager";
+import {
+  applyRemoteSettings,
+  setWebClientDir,
+  stopRemote,
+} from "./services/remote/remoteService";
 import { refreshAllBranches } from "./services/session/watcher";
 import { stopSimulatorCapture } from "./services/simulator/ios";
 import {
@@ -130,6 +135,23 @@ function resolveAppIconPath(): string | null {
       ];
   for (const p of candidates) {
     if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+
+  return null;
+}
+
+/** Resolve the built LAN web client directory, or null if it isn't present. */
+function resolveWebClientDir(): string | null {
+  const candidates = isDev
+    ? [
+        path.join(__dirname, "..", "clients", "argus-web", "dist"),
+        path.join(__dirname, "..", "..", "clients", "argus-web", "dist"),
+      ]
+    : [path.join(process.resourcesPath, "argus-web")];
+  for (const p of candidates) {
+    if (fs.existsSync(path.join(p, "index.html"))) {
       return p;
     }
   }
@@ -702,6 +724,7 @@ app.on("before-quit", (e) => {
   telemetryCapture("app_quit");
   shutdownTelemetry().catch(() => undefined);
   stopMcpServer();
+  stopRemote();
   stopMjpegServer();
   stopAllScreencasts();
   stopAllDebugStreams();
@@ -869,6 +892,12 @@ app.whenReady().then(() => {
   // sibling agents via the Model Context Protocol.
   startMcpServer().catch((e) =>
     log("Failed to start MCP server: %s", String(e)),
+  );
+
+  // Bring up phone/LAN remote access if the user has enabled it.
+  setWebClientDir(resolveWebClientDir());
+  applyRemoteSettings().catch((e) =>
+    log("Failed to start remote access: %s", String(e)),
   );
 
   // Start the MJPEG server for streaming browser frames via CDP screencast.

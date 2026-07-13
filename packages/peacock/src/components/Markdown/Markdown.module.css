@@ -1,0 +1,163 @@
+.markdown {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  line-height: 1.7;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.markdown p {
+  margin-bottom: 10px;
+}
+
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin: 16px 0 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.markdown h1 {
+  font-size: 16px;
+}
+
+.markdown h2,
+.markdown h3 {
+  font-size: var(--font-size-md);
+}
+
+.markdown h4 {
+  font-size: var(--font-size-sm);
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.markdown li {
+  margin-bottom: 4px;
+  line-height: 1.6;
+}
+
+.markdown code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--surface-3);
+  border: 1px solid var(--surface-4);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--accent);
+}
+
+.markdown pre {
+  background: var(--scrim-md);
+  border: 1px solid var(--surface-4);
+  border-radius: var(--border-radius-sm);
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin-bottom: 10px;
+}
+
+.markdown pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.markdown blockquote {
+  border-left: 3px solid var(--accent-border-soft);
+  padding-left: 14px;
+  color: var(--text-muted);
+  margin: 10px 0;
+}
+
+.markdown a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-glow);
+  transition: border-color var(--transition-base);
+}
+
+.markdown a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: var(--font-size-xs);
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid var(--surface-4);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.markdown th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.markdown hr {
+  border: none;
+  border-top: 1px solid var(--surface-4);
+  margin: 16px 0;
+}
+
+/* GFM task-list checkboxes — rendered as spans so they survive CSS-module
+   class hashing and render consistently on every markdown surface. */
+.markdown [data-task-check] {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  position: relative;
+  margin-right: 2px;
+  vertical-align: text-bottom;
+  box-sizing: border-box;
+}
+
+.markdown [data-task-check="checked"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.markdown [data-task-check="checked"]::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid var(--accent-fg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.markdown ul:has(> li > [data-task-check]) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown li:has(> [data-task-check]) {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}

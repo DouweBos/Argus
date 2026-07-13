@@ -1,0 +1,539 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Baseline button reset the Peacock chat kit assumes (desktop provides it
+   globally) — without it, unstyled kit buttons render a UA border. */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+.aw-shell {
+  max-width: 720px;
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable body between the pinned nav and the (optional) docked input. */
+.aw-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+/* Persistent, sticky nav bar across all views — the Peacock SidebarHeader,
+   made sticky and full-bleed for the web shell (negative side margins cancel
+   the shell's gutter; matching padding keeps content aligned with the body). */
+.aw-topbar {
+  flex: 0 0 auto;
+  z-index: 10;
+  margin: 0 -16px 4px;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+}
+
+.aw-topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 24px;
+}
+
+.aw-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aw-hero .aw-title {
+  font-size: 22px;
+}
+
+.aw-muted {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
+
+.aw-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aw-card {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aw-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aw-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: var(--text-secondary);
+}
+
+.aw-sas {
+  font-family: var(--font-mono, monospace);
+  font-size: 28px;
+  letter-spacing: 6px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.aw-textarea {
+  width: 100%;
+  min-height: 72px;
+  background: var(--surface-4, var(--surface-2));
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+}
+
+/* Projects / agents lists — mirror the desktop sidebar cadence: sections
+   stacked flush, rows tight beneath them. */
+.aw-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Settings screen — fields stacked with breathing room. */
+.aw-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 8px;
+}
+
+.aw-settings-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aw-settings-inline :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Agent list grouping under a session section header. */
+.aw-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Loading spinner shown at the top while older history lazy-loads. */
+.aw-load-older {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  font-size: var(--font-size-sm, 13px);
+}
+
+/* Inline activity row ("Crystallizing…") at the foot of the transcript. */
+.aw-activity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 4px;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm, 13px);
+}
+
+.aw-activity-text {
+  color: var(--text-primary);
+}
+
+/* Transcript — messages carry their own padding via the Peacock chat kit, so
+   the list stacks them tightly (mirrors the desktop chat). */
+.aw-transcript-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  padding-bottom: 12px;
+}
+
+/* Scroll-to-bottom pill — sticky to the bottom of the transcript scroll area;
+   pulled up over the content so it overlays rather than adding a blank row. */
+.aw-scroll-bottom {
+  position: sticky;
+  bottom: 12px;
+  align-self: center;
+  margin-top: -32px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: var(--bg-secondary-85, var(--bg-primary-85));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-pill);
+  box-shadow: 0 4px 16px var(--scrim-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 20;
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.aw-scroll-bottom:hover {
+  background: var(--surface-6, var(--surface-3));
+  color: var(--text-primary);
+}
+
+.aw-mermaid {
+  overflow-x: auto;
+}
+
+.aw-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fallback preview when a mermaid diagram fails to render. */
+.aw-tool-result {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--border-radius-sm);
+  background: var(--surface-4, var(--surface-2));
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+}
+
+/* --- Chat input (control devices) ---------------------------------------- */
+
+/* In-flow dock pinned at the bottom of the fixed-height shell. */
+.aw-chat-dock {
+  flex: 0 0 auto;
+  margin: 0 -16px;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg-secondary-85, var(--bg-primary-85));
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 15;
+}
+
+.aw-chat-textarea {
+  width: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm, 13px);
+  line-height: 1.4;
+  /* Inset from the shell's rounded top edge so the caret/placeholder don't
+     collide with the corner. */
+  padding: 12px 12px 4px;
+  min-height: 24px;
+  max-height: 160px;
+  box-sizing: border-box;
+}
+
+.aw-hidden-file-input {
+  display: none;
+}
+
+.aw-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+}
+
+.aw-attach-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-4, var(--surface-3));
+}
+
+/* Picker chips anchor their dropdowns. */
+.aw-picker-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.aw-dropdown-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.aw-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 31;
+  min-width: 180px;
+  max-width: 280px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 4px;
+  /* Opaque: surface tint composited over the solid page bg so the input and
+     transcript don't bleed through the menu. */
+  background: var(--bg-primary);
+  background-image: linear-gradient(var(--surface-4), var(--surface-4));
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 8px 24px var(--scrim-lg);
+}
+
+.aw-dropdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm, 13px);
+  cursor: pointer;
+}
+
+.aw-dropdown-item:hover {
+  background: var(--surface-4, var(--surface-2));
+}
+
+.aw-dropdown-item-active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.aw-dropdown-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-dropdown-empty {
+  padding: 8px;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--text-secondary);
+}
+
+/* Slash-command + mention autocomplete list. */
+.aw-suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 220px;
+  overflow: auto;
+  margin-bottom: 6px;
+  padding: 4px;
+  background: var(--bg-primary);
+  background-image: linear-gradient(var(--surface-4), var(--surface-4));
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+}
+
+.aw-suggestions-header {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  padding: 4px 6px;
+}
+
+.aw-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm, 13px);
+  cursor: pointer;
+  text-align: left;
+}
+
+.aw-suggestion-active,
+.aw-suggestion:hover {
+  background: var(--surface-4, var(--surface-2));
+}
+
+.aw-suggestion-slash {
+  color: var(--text-secondary);
+}
+
+.aw-suggestion-name {
+  font-family: var(--font-mono, monospace);
+}
+
+.aw-suggestion-desc {
+  color: var(--text-secondary);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Control affordances on the project screen. */
+.aw-control-bar {
+  padding: 8px 0;
+}
+
+/* Session group header: label + git badge + actions menu. */
+.aw-session-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px 4px;
+}
+
+.aw-session-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.aw-session-git {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.aw-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.aw-icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-4, var(--surface-3));
+}
+
+/* Changes (diff) view. */
+.aw-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.aw-changes-bar {
+  display: flex;
+  justify-content: center;
+}
+
+.aw-changes-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm, 13px);
+}
+
+.aw-changes-files {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aw-new-session {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.aw-new-agent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-top: 2px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs, 12px);
+  cursor: pointer;
+}
+
+.aw-new-agent:hover {
+  color: var(--text-primary);
+  background: var(--surface-4, var(--surface-3));
+}
