@@ -1503,6 +1503,14 @@ export function respondToPermission(
   } catch (e) {
     throw `Failed to write permission response to agent stdin: ${String(e)}`;
   }
+
+  // Tell the renderer the prompt was answered so it clears the pending state
+  // and republishes the snapshot. Essential when a remote (web) client answers:
+  // otherwise the renderer never learns and the tool call stays "awaiting
+  // permission" forever, on the desktop and in the mirrored remote transcript.
+  broadcastToRenderers(`agent:permission-resolved:${agentId}`, {
+    tool_use_id: toolUseId,
+  });
 }
 
 // ---------------------------------------------------------------------------

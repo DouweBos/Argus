@@ -557,11 +557,16 @@ export const setLastEffortForRunner = (
 };
 
 interface SettingsDialogState {
+  /** Section to open on first render (e.g. "remote-access"). */
+  initialSectionId?: string;
   open: boolean;
 }
 
 const dialogStore = create<SettingsDialogState>(() => ({ open: false }));
 
-export const showSettingsDialog = () => dialogStore.setState({ open: true });
+export const showSettingsDialog = (initialSectionId?: string) =>
+  dialogStore.setState({ open: true, initialSectionId });
 export const hideSettingsDialog = () => dialogStore.setState({ open: false });
 export const useSettingsDialogOpen = () => dialogStore((s) => s.open);
+export const useSettingsInitialSection = () =>
+  dialogStore((s) => s.initialSectionId);

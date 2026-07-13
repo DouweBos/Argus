@@ -1,0 +1,414 @@
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Button,
+  EmptyState,
+  Icons,
+  Markdown,
+  MessageBubble,
+  type MessageImage,
+  parseQuestions,
+  PlanApproval,
+  QuestionForm,
+  Spinner,
+  TaskList,
+  TodoList,
+  ToolCall,
+  type ToolCallData,
+  type ToolResultBlockData,
+} from "@argus/peacock";
+import type { RemoteMessage, RemoteToolCall } from "../lib/protocol";
+import { imageKey, useAppStore } from "../lib/store";
+import { Mermaid } from "./Mermaid";
+import { WorkingIndicator } from "./WorkingIndicator";
+
+// Deny messages mirror the desktop's ToolCallCard so the agent gets the same
+// guidance whichever client answers.
+const CANCEL_QUESTION_MSG =
+  "The user cancelled the question prompt without answering. Proceed with reasonable assumptions and note them.";
+const KEEP_PLANNING_MSG =
+  "The user rejected the plan and wants to keep refining it. Incorporate their feedback once provided.";
+const planFeedbackMsg = (feedback: string) =>
+  `The user wants to refine the plan before approving it. Their feedback:\n\n${feedback}\n\nIncorporate this feedback and propose an updated plan via ExitPlanMode.`;
+
+type ImageBlock = Extract<ToolResultBlockData, { type: "image" }>;
+
+// --- Adapters: wire RemoteToolCall/RemoteMessage → pure Peacock data --------
+
+function toToolCallData(tc: RemoteToolCall): ToolCallData {
+  const pending = tc.status === "pending" || !!tc.pending_permission;
+  const running = tc.status === "running";
+  const result: ToolCallData["result"] =
+    pending || running
+      ? undefined
+      : tc.result_blocks.map((b): ToolResultBlockData =>
+          b.type === "image"
+            ? { type: "image", mediaType: b.media_type, imageId: b.image_id }
+            : { type: "text", text: b.text },
+        );
+
+  return {
+    id: tc.id,
+    name: tc.name,
+    input: tc.input,
+    isError: tc.is_error ?? tc.status === "error",
+    pendingPermission: pending,
+    result,
+    children: tc.children?.map((c) =>
+      c.kind === "text"
+        ? { kind: "text" as const, text: c.text }
+        : { kind: "tool_use" as const, toolCall: toToolCallData(c.tool_call) },
+    ),
+  };
+}
+
+/** Every image id referenced by a transcript, for lazy preloading. */
+function collectImageIds(messages: RemoteMessage[]): string[] {
+  const ids: string[] = [];
+  const walk = (tc: RemoteToolCall) => {
+    for (const b of tc.result_blocks) {
+      if (b.type === "image") {
+        ids.push(b.image_id);
+      }
+    }
+    tc.children?.forEach((c) => {
+      if (c.kind === "tool_use") {
+        walk(c.tool_call);
+      }
+    });
+  };
+  for (const m of messages) {
+    (m.images ?? []).forEach((img) => ids.push(img.image_id));
+    m.tool_calls.forEach(walk);
+  }
+
+  return ids;
+}
+
+// Stable identities: fresh array/function props every render would churn
+// Peacock's memoized `components`, remounting inline mermaid diagrams.
+const renderMermaid = (code: string) => <Mermaid code={code} />;
+const renderMarkdown = (text: string, className?: string) => (
+  <Markdown className={className} text={text} renderMermaid={renderMermaid} />
+);
+
+/** Allow/Deny and the AskUserQuestion / ExitPlanMode forms, rendered inline on
+ * the pending tool call — the desktop's flow, minus the desktop-only "Always
+ * Allow" (the remote scope is monitor + approve). */
+function pendingActions(
+  agentId: string,
+  tc: RemoteToolCall,
+  respond: (
+    agentId: string,
+    toolUseId: string,
+    decision: "allow" | "deny",
+    message?: string,
+  ) => Promise<void>,
+): { pendingForm?: ReactNode; permissionActions?: ReactNode } {
+  if (tc.name === "AskUserQuestion") {
+    const questions = parseQuestions(tc.input);
+    if (questions.length > 0) {
+      return {
+        pendingForm: (
+          <QuestionForm
+            questions={questions}
+            onSubmit={(answer) => respond(agentId, tc.id, "deny", answer)}
+            onCancel={() => respond(agentId, tc.id, "deny", CANCEL_QUESTION_MSG)}
+          />
+        ),
+      };
+    }
+  }
+  if (tc.name === "ExitPlanMode" && typeof tc.input.plan === "string") {
+    return {
+      pendingForm: (
+        <PlanApproval
+          plan={tc.input.plan}
+          renderMarkdown={renderMarkdown}
+          onApprove={() => respond(agentId, tc.id, "allow")}
+          onReject={() => respond(agentId, tc.id, "deny", KEEP_PLANNING_MSG)}
+          onSubmitFeedback={(f) =>
+            respond(agentId, tc.id, "deny", planFeedbackMsg(f))
+          }
+        />
+      ),
+    };
+  }
+
+  return {
+    permissionActions: (
+      <>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => respond(agentId, tc.id, "allow")}
+        >
+          Allow
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => respond(agentId, tc.id, "deny")}
+        >
+          Deny
+        </Button>
+      </>
+    ),
+  };
+}
+
+function Message({ agentId, msg }: { agentId: string; msg: RemoteMessage }) {
+  const imageCache = useAppStore((s) => s.imageCache);
+  const prompts = useAppStore((s) => s.prompts);
+  const answered = useAppStore((s) => s.answered);
+  const respond = useAppStore((s) => s.respond);
+
+  const resolveImageSrc = (block: ImageBlock) =>
+    block.imageId ? imageCache[imageKey(agentId, block.imageId)] : undefined;
+
+  const trimmed = msg.text_blocks
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+
+  const images: MessageImage[] = (msg.images ?? [])
+    .map((img, i) => {
+      const src = imageCache[imageKey(agentId, img.image_id)];
+
+      return src ? { src, alt: `Attachment ${i + 1}` } : null;
+    })
+    .filter((x): x is MessageImage => x != null);
+
+  const toolCalls =
+    msg.tool_calls.length > 0
+      ? msg.tool_calls.map((tc) => {
+          const isPending =
+            !answered[`${agentId}:${tc.id}`] &&
+            (tc.status === "pending" ||
+              !!tc.pending_permission ||
+              prompts[`${agentId}:${tc.id}`] != null);
+          const { pendingForm, permissionActions } = isPending
+            ? pendingActions(agentId, tc, respond)
+            : {};
+          // Drive ToolCall's pending rendering off the live prompt too — the
+          // snapshot's own flag can lag the permission.request event.
+          const data = { ...toToolCallData(tc), pendingPermission: isPending };
+
+          return (
+            <ToolCall
+              key={tc.id}
+              toolCall={data}
+              resolveImageSrc={resolveImageSrc}
+              renderMarkdown={renderMarkdown}
+              pendingForm={pendingForm}
+              permissionActions={permissionActions}
+            />
+          );
+        })
+      : undefined;
+
+  const mcp =
+    msg.role === "system" && msg.source?.kind === "mcp"
+      ? {
+          label: msg.source.parent_label?.trim()
+            ? `${msg.source.parent_label} → ${msg.source.tool}`
+            : `MCP · ${msg.source.tool}`,
+        }
+      : undefined;
+
+  return (
+    <MessageBubble
+      role={msg.role}
+      mcp={mcp}
+      isError={msg.is_error}
+      timestamp={msg.timestamp}
+      toolOnly={trimmed.length === 0 && !!toolCalls}
+      textBlocks={trimmed}
+      renderMarkdown={renderMarkdown}
+      toolCalls={toolCalls}
+      images={images}
+    />
+  );
+}
+
+export function AgentTranscript({ agentId }: { agentId: string }) {
+  const connection = useAppStore((s) => s.connection);
+  const serverMessages = useAppStore((s) => s.messagesByAgent[agentId]);
+  const optimistic = useAppStore((s) => s.optimisticByAgent[agentId]);
+  const tasks = useAppStore((s) => s.tasksByAgent[agentId]);
+  const todos = useAppStore((s) => s.todosByAgent[agentId]);
+  const loadTranscript = useAppStore((s) => s.loadTranscript);
+  const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
+  const loadImage = useAppStore((s) => s.loadImage);
+  const watchAgent = useAppStore((s) => s.watchAgent);
+  const endRef = useRef<HTMLDivElement>(null);
+  const loadingOlderRef = useRef(false);
+  // Scroll height captured just before prepending older messages, so we can
+  // restore the viewport position (otherwise the list jumps).
+  const preScrollHeightRef = useRef<number | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
+  // Combine the authoritative snapshot with any not-yet-confirmed optimistic
+  // user messages so a just-sent message shows instantly.
+  const messages =
+    serverMessages === undefined
+      ? undefined
+      : [...serverMessages, ...(optimistic ?? [])];
+
+  const scrollToBottom = useCallback(() => {
+    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    setIsAtBottom(true);
+  }, []);
+
+  useEffect(() => {
+    if (connection !== "ready") {
+      return;
+    }
+    const refresh = () => loadTranscript(agentId).catch(() => {});
+    refresh();
+    watchAgent(agentId, true);
+    // Subscriptions are fire-and-forget, so any event the agent emits before the
+    // gateway registers our subscription is never delivered (e.g. the first
+    // question). A short re-fetch closes that race; a gentle poll + a refetch on
+    // refocus recover from any other missed event without a manual back-and-forth.
+    const raceCatch = setTimeout(refresh, 600);
+    const poll = setInterval(refresh, 5000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+
+    return () => {
+      watchAgent(agentId, false);
+      clearTimeout(raceCatch);
+      clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [connection, agentId, loadTranscript, watchAgent]);
+
+  // Track scroll position: toggle the bottom pill, and lazy-load older history
+  // when the user nears the top.
+  useEffect(() => {
+    const scroller = endRef.current?.closest(".aw-main");
+    if (!scroller) {
+      return;
+    }
+    const onScroll = () => {
+      setIsAtBottom(
+        scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 60,
+      );
+      if (
+        scroller.scrollTop < 160 &&
+        !loadingOlderRef.current &&
+        useAppStore.getState().prevBeforeByAgent[agentId] != null
+      ) {
+        loadingOlderRef.current = true;
+        preScrollHeightRef.current = scroller.scrollHeight;
+        setLoadingOlder(true);
+        loadOlderMessages(agentId)
+          .catch(() => {})
+          .finally(() => {
+            loadingOlderRef.current = false;
+            setLoadingOlder(false);
+          });
+      }
+    };
+    onScroll();
+    scroller.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => scroller.removeEventListener("scroll", onScroll);
+  }, [agentId, loadOlderMessages]);
+
+  // After older messages prepend, keep the viewport anchored on what the user
+  // was reading by offsetting scrollTop by the newly-added height.
+  useLayoutEffect(() => {
+    if (preScrollHeightRef.current == null) {
+      return;
+    }
+    const scroller = endRef.current?.closest(".aw-main");
+    if (scroller) {
+      scroller.scrollTop += scroller.scrollHeight - preScrollHeightRef.current;
+    }
+    preScrollHeightRef.current = null;
+  }, [messages]);
+
+  // Lazily fetch any images the transcript references.
+  const imageIds = useMemo(
+    () => (messages ? collectImageIds(messages) : []),
+    [messages],
+  );
+  useEffect(() => {
+    for (const id of imageIds) {
+      loadImage(agentId, id).catch(() => {});
+    }
+  }, [agentId, imageIds, loadImage]);
+
+  // Keep the newest message in view as the transcript streams — but only when
+  // the user is already at the bottom, so scrolling up to read isn't yanked.
+  useEffect(() => {
+    if (isAtBottom) {
+      endRef.current?.scrollIntoView({ block: "end" });
+    }
+  }, [messages, isAtBottom]);
+
+  if (messages === undefined) {
+    return (
+      <div className="aw-center">
+        <Spinner />
+        <span className="aw-muted">Loading transcript…</span>
+      </div>
+    );
+  }
+  if (messages.length === 0) {
+    return (
+      <div className="aw-transcript-list">
+        <EmptyState
+          icon={<Icons.AgentIcon size={22} />}
+          title="No messages yet"
+          body="This agent hasn't produced any output yet. New messages stream in live."
+        />
+        <WorkingIndicator agentId={agentId} />
+        <div ref={endRef} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="aw-transcript-list">
+      {loadingOlder && (
+        <div className="aw-load-older">
+          <Spinner size="sm" />
+          <span className="aw-muted">Loading earlier messages…</span>
+        </div>
+      )}
+      {tasks && tasks.length > 0 && <TaskList tasks={tasks} />}
+      {todos && todos.length > 0 && <TodoList todos={todos} />}
+      {messages.map((m) => (
+        <Message key={m.id} agentId={agentId} msg={m} />
+      ))}
+      <WorkingIndicator agentId={agentId} />
+      <div ref={endRef} />
+      {!isAtBottom && (
+        <button
+          aria-label="Scroll to bottom"
+          className="aw-scroll-bottom"
+          onClick={scrollToBottom}
+        >
+          <Icons.ChevronDownIcon size={12} />
+          Scroll to bottom
+        </button>
+      )}
+    </div>
+  );
+}

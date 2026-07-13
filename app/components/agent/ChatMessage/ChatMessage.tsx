@@ -6,9 +6,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Chip,
-  HoverActionBar,
   HoverActionButton,
   Icons,
+  MessageBubble,
+  type MessageImage,
 } from "@argus/peacock";
 import { showImageContextMenu } from "../../../lib/ipc";
 import {
@@ -21,24 +22,6 @@ import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, MentionedText } from "../FileLinkHandler";
 import { ToolCallCard } from "../ToolCallCard";
 import styles from "./ChatMessage.module.css";
-
-function TimestampGutter({ timestamp }: { timestamp: number }) {
-  const d = new Date(timestamp);
-  const time = d.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <time
-      className={styles.timestamp}
-      dateTime={d.toISOString()}
-      title={d.toLocaleString()}
-    >
-      {time}
-    </time>
-  );
-}
 
 interface ChatMessageProps {
   agentId?: string;
@@ -56,25 +39,38 @@ interface ChatMessageProps {
   onSaveToolCallToDisk?: (toolCall: ToolCallInfo) => void;
 }
 
+function TimestampGutter({ timestamp }: { timestamp: number }) {
+  const d = new Date(timestamp);
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <time
+      className={styles.timestamp}
+      dateTime={d.toISOString()}
+      title={d.toLocaleString()}
+    >
+      {time}
+    </time>
+  );
+}
+
 function MessageActions({
   onCopy,
   onEdit,
   onFork,
   onRestore,
-  placement,
 }: {
   onCopy?: () => void;
   onEdit?: () => void;
   onFork?: () => void;
   onRestore?: () => void;
-  placement: "top-left" | "top-right";
 }) {
-  if (!onCopy && !onFork && !onEdit && !onRestore) {
+  if (!onCopy && !onEdit && !onFork && !onRestore) {
     return null;
   }
 
   return (
-    <HoverActionBar className={styles.actions} placement={placement}>
+    <>
       {onCopy && (
         <HoverActionButton
           icon={<Icons.CopyIcon size={12} />}
@@ -103,8 +99,29 @@ function MessageActions({
           onClick={onFork}
         />
       )}
-    </HoverActionBar>
+    </>
   );
+}
+
+/** Build MessageImage descriptors for an attachment strip. */
+function toMessageImages(
+  images: { data: string; media_type: string }[],
+  ctxPrefix: string,
+): MessageImage[] {
+  return images.map((img, i) => {
+    const src = `data:${img.media_type};base64,${img.data}`;
+    const alt = `Attachment ${i + 1}`;
+
+    return {
+      src,
+      alt,
+      onActivate: () => openImageViewer(src, alt),
+      onContextMenu: (e) => {
+        e.preventDefault();
+        showImageContextMenu(src, `${ctxPrefix}-${i + 1}`);
+      },
+    };
+  });
 }
 
 export function ChatMessage({
@@ -219,59 +236,25 @@ export function ChatMessage({
         : `MCP · ${message.source.tool}`;
 
       return (
-        <div className={styles.mcpMsg}>
-          <TimestampGutter timestamp={message.timestamp} />
-          <div className={styles.mcpHeader}>
-            <span className={styles.mcpBadge}>MCP</span>
-            <span className={styles.mcpLabel}>{sourceLabel}</span>
-          </div>
-          <FileLinkHandler className={styles.mcpBody}>
-            {trimmed.map((text, i) => (
-              <p key={i} className={styles.mcpText}>
-                <MentionedText text={text} />
-              </p>
-            ))}
-          </FileLinkHandler>
-          {images.length > 0 && (
-            <div className={styles.mcpAttachments}>
-              {images.map((img, i) => {
-                const src = `data:${img.media_type};base64,${img.data}`;
-
-                return (
-                  <button
-                    key={i}
-                    className={styles.mcpAttachment}
-                    title={`Image ${i + 1}`}
-                    type="button"
-                    onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      showImageContextMenu(src, `mcp-attachment-${i + 1}`);
-                    }}
-                  >
-                    <img
-                      alt={`Attachment ${i + 1}`}
-                      className={styles.mcpAttachmentImg}
-                      src={src}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <MessageBubble
+          role="system"
+          mcp={{ label: sourceLabel }}
+          timestamp={message.timestamp}
+          textBlocks={trimmed}
+          renderText={(text) => <MentionedText text={text} />}
+          images={toMessageImages(images, "mcp-attachment")}
+          Container={FileLinkHandler}
+        />
       );
     }
 
     return (
-      <div
-        className={`${styles.systemMsg}${message.isError ? ` ${styles.systemMsgError}` : ""}`}
-      >
-        <TimestampGutter timestamp={message.timestamp} />
-        {trimmed.map((text, i) => (
-          <span key={i}>{text}</span>
-        ))}
-      </div>
+      <MessageBubble
+        role="system"
+        isError={message.isError}
+        timestamp={message.timestamp}
+        textBlocks={trimmed}
+      />
     );
   }
 
@@ -353,71 +336,53 @@ export function ChatMessage({
       );
     }
 
+    // Derive from the raw props (not the ref-reading `handleStartEdit`
+    // closure) so this stays a pure render-time check.
+    const hasUserActions = !!(
+      onCopy ||
+      onEdit ||
+      onFork ||
+      (onRestore && message.checkpointId)
+    );
+    const userActions = hasUserActions ? (
+      <MessageActions
+        onCopy={handleCopy}
+        onEdit={handleStartEdit}
+        onFork={handleFork}
+        onRestore={handleRestore}
+      />
+    ) : undefined;
+
+    const chips =
+      linkedPaths.length > 0
+        ? linkedPaths.map((path) => {
+            const label = path.split("/").filter(Boolean).pop() ?? path;
+
+            return (
+              <Chip
+                key={path}
+                muted
+                title={path}
+                leading={<Icons.FolderIcon size={11} />}
+              >
+                {label}
+              </Chip>
+            );
+          })
+        : undefined;
+
     return (
-      <div ref={userMsgRef} className={styles.userMsg}>
-        <TimestampGutter timestamp={message.timestamp} />
-        <MessageActions
-          onCopy={handleCopy}
-          onEdit={handleStartEdit}
-          onFork={handleFork}
-          onRestore={handleRestore}
-          placement="top-right"
-        />
-        {trimmedUserBlocks.length > 0 && (
-          <FileLinkHandler className={styles.userTextWrap}>
-            {trimmedUserBlocks.map((text, i) => (
-              <p key={i} className={styles.userText} data-bubble-text="">
-                <MentionedText text={text} />
-              </p>
-            ))}
-          </FileLinkHandler>
-        )}
-        {linkedPaths.length > 0 && (
-          <div className={styles.userLinkedProjects}>
-            {linkedPaths.map((path) => {
-              const label = path.split("/").filter(Boolean).pop() ?? path;
-
-              return (
-                <Chip
-                  key={path}
-                  muted
-                  title={path}
-                  leading={<Icons.FolderIcon size={11} />}
-                >
-                  {label}
-                </Chip>
-              );
-            })}
-          </div>
-        )}
-        {images.length > 0 && (
-          <div className={styles.userAttachments}>
-            {images.map((img, i) => {
-              const src = `data:${img.media_type};base64,${img.data}`;
-
-              return (
-                <button
-                  key={i}
-                  className={styles.userAttachment}
-                  title={`Image ${i + 1}`}
-                  type="button"
-                  onClick={() => openImageViewer(src, `Attachment ${i + 1}`)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    showImageContextMenu(src, `attachment-${i + 1}`);
-                  }}
-                >
-                  <img
-                    alt={`Attachment ${i + 1}`}
-                    className={styles.userAttachmentImg}
-                    src={src}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <MessageBubble
+        role="user"
+        rootRef={userMsgRef}
+        timestamp={message.timestamp}
+        textBlocks={trimmedUserBlocks}
+        renderText={(text) => <MentionedText text={text} />}
+        actions={userActions}
+        chips={chips}
+        images={toMessageImages(images, "attachment")}
+        Container={FileLinkHandler}
+      />
     );
   }
 
@@ -433,42 +398,38 @@ export function ChatMessage({
     return null;
   }
 
-  return (
-    <div
-      className={`${styles.assistantMsg} ${toolOnly ? styles.assistantMsgToolOnly : ""}`}
-      data-message-id={message.id}
-      data-unread={isUnread ? "" : undefined}
-    >
-      <TimestampGutter timestamp={message.timestamp} />
-      {!toolOnly && (
-        <MessageActions
-          onCopy={handleCopy}
-          onFork={handleFork}
-          placement="top-right"
-        />
-      )}
-      {hasText && (
-        <FileLinkHandler className={styles.textContent}>
-          {trimmedBlocks.map((text, i) => (
-            <Markdown key={i} className={styles.markdown} text={text} />
-          ))}
-        </FileLinkHandler>
-      )}
+  const assistantActions =
+    handleCopy || handleFork ? (
+      <MessageActions onCopy={handleCopy} onFork={handleFork} />
+    ) : undefined;
 
-      {hasToolCalls && (
-        <div className={styles.toolCallsSection}>
-          {message.toolCalls.map((tc) => (
-            <ToolCallCard
-              key={tc.id}
-              agentId={agentId}
-              toolCall={tc}
-              onFork={handleFork}
-              onPermissionRespond={onPermissionRespond}
-              onSaveToDisk={onSaveToolCallToDisk}
-            />
-          ))}
-        </div>
+  const toolCallsNode = hasToolCalls
+    ? message.toolCalls.map((tc) => (
+        <ToolCallCard
+          key={tc.id}
+          agentId={agentId}
+          toolCall={tc}
+          onFork={handleFork}
+          onPermissionRespond={onPermissionRespond}
+          onSaveToDisk={onSaveToolCallToDisk}
+        />
+      ))
+    : undefined;
+
+  return (
+    <MessageBubble
+      role="assistant"
+      messageId={message.id}
+      unread={isUnread}
+      toolOnly={toolOnly}
+      timestamp={message.timestamp}
+      textBlocks={trimmedBlocks}
+      renderMarkdown={(text) => (
+        <Markdown className={styles.markdown} text={text} />
       )}
-    </div>
+      actions={assistantActions}
+      toolCalls={toolCallsNode}
+      Container={FileLinkHandler}
+    />
   );
 }

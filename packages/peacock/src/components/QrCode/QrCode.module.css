@@ -1,0 +1,28 @@
+/* The PNG carries its own white quiet zone (needed to scan), so the frame just
+   rounds the corners and clips — no themed background required. */
+.frame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  background: var(--surface-3);
+  padding: var(--space-2);
+}
+
+.image {
+  display: block;
+  border-radius: var(--border-radius-sm);
+}
+
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-3);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}

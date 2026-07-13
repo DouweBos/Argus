@@ -259,6 +259,61 @@ your repo.
 
 ---
 
+## Remote Access
+
+Pair a phone to monitor your projects and agents from anywhere. Argus runs a
+local, loopback-only gateway and exposes it through a tunnel — no inbound ports
+are opened on your machine. All traffic is end-to-end encrypted (Noise IK); the
+tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** —
+they can view projects/sessions/agents and approve or deny permission prompts,
+but cannot spawn agents, send messages, or run commands.
+
+| Setting                  | Default | Description                                                                                                                                         |
+| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access** | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                    |
+| **Provider**             | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`. |
+| **Tunnel** (Cloudflare)  | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                          |
+| **Connector token**      | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                    |
+| **Public URL**           | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                |
+| **Paired devices**       | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                  |
+
+### Choosing a provider
+
+- **LAN only**: no tunnel and no external process at all — pair over Wi-Fi with
+  the web client below. Enabling remote access with this provider spawns
+  nothing beyond the local gateway. Pick a tunnel only when you need access
+  from _off_ your network.
+- **Cloudflare — Quick**: zero setup, just the
+  [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
+  binary. The URL rotates each run, so you re-pair after a restart. Good for a
+  first try.
+- **Cloudflare — Named**: stable hostname, survives restarts, but needs a
+  (free) Cloudflare account **and a domain on Cloudflare**.
+- **Tailscale**: stable `*.ts.net` address with **no domain and no Cloudflare
+  account** — just the `tailscale` CLI, signed into a tailnet with
+  [Funnel](https://tailscale.com/kb/1223/funnel) enabled. Often the sweet spot
+  for a stable URL without owning a domain.
+
+### Web client on this network
+
+Toggling **Web client on this network** binds the gateway to your Wi-Fi
+interface and serves a browser client from it. Open `http://<your-ip>:47615` on
+any device on the same network — no app install, no tunnel. It still pairs and
+Noise-authenticates exactly like the phone, so being on the LAN grants no
+access on its own. You can also reach it from the Home screen's **Remote access**
+button. (Build the bundle once with `pnpm --filter argus-web build`.)
+
+**Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation
+number. Scan it on the device, confirm the number matches on both screens, and
+the device is enrolled. The pairing secret travels only in the QR/code — never
+over the wire — so nothing in the middle (Cloudflare or Tailscale included) can
+impersonate your desktop.
+
+The desktop identity key lives in `~/.argus/remote-devices.json` (encrypted via
+`safeStorage`); the tunnel settings live in `app-settings.json`.
+
+---
+
 ## Where things are stored
 
 Argus keeps everything under `~/.argus/`:
@@ -267,7 +322,8 @@ Argus keeps everything under `~/.argus/`:
 ~/.argus/
   worktrees/                  ← Session worktrees (one dir per repo)
   sessions/                   ← Session metadata
-  app-settings.json           ← MCP servers (and future global prefs)
+  app-settings.json           ← MCP servers, remote-access tunnel + kill-switch
+  remote-devices.json         ← Remote-access identity key + paired devices (encrypted)
   user-project-settings.json  ← Per-developer project prefs (branch prefix, …)
   telemetry-id                ← Anonymous install id (only present if telemetry is on)
 ```
