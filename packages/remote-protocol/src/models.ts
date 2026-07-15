@@ -266,5 +266,8 @@ export const RemoteGitStatus = z.object({
   detached: z.boolean(),
   last_fetch_at: z.number().nullable(),
   in_progress: RemoteGitInProgress.nullable(),
+  /** Added/removed line counts across committed + working + untracked diffs. */
+  diff_additions: z.number().optional(),
+  diff_deletions: z.number().optional(),
 });
 export type RemoteGitStatus = z.infer<typeof RemoteGitStatus>;

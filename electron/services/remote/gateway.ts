@@ -126,6 +126,15 @@ export class DeviceConnection {
 
   /** Forward a tapped renderer broadcast to this device, if relevant. */
   handleBroadcast(channel: string, args: unknown[]): void {
+    // User-facing notifications go to every connected device, regardless of
+    // which agent it happens to be subscribed to — that's the whole point.
+    if (channel === "remote:notification") {
+      const p = args[0] as { agent_id?: string | null } | undefined;
+      this.pushEvent("notification", p?.agent_id ?? null, p);
+
+      return;
+    }
+
     const parsed = parseAgentChannel(channel);
     if (!parsed) {
       return;

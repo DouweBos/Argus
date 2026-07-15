@@ -104,6 +104,8 @@ export interface RemoteGitStatus {
   detached: boolean;
   last_fetch_at: number | null;
   in_progress: RemoteGitInProgress | null;
+  diff_additions?: number;
+  diff_deletions?: number;
 }
 
 export interface RemoteProject {
@@ -217,6 +219,13 @@ export interface RemotePermissionRequest {
   tool_use_id: string;
   tool_name: string;
   tool_input: Record<string, unknown>;
+}
+export interface RemoteNotification {
+  agent_id: string | null;
+  session_id: string | null;
+  kind: "failed" | "finished" | "permission" | "push";
+  title: string;
+  body: string;
 }
 
 // Envelopes -----------------------------------------------------------------

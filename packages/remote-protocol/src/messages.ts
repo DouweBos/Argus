@@ -248,4 +248,11 @@ export const EventPayloads = {
   }),
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
+  notification: z.object({
+    agent_id: z.string().nullable(),
+    session_id: z.string().nullable(),
+    kind: z.enum(["finished", "failed", "permission", "push"]),
+    title: z.string(),
+    body: z.string(),
+  }),
 } as const;

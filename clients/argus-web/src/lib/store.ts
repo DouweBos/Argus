@@ -12,6 +12,7 @@ import {
   saveIdentity,
 } from "./keystore";
 import type { DeviceIdentity } from "./keystore";
+import { showRemoteNotification } from "./notify";
 import type {
   EventEnvelope,
   RemoteAgentCapabilities,
@@ -21,6 +22,7 @@ import type {
   RemoteImageData,
   RemoteMentionPathResult,
   RemoteMessage,
+  RemoteNotification,
   RemotePermissionMode,
   RemotePermissionRequest,
   RemoteProject,
@@ -246,6 +248,8 @@ export const useAppStore = create<AppState>((set, get) => {
     } else if (ev.event === "agent.event" && ev.agent_id) {
       // Re-fetch the structured transcript rather than rendering raw events.
       scheduleTranscript(ev.agent_id);
+    } else if (ev.event === "notification") {
+      showRemoteNotification(ev.payload as RemoteNotification);
     }
   }
 

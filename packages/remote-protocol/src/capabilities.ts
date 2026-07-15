@@ -83,5 +83,7 @@ export const REMOTE_EVENTS = [
   "permission.cancel",
   "sessions.changed",
   "projects.changed",
+  /** A user-facing notification (agent finished, needs approval, MCP push). */
+  "notification",
 ] as const;
 export type RemoteEventType = (typeof REMOTE_EVENTS)[number];

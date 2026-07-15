@@ -5,6 +5,7 @@ export * from "./components/Avatar/Avatar";
 export * from "./components/Badge/Badge";
 export * from "./components/Banner/Banner";
 export * from "./components/BranchDialog/BranchDialog";
+export * from "./components/BranchDivergence/BranchDivergence";
 export * from "./components/BranchPicker/BranchPicker";
 export * from "./components/BlameGutter/BlameGutter";
 export * from "./components/RefBadge/RefBadge";

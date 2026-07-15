@@ -5,6 +5,10 @@ import {
   SegmentedControl,
   SettingsScreenField,
 } from "@argus/peacock";
+import {
+  notificationsSupported,
+  requestNotificationPermission,
+} from "../lib/notify";
 import { useAppStore } from "../lib/store";
 import {
   setThemePreference,
@@ -12,6 +16,20 @@ import {
   type ThemePreference,
   useThemePreference,
 } from "../lib/theme";
+
+function notificationStatusLabel(): string {
+  if (!notificationsSupported()) {
+    return "Not supported in this browser";
+  }
+  if (Notification.permission === "granted") {
+    return "Enabled";
+  }
+  if (Notification.permission === "denied") {
+    return "Blocked — enable in browser settings";
+  }
+
+  return "Not enabled";
+}
 
 const THEME_OPTIONS: { label: string; value: ThemePreference }[] = (
   ["system", "light", "dark"] as const
@@ -25,6 +43,12 @@ export function Settings() {
 
   const [name, setName] = useState(deviceName);
   const [saved, setSaved] = useState(false);
+  const [notifyStatus, setNotifyStatus] = useState(notificationStatusLabel());
+  const enableNotifications = () => {
+    requestNotificationPermission().finally(() =>
+      setNotifyStatus(notificationStatusLabel()),
+    );
+  };
 
   const dirty = name.trim() !== deviceName && name.trim().length > 0;
   const save = () => {
@@ -67,6 +91,26 @@ export function Settings() {
           options={THEME_OPTIONS}
           onChange={setThemePreference}
         />
+      </SettingsScreenField>
+
+      <SettingsScreenField
+        label="Notifications"
+        caption="Get alerted when an agent finishes or needs approval, even when you're on another screen."
+      >
+        <div className="aw-settings-inline">
+          <span className="aw-muted">{notifyStatus}</span>
+          <Button
+            variant="secondary"
+            disabled={
+              !notificationsSupported() ||
+              Notification.permission === "granted" ||
+              Notification.permission === "denied"
+            }
+            onClick={enableNotifications}
+          >
+            Enable
+          </Button>
+        </div>
       </SettingsScreenField>
 
       <SettingsScreenField

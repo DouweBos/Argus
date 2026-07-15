@@ -152,6 +152,10 @@ import { listAuthorized, loadToken } from "./services/mcp/oauthStore";
 import { collectAllProjects } from "./services/mcp/projects";
 import { listInheritedMcpServers } from "./services/mcp/userConfig";
 import {
+  broadcastRemoteNotification,
+  type RemoteNotificationPayload,
+} from "./services/notifications/broadcast";
+import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
   claudePing as onboardingClaudePing,
@@ -1926,6 +1930,11 @@ export function registerIpcHandlers(): void {
   toolHandle("debug_run_command", "device-debug", (a) =>
     runDebugCommand(a.deviceKey as string, a.args as string[]),
   );
+
+  // Mirror a renderer-decided notification to connected remote devices.
+  handle("remote_notify", (a) => {
+    broadcastRemoteNotification(a as unknown as RemoteNotificationPayload);
+  });
 
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));

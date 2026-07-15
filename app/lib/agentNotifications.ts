@@ -2,6 +2,7 @@ import type { PermissionRequest } from "./types";
 import { getAgentState, setActiveAgent } from "../stores/agentStore";
 import { getConversationState } from "../stores/conversationStore";
 import { getSessionState, selectSession } from "../stores/sessionStore";
+import { remoteNotify } from "./ipc";
 
 const MIN_TURN_DURATION_MS = 10_000;
 
@@ -58,9 +59,6 @@ export function notifyAgentFinished(
   durationMs: number,
   subtype: "error" | "success",
 ): void {
-  if (!canNotify()) {
-    return;
-  }
   if (subtype === "success" && durationMs < MIN_TURN_DURATION_MS) {
     return;
   }
@@ -80,6 +78,19 @@ export function notifyAgentFinished(
       ? `${ctx.sessionName} - ${name} ended with an error`
       : `${ctx.sessionName} - ${name} completed in ${seconds}s`;
 
+  // Remote devices decide visibility from their own focus, so forward
+  // regardless of whether this desktop window is focused.
+  remoteNotify({
+    agent_id: agentId,
+    session_id: agent?.session_id ?? null,
+    kind: subtype === "error" ? "failed" : "finished",
+    title,
+    body,
+  }).catch(() => {});
+
+  if (!canNotify()) {
+    return;
+  }
   const n = new Notification(title, { body });
   n.onclick = () => {
     focusAgent(agentId);
@@ -91,10 +102,6 @@ export function notifyPermissionRequested(
   agentId: string,
   request: PermissionRequest,
 ): void {
-  if (!canNotify()) {
-    return;
-  }
-
   const agent = getAgentState().agents[agentId];
   const ctx = sessionContext(agent?.session_id);
   const name = agentLabel(agentId);
@@ -103,6 +110,17 @@ export function notifyPermissionRequested(
   const title = `${project} agent needs approval`;
   const body = `${ctx.sessionName} - ${name} requested ${request.tool_name}`;
 
+  remoteNotify({
+    agent_id: agentId,
+    session_id: agent?.session_id ?? null,
+    kind: "permission",
+    title,
+    body,
+  }).catch(() => {});
+
+  if (!canNotify()) {
+    return;
+  }
   const n = new Notification(title, { body, requireInteraction: true });
   n.onclick = () => {
     focusAgent(agentId);

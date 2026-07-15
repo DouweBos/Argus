@@ -1880,6 +1880,17 @@ export const debugRunCommand = (
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
 
+/** Mirror a notification to connected remote devices (fire-and-forget). */
+export interface RemoteNotifyPayload {
+  agent_id: string | null;
+  body: string;
+  kind: "failed" | "finished" | "permission" | "push";
+  session_id: string | null;
+  title: string;
+}
+export const remoteNotify = (payload: RemoteNotifyPayload): Promise<void> =>
+  invoke("remote_notify", payload as unknown as Record<string, unknown>);
+
 /** Open a file/folder with the system's default handler. */
 export const openPath = (path: string): Promise<void> =>
   invoke("open_path", { path });

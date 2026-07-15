@@ -164,6 +164,41 @@ export function startWatcher(
   return handle;
 }
 
+/**
+ * Compute combined diff stats for a session on demand (committed + working +
+ * untracked). Used by the remote gateway to mirror the desktop sidebar's
+ * green/red line counts. Returns zeros if the session isn't materialised.
+ */
+export async function computeSessionDiffStats(
+  sessionId: string,
+): Promise<DiffStats> {
+  const ws = appState.sessions.get(sessionId);
+  const worktreePath = ws?.path;
+  if (!worktreePath) {
+    return { additions: 0, deletions: 0, files: 0 };
+  }
+  const baseBranch =
+    ws.kind !== "project_root" ? (ws.base_branch ?? null) : null;
+
+  const [workingNumstat, untrackedRaw, committedNumstat] = await Promise.all([
+    git(worktreePath, ["diff", "HEAD", "--numstat"]).catch(() => ""),
+    git(worktreePath, ["ls-files", "--others", "--exclude-standard"]).catch(
+      () => "",
+    ),
+    baseBranch
+      ? git(worktreePath, ["diff", `${baseBranch}...HEAD`, "--numstat"]).catch(
+          () => "",
+        )
+      : Promise.resolve(""),
+  ]);
+
+  const untrackedPaths = untrackedRaw.trim()
+    ? untrackedRaw.trim().split("\n")
+    : [];
+
+  return combineDiffStats(committedNumstat, workingNumstat, untrackedPaths);
+}
+
 // ---------------------------------------------------------------------------
 // Branch watcher — monitors .git/HEAD for external branch switches
 // ---------------------------------------------------------------------------

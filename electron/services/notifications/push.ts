@@ -11,6 +11,7 @@
 import { Notification } from "electron";
 import { getMainWindow } from "../../main";
 import { appState } from "../../state";
+import { broadcastRemoteNotification } from "./broadcast";
 
 export type PushNotificationUrgency = "critical" | "normal";
 
@@ -87,6 +88,14 @@ export function sendPushNotification(
   });
 
   notification.show();
+
+  broadcastRemoteNotification({
+    agent_id: input.agentId ?? null,
+    session_id: ctx.sessionId,
+    kind: "push",
+    title,
+    body: input.body,
+  });
 
   return { delivered: true };
 }

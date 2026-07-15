@@ -54,6 +54,7 @@ import {
   getSessionBranchDiff,
   getSessionFullDiff,
 } from "../session/sessionOps";
+import { computeSessionDiffStats } from "../session/watcher";
 import { renameDevice, type PairedDevice } from "./deviceStore";
 
 export class GatewayError extends Error {
@@ -851,7 +852,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "sessions.git_status": async (params) => {
     const { session_id } = parse("sessions.git_status", params);
     requireSession(session_id);
-    const s = await control(() => gitStatus(session_id));
+    const [s, diff] = await control(() =>
+      Promise.all([gitStatus(session_id), computeSessionDiffStats(session_id)]),
+    );
 
     return {
       status: {
@@ -871,6 +874,8 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
               onto: s.inProgress.onto,
             }
           : null,
+        diff_additions: diff.additions,
+        diff_deletions: diff.deletions,
       } satisfies RemoteGitStatus,
     };
   },

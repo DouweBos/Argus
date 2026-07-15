@@ -11,12 +11,18 @@ import {
   Icons,
   Input,
   projectAccent,
+  SessionCard,
   SidebarHeader,
   SidebarHeaderAction,
   SidebarRepoGroup,
   SidebarSection,
   Spinner,
 } from "@argus/peacock";
+import {
+  notificationsSupported,
+  requestNotificationPermission,
+  setNotificationOpener,
+} from "../lib/notify";
 import { PairingClient, parsePairingInput } from "../lib/pairingClient";
 import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
 import type { ConnectionState } from "../lib/transport";
@@ -142,6 +148,27 @@ function Monitor() {
       ? s.statusByAgent[view.agentId]?.session_id
       : undefined,
   );
+
+  // Let a notification click navigate to its agent.
+  useEffect(() => {
+    setNotificationOpener((agentId, agentLabel) =>
+      push({ name: "agent", agentId, agentLabel }),
+    );
+
+    return () => setNotificationOpener(null);
+  }, [push]);
+
+  // Ask for notification permission once the channel is up (desktop/Android;
+  // iOS Safari needs the Settings button, which provides a user gesture).
+  useEffect(() => {
+    if (
+      connection === "ready" &&
+      notificationsSupported() &&
+      Notification.permission === "default"
+    ) {
+      void requestNotificationPermission();
+    }
+  }, [connection]);
 
   const heading =
     view.name === "projects"
@@ -524,7 +551,14 @@ function Project({
     }
   }
   const sessionById = new Map((sessions ?? []).map((s) => [s.id, s]));
-  const entries = [...groups.entries()];
+  // Match the desktop sidebar: project_root sessions first, others keep order.
+  const entries = [...groups.entries()].sort(([aId], [bId]) => {
+    const aRoot = sessionById.get(aId)?.kind === "project_root";
+    const bRoot = sessionById.get(bId)?.kind === "project_root";
+    if (aRoot && !bRoot) return -1;
+    if (!aRoot && bRoot) return 1;
+    return 0;
+  });
 
   return (
     <div className="aw-sidebar">
@@ -658,16 +692,8 @@ function SessionGroup({
       : []),
   ];
 
-  const gitSummary =
-    git && (git.ahead > 0 || git.behind > 0 || git.dirty_count > 0)
-      ? [
-          git.ahead > 0 ? `↑${git.ahead}` : "",
-          git.behind > 0 ? `↓${git.behind}` : "",
-          git.dirty_count > 0 ? `${git.dirty_count}∆` : "",
-        ]
-          .filter(Boolean)
-          .join(" ")
-      : null;
+  const additions = git?.diff_additions ?? 0;
+  const deletions = git?.diff_deletions ?? 0;
 
   const kind = session?.kind;
   const isRoot = kind === "project_root";
@@ -677,35 +703,42 @@ function SessionGroup({
   const showStatus = Boolean(status) && status !== "ready";
 
   return (
-    <div className="aw-session-card">
-      <div className="aw-session-head">
-        <span className="aw-session-icon">
-          {isRoot ? (
-            <Icons.RepoIcon size={13} />
-          ) : (
-            <Icons.BranchIcon size={13} />
-          )}
-        </span>
-        <span className="aw-session-label">{label}</span>
-        {isRoot && (
-          <span
-            className="aw-session-kind aw-session-kind-root"
-            title="Runs on the project root, not an isolated worktree"
-          >
-            root
-          </span>
-        )}
-        {kind === "worktree" && (
-          <span
-            className="aw-session-kind aw-session-kind-worktree"
-            title="Runs in an isolated git worktree"
-          >
-            worktree
-          </span>
-        )}
-        {gitSummary && <span className="aw-session-git">{gitSummary}</span>}
-        <button
-          className="aw-icon-btn"
+    <SessionCard
+      className="aw-session-card"
+      icon={
+        isRoot ? <Icons.RepoIcon size={13} /> : <Icons.BranchIcon size={13} />
+      }
+      title={label}
+      actionReveal="always"
+      kind={
+        isRoot
+          ? { label: "root", tone: "accent" }
+          : kind === "worktree"
+            ? { label: "worktree", tone: "neutralFilled" }
+            : undefined
+      }
+      status={showStatus ? { label: status!, tone: "neutral" } : undefined}
+      diff={
+        additions > 0 || deletions > 0
+          ? {
+              added: additions > 0 ? additions : undefined,
+              removed: deletions > 0 ? deletions : undefined,
+            }
+          : undefined
+      }
+      divergence={
+        git
+          ? { ahead: git.ahead, behind: git.behind, dirty: git.dirty_count }
+          : undefined
+      }
+      subtitle={
+        showBranch ? (
+          <span className="aw-session-branch">{branch}</span>
+        ) : undefined
+      }
+      actions={
+        <Button
+          variant="ghost"
           aria-label="Session actions"
           onClick={(e) => {
             const r = e.currentTarget.getBoundingClientRect();
@@ -713,16 +746,9 @@ function SessionGroup({
           }}
         >
           <Icons.EllipsisIcon size={14} />
-        </button>
-      </div>
-
-      {(showBranch || showStatus) && (
-        <div className="aw-session-sub">
-          {showBranch && <span className="aw-session-branch">{branch}</span>}
-          {showStatus && <span className="aw-session-status">{status}</span>}
-        </div>
-      )}
-
+        </Button>
+      }
+    >
       {renaming && (
         <div className="aw-new-session">
           <Input
@@ -783,7 +809,7 @@ function SessionGroup({
           onClose={() => setMenu(null)}
         />
       )}
-    </div>
+    </SessionCard>
   );
 }
 

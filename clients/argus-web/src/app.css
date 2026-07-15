@@ -513,82 +513,18 @@ button {
   padding: 8px 0;
 }
 
-/* One session rendered as a card: header, subtitle, its agents, and actions. */
-.aw-session-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 8px 8px;
+/* One session rendered as a Peacock SessionCard; this override adds the
+   persistent bordered-card look and roomier touch padding (scoped so it wins
+   over the Peacock `.card` padding/radius). */
+.aw-sidebar .aw-session-card {
   margin-bottom: 6px;
+  padding: 6px 8px 8px;
   border: 1px solid var(--border);
   border-radius: var(--border-radius-md);
   background: var(--surface-2);
 }
 
-/* Session card header: icon + label + kind badge + git badge + actions menu. */
-.aw-session-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 0;
-}
-
-.aw-session-icon {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  color: var(--text-secondary);
-}
-
-.aw-session-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-/* Distinguishes project-root from worktree sessions. */
-.aw-session-kind {
-  flex-shrink: 0;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 14px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-pill);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.aw-session-kind-root {
-  background: var(--accent-overlay-md);
-  color: var(--accent);
-}
-
-.aw-session-kind-worktree {
-  background: var(--surface-4);
-  color: var(--text-secondary);
-}
-
-.aw-session-git {
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-/* Secondary line under the header: branch name + status. */
-.aw-session-sub {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 2px 2px 21px;
-  min-width: 0;
-}
-
+/* Branch name in the SessionCard subtitle slot. */
 .aw-session-branch {
   flex: 1;
   min-width: 0;
@@ -597,18 +533,6 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.aw-session-status {
-  flex-shrink: 0;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 14px;
-  padding: 0 6px;
-  border-radius: var(--border-radius-pill);
-  text-transform: uppercase;
-  background: var(--surface-4);
-  color: var(--text-secondary);
 }
 
 .aw-icon-btn {
