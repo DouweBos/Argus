@@ -85,12 +85,36 @@ export function parseMermaid(code: string): Promise<boolean> {
   });
 }
 
+// Off-screen element mermaid renders into. Without a container mermaid appends
+// its temp-measuring node (and, on error, its "Syntax error" SVG) straight to
+// document.body and leaves it there on failure — shifting the whole app up. We
+// own this node, keep it out of the layout, and clear it after every render.
+let sandbox: HTMLDivElement | null = null;
+
+function getSandbox(): HTMLDivElement {
+  if (!sandbox?.isConnected) {
+    sandbox = document.createElement("div");
+    sandbox.setAttribute("aria-hidden", "true");
+    // visibility:hidden (not display:none) so getBBox text measuring still works.
+    sandbox.style.cssText =
+      "position:absolute;width:0;height:0;overflow:hidden;visibility:hidden;";
+    document.body.appendChild(sandbox);
+  }
+
+  return sandbox;
+}
+
 /** Render `code` to an SVG string. Rejects if the diagram is invalid. */
 export function renderMermaid(id: string, code: string): Promise<string> {
   return serialize(async () => {
     const mermaid = await ensureInitialized();
-    const { svg } = await mermaid.render(id, code);
+    const container = getSandbox();
+    try {
+      const { svg } = await mermaid.render(id, code, container);
 
-    return svg;
+      return svg;
+    } finally {
+      container.replaceChildren();
+    }
   });
 }
