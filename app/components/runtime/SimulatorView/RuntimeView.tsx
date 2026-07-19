@@ -16,6 +16,7 @@ import { WebBrowserViewStack } from "../WebBrowserView";
 import { AndroidDeviceView } from "./AndroidDeviceView";
 import { IosSimulatorView } from "./IosSimulatorView";
 import styles from "./RuntimeView.module.css";
+import { VideoInputView } from "./VideoInputView";
 
 interface RuntimeViewProps {
   sessionId: string | null;
@@ -190,6 +191,12 @@ export function RuntimeView({
       >
         {toggle}
       </AndroidDeviceView>
+    );
+  } else if (platform === "video") {
+    nativeSimulator = (
+      <VideoInputView sessionId={sessionId} titleBarToggles={titleBarToggles}>
+        {toggle}
+      </VideoInputView>
     );
   }
 

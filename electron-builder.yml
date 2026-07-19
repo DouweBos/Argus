@@ -24,6 +24,8 @@ extraResources:
     to: argus-sim-bridge
   - from: native/scrcpy-server/scrcpy-server.jar
     to: scrcpy-server.jar
+  - from: native/emulator-proto/emulator_controller.proto
+    to: emulator_controller.proto
   - from: electron/prompts/worktree-agent-system-prompt.md
     to: worktree-agent-system-prompt.md
   - from: electron/prompts/root-agent-system-prompt.md
@@ -51,6 +53,7 @@ mac:
     NSRemovableVolumesUsageDescription: Argus needs access to removable volumes so agents can read files from external drives.
     NSNetworkVolumesUsageDescription: Argus needs access to network volumes so agents can read files from mounted shares.
     NSAppleEventsUsageDescription: Argus uses Apple Events to control developer tools (simulators, terminals) on your behalf.
+    NSCameraUsageDescription: Argus needs camera access to display video from connected capture cards and cameras.
     NSSystemAdministrationUsageDescription: Argus performs system administration tasks to manage simulators, emulators, and developer tooling.
 dmg:
   artifactName: "${productName}-${version}-${arch}.${ext}"

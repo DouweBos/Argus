@@ -355,6 +355,16 @@
   cursor: default;
 }
 
+/* Video-input (capture card / camera) element — view only. Fills the stage
+   while preserving the source's aspect ratio (letterboxed as needed). */
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  -webkit-user-drag: none;
+}
+
 /* Connecting overlay */
 .connecting {
   position: absolute;

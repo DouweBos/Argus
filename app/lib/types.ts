@@ -195,7 +195,7 @@ export interface SimulatorDevice {
   udid: string;
 }
 
-export type DevicePlatform = "android" | "ios" | "web";
+export type DevicePlatform = "android" | "ios" | "video" | "web";
 
 export interface DeviceInfo {
   agentId: string | null;

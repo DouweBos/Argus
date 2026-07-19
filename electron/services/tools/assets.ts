@@ -27,6 +27,10 @@ const ASSET_SPECS: Record<string, AssetSpec> = {
     name: "scrcpy-server.jar",
     source: "native/scrcpy-server/scrcpy-server.jar",
   },
+  "emulator_controller.proto": {
+    name: "emulator_controller.proto",
+    source: "native/emulator-proto/emulator_controller.proto",
+  },
   conductor: {
     name: "conductor",
     source: "native/conductor",

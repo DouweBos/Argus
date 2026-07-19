@@ -540,6 +540,24 @@ function createWindow(): void {
     },
   });
 
+  // Allow the app's own renderer to use camera/mic (video-input viewer) while
+  // NOT auto-granting media to arbitrary sites loaded in embedded browsers.
+  const isAppFrame = (wc: Electron.WebContents | null): boolean =>
+    wc?.id === mainWindow?.webContents.id;
+  mainWindow.webContents.session.setPermissionRequestHandler(
+    (wc, permission, callback) => {
+      if (permission === "media") {
+        callback(isAppFrame(wc));
+
+        return;
+      }
+      callback(true);
+    },
+  );
+  mainWindow.webContents.session.setPermissionCheckHandler((wc, permission) =>
+    permission === "media" ? isAppFrame(wc) : true,
+  );
+
   // Intercept Cmd+W before the OS menu accelerator fires so the renderer can
   // close an open agent tab first and only fall through to window close when
   // no agents remain. Calling preventDefault() on before-input-event cancels

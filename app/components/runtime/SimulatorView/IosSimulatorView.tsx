@@ -43,7 +43,6 @@ export function IosSimulatorView({
     devices,
     selectedUdidBySession,
     capturing,
-    mjpegPortByUdid,
     booting,
     disconnected,
     setDevices,
@@ -56,9 +55,6 @@ export function IosSimulatorView({
 
   const storeKey = sessionId ?? "__global__";
   const selectedUdid = selectedUdidBySession[storeKey] ?? null;
-  const mjpegPort = selectedUdid
-    ? (mjpegPortByUdid[selectedUdid] ?? null)
-    : null;
 
   const selectedDevice = devices.find((d) => d.udid === selectedUdid);
   const isTv = isTvOS(selectedDevice);
@@ -433,28 +429,33 @@ export function IosSimulatorView({
   const renderTvStream =
     isTv && selectedUdid
       ? ({
-          imgRef,
-          streamUrl,
+          canvasRef,
           isReceiving,
+          isConfigured,
+          videoWidth,
+          videoHeight,
         }: {
-          imgRef: React.RefObject<HTMLImageElement | null>;
+          canvasRef: React.RefObject<HTMLCanvasElement | null>;
+          isConfigured: boolean;
           isReceiving: boolean;
-          streamUrl: string | null;
+          videoHeight: number;
+          videoWidth: number;
         }) => (
           <div className={styles.tvBody}>
             <div className={styles.canvasContainer}>
-              {streamUrl && (
-                <img
-                  ref={imgRef}
-                  alt="Simulator"
-                  className={`${styles.canvas} ${styles.tvCanvas}`}
-                  draggable={false}
-                  src={streamUrl}
-                />
-              )}
+              <canvas
+                ref={canvasRef}
+                className={`${styles.canvas} ${styles.tvCanvas}`}
+                height={videoHeight || undefined}
+                width={videoWidth || undefined}
+              />
               {!isReceiving && (
                 <div className={styles.connecting}>
-                  <p>Waiting for frames...</p>
+                  <p>
+                    {!isConfigured
+                      ? "Connecting to device..."
+                      : "Decoding first frame..."}
+                  </p>
                 </div>
               )}
             </div>
@@ -468,7 +469,6 @@ export function IosSimulatorView({
       actionButtons={actionButtons}
       capturing={capturing}
       devicePicker={hideDevicePicker ? null : devicePicker}
-      mjpegPort={mjpegPort}
       placeholder={placeholderContent}
       showFloatingActionBar={deviceSessionActive}
       titleBarExtra={titleBarExtra}
@@ -483,7 +483,7 @@ export function IosSimulatorView({
         ),
       }}
       renderStream={renderTvStream}
-      streamAlt="Simulator"
+      udid={selectedUdid}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       onTouch={handleTouch}

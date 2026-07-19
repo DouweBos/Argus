@@ -89,6 +89,19 @@
   user-select: none;
 }
 
+/* Video-input preview — fill the stage while preserving the source aspect. */
+.previewVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.videoHidden {
+  display: none;
+}
+
 .pointerLayer {
   position: absolute;
   inset: 0;

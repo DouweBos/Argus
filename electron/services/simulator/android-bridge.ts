@@ -10,6 +10,7 @@
  *   5. Send touch/key events via the scrcpy binary control protocol
  */
 
+import type { AndroidCaptureBackend } from "./android-backend";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as net from "node:net";
 import { promisify } from "node:util";
@@ -100,7 +101,17 @@ export interface AndroidBridgeOptions {
 
 const SCRCPY_VERSION = "3.1";
 
-export class AndroidBridge {
+/** Named hardware buttons → Android AKEYCODE_* values. */
+const BUTTON_KEYCODES: Record<string, number> = {
+  home: 3,
+  back: 4,
+  recents: 187,
+  power: 26,
+  volume_up: 24,
+  volume_down: 25,
+};
+
+export class AndroidBridge implements AndroidCaptureBackend {
   static instance: AndroidBridge | null = null;
 
   private serial: string;
@@ -190,6 +201,17 @@ export class AndroidBridge {
     }
     const msg = buildBackOrScreenOnMessage(action);
     this.controlSocket.write(msg);
+  }
+
+  /** Press a named hardware button via a keycode down + up pair. */
+  async sendButton(button: string): Promise<void> {
+    const keycode = BUTTON_KEYCODES[button];
+    if (keycode === undefined) {
+      throw `Unknown button: ${button}`;
+    }
+    this.sendKey(0, keycode, 0); // down
+    await new Promise((r) => setTimeout(r, 50));
+    this.sendKey(1, keycode, 0); // up
   }
 
   /** Tear everything down. */

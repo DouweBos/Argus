@@ -1729,6 +1729,10 @@ export const androidKeyboard = (
 export const androidButton = (button: string): Promise<void> =>
   invoke("android_button", { button });
 
+/** macOS camera (capture-card) TCC status: granted | denied | restricted | not-determined | unknown. */
+export const requestCameraAccess = (): Promise<string> =>
+  invoke("request_camera_access");
+
 // Browser commands — Playwright Chromium-backed embedded browser per session.
 
 export const browserViewEnsure = (sessionId: string): Promise<void> =>

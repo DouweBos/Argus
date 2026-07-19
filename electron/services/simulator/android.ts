@@ -5,13 +5,19 @@
  * screen capture (via scrcpy-server) and input injection.
  */
 
+import type { AndroidCaptureBackend } from "./android-backend";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
+import * as net from "node:net";
 import path from "node:path";
 import { promisify } from "node:util";
-import { error } from "../../../app/lib/logger";
+import { error, log } from "../../../app/lib/logger";
 import { appState } from "../../state";
 import { AndroidBridge } from "./android-bridge";
+import { EmulatorGrpcBridge } from "./emulator-grpc-bridge";
+
+/** The active capture backend (emulator gRPC or scrcpy), if any. */
+let activeBackend: AndroidCaptureBackend | null = null;
 
 const execFileAsync = promisify(execFile);
 
@@ -283,7 +289,12 @@ let emulatorProc: ChildProcess | null = null;
  * Note: we intentionally do NOT use `-no-window`. Newer emulators (API 34+)
  * often fail to fully initialize headless — the device stays "offline" in
  * adb because the graphics subsystem never starts. The emulator window can
- * be minimised; scrcpy provides the mirror in Argus.
+ * be minimised; Argus provides the mirror.
+ *
+ * We pass `-grpc <port>` so the emulator exposes a plain (insecure) gRPC
+ * endpoint for the EmulatorGrpcBridge. Without it, modern emulators default to
+ * TLS+JWT-secured gRPC, which the bridge can't reach (it then falls back to
+ * scrcpy).
  */
 export async function bootAndroidEmulator(avdName: string): Promise<string> {
   const emulatorPath = await findEmulator();
@@ -294,9 +305,18 @@ export async function bootAndroidEmulator(avdName: string): Promise<string> {
     before.filter((d) => d.online).map((d) => d.serial),
   );
 
+  const grpcPort = await findFreePort();
   emulatorProc = spawn(
     emulatorPath,
-    ["-avd", avdName, "-no-audio", "-no-boot-anim", "-no-snapshot-load"],
+    [
+      "-avd",
+      avdName,
+      "-no-audio",
+      "-no-boot-anim",
+      "-no-snapshot-load",
+      "-grpc",
+      String(grpcPort),
+    ],
     { stdio: "ignore", detached: true },
   );
   emulatorProc.unref();
@@ -324,6 +344,18 @@ export async function bootAndroidEmulator(avdName: string): Promise<string> {
   throw "Timed out waiting for emulator to boot (90s)";
 }
 
+/** Find a free TCP port for the emulator's gRPC endpoint. */
+function findFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.listen(0, "127.0.0.1", () => {
+      const port = (srv.address() as net.AddressInfo).port;
+      srv.close(() => resolve(port));
+    });
+    srv.on("error", reject);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Capture
 // ---------------------------------------------------------------------------
@@ -331,8 +363,9 @@ export async function bootAndroidEmulator(avdName: string): Promise<string> {
 /**
  * Start capturing an Android device screen.
  *
- * Pushes scrcpy-server to the device, starts the video pipeline,
- * and sends H.264 frames to the renderer via IPC events.
+ * Emulators use the emulator's native gRPC API (fast startup, low-latency
+ * input); physical devices use scrcpy-server. Both emit the same
+ * android_video_config / android_video_frame IPC events.
  */
 export async function startAndroidCapture(serial: string): Promise<void> {
   const adbPath = await findAdb();
@@ -344,13 +377,9 @@ export async function startAndroidCapture(serial: string): Promise<void> {
     throw `No Android device found with serial ${serial}`;
   }
 
-  const bridge = new AndroidBridge({
-    serial,
-    adbPath,
-  });
-  AndroidBridge.instance = bridge;
-
-  await bridge.start();
+  const backend = await startCaptureBackend(device, adbPath);
+  activeBackend = backend;
+  AndroidBridge.instance = backend instanceof AndroidBridge ? backend : null;
 
   appState.androidDevice = {
     serial,
@@ -361,14 +390,42 @@ export async function startAndroidCapture(serial: string): Promise<void> {
 }
 
 /**
+ * Pick and start a capture backend. Emulators try gRPC first and fall back to
+ * scrcpy if the gRPC endpoint is unreachable; physical devices use scrcpy.
+ */
+async function startCaptureBackend(
+  device: AndroidDevice,
+  adbPath: string,
+): Promise<AndroidCaptureBackend> {
+  if (device.type === "emulator") {
+    try {
+      const grpc = new EmulatorGrpcBridge({ serial: device.serial, adbPath });
+      await grpc.start();
+      log(`[Android] using emulator gRPC backend for ${device.serial}`);
+
+      return grpc;
+    } catch (err) {
+      log(
+        `[Android] emulator gRPC unavailable (${String(err)}), falling back to scrcpy`,
+      );
+    }
+  }
+
+  const scrcpy = new AndroidBridge({ serial: device.serial, adbPath });
+  await scrcpy.start();
+
+  return scrcpy;
+}
+
+/**
  * Stop the active Android capture session.
  */
 export function stopAndroidCapture(): void {
-  const bridge = AndroidBridge.instance;
-  if (bridge) {
-    bridge.kill();
-    AndroidBridge.instance = null;
+  if (activeBackend) {
+    activeBackend.kill();
+    activeBackend = null;
   }
+  AndroidBridge.instance = null;
   appState.androidDevice = null;
 }
 
@@ -401,8 +458,7 @@ export function androidTouch(
     throw "No active Android capture session";
   }
 
-  const bridge = AndroidBridge.instance;
-  if (!bridge) {
+  if (!activeBackend) {
     throw "Android bridge is not running";
   }
 
@@ -415,7 +471,7 @@ export function androidTouch(
   const action = actionMap[eventType] ?? 2;
   const pressure = eventType === 2 ? 0 : 1;
 
-  bridge.sendTouch(action, x, y, pressure);
+  activeBackend.sendTouch(action, x, y, pressure);
 }
 
 /**
@@ -432,12 +488,11 @@ export function androidKeyboard(
     throw "No active Android capture session";
   }
 
-  const bridge = AndroidBridge.instance;
-  if (!bridge) {
+  if (!activeBackend) {
     throw "Android bridge is not running";
   }
 
-  bridge.sendKey(isDown ? 0 : 1, keyCode, metaState);
+  activeBackend.sendKey(isDown ? 0 : 1, keyCode, metaState);
 }
 
 /**
@@ -450,27 +505,9 @@ export async function androidButton(button: string): Promise<void> {
     throw "No active Android capture session";
   }
 
-  const bridge = AndroidBridge.instance;
-  if (!bridge) {
+  if (!activeBackend) {
     throw "Android bridge is not running";
   }
 
-  // Android keycode mapping for common buttons
-  const buttonKeycodes: Record<string, number> = {
-    home: 3, // AKEYCODE_HOME
-    back: 4, // AKEYCODE_BACK
-    recents: 187, // AKEYCODE_APP_SWITCH
-    power: 26, // AKEYCODE_POWER
-    volume_up: 24, // AKEYCODE_VOLUME_UP
-    volume_down: 25, // AKEYCODE_VOLUME_DOWN
-  };
-
-  const keycode = buttonKeycodes[button];
-  if (keycode === undefined) {
-    throw `Unknown button: ${button}`;
-  }
-
-  bridge.sendKey(0, keycode, 0); // down
-  await new Promise((r) => setTimeout(r, 50));
-  bridge.sendKey(1, keycode, 0); // up
+  await activeBackend.sendButton(button);
 }

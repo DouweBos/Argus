@@ -18,11 +18,10 @@
 import Foundation
 
 // Ignore SIGPIPE — macOS sends this when we write to a socket the client has
-// closed (e.g. a popout window mirroring the MJPEG stream is closed). The
-// default disposition terminates the process, which would tear down the
-// bridge and kill all remaining clients (including the main window's stream).
-// writeAll already handles the EPIPE return value and closes the broken
-// client cleanly.
+// closed (e.g. a popout window mirroring the stream is closed). The default
+// disposition terminates the process, which would tear down the bridge and
+// kill all remaining clients (including the main window's stream). writeAll
+// already handles the EPIPE return value and closes the broken client cleanly.
 signal(SIGPIPE, SIG_IGN)
 
 // ---------------------------------------------------------------------------
@@ -34,73 +33,54 @@ signal(SIGPIPE, SIG_IGN)
 // callable directly — no forward declarations needed.
 
 // ---------------------------------------------------------------------------
-// MARK: - MJPEG TCP server
+// MARK: - Raw H.264 TCP server
 // ---------------------------------------------------------------------------
 
-// Shared frame state — updated by the capture callback, consumed by the
-// MJPEG streaming thread.
-private final class FrameState {
-    var data: Data = Data()
-    var seq: UInt64 = 0
-    let lock = NSLock()
-    let cond = NSCondition()
+/// Tracks connected streaming clients and fans out encoded H.264 Annex B
+/// chunks to each of them in order. Unlike the old MJPEG server there are no
+/// HTTP headers — each client receives the raw elementary byte stream, which
+/// the Node side parses with H264AccessUnitParser.
+private final class StreamHub {
+    private var clients: [Int32] = []
+    private let lock = NSLock()
+
+    func addClient(_ fd: Int32) {
+        lock.lock()
+        clients.append(fd)
+        lock.unlock()
+        // A new subscriber needs a keyframe (SPS/PPS + IDR) to start decoding.
+        SHRequestKeyframe()
+    }
+
+    /// Write one encoded chunk to every connected client, in order. Clients
+    /// whose socket write fails (closed/broken connection) are dropped.
+    func broadcast(_ data: Data) {
+        lock.lock()
+        let snapshot = clients
+        lock.unlock()
+        if snapshot.isEmpty { return }
+
+        var dead: [Int32] = []
+        for fd in snapshot where !writeAll(fd, data) {
+            dead.append(fd)
+        }
+        if !dead.isEmpty {
+            lock.lock()
+            clients.removeAll { dead.contains($0) }
+            lock.unlock()
+            for fd in dead { close(fd) }
+        }
+    }
 }
 
-private let frameState = FrameState()
+private let streamHub = StreamHub()
 
-/// C-callable frame callback invoked by cs_start_framebuffer at ~30fps.
+/// C-callable frame callback invoked by cs_start_framebuffer at ~30fps with
+/// H.264 Annex B chunks (one access unit per call).
 private let frameCallback: @convention(c) (UnsafePointer<UInt8>, UInt) -> Void = {
     ptr, len in
     let bytes = Data(bytes: ptr, count: Int(len))
-    frameState.cond.lock()
-    frameState.data = bytes
-    frameState.seq &+= 1
-    frameState.cond.broadcast()
-    frameState.cond.unlock()
-}
-
-/// Serve an MJPEG stream to a single connected TCP client.
-private func serveMjpegClient(_ fd: Int32) {
-    // Send HTTP response headers
-    let header =
-        "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n" +
-        "Cache-Control: no-cache, no-store\r\n" +
-        "Connection: close\r\n" +
-        "Access-Control-Allow-Origin: *\r\n" +
-        "\r\n"
-
-    guard writeAll(fd, header.data(using: .utf8)!) else {
-        close(fd)
-        return
-    }
-
-    var lastSeq: UInt64 = 0
-
-    while true {
-        // Wait for a new frame
-        frameState.cond.lock()
-        while frameState.seq == lastSeq {
-            frameState.cond.wait()
-        }
-        lastSeq = frameState.seq
-        let frame = frameState.data
-        frameState.cond.unlock()
-
-        if frame.isEmpty { continue }
-
-        let part =
-            "--frame\r\n" +
-            "Content-Type: image/jpeg\r\n" +
-            "Content-Length: \(frame.count)\r\n" +
-            "\r\n"
-
-        guard writeAll(fd, part.data(using: .utf8)!) else { break }
-        guard writeAll(fd, frame) else { break }
-        guard writeAll(fd, "\r\n".data(using: .utf8)!) else { break }
-    }
-
-    close(fd)
+    streamHub.broadcast(bytes)
 }
 
 /// Write all bytes to a file descriptor, handling short writes.
@@ -117,9 +97,9 @@ private func writeAll(_ fd: Int32, _ data: Data) -> Bool {
     return true
 }
 
-/// Bind a TCP listener on a random port, start accepting MJPEG clients in
-/// background threads, and return the bound port number.
-private func startMjpegServer() throws -> UInt16 {
+/// Bind a TCP listener on a random port, start accepting raw H.264 stream
+/// clients, and return the bound port number.
+private func startStreamServer() throws -> UInt16 {
     // Create a TCP socket
     let serverFd = socket(AF_INET, SOCK_STREAM, 0)
     guard serverFd >= 0 else {
@@ -162,15 +142,14 @@ private func startMjpegServer() throws -> UInt16 {
     }
     let port = UInt16(bigEndian: boundAddr.sin_port)
 
-    // Accept clients in a background thread
+    // Accept clients in a background thread. The stream hub fans encoded
+    // frames out to every connected client from the encoder callback, so no
+    // per-client serving thread is needed.
     Thread.detachNewThread {
         while true {
             let clientFd = accept(serverFd, nil, nil)
             guard clientFd >= 0 else { break }
-            let capturedFd = clientFd
-            Thread.detachNewThread {
-                serveMjpegClient(capturedFd)
-            }
+            streamHub.addClient(clientFd)
         }
         close(serverFd)
     }
@@ -200,9 +179,24 @@ private func buttonToKey(_ button: String) -> KeyMapping? {
     case "menu":      return KeyMapping(keycode: 53,  flags: 0)   // Escape
     case "playpause": return KeyMapping(keycode: 49,  flags: 0)   // Space
     case "home":      return KeyMapping(keycode: 115, flags: 0)   // Home (TV button)
-    // iOS home: Cmd+Shift+H
-    case "ios_home":  return KeyMapping(keycode: 4,   flags: 0x120000)
     default:          return nil
+    }
+}
+
+// iOS hardware buttons routed through IndigoHIDMessageForButton (real button
+// HID) instead of a faked keyboard chord — doesn't depend on a focused keyboard
+// responder and can't misfire as text.
+//
+// `target` is SimDeviceScreen.buttonTarget: 51 for a device's primary internal
+// display (verified on iPhone; the 21 variant is for secondary/external
+// displays). An invalid target aborts backboardd, so this is intentionally a
+// single verified constant rather than a guess. keyCode 1 = Home (verified).
+private let iosButtonTarget: UInt32 = 51
+
+private func iosHardwareButtonKeyCode(_ button: String) -> UInt32? {
+    switch button {
+    case "ios_home": return 1
+    default:         return nil
     }
 }
 
@@ -245,7 +239,7 @@ private func dispatch(_ obj: [String: Any]) {
     switch cmd {
 
     // ------------------------------------------------------------------
-    // start_capture — start IOSurface framebuffer capture + MJPEG server
+    // start_capture — start IOSurface framebuffer capture + H.264 server
     // ------------------------------------------------------------------
     case "start_capture":
         guard let udid = obj["udid"] as? String else {
@@ -253,12 +247,12 @@ private func dispatch(_ obj: [String: Any]) {
             return
         }
 
-        // Start the MJPEG TCP server first so we have a port to report
+        // Start the raw H.264 TCP server first so we have a port to report
         let port: UInt16
         do {
-            port = try startMjpegServer()
+            port = try startStreamServer()
         } catch {
-            respondError("start_capture: failed to start MJPEG server: \(error)")
+            respondError("start_capture: failed to start stream server: \(error)")
             return
         }
 
@@ -311,6 +305,27 @@ private func dispatch(_ obj: [String: Any]) {
             return
         }
 
+        // iOS hardware buttons (Home, …) go through the real button HID path.
+        if let btnCode = iosHardwareButtonKeyCode(buttonName) {
+            let rcDown = udid.withCString {
+                scIndigoButton($0, btnCode, 1, iosButtonTarget)
+            }
+            guard rcDown == 0 else {
+                respondError("button: hw down returned \(rcDown)")
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.05)
+            let rcUp = udid.withCString {
+                scIndigoButton($0, btnCode, 2, iosButtonTarget)
+            }
+            guard rcUp == 0 else {
+                respondError("button: hw up returned \(rcUp)")
+                return
+            }
+            respond(ok: true)
+            return
+        }
+
         guard let mapping = buttonToKey(buttonName) else {
             respondError("button: unknown button '\(buttonName)'")
             return
@@ -338,6 +353,35 @@ private func dispatch(_ obj: [String: Any]) {
         }
 
         respond(ok: true)
+
+    // ------------------------------------------------------------------
+    // hw_button — send a hardware button via IndigoHIDMessageForButton.
+    // Parametric (keyCode/op/target) for empirical probing; sends a down+up
+    // pair when op is omitted.
+    // ------------------------------------------------------------------
+    case "hw_button":
+        guard let udid = obj["udid"] as? String,
+              let keyCode = obj["keyCode"] as? Int else {
+            respondError("hw_button: missing required field(s)")
+            return
+        }
+        let target = UInt32(obj["target"] as? Int ?? Int(iosButtonTarget))
+        if let op = obj["op"] as? Int {
+            let rc = udid.withCString {
+                scIndigoButton($0, UInt32(keyCode), UInt32(op), target)
+            }
+            respond(ok: rc == 0, extras: ["rc": Int(rc)])
+        } else {
+            let rcDown = udid.withCString {
+                scIndigoButton($0, UInt32(keyCode), 1, target)
+            }
+            Thread.sleep(forTimeInterval: 0.05)
+            let rcUp = udid.withCString {
+                scIndigoButton($0, UInt32(keyCode), 2, target)
+            }
+            respond(ok: rcDown == 0 && rcUp == 0,
+                    extras: ["rcDown": Int(rcDown), "rcUp": Int(rcUp)])
+        }
 
     // ------------------------------------------------------------------
     // keyboard — send a raw key event (down or up) via Indigo HID

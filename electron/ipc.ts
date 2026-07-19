@@ -13,7 +13,15 @@ import type {
 } from "./services/onboarding/types";
 import type { OrganizationMember } from "./services/organization/models";
 import type { ToolId } from "./services/tools/types";
-import { Menu, app, clipboard, dialog, ipcMain, nativeImage } from "electron";
+import {
+  Menu,
+  app,
+  clipboard,
+  dialog,
+  ipcMain,
+  nativeImage,
+  systemPreferences,
+} from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { createLogger } from "../app/lib/logger";
@@ -1620,6 +1628,26 @@ export function registerIpcHandlers(): void {
     const id = a.id as string;
 
     return Promise.resolve(appState.sessions.get(id) ?? null);
+  });
+
+  // Video-input viewer — ensure macOS camera (capture-card) access is granted.
+  // Returns the resulting TCC status so the renderer can surface it.
+  handle("request_camera_access", async () => {
+    if (process.platform !== "darwin") {
+      return "granted";
+    }
+    const status = systemPreferences.getMediaAccessStatus("camera");
+    if (status === "granted") {
+      return "granted";
+    }
+    // Only "not-determined" can prompt; "denied"/"restricted" must be changed
+    // in System Settings and would otherwise hang here.
+    if (status !== "not-determined") {
+      return status;
+    }
+    const granted = await systemPreferences.askForMediaAccess("camera");
+
+    return granted ? "granted" : "denied";
   });
 
   // Android device commands

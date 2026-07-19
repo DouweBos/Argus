@@ -124,6 +124,8 @@
     "@codingame/monaco-vscode-workspace-trust-service-override": "~28.3.0",
     "@codingame/monaco-vscode-xml-default-extension": "~28.3.0",
     "@codingame/monaco-vscode-yaml-default-extension": "~28.3.0",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/dompurify": "^3.2.0",
     "@types/hast": "^3.0.4",

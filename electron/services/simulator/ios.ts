@@ -9,6 +9,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { appState } from "../../state";
 import { SimBridge } from "./bridge";
+import { startIosVideoStream, stopIosVideoStream } from "./ios-video";
 
 const execFileAsync = promisify(execFile);
 
@@ -324,6 +325,10 @@ export async function startSimulatorCapture(udid: string): Promise<number> {
 
   const port = response.port as number;
 
+  // Connect to the bridge's raw H.264 stream and forward frames to the
+  // renderer's WebCodecs decoder via IPC.
+  startIosVideoStream(udid, port);
+
   appState.simulators.set(udid, {
     udid,
     deviceName: device.name,
@@ -370,6 +375,8 @@ export function stopSimulatorCapture(udid: string): void {
  * Disconnect, device switch) where we want the stream down immediately.
  */
 export function forceStopSimulatorCapture(udid: string): void {
+  stopIosVideoStream(udid);
+
   const bridge = bridgesByUdid.get(udid);
   if (bridge) {
     // Best-effort — ignore errors on teardown

@@ -4,16 +4,21 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/// Callback invoked for each JPEG-encoded frame.
+/// Callback invoked for each encoded frame. Payload is an H.264 Annex B
+/// elementary stream chunk (one access unit; SPS/PPS prepended on keyframes).
 typedef void (*FrameCallback)(const uint8_t *data, uintptr_t len);
 
 /// Start capturing the simulator framebuffer via CoreSimulator IOSurface.
-/// Calls `callback` with JPEG bytes at ~30fps.
+/// Calls `callback` with H.264 Annex B bytes at ~30fps.
 /// Returns 0 on success, non-zero on failure.
 int32_t cs_start_framebuffer(const char *udid, FrameCallback callback);
 
 /// Stop the active framebuffer capture.
 void cs_stop_framebuffer(void);
+
+/// Force the next encoded frame to be a keyframe (SPS/PPS + IDR). Called when
+/// a new streaming client connects so it can start decoding promptly.
+void SHRequestKeyframe(void);
 
 /// Inject a touch event into the simulator via the Indigo HID protocol.
 /// norm_x, norm_y: normalized screen coordinates in [0.0, 1.0].
