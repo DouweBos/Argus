@@ -1,10 +1,15 @@
 import type { RuntimePickerSection } from "@argus/peacock";
 import { useEffect, useMemo } from "react";
 import { Icons, RuntimePicker } from "@argus/peacock";
+import {
+  useVideoInputDevices,
+  videoInputLabel,
+} from "../../../hooks/useVideoInputDevices";
 import { listAndroidDevices, listSimulators } from "../../../lib/ipc";
 import {
   selectAndroidDevice,
   selectDevice,
+  selectVideoInput,
   setAndroidDevices,
   setDevices,
   setPlatform,
@@ -29,8 +34,15 @@ const SESSION_GLOBAL = "__global__";
  * mount to keep every option available at all times.
  */
 export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
-  const { platform, devices, androidDevices, iosUdid, androidSerial } =
-    useRuntimeTargetState(sessionId);
+  const {
+    platform,
+    devices,
+    androidDevices,
+    iosUdid,
+    androidSerial,
+    videoDeviceId,
+  } = useRuntimeTargetState(sessionId);
+  const videoInputs = useVideoInputDevices();
 
   const sid = sessionId ?? SESSION_GLOBAL;
 
@@ -87,8 +99,33 @@ export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
           },
         ],
       },
+      ...(videoInputs.length > 0
+        ? [
+            {
+              header: "Video Inputs",
+              items: videoInputs.map((d, i) => ({
+                id: d.deviceId,
+                label: videoInputLabel(d, i),
+                selected: platform === "video" && d.deviceId === videoDeviceId,
+                onSelect: () => {
+                  setPlatform("video");
+                  selectVideoInput(sid, d.deviceId);
+                },
+              })),
+            },
+          ]
+        : []),
     ],
-    [devices, androidDevices, platform, iosUdid, androidSerial, sid],
+    [
+      devices,
+      androidDevices,
+      videoInputs,
+      platform,
+      iosUdid,
+      androidSerial,
+      videoDeviceId,
+      sid,
+    ],
   );
 
   const { icon, label, muted } = useMemo(
@@ -97,10 +134,20 @@ export function RuntimeTargetPicker({ sessionId }: RuntimeTargetPickerProps) {
         platform,
         devices,
         androidDevices,
+        videoInputs,
         iosUdid,
         androidSerial,
+        videoDeviceId,
       }),
-    [platform, devices, androidDevices, iosUdid, androidSerial],
+    [
+      platform,
+      devices,
+      androidDevices,
+      videoInputs,
+      iosUdid,
+      androidSerial,
+      videoDeviceId,
+    ],
   );
 
   return (
@@ -117,20 +164,34 @@ function renderTriggerContent({
   platform,
   devices,
   androidDevices,
+  videoInputs,
   iosUdid,
   androidSerial,
+  videoDeviceId,
 }: {
   androidDevices: { name?: string; serial: string }[];
   androidSerial: string | null;
   devices: { name: string; udid: string }[];
   iosUdid: string | null;
-  platform: "android" | "ios" | "web";
+  platform: "android" | "ios" | "video" | "web";
+  videoDeviceId: string | null;
+  videoInputs: MediaDeviceInfo[];
 }): { icon: React.ReactNode; label: string; muted: boolean } {
   if (platform === "web") {
     return {
       icon: <Icons.WebIcon size={10} />,
       label: "Chromium",
       muted: false,
+    };
+  }
+  if (platform === "video") {
+    const idx = videoInputs.findIndex((d) => d.deviceId === videoDeviceId);
+    const device = idx >= 0 ? videoInputs[idx] : undefined;
+
+    return {
+      icon: <Icons.VideoIcon size={10} />,
+      label: device ? videoInputLabel(device, idx) : "Pick input",
+      muted: !device,
     };
   }
   if (platform === "ios") {

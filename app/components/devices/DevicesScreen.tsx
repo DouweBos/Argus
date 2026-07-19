@@ -1,6 +1,10 @@
 import type { DeviceInfo } from "../../lib/types";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ContextMenu, type ContextMenuItem, Icons } from "@argus/peacock";
+import {
+  useVideoInputDevices,
+  videoInputLabel,
+} from "../../hooks/useVideoInputDevices";
 import { bootSimulator, openSimulatorPopout, stopDevice } from "../../lib/ipc";
 import { refreshDevices } from "../../stores/deviceStore";
 import {
@@ -24,8 +28,28 @@ interface MenuState {
 
 export function DevicesScreen() {
   useDevicePoller(3000);
-  const devices = useDevices();
+  const backendDevices = useDevices();
+  const videoInputs = useVideoInputDevices();
   const error = useDevicesError();
+
+  // Video inputs (capture cards / cameras) live in the renderer — surface them
+  // as view-only device rows alongside the backend-polled simulators.
+  const devices = useMemo<DeviceInfo[]>(() => {
+    const video: DeviceInfo[] = videoInputs.map((d, i) => ({
+      agentId: null,
+      deviceKey: d.deviceId,
+      name: videoInputLabel(d, i),
+      online: true,
+      platform: "video",
+      repoRoot: null,
+      reservationKey: d.deviceId,
+      reserved: false,
+      sessionId: null,
+      sessionPath: null,
+    }));
+
+    return [...backendDevices, ...video];
+  }, [backendDevices, videoInputs]);
   const { goto } = useDeviceNavigation();
   const [open, setOpen] = useState<DeviceInfo | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
@@ -40,6 +64,10 @@ export function DevicesScreen() {
   const handleContextMenu = (d: DeviceInfo) => (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Video inputs are view-only — no stop/boot actions.
+    if (d.platform === "video") {
+      return;
+    }
     setMenu({ device: d, x: e.clientX, y: e.clientY });
   };
 

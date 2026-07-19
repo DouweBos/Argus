@@ -31,6 +31,10 @@ func csStartFramebuffer(_ udid: UnsafePointer<CChar>, _ callback: @escaping Fram
         return -1
     }
 
+    // Enable hardware-keyboard mode once per capture session so text entry via
+    // the HID keyboard path is reliable.
+    SHEnableHardwareKeyboard(device)
+
     return SHStartFramebuffer(device, callback)
 }
 
@@ -47,6 +51,8 @@ private var indigoFnPtr: UnsafeMutableRawPointer?    // raw ptr to IndigoHIDMess
 private var indigoLoaded = false
 private var indigoKeyboardFnPtr: UnsafeMutableRawPointer?  // raw ptr to IndigoHIDMessageForKeyboardNSEvent
 private var indigoKeyboardLoaded = false
+private var indigoButtonFnPtr: UnsafeMutableRawPointer?    // raw ptr to IndigoHIDMessageForButton
+private var indigoButtonLoaded = false
 
 // Per-UDID HID clients — allows simultaneous connections to multiple simulators.
 private var hidClients: [String: AnyObject] = [:]
@@ -64,6 +70,14 @@ func SHSendKeyboard(_ client: AnyObject, _ fnPtr: UnsafeMutableRawPointer,
                      _ udid: UnsafePointer<CChar>,
                      _ keyCode: UInt16, _ modifierFlags: UInt64,
                      _ isDown: Bool) -> Int32
+
+@_silgen_name("SHSendButton")
+func SHSendButton(_ client: AnyObject, _ fnPtr: UnsafeMutableRawPointer,
+                   _ udid: UnsafePointer<CChar>,
+                   _ keyCode: UInt32, _ op: UInt32, _ target: UInt32) -> Int32
+
+@_silgen_name("SHEnableHardwareKeyboard")
+func SHEnableHardwareKeyboard(_ device: AnyObject)
 
 @_silgen_name("SHIsHIDClientInvalidForUDID")
 func SHIsHIDClientInvalidForUDID(_ udid: UnsafePointer<CChar>) -> Bool
@@ -174,6 +188,29 @@ private func ensureIndigoKeyboardLoaded() -> Bool {
     }
     NSLog("[IndigoHID] IndigoHIDMessageForKeyboardNSEvent loaded")
     indigoKeyboardFnPtr = sym
+    return true
+}
+
+private func ensureIndigoButtonLoaded() -> Bool {
+    if indigoButtonLoaded { return indigoButtonFnPtr != nil }
+    indigoButtonLoaded = true
+
+    guard ensureSimKitLoaded() else { return false }
+
+    let devDir = xcodeDevDir()
+    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+
+    guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
+        NSLog("[IndigoHID] Failed to load SimulatorKit for button")
+        return false
+    }
+
+    guard let sym = dlsym(simKitHandle, "IndigoHIDMessageForButton") else {
+        NSLog("[IndigoHID] IndigoHIDMessageForButton symbol not found")
+        return false
+    }
+    NSLog("[IndigoHID] IndigoHIDMessageForButton loaded")
+    indigoButtonFnPtr = sym
     return true
 }
 
@@ -378,6 +415,49 @@ func scIndigoKeyboard(_ udid: UnsafePointer<CChar>,
     } else {
         rc = DispatchQueue.main.sync {
             SHSendKeyboard(client, fnPtr, udid, keyCode, modifierFlags, isDown)
+        }
+    }
+    if rc != 0 {
+        hidClients.removeValue(forKey: udidStr)
+    }
+    return rc
+}
+
+/// Send a real hardware-button event (Home, Lock, Volume, …) via the Indigo
+/// HID protocol using IndigoHIDMessageForButton.
+///
+/// keyCode: IndigoHIDButtonKeyCode (1 = Home). op: 1=down, 2=up.
+/// target: IndigoHIDTarget (SimDeviceScreen.buttonTarget — 21 or 51 by family).
+/// Returns 0 on success, negative on failure.
+@_cdecl("sc_indigo_button")
+func scIndigoButton(_ udid: UnsafePointer<CChar>,
+                     _ keyCode: UInt32, _ op: UInt32, _ target: UInt32) -> Int32 {
+    let udidStr = String(cString: udid)
+
+    guard ensureIndigoButtonLoaded() else {
+        NSLog("[IndigoHID] ensureIndigoButtonLoaded failed")
+        return -1
+    }
+
+    if SHIsHIDClientInvalidForUDID(udid) {
+        hidClients.removeValue(forKey: udidStr)
+        SHResetHIDClientInvalidForUDID(udid)
+    }
+
+    guard ensureHIDClient(udid: udidStr) else {
+        NSLog("[IndigoHID] ensureHIDClient failed for %@", udidStr)
+        return -2
+    }
+    guard let fnPtr = indigoButtonFnPtr, let client = hidClients[udidStr] else {
+        return -3
+    }
+
+    let rc: Int32
+    if Thread.isMainThread {
+        rc = SHSendButton(client, fnPtr, udid, keyCode, op, target)
+    } else {
+        rc = DispatchQueue.main.sync {
+            SHSendButton(client, fnPtr, udid, keyCode, op, target)
         }
     }
     if rc != 0 {

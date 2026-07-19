@@ -16,6 +16,9 @@
 #import <IOSurface/IOSurface.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <AppKit/AppKit.h>
+#import <VideoToolbox/VideoToolbox.h>
+#import <CoreMedia/CoreMedia.h>
+#import <CoreVideo/CoreVideo.h>
 
 // ---------------------------------------------------------------------------
 // MARK: - HID touch injection
@@ -55,7 +58,12 @@ static SHTouchState *_touchStateForUDID(const char *udid) {
         atomic_store(&s->invalid, false);
         return s;
     }
-    // Evict oldest (slot 0) and shift — unlikely to hit with ≤8 simulators
+    // Evict oldest (slot 0) and shift — unlikely to hit with ≤8 simulators.
+    // Free its owned continuity snapshot first so eviction doesn't leak.
+    if (g_touchStates[0].lastIndigoMsg) {
+        free(g_touchStates[0].lastIndigoMsg);
+        g_touchStates[0].lastIndigoMsg = NULL;
+    }
     for (int i = 1; i < MAX_TOUCH_STATES; i++) {
         g_touchStates[i - 1] = g_touchStates[i];
     }
@@ -70,6 +78,15 @@ static SHTouchState *_touchStateForUDID(const char *udid) {
 // Minimum nanoseconds between IndigoHIDMessageForMouseNSEvent calls.
 // The function's internal threshold is ~16ms.  We use 17ms for safety.
 #define INDIGO_MIN_INTERVAL_NS 17000000ULL
+
+// Reverse-engineered sizes of the Indigo HID message buffers returned by
+// IndigoHIDMessageForMouseNSEvent (touch) and IndigoHIDMessageForKeyboardNSEvent
+// (keyboard). These are the fixed static-buffer sizes observed in the
+// SimulatorKit disassembly; the functions return a pointer into that buffer.
+// We only ever copy exactly this many bytes, so an under-read is the failure
+// mode to guard against — we NULL-check the returned pointer before copying.
+#define SH_TOUCH_MSG_SIZE 320
+#define SH_KEYBOARD_MSG_SIZE 192
 
 static void _ensureTimebase(mach_timebase_info_data_t *out) {
     static mach_timebase_info_data_t s_timebase;
@@ -100,6 +117,9 @@ void SHResetHIDClientInvalidForUDID(const char *udid) {
 void SHClearTouchStateForUDID(const char *udid) {
     for (int i = 0; i < g_touchStateCount; i++) {
         if (strcmp(g_touchStates[i].udid, udid) == 0) {
+            if (g_touchStates[i].lastIndigoMsg) {
+                free(g_touchStates[i].lastIndigoMsg);
+            }
             g_touchStates[i].lastIndigoMsg = NULL;
             g_touchStates[i].lastTouchTime = 0;
             return;
@@ -107,11 +127,17 @@ void SHClearTouchStateForUDID(const char *udid) {
     }
 }
 
-/// Call IndigoHIDMessageForMouseNSEvent with SIMD registers d0-d3 set to 1.0.
+/// Call IndigoHIDMessageForMouseNSEvent with an already-normalized CGPoint.
 ///
-/// The function internally divides the input coordinates by values in d0-d3
-/// (normally loaded with the screen pixel dimensions). By forcing them to 1.0,
-/// the division becomes a no-op and we can pass normalized [0,1] ratios directly.
+/// The previous implementation set FP registers d0–d3 = 1.0 via inline asm on
+/// the theory that the function divides the input point by those registers.
+/// That was empirically false on current Xcode (18.x): forcing d0–d3 to 2.0
+/// left a tap at (0.5, 0.5) landing dead-center, i.e. the coordinate mapping is
+/// register-independent — the function consumes the CGPoint as normalized
+/// [0,1] directly. The asm was undefined-behaviour-adjacent (relied on the
+/// compiler not touching d0–d3 before the call under -O) for no benefit, so it
+/// is gone. `pt` MUST already be clamped to [0,1] by the caller — the real
+/// crash guard is never handing backboardd an out-of-range coordinate.
 ///
 /// MUST be called on the main thread — IndigoHIDMessageForMouseNSEvent uses
 /// thread-local state to track active touch sequences.
@@ -121,17 +147,6 @@ static void* SHCallIndigoMouseFn(IndigoMouseFn fn,
                                   int nsEventType,
                                   int direction)
 {
-#if defined(__aarch64__)
-    double one = 1.0;
-    __asm__ volatile (
-        "ldr d0, %[one]\n"
-        "ldr d1, %[one]\n"
-        "ldr d2, %[one]\n"
-        "ldr d3, %[one]\n"
-        : : [one] "m" (one)
-        : "d0", "d1", "d2", "d3"
-    );
-#endif
     return fn(pt, prevMsg, 0x32, nsEventType, direction);
 }
 
@@ -173,10 +188,20 @@ int32_t SHSendTouch(id client, void *fnPtr,
     }
 
     IndigoMouseFn fn = (IndigoMouseFn)fnPtr;
+
+    // Clamp to [0,1]. An out-of-range point becomes an off-screen digitizer
+    // coordinate, which trips a backboardd assert and relaunches SpringBoard —
+    // this is the single most important crash guard on the touch path.
+    if (normX < 0.0f) normX = 0.0f; else if (normX > 1.0f) normX = 1.0f;
+    if (normY < 0.0f) normY = 0.0f; else if (normY > 1.0f) normY = 1.0f;
     CGPoint pt = { (double)normX, (double)normY };
 
-    // mouseDown (direction=1) starts a new touch — pass NULL.
-    // mouseDragged/mouseUp pass the previous message for touch continuity.
+    // Touch continuity: pass our OWN snapshot of the previous message, never
+    // IndigoHID's process-global static buffer. That buffer is overwritten by
+    // the next fn() call for THIS or ANY other simulator, so handing it back as
+    // prevMsg can splice a different device's touch into this sequence — a
+    // stale/mismatched continuity record that wedges SpringBoard. DOWN
+    // (direction=1) starts a fresh sequence, so it passes NULL.
     void *prevMsg = (direction == 1) ? NULL : ts->lastIndigoMsg;
 
     void *msg = SHCallIndigoMouseFn(fn, &pt, prevMsg, nsEventType, direction);
@@ -188,12 +213,24 @@ int32_t SHSendTouch(id client, void *fnPtr,
     }
 
     ts->lastTouchTime = now;
-    ts->lastIndigoMsg = msg;
 
-    // Copy the buffer for sending — the HID client frees it asynchronously
-    // via freeWhenDone:YES, so we can't hand over the internal buffer directly.
-    void *copy = malloc(320);
-    memcpy(copy, msg, 320);
+    // Snapshot the shared static buffer into two independent owned copies: one
+    // handed to the HID client for sending (freed by it via freeWhenDone:YES),
+    // and one retained as this UDID's continuity record for the next drag/up.
+    void *copy = malloc(SH_TOUCH_MSG_SIZE);
+    void *owned = malloc(SH_TOUCH_MSG_SIZE);
+    if (!copy || !owned) {
+        free(copy);
+        free(owned);
+        NSLog(@"[IndigoHID] touch message allocation failed");
+        return -7;
+    }
+    memcpy(copy, msg, SH_TOUCH_MSG_SIZE);
+    memcpy(owned, msg, SH_TOUCH_MSG_SIZE);
+
+    // Replace the retained continuity snapshot, freeing the previous one.
+    if (ts->lastIndigoMsg) free(ts->lastIndigoMsg);
+    ts->lastIndigoMsg = owned;
 
     // Capture a pointer to this simulator's invalidation flag so the async
     // completion marks the RIGHT simulator as invalid (not a different one).
@@ -220,6 +257,7 @@ int32_t SHSendTouch(id client, void *fnPtr,
         if (sendError) {
             NSLog(@"[IndigoHID] DOWN send error: %@", sendError);
             atomic_store(invalidFlag, true);
+            free(ts->lastIndigoMsg);
             ts->lastIndigoMsg = NULL;
             ts->lastTouchTime = 0;
             return -6;  // caller will recreate client and retry
@@ -244,9 +282,9 @@ int32_t SHSendTouch(id client, void *fnPtr,
             client, sel, copy, YES, queue, completion);
     }
 
-    // Clear saved pointer on mouseUp — touch sequence is complete.
-    // Don't free: the buffer is owned by IndigoHID internals.
+    // Free the owned continuity snapshot on mouseUp — sequence is complete.
     if (direction == 2) {
+        free(ts->lastIndigoMsg);
         ts->lastIndigoMsg = NULL;
         ts->lastTouchTime = 0;
     }
@@ -307,9 +345,13 @@ int32_t SHSendKeyboard(id client, void *fnPtr,
         return -3;
     }
 
-    // Copy the buffer — 192 bytes (0xc0) per disassembly.
-    void *copy = malloc(192);
-    memcpy(copy, msg, 192);
+    // Copy the buffer for sending — the HID client frees it via freeWhenDone.
+    void *copy = malloc(SH_KEYBOARD_MSG_SIZE);
+    if (!copy) {
+        NSLog(@"[IndigoHID] keyboard message allocation failed");
+        return -5;
+    }
+    memcpy(copy, msg, SH_KEYBOARD_MSG_SIZE);
 
     _Atomic(bool) *invalidFlag = &ts->invalid;
 
@@ -329,6 +371,94 @@ int32_t SHSendKeyboard(id client, void *fnPtr,
 }
 
 // ---------------------------------------------------------------------------
+// MARK: - HID hardware button injection
+// ---------------------------------------------------------------------------
+
+// IndigoHIDMessageForButton(IndigoHIDButtonKeyCode, IndigoHIDButtonOp,
+//   IndigoHIDTarget) -> IndigoHIDMessage*  (per SimulatorKit's own assert
+// string). It calloc's a fresh 192-byte message (SH_KEYBOARD_MSG_SIZE) — the
+// caller OWNS it and must free it, unlike the mouse/keyboard variants which
+// return a shared static buffer. Op values (from the disassembly): down=1, up=2.
+// The `target` MUST be a valid IndigoHIDTarget (SimDeviceScreen.buttonTarget,
+// 21 or 51 by device family) — an invalid target aborts backboardd in the
+// guest's -[SimHIDVirtualServiceManager serviceForIndigoHIDData:].
+typedef void* (*IndigoButtonFn)(uint32_t, uint32_t, uint32_t);
+
+/// Build a real hardware-button HID message (Home, Lock, Volume, …) and send
+/// it via the HID client. Sturdier than faking a keyboard chord: it doesn't
+/// depend on a focused keyboard responder and can't misfire as text.
+///
+/// Returns 0 on success, negative on failure.
+int32_t SHSendButton(id client, void *fnPtr,
+                     const char *udid,
+                     uint32_t keyCode, uint32_t op, uint32_t target) {
+    if (!client || !fnPtr || !udid) return -1;
+
+    IndigoButtonFn fn = (IndigoButtonFn)fnPtr;
+    void *msg = fn(keyCode, op, target);
+    if (!msg) {
+        NSLog(@"[IndigoHID] IndigoHIDMessageForButton returned NULL for "
+              @"keyCode=%u op=%u", keyCode, op);
+        return -3;
+    }
+
+    // Copy into our own buffer for the (async) send, which the client frees via
+    // freeWhenDone:YES; then free the calloc'd message the function handed us.
+    void *copy = malloc(SH_KEYBOARD_MSG_SIZE);
+    if (!copy) {
+        free(msg);
+        NSLog(@"[IndigoHID] button message allocation failed");
+        return -5;
+    }
+    memcpy(copy, msg, SH_KEYBOARD_MSG_SIZE);
+    free(msg);
+
+    _Atomic(bool) *invalidFlag = NULL;
+    for (int i = 0; i < g_touchStateCount; i++) {
+        if (strcmp(g_touchStates[i].udid, udid) == 0) {
+            invalidFlag = &g_touchStates[i].invalid;
+            break;
+        }
+    }
+
+    SEL sel = NSSelectorFromString(@"sendWithMessage:freeWhenDone:completionQueue:completion:");
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    void (^completion)(NSError *) = ^(NSError *error) {
+        if (error) {
+            NSLog(@"[IndigoHID] button send error: %@", error);
+            if (invalidFlag) atomic_store(invalidFlag, true);
+        }
+    };
+
+    ((void (*)(id, SEL, void *, BOOL, dispatch_queue_t, void(^)(NSError *)))objc_msgSend)(
+        client, sel, copy, YES, queue, completion);
+
+    return 0;
+}
+
+/// Enable hardware-keyboard mode on the SimDevice so physical key events are
+/// routed to the focused text field. Called once per capture session; without
+/// it, text entry via the HID keyboard path is flaky.
+void SHEnableHardwareKeyboard(id device) {
+    if (!device) return;
+    SEL sel = NSSelectorFromString(@"setHardwareKeyboardEnabled:keyboardType:error:");
+    if (![device respondsToSelector:sel]) {
+        NSLog(@"[IndigoHID] setHardwareKeyboardEnabled:keyboardType:error: unavailable");
+        return;
+    }
+    NSError *err = nil;
+    // keyboardType 0 = default. Pass the type as a full 64-bit register so the
+    // value is 0 regardless of the parameter's real width.
+    BOOL ok = ((BOOL (*)(id, SEL, BOOL, unsigned long long, NSError **))objc_msgSend)(
+        device, sel, YES, 0ULL, &err);
+    if (!ok || err) {
+        NSLog(@"[IndigoHID] setHardwareKeyboardEnabled failed: %@", err);
+    } else {
+        NSLog(@"[IndigoHID] hardware keyboard enabled");
+    }
+}
+
+// ---------------------------------------------------------------------------
 // MARK: - Framebuffer capture via SimDeviceIOClient + IOSurface
 // ---------------------------------------------------------------------------
 
@@ -342,6 +472,200 @@ static SHFrameCallback g_frameCallback = NULL;
 static id g_ioClient = nil;
 static id g_displayDescriptor = nil;   // SimDisplayIOSurfaceRenderable proxy
 static id g_captureDevice = nil;       // SimDevice retained for IOClient recreation
+
+// ---------------------------------------------------------------------------
+// MARK: - VideoToolbox H.264 encoder
+//
+// Replaces the old per-frame CPU JPEG path: the IOSurface is wrapped
+// zero-copy in a CVPixelBuffer and fed to a VTCompressionSession. The output
+// callback converts the AVCC (length-prefixed) NAL units to an Annex B
+// elementary stream (with SPS/PPS on keyframes) and emits it via
+// g_frameCallback — matching what the Node-side H264AccessUnitParser expects.
+// ---------------------------------------------------------------------------
+
+static VTCompressionSessionRef g_vtSession = NULL;
+static int32_t g_vtWidth = 0;   // source (IOSurface) dims — for change detection
+static int32_t g_vtHeight = 0;
+static int64_t g_frameIndex = 0;
+static _Atomic(bool) g_forceKeyframe = false;
+
+static const uint8_t kAnnexBStartCode[4] = {0x00, 0x00, 0x00, 0x01};
+
+// Cap the longest ENCODED dimension for performance (consistent with the
+// Android capture path's maxSize default). The framebuffer is captured at
+// native resolution and VideoToolbox scales it down to fit; 0 disables the
+// cap. 1920 keeps Retina mirrors crisp while roughly halving the encode cost
+// of the largest devices.
+static int32_t g_maxEncodeDim = 1920;
+
+/// Compute the (aspect-preserving, even) H.264 encode dimensions for a source
+/// framebuffer, applying the resolution cap.
+static void _encodeDims(int32_t sw, int32_t sh, int32_t *ew, int32_t *eh) {
+    int32_t longest = sw > sh ? sw : sh;
+    if (g_maxEncodeDim > 0 && longest > g_maxEncodeDim) {
+        double scale = (double)g_maxEncodeDim / (double)longest;
+        sw = (int32_t)(sw * scale);
+        sh = (int32_t)(sh * scale);
+    }
+    sw &= ~1;  // H.264 requires even dimensions
+    sh &= ~1;
+    *ew = sw < 2 ? 2 : sw;
+    *eh = sh < 2 ? 2 : sh;
+}
+
+/// VT output callback — runs on a VideoToolbox-managed thread. Serializes the
+/// compressed access unit as Annex B and hands it to the frame callback.
+static void _vtOutputCallback(void *outputCallbackRefCon,
+                              void *sourceFrameRefCon,
+                              OSStatus status,
+                              VTEncodeInfoFlags infoFlags,
+                              CMSampleBufferRef sampleBuffer) {
+    SHFrameCallback cb = g_frameCallback;
+    if (status != noErr || !sampleBuffer || !cb) return;
+    if (!CMSampleBufferDataIsReady(sampleBuffer)) return;
+
+    // A frame is a keyframe unless it is explicitly flagged NotSync.
+    bool isKeyframe = true;
+    CFArrayRef attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, false);
+    if (attachments && CFArrayGetCount(attachments) > 0) {
+        CFDictionaryRef dict = (CFDictionaryRef)CFArrayGetValueAtIndex(attachments, 0);
+        isKeyframe = !CFDictionaryContainsKey(dict, kCMSampleAttachmentKey_NotSync);
+    }
+
+    NSMutableData *out = [NSMutableData data];
+
+    // Prepend SPS/PPS (as Annex B) ahead of every keyframe so late joiners can
+    // configure their decoder.
+    if (isKeyframe) {
+        CMFormatDescriptionRef fmt = CMSampleBufferGetFormatDescription(sampleBuffer);
+        if (fmt) {
+            size_t paramCount = 0;
+            if (CMVideoFormatDescriptionGetH264ParameterSetAtIndex(
+                    fmt, 0, NULL, NULL, &paramCount, NULL) == noErr) {
+                for (size_t i = 0; i < paramCount; i++) {
+                    const uint8_t *ps = NULL;
+                    size_t psLen = 0;
+                    if (CMVideoFormatDescriptionGetH264ParameterSetAtIndex(
+                            fmt, i, &ps, &psLen, NULL, NULL) == noErr && ps) {
+                        [out appendBytes:kAnnexBStartCode length:4];
+                        [out appendBytes:ps length:psLen];
+                    }
+                }
+            }
+        }
+    }
+
+    // Convert the AVCC block buffer (4-byte length prefixes) to Annex B.
+    CMBlockBufferRef bb = CMSampleBufferGetDataBuffer(sampleBuffer);
+    if (bb) {
+        size_t totalLen = 0;
+        char *dataPtr = NULL;
+        if (CMBlockBufferGetDataPointer(bb, 0, NULL, &totalLen, &dataPtr) == noErr && dataPtr) {
+            size_t offset = 0;
+            while (offset + 4 <= totalLen) {
+                uint32_t nalLen = ((uint32_t)(uint8_t)dataPtr[offset] << 24) |
+                                  ((uint32_t)(uint8_t)dataPtr[offset + 1] << 16) |
+                                  ((uint32_t)(uint8_t)dataPtr[offset + 2] << 8) |
+                                  ((uint32_t)(uint8_t)dataPtr[offset + 3]);
+                offset += 4;
+                if (offset + nalLen > totalLen) break;
+                [out appendBytes:kAnnexBStartCode length:4];
+                [out appendBytes:(dataPtr + offset) length:nalLen];
+                offset += nalLen;
+            }
+        }
+    }
+
+    if (out.length > 0) {
+        cb((const uint8_t *)out.bytes, out.length);
+    }
+}
+
+/// Tear down the compression session and reset encoder state.
+static void _teardownVTSession(void) {
+    if (g_vtSession) {
+        VTCompressionSessionCompleteFrames(g_vtSession, kCMTimeInvalid);
+        VTCompressionSessionInvalidate(g_vtSession);
+        CFRelease(g_vtSession);
+        g_vtSession = NULL;
+    }
+    g_vtWidth = 0;
+    g_vtHeight = 0;
+    g_frameIndex = 0;
+}
+
+/// Create the compression session lazily, recreating it if the surface
+/// dimensions changed. Returns NO on failure.
+static BOOL _ensureVTSession(int32_t w, int32_t h) {
+    if (g_vtSession && g_vtWidth == w && g_vtHeight == h) return YES;
+    _teardownVTSession();
+
+    int32_t ew, eh;
+    _encodeDims(w, h, &ew, &eh);
+
+    OSStatus st = VTCompressionSessionCreate(
+        kCFAllocatorDefault, ew, eh, kCMVideoCodecType_H264,
+        NULL, NULL, NULL, _vtOutputCallback, NULL, &g_vtSession);
+    if (st != noErr || !g_vtSession) {
+        NSLog(@"[Framebuffer] VTCompressionSessionCreate failed: %d", (int)st);
+        g_vtSession = NULL;
+        return NO;
+    }
+
+    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_RealTime, kCFBooleanTrue);
+    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_AllowFrameReordering, kCFBooleanFalse);
+    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_ProfileLevel,
+                         kVTProfileLevel_H264_Main_AutoLevel);
+
+    // Quality-driven VBR instead of a fixed average bitrate: crisp text,
+    // near-zero bytes on static screens, and the bitrate rises only under
+    // motion. No bitrate cap — the transport is localhost.
+    // Kept below 1.0: at 1.0 VideoToolbox preserves the BGRA source's full
+    // chroma and emits High 4:4:4 (profile 244), which WebCodecs can't decode;
+    // 0.8 keeps it 4:2:0 / decodable while still visually lossless for UI.
+    float quality = 0.8f;
+    CFNumberRef qNum = CFNumberCreate(NULL, kCFNumberFloat32Type, &quality);
+    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_Quality, qNum);
+    CFRelease(qNum);
+
+    // Keyframe every 1s (time-based) for fast recovery and late-joiner
+    // startup, independent of frame rate.
+    double kfDur = 1.0;
+    CFNumberRef kfNum = CFNumberCreate(NULL, kCFNumberFloat64Type, &kfDur);
+    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration, kfNum);
+    CFRelease(kfNum);
+
+    int32_t fps = 30;
+    CFNumberRef fpsNum = CFNumberCreate(NULL, kCFNumberSInt32Type, &fps);
+    VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_ExpectedFrameRate, fpsNum);
+    CFRelease(fpsNum);
+
+    // When encoding below native resolution, let VideoToolbox scale the source
+    // pixel buffer down (aspect preserved by _encodeDims, so Trim never crops).
+    if (ew != w || eh != h) {
+        const void *ks[] = { kVTPixelTransferPropertyKey_ScalingMode };
+        const void *vs[] = { kVTScalingMode_Trim };
+        CFDictionaryRef xfer = CFDictionaryCreate(NULL, ks, vs, 1,
+            &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        VTSessionSetProperty(g_vtSession, kVTCompressionPropertyKey_PixelTransferProperties, xfer);
+        CFRelease(xfer);
+    }
+
+    VTCompressionSessionPrepareToEncodeFrames(g_vtSession);
+
+    g_vtWidth = w;
+    g_vtHeight = h;
+    g_frameIndex = 0;
+    NSLog(@"[Framebuffer] VTCompressionSession source %dx%d → encode %dx%d (quality VBR)",
+          w, h, ew, eh);
+    return YES;
+}
+
+/// Force the next encoded frame to be a keyframe. Called when a new streaming
+/// client connects so it gets a decodable stream (SPS/PPS + IDR) promptly.
+void SHRequestKeyframe(void) {
+    atomic_store(&g_forceKeyframe, true);
+}
 
 /// (Re)create the SimDeviceIOClient and find the display descriptor.
 /// Returns YES if g_displayDescriptor is ready, NO on failure.
@@ -434,7 +758,7 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
         NSLog(@"[Framebuffer] framebufferSurface threw: %@ — will retry", e.reason);
     }
 
-    // --- Start timer for JPEG encoding at ~30fps ---
+    // --- Start timer for H.264 encoding at ~30fps ---
     // If framebufferSurface stays nil, the timer will periodically rebuild the
     // IOClient — the surface port is bound at creation time, so a stale client
     // created before Simulator.app switched to this device will never get one.
@@ -491,39 +815,34 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
             nilSurfaceCount = 0;
         }
 
-        size_t w = IOSurfaceGetWidth(surface);
-        size_t h = IOSurfaceGetHeight(surface);
-        size_t bpr = IOSurfaceGetBytesPerRow(surface);
+        int32_t w = (int32_t)IOSurfaceGetWidth(surface);
+        int32_t h = (int32_t)IOSurfaceGetHeight(surface);
 
-        IOSurfaceLock(surface, kIOSurfaceLockReadOnly, NULL);
+        if (!_ensureVTSession(w, h)) return;
 
-        void *base = IOSurfaceGetBaseAddress(surface);
-        CGColorSpaceRef cs = CGColorSpaceCreateDeviceRGB();
-
-        // BGRA pixel format
-        CGContextRef ctx = CGBitmapContextCreate(
-            base, w, h, 8, bpr, cs,
-            kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little);
-        CGColorSpaceRelease(cs);
-
-        if (ctx) {
-            CGImageRef image = CGBitmapContextCreateImage(ctx);
-            CGContextRelease(ctx);
-
-            if (image) {
-                NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithCGImage:image];
-                CGImageRelease(image);
-
-                NSDictionary *props = @{NSImageCompressionFactor: @0.7};
-                NSData *jpeg = [rep representationUsingType:NSBitmapImageFileTypeJPEG
-                                                properties:props];
-                if (jpeg && g_frameCallback) {
-                    g_frameCallback(jpeg.bytes, jpeg.length);
-                }
-            }
+        // Wrap the IOSurface (32BGRA) zero-copy in a CVPixelBuffer and encode.
+        CVPixelBufferRef pb = NULL;
+        CVReturn cvret = CVPixelBufferCreateWithIOSurface(NULL, surface, NULL, &pb);
+        if (cvret != kCVReturnSuccess || !pb) {
+            if (pb) CVPixelBufferRelease(pb);
+            return;
         }
 
-        IOSurfaceUnlock(surface, kIOSurfaceLockReadOnly, NULL);
+        CMTime pts = CMTimeMake(g_frameIndex++, 30);
+
+        CFDictionaryRef frameProps = NULL;
+        if (atomic_exchange(&g_forceKeyframe, false)) {
+            const void *keys[1] = { kVTEncodeFrameOptionKey_ForceKeyFrame };
+            const void *vals[1] = { kCFBooleanTrue };
+            frameProps = CFDictionaryCreate(NULL, keys, vals, 1,
+                &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+        }
+
+        VTCompressionSessionEncodeFrame(g_vtSession, pb, pts, kCMTimeInvalid,
+                                        frameProps, NULL, NULL);
+
+        if (frameProps) CFRelease(frameProps);
+        CVPixelBufferRelease(pb);
     });
 
     dispatch_resume(g_captureTimer);
@@ -537,6 +856,9 @@ void SHStopFramebuffer(void) {
         dispatch_source_cancel(g_captureTimer);
         g_captureTimer = NULL;
     }
+
+    _teardownVTSession();
+    atomic_store(&g_forceKeyframe, false);
 
     g_displayDescriptor = nil;
     g_ioClient = nil;

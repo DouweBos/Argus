@@ -39,6 +39,10 @@ module.exports = {
     },
     { from: "native/scrcpy-server/scrcpy-server.jar", to: "scrcpy-server.jar" },
     {
+      from: "native/emulator-proto/emulator_controller.proto",
+      to: "emulator_controller.proto",
+    },
+    {
       from: "electron/prompts/worktree-agent-system-prompt.md",
       to: "worktree-agent-system-prompt.md",
     },
@@ -81,6 +85,8 @@ module.exports = {
         "Argus uses Apple Events to control developer tools (simulators, terminals) on your behalf.",
       NSSystemAdministrationUsageDescription:
         "Argus performs system administration tasks to manage simulators, emulators, and developer tooling.",
+      NSCameraUsageDescription:
+        "Argus needs camera access to display video from connected capture cards and cameras.",
     },
   },
   publish: [

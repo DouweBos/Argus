@@ -54,7 +54,10 @@ FRAMEWORKS      := \
     -framework IOSurface \
     -framework CoreGraphics \
     -framework AppKit \
-    -framework Foundation
+    -framework Foundation \
+    -framework VideoToolbox \
+    -framework CoreMedia \
+    -framework CoreVideo
 
 # ---------------------------------------------------------------------------
 # Targets

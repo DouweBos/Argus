@@ -9,6 +9,7 @@ export function isTvOS(device: SimulatorDevice | undefined): boolean {
 
 const STORAGE_KEY = "argus:simulatorBySession";
 const ANDROID_STORAGE_KEY = "argus:androidBySession";
+const VIDEO_STORAGE_KEY = "argus:videoBySession";
 const PLATFORM_STORAGE_KEY = "argus:platform";
 const BROWSER_PRESET_STORAGE_KEY = "argus:browserPreset";
 
@@ -58,6 +59,9 @@ function loadPlatform(): Platform {
     if (raw === "web") {
       return "web";
     }
+    if (raw === "video") {
+      return "video";
+    }
   } catch {
     // ignore
   }
@@ -78,7 +82,7 @@ function loadBrowserPreset(): string {
   return "desktop";
 }
 
-export type Platform = "android" | "ios" | "web";
+export type Platform = "android" | "ios" | "video" | "web";
 export type RuntimeMode = "inspect" | "simulate";
 
 interface SimulatorStoreData {
@@ -118,6 +122,8 @@ interface SimulatorStoreData {
   runtimeMode: RuntimeMode;
   selectedAndroidBySession: Record<string, string | null>;
   selectedUdidBySession: Record<string, string | null>;
+  /** Selected video-input (capture card / camera) `deviceId` per session. */
+  selectedVideoBySession: Record<string, string | null>;
 }
 
 const simulatorStore = create<SimulatorStoreData>(() => ({
@@ -134,6 +140,7 @@ const simulatorStore = create<SimulatorStoreData>(() => ({
   androidToolsError: null,
   androidDevices: [],
   selectedAndroidBySession: loadSelectedBySession(ANDROID_STORAGE_KEY),
+  selectedVideoBySession: loadSelectedBySession(VIDEO_STORAGE_KEY),
   androidCapturing: false,
   androidBooting: false,
   androidDisconnected: false,
@@ -279,6 +286,21 @@ export const selectAndroidDevice = (
   });
 };
 
+export const selectVideoInput = (
+  sessionId: string,
+  deviceId: string | null,
+) => {
+  simulatorStore.setState((state) => {
+    const next = {
+      ...state.selectedVideoBySession,
+      [sessionId]: deviceId,
+    };
+    saveSelectedBySession(VIDEO_STORAGE_KEY, next);
+
+    return { selectedVideoBySession: next };
+  });
+};
+
 export const setAndroidCapturing = (capturing: boolean) => {
   simulatorStore.setState({ androidCapturing: capturing });
 };
@@ -408,7 +430,16 @@ export function useRuntimeTargetState(sessionId: string | null) {
       iosUdid: s.selectedUdidBySession[sessionId ?? "__global__"] ?? null,
       androidSerial:
         s.selectedAndroidBySession[sessionId ?? "__global__"] ?? null,
+      videoDeviceId:
+        s.selectedVideoBySession[sessionId ?? "__global__"] ?? null,
     })),
+  );
+}
+
+/** The selected video-input `deviceId` for a session (capture card viewer). */
+export function useSelectedVideoDeviceId(sessionId: string | null) {
+  return useSimulatorStore(
+    (s) => s.selectedVideoBySession[sessionId ?? "__global__"] ?? null,
   );
 }
 

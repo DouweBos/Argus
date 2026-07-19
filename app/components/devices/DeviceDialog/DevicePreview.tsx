@@ -1,7 +1,8 @@
 import type { DeviceInfo } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAndroidVideoDecoder } from "../../../hooks/useAndroidVideoDecoder";
-import { useSimulatorCapture } from "../../../hooks/useSimulatorCapture";
+import { useIosVideoDecoder } from "../../../hooks/useIosVideoDecoder";
+import { useVideoInputStream } from "../../../hooks/useVideoInputStream";
 import {
   androidMetaStateFromEvent,
   ANDROID_KEYCODE_MAP,
@@ -46,8 +47,43 @@ export function DevicePreview({ device }: DevicePreviewProps) {
   if (device.platform === "android") {
     return <AndroidPreview device={device} />;
   }
+  if (device.platform === "video") {
+    return <VideoPreview device={device} />;
+  }
 
   return <WebPreview device={device} />;
+}
+
+// ---------------------------------------------------------------------------
+// Video input (capture card / camera) — view only
+// ---------------------------------------------------------------------------
+
+function VideoPreview({ device }: { device: DeviceInfo }) {
+  const { videoRef, playing, errorMsg } = useVideoInputStream(
+    device.deviceKey,
+    true,
+  );
+
+  return (
+    <div className={styles.stageWrap}>
+      <video
+        ref={videoRef}
+        className={
+          playing
+            ? styles.previewVideo
+            : `${styles.previewVideo} ${styles.videoHidden}`
+        }
+        autoPlay
+        muted
+        playsInline
+      />
+      {!playing && (
+        <div className={styles.previewPlaceholder}>
+          {errorMsg ?? "Starting video…"}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -55,24 +91,25 @@ export function DevicePreview({ device }: DevicePreviewProps) {
 // ---------------------------------------------------------------------------
 
 function IosPreview({ device }: { device: DeviceInfo }) {
-  const [port, setPort] = useState<number | null>(null);
-  const { imgRef, streamUrl, isReceiving } = useSimulatorCapture(port);
-  const stageRef = useRef<HTMLDivElement>(null);
-
+  const [active, setActive] = useState(false);
   const udid = device.reservationKey;
+  const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
+    useIosVideoDecoder(active, udid);
+  const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
     startSimulatorCapture(udid)
-      .then((p) => {
+      .then(() => {
         if (!cancelled) {
-          setPort(p);
+          setActive(true);
         }
       })
       .catch(() => {});
 
     return () => {
       cancelled = true;
+      setActive(false);
       stopSimulatorCapture(udid).catch(() => {});
     };
   }, [udid]);
@@ -86,12 +123,11 @@ function IosPreview({ device }: { device: DeviceInfo }) {
 
   const { handlers } = useNormalizedPointer(stageRef, {
     getMediaSize: () => {
-      const img = imgRef.current;
-      if (!img) {
+      if (videoWidth === 0 || videoHeight === 0) {
         return null;
       }
 
-      return { width: img.naturalWidth, height: img.naturalHeight };
+      return { width: videoWidth, height: videoHeight };
     },
     onTouch,
   });
@@ -145,15 +181,15 @@ function IosPreview({ device }: { device: DeviceInfo }) {
   return (
     <>
       <div ref={stageRef} className={styles.stageWrap}>
-        {streamUrl ? (
-          <img
-            ref={imgRef}
-            src={streamUrl}
-            alt={device.name}
-            className={styles.previewImg}
-            style={{ opacity: isReceiving ? 1 : 0.6 }}
-          />
-        ) : (
+        <canvas
+          ref={canvasRef}
+          className={styles.previewImg}
+          style={{
+            display: isConfigured ? "block" : "none",
+            opacity: isReceiving ? 1 : 0.6,
+          }}
+        />
+        {!isConfigured && (
           <div className={styles.previewPlaceholder}>Starting capture…</div>
         )}
         <div
