@@ -1,5 +1,11 @@
 # argus
 
+## 0.33.1
+
+### Patch Changes
+
+- d16da67: Updated conductor to 0.23.0.
+
 ## 0.33.0
 
 ### Minor Changes
