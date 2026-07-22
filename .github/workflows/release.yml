@@ -136,12 +136,24 @@ jobs:
           security default-keychain -s build.keychain
           echo "Keychain ready at $KEYCHAIN_PATH"
 
+      - name: Encode match git auth
+        if: steps.stage.outputs.has_changes == 'true'
+        env:
+          MATCH_GIT_PAT: ${{ secrets.MATCH_GIT_PAT }}
+        run: |
+          # match needs base64("user:token") for the HTTPS Authorization header.
+          # Store the raw PAT as a secret and encode it here so rotation is trivial.
+          AUTH=$(printf '%s' "x-access-token:${MATCH_GIT_PAT}" | base64 | tr -d '\n')
+          echo "::add-mask::$AUTH"
+          echo "MATCH_GIT_BASIC_AUTHORIZATION=$AUTH" >> "$GITHUB_ENV"
+
       - name: Run fastlane release
         if: steps.stage.outputs.has_changes == 'true'
         env:
           # --- Signing (match) ---
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          # MATCH_GIT_BASIC_AUTHORIZATION is set in $GITHUB_ENV by the
+          # "Encode match git auth" step above from the raw MATCH_GIT_PAT secret.
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_KEYCHAIN_NAME: build.keychain
           MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_KEYCHAIN_PASSWORD }}
