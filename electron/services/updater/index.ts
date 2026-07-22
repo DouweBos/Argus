@@ -49,7 +49,8 @@ export interface UpdaterState {
 }
 
 let state: UpdaterState = {
-  currentVersion: app.getVersion(),
+  // `app` is undefined outside Electron (e.g. vitest importing this transitively).
+  currentVersion: app?.getVersion() ?? "0.0.0",
   error: null,
   phase: "idle",
   progressPercent: 0,

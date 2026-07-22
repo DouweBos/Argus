@@ -12,7 +12,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import { promisify } from "node:util";
 import { error, info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { sendAgentMessage, startAgent, stopAgent } from "../agent/claude";
 import { ensureRepoRegistered } from "../mcp/projects";

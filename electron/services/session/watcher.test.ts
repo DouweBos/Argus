@@ -7,7 +7,7 @@ import { WatcherHandle, startWatcher } from "./watcher";
 // ---------------------------------------------------------------------------
 
 const mockSend = vi.fn();
-vi.mock("../../main", () => ({
+vi.mock("../../mainWindow", () => ({
   getMainWindow: () => ({ webContents: { send: mockSend } }),
 }));
 

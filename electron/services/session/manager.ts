@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { error, info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
 import { forkClaudeSessionFile } from "../llm/runners/claudeCode/transcriptFork";

@@ -8,7 +8,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { getConductorBinPath } from "../cli/conductor";
 
 const execFileAsync = promisify(execFile);

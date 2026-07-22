@@ -17,7 +17,7 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { promisify } from "node:util";
 import { info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 
 const execFileAsync = promisify(execFile);
 

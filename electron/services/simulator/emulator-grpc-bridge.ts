@@ -25,7 +25,7 @@ import {
 } from "node:child_process";
 import { promisify } from "node:util";
 import { log } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { resolveAssetPath } from "../tools/assets";
 import { discoverEmulatorGrpc } from "./emulator-discovery";
 import { ANDROID_TO_EVDEV, BUTTON_TO_KEY } from "./emulator-input";

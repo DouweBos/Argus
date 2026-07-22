@@ -11,7 +11,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import nodePath from "node:path";
 import { info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { git, worktreesRoot } from "./git";
 import { withGitLock } from "./gitLock";

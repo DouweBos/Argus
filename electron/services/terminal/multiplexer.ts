@@ -26,7 +26,7 @@ import type { IPty } from "node-pty";
 import type * as NodePty from "node-pty";
 import fs from "node:fs";
 import path from "node:path";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { loadArgusConfig } from "../session/setup";
 
