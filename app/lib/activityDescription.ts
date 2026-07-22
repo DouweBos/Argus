@@ -131,6 +131,7 @@ export interface Activity {
  * @param pendingToolName - Name of the tool currently waiting for result (if any).
  * @param pendingToolInput - Input of the tool currently waiting for result (if any).
  * @param hasPendingPermission - Whether any tool call has pendingPermission = true.
+ * @param hasRunningSubagents - Whether a Task/Agent subagent is still in flight.
  */
 export function deriveActivity(
   agentStatus:
@@ -145,13 +146,17 @@ export function deriveActivity(
   pendingToolName: string | null,
   pendingToolInput: Record<string, unknown> | null,
   hasPendingPermission: boolean,
+  hasRunningSubagents = false,
 ): Activity {
   if (!agentStatus || agentStatus === "stopped" || agentStatus === "error") {
     return { description: "Stopped", state: "stopped" };
   }
 
   if (agentStatus === "idle") {
-    return { description: "Idle", state: "idle" };
+    // The CLI can report idle between tool calls while subagents keep working.
+    return hasRunningSubagents
+      ? { description: "Running subagents", state: "working" }
+      : { description: "Idle", state: "idle" };
   }
 
   // agentStatus === "running"

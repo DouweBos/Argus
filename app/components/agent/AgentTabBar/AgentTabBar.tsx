@@ -79,11 +79,24 @@ function useTabMeta(
   const awaitingPermission = messages.some((m) =>
     m.toolCalls.some((tc) => tc.pendingPermission),
   );
+  // A Task/Agent tool call without a result yet means a subagent is still
+  // working, even if the CLI reported the parent session idle.
+  const hasRunningSubagents = messages.some((m) =>
+    m.toolCalls.some(
+      (tc) =>
+        (tc.name === "Task" || tc.name === "Agent") &&
+        tc.result === undefined &&
+        !tc.pendingPermission,
+    ),
+  );
 
   let state: StatusDotsState = "idle";
   if (awaitingPermission) {
     state = "awaiting";
-  } else if (status === "running") {
+  } else if (
+    status === "running" ||
+    (status === "idle" && hasRunningSubagents)
+  ) {
     state = "running";
   }
 

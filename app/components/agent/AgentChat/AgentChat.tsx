@@ -63,6 +63,7 @@ import {
   queueMessage,
   setDraft,
   useConversation,
+  useHasRunningSubagents,
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
 import { useSessions } from "../../../stores/sessionStore";
@@ -162,6 +163,7 @@ export function AgentChat({
   const conversation = useConversation(agentId);
   const agentSnapshot = useAgentStatus(agentId ?? "");
   const agentStatus = agentId != null ? (agentSnapshot?.status ?? null) : null;
+  const hasRunningSubagents = useHasRunningSubagents(agentId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -530,6 +532,7 @@ export function AgentChat({
         pendingToolName,
         pendingToolInput,
         hasPendingPermission,
+        hasRunningSubagents,
       ),
     [
       agentStatus,
@@ -537,6 +540,7 @@ export function AgentChat({
       pendingToolName,
       pendingToolInput,
       hasPendingPermission,
+      hasRunningSubagents,
     ],
   );
 

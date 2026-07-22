@@ -1,3 +1,4 @@
+import type { ConversationMessage, ToolCallInfo } from "./conversationStore";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addUserMessage,
@@ -5,6 +6,7 @@ import {
   clearConversation,
   dequeueMessage,
   getConversationState,
+  hasRunningSubagents,
   migrateConversation,
   queueMessage,
   setCapabilities,
@@ -289,5 +291,51 @@ describe("conversationStore", () => {
     expect(conv.slashCommands).toHaveLength(2);
     expect(conv.slashCommands![0].name).toBe("commit");
     expect(conv.slashCommands![0].description).toBe("Commit changes");
+  });
+
+  describe("hasRunningSubagents", () => {
+    function seed(toolCalls: ToolCallInfo[]) {
+      const message: ConversationMessage = {
+        id: "m1",
+        role: "assistant",
+        textBlocks: [],
+        timestamp: 0,
+        toolCalls,
+      };
+      setConversationState({
+        conversations: {
+          "agent-1": { messages: [message], queuedMessages: [] },
+        },
+      });
+    }
+
+    it("is false with no conversation", () => {
+      expect(hasRunningSubagents("agent-1")).toBe(false);
+    });
+
+    it("is true for a Task tool call without a result", () => {
+      seed([{ id: "t1", name: "Task", input: {} }]);
+      expect(hasRunningSubagents("agent-1")).toBe(true);
+    });
+
+    it("is true for an Agent tool call without a result", () => {
+      seed([{ id: "t1", name: "Agent", input: {} }]);
+      expect(hasRunningSubagents("agent-1")).toBe(true);
+    });
+
+    it("is false once the Task tool call has a result", () => {
+      seed([{ id: "t1", name: "Task", input: {}, result: "done" }]);
+      expect(hasRunningSubagents("agent-1")).toBe(false);
+    });
+
+    it("is false while the Task call awaits permission", () => {
+      seed([{ id: "t1", name: "Task", input: {}, pendingPermission: true }]);
+      expect(hasRunningSubagents("agent-1")).toBe(false);
+    });
+
+    it("ignores non-subagent tool calls", () => {
+      seed([{ id: "t1", name: "Bash", input: {} }]);
+      expect(hasRunningSubagents("agent-1")).toBe(false);
+    });
   });
 });
