@@ -19,7 +19,7 @@ import http from "node:http";
 import path from "node:path";
 import { z } from "zod";
 import { createLogger, info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { resolveAttachments, mcpAttachmentSchema } from "../agent/attachments";
 import {

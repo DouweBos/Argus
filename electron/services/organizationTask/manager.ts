@@ -12,7 +12,7 @@ import type { Session } from "../session/models";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { info, warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { orgHostDir, orgHostOrgDir } from "./paths";
 import { loadOrgTasks, saveOrgTasks } from "./store";

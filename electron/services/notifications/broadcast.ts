@@ -6,7 +6,7 @@
  */
 
 import { broadcastToRenderers } from "../../broadcast";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 
 export type NotificationLevel = "error" | "warning";
 

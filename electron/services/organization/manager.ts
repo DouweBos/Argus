@@ -7,7 +7,7 @@ import type { Organization, OrganizationMember } from "./models";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { isGitRepo } from "../mcp/projects";
 import { deleteOrgTasksForOrganization } from "../organizationTask/manager";

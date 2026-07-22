@@ -14,7 +14,7 @@
 
 import type { Session } from "./models";
 import { info, warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { git } from "./git";
 

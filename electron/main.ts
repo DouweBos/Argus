@@ -26,6 +26,7 @@ import { broadcastToRenderers } from "./broadcast";
 import { registerIpcHandlers } from "./ipc";
 import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
+import { setMainWindow } from "./mainWindow";
 import { destroyAllAgents } from "./services/agent/agentService";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
@@ -561,6 +562,7 @@ function createWindow(): void {
       sandbox: false,
     },
   });
+  setMainWindow(mainWindow);
 
   // Allow the app's own renderer to use camera/mic (video-input viewer) while
   // NOT auto-granting media to arbitrary sites loaded in embedded browsers.
@@ -1112,10 +1114,8 @@ app.whenReady().then(() => {
   });
 });
 
-/** Return the main BrowserWindow (used by services to send events). */
-export function getMainWindow(): BrowserWindow | null {
-  return mainWindow;
-}
+/** Re-exported for back-compat; services import from `./mainWindow` directly. */
+export { getMainWindow } from "./mainWindow";
 
 /**
  * Pick a popout window size that matches the selected device's native aspect.

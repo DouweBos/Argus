@@ -15,7 +15,7 @@ import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as net from "node:net";
 import { promisify } from "node:util";
 import { log } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { resolveAssetPath } from "../tools/assets";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";

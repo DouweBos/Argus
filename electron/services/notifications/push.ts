@@ -9,7 +9,7 @@
  */
 
 import { Notification } from "electron";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { broadcastRemoteNotification } from "./broadcast";
 

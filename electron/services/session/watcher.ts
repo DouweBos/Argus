@@ -13,7 +13,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { effectiveAutoFetchMinutes, reconfigureAutoFetch } from "./autoFetch";
 import { git } from "./git";

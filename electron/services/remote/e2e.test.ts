@@ -41,6 +41,19 @@ const { startLocalGateway, stopLocalGateway } =
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
+
+// The gateway frames every JSON envelope with a leading TAG_JSON (0x00) byte.
+const TAG_JSON = 0x00;
+const frameJson = (env: unknown): Uint8Array => {
+  const json = enc.encode(JSON.stringify(env));
+  const out = new Uint8Array(1 + json.length);
+  out[0] = TAG_JSON;
+  out.set(json, 1);
+
+  return out;
+};
+const unframeJson = (plain: Uint8Array): unknown =>
+  JSON.parse(dec.decode(plain.subarray(1)));
 const desktop = generateKeypair();
 const identity: DesktopIdentity = { priv: desktop.priv, pub: desktop.pub };
 let url: string;
@@ -79,7 +92,7 @@ class TestClient {
           this.session = this.hs.session();
           this.onReady();
         } else {
-          const env = JSON.parse(dec.decode(this.session.decrypt(bytes))) as {
+          const env = unframeJson(this.session.decrypt(bytes)) as {
             id: string;
             type: string;
           };
@@ -100,7 +113,7 @@ class TestClient {
     const p = new Promise<{ ok?: unknown; error?: unknown }>((resolve) =>
       this.pending.set(id, resolve as (v: unknown) => void),
     );
-    this.ws.send(this.session!.encrypt(enc.encode(JSON.stringify(env))));
+    this.ws.send(this.session!.encrypt(frameJson(env)));
 
     return p;
   }

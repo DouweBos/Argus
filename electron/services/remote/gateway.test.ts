@@ -40,6 +40,19 @@ const device: PairedDevice = {
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
+// The gateway frames every JSON envelope with a leading TAG_JSON (0x00) byte.
+const TAG_JSON = 0x00;
+const frameJson = (env: unknown): Uint8Array => {
+  const json = enc.encode(JSON.stringify(env));
+  const out = new Uint8Array(1 + json.length);
+  out[0] = TAG_JSON;
+  out.set(json, 1);
+
+  return out;
+};
+const unframeJson = (plain: Uint8Array): unknown =>
+  JSON.parse(dec.decode(plain.subarray(1)));
+
 /** Establish a real Noise IK pair and wire both ends together in memory. */
 function connect(caps: PairedDevice["capabilities"] = device.capabilities) {
   const client = generateKeypair();
@@ -60,17 +73,13 @@ function connect(caps: PairedDevice["capabilities"] = device.capabilities) {
     { ...device, capabilities: caps },
     desktopSession,
     (bytes) => {
-      fromGateway.push(
-        JSON.parse(dec.decode(clientSession.decrypt(bytes))) as Envelope,
-      );
+      fromGateway.push(unframeJson(clientSession.decrypt(bytes)) as Envelope);
     },
   );
 
   let seq = 0;
   const send = async (env: Record<string, unknown>) => {
-    const frame = clientSession.encrypt(
-      enc.encode(JSON.stringify({ seq: seq++, ...env })),
-    );
+    const frame = clientSession.encrypt(frameJson({ seq: seq++, ...env }));
     await conn.onFrame(frame);
   };
 
@@ -134,19 +143,17 @@ describe("gateway capability boundary", () => {
     const cs = ci.session();
     const out: Envelope[] = [];
     const conn = new DeviceConnection(noCaps, ri.session(), (b) =>
-      out.push(JSON.parse(dec.decode(cs.decrypt(b))) as Envelope),
+      out.push(unframeJson(cs.decrypt(b)) as Envelope),
     );
     await conn.onFrame(
       cs.encrypt(
-        enc.encode(
-          JSON.stringify({
-            seq: 0,
-            type: "req",
-            id: "1",
-            method: "projects.list",
-            params: {},
-          }),
-        ),
+        frameJson({
+          seq: 0,
+          type: "req",
+          id: "1",
+          method: "projects.list",
+          params: {},
+        }),
       ),
     );
     expect((out[0] as { error?: { code: string } }).error?.code).toBe(
@@ -168,19 +175,17 @@ describe("gateway capability boundary", () => {
     const cs = ci.session();
     const out: Envelope[] = [];
     const conn = new DeviceConnection(device, ri.session(), (b) =>
-      out.push(JSON.parse(dec.decode(cs.decrypt(b))) as Envelope),
+      out.push(unframeJson(cs.decrypt(b)) as Envelope),
     );
     const frame = (seq: number) =>
       cs.encrypt(
-        enc.encode(
-          JSON.stringify({
-            seq,
-            type: "req",
-            id: String(seq),
-            method: "projects.list",
-            params: {},
-          }),
-        ),
+        frameJson({
+          seq,
+          type: "req",
+          id: String(seq),
+          method: "projects.list",
+          params: {},
+        }),
       );
     await conn.onFrame(frame(0));
     await conn.onFrame(frame(1));

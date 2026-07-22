@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { info, warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { createTerminal } from "../terminal/multiplexer";
 import {

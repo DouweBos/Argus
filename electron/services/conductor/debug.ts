@@ -18,7 +18,7 @@
 
 import { type ChildProcess, spawn } from "node:child_process";
 import { createLogger } from "../../../app/lib/logger";
-import { getMainWindow } from "../../main";
+import { getMainWindow } from "../../mainWindow";
 import { getConductorBinPath } from "../cli/conductor";
 import { conductorLogStore, execConductor } from "./logger";
 
