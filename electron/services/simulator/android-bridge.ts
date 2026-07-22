@@ -18,6 +18,7 @@ import { log } from "../../../app/lib/logger";
 import { getMainWindow } from "../../main";
 import { resolveAssetPath } from "../tools/assets";
 import { H264AccessUnitParser } from "./h264-parser";
+import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
 const execFileAsync = promisify(execFile);
 
@@ -109,6 +110,12 @@ const BUTTON_KEYCODES: Record<string, number> = {
   power: 26,
   volume_up: 24,
   volume_down: 25,
+  // Android TV dpad (AKEYCODE_DPAD_*)
+  up: 19,
+  down: 20,
+  left: 21,
+  right: 22,
+  select: 23,
 };
 
 export class AndroidBridge implements AndroidCaptureBackend {
@@ -218,6 +225,7 @@ export class AndroidBridge implements AndroidCaptureBackend {
   kill(): void {
     this.h264Parser?.reset();
     this.h264Parser = null;
+    clearVideo(this.serial);
 
     // Close sockets
     this.videoSocket?.destroy();
@@ -421,6 +429,7 @@ export class AndroidBridge implements AndroidCaptureBackend {
           `[AndroidBridge] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
         win?.webContents.send("android_video_config", config);
+        emitVideoConfig(this.serial, config);
       },
       onFrame: (data, keyFrame, timestamp) => {
         win?.webContents.send("android_video_frame", {
@@ -428,6 +437,7 @@ export class AndroidBridge implements AndroidCaptureBackend {
           keyFrame,
           timestamp,
         });
+        emitVideoFrame(this.serial, data, keyFrame, timestamp);
       },
     });
 

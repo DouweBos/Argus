@@ -1,0 +1,506 @@
+/**
+ * The remote gateway: turns a decrypted, authenticated device channel into
+ * capability-gated calls against the existing service layer, and forwards a
+ * filtered, encrypted event stream back.
+ *
+ * Transport-agnostic on purpose — a `DeviceConnection` takes a `NoiseSession`
+ * and a raw `send(bytes)` sink, so the same class is driven by the real relay
+ * socket in production and by an in-memory pipe in tests.
+ */
+
+import type { PairedDevice } from "./deviceStore";
+import type { NoiseSession } from "./noise";
+import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
+import type { H264Config } from "../simulator/h264-parser";
+import {
+  Envelope,
+  EventPayloads,
+  type RemoteEventType,
+  type RemotePlatform,
+} from "@argus/remote-protocol";
+import { log } from "../../../app/lib/logger";
+import { addBroadcastTap } from "../../broadcast";
+import { appState } from "../../state";
+import {
+  isAndroidCapturing,
+  startAndroidCapture,
+  stopAndroidCapture,
+} from "../simulator/android";
+import {
+  forceStopSimulatorCapture,
+  isSimulatorCapturing,
+  startSimulatorCapture,
+  stopSimulatorCapture,
+} from "../simulator/ios";
+import { onVideo } from "../simulator/videoForward";
+import {
+  dispatch,
+  GatewayError,
+  permissionKey,
+  toRemoteAgentCapabilities,
+  toRemoteAgentStatus,
+  type DeviceMediaController,
+  type GatewayContext,
+} from "./capabilities";
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+/** Plaintext tag distinguishing JSON envelopes from binary media frames. */
+const TAG_JSON = 0x00;
+const TAG_MEDIA = 0x01;
+
+/** Media message types (first header byte after the tag). */
+const MEDIA_CONFIG = 0;
+const MEDIA_FRAME = 1;
+
+/** Drop delta frames once the socket's send buffer exceeds this (bytes). */
+const BACKPRESSURE_LIMIT = 1_000_000;
+
+/** Whether the gateway itself started the (single) Android capture session. */
+let androidStartedByGateway = false;
+/** Live watchers of the single Android session, across all connections. */
+const androidWatchers = new Set<DeviceConnection>();
+
+let nextStreamId = 1;
+function allocStreamId(): number {
+  const id = nextStreamId;
+  nextStreamId = (nextStreamId + 1) & 0xffff || 1;
+
+  return id;
+}
+
+/** Build the binary body (after the media tag) for a config message. */
+function buildConfigBody(streamId: number, config: H264Config): Uint8Array {
+  const codec = encoder.encode(config.codec);
+  const body = new Uint8Array(
+    12 + 5 + codec.length + config.description.length,
+  );
+  const view = new DataView(body.buffer);
+  view.setUint8(0, MEDIA_CONFIG);
+  view.setUint8(1, 0);
+  view.setUint16(2, streamId, true);
+  view.setFloat64(4, 0, true);
+  view.setUint16(12, config.codedWidth, true);
+  view.setUint16(14, config.codedHeight, true);
+  view.setUint8(16, codec.length);
+  body.set(codec, 17);
+  body.set(config.description, 17 + codec.length);
+
+  return body;
+}
+
+/** Build the binary body (after the media tag) for a frame message. */
+function buildFrameBody(
+  streamId: number,
+  data: Uint8Array,
+  keyFrame: boolean,
+  timestamp: number,
+): Uint8Array {
+  const body = new Uint8Array(12 + data.length);
+  const view = new DataView(body.buffer);
+  view.setUint8(0, MEDIA_FRAME);
+  view.setUint8(1, keyFrame ? 1 : 0);
+  view.setUint16(2, streamId, true);
+  view.setFloat64(4, timestamp, true);
+  body.set(data, 12);
+
+  return body;
+}
+
+/** Parsed agent channel, e.g. `agent:permission:<id>` → kind + agentId. */
+function parseAgentChannel(
+  channel: string,
+): { kind: string; agentId: string } | null {
+  const parts = channel.split(":");
+  if (parts.length < 3 || parts[0] !== "agent") {
+    return null;
+  }
+
+  return { kind: parts[1], agentId: parts.slice(2).join(":") };
+}
+
+/** One authenticated device: a Noise transport plus its subscriptions. */
+export class DeviceConnection implements DeviceMediaController {
+  private sendSeq = 0;
+  private recvSeq = -1;
+  private readonly subscriptions = new Set<string>();
+  private readonly ctx: GatewayContext;
+  private closer: (() => void) | null = null;
+  private bufferedProbe: (() => number) | null = null;
+  /** Active screen streams for this connection, keyed by device id. */
+  private readonly watched = new Map<
+    string,
+    { streamId: number; platform: RemotePlatform; unsub: () => void }
+  >();
+
+  constructor(
+    readonly device: PairedDevice,
+    private readonly session: NoiseSession,
+    private readonly sink: (bytes: Uint8Array) => void,
+  ) {
+    this.ctx = { device, outstandingPermissions: new Set(), media: this };
+  }
+
+  /** Register how to tear down the underlying socket (set by the server). */
+  setCloser(fn: () => void): void {
+    this.closer = fn;
+  }
+
+  /** Probe the socket's outbound buffer, for backpressure-based frame dropping. */
+  setBufferedProbe(fn: () => number): void {
+    this.bufferedProbe = fn;
+  }
+
+  close(): void {
+    this.closer?.();
+  }
+
+  /** Release all screen streams. Called when the connection goes away. */
+  dispose(): void {
+    for (const deviceId of [...this.watched.keys()]) {
+      this.unwatch(deviceId);
+    }
+  }
+
+  // --- DeviceMediaController -------------------------------------------------
+
+  async watch(deviceId: string, platform: RemotePlatform): Promise<number> {
+    const existing = this.watched.get(deviceId);
+    if (existing) {
+      return existing.streamId;
+    }
+
+    if (platform === "ios") {
+      await startSimulatorCapture(deviceId);
+    } else {
+      // Android capture is a single global session. Only start it if nothing
+      // else is capturing; reject a request for a different emulator.
+      if (isAndroidCapturing() && !isAndroidCapturing(deviceId)) {
+        throw new GatewayError(
+          "bad_request",
+          "another Android device is already being captured",
+        );
+      }
+      if (!isAndroidCapturing(deviceId)) {
+        await startAndroidCapture(deviceId);
+        androidStartedByGateway = true;
+      }
+      androidWatchers.add(this);
+    }
+
+    const streamId = allocStreamId();
+    log(`[remote] watch ${platform} ${deviceId} → stream ${String(streamId)}`);
+    let loggedFirst = false;
+    const unsub = onVideo(deviceId, {
+      onConfig: (config) => this.emitMedia(buildConfigBody(streamId, config)),
+      onFrame: (data, keyFrame, timestamp) => {
+        // Never drop config/keyframes; shed delta frames under backpressure.
+        if (
+          !keyFrame &&
+          this.bufferedProbe &&
+          this.bufferedProbe() > BACKPRESSURE_LIMIT
+        ) {
+          return;
+        }
+        if (!loggedFirst) {
+          loggedFirst = true;
+          log(
+            `[remote] forwarding frames for ${deviceId} (stream ${String(streamId)})`,
+          );
+        }
+        this.emitMedia(buildFrameBody(streamId, data, keyFrame, timestamp));
+      },
+    });
+    this.watched.set(deviceId, { streamId, platform, unsub });
+
+    return streamId;
+  }
+
+  unwatch(deviceId: string): void {
+    const entry = this.watched.get(deviceId);
+    if (!entry) {
+      return;
+    }
+    entry.unsub();
+    this.watched.delete(deviceId);
+
+    if (entry.platform === "ios") {
+      stopSimulatorCapture(deviceId);
+      // If no one else (the desktop view or another remote device) still holds
+      // the capture, tear it down immediately rather than leaving the bridge
+      // running through its grace period — a remote viewer that left the screen
+      // shouldn't keep the simulator captured.
+      if (!isSimulatorCapturing(deviceId)) {
+        forceStopSimulatorCapture(deviceId);
+      }
+    } else {
+      androidWatchers.delete(this);
+      // Only tear down the shared Android session if we started it and no
+      // other remote watcher still needs it (the desktop may own it otherwise).
+      if (androidWatchers.size === 0 && androidStartedByGateway) {
+        stopAndroidCapture();
+        androidStartedByGateway = false;
+      }
+    }
+  }
+
+  /** Handle one encrypted inbound frame from the transport. */
+  async onFrame(cipher: Uint8Array): Promise<void> {
+    let envelope: Envelope;
+    try {
+      const plain = this.session.decrypt(cipher);
+      // Inbound media (tag 0x01) is client→gateway only in theory; the client
+      // never sends it, so drop anything that isn't a JSON envelope.
+      if (plain.length === 0 || plain[0] !== TAG_JSON) {
+        return;
+      }
+      envelope = Envelope.parse(JSON.parse(decoder.decode(plain.subarray(1))));
+    } catch {
+      // Undecryptable or malformed frames are dropped silently — a
+      // well-behaved peer never produces them, an attacker learns nothing.
+      return;
+    }
+
+    // Reject stale/replayed app-layer frames (Noise already blocks replays
+    // within a session; this guards reordering across the envelope layer).
+    if (envelope.seq <= this.recvSeq) {
+      return;
+    }
+    this.recvSeq = envelope.seq;
+
+    if (envelope.type === "sub") {
+      if (envelope.action === "subscribe") {
+        this.subscriptions.add(envelope.agent_id);
+        this.replayPendingPermissions(envelope.agent_id);
+      } else {
+        this.subscriptions.delete(envelope.agent_id);
+      }
+
+      return;
+    }
+
+    if (envelope.type === "req") {
+      await this.handleRequest(envelope.id, envelope.method, envelope.params);
+    }
+    // "res"/"evt" are gateway→device only; ignore if a client sends them.
+  }
+
+  private async handleRequest(
+    id: string,
+    method: string,
+    params: unknown,
+  ): Promise<void> {
+    try {
+      const ok = await dispatch(method, params, this.ctx);
+      this.emit({ type: "res", seq: this.nextSeq(), id, ok });
+    } catch (err) {
+      const code =
+        err instanceof GatewayError ? err.code : ("internal" as const);
+      const message = err instanceof Error ? err.message : "error";
+      this.emit({
+        type: "res",
+        seq: this.nextSeq(),
+        id,
+        error: { code, message },
+      });
+    }
+  }
+
+  /** Forward a tapped renderer broadcast to this device, if relevant. */
+  handleBroadcast(channel: string, args: unknown[]): void {
+    // User-facing notifications go to every connected device, regardless of
+    // which agent it happens to be subscribed to — that's the whole point.
+    if (channel === "remote:notification") {
+      const p = args[0] as { agent_id?: string | null } | undefined;
+      this.pushEvent("notification", p?.agent_id ?? null, p);
+
+      return;
+    }
+
+    const parsed = parseAgentChannel(channel);
+    if (!parsed) {
+      return;
+    }
+    const { kind, agentId } = parsed;
+    if (!this.subscriptions.has(agentId)) {
+      return;
+    }
+
+    switch (kind) {
+      case "event":
+        this.pushEvent("agent.event", agentId, {
+          agent_id: agentId,
+          event: args[0],
+        });
+        break;
+      case "status": {
+        const agent = appState.agents.get(agentId);
+        if (agent) {
+          this.pushEvent("agent.status", agentId, toRemoteAgentStatus(agent));
+        }
+        break;
+      }
+      case "capabilities": {
+        const init = appState.agents.get(agentId)?.handle.initializeResponse();
+        if (init) {
+          this.pushEvent(
+            "agent.capabilities",
+            agentId,
+            toRemoteAgentCapabilities(init),
+          );
+        }
+        break;
+      }
+      case "permission": {
+        const p = args[0] as PermissionRequestPayload;
+        this.ctx.outstandingPermissions.add(
+          permissionKey(agentId, p.tool_use_id),
+        );
+        this.pushEvent("permission.request", agentId, {
+          agent_id: agentId,
+          tool_use_id: p.tool_use_id,
+          tool_name: p.tool_name,
+          tool_input: p.tool_input,
+        });
+        break;
+      }
+      case "permission-cancel": {
+        const p = args[0] as { tool_use_id: string };
+        this.ctx.outstandingPermissions.delete(
+          permissionKey(agentId, p.tool_use_id),
+        );
+        this.pushEvent("permission.cancel", agentId, {
+          agent_id: agentId,
+          tool_use_id: p.tool_use_id,
+        });
+        break;
+      }
+    }
+  }
+
+  /**
+   * Re-forward prompts already pending when this device (re)subscribes so a
+   * late-joining or reconnected device can answer them; without this the reply
+   * is rejected as "no such outstanding prompt" since `outstandingPermissions`
+   * is per-connection and only filled by live events.
+   */
+  private replayPendingPermissions(agentId: string): void {
+    const pending = appState.agentPendingPermissions.get(agentId);
+    if (!pending) {
+      return;
+    }
+    for (const p of pending.values()) {
+      this.ctx.outstandingPermissions.add(
+        permissionKey(agentId, p.tool_use_id),
+      );
+      this.pushEvent("permission.request", agentId, {
+        agent_id: agentId,
+        tool_use_id: p.tool_use_id,
+        tool_name: p.tool_name,
+        tool_input: p.tool_input,
+      });
+    }
+  }
+
+  private pushEvent(
+    event: RemoteEventType,
+    agentId: string | null,
+    payload: unknown,
+  ): void {
+    // Validate our own outgoing payload against the shared schema — a bug that
+    // leaks an unexpected field is caught here rather than shipped.
+    const schema = EventPayloads[event];
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      return;
+    }
+    this.emit({
+      type: "evt",
+      seq: this.nextSeq(),
+      event,
+      agent_id: agentId,
+      payload: parsed.data,
+    });
+  }
+
+  private nextSeq(): number {
+    return this.sendSeq++;
+  }
+
+  private emit(envelope: Envelope): void {
+    const json = encoder.encode(JSON.stringify(envelope));
+    const plain = new Uint8Array(1 + json.length);
+    plain[0] = TAG_JSON;
+    plain.set(json, 1);
+    this.sink(this.session.encrypt(plain));
+  }
+
+  /** Send a binary media message (config/frame) on the same encrypted channel. */
+  private emitMedia(body: Uint8Array): void {
+    const plain = new Uint8Array(1 + body.length);
+    plain[0] = TAG_MEDIA;
+    plain.set(body, 1);
+    this.sink(this.session.encrypt(plain));
+  }
+}
+
+// --- Registry + broadcast tap ----------------------------------------------
+
+const connections = new Set<DeviceConnection>();
+let untap: (() => void) | null = null;
+
+/** Notified whenever the live connection set changes (connect/disconnect). */
+let connectionsChanged: (() => void) | null = null;
+export function setConnectionsChangedListener(cb: (() => void) | null): void {
+  connectionsChanged = cb;
+}
+
+/** Device IDs with a live connection right now. */
+export function getConnectedDeviceIds(): string[] {
+  return [...new Set([...connections].map((c) => c.device.device_id))];
+}
+
+/** Register a live device connection so it receives forwarded events. */
+export function addConnection(conn: DeviceConnection): void {
+  connections.add(conn);
+  if (!untap) {
+    untap = addBroadcastTap((channel, args) => {
+      for (const c of connections) {
+        c.handleBroadcast(channel, args);
+      }
+    });
+  }
+  connectionsChanged?.();
+}
+
+export function removeConnection(conn: DeviceConnection): void {
+  conn.dispose();
+  connections.delete(conn);
+  if (connections.size === 0 && untap) {
+    untap();
+    untap = null;
+  }
+  connectionsChanged?.();
+}
+
+/** Close any live connection for a device (called on revoke). */
+export function disconnectDevice(deviceId: string): void {
+  for (const c of connections) {
+    if (c.device.device_id === deviceId) {
+      c.close();
+    }
+  }
+}
+
+/** Drop every connection (kill-switch / shutdown). */
+export function clearConnections(): void {
+  for (const c of connections) {
+    c.dispose();
+  }
+  connections.clear();
+  if (untap) {
+    untap();
+    untap = null;
+  }
+}

@@ -42,12 +42,18 @@ export const Default: Story = {
       </SidebarItem>
       <SidebarSection count={5}>Sessions</SidebarSection>
       <SessionCard
-        branch="feat/session-card"
+        icon={<BranchIcon size={13} />}
+        title="feat/session-card"
+        interactive
         selected
-        added={128}
-        removed={47}
+        diff={{ added: 128, removed: 47 }}
       />
-      <SessionCard branch="fix/diff-hunk-staging" status="warning" />
+      <SessionCard
+        icon={<BranchIcon size={13} />}
+        title="fix/diff-hunk-staging"
+        interactive
+        status={{ label: "initializing", tone: "warning" }}
+      />
     </SidebarNav>
   ),
 };

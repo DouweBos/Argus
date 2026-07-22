@@ -1,0 +1,33 @@
+.image {
+  max-width: 100%;
+  max-height: 320px;
+  width: auto;
+  height: auto;
+  align-self: flex-start;
+  display: block;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--glass-border);
+  margin-top: 4px;
+  cursor: zoom-in;
+  transition: outline-color 0.15s;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.image:hover {
+  outline-color: var(--accent);
+}
+
+.lightbox {
+  padding: 0;
+}
+
+.zoomImage {
+  display: block;
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}

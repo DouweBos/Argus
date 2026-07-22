@@ -25,6 +25,32 @@ export interface AppSettings {
    * manually from the GitHub release page by repo collaborators.
    */
   updater_channel?: "beta" | "latest";
+  /**
+   * Master kill-switch for phone remote access. When false (default) the local
+   * gateway + tunnel stay down and pairing is refused.
+   */
+  remote_enabled?: boolean;
+  /**
+   * How the gateway is exposed off-network. "none" = LAN only (no tunnel, no
+   * external process). Defaults to "none" — enabling remote access never spawns
+   * a tunnel unless you pick one.
+   */
+  remote_provider?: "cloudflare" | "none" | "tailscale";
+  /**
+   * Cloudflare tunnel mode: "quick" (ephemeral trycloudflare URL, no account)
+   * or "token" (stable named tunnel via a connector token). Defaults to quick.
+   */
+  remote_tunnel_mode?: "quick" | "token";
+  /** Cloudflare connector token for a named tunnel (token mode). */
+  remote_tunnel_token?: string;
+  /** Stable public URL for the named tunnel, configured in Cloudflare. */
+  remote_public_url?: string;
+  /**
+   * Serve the web client on the LAN — binds the gateway to the network
+   * interface so other devices on your Wi-Fi can open it in a browser. Access
+   * is still gated by Noise pairing; this only changes reachability.
+   */
+  remote_lan_web?: boolean;
 }
 
 interface AppSettingsFile {

@@ -20,6 +20,7 @@ import {
   appendSystemMessage,
   cancelPermission,
   clearConversation,
+  clearPermission,
   dequeueMessage,
   flushPendingUnread,
   getConversationState,
@@ -38,6 +39,7 @@ import { type UnlistenFn, listen } from "./events";
 import {
   createCheckpoint,
   generateSessionTitle,
+  type ImageAttachment,
   publishAgentSnapshot,
   saveChatHistory,
   sendAgentMessage,
@@ -288,12 +290,15 @@ const listeners = new Map<string, UnlistenFn>();
 const exitListeners = new Map<string, UnlistenFn>();
 const permListeners = new Map<string, UnlistenFn>();
 const permCancelListeners = new Map<string, UnlistenFn>();
+const permResolvedListeners = new Map<string, UnlistenFn>();
 const capListeners = new Map<string, UnlistenFn>();
 const modelListeners = new Map<string, UnlistenFn>();
 const permModeListeners = new Map<string, UnlistenFn>();
 const effortListeners = new Map<string, UnlistenFn>();
 const stderrListeners = new Map<string, UnlistenFn>();
 const mcpMessageListeners = new Map<string, UnlistenFn>();
+const remoteMessageListeners = new Map<string, UnlistenFn>();
+const statusListeners = new Map<string, UnlistenFn>();
 
 /**
  * Payload emitted by the Electron main process when the MCP server injects
@@ -404,6 +409,25 @@ export function startAgentListening(agentId: string): void {
     exitListeners.set(agentId, unlisten);
   });
 
+  // Reflect the backend's authoritative "running" transition — set when a
+  // prompt is injected from anywhere (remote web client, MCP), which the
+  // renderer would otherwise miss since it only marks running on its own sends.
+  // Running-only on purpose: idle/stopped stay with the queue-aware handlers.
+  statusListeners.set(agentId, () => {});
+  listen<string>(`agent:status:${agentId}`, (event) => {
+    if (event.payload === "running") {
+      updateAgent(agentId, { status: "running" });
+    }
+  }).then((unlisten) => {
+    if (!statusListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+
+    statusListeners.set(agentId, unlisten);
+  });
+
   // Watch for permission requests from the control protocol.
   // With the native control protocol, the assistant event (containing the
   // tool_use block) is always forwarded to the renderer *before* the
@@ -454,6 +478,29 @@ export function startAgentListening(agentId: string): void {
     }
 
     permCancelListeners.set(agentId, unlisten);
+  });
+
+  // A prompt was answered — possibly by a remote (web) client, whose response
+  // goes straight to the CLI and never touches this store. Clear the pending
+  // state and republish the snapshot so the desktop and other clients update.
+  permResolvedListeners.set(agentId, () => {});
+
+  listen<{ tool_use_id: string }>(
+    `agent:permission-resolved:${agentId}`,
+    (event) => {
+      clearPermission(agentId, event.payload.tool_use_id);
+      // Publish immediately (not debounced) so remote clients see the prompt
+      // resolve right after they answer, rather than lagging a save cycle.
+      saveAgentConversation(agentId);
+    },
+  ).then((unlisten) => {
+    if (!permResolvedListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+
+    permResolvedListeners.set(agentId, unlisten);
   });
 
   // Watch for capabilities from the initialize control_request response.
@@ -560,6 +607,28 @@ export function startAgentListening(agentId: string): void {
     }
 
     mcpMessageListeners.set(agentId, unlisten);
+  });
+
+  // Messages sent from a remote (web) control client: the backend wrote them to
+  // the CLI's stdin, but only the initiating renderer records the user bubble —
+  // so mirror them here into a real user message the transcript (and snapshot)
+  // can show.
+  remoteMessageListeners.set(agentId, () => {});
+  listen<{ images?: ImageAttachment[]; message: string }>(
+    `agent:remote-message:${agentId}`,
+    (event) => {
+      const { message, images } = event.payload;
+      addUserMessage(agentId, message, images);
+      maybeGenerateTitle(agentId, message);
+      scheduleAgentSave(agentId);
+    },
+  ).then((unlisten) => {
+    if (!remoteMessageListeners.has(agentId)) {
+      unlisten();
+
+      return;
+    }
+    remoteMessageListeners.set(agentId, unlisten);
   });
 
   listen<string>(`agent:stderr:${agentId}`, (event) => {
@@ -670,6 +739,12 @@ export function stopAgentListening(agentId: string): void {
   }
   exitListeners.delete(agentId);
 
+  const statusUnlisten = statusListeners.get(agentId);
+  if (statusUnlisten) {
+    statusUnlisten();
+  }
+  statusListeners.delete(agentId);
+
   const permUnlisten = permListeners.get(agentId);
   if (permUnlisten) {
     permUnlisten();
@@ -681,6 +756,12 @@ export function stopAgentListening(agentId: string): void {
     permCancelUnlisten();
   }
   permCancelListeners.delete(agentId);
+
+  const permResolvedUnlisten = permResolvedListeners.get(agentId);
+  if (permResolvedUnlisten) {
+    permResolvedUnlisten();
+  }
+  permResolvedListeners.delete(agentId);
 
   const capUnlisten = capListeners.get(agentId);
   if (capUnlisten) {
@@ -717,4 +798,10 @@ export function stopAgentListening(agentId: string): void {
     mcpUnlisten();
   }
   mcpMessageListeners.delete(agentId);
+
+  const remoteUnlisten = remoteMessageListeners.get(agentId);
+  if (remoteUnlisten) {
+    remoteUnlisten();
+  }
+  remoteMessageListeners.delete(agentId);
 }

@@ -80,44 +80,10 @@
   white-space: nowrap;
 }
 
+/* Layout only — the row, label, bubble and actions come from Peacock's
+   QueuedMessage; the section keeps the desktop's chat gutter padding. */
 .queuedSection {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   padding: 8px 16px;
-}
-
-.queuedLabel {
-  font: var(--type-eyebrow);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-}
-
-.queuedMessageWrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-}
-
-.queuedMessageRow {
-  position: relative;
-  display: flex;
-  align-self: stretch;
-}
-
-.queuedMessage {
-  flex: 1;
-  font: var(--type-body);
-  color: var(--text-secondary);
-  padding: var(--space-4) var(--space-6);
-  background: var(--glass-bg);
-  border: 1px dashed var(--glass-border);
-  border-radius: var(--border-radius-sm);
-  white-space: pre-wrap;
-  word-break: break-word;
-  align-self: stretch;
 }
 
 .queuedEditArea {
@@ -134,45 +100,6 @@
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
-}
-
-.queuedActions {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity var(--transition-base);
-}
-
-.queuedMessageRow:hover .queuedActions,
-.queuedMessageRow:focus-within .queuedActions {
-  opacity: 1;
-}
-
-.queuedActionButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--glass-border);
-  background: var(--bg-secondary-85);
-  color: var(--text-muted);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition:
-    color var(--transition-base),
-    border-color var(--transition-base),
-    background var(--transition-base);
-}
-
-.queuedActionButton:hover {
-  color: var(--text-primary);
-  border-color: var(--accent-border-strong);
-  background: var(--surface-6);
 }
 
 .queuedLinkedProjects {

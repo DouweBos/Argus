@@ -5,6 +5,7 @@
  */
 
 import type { AgentSession } from "./services/agent/models";
+import type { PermissionRequestPayload } from "./services/llm/runners/claudeCode/controlHandler";
 import type { Organization } from "./services/organization/models";
 import type { OrgTask } from "./services/organizationTask/models";
 import type { Session } from "./services/session/models";
@@ -107,6 +108,17 @@ class AppState {
    * hydrate its conversation store without round-tripping to disk.
    */
   agentSnapshots = new Map<string, string>();
+
+  /**
+   * Currently-outstanding permission prompts per agent (`toolUseId` → payload).
+   * A durable source of truth so the remote gateway can replay pending prompts
+   * to a device that connects (or reconnects) after the prompt was raised —
+   * otherwise a remote answer is rejected as "no such outstanding prompt".
+   */
+  agentPendingPermissions = new Map<
+    string,
+    Map<string, PermissionRequestPayload>
+  >();
 }
 
 /** Singleton instance. */

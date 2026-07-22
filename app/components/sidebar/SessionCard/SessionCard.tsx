@@ -1,7 +1,12 @@
+import type { BadgeTone } from "@argus/peacock";
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
-import { ContextMenu, type ContextMenuItem } from "@argus/peacock";
+import {
+  ContextMenu,
+  type ContextMenuItem,
+  SessionCard as PeacockSessionCard,
+} from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
 import {
@@ -55,14 +60,14 @@ interface SessionCardProps {
   session: Session;
 }
 
-function renderSessionIcon(
+/** Pick the icon node + whether it pulses green (Peacock wraps the pulse). */
+function resolveSessionIcon(
   kind: Session["kind"],
   isRunning: boolean,
   isAgentRunning: boolean,
-  agentRunningIconClass: string,
   runningCount: number,
   iconOverride?: ReactNode,
-) {
+): { node: ReactNode; pulse: boolean; title?: string } {
   const base =
     iconOverride ??
     (kind === "project_root" ? (
@@ -70,49 +75,27 @@ function renderSessionIcon(
     ) : (
       <Icons.BranchIcon size={13} />
     ));
+  const agentTitle = `${runningCount} agent${runningCount > 1 ? "s" : ""} running`;
 
   if (kind === "project_root") {
-    if (isAgentRunning) {
-      return (
-        <span
-          className={agentRunningIconClass}
-          title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
-        >
-          {base}
-        </span>
-      );
-    }
-
-    return base;
+    return isAgentRunning
+      ? { node: base, pulse: true, title: agentTitle }
+      : { node: base, pulse: false };
   }
   if (isRunning) {
-    const agentTitle = `${runningCount} agent${runningCount > 1 ? "s" : ""} running`;
-
-    return (
-      <span
-        className={agentRunningIconClass}
-        title={
-          isAgentRunning
-            ? `${agentTitle}; run command is executing`
-            : "Run command is executing"
-        }
-      >
-        {iconOverride ?? <Icons.PlayIcon size={13} />}
-      </span>
-    );
+    return {
+      node: iconOverride ?? <Icons.PlayIcon size={13} />,
+      pulse: true,
+      title: isAgentRunning
+        ? `${agentTitle}; run command is executing`
+        : "Run command is executing",
+    };
   }
   if (isAgentRunning) {
-    return (
-      <span
-        className={agentRunningIconClass}
-        title={`${runningCount} agent${runningCount > 1 ? "s" : ""} running`}
-      >
-        {base}
-      </span>
-    );
+    return { node: base, pulse: true, title: agentTitle };
   }
 
-  return base;
+  return { node: base, pulse: false };
 }
 
 export function SessionCard({
@@ -214,141 +197,140 @@ export function SessionCard({
       ? session.status.error
       : null;
 
+  const iconInfo = resolveSessionIcon(
+    session.kind,
+    isRunning,
+    runningCount > 0,
+    runningCount,
+    iconOverride,
+  );
+  const statusTone: BadgeTone =
+    statusLabel === "initializing" ? "warning" : "error";
+  const showDiff =
+    !isProject &&
+    !isDeletingStatus &&
+    Boolean(diffStats) &&
+    (diffStats!.additions > 0 || diffStats!.deletions > 0);
+
+  const copyItems: ContextMenuItem[] = [
+    {
+      icon: <Icons.CopyIcon size={12} />,
+      label: "Copy Absolute Path",
+      onClick: () => navigator.clipboard.writeText(session.path),
+    },
+    {
+      icon: <Icons.CopyIcon size={12} />,
+      label: "Copy Relative Path",
+      onClick: () => navigator.clipboard.writeText(toTildePath(session.path)),
+    },
+    {
+      icon: <Icons.BranchIcon size={12} />,
+      label: "Copy Branch Name",
+      onClick: () => navigator.clipboard.writeText(branchName),
+    },
+    { separator: true },
+    {
+      icon: <Icons.FolderIcon size={12} />,
+      label: "Reveal in Finder",
+      onClick: () => revealInFinder(session.path),
+    },
+    {
+      icon: <Icons.TerminalIcon size={12} />,
+      label: "Open in Terminal",
+      onClick: () => {
+        createTerminal(session.id);
+      },
+    },
+  ];
+  const menuItems: ContextMenuItem[] = isProject
+    ? copyItems
+    : [
+        ...copyItems,
+        { separator: true },
+        ...(onRename
+          ? [
+              {
+                icon: <Icons.PencilIcon size={12} />,
+                label: "Rename Session",
+                onClick: onRename,
+              },
+            ]
+          : []),
+        {
+          icon: <Icons.TrashIcon size={12} />,
+          label: isDeleting ? "Deleting..." : "Delete Session",
+          onClick: handleDelete,
+          danger: true,
+          disabled: isDeleting,
+        },
+      ];
+
+  const menuSlot = (
+    <span onClick={(e) => e.stopPropagation()}>
+      <button
+        ref={menuBtnRef}
+        className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
+        title="Session options"
+        onClick={toggleMenu}
+      >
+        <Icons.EllipsisIcon size={12} />
+      </button>
+      {menuPosition && (
+        <ContextMenu
+          items={menuItems}
+          position={menuPosition}
+          onClose={closeMenu}
+        />
+      )}
+    </span>
+  );
+
   return (
-    <div
-      aria-selected={isSelected}
-      className={`${styles.card} ${isSelected ? styles.selected : ""}`}
-      role="option"
-      tabIndex={0}
-      onClick={onSelect}
+    <PeacockSessionCard
+      icon={iconInfo.node}
+      iconPulse={iconInfo.pulse}
+      iconTitle={iconInfo.title}
+      title={projectName}
+      showUnread={hasUnread}
+      selected={isSelected}
+      interactive
+      actionReveal="hover"
+      onSelect={onSelect}
       onContextMenu={handleContextMenu}
-      onKeyDown={(e) => e.key === "Enter" && onSelect()}
-    >
-      <div className={styles.main}>
-        <div className={styles.left}>
-          <div className={styles.titleRow}>
-            {renderSessionIcon(
-              session.kind,
-              isRunning,
-              runningCount > 0,
-              styles.agentRunningIcon,
-              runningCount,
-              iconOverride,
-            )}
-            <span className={styles.projectName}>{projectName}</span>
-            {hasUnread && (
-              <span
-                aria-label="Unread messages"
-                className={styles.unreadDot}
-                title="Unread agent messages"
-              />
-            )}
-          </div>
-        </div>
-        <div className={styles.right}>
-          {showStatusBadge && (
-            <span
-              className={`${styles.statusBadge} ${styles[`ws_${statusLabel}`]}`}
-              title={errorMessage ?? undefined}
-            >
-              {statusLabel}
-            </span>
-          )}
-          {!isProject && (
-            <span className={styles.subtitleTrailing}>
-              {!isDeletingStatus &&
-                diffStats &&
-                (diffStats.additions > 0 || diffStats.deletions > 0) && (
-                  <span className={styles.diffStats}>
-                    {diffStats.additions > 0 && (
-                      <span className={styles.diffAdd}>
-                        +{diffStats.additions}
-                      </span>
-                    )}
-                    {diffStats.deletions > 0 && (
-                      <span className={styles.diffRemove}>
-                        -{diffStats.deletions}
-                      </span>
-                    )}
-                  </span>
-                )}
-              <span
-                className={styles.menuAnchor}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  ref={menuBtnRef}
-                  className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
-                  title="Session options"
-                  onClick={toggleMenu}
-                >
-                  <Icons.EllipsisIcon size={12} />
-                </button>
-                {menuPosition && (
-                  <ContextMenu
-                    items={
-                      [
-                        {
-                          icon: <Icons.CopyIcon size={12} />,
-                          label: "Copy Absolute Path",
-                          onClick: () =>
-                            navigator.clipboard.writeText(session.path),
-                        },
-                        {
-                          icon: <Icons.CopyIcon size={12} />,
-                          label: "Copy Relative Path",
-                          onClick: () =>
-                            navigator.clipboard.writeText(
-                              toTildePath(session.path),
-                            ),
-                        },
-                        {
-                          icon: <Icons.BranchIcon size={12} />,
-                          label: "Copy Branch Name",
-                          onClick: () =>
-                            navigator.clipboard.writeText(branchName),
-                        },
-                        { separator: true },
-                        {
-                          icon: <Icons.FolderIcon size={12} />,
-                          label: "Reveal in Finder",
-                          onClick: () => revealInFinder(session.path),
-                        },
-                        {
-                          icon: <Icons.TerminalIcon size={12} />,
-                          label: "Open in Terminal",
-                          onClick: () => {
-                            createTerminal(session.id);
-                          },
-                        },
-                        { separator: true as const },
-                        ...(onRename
-                          ? [
-                              {
-                                icon: <Icons.PencilIcon size={12} />,
-                                label: "Rename Session",
-                                onClick: onRename,
-                              },
-                            ]
-                          : []),
-                        {
-                          icon: <Icons.TrashIcon size={12} />,
-                          label: isDeleting ? "Deleting..." : "Delete Session",
-                          onClick: handleDelete,
-                          danger: true,
-                          disabled: isDeleting,
-                        },
-                      ] satisfies ContextMenuItem[]
-                    }
-                    position={menuPosition}
-                    onClose={closeMenu}
-                  />
-                )}
+      status={
+        showStatusBadge
+          ? {
+              label: statusLabel,
+              tone: statusTone,
+              title: errorMessage ?? undefined,
+            }
+          : undefined
+      }
+      diff={
+        showDiff
+          ? {
+              added:
+                diffStats!.additions > 0 ? diffStats!.additions : undefined,
+              removed:
+                diffStats!.deletions > 0 ? diffStats!.deletions : undefined,
+            }
+          : undefined
+      }
+      actions={menuSlot}
+      subtitle={
+        isProject ? (
+          <span className={styles.branchSubtitle}>
+            {branchName}
+            {session.description && (
+              <span className={styles.descriptionInline}>
+                {" "}
+                &mdash; {session.description}
               </span>
-            </span>
-          )}
-        </div>
-      </div>
+            )}
+          </span>
+        ) : undefined
+      }
+    >
       {orgTask && (
         <button
           type="button"
@@ -363,77 +345,6 @@ export function SessionCard({
         >
           task: {orgTask.title}
         </button>
-      )}
-      {isProject && (
-        <div className={styles.subtitleRow}>
-          <span className={styles.branchSubtitle}>
-            {branchName}
-            {session.description && (
-              <span className={styles.descriptionInline}>
-                {" "}
-                &mdash; {session.description}
-              </span>
-            )}
-          </span>
-          <span className={styles.subtitleTrailing}>
-            <span
-              className={styles.menuAnchor}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                ref={menuBtnRef}
-                className={`${styles.actionBtn} ${styles.ellipsisBtn}`}
-                title="Session options"
-                onClick={toggleMenu}
-              >
-                <Icons.EllipsisIcon size={12} />
-              </button>
-              {menuPosition && (
-                <ContextMenu
-                  items={
-                    [
-                      {
-                        icon: <Icons.CopyIcon size={12} />,
-                        label: "Copy Absolute Path",
-                        onClick: () =>
-                          navigator.clipboard.writeText(session.path),
-                      },
-                      {
-                        icon: <Icons.CopyIcon size={12} />,
-                        label: "Copy Relative Path",
-                        onClick: () =>
-                          navigator.clipboard.writeText(
-                            toTildePath(session.path),
-                          ),
-                      },
-                      {
-                        icon: <Icons.BranchIcon size={12} />,
-                        label: "Copy Branch Name",
-                        onClick: () =>
-                          navigator.clipboard.writeText(branchName),
-                      },
-                      { separator: true },
-                      {
-                        icon: <Icons.FolderIcon size={12} />,
-                        label: "Reveal in Finder",
-                        onClick: () => revealInFinder(session.path),
-                      },
-                      {
-                        icon: <Icons.TerminalIcon size={12} />,
-                        label: "Open in Terminal",
-                        onClick: () => {
-                          createTerminal(session.id);
-                        },
-                      },
-                    ] satisfies ContextMenuItem[]
-                  }
-                  position={menuPosition}
-                  onClose={closeMenu}
-                />
-              )}
-            </span>
-          </span>
-        </div>
       )}
       {isProject && repoRoot && repoBranch && onBranchChanged && isSelected && (
         <div className={styles.branchRow} onClick={(e) => e.stopPropagation()}>
@@ -486,6 +397,6 @@ export function SessionCard({
           </p>
         </div>
       )}
-    </div>
+    </PeacockSessionCard>
   );
 }

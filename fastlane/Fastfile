@@ -35,7 +35,7 @@ platform :mac do
   lane :dev do
     sh("cd .. && pnpm install --frozen-lockfile")
     ENV["CSC_NAME"] = SIGN_IDENTITY_DEV
-    sh("cd .. && pnpm build && pnpm exec electron-builder")
+    sh("cd .. && pnpm build && pnpm build:web-client && pnpm exec electron-builder")
     UI.success("Built release/mac-arm64/Argus.app")
   end
 
@@ -115,7 +115,7 @@ platform :mac do
     ENV["EP_PRE_RELEASE"] = (channel == "production") ? "false" : "true"
 
     publish_flag = publish ? "--publish always" : "--publish never"
-    sh("cd .. && pnpm build && pnpm exec electron-builder --config electron-builder.release.cjs #{publish_flag}#{notes_flag}")
+    sh("cd .. && pnpm build && pnpm build:web-client && pnpm exec electron-builder --config electron-builder.release.cjs #{publish_flag}#{notes_flag}")
 
     # Stable-only side effects: the website-changelog dispatch and main-branch
     # commit/tag bump are driven from the workflow, not this lane. Pre-release
