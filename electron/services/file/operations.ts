@@ -434,11 +434,29 @@ export interface MentionDirEntry {
 export async function resolveMentionPath(
   id: string,
   query: string,
+  // Remote callers pass the roots browsing is confined to (the session worktree
+  // plus registered projects), so a paired device can reference a backend file
+  // in another project but can't enumerate `~/.ssh`, `/etc`, etc. Desktop passes
+  // nothing and keeps the full-filesystem browse the local picker relies on.
+  confineRoots?: string[],
 ): Promise<{ resolvedPath: string; entries: MentionDirEntry[] }> {
   const root = sessionPath(id);
 
   let resolved: string;
-  if (query.startsWith("~/") || query === "~") {
+  if (confineRoots) {
+    // Absolute/home queries reach other projects; relative stays in the session.
+    resolved =
+      query.startsWith("/") || query.startsWith("~")
+        ? path.resolve(query.replace(/^~(?=\/|$)/, os.homedir()))
+        : path.resolve(root, query);
+    const allowed = [root, ...confineRoots].map((r) => path.resolve(r));
+    const inside = allowed.some(
+      (r) => resolved === r || resolved.startsWith(r + path.sep),
+    );
+    if (!inside) {
+      return { resolvedPath: root, entries: [] };
+    }
+  } else if (query.startsWith("~/") || query === "~") {
     resolved = path.join(os.homedir(), query.slice(1));
   } else if (query.startsWith("/")) {
     resolved = query;

@@ -2,25 +2,30 @@ import type {
   ToolCallInfo,
   ToolResultBlock,
 } from "../../../stores/conversationStore";
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import {
-  Badge,
   Button,
-  HoverActionBar,
   HoverActionButton,
   Icons,
+  parseQuestions,
+  PlanApproval,
+  type PlanApprovalDraft,
+  QuestionForm,
+  type QuestionFormDraft,
+  ToolCall,
+  type ToolCallChildData,
+  type ToolCallData,
+  type ToolResultBlockData,
 } from "@argus/peacock";
+import {
+  clearToolDraft,
+  getToolDraft,
+  setToolDraft,
+} from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { Markdown } from "../../shared/Markdown";
-import { EditDiffView } from "../EditDiffView";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
 import { alwaysAllowRule } from "../alwaysAllowRule";
-import { AnsweredQuestionView } from "./AnsweredQuestionView";
-import { PlanApproval } from "./PlanApproval";
-import { QuestionForm } from "./QuestionForm";
-import styles from "./ToolCallCard.module.css";
-import { parseAnswerSelections } from "./parseAnswerSelections";
-import { parseQuestions } from "./parseQuestions";
 
 interface ToolCallCardProps {
   /** Agent ID — needed to route permission responses. */
@@ -30,14 +35,11 @@ interface ToolCallCardProps {
    * (as a hover action) for file-mutating tools (Write / Edit / MultiEdit).
    */
   onFork?: () => void;
-  /** Called when the user clicks Allow, Always Allow, or Deny. */
   onPermissionRespond?: (
     toolUseId: string,
     decision: "allow" | "deny",
-    /** Rule string like `Bash(npm *)` or `Edit(**\/*.tsx)` for "always allow". */
     allowRule?: string,
     allowAll?: boolean,
-    /** Optional custom message for deny (used by AskUserQuestion answers). */
     denyMessage?: string,
   ) => Promise<void> | void;
   /**
@@ -48,248 +50,71 @@ interface ToolCallCardProps {
   toolCall: ToolCallInfo;
 }
 
-/** Generate a short human-readable summary from tool name + input. */
-const PATH_SUMMARY_TOOLS = new Set([
-  "Read",
-  "Edit",
-  "MultiEdit",
-  "Write",
-  "LS",
-]);
+type ImageBlock = Extract<ToolResultBlockData, { type: "image" }>;
 
-function isPathTool(name: string): boolean {
-  return PATH_SUMMARY_TOOLS.has(name);
-}
+// --- Adapters: store ToolCallInfo → pure Peacock ToolCallData --------------
 
-function toolSummary(name: string, input: Record<string, unknown>): string {
-  switch (name) {
-    case "Edit":
-    case "MultiEdit":
-    case "Write":
-    case "Read": {
-      return (input.file_path ?? input.path ?? "") as string;
-    }
-
-    case "Bash": {
-      return ((input.command ?? "") as string).slice(0, 60);
-    }
-
-    case "Glob":
-    case "Grep": {
-      return (input.pattern ?? "") as string;
-    }
-
-    case "LS": {
-      return (input.path ?? ".") as string;
-    }
-
-    case "Task": {
-      return ((input.description ?? "") as string).slice(0, 60);
-    }
-
-    case "WebSearch": {
-      return ((input.query ?? "") as string).slice(0, 60);
-    }
-
-    case "WebFetch": {
-      return ((input.url ?? "") as string).slice(0, 60);
-    }
-
-    case "Agent": {
-      const type = (input.subagent_type ?? "") as string;
-      const desc = (input.description ?? "") as string;
-      const label = type || "Agent";
-
-      return desc ? `${label}: ${desc.slice(0, 80)}` : label;
-    }
-
-    default:
-      return "";
-  }
-}
-
-/** Safely coerce a tool result to a renderable string (used for truncated previews). */
-function safeResultText(result: unknown): string {
-  if (typeof result === "string") {
+function mapResult(result: ToolCallInfo["result"]): ToolCallData["result"] {
+  if (result == null || typeof result === "string") {
     return result;
   }
-  if (result == null) {
-    return "";
-  }
-  if (Array.isArray(result)) {
-    return (result as ToolResultBlock[])
-      .map((block) => (block.type === "text" ? block.text : `[${block.type}]`))
-      .join("\n");
-  }
 
-  return JSON.stringify(result, null, 2);
+  return result.map(
+    (block: ToolResultBlock): ToolResultBlockData =>
+      block.type === "image"
+        ? {
+            type: "image",
+            mediaType: block.source.media_type,
+            data: block.source.data,
+          }
+        : { type: "text", text: block.text },
+  );
 }
 
-/**
- * Build an image src for a tool result image block. When the tool is Read and
- * the input contains a file path, load the image directly from disk via the
- * argus-file:// protocol at full resolution. Otherwise fall back to the
- * base64 data URL embedded in the result.
- */
-function imageSrc(
-  block: { source: { data: string; media_type: string } },
-  toolName?: string,
-  toolInput?: Record<string, unknown>,
-): string {
+function toToolCallData(tc: ToolCallInfo): ToolCallData {
+  return {
+    id: tc.id,
+    name: tc.name,
+    input: tc.input,
+    isError: tc.isError,
+    pendingPermission: tc.pendingPermission,
+    result: mapResult(tc.result),
+    children: tc.children?.map(
+      (c): ToolCallChildData =>
+        c.kind === "text"
+          ? { kind: "text", text: c.text }
+          : { kind: "tool_use", toolCall: toToolCallData(c.toolCall) },
+    ),
+  };
+}
+
+// Load a Read image from disk at full resolution via the argus-file://
+// protocol; otherwise fall back to the base64 data URL embedded in the result.
+function resolveImageSrc(
+  block: ImageBlock,
+  toolName: string,
+  input: Record<string, unknown>,
+): string | undefined {
   if (toolName === "Read") {
-    const filePath = (toolInput?.file_path ?? toolInput?.path) as
-      | string
-      | undefined;
+    const filePath = (input.file_path ?? input.path) as string | undefined;
     if (filePath) {
       return `argus-file://local${encodeURI(filePath)}`;
     }
   }
 
-  return `data:${block.source.media_type};base64,${block.source.data}`;
+  return block.data
+    ? `data:${block.mediaType};base64,${block.data}`
+    : undefined;
 }
 
-/** Render a tool result — string as <pre>, content blocks inline (images embedded). */
-function renderResult(
-  result: ToolResultBlock[] | string | undefined,
-  className: string,
-  toolName?: string,
-  toolInput?: Record<string, unknown>,
-): ReactNode {
-  if (typeof result === "string" || result == null) {
-    return (
-      <pre className={className}>
-        <LinkifiedText text={result ?? ""} />
-      </pre>
-    );
-  }
-
-  return (
-    <>
-      {result.map((block, i) => {
-        if (block.type === "image") {
-          const src = imageSrc(block, toolName, toolInput);
-          const fallback = `data:${block.source.media_type};base64,${block.source.data}`;
-
-          return (
-            <img
-              alt="tool result"
-              className={styles.resultImage}
-              key={i}
-              onClick={() =>
-                openImageViewer(
-                  src,
-                  "tool result",
-                  src !== fallback ? fallback : undefined,
-                )
-              }
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (img.src !== fallback) {
-                  img.src = fallback;
-                }
-              }}
-              src={src}
-            />
-          );
-        }
-        if (block.type === "text") {
-          return (
-            <pre className={className} key={i}>
-              <LinkifiedText text={block.text} />
-            </pre>
-          );
-        }
-
-        return (
-          <pre className={className} key={i}>
-            {JSON.stringify(block, null, 2)}
-          </pre>
-        );
-      })}
-    </>
-  );
+function resolveImageFallback(block: ImageBlock): string | undefined {
+  return block.data
+    ? `data:${block.mediaType};base64,${block.data}`
+    : undefined;
 }
 
-/** Count additions/deletions for an Edit — mirrors EditDiffView's prefix/suffix logic. */
-function computeEditStats(
-  oldStr: string,
-  newStr: string,
-): { additions: number; deletions: number } {
-  const oldLines = oldStr.split("\n");
-  const newLines = newStr.split("\n");
+// --- Write-tool "copy new content" helpers ---------------------------------
 
-  let prefixLen = 0;
-  while (
-    prefixLen < oldLines.length &&
-    prefixLen < newLines.length &&
-    oldLines[prefixLen] === newLines[prefixLen]
-  ) {
-    prefixLen++;
-  }
-
-  let suffixLen = 0;
-  while (
-    suffixLen < oldLines.length - prefixLen &&
-    suffixLen < newLines.length - prefixLen &&
-    oldLines[oldLines.length - 1 - suffixLen] ===
-      newLines[newLines.length - 1 - suffixLen]
-  ) {
-    suffixLen++;
-  }
-
-  return {
-    additions: newLines.length - prefixLen - suffixLen,
-    deletions: oldLines.length - prefixLen - suffixLen,
-  };
-}
-
-/** Format input params for display. Bash commands get plain text, others get JSON. */
-function formatInput(name: string, input: Record<string, unknown>): string {
-  if (name === "Bash" && input.command) {
-    return input.command as string;
-  }
-
-  return JSON.stringify(input, null, 2);
-}
-
-function WriteToolActions({
-  onCopy,
-  onFork,
-  onSaveToDisk,
-}: {
-  onCopy: () => void;
-  onFork?: () => void;
-  onSaveToDisk?: () => void;
-}) {
-  return (
-    <HoverActionBar className={styles.forkActions} placement="top-right">
-      <HoverActionButton
-        icon={<Icons.CopyIcon size={12} />}
-        label="Copy new content"
-        onClick={onCopy}
-      />
-      {onSaveToDisk && (
-        <HoverActionButton
-          icon={<Icons.DownloadIcon size={12} />}
-          label="Save entire file to disk"
-          onClick={onSaveToDisk}
-        />
-      )}
-      {onFork && (
-        <HoverActionButton
-          icon={<Icons.BranchIcon size={12} />}
-          label="Fork workspace and chat from here"
-          onClick={onFork}
-        />
-      )}
-    </HoverActionBar>
-  );
-}
-
-/**
- * Return only the added lines (not the common prefix/suffix context) when
- * diffing `oldStr` against `newStr`, mirroring EditDiffView's diff logic.
- */
 function addedLines(oldStr: string, newStr: string): string {
   const oldLines = oldStr.split("\n");
   const newLines = newStr.split("\n");
@@ -316,11 +141,6 @@ function addedLines(oldStr: string, newStr: string): string {
   return newLines.slice(prefixLen, newLines.length - suffixLen).join("\n");
 }
 
-/**
- * Extract just the added lines from a Write / Edit / MultiEdit tool call,
- * suitable for placing on the clipboard. Context lines present in both old
- * and new are excluded.
- */
 function writeToolAddedContent(
   name: string,
   input: Record<string, unknown>,
@@ -349,6 +169,11 @@ function writeToolAddedContent(
   return "";
 }
 
+/**
+ * Desktop tool-call card — the pure Peacock `ToolCall` with the desktop's
+ * platform behaviour injected: `argus-file://` image resolution + native
+ * viewer, file-path linkification, and the interactive permission forms.
+ */
 export function ToolCallCard({
   agentId,
   onFork,
@@ -361,8 +186,6 @@ export function ToolCallCard({
     toolCall.name === "Edit" ||
     toolCall.name === "MultiEdit";
   const canFork = onFork != null && isWriteTool;
-  const handleSaveToDisk =
-    onSaveToDisk && isWriteTool ? () => onSaveToDisk(toolCall) : undefined;
 
   const handleCopyWriteContent = useCallback(() => {
     const text = writeToolAddedContent(toolCall.name, toolCall.input);
@@ -370,68 +193,18 @@ export function ToolCallCard({
       navigator.clipboard.writeText(text).catch(() => {});
     }
   }, [toolCall.name, toolCall.input]);
-  const [userExpanded, setUserExpanded] = useState(false);
-  // Auto-expand when a permission request is pending; user toggle applies otherwise.
-  const expanded = !!toolCall.pendingPermission || userExpanded;
 
-  const isAgent = toolCall.name === "Agent";
-  const isSubAgentParent =
-    toolCall.name === "Agent" || toolCall.name === "Task";
-  const children = toolCall.children ?? [];
-  const childToolCalls = children.flatMap((c) =>
-    c.kind === "tool_use" ? [c.toolCall] : [],
-  );
-  const previewToolCalls = childToolCalls.slice(-5);
-  const agentType = isAgent
-    ? ((toolCall.input.subagent_type ?? "") as string) || "Agent"
-    : "";
-  const agentDesc = isAgent
-    ? ((toolCall.input.description ?? "") as string)
-    : "";
-  const summary = toolSummary(toolCall.name, toolCall.input);
-  const hasResult = toolCall.result !== undefined;
-  const isBash = toolCall.name === "Bash";
-  const isPathSummary = isPathTool(toolCall.name);
-  const isEdit =
-    (toolCall.name === "Edit" || toolCall.name === "MultiEdit") &&
-    typeof toolCall.input.old_string === "string" &&
-    typeof toolCall.input.new_string === "string";
-  const isWrite =
-    toolCall.name === "Write" && typeof toolCall.input.content === "string";
+  const isExitPlanMode = toolCall.name === "ExitPlanMode";
   const isAskUserQuestion = toolCall.name === "AskUserQuestion";
   const questions = isAskUserQuestion ? parseQuestions(toolCall.input) : [];
-  const isAnsweredQuestion =
-    isAskUserQuestion &&
-    questions.length > 0 &&
-    hasResult &&
-    !toolCall.pendingPermission;
-  const answeredSelections = isAnsweredQuestion
-    ? parseAnswerSelections(questions, safeResultText(toolCall.result))
-    : [];
-  // Edit/Write diffs and answered questions are always visible so the user sees
-  // the content without a click. The chevron only hides the result payload.
-  const alwaysShowInputPreview = isEdit || isWrite || isAnsweredQuestion;
-  const inputText = formatInput(toolCall.name, toolCall.input);
-  let editStats: { additions: number; deletions: number } | null = null;
-  if (isEdit) {
-    editStats = computeEditStats(
-      toolCall.input.old_string as string,
-      toolCall.input.new_string as string,
-    );
-  } else if (isWrite) {
-    const content = toolCall.input.content as string;
-    editStats = {
-      additions: content === "" ? 0 : content.split("\n").length,
-      deletions: 0,
-    };
-  }
-  const isPending = toolCall.pendingPermission;
+  const isPending = !!toolCall.pendingPermission;
   const allowRule = alwaysAllowRule(toolCall.name, toolCall.input);
+  const planText =
+    isExitPlanMode && typeof toolCall.input.plan === "string"
+      ? (toolCall.input.plan as string)
+      : "";
 
   const handleAllow = useCallback(() => {
-    // Approving ExitPlanMode makes the CLI drop to "default" (ask-per-tool).
-    // The backend watches the CLI's `permissionMode` signal and restores the
-    // pre-plan mode there — no client-side re-set needed (see agentService).
     onPermissionRespond?.(toolCall.id, "allow");
   }, [onPermissionRespond, toolCall.id]);
 
@@ -445,10 +218,6 @@ export function ToolCallCard({
 
   const handleSubmitAnswers = useCallback(
     (formattedAnswer: string) => {
-      // AskUserQuestion has no "accept" in the CLI's protocol — allowing would
-      // let the CLI execute its own (piped, non-interactive) question UI.
-      // We deny with a structured message that the model reads as the user's
-      // response to the question.
       onPermissionRespond?.(
         toolCall.id,
         "deny",
@@ -493,289 +262,112 @@ export function ToolCallCard({
     [onPermissionRespond, toolCall.id],
   );
 
-  const isExitPlanMode = toolCall.name === "ExitPlanMode";
-  const planText =
-    isExitPlanMode && typeof toolCall.input.plan === "string"
-      ? (toolCall.input.plan as string)
-      : "";
+  const hoverActions = isWriteTool ? (
+    <>
+      <HoverActionButton
+        icon={<Icons.CopyIcon size={12} />}
+        label="Copy new content"
+        onClick={handleCopyWriteContent}
+      />
+      {onSaveToDisk && (
+        <HoverActionButton
+          icon={<Icons.DownloadIcon size={12} />}
+          label="Save entire file to disk"
+          onClick={() => onSaveToDisk(toolCall)}
+        />
+      )}
+      {canFork && onFork && (
+        <HoverActionButton
+          icon={<Icons.BranchIcon size={12} />}
+          label="Fork workspace and chat from here"
+          onClick={onFork}
+        />
+      )}
+    </>
+  ) : undefined;
 
-  let structuredInputPreview: ReactNode;
-  if (isEdit) {
-    structuredInputPreview = (
-      <EditDiffView
-        newString={toolCall.input.new_string as string}
-        oldString={toolCall.input.old_string as string}
+  const questionDrafts = useMemo(
+    () => ({
+      get: () => getToolDraft<QuestionFormDraft>(toolCall.id),
+      set: (d: QuestionFormDraft) => setToolDraft(toolCall.id, d),
+      clear: () => clearToolDraft(toolCall.id),
+    }),
+    [toolCall.id],
+  );
+  const planDrafts = useMemo(
+    () => ({
+      get: () => getToolDraft<PlanApprovalDraft>(toolCall.id),
+      set: (d: PlanApprovalDraft) => setToolDraft(toolCall.id, d),
+      clear: () => clearToolDraft(toolCall.id),
+    }),
+    [toolCall.id],
+  );
+  const renderPlanMarkdown = useCallback(
+    (text: string, className?: string) => (
+      <Markdown className={className} text={text} />
+    ),
+    [],
+  );
+
+  let pendingForm: ReactNode;
+  if (isPending && isExitPlanMode) {
+    pendingForm = (
+      <PlanApproval
+        onApprove={handleAllow}
+        onReject={handleRejectPlan}
+        onSubmitFeedback={handlePlanFeedback}
+        plan={planText}
+        renderMarkdown={renderPlanMarkdown}
+        drafts={planDrafts}
       />
     );
-  } else if (isWrite) {
-    structuredInputPreview = (
-      <EditDiffView newString={toolCall.input.content as string} />
-    );
-  } else if (isAnsweredQuestion) {
-    structuredInputPreview = (
-      <AnsweredQuestionView
+  } else if (isPending && isAskUserQuestion && questions.length > 0) {
+    pendingForm = (
+      <QuestionForm
+        onCancel={handleCancelQuestion}
+        onSubmit={handleSubmitAnswers}
         questions={questions}
-        selections={answeredSelections}
+        drafts={questionDrafts}
       />
-    );
-  } else if (isExitPlanMode && planText) {
-    structuredInputPreview = (
-      <div className={styles.section}>
-        <span className={styles.sectionLabel}>Plan</span>
-        <Markdown className={styles.planPreview} text={planText} />
-      </div>
-    );
-  } else {
-    structuredInputPreview = (
-      <div className={styles.section}>
-        <span className={styles.sectionLabel}>Input</span>
-        <HoverActionBar className={styles.sectionActions} placement="top-right">
-          <HoverActionButton
-            icon={<Icons.CopyIcon size={12} />}
-            label="Copy input"
-            onClick={() => {
-              navigator.clipboard.writeText(inputText).catch(() => {});
-            }}
-          />
-        </HoverActionBar>
-        <pre className={`${styles.code} ${isBash ? styles.bash : ""}`}>
-          <LinkifiedText text={inputText} />
-        </pre>
-      </div>
     );
   }
 
+  const showPermissionButtons =
+    isPending &&
+    !!agentId &&
+    !isExitPlanMode &&
+    !(isAskUserQuestion && questions.length > 0);
+
+  const permissionActions = showPermissionButtons ? (
+    <>
+      <Button variant="primary" size="sm" onClick={handleAllow}>
+        Allow
+      </Button>
+      <Button variant="secondary" size="sm" onClick={handleAllowAll}>
+        Always Allow {allowRule}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={handleDeny}>
+        Deny
+      </Button>
+    </>
+  ) : undefined;
+
   return (
-    <FileLinkHandler
-      className={`${styles.card} ${toolCall.isError ? styles.cardError : ""} ${isPending ? styles.cardPending : ""}`}
-    >
-      {isWriteTool && (
-        <WriteToolActions
-          onCopy={handleCopyWriteContent}
-          onFork={canFork ? onFork : undefined}
-          onSaveToDisk={handleSaveToDisk}
-        />
+    <ToolCall
+      toolCall={toToolCallData(toolCall)}
+      Container={FileLinkHandler}
+      resolveImageSrc={resolveImageSrc}
+      resolveImageFallback={resolveImageFallback}
+      onImageActivate={(src, alt, fallbackSrc) =>
+        openImageViewer(src, alt, src !== fallbackSrc ? fallbackSrc : undefined)
+      }
+      renderText={(text) => <LinkifiedText text={text} />}
+      renderMarkdown={(text, className) => (
+        <Markdown className={className} text={text} />
       )}
-      <button
-        aria-expanded={expanded}
-        className={styles.header}
-        onClick={() => setUserExpanded((v) => !v)}
-      >
-        <span className={styles.chevron}>
-          {expanded ? (
-            <Icons.ChevronDownIcon size={9} />
-          ) : (
-            <Icons.ChevronRightIcon size={9} />
-          )}
-        </span>
-        <span className={styles.name}>
-          {isAgent ? agentType : toolCall.name}
-        </span>
-        <span
-          className={`${styles.summary} ${isPathSummary ? styles.summaryPath : ""}`}
-        >
-          {isAgent ? agentDesc : <LinkifiedText text={summary} />}
-        </span>
-        {editStats && (editStats.additions > 0 || editStats.deletions > 0) && (
-          <span className={styles.editStats}>
-            {editStats.additions > 0 && (
-              <span className={styles.statsAdd}>+{editStats.additions}</span>
-            )}
-            {editStats.deletions > 0 && (
-              <span className={styles.statsDel}>-{editStats.deletions}</span>
-            )}
-          </span>
-        )}
-        {isPending && (
-          <Badge tone="warning" className={styles.pendingTag}>
-            awaiting permission
-          </Badge>
-        )}
-        {hasResult && !toolCall.isError && !isPending && (
-          <Badge tone="neutral" className={styles.doneTag}>
-            done
-          </Badge>
-        )}
-        {isAgent && !hasResult && !toolCall.isError && !isPending && (
-          <Badge tone="accent" className={styles.runningTag}>
-            running
-          </Badge>
-        )}
-        {toolCall.isError && <Badge tone="error">error</Badge>}
-      </button>
-
-      {alwaysShowInputPreview && !expanded && (
-        <div className={styles.body}>{structuredInputPreview}</div>
-      )}
-
-      {isSubAgentParent && !expanded && previewToolCalls.length > 0 && (
-        <div className={styles.inlinePreview}>
-          {previewToolCalls.map((child) => {
-            const childSummary = toolSummary(child.name, child.input);
-            const childLabel =
-              child.name === "Agent"
-                ? ((child.input.subagent_type ?? "") as string) || "Agent"
-                : child.name;
-
-            return (
-              <div className={styles.previewRow} key={child.id}>
-                <span className={styles.previewName}>{childLabel}</span>
-                {childSummary && (
-                  <span
-                    className={`${styles.previewSummary} ${isPathTool(child.name) ? styles.summaryPath : ""}`}
-                  >
-                    {childSummary}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-          {childToolCalls.length > previewToolCalls.length && (
-            <div className={styles.previewMore}>
-              +{childToolCalls.length - previewToolCalls.length} more
-            </div>
-          )}
-        </div>
-      )}
-
-      {expanded && (
-        <div className={styles.body}>
-          {isPending && isExitPlanMode && (
-            <PlanApproval
-              onApprove={handleAllow}
-              onReject={handleRejectPlan}
-              onSubmitFeedback={handlePlanFeedback}
-              plan={planText}
-              toolUseId={toolCall.id}
-            />
-          )}
-          {isPending && isAskUserQuestion && questions.length > 0 && (
-            <QuestionForm
-              onCancel={handleCancelQuestion}
-              onSubmit={handleSubmitAnswers}
-              questions={questions}
-              toolUseId={toolCall.id}
-            />
-          )}
-          {!(
-            isPending &&
-            (isExitPlanMode || (isAskUserQuestion && questions.length > 0))
-          ) &&
-            (isAgent ? (
-              <>
-                {agentDesc && (
-                  <div className={styles.section}>
-                    <span className={styles.sectionLabel}>Description</span>
-                    <pre className={styles.code}>{agentDesc}</pre>
-                  </div>
-                )}
-                {hasResult && (
-                  <div className={styles.section}>
-                    <span className={styles.sectionLabel}>
-                      {toolCall.isError ? "Error" : "Result"}
-                    </span>
-                    <HoverActionBar
-                      className={styles.sectionActions}
-                      placement="top-right"
-                    >
-                      <HoverActionButton
-                        icon={<Icons.CopyIcon size={12} />}
-                        label="Copy result"
-                        onClick={() => {
-                          navigator.clipboard
-                            .writeText(safeResultText(toolCall.result))
-                            .catch(() => {});
-                        }}
-                      />
-                    </HoverActionBar>
-                    <pre
-                      className={`${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`}
-                    >
-                      <LinkifiedText
-                        text={
-                          safeResultText(toolCall.result).slice(0, 500) +
-                          (safeResultText(toolCall.result).length > 500
-                            ? "…"
-                            : "")
-                        }
-                      />
-                    </pre>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                {structuredInputPreview}
-
-                {hasResult && !isAnsweredQuestion && (
-                  <div className={styles.section}>
-                    <span className={styles.sectionLabel}>
-                      {toolCall.isError ? "Error" : "Result"}
-                    </span>
-                    <HoverActionBar
-                      className={styles.sectionActions}
-                      placement="top-right"
-                    >
-                      <HoverActionButton
-                        icon={<Icons.CopyIcon size={12} />}
-                        label="Copy result"
-                        onClick={() => {
-                          navigator.clipboard
-                            .writeText(safeResultText(toolCall.result))
-                            .catch(() => {});
-                        }}
-                      />
-                    </HoverActionBar>
-                    {renderResult(
-                      toolCall.result,
-                      `${styles.code} ${toolCall.isError ? styles.resultError : styles.result}`,
-                      toolCall.name,
-                      toolCall.input,
-                    )}
-                  </div>
-                )}
-              </>
-            ))}
-
-          {isSubAgentParent && children.length > 0 && (
-            <div className={styles.section}>
-              <span className={styles.sectionLabel}>Sub-agent activity</span>
-              <div className={styles.children}>
-                {children.map((child, i) =>
-                  child.kind === "text" ? (
-                    <div className={styles.childText} key={i}>
-                      <LinkifiedText text={child.text} />
-                    </div>
-                  ) : (
-                    <ToolCallCard
-                      agentId={agentId}
-                      key={child.toolCall.id}
-                      toolCall={child.toolCall}
-                    />
-                  ),
-                )}
-              </div>
-            </div>
-          )}
-
-          {isPending &&
-            agentId &&
-            !isExitPlanMode &&
-            !(isAskUserQuestion && questions.length > 0) && (
-              <div className={styles.permissionActions}>
-                <Button variant="primary" size="sm" onClick={handleAllow}>
-                  Allow
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleAllowAll}>
-                  Always Allow {allowRule}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={handleDeny}>
-                  Deny
-                </Button>
-              </div>
-            )}
-        </div>
-      )}
-    </FileLinkHandler>
+      hoverActions={hoverActions}
+      pendingForm={pendingForm}
+      permissionActions={permissionActions}
+    />
   );
 }

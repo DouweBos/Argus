@@ -1,6 +1,9 @@
 packages:
   - "."
   - "packages/*"
+  # LAN web client — in the workspace so it can consume @argus/peacock. The
+  # native Expo client (clients/argus-remote) stays out (heavy RN toolchain).
+  - "clients/argus-web"
 
 allowBuilds:
   electron-winstaller: false

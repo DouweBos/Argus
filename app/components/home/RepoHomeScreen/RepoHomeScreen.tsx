@@ -231,25 +231,20 @@ export function RepoHomeScreen({
                 );
                 const hasErr = wsAgents.some((a) => a.status === "error");
                 const hasRun = wsAgents.some((a) => a.status === "running");
-                let statusTone: "error" | "idle" | "success" = "idle";
-                if (hasErr) {
-                  statusTone = "error";
-                } else if (hasRun) {
-                  statusTone = "success";
-                }
 
                 return (
                   <SessionCard
                     key={ws.id}
-                    branch={ws.display_name ?? ws.branch}
-                    parentBranch={ws.base_branch ?? undefined}
+                    icon={<Icons.BranchIcon size={13} />}
+                    iconPulse={hasRun}
+                    title={ws.display_name ?? ws.branch}
+                    subtitle={ws.base_branch ?? undefined}
                     selected={ws.id === sessionId}
-                    status={statusTone}
-                    pulse={hasRun}
-                    role="button"
-                    tabIndex={0}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => selectSession(ws.id)}
+                    interactive
+                    status={
+                      hasErr ? { label: "error", tone: "error" } : undefined
+                    }
+                    onSelect={() => selectSession(ws.id)}
                   />
                 );
               })}

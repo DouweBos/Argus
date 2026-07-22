@@ -14,11 +14,33 @@
   margin-bottom: 0;
 }
 
-.expandBtn {
+.source {
+  margin-bottom: 0;
+  white-space: pre;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.toolbar {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
   z-index: 1;
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.wrap:hover .toolbar,
+.wrap:focus-within .toolbar {
+  opacity: 1;
+}
+
+.btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,18 +52,17 @@
   background: color-mix(in srgb, var(--bg-primary) 70%, transparent);
   color: var(--text-muted);
   cursor: pointer;
-  opacity: 0;
   transition:
     background var(--transition-fast),
-    color var(--transition-fast),
-    opacity var(--transition-fast);
+    color var(--transition-fast);
 }
 
-.wrap:hover .expandBtn {
-  opacity: 1;
-}
-
-.expandBtn:hover {
+.btn:hover {
   background: var(--surface-4);
   color: var(--text-secondary);
+}
+
+.btnActive {
+  background: var(--surface-4);
+  color: var(--text-primary);
 }

@@ -244,6 +244,13 @@ const bridgesByUdid = new Map<string, SimBridge>();
 const captureRefsByUdid = new Map<string, number>();
 
 /**
+ * In-flight capture spawns, keyed by UDID. Guards the non-atomic
+ * check-then-spawn in {@link startSimulatorCapture} so concurrent starts for
+ * the same device share one bridge instead of racing to spawn duplicates.
+ */
+const startInFlightByUdid = new Map<string, Promise<number>>();
+
+/**
  * Per-UDID deferred-teardown timers. When the last view holding a capture
  * unmounts, refs hit zero and we *schedule* a tear-down instead of running
  * it immediately — so a quick close/reopen reuses the existing bridge.
@@ -272,6 +279,11 @@ export function getBridgeForUdid(udid: string): SimBridge | null {
   return bridgesByUdid.get(udid) ?? null;
 }
 
+/** Whether a capture session is currently active for this UDID. */
+export function isSimulatorCapturing(udid: string): boolean {
+  return (captureRefsByUdid.get(udid) ?? 0) > 0;
+}
+
 /**
  * Acquire a capture session for the given UDID and return the MJPEG port.
  *
@@ -294,6 +306,31 @@ export async function startSimulatorCapture(udid: string): Promise<number> {
     return existing.mjpegPort;
   }
 
+  // A spawn is already in flight for this UDID — the check-then-spawn above is
+  // not atomic across the awaits below, so two near-simultaneous starts (the
+  // desktop view opening + a remote watch, or a StrictMode double-invoke) would
+  // otherwise each spawn a bridge and clobber the registry. Join the in-flight
+  // spawn and just add our own reference once it completes.
+  const inflight = startInFlightByUdid.get(udid);
+  if (inflight) {
+    const port = await inflight;
+    captureRefsByUdid.set(udid, (captureRefsByUdid.get(udid) ?? 0) + 1);
+
+    return port;
+  }
+
+  const spawn = spawnSimulatorCapture(udid);
+  startInFlightByUdid.set(udid, spawn);
+  try {
+    return await spawn;
+  } finally {
+    startInFlightByUdid.delete(udid);
+  }
+}
+
+/** Actually spawn the bridge + start capture. Serialized per UDID by the
+ *  in-flight guard in {@link startSimulatorCapture}; sets the ref count to 1. */
+async function spawnSimulatorCapture(udid: string): Promise<number> {
   // Resolve the human-readable device name for the session record
   const devices = await listSimulators();
   const device = devices.find((d) => d.udid === udid);

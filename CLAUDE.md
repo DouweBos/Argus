@@ -74,6 +74,7 @@ Node.js + TypeScript + Electron.
 6. Icons: `Icons` from `@argus/peacock` only. No Lucide/Heroicons/icon fonts. Missing icon → add to `packages/peacock/src/icons/Icons.tsx` at matching stroke weight.
 7. **No inline `<svg>` in `app/`** (most common violation). Every SVG — icons, badges, shapes, data-viz (graphs, charts, sparklines, arcs), loaders, illustrations — belongs in `packages/peacock/src/components/<Name>/` with a story. Data-driven too: extract the pure renderer, move its types/constants (palettes, row shapes) into Peacock, compose from the app. Before adding a primitive, `grep -r '<svg' packages/peacock/src` for existing coverage.
 8. No emoji, third-party UI kits, or Tailwind. Peacock is the only UI layer.
+9. **Rebuilding a desktop feature in the embedded web client → reuse the desktop component, don't rebuild it.** Everything is already built in desktop. Decouple the component (strip IPC/Electron-specific deps), move it into Peacock, and compose it from both the desktop app and the web client, each wiring their own data/transport. Only build fresh when no desktop equivalent exists.
 
 Every Peacock component ships with a Storybook story covering meaningful states.
 

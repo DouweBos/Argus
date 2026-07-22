@@ -140,7 +140,7 @@ export function SessionSidebar() {
             </SidebarHeaderAction>
             <SidebarHeaderAction
               title="Settings (⌘,)"
-              onClick={showSettingsDialog}
+              onClick={() => showSettingsDialog()}
             >
               <Icons.GearIcon size={12} />
             </SidebarHeaderAction>

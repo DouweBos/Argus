@@ -152,6 +152,10 @@ import { listAuthorized, loadToken } from "./services/mcp/oauthStore";
 import { collectAllProjects } from "./services/mcp/projects";
 import { listInheritedMcpServers } from "./services/mcp/userConfig";
 import {
+  broadcastRemoteNotification,
+  type RemoteNotificationPayload,
+} from "./services/notifications/broadcast";
+import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
   claudePing as onboardingClaudePing,
@@ -187,6 +191,23 @@ import {
   cancelOrgTask,
   startOrgTask,
 } from "./services/organizationTask/orchestrator";
+import {
+  listDevices as listRemoteDevices,
+  revokeDevice,
+  setDeviceCapabilities,
+} from "./services/remote/deviceStore";
+import { disconnectDevice } from "./services/remote/gateway";
+import {
+  cancelPairing,
+  confirmPairing,
+  startPairing,
+} from "./services/remote/pairing";
+import {
+  getPublicUrl,
+  getRemoteStatus,
+  setRemoteConfig,
+  setRemoteStatusListener,
+} from "./services/remote/remoteService";
 import { reconfigureAutoFetchForRepo } from "./services/session/autoFetch";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
 import { gitAmendTip } from "./services/session/gitAmend";
@@ -950,6 +971,63 @@ export function registerIpcHandlers(): void {
   );
   handle("get_app_settings", () => loadAppSettings());
   handle("set_app_settings", (a) => saveAppSettings(a.settings as AppSettings));
+
+  // Remote access (phone/web control).
+  handle("remote_get_status", () => getRemoteStatus());
+  handle("remote_set_config", (a) =>
+    setRemoteConfig(
+      a.config as {
+        enabled?: boolean;
+        lanWeb?: boolean;
+        provider?: "cloudflare" | "none" | "tailscale";
+        publicUrl?: string;
+        tunnelMode?: "quick" | "token";
+        tunnelToken?: string;
+      },
+    ),
+  );
+  handle("remote_list_devices", () => listRemoteDevices());
+  handle("remote_revoke_device", async (a) => {
+    const deviceId = a.deviceId as string;
+    await revokeDevice(deviceId);
+    disconnectDevice(deviceId);
+
+    return getRemoteStatus();
+  });
+  handle("remote_start_pairing", () =>
+    startPairing(getPublicUrl(), {
+      onSas: (sas) => broadcastToRenderers("remote:pairing-sas", { sas }),
+      onPaired: (device) =>
+        broadcastToRenderers("remote:pairing-complete", { device }),
+      onError: (message) =>
+        broadcastToRenderers("remote:pairing-error", { message }),
+    }),
+  );
+  handle("remote_confirm_pairing", (a) =>
+    confirmPairing(a.control as boolean | undefined),
+  );
+  handle("remote_cancel_pairing", () => {
+    cancelPairing();
+  });
+  handle("remote_set_device_control", async (a) => {
+    const deviceId = a.deviceId as string;
+    await setDeviceCapabilities(
+      deviceId,
+      a.control ? ["monitor", "control"] : ["monitor"],
+    );
+    // Drop any live connection so it reconnects with the fresh grants — the
+    // gateway pins capabilities per-connection at handshake time.
+    disconnectDevice(deviceId);
+
+    return listRemoteDevices();
+  });
+  // Push status to the renderer whenever the tunnel state changes (e.g. a quick
+  // tunnel finishing startup and revealing its URL).
+  setRemoteStatusListener(() => {
+    getRemoteStatus()
+      .then((status) => broadcastToRenderers("remote:status", status))
+      .catch(() => {});
+  });
   handle("list_inherited_mcp_servers", (a) =>
     listInheritedMcpServers((a.worktreePath as string | null) ?? null),
   );
@@ -1852,6 +1930,11 @@ export function registerIpcHandlers(): void {
   toolHandle("debug_run_command", "device-debug", (a) =>
     runDebugCommand(a.deviceKey as string, a.args as string[]),
   );
+
+  // Mirror a renderer-decided notification to connected remote devices.
+  handle("remote_notify", (a) => {
+    broadcastRemoteNotification(a as unknown as RemoteNotificationPayload);
+  });
 
   // Shell
   handle("reveal_in_finder", (a) => revealInFinder(a.path as string));

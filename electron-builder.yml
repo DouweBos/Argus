@@ -34,6 +34,11 @@ extraResources:
     to: org-host-agent-system-prompt.md
   - from: docs/project-settings.md
     to: docs/project-settings.md
+  # LAN web client bundle — served by the gateway in LAN mode. Built by
+  # `build:web-client` before packaging; resolved at runtime via
+  # process.resourcesPath/argus-web.
+  - from: clients/argus-web/dist
+    to: argus-web
 afterPack: scripts/electron-after-pack.cjs
 mac:
   identity: null

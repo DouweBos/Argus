@@ -32,6 +32,36 @@ export interface AndroidDevice {
   online: boolean;
   serial: string;
   type: "emulator" | "physical";
+  /** Android TV form factor (Chromecast / leanback) — dpad-driven, not touch. */
+  isTv: boolean;
+}
+
+/** Cached `ro.build.characteristics` TV check per serial (hardware is static). */
+const tvBySerial = new Map<string, boolean>();
+
+/** Resolve (and cache) whether a booted device is an Android TV. */
+async function resolveIsTv(serial: string, adbPath: string): Promise<boolean> {
+  const cached = tvBySerial.get(serial);
+  if (cached !== undefined) {
+    return cached;
+  }
+  let isTv = false;
+  try {
+    const { stdout } = await execFileAsync(adbPath, [
+      "-s",
+      serial,
+      "shell",
+      "getprop",
+      "ro.build.characteristics",
+    ]);
+    isTv = stdout.toLowerCase().includes("tv");
+  } catch {
+    // Unreachable device — assume not a TV; don't cache so we retry later.
+    return false;
+  }
+  tvBySerial.set(serial, isTv);
+
+  return isTv;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,6 +177,7 @@ export async function listAndroidDevices(): Promise<AndroidDevice[]> {
         online: false,
         serial: `avd:${avd}`,
         type: "emulator",
+        isTv: false,
       });
     }
   }
@@ -217,17 +248,21 @@ async function listAdbDevices(): Promise<AndroidDevice[]> {
       online,
       serial,
       type: isEmulator ? "emulator" : "physical",
+      isTv: false,
     });
   }
 
-  // Resolve AVD names for running emulators (in parallel)
+  // Resolve AVD names for running emulators + TV form factor (in parallel)
   await Promise.all(
     devices
-      .filter((d) => d.type === "emulator" && d.online)
+      .filter((d) => d.online)
       .map(async (d) => {
+        d.isTv = await resolveIsTv(d.serial, adbPath);
+        if (d.type !== "emulator") {
+          return;
+        }
         try {
-          const adb = await findAdb();
-          const { stdout: avdOut } = await execFileAsync(adb, [
+          const { stdout: avdOut } = await execFileAsync(adbPath, [
             "-s",
             d.serial,
             "emu",
@@ -427,6 +462,15 @@ export function stopAndroidCapture(): void {
   }
   AndroidBridge.instance = null;
   appState.androidDevice = null;
+}
+
+/** Whether an Android capture session is active (optionally for a serial). */
+export function isAndroidCapturing(serial?: string): boolean {
+  if (!appState.androidDevice) {
+    return false;
+  }
+
+  return serial ? appState.androidDevice.serial === serial : true;
 }
 
 /**

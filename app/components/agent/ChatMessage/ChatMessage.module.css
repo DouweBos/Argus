@@ -1,4 +1,4 @@
-/* Hover-revealed timestamp overlaid at the top-left of every message,
+/* Hover-revealed timestamp overlaid at the top-left of the edit bubble,
    mirroring the HoverActionBar reveal pattern. */
 .timestamp {
   position: absolute;
@@ -21,168 +21,17 @@
   z-index: 4;
 }
 
-.userMsg:hover .timestamp,
-.assistantMsg:hover .timestamp,
-.systemMsg:hover .timestamp,
-.mcpMsg:hover .timestamp {
+.userMsg:hover .timestamp {
   opacity: 1;
 }
 
-/* System message — subtle divider line */
-.systemMsg {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
-  position: relative;
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--surface-3);
-}
-
-.systemMsgError {
-  color: var(--error);
-  border-bottom-color: var(--error-overlay-lg);
-}
-
-/* MCP-injected system message — full-width card, clearly not a user bubble. */
-.mcpMsg {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 8px 20px;
-  padding: 10px 14px;
-  position: relative;
-  background: var(--surface-2);
-  border: 1px solid var(--surface-4);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--border-radius-sm);
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-}
-
-.mcpHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  text-transform: none;
-}
-
-.mcpBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: var(--border-radius-sm);
-  background: var(--accent-overlay-md);
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.mcpLabel {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-}
-
-.mcpBody {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.mcpText {
-  margin: 0;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: var(--text-primary);
-}
-
-.mcpAttachments {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.mcpAttachment {
-  display: block;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-  cursor: zoom-in;
-  transition: transform var(--transition-base);
-}
-
-.mcpAttachment:hover {
-  transform: translateY(-1px);
-}
-
-.mcpAttachmentImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* User message — right-aligned bubble */
+/* User message — right-aligned container (edit mode). */
 .userMsg {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   padding: 12px 20px;
   position: relative;
-}
-
-/* Reveal the shared Peacock HoverActionBar when the message is hovered. The
-   bar styles itself; we only toggle its visibility here. */
-.userMsg:hover .actions,
-.assistantMsg:hover .actions,
-.actions:focus-within {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.userLinkedProjects {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 6px;
-  max-width: 75%;
-  align-self: flex-end;
-}
-
-.userTextWrap {
-  display: flex;
-  justify-content: flex-end;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.userText {
-  display: inline-block;
-  background: var(--accent-overlay-md);
-  border: 1px solid var(--accent-overlay-xl);
-  border-radius: 16px 16px 4px 16px;
-  padding: 10px 16px;
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  max-width: 75%;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-  position: relative;
-  z-index: 2;
 }
 
 .userEdit {
@@ -196,9 +45,7 @@
 
 /* Auto-grow wrapper: an inline-grid that sizes itself to the longer of the
    textarea's content (mirrored via the ::after pseudo) or the textarea's
-   intrinsic size. The bubble starts at the original message width
-   (min-width on .userEdit) and expands horizontally as the user types
-   until it hits the 75% max-width on .userEdit, then wraps. */
+   intrinsic size. */
 .userEditGrow {
   display: inline-grid;
   align-self: flex-end;
@@ -239,69 +86,7 @@
   gap: 8px;
 }
 
-.userAttachments {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: -8px;
-  margin-right: 6px;
-  max-width: 75%;
-  align-self: flex-end;
-  position: relative;
-  z-index: 3;
-}
-
-.userAttachment {
-  display: block;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border-radius: var(--border-radius-sm);
-  overflow: hidden;
-  border: none;
-  background: transparent;
-  cursor: zoom-in;
-  transition: transform var(--transition-base);
-}
-
-.userAttachment:hover {
-  transform: translateY(-1px);
-}
-
-.userAttachmentImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Assistant message — full width, generous spacing */
-.assistantMsg {
-  padding: 14px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
-}
-
-/* Tool-call-only messages stack tightly — consecutive calls should read as
-   one continuous activity log, not as individually padded turns. */
-.assistantMsgToolOnly {
-  padding: 0 20px;
-  gap: 0;
-}
-
-.assistantMsgToolOnly + .assistantMsgToolOnly {
-  margin-top: -1px;
-}
-
-.textContent {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+/* Prose styling for assistant markdown injected into the Peacock chat kit. */
 .markdown {
   font-size: var(--font-size-sm);
   color: var(--text-primary);
@@ -310,7 +95,6 @@
   -webkit-user-select: text;
 }
 
-/* Markdown rendered elements */
 .markdown p {
   margin-bottom: 10px;
 }
@@ -421,11 +205,4 @@
   border: none;
   border-top: 1px solid var(--surface-4);
   margin: 16px 0;
-}
-
-/* Tool calls section */
-.toolCallsSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
 }

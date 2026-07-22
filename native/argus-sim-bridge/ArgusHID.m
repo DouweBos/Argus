@@ -27,7 +27,14 @@
 // Function pointer type for IndigoHIDMessageForMouseNSEvent.
 // Args: point, prevMsg, 0x32, nsEventType, direction → 320-byte static buffer.
 // prevMsg: NULL for mouseDown (new touch), previous message for drag/up (continuity).
-typedef void* (*IndigoMouseFn)(CGPoint*, void*, int, int, int);
+// IndigoHIDMessageForMouseNSEvent takes 4 trailing `double` args (scale/pressure)
+// beyond the visible params. They land in FP registers d0–d3 per the ARM64
+// calling convention; the function requires them = 1.0 or the built touch has no
+// effect (event "sends" fine but never registers). Declaring them here makes the
+// compiler pass 1.0 properly — the previous code set d0–d3 via inline asm, which
+// a refactor removed, silently breaking all touch injection.
+typedef void* (*IndigoMouseFn)(CGPoint*, void*, int, int, int,
+                               double, double, double, double);
 
 // Per-simulator touch state.  Keyed by UDID so multiple simulators can have
 // independent touch sequences without interfering with each other.
@@ -129,15 +136,17 @@ void SHClearTouchStateForUDID(const char *udid) {
 
 /// Call IndigoHIDMessageForMouseNSEvent with an already-normalized CGPoint.
 ///
-/// The previous implementation set FP registers d0–d3 = 1.0 via inline asm on
-/// the theory that the function divides the input point by those registers.
-/// That was empirically false on current Xcode (18.x): forcing d0–d3 to 2.0
-/// left a tap at (0.5, 0.5) landing dead-center, i.e. the coordinate mapping is
-/// register-independent — the function consumes the CGPoint as normalized
-/// [0,1] directly. The asm was undefined-behaviour-adjacent (relied on the
-/// compiler not touching d0–d3 before the call under -O) for no benefit, so it
-/// is gone. `pt` MUST already be clamped to [0,1] by the caller — the real
-/// crash guard is never handing backboardd an out-of-range coordinate.
+/// The function reads 4 trailing `double` args (in d0–d3 per the ARM64 ABI)
+/// that must be 1.0, or the built touch has no effect — the event "sends"
+/// without error but never registers with backboardd. They are declared in the
+/// `IndigoMouseFn` typedef and passed as 1.0, 1.0, 1.0, 1.0 below so the
+/// compiler supplies them via the normal calling convention. (An earlier
+/// version set d0–d3 with inline asm; a refactor removed it as "pointless" and
+/// silently broke all touch injection — coordinate mapping still worked, so a
+/// dead-center tap test looked fine, but real taps stopped landing.)
+///
+/// `pt` MUST already be clamped to [0,1] by the caller — handing backboardd an
+/// out-of-range coordinate trips an assert and relaunches SpringBoard.
 ///
 /// MUST be called on the main thread — IndigoHIDMessageForMouseNSEvent uses
 /// thread-local state to track active touch sequences.
@@ -147,7 +156,7 @@ static void* SHCallIndigoMouseFn(IndigoMouseFn fn,
                                   int nsEventType,
                                   int direction)
 {
-    return fn(pt, prevMsg, 0x32, nsEventType, direction);
+    return fn(pt, prevMsg, 0x32, nsEventType, direction, 1.0, 1.0, 1.0, 1.0);
 }
 
 /// Build an Indigo HID touch message and send it via the HID client.
