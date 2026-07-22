@@ -83,6 +83,13 @@ describe("deriveActivity", () => {
     });
   });
 
+  it("reads as working when idle but subagents are still running", () => {
+    expect(deriveActivity("idle", undefined, null, null, false, true)).toEqual({
+      description: "Running subagents",
+      state: "working",
+    });
+  });
+
   it("prioritizes pending permission over tool activity", () => {
     const a = deriveActivity("running", "tool_use", "Edit", null, true);
     expect(a.state).toBe("blocked");

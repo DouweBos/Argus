@@ -1679,6 +1679,49 @@ export const useConversation = (agentId: string | null | undefined) =>
 export const useConversations = () =>
   useConversationStore((state) => state.conversations);
 
+/**
+ * True when the agent has an in-flight Claude subagent — a `Task`/`Agent`
+ * tool call that hasn't returned a result yet (and isn't waiting on a
+ * permission prompt). The CLI can report the parent session `idle` between
+ * tool calls while its subagents keep working, so this is the live signal
+ * that work is still happening under the hood.
+ */
+function conversationHasRunningSubagents(
+  conversation: AgentConversation | undefined,
+): boolean {
+  if (!conversation) {
+    return false;
+  }
+  const { messages } = conversation;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    for (const tc of messages[i].toolCalls) {
+      if (
+        (tc.name === "Task" || tc.name === "Agent") &&
+        tc.result === undefined &&
+        !tc.pendingPermission
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+export const useHasRunningSubagents = (
+  agentId: string | null | undefined,
+): boolean =>
+  useConversationStore((state) =>
+    conversationHasRunningSubagents(
+      agentId ? state.conversations[agentId] : undefined,
+    ),
+  );
+
+export const hasRunningSubagents = (agentId: string): boolean =>
+  conversationHasRunningSubagents(
+    conversationStore.getState().conversations[agentId],
+  );
+
 export const getConversationState = () => conversationStore.getState();
 export const setConversationState =
   conversationStore.setState.bind(conversationStore);
