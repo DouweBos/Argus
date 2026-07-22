@@ -19,7 +19,9 @@ import {
   type RemoteAgentStatus,
   type RemoteGitStatus,
   type RemoteMessage,
+  type RemoteDevice,
   type RemoteMethod,
+  type RemotePlatform,
   type RemoteSession,
   type RemoteTask,
   type RemoteToolCall,
@@ -55,6 +57,21 @@ import {
   getSessionFullDiff,
 } from "../session/sessionOps";
 import { computeSessionDiffStats } from "../session/watcher";
+import {
+  androidButton,
+  androidKeyboard,
+  androidTouch,
+  isAndroidCapturing,
+  listAndroidDevices,
+} from "../simulator/android";
+import {
+  isSimulatorCapturing,
+  listSimulators,
+  simulatorButton,
+  simulatorKeyboard,
+  simulatorTouch,
+} from "../simulator/ios";
+import { getVideoDims } from "../simulator/videoForward";
 import { renameDevice, type PairedDevice } from "./deviceStore";
 
 export class GatewayError extends Error {
@@ -71,15 +88,71 @@ export class GatewayError extends Error {
   }
 }
 
+/**
+ * Screen-stream control for a connection. Implemented by `DeviceConnection`,
+ * which owns the binary media channel; kept as an interface so `capabilities`
+ * stays free of transport concerns.
+ */
+export interface DeviceMediaController {
+  /** Start streaming a device's screen; returns the binary-frame stream id. */
+  watch: (deviceId: string, platform: RemotePlatform) => Promise<number>;
+  unwatch: (deviceId: string) => void;
+}
+
 /** Per-connection context handed to each handler. */
 export interface GatewayContext {
   device: PairedDevice;
   /** `agentId::toolUseId` prompts this device was forwarded and may answer. */
   outstandingPermissions: Set<string>;
+  /** Screen-stream control, present when the transport carries a media channel. */
+  media?: DeviceMediaController;
 }
 
 export function permissionKey(agentId: string, toolUseId: string): string {
   return `${agentId}::${toolUseId}`;
+}
+
+/** Map a booted iOS simulator to the remote device shape. */
+function iosToRemoteDevice(d: {
+  udid: string;
+  name: string;
+  runtime: string;
+  booted: boolean;
+}): RemoteDevice {
+  const dims = getVideoDims(d.udid);
+
+  return {
+    id: d.udid,
+    platform: "ios",
+    name: d.name,
+    runtime: d.runtime,
+    booted: d.booted,
+    is_tv: d.runtime.toLowerCase().includes("tvos"),
+    capturing: isSimulatorCapturing(d.udid),
+    width: dims?.width,
+    height: dims?.height,
+  };
+}
+
+/** Map an online Android device/emulator to the remote device shape. */
+function androidToRemoteDevice(d: {
+  serial: string;
+  name: string;
+  online: boolean;
+  isTv: boolean;
+}): RemoteDevice {
+  const dims = getVideoDims(d.serial);
+
+  return {
+    id: d.serial,
+    platform: "android",
+    name: d.name,
+    booted: d.online,
+    is_tv: d.isTv,
+    capturing: isAndroidCapturing(d.serial),
+    width: dims?.width,
+    height: dims?.height,
+  };
 }
 
 // --- Mappers (desktop model → monitor-scoped remote model) -----------------
@@ -891,6 +964,73 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const base = appState.sessions.get(session_id)?.base_branch ?? null;
 
     return { diff, base_branch: base };
+  },
+  "devices.list": async () => {
+    // A missing toolchain (no Xcode / no Android SDK) contributes an empty
+    // list rather than failing the whole call.
+    const [ios, android] = await Promise.all([
+      listSimulators().catch(() => []),
+      listAndroidDevices().catch(() => []),
+    ]);
+    const devices: RemoteDevice[] = [
+      ...ios.filter((d) => d.booted).map(iosToRemoteDevice),
+      ...android.filter((d) => d.online).map(androidToRemoteDevice),
+    ];
+
+    return { devices };
+  },
+  "devices.watch": async (params, ctx) => {
+    const { device_id, platform } = parse("devices.watch", params);
+    if (!ctx.media) {
+      throw new GatewayError("internal", "media channel unavailable");
+    }
+    const stream_id = await control(() =>
+      ctx.media!.watch(device_id, platform),
+    );
+
+    return { stream_id };
+  },
+  "devices.unwatch": async (params, ctx) => {
+    const { device_id } = parse("devices.unwatch", params);
+    ctx.media?.unwatch(device_id);
+
+    return { accepted: true };
+  },
+  "devices.touch": async (params) => {
+    const { device_id, platform, x, y, event_type } = parse(
+      "devices.touch",
+      params,
+    );
+    await control(() =>
+      platform === "ios"
+        ? simulatorTouch(device_id, x, y, event_type)
+        : androidTouch(device_id, x, y, event_type),
+    );
+
+    return { accepted: true };
+  },
+  "devices.button": async (params) => {
+    const { device_id, platform, button } = parse("devices.button", params);
+    await control(() =>
+      platform === "ios"
+        ? simulatorButton(device_id, button)
+        : androidButton(button),
+    );
+
+    return { accepted: true };
+  },
+  "devices.keyboard": async (params) => {
+    const { device_id, platform, key_code, modifiers, is_down } = parse(
+      "devices.keyboard",
+      params,
+    );
+    await control(() =>
+      platform === "ios"
+        ? simulatorKeyboard(device_id, key_code, modifiers, is_down)
+        : androidKeyboard(key_code, modifiers, is_down),
+    );
+
+    return { accepted: true };
   },
 };
 

@@ -16,6 +16,7 @@ import { BrowserWindow } from "electron";
 import * as net from "node:net";
 import { error, log } from "../../../app/lib/logger";
 import { H264AccessUnitParser } from "./h264-parser";
+import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
 interface IosVideoStream {
   socket: net.Socket;
@@ -51,9 +52,11 @@ export function startIosVideoStream(udid: string, port: number): void {
         `[IosVideo] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)} (${udid})`,
       );
       broadcast(`ios_video_config:${udid}`, config);
+      emitVideoConfig(udid, config);
     },
     onFrame: (data, keyFrame, timestamp) => {
       broadcast(`ios_video_frame:${udid}`, { data, keyFrame, timestamp });
+      emitVideoFrame(udid, data, keyFrame, timestamp);
     },
   });
 
@@ -85,4 +88,5 @@ export function stopIosVideoStream(udid: string): void {
   stream.socket.destroy();
   stream.parser.reset();
   streamsByUdid.delete(udid);
+  clearVideo(udid);
 }

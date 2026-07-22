@@ -11,6 +11,15 @@ export type View =
   | { name: "project"; repoRoot: string; projectName: string }
   | { name: "agent"; agentId: string; agentLabel: string }
   | { name: "changes"; sessionId: string; label: string }
+  | { name: "devices" }
+  | {
+      name: "device";
+      deviceId: string;
+      platform: "ios" | "android";
+      deviceName: string;
+      /** tvOS (Apple TV): pointer maps to remote dpad, not touch forwarding. */
+      isTv: boolean;
+    }
   | { name: "settings" };
 
 const ROOT: View[] = [{ name: "projects" }];

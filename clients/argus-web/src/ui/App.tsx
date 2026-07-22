@@ -30,8 +30,11 @@ import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
+import { DevicesView } from "./DevicesView";
+import { DeviceScreen } from "./DeviceScreen";
 import { Settings } from "./Settings";
 import { useHistoryView } from "./useHistoryView";
+import { useLiveRefresh } from "./useLiveRefresh";
 
 export function App() {
   const identity = useAppStore((s) => s.identity);
@@ -179,7 +182,11 @@ function Monitor() {
           ? "Settings"
           : view.name === "changes"
             ? `Changes · ${view.label}`
-            : view.agentLabel;
+            : view.name === "devices"
+              ? "Devices"
+              : view.name === "device"
+                ? view.deviceName
+                : view.agentLabel;
 
   return (
     <div className="aw-shell">
@@ -239,6 +246,13 @@ function Monitor() {
             {!canGoBack && (
               <>
                 <SidebarHeaderAction
+                  onClick={() => push({ name: "devices" })}
+                  title="Devices"
+                  aria-label="Devices"
+                >
+                  <Icons.SimulatorIcon size={14} />
+                </SidebarHeaderAction>
+                <SidebarHeaderAction
                   onClick={() => refreshProjects().catch(() => {})}
                   title="Refresh"
                   aria-label="Refresh"
@@ -289,6 +303,26 @@ function Monitor() {
         )}
         {view.name === "agent" && <AgentTranscript agentId={view.agentId} />}
         {view.name === "changes" && <ChangesView sessionId={view.sessionId} />}
+        {view.name === "devices" && (
+          <DevicesView
+            onOpen={(d) =>
+              push({
+                name: "device",
+                deviceId: d.id,
+                platform: d.platform,
+                deviceName: d.name,
+                isTv: d.is_tv,
+              })
+            }
+          />
+        )}
+        {view.name === "device" && (
+          <DeviceScreen
+            deviceId={view.deviceId}
+            platform={view.platform}
+            isTv={view.isTv}
+          />
+        )}
         {view.name === "settings" && <Settings />}
       </div>
 
@@ -363,34 +397,6 @@ function agentMetaLabel(status: string): string {
     default:
       return "idle";
   }
-}
-
-// The project/agent lists have no server-push channel (unlike agent
-// transcripts), so keep them fresh by re-fetching on an interval while the
-// screen is visible, plus immediately when the tab regains focus.
-const LIST_REFRESH_MS = 4000;
-
-function useLiveRefresh(enabled: boolean, refresh: () => void) {
-  useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-    refresh();
-    const id = setInterval(refresh, LIST_REFRESH_MS);
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        refresh();
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onVisible);
-
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onVisible);
-    };
-  }, [enabled, refresh]);
 }
 
 /** Most-recently-active agents across all projects — a quick jump back to what

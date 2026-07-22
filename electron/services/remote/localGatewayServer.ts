@@ -122,6 +122,7 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
           send(ws, out),
         );
         conn.setCloser(() => ws.close());
+        conn.setBufferedProbe(() => ws.bufferedAmount);
         connection = conn;
         addConnection(conn);
         updateLastSeen(device.device_id, Date.now()).catch(() => {});

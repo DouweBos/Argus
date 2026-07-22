@@ -63,6 +63,15 @@ export const REMOTE_METHODS = {
   "sessions.git_status": "monitor",
   /** Read a session's diff (what the agent changed) as unified-diff text. */
   "sessions.diff": "monitor",
+  /** List connected simulators/emulators. */
+  "devices.list": "monitor",
+  /** Begin/stop streaming a device's screen (frames ride the binary channel). */
+  "devices.watch": "monitor",
+  "devices.unwatch": "monitor",
+  /** Drive a device — taps mutate it, so control-gated like agents.send. */
+  "devices.touch": "control",
+  "devices.button": "control",
+  "devices.keyboard": "control",
 } as const satisfies Record<string, Capability>;
 
 export type RemoteMethod = keyof typeof REMOTE_METHODS;

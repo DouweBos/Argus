@@ -10,6 +10,7 @@ import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
   RemoteAgentVitals,
+  RemoteDevice,
   RemoteGitStatus,
   RemoteImageAttachment,
   RemoteMentionPathResult,
@@ -31,6 +32,10 @@ export const RemotePermissionMode = z.enum([
   "trusted",
 ]);
 export type RemotePermissionMode = z.infer<typeof RemotePermissionMode>;
+
+/** Device platform, shared across the device-control methods. */
+export const RemotePlatform = z.enum(["ios", "android"]);
+export type RemotePlatform = z.infer<typeof RemotePlatform>;
 
 // --- Request params per method ---------------------------------------------
 
@@ -122,6 +127,34 @@ export const MethodParams = {
     session_id: z.string(),
     mode: z.enum(["branch", "working"]).optional(),
   }),
+  "devices.list": z.object({}),
+  /** Begin streaming a device's screen; returns a stream id for binary frames. */
+  "devices.watch": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+  }),
+  "devices.unwatch": z.object({ device_id: z.string() }),
+  /** Normalized [0..1] touch. event_type: 0=down, 1=move, 2=up. */
+  "devices.touch": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+    x: z.number(),
+    y: z.number(),
+    event_type: z.union([z.literal(0), z.literal(1), z.literal(2)]),
+  }),
+  "devices.button": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+    button: z.string(),
+  }),
+  /** Platform-native key codes (macOS virtual for iOS, AKEYCODE for Android). */
+  "devices.keyboard": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+    key_code: z.number(),
+    modifiers: z.number(),
+    is_down: z.boolean(),
+  }),
 } as const;
 
 // --- Result payloads per method --------------------------------------------
@@ -176,6 +209,12 @@ export const MethodResult = {
     diff: z.string(),
     base_branch: z.string().nullable().optional(),
   }),
+  "devices.list": z.object({ devices: z.array(RemoteDevice) }),
+  "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
+  "devices.unwatch": z.object({ accepted: z.boolean() }),
+  "devices.touch": z.object({ accepted: z.boolean() }),
+  "devices.button": z.object({ accepted: z.boolean() }),
+  "devices.keyboard": z.object({ accepted: z.boolean() }),
 } as const;
 
 // --- Envelopes -------------------------------------------------------------

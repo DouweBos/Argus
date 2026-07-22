@@ -20,9 +20,15 @@ import { GatewaySocket } from "./socket";
 
 export type ConnectionState = "connecting" | "handshaking" | "offline" | "ready";
 
+/** Plaintext tag distinguishing JSON envelopes from binary media frames. */
+const TAG_JSON = 0x00;
+const TAG_MEDIA = 0x01;
+
 export interface TransportHandlers {
   onState: (state: ConnectionState) => void;
   onEvent: (event: EventEnvelope) => void;
+  /** Binary device-screen frame (after the media tag byte). */
+  onMedia?: (bytes: Uint8Array) => void;
 }
 
 export class Transport {
@@ -90,9 +96,23 @@ export class Transport {
 
       return;
     }
+    let plain: Uint8Array;
+    try {
+      plain = this.session.decrypt(bytes);
+    } catch {
+      return;
+    }
+    if (plain.length === 0) {
+      return;
+    }
+    if (plain[0] === TAG_MEDIA) {
+      this.handlers.onMedia?.(plain.subarray(1));
+
+      return;
+    }
     let env: Envelope;
     try {
-      env = JSON.parse(toUtf8(this.session.decrypt(bytes))) as Envelope;
+      env = JSON.parse(toUtf8(plain.subarray(1))) as Envelope;
     } catch {
       return;
     }
@@ -110,7 +130,11 @@ export class Transport {
 
   private emit(env: Envelope): void {
     if (this.session) {
-      this.socket.send(this.session.encrypt(fromUtf8(JSON.stringify(env))));
+      const json = fromUtf8(JSON.stringify(env));
+      const plain = new Uint8Array(1 + json.length);
+      plain[0] = TAG_JSON;
+      plain.set(json, 1);
+      this.socket.send(this.session.encrypt(plain));
     }
   }
 

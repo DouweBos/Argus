@@ -181,6 +181,25 @@ export const RemotePermissionRequest = z.object({
 });
 export type RemotePermissionRequest = z.infer<typeof RemotePermissionRequest>;
 
+/**
+ * A connected simulator/emulator the remote client can view and control.
+ * `width/height` are only known once a stream's H.264 config has been seen.
+ */
+export const RemoteDevice = z.object({
+  id: z.string(),
+  platform: z.enum(["ios", "android"]),
+  name: z.string(),
+  runtime: z.string().nullable().optional(),
+  booted: z.boolean(),
+  /** TV form factor (Apple TV / Android TV) — driven by the dpad, not touch. */
+  is_tv: z.boolean(),
+  /** Whether a capture session is currently active (driven by remote demand). */
+  capturing: z.boolean(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+});
+export type RemoteDevice = z.infer<typeof RemoteDevice>;
+
 export const RemoteOrganization = z.object({
   id: z.string(),
   name: z.string(),

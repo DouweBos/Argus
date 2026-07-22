@@ -17,6 +17,7 @@ import type {
   EventEnvelope,
   RemoteAgentCapabilities,
   RemoteAgentStatus,
+  RemoteDevice,
   RemoteGitStatus,
   RemoteImageAttachment,
   RemoteImageData,
@@ -25,12 +26,14 @@ import type {
   RemoteNotification,
   RemotePermissionMode,
   RemotePermissionRequest,
+  RemotePlatform,
   RemoteProject,
   RemoteSession,
   RemoteTask,
   RemoteTodo,
   RemoteTranscript,
 } from "./protocol";
+import { parseMediaMessage, type MediaMessage } from "./h264Decoder";
 import { Transport, type ConnectionState } from "./transport";
 
 /** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
@@ -78,6 +81,8 @@ interface AppState {
   statusByAgent: Record<string, RemoteAgentStatus>;
   /** Locally-chosen effort per agent (not surfaced by the monitor snapshot). */
   effortByAgent: Record<string, string | null>;
+  /** Connected simulators/emulators (from devices.list). */
+  devices: RemoteDevice[];
 
   init: () => void;
   pairComplete: (identity: DeviceIdentity) => void;
@@ -162,6 +167,37 @@ interface AppState {
     sessionId: string,
     query: string,
   ) => Promise<RemoteMentionPathResult>;
+
+  // --- devices -----------------------------------------------------------
+  refreshDevices: () => Promise<void>;
+  /** Start streaming a device's screen; returns the binary-frame stream id. */
+  watchDevice: (deviceId: string, platform: RemotePlatform) => Promise<number>;
+  unwatchDevice: (deviceId: string) => Promise<void>;
+  /** Route parsed media frames for a stream to a sink (the device view). */
+  registerMediaSink: (
+    streamId: number,
+    sink: (msg: MediaMessage) => void,
+  ) => () => void;
+  /** Fire-and-forget touch (moves are unawaited to avoid head-of-line latency). */
+  deviceTouch: (
+    deviceId: string,
+    platform: RemotePlatform,
+    x: number,
+    y: number,
+    eventType: 0 | 1 | 2,
+  ) => void;
+  deviceButton: (
+    deviceId: string,
+    platform: RemotePlatform,
+    button: string,
+  ) => Promise<void>;
+  deviceKeyboard: (
+    deviceId: string,
+    platform: RemotePlatform,
+    keyCode: number,
+    modifiers: number,
+    isDown: boolean,
+  ) => void;
 }
 
 export function imageKey(agentId: string, imageId: string): string {
@@ -180,6 +216,33 @@ export interface QueuedMessage {
 const TRANSCRIPT_PAGE = 80;
 
 export const useAppStore = create<AppState>((set, get) => {
+  // Binary media routing (kept out of reactive state — hot path, no re-render).
+  // `mediaSinks` maps a stream id to the device view consuming it; frames that
+  // arrive before a view registers (e.g. the config sent just before the watch
+  // response) are briefly buffered so the decoder can still configure.
+  const mediaSinks = new Map<number, (msg: MediaMessage) => void>();
+  const mediaBuffer = new Map<number, MediaMessage[]>();
+  const MEDIA_BUFFER_CAP = 120;
+
+  function onMedia(bytes: Uint8Array): void {
+    const msg = parseMediaMessage(bytes);
+    if (!msg) {
+      return;
+    }
+    const sink = mediaSinks.get(msg.streamId);
+    if (sink) {
+      sink(msg);
+
+      return;
+    }
+    const buf = mediaBuffer.get(msg.streamId) ?? [];
+    buf.push(msg);
+    if (buf.length > MEDIA_BUFFER_CAP) {
+      buf.shift();
+    }
+    mediaBuffer.set(msg.streamId, buf);
+  }
+
   // Debounce live transcript refreshes so a burst of events → one refetch.
   const refetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
   const scheduleTranscript = (agentId: string) => {
@@ -273,6 +336,7 @@ export const useAppStore = create<AppState>((set, get) => {
         }
       },
       onEvent,
+      onMedia,
     });
     transport.connect();
 
@@ -303,6 +367,7 @@ export const useAppStore = create<AppState>((set, get) => {
     capabilitiesByAgent: {},
     statusByAgent: {},
     effortByAgent: {},
+    devices: [],
 
     init: () => {
       const identity = loadIdentity();
@@ -373,6 +438,7 @@ export const useAppStore = create<AppState>((set, get) => {
         capabilitiesByAgent: {},
         statusByAgent: {},
         effortByAgent: {},
+        devices: [],
       });
     },
 
@@ -893,6 +959,94 @@ export const useAppStore = create<AppState>((set, get) => {
         "sessions.resolve_mention_path",
         { session_id: sessionId, query },
       );
+    },
+
+    refreshDevices: async () => {
+      const t = get().transport;
+      if (!t) {
+        return;
+      }
+      try {
+        const { devices } = await t.request<{ devices: RemoteDevice[] }>(
+          "devices.list",
+          {},
+        );
+        set({ devices });
+      } catch {
+        // Toolchain may be missing; leave any prior list in place.
+      }
+    },
+
+    watchDevice: async (deviceId, platform) => {
+      const t = get().transport;
+      if (!t) {
+        throw new Error("not connected");
+      }
+      const { stream_id } = await t.request<{ stream_id: number }>(
+        "devices.watch",
+        { device_id: deviceId, platform },
+      );
+
+      return stream_id;
+    },
+
+    unwatchDevice: async (deviceId) => {
+      await get()
+        .transport?.request("devices.unwatch", { device_id: deviceId })
+        .catch(() => {});
+    },
+
+    registerMediaSink: (streamId, sink) => {
+      mediaSinks.set(streamId, sink);
+      // Flush anything buffered before this view registered (e.g. the initial
+      // config emitted right before the watch response arrived).
+      const buffered = mediaBuffer.get(streamId);
+      if (buffered) {
+        mediaBuffer.delete(streamId);
+        for (const msg of buffered) {
+          sink(msg);
+        }
+      }
+
+      return () => {
+        mediaSinks.delete(streamId);
+        mediaBuffer.delete(streamId);
+      };
+    },
+
+    deviceTouch: (deviceId, platform, x, y, eventType) => {
+      // Unawaited: touch-move latency compounds if we round-trip each event.
+      get()
+        .transport?.request("devices.touch", {
+          device_id: deviceId,
+          platform,
+          x,
+          y,
+          event_type: eventType,
+        })
+        .catch(() => {});
+    },
+
+    deviceButton: async (deviceId, platform, button) => {
+      await get()
+        .transport?.request("devices.button", {
+          device_id: deviceId,
+          platform,
+          button,
+        })
+        .catch(() => {});
+    },
+
+    deviceKeyboard: (deviceId, platform, keyCode, modifiers, isDown) => {
+      get()
+        .transport?.request("devices.keyboard", {
+          device_id: deviceId,
+          platform,
+          key_code: keyCode,
+          modifiers,
+          is_down: isDown,
+        })
+        .catch(() => {});
     },
   };
 });

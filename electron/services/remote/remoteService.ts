@@ -32,8 +32,16 @@ import {
 /** Provider choice including "none" (LAN only, no tunnel). */
 export type RemoteProvider = TunnelProvider | "none";
 
-/** Fixed loopback/LAN port the gateway listens on. */
-export const LOCAL_GATEWAY_PORT = 47615;
+/**
+ * Loopback/LAN port the gateway (and the web client it serves) listens on.
+ * Overridable via `ARGUS_REMOTE_PORT` — `pnpm dev` sets it to 47616 so a dev
+ * instance and an installed release can run side by side without fighting over
+ * the socket.
+ */
+export const LOCAL_GATEWAY_PORT = parseInt(
+  process.env.ARGUS_REMOTE_PORT ?? "47615",
+  10,
+);
 
 let running = false;
 let webClientDir: string | null = null;

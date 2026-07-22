@@ -11,24 +11,102 @@
 import type { PairedDevice } from "./deviceStore";
 import type { NoiseSession } from "./noise";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
+import type { H264Config } from "../simulator/h264-parser";
 import {
   Envelope,
   EventPayloads,
   type RemoteEventType,
+  type RemotePlatform,
 } from "@argus/remote-protocol";
+import { log } from "../../../app/lib/logger";
 import { addBroadcastTap } from "../../broadcast";
 import { appState } from "../../state";
+import {
+  isAndroidCapturing,
+  startAndroidCapture,
+  stopAndroidCapture,
+} from "../simulator/android";
+import {
+  forceStopSimulatorCapture,
+  isSimulatorCapturing,
+  startSimulatorCapture,
+  stopSimulatorCapture,
+} from "../simulator/ios";
+import { onVideo } from "../simulator/videoForward";
 import {
   dispatch,
   GatewayError,
   permissionKey,
   toRemoteAgentCapabilities,
   toRemoteAgentStatus,
+  type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+/** Plaintext tag distinguishing JSON envelopes from binary media frames. */
+const TAG_JSON = 0x00;
+const TAG_MEDIA = 0x01;
+
+/** Media message types (first header byte after the tag). */
+const MEDIA_CONFIG = 0;
+const MEDIA_FRAME = 1;
+
+/** Drop delta frames once the socket's send buffer exceeds this (bytes). */
+const BACKPRESSURE_LIMIT = 1_000_000;
+
+/** Whether the gateway itself started the (single) Android capture session. */
+let androidStartedByGateway = false;
+/** Live watchers of the single Android session, across all connections. */
+const androidWatchers = new Set<DeviceConnection>();
+
+let nextStreamId = 1;
+function allocStreamId(): number {
+  const id = nextStreamId;
+  nextStreamId = (nextStreamId + 1) & 0xffff || 1;
+
+  return id;
+}
+
+/** Build the binary body (after the media tag) for a config message. */
+function buildConfigBody(streamId: number, config: H264Config): Uint8Array {
+  const codec = encoder.encode(config.codec);
+  const body = new Uint8Array(
+    12 + 5 + codec.length + config.description.length,
+  );
+  const view = new DataView(body.buffer);
+  view.setUint8(0, MEDIA_CONFIG);
+  view.setUint8(1, 0);
+  view.setUint16(2, streamId, true);
+  view.setFloat64(4, 0, true);
+  view.setUint16(12, config.codedWidth, true);
+  view.setUint16(14, config.codedHeight, true);
+  view.setUint8(16, codec.length);
+  body.set(codec, 17);
+  body.set(config.description, 17 + codec.length);
+
+  return body;
+}
+
+/** Build the binary body (after the media tag) for a frame message. */
+function buildFrameBody(
+  streamId: number,
+  data: Uint8Array,
+  keyFrame: boolean,
+  timestamp: number,
+): Uint8Array {
+  const body = new Uint8Array(12 + data.length);
+  const view = new DataView(body.buffer);
+  view.setUint8(0, MEDIA_FRAME);
+  view.setUint8(1, keyFrame ? 1 : 0);
+  view.setUint16(2, streamId, true);
+  view.setFloat64(4, timestamp, true);
+  body.set(data, 12);
+
+  return body;
+}
 
 /** Parsed agent channel, e.g. `agent:permission:<id>` → kind + agentId. */
 function parseAgentChannel(
@@ -43,19 +121,25 @@ function parseAgentChannel(
 }
 
 /** One authenticated device: a Noise transport plus its subscriptions. */
-export class DeviceConnection {
+export class DeviceConnection implements DeviceMediaController {
   private sendSeq = 0;
   private recvSeq = -1;
   private readonly subscriptions = new Set<string>();
   private readonly ctx: GatewayContext;
   private closer: (() => void) | null = null;
+  private bufferedProbe: (() => number) | null = null;
+  /** Active screen streams for this connection, keyed by device id. */
+  private readonly watched = new Map<
+    string,
+    { streamId: number; platform: RemotePlatform; unsub: () => void }
+  >();
 
   constructor(
     readonly device: PairedDevice,
     private readonly session: NoiseSession,
     private readonly sink: (bytes: Uint8Array) => void,
   ) {
-    this.ctx = { device, outstandingPermissions: new Set() };
+    this.ctx = { device, outstandingPermissions: new Set(), media: this };
   }
 
   /** Register how to tear down the underlying socket (set by the server). */
@@ -63,16 +147,115 @@ export class DeviceConnection {
     this.closer = fn;
   }
 
+  /** Probe the socket's outbound buffer, for backpressure-based frame dropping. */
+  setBufferedProbe(fn: () => number): void {
+    this.bufferedProbe = fn;
+  }
+
   close(): void {
     this.closer?.();
+  }
+
+  /** Release all screen streams. Called when the connection goes away. */
+  dispose(): void {
+    for (const deviceId of [...this.watched.keys()]) {
+      this.unwatch(deviceId);
+    }
+  }
+
+  // --- DeviceMediaController -------------------------------------------------
+
+  async watch(deviceId: string, platform: RemotePlatform): Promise<number> {
+    const existing = this.watched.get(deviceId);
+    if (existing) {
+      return existing.streamId;
+    }
+
+    if (platform === "ios") {
+      await startSimulatorCapture(deviceId);
+    } else {
+      // Android capture is a single global session. Only start it if nothing
+      // else is capturing; reject a request for a different emulator.
+      if (isAndroidCapturing() && !isAndroidCapturing(deviceId)) {
+        throw new GatewayError(
+          "bad_request",
+          "another Android device is already being captured",
+        );
+      }
+      if (!isAndroidCapturing(deviceId)) {
+        await startAndroidCapture(deviceId);
+        androidStartedByGateway = true;
+      }
+      androidWatchers.add(this);
+    }
+
+    const streamId = allocStreamId();
+    log(`[remote] watch ${platform} ${deviceId} → stream ${String(streamId)}`);
+    let loggedFirst = false;
+    const unsub = onVideo(deviceId, {
+      onConfig: (config) => this.emitMedia(buildConfigBody(streamId, config)),
+      onFrame: (data, keyFrame, timestamp) => {
+        // Never drop config/keyframes; shed delta frames under backpressure.
+        if (
+          !keyFrame &&
+          this.bufferedProbe &&
+          this.bufferedProbe() > BACKPRESSURE_LIMIT
+        ) {
+          return;
+        }
+        if (!loggedFirst) {
+          loggedFirst = true;
+          log(
+            `[remote] forwarding frames for ${deviceId} (stream ${String(streamId)})`,
+          );
+        }
+        this.emitMedia(buildFrameBody(streamId, data, keyFrame, timestamp));
+      },
+    });
+    this.watched.set(deviceId, { streamId, platform, unsub });
+
+    return streamId;
+  }
+
+  unwatch(deviceId: string): void {
+    const entry = this.watched.get(deviceId);
+    if (!entry) {
+      return;
+    }
+    entry.unsub();
+    this.watched.delete(deviceId);
+
+    if (entry.platform === "ios") {
+      stopSimulatorCapture(deviceId);
+      // If no one else (the desktop view or another remote device) still holds
+      // the capture, tear it down immediately rather than leaving the bridge
+      // running through its grace period — a remote viewer that left the screen
+      // shouldn't keep the simulator captured.
+      if (!isSimulatorCapturing(deviceId)) {
+        forceStopSimulatorCapture(deviceId);
+      }
+    } else {
+      androidWatchers.delete(this);
+      // Only tear down the shared Android session if we started it and no
+      // other remote watcher still needs it (the desktop may own it otherwise).
+      if (androidWatchers.size === 0 && androidStartedByGateway) {
+        stopAndroidCapture();
+        androidStartedByGateway = false;
+      }
+    }
   }
 
   /** Handle one encrypted inbound frame from the transport. */
   async onFrame(cipher: Uint8Array): Promise<void> {
     let envelope: Envelope;
     try {
-      const plain = decoder.decode(this.session.decrypt(cipher));
-      envelope = Envelope.parse(JSON.parse(plain));
+      const plain = this.session.decrypt(cipher);
+      // Inbound media (tag 0x01) is client→gateway only in theory; the client
+      // never sends it, so drop anything that isn't a JSON envelope.
+      if (plain.length === 0 || plain[0] !== TAG_JSON) {
+        return;
+      }
+      envelope = Envelope.parse(JSON.parse(decoder.decode(plain.subarray(1))));
     } catch {
       // Undecryptable or malformed frames are dropped silently — a
       // well-behaved peer never produces them, an attacker learns nothing.
@@ -246,7 +429,18 @@ export class DeviceConnection {
   }
 
   private emit(envelope: Envelope): void {
-    const plain = encoder.encode(JSON.stringify(envelope));
+    const json = encoder.encode(JSON.stringify(envelope));
+    const plain = new Uint8Array(1 + json.length);
+    plain[0] = TAG_JSON;
+    plain.set(json, 1);
+    this.sink(this.session.encrypt(plain));
+  }
+
+  /** Send a binary media message (config/frame) on the same encrypted channel. */
+  private emitMedia(body: Uint8Array): void {
+    const plain = new Uint8Array(1 + body.length);
+    plain[0] = TAG_MEDIA;
+    plain.set(body, 1);
     this.sink(this.session.encrypt(plain));
   }
 }
@@ -281,6 +475,7 @@ export function addConnection(conn: DeviceConnection): void {
 }
 
 export function removeConnection(conn: DeviceConnection): void {
+  conn.dispose();
   connections.delete(conn);
   if (connections.size === 0 && untap) {
     untap();
@@ -300,6 +495,9 @@ export function disconnectDevice(deviceId: string): void {
 
 /** Drop every connection (kill-switch / shutdown). */
 export function clearConnections(): void {
+  for (const c of connections) {
+    c.dispose();
+  }
   connections.clear();
   if (untap) {
     untap();

@@ -109,4 +109,10 @@ export const BUTTON_TO_KEY: Record<string, string> = {
   power: "Power",
   volume_up: "AudioVolumeUp",
   volume_down: "AudioVolumeDown",
+  // Android TV dpad
+  up: "DpadUp",
+  down: "DpadDown",
+  left: "DpadLeft",
+  right: "DpadRight",
+  select: "DpadCenter",
 };

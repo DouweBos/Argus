@@ -601,3 +601,50 @@ button {
   color: var(--text-primary);
   background: var(--surface-4, var(--surface-3));
 }
+
+/* --- Live device view --------------------------------------------------- */
+
+.aw-device {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aw-device-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  outline: none;
+  touch-action: none;
+}
+
+.aw-device-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.aw-device-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.aw-device-buttons {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}

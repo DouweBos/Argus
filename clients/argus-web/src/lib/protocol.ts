@@ -43,7 +43,28 @@ export type RemoteMethod =
   | "sessions.files"
   | "sessions.resolve_mention_path"
   | "sessions.git_status"
-  | "sessions.diff";
+  | "sessions.diff"
+  | "devices.list"
+  | "devices.watch"
+  | "devices.unwatch"
+  | "devices.touch"
+  | "devices.button"
+  | "devices.keyboard";
+
+export type RemotePlatform = "ios" | "android";
+
+export interface RemoteDevice {
+  id: string;
+  platform: RemotePlatform;
+  name: string;
+  runtime?: string | null;
+  booted: boolean;
+  /** TV form factor (Apple TV / Android TV) — driven by the dpad, not touch. */
+  is_tv: boolean;
+  capturing: boolean;
+  width?: number;
+  height?: number;
+}
 
 export type RemotePermissionMode =
   | "ask"
