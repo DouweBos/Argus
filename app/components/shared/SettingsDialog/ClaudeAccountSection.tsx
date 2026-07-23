@@ -1,6 +1,7 @@
-import type { ClaudeAuthStatus } from "../../../lib/types";
+import type { ClaudeAccount } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import {
+  AccountRow,
   Button,
   Input,
   SegmentedControl,
@@ -11,12 +12,15 @@ import {
 } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
+  addClaudeAccount,
   claudeAuthLoginCancel,
   claudeAuthLoginStart,
   claudeAuthLoginSubmitCode,
-  claudeAuthLogout,
-  getClaudeAuthStatus,
+  listClaudeAccounts,
   openExternalUrl,
+  removeClaudeAccount,
+  renameClaudeAccount,
+  setActiveClaudeAccount,
 } from "../../../lib/ipc";
 import styles from "./ClaudeAccountSection.module.css";
 
@@ -41,68 +45,33 @@ const SUBSCRIPTION_LABELS: Record<string, string> = {
   free: "Free",
 };
 
-function planLabel(status: ClaudeAuthStatus): string | null {
-  if (!status.subscriptionType) {
-    return null;
+function accountDisplayName(account: ClaudeAccount): string {
+  return account.label || account.email || "Signing in…";
+}
+
+function planLabel(account: ClaudeAccount): string | undefined {
+  if (!account.subscription_type) {
+    return undefined;
   }
 
   return (
-    SUBSCRIPTION_LABELS[status.subscriptionType] ?? status.subscriptionType
+    SUBSCRIPTION_LABELS[account.subscription_type] ?? account.subscription_type
   );
 }
 
-interface SignedInAsProps {
-  busy: boolean;
-  onLogout: () => void;
-  status: ClaudeAuthStatus | null;
-}
+/** Second line: org, plus the email when it isn't already the title. */
+function accountDetail(account: ClaudeAccount): string | undefined {
+  const parts = [
+    account.label && account.email ? account.email : null,
+    account.org_name,
+  ].filter(Boolean);
 
-function SignedInAs({ status, busy, onLogout }: SignedInAsProps) {
-  if (status === null) {
-    return <p className={styles.muted}>Checking…</p>;
-  }
-  if (!status.loggedIn) {
-    return <p className={styles.muted}>Not signed in.</p>;
-  }
-  const plan = planLabel(status);
-
-  return (
-    <div className={styles.account}>
-      <dl className={styles.details}>
-        {status.email && (
-          <div className={styles.row}>
-            <dt>Email</dt>
-            <dd>{status.email}</dd>
-          </div>
-        )}
-        {status.orgName && (
-          <div className={styles.row}>
-            <dt>Organization</dt>
-            <dd>{status.orgName}</dd>
-          </div>
-        )}
-        {plan && (
-          <div className={styles.row}>
-            <dt>Plan</dt>
-            <dd>{plan}</dd>
-          </div>
-        )}
-        {status.authMethod && (
-          <div className={styles.row}>
-            <dt>Method</dt>
-            <dd>{status.authMethod}</dd>
-          </div>
-        )}
-      </dl>
-      <Button disabled={busy} variant="secondary" onClick={onLogout}>
-        {busy ? "Logging out…" : "Log out"}
-      </Button>
-    </div>
-  );
+  return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
 export function ClaudeAccountSection() {
-  const [status, setStatus] = useState<ClaudeAuthStatus | null>(null);
+  const [accounts, setAccounts] = useState<ClaudeAccount[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,7 +82,9 @@ export function ClaudeAccountSection() {
 
   const refresh = useCallback(async () => {
     try {
-      setStatus(await getClaudeAuthStatus());
+      const state = await listClaudeAccounts();
+      setAccounts(state.accounts);
+      setActiveId(state.activeId);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -122,6 +93,10 @@ export function ClaudeAccountSection() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useIpcEvent("claude-auth:accounts-changed", () => {
+    refresh();
+  });
 
   const resetLogin = () => {
     setPhase("idle");
@@ -134,13 +109,11 @@ export function ClaudeAccountSection() {
   useIpcEvent<{ error?: string; ok: boolean }>(
     "claude-auth:login-result",
     (payload) => {
-      if (payload.ok) {
-        resetLogin();
-        refresh();
-      } else {
+      if (!payload.ok) {
         setError(payload.error ?? "Login failed.");
-        resetLogin();
       }
+      resetLogin();
+      refresh();
     },
   );
 
@@ -150,19 +123,23 @@ export function ClaudeAccountSection() {
     setPhase((p) => (p === "awaiting-browser" ? "awaiting-code" : p));
   });
 
-  const startLogin = async () => {
+  /** Sign in an extra account, or re-authenticate `accountId` in place. */
+  const startLogin = async (accountId?: string) => {
     setError(null);
     setPhase("starting");
     try {
       // The CLI opens the browser itself; we keep the URL for the manual
       // "Reopen sign-in page" fallback rather than opening a duplicate tab.
-      const { url } = await claudeAuthLoginStart(accountType === "console");
+      const { url } = accountId
+        ? await claudeAuthLoginStart(accountType === "console", accountId)
+        : await addClaudeAccount(accountType === "console");
       setLoginUrl(url);
       setPhase("awaiting-browser");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       resetLogin();
     }
+    refresh();
   };
 
   const submitCode = async () => {
@@ -190,38 +167,67 @@ export function ClaudeAccountSection() {
     claudeAuthLoginCancel().catch(() => {});
     setError(null);
     resetLogin();
+    refresh();
   };
 
-  const logout = async () => {
+  /** Wrap a mutation so failures surface and the list always re-reads. */
+  const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError(null);
     try {
-      await claudeAuthLogout();
-      await refresh();
+      await action();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
+      await refresh();
     }
   };
 
-  const loggedIn = status?.loggedIn ?? false;
+  const empty = accounts.length === 0;
 
   return (
     <SettingsScreenDetail>
       <SettingsScreenDetailHeader
-        description="Sign in, sign out, or switch the Claude account Argus uses to run agents — no terminal required."
+        description="Stay signed in to several Claude accounts at once and switch between them instantly — no logging out, no terminal."
         title="Claude account"
       />
       <SettingsScreenDetailBody>
-        <SettingsScreenField label="Signed in as">
-          <SignedInAs busy={busy} status={status} onLogout={logout} />
+        <SettingsScreenField
+          label="Accounts"
+          caption={
+            empty
+              ? undefined
+              : "Agents and terminals use the selected account. Sessions pinned to another account keep theirs, and running agents are never interrupted by a switch."
+          }
+        >
+          {empty ? (
+            <p className={styles.muted}>No accounts signed in yet.</p>
+          ) : (
+            <div className={styles.list}>
+              {accounts.map((account) => (
+                <AccountRow
+                  key={account.id}
+                  active={account.id === activeId}
+                  busy={busy}
+                  detail={accountDetail(account)}
+                  label={accountDisplayName(account)}
+                  plan={planLabel(account)}
+                  onRemove={() => run(() => removeClaudeAccount(account.id))}
+                  onRename={(label) =>
+                    run(() => renameClaudeAccount(account.id, label))
+                  }
+                  onSelect={() => run(() => setActiveClaudeAccount(account.id))}
+                />
+              ))}
+            </div>
+          )}
         </SettingsScreenField>
 
         {phase === "idle" ? (
           <SettingsScreenField
-            label={loggedIn ? "Switch account" : "Sign in"}
-            caption="Opens your browser to authenticate — approve access there and Argus signs in automatically."
+            label={empty ? "Sign in" : "Add another account"}
+            caption="Opens your browser to authenticate — approve access there and Argus signs in automatically. Accounts already signed in stay signed in."
           >
             <div className={styles.loginStart}>
               <SegmentedControl<AccountType>
@@ -230,8 +236,8 @@ export function ClaudeAccountSection() {
                 onChange={setAccountType}
                 options={ACCOUNT_TYPE_OPTIONS}
               />
-              <Button variant="primary" onClick={startLogin}>
-                {loggedIn ? "Log in with a different account" : "Log in"}
+              <Button variant="primary" onClick={() => startLogin()}>
+                {empty ? "Log in" : "Add account"}
               </Button>
             </div>
           </SettingsScreenField>

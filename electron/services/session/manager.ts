@@ -192,6 +192,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.organization_task_id = m.organization_task_id ?? null;
       ws.runner_id = m.runner_id ?? null;
       ws.model = m.model ?? null;
+      ws.claude_account_id = m.claude_account_id ?? null;
     }
 
     if (!appState.sessions.has(ws.id)) {
@@ -213,6 +214,7 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         organization_task_id: w.organization_task_id ?? null,
         runner_id: w.runner_id ?? null,
         model: w.model ?? null,
+        claude_account_id: w.claude_account_id ?? null,
       });
     }
   }
@@ -556,6 +558,7 @@ async function finalizeSession(
       base_branch: ws.base_branch,
       runner_id: ws.runner_id ?? null,
       model: ws.model ?? null,
+      claude_account_id: ws.claude_account_id ?? null,
     });
     try {
       saveMetadata(worktreesDir, meta);

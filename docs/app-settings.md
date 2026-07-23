@@ -23,19 +23,36 @@ targets, related projects, …) see
 
 ## Claude account
 
-Sign in to Claude, sign out, or switch the account Argus uses to run agents —
-without leaving the app.
+Stay signed in to several Claude accounts at once and switch between them
+instantly — no logging out, no terminal.
 
-- **Signed in as** — shows the current account (email, organization, plan, and
-  auth method), read from `claude auth status`.
-- **Log out** — runs `claude auth logout`, clearing the stored credentials.
-- **Log in / switch account** — pick **Claude subscription** or **Anthropic
-  Console**, then click Log in. Argus opens your browser to authenticate; approve
-  access there and the dialog signs in automatically — no code to copy. (If the
-  browser can't open, the dialog falls back to asking for a pasted code.)
+- **Accounts** — every account you've signed in, with its email, organization
+  and plan. Click a row to make it active; agents, terminals and one-shot
+  helpers started from then on use it. Rename a row to give an account a
+  friendlier label, or remove it to sign out and forget it.
+- **Add another account** — pick **Claude subscription** or **Anthropic
+  Console**, then click Add account. Argus opens your browser to authenticate;
+  approve access there and it signs in automatically — no code to copy. (If the
+  browser can't open, it falls back to asking for a pasted code.) Accounts
+  already signed in stay signed in.
 
-This drives the same Claude CLI credentials used everywhere else, so changes
-apply to every session and runner on this machine.
+Switching never interrupts a running agent — each agent keeps the account it
+started with.
+
+**Pinning a session to an account.** Once you have more than one account, the
+model picker in the chat input grows an **Account** section. Pin a session there
+to run it on a specific account regardless of which one is active — handy when
+one account is rate-limited and you want work to continue on another in
+parallel. Sessions default to _Follow app default_.
+
+Your first account is adopted from whatever `claude` was already logged into, so
+upgrading Argus never costs you a re-authentication.
+
+Additional accounts store their credentials under
+`~/.argus/claude-accounts/<id>/`. The location is part of how the credentials are
+keyed, so moving or renaming `~/.argus` means signing those accounts in again —
+nothing else breaks. Everything else the Claude CLI keeps in `~/.claude`
+(settings, `CLAUDE.md`, plugins, transcripts) is shared across accounts.
 
 ---
 
@@ -323,6 +340,8 @@ Argus keeps everything under `~/.argus/`:
   worktrees/                  ← Session worktrees (one dir per repo)
   sessions/                   ← Session metadata
   app-settings.json           ← MCP servers, remote-access tunnel + kill-switch
+  claude-accounts.json        ← Signed-in Claude accounts + the active one
+  claude-accounts/            ← Per-account Claude credentials
   remote-devices.json         ← Remote-access identity key + paired devices (encrypted)
   user-project-settings.json  ← Per-developer project prefs (branch prefix, …)
   telemetry-id                ← Anonymous install id (only present if telemetry is on)

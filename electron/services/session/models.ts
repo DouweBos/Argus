@@ -70,6 +70,12 @@ export interface Session {
    * Runner+Model picker.
    */
   model?: string | null;
+  /**
+   * Claude account this session's agents and terminals authenticate as. `null`
+   * follows the app-wide active account. Lets two sessions run in parallel on
+   * different accounts.
+   */
+  claude_account_id?: string | null;
 }
 
 /**

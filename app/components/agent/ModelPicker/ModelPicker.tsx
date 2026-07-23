@@ -39,7 +39,31 @@ export interface RunnerSelection {
   onSelect?: (runnerId: string) => void;
 }
 
+/**
+ * Claude accounts surfaced above the runner. Pinning a session to an account
+ * lets sessions run in parallel on different accounts; `null` follows the
+ * app-wide active account picked in Settings.
+ */
+export interface AccountSelection {
+  /** Account the app falls back to when nothing is pinned. */
+  activeId: string | null;
+  /** Accounts available to pin to. */
+  available: AccountOption[];
+  /** Currently pinned account, or null when following the app default. */
+  currentId: string | null;
+  onSelect: (accountId: string | null) => void;
+}
+
+export interface AccountOption {
+  /** Optional second line, e.g. the organization or plan. */
+  description?: string;
+  displayName: string;
+  id: string;
+}
+
 interface ModelPickerProps {
+  /** Account section rendered above the runner. Omit to hide it. */
+  account?: AccountSelection;
   currentModel: string | undefined;
   models: ModelOption[];
   onClose: () => void;
@@ -63,6 +87,7 @@ export function ModelPicker({
   currentModel,
   onSelect,
   onClose,
+  account,
   runner,
   triggerRef,
 }: ModelPickerProps) {
@@ -114,6 +139,9 @@ export function ModelPicker({
       className={styles.picker}
       style={{ left: rect.left, bottom: rect.bottom }}
     >
+      {account && account.available.length > 0 && (
+        <AccountSection account={account} />
+      )}
       {runner && <RunnerSection runner={runner} />}
 
       <div className={styles.header}>Switch model</div>
@@ -141,6 +169,53 @@ export function ModelPicker({
       })}
     </div>,
     document.body,
+  );
+}
+
+function AccountSection({ account }: { account: AccountSelection }) {
+  const followLabel =
+    account.available.find((a) => a.id === account.activeId)?.displayName ??
+    "app default";
+
+  const options: { description?: string; id: string | null; name: string }[] = [
+    {
+      id: null,
+      name: "Follow app default",
+      description: followLabel,
+    },
+    ...account.available.map((a) => ({
+      id: a.id,
+      name: a.displayName,
+      description: a.description,
+    })),
+  ];
+
+  return (
+    <>
+      <div className={styles.header}>Account</div>
+      {options.map((opt) => {
+        const isActive = opt.id === account.currentId;
+
+        return (
+          <button
+            key={opt.id ?? "default"}
+            className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              account.onSelect(opt.id);
+            }}
+          >
+            <div className={styles.optionLabel}>
+              <span className={styles.optionName}>{opt.name}</span>
+              {opt.description && (
+                <span className={styles.optionDesc}>{opt.description}</span>
+              )}
+            </div>
+            {isActive && <span className={styles.optionCheck}>✓</span>}
+          </button>
+        );
+      })}
+    </>
   );
 }
 

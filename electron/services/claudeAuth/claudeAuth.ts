@@ -5,6 +5,9 @@
  * current account, log out, and log in/switch accounts from inside Argus —
  * instead of dropping to a terminal to run `claude auth login`.
  *
+ * Every call runs against one account's credential namespace (see
+ * `./accounts.ts`), so signing a second account in leaves the first signed in.
+ *
  * `status` and `logout` are non-interactive (plain execFile). `login` opens a
  * browser and completes over an OAuth loopback callback: the child exits on its
  * own once the browser redirects, no pasted code required. We keep the child
@@ -15,9 +18,20 @@
  */
 
 import { execFile, spawn, type ChildProcess } from "node:child_process";
+import fs from "node:fs";
 import { promisify } from "node:util";
 import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../mainWindow";
+import {
+  accountCredentialDir,
+  createPendingAccount,
+  dedupeAccountByEmail,
+  DEFAULT_ACCOUNT_ID,
+  envForAccount,
+  getActiveAccountId,
+  removeClaudeAccount,
+  syncAccountIdentity,
+} from "./accounts";
 
 const execFileAsync = promisify(execFile);
 
@@ -33,13 +47,18 @@ export interface ClaudeAuthStatus {
   subscriptionType?: string;
 }
 
-/** Read the current Claude account status via `claude auth status --json`. */
-export async function getClaudeAuthStatus(): Promise<ClaudeAuthStatus> {
+/** Read a Claude account's status via `claude auth status --json`. */
+export async function getClaudeAuthStatus(
+  accountId?: string,
+): Promise<ClaudeAuthStatus> {
   try {
     const { stdout } = await execFileAsync(
       CLAUDE_BIN,
       ["auth", "status", "--json"],
-      { timeout: 12_000 },
+      {
+        timeout: 12_000,
+        env: envForAccount(accountId ?? getActiveAccountId()),
+      },
     );
     const parsed = JSON.parse(stdout) as Partial<ClaudeAuthStatus>;
 
@@ -58,21 +77,63 @@ export async function getClaudeAuthStatus(): Promise<ClaudeAuthStatus> {
   }
 }
 
-/** Log out of the current Claude account via `claude auth logout`. */
-export async function claudeLogout(): Promise<void> {
-  await execFileAsync(CLAUDE_BIN, ["auth", "logout"], { timeout: 12_000 });
+/**
+ * Log out of a Claude account. Forgetting the account entirely (so it stops
+ * showing in the switcher) goes through `removeClaudeAccount`.
+ */
+export async function claudeLogout(accountId?: string): Promise<void> {
+  const id = accountId ?? getActiveAccountId();
+  await execFileAsync(CLAUDE_BIN, ["auth", "logout"], {
+    timeout: 12_000,
+    env: envForAccount(id),
+  });
+  emitAccountsChanged();
+}
+
+/** Tell the renderer the account list or active account moved. */
+export function emitAccountsChanged(): void {
+  getMainWindow()?.webContents.send("claude-auth:accounts-changed", {});
 }
 
 // Only one interactive login can be in flight at a time. The `claude auth
 // login` child lives here between start and completion (browser callback or
 // pasted code).
 let loginChild: ChildProcess | null = null;
+// Account the in-flight login is authenticating, and whether it was minted for
+// this attempt (so an abandoned "add account" doesn't leave a dead entry).
+let loginAccountId = DEFAULT_ACCOUNT_ID;
+let loginAccountIsNew = false;
 // Set while we're deliberately tearing a login down (cancel / restart) so its
 // exit doesn't surface as a spurious login-result event.
 let loginSuppressed = false;
 
 function emitLoginResult(ok: boolean, error?: string): void {
   getMainWindow()?.webContents.send("claude-auth:login-result", { ok, error });
+}
+
+/**
+ * Persist the identity of a just-authenticated account, collapsing it onto an
+ * existing entry if the same email signed in twice.
+ */
+async function finalizeLogin(id: string): Promise<void> {
+  try {
+    await dedupeAccountByEmail(id);
+  } catch (e) {
+    info(`[claudeAuth] identity sync for ${id} failed: ${String(e)}`);
+  }
+  emitAccountsChanged();
+}
+
+/** Drop the entry + directory of an account that never finished signing in. */
+function discardPendingAccount(): void {
+  if (!loginAccountIsNew) {
+    return;
+  }
+  const id = loginAccountId;
+  loginAccountIsNew = false;
+  removeClaudeAccount(id)
+    .then(emitAccountsChanged)
+    .catch(() => {});
 }
 
 function killLoginChild(): void {
@@ -97,10 +158,22 @@ function outputTail(output: string): string {
  */
 export async function claudeLoginStart(args: {
   useConsole?: boolean;
+  /** Account to authenticate. Defaults to the active one (re-login in place). */
+  accountId?: string;
+  /** Set when the caller minted `accountId` for this attempt. */
+  isNewAccount?: boolean;
 }): Promise<{ url: string }> {
   // Abandon any previous in-flight attempt.
   killLoginChild();
+  discardPendingAccount();
   loginSuppressed = false;
+
+  const accountId = args.accountId ?? getActiveAccountId();
+  loginAccountId = accountId;
+  loginAccountIsNew = args.isNewAccount ?? false;
+  if (accountId !== DEFAULT_ACCOUNT_ID) {
+    fs.mkdirSync(accountCredentialDir(accountId), { recursive: true });
+  }
 
   const cliArgs = [
     "auth",
@@ -109,6 +182,7 @@ export async function claudeLoginStart(args: {
   ];
   const child = spawn(CLAUDE_BIN, cliArgs, {
     stdio: ["pipe", "pipe", "pipe"],
+    env: envForAccount(accountId),
   });
   loginChild = child;
 
@@ -140,8 +214,12 @@ export async function claudeLoginStart(args: {
       return;
     }
     if (code === 0) {
-      emitLoginResult(true);
+      loginAccountIsNew = false;
+      finalizeLogin(accountId)
+        .then(() => emitLoginResult(true))
+        .catch(() => emitLoginResult(true));
     } else {
+      discardPendingAccount();
       emitLoginResult(
         false,
         outputTail(output) || `Login failed (exit code ${code ?? "null"}).`,
@@ -159,6 +237,7 @@ export async function claudeLoginStart(args: {
 
       return;
     }
+    discardPendingAccount();
     emitLoginResult(false, `claude auth login failed: ${err.message}`);
   };
 
@@ -235,6 +314,7 @@ export async function claudeLoginSubmitCode(args: {
   if (!child || child.killed || !child.stdin) {
     return { ok: false, error: "No login in progress. Start the login again." };
   }
+  const accountId = loginAccountId;
 
   return new Promise<{ ok: boolean; error?: string }>((resolve) => {
     let output = "";
@@ -247,8 +327,12 @@ export async function claudeLoginSubmitCode(args: {
       cleanup();
       loginChild = null;
       if (code === 0) {
-        resolve({ ok: true });
+        loginAccountIsNew = false;
+        finalizeLogin(accountId)
+          .then(() => resolve({ ok: true }))
+          .catch(() => resolve({ ok: true }));
       } else {
+        discardPendingAccount();
         const tail = output.trim().split("\n").slice(-3).join(" ").trim();
         resolve({
           ok: false,
@@ -260,6 +344,7 @@ export async function claudeLoginSubmitCode(args: {
     const onError = (err: Error) => {
       cleanup();
       loginChild = null;
+      discardPendingAccount();
       resolve({ ok: false, error: err.message });
     };
 
@@ -283,4 +368,31 @@ export async function claudeLoginSubmitCode(args: {
 /** Cancel an in-flight interactive login, killing the child process. */
 export function claudeLoginCancel(): void {
   killLoginChild();
+  discardPendingAccount();
+}
+
+/**
+ * Begin signing in an *additional* account. Mints a fresh credential namespace
+ * so the accounts already signed in stay signed in, then runs the normal login
+ * flow against it.
+ */
+export async function claudeAddAccount(args: {
+  useConsole?: boolean;
+}): Promise<{ url: string }> {
+  const account = createPendingAccount(
+    args.useConsole ? "console" : "claudeai",
+  );
+  emitAccountsChanged();
+
+  return claudeLoginStart({
+    useConsole: args.useConsole,
+    accountId: account.id,
+    isNewAccount: true,
+  });
+}
+
+/** Re-read an account's identity from the CLI (e.g. after a plan change). */
+export async function claudeRefreshAccount(accountId: string): Promise<void> {
+  await syncAccountIdentity(accountId);
+  emitAccountsChanged();
 }

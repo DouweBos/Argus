@@ -29,6 +29,9 @@ export interface SessionMeta {
   /** Default model for agents spawned in this session. `null` defers to
    * the project/app/runner defaults. */
   model?: string | null;
+  /** Claude account this session authenticates as. `null` follows the
+   * app-wide active account. */
+  claude_account_id?: string | null;
 }
 
 interface MetadataFile {
