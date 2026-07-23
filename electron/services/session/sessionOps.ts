@@ -13,6 +13,7 @@ import nodePath from "node:path";
 import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
+import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { git, worktreesRoot } from "./git";
 import { withGitLock } from "./gitLock";
 import { attachGitWatcher } from "./gitWatcher";
@@ -891,6 +892,40 @@ export async function setSessionBaseBranch(
   const m = meta.get(ws.path);
   if (m) {
     m.base_branch = baseBranch;
+    meta.set(ws.path, m);
+  }
+  try {
+    saveMetadata(worktreesDir, meta);
+  } catch {
+    // Non-fatal.
+  }
+}
+
+/**
+ * Pin this session's agents and terminals to a Claude account, or pass `null`
+ * to follow the app-wide active account. Takes effect on the next spawn;
+ * running agents keep the account they started with.
+ */
+export function setSessionClaudeAccount(
+  id: string,
+  accountId: string | null,
+): void {
+  const ws = appState.sessions.get(id);
+  if (!ws) {
+    throw `Session not found: ${id}`;
+  }
+  if (accountId && !listClaudeAccounts().some((a) => a.id === accountId)) {
+    throw `Unknown Claude account: ${accountId}`;
+  }
+
+  ws.claude_account_id = accountId;
+  appState.sessions.set(id, ws);
+
+  const worktreesDir = worktreesRoot(ws.repo_root);
+  const meta = loadMetadata(worktreesDir);
+  const m = meta.get(ws.path);
+  if (m) {
+    m.claude_account_id = accountId;
     meta.set(ws.path, m);
   }
   try {

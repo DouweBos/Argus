@@ -28,6 +28,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
+import {
+  envForAccount,
+  resolveAccountForSession,
+} from "../claudeAuth/accounts";
 import { loadArgusConfig } from "../session/setup";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -297,9 +301,13 @@ export function createTerminal(
   const terminalId = crypto.randomUUID();
 
   // node-pty requires all env values to be defined strings — filter out any
-  // undefined entries from process.env to avoid posix_spawnp failures.
+  // undefined entries from process.env to avoid posix_spawnp failures. The
+  // account overlay makes `claude` in this terminal use the same account as
+  // the session's agents.
   const cleanEnv: Record<string, string> = {};
-  for (const [k, v] of Object.entries(process.env)) {
+  for (const [k, v] of Object.entries(
+    envForAccount(resolveAccountForSession(ws)),
+  )) {
     if (v !== undefined) {
       cleanEnv[k] = v;
     }

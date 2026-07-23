@@ -87,10 +87,20 @@ import {
 import { getMjpegPort } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
 import {
+  getActiveAccountId,
+  listClaudeAccounts,
+  removeClaudeAccount,
+  renameClaudeAccount,
+  setActiveAccount,
+} from "./services/claudeAuth/accounts";
+import {
+  claudeAddAccount,
   claudeLoginCancel,
   claudeLoginStart,
   claudeLoginSubmitCode,
   claudeLogout,
+  claudeRefreshAccount,
+  emitAccountsChanged,
   getClaudeAuthStatus,
 } from "./services/claudeAuth/claudeAuth";
 import {
@@ -369,6 +379,7 @@ import {
   readArgusConfig,
   writeArgusConfig,
   setSessionBaseBranch,
+  setSessionClaudeAccount,
   getSessionCommitsAhead,
   getSessionCommitsBehind,
   getSessionConflicts,
@@ -1069,6 +1080,14 @@ export function registerIpcHandlers(): void {
   handle("set_session_base_branch", (a) =>
     setSessionBaseBranch(a.id as string, a.baseBranch as string),
   );
+  handle("set_session_claude_account", (a) => {
+    setSessionClaudeAccount(
+      a.sessionId as string,
+      (a.accountId as string | null) ?? null,
+    );
+
+    return null;
+  });
   handle("get_session_conflicts", (a) => getSessionConflicts(a.id as string));
   handle("get_session_merge_blockers", (a) =>
     getSessionMergeBlockers(a.id as string),
@@ -2054,11 +2073,48 @@ export function registerIpcHandlers(): void {
     ),
   );
   handle("onboarding_claude_ping", () => onboardingClaudePing());
-  handle("claude_auth_status", () => getClaudeAuthStatus());
-  handle("claude_auth_logout", () => claudeLogout());
-  handle("claude_auth_login_start", (a) =>
-    claudeLoginStart({ useConsole: a.useConsole as boolean | undefined }),
+  handle("claude_auth_status", (a) =>
+    getClaudeAuthStatus(a.accountId as string | undefined),
   );
+  handle("claude_auth_logout", (a) =>
+    claudeLogout(a.accountId as string | undefined),
+  );
+  handle("claude_auth_login_start", (a) =>
+    claudeLoginStart({
+      useConsole: a.useConsole as boolean | undefined,
+      accountId: a.accountId as string | undefined,
+    }),
+  );
+  handle("claude_accounts_list", () => ({
+    accounts: listClaudeAccounts(),
+    activeId: getActiveAccountId(),
+  }));
+  handle("claude_accounts_set_active", (a) => {
+    setActiveAccount(a.id as string);
+    emitAccountsChanged();
+
+    return null;
+  });
+  handle("claude_accounts_add", (a) =>
+    claudeAddAccount({ useConsole: a.useConsole as boolean | undefined }),
+  );
+  handle("claude_accounts_remove", async (a) => {
+    await removeClaudeAccount(a.id as string);
+    emitAccountsChanged();
+
+    return null;
+  });
+  handle("claude_accounts_rename", (a) => {
+    renameClaudeAccount(a.id as string, a.label as string);
+    emitAccountsChanged();
+
+    return null;
+  });
+  handle("claude_accounts_refresh", async (a) => {
+    await claudeRefreshAccount(a.id as string);
+
+    return null;
+  });
   handle("claude_auth_login_submit_code", (a) =>
     claudeLoginSubmitCode({ code: a.code as string }),
   );

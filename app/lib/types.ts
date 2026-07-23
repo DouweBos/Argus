@@ -2,6 +2,11 @@ export interface Session {
   /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
   branch: string;
+  /**
+   * Claude account this session's agents and terminals authenticate as.
+   * `null`/absent follows the app-wide active account.
+   */
+  claude_account_id?: string | null;
   description: string;
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
@@ -757,6 +762,29 @@ export interface ClaudeAuthStatus {
   orgId?: string;
   orgName?: string;
   subscriptionType?: string;
+}
+
+/**
+ * A Claude account Argus keeps signed in. Identity is captured at login rather
+ * than read back from the CLI, because the shared `~/.claude.json` only ever
+ * names one account.
+ */
+export interface ClaudeAccount {
+  account_type: "claudeai" | "console";
+  auth_method?: string;
+  created_at: number;
+  email?: string;
+  id: string;
+  /** User-editable display name; falls back to the email. */
+  label?: string;
+  org_id?: string;
+  org_name?: string;
+  subscription_type?: string;
+}
+
+export interface ClaudeAccountsState {
+  accounts: ClaudeAccount[];
+  activeId: string;
 }
 
 // Onboarding

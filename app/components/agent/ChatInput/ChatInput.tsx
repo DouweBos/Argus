@@ -15,7 +15,7 @@ import {
   extractImageFilesFromClipboard,
   filesToPendingImages,
 } from "../../../lib/imageAttachments";
-import { listProjects } from "../../../lib/ipc";
+import { listProjects, setSessionClaudeAccount } from "../../../lib/ipc";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
   type CanonicalPermissionMode,
@@ -23,6 +23,7 @@ import {
   permissionModeDisplayName,
   toCanonicalPermissionMode,
 } from "../../../lib/permissionModes";
+import { useClaudeAccounts } from "../../../stores/claudeAccountsStore";
 import {
   clearDraft,
   getDraft,
@@ -37,10 +38,11 @@ import {
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
-import { useSessions } from "../../../stores/sessionStore";
+import { updateSession, useSessions } from "../../../stores/sessionStore";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { EffortPicker, effortDisplayName } from "../EffortPicker";
 import {
+  type AccountSelection,
   type ModelOption,
   ModelPicker,
   type RunnerSelection,
@@ -148,6 +150,27 @@ export function ChatInput({
     locked: true,
     available: registeredRunners,
   };
+  // Pinning is only offered once a second account exists — with one account
+  // there's nothing to switch between.
+  const { accounts: claudeAccounts, activeId: activeClaudeAccountId } =
+    useClaudeAccounts();
+  const accountSelection: AccountSelection | undefined =
+    sessionId && claudeAccounts.length > 1
+      ? {
+          activeId: activeClaudeAccountId,
+          currentId: currentSession?.claude_account_id ?? null,
+          available: claudeAccounts.map((a) => ({
+            id: a.id,
+            displayName: a.label || a.email || "Claude account",
+            description: a.label && a.email ? a.email : a.org_name,
+          })),
+          onSelect: (accountId) => {
+            // Optimistic: nothing re-broadcasts the session list on this write.
+            updateSession(sessionId, { claude_account_id: accountId });
+            setSessionClaudeAccount(sessionId, accountId).catch(() => {});
+          },
+        }
+      : undefined;
   const pendingImages = usePendingImages(agentId);
   const updatePendingImages = useCallback(
     (updater: (prev: PendingImage[]) => PendingImage[]) => {
@@ -668,6 +691,7 @@ export function ChatInput({
           {modelPickerOpen && onModelSelect && models && models.length > 0 && (
             <ModelPicker
               triggerRef={modelChipRef}
+              account={accountSelection}
               currentModel={modelValue ?? model}
               models={models}
               runner={runnerSelection}

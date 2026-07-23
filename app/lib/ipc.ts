@@ -16,6 +16,7 @@ import type {
   ArgusConfig,
   ArgusConfigSuggestion,
   BranchList,
+  ClaudeAccountsState,
   ClaudeAuthStatus,
   ConductorLogEntry,
   DependencyReport,
@@ -2020,16 +2021,45 @@ export const runPrereqFixer = (
 export const claudePing = (): Promise<{ error?: string; ok: boolean }> =>
   invoke("onboarding_claude_ping");
 
-export const getClaudeAuthStatus = (): Promise<ClaudeAuthStatus> =>
-  invoke("claude_auth_status");
+export const getClaudeAuthStatus = (
+  accountId?: string,
+): Promise<ClaudeAuthStatus> => invoke("claude_auth_status", { accountId });
 
-export const claudeAuthLogout = (): Promise<void> =>
-  invoke("claude_auth_logout");
+export const claudeAuthLogout = (accountId?: string): Promise<void> =>
+  invoke("claude_auth_logout", { accountId });
 
 export const claudeAuthLoginStart = (
   useConsole: boolean,
+  accountId?: string,
 ): Promise<{ url: string }> =>
-  invoke("claude_auth_login_start", { useConsole });
+  invoke("claude_auth_login_start", { useConsole, accountId });
+
+export const listClaudeAccounts = (): Promise<ClaudeAccountsState> =>
+  invoke("claude_accounts_list");
+
+export const setActiveClaudeAccount = (id: string): Promise<void> =>
+  invoke("claude_accounts_set_active", { id });
+
+/** Sign in an additional account without disturbing the ones already signed in. */
+export const addClaudeAccount = (
+  useConsole: boolean,
+): Promise<{ url: string }> => invoke("claude_accounts_add", { useConsole });
+
+export const removeClaudeAccount = (id: string): Promise<void> =>
+  invoke("claude_accounts_remove", { id });
+
+export const renameClaudeAccount = (id: string, label: string): Promise<void> =>
+  invoke("claude_accounts_rename", { id, label });
+
+export const refreshClaudeAccount = (id: string): Promise<void> =>
+  invoke("claude_accounts_refresh", { id });
+
+/** Pin a session to an account, or pass `null` to follow the active account. */
+export const setSessionClaudeAccount = (
+  sessionId: string,
+  accountId: string | null,
+): Promise<void> =>
+  invoke("set_session_claude_account", { sessionId, accountId });
 
 export const claudeAuthLoginSubmitCode = (
   code: string,

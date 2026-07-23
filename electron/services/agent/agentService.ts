@@ -47,6 +47,10 @@ import { broadcastToRenderers } from "../../broadcast";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
+import {
+  envForAccount,
+  resolveAccountForSession,
+} from "../claudeAuth/accounts";
 import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
@@ -343,7 +347,9 @@ export async function startAgent(
 
   // Build env. Conductor shim on PATH; resolver URL/token for lazy device
   // acquisition; long MCP timeouts so wait_for_agent etc. don't time out.
-  const env = { ...process.env };
+  // `envForAccount` also clears an inherited credential dir, so a session
+  // pinned to the default account isn't dragged onto the globally active one.
+  const env = envForAccount(resolveAccountForSession(argusSession));
   env.PATH = `${getConductorBinDir()}:${env.PATH ?? ""}`;
   env.ARGUS_AGENT_ID = agentId;
   if (supportsMcp && mcpPort && mcpToken) {

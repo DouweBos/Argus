@@ -36,6 +36,10 @@ import {
   stopMjpegServer,
 } from "./services/browser/mjpegServer";
 import { webBrowserPool } from "./services/browser/pool";
+import {
+  applyActiveAccountToProcessEnv,
+  ensureDefaultAccountSeeded,
+} from "./services/claudeAuth/accounts";
 import { stopAllDebugStreams } from "./services/conductor/debug";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
@@ -895,6 +899,13 @@ app.whenReady().then(() => {
   // Fix PATH for bundled .app builds — ensures PATH includes Homebrew, mise, etc.
   const pathDiag = fixProcessPath();
   pathDiag.forEach((d) => log("[shellEnv] %s", d));
+
+  // Point this process (and everything inheriting its env) at the active
+  // Claude account, adopting any pre-existing `claude` login on first run.
+  applyActiveAccountToProcessEnv();
+  ensureDefaultAccountSeeded().catch((e) =>
+    log("Failed to seed the default Claude account: %s", String(e)),
+  );
 
   // Start the Argus MCP server so agents can orchestrate sessions and
   // sibling agents via the Model Context Protocol.
