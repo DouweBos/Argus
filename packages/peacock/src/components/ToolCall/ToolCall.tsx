@@ -13,6 +13,7 @@ import {
   HoverActionButton,
 } from "../HoverActionBar/HoverActionBar";
 import { Markdown } from "../Markdown/Markdown";
+import { Spinner } from "../Spinner/Spinner";
 import { ToolResultImage } from "../ToolResultImage/ToolResultImage";
 import styles from "./ToolCall.module.css";
 import {
@@ -111,6 +112,11 @@ export function ToolCall(props: ToolCallProps) {
     : "";
   const summary = toolSummary(toolCall.name, toolCall.input);
   const hasResult = toolCall.result !== undefined;
+  const subAgentRunning =
+    isSubAgentParent &&
+    !hasResult &&
+    !toolCall.isError &&
+    !toolCall.pendingPermission;
   const isBash = toolCall.name === "Bash";
   const isPathSummary = isPathTool(toolCall.name);
   const isEdit =
@@ -283,6 +289,9 @@ export function ToolCall(props: ToolCallProps) {
         <span className={styles.name}>
           {isAgent ? agentType : toolCall.name}
         </span>
+        {subAgentRunning && (
+          <Spinner size="xs" tone="primary" className={styles.runningSpinner} />
+        )}
         <span
           className={`${styles.summary} ${isPathSummary ? styles.summaryPath : ""}`}
         >
@@ -308,7 +317,7 @@ export function ToolCall(props: ToolCallProps) {
             done
           </Badge>
         )}
-        {isAgent && !hasResult && !toolCall.isError && !isPending && (
+        {subAgentRunning && !isPending && (
           <Badge tone="accent" className={styles.runningTag}>
             running
           </Badge>
