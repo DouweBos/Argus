@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Icons } from "../../icons/Icons";
+import * as Icons from "../../icons/Icons";
 import {
   QueuedMessage,
   QueuedMessageAction,
