@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addUserMessage,
   appendEvent,
+  cancelPermission,
   clearConversation,
   dequeueMessage,
   getConversationState,
@@ -11,6 +12,7 @@ import {
   queueMessage,
   setCapabilities,
   setConversationState,
+  setPermissionPending,
 } from "./conversationStore";
 
 // Mock crypto.randomUUID for deterministic IDs
@@ -251,6 +253,99 @@ describe("conversationStore", () => {
         result: "file contents",
         isError: false,
       },
+    });
+  });
+
+  it("sets pendingPermission on a nested sub-agent tool call", () => {
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [{ type: "tool_use", id: "task-1", name: "Task", input: {} }],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    appendEvent("agent-1", {
+      type: "assistant",
+      parent_tool_use_id: "task-1",
+      message: {
+        content: [
+          {
+            type: "tool_use",
+            id: "bash-1",
+            name: "Bash",
+            input: { command: "grep x" },
+          },
+        ],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+
+    const found = setPermissionPending("agent-1", {
+      request_id: "req-1",
+      tool_use_id: "bash-1",
+      tool_name: "Bash",
+      tool_input: { command: "grep x" },
+    });
+    expect(found).toBe(true);
+
+    const conv = getConversationState().conversations["agent-1"];
+    const child = conv.messages[0].toolCalls[0].children![0];
+    expect(child).toMatchObject({
+      kind: "tool_use",
+      toolCall: { id: "bash-1", pendingPermission: true },
+    });
+
+    // Cancelling clears it on the nested child too.
+    cancelPermission("agent-1", "bash-1");
+    const cleared = getConversationState().conversations["agent-1"];
+    expect(cleared.messages[0].toolCalls[0].children![0]).toMatchObject({
+      kind: "tool_use",
+      toolCall: { id: "bash-1", pendingPermission: false },
+    });
+  });
+
+  it("attaches a background tool_result to an older assistant message", () => {
+    // Assistant message that spawns a background Agent.
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [
+          { type: "tool_use", id: "agent-x", name: "Agent", input: {} },
+        ],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    // A later, more recent assistant turn — pushes the Agent call off "last".
+    appendEvent("agent-1", {
+      type: "assistant",
+      message: {
+        content: [{ type: "text", text: "still working" }],
+        model: "m",
+        usage: { input_tokens: 1, output_tokens: 1 },
+      },
+    });
+    // Deferred top-level tool_result for the background Agent (no parent id).
+    appendEvent("agent-1", {
+      type: "user",
+      message: {
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "agent-x",
+            content: "final report",
+          },
+        ],
+      },
+    });
+
+    const conv = getConversationState().conversations["agent-1"];
+    expect(conv.messages[0].toolCalls[0]).toMatchObject({
+      id: "agent-x",
+      result: "final report",
+      isError: false,
     });
   });
 
