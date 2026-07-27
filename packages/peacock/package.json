@@ -1,6 +1,6 @@
 {
   "name": "@argus/peacock",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "description": "Argus design system — Peacock component library",
   "type": "module",
