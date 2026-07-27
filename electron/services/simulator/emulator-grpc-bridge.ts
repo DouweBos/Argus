@@ -25,7 +25,7 @@ import {
 } from "node:child_process";
 import { promisify } from "node:util";
 import { log } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
+import { broadcastToRenderers } from "../../broadcast";
 import { resolveAssetPath } from "../tools/assets";
 import { discoverEmulatorGrpc } from "./emulator-discovery";
 import { ANDROID_TO_EVDEV, BUTTON_TO_KEY } from "./emulator-input";
@@ -109,6 +109,15 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
   private ffmpeg: ChildProcess | null = null;
   private ffmpegWritable = true;
   private h264Parser: H264AccessUnitParser | null = null;
+
+  // Idle keep-alive: the emulator only streams screenshots when the display
+  // changes, so a static screen sends one frame then nothing. A single frame
+  // never primes the encoder (no H.264 out → decoder never configures). We
+  // cache the last raw frame and re-push it on a timer so the encoder keeps
+  // producing output (and its first keyframe) even when the screen is idle.
+  private lastFrame: Buffer | null = null;
+  private lastWriteAt = 0;
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
 
   // Encoder input dimensions (raw frame size). ffmpeg is restarted if these
   // change (e.g. device rotation).
@@ -202,6 +211,12 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
   }
 
   kill(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
+    this.lastFrame = null;
+
     this.screenStream?.cancel();
     this.screenStream = null;
 
@@ -279,17 +294,18 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
   }
 
   private startVideoPipeline(): void {
-    const win = getMainWindow();
-
+    // Broadcast to every live window (not a captured main-window ref) so the
+    // stream survives HMR renderer reloads and reaches popouts — matching the
+    // iOS video path. A stale captured webContents silently drops all frames.
     this.h264Parser = new H264AccessUnitParser({
       onConfig: (config) => {
         log(
           `[EmulatorGrpc] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
-        win?.webContents.send("android_video_config", config);
+        broadcastToRenderers(`android_video_config:${this.serial}`, config);
       },
       onFrame: (data, keyFrame, timestamp) => {
-        win?.webContents.send("android_video_frame", {
+        broadcastToRenderers(`android_video_frame:${this.serial}`, {
           data,
           keyFrame,
           timestamp,
@@ -315,10 +331,8 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
       if (w !== this.frameWidth || h !== this.frameHeight) {
         this.restartEncoder(w, h);
       }
-      // Drop frames while ffmpeg's stdin is draining to bound memory.
-      if (this.ffmpeg?.stdin?.writable && this.ffmpegWritable) {
-        this.ffmpegWritable = this.ffmpeg.stdin.write(buf);
-      }
+      this.lastFrame = buf;
+      this.writeFrame(buf);
     });
 
     this.screenStream.on("error", (err: grpc.ServiceError) => {
@@ -326,6 +340,24 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
         log(`[EmulatorGrpc] screenshot stream error: ${err.message}`);
       }
     });
+
+    // Re-push the last frame when the real stream goes quiet (~6fps floor) so
+    // an idle emulator keeps the encoder producing frames + keyframes.
+    this.keepAliveTimer = setInterval(() => {
+      if (this.lastFrame && Date.now() - this.lastWriteAt >= 150) {
+        this.writeFrame(this.lastFrame);
+      }
+    }, 200);
+    this.keepAliveTimer.unref?.();
+  }
+
+  /** Write a raw frame to ffmpeg, honoring stdin backpressure. Records the
+   *  write time so the idle keep-alive only fires when the stream is quiet. */
+  private writeFrame(buf: Buffer): void {
+    if (this.ffmpeg?.stdin?.writable && this.ffmpegWritable) {
+      this.ffmpegWritable = this.ffmpeg.stdin.write(buf);
+      this.lastWriteAt = Date.now();
+    }
   }
 
   /** (Re)spawn ffmpeg for the given raw frame dimensions. */

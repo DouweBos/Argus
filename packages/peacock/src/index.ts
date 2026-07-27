@@ -87,6 +87,7 @@ export * from "./components/PushDialog/PushDialog";
 export * from "./components/PullDialog/PullDialog";
 export * from "./components/RebaseEditor/RebaseEditor";
 export * from "./components/ResetDialog/ResetDialog";
+export * from "./components/Slider/Slider";
 export * from "./components/Spinner/Spinner";
 export * from "./components/StatsStrip/StatsStrip";
 export * from "./components/StatusBulb/StatusBulb";

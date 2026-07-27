@@ -30,9 +30,18 @@ import { useNormalizedPointer } from "./useNormalizedPointer";
 
 interface DevicePreviewProps {
   device: DeviceInfo;
+  /**
+   * When false, render a view-only monitor: no control bar and a passive
+   * pointer layer (no tap/type). Used by the multi-device grid's compact
+   * tiles. Defaults to true (full interaction) for the device dialog.
+   */
+  interactive?: boolean;
 }
 
-export function DevicePreview({ device }: DevicePreviewProps) {
+export function DevicePreview({
+  device,
+  interactive = true,
+}: DevicePreviewProps) {
   if (!device.online) {
     return (
       <div className={styles.previewPlaceholder}>
@@ -42,16 +51,16 @@ export function DevicePreview({ device }: DevicePreviewProps) {
   }
 
   if (device.platform === "ios") {
-    return <IosPreview device={device} />;
+    return <IosPreview device={device} interactive={interactive} />;
   }
   if (device.platform === "android") {
-    return <AndroidPreview device={device} />;
+    return <AndroidPreview device={device} interactive={interactive} />;
   }
   if (device.platform === "video") {
     return <VideoPreview device={device} />;
   }
 
-  return <WebPreview device={device} />;
+  return <WebPreview device={device} interactive={interactive} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +99,13 @@ function VideoPreview({ device }: { device: DeviceInfo }) {
 // iOS
 // ---------------------------------------------------------------------------
 
-function IosPreview({ device }: { device: DeviceInfo }) {
+function IosPreview({
+  device,
+  interactive,
+}: {
+  device: DeviceInfo;
+  interactive: boolean;
+}) {
   const [active, setActive] = useState(false);
   const udid = device.reservationKey;
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
@@ -192,47 +207,51 @@ function IosPreview({ device }: { device: DeviceInfo }) {
         {!isConfigured && (
           <div className={styles.previewPlaceholder}>Starting capture…</div>
         )}
-        <div
-          className={styles.pointerLayer}
-          role="application"
-          tabIndex={0}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          {...handlers}
-        />
+        {interactive && (
+          <div
+            className={styles.pointerLayer}
+            role="application"
+            tabIndex={0}
+            onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
+            {...handlers}
+          />
+        )}
       </div>
-      <div className={styles.controlBar}>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            simulatorButton(udid, "ios_home").catch(() => {});
-          }}
-        >
-          Home
-        </button>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            simulatorButton(udid, "ios_lock").catch(() => {});
-          }}
-        >
-          Lock
-        </button>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            simulatorButton(udid, "ios_siri").catch(() => {});
-          }}
-        >
-          Siri
-        </button>
-        <span className={styles.controlHint}>
-          Tap, drag, and type — click preview to focus keyboard
-        </span>
-      </div>
+      {interactive && (
+        <div className={styles.controlBar}>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              simulatorButton(udid, "ios_home").catch(() => {});
+            }}
+          >
+            Home
+          </button>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              simulatorButton(udid, "ios_lock").catch(() => {});
+            }}
+          >
+            Lock
+          </button>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              simulatorButton(udid, "ios_siri").catch(() => {});
+            }}
+          >
+            Siri
+          </button>
+          <span className={styles.controlHint}>
+            Tap, drag, and type — click preview to focus keyboard
+          </span>
+        </div>
+      )}
     </>
   );
 }
@@ -241,15 +260,26 @@ function IosPreview({ device }: { device: DeviceInfo }) {
 // Android
 // ---------------------------------------------------------------------------
 
-function AndroidPreview({ device }: { device: DeviceInfo }) {
+function AndroidPreview({
+  device,
+  interactive,
+}: {
+  device: DeviceInfo;
+  interactive: boolean;
+}) {
   const [active, setActive] = useState(false);
+  const serial = device.reservationKey;
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useAndroidVideoDecoder(active);
+    useAndroidVideoDecoder(
+      active,
+      `android_video_config:${serial}`,
+      `android_video_frame:${serial}`,
+    );
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    startAndroidCapture(device.reservationKey)
+    startAndroidCapture(serial)
       .then(() => {
         if (!cancelled) {
           setActive(true);
@@ -260,11 +290,9 @@ function AndroidPreview({ device }: { device: DeviceInfo }) {
     return () => {
       cancelled = true;
       setActive(false);
-      stopAndroidCapture().catch(() => {});
+      stopAndroidCapture(serial).catch(() => {});
     };
-  }, [device.reservationKey]);
-
-  const serial = device.reservationKey;
+  }, [serial]);
 
   const onTouch = useCallback(
     (x: number, y: number, type: 0 | 1 | 2) => {
@@ -284,35 +312,45 @@ function AndroidPreview({ device }: { device: DeviceInfo }) {
     onTouch,
   });
 
-  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.repeat) {
-      return;
-    }
-    if (e.metaKey && e.code !== "MetaLeft" && e.code !== "MetaRight") {
-      return;
-    }
-    const code = ANDROID_KEYCODE_MAP[e.code];
-    if (code === undefined) {
-      return;
-    }
-    e.preventDefault();
-    androidKeyboard(code, androidMetaStateFromEvent(e.nativeEvent), true).catch(
-      () => {},
-    );
-  }, []);
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.repeat) {
+        return;
+      }
+      if (e.metaKey && e.code !== "MetaLeft" && e.code !== "MetaRight") {
+        return;
+      }
+      const code = ANDROID_KEYCODE_MAP[e.code];
+      if (code === undefined) {
+        return;
+      }
+      e.preventDefault();
+      androidKeyboard(
+        serial,
+        code,
+        androidMetaStateFromEvent(e.nativeEvent),
+        true,
+      ).catch(() => {});
+    },
+    [serial],
+  );
 
-  const onKeyUp = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const code = ANDROID_KEYCODE_MAP[e.code];
-    if (code === undefined) {
-      return;
-    }
-    e.preventDefault();
-    androidKeyboard(
-      code,
-      androidMetaStateFromEvent(e.nativeEvent),
-      false,
-    ).catch(() => {});
-  }, []);
+  const onKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const code = ANDROID_KEYCODE_MAP[e.code];
+      if (code === undefined) {
+        return;
+      }
+      e.preventDefault();
+      androidKeyboard(
+        serial,
+        code,
+        androidMetaStateFromEvent(e.nativeEvent),
+        false,
+      ).catch(() => {});
+    },
+    [serial],
+  );
 
   return (
     <>
@@ -328,56 +366,60 @@ function AndroidPreview({ device }: { device: DeviceInfo }) {
         {!isConfigured && (
           <div className={styles.previewPlaceholder}>Starting capture…</div>
         )}
-        <div
-          className={styles.pointerLayer}
-          role="application"
-          tabIndex={0}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          {...handlers}
-        />
+        {interactive && (
+          <div
+            className={styles.pointerLayer}
+            role="application"
+            tabIndex={0}
+            onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
+            {...handlers}
+          />
+        )}
       </div>
-      <div className={styles.controlBar}>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            androidButton("android_back").catch(() => {});
-          }}
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            androidButton("android_home").catch(() => {});
-          }}
-        >
-          Home
-        </button>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            androidButton("android_recent").catch(() => {});
-          }}
-        >
-          Recents
-        </button>
-        <button
-          type="button"
-          className={styles.controlBtn}
-          onClick={() => {
-            androidButton("android_power").catch(() => {});
-          }}
-        >
-          Power
-        </button>
-        <span className={styles.controlHint}>
-          Tap, drag, and type — click preview to focus keyboard
-        </span>
-      </div>
+      {interactive && (
+        <div className={styles.controlBar}>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              androidButton(serial, "android_back").catch(() => {});
+            }}
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              androidButton(serial, "android_home").catch(() => {});
+            }}
+          >
+            Home
+          </button>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              androidButton(serial, "android_recent").catch(() => {});
+            }}
+          >
+            Recents
+          </button>
+          <button
+            type="button"
+            className={styles.controlBtn}
+            onClick={() => {
+              androidButton(serial, "android_power").catch(() => {});
+            }}
+          >
+            Power
+          </button>
+          <span className={styles.controlHint}>
+            Tap, drag, and type — click preview to focus keyboard
+          </span>
+        </div>
+      )}
     </>
   );
 }
@@ -386,7 +428,13 @@ function AndroidPreview({ device }: { device: DeviceInfo }) {
 // Web
 // ---------------------------------------------------------------------------
 
-function WebPreview({ device }: { device: DeviceInfo }) {
+function WebPreview({
+  device,
+  interactive,
+}: {
+  device: DeviceInfo;
+  interactive: boolean;
+}) {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -540,25 +588,29 @@ function WebPreview({ device }: { device: DeviceInfo }) {
             Starting browser capture…
           </div>
         )}
-        <div
-          className={styles.pointerLayer}
-          role="application"
-          tabIndex={0}
-          onClick={onClick}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onWheel={onWheel}
-          style={{ cursor: "default" }}
-        />
+        {interactive && (
+          <div
+            className={styles.pointerLayer}
+            role="application"
+            tabIndex={0}
+            onClick={onClick}
+            onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onWheel={onWheel}
+            style={{ cursor: "default" }}
+          />
+        )}
       </div>
-      <div className={styles.controlBar}>
-        <span className={styles.controlHint}>
-          Click, drag, scroll, and type — click preview to focus keyboard
-        </span>
-      </div>
+      {interactive && (
+        <div className={styles.controlBar}>
+          <span className={styles.controlHint}>
+            Click, drag, scroll, and type — click preview to focus keyboard
+          </span>
+        </div>
+      )}
     </>
   );
 }

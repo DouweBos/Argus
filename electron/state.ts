@@ -73,8 +73,8 @@ class AppState {
   /** Active iOS simulator capture sessions, keyed by UDID. */
   simulators = new Map<string, SimulatorSession>();
 
-  /** Active Android device capture session, if any. */
-  androidDevice: AndroidDeviceSession | null = null;
+  /** Active Android device capture sessions, keyed by serial. */
+  androidDevices = new Map<string, AndroidDeviceSession>();
 
   /** Active file system watchers, keyed by session UUID. */
   watchers = new Map<string, WatcherHandle>();

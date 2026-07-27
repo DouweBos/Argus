@@ -16,8 +16,43 @@ import { appState } from "../../state";
 import { AndroidBridge } from "./android-bridge";
 import { EmulatorGrpcBridge } from "./emulator-grpc-bridge";
 
-/** The active capture backend (emulator gRPC or scrcpy), if any. */
-let activeBackend: AndroidCaptureBackend | null = null;
+/** Active capture backends (emulator gRPC or scrcpy), keyed by serial. */
+const backends = new Map<string, AndroidCaptureBackend>();
+
+/**
+ * Reference counts per serial. Each holder — the desktop grid tile, the
+ * runtime panel, a remote watcher — owns one ref. The backend for a serial is
+ * torn down only when its count hits zero, so closing one viewer doesn't kill
+ * streams other viewers still need. Mirrors the iOS `captureRefsByUdid` model.
+ */
+const captureRefsBySerial = new Map<string, number>();
+
+/**
+ * In-flight capture spawns, keyed by serial. Guards the non-atomic
+ * check-then-spawn in {@link startAndroidCapture} so concurrent starts for the
+ * same device share one backend instead of racing to spawn duplicates.
+ */
+const startInFlightBySerial = new Map<string, Promise<void>>();
+
+/**
+ * Per-serial deferred-teardown timers. When the last holder releases its ref,
+ * we schedule teardown instead of running it immediately so a quick
+ * close/reopen reuses the existing backend.
+ */
+const pendingTeardownBySerial = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
+
+const TEARDOWN_GRACE_MS = 10 * 60 * 1000;
+
+function cancelPendingTeardown(serial: string): void {
+  const timer = pendingTeardownBySerial.get(serial);
+  if (timer) {
+    clearTimeout(timer);
+    pendingTeardownBySerial.delete(serial);
+  }
+}
 
 const execFileAsync = promisify(execFile);
 
@@ -403,6 +438,41 @@ function findFreePort(): Promise<number> {
  * android_video_config / android_video_frame IPC events.
  */
 export async function startAndroidCapture(serial: string): Promise<void> {
+  // A previous holder dropped to zero refs but the grace timer hasn't fired
+  // yet — reclaim the backend instead of letting it be torn down.
+  cancelPendingTeardown(serial);
+
+  // Fast path: reuse an existing capture, just add a reference.
+  if (backends.has(serial)) {
+    captureRefsBySerial.set(serial, (captureRefsBySerial.get(serial) ?? 0) + 1);
+
+    return;
+  }
+
+  // A spawn is already in flight for this serial — the check above is not
+  // atomic across the awaits in spawn, so two near-simultaneous starts (a grid
+  // tile mount + a remote watch, or a StrictMode double-invoke) would each
+  // spawn a backend and clobber the registry. Join the in-flight spawn.
+  const inflight = startInFlightBySerial.get(serial);
+  if (inflight) {
+    await inflight;
+    captureRefsBySerial.set(serial, (captureRefsBySerial.get(serial) ?? 0) + 1);
+
+    return;
+  }
+
+  const spawning = spawnAndroidCapture(serial);
+  startInFlightBySerial.set(serial, spawning);
+  try {
+    await spawning;
+  } finally {
+    startInFlightBySerial.delete(serial);
+  }
+}
+
+/** Actually spawn the backend + start capture. Serialized per serial by the
+ *  in-flight guard in {@link startAndroidCapture}; sets the ref count to 1. */
+async function spawnAndroidCapture(serial: string): Promise<void> {
   const adbPath = await findAdb();
 
   // Resolve device name
@@ -413,15 +483,15 @@ export async function startAndroidCapture(serial: string): Promise<void> {
   }
 
   const backend = await startCaptureBackend(device, adbPath);
-  activeBackend = backend;
-  AndroidBridge.instance = backend instanceof AndroidBridge ? backend : null;
+  backends.set(serial, backend);
 
-  appState.androidDevice = {
+  appState.androidDevices.set(serial, {
     serial,
     deviceName: device.name,
     type: device.type,
     captureActive: true,
-  };
+  });
+  captureRefsBySerial.set(serial, 1);
 }
 
 /**
@@ -453,33 +523,69 @@ async function startCaptureBackend(
 }
 
 /**
- * Stop the active Android capture session.
+ * Release one reference to a serial's capture session. If this was the last
+ * holder, schedule a deferred teardown — the backend stays alive for {@link
+ * TEARDOWN_GRACE_MS} so a re-mounting view (grid toggle, dialog reopen) can
+ * reclaim it without respawning. With no serial, force-stops every session
+ * immediately (shutdown / global teardown). No-ops if nothing is active.
  */
-export function stopAndroidCapture(): void {
-  if (activeBackend) {
-    activeBackend.kill();
-    activeBackend = null;
-  }
-  AndroidBridge.instance = null;
-  appState.androidDevice = null;
-}
+export function stopAndroidCapture(serial?: string): void {
+  if (serial === undefined) {
+    for (const s of [...backends.keys()]) {
+      forceStopAndroidCapture(s);
+    }
 
-/** Whether an Android capture session is active (optionally for a serial). */
-export function isAndroidCapturing(serial?: string): boolean {
-  if (!appState.androidDevice) {
-    return false;
+    return;
   }
 
-  return serial ? appState.androidDevice.serial === serial : true;
+  const refs = captureRefsBySerial.get(serial) ?? 0;
+  if (refs > 1) {
+    captureRefsBySerial.set(serial, refs - 1);
+
+    return;
+  }
+  if (refs === 0) {
+    return;
+  }
+  captureRefsBySerial.set(serial, 0);
+
+  cancelPendingTeardown(serial);
+  const timer = setTimeout(() => {
+    pendingTeardownBySerial.delete(serial);
+    forceStopAndroidCapture(serial);
+  }, TEARDOWN_GRACE_MS);
+  timer.unref?.();
+  pendingTeardownBySerial.set(serial, timer);
 }
 
 /**
- * Disconnect a specific Android device.
+ * Unconditionally stop a serial's capture session, regardless of outstanding
+ * references. Used for hard-disconnect flows (Disconnect button, device
+ * switch) where the stream should go down immediately.
+ */
+export function forceStopAndroidCapture(serial: string): void {
+  const backend = backends.get(serial);
+  if (backend) {
+    backend.kill();
+    backends.delete(serial);
+  }
+  appState.androidDevices.delete(serial);
+  captureRefsBySerial.delete(serial);
+  cancelPendingTeardown(serial);
+}
+
+/** Whether a capture session is currently active (optionally for a serial). */
+export function isAndroidCapturing(serial?: string): boolean {
+  return serial
+    ? (captureRefsBySerial.get(serial) ?? 0) > 0
+    : backends.size > 0;
+}
+
+/**
+ * Disconnect a specific Android device — hard teardown, ignoring refs.
  */
 export function disconnectAndroidDevice(serial: string): void {
-  if (appState.androidDevice?.serial === serial) {
-    stopAndroidCapture();
-  }
+  forceStopAndroidCapture(serial);
 }
 
 // ---------------------------------------------------------------------------
@@ -498,12 +604,9 @@ export function androidTouch(
   y: number,
   eventType: number,
 ): void {
-  if (!appState.androidDevice || appState.androidDevice.serial !== serial) {
+  const backend = backends.get(serial);
+  if (!backend) {
     throw "No active Android capture session";
-  }
-
-  if (!activeBackend) {
-    throw "Android bridge is not running";
   }
 
   // Map our event types to Android MotionEvent actions
@@ -515,7 +618,7 @@ export function androidTouch(
   const action = actionMap[eventType] ?? 2;
   const pressure = eventType === 2 ? 0 : 1;
 
-  activeBackend.sendTouch(action, x, y, pressure);
+  backend.sendTouch(action, x, y, pressure);
 }
 
 /**
@@ -524,19 +627,17 @@ export function androidTouch(
  * Uses Android keycodes (AKEYCODE_*), not macOS virtual keycodes.
  */
 export function androidKeyboard(
+  serial: string,
   keyCode: number,
   metaState: number,
   isDown: boolean,
 ): void {
-  if (!appState.androidDevice) {
+  const backend = backends.get(serial);
+  if (!backend) {
     throw "No active Android capture session";
   }
 
-  if (!activeBackend) {
-    throw "Android bridge is not running";
-  }
-
-  activeBackend.sendKey(isDown ? 0 : 1, keyCode, metaState);
+  backend.sendKey(isDown ? 0 : 1, keyCode, metaState);
 }
 
 /**
@@ -544,14 +645,14 @@ export function androidKeyboard(
  *
  * Maps button names to Android keycodes and issues a down + up pair.
  */
-export async function androidButton(button: string): Promise<void> {
-  if (!appState.androidDevice) {
+export async function androidButton(
+  serial: string,
+  button: string,
+): Promise<void> {
+  const backend = backends.get(serial);
+  if (!backend) {
     throw "No active Android capture session";
   }
 
-  if (!activeBackend) {
-    throw "Android bridge is not running";
-  }
-
-  await activeBackend.sendButton(button);
+  await backend.sendButton(button);
 }

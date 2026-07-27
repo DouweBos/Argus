@@ -16,6 +16,8 @@ export interface AndroidDeviceStreamViewProps {
   /** Called with normalized [0..1] coordinates and event type (0=down, 1=move, 2=up). */
   onTouch: (x: number, y: number, eventType: number) => void;
   placeholder: React.ReactNode;
+  /** Serial of the device being streamed — scopes the per-serial video channel. */
+  serial: string | null;
   /**
    * When false, the floating bar is hidden. When true but the device session is
    * idle, the bar can still show session actions such as Run (see simulator
@@ -41,12 +43,17 @@ export function AndroidDeviceStreamView({
   titleBarToggles,
   toolsAvailable,
   toolsMissing,
+  serial,
   onKeyDown,
   onKeyUp,
   onTouch,
 }: AndroidDeviceStreamViewProps) {
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useAndroidVideoDecoder(capturing);
+    useAndroidVideoDecoder(
+      capturing && !!serial,
+      serial ? `android_video_config:${serial}` : "",
+      serial ? `android_video_frame:${serial}` : "",
+    );
 
   const titleChrome = (
     <RuntimeTitleBar

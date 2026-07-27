@@ -26,6 +26,31 @@
   color: var(--text-muted);
 }
 
+.headControls {
+  margin-left: auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.tileSlider {
+  width: 100%;
+}
+
+.pillBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pillIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
 .empty {
   padding: 40px;
   text-align: center;
