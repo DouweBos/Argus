@@ -440,9 +440,10 @@ export function startAgentListening(agentId: string): void {
     notifyPermissionRequested(agentId, request);
     const found = setPermissionPending(agentId, request);
     if (!found) {
-      // Fallback: if the tool call hasn't been processed yet (unlikely but
-      // possible during very fast streaming), retry a few times.
-      let attempts = 3;
+      // Fallback: if the tool call hasn't been processed yet (fast streaming,
+      // or a nested subagent tool_use whose block is still being folded in),
+      // retry over ~1s so the prompt is never silently dropped.
+      let attempts = 20;
       const retry = () => {
         if (attempts-- > 0 && !setPermissionPending(agentId, request)) {
           setTimeout(retry, 50);

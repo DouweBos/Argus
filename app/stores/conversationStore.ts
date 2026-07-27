@@ -1200,48 +1200,47 @@ export function appendEvent(agentId: string, event: LlmStreamEvent) {
         };
       }
 
-      const messages = [...existing.messages];
+      // Match each result to the tool call that owns its id anywhere in the
+      // history — not just the most recent assistant message. A background
+      // Agent's result lands many turns after its call, so a last-message-only
+      // scan would drop it and the subagent's output would never appear.
+      let messages = existing.messages;
       const taskCallsWithResults: ToolCallInfo[] = [];
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === "assistant") {
-          const updated: ConversationMessage = {
-            ...messages[i],
-            toolCalls: messages[i].toolCalls.map((tc) => {
-              const match = results.find((r) => r.tool_use_id === tc.id);
-              if (!match) {
-                return tc;
-              }
-              const raw = match.content;
-              let result: ToolResultBlock[] | string;
-              if (typeof raw === "string") {
-                result = raw;
-              } else if (Array.isArray(raw)) {
-                result = raw as ToolResultBlock[];
-              } else {
-                result = JSON.stringify(raw, null, 2);
-              }
+      for (const match of results) {
+        const next = updateToolCallInMessages(
+          messages,
+          match.tool_use_id,
+          (tc) => {
+            const raw = match.content;
+            let result: ToolResultBlock[] | string;
+            if (typeof raw === "string") {
+              result = raw;
+            } else if (Array.isArray(raw)) {
+              result = raw as ToolResultBlock[];
+            } else {
+              result = JSON.stringify(raw, null, 2);
+            }
 
-              // AskUserQuestion and ExitPlanMode use a deny-with-message
-              // pattern to pass the user's answer back — the CLI marks the
-              // resulting tool_result as is_error, but from the user's POV it's
-              // a successful answer, not a failure.
-              const isDenyAnswerFlow =
-                tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
+            // AskUserQuestion and ExitPlanMode use a deny-with-message pattern to
+            // pass the user's answer back — the CLI marks the tool_result as
+            // is_error, but from the user's POV it's a successful answer.
+            const isDenyAnswerFlow =
+              tc.name === "AskUserQuestion" || tc.name === "ExitPlanMode";
 
-              const nextTc: ToolCallInfo = {
-                ...tc,
-                result,
-                isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
-              };
-              if (TASK_TOOL_NAMES.has(nextTc.name)) {
-                taskCallsWithResults.push(nextTc);
-              }
+            const nextTc: ToolCallInfo = {
+              ...tc,
+              result,
+              isError: isDenyAnswerFlow ? false : (match.is_error ?? false),
+            };
+            if (TASK_TOOL_NAMES.has(nextTc.name)) {
+              taskCallsWithResults.push(nextTc);
+            }
 
-              return nextTc;
-            }),
-          };
-          messages[i] = updated;
-          break;
+            return nextTc;
+          },
+        );
+        if (next) {
+          messages = next;
         }
       }
 
@@ -1352,32 +1351,17 @@ export function setPermissionPending(
       return state;
     }
 
-    const messages = [...existing.messages];
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role !== "assistant") {
-        continue;
-      }
-      const idx = messages[i].toolCalls.findIndex(
-        (tc) => tc.id === request.tool_use_id,
-      );
-      if (idx === -1) {
-        continue;
-      }
-
-      const updated = { ...messages[i] };
-      updated.toolCalls = [...updated.toolCalls];
-      updated.toolCalls[idx] = {
-        ...updated.toolCalls[idx],
-        pendingPermission: true,
-      };
-      messages[i] = updated;
-      found = true;
-      break;
-    }
-
-    if (!found) {
+    // Walk the full tool-call tree: a subagent's tool call lives nested under
+    // its parent Agent/Task call, not at the top level.
+    const messages = updateToolCallInMessages(
+      existing.messages,
+      request.tool_use_id,
+      (tc) => ({ ...tc, pendingPermission: true }),
+    );
+    if (!messages) {
       return state;
     }
+    found = true;
 
     return {
       conversations: {
@@ -1391,66 +1375,28 @@ export function setPermissionPending(
 }
 
 export function clearPermission(agentId: string, toolUseId: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-
-    const messages = [...existing.messages];
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role !== "assistant") {
-        continue;
-      }
-      const idx = messages[i].toolCalls.findIndex((tc) => tc.id === toolUseId);
-      if (idx === -1) {
-        continue;
-      }
-
-      const updated = { ...messages[i] };
-      updated.toolCalls = [...updated.toolCalls];
-      updated.toolCalls[idx] = {
-        ...updated.toolCalls[idx],
-        pendingPermission: false,
-      };
-      messages[i] = updated;
-      break;
-    }
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, messages },
-      },
-    };
-  });
+  setPermissionResolved(agentId, toolUseId);
 }
 
 export function cancelPermission(agentId: string, toolUseId: string) {
+  setPermissionResolved(agentId, toolUseId);
+}
+
+/** Clear `pendingPermission` on the (possibly nested) tool call. */
+function setPermissionResolved(agentId: string, toolUseId: string) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId];
     if (!existing) {
       return state;
     }
 
-    const messages = [...existing.messages];
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role !== "assistant") {
-        continue;
-      }
-      const idx = messages[i].toolCalls.findIndex((tc) => tc.id === toolUseId);
-      if (idx === -1) {
-        continue;
-      }
-
-      const updated = { ...messages[i] };
-      updated.toolCalls = [...updated.toolCalls];
-      updated.toolCalls[idx] = {
-        ...updated.toolCalls[idx],
-        pendingPermission: false,
-      };
-      messages[i] = updated;
-      break;
+    const messages = updateToolCallInMessages(
+      existing.messages,
+      toolUseId,
+      (tc) => ({ ...tc, pendingPermission: false }),
+    );
+    if (!messages) {
+      return state;
     }
 
     return {

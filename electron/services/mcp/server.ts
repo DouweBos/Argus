@@ -395,6 +395,28 @@ function resolveRepoRoot(projectPath?: string): string {
   return appState.repoRoots.values().next().value as string;
 }
 
+/**
+ * Argus `spawn_agent` ids are UUIDs (`crypto.randomUUID()`); the built-in
+ * `Agent` tool's background subagents (local_agents) use a dash-less `a…` hex
+ * id. When an unknown id looks like the latter, return an explanatory hint so
+ * the caller reaches for the right API instead of a bare "not found".
+ */
+function localAgentHint(agentId: string): string | null {
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      agentId,
+    );
+  if (isUuid) {
+    return null;
+  }
+
+  return (
+    `\`${agentId}\` is not an Argus \`spawn_agent\` agent. It looks like a ` +
+    `background Agent-tool subagent (local_agent), which Argus doesn't track — ` +
+    `use the \`Agent\` tool's returned result or \`TaskOutput\` to read its final report.`
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Tool registration
 // ---------------------------------------------------------------------------
@@ -1378,7 +1400,10 @@ export function createMcpServer(
       if (!session) {
         return {
           content: [
-            { type: "text" as const, text: `Agent not found: ${agent_id}` },
+            {
+              type: "text" as const,
+              text: localAgentHint(agent_id) ?? `Agent not found: ${agent_id}`,
+            },
           ],
           isError: true,
         };
@@ -1436,6 +1461,16 @@ export function createMcpServer(
         ),
     },
     async ({ agent_id, timeout_seconds }, extra) => {
+      const hint = !appState.agents.has(agent_id)
+        ? localAgentHint(agent_id)
+        : null;
+      if (hint) {
+        return {
+          content: [{ type: "text" as const, text: hint }],
+          isError: true,
+        };
+      }
+
       // Emit progress notifications periodically so the transport sees traffic
       // while the wait blocks. Protects against intermediate idle timeouts
       // even when the per-tool call timeout is disabled on the client.
@@ -1763,7 +1798,9 @@ export function createMcpServer(
           content: [
             {
               type: "text" as const,
-              text: `No transcript available for agent ${agent_id}. The agent has stopped and its in-memory snapshot was released; use \`get_agent_result\` for the final result summary instead.`,
+              text:
+                localAgentHint(agent_id) ??
+                `No transcript available for agent ${agent_id}. The agent has stopped and its in-memory snapshot was released; use \`get_agent_result\` for the final result summary instead.`,
             },
           ],
           isError: true,
