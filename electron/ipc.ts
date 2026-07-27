@@ -116,6 +116,10 @@ import {
 } from "./services/conductor/devices";
 import { conductorLogStore, execConductor } from "./services/conductor/logger";
 import { openDeepLink } from "./services/conductor/openLink";
+import {
+  getConductorStatus,
+  setConductorOverrideVersion,
+} from "./services/conductor/override";
 import { checkDependencies } from "./services/dependencies/check";
 import { discoverExtensions } from "./services/extensions/loader";
 import {
@@ -1978,6 +1982,10 @@ export function registerIpcHandlers(): void {
       (a.userEnabled ?? {}) as Partial<Record<string, boolean>>,
     );
   });
+  handle("get_conductor_status", () => getConductorStatus());
+  handle("set_conductor_version", (a) =>
+    setConductorOverrideVersion((a.version ?? null) as string | null),
+  );
   // Image context menu
   handle("show_image_context_menu", async (a) => {
     const win = getMainWindow();

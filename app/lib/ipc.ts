@@ -19,6 +19,7 @@ import type {
   ClaudeAccountsState,
   ClaudeAuthStatus,
   ConductorLogEntry,
+  ConductorStatus,
   DependencyReport,
   DeviceInfo,
   DevicePlatform,
@@ -2224,3 +2225,12 @@ export const getEnabledToolsIpc = (): Promise<
 export const setEnabledToolsIpc = (
   userEnabled: Partial<Record<string, boolean>>,
 ): Promise<void> => invoke("set_enabled_tools", { userEnabled });
+
+// Conductor version override — renderer reads status / pins a version; main
+// provisions it into ~/.argus/conductor/<version>/.
+export const getConductorStatusIpc = (): Promise<ConductorStatus> =>
+  invoke("get_conductor_status");
+
+export const setConductorVersionIpc = (
+  version: string | null,
+): Promise<ConductorStatus> => invoke("set_conductor_version", { version });

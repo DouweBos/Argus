@@ -168,6 +168,15 @@ Each tool row in Settings runs its declared prereq checks live and surfaces **In
 
 The preflight onboarding step is filtered to your enabled tools' prereqs plus the four core checks (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`). A user who picks zero tools sees only the four core checks.
 
+### Conductor version
+
+Argus ships with a bundled version of the `conductor` CLI (the tool agents use to drive iOS/Android/web devices). The **Conductor version** field under Settings → Tools lets you pin a different published version without waiting for an Argus release — useful for picking up a conductor fix or trying a newer build.
+
+- Enter a version (e.g. `0.25.0`) and press **Apply**. Argus installs `@houwert/conductor@<version>` on demand into `~/.argus/conductor/<version>/` and points every agent's `conductor` invocation at it.
+- Leave the field blank (or press **Use bundled**) to revert to the version that shipped with the app.
+- Installing requires **`npm` on your PATH** (Electron's Node has none) and registry access. If the install fails — npm missing, unknown version, offline — Argus keeps using the bundled version and shows the error.
+- The pinned version persists at `~/.argus/conductor.json` and is re-provisioned on next launch if needed. Machine-local; not shared with your team.
+
 ---
 
 ## Advanced — Update channel
