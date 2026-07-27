@@ -24,10 +24,13 @@
  */
 
 import path from "node:path";
+import { getActiveConductorOverrideDir } from "../conductor/override";
 import { resolveAssetPath } from "../tools/assets";
 
 export function getConductorDir(): string {
-  return resolveAssetPath("conductor");
+  // A user-pinned version (installed under ~/.argus/conductor/<version>/) wins
+  // over the bundled tree; falls back to bundled until/unless one is ready.
+  return getActiveConductorOverrideDir() ?? resolveAssetPath("conductor");
 }
 
 export function getConductorBinDir(): string {

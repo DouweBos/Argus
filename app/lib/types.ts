@@ -229,6 +229,18 @@ export interface ConductorLogEntry {
   ts: number;
 }
 
+/** Status of the runtime conductor-version override (Settings → Tools). */
+export interface ConductorStatus {
+  /** Version resolved for invocations right now (override when ready, else bundled). */
+  activeVersion: string | null;
+  /** Version baked into this app build. */
+  bundledVersion: string | null;
+  error: string | null;
+  /** User-pinned version, or null when using the bundled default. */
+  overrideVersion: string | null;
+  state: "error" | "idle" | "installing" | "ready";
+}
+
 export interface AndroidDevice {
   /** AVD name (emulators only — used to boot). Null for physical devices. */
   avdName: string | null;

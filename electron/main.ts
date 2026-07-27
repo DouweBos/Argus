@@ -41,6 +41,7 @@ import {
   ensureDefaultAccountSeeded,
 } from "./services/claudeAuth/accounts";
 import { stopAllDebugStreams } from "./services/conductor/debug";
+import { initConductorOverride } from "./services/conductor/override";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import { initOrganizations } from "./services/organization/manager";
@@ -872,6 +873,10 @@ app.whenReady().then(() => {
   // consent state (collected during onboarding, kept in localStorage) once
   // it boots. Until that arrives, no events are sent.
   initTelemetry();
+
+  // Restore a user-pinned conductor version, installing it in the background
+  // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
+  initConductorOverride();
 
   // Sweep up node-pty spawn-helpers from prior Argus runs that didn't get a
   // chance to clean up (SIGKILL'd dev process, OS crash, etc.) — they
