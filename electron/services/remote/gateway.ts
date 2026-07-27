@@ -22,6 +22,7 @@ import { log } from "../../../app/lib/logger";
 import { addBroadcastTap } from "../../broadcast";
 import { appState } from "../../state";
 import {
+  forceStopAndroidCapture,
   isAndroidCapturing,
   startAndroidCapture,
   stopAndroidCapture,
@@ -56,11 +57,6 @@ const MEDIA_FRAME = 1;
 
 /** Drop delta frames once the socket's send buffer exceeds this (bytes). */
 const BACKPRESSURE_LIMIT = 1_000_000;
-
-/** Whether the gateway itself started the (single) Android capture session. */
-let androidStartedByGateway = false;
-/** Live watchers of the single Android session, across all connections. */
-const androidWatchers = new Set<DeviceConnection>();
 
 let nextStreamId = 1;
 function allocStreamId(): number {
@@ -174,19 +170,10 @@ export class DeviceConnection implements DeviceMediaController {
     if (platform === "ios") {
       await startSimulatorCapture(deviceId);
     } else {
-      // Android capture is a single global session. Only start it if nothing
-      // else is capturing; reject a request for a different emulator.
-      if (isAndroidCapturing() && !isAndroidCapturing(deviceId)) {
-        throw new GatewayError(
-          "bad_request",
-          "another Android device is already being captured",
-        );
-      }
-      if (!isAndroidCapturing(deviceId)) {
-        await startAndroidCapture(deviceId);
-        androidStartedByGateway = true;
-      }
-      androidWatchers.add(this);
+      // Android capture is per-serial and ref-counted (like iOS). Acquiring a
+      // ref starts the backend on first holder; multiple emulators — and
+      // multiple viewers of one emulator — stream concurrently.
+      await startAndroidCapture(deviceId);
     }
 
     const streamId = allocStreamId();
@@ -235,12 +222,12 @@ export class DeviceConnection implements DeviceMediaController {
         forceStopSimulatorCapture(deviceId);
       }
     } else {
-      androidWatchers.delete(this);
-      // Only tear down the shared Android session if we started it and no
-      // other remote watcher still needs it (the desktop may own it otherwise).
-      if (androidWatchers.size === 0 && androidStartedByGateway) {
-        stopAndroidCapture();
-        androidStartedByGateway = false;
+      stopAndroidCapture(deviceId);
+      // If no one else (the desktop grid/panel or another remote viewer) still
+      // holds the capture, tear it down now rather than through the grace
+      // period — a remote viewer that left shouldn't keep the emulator captured.
+      if (!isAndroidCapturing(deviceId)) {
+        forceStopAndroidCapture(deviceId);
       }
     }
   }

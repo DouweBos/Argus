@@ -1746,8 +1746,8 @@ export const bootAndroidEmulator = (avdName: string): Promise<string> =>
 export const startAndroidCapture = (serial: string): Promise<void> =>
   invoke("start_android_capture", { serial });
 
-export const stopAndroidCapture = (): Promise<void> =>
-  invoke("stop_android_capture");
+export const stopAndroidCapture = (serial: string): Promise<void> =>
+  invoke("stop_android_capture", { serial });
 
 export const disconnectAndroidDevice = (serial: string): Promise<void> =>
   invoke("disconnect_android_device", { serial });
@@ -1760,13 +1760,15 @@ export const androidTouch = (
 ): Promise<void> => invoke("android_touch", { serial, x, y, eventType });
 
 export const androidKeyboard = (
+  serial: string,
   keyCode: number,
   metaState: number,
   isDown: boolean,
-): Promise<void> => invoke("android_keyboard", { keyCode, metaState, isDown });
+): Promise<void> =>
+  invoke("android_keyboard", { serial, keyCode, metaState, isDown });
 
-export const androidButton = (button: string): Promise<void> =>
-  invoke("android_button", { button });
+export const androidButton = (serial: string, button: string): Promise<void> =>
+  invoke("android_button", { serial, button });
 
 /** macOS camera (capture-card) TCC status: granted | denied | restricted | not-determined | unknown. */
 export const requestCameraAccess = (): Promise<string> =>

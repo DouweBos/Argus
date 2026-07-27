@@ -59,6 +59,11 @@ export function AndroidDeviceView({
   );
   const isOnline = selectedDevice?.online ?? false;
   const prevSessionIdRef = useRef<string | null>(null);
+  const prevSerialRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    prevSerialRef.current = selectedSerial;
+  }, [selectedSerial]);
 
   // --- Tool availability check ---
 
@@ -101,15 +106,16 @@ export function AndroidDeviceView({
       storeKey !== prevSessionIdRef.current &&
       prevSessionIdRef.current !== null
     ) {
-      stopAndroidCapture()
-        .then(() => {
-          setAndroidCapturing(false);
-          setAndroidDisconnected(false);
-        })
-        .catch(() => {
-          setAndroidCapturing(false);
-          setAndroidDisconnected(false);
-        });
+      const prevSerial = prevSerialRef.current;
+      const done = () => {
+        setAndroidCapturing(false);
+        setAndroidDisconnected(false);
+      };
+      if (prevSerial) {
+        stopAndroidCapture(prevSerial).then(done).catch(done);
+      } else {
+        done();
+      }
     }
 
     prevSessionIdRef.current = storeKey;
@@ -149,9 +155,10 @@ export function AndroidDeviceView({
 
   const handleDeviceChange = useCallback(
     async (serial: string | null) => {
-      if (androidCapturing) {
+      const prevSerial = prevSerialRef.current;
+      if (androidCapturing && prevSerial) {
         try {
-          await stopAndroidCapture();
+          await stopAndroidCapture(prevSerial);
         } catch {
           // Capture may already be stopped
         }
@@ -218,9 +225,17 @@ export function AndroidDeviceView({
     setAndroidDisconnected,
   ]);
 
-  const handleNavButton = useCallback((button: string) => {
-    androidButton(button).catch((err) => error(`[${button}] failed:`, err));
-  }, []);
+  const handleNavButton = useCallback(
+    (button: string) => {
+      if (!selectedSerial) {
+        return;
+      }
+      androidButton(selectedSerial, button).catch((err) =>
+        error(`[${button}] failed:`, err),
+      );
+    },
+    [selectedSerial],
+  );
 
   // --- Touch / keyboard callbacks ---
 
@@ -238,7 +253,7 @@ export function AndroidDeviceView({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.repeat) {
+      if (e.repeat || !selectedSerial) {
         return;
       }
       if (e.metaKey && e.code !== "MetaLeft" && e.code !== "MetaRight") {
@@ -249,22 +264,38 @@ export function AndroidDeviceView({
         return;
       }
       e.preventDefault();
-      androidKeyboard(keyCode, androidMetaStateFromEvent(e.nativeEvent), true);
+      androidKeyboard(
+        selectedSerial,
+        keyCode,
+        androidMetaStateFromEvent(e.nativeEvent),
+        true,
+      );
     },
-    [],
+    [selectedSerial],
   );
 
-  const handleKeyUp = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.metaKey && e.code !== "MetaLeft" && e.code !== "MetaRight") {
-      return;
-    }
-    const keyCode = ANDROID_KEYCODE_MAP[e.code];
-    if (keyCode === undefined) {
-      return;
-    }
-    e.preventDefault();
-    androidKeyboard(keyCode, androidMetaStateFromEvent(e.nativeEvent), false);
-  }, []);
+  const handleKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!selectedSerial) {
+        return;
+      }
+      if (e.metaKey && e.code !== "MetaLeft" && e.code !== "MetaRight") {
+        return;
+      }
+      const keyCode = ANDROID_KEYCODE_MAP[e.code];
+      if (keyCode === undefined) {
+        return;
+      }
+      e.preventDefault();
+      androidKeyboard(
+        selectedSerial,
+        keyCode,
+        androidMetaStateFromEvent(e.nativeEvent),
+        false,
+      );
+    },
+    [selectedSerial],
+  );
 
   // --- Device picker ---
 
@@ -390,6 +421,7 @@ export function AndroidDeviceView({
       capturing={androidCapturing}
       devicePicker={hideDevicePicker ? null : devicePicker}
       placeholder={placeholderContent}
+      serial={selectedSerial}
       showFloatingActionBar={deviceSessionActive}
       titleBarExtra={titleBarExtra}
       titleBarToggles={titleBarToggles}

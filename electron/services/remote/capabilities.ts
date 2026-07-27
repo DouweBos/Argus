@@ -1034,7 +1034,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() =>
       platform === "ios"
         ? simulatorButton(device_id, button)
-        : androidButton(button),
+        : androidButton(device_id, button),
     );
 
     return { accepted: true };
@@ -1047,7 +1047,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() =>
       platform === "ios"
         ? simulatorKeyboard(device_id, key_code, modifiers, is_down)
-        : androidKeyboard(key_code, modifiers, is_down),
+        : androidKeyboard(device_id, key_code, modifiers, is_down),
     );
 
     return { accepted: true };

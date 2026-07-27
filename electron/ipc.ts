@@ -1757,8 +1757,8 @@ export function registerIpcHandlers(): void {
   toolHandle("start_android_capture", "device-recording", (a) =>
     startAndroidCapture(a.serial as string),
   );
-  toolHandle("stop_android_capture", "device-recording", () =>
-    stopAndroidCapture(),
+  toolHandle("stop_android_capture", "device-recording", (a) =>
+    stopAndroidCapture(a.serial as string),
   );
   toolHandle("disconnect_android_device", "device-recording", (a) =>
     disconnectAndroidDevice(a.serial as string),
@@ -1773,13 +1773,14 @@ export function registerIpcHandlers(): void {
   );
   toolHandle("android_keyboard", "device-control", (a) =>
     androidKeyboard(
+      a.serial as string,
       a.keyCode as number,
       a.metaState as number,
       a.isDown as boolean,
     ),
   );
   toolHandle("android_button", "device-control", (a) =>
-    androidButton(a.button as string),
+    androidButton(a.serial as string, a.button as string),
   );
 
   // Browser — Conductor-backed Chromium per session. Pool manages daemons;

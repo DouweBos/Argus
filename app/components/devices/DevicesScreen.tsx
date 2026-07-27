@@ -1,11 +1,29 @@
 import type { DeviceInfo } from "../../lib/types";
-import { useMemo, useState } from "react";
-import { ContextMenu, type ContextMenuItem, Icons } from "@argus/peacock";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Chip,
+  ContextMenu,
+  type ContextMenuItem,
+  Icons,
+  SegmentedControl,
+  Slider,
+} from "@argus/peacock";
 import {
   useVideoInputDevices,
   videoInputLabel,
 } from "../../hooks/useVideoInputDevices";
 import { bootSimulator, openSimulatorPopout, stopDevice } from "../../lib/ipc";
+import {
+  MAX_TILE_SIZE,
+  MIN_TILE_SIZE,
+  pruneGridSelection,
+  setDevicesViewMode,
+  setGridTileSize,
+  toggleGridSelected,
+  useDeviceGridSelection,
+  useDevicesViewMode,
+  useGridTileSize,
+} from "../../stores/deviceGridStore";
 import { refreshDevices } from "../../stores/deviceStore";
 import {
   useDevicePoller,
@@ -13,8 +31,20 @@ import {
   useDevicesError,
 } from "../../stores/deviceStore";
 import { DeviceDialog } from "./DeviceDialog/DeviceDialog";
+import { DeviceGrid } from "./DeviceGrid/DeviceGrid";
 import styles from "./DevicesScreen.module.css";
 import { useDeviceNavigation } from "./deviceNav";
+
+function platformIcon(platform: DeviceInfo["platform"]) {
+  if (platform === "web") {
+    return <Icons.WebIcon size={10} />;
+  }
+  if (platform === "video") {
+    return <Icons.VideoIcon size={10} />;
+  }
+
+  return <Icons.SimulatorIcon size={10} />;
+}
 
 function basename(p: string): string {
   return p.split(/[/\\]/).filter(Boolean).pop() ?? p;
@@ -53,6 +83,35 @@ export function DevicesScreen() {
   const { goto } = useDeviceNavigation();
   const [open, setOpen] = useState<DeviceInfo | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
+
+  const viewMode = useDevicesViewMode();
+  const tileSize = useGridTileSize();
+  const { selectedKeys, interactiveKeys } = useDeviceGridSelection();
+
+  const onlineDevices = useMemo(
+    () => devices.filter((d) => d.online),
+    [devices],
+  );
+
+  // Drop grid selections whose device is no longer online/present.
+  useEffect(() => {
+    pruneGridSelection(onlineDevices.map((d) => d.deviceKey));
+  }, [onlineDevices]);
+
+  const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
+  const interactiveSet = useMemo(
+    () => new Set(interactiveKeys),
+    [interactiveKeys],
+  );
+
+  // Grid tiles in selection order, filtered to devices still online.
+  const gridDevices = useMemo(
+    () =>
+      selectedKeys
+        .map((k) => onlineDevices.find((d) => d.deviceKey === k))
+        .filter((d): d is DeviceInfo => d != null),
+    [selectedKeys, onlineDevices],
+  );
 
   const nav =
     (kind: "agent" | "project" | "session", d: DeviceInfo) =>
@@ -130,9 +189,31 @@ export function DevicesScreen() {
       <div className={styles.head}>
         <span className={styles.title}>Devices</span>
         <span className={styles.sub}>
-          {devices.length} total · {devices.filter((d) => d.online).length}{" "}
-          running · {devices.filter((d) => d.reserved).length} reserved
+          {devices.length} total · {onlineDevices.length} running ·{" "}
+          {devices.filter((d) => d.reserved).length} reserved
         </span>
+        <div className={styles.headControls}>
+          <SegmentedControl
+            aria-label="Devices view"
+            value={viewMode}
+            onChange={setDevicesViewMode}
+            options={[
+              { label: "Table", value: "table" as const },
+              { label: "Grid", value: "grid" as const },
+            ]}
+          />
+          {viewMode === "grid" && (
+            <Slider
+              aria-label="Tile size"
+              className={styles.tileSlider}
+              min={MIN_TILE_SIZE}
+              max={MAX_TILE_SIZE}
+              step={10}
+              value={tileSize}
+              onChange={setGridTileSize}
+            />
+          )}
+        </div>
       </div>
 
       {error && (
@@ -147,7 +228,37 @@ export function DevicesScreen() {
           here.
         </div>
       )}
-      {devices.length > 0 && (
+
+      {viewMode === "grid" && devices.length > 0 && (
+        <>
+          {onlineDevices.length > 0 && (
+            <div className={styles.pillBar}>
+              {onlineDevices.map((d) => (
+                <Chip
+                  key={`${d.platform}:${d.deviceKey}`}
+                  interactive
+                  selected={selectedSet.has(d.deviceKey)}
+                  leading={
+                    <span className={styles.pillIcon}>
+                      {platformIcon(d.platform)}
+                    </span>
+                  }
+                  onClick={() => toggleGridSelected(d.deviceKey)}
+                >
+                  {d.name}
+                </Chip>
+              ))}
+            </div>
+          )}
+          <DeviceGrid
+            devices={gridDevices}
+            interactiveKeys={interactiveSet}
+            tileSize={tileSize}
+          />
+        </>
+      )}
+
+      {viewMode === "table" && devices.length > 0 && (
         <table className={styles.table}>
           <thead>
             <tr>

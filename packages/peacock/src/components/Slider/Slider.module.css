@@ -1,0 +1,68 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.root[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.input {
+  --slider-fill: 0%;
+  flex: 1;
+  min-width: 0;
+  height: 16px;
+  margin: 0;
+  cursor: inherit;
+  appearance: none;
+  background: transparent;
+}
+
+/* Track — WebKit */
+.input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--slider-fill),
+    var(--surface-5) var(--slider-fill),
+    var(--surface-5) 100%
+  );
+}
+
+/* Thumb — WebKit */
+.input::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-fg);
+  border: 1px solid var(--accent-hover);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform var(--transition-fast);
+}
+
+.input:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+.input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.input:focus-visible {
+  outline: none;
+}

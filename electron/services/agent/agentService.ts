@@ -385,7 +385,7 @@ export async function startAgent(
   const runtimeSection = buildRuntimeSection({
     platforms: new Set(resolvedPlatforms),
     iosReservation: appState.simulatorReservations.get(agentId) ?? null,
-    androidDevice: appState.androidDevice,
+    androidDevices: [...appState.androidDevices.values()],
     browserSession: appState.browserSessions.get(sessionId) ?? null,
     browserUrl,
   });
@@ -1552,7 +1552,7 @@ export function respondToPermission(
 interface RuntimeContext {
   platforms: Set<RuntimePlatform>;
   iosReservation: SimulatorReservation | null;
-  androidDevice: AndroidDeviceSession | null;
+  androidDevices: AndroidDeviceSession[];
   browserSession: BrowserSession | null;
   browserUrl: string | null;
 }
@@ -1561,7 +1561,7 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
   const {
     platforms,
     iosReservation,
-    androidDevice,
+    androidDevices,
     browserSession,
     browserUrl,
   } = ctx;
@@ -1603,10 +1603,12 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
 
   if (platforms.has("android")) {
     lines.push("", "### Android Emulator", "");
-    if (androidDevice) {
-      lines.push(
-        `An Android ${androidDevice.type} **${androidDevice.deviceName}** (serial \`${androidDevice.serial}\`) is booted. Target it with \`conductor <command> --device ${androidDevice.serial}\`.`,
-      );
+    if (androidDevices.length > 0) {
+      for (const d of androidDevices) {
+        lines.push(
+          `An Android ${d.type} **${d.deviceName}** (serial \`${d.serial}\`) is booted. Target it with \`conductor <command> --device ${d.serial}\`.`,
+        );
+      }
     } else {
       lines.push(
         "An Android emulator may be available. Use `conductor list-devices` to check for booted Android devices. Conductor commands work the same way for Android — just target the Android device ID with `--device`.",

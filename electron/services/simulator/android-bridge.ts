@@ -15,7 +15,7 @@ import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as net from "node:net";
 import { promisify } from "node:util";
 import { log } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
+import { broadcastToRenderers } from "../../broadcast";
 import { resolveAssetPath } from "../tools/assets";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
@@ -418,21 +418,23 @@ export class AndroidBridge implements AndroidCaptureBackend {
    */
   private startVideoPipeline(): void {
     const HEADER_SIZE = 64;
-    const win = getMainWindow();
 
     let headerBuf = Buffer.alloc(0);
     let headerParsed = false;
 
+    // Broadcast to every live window (not a captured main-window ref) so the
+    // stream survives HMR renderer reloads and reaches popouts — matching the
+    // iOS video path. A stale captured webContents silently drops all frames.
     this.h264Parser = new H264AccessUnitParser({
       onConfig: (config) => {
         log(
           `[AndroidBridge] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
-        win?.webContents.send("android_video_config", config);
+        broadcastToRenderers(`android_video_config:${this.serial}`, config);
         emitVideoConfig(this.serial, config);
       },
       onFrame: (data, keyFrame, timestamp) => {
-        win?.webContents.send("android_video_frame", {
+        broadcastToRenderers(`android_video_frame:${this.serial}`, {
           data,
           keyFrame,
           timestamp,
