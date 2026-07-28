@@ -75,32 +75,3 @@ const api: ArgusAPI = {
 };
 
 contextBridge.exposeInMainWorld("argus", api);
-
-// Right-clicks in plain text fields (chat input textareas, regular <input>s)
-// otherwise get intercepted by @codingame/monaco-vscode-api's global capture-
-// phase contextmenu handler, which calls preventDefault() before Electron's
-// native `context-menu` event fires. The result: spelling suggestions never
-// surface in our handler. The preload script runs before any renderer JS, so
-// registering this listener here puts it ahead of the VS Code workbench in
-// capture order — for plain inputs/textareas we stopImmediatePropagation so
-// VS Code never sees the event and Electron's spellcheck menu can show.
-window.addEventListener(
-  "contextmenu",
-  (e) => {
-    const t = e.target as HTMLElement | null;
-    if (
-      t instanceof HTMLTextAreaElement ||
-      (t instanceof HTMLInputElement &&
-        (t.type === "text" ||
-          t.type === "search" ||
-          t.type === "email" ||
-          t.type === "url" ||
-          t.type === "" ||
-          t.type === "tel" ||
-          t.type === "password"))
-    ) {
-      e.stopImmediatePropagation();
-    }
-  },
-  true,
-);

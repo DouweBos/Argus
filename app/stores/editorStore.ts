@@ -8,15 +8,13 @@ import {
   type GitSubView,
 } from "../lib/router";
 
-export type CenterView = "agents" | "editor" | "git" | "home";
+export type CenterView = "agents" | "git" | "home";
 
 /**
- * Simplified editor store for the monaco-vscode-api migration.
+ * Session panel store.
  *
- * VS Code manages tabs, models, file content, and the session folder
- * internally. The EditorPanel drives session switching directly via
- * updateWorkspaceFolder(). The active panel (agents/editor/git) is part of
- * the URL; only the live session id lives here.
+ * The active panel (agents/git/home) is part of the URL; only the live
+ * session id lives here.
  *
  * `lastPanelBySessionId` remembers the most recent panel each session was
  * viewed on, so that switching back to a session restores it. In-memory

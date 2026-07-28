@@ -52,7 +52,7 @@ function isEditableElement(el: Element | null): boolean {
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
     return true;
   }
-  if (el.closest(".xterm") || el.closest(".monaco-editor")) {
+  if (el.closest(".xterm")) {
     return true;
   }
 

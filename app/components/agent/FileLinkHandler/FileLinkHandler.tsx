@@ -4,8 +4,7 @@ import {
   splitTextForLinks,
   splitTextForMentions,
 } from "../../../lib/filePathLink";
-import { openExternalUrl } from "../../../lib/ipc";
-import { openFileInEditor } from "../../../lib/vscodeEditor";
+import { openExternalUrl, openPath } from "../../../lib/ipc";
 import styles from "./FileLinkHandler.module.css";
 
 interface FileLinkHandlerProps {
@@ -111,13 +110,10 @@ export function FileLinkHandler({ children, className }: FileLinkHandlerProps) {
       if (!path) {
         return;
       }
-      const line = link.dataset.fileLine
-        ? Number(link.dataset.fileLine)
-        : undefined;
       e.preventDefault();
       e.stopPropagation();
-      openFileInEditor(path, line).catch((err) => {
-        logError("openFileInEditor failed", err);
+      openPath(path).catch((err) => {
+        logError("openPath failed", err);
       });
     };
 
