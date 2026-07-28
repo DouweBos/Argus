@@ -1620,14 +1620,16 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
     const browserDefault = browserUrl
       ? `, currently loaded at **${browserUrl}**`
       : "";
-    const cdpNote = browserSession
-      ? " A live CDP session is already wired to this session's webview."
-      : "";
+    // `browserSession` is the live attachment signal — `platforms` only means
+    // the project targets web, not that a browser view is actually mounted.
+    const intro = browserSession
+      ? `A web browser view is attached to your session${browserDefault}. A live CDP session is already wired to this session's webview. The user can see this browser view in the runtime panel. When the user asks about "the website", "the page", or "what site we're on", they are referring to this web browser view.`
+      : `This project targets the web. A web browser view is not currently attached to your session — the user can open one in the runtime panel${browserDefault ? ` (it defaults to **${browserUrl}**)` : ""}. Once a browser view is open, the commands below work against it. When the user asks about "the website" or "the page", they mean that browser view.`;
     lines.push(
       "",
       "### Web Browser",
       "",
-      `A web browser view is attached to your session${browserDefault}.${cdpNote} The user can see this browser view in the runtime panel. When the user asks about "the website", "the page", or "what site we're on", they are referring to this web browser view.`,
+      intro,
       "",
       "To interact with the web browser view, use `conductor` with `--device web`:",
       "- `conductor inspect --device web` — see what's on the web page (ARIA tree, element names)",
@@ -1639,6 +1641,8 @@ function buildRuntimeSection(ctx: RuntimeContext): string {
       "- `conductor set-viewport --preset mobile|tablet|desktop --device web` (or explicit `--width N --height N`) — resize the browser viewport. Useful for responsive checks; the current URL is preserved across the resize, so one browser session can be screenshotted at multiple form factors.",
       "",
       "Argus wires `--device web` directly to this session's webview via CDP — conductor does **not** spawn a separate browser window. If the webview is reloaded or the runtime panel is torn down, run `conductor daemon-stop --device web` once to clear the stale connection; the next command will reconnect automatically.",
+      "",
+      "This repo may already ship tooling that emulates a browser (e.g. a dev server with a headless Chrome/Playwright/Puppeteer instance, or an existing CDP-exposing process). Prefer connecting `conductor` to such an emulator over CDP rather than spawning a new web browser — reuse the running instance instead of standing up a duplicate.",
     );
   }
 
