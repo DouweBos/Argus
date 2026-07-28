@@ -1,5 +1,5 @@
 
-### Minor Changes
+### Patch Changes
 
-- 71b0109: Pin a specific conductor CLI version from Settings → Tools. Argus installs it on demand and uses it for all device interaction — no app update needed. Leave it blank to use the bundled version.
+- 16685a0: Agents no longer claim a web browser view is attached when the runtime panel has none open. They're now told the project targets the web and a browser can be opened, instead of being pointed at a non-existent view.
 
