@@ -1,0 +1,67 @@
+name: Conductor version check
+
+on:
+  schedule:
+    # Every Monday 07:00 UTC (09:00 Amsterdam in summer, 08:00 in winter).
+    - cron: "0 7 * * 1"
+  workflow_dispatch: # allow manual runs
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Resolve versions
+        id: versions
+        run: |
+          current=$(sed -n 's/^const CONDUCTOR_VERSION = "\(.*\)";$/\1/p' scripts/prepare-conductor.ts)
+          if [ -z "$current" ]; then
+            echo "Could not parse CONDUCTOR_VERSION from scripts/prepare-conductor.ts" >&2
+            exit 1
+          fi
+          latest=$(npm view @houwert/conductor version)
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$current" = "$latest" ]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "Already up to date at $current."
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "Behind: pinned $current, latest $latest."
+          fi
+
+      - name: Apply bump
+        if: steps.versions.outputs.up_to_date == 'false'
+        env:
+          CURRENT: ${{ steps.versions.outputs.current }}
+          LATEST: ${{ steps.versions.outputs.latest }}
+        run: |
+          sed -i "s/^const CONDUCTOR_VERSION = \".*\";$/const CONDUCTOR_VERSION = \"$LATEST\";/" scripts/prepare-conductor.ts
+          cat > ".changeset/bump-conductor-$LATEST.md" <<EOF
+          ---
+          "argus": minor
+          ---
+
+          Update the bundled conductor CLI to v$LATEST.
+          EOF
+
+      - name: Open pull request
+        if: steps.versions.outputs.up_to_date == 'false'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          branch: chore/bump-conductor-${{ steps.versions.outputs.latest }}
+          base: main
+          commit-message: "chore: bump conductor to ${{ steps.versions.outputs.latest }}"
+          title: "chore: bump conductor to ${{ steps.versions.outputs.latest }}"
+          body: |
+            Bumps the pinned conductor CLI from `${{ steps.versions.outputs.current }}` to `${{ steps.versions.outputs.latest }}`.
+
+            Opened automatically by the weekly `conductor-version-check` workflow.
+          delete-branch: true
