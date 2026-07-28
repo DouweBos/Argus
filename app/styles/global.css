@@ -165,27 +165,6 @@ li:has(> [data-task-check]) {
   border: 0;
 }
 
-/* Hide VS Code accounts and manage/gear buttons from the activity bar / sidebar header */
-.action-item:has(.codicon-accounts-view-bar-icon),
-.action-item:has(.codicon-settings-gear) {
-  display: none !important;
-}
-
-/* Match VS Code workbench font to Argus app */
-.monaco-workbench .part.sidebar .composite.title,
-.monaco-workbench .part.sidebar .pane-header,
-.monaco-workbench .part.sidebar .monaco-list-row,
-.monaco-workbench .part.sidebar .explorer-item,
-.monaco-workbench .part.sidebar .monaco-icon-label,
-.monaco-workbench .part.sidebar .label-name,
-.monaco-workbench .part.sidebar .monaco-tl-row,
-.monaco-workbench .part.auxiliarybar .composite.title,
-.monaco-workbench .part.auxiliarybar .pane-header,
-.monaco-workbench .part.auxiliarybar .monaco-list-row {
-  font-family: var(--font-ui) !important;
-  font-size: var(--font-size-sm) !important;
-}
-
 /* xterm overrides */
 .xterm {
   height: 100%;

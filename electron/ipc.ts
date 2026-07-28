@@ -121,21 +121,13 @@ import {
   setConductorOverrideVersion,
 } from "./services/conductor/override";
 import { checkDependencies } from "./services/dependencies/check";
-import { discoverExtensions } from "./services/extensions/loader";
 import {
-  listDirectory,
   listSessionFiles,
   resolveMentionPath,
   readFile,
   writeFile,
   statFile,
-  statPath,
-  readPath,
-  writePath,
   listPath,
-  mkdirPath,
-  deletePath,
-  renamePath,
 } from "./services/file/operations";
 import { listGhIssues } from "./services/github/issues";
 import {
@@ -592,9 +584,6 @@ function handle(
 
 export function registerIpcHandlers(): void {
   // File commands
-  handle("list_directory", (a) =>
-    listDirectory(a.id as string, a.relativePath as string),
-  );
   handle("read_file", (a) =>
     readFile(a.id as string, a.relativePath as string),
   );
@@ -609,14 +598,8 @@ export function registerIpcHandlers(): void {
     resolveMentionPath(a.id as string, a.query as string),
   );
 
-  // Absolute-path file operations (used by VS Code filesystem provider)
-  handle("stat_path", (a) => statPath(a.path as string));
-  handle("read_path", (a) => readPath(a.path as string));
-  handle("write_path", (a) => writePath(a.path as string, a.content as string));
+  // Absolute-path directory listing (used by the project-settings glob input).
   handle("list_path", (a) => listPath(a.path as string));
-  handle("mkdir_path", (a) => mkdirPath(a.path as string));
-  handle("delete_path", (a) => deletePath(a.path as string));
-  handle("rename_path", (a) => renamePath(a.from as string, a.to as string));
 
   // Window
   handle("close_window", () => {
@@ -1971,9 +1954,6 @@ export function registerIpcHandlers(): void {
   handle("open_in_custom_editor", (a) =>
     openInCustomEditor(a.command as string, a.path as string),
   );
-
-  // Extensions
-  handle("discover_extensions", () => discoverExtensions());
 
   // Tools — backend mirror of the renderer's enable map.
   handle("get_enabled_tools", () => getEnabledToolsForRenderer());

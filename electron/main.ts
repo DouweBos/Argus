@@ -18,13 +18,11 @@ import {
   shell,
 } from "electron";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { log as emitLog } from "../app/lib/logger";
 import { broadcastToRenderers } from "./broadcast";
 import { registerIpcHandlers } from "./ipc";
-import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
 import { setMainWindow } from "./mainWindow";
 import { destroyAllAgents } from "./services/agent/agentService";
@@ -76,28 +74,8 @@ import { appState } from "./state";
 // and Argus connects via CDP to Conductor's Chromium instance.
 
 // Register custom protocols as privileged before app is ready.
-// This lets the renderer fetch extension files and session images via URL.
+// This lets the renderer fetch session images via URL.
 protocol.registerSchemesAsPrivileged([
-  {
-    scheme: "argus-ext",
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-      bypassCSP: true,
-    },
-  },
-  {
-    scheme: "extension-file",
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      corsEnabled: true,
-      bypassCSP: true,
-    },
-  },
   {
     scheme: "argus-file",
     privileges: {
@@ -757,9 +735,8 @@ app.on("before-quit", (e) => {
     // SIGKILL on a 2 s timeout for any child that ignored SIGTERM.
     destroyAllAgents(),
   ]).finally(() => {
-    // The @codingame/monaco-vscode-api registers a beforeunload handler via
-    // addEventListener that cancels the first close. Destroy the window
-    // directly to bypass it — we handle our own save state, not VS Code's.
+    // Destroy the window directly to bypass any beforeunload handler — we
+    // handle our own save state.
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.destroy();
     }
@@ -952,46 +929,6 @@ app.whenReady().then(() => {
     }
   });
 
-  // Allowed root directories for extension file serving.
-  const extensionRoots = [
-    path.join(os.homedir(), ".vscode", "extensions"),
-    path.join(os.homedir(), ".cursor", "extensions"),
-    path.join(argusHomeDir(), "extensions"),
-  ];
-
-  /** Validate that a file path falls within an allowed extension directory. */
-  function isAllowedExtensionPath(filePath: string): boolean {
-    const resolved = path.resolve(filePath);
-
-    return extensionRoots.some(
-      (root) => resolved.startsWith(root + path.sep) || resolved === root,
-    );
-  }
-
-  // Serve extension files via argus-ext:// protocol.
-  // URL format: argus-ext://ext/<absolute-path-to-file>
-  protocol.handle("argus-ext", (request) => {
-    const url = new URL(request.url);
-    const filePath = decodeURIComponent(url.pathname);
-    if (!isAllowedExtensionPath(filePath)) {
-      return new Response("Forbidden", { status: 403 });
-    }
-
-    return net.fetch(`file://${filePath}`);
-  });
-
-  // Serve extension-file:// URIs (used by VS Code extension icon references).
-  // URL format: extension-file://<publisher.name>/<absolute-path-to-file>
-  protocol.handle("extension-file", (request) => {
-    const url = new URL(request.url);
-    const filePath = decodeURIComponent(url.pathname);
-    if (!isAllowedExtensionPath(filePath)) {
-      return new Response("Forbidden", { status: 403 });
-    }
-
-    return net.fetch(`file://${filePath}`);
-  });
-
   // Serve local files via argus-file:// protocol.
   // Used by the renderer to load full-resolution images from disk (e.g. tool
   // result screenshots) instead of relying on base64 blobs.
@@ -1050,37 +987,20 @@ app.whenReady().then(() => {
       headers["Cross-Origin-Resource-Policy"] = ["cross-origin"];
     }
 
-    // open-vsx.org echoes back a `vscode-file://vscode-app` Access-Control-Allow-Origin
-    // (because monaco's gallery client emulates VSCode's request shape), which the
-    // renderer at http://localhost:1420 rejects. Rewrite to a permissive value so
-    // monaco can read public gallery metadata. These endpoints are unauthenticated.
-    if (details.url.startsWith("https://open-vsx.org/")) {
-      for (const key of Object.keys(headers)) {
-        const lower = key.toLowerCase();
-        if (
-          lower === "access-control-allow-origin" ||
-          lower === "access-control-allow-credentials"
-        ) {
-          headers[key] = [];
-        }
-      }
-      headers["Access-Control-Allow-Origin"] = ["*"];
-    }
-
     // Apply CSP to top-level document responses only.
     if (details.resourceType === "mainFrame") {
       const csp = [
-        "default-src 'self' argus-ext:",
-        "script-src 'self' argus-ext: https://*.i.posthog.com" +
+        "default-src 'self'",
+        "script-src 'self' https://*.i.posthog.com" +
           (isDev
             ? " 'unsafe-inline' 'unsafe-eval'"
             : " 'sha256-PSPsfpU4uc1//0GK5lM0KrdHS2UBpy5pXU7hQYefIyI='"),
-        "style-src 'self' 'unsafe-inline' argus-ext:",
-        "font-src 'self' argus-ext: data:",
-        "img-src 'self' argus-ext: argus-file: extension-file: data: blob: https: http://127.0.0.1:*",
-        "connect-src 'self' argus-ext: data: https://open-vsx.org https://*.i.posthog.com" +
+        "style-src 'self' 'unsafe-inline'",
+        "font-src 'self' data:",
+        "img-src 'self' argus-file: data: blob: https: http://127.0.0.1:*",
+        "connect-src 'self' data: https://*.i.posthog.com" +
           (isDev ? " ws://localhost:* http://localhost:*" : ""),
-        "worker-src 'self' blob: data: argus-ext:",
+        "worker-src 'self' blob: data:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];
     }

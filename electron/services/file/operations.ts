@@ -37,55 +37,6 @@ export interface DirEntry {
  * @throws string if the session is not found, the path escapes the root, or
  *   the directory cannot be read.
  */
-export async function listDirectory(
-  id: string,
-  relativePath: string,
-): Promise<DirEntry[]> {
-  const root = sessionPath(id);
-  const target = await resolveSafePath(root, relativePath);
-
-  let rawEntries: fs.Dirent[];
-  try {
-    rawEntries = await fs.promises.readdir(target, { withFileTypes: true });
-  } catch (e) {
-    throw `Failed to read directory: ${String(e)}`;
-  }
-
-  const entries: DirEntry[] = [];
-
-  for (const dirent of rawEntries) {
-    // Filter .git at the session root level only
-    if (relativePath === "" && dirent.name === ".git") {
-      continue;
-    }
-
-    let size = 0;
-    try {
-      const stat = await fs.promises.stat(path.join(target, dirent.name));
-      size = stat.size;
-    } catch {
-      // If stat fails, include the entry with size 0 rather than dropping it
-    }
-
-    entries.push({
-      name: dirent.name,
-      is_dir: dirent.isDirectory(),
-      size,
-    });
-  }
-
-  // Sort: directories first, then alphabetical (case-insensitive)
-  entries.sort((a, b) => {
-    if (a.is_dir !== b.is_dir) {
-      return a.is_dir ? -1 : 1;
-    }
-
-    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-  });
-
-  return entries;
-}
-
 /**
  * Read a text file from a session.
  *
@@ -302,33 +253,6 @@ async function canonicalize(
   }
 }
 
-/** Stat an absolute path. */
-export async function statPath(
-  absPath: string,
-): Promise<{ is_dir: boolean; size: number; mtime: number }> {
-  await assertInsideSession(absPath);
-  const stat = await fs.promises.stat(absPath);
-
-  return { is_dir: stat.isDirectory(), size: stat.size, mtime: stat.mtimeMs };
-}
-
-/** Read a text file at an absolute path. */
-export async function readPath(absPath: string): Promise<string> {
-  await assertInsideSession(absPath);
-
-  return fs.promises.readFile(absPath, "utf8");
-}
-
-/** Write a text file at an absolute path, creating parent dirs as needed. */
-export async function writePath(
-  absPath: string,
-  content: string,
-): Promise<void> {
-  await assertInsideSession(absPath, { mustExist: false });
-  await fs.promises.mkdir(path.dirname(absPath), { recursive: true });
-  await fs.promises.writeFile(absPath, content, "utf8");
-}
-
 /** List directory contents at an absolute path. */
 export async function listPath(absPath: string): Promise<DirEntry[]> {
   await assertInsideSession(absPath);
@@ -358,38 +282,6 @@ export async function listPath(absPath: string): Promise<DirEntry[]> {
   });
 
   return entries;
-}
-
-/** Create a directory at an absolute path (recursive). */
-export async function mkdirPath(absPath: string): Promise<void> {
-  await assertInsideSession(absPath, { mustExist: false });
-  await fs.promises.mkdir(absPath, { recursive: true });
-}
-
-/**
- * Delete a file or directory at an absolute path.
- *
- * `lstat` (not `stat`) is used so we operate on the symlink itself rather
- * than its target — combined with `assertInsideSession` this prevents
- * deleting files outside the session via a symlink whose canonical path
- * happens to live elsewhere.
- */
-export async function deletePath(absPath: string): Promise<void> {
-  await assertInsideSession(absPath);
-  const stat = await fs.promises.lstat(absPath);
-  if (stat.isDirectory()) {
-    await fs.promises.rm(absPath, { recursive: true });
-  } else {
-    await fs.promises.unlink(absPath);
-  }
-}
-
-/** Rename/move a file at an absolute path. */
-export async function renamePath(from: string, to: string): Promise<void> {
-  await assertInsideSession(from);
-  await assertInsideSession(to, { mustExist: false });
-  await fs.promises.mkdir(path.dirname(to), { recursive: true });
-  await fs.promises.rename(from, to);
 }
 
 /**

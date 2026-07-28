@@ -23,7 +23,6 @@ No Zustand store mirrors the route. Reads go through URL-derived hooks
 | `/runtimes`                                     | Runtimes overview                  | All running dev servers / terminals.                                                                                                                                                                                                                                                                                                                                                                                              |
 | `/sessions/:sessionId`                          | Session (defaults to home)         | Equivalent to `/sessions/:sessionId/home`.                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/sessions/:sessionId/agents`                   | Session → Agents panel             | Claude Code agents for this session.                                                                                                                                                                                                                                                                                                                                                                                              |
-| `/sessions/:sessionId/editor`                   | Session → Editor panel             | Monaco / VS Code editor.                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `/sessions/:sessionId/git`                      | Session → Git panel                | Commit log, stashes, diffs.                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `/sessions/:sessionId/git/:gitView`             | Session → Git sub-view             | `working`, `branch`, `history`, `stashes`, `reflog`, `conflicts`, `branches`, `submodules`, `bisect`, `hooks`, `compare` (?left=&right=), `blame` (?path=&ref=), `settings`. Also `tags` as a ref-route prefix (`/git/tags/:name`). Project-scope sub-views (`branches`, `submodules`, `bisect`, `hooks`, `compare`, `blame`, `settings`) only render when the session is `kind === "project_root"` or are universally available. |
 | `/sessions/:sessionId/git/branches/:branchName` | Session → Git, focused on a branch | Renders the history view filtered to `:branchName`. The sidebar highlights the matching branch row; top-nav items stay deselected. Use `setGitRef("branches", name)`.                                                                                                                                                                                                                                                             |
@@ -51,7 +50,7 @@ interface ParsedRoute {
     | "session";
   sessionId: string | null; // set when view === "session"
   organizationId: string | null; // set on /organizations/:organizationId
-  panel: "agents" | "editor" | "git" | "home"; // only meaningful when view === "session"
+  panel: "agents" | "git" | "home"; // only meaningful when view === "session"
   gitView:
     | "working"
     | "branch"
@@ -112,7 +111,7 @@ There is exactly one write primitive:
 ```ts
 import { appNavigate } from "app/lib/router";
 
-appNavigate({ view: "session", sessionId: "abc", panel: "editor" });
+appNavigate({ view: "session", sessionId: "abc", panel: "git" });
 appNavigate({ view: "notifications" });
 appNavigate({ view: "organizations", organizationId: "org-1" });
 appNavigate({ view: "home" }, { replace: true });

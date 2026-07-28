@@ -107,4 +107,3 @@ If the new setting needs UI primitives Peacock doesn't have, add them to Peacock
 - Claude Code as subprocess with `--output-format stream-json` (piped stdio, not PTY)
 - Simulator bridge as standalone macOS binary over JSON-over-stdio — uses private frameworks that can't run in Node
 - Worktrees outside project dir to keep user's repo clean
-- `@codingame/monaco-vscode-api` for embedded VS Code editor/explorer/search

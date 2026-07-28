@@ -20,7 +20,6 @@
  * - `/settings`                                  → settings (opened as dialog)
  * - `/sessions/:sessionId`                       → session (default home tab)
  * - `/sessions/:sessionId/agents`                → session agents view
- * - `/sessions/:sessionId/editor`                → session editor view
  * - `/sessions/:sessionId/git`                   → session git view
  * - `/sessions/:sessionId/git/:gitView`           → git view sub-screen
  *                                                  (working|branch|history|stashes|
@@ -54,7 +53,7 @@ export type AppView =
   | "runtimes"
   | "session";
 
-export type SessionPanel = "agents" | "editor" | "git" | "home";
+export type SessionPanel = "agents" | "git" | "home";
 
 export type GitSubView =
   | "bisect"
@@ -113,7 +112,7 @@ export interface ParsedRoute {
   /** Sub-view inside the git panel (working/branches/history/…). */
   gitView: GitSubView | null;
   organizationId: string | null;
-  /** Session panel (agents/editor/git). Only meaningful when view=session. */
+  /** Session panel (agents/git/home). Only meaningful when view=session. */
   panel: SessionPanel;
   /** Identifies which PR to show when view === "pull-request-detail". */
   pr: PullRequestRef | null;
@@ -121,7 +120,7 @@ export interface ParsedRoute {
   view: AppView;
 }
 
-const VALID_PANELS: SessionPanel[] = ["agents", "editor", "git", "home"];
+const VALID_PANELS: SessionPanel[] = ["agents", "git", "home"];
 
 /** Parse a pathname into a normalised route descriptor. */
 export function parseRoute(pathname: string): ParsedRoute {
@@ -233,7 +232,7 @@ function emptyRoute(view: AppView): ParsedRoute {
  * names, or any other dynamic segment that could leak project / session /
  * org / repo identifiers into telemetry.
  *
- * Example: `/sessions/abc-123/editor` → `/sessions/:sessionId/editor`.
+ * Example: `/sessions/abc-123/git` → `/sessions/:sessionId/git`.
  */
 export function routePattern(pathname: string): string {
   const route = parseRoute(pathname);

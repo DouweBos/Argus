@@ -6,7 +6,6 @@ import {
 } from "../../../stores/editorStore";
 import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useSessions } from "../../../stores/sessionStore";
-import { EditorPanel } from "../../editor/EditorPanel";
 import { HomeScreen } from "../../home/HomeScreen";
 import { RunControl } from "../../layout/RunControl";
 import { TaskBanner } from "../../organizations/TaskBanner";
@@ -71,28 +70,16 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
             Agents
           </Chip>
           {!isOrgHost && (
-            <>
-              <Chip
-                interactive
-                leading={<Icons.FileIcon size={12} />}
-                className={
-                  effectiveView === "editor" ? styles.chipActive : undefined
-                }
-                onClick={() => setActiveView("editor")}
-              >
-                Editor
-              </Chip>
-              <Chip
-                interactive
-                leading={<Icons.BranchIcon size={12} />}
-                className={
-                  effectiveView === "git" ? styles.chipActive : undefined
-                }
-                onClick={() => setActiveView("git")}
-              >
-                Git
-              </Chip>
-            </>
+            <Chip
+              interactive
+              leading={<Icons.BranchIcon size={12} />}
+              className={
+                effectiveView === "git" ? styles.chipActive : undefined
+              }
+              onClick={() => setActiveView("git")}
+            >
+              Git
+            </Chip>
           )}
         </div>
         {!isOrgHost && (
@@ -109,8 +96,6 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
         )}
 
         {effectiveView === "agents" && <AgentView sessionId={sessionId} />}
-
-        {effectiveView === "editor" && <EditorPanel sessionId={sessionId} />}
 
         {effectiveView === "git" &&
           (session.status === "initializing" ? (

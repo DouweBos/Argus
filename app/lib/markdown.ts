@@ -73,8 +73,7 @@ const SANITIZE_CONFIG: DOMPurifyConfig = {
   FORBID_ATTR: ["srcdoc", "formaction"],
   // Only allow safe URI schemes; this kills javascript:/data:text/html
   // payloads even when wrapped in <a href> or <img src>.
-  ALLOWED_URI_REGEXP:
-    /^(?:(?:https?|mailto|tel|argus-file|argus-ext|extension-file|file|vscode):|[#/])/i,
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|argus-file|file):|[#/])/i,
 };
 
 /** Parse markdown text to a sanitized HTML string (synchronous). */
