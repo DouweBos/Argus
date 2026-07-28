@@ -59,6 +59,12 @@ describe("splitTextForLinks", () => {
     ]);
   });
 
+  it("returns no segments for undefined/empty input without throwing", () => {
+    expect(splitTextForLinks(undefined as unknown as string)).toEqual([]);
+    expect(splitTextForLinks("")).toEqual([]);
+    expect(splitTextForMentions(undefined as unknown as string)).toEqual([]);
+  });
+
   it("splits a file path into a link segment with line info", () => {
     const segs = splitTextForLinks("edit src/foo.ts:10 now");
     expect(segs[0]).toEqual({ type: "text", value: "edit " });

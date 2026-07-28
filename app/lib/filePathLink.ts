@@ -226,6 +226,12 @@ function trimTrailingPunctuation(token: string, pattern: RegExp): string {
 }
 
 export function splitTextForMentions(text: string): LinkSegment[] {
+  // Callers hand us block text typed as `string`, but renderers can pass
+  // undefined/empty for blocks with no text — guard so one bad block doesn't
+  // white-screen the whole chat.
+  if (!text) {
+    return [];
+  }
   interface Marker {
     end: number;
     segment: Extract<LinkSegment, { type: "link" | "url" }>;
@@ -293,6 +299,9 @@ interface UrlRange {
 
 function findUrlRanges(text: string): UrlRange[] {
   const ranges: UrlRange[] = [];
+  if (!text) {
+    return ranges;
+  }
   for (const match of text.matchAll(URL_REGEX)) {
     const start = match.index ?? 0;
     let url = match[0];
@@ -308,6 +317,9 @@ function findUrlRanges(text: string): UrlRange[] {
 
 export function splitTextForLinks(text: string): LinkSegment[] {
   const segments: LinkSegment[] = [];
+  if (!text) {
+    return segments;
+  }
   const urlRanges = findUrlRanges(text);
   let cursor = 0;
 
