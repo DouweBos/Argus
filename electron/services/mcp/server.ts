@@ -1391,7 +1391,7 @@ export function createMcpServer(
 
   server.tool(
     "get_agent_result",
-    "Get the result summary of a completed agent. Returns the final output, cost, and duration from the agent's last conversation turn. Only available after the agent has finished (status: stopped or error).",
+    "Get the result summary of a completed agent. Returns the final output, cost, and duration from the agent's last conversation turn. Available once the agent has finished a turn (status: stopped, error, or idle after completing at least one turn).",
     {
       agent_id: z.string().describe("The agent ID returned by spawn_agent"),
     },
@@ -1409,7 +1409,16 @@ export function createMcpServer(
         };
       }
 
-      if (session.status !== "stopped" && session.status !== "error") {
+      // Result is available once the process has exited (stopped/error) or the
+      // agent has finished a turn while still alive (idle with turnsCompleted > 0).
+      // Mirror the gate in waitForAgent so a finished-but-alive agent isn't blocked.
+      const finishedTurn =
+        session.status === "idle" && session.turnsCompleted > 0;
+      if (
+        session.status !== "stopped" &&
+        session.status !== "error" &&
+        !finishedTurn
+      ) {
         return {
           content: [
             {
