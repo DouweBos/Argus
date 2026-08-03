@@ -267,7 +267,7 @@ export function ToolCall(props: ToolCallProps) {
     <Container
       className={`${styles.card} ${toolCall.isError ? styles.cardError : ""} ${
         isPending ? styles.cardPending : ""
-      }`}
+      } ${subAgentRunning ? styles.cardRunning : ""}`}
     >
       {hoverActions && (
         <HoverActionBar className={styles.hoverActions} placement="top-right">
@@ -279,6 +279,9 @@ export function ToolCall(props: ToolCallProps) {
         className={styles.header}
         onClick={() => setUserExpanded((v) => !v)}
       >
+        {subAgentRunning && (
+          <Spinner size="xs" tone="primary" className={styles.runningSpinner} />
+        )}
         <span className={styles.chevron}>
           {expanded ? (
             <Icons.ChevronDownIcon size={9} />
@@ -289,9 +292,6 @@ export function ToolCall(props: ToolCallProps) {
         <span className={styles.name}>
           {isAgent ? agentType : toolCall.name}
         </span>
-        {subAgentRunning && (
-          <Spinner size="xs" tone="primary" className={styles.runningSpinner} />
-        )}
         <span
           className={`${styles.summary} ${isPathSummary ? styles.summaryPath : ""}`}
         >
