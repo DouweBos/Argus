@@ -135,9 +135,17 @@
   flex-shrink: 0;
 }
 
+/* Sits in the dot's slot on the left while the sub-agent runs. */
 .runningSpinner {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
   flex-shrink: 0;
-  align-self: center;
+}
+
+.cardRunning .header::before {
+  display: none;
 }
 
 .doneTag {
