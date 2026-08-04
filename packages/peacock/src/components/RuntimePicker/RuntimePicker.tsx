@@ -104,6 +104,7 @@ export function RuntimePicker({
           items={items}
           position={menuPos}
           onClose={() => setMenuOpen(false)}
+          triggerRef={triggerRef}
         />
       )}
     </>

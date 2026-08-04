@@ -133,6 +133,7 @@ export function RuntimeLinkButton({
           items={items}
           position={pos}
           onClose={() => setOpen(false)}
+          triggerRef={triggerRef}
         />
       )}
     </>
