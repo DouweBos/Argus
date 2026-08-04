@@ -379,6 +379,7 @@ export function RunControl({ sessionId }: RunControlProps) {
           })}
           position={menuPosition}
           onClose={() => setMenuPosition(null)}
+          triggerRef={anchorRef}
         />
       )}
       {conflictDialog}

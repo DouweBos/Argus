@@ -1,6 +1,7 @@
 import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  type RefObject,
   useEffect,
   useRef,
   useState,
@@ -66,6 +67,12 @@ export interface ContextMenuProps {
   /** When true, this menu is a child submenu — disables its own
    * outside-click / scroll dismissal so dismissal is owned by the root. */
   submenu?: boolean;
+  /** The element this menu is anchored to (e.g. a dropdown's trigger button).
+   * When provided, scroll only dismisses the menu if the scroll actually moved
+   * the trigger — unrelated scrolls elsewhere (chat auto-scroll, etc.) are
+   * ignored. Omit for right-click menus with no persistent anchor, where any
+   * scroll should dismiss. */
+  triggerRef?: RefObject<HTMLElement | null>;
   /** Fixed pixel width applied to the menu and inherited by its submenus.
    * Defaults to 240px so menus render consistently regardless of content. */
   width?: number;
@@ -85,6 +92,7 @@ export function ContextMenu({
   submenu = false,
   onMenuMouseEnter,
   onMenuMouseLeave,
+  triggerRef,
   width = DEFAULT_MENU_WIDTH,
 }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -126,7 +134,21 @@ export function ContextMenu({
       }
     };
 
-    const handleScroll = () => onClose();
+    const handleScroll = (e: Event) => {
+      // Scrolling inside the menu's own list never dismisses it.
+      const target = e.target as Node | null;
+      if (target && menuRef.current?.contains(target)) {
+        return;
+      }
+      // For anchored menus, only dismiss when the scroll actually moved the
+      // trigger (i.e. the scrolled node is an ancestor of it). Unrelated
+      // scrolls elsewhere in the app leave the menu open.
+      const trigger = triggerRef?.current;
+      if (trigger && !(target instanceof Node && target.contains(trigger))) {
+        return;
+      }
+      onClose();
+    };
 
     document.addEventListener("mousedown", handleMouseDown);
     document.addEventListener("keydown", handleKeyDown);
@@ -139,7 +161,7 @@ export function ContextMenu({
       document.removeEventListener("scroll", handleScroll, true);
       window.removeEventListener("blur", onClose);
     };
-  }, [onClose, submenu]);
+  }, [onClose, submenu, triggerRef]);
 
   useEffect(
     () => () => {
