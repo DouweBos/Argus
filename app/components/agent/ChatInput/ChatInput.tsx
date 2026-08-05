@@ -95,6 +95,20 @@ interface ChatInputProps {
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
+// Ghost-text argument hint for a value like "/model " — the completed command
+// name plus a trailing space, before any argument is typed.
+function argHintFor(
+  value: string,
+  commands: SlashCommand[] | undefined,
+): { hint: string; text: string } | null {
+  const match = /^\/(\S+)[ \t]$/.exec(value);
+  const cmd = match
+    ? commands?.find((c) => c.name.toLowerCase() === match[1].toLowerCase())
+    : undefined;
+
+  return cmd?.argumentHint ? { hint: cmd.argumentHint, text: value } : null;
+}
+
 export function ChatInput({
   onSend,
   onInterrupt,
@@ -126,6 +140,10 @@ export function ChatInput({
   const [isFocused, setIsFocused] = useState(false);
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  // Inline ghost hint shown after a completed slash command (e.g. "/model [model]").
+  const [argHint, setArgHint] = useState<{ hint: string; text: string } | null>(
+    null,
+  );
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const projectChipRef = useRef<HTMLDivElement>(null);
   const modelChipRef = useRef<HTMLDivElement>(null);
@@ -243,6 +261,18 @@ export function ChatInput({
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, []);
 
+  const updateArgHint = useCallback(() => {
+    setArgHint(argHintFor(textareaRef.current?.value ?? "", slashCommands));
+  }, [slashCommands]);
+
+  // Recompute the hint from the restored draft when the agent tab changes,
+  // during render so it never lags the (uncontrolled) textarea by a frame.
+  const [hintAgentId, setHintAgentId] = useState(agentId);
+  if (agentId !== hintAgentId) {
+    setHintAgentId(agentId);
+    setArgHint(argHintFor(agentId ? getDraft(agentId) : "", slashCommands));
+  }
+
   // Restore draft when the agent tab changes (textarea is uncontrolled so we
   // seed its value directly).
   useEffect(() => {
@@ -278,11 +308,12 @@ export function ChatInput({
   const handleInput = useCallback(() => {
     adjustHeight();
     updateSuggestions();
+    updateArgHint();
     updateMentions(textareaRef.current);
     if (agentId) {
       setDraft(agentId, textareaRef.current?.value ?? "");
     }
-  }, [adjustHeight, updateSuggestions, updateMentions, agentId]);
+  }, [adjustHeight, updateSuggestions, updateArgHint, updateMentions, agentId]);
 
   const submit = useCallback(() => {
     const value = textareaRef.current?.value.trim() ?? "";
@@ -305,6 +336,7 @@ export function ChatInput({
       textareaRef.current.value = "";
       adjustHeight();
     }
+    setArgHint(null);
     if (agentId) {
       clearDraft(agentId);
     }
@@ -470,11 +502,12 @@ export function ChatInput({
       textareaRef.current.focus();
       setSuggestions([]);
       adjustHeight();
+      updateArgHint();
       if (agentId) {
         setDraft(agentId, textareaRef.current.value);
       }
     },
-    [adjustHeight, agentId],
+    [adjustHeight, updateArgHint, agentId],
   );
 
   const handleKeyDown = useCallback(
@@ -873,6 +906,12 @@ export function ChatInput({
           onPaste={handlePaste}
           onSelect={() => updateMentions(textareaRef.current)}
         />
+        {argHint && !disabled && (
+          <div className={styles.argHint} aria-hidden="true">
+            <span className={styles.argHintSpacer}>{argHint.text}</span>
+            <span className={styles.argHintText}>{argHint.hint}</span>
+          </div>
+        )}
         {!isFocused &&
           !disabled &&
           suggestions.length === 0 &&
