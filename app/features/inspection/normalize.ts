@@ -1,16 +1,11 @@
 /**
- * Collapses the platform-specific `conductor capture-ui` shape into the
- * uniform `Capture` used by the renderer.
+ * Turn the raw `native-inspect` bundle into the `Capture` the renderer consumes.
  *
- * Conductor emits three different hierarchy envelopes:
- *   - iOS / tvOS: `{ axElement, depth }`             (single XCUIElement tree)
- *   - Android:    `{ xml, elements }`                (uiautomator flat + tree)
- *   - Web:        `{ ...playwrightVh, elements }`    (AX tree array)
- *
- * Per-node shapes also vary (frame casing, class vs type vs role, state
- * grouping). The renderer consumes a single `HierarchyNode` tree, so this
- * module absorbs the variance in one place. If conductor later unifies its
- * output, this file goes away — no call sites change.
+ * `native-inspect` already returns a single, typed Apple view tree, so — unlike
+ * the old multi-platform `capture-ui` normalizer — there is no heterogeneity to
+ * collapse. This module only: wraps the `windows[]` array into one root, fills
+ * defaults defensively (so a partial/garbled payload shows the empty state
+ * instead of crashing), and guarantees every node has a `children` array.
  */
 
 import type {
@@ -18,286 +13,209 @@ import type {
   CaptureDevice,
   Frame,
   HierarchyNode,
-  NodeState,
   RawCapture,
 } from "./types";
 
-// XCUIElementType raw values → human-readable type string.
-// Subset — conductor's own `IOS_TYPE_TO_TRAIT` covers the user-facing ones;
-// for anything else we render `UIElement_<n>` so the tree stays readable.
-const IOS_ELEMENT_TYPE_NAMES: Record<number, string> = {
-  0: "Any",
-  3: "Application",
-  4: "Window",
-  5: "Sheet",
-  6: "Drawer",
-  7: "Alert",
-  8: "UIImageView",
-  9: "UIButton",
-  10: "RadioButton",
-  14: "CheckBox",
-  15: "DisclosureTriangle",
-  23: "UISlider",
-  24: "Page",
-  25: "Tab",
-  40: "UISwitch",
-  44: "Toggle",
-  47: "NavigationBar",
-  48: "UILabel",
-  49: "UITextField",
-  50: "UISecureTextField",
-  51: "DatePicker",
-  52: "UITextView",
-  53: "Menu",
-  54: "Link",
-  55: "Outline",
-  60: "WebView",
-  70: "UITable",
-  73: "UIPicker",
-  74: "UIPickerView",
-  75: "UITableCell",
-  78: "UIScrollView",
-  82: "UIView",
-  90: "UIStepper",
-  93: "UISearchField",
-};
-
-function iosTypeName(code: unknown): string {
-  if (typeof code !== "number") {
-    return "UIElement";
-  }
-
-  return IOS_ELEMENT_TYPE_NAMES[code] ?? `UIElement_${code}`;
+function num(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
 }
 
-function normalizeFrame(source: unknown): Frame {
+function str(v: unknown): string | undefined {
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+function bool(v: unknown): boolean | undefined {
+  return v === true ? true : undefined;
+}
+
+function frame(source: unknown): Frame {
   const raw = (source ?? {}) as Record<string, unknown>;
-  const pick = (...keys: string[]): number => {
-    for (const key of keys) {
-      const v = raw[key];
-      if (typeof v === "number") {
-        return v;
-      }
-    }
-
-    return 0;
-  };
-  // iOS bounds ({X,Y,Width,Height}) · Web Playwright ({x,y,width,height}) ·
-  // Android uiautomator ({x1,y1,x2,y2}).
-  if ("x1" in raw) {
-    const x1 = pick("x1");
-    const y1 = pick("y1");
-    const x2 = pick("x2");
-    const y2 = pick("y2");
-
-    return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
-  }
 
   return {
-    x: pick("x", "X"),
-    y: pick("y", "Y"),
-    w: pick("w", "width", "Width"),
-    h: pick("h", "height", "Height"),
+    x: num(raw.x) ?? 0,
+    y: num(raw.y) ?? 0,
+    w: num(raw.w) ?? 0,
+    h: num(raw.h) ?? 0,
   };
 }
 
-function normalizeState(node: Record<string, unknown>): NodeState {
-  const state = node.state as Record<string, unknown> | undefined;
-  if (state && typeof state === "object") {
-    return {
-      enabled: Boolean(state.enabled),
-      selected: Boolean(state.selected),
-      focused: Boolean(state.focused),
-    };
-  }
-
-  // iOS puts these at the node root.
-  return {
-    enabled: Boolean(node.enabled),
-    selected: Boolean(node.selected),
-    focused: Boolean(node.hasFocus ?? node.focused),
-  };
+function optionalFrame(source: unknown): Frame | undefined {
+  return source && typeof source === "object" ? frame(source) : undefined;
 }
 
-function asString(v: unknown): string | undefined {
-  if (typeof v !== "string" || v.length === 0) {
-    return undefined;
-  }
-
-  return v;
-}
-
-function asStringArray(v: unknown): string[] | undefined {
+function stringArray(v: unknown): string[] | undefined {
   if (!Array.isArray(v)) {
     return undefined;
   }
-  const strings = v.filter((x): x is string => typeof x === "string");
+  const out = v.filter((x): x is string => typeof x === "string");
 
-  return strings.length > 0 ? strings : undefined;
+  return out.length > 0 ? out : undefined;
 }
 
-interface NormalizeOpts {
-  defaultFallbackType: string;
-  parentPath: string | null;
+function numberArray(v: unknown): number[] | undefined {
+  if (!Array.isArray(v)) {
+    return undefined;
+  }
+  const out = v.filter((x): x is number => typeof x === "number");
+
+  return out.length > 0 ? out : undefined;
+}
+
+function font(v: unknown): HierarchyNode["font"] {
+  if (!v || typeof v !== "object") {
+    return undefined;
+  }
+  const raw = v as Record<string, unknown>;
+
+  return {
+    name: str(raw.name) ?? "",
+    family: str(raw.family) ?? "",
+    size: num(raw.size) ?? 0,
+    bold: bool(raw.bold),
+    italic: bool(raw.italic),
+    weight: num(raw.weight),
+  };
+}
+
+function reactInfo(v: unknown): HierarchyNode["rn"] {
+  if (!v || typeof v !== "object") {
+    return undefined;
+  }
+  const raw = v as Record<string, unknown>;
+  const rn = {
+    reactTag: str(raw.reactTag),
+    nativeID: str(raw.nativeID),
+    testID: str(raw.testID),
+  };
+
+  return rn.reactTag || rn.nativeID || rn.testID ? rn : undefined;
+}
+
+function image(v: unknown): HierarchyNode["image"] {
+  if (!v || typeof v !== "object") {
+    return undefined;
+  }
+  const raw = v as Record<string, unknown>;
+
+  return {
+    w: num(raw.w) ?? 0,
+    h: num(raw.h) ?? 0,
+    scale: num(raw.scale) ?? 1,
+    name: str(raw.name),
+  };
+}
+
+function anchor(v: unknown): HierarchyNode["anchorPoint"] {
+  if (!v || typeof v !== "object") {
+    return undefined;
+  }
+  const raw = v as Record<string, unknown>;
+  const x = num(raw.x);
+  const y = num(raw.y);
+
+  return x !== undefined && y !== undefined ? { x, y } : undefined;
 }
 
 function normalizeNode(
   raw: Record<string, unknown>,
-  platform: CaptureDevice["platform"],
-  opts: NormalizeOpts,
-  fallbackIndex: number,
+  depth: number,
 ): HierarchyNode {
-  // Prefer conductor's nodeId; synthesize path if absent.
-  const rawId = asString(raw.nodeId);
-  const id =
-    rawId ??
-    (opts.parentPath === null
-      ? String(fallbackIndex)
-      : `${opts.parentPath}.${fallbackIndex}`);
-
-  let type: string;
-  if (platform === "ios" || platform === "tvos") {
-    type = iosTypeName(raw.elementType);
-  } else if (platform === "android") {
-    type = asString(raw.class) ?? opts.defaultFallbackType;
-  } else {
-    type = asString(raw.role) ?? opts.defaultFallbackType;
-  }
-
-  const label =
-    asString(raw.label) ??
-    asString(raw.accessibilityLabel) ??
-    asString(raw.text) ??
-    asString(raw.contentDescription) ??
-    asString(raw.name) ??
-    asString(raw.title);
-
-  const identifier =
-    asString(raw.identifier) ??
-    asString(raw.accessibilityIdentifier) ??
-    asString(raw.resourceId);
-
-  const hint =
-    asString(raw.hint) ??
-    asString(raw.accessibilityHint) ??
-    asString(raw.hintText);
-
-  const value =
-    asString(raw.value) ??
-    asString(raw.accessibilityValue) ??
-    asString(raw.placeholderValue);
-
-  const role = asString(raw.role) ?? asString(raw.roleDescription);
-
   const children: HierarchyNode[] = [];
-  const rawChildren = raw.children;
-  if (Array.isArray(rawChildren)) {
-    rawChildren.forEach((c, i) => {
-      if (c && typeof c === "object") {
+  if (Array.isArray(raw.children)) {
+    for (const child of raw.children) {
+      if (child && typeof child === "object") {
         children.push(
-          normalizeNode(
-            c as Record<string, unknown>,
-            platform,
-            { defaultFallbackType: opts.defaultFallbackType, parentPath: id },
-            i,
-          ),
+          normalizeNode(child as Record<string, unknown>, depth + 1),
         );
       }
-    });
+    }
   }
 
   return {
-    id,
-    type,
-    frame: normalizeFrame(raw.frame ?? raw.bounds),
+    id: str(raw.id) ?? `node_${depth}_${children.length}`,
+    class: str(raw.class) ?? "UIView",
+    frame: frame(raw.frame),
+    absFrame: optionalFrame(raw.absFrame),
+    depth: num(raw.depth) ?? depth,
+    z: num(raw.z),
+    alpha: num(raw.alpha),
+    hidden: bool(raw.hidden),
+    accessibilityIdentifier: str(raw.accessibilityIdentifier),
+    accessibilityLabel: str(raw.accessibilityLabel),
+    backgroundColor: str(raw.backgroundColor),
+    textColor: str(raw.textColor),
+    tintColor: str(raw.tintColor),
+    titleColor: str(raw.titleColor),
+    text: typeof raw.text === "string" ? raw.text : undefined,
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    placeholder: str(raw.placeholder),
+    font: font(raw.font),
+    image: image(raw.image),
+    enabled: typeof raw.enabled === "boolean" ? raw.enabled : undefined,
+    cornerRadius: num(raw.cornerRadius),
+    maskedCorners: num(raw.maskedCorners),
+    masksToBounds: bool(raw.masksToBounds),
+    borderWidth: num(raw.borderWidth),
+    borderColor: str(raw.borderColor),
+    shadowOpacity: num(raw.shadowOpacity),
+    shadowRadius: num(raw.shadowRadius),
+    shadowColor: str(raw.shadowColor),
+    gradientColors: stringArray(raw.gradientColors),
+    transform3D: numberArray(raw.transform3D),
+    anchorPoint: anchor(raw.anchorPoint),
+    hasMask: bool(raw.hasMask),
+    rn: reactInfo(raw.rn),
+    truncated: num(raw.truncated),
     children,
-    label,
-    identifier,
-    hint,
-    value,
-    role,
-    traits: asStringArray(raw.traits),
-    state: normalizeState(raw),
-    accessibilityOrder:
-      typeof raw.accessibilityOrder === "number"
-        ? raw.accessibilityOrder
-        : null,
-    isAccessibilityElement: Boolean(raw.isAccessibilityElement),
   };
 }
 
 function syntheticRoot(
-  elements: HierarchyNode[],
+  children: HierarchyNode[],
   device: CaptureDevice,
-  typeLabel: string,
 ): HierarchyNode {
   return {
-    id: "root",
-    type: typeLabel,
+    id: "windows",
+    class: "Windows",
     frame: { x: 0, y: 0, w: device.width, h: device.height },
-    children: elements,
-    isAccessibilityElement: false,
-    accessibilityOrder: null,
-    state: { enabled: true, selected: false, focused: false },
+    absFrame: { x: 0, y: 0, w: device.width, h: device.height },
+    depth: 0,
+    children,
   };
 }
 
 /**
- * Convert `conductor capture-ui --json` output to the uniform `Capture` shape
- * consumed by the renderer. Unknown input is tolerated — anything that fails
- * to parse returns an empty synthetic root so the UI shows the empty state
- * instead of crashing.
+ * Convert a `native-inspect` bundle to the uniform `Capture`. A payload with no
+ * usable windows yields an empty synthetic root so the UI shows the empty state.
  */
 export function normalizeCapture(raw: RawCapture): Capture {
-  const device = raw.device;
-  const platform = device.platform;
-  const envelope = raw.hierarchy ?? {};
-
-  let root: HierarchyNode;
-  if (platform === "ios" || platform === "tvos") {
-    const axElement = envelope.axElement as Record<string, unknown> | undefined;
-    if (axElement && typeof axElement === "object") {
-      root = normalizeNode(
-        axElement,
-        platform,
-        { defaultFallbackType: "UIView", parentPath: null },
-        0,
-      );
-    } else {
-      root = syntheticRoot([], device, "UIWindow");
+  const windows = Array.isArray(raw.inspect?.windows)
+    ? raw.inspect.windows
+    : [];
+  const roots: HierarchyNode[] = [];
+  for (const w of windows) {
+    if (w && typeof w === "object") {
+      roots.push(normalizeNode(w as Record<string, unknown>, 0));
     }
-  } else {
-    const fallbackType =
-      platform === "android" ? "android.view.ViewGroup" : "div";
-    const elements = (envelope.elements ?? []) as unknown;
-    const normalized: HierarchyNode[] = [];
-    if (Array.isArray(elements)) {
-      elements.forEach((el, i) => {
-        if (el && typeof el === "object") {
-          normalized.push(
-            normalizeNode(
-              el as Record<string, unknown>,
-              platform,
-              { defaultFallbackType: fallbackType, parentPath: null },
-              i,
-            ),
-          );
-        }
-      });
-    }
-    root =
-      normalized.length === 1
-        ? normalized[0]
-        : syntheticRoot(normalized, device, fallbackType);
   }
 
+  const hierarchy =
+    roots.length === 1 ? roots[0] : syntheticRoot(roots, raw.device);
+
   return {
-    version: raw.version,
     capturedAt: raw.capturedAt,
-    device,
+    device: raw.device,
     screenshot: raw.screenshot,
-    capabilities: raw.capabilities,
-    a11ySnapshot: raw.a11ySnapshot,
-    hierarchy: root,
+    nodeCount: num(raw.inspect?.nodeCount) ?? countNodes(hierarchy),
+    hierarchy,
   };
+}
+
+function countNodes(root: HierarchyNode): number {
+  let n = 1;
+  for (const child of root.children) {
+    n += countNodes(child);
+  }
+
+  return n;
 }

@@ -2,9 +2,14 @@ import type { Capture, HierarchyNode } from "./types";
 import { describe, expect, it } from "vitest";
 import sampleCapture from "./__fixtures__/sample-capture.json";
 import {
+  ancestorIds,
+  buildParentMap,
+  collectVisibleIds,
   findNodeById,
   flattenHierarchy,
   isVisibleLeaf,
+  nodeHint,
+  nodeRect,
   resolveNodeVisual,
 } from "./resolveNodeVisual";
 
@@ -12,98 +17,98 @@ const capture = sampleCapture as unknown as Capture;
 
 function node(partial: Partial<HierarchyNode> & { id: string }): HierarchyNode {
   return {
-    type: "UIView",
+    class: "UIView",
     frame: { x: 0, y: 0, w: 10, h: 10 },
+    depth: 0,
     children: [],
-    isAccessibilityElement: false,
-    accessibilityOrder: null,
-    state: { enabled: true, selected: false, focused: false },
     ...partial,
   };
 }
 
 describe("resolveNodeVisual", () => {
-  it("returns outline for generic container views", () => {
-    const n = node({
-      id: "0",
-      type: "UIView",
-      children: [node({ id: "0.0" })],
-    });
-    expect(resolveNodeVisual(n, capture)).toEqual({ kind: "outline" });
+  it("returns a fill with the real background color", () => {
+    const n = node({ id: "0x1", backgroundColor: "#007AFFFF" });
+    expect(resolveNodeVisual(n)).toEqual({ kind: "fill", color: "#007AFFFF" });
   });
 
-  it("returns crop for visible leaf types", () => {
-    const n = node({
-      id: "0",
-      type: "UILabel",
-      frame: { x: 1, y: 2, w: 3, h: 4 },
-    });
-    const result = resolveNodeVisual(n, capture);
-    expect(result).toEqual({
-      kind: "crop",
-      bounds: { x: 1, y: 2, w: 3, h: 4 },
-    });
-  });
-
-  it("prefers pixelSource image when the capability is enabled", () => {
-    const n = node({
-      id: "0",
-      type: "UILabel",
-      pixelSource: { kind: "image", url: "blob:abc" },
-    });
-    const capable: Capture = {
-      ...capture,
-      capabilities: { perViewPixels: true, depthData: false },
-    };
-    expect(resolveNodeVisual(n, capable)).toEqual({
-      kind: "image",
-      url: "blob:abc",
-    });
-  });
-
-  it("ignores pixelSource when capability flag is off", () => {
-    const n = node({
-      id: "0",
-      type: "UILabel",
-      pixelSource: { kind: "image", url: "blob:abc" },
-    });
-    expect(resolveNodeVisual(n, capture).kind).toBe("crop");
+  it("returns outline for nodes without a background color", () => {
+    const n = node({ id: "0x1", class: "UIView" });
+    expect(resolveNodeVisual(n)).toEqual({ kind: "outline" });
   });
 });
 
-describe("isVisibleLeaf", () => {
-  it("true for web input/img/button", () => {
-    for (const type of ["img", "button", "input"]) {
-      expect(isVisibleLeaf(node({ id: "x", type }))).toBe(true);
-    }
-  });
-
-  it("true for a child-less node that carries text", () => {
+describe("isVisibleLeaf + nodeRect", () => {
+  it("leaf ⇔ no children", () => {
+    expect(isVisibleLeaf(node({ id: "x" }))).toBe(true);
     expect(
-      isVisibleLeaf(node({ id: "x", type: "UIView", label: "Hello" })),
-    ).toBe(true);
-  });
-
-  it("false for containers with children", () => {
-    expect(
-      isVisibleLeaf(
-        node({ id: "x", type: "UIView", children: [node({ id: "x.0" })] }),
-      ),
+      isVisibleLeaf(node({ id: "x", children: [node({ id: "x.0" })] })),
     ).toBe(false);
+  });
+
+  it("prefers absFrame over the local frame", () => {
+    const n = node({
+      id: "x",
+      frame: { x: 0, y: 0, w: 5, h: 5 },
+      absFrame: { x: 10, y: 20, w: 30, h: 40 },
+    });
+    expect(nodeRect(n)).toEqual({ x: 10, y: 20, w: 30, h: 40 });
+    expect(nodeRect(node({ id: "y" }))).toEqual({ x: 0, y: 0, w: 10, h: 10 });
   });
 });
 
 describe("flattenHierarchy + findNodeById", () => {
   it("flattens the fixture depth-first", () => {
     const flat = flattenHierarchy(capture.hierarchy);
-    expect(flat[0].id).toBe("0");
-    expect(flat.some((n) => n.id === "0.0.3")).toBe(true);
-    expect(flat.length).toBeGreaterThan(5);
+    expect(flat[0].id).toBe("0x1");
+    expect(flat.some((n) => n.id === "0x5")).toBe(true);
+    expect(flat).toHaveLength(6);
   });
 
   it("findNodeById walks the tree", () => {
-    const found = findNodeById(capture.hierarchy, "0.0.3");
-    expect(found?.label).toBe("Sign In");
+    const found = findNodeById(capture.hierarchy, "0x5");
+    expect(found?.title).toBe("Sign In");
     expect(findNodeById(capture.hierarchy, "does-not-exist")).toBeNull();
+  });
+});
+
+describe("nodeHint", () => {
+  it("prefers text, then identifier, then image, then background", () => {
+    expect(nodeHint(node({ id: "1", text: "Hello" }))).toBe('"Hello"');
+    expect(nodeHint(node({ id: "1", title: "Sign In" }))).toBe('"Sign In"');
+    expect(nodeHint(node({ id: "1", rn: { testID: "submit-btn" } }))).toBe(
+      "#submit-btn",
+    );
+    expect(nodeHint(node({ id: "1", accessibilityIdentifier: "email" }))).toBe(
+      "#email",
+    );
+    expect(
+      nodeHint(
+        node({ id: "1", image: { w: 40, h: 40, scale: 2, name: "avatar" } }),
+      ),
+    ).toBe("img:avatar");
+    expect(nodeHint(node({ id: "1", backgroundColor: "#112233FF" }))).toBe(
+      "#112233FF",
+    );
+  });
+
+  it("returns undefined for an anonymous node and skips transparent fills", () => {
+    expect(nodeHint(node({ id: "1", class: "UIView" }))).toBeUndefined();
+    expect(
+      nodeHint(node({ id: "1", backgroundColor: "#11223300" })),
+    ).toBeUndefined();
+  });
+});
+
+describe("parent map ancestry (opaque ids)", () => {
+  it("resolves strict ancestors from the tree, not the id string", () => {
+    const parents = buildParentMap(capture.hierarchy);
+    expect(ancestorIds(parents, "0x5")).toEqual(["0x2", "0x1"]);
+    expect(ancestorIds(parents, "0x1")).toEqual([]);
+  });
+
+  it("collectVisibleIds unions ids with their ancestors", () => {
+    const parents = buildParentMap(capture.hierarchy);
+    const visible = collectVisibleIds(parents, ["0x5"]);
+    expect(visible).toEqual(new Set(["0x5", "0x2", "0x1"]));
   });
 });

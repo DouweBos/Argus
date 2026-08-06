@@ -66,10 +66,12 @@ export function RuntimeView({
   } = useRuntimeViewSimulatorState();
   const activeToolId = useActiveToolId("right");
   const activeDeviceKey = useActiveDeviceKey(sessionId, platform);
-  const inspectorEnabled = useEffectiveToolEnabled("device-inspector");
+  const toolInspectorEnabled = useEffectiveToolEnabled("device-inspector");
+  // Native inspection is Apple-only (iOS/iPadOS/tvOS all run as iOS sims here).
+  const inspectorEnabled = toolInspectorEnabled && platform === "ios";
 
   // Modes contributed by tools. `Simulate` is core. `Inspect` is contributed
-  // by `device-inspector`; when the tool is off we hide the toggle and
+  // by `device-inspector` on Apple platforms; otherwise we hide the toggle and
   // ensure the active mode falls back to simulate.
   const runtimeModeOptions = useMemo(
     () =>
@@ -270,7 +272,7 @@ export function RuntimeView({
               className={styles.sidePanelResizer}
               onMouseDown={onSidePanelResize}
             />
-            <NodeMetadataPanel />
+            <NodeMetadataPanel deviceKey={activeDeviceKey} />
           </div>
         )}
       </div>

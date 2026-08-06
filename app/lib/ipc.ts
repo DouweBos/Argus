@@ -1715,6 +1715,23 @@ export const simulatorTouch = (
 export const simulatorButton = (udid: string, button: string): Promise<void> =>
   invoke("simulator_button", { udid, button });
 
+export interface DeviceInputEndpoint {
+  device: string;
+  inputPort: number;
+  platform: string;
+  url: string;
+}
+
+/**
+ * Resolve conductor's streaming-input WebSocket for a device (starting it if
+ * needed). Null when conductor can't provide one — the caller falls back to the
+ * native simulator/emulator input path.
+ */
+export const deviceInputEndpoint = (
+  deviceKey: string,
+): Promise<DeviceInputEndpoint | null> =>
+  invoke("device_input_endpoint", { deviceKey });
+
 /**
  * Open a URL / deep link on the given device via `conductor open-link`.
  * `deviceKey` is the iOS UDID, Android serial, or web browser deviceId.
@@ -1855,6 +1872,53 @@ export const runConductorCommand = (
 
 export const inspectionCapture = <T = unknown>(deviceKey: string): Promise<T> =>
   invoke("inspection_capture", { deviceKey });
+
+export interface InjectionProbe {
+  foregroundApp: string | null;
+  injected: boolean;
+  isSpringboard: boolean;
+}
+
+export const inspectionProbe = (deviceKey: string): Promise<InjectionProbe> =>
+  invoke("inspection_probe", { deviceKey });
+
+export interface InstalledApp {
+  bundleId: string;
+  name: string;
+}
+
+export const inspectionListApps = (
+  deviceKey: string,
+): Promise<InstalledApp[]> => invoke("inspection_list_apps", { deviceKey });
+
+export const inspectionLaunchInjected = (
+  deviceKey: string,
+  bundleId: string,
+): Promise<{ ok: boolean }> =>
+  invoke("inspection_launch_injected", { deviceKey, bundleId });
+
+export const inspectionSetProperty = (
+  deviceKey: string,
+  nodeId: string,
+  key: string,
+  value: string,
+): Promise<{ ok: boolean }> =>
+  invoke("inspection_set_property", { deviceKey, nodeId, key, value });
+
+export interface NodeProps {
+  class?: string;
+  id?: string;
+  isFabric?: boolean;
+  note?: string;
+  props?: Record<string, unknown> | null;
+  rawProps?: Record<string, unknown> | null;
+  status?: string;
+}
+
+export const inspectionNodeProps = (
+  deviceKey: string,
+  nodeId: string,
+): Promise<NodeProps> => invoke("inspection_node_props", { deviceKey, nodeId });
 
 // Debug panel
 export interface DebugCommandResult {

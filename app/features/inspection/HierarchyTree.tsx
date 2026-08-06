@@ -2,7 +2,13 @@ import type { HierarchyNode } from "./types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
 import styles from "./HierarchyTree.module.css";
-import { findSearchMatches, matchesSearch } from "./resolveNodeVisual";
+import {
+  ancestorIds,
+  buildParentMap,
+  collectVisibleIds,
+  findSearchMatches,
+  matchesSearch,
+} from "./resolveNodeVisual";
 import {
   focusOnNode,
   selectNode,
@@ -22,6 +28,10 @@ export function HierarchyTree({ root }: HierarchyTreeProps) {
   }));
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // Node ids are opaque pointers, not dotted paths, so ancestry comes from a
+  // parent map walked from the tree, not from splitting the id string.
+  const parentMap = useMemo(() => buildParentMap(root), [root]);
+
   // Pre-compute the set of ancestor ids for every search match so their
   // rows stay visible while the user is filtering.
   const searchAncestorIds = useMemo(() => {
@@ -29,16 +39,12 @@ export function HierarchyTree({ root }: HierarchyTreeProps) {
       return null;
     }
     const matches = findSearchMatches(root, searchQuery);
-    const set = new Set<string>();
-    for (const match of matches) {
-      const pieces = match.id.split(".");
-      for (let i = 1; i <= pieces.length; i += 1) {
-        set.add(pieces.slice(0, i).join("."));
-      }
-    }
 
-    return set;
-  }, [root, searchQuery]);
+    return collectVisibleIds(
+      parentMap,
+      matches.map((m) => m.id),
+    );
+  }, [root, parentMap, searchQuery]);
 
   // Strict ancestors of the selected node are force-expanded so clicking a
   // box reveals its row. The selected node itself is NOT auto-expanded —
@@ -46,10 +52,8 @@ export function HierarchyTree({ root }: HierarchyTreeProps) {
   const effectiveExpanded = useMemo(() => {
     const next: Record<string, boolean> = { ...expanded };
     if (selectedNodeId) {
-      const pieces = selectedNodeId.split(".");
-      // < pieces.length ⇒ ancestors only, excluding the node itself.
-      for (let i = 1; i < pieces.length; i += 1) {
-        next[pieces.slice(0, i).join(".")] = true;
+      for (const id of ancestorIds(parentMap, selectedNodeId)) {
+        next[id] = true;
       }
     }
     if (searchAncestorIds) {
@@ -59,7 +63,7 @@ export function HierarchyTree({ root }: HierarchyTreeProps) {
     }
 
     return next;
-  }, [expanded, selectedNodeId, searchAncestorIds]);
+  }, [expanded, selectedNodeId, parentMap, searchAncestorIds]);
 
   useEffect(() => {
     if (!selectedNodeId || !containerRef.current) {
@@ -190,13 +194,11 @@ function TreeNode({
   const isSelected = selectedNodeId === node.id;
   const hasSearch = searchQuery.trim().length > 0;
   const isMatch = hasSearch && matchesSearch(node, searchQuery);
+  const rowLabel = node.text ?? node.title ?? node.accessibilityLabel;
 
   const classes = [styles.row];
   if (isSelected) {
     classes.push(styles.rowSelected);
-  }
-  if (node.state.focused) {
-    classes.push(styles.rowFocused);
   }
   if (hasSearch && !isMatch) {
     classes.push(styles.rowDimmed);
@@ -237,25 +239,18 @@ function TreeNode({
         )}
         <span className={styles.type}>
           {hasSearch ? (
-            <HighlightedText text={node.type} query={searchQuery} />
+            <HighlightedText text={node.class} query={searchQuery} />
           ) : (
-            node.type
+            node.class
           )}
         </span>
-        {node.state.focused && (
-          <span
-            className={styles.focusedDot}
-            title="Currently focused on device"
-            aria-label="Currently focused on device"
-          />
-        )}
-        {node.label ? (
+        {rowLabel ? (
           <span className={styles.label}>
             &ldquo;
             {hasSearch ? (
-              <HighlightedText text={node.label} query={searchQuery} />
+              <HighlightedText text={rowLabel} query={searchQuery} />
             ) : (
-              node.label
+              rowLabel
             )}
             &rdquo;
           </span>
