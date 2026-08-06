@@ -143,7 +143,7 @@ export function getActiveConductorOverrideDir(): string | null {
 }
 
 /** Read the version baked into the bundled tree (its `.version` marker). */
-function readBundledVersion(): string | null {
+export function readBundledVersion(): string | null {
   return readMarker(resolveAssetPath("conductor"));
 }
 

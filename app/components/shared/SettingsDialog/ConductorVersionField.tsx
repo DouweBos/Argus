@@ -1,7 +1,8 @@
 /**
  * Settings → Tools → Conductor version. Lets the user pin a conductor version
  * that Argus installs into `~/.argus/conductor/<version>/` at runtime — no app
- * update required. Blank reverts to the version bundled with the app.
+ * update required. The picker lists npm releases at or above the bundled one;
+ * "bundled" reverts to the version shipped with the app.
  *
  * Main owns provisioning; this just reads status, pushes a version, and
  * reflects install progress pushed back over `conductor_status_changed`.
@@ -9,10 +10,11 @@
 
 import type { ConductorStatus } from "../../../lib/types";
 import { useEffect, useState } from "react";
-import { Button, Input, SettingsScreenField, Spinner } from "@argus/peacock";
+import { SettingsScreenField, Select, Spinner } from "@argus/peacock";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   getConductorStatusIpc,
+  listConductorVersionsIpc,
   setConductorVersionIpc,
 } from "../../../lib/ipc";
 import styles from "./ConductorVersionField.module.css";
@@ -21,16 +23,28 @@ const STATUS_EVENT = "conductor_status_changed";
 
 export function ConductorVersionField() {
   const [status, setStatus] = useState<ConductorStatus | null>(null);
-  const [draft, setDraft] = useState("");
+  const [versions, setVersions] = useState<string[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     getConductorStatusIpc().then((s) => {
       if (active) {
         setStatus(s);
-        setDraft(s.overrideVersion ?? "");
       }
     });
+    listConductorVersionsIpc().then(
+      (v) => {
+        if (active) {
+          setVersions(v);
+        }
+      },
+      (e: unknown) => {
+        if (active) {
+          setListError(typeof e === "string" ? e : String(e));
+        }
+      },
+    );
 
     return () => {
       active = false;
@@ -41,59 +55,49 @@ export function ConductorVersionField() {
 
   const installing = status?.state === "installing";
   const pinned = status?.overrideVersion ?? "";
-  const dirty = draft.trim() !== pinned;
+  // A pinned version that predates this build won't be in the fetched list —
+  // keep it selectable so the dropdown still reflects reality.
+  const options =
+    pinned && !versions.includes(pinned) ? [pinned, ...versions] : versions;
 
-  const apply = () => {
-    if (installing) {
-      return;
-    }
-    setConductorVersionIpc(draft.trim() || null).then(setStatus);
-  };
-
-  const reset = () => {
-    setDraft("");
-    setConductorVersionIpc(null).then((s) => {
-      setStatus(s);
-    });
+  const select = (version: string) => {
+    setConductorVersionIpc(version || null).then(setStatus);
   };
 
   return (
     <SettingsScreenField
-      caption="Pin the conductor CLI version agents use. Installed on demand from npm into ~/.argus — no app update needed. Leave blank to use the version bundled with Argus."
+      caption="Pin the conductor CLI version agents use. Installed on demand from npm into ~/.argus — no app update needed. Only versions at or above the bundled one are listed."
       label="Conductor version"
     >
       <div className={styles.row}>
-        <Input
-          disabled={installing}
+        <Select
+          disabled={installing || (options.length === 0 && !pinned)}
           mono
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              apply();
-            }
-          }}
-          placeholder={status?.bundledVersion ?? "0.0.0"}
-          value={draft}
-        />
-        <Button
-          disabled={!dirty || installing}
-          onClick={apply}
-          variant="secondary"
+          onChange={(e) => select(e.target.value)}
+          value={pinned}
         >
-          {installing ? "Installing…" : "Apply"}
-        </Button>
-        {pinned && !installing && (
-          <Button onClick={reset} variant="ghost">
-            Use bundled
-          </Button>
-        )}
+          <option value="">
+            Bundled{status?.bundledVersion ? ` (${status.bundledVersion})` : ""}
+          </option>
+          {options.map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+        </Select>
       </div>
-      <StatusLine status={status} />
+      <StatusLine listError={listError} status={status} />
     </SettingsScreenField>
   );
 }
 
-function StatusLine({ status }: { status: ConductorStatus | null }) {
+function StatusLine({
+  listError,
+  status,
+}: {
+  listError: string | null;
+  status: ConductorStatus | null;
+}) {
   if (!status) {
     return null;
   }
@@ -111,6 +115,9 @@ function StatusLine({ status }: { status: ConductorStatus | null }) {
         {status.bundledVersion}.
       </p>
     );
+  }
+  if (listError) {
+    return <p className={`${styles.status} ${styles.error}`}>{listError}</p>;
   }
   if (status.overrideVersion && status.state === "ready") {
     return (
