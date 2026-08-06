@@ -89,10 +89,10 @@ class AppState {
   webBrowserReservations = new Map<string, WebBrowserReservation>();
 
   /**
-   * Floating always-on-top simulator popout windows, keyed by the simulator
-   * UDID they mirror.
+   * Floating always-on-top device popout windows, keyed by `platform:deviceKey`
+   * — a UDID and an Android serial can collide, and video inputs have neither.
    */
-  simulatorPopouts = new Map<string, BrowserWindow>();
+  devicePopouts = new Map<string, BrowserWindow>();
 
   /**
    * Agent popout windows (dragged out of the tab bar), keyed by the agent_id

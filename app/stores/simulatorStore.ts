@@ -479,20 +479,25 @@ export function useWebBrowserSimulatorState() {
 }
 
 /**
- * Return the active device key for the given session + platform (the UDID
- * for iOS, the serial for Android), or null. Used by the runtime live log to
- * know which device's conductor events to show.
+ * Return the active device key for the given session + platform (the UDID for
+ * iOS, the serial for Android, the `deviceId` for a video input), or null.
+ * Used by the runtime live log to know which device's conductor events to
+ * show, and by the popout button to know what to detach.
  */
 export function useActiveDeviceKey(
   sessionId: string | null,
   platform: Platform,
 ): string | null {
   return useSimulatorStore((s) => {
+    const key = sessionId ?? "__global__";
     if (platform === "ios") {
-      return s.selectedUdidBySession[sessionId ?? "__global__"] ?? null;
+      return s.selectedUdidBySession[key] ?? null;
     }
     if (platform === "android") {
-      return s.selectedAndroidBySession[sessionId ?? "__global__"] ?? null;
+      return s.selectedAndroidBySession[key] ?? null;
+    }
+    if (platform === "video") {
+      return s.selectedVideoBySession[key] ?? null;
     }
 
     return null;

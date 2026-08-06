@@ -213,7 +213,7 @@ export function disconnectSimulator(udid: string): void {
     forceStopSimulatorCapture(udid);
   }
 
-  const popout = appState.simulatorPopouts.get(udid);
+  const popout = appState.devicePopouts.get(`ios:${udid}`);
   if (popout && !popout.isDestroyed()) {
     popout.close();
   }

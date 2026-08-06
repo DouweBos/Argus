@@ -12,7 +12,7 @@ import {
   useVideoInputDevices,
   videoInputLabel,
 } from "../../hooks/useVideoInputDevices";
-import { bootSimulator, openSimulatorPopout, stopDevice } from "../../lib/ipc";
+import { bootSimulator, openDevicePopout, stopDevice } from "../../lib/ipc";
 import {
   MAX_TILE_SIZE,
   MIN_TILE_SIZE,
@@ -133,7 +133,11 @@ export function DevicesScreen() {
   const handlePopout =
     (d: DeviceInfo) => (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      openSimulatorPopout(d.deviceKey).catch(() => {
+      openDevicePopout({
+        platform: d.platform,
+        deviceKey: d.deviceKey,
+        name: d.name,
+      }).catch(() => {
         // best-effort — the backend logs failures
       });
     };
@@ -348,15 +352,17 @@ export function DevicesScreen() {
                           <Icons.DisconnectIcon size={11} />
                         </button>
                       )}
-                      <button
-                        className={styles.iconBtn}
-                        title="Open in floating window"
-                        type="button"
-                        onClick={handlePopout(d)}
-                      >
-                        <Icons.PopoutIcon size={11} />
-                      </button>
                     </>
+                  )}
+                  {d.platform !== "web" && (
+                    <button
+                      className={styles.iconBtn}
+                      title="Open in floating window"
+                      type="button"
+                      onClick={handlePopout(d)}
+                    >
+                      <Icons.PopoutIcon size={11} />
+                    </button>
                   )}
                 </td>
               </tr>

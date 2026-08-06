@@ -1620,12 +1620,19 @@ export const createRunTerminal = (
     ...(title != null && title !== "" && { title }),
   });
 
-// Simulator popout — opens the simulator view in a separate always-on-top window.
-export const openSimulatorPopout = (udid: string): Promise<void> =>
-  invoke("open_simulator_popout", { udid });
+// Device popout — opens a runtime target (iOS/Android simulator or video
+// input) in a separate always-on-top window. `name` is only needed for video
+// inputs, which are enumerated in the renderer and unknown to the backend.
+export const openDevicePopout = (args: {
+  deviceKey: string;
+  name?: string;
+  platform: DevicePlatform;
+}): Promise<void> => invoke("open_device_popout", args);
 
-export const closeSimulatorPopout = (udid: string): Promise<void> =>
-  invoke("close_simulator_popout", { udid });
+export const closeDevicePopout = (args: {
+  deviceKey: string;
+  platform: DevicePlatform;
+}): Promise<void> => invoke("close_device_popout", args);
 
 // Agent popout — detach an agent into its own window. The backend creates a
 // BrowserWindow that loads the renderer bundle with `?popout=agent` and
