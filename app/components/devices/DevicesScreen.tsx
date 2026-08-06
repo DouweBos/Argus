@@ -9,7 +9,7 @@ import {
   Slider,
 } from "@argus/peacock";
 import {
-  useVideoInputDevices,
+  useVideoInputDevicesState,
   videoInputLabel,
 } from "../../hooks/useVideoInputDevices";
 import { bootSimulator, openDevicePopout, stopDevice } from "../../lib/ipc";
@@ -59,7 +59,8 @@ interface MenuState {
 export function DevicesScreen() {
   useDevicePoller(3000);
   const backendDevices = useDevices();
-  const videoInputs = useVideoInputDevices();
+  const { devices: videoInputs, ready: videoInputsReady } =
+    useVideoInputDevicesState();
   const error = useDevicesError();
 
   // Video inputs (capture cards / cameras) live in the renderer — surface them
@@ -93,10 +94,14 @@ export function DevicesScreen() {
     [devices],
   );
 
-  // Drop grid selections whose device is no longer online/present.
+  // Drop grid selections whose device is no longer online/present. Wait for the
+  // async video-input enumeration, else remounting prunes every video input.
   useEffect(() => {
+    if (!videoInputsReady) {
+      return;
+    }
     pruneGridSelection(onlineDevices.map((d) => d.deviceKey));
-  }, [onlineDevices]);
+  }, [onlineDevices, videoInputsReady]);
 
   const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const interactiveSet = useMemo(
