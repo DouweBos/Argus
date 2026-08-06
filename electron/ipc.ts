@@ -143,6 +143,13 @@ import {
 } from "./services/github/prDetail";
 import { listInterestingPullRequests } from "./services/github/pullRequests";
 import { captureUi } from "./services/inspection/capture";
+import { setNodeProperty } from "./services/inspection/edit";
+import {
+  launchInjected,
+  listInstalledApps,
+  probeInjection,
+} from "./services/inspection/launcher";
+import { getNodeProps } from "./services/inspection/props";
 import {
   listRunnerOnboardingSteps,
   listRunners as listLlmRunners,
@@ -420,6 +427,7 @@ import {
   androidKeyboard,
   androidButton,
 } from "./services/simulator/android";
+import { getDeviceInputEndpoint } from "./services/simulator/deviceInput";
 import {
   checkIosTools,
   listSimulators,
@@ -1600,6 +1608,9 @@ export function registerIpcHandlers(): void {
   toolHandle("simulator_button", "device-control", (a) =>
     simulatorButton(a.udid as string, a.button as string),
   );
+  toolHandle("device_input_endpoint", "device-control", (a) =>
+    getDeviceInputEndpoint(a.deviceKey as string),
+  );
   toolHandle("device_open_link", "device-control", (a) =>
     openDeepLink(a.deviceKey as string, a.url as string),
   );
@@ -1909,6 +1920,26 @@ export function registerIpcHandlers(): void {
   );
   toolHandle("inspection_capture", "device-inspector", (a) =>
     captureUi({ deviceKey: a.deviceKey as string }),
+  );
+  toolHandle("inspection_probe", "device-inspector", (a) =>
+    probeInjection(a.deviceKey as string),
+  );
+  toolHandle("inspection_list_apps", "device-inspector", (a) =>
+    listInstalledApps(a.deviceKey as string),
+  );
+  toolHandle("inspection_launch_injected", "device-inspector", (a) =>
+    launchInjected(a.deviceKey as string, a.bundleId as string),
+  );
+  toolHandle("inspection_set_property", "device-inspector", (a) =>
+    setNodeProperty({
+      deviceKey: a.deviceKey as string,
+      nodeId: a.nodeId as string,
+      key: a.key as string,
+      value: a.value as string,
+    }),
+  );
+  toolHandle("inspection_node_props", "device-inspector", (a) =>
+    getNodeProps(a.deviceKey as string, a.nodeId as string),
   );
   toolHandle("run_conductor_command", "device-control", async (a) => {
     const deviceKey = a.deviceKey as string;

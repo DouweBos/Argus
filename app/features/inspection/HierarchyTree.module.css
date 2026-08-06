@@ -83,25 +83,6 @@
   font-family: var(--font-sans, inherit);
 }
 
-.rowFocused {
-  background: color-mix(in srgb, var(--warning) 8%, transparent);
-}
-
-.rowFocused:hover {
-  background: color-mix(in srgb, var(--warning) 14%, transparent);
-}
-
-.focusedDot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--warning);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--warning) 70%, transparent);
-  flex-shrink: 0;
-  margin-left: var(--space-1);
-}
-
 .rowDimmed {
   opacity: 0.35;
 }

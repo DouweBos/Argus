@@ -1,9 +1,11 @@
-import type { Capture, RendererMode } from "./types";
+import type { Capture, HierarchyNode, RendererMode } from "./types";
 import { FlatRenderer } from "./FlatRenderer";
 
 interface InspectionRendererProps {
   capture: Capture;
   mode?: RendererMode;
+  /** Subtree to render + hit-test (the focused node); defaults to the full tree. */
+  root?: HierarchyNode;
 }
 
 /**
@@ -14,10 +16,11 @@ interface InspectionRendererProps {
 export function InspectionRenderer({
   capture,
   mode = "2d",
+  root,
 }: InspectionRendererProps) {
   if (mode === "3d") {
     throw new Error("3D renderer not available in v1");
   }
 
-  return <FlatRenderer capture={capture} />;
+  return <FlatRenderer capture={capture} root={root} />;
 }

@@ -92,3 +92,101 @@
   color: var(--text-muted);
   font-size: var(--font-size-xs);
 }
+
+/* --- Live-edit controls (conductor native-set) --- */
+
+.savingHint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.editError {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-xs);
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
+  flex-shrink: 0;
+}
+
+.textInput,
+.numberInput,
+.hexInput {
+  width: 100%;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xs);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--font-size-xs);
+  outline: none;
+}
+
+.textInput:focus,
+.numberInput:focus,
+.hexInput:focus {
+  border-color: var(--accent);
+}
+
+.numberInput {
+  width: 88px;
+}
+
+.colorEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.colorPicker {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--border-radius-xs);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.hexInput {
+  width: 96px;
+}
+
+.toggle {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.propsBlock {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-xs);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font: var(--type-code);
+  white-space: pre;
+  tab-size: 2;
+}
+
+.propsNote {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-style: italic;
+}
+
+.managedHint {
+  color: var(--text-muted);
+  font-style: italic;
+}

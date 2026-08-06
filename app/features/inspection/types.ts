@@ -1,13 +1,12 @@
 /**
- * Data contract for `conductor capture-ui --json` and the inspection panel.
+ * Data contract for `conductor native-inspect --json` and the inspection panel.
  *
- * Mirrors the JSON shape emitted by the conductor CLI. Three extension seams:
- *   - `capabilities` flags so v2 can opt into per-view pixels / depth data
- *     without breaking v1 consumers.
- *   - `HierarchyNode.pixelSource` so individual nodes can carry their own
- *     rendered pixels later on.
- *   - `RendererMode` so the renderer abstraction can branch into a `'3d'`
- *     implementation without touching call sites.
+ * `native-inspect` reads the running iOS/tvOS app *in-process* (a dylib injected
+ * via `launch-app --inject`) and returns one already-unified Apple view tree
+ * with resolved colors, fonts, text, and layer visuals — so there's no
+ * per-platform heterogeneity to collapse. `absFrame`, `depth`, `z`, and per-node
+ * `native-snapshot` textures are the inputs a future 3D exploded-layer viewer
+ * consumes; `NodeVisual.image` is the seam it slots into.
  */
 
 export interface Frame {
@@ -17,23 +16,86 @@ export interface Frame {
   y: number;
 }
 
-export type DevicePlatform = "android" | "ios" | "tvos" | "web";
+/** Inspection is Apple-only; Android/Web are not offered. */
+export type DevicePlatform = "ios" | "tvos";
+
+/** UIFont detail resolved from a control or an attributed-text run. */
+export interface FontInfo {
+  bold?: boolean;
+  family: string;
+  italic?: boolean;
+  name: string;
+  size: number;
+  weight?: number;
+}
+
+/** React Native tag mapping so a node reads as its JSX component. */
+export interface ReactNativeInfo {
+  nativeID?: string;
+  reactTag?: string;
+  testID?: string;
+}
+
+/** UIImageView content metadata (native size + asset name). */
+export interface NodeImageInfo {
+  h: number;
+  name?: string;
+  scale: number;
+  w: number;
+}
 
 /**
- * Raw envelope emitted by `conductor capture-ui --json`. The hierarchy is
- * platform-specific and heterogeneous — iOS wraps the tree under `axElement`,
- * Android/Web return a flat `elements` array alongside a raw dump. The
- * `normalizeCapture` helper collapses this variance into the uniform
- * `Capture` shape consumed by the renderer.
+ * One UIView/CALayer node from `native-inspect`. Everything past
+ * id/class/frame/depth/children is optional — the bridge only emits a key when
+ * it carries signal (a non-default color, non-empty text, non-identity
+ * transform), so absence means "default", not "unknown".
  */
-export interface RawCapture {
-  a11ySnapshot: A11yEntry[];
-  capabilities: Capabilities;
-  capturedAt: string;
-  device: CaptureDevice;
-  hierarchy: Record<string, unknown>;
-  screenshot: CaptureScreenshot;
-  version: 1;
+export interface HierarchyNode {
+  /** Window-absolute rect — box position on the overlay + the 3D plane's rect. */
+  absFrame?: Frame;
+  accessibilityIdentifier?: string;
+  accessibilityLabel?: string;
+  alpha?: number;
+  anchorPoint?: { x: number; y: number };
+  /** `#RRGGBBAA`. */
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  children: HierarchyNode[];
+  /** Native class, e.g. `UIButton`, `RCTParagraphComponentView`. */
+  class: string;
+  cornerRadius?: number;
+  depth: number;
+  enabled?: boolean;
+  font?: FontInfo;
+  /** Local frame, relative to the superview. */
+  frame: Frame;
+  gradientColors?: string[];
+  hasMask?: boolean;
+  hidden?: boolean;
+  /** Stable within a launch; pointer-based, so it resets on relaunch. */
+  id: string;
+  image?: NodeImageInfo;
+  /** `CACornerMask` raw value when only some corners are rounded. */
+  maskedCorners?: number;
+  masksToBounds?: boolean;
+  placeholder?: string;
+  rn?: ReactNativeInfo;
+  shadowColor?: string;
+  shadowOpacity?: number;
+  shadowRadius?: number;
+  text?: string;
+  textColor?: string;
+  tintColor?: string;
+  /** UIButton title (distinct from `text` on labels/fields). */
+  title?: string;
+  titleColor?: string;
+  /** 16 row-major CATransform3D values, present only when non-identity. */
+  transform3D?: number[];
+  /** Subtree pruned at the bridge's depth/node cap; count of dropped subviews. */
+  truncated?: number;
+  /** Layer `zPosition` for sibling ordering (present only when non-zero). */
+  z?: number;
 }
 
 export interface CaptureDevice {
@@ -44,85 +106,48 @@ export interface CaptureDevice {
 }
 
 export interface CaptureScreenshot {
-  /** Base64-encoded image data. */
+  /** Base64-encoded PNG. */
   data: string;
   encoding: "png";
-  /** v1 always returns a single composite screenshot of the full screen. */
+  /** Full-screen composite from `native-screenshot`. */
   kind: "composite";
 }
 
-export interface Capabilities {
-  /** Future: per-frame depth buffer for 3D orbit. */
-  depthData: boolean;
-  /** Future: individual node pixel capture via an injected debug SDK. */
-  perViewPixels: boolean;
-}
-
-export interface NodeState {
-  enabled: boolean;
-  focused: boolean;
-  selected: boolean;
+/** Envelope emitted by `native-inspect`: `{ status, nodeCount, windows }`. */
+export interface RawInspect {
+  nodeCount?: number;
+  status?: string;
+  windows?: unknown[];
 }
 
 /**
- * Future extension seam: a node may carry its own rendered pixels (from an
- * injected debug SDK). v1 always omits this; the resolver ignores it unless
- * `capabilities.perViewPixels` is also true.
+ * Bundle the Argus backend assembles per inspect: the `native-inspect` tree plus
+ * an optional `native-screenshot` background. `normalizeCapture` turns it into
+ * the `Capture` the renderer consumes.
  */
-export interface NodePixelSource {
-  kind: "image";
-  url: string;
-}
-
-export interface HierarchyNode {
-  accessibilityOrder: number | null;
-  children: HierarchyNode[];
-  frame: Frame;
-  hint?: string;
-  /** Stable path-based id like `"0.2.1.3"`. */
-  id: string;
-  /** Platform-native identifier (accessibility id / resource id / test id). */
-  identifier?: string;
-  isAccessibilityElement: boolean;
-  label?: string;
-  pixelSource?: NodePixelSource;
-  role?: string;
-  state: NodeState;
-  traits?: string[];
-  /** Platform-native class/type (e.g. `UIButton`, `android.widget.TextView`). */
-  type: string;
-  value?: string;
-}
-
-export interface A11yEntry {
-  announcement?: string;
-  frame: Frame;
-  hint?: string;
-  label?: string;
-  nodeId: string;
-  order: number;
-  role?: string;
-  state: NodeState;
-  traits?: string[];
-  value?: string;
+export interface RawCapture {
+  capturedAt: string;
+  device: CaptureDevice;
+  inspect: RawInspect;
+  screenshot?: CaptureScreenshot;
 }
 
 export interface Capture {
-  a11ySnapshot: A11yEntry[];
-  capabilities: Capabilities;
   capturedAt: string;
   device: CaptureDevice;
   hierarchy: HierarchyNode;
-  screenshot: CaptureScreenshot;
-  version: 1;
+  nodeCount: number;
+  /** Optional — the overlay renders bare boxes if the screenshot is missing. */
+  screenshot?: CaptureScreenshot;
 }
 
 /**
- * Output of `resolveNodeVisual`. The flat renderer currently uses `crop` and
- * `outline` only; `image` is reserved for the per-view-pixels future.
+ * How a node draws in the 2D overlay. `fill` carries the node's real
+ * `backgroundColor`; `image` is reserved for the per-layer `native-snapshot`
+ * texture a 3D viewer will use.
  */
 export type NodeVisual =
-  | { bounds: Frame; kind: "crop" }
+  | { color: string; kind: "fill" }
   | { kind: "image"; url: string }
   | { kind: "outline" };
 

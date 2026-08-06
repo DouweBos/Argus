@@ -21,6 +21,7 @@ export * from "./components/ChecklistRow/ChecklistRow";
 export * from "./components/Chip/Chip";
 export * from "./components/Coachmark/Coachmark";
 export * from "./components/CodeBlock/CodeBlock";
+export * from "./components/ColorSwatch/ColorSwatch";
 export * from "./components/DiffView/DiffView";
 export * from "./components/Markdown/Markdown";
 export * from "./components/MessageBubble/MessageBubble";

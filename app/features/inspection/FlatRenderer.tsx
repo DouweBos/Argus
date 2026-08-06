@@ -9,24 +9,24 @@ import {
   useState,
 } from "react";
 import { ContextMenu } from "@argus/peacock";
-import { A11yBadgeLayer } from "./A11yBadgeLayer";
 import styles from "./FlatRenderer.module.css";
 import {
   flattenHierarchy,
   fmtCoord,
   isVisibleLeaf,
+  nodeHint,
+  nodeRect,
   nodesContainingPoint,
   resolveNodeVisual,
 } from "./resolveNodeVisual";
-import {
-  focusOnNode,
-  selectNode,
-  useA11yOverlayState,
-  useInspectionSelection,
-} from "./store";
+import { focusOnNode, selectNode, useInspectionSelection } from "./store";
 
 interface FlatRendererProps {
   capture: Capture;
+  /** Subtree to draw + hit-test; defaults to the whole capture. When a node is
+   * focused (double-click), this narrows selection to that subtree's descendants
+   * so clicks in the canvas can't grab filtered-out siblings. */
+  root?: HierarchyNode;
 }
 
 function useContainSize(
@@ -66,17 +66,14 @@ interface StackMenu {
   y: number;
 }
 
-export function FlatRenderer({ capture }: FlatRendererProps) {
+export function FlatRenderer({ capture, root }: FlatRendererProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLDivElement | null>(null);
   const { selectedNodeId } = useInspectionSelection();
-  const { showBadges } = useA11yOverlayState();
   const [stackMenu, setStackMenu] = useState<StackMenu | null>(null);
 
-  const nodes = useMemo(
-    () => flattenHierarchy(capture.hierarchy),
-    [capture.hierarchy],
-  );
+  const rootNode = root ?? capture.hierarchy;
+  const nodes = useMemo(() => flattenHierarchy(rootNode), [rootNode]);
 
   const deviceW = capture.device.width;
   const deviceH = capture.device.height;
@@ -85,7 +82,9 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
   const scaleX = deviceW > 0 ? stageW / deviceW : 0;
   const scaleY = deviceH > 0 ? stageH / deviceH : 0;
 
-  const screenshotSrc = `data:image/${capture.screenshot.encoding};base64,${capture.screenshot.data}`;
+  const screenshotSrc = capture.screenshot
+    ? `data:image/${capture.screenshot.encoding};base64,${capture.screenshot.data}`
+    : null;
 
   const hitTest = useCallback(
     (clientX: number, clientY: number): HierarchyNode[] => {
@@ -97,9 +96,9 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
       const devX = (clientX - rect.left) / scaleX;
       const devY = (clientY - rect.top) / scaleY;
 
-      return nodesContainingPoint(capture.hierarchy, devX, devY);
+      return nodesContainingPoint(rootNode, devX, devY);
     },
-    [capture.hierarchy, scaleX, scaleY],
+    [rootNode, scaleX, scaleY],
   );
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -151,11 +150,14 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
         .slice()
         .reverse()
         .map((n): ContextMenuItem => {
-          const labelSuffix = n.label ? `  "${truncate(n.label, 32)}"` : "";
+          const hint = nodeHint(n);
+          const fullHint = nodeHint(n, Infinity);
+          const rect = nodeRect(n);
 
           return {
-            label: `${n.type}${labelSuffix}`,
-            trailing: `${fmtCoord(n.frame.w)}×${fmtCoord(n.frame.h)}`,
+            label: hint ? `${n.class}  ${hint}` : n.class,
+            title: fullHint ? `${n.class}  ${fullHint}` : n.class,
+            trailing: `${fmtCoord(rect.w)}×${fmtCoord(rect.h)}`,
             selected: selectedNodeId === n.id,
             onClick: () => selectNode(n.id),
           };
@@ -167,27 +169,26 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
     <div ref={rootRef} className={styles.root}>
       {stageW > 0 && stageH > 0 && (
         <div className={styles.stage} style={{ width: stageW, height: stageH }}>
-          <img
-            className={styles.screenshot}
-            src={screenshotSrc}
-            alt="Captured screen"
-            draggable={false}
-          />
+          {screenshotSrc && (
+            <img
+              className={styles.screenshot}
+              src={screenshotSrc}
+              alt="Captured screen"
+              draggable={false}
+            />
+          )}
           <div className={styles.overlay}>
             {nodes.map((node) => (
               <NodeBox
                 key={node.id}
-                capture={capture}
                 node={node}
                 scaleX={scaleX}
                 scaleY={scaleY}
                 selected={selectedNodeId === node.id}
+                tint={!screenshotSrc}
               />
             ))}
           </div>
-          {showBadges && (
-            <A11yBadgeLayer capture={capture} scaleX={scaleX} scaleY={scaleY} />
-          )}
           {/* Single interaction layer on top — the boxes below are visual
               only. React synthetic handlers for click / dblclick; a native
               capture-phase listener handles contextmenu because Electron
@@ -212,21 +213,20 @@ export function FlatRenderer({ capture }: FlatRendererProps) {
 }
 
 interface NodeBoxProps {
-  capture: Capture;
   node: HierarchyNode;
   scaleX: number;
   scaleY: number;
   selected: boolean;
+  /** Fill the box with its real background color (bare-box, no-screenshot mode). */
+  tint: boolean;
 }
 
-function NodeBox({ capture, node, scaleX, scaleY, selected }: NodeBoxProps) {
-  const visual = resolveNodeVisual(node, capture);
-  const leaf = visual.kind !== "outline" && isVisibleLeaf(node);
+function NodeBox({ node, scaleX, scaleY, selected, tint }: NodeBoxProps) {
+  const visual = resolveNodeVisual(node);
+  const leaf = isVisibleLeaf(node);
+  const rect = nodeRect(node);
 
   const classes = [styles.box, leaf ? styles.boxLeaf : styles.boxContainer];
-  if (node.state.focused) {
-    classes.push(styles.boxFocused);
-  }
   if (selected) {
     classes.push(styles.boxSelected);
   }
@@ -235,16 +235,17 @@ function NodeBox({ capture, node, scaleX, scaleY, selected }: NodeBoxProps) {
     <div
       className={classes.join(" ")}
       style={{
-        left: node.frame.x * scaleX,
-        top: node.frame.y * scaleY,
-        width: node.frame.w * scaleX,
-        height: node.frame.h * scaleY,
+        left: rect.x * scaleX,
+        top: rect.y * scaleY,
+        width: rect.w * scaleX,
+        height: rect.h * scaleY,
+        // Captured device color (runtime data, not a token) tints the box so
+        // the overlay reads even without a screenshot behind it.
+        ...(tint && visual.kind === "fill"
+          ? { backgroundColor: visual.color }
+          : null),
       }}
-      title={node.label ?? node.identifier ?? node.type}
+      title={node.text ?? node.accessibilityLabel ?? node.class}
     />
   );
-}
-
-function truncate(s: string, max: number): string {
-  return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
 }

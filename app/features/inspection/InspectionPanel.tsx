@@ -1,18 +1,10 @@
-import type { SidebarTab } from "./store";
 import type { HierarchyNode } from "./types";
 import { useEffect, useMemo } from "react";
-import {
-  Banner,
-  Button,
-  Icons,
-  SegmentedControl,
-  Spinner,
-  StatusDot,
-} from "@argus/peacock";
+import { Banner, Button, Icons, Spinner } from "@argus/peacock";
 import { useDragResize } from "../../hooks/useDragResize";
-import { AccessibilityList } from "./AccessibilityList";
 import { HierarchySearch } from "./HierarchySearch";
 import { HierarchyTree } from "./HierarchyTree";
+import { InspectionLauncher } from "./InspectionLauncher";
 import styles from "./InspectionPanel.module.css";
 import { InspectionRenderer } from "./InspectionRenderer";
 import {
@@ -26,14 +18,12 @@ import {
   focusOnNode,
   selectCapture,
   selectNode,
-  setSidebarTab,
   useActiveCapture,
   useCaptureList,
   useCaptureStatus,
-  useFocusedNode,
   useFocusedRootNodeId,
+  useLaunchPrompt,
   useRendererMode,
-  useSidebarTab,
 } from "./store";
 
 interface InspectionPanelProps {
@@ -47,6 +37,14 @@ const SIDEBAR_WIDTH_KEY = "argus:inspection:sidebarWidth";
 const SIDEBAR_DEFAULT = 280;
 const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 560;
+
+function inspectButtonLabel(capturing: boolean, hasCapture: boolean): string {
+  if (capturing) {
+    return hasCapture ? "Refreshing…" : "Inspecting…";
+  }
+
+  return hasCapture ? "Refresh" : "Inspect";
+}
 
 function loadSidebarWidth(): number {
   try {
@@ -69,10 +67,9 @@ export function InspectionPanel({
   const activeCapture = useActiveCapture();
   const { captureOrder, activeCaptureId, captures } = useCaptureList();
   const { capturing, captureError } = useCaptureStatus();
-  const sidebarTab = useSidebarTab();
+  const { launchPrompt, installedApps, launching } = useLaunchPrompt();
   const mode = useRendererMode();
   const focusedRootId = useFocusedRootNodeId();
-  const focusedNode = useFocusedNode();
 
   const { treeRoot, breadcrumbs } = useMemo(() => {
     if (!activeCapture) {
@@ -96,6 +93,9 @@ export function InspectionPanel({
     () => (treeRoot ? flattenHierarchy(treeRoot).length : 0),
     [treeRoot],
   );
+
+  // Re-inspecting an already-captured screen reads as "Refresh".
+  const inspectLabel = inspectButtonLabel(capturing, !!activeCapture);
 
   useEffect(() => {
     clearCaptures();
@@ -121,6 +121,31 @@ export function InspectionPanel({
     }
   }, [sidebarWidth]);
 
+  function renderMain() {
+    if (activeCapture && treeRoot) {
+      return (
+        <InspectionRenderer
+          capture={activeCapture}
+          root={treeRoot}
+          mode={mode}
+        />
+      );
+    }
+    if (launchPrompt) {
+      return (
+        <InspectionLauncher
+          deviceKey={deviceKey}
+          foregroundApp={launchPrompt.foregroundApp}
+          isSpringboard={launchPrompt.isSpringboard}
+          installedApps={installedApps}
+          launching={launching}
+        />
+      );
+    }
+
+    return <EmptyState hasDevice={!!deviceKey} capturing={capturing} />;
+  }
+
   return (
     <div className={styles.root}>
       <Banner
@@ -128,9 +153,9 @@ export function InspectionPanel({
         leading={<Icons.SearchIcon size={11} />}
         className={styles.sdkBanner}
       >
-        Inspect runs against the accessibility hierarchy — class names and
-        better view hierarchy inspection tools will come soon through an custom
-        SDK.
+        Inspect reads the running app in-process — real classes, colors, fonts,
+        and the full view/layer tree. Requires launching the app with injection
+        (<code>launch-app --inject</code>).
       </Banner>
       <div className={styles.header}>
         {!showSidebar && (
@@ -140,20 +165,8 @@ export function InspectionPanel({
             disabled={capturing || !deviceKey}
             onClick={onInspect}
           >
-            {capturing ? "Inspecting…" : "Inspect"}
+            {inspectLabel}
           </Button>
-        )}
-        {focusedNode && (
-          <button
-            type="button"
-            className={styles.focusedPill}
-            onClick={() => selectNode(focusedNode.id)}
-            title={`Jump to focused element: ${focusedNode.type}${focusedNode.label ? ` "${focusedNode.label}"` : ""}`}
-          >
-            <StatusDot tone="warning" pulse />
-            <span className={styles.focusedPillLabel}>Focused</span>
-            <span className={styles.focusedPillType}>{focusedNode.type}</span>
-          </button>
         )}
         {captureOrder.length > 1 && (
           <select
@@ -177,7 +190,7 @@ export function InspectionPanel({
               {activeCapture.device.width} × {activeCapture.device.height}
             </span>
             <span className={styles.metaSeparator}>·</span>
-            <span>{activeCapture.a11ySnapshot.length} a11y</span>
+            <span>{activeCapture.nodeCount} nodes</span>
           </div>
         )}
       </div>
@@ -194,22 +207,9 @@ export function InspectionPanel({
         {showSidebar && (
           <div className={styles.sidebar} style={{ width: sidebarWidth }}>
             <div className={styles.sidebarTabs}>
-              <SegmentedControl<SidebarTab>
-                aria-label="Sidebar view"
-                size="sm"
-                value={sidebarTab}
-                onChange={setSidebarTab}
-                options={[
-                  { value: "hierarchy", label: "Hierarchy" },
-                  { value: "a11y", label: "Accessibility" },
-                ]}
-              />
+              <span className={styles.sidebarTitle}>Hierarchy</span>
               {treeRoot && (
-                <span className={styles.sidebarCount}>
-                  {sidebarTab === "hierarchy"
-                    ? nodeCount
-                    : (activeCapture?.a11ySnapshot.length ?? 0)}
-                </span>
+                <span className={styles.sidebarCount}>{nodeCount}</span>
               )}
               <div className={styles.sidebarSpacer} />
               <Button
@@ -218,15 +218,10 @@ export function InspectionPanel({
                 disabled={capturing || !deviceKey}
                 onClick={onInspect}
               >
-                {capturing ? "Inspecting…" : "Inspect"}
+                {inspectLabel}
               </Button>
             </div>
-            {renderSidebarBody({
-              activeCapture,
-              capturing,
-              sidebarTab,
-              treeRoot,
-            })}
+            {renderSidebarBody({ activeCapture, capturing, treeRoot })}
             <div
               role="separator"
               aria-orientation="vertical"
@@ -236,33 +231,25 @@ export function InspectionPanel({
             />
           </div>
         )}
-        <div className={styles.main}>
-          {activeCapture && treeRoot ? (
-            <InspectionRenderer capture={activeCapture} mode={mode} />
-          ) : (
-            <EmptyState hasDevice={!!deviceKey} capturing={capturing} />
-          )}
-        </div>
+        <div className={styles.main}>{renderMain()}</div>
       </div>
     </div>
   );
 }
 
 interface Node {
+  class: string;
   id: string;
-  label?: string;
-  type: string;
+  text?: string;
 }
 
 function renderSidebarBody({
   activeCapture,
   capturing,
-  sidebarTab,
   treeRoot,
 }: {
   activeCapture: ReturnType<typeof useActiveCapture>;
   capturing: boolean;
-  sidebarTab: SidebarTab;
   treeRoot: HierarchyNode | null;
 }) {
   if (!treeRoot || !activeCapture) {
@@ -273,9 +260,6 @@ function renderSidebarBody({
           : "Hierarchy appears here after inspecting."}
       </div>
     );
-  }
-  if (sidebarTab === "a11y") {
-    return <AccessibilityList entries={activeCapture.a11ySnapshot} />;
   }
 
   return (
@@ -322,10 +306,10 @@ function Breadcrumbs({
                 }
               }}
             >
-              {node.type}
-              {node.label ? (
+              {node.class}
+              {node.text ? (
                 <span className={styles.breadcrumbLabel}>
-                  &nbsp;&ldquo;{node.label}&rdquo;
+                  &nbsp;&ldquo;{node.text}&rdquo;
                 </span>
               ) : null}
             </button>
@@ -350,8 +334,8 @@ function EmptyState({
         <Spinner size="lg" aria-label="Fetching UI" />
         <div className={styles.emptyTitle}>Fetching UI…</div>
         <div className={styles.emptyHint}>
-          Pulling the screenshot, view hierarchy, and accessibility snapshot
-          from the device. This usually takes a couple of seconds.
+          Reading the live view/layer tree — classes, colors, fonts, and text —
+          from inside the running app. This usually takes a couple of seconds.
         </div>
       </div>
     );
@@ -363,8 +347,8 @@ function EmptyState({
       <div className={styles.emptyTitle}>Inspect a live screen</div>
       <div className={styles.emptyHint}>
         {hasDevice
-          ? "Press Inspect to snapshot the current UI. You'll get the screenshot, the view hierarchy, and the accessibility order in one bundle."
-          : "Boot a simulator from the Simulate tab above, then return here and press Inspect."}
+          ? "Press Inspect to read the running app's native view/layer tree with real classes, colors, fonts, and text. The app must have been launched with injection (launch-app --inject)."
+          : "Boot an iOS/tvOS simulator from the Simulate tab above, then return here and press Inspect."}
       </div>
     </div>
   );

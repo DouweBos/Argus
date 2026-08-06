@@ -22,6 +22,8 @@ export interface ContextMenuAction {
   onClick?: () => void;
   /** Shows a highlight + checkmark-style trailing mark on this row. */
   selected?: boolean;
+  /** Native hover tooltip — useful when `label` is truncated. */
+  title?: string;
   /** Small text on the right (shortcut, status, etc.). */
   trailing?: ReactNode;
 }
@@ -315,6 +317,7 @@ export function ContextMenu({
               key={i}
               className={classes}
               disabled={item.disabled}
+              title={item.title}
               onClick={handleRowClick}
               onMouseEnter={handleRowMouseEnter}
               onMouseLeave={handleRowMouseLeave}

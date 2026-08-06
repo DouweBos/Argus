@@ -1,6 +1,6 @@
-import type { Capture, HierarchyNode, NodeVisual } from "./types";
+import type { Frame, HierarchyNode, NodeVisual } from "./types";
 
-/** Round a frame coordinate to 2 decimals, stripping trailing zeros. */
+/** Round a coordinate to 2 decimals, stripping trailing zeros. */
 export function fmtCoord(n: number): string {
   if (!Number.isFinite(n)) {
     return "0";
@@ -11,74 +11,74 @@ export function fmtCoord(n: number): string {
 }
 
 /**
- * Native types that are intrinsically "visible leaves" — their frame alone
- * represents the pixels on screen, so we can crop the composite screenshot to
- * get a faithful per-node thumbnail. Container views (`UIView`,
- * `android.view.ViewGroup`, generic `<div>`) instead render as outlines.
+ * The rect to draw a node at on the overlay. `native-inspect`'s `frame` is
+ * superview-local; `absFrame` is window-absolute, which is what the overlay
+ * (and the future 3D plane) needs. Falls back to `frame` for the window roots,
+ * whose local frame already is window-absolute.
  */
-const VISIBLE_LEAF_TYPES = new Set([
-  "UIImageView",
-  "UILabel",
-  "UIButton",
-  "UITextField",
-  "UITextView",
-  "UISwitch",
-  "android.widget.TextView",
-  "android.widget.ImageView",
-  "android.widget.Button",
-  "android.widget.EditText",
-  "android.widget.ImageButton",
-  "img",
-  "input",
-  "button",
-  "textarea",
-  "select",
-  "a",
-]);
-
-function hasDirectText(node: HierarchyNode): boolean {
-  return Boolean(
-    (node.label && node.label.trim().length > 0) ||
-    (node.value && node.value.trim().length > 0),
-  );
+export function nodeRect(node: HierarchyNode): Frame {
+  return node.absFrame ?? node.frame;
 }
 
+/** A node with no children draws its own pixels; containers draw as outlines. */
 export function isVisibleLeaf(node: HierarchyNode): boolean {
-  if (VISIBLE_LEAF_TYPES.has(node.type)) {
-    return true;
-  }
-  if (node.children.length === 0 && hasDirectText(node)) {
-    return true;
-  }
-
   return node.children.length === 0;
 }
 
+function truncate(s: string, max: number): string {
+  return s.length <= max ? s : `${s.slice(0, max - 1)}…`;
+}
+
 /**
- * Decide how a single node should be rendered in the 2D overlay.
- *
- * Extension seam: when `capabilities.perViewPixels` flips to `true` in a
- * future capture, individual nodes can ship their own `pixelSource` and the
- * renderer will use that instead of cropping from the composite screenshot.
+ * A short, human-recognisable tag for a node beyond its class — the thing that
+ * lets you pick it out of a list of identical `RCTViewComponentView`s. Falls
+ * through text → accessibility label → identifier/testID/nativeID → image asset
+ * → non-transparent background color. Returns undefined when nothing
+ * distinguishing is available. Pass `maxLength: Infinity` for the full,
+ * untruncated string (e.g. a hover tooltip).
  */
-export function resolveNodeVisual(
+export function nodeHint(
   node: HierarchyNode,
-  capture: Capture,
-): NodeVisual {
-  if (
-    capture.capabilities.perViewPixels &&
-    node.pixelSource?.kind === "image"
-  ) {
-    return { kind: "image", url: node.pixelSource.url };
+  maxLength = 32,
+): string | undefined {
+  const text = (node.text ?? node.title ?? node.accessibilityLabel)?.trim();
+  if (text) {
+    return `"${truncate(text, maxLength)}"`;
   }
-  if (isVisibleLeaf(node)) {
-    return { kind: "crop", bounds: node.frame };
+  const id =
+    node.accessibilityIdentifier ?? node.rn?.testID ?? node.rn?.nativeID;
+  if (id) {
+    return `#${truncate(id, maxLength)}`;
+  }
+  if (node.image?.name) {
+    return `img:${truncate(node.image.name, maxLength)}`;
+  }
+  // A solid fill is at least a visual cue for otherwise-anonymous wrappers;
+  // skip fully-transparent colors (alpha 00), which tell you nothing.
+  if (
+    node.backgroundColor &&
+    !node.backgroundColor.toUpperCase().endsWith("00")
+  ) {
+    return node.backgroundColor;
+  }
+
+  return undefined;
+}
+
+/**
+ * Decide how a node draws in the 2D overlay. With real `backgroundColor` from
+ * the layer we tint the box; otherwise it's a plain outline. `image` (a
+ * per-node `native-snapshot` texture) is the seam a 3D viewer slots into.
+ */
+export function resolveNodeVisual(node: HierarchyNode): NodeVisual {
+  if (node.backgroundColor) {
+    return { kind: "fill", color: node.backgroundColor };
   }
 
   return { kind: "outline" };
 }
 
-/** Depth-first flatten — the renderer iterates this list to draw outlines. */
+/** Depth-first flatten — the renderer iterates this to draw boxes. */
 export function flattenHierarchy(root: HierarchyNode): HierarchyNode[] {
   const out: HierarchyNode[] = [];
   const walk = (node: HierarchyNode) => {
@@ -110,8 +110,8 @@ export function findNodeById(
 }
 
 /**
- * Returns the chain of nodes from `root` down to `id` (inclusive). Empty when
- * the id isn't in the tree.
+ * Chain of nodes from `root` down to `id` (inclusive). Empty when the id isn't
+ * in the tree.
  */
 export function pathToNode(root: HierarchyNode, id: string): HierarchyNode[] {
   const stack: HierarchyNode[] = [];
@@ -135,8 +135,57 @@ export function pathToNode(root: HierarchyNode, id: string): HierarchyNode[] {
 }
 
 /**
- * Case-insensitive match of a node's type, label, identifier, value, or hint
- * against a free-text query. Empty / whitespace-only queries match nothing.
+ * child-id → parent-id map. Node ids from `native-inspect` are opaque pointers
+ * (not dotted paths), so ancestry can't be derived from the id string — the
+ * tree walk gives it instead.
+ */
+export function buildParentMap(root: HierarchyNode): Map<string, string> {
+  const parents = new Map<string, string>();
+  const walk = (node: HierarchyNode) => {
+    for (const child of node.children) {
+      parents.set(child.id, node.id);
+      walk(child);
+    }
+  };
+  walk(root);
+
+  return parents;
+}
+
+/** Strict-ancestor ids of `id` (excluding `id` itself), outermost last. */
+export function ancestorIds(
+  parents: Map<string, string>,
+  id: string,
+): string[] {
+  const out: string[] = [];
+  let cursor = parents.get(id);
+  while (cursor !== undefined) {
+    out.push(cursor);
+    cursor = parents.get(cursor);
+  }
+
+  return out;
+}
+
+/** Union of every id in `ids` plus all their strict ancestors. */
+export function collectVisibleIds(
+  parents: Map<string, string>,
+  ids: Iterable<string>,
+): Set<string> {
+  const set = new Set<string>();
+  for (const id of ids) {
+    set.add(id);
+    for (const ancestor of ancestorIds(parents, id)) {
+      set.add(ancestor);
+    }
+  }
+
+  return set;
+}
+
+/**
+ * Case-insensitive match of a node's class, text, identifiers, or accessibility
+ * label against a free-text query. Empty / whitespace-only queries match nothing.
  */
 export function matchesSearch(node: HierarchyNode, query: string): boolean {
   const q = query.trim().toLowerCase();
@@ -144,11 +193,14 @@ export function matchesSearch(node: HierarchyNode, query: string): boolean {
     return false;
   }
   const fields = [
-    node.type,
-    node.label,
-    node.identifier,
-    node.value,
-    node.hint,
+    node.class,
+    node.text,
+    node.title,
+    node.placeholder,
+    node.accessibilityLabel,
+    node.accessibilityIdentifier,
+    node.rn?.testID,
+    node.rn?.nativeID,
   ];
   for (const field of fields) {
     if (field && field.toLowerCase().includes(q)) {
@@ -160,8 +212,8 @@ export function matchesSearch(node: HierarchyNode, query: string): boolean {
 }
 
 /**
- * Flatten the tree in visual (depth-first) order, returning only nodes that
- * match the query. Used to drive next/prev navigation.
+ * Flatten in visual (depth-first) order, keeping only nodes that match. Drives
+ * next/prev search navigation.
  */
 export function findSearchMatches(
   root: HierarchyNode,
@@ -185,11 +237,9 @@ export function findSearchMatches(
 }
 
 /**
- * Returns every node whose frame contains the given point, in depth-first
- * order (outer-first). Walks the whole tree unconditionally — we can't
- * prune by ancestor containment because some containers legitimately have
- * zero frames (iOS's XCUI Application root, certain layout wrappers) while
- * their descendants have real coordinates.
+ * Every node whose on-screen rect contains the point, depth-first (outer-first).
+ * Walks the whole tree unconditionally — some containers legitimately have zero
+ * frames while their descendants have real coordinates.
  */
 export function nodesContainingPoint(
   root: HierarchyNode,
@@ -198,16 +248,13 @@ export function nodesContainingPoint(
 ): HierarchyNode[] {
   const hits: HierarchyNode[] = [];
   const contains = (node: HierarchyNode): boolean => {
-    const { frame } = node;
-    if (frame.w <= 0 || frame.h <= 0) {
+    const rect = nodeRect(node);
+    if (rect.w <= 0 || rect.h <= 0) {
       return false;
     }
 
     return (
-      x >= frame.x &&
-      x <= frame.x + frame.w &&
-      y >= frame.y &&
-      y <= frame.y + frame.h
+      x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h
     );
   };
   const walk = (node: HierarchyNode) => {
