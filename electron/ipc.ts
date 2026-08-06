@@ -28,9 +28,9 @@ import { createLogger } from "../app/lib/logger";
 import { broadcastToRenderers } from "./broadcast";
 import {
   closeFloatingAgentWindow,
-  closeFloatingSimulatorWindow,
+  closeFloatingDeviceWindow,
   createFloatingAgentWindow,
-  createFloatingSimulatorWindow,
+  createFloatingDeviceWindow,
   getMainWindow,
   markQuitConfirmedDespiteAgents,
 } from "./main";
@@ -1624,47 +1624,57 @@ export function registerIpcHandlers(): void {
       a.isDown as boolean,
     ),
   );
-  toolHandle("open_simulator_popout", "device-recording", async (a) => {
-    const udid = a.udid as string;
-    const existing = appState.simulatorPopouts.get(udid);
-    if (existing && !existing.isDestroyed()) {
-      existing.show();
-      existing.focus();
+  toolHandle("open_device_popout", "device-recording", async (a) => {
+    const platform = a.platform as "android" | "ios" | "video";
+    const deviceKey = a.deviceKey as string;
 
-      return;
-    }
+    let deviceName = (a.name as string | undefined) ?? "Device";
+    let runtime = "";
+    let online = platform === "video";
+    // Acquire a capture reference so the stream survives the main window
+    // switching away from this device. Only for a device that's actually up —
+    // capturing a shut-down simulator hides the popout's own Boot button and
+    // leaves the user with an empty frame and no way out.
+    let capturing = false;
 
-    const devices = await listSimulators().catch(() => []);
-    const device = devices.find((d) => d.udid === udid);
-    const active = appState.simulators.get(udid);
-    const deviceName = active?.deviceName ?? device?.name ?? "Simulator";
-    const booted = device?.booted ?? false;
-
-    // Only acquire a capture reference when the device is actually booted.
-    // Starting capture on a shutdown simulator can return a misleading port
-    // that makes the popout think it's streaming and hides the Boot button —
-    // leaving the user with an empty frame and no way to boot. For shutdown
-    // devices, open the popout in placeholder mode; its own Boot flow will
-    // start capture once the user boots.
-    let mjpegPort: number | null = null;
-    if (booted) {
-      try {
-        mjpegPort = await startSimulatorCapture(udid);
-      } catch {
-        // Fall back to no stream — popout will show the placeholder.
+    if (platform === "ios") {
+      const devices = await listSimulators().catch(() => []);
+      const device = devices.find((d) => d.udid === deviceKey);
+      const active = appState.simulators.get(deviceKey);
+      deviceName = active?.deviceName ?? device?.name ?? deviceName;
+      runtime = device?.runtime ?? "";
+      online = device?.booted ?? false;
+      if (online) {
+        capturing = await startSimulatorCapture(deviceKey)
+          .then(() => true)
+          .catch(() => false);
+      }
+    } else if (platform === "android") {
+      const devices = await listAndroidDevices().catch(() => []);
+      const device = devices.find((d) => d.serial === deviceKey);
+      deviceName = device?.name ?? deviceName;
+      online = device?.online ?? false;
+      if (online) {
+        capturing = await startAndroidCapture(deviceKey)
+          .then(() => true)
+          .catch(() => false);
       }
     }
 
-    createFloatingSimulatorWindow({
-      udid,
-      mjpegPort,
+    createFloatingDeviceWindow({
+      platform,
+      deviceKey,
       deviceName,
-      runtime: device?.runtime ?? "",
-      booted,
+      runtime,
+      online,
+      capturing,
     });
   });
-  toolHandle("close_simulator_popout", "device-recording", (a) => {
-    closeFloatingSimulatorWindow(a.udid as string);
+  toolHandle("close_device_popout", "device-recording", (a) => {
+    closeFloatingDeviceWindow(
+      a.platform as "android" | "ios" | "video",
+      a.deviceKey as string,
+    );
 
     return Promise.resolve();
   });

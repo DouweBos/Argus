@@ -1,9 +1,11 @@
+import type { Platform } from "./stores/simulatorStore";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles/global.css";
 import { AgentPopout } from "./components/popout/AgentPopout";
-import { SimulatorPopout } from "./components/popout/SimulatorPopout";
+import { DevicePopout } from "./components/popout/DevicePopout";
+import { PopoutRoot } from "./components/popout/PopoutRoot";
 import { seedPopoutStore } from "./components/popout/seedPopoutStore";
 import {
   initAppQuitSave,
@@ -68,30 +70,28 @@ if (popoutMode === "agent") {
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
-      <AgentPopout agentId={agentId} sessionId={sessionId} title={title} />
+      <PopoutRoot initialPath={`/sessions/${sessionId}`}>
+        <AgentPopout agentId={agentId} sessionId={sessionId} title={title} />
+      </PopoutRoot>
     </React.StrictMode>,
   );
-} else if (popoutMode === "simulator") {
+} else if (popoutMode === "device") {
   // Minimal popout renderer — bypasses the heavy VS Code / quit wiring so
   // this separate BrowserWindow stays lightweight.
-  const udid = params.get("udid") ?? "";
-  const portRaw = params.get("port");
-  const port = portRaw ? Number.parseInt(portRaw, 10) : NaN;
-  const name = params.get("name") ?? "Simulator";
-  const runtime = params.get("runtime") ?? "";
-  const booted = params.get("booted") === "1";
-
   seedPopoutStore({
-    udid,
-    deviceName: name,
-    mjpegPort: Number.isFinite(port) ? port : null,
-    runtime,
-    booted,
+    platform: (params.get("platform") ?? "ios") as Platform,
+    deviceKey: params.get("deviceKey") ?? "",
+    deviceName: params.get("name") ?? "Device",
+    runtime: params.get("runtime") ?? "",
+    online: params.get("online") === "1",
+    capturing: params.get("capturing") === "1",
   });
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
-      <SimulatorPopout />
+      <PopoutRoot>
+        <DevicePopout />
+      </PopoutRoot>
     </React.StrictMode>,
   );
 } else {

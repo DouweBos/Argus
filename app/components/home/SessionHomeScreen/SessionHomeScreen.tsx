@@ -209,11 +209,14 @@ export function SessionHomeScreen({
                   onClick={async () => {
                     setIsClearingSetupError(true);
                     try {
+                      // Arm the prompt only after the status flips to ready —
+                      // the pending-prompt watcher drops prompts on sessions
+                      // that are still in a failed state.
+                      await clearSessionSetupError(sessionId);
                       const initialPrompt = session?.description.trim();
                       if (initialPrompt) {
                         setPendingPrompt(sessionId, initialPrompt);
                       }
-                      await clearSessionSetupError(sessionId);
                     } finally {
                       setIsClearingSetupError(false);
                     }

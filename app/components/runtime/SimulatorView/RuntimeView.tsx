@@ -4,7 +4,11 @@ import { Icons, SegmentedControl } from "@argus/peacock";
 import { InspectionPanel } from "../../../features/inspection/InspectionPanel";
 import { NodeMetadataPanel } from "../../../features/inspection/NodeMetadataPanel";
 import { useDragResize } from "../../../hooks/useDragResize";
-import { openSimulatorPopout } from "../../../lib/ipc";
+import {
+  useVideoInputDevices,
+  videoInputLabel,
+} from "../../../hooks/useVideoInputDevices";
+import { openDevicePopout } from "../../../lib/ipc";
 import { useActiveToolId } from "../../../stores/layoutStore";
 import {
   useActiveDeviceKey,
@@ -102,7 +106,10 @@ export function RuntimeView({
     setRuntimeDialogOpen(!runtimeDialogOpen);
   }, [runtimeDialogOpen, setRuntimeDialogOpen]);
 
-  const canPopout = !isPopout && platform === "ios" && !!activeDeviceKey;
+  // Web runs in an embedded WebContentsView owned by this window — it can't be
+  // handed to another one, so every platform but Web can be detached.
+  const videoInputs = useVideoInputDevices();
+  const canPopout = !isPopout && platform !== "web" && !!activeDeviceKey;
 
   const { size: sidePanelWidth, onMouseDown: onSidePanelResize } =
     useDragResize({
@@ -121,13 +128,23 @@ export function RuntimeView({
   }, [sidePanelWidth]);
 
   const handlePopout = useCallback(() => {
-    if (!activeDeviceKey) {
+    if (!activeDeviceKey || platform === "web") {
       return;
     }
-    openSimulatorPopout(activeDeviceKey).catch(() => {
-      // best-effort — the backend already logs failures
-    });
-  }, [activeDeviceKey]);
+    // Video inputs only exist in the renderer, so the label travels with the
+    // request — the backend has no way to resolve it.
+    const index = videoInputs.findIndex((d) => d.deviceId === activeDeviceKey);
+    const name =
+      platform === "video" && index >= 0
+        ? videoInputLabel(videoInputs[index], index)
+        : undefined;
+
+    openDevicePopout({ platform, deviceKey: activeDeviceKey, name }).catch(
+      () => {
+        // best-effort — the backend already logs failures
+      },
+    );
+  }, [activeDeviceKey, platform, videoInputs]);
 
   const toggle = (
     <>
@@ -149,7 +166,7 @@ export function RuntimeView({
       {canPopout && (
         <button
           className={styles.runtimeToggleButton}
-          title="Open simulator in floating window"
+          title="Open in floating window"
           type="button"
           onClick={handlePopout}
         >

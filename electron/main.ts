@@ -50,7 +50,9 @@ import {
   stopRemote,
 } from "./services/remote/remoteService";
 import { refreshAllBranches } from "./services/session/watcher";
+import { stopAndroidCapture } from "./services/simulator/android";
 import { stopSimulatorCapture } from "./services/simulator/ios";
+import { getVideoDims } from "./services/simulator/videoForward";
 import {
   initTelemetry,
   shutdownTelemetry,
@@ -547,10 +549,18 @@ function createWindow(): void {
   });
   setMainWindow(mainWindow);
 
-  // Allow the app's own renderer to use camera/mic (video-input viewer) while
+  // Allow the app's own renderers to use camera/mic (video-input viewer) while
   // NOT auto-granting media to arbitrary sites loaded in embedded browsers.
-  const isAppFrame = (wc: Electron.WebContents | null): boolean =>
-    wc?.id === mainWindow?.webContents.id;
+  // Matches any top-level app window — the main window and every popout — but
+  // not embedded guests, whose webContents is never its window's top-level one.
+  const isAppFrame = (wc: Electron.WebContents | null): boolean => {
+    if (!wc) {
+      return false;
+    }
+    const owner = BrowserWindow.fromWebContents(wc);
+
+    return owner?.webContents.id === wc.id;
+  };
   mainWindow.webContents.session.setPermissionRequestHandler(
     (wc, permission, callback) => {
       if (permission === "media") {
@@ -1053,68 +1063,96 @@ app.whenReady().then(() => {
 /** Re-exported for back-compat; services import from `./mainWindow` directly. */
 export { getMainWindow } from "./mainWindow";
 
+/** Runtime targets that can be detached into their own window (Web can't). */
+type PopoutPlatform = "android" | "ios" | "video";
+
+interface PopoutSize {
+  width: number;
+  height: number;
+  minWidth: number;
+  minHeight: number;
+}
+
 /**
- * Pick a popout window size that matches the selected device's native aspect.
- * We don't have the actual framebuffer resolution here, so we infer from the
- * runtime / name: tvOS is 16:9 landscape, iPads are ~4:3 portrait, and every
- * iPhone is a tall portrait rectangle (~9:19.5).
+ * Pick a popout window size matching the target's native aspect. A live
+ * capture reports its real framebuffer size; otherwise we infer from the
+ * runtime / name: tvOS is 16:9 landscape, iPads are ~4:3 portrait, phones are
+ * tall portrait rectangles (~9:19.5), and video inputs are 16:9.
  */
-function popoutDimensionsForDevice(
-  runtime: string,
-  deviceName: string,
-): { width: number; height: number; minWidth: number; minHeight: number } {
+function popoutDimensionsForDevice(target: {
+  platform: PopoutPlatform;
+  deviceKey: string;
+  deviceName: string;
+  runtime: string;
+}): PopoutSize {
   // The popout has ~28px of title-bar chrome above the stream and a ~60px
   // floating action bar below it. Add that vertical slack on top of the
-  // framebuffer aspect so the stream itself still fits the device's native
-  // ratio after the chrome is subtracted.
+  // framebuffer aspect so the stream itself still fits the native ratio after
+  // the chrome is subtracted.
   const CHROME_V = 100;
+  const { platform, deviceKey, deviceName, runtime } = target;
+
+  const sized = (width: number, aspect: number): PopoutSize => ({
+    width,
+    height: Math.round(width * aspect) + CHROME_V,
+    minWidth: Math.round(width * 0.65),
+    minHeight: Math.round(width * 0.65 * aspect) + CHROME_V,
+  });
 
   if (runtime.startsWith("tvOS")) {
-    // tvOS: 16:9 landscape, plus ~150px width for the Apple TV remote column.
+    // 16:9 landscape, plus ~150px width for the Apple TV remote column — the
+    // stream's own aspect would leave no room for it.
     return {
       width: 820,
       height: 420 + CHROME_V,
       minWidth: 520,
-      minHeight: 280 + CHROME_V,
-    };
-  }
-  if (/ipad/i.test(deviceName) || runtime.startsWith("iPadOS")) {
-    return {
-      width: 520,
-      height: 700 + CHROME_V,
-      minWidth: 340,
-      minHeight: 460 + CHROME_V,
+      minHeight: 380,
     };
   }
 
-  // iPhone portrait default.
-  return {
-    width: 320,
-    height: 680 + CHROME_V,
-    minWidth: 220,
-    minHeight: 420 + CHROME_V,
-  };
+  const dims = getVideoDims(deviceKey);
+  if (dims && dims.width > 0) {
+    const aspect = dims.height / dims.width;
+
+    return sized(aspect >= 1 ? 340 : 820, aspect);
+  }
+
+  if (platform === "video") {
+    return sized(820, 9 / 16);
+  }
+  if (/ipad/i.test(deviceName) || runtime.startsWith("iPadOS")) {
+    return sized(520, 4 / 3);
+  }
+
+  return sized(320, 19.5 / 9);
+}
+
+/** Popout registry key — UDIDs and Android serials share one map. */
+function popoutKey(platform: PopoutPlatform, deviceKey: string): string {
+  return `${platform}:${deviceKey}`;
 }
 
 /**
- * Open a floating, always-on-top simulator popout window mirroring the
- * capture stream for the given `udid`. The popout renders its own React tree
- * (see `app/main.tsx` — the query string `?popout=simulator&...` short-
- * circuits the full app shell) and subscribes to the same MJPEG port served
- * by the bridge binary, so both main and popout windows share one capture
- * session.
+ * Open a floating, always-on-top popout window for a runtime target — an iOS /
+ * Android simulator or a video input (capture card). The popout renders its
+ * own React tree (see `app/main.tsx` — the query string `?popout=device&...`
+ * short-circuits the full app shell) and subscribes to the same broadcast
+ * frame stream as the main window, so both share one capture session.
  *
- * Idempotent: reusing the same udid focuses the existing popout.
+ * Idempotent: reusing the same target focuses the existing popout.
  */
-export function createFloatingSimulatorWindow(options: {
-  udid: string;
-  mjpegPort: number | null;
+export function createFloatingDeviceWindow(options: {
+  platform: PopoutPlatform;
+  deviceKey: string;
   deviceName: string;
   runtime: string;
-  booted: boolean;
+  online: boolean;
+  capturing: boolean;
 }): BrowserWindow {
-  const { udid, mjpegPort, deviceName, runtime, booted } = options;
-  const existing = appState.simulatorPopouts.get(udid);
+  const { platform, deviceKey, deviceName, runtime, online, capturing } =
+    options;
+  const key = popoutKey(platform, deviceKey);
+  const existing = appState.devicePopouts.get(key);
   if (existing && !existing.isDestroyed()) {
     existing.show();
     existing.focus();
@@ -1122,10 +1160,12 @@ export function createFloatingSimulatorWindow(options: {
     return existing;
   }
 
-  const { width, height, minWidth, minHeight } = popoutDimensionsForDevice(
-    runtime,
+  const { width, height, minWidth, minHeight } = popoutDimensionsForDevice({
+    platform,
+    deviceKey,
     deviceName,
-  );
+    runtime,
+  });
 
   const win = new BrowserWindow({
     width,
@@ -1147,12 +1187,13 @@ export function createFloatingSimulatorWindow(options: {
   });
 
   const params = new URLSearchParams({
-    popout: "simulator",
-    udid,
+    popout: "device",
+    platform,
+    deviceKey,
     name: deviceName,
     runtime,
-    booted: booted ? "1" : "0",
-    ...(mjpegPort != null ? { port: String(mjpegPort) } : {}),
+    online: online ? "1" : "0",
+    capturing: capturing ? "1" : "0",
   });
 
   if (isDev) {
@@ -1162,27 +1203,40 @@ export function createFloatingSimulatorWindow(options: {
     win.loadFile(indexPath, { search: `?${params.toString()}` });
   }
 
-  win.once("ready-to-show", () => win.show());
-  win.on("closed", () => {
-    appState.simulatorPopouts.delete(udid);
-    // Release the capture reference this popout acquired at open_simulator_popout.
-    // If the main window still holds a ref for this UDID, the bridge keeps
-    // running; other UDIDs' bridges are unaffected.
-    stopSimulatorCapture(udid);
+  win.webContents.on("did-fail-load", (_e, code, desc, url) => {
+    log("device popout did-fail-load: code=%d desc=%s url=%s", code, desc, url);
   });
 
-  appState.simulatorPopouts.set(udid, win);
+  win.once("ready-to-show", () => win.show());
+  win.on("closed", () => {
+    appState.devicePopouts.delete(key);
+    // Release the capture reference acquired at open_device_popout. If the main
+    // window still holds one for this device the bridge keeps running; other
+    // devices are unaffected. Video inputs stream straight from the renderer,
+    // so there is nothing to release.
+    if (platform === "ios") {
+      stopSimulatorCapture(deviceKey);
+    } else if (platform === "android") {
+      stopAndroidCapture(deviceKey);
+    }
+  });
+
+  appState.devicePopouts.set(key, win);
 
   return win;
 }
 
-/** Close the popout window for a given udid, if any. */
-export function closeFloatingSimulatorWindow(udid: string): void {
-  const win = appState.simulatorPopouts.get(udid);
+/** Close the popout window for a given target, if any. */
+export function closeFloatingDeviceWindow(
+  platform: PopoutPlatform,
+  deviceKey: string,
+): void {
+  const key = popoutKey(platform, deviceKey);
+  const win = appState.devicePopouts.get(key);
   if (win && !win.isDestroyed()) {
     win.close();
   }
-  appState.simulatorPopouts.delete(udid);
+  appState.devicePopouts.delete(key);
 }
 
 /**

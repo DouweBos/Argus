@@ -1,11 +1,7 @@
 import type { DeviceInfo } from "../../../lib/types";
 import { useState } from "react";
 import { Button, Dialog, Icons } from "@argus/peacock";
-import {
-  bootSimulator,
-  openSimulatorPopout,
-  stopDevice,
-} from "../../../lib/ipc";
+import { bootSimulator, openDevicePopout, stopDevice } from "../../../lib/ipc";
 import { refreshDevices } from "../../../stores/deviceStore";
 import { useDeviceNavigation } from "../deviceNav";
 import styles from "./DeviceDialog.module.css";
@@ -30,14 +26,19 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
     onClose();
   };
 
-  const canPopout = device.platform === "ios";
+  // Web runs in an embedded view owned by the main window — not detachable.
+  const canPopout = device.platform !== "web";
   const canBoot = device.platform === "ios" && !device.online;
   const canShutdown = device.platform === "ios" && device.online;
   const [booting, setBooting] = useState(false);
   const [shuttingDown, setShuttingDown] = useState(false);
 
   const handlePopout = () => {
-    openSimulatorPopout(device.deviceKey).catch(() => {});
+    openDevicePopout({
+      platform: device.platform,
+      deviceKey: device.deviceKey,
+      name: device.name,
+    }).catch(() => {});
   };
 
   const handleBoot = async () => {
