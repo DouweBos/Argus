@@ -118,8 +118,10 @@ import { conductorLogStore, execConductor } from "./services/conductor/logger";
 import { openDeepLink } from "./services/conductor/openLink";
 import {
   getConductorStatus,
+  readBundledVersion,
   setConductorOverrideVersion,
 } from "./services/conductor/override";
+import { listConductorVersions } from "./services/conductor/registry";
 import { checkDependencies } from "./services/dependencies/check";
 import {
   listSessionFiles,
@@ -1994,6 +1996,9 @@ export function registerIpcHandlers(): void {
     );
   });
   handle("get_conductor_status", () => getConductorStatus());
+  handle("list_conductor_versions", () =>
+    listConductorVersions(readBundledVersion()),
+  );
   handle("set_conductor_version", (a) =>
     setConductorOverrideVersion((a.version ?? null) as string | null),
   );

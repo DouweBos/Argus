@@ -76,6 +76,7 @@ export * from "./components/QuickCard/QuickCard";
 export * from "./components/SectionPanel/SectionPanel";
 export * from "./components/SegmentedCard/SegmentedCard";
 export * from "./components/SegmentedControl/SegmentedControl";
+export * from "./components/Select/Select";
 export * from "./components/RuntimePicker/RuntimePicker";
 export * from "./components/ShortcutCheatsheet/ShortcutCheatsheet";
 export * from "./components/ShortcutsRail/ShortcutsRail";

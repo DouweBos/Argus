@@ -170,10 +170,11 @@ The preflight onboarding step is filtered to your enabled tools' prereqs plus th
 
 ### Conductor version
 
-Argus ships with a bundled version of the `conductor` CLI (the tool agents use to drive iOS/Android/web devices). The **Conductor version** field under Settings → Tools lets you pin a different published version without waiting for an Argus release — useful for picking up a conductor fix or trying a newer build.
+Argus ships with a bundled version of the `conductor` CLI (the tool agents use to drive iOS/Android/web devices). The **Conductor version** dropdown under Settings → Tools lets you pin a different published version without waiting for an Argus release — useful for picking up a conductor fix or trying a newer build.
 
-- Enter a version (e.g. `0.25.0`) and press **Apply**. Argus installs `@houwert/conductor@<version>` on demand into `~/.argus/conductor/<version>/` and points every agent's `conductor` invocation at it.
-- Leave the field blank (or press **Use bundled**) to revert to the version that shipped with the app.
+- The dropdown lists stable versions published to npm, newest first. Only versions **at or above the bundled one** are offered — older conductors predate APIs the app relies on.
+- Pick a version and Argus installs `@houwert/conductor@<version>` on demand into `~/.argus/conductor/<version>/`, then points every agent's `conductor` invocation at it.
+- Pick **Bundled** to revert to the version that shipped with the app.
 - Installing requires **`npm` on your PATH** (Electron's Node has none) and registry access. If the install fails — npm missing, unknown version, offline — Argus keeps using the bundled version and shows the error.
 - The pinned version persists at `~/.argus/conductor.json` and is re-provisioned on next launch if needed. Machine-local; not shared with your team.
 

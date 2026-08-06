@@ -2295,6 +2295,10 @@ export const setEnabledToolsIpc = (
 export const getConductorStatusIpc = (): Promise<ConductorStatus> =>
   invoke("get_conductor_status");
 
+/** Published conductor versions >= the bundled one, newest first. */
+export const listConductorVersionsIpc = (): Promise<string[]> =>
+  invoke("list_conductor_versions");
+
 export const setConductorVersionIpc = (
   version: string | null,
 ): Promise<ConductorStatus> => invoke("set_conductor_version", { version });
