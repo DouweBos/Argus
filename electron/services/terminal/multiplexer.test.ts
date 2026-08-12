@@ -1,6 +1,6 @@
 import type { WorkspaceEnvConfig } from "../session/models";
 import { describe, expect, it, vi } from "vitest";
-import { workspaceEnvValue, defaultShell } from "./multiplexer";
+import { workspaceEnvValue, defaultShell, commandShell } from "./multiplexer";
 
 // Mock node-pty (native module) and other Electron deps
 vi.mock("node-pty", () => ({ spawn: vi.fn() }));
@@ -103,6 +103,25 @@ describe("defaultShell", () => {
     const original = process.env.SHELL;
     delete process.env.SHELL;
     expect(defaultShell()).toBe("/bin/sh");
+    process.env.SHELL = original;
+  });
+});
+
+describe("commandShell", () => {
+  it("runs commands under the user's login shell", () => {
+    const original = process.env.SHELL;
+    process.env.SHELL = "/bin/zsh";
+    expect(commandShell("pnpm dev")).toEqual([
+      "/bin/zsh",
+      ["-l", "-c", "pnpm dev"],
+    ]);
+    process.env.SHELL = original;
+  });
+
+  it("omits the login flag for unrecognised shells", () => {
+    const original = process.env.SHELL;
+    process.env.SHELL = "/usr/bin/nu";
+    expect(commandShell("echo hi")).toEqual(["/usr/bin/nu", ["-c", "echo hi"]]);
     process.env.SHELL = original;
   });
 });

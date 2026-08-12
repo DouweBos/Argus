@@ -171,6 +171,22 @@ export function defaultShell(): string {
 }
 
 /**
+ * Resolve the program + args for a one-shot command.
+ *
+ * Runs it under the user's login shell so rc files (`~/.zshenv`,
+ * `~/.bash_profile`, …) are sourced — plain `sh -c` misses env like
+ * `ANDROID_HOME` that builds depend on. Shells we don't recognise get a bare
+ * `-c` since the login flag isn't portable.
+ */
+export function commandShell(command: string): [string, string[]] {
+  const shell = defaultShell();
+  const name = path.basename(shell);
+  const login = ["zsh", "bash", "fish", "ksh"].includes(name) ? ["-l"] : [];
+
+  return [shell, [...login, "-c", command]];
+}
+
+/**
  * Compute a deterministic per-session integer from `sessionId` using a
  * simple djb2-style hash, bounded by `range`.
  *
@@ -295,7 +311,7 @@ export function createTerminal(
 
   // Determine the program and arguments.
   const [program, args]: [string, string[]] = command
-    ? ["sh", ["-c", command]]
+    ? commandShell(command)
     : [defaultShell(), []];
 
   const terminalId = crypto.randomUUID();
