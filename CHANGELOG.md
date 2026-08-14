@@ -1,5 +1,11 @@
 # argus
 
+## 0.37.1
+
+### Patch Changes
+
+- f9a383e: Run commands now execute in your login shell, so environment variables from your shell config (like `ANDROID_HOME`) are available to builds.
+
 ## 0.37.0
 
 ### Minor Changes
