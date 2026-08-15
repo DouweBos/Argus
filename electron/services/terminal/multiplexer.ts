@@ -173,17 +173,25 @@ export function defaultShell(): string {
 /**
  * Resolve the program + args for a one-shot command.
  *
- * Runs it under the user's login shell so rc files (`~/.zshenv`,
- * `~/.bash_profile`, …) are sourced — plain `sh -c` misses env like
- * `ANDROID_HOME` that builds depend on. Shells we don't recognise get a bare
- * `-c` since the login flag isn't portable.
+ * Sources the user's login shell so rc files (`~/.zshenv`, `~/.bash_profile`,
+ * …) export env like `ANDROID_HOME` that builds need, then `exec sh -c` on the
+ * command itself. The command travels as a positional parameter so the login
+ * shell never parses it — zsh would otherwise choke on things like
+ * `--filter ~mobile-native` (named-directory expansion).
  */
 export function commandShell(command: string): [string, string[]] {
   const shell = defaultShell();
   const name = path.basename(shell);
-  const login = ["zsh", "bash", "fish", "ksh"].includes(name) ? ["-l"] : [];
 
-  return [shell, [...login, "-c", command]];
+  if (name === "zsh" || name === "bash" || name === "ksh") {
+    return [shell, ["-lc", 'exec sh -c "$0"', command]];
+  }
+  if (name === "fish") {
+    return [shell, ["-lc", 'exec sh -c "$argv[1]"', command]];
+  }
+
+  // Unknown shell — run the command directly under `sh`, no login env.
+  return ["sh", ["-c", command]];
 }
 
 /**
