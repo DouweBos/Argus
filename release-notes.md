@@ -1,5 +1,5 @@
 
 ### Patch Changes
 
-- f9a383e: Run commands now execute in your login shell, so environment variables from your shell config (like `ANDROID_HOME`) are available to builds.
+- 40bae7e: Run commands now pick up environment variables from your shell config (like `ANDROID_HOME`) while still being parsed exactly as written.
 
