@@ -108,20 +108,20 @@ describe("defaultShell", () => {
 });
 
 describe("commandShell", () => {
-  it("runs commands under the user's login shell", () => {
+  it("sources the login shell but parses the command with sh", () => {
     const original = process.env.SHELL;
     process.env.SHELL = "/bin/zsh";
-    expect(commandShell("pnpm dev")).toEqual([
+    expect(commandShell("pnpm --filter ~plex-native dev")).toEqual([
       "/bin/zsh",
-      ["-l", "-c", "pnpm dev"],
+      ["-lc", 'exec sh -c "$0"', "pnpm --filter ~plex-native dev"],
     ]);
     process.env.SHELL = original;
   });
 
-  it("omits the login flag for unrecognised shells", () => {
+  it("falls back to plain sh for unrecognised shells", () => {
     const original = process.env.SHELL;
     process.env.SHELL = "/usr/bin/nu";
-    expect(commandShell("echo hi")).toEqual(["/usr/bin/nu", ["-c", "echo hi"]]);
+    expect(commandShell("echo hi")).toEqual(["sh", ["-c", "echo hi"]]);
     process.env.SHELL = original;
   });
 });
