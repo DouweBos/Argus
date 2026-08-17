@@ -423,7 +423,10 @@ export function CreateSessionDialog({
   // session honours both. We pull a model list from any existing
   // conversation's reported capabilities — first-launch with no prior agent
   // means the picker stays hidden.
-  const { models: knownModels } = useMemo(() => getLastKnownCapabilities(), []);
+  const { models: lastKnownModels } = useMemo(
+    () => getLastKnownCapabilities(),
+    [],
+  );
   const [modelValue, setModelValue] = useState<string>(
     () => getDefaultModel() || "default",
   );
@@ -486,6 +489,14 @@ export function CreateSessionDialog({
       prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
     );
   }, []);
+
+  // A custom runner declares its own models; the cached capabilities only
+  // describe the base runner's, which the gateway won't accept.
+  const knownModels = useMemo(() => {
+    const declared = registeredRunners.find((r) => r.id === runnerId)?.models;
+
+    return declared?.length ? declared : lastKnownModels;
+  }, [registeredRunners, runnerId, lastKnownModels]);
 
   const modelDisplayName = useMemo(() => {
     if (!knownModels.length) {

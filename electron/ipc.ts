@@ -152,9 +152,17 @@ import {
   probeInjection,
 } from "./services/inspection/launcher";
 import { getNodeProps } from "./services/inspection/props";
+import { CUSTOM_RUNNER_PRESETS } from "./services/llm/customRunners/presets";
+import {
+  deleteCustomRunner,
+  listCustomRunners,
+  saveCustomRunner,
+  type CustomRunner,
+} from "./services/llm/customRunners/store";
 import {
   listRunnerOnboardingSteps,
   listRunners as listLlmRunners,
+  syncCustomRunners,
 } from "./services/llm/registry";
 import { generateChatTitle } from "./services/llm/titleGenerator";
 import { testMcpServer } from "./services/mcp/connectivity";
@@ -2199,8 +2207,28 @@ export function registerIpcHandlers(): void {
       id: r.id,
       displayName: r.displayName,
       capabilities: r.capabilities(),
+      isCustom: r.isCustom ?? false,
+      baseRunnerId: r.baseRunnerId ?? null,
+      models: r.models?.() ?? [],
+      defaultModel: r.defaultModel?.() ?? null,
     })),
   );
+
+  // Custom runners — official runners re-pointed at another endpoint. Every
+  // mutation re-syncs the registry so the picker and resolver see the change
+  // without an app restart.
+  handle("llm_list_custom_runners", () => listCustomRunners());
+  handle("llm_list_custom_runner_presets", () => CUSTOM_RUNNER_PRESETS);
+  handle("llm_save_custom_runner", (a) => {
+    const saved = saveCustomRunner(a.runner as Partial<CustomRunner>);
+    syncCustomRunners();
+
+    return saved;
+  });
+  handle("llm_delete_custom_runner", (a) => {
+    deleteCustomRunner(a.id as string);
+    syncCustomRunners();
+  });
 
   // Telemetry — anonymous PostHog. Renderer asks for the install id + current
   // enable state at boot, and pushes opt-in/opt-out toggles back here.

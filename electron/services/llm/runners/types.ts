@@ -209,6 +209,24 @@ export interface OneShotArgs {
   timeoutMs?: number;
   cwd?: string;
   source: string;
+  /** Override the runner's default one-shot model. */
+  model?: string;
+  /** Override the terse default system prompt. */
+  systemPrompt?: string;
+  /** Environment for the child. Defaults to the main process env. */
+  env?: NodeJS.ProcessEnv;
+}
+
+/**
+ * Model a runner offers up front. Runners that only learn their model list
+ * from a live handshake (Claude Code) omit this; derived runners declare it
+ * so the picker can list gateway models the CLI knows nothing about.
+ */
+export interface RunnerModelOption {
+  /** Model id passed to the CLI. */
+  value: string;
+  displayName: string;
+  description?: string;
 }
 
 /**
@@ -253,7 +271,15 @@ export interface ForkTranscriptArgs {
 export interface LlmRunner {
   readonly id: string;
   readonly displayName: string;
+  /** Set on runners derived from an official one via user config. */
+  readonly isCustom?: boolean;
+  /** Official runner a derived runner delegates to. */
+  readonly baseRunnerId?: string;
   capabilities: () => RunnerCapabilities;
+  /** Optional: models to offer before (or instead of) the handshake list. */
+  models?: () => RunnerModelOption[];
+  /** Optional: model used when no level of the cascade pinned one. */
+  defaultModel?: () => string | null;
   preflight: () => Promise<PreflightResult>;
   spawn: (args: LlmRunnerSpawnArgs) => Promise<LlmRunnerHandle>;
   /** One-shot title/slug invocation (replaces direct claudePrint). */

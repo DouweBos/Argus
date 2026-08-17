@@ -373,6 +373,8 @@ export type RuntimePlatform = "android" | "ios" | "tvos" | "web";
  * Mirrors the small subset of `LlmRunner` the UI needs.
  */
 export interface RegisteredRunner {
+  /** Official runner a custom runner derives from; null for built-ins. */
+  baseRunnerId?: string | null;
   /** Capability flags (e.g. `supportsMcp`, `supportsSetModel`). */
   capabilities: {
     supportsInterrupt: boolean;
@@ -382,10 +384,55 @@ export interface RegisteredRunner {
     supportsSetPermissionMode: boolean;
     supportsTranscriptFork: boolean;
   };
+  /** Model applied when nothing else pins one. */
+  defaultModel?: string | null;
   /** Human-readable label, e.g. "Claude Code". */
   displayName: string;
   /** Stable id, e.g. `"claude-code"`. */
   id: string;
+  /** True for user-configured runners derived from an official one. */
+  isCustom?: boolean;
+  /**
+   * Models the runner declares up front. Empty for runners that only learn
+   * their model list from the live handshake (Claude Code).
+   */
+  models?: CustomRunnerModel[];
+}
+
+/** A model offered by a custom runner. */
+export interface CustomRunnerModel {
+  description?: string;
+  displayName: string;
+  /** Model id passed to the CLI, e.g. `callstack/Apex`. */
+  value: string;
+}
+
+/**
+ * A user-configured runner derived from an official one. Persisted in
+ * `~/.argus/custom-runners.json`; mirrors `CustomRunner` on the main side.
+ */
+export interface CustomRunnerConfig {
+  /** Official runner it delegates to, e.g. `"claude-code"`. */
+  baseRunnerId: string;
+  /** Model used when nothing else pins one. */
+  defaultModel: string | null;
+  displayName: string;
+  /** Env overrides applied to every spawn. Empty value unsets a variable. */
+  env: Record<string, string>;
+  /** `custom:<slug>`. Omitted when creating a new runner. */
+  id?: string;
+  /** Models offered in the picker. */
+  models: { description?: string; displayName: string; id: string }[];
+}
+
+/** Pre-filled starting point offered in the "Add runner" menu. */
+export interface CustomRunnerPreset {
+  description: string;
+  draft: Omit<CustomRunnerConfig, "id">;
+  key: string;
+  label: string;
+  /** Env var holding the API key/token the user must supply. */
+  secretEnvKey: string;
 }
 
 /**

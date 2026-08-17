@@ -5,8 +5,8 @@
  * but the model stays editable per agent spawn:
  *
  * - {@link resolveRunnerForSession} — runs once at `create_session` time.
- *   Walks project (`.argus.json` `llm.runner`) → app default → single
- *   registered runner. Throws when multiple runners are registered and no
+ *   Walks project (`.argus.json` `llm.runner`) → app default → the single
+ *   built-in runner. Throws when multiple runners are registered and no
  *   level chose one. The chosen runner is stamped onto `Session.runner_id`
  *   and is immutable for the session's lifetime.
  *
@@ -94,20 +94,26 @@ export function resolveRunnerForSession(
     );
   }
 
-  // 3. Single registered runner fallback.
+  // 3. Built-in fallback. Custom runners are opt-in, so they never become an
+  // implicit default — callers that don't pass an app default (the MCP
+  // `create_session` tool) must still get a working session.
   const all = listRunners();
   if (all.length === 0) {
     throw "No LLM runners are registered";
   }
-  if (all.length > 1) {
-    throw `Multiple LLM runners are registered (${all
+  const builtIns = all.filter((r) => !r.isCustom);
+  if (builtIns.length === 0) {
+    throw "No built-in LLM runners are registered";
+  }
+  if (builtIns.length > 1) {
+    throw `Multiple LLM runners are registered (${builtIns
       .map((r) => r.id)
       .join(
         ", ",
       )}) but neither the project (.argus.json llm.runner) nor the app default chose one. Set llm.runner in .argus.json or the LLM section of Settings.`;
   }
 
-  return { runner: all[0]!, defaultModel: null };
+  return { runner: builtIns[0]!, defaultModel: null };
 }
 
 export interface ResolveModelArgs {
@@ -122,6 +128,8 @@ export interface ResolveModelArgs {
   argusConfig?: ProjectLlmConfig;
   /** App default to consult after the project default. */
   appDefault?: AppDefaultLlm;
+  /** Runner's own default, consulted last (custom runners declare one). */
+  runnerDefaultModel?: string | null;
 }
 
 export interface ResolveModelResult {
@@ -140,7 +148,7 @@ export interface ResolveModelResult {
 
 /**
  * Pick the model for a single agent spawn. Cascade: agent override →
- * session.model → project → app → null (runner default).
+ * session.model → project → app → runner default → null.
  */
 export function resolveModelForAgent(
   args: ResolveModelArgs,
@@ -149,8 +157,10 @@ export function resolveModelForAgent(
   const sessionModel = trimOrNull(args.session.model ?? null);
   const projectModel = trimOrNull(args.argusConfig?.llm?.model ?? null);
   const appModel = trimOrNull(args.appDefault?.model ?? null);
+  const runnerModel = trimOrNull(args.runnerDefaultModel ?? null);
 
-  const model = override ?? sessionModel ?? projectModel ?? appModel ?? null;
+  const model =
+    override ?? sessionModel ?? projectModel ?? appModel ?? runnerModel ?? null;
   const permissionMode = args.agentOverride?.permissionMode ?? null;
 
   return { model, permissionMode };

@@ -66,6 +66,7 @@ import {
   useHasRunningSubagents,
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
+import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import {
   getLastEffortForRunner,
@@ -245,8 +246,24 @@ export function AgentChat({
     return levels.includes("xhigh") ? [...levels, ULTRACODE_EFFORT] : levels;
   }, [capabilitiesModels, modelValue]);
 
-  // Model options for the picker, derived from capabilities.
+  // Fetch per-project command metrics for popularity sorting.
+  const sessions = useSessions();
+
+  // Model options for the picker. A custom runner declares its own models —
+  // the CLI's handshake only knows the base runner's, which don't exist on
+  // the gateway it's pointed at.
+  const registeredRunners = useRegisteredRunners();
+  const runnerModels = useMemo(() => {
+    const runnerId = sessions.find((s) => s.id === sessionId)?.runner_id;
+
+    return runnerId
+      ? (registeredRunners.find((r) => r.id === runnerId)?.models ?? [])
+      : [];
+  }, [registeredRunners, sessions, sessionId]);
   const modelOptions = useMemo(() => {
+    if (runnerModels.length > 0) {
+      return runnerModels;
+    }
     if (!capabilitiesModels?.length) {
       return undefined;
     }
@@ -256,10 +273,7 @@ export function AgentChat({
       displayName: m.displayName,
       description: m.description,
     }));
-  }, [capabilitiesModels]);
-
-  // Fetch per-project command metrics for popularity sorting.
-  const sessions = useSessions();
+  }, [capabilitiesModels, runnerModels]);
   const repoRoot = useMemo(
     () => sessions.find((w) => w.id === sessionId)?.repo_root ?? null,
     [sessions, sessionId],
