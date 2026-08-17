@@ -84,6 +84,7 @@ import {
   type McpEntry,
 } from "../McpServersField";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
+import { CustomRunnersSection } from "./CustomRunnersSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
@@ -140,6 +141,13 @@ function SettingsDialogContent() {
           description: "Default runner & model",
           icon: <Icons.OrchestrationIcon size={12} />,
           render: () => <LlmSection />,
+        },
+        {
+          id: "custom-runners",
+          label: "Custom runners",
+          description: "Bring your own endpoint",
+          icon: <Icons.OrchestrationIcon size={12} />,
+          render: () => <CustomRunnersSection />,
         },
         {
           id: "open-in",

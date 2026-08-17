@@ -40,6 +40,8 @@ export interface RunClaudePrintOptions {
    * benefit from longer reasoning (e.g. summarizing a diff into a PR body).
    */
   model?: string;
+  /** Environment for the child. Defaults to the main process env. */
+  env?: NodeJS.ProcessEnv;
 }
 
 let lastBroadcastAt = 0;
@@ -134,6 +136,7 @@ export async function runClaudePrint(
         timeout: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         maxBuffer: 1024 * 1024,
         cwd: opts.cwd,
+        env: opts.env,
       },
     );
     child.child.stdin?.end();

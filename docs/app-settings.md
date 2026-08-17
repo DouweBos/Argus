@@ -87,7 +87,7 @@ new-agent picker.
 
 | Setting           | Default       | Description                                                                                                                            |
 | ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Runner**        | `claude-code` | The CLI/agent that drives sessions. Today only Claude Code is registered; additional runners (Codex, Gemini, …) will appear over time. |
+| **Runner**        | `claude-code` | The CLI/agent that drives sessions. Claude Code is the built-in runner; any [custom runner](#custom-runners) you add appears here too. |
 | **Default model** | _(empty)_     | Optional model id passed to the runner — e.g. `claude-opus-4-7`. Leave blank to let the runner pick its own default.                   |
 
 Resolution order for the runner (at session creation):
@@ -103,7 +103,47 @@ Resolution order for the model (at every agent spawn):
    create time).
 3. Project default — `llm.model` in `.argus.json`.
 4. App default — this setting.
-5. Whatever the runner picks if none of the above specify a model.
+5. The runner's own default (custom runners declare one).
+6. Whatever the runner picks if none of the above specify a model.
+
+---
+
+## Custom runners
+
+A custom runner reuses an official runner's CLI but points it at a different
+endpoint — a gateway like callstack.ai's Apex, a proxy, or a self-hosted
+model. Everything else (permissions, MCP, restore-at-turn, the whole agent
+experience) is unchanged, because it is still the same CLI underneath.
+
+Pick a template to start from, fill in the fields, and hit **Save**. The
+runner then shows up in the runner picker when you create a session, and in
+the **LLM** section as an app-wide default.
+
+| Field             | Description                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Name**          | Shown wherever runners are listed. The id (`custom:<slug>`) is derived from it and never changes afterwards.                     |
+| **Based on**      | The official runner it delegates to. Claude Code today.                                                                          |
+| **Default model** | Used when neither the agent, session, project, nor app default pins a model.                                                     |
+| **Environment**   | Variables layered on top of the base runner's environment for every agent and one-shot call. An empty value _unsets_ a variable. |
+| **Models**        | Models offered in the model picker. Leave empty to fall back to whatever the base runner advertises.                             |
+
+Values whose name looks like a credential (`token`, `key`, `secret`,
+`password`) are masked until you click **Show**. Custom runners are stored in
+`~/.argus/custom-runners.json` (readable only by you, since it holds API
+tokens) and are never written into the repository — `.argus.json` only
+references a runner by id.
+
+### Example: Apex (callstack.ai)
+
+The **Apex (callstack.ai)** template pre-fills everything except your API key:
+
+| Variable                         | Value                      |
+| -------------------------------- | -------------------------- |
+| `ANTHROPIC_BASE_URL`             | `https://api.callstack.ai` |
+| `ANTHROPIC_AUTH_TOKEN`           | your `sk-…` key            |
+| `CLAUDE_CODE_ATTRIBUTION_HEADER` | `0`                        |
+
+with `callstack/Apex` as both the listed and the default model.
 
 ---
 

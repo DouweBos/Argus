@@ -46,6 +46,8 @@ import type {
   InheritedMcpServer,
   McpOAuthStatus,
   McpTestResult,
+  CustomRunnerConfig,
+  CustomRunnerPreset,
   RegisteredRunner,
   RemoteDevice,
   RemotePairingStart,
@@ -2148,6 +2150,19 @@ export const listRunnerOnboardingSteps = (): Promise<RunnerOnboardingStep[]> =>
 
 export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
   invoke("llm_list_runners");
+
+export const listCustomRunners = (): Promise<CustomRunnerConfig[]> =>
+  invoke("llm_list_custom_runners");
+
+export const listCustomRunnerPresets = (): Promise<CustomRunnerPreset[]> =>
+  invoke("llm_list_custom_runner_presets");
+
+export const saveCustomRunner = (
+  runner: CustomRunnerConfig,
+): Promise<CustomRunnerConfig> => invoke("llm_save_custom_runner", { runner });
+
+export const deleteCustomRunner = (id: string): Promise<void> =>
+  invoke("llm_delete_custom_runner", { id });
 
 export const listOnboardingExamples = (): Promise<ExampleProject[]> =>
   invoke("onboarding_list_examples");

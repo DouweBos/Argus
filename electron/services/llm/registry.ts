@@ -8,7 +8,10 @@
  */
 
 import type { LlmRunner, RunnerOnboardingStep } from "./runners/types";
+import { warn } from "../../../app/lib/logger";
+import { listCustomRunners } from "./customRunners/store";
 import { ClaudeCodeRunner } from "./runners/claudeCode/runner";
+import { DerivedRunner } from "./runners/derived";
 
 const runners = new Map<string, LlmRunner>();
 
@@ -25,25 +28,21 @@ export function listRunners(): LlmRunner[] {
 }
 
 /**
- * Resolve the single runner Argus should use today. Phase 1 has no
- * project/app cascade — it returns the only registered runner. Phase 2
- * replaces the body with the resolver from the plan.
+ * Resolve the runner for callers with no session context (preflight, title
+ * generation). Prefers Claude, then any other built-in; custom runners are
+ * opt-in and never picked implicitly.
  */
 export function resolveDefaultRunner(): LlmRunner {
   const all = [...runners.values()];
   if (all.length === 0) {
     throw "No LLM runners are registered";
   }
-  if (all.length > 1) {
-    // Phase 1: only Claude is registered. If multiple ever land before the
-    // resolver does, pick Claude explicitly so behavior stays stable.
-    const claude = runners.get("claude-code");
-    if (claude) {
-      return claude;
-    }
+  const claude = runners.get("claude-code");
+  if (claude) {
+    return claude;
   }
 
-  return all[0]!;
+  return all.find((r) => !r.isCustom) ?? all[0]!;
 }
 
 /**
@@ -66,5 +65,33 @@ export function listRunnerOnboardingSteps(): RunnerOnboardingStep[] {
   return steps;
 }
 
-// Register built-in runners on module load.
+/**
+ * Re-register the user's custom runners from `~/.argus/custom-runners.json`.
+ *
+ * Called at boot and after every edit. Runners are re-derived wholesale so a
+ * renamed or deleted entry can't linger; built-ins are never touched.
+ * Sessions already bound to a removed runner fail at spawn with a clear
+ * "not registered" error rather than silently switching runners.
+ */
+export function syncCustomRunners(): void {
+  for (const [id, runner] of runners) {
+    if (runner.isCustom) {
+      runners.delete(id);
+    }
+  }
+
+  for (const config of listCustomRunners()) {
+    const base = runners.get(config.baseRunnerId);
+    if (!base) {
+      warn(
+        `[llm] custom runner "${config.id}" derives from unknown runner "${config.baseRunnerId}" — skipping`,
+      );
+      continue;
+    }
+    registerRunner(new DerivedRunner(config, base));
+  }
+}
+
+// Register built-in runners on module load, then layer the user's on top.
 registerRunner(new ClaudeCodeRunner());
+syncCustomRunners();

@@ -317,6 +317,7 @@ export async function startAgent(
     },
     agentOverride: { model: model ?? null },
     argusConfig: projectLlmConfig,
+    runnerDefaultModel: runner.defaultModel?.() ?? null,
   });
 
   // Per-agent debug log.
