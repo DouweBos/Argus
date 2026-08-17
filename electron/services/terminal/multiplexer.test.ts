@@ -108,12 +108,12 @@ describe("defaultShell", () => {
 });
 
 describe("commandShell", () => {
-  it("sources the login shell but parses the command with sh", () => {
+  it("sources the interactive login shell but parses the command with sh", () => {
     const original = process.env.SHELL;
     process.env.SHELL = "/bin/zsh";
     expect(commandShell("pnpm --filter ~plex-native dev")).toEqual([
       "/bin/zsh",
-      ["-lc", 'exec sh -c "$0"', "pnpm --filter ~plex-native dev"],
+      ["-ilc", 'exec sh -c "$0"', "pnpm --filter ~plex-native dev"],
     ]);
     process.env.SHELL = original;
   });
