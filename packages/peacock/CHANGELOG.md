@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.12.1
+
+### Patch Changes
+
+- e1be735: Give each Claude account its own CLI identity so agents stop failing with "OAuth session expired and could not be refreshed" after switching accounts. Accounts whose credentials stop working now show as Signed out in Settings with a Sign in again button.
+
 ## 0.12.0
 
 ### Minor Changes
