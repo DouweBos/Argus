@@ -1,8 +1,8 @@
 /**
  * External "open in" target detection + launch.
  *
- * Supports editors (VS Code, Cursor, Codex, IntelliJ IDEA, Xcode, Android
- * Studio) and terminal apps (iTerm, Terminal). On macOS we prefer
+ * Supports editors (VS Code, Cursor, Zed, Codex, IntelliJ IDEA, Xcode,
+ * Android Studio) and terminal apps (iTerm, Terminal). On macOS we prefer
  * `open -a <AppName>` when the .app bundle is installed, and fall back to a
  * CLI on PATH (`code`, `cursor`, `idea`, etc.).
  */
@@ -41,6 +41,12 @@ const EDITORS: EditorDef[] = [
     name: "Cursor",
     appNames: ["Cursor.app"],
     clis: ["cursor"],
+  },
+  {
+    id: "zed",
+    name: "Zed",
+    appNames: ["Zed.app", "Zed Preview.app"],
+    clis: ["zed"],
   },
   {
     id: "codex",
