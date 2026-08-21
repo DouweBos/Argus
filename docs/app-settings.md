@@ -29,7 +29,9 @@ instantly — no logging out, no terminal.
 - **Accounts** — every account you've signed in, with its email, organization
   and plan. Click a row to make it active; agents, terminals and one-shot
   helpers started from then on use it. Rename a row to give an account a
-  friendlier label, or remove it to sign out and forget it.
+  friendlier label, or remove it to sign out and forget it. A row marked
+  **Signed out** has credentials that stopped working — **Sign in again** renews
+  them in place, keeping the session pins and the label.
 - **Add another account** — pick **Claude subscription** or **Anthropic
   Console**, then click Add account. Argus opens your browser to authenticate;
   approve access there and it signs in automatically — no code to copy. (If the
@@ -49,10 +51,13 @@ Your first account is adopted from whatever `claude` was already logged into, so
 upgrading Argus never costs you a re-authentication.
 
 Additional accounts store their credentials under
-`~/.argus/claude-accounts/<id>/`. The location is part of how the credentials are
-keyed, so moving or renaming `~/.argus` means signing those accounts in again —
-nothing else breaks. Everything else the Claude CLI keeps in `~/.claude`
-(settings, `CLAUDE.md`, plugins, transcripts) is shared across accounts.
+`~/.argus/claude-accounts/<id>/`, alongside their own copy of the Claude CLI's
+`.claude.json` so each account carries its own identity and organization. The
+location is part of how the credentials are keyed, so moving or renaming
+`~/.argus` means signing those accounts in again — nothing else breaks.
+Everything else the Claude CLI keeps in `~/.claude` (settings, `CLAUDE.md`,
+plugins, transcripts) is linked back to the shared copy, so it stays one set of
+files across accounts.
 
 ---
 

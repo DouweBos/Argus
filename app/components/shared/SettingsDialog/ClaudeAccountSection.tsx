@@ -198,7 +198,7 @@ export function ClaudeAccountSection() {
           caption={
             empty
               ? undefined
-              : "Agents and terminals use the selected account. Sessions pinned to another account keep theirs, and running agents are never interrupted by a switch."
+              : "Agents and terminals use the selected account. Sessions pinned to another account keep theirs, and running agents are never interrupted by a switch. An account marked Signed out has expired credentials — sign in again to renew them."
           }
         >
           {empty ? (
@@ -212,7 +212,9 @@ export function ClaudeAccountSection() {
                   busy={busy}
                   detail={accountDetail(account)}
                   label={accountDisplayName(account)}
+                  needsReauth={account.needs_reauth}
                   plan={planLabel(account)}
+                  onReauth={() => startLogin(account.id)}
                   onRemove={() => run(() => removeClaudeAccount(account.id))}
                   onRename={(label) =>
                     run(() => renameClaudeAccount(account.id, label))

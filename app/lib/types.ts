@@ -824,9 +824,8 @@ export interface ClaudeAuthStatus {
 }
 
 /**
- * A Claude account Argus keeps signed in. Identity is captured at login rather
- * than read back from the CLI, because the shared `~/.claude.json` only ever
- * names one account.
+ * A Claude account Argus keeps signed in. Each one gets its own CLI config dir,
+ * so identity and credentials belong to that account alone.
  */
 export interface ClaudeAccount {
   account_type: "claudeai" | "console";
@@ -836,6 +835,8 @@ export interface ClaudeAccount {
   id: string;
   /** User-editable display name; falls back to the email. */
   label?: string;
+  /** A run failed to authenticate — the credentials need renewing. */
+  needs_reauth?: boolean;
   org_id?: string;
   org_name?: string;
   subscription_type?: string;

@@ -12,6 +12,9 @@ export interface AccountRowProps {
   detail?: string;
   /** Primary line — display name, falling back to the email. */
   label: string;
+  /** Signals the stored credentials no longer work; reveals the re-login. */
+  needsReauth?: boolean;
+  onReauth?: () => void;
   onRemove?: () => void;
   /** Omit to make the row non-renamable. */
   onRename?: (label: string) => void;
@@ -30,6 +33,8 @@ export function AccountRow({
   plan,
   active = false,
   busy = false,
+  needsReauth = false,
+  onReauth,
   onSelect,
   onRename,
   onRemove,
@@ -60,6 +65,7 @@ export function AccountRow({
     <div
       className={styles.row}
       data-active={active || undefined}
+      data-stale={needsReauth || undefined}
       data-selectable={onSelect && !active ? true : undefined}
       onClick={active || busy || editing ? undefined : onSelect}
     >
@@ -91,9 +97,23 @@ export function AccountRow({
         {detail ? <span className={styles.detail}>{detail}</span> : null}
       </div>
 
+      {needsReauth ? <Badge tone="warning">Signed out</Badge> : null}
       {plan ? <Badge tone="neutral">{plan}</Badge> : null}
 
       <div className={styles.actions}>
+        {onReauth ? (
+          <button
+            type="button"
+            className={styles.reauth}
+            disabled={busy}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReauth();
+            }}
+          >
+            Sign in again
+          </button>
+        ) : null}
         {onRename && !editing ? (
           <button
             type="button"

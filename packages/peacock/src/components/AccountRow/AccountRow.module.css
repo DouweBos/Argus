@@ -118,3 +118,28 @@
   width: 13px;
   height: 13px;
 }
+
+.row[data-stale] {
+  border-color: var(--warning-soft);
+}
+
+.reauth {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid var(--surface-4);
+  border-radius: var(--border-radius-small);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.reauth:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.reauth:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

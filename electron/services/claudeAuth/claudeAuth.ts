@@ -24,6 +24,7 @@ import { info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../mainWindow";
 import {
   accountCredentialDir,
+  clearAuthFailure,
   createPendingAccount,
   dedupeAccountByEmail,
   DEFAULT_ACCOUNT_ID,
@@ -116,6 +117,7 @@ function emitLoginResult(ok: boolean, error?: string): void {
  * existing entry if the same email signed in twice.
  */
 async function finalizeLogin(id: string): Promise<void> {
+  clearAuthFailure(id);
   try {
     await dedupeAccountByEmail(id);
   } catch (e) {

@@ -49,8 +49,10 @@ import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
 import {
   envForAccount,
+  noteAuthFailure,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
+import { emitAccountsChanged } from "../claudeAuth/claudeAuth";
 import { getConductorBinDir } from "../cli/conductor";
 import { getRunnerById, resolveDefaultRunner } from "../llm/registry";
 import { resolveModelForAgent } from "../llm/resolve";
@@ -350,7 +352,8 @@ export async function startAgent(
   // acquisition; long MCP timeouts so wait_for_agent etc. don't time out.
   // `envForAccount` also clears an inherited credential dir, so a session
   // pinned to the default account isn't dragged onto the globally active one.
-  const env = envForAccount(resolveAccountForSession(argusSession));
+  const accountId = resolveAccountForSession(argusSession);
+  const env = envForAccount(accountId);
   env.PATH = `${getConductorBinDir()}:${env.PATH ?? ""}`;
   env.ARGUS_AGENT_ID = agentId;
   if (supportsMcp && mcpPort && mcpToken) {
@@ -535,6 +538,12 @@ export async function startAgent(
   // -------------------------------------------------------------------------
 
   handle.on("stderr", (line: string) => {
+    // A dead refresh token only shows up here — surface it on the account so
+    // Settings can offer a re-login instead of claiming it's signed in.
+    if (noteAuthFailure(accountId, line)) {
+      warn(`[agent:${agentId}] account ${accountId} needs re-authentication`);
+      emitAccountsChanged();
+    }
     broadcastToRenderers(`agent:stderr:${agentId}`, line);
   });
 

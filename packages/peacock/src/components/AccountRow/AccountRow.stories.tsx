@@ -49,6 +49,19 @@ export const Busy: Story = {
   },
 };
 
+export const NeedsReauth: Story = {
+  args: {
+    label: "work@example.com",
+    detail: "Acme Inc",
+    plan: "Team",
+    needsReauth: true,
+    onReauth: () => {},
+    onSelect: () => {},
+    onRename: () => {},
+    onRemove: () => {},
+  },
+};
+
 export const List: Story = {
   render: () => (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
