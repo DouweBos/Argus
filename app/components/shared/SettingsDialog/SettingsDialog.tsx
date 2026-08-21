@@ -328,6 +328,11 @@ function PermissionsSection() {
 
 function LlmSection() {
   const llm = useDefaultLlm();
+  // Mirror the choice into ~/.argus/app-settings.json so sessions created
+  // outside the UI (MCP, remote) resolve the same runner.
+  const mirror = (next: { model?: string | null; runner?: string | null }) => {
+    setAppSettings({ default_llm: { ...llm, ...next } }).catch(() => undefined);
+  };
   const registered = useRegisteredRunners();
   // Fall back to a local "claude-code" entry if the IPC hasn't returned
   // yet — the picker can never render an empty list. The list is replaced
@@ -361,7 +366,10 @@ function LlmSection() {
                   name="default-llm-runner"
                   type="radio"
                   value={opt.id}
-                  onChange={() => setDefaultLlmRunner(opt.id)}
+                  onChange={() => {
+                    setDefaultLlmRunner(opt.id);
+                    mirror({ runner: opt.id });
+                  }}
                 />
                 <span>{opt.label}</span>
               </label>
@@ -377,7 +385,11 @@ function LlmSection() {
             mono
             placeholder="e.g. claude-opus-4-7 (leave blank for runner default)"
             value={llm.model ?? ""}
-            onChange={(e) => setDefaultLlmModel(e.target.value || null)}
+            onChange={(e) => {
+              const next = e.target.value || null;
+              setDefaultLlmModel(next);
+              mirror({ model: next });
+            }}
           />
         </SettingsScreenField>
       </SettingsScreenDetailBody>

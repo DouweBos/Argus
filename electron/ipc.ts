@@ -751,9 +751,7 @@ export function registerIpcHandlers(): void {
       a.description as string,
       a.useExistingBranch as boolean | undefined,
       a.baseBranch as string | undefined,
-      a.appDefaultLlm as
-        | { runner?: string | null; model?: string | null }
-        | undefined,
+      a.llm as { runner?: string | null; model?: string | null } | undefined,
     ),
   );
   handle("create_project_root_session", (a) =>

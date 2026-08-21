@@ -5,8 +5,8 @@
  * but the model stays editable per agent spawn:
  *
  * - {@link resolveRunnerForSession} — runs once at `create_session` time.
- *   Walks project (`.argus.json` `llm.runner`) → app default → the single
- *   built-in runner. Throws when multiple runners are registered and no
+ *   Walks explicit per-session pick → project (`.argus.json` `llm.runner`) →
+ *   app default → the single built-in runner. Throws when multiple runners are registered and no
  *   level chose one. The chosen runner is stamped onto `Session.runner_id`
  *   and is immutable for the session's lifetime.
  *
@@ -47,6 +47,12 @@ export interface AppDefaultLlm {
 export interface ResolveRunnerArgs {
   /** Repo root for diagnostic messages. */
   repoRoot: string;
+  /**
+   * Runner/model the user picked for this session in the new-session dialog.
+   * Wins over every other level — an explicit choice must not be overridden
+   * by `.argus.json`.
+   */
+  explicit?: AppDefaultLlm;
   /** Parsed `.argus.json`. May be missing the `llm` block. */
   argusConfig?: ProjectLlmConfig;
   /** App-level default. May be undefined when settings haven't been read. */
@@ -67,10 +73,23 @@ export interface ResolveRunnerResult {
 export function resolveRunnerForSession(
   args: ResolveRunnerArgs,
 ): ResolveRunnerResult {
+  const explicitRunner = trimOrNull(args.explicit?.runner ?? null);
+  const explicitModel = trimOrNull(args.explicit?.model ?? null);
   const projectRunner = trimOrNull(args.argusConfig?.llm?.runner ?? null);
   const projectModel = trimOrNull(args.argusConfig?.llm?.model ?? null);
   const appRunner = trimOrNull(args.appDefault?.runner ?? null);
   const appModel = trimOrNull(args.appDefault?.model ?? null);
+
+  // 0. Explicit per-session pick.
+  if (explicitRunner) {
+    const runner = getRunnerById(explicitRunner);
+    if (runner) {
+      return { runner, defaultModel: explicitModel };
+    }
+    warn(
+      `[llm] session runner "${explicitRunner}" is not registered — falling back to project/app default`,
+    );
+  }
 
   // 1. Project default.
   if (projectRunner) {

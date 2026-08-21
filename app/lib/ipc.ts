@@ -619,10 +619,10 @@ export const gitRunHook = (
 export const listSessions = (repoRoot: string): Promise<Session[]> =>
   invoke("list_sessions", { repoRoot });
 
-export interface CreateSessionLlmDefault {
-  /** App-level default model id. `null` lets the runner pick. */
+export interface CreateSessionLlm {
+  /** Model id stamped onto the session. `null` lets the runner pick. */
   model?: string | null;
-  /** App-level default runner id (e.g. `"claude-code"`). `null` defers to fallback. */
+  /** Runner id picked for this session (e.g. `"claude-code"`, `"custom:apex"`). */
   runner?: string | null;
 }
 
@@ -632,7 +632,7 @@ export const createSession = (
   description: string,
   useExistingBranch?: boolean,
   baseBranch?: string,
-  appDefaultLlm?: CreateSessionLlmDefault,
+  llm?: CreateSessionLlm,
 ): Promise<Session> =>
   invoke("create_session", {
     repoRoot,
@@ -640,7 +640,7 @@ export const createSession = (
     description,
     useExistingBranch: useExistingBranch ?? false,
     baseBranch,
-    appDefaultLlm,
+    llm,
   });
 
 export const createHeadSession = (repoRoot: string): Promise<Session> =>
