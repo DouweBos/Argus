@@ -454,7 +454,15 @@ export function CreateSessionDialog({
     currentId: runnerId,
     locked: false,
     available: registeredRunners,
-    onSelect: setRunnerId,
+    onSelect: (id) => {
+      setRunnerId(id);
+      // Models don't carry across runners — a gateway rejects the other
+      // runner's ids, so reset to the newly picked runner's default.
+      const next = registeredRunners.find((r) => r.id === id);
+      setModelValue(
+        next?.defaultModel ?? next?.models?.[0]?.value ?? "default",
+      );
+    },
   };
 
   const [linkedProjects, setLinkedProjects] = useState<string[]>([]);
@@ -711,6 +719,10 @@ export function CreateSessionDialog({
     initialModel?: string,
     initialLinkedProjects?: string[],
   ) => {
+    const llm = {
+      runner: runnerId,
+      model: initialModel && initialModel !== "default" ? initialModel : null,
+    };
     // Close the dialog immediately — branch name generation and worktree
     // setup can take several seconds (claude -p title generation, git
     // worktree add, copy/symlink pipeline). The session renders in the
@@ -733,6 +745,7 @@ export function CreateSessionDialog({
             desc,
             useExisting,
             baseBranch,
+            llm,
           );
           // The backend returns with the session in `initializing` status —
           // branch-name generation and worktree creation still run in the

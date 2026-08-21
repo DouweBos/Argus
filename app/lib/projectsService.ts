@@ -8,6 +8,7 @@
  * its own `addRepoRoot` IPC call, spamming the main-process log.
  */
 
+import type { CreateSessionLlm } from "./ipc";
 import { getAgentState, removeAgent } from "../stores/agentStore";
 import { pushError } from "../stores/notificationsStore";
 import {
@@ -108,6 +109,7 @@ export async function createSessionInProject(
   description: string,
   useExistingBranch?: boolean,
   baseBranch?: string,
+  llm?: CreateSessionLlm,
 ) {
   try {
     const session = await apiCreateSession(
@@ -116,6 +118,7 @@ export async function createSessionInProject(
       description,
       useExistingBranch,
       baseBranch,
+      llm,
     );
     if (!getSessionState().sessions.some((w) => w.id === session.id)) {
       addSession(session);

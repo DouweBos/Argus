@@ -15,6 +15,11 @@ import { argusHomeDir } from "../../lib/argusHome";
 const SCHEMA_VERSION = 1;
 
 export interface AppSettings {
+  /**
+   * App-level default LLM picked in Settings. Mirrored here from the renderer
+   * so sessions created outside the UI (MCP, remote) resolve the same runner.
+   */
+  default_llm?: { model?: string | null; runner?: string | null };
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: McpServers;
   /**

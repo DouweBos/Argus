@@ -600,6 +600,8 @@ export interface McpOAuthStatus {
 
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
+  /** App-level default LLM picked in Settings, mirrored for the main process. */
+  default_llm?: { model?: string | null; runner?: string | null };
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: Record<string, Record<string, unknown>>;
   /**

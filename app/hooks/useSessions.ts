@@ -1,3 +1,4 @@
+import type { CreateSessionLlm } from "../lib/ipc";
 import type { Session } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { listen } from "../lib/events";
@@ -234,6 +235,7 @@ export function useProjectSessions(repoRoot: string) {
       description: string,
       useExistingBranch?: boolean,
       baseBranch?: string,
+      llm?: CreateSessionLlm,
     ) => {
       const session = await createSessionInProject(
         repoRoot,
@@ -241,6 +243,7 @@ export function useProjectSessions(repoRoot: string) {
         description,
         useExistingBranch,
         baseBranch,
+        llm,
       );
 
       const [unlistenStatus, unlistenProgress, unlistenTerminal] =

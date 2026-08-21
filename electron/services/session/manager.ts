@@ -8,6 +8,7 @@ import path from "node:path";
 import { error, info } from "../../../app/lib/logger";
 import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
+import { loadAppSettings } from "../appSettings/store";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
 import { forkClaudeSessionFile } from "../llm/runners/claudeCode/transcriptFork";
 import {
@@ -281,7 +282,7 @@ export async function createSession(
   description: string,
   useExistingBranch?: boolean,
   explicitBaseBranch?: string,
-  appDefaultLlm?: AppDefaultLlm,
+  sessionLlm?: AppDefaultLlm,
   opts?: Pick<CreateSessionOptions, "awaitWorktreeReady" | "postWorktreeReady">,
 ): Promise<Session> {
   const id = crypto.randomUUID();
@@ -298,13 +299,17 @@ export async function createSession(
   } catch {
     argusConfig = undefined;
   }
+  const appDefaultLlm = loadAppSettings().default_llm ?? undefined;
   const { runner: chosenRunner, defaultModel } = resolveRunnerForSession({
     repoRoot,
+    explicit: sessionLlm,
     argusConfig,
     appDefault: appDefaultLlm,
   });
   const initialModel =
-    defaultModel ?? (appDefaultLlm?.model ? appDefaultLlm.model.trim() : null);
+    defaultModel ??
+    (sessionLlm?.model ? sessionLlm.model.trim() : null) ??
+    (appDefaultLlm?.model ? appDefaultLlm.model.trim() : null);
 
   // Provisional display name so the sidebar row has something readable before
   // branch generation returns. Prefer the user-typed branch, then the first

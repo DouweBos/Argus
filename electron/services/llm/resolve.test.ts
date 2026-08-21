@@ -36,6 +36,34 @@ describe("resolveRunnerForSession", () => {
     expect(runner.id).toBe("claude-code");
   });
 
+  it("honours the runner picked for this session", () => {
+    const { runner, defaultModel } = resolveRunnerForSession({
+      repoRoot: "/repo",
+      explicit: { runner: "custom:apex", model: "callstack/Apex" },
+    });
+    expect(runner.id).toBe("custom:apex");
+    expect(defaultModel).toBe("callstack/Apex");
+  });
+
+  it("prefers the session pick over the project and app defaults", () => {
+    const { runner } = resolveRunnerForSession({
+      repoRoot: "/repo",
+      explicit: { runner: "custom:apex" },
+      argusConfig: { llm: { runner: "claude-code" } },
+      appDefault: { runner: "claude-code" },
+    });
+    expect(runner.id).toBe("custom:apex");
+  });
+
+  it("falls back when the session pick is not registered", () => {
+    const { runner } = resolveRunnerForSession({
+      repoRoot: "/repo",
+      explicit: { runner: "custom:gone" },
+      appDefault: { runner: "claude-code" },
+    });
+    expect(runner.id).toBe("claude-code");
+  });
+
   it("honours a custom runner pinned by the project", () => {
     const { runner, defaultModel } = resolveRunnerForSession({
       repoRoot: "/repo",
