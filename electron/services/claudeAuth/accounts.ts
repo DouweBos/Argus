@@ -4,14 +4,21 @@
  * The Claude CLI namespaces its stored credentials by
  * `CLAUDE_SECURESTORAGE_CONFIG_DIR`: the macOS keychain service becomes
  * `Claude Code-credentials-<sha256(dir)[0:8]>` (with a `<dir>/.credentials.json`
- * fallback). Unlike `CLAUDE_CONFIG_DIR` it namespaces *credentials only*, so
- * `~/.claude` — settings, CLAUDE.md, plugins, and the `projects/` transcripts
- * Argus forks — stays shared across accounts.
+ * fallback). It namespaces *credentials only*.
  *
- * Each account therefore just owns a directory under
+ * Each account therefore owns a directory under
  * `~/.argus/claude-accounts/<id>/` used purely as that namespace. Because the
  * keychain service name hashes the absolute path, moving `~/.argus` invalidates
  * saved logins — the user re-authenticates, nothing else breaks.
+ *
+ * Credentials alone aren't enough, though: the CLI keeps the signed-in identity
+ * (`oauthAccount` — email, org, billing) in `.claude.json`, which is *not*
+ * namespaced by that variable. Sharing one `.claude.json` across accounts means
+ * every run but the most recent login's carries another account's org, which
+ * breaks token refresh and misreports who is signed in. So each account also
+ * gets its own `CLAUDE_CONFIG_DIR` at `<id>/config/`, holding a real
+ * `.claude.json` plus symlinks back to everything in `~/.claude` (settings,
+ * CLAUDE.md, plugins, `projects/` transcripts) so the rest stays shared.
  *
  * The reserved id `default` sets no env var at all, i.e. it is whatever account
  * `claude` was already logged into before Argus grew this feature.
@@ -20,6 +27,7 @@
 import { execFile } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { warn } from "../../../app/lib/logger";
@@ -30,6 +38,7 @@ const execFileAsync = promisify(execFile);
 const SCHEMA_VERSION = 1;
 const CLAUDE_BIN = "claude";
 const CREDENTIAL_ENV = "CLAUDE_SECURESTORAGE_CONFIG_DIR";
+const CONFIG_ENV = "CLAUDE_CONFIG_DIR";
 
 /** Id of the pre-existing `~/.claude` login. Sets no credential env var. */
 export const DEFAULT_ACCOUNT_ID = "default";
@@ -43,6 +52,8 @@ export interface ClaudeAccount {
   org_name?: string;
   subscription_type?: string;
   auth_method?: string;
+  /** Set when a run failed to authenticate — the row offers a re-login. */
+  needs_reauth?: boolean;
   account_type: "claudeai" | "console";
   created_at: number;
 }
@@ -100,36 +111,144 @@ function writeFile(file: ClaudeAccountsFile): void {
   fs.renameSync(tmp, target);
 }
 
+function accountsRootDir(): string {
+  return path.join(argusHomeDir(), "claude-accounts");
+}
+
 /** Directory whose path seeds the CLI's credential namespace for an account. */
 export function accountCredentialDir(id: string): string {
-  return path.join(argusHomeDir(), "claude-accounts", id);
+  return path.join(accountsRootDir(), id);
+}
+
+/** This account's `CLAUDE_CONFIG_DIR` — its own `.claude.json` lives here. */
+export function accountConfigDir(id: string): string {
+  return path.join(accountCredentialDir(id), "config");
+}
+
+function sharedClaudeDir(): string {
+  return path.join(os.homedir(), ".claude");
 }
 
 /**
- * Env overlay that points the Claude CLI at this account's credentials. Empty
- * for the default account, which uses the CLI's own unnamespaced store.
+ * Create the account's config dir and keep it linked to the shared `~/.claude`.
+ * `.claude.json` is seeded from the user's own (minus the identity) so the
+ * account doesn't start at onboarding; the CLI refills `oauthAccount` from the
+ * account's token on its first run.
+ */
+export function ensureAccountConfigDir(id: string): string {
+  const dir = accountConfigDir(id);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const configFile = path.join(dir, ".claude.json");
+  if (!fs.existsSync(configFile)) {
+    fs.writeFileSync(configFile, seedConfigJson(), "utf8");
+  }
+
+  // Link (never copy) the shared config so settings, CLAUDE.md, plugins and the
+  // `projects/` transcripts Argus forks stay one set of files.
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(sharedClaudeDir());
+  } catch {
+    return dir;
+  }
+  for (const entry of entries) {
+    const target = path.join(dir, entry);
+    if (fs.existsSync(target) || isSymlink(target)) {
+      continue;
+    }
+    try {
+      fs.symlinkSync(path.join(sharedClaudeDir(), entry), target);
+    } catch (e) {
+      warn(`[claudeAccounts] linking ${entry} into ${dir} failed:`, e);
+    }
+  }
+
+  return dir;
+}
+
+/** `existsSync` follows links, so a dangling one needs its own check. */
+function isSymlink(target: string): boolean {
+  try {
+    return fs.lstatSync(target).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
+function seedConfigJson(): string {
+  try {
+    const raw = fs.readFileSync(
+      path.join(os.homedir(), ".claude.json"),
+      "utf8",
+    );
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    Reflect.deleteProperty(parsed, "oauthAccount");
+
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return "{}";
+  }
+}
+
+/**
+ * Env overlay that points the Claude CLI at this account's credentials and
+ * config. Empty for the default account, which uses the CLI's own stores.
  */
 export function claudeAccountEnv(id: string): Record<string, string> {
   if (id === DEFAULT_ACCOUNT_ID) {
     return {};
   }
 
-  return { [CREDENTIAL_ENV]: accountCredentialDir(id) };
+  return {
+    [CREDENTIAL_ENV]: accountCredentialDir(id),
+    [CONFIG_ENV]: ensureAccountConfigDir(id),
+  };
 }
 
 /**
- * Build a child env for the given account. Always clears an inherited
- * {@link CREDENTIAL_ENV} first so the default account doesn't silently pick up
- * the globally active one.
+ * Build a child env for the given account. Always clears the inherited
+ * credential and config vars first so the default account doesn't silently pick
+ * up the globally active one.
  */
 export function envForAccount(
   id: string,
   base: NodeJS.ProcessEnv = process.env,
 ): NodeJS.ProcessEnv {
   const env = { ...base };
-  Reflect.deleteProperty(env, CREDENTIAL_ENV);
+  for (const key of [CREDENTIAL_ENV, CONFIG_ENV]) {
+    // Only ours — a value the user set themselves is theirs to keep.
+    if (env[key]?.startsWith(accountsRootDir())) {
+      Reflect.deleteProperty(env, key);
+    }
+  }
 
   return Object.assign(env, claudeAccountEnv(id));
+}
+
+/**
+ * CLI output that means the stored credentials are dead. `auth status` still
+ * reports these accounts as signed in — it only checks that tokens exist — so a
+ * failed run is the only signal that a re-login is needed.
+ */
+const AUTH_FAILURE =
+  /OAuth (?:token|session) expired|could not be refreshed|Failed to authenticate|invalid_grant|authentication_error|Please run [`"]?\/login/i;
+
+/** Clear the flag once the account signs in again. */
+export function clearAuthFailure(id: string): void {
+  if (getClaudeAccount(id)?.needs_reauth) {
+    upsertClaudeAccount({ id, needs_reauth: false });
+  }
+}
+
+/** Flag an account whose run just failed to authenticate. Idempotent. */
+export function noteAuthFailure(id: string, text: string): boolean {
+  if (!AUTH_FAILURE.test(text) || getClaudeAccount(id)?.needs_reauth) {
+    return false;
+  }
+  upsertClaudeAccount({ id, needs_reauth: true });
+
+  return true;
 }
 
 export function listClaudeAccounts(): ClaudeAccount[] {
@@ -153,12 +272,14 @@ export function getClaudeAccount(id: string): ClaudeAccount | undefined {
  */
 export function applyActiveAccountToProcessEnv(): void {
   const env = claudeAccountEnv(getActiveAccountId());
-  const dir = env[CREDENTIAL_ENV];
-  if (dir) {
-    fs.mkdirSync(dir, { recursive: true });
-    process.env[CREDENTIAL_ENV] = dir;
-  } else {
-    Reflect.deleteProperty(process.env, CREDENTIAL_ENV);
+  for (const key of [CREDENTIAL_ENV, CONFIG_ENV]) {
+    const dir = env[key];
+    if (dir) {
+      fs.mkdirSync(dir, { recursive: true });
+      process.env[key] = dir;
+    } else if (process.env[key]?.startsWith(accountsRootDir())) {
+      Reflect.deleteProperty(process.env, key);
+    }
   }
 }
 
@@ -230,13 +351,19 @@ export async function syncAccountIdentity(
   const str = (key: string): string | undefined =>
     typeof parsed[key] === "string" ? (parsed[key] as string) : undefined;
 
-  return upsertClaudeAccount({
-    id,
+  // Keep what we already know for fields the CLI leaves null — an account that
+  // hasn't run since its config dir was created has no identity cached yet.
+  const fields = {
     email: str("email"),
     org_id: str("orgId"),
     org_name: str("orgName"),
     subscription_type: str("subscriptionType"),
     auth_method: str("authMethod"),
+  };
+
+  return upsertClaudeAccount({
+    id,
+    ...Object.fromEntries(Object.entries(fields).filter(([, v]) => v)),
   });
 }
 

@@ -3,23 +3,29 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  accountConfigDir,
   accountCredentialDir,
   applyActiveAccountToProcessEnv,
   claudeAccountEnv,
+  clearAuthFailure,
   DEFAULT_ACCOUNT_ID,
   envForAccount,
   getActiveAccountId,
+  getClaudeAccount,
   listClaudeAccounts,
+  noteAuthFailure,
   resolveAccountForSession,
   setActiveAccount,
   upsertClaudeAccount,
 } from "./accounts";
 
 const CREDENTIAL_ENV = "CLAUDE_SECURESTORAGE_CONFIG_DIR";
+const CONFIG_ENV = "CLAUDE_CONFIG_DIR";
 
 let home: string;
 let originalHome: string | undefined;
 let originalCredentialEnv: string | undefined;
+let originalConfigEnv: string | undefined;
 
 // Isolate `~/.argus` per test so the store always starts empty.
 describe("claude accounts", () => {
@@ -27,8 +33,10 @@ describe("claude accounts", () => {
     home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-accounts-"));
     originalHome = process.env.ARGUS_HOME;
     originalCredentialEnv = process.env[CREDENTIAL_ENV];
+    originalConfigEnv = process.env[CONFIG_ENV];
     process.env.ARGUS_HOME = home;
     Reflect.deleteProperty(process.env, CREDENTIAL_ENV);
+    Reflect.deleteProperty(process.env, CONFIG_ENV);
   });
 
   afterEach(() => {
@@ -42,6 +50,11 @@ describe("claude accounts", () => {
     } else {
       process.env[CREDENTIAL_ENV] = originalCredentialEnv;
     }
+    if (originalConfigEnv === undefined) {
+      Reflect.deleteProperty(process.env, CONFIG_ENV);
+    } else {
+      process.env[CONFIG_ENV] = originalConfigEnv;
+    }
     fs.rmSync(home, { force: true, recursive: true });
   });
 
@@ -53,25 +66,45 @@ describe("claude accounts", () => {
     it("namespaces other accounts by directory", () => {
       expect(claudeAccountEnv("abc")).toEqual({
         [CREDENTIAL_ENV]: accountCredentialDir("abc"),
+        [CONFIG_ENV]: accountConfigDir("abc"),
       });
+    });
+
+    it("gives the account its own .claude.json", () => {
+      claudeAccountEnv("abc");
+
+      expect(
+        fs.existsSync(path.join(accountConfigDir("abc"), ".claude.json")),
+      ).toBe(true);
     });
   });
 
   describe("envForAccount", () => {
-    it("clears an inherited namespace for the default account", () => {
+    it("clears another account's namespace for the default account", () => {
       const env = envForAccount(DEFAULT_ACCOUNT_ID, {
-        [CREDENTIAL_ENV]: "/somewhere/else",
+        [CREDENTIAL_ENV]: accountCredentialDir("other"),
+        [CONFIG_ENV]: accountConfigDir("other"),
         PATH: "/usr/bin",
       });
 
       expect(env[CREDENTIAL_ENV]).toBeUndefined();
+      expect(env[CONFIG_ENV]).toBeUndefined();
       expect(env.PATH).toBe("/usr/bin");
     });
 
+    it("leaves a config dir the user set themselves alone", () => {
+      const env = envForAccount(DEFAULT_ACCOUNT_ID, {
+        [CONFIG_ENV]: "/somewhere/else",
+      });
+
+      expect(env[CONFIG_ENV]).toBe("/somewhere/else");
+    });
+
     it("overwrites an inherited namespace for a pinned account", () => {
-      const env = envForAccount("abc", { [CREDENTIAL_ENV]: "/somewhere/else" });
+      const env = envForAccount("abc", { [CONFIG_ENV]: "/somewhere/else" });
 
       expect(env[CREDENTIAL_ENV]).toBe(accountCredentialDir("abc"));
+      expect(env[CONFIG_ENV]).toBe(accountConfigDir("abc"));
     });
   });
 
@@ -113,15 +146,41 @@ describe("claude accounts", () => {
       applyActiveAccountToProcessEnv();
 
       expect(process.env[CREDENTIAL_ENV]).toBe(accountCredentialDir("one"));
+      expect(process.env[CONFIG_ENV]).toBe(accountConfigDir("one"));
     });
 
     it("clears the namespace for the default account", () => {
       upsertClaudeAccount({ id: DEFAULT_ACCOUNT_ID });
-      process.env[CREDENTIAL_ENV] = "/stale";
+      process.env[CREDENTIAL_ENV] = accountCredentialDir("stale");
       setActiveAccount(DEFAULT_ACCOUNT_ID);
       applyActiveAccountToProcessEnv();
 
       expect(process.env[CREDENTIAL_ENV]).toBeUndefined();
+    });
+  });
+
+  describe("noteAuthFailure", () => {
+    it("flags the account once on an expired-session message", () => {
+      upsertClaudeAccount({ id: "one" });
+
+      expect(
+        noteAuthFailure(
+          "one",
+          "OAuth session expired and could not be refreshed",
+        ),
+      ).toBe(true);
+      expect(getClaudeAccount("one")?.needs_reauth).toBe(true);
+      expect(noteAuthFailure("one", "OAuth session expired")).toBe(false);
+    });
+
+    it("ignores ordinary output and clears on a fresh sign-in", () => {
+      upsertClaudeAccount({ id: "one" });
+
+      expect(noteAuthFailure("one", "npm warn deprecated")).toBe(false);
+      noteAuthFailure("one", "Failed to authenticate");
+      clearAuthFailure("one");
+
+      expect(getClaudeAccount("one")?.needs_reauth).toBe(false);
     });
   });
 
