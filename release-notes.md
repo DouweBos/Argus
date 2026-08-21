@@ -1,9 +1,8 @@
 
-### Minor Changes
-
-- 63b097f: Add custom runners: point Claude Code at another Anthropic-compatible endpoint (like callstack.ai's Apex) from Settings → Custom runners, then pick it per session or as your app default. Start from a template, paste your API key, and the runner's models show up in the model picker.
-
 ### Patch Changes
 
-- e33950f: Run commands now pick up version managers configured in your shell rc file, so tools like `bundle`, `ruby`, and `node` resolve to the same versions you get in a terminal.
+- e1be735: Give each Claude account its own CLI identity so agents stop failing with "OAuth session expired and could not be refreshed" after switching accounts. Accounts whose credentials stop working now show as Signed out in Settings with a Sign in again button.
+- 38d7e3e: Fix custom runners being ignored: the runner picked in the new-session dialog (and the default runner set in Settings) is now actually used for the session, and switching runners resets the model to that runner's own default.
+- Updated dependencies [e1be735]
+  - @argus/peacock@0.12.1
 
