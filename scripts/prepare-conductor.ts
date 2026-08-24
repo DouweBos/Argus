@@ -39,7 +39,7 @@ import {
 // Configuration — bump this when upgrading conductor
 // ---------------------------------------------------------------------------
 
-const CONDUCTOR_VERSION = "0.25.0";
+const CONDUCTOR_VERSION = "0.29.3";
 
 // ---------------------------------------------------------------------------
 // Paths
