@@ -33,7 +33,8 @@ import { ChatInput } from "./ChatInput";
 import { DevicesView } from "./DevicesView";
 import { DeviceScreen } from "./DeviceScreen";
 import { Settings } from "./Settings";
-import { useHistoryView } from "./useHistoryView";
+import { useHistoryView, type View } from "./useHistoryView";
+import { useScrollRestore } from "./useScrollRestore";
 import { useLiveRefresh } from "./useLiveRefresh";
 
 export function App() {
@@ -142,6 +143,7 @@ function ConnectionBadge({ state }: { state: ConnectionState }) {
 
 function Monitor() {
   const { view, push, back, canGoBack } = useHistoryView();
+  const mainRef = useRef<HTMLDivElement>(null);
   const connection = useAppStore((s) => s.connection);
   const refreshProjects = useAppStore((s) => s.refreshProjects);
   const hasControl = useAppStore((s) => s.hasControl());
@@ -187,6 +189,8 @@ function Monitor() {
               : view.name === "device"
                 ? view.deviceName
                 : view.agentLabel;
+
+  useScrollRestore(mainRef, viewKey(view), view.name !== "agent");
 
   return (
     <div className="aw-shell">
@@ -273,7 +277,7 @@ function Monitor() {
         }
       />
 
-      <div className="aw-main">
+      <div className="aw-main" ref={mainRef}>
         {connection === "offline" && (
           <Banner tone="warning">
             Lost the connection to Argus — retrying automatically.
@@ -329,6 +333,22 @@ function Monitor() {
       {view.name === "agent" && <AgentDock agentId={view.agentId} />}
     </div>
   );
+}
+
+/** Identity of the view for scroll memory — same screen, same key. */
+function viewKey(view: View): string {
+  switch (view.name) {
+    case "project":
+      return `project:${view.repoRoot}`;
+    case "agent":
+      return `agent:${view.agentId}`;
+    case "changes":
+      return `changes:${view.sessionId}`;
+    case "device":
+      return `device:${view.deviceId}`;
+    default:
+      return view.name;
+  }
 }
 
 /** The control-only chat input, pinned below the transcript scroll area. */
