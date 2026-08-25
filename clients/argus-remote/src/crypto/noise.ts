@@ -311,7 +311,7 @@ export class NoiseHandshake {
       throw new Error("not this side's turn to write");
     }
 
-    let buf = new Uint8Array(0);
+    let buf: Uint8Array = new Uint8Array(0);
     for (const token of this.tokens(this.messageIndex)) {
       switch (token) {
         case "e": {

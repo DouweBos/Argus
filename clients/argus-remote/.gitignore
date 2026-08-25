@@ -4,3 +4,11 @@ dist/
 web-build/
 *.log
 .DS_Store
+
+# Prebuild output (regenerate with `npx expo prebuild`)
+/ios/
+/android/
+
+# Local Expo module build output
+modules/*/android/build/
+modules/*/android/.cxx/

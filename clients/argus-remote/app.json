@@ -5,26 +5,49 @@
     "version": "0.1.0",
     "scheme": "argus-remote",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.houwert.argus.remote",
       "infoPlist": {
-        "NSCameraUsageDescription": "Scan the pairing QR code shown in Argus."
+        "NSCameraUsageDescription": "Scan the pairing QR code shown in Argus, or take a photo to send to an agent."
       }
     },
     "android": {
       "package": "dev.houwert.argus.remote",
-      "permissions": ["CAMERA", "USE_BIOMETRIC"]
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-local-authentication",
+      "expo-notifications",
       [
         "expo-camera",
-        { "cameraPermission": "Scan the pairing QR code shown in Argus." }
+        {
+          "cameraPermission": "Scan the pairing QR code shown in Argus."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach screenshots and photos to messages you send an agent.",
+          "cameraPermission": "Take a photo to send to an agent."
+        }
+      ],
+      "expo-asset",
+      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
       ]
     ]
   }

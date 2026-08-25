@@ -1,15 +1,28 @@
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
-import { Body, Btn, Card, Muted, Screen, Title } from "../src/components/ui";
+import {
+  Banner,
+  Body,
+  Btn,
+  Card,
+  Muted,
+  Row,
+  Screen,
+  Spinner,
+  TextField,
+  Title,
+} from "../src/components/ui";
+import { defaultDeviceName } from "../src/lib/keystore";
 import { PairingClient, parsePairingInput } from "../src/lib/pairingClient";
-import { theme } from "../src/theme";
 import { useAppStore } from "../src/stores/appStore";
+import { useTheme } from "../src/theme";
 
-type Phase = "scan" | "await-confirm" | "paired";
+type Phase = "await-confirm" | "scan";
 
 export default function PairScreen() {
+  const theme = useTheme();
   const router = useRouter();
   const pairComplete = useAppStore((s) => s.pairComplete);
   const [permission, requestPermission] = useCameraPermissions();
@@ -41,10 +54,11 @@ export default function PairScreen() {
           setSas(code);
           setPhase("await-confirm");
         },
-        onPaired: async (identity) => {
-          await pairComplete(identity);
-          setPhase("paired");
-          router.replace("/");
+        onPaired: (identity) => {
+          // Seed a friendly label so the desktop's device list isn't "New device".
+          pairComplete({ ...identity, name: defaultDeviceName() })
+            .catch(() => {})
+            .finally(() => router.replace("/"));
         },
         onError: (message) => {
           setError(message);
@@ -64,11 +78,19 @@ export default function PairScreen() {
     return (
       <Screen>
         <Title>Confirm the code</Title>
-        <Muted>Check this matches the code shown in Argus, then tap “Codes match — pair” on your computer.</Muted>
-        <View style={styles.sasBox}>
-          <Body>{sas}</Body>
-        </View>
-        <Muted>Waiting for confirmation…</Muted>
+        <Muted>
+          Check this matches the code shown in Argus, then tap “Codes match —
+          pair” on your computer.
+        </Muted>
+        <Card>
+          <Body style={{ fontSize: 24, letterSpacing: 4, textAlign: "center" }}>
+            {sas}
+          </Body>
+        </Card>
+        <Row gap={8}>
+          <Spinner />
+          <Muted>Waiting for confirmation…</Muted>
+        </Row>
         <Btn
           label="Cancel"
           tone="ghost"
@@ -89,54 +111,36 @@ export default function PairScreen() {
       <Muted>In Argus, open Settings → Remote Access → Start pairing.</Muted>
 
       {permission?.granted ? (
-        <Card style={{ padding: 0, overflow: "hidden", height: 280 }}>
+        <View
+          style={{
+            height: 280,
+            borderRadius: theme.radius,
+            overflow: "hidden",
+            backgroundColor: theme.mediaBg,
+          }}
+        >
           <CameraView
             style={StyleSheet.absoluteFill}
             barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
             onBarcodeScanned={({ data }) => begin(data)}
           />
-        </Card>
+        </View>
       ) : (
         <Muted>Camera permission is needed to scan the QR.</Muted>
       )}
 
       <Card>
         <Muted>Or paste the pairing code</Muted>
-        <TextInput
-          style={styles.input}
-          placeholder="paste code"
-          placeholderTextColor={theme.textMuted}
+        <TextField
+          multiline
           value={manual}
           onChangeText={setManual}
-          autoCapitalize="none"
-          multiline
+          placeholder="paste code"
         />
-        <Btn
-          label="Pair"
-          tone="primary"
-          disabled={!manual.trim()}
-          onPress={() => begin(manual)}
-        />
+        <Btn label="Pair" disabled={!manual.trim()} onPress={() => begin(manual)} />
       </Card>
 
-      {error && <Muted>{error}</Muted>}
+      {error && <Banner tone="danger">{error}</Banner>}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  sasBox: {
-    alignSelf: "flex-start",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: theme.radiusSm,
-    backgroundColor: theme.surfaceRaised,
-  },
-  input: {
-    color: theme.text,
-    backgroundColor: theme.surfaceRaised,
-    borderRadius: theme.radiusSm,
-    padding: 10,
-    minHeight: 60,
-  },
-});
