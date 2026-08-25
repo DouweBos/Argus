@@ -3,7 +3,9 @@
  * `expo-secure-store` (Keychain / Keystore, hardware-backed).
  */
 
+import * as Device from "expo-device";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { toBase64, fromBase64 } from "./base64";
 import { generateKeypair, type NoiseKeypair } from "../crypto/noise";
 
@@ -19,6 +21,18 @@ export interface DeviceIdentity {
   /** Public wss:// URL of the desktop gateway (via the tunnel). */
   url: string;
   capabilities: string[];
+  /** Client-chosen display name, shown in the desktop's paired-device list. */
+  name?: string;
+}
+
+/** Friendly default shown in the desktop's paired-device list. */
+export function defaultDeviceName(): string {
+  const model = Device.modelName?.trim();
+  if (model) {
+    return model;
+  }
+
+  return Platform.OS === "ios" ? "iPhone" : "Android device";
 }
 
 export async function loadIdentity(): Promise<DeviceIdentity | null> {

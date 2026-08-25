@@ -1,32 +1,41 @@
 # Argus Remote
 
-Monitor and approve your Argus agents from a phone. Pairs with the desktop Argus
-over an end-to-end-encrypted channel (Noise IK). The desktop runs a local
-gateway exposed through a Cloudflare or Tailscale tunnel; the tunnel only ever
-sees ciphertext.
+Drive your Argus agents from a phone. Pairs with the desktop over an
+end-to-end-encrypted channel (Noise IK). The desktop runs a local gateway
+exposed through a Cloudflare or Tailscale tunnel; the tunnel only ever sees
+ciphertext.
 
-**Scope (v1): monitor + approve only.** This client can view projects, sessions,
-agents, and transcripts, and approve/deny permission prompts. It cannot spawn
-agents, send messages, run terminals, or write files — that boundary is enforced
-by the desktop gateway, not this UI.
+**Scope: whatever the desktop granted this device.** Every paired device can
+monitor — projects, sessions, agents, transcripts, changes — and approve or deny
+permission prompts. Devices granted **control** can also message agents, spawn
+them, create/rename/delete sessions, switch model / permission mode / effort,
+and touch and type on mirrored simulators. That boundary is enforced by the
+desktop gateway, not this UI.
 
-Native iOS/Android only for now. The crypto/transport/protocol modules under
-`src/` are platform-agnostic, so a future web client can reuse them.
+Native iOS/Android. The crypto/transport/protocol modules under `src/lib` mirror
+the desktop's byte-for-byte, so they interoperate by construction.
 
 ## Stack
 
-Expo (managed) + Expo Router. Crypto is
-[`@noble/*`](https://github.com/paulmillr/noble-curves) — pure TS, no native
-module — so `src/crypto/noise.ts` is a byte-for-byte copy of the desktop's
-implementation and interoperates by construction.
+Expo + Expo Router. Crypto is [`@noble/*`](https://github.com/paulmillr/noble-curves)
+— pure TS, no native module. Device mirroring uses a local Expo module
+(`modules/argus-video`) that renders H.264 with AVSampleBufferDisplayLayer on
+iOS and MediaCodec on Android; frames are decrypted in JS and handed to the view
+as typed arrays.
+
+Peacock is DOM-only, so `src/components` holds the RN twins of the components
+the web client uses (theme tokens in `src/theme.ts` mirror `tokens.css`).
 
 ## Run
 
 ```sh
 cd clients/argus-remote
 npm install            # not part of the pnpm workspace — install separately
-npx expo start         # Expo Go / dev client on a device or simulator
+npx expo run:ios       # or run:android — a dev client is required
 ```
+
+The native video module means Expo Go can't run this app; use `expo run:*` (or
+an EAS dev build) once, then `npx expo start --dev-client` day to day.
 
 ## Pairing
 
@@ -47,9 +56,12 @@ npx expo start         # Expo Go / dev client on a device or simulator
 ## Layout
 
 ```
-app/                 Expo Router screens (pair, projects, project, agent, settings)
+app/                 Expo Router screens (projects, project, agent, changes,
+                     devices, device, settings, pair)
+modules/argus-video/ Local Expo module: native H.264 surface (iOS + Android)
 src/crypto/          Noise IK + derivations (mirror of the desktop)
-src/lib/             keystore, socket, transport, pairingClient, protocol
+src/lib/             keystore, socket, transport, protocol, diff, activity,
+                     images, notifications, storage
 src/stores/          zustand app store
-src/components/      small RN UI primitives (Peacock is not reusable here)
+src/components/      RN component kit (transcript, tool calls, chat input, …)
 ```

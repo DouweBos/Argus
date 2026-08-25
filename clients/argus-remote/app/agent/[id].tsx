@@ -1,71 +1,77 @@
 import { useEffect } from "react";
-import { View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
-import { Body, Btn, Card, Muted, Screen, Title } from "../../src/components/ui";
-import { theme } from "../../src/theme";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { AgentTranscript } from "../../src/components/AgentTranscript";
+import { ChatInput } from "../../src/components/ChatInput";
+import * as Icons from "../../src/components/Icons";
+import { Banner, IconBtn, Row } from "../../src/components/ui";
 import { useAppStore } from "../../src/stores/appStore";
+import { useTheme } from "../../src/theme";
 
 export default function AgentScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
+  const router = useRouter();
+  const { id, label } = useLocalSearchParams<{ id: string; label?: string }>();
   const agentId = id ?? "";
 
-  const transcript = useAppStore((s) => s.transcriptByAgent[agentId] ?? []);
-  const prompts = useAppStore((s) => s.prompts);
-  const loadTranscript = useAppStore((s) => s.loadTranscript);
-  const watchAgent = useAppStore((s) => s.watchAgent);
-  const respond = useAppStore((s) => s.respond);
   const connection = useAppStore((s) => s.connection);
+  const hasControl = useAppStore((s) => s.hasControl());
+  const sessionId = useAppStore((s) => s.statusByAgent[agentId]?.session_id);
+  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
+  const stopAgentProcess = useAppStore((s) => s.stopAgentProcess);
 
   useEffect(() => {
-    if (connection !== "ready") {
-      return;
+    if (!sessionId) {
+      loadAgentStatus(agentId).catch(() => {});
     }
-    loadTranscript(agentId).catch(() => {});
-    watchAgent(agentId, true);
-
-    return () => watchAgent(agentId, false);
-  }, [connection, agentId, loadTranscript, watchAgent]);
-
-  const pending = Object.values(prompts).filter((p) => p.agent_id === agentId);
+  }, [agentId, sessionId, loadAgentStatus]);
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: `Agent ${agentId.slice(0, 8)}` }} />
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: theme.bg }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 92 : 0}
+    >
+      <Stack.Screen
+        options={{
+          title: label ?? `Agent ${agentId.slice(0, 8)}`,
+          headerRight: () => (
+            <Row gap={2}>
+              {sessionId ? (
+                <IconBtn
+                  label="View changes"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/changes/[session]",
+                      params: { session: sessionId, label: label ?? "Session" },
+                    })
+                  }
+                >
+                  <Icons.Branch size={16} color={theme.textSecondary} />
+                </IconBtn>
+              ) : null}
+              {hasControl ? (
+                <IconBtn
+                  label="Stop agent"
+                  onPress={() => stopAgentProcess(agentId).catch(() => {})}
+                >
+                  <Icons.Stop size={16} color={theme.textSecondary} />
+                </IconBtn>
+              ) : null}
+            </Row>
+          ),
+        }}
+      />
 
-      {pending.map((p) => (
-        <Card key={p.tool_use_id} style={{ borderColor: theme.warning }}>
-          <Title>Permission requested</Title>
-          <Body>{p.tool_name}</Body>
-          <Muted>{JSON.stringify(p.tool_input)}</Muted>
-          <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
-            <Btn
-              label="Deny"
-              tone="danger"
-              onPress={() => respond(agentId, p.tool_use_id, "deny")}
-            />
-            <Btn
-              label="Allow"
-              tone="primary"
-              onPress={() => respond(agentId, p.tool_use_id, "allow")}
-            />
-          </View>
-        </Card>
-      ))}
-
-      <Muted>Transcript</Muted>
-      {transcript.length === 0 ? (
-        <Muted>No messages yet.</Muted>
-      ) : (
-        transcript.slice(-200).map((line, i) => (
-          <Card key={i}>
-            <Muted>{truncate(line)}</Muted>
-          </Card>
-        ))
+      {connection === "offline" && (
+        <View style={{ padding: theme.space }}>
+          <Banner>Lost the connection to Argus — retrying automatically.</Banner>
+        </View>
       )}
-    </Screen>
-  );
-}
 
-function truncate(s: string): string {
-  return s.length > 600 ? `${s.slice(0, 600)}…` : s;
+      <AgentTranscript agentId={agentId} />
+
+      {hasControl && <ChatInput agentId={agentId} sessionId={sessionId} />}
+    </KeyboardAvoidingView>
+  );
 }

@@ -1,0 +1,169 @@
+/** List rows for agents and sessions (phone twins of Peacock's AgentRow/SessionCard). */
+
+import type { ReactNode } from "react";
+import { View } from "react-native";
+import * as Icons from "./Icons";
+import {
+  Badge,
+  Body,
+  Card,
+  Chip,
+  IconBtn,
+  Muted,
+  Row,
+  StatusDot,
+  type Tone,
+} from "./ui";
+import { useTheme } from "../theme";
+
+export type AgentStatusTone = "done" | "error" | "idle" | "pending" | "running";
+
+export function mapAgentStatus(status: string): AgentStatusTone {
+  switch (status) {
+    case "running":
+      return "running";
+    case "requires_action":
+      return "pending";
+    case "error":
+      return "error";
+    case "stopped":
+      return "done";
+    default:
+      return "idle";
+  }
+}
+
+export function agentMetaLabel(status: string): string {
+  switch (status) {
+    case "running":
+      return "running";
+    case "requires_action":
+      return "needs input";
+    case "error":
+      return "blocked";
+    case "stopped":
+      return "done";
+    default:
+      return "idle";
+  }
+}
+
+function statusTone(status: AgentStatusTone): Tone {
+  switch (status) {
+    case "running":
+      return "accent";
+    case "pending":
+      return "warning";
+    case "error":
+      return "danger";
+    case "done":
+      return "success";
+    default:
+      return "muted";
+  }
+}
+
+export function AgentRow({
+  name,
+  status,
+  meta,
+  model,
+  onPress,
+}: {
+  name: string;
+  status: AgentStatusTone;
+  meta?: string;
+  model?: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Card onPress={onPress} style={{ paddingVertical: 10 }}>
+      <Row gap={9}>
+        <StatusDot tone={statusTone(status)} pulse={status === "running"} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Body numberOfLines={1}>{name}</Body>
+          <Row gap={6}>
+            {meta ? <Muted>{meta}</Muted> : null}
+            {model ? <Muted numberOfLines={1}>· {model}</Muted> : null}
+          </Row>
+        </View>
+        <Icons.ChevronRight size={14} color={theme.textMuted} />
+      </Row>
+    </Card>
+  );
+}
+
+export function SessionCard({
+  title,
+  branch,
+  kind,
+  status,
+  additions,
+  deletions,
+  divergence,
+  onActions,
+  children,
+}: {
+  title: string;
+  branch?: string;
+  kind?: string;
+  status?: string;
+  additions?: number;
+  deletions?: number;
+  divergence?: { ahead: number; behind: number; dirty: number };
+  onActions?: () => void;
+  children?: ReactNode;
+}) {
+  const theme = useTheme();
+  const isRoot = kind === "project_root";
+
+  return (
+    <Card style={{ gap: 10 }}>
+      <Row gap={8}>
+        {isRoot ? (
+          <Icons.Repo size={14} color={theme.textSecondary} />
+        ) : (
+          <Icons.Branch size={14} color={theme.textSecondary} />
+        )}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Body numberOfLines={1} style={{ fontWeight: "600" }}>
+            {title}
+          </Body>
+          {branch && branch !== title ? (
+            <Muted numberOfLines={1}>{branch}</Muted>
+          ) : null}
+        </View>
+        {isRoot ? <Badge label="root" tone="accent" /> : null}
+        {kind === "worktree" ? <Badge label="worktree" /> : null}
+        {status && status !== "ready" ? <Badge label={status} /> : null}
+        {onActions ? (
+          <IconBtn label="Session actions" onPress={onActions}>
+            <Icons.Ellipsis size={16} color={theme.textMuted} />
+          </IconBtn>
+        ) : null}
+      </Row>
+
+      {(additions || deletions || divergence) && (
+        <Row gap={8} style={{ flexWrap: "wrap" }}>
+          {additions ? (
+            <Chip label={`+${additions}`} tone="success" mono />
+          ) : null}
+          {deletions ? <Chip label={`-${deletions}`} tone="danger" mono /> : null}
+          {divergence && divergence.ahead > 0 ? (
+            <Chip label={`↑${divergence.ahead}`} mono />
+          ) : null}
+          {divergence && divergence.behind > 0 ? (
+            <Chip label={`↓${divergence.behind}`} mono />
+          ) : null}
+          {divergence && divergence.dirty > 0 ? (
+            <Chip label={`${divergence.dirty} changed`} tone="warning" />
+          ) : null}
+        </Row>
+      )}
+
+      {children}
+    </Card>
+  );
+}
