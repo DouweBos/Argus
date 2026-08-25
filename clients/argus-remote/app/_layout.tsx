@@ -7,7 +7,12 @@ import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Btn, Muted, Screen, Title } from "../src/components/ui";
-import { setNotificationOpener, startNotificationRouting } from "../src/lib/notify";
+import {
+  registerNotificationCategories,
+  setNotificationDecider,
+  setNotificationOpener,
+  startNotificationRouting,
+} from "../src/lib/notify";
 import { useThemeBootstrap, useTheme } from "../src/theme";
 import { useAppStore } from "../src/stores/appStore";
 
@@ -42,18 +47,29 @@ function Root() {
     })();
   }, [init]);
 
-  // Tapping a notification jumps to the agent it came from.
+  // Tapping a notification jumps to the agent it came from; its Approve/Deny
+  // buttons answer the prompt without opening the app at all. Registered
+  // outside the biometric gate so a background tap is never dropped — the
+  // answer is queued and sent once the gateway is back.
   useEffect(() => {
+    registerNotificationCategories().catch(() => {});
     setNotificationOpener((agentId, label) => {
       router.push({
         pathname: "/agent/[id]",
         params: { id: agentId, label },
       });
     });
+    setNotificationDecider((agentId, toolUseId, decision) => {
+      useAppStore
+        .getState()
+        .decidePrompt(agentId, toolUseId, decision)
+        .catch(() => {});
+    });
     const stop = startNotificationRouting();
 
     return () => {
       setNotificationOpener(null);
+      setNotificationDecider(null);
       stop();
     };
   }, [router]);

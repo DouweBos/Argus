@@ -175,9 +175,9 @@ import { listAuthorized, loadToken } from "./services/mcp/oauthStore";
 import { collectAllProjects } from "./services/mcp/projects";
 import { listInheritedMcpServers } from "./services/mcp/userConfig";
 import {
-  broadcastRemoteNotification,
-  type RemoteNotificationPayload,
-} from "./services/notifications/broadcast";
+  showAgentNotification,
+  type AgentNotificationInput,
+} from "./services/notifications/osNotification";
 import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
@@ -225,6 +225,11 @@ import {
   confirmPairing,
   startPairing,
 } from "./services/remote/pairing";
+import {
+  getPushConfigStatus,
+  setPushConfig,
+} from "./services/remote/push/config";
+import { sendTestPush } from "./services/remote/push/dispatch";
 import {
   getPublicUrl,
   getRemoteStatus,
@@ -1000,6 +1005,41 @@ export function registerIpcHandlers(): void {
       },
     ),
   );
+  handle("remote_get_push_config", () => getPushConfigStatus());
+  handle("remote_set_push_config", (a) => {
+    const patch = a.patch as {
+      apnsBundleId?: string;
+      apnsKeyId?: string;
+      apnsKeyP8?: string;
+      apnsTeamId?: string;
+      enabled?: boolean;
+      fcmServiceAccount?: string;
+      vapidSubject?: string;
+    };
+
+    return setPushConfig({
+      ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
+      ...(patch.apnsKeyP8 !== undefined
+        ? { apns_key_p8: patch.apnsKeyP8.trim() }
+        : {}),
+      ...(patch.apnsKeyId !== undefined
+        ? { apns_key_id: patch.apnsKeyId.trim() }
+        : {}),
+      ...(patch.apnsTeamId !== undefined
+        ? { apns_team_id: patch.apnsTeamId.trim() }
+        : {}),
+      ...(patch.apnsBundleId !== undefined
+        ? { apns_bundle_id: patch.apnsBundleId.trim() }
+        : {}),
+      ...(patch.fcmServiceAccount !== undefined
+        ? { fcm_service_account: patch.fcmServiceAccount.trim() }
+        : {}),
+      ...(patch.vapidSubject !== undefined
+        ? { vapid_subject: patch.vapidSubject.trim() }
+        : {}),
+    });
+  });
+  handle("remote_test_push", (a) => sendTestPush(a.deviceId as string));
   handle("remote_list_devices", () => listRemoteDevices());
   handle("remote_revoke_device", async (a) => {
     const deviceId = a.deviceId as string;
@@ -1987,9 +2027,13 @@ export function registerIpcHandlers(): void {
     runDebugCommand(a.deviceKey as string, a.args as string[]),
   );
 
-  // Mirror a renderer-decided notification to connected remote devices.
-  handle("remote_notify", (a) => {
-    broadcastRemoteNotification(a as unknown as RemoteNotificationPayload);
+  // The renderer decides *what* a notification says (it holds the session and
+  // conversation state); the main process shows it, because only there can
+  // Electron render quick-action buttons, and fans it out to remote devices.
+  handle("notify_agent", (a) => {
+    showAgentNotification(a.payload as AgentNotificationInput, {
+      showLocal: a.showLocal as boolean,
+    });
   });
 
   // Shell

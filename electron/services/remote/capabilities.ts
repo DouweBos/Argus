@@ -72,7 +72,17 @@ import {
   simulatorTouch,
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
-import { renameDevice, type PairedDevice } from "./deviceStore";
+import {
+  clearDevicePush,
+  renameDevice,
+  setDevicePush,
+  type PairedDevice,
+} from "./deviceStore";
+import {
+  ensureVapidPublicKey,
+  getPushConfigStatus,
+  isPushConfigured,
+} from "./push/config";
 
 export class GatewayError extends Error {
   constructor(
@@ -785,6 +795,44 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
   "device.capabilities": async (_params, ctx) => {
     return { capabilities: ctx.device.capabilities };
+  },
+
+  "device.push_info": async () => {
+    const status = await getPushConfigStatus();
+
+    return {
+      configured: await isPushConfigured(),
+      enabled: status.enabled,
+      // Minted on first ask — web push needs no user-supplied credentials.
+      vapid_public_key: status.enabled ? await ensureVapidPublicKey() : null,
+    };
+  },
+
+  "device.register_push": async (params, ctx) => {
+    const { service, token, environment, keys } = parse(
+      "device.register_push",
+      params,
+    );
+    const registration = {
+      service,
+      token,
+      environment,
+      keys,
+      updated_at: Date.now(),
+    };
+    await setDevicePush(ctx.device.device_id, registration);
+    ctx.device.push = registration;
+
+    // Tell the phone whether pushes will actually go anywhere, so its settings
+    // screen can say "the desktop still needs credentials" instead of lying.
+    return { accepted: true, configured: await isPushConfigured() };
+  },
+
+  "device.unregister_push": async (_params, ctx) => {
+    await clearDevicePush(ctx.device.device_id);
+    ctx.device.push = null;
+
+    return { accepted: true };
   },
 
   // --- control-scoped ---------------------------------------------------

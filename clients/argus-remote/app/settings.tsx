@@ -21,7 +21,7 @@ import {
   useThemePreference,
   type ThemePreference,
 } from "../src/theme";
-import { useAppStore } from "../src/stores/appStore";
+import { useAppStore, type PushState } from "../src/stores/appStore";
 
 const THEME_OPTIONS: { label: string; value: ThemePreference }[] = (
   ["system", "light", "dark"] as const
@@ -33,6 +33,20 @@ const NOTIFY_LABEL: Record<string, string> = {
   unset: "Not enabled",
 };
 
+const PUSH_OPTIONS: { label: string; value: "off" | "on" }[] = [
+  { value: "on", label: "On" },
+  { value: "off", label: "Off" },
+];
+
+const PUSH_LABEL: Record<PushState, string> = {
+  registered: "Registered — your computer can wake this phone.",
+  unconfigured:
+    "Registered, but Argus on your computer has no Apple/Firebase push credentials yet.",
+  unavailable:
+    "Unavailable on this build — needs notification permission and a real device.",
+  off: "Off — you'll only see alerts while the app is connected.",
+};
+
 export default function SettingsScreen() {
   const router = useRouter();
   const identity = useAppStore((s) => s.identity);
@@ -41,6 +55,9 @@ export default function SettingsScreen() {
   const connection = useAppStore((s) => s.connection);
   const capabilities = useAppStore((s) => s.capabilities);
   const unpair = useAppStore((s) => s.unpair);
+  const pushEnabled = useAppStore((s) => s.pushEnabled);
+  const pushState = useAppStore((s) => s.pushState);
+  const setPushEnabled = useAppStore((s) => s.setPushEnabled);
   const theme = useThemePreference();
 
   const [name, setName] = useState(deviceName);
@@ -63,10 +80,12 @@ export default function SettingsScreen() {
 
   const enableNotifications = useCallback(() => {
     requestNotificationPermission()
+      // Permission is what gates the push token, so re-register right after.
+      .then(() => setPushEnabled(true))
       .then(() => notificationStatus())
       .then(setNotify)
       .catch(() => {});
-  }, []);
+  }, [setPushEnabled]);
 
   return (
     <Screen>
@@ -122,6 +141,20 @@ export default function SettingsScreen() {
           disabled={notify !== "unset"}
           onPress={enableNotifications}
         />
+      </Field>
+
+      <Field
+        label="Background push"
+        caption="Wakes this phone even when the app is closed. Your computer sends these directly to Apple/Google — no Argus server in between."
+      >
+        <SegmentedControl<"off" | "on">
+          value={pushEnabled ? "on" : "off"}
+          options={PUSH_OPTIONS}
+          onChange={(v) => {
+            setPushEnabled(v === "on").catch(() => {});
+          }}
+        />
+        <Muted>{PUSH_LABEL[pushState]}</Muted>
       </Field>
 
       {identity ? (

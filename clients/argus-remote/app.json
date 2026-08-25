@@ -13,13 +13,17 @@
       "bundleIdentifier": "dev.houwert.argus.remote",
       "infoPlist": {
         "NSCameraUsageDescription": "Scan the pairing QR code shown in Argus, or take a photo to send to an agent."
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
       "package": "dev.houwert.argus.remote",
       "permissions": [
         "CAMERA",
-        "USE_BIOMETRIC"
+        "USE_BIOMETRIC",
+        "POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

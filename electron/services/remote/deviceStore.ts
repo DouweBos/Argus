@@ -20,6 +20,18 @@ import { warn } from "../../../app/lib/logger";
 import { argusDirPath } from "../onboarding/state";
 import { generateKeypair } from "./noise";
 
+/** A device's push registration, handed over the gateway after pairing. */
+export interface DevicePushToken {
+  service: "apns" | "fcm" | "webpush";
+  /** Native device token, or the Web Push endpoint URL for "webpush". */
+  token: string;
+  /** APNs only — which Apple environment minted the token. */
+  environment?: "production" | "sandbox";
+  /** Web Push only — the subscription's encryption keys (base64url). */
+  keys?: { auth: string; p256dh: string };
+  updated_at: number;
+}
+
 export interface PairedDevice {
   device_id: string;
   label: string;
@@ -28,7 +40,44 @@ export interface PairedDevice {
   capabilities: Capability[];
   created_at: number;
   last_seen: number | null;
+  /** Present once the phone has registered for background push. */
+  push?: DevicePushToken | null;
 }
+
+/**
+ * Credentials the desktop uses to talk to APNs/FCM directly. Kept in the same
+ * safeStorage-encrypted blob as the device keys — they are provider secrets,
+ * not settings, so they never land in plaintext `app-settings.json`.
+ */
+export interface PushConfig {
+  enabled: boolean;
+  /** Contents of an APNs `.p8` auth key (PEM). */
+  apns_key_p8: string;
+  apns_key_id: string;
+  apns_team_id: string;
+  /** The phone app's bundle id — the APNs topic. */
+  apns_bundle_id: string;
+  /** A Firebase service-account JSON blob, verbatim. */
+  fcm_service_account: string;
+  /** VAPID signing key for browsers (PEM), generated on first use. */
+  vapid_private_pem: string;
+  /** The matching raw P-256 public key, base64url — browsers subscribe with it. */
+  vapid_public: string;
+  /** VAPID `sub` claim: a mailto:/https: contact for the push service. */
+  vapid_subject: string;
+}
+
+export const EMPTY_PUSH_CONFIG: PushConfig = {
+  enabled: false,
+  apns_key_p8: "",
+  apns_key_id: "",
+  apns_team_id: "",
+  apns_bundle_id: "",
+  fcm_service_account: "",
+  vapid_private_pem: "",
+  vapid_public: "",
+  vapid_subject: "mailto:argus@localhost",
+};
 
 /** The desktop's long-lived identity + all paired devices. */
 interface RemoteState {
@@ -37,6 +86,7 @@ interface RemoteState {
   /** Desktop static X25519 public key, base64. */
   ds_pub: string;
   devices: Record<string, PairedDevice>;
+  push_config?: PushConfig;
 }
 
 interface FileShape {
@@ -240,6 +290,81 @@ export async function updateLastSeen(
   }
   device.last_seen = when;
   await writeState(state);
+}
+
+/** Store (or replace) a device's native push token. */
+export async function setDevicePush(
+  deviceId: string,
+  push: DevicePushToken,
+): Promise<void> {
+  const state = await ensureState();
+  const device = state.devices[deviceId];
+  if (!device) {
+    return;
+  }
+  const prev = device.push;
+  if (
+    prev &&
+    prev.service === push.service &&
+    prev.token === push.token &&
+    prev.environment === push.environment &&
+    prev.keys?.p256dh === push.keys?.p256dh &&
+    prev.keys?.auth === push.keys?.auth
+  ) {
+    return;
+  }
+  device.push = push;
+  await writeState(state);
+}
+
+/** Correct a device's recorded APNs environment after a sandbox/prod mismatch. */
+export async function setDevicePushEnvironment(
+  deviceId: string,
+  environment: "production" | "sandbox",
+): Promise<void> {
+  const state = await ensureState();
+  const push = state.devices[deviceId]?.push;
+  if (!push || push.environment === environment) {
+    return;
+  }
+  push.environment = environment;
+  await writeState(state);
+}
+
+/**
+ * Forget a device's push token. Called when the user disables notifications on
+ * the phone and when a provider tells us the token is dead (APNs 410 /
+ * FCM UNREGISTERED), so we stop pushing into a black hole.
+ */
+export async function clearDevicePush(deviceId: string): Promise<void> {
+  const state = await ensureState();
+  const device = state.devices[deviceId];
+  if (!device?.push) {
+    return;
+  }
+  device.push = null;
+  await writeState(state);
+}
+
+export async function getPushConfig(): Promise<PushConfig> {
+  const state = await ensureState();
+
+  return { ...EMPTY_PUSH_CONFIG, ...(state.push_config ?? {}) };
+}
+
+export async function savePushConfig(
+  patch: Partial<PushConfig>,
+): Promise<PushConfig> {
+  const state = await ensureState();
+  const next: PushConfig = {
+    ...EMPTY_PUSH_CONFIG,
+    ...(state.push_config ?? {}),
+    ...patch,
+  };
+  state.push_config = next;
+  await writeState(state);
+
+  return next;
 }
 
 /** Revoke a device — its pinned key is gone, so future handshakes fail. */

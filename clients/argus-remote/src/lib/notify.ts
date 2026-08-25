@@ -9,12 +9,53 @@ import { AppState } from "react-native";
 import type { RemoteNotification } from "./protocol";
 
 type OpenAgent = (agentId: string, label: string) => void;
+type Decide = (
+  agentId: string,
+  toolUseId: string,
+  decision: "allow" | "deny",
+) => void;
 
 let openAgent: OpenAgent | null = null;
+let decide: Decide | null = null;
+
+/**
+ * iOS renders a notification's buttons from a category the app registers up
+ * front; the desktop only names it. Must match `PERMISSION_CATEGORY` in the
+ * desktop's push dispatcher.
+ */
+const PERMISSION_CATEGORY = "argus.permission";
 
 /** Register how a notification tap navigates to its agent. */
 export function setNotificationOpener(fn: OpenAgent | null): void {
   openAgent = fn;
+}
+
+/** Register how an Approve/Deny button answers its prompt. */
+export function setNotificationDecider(fn: Decide | null): void {
+  decide = fn;
+}
+
+/**
+ * Declare the Approve/Deny buttons. Both stay in the background so answering a
+ * prompt never yanks you into the app.
+ */
+export async function registerNotificationCategories(): Promise<void> {
+  try {
+    await Notifications.setNotificationCategoryAsync(PERMISSION_CATEGORY, [
+      {
+        identifier: "approve",
+        buttonTitle: "Approve",
+        options: { opensAppToForeground: false },
+      },
+      {
+        identifier: "deny",
+        buttonTitle: "Deny",
+        options: { opensAppToForeground: false, isDestructive: true },
+      },
+    ]);
+  } catch {
+    // Categories are best-effort; without them the notification is just plain.
+  }
 }
 
 Notifications.setNotificationHandler({
@@ -49,17 +90,42 @@ export async function notificationStatus(): Promise<
   return current.canAskAgain ? "unset" : "blocked";
 }
 
+function routeResponse(res: Notifications.NotificationResponse): void {
+  const data = res.notification.request.content.data as {
+    agentId?: string;
+    label?: string;
+    toolUseId?: string;
+  };
+  const action = res.actionIdentifier;
+  if ((action === "approve" || action === "deny") && data.agentId) {
+    if (data.toolUseId) {
+      decide?.(
+        data.agentId,
+        data.toolUseId,
+        action === "approve" ? "allow" : "deny",
+      );
+    }
+
+    return;
+  }
+  if (data.agentId) {
+    openAgent?.(data.agentId, data.label ?? "Agent");
+  }
+}
+
 /** Route a tapped notification back into the app. */
 export function startNotificationRouting(): () => void {
-  const sub = Notifications.addNotificationResponseReceivedListener((res) => {
-    const data = res.notification.request.content.data as {
-      agentId?: string;
-      label?: string;
-    };
-    if (data.agentId) {
-      openAgent?.(data.agentId, data.label ?? "Agent");
-    }
-  });
+  // A push that launched the app from cold never reaches the listener below.
+  Notifications.getLastNotificationResponseAsync()
+    .then((res) => {
+      if (res) {
+        routeResponse(res);
+      }
+    })
+    .catch(() => {});
+  const sub = Notifications.addNotificationResponseReceivedListener(
+    routeResponse,
+  );
 
   return () => sub.remove();
 }
@@ -70,10 +136,21 @@ export function showRemoteNotification(n: RemoteNotification): void {
     return;
   }
   Notifications.scheduleNotificationAsync({
+    // Same id as the desktop's push collapse key, so an in-band alert and a
+    // push about the same agent replace each other instead of stacking.
+    identifier: n.agent_id ? `agent-${n.agent_id}` : undefined,
     content: {
       title: n.title,
       body: n.body,
-      data: { agentId: n.agent_id ?? undefined, label: n.title },
+      // Same category the pushed version uses, so the buttons match whether
+      // this arrived over the socket or through APNs/FCM.
+      categoryIdentifier:
+        n.actions.length > 0 ? PERMISSION_CATEGORY : undefined,
+      data: {
+        agentId: n.agent_id ?? undefined,
+        label: n.title,
+        toolUseId: n.tool_use_id ?? undefined,
+      },
     },
     trigger: null,
   }).catch(() => {});

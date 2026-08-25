@@ -13,6 +13,19 @@ import {
 } from "./keystore";
 import type { DeviceIdentity } from "./keystore";
 import { showRemoteNotification } from "./notify";
+import {
+  clearPendingDecision,
+  queuePendingDecision,
+  readPendingDecisions,
+  type PendingDecision,
+} from "./pendingDecisions";
+import {
+  pushPreference,
+  registerWebPush,
+  setPushPreference,
+  unregisterWebPush,
+  type WebPushState,
+} from "./webpush";
 import type {
   EventEnvelope,
   RemoteAgentCapabilities,
@@ -83,10 +96,21 @@ interface AppState {
   effortByAgent: Record<string, string | null>;
   /** Connected simulators/emulators (from devices.list). */
   devices: RemoteDevice[];
+  /** Whether the user wants background push in this browser. */
+  pushEnabled: boolean;
+  /** Where Web Push registration got to — drives the Settings copy. */
+  pushState: WebPushState;
 
+  /** Answer a prompt from a notification button, even while offline. */
+  decidePrompt: (
+    agentId: string,
+    toolUseId: string,
+    decision: "allow" | "deny",
+  ) => Promise<void>;
   init: () => void;
   pairComplete: (identity: DeviceIdentity) => void;
   setDeviceName: (name: string) => Promise<void>;
+  setPushEnabled: (enabled: boolean) => Promise<void>;
   unpair: () => void;
   refreshProjects: () => Promise<void>;
   loadRecentAgents: () => Promise<void>;
@@ -316,6 +340,48 @@ export const useAppStore = create<AppState>((set, get) => {
     }
   }
 
+  /**
+   * Replay a queued Approve/Deny. The gateway only accepts answers to prompts
+   * it forwarded to *this* connection, and it re-forwards pending ones when we
+   * subscribe — so subscribe first, then retry while the replay lands.
+   */
+  async function flushDecision(
+    transport: Transport,
+    decision: PendingDecision,
+  ): Promise<boolean> {
+    transport.subscribe(decision.agentId, true);
+    try {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          await transport.request("permission.respond", {
+            agent_id: decision.agentId,
+            tool_use_id: decision.toolUseId,
+            decision: decision.decision,
+          });
+
+          return true;
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+      }
+
+      return false;
+    } finally {
+      transport.subscribe(decision.agentId, false);
+    }
+  }
+
+  async function flushPendingDecisions(transport: Transport): Promise<void> {
+    for (const decision of readPendingDecisions(Date.now())) {
+      const sent = await flushDecision(transport, decision);
+      // Drop it either way: a prompt that never came back is gone for good.
+      clearPendingDecision(decision);
+      if (sent) {
+        scheduleTranscript(decision.agentId);
+      }
+    }
+  }
+
   function connect(identity: DeviceIdentity): Transport {
     const transport = new Transport(identity, {
       onState: (connection) => {
@@ -333,6 +399,12 @@ export const useAppStore = create<AppState>((set, get) => {
             .request<{ capabilities: string[] }>("device.capabilities", {})
             .then((r) => set({ capabilities: r.capabilities }))
             .catch(() => {});
+          registerWebPush(transport)
+            .then((pushState) => set({ pushState }))
+            .catch(() => {});
+          flushPendingDecisions(transport).catch(() => {});
+        } else {
+          set({ pushState: "off" });
         }
       },
       onEvent,
@@ -364,6 +436,8 @@ export const useAppStore = create<AppState>((set, get) => {
     answered: {},
     imageCache: {},
     capabilities: [],
+    pushEnabled: pushPreference(),
+    pushState: "off",
     capabilitiesByAgent: {},
     statusByAgent: {},
     effortByAgent: {},
@@ -392,6 +466,29 @@ export const useAppStore = create<AppState>((set, get) => {
       });
     },
 
+    decidePrompt: async (agentId, toolUseId, decision) => {
+      queuePendingDecision({ agentId, toolUseId, decision, at: Date.now() });
+      const transport = get().transport;
+      if (get().connection === "ready" && transport) {
+        await flushPendingDecisions(transport).catch(() => {});
+      }
+    },
+
+    setPushEnabled: async (enabled) => {
+      setPushPreference(enabled);
+      set({ pushEnabled: enabled });
+      const transport = get().transport;
+      if (!enabled) {
+        await unregisterWebPush(transport);
+        set({ pushState: "off" });
+
+        return;
+      }
+      if (get().connection === "ready" && transport) {
+        set({ pushState: await registerWebPush(transport) });
+      }
+    },
+
     setDeviceName: async (rawName) => {
       const name = rawName.trim();
       if (!name) {
@@ -412,6 +509,7 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     unpair: () => {
+      void unregisterWebPush(get().transport);
       get().transport?.disconnect();
       clearIdentity();
       set({
