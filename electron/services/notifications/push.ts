@@ -9,9 +9,8 @@
  */
 
 import { Notification } from "electron";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
-import { broadcastRemoteNotification } from "./broadcast";
+import { showAgentNotification } from "./osNotification";
 
 export type PushNotificationUrgency = "critical" | "normal";
 
@@ -64,38 +63,18 @@ export function sendPushNotification(
     ? `${ctx.resolvedTitle} — ${input.title}`
     : input.title;
 
-  const notification = new Notification({
-    title,
-    body: input.body,
-    urgency: input.urgency === "critical" ? "critical" : "normal",
-  });
-
-  notification.on("click", () => {
-    const win = getMainWindow();
-    if (win) {
-      if (win.isMinimized()) {
-        win.restore();
-      }
-      win.show();
-      win.focus();
-    }
-    if (input.agentId && ctx.sessionId) {
-      win?.webContents.send("agent_notification_clicked", {
-        agent_id: input.agentId,
-        session_id: ctx.sessionId,
-      });
-    }
-  });
-
-  notification.show();
-
-  broadcastRemoteNotification({
-    agent_id: input.agentId ?? null,
-    session_id: ctx.sessionId,
-    kind: "push",
-    title,
-    body: input.body,
-  });
+  showAgentNotification(
+    {
+      agent_id: input.agentId ?? null,
+      session_id: ctx.sessionId,
+      tool_use_id: null,
+      tool_name: null,
+      kind: "push",
+      title,
+      body: input.body,
+    },
+    { showLocal: true, urgency: input.urgency },
+  );
 
   return { delivered: true };
 }

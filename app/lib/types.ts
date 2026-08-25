@@ -1072,6 +1072,16 @@ export interface OrgTask {
 // Remote access (phone/web control)
 // ---------------------------------------------------------------------------
 
+export interface RemoteDevicePush {
+  environment?: "production" | "sandbox";
+  /** Web Push only — the subscription's encryption keys. */
+  keys?: { auth: string; p256dh: string };
+  service: "apns" | "fcm" | "webpush";
+  /** Native device token, or the Web Push endpoint URL. */
+  token: string;
+  updated_at: number;
+}
+
 export interface RemoteDevice {
   capabilities: string[];
   created_at: number;
@@ -1079,6 +1089,41 @@ export interface RemoteDevice {
   device_id: string;
   label: string;
   last_seen: number | null;
+  /** Set once the phone registered a native push token. */
+  push?: RemoteDevicePush | null;
+}
+
+/** Push credential state — presence flags only, never the secrets. */
+export interface RemotePushConfig {
+  apnsBundleId: string;
+  apnsConfigured: boolean;
+  apnsKeyId: string;
+  apnsTeamId: string;
+  enabled: boolean;
+  fcmConfigured: boolean;
+  fcmProjectId: string | null;
+  /** VAPID contact claim sent to the browser's push service. */
+  vapidSubject: string;
+  /** Browsers need no user credentials — true once the VAPID key is minted. */
+  webPushConfigured: boolean;
+}
+
+export interface RemotePushConfigPatch {
+  apnsBundleId?: string;
+  apnsKeyId?: string;
+  /** Contents of an APNs `.p8` auth key. Omit to leave the stored key alone. */
+  apnsKeyP8?: string;
+  apnsTeamId?: string;
+  enabled?: boolean;
+  /** Firebase service-account JSON. Omit to leave the stored one alone. */
+  fcmServiceAccount?: string;
+  /** `mailto:`/`https:` contact the browser's push service can reach you at. */
+  vapidSubject?: string;
+}
+
+export interface RemotePushTestResult {
+  delivered: boolean;
+  reason?: string;
 }
 
 export type RemoteTunnelMode = "quick" | "token";

@@ -75,6 +75,23 @@ export const MethodParams = {
   }),
   "device.rename": z.object({ name: z.string().trim().min(1).max(60) }),
   "device.capabilities": z.object({}),
+  "device.push_info": z.object({}),
+  "device.register_push": z.object({
+    /** Which push service issued the registration. */
+    service: z.enum(["apns", "fcm", "webpush"]),
+    /** APNs token (hex), FCM registration id, or the Web Push endpoint URL. */
+    token: z.string().min(1).max(4096),
+    /** APNs only: which Apple environment minted the token. */
+    environment: z.enum(["production", "sandbox"]).optional(),
+    /** Web Push only: the subscription's encryption keys, base64url. */
+    keys: z
+      .object({
+        p256dh: z.string().min(1).max(256),
+        auth: z.string().min(1).max(64),
+      })
+      .optional(),
+  }),
+  "device.unregister_push": z.object({}),
   "agents.capabilities": z.object({ agent_id: z.string() }),
   "agents.send": z.object({
     agent_id: z.string(),
@@ -192,6 +209,20 @@ export const MethodResult = {
   "permission.respond": z.object({ accepted: z.boolean() }),
   "device.rename": z.object({ accepted: z.boolean() }),
   "device.capabilities": z.object({ capabilities: z.array(z.string()) }),
+  "device.push_info": z.object({
+    /** True when at least one push provider is usable. */
+    configured: z.boolean(),
+    /** Whether the user enabled background push on the desktop at all. */
+    enabled: z.boolean(),
+    /** VAPID application-server key for `PushManager.subscribe`, base64url. */
+    vapid_public_key: z.string().nullable(),
+  }),
+  "device.register_push": z.object({
+    accepted: z.boolean(),
+    /** False when the desktop has no push credentials configured yet. */
+    configured: z.boolean(),
+  }),
+  "device.unregister_push": z.object({ accepted: z.boolean() }),
   "agents.capabilities": z.object({ capabilities: RemoteAgentCapabilities }),
   "agents.send": z.object({ accepted: z.boolean() }),
   "agents.interrupt": z.object({ accepted: z.boolean() }),
@@ -292,8 +323,19 @@ export const EventPayloads = {
   notification: z.object({
     agent_id: z.string().nullable(),
     session_id: z.string().nullable(),
+    /** The prompt a quick action answers; only set for "permission". */
+    tool_use_id: z.string().nullable(),
     kind: z.enum(["finished", "failed", "permission", "push"]),
     title: z.string(),
     body: z.string(),
+    /** Buttons on the notification itself — the same set the desktop shows. */
+    actions: z
+      .array(
+        z.object({
+          id: z.enum(["approve", "deny"]),
+          title: z.string(),
+        }),
+      )
+      .default([]),
   }),
 } as const;

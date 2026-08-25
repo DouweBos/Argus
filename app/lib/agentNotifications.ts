@@ -1,12 +1,16 @@
 import type { PermissionRequest } from "./types";
-import { getAgentState, setActiveAgent } from "../stores/agentStore";
+import { getAgentState } from "../stores/agentStore";
 import { getConversationState } from "../stores/conversationStore";
-import { getSessionState, selectSession } from "../stores/sessionStore";
-import { remoteNotify } from "./ipc";
+import { getSessionState } from "../stores/sessionStore";
+import { notifyAgent, type NotifyAgentPayload } from "./ipc";
 
 const MIN_TURN_DURATION_MS = 10_000;
 
-function canNotify(): boolean {
+/**
+ * Whether to raise a banner on this Mac. Remote devices judge their own focus,
+ * so this only gates the local half — the fan-out always happens.
+ */
+function showLocally(): boolean {
   if (typeof Notification === "undefined") {
     return false;
   }
@@ -18,6 +22,10 @@ function canNotify(): boolean {
   }
 
   return true;
+}
+
+function dispatch(payload: NotifyAgentPayload): void {
+  notifyAgent(payload, showLocally()).catch(() => {});
 }
 
 interface SessionContext {
@@ -44,16 +52,6 @@ function agentLabel(agentId: string): string {
   return title?.trim() ? title : "Agent";
 }
 
-function focusAgent(agentId: string): void {
-  window.focus();
-  const agent = getAgentState().agents[agentId];
-  if (!agent) {
-    return;
-  }
-  selectSession(agent.session_id);
-  setActiveAgent(agent.session_id, agentId);
-}
-
 export function notifyAgentFinished(
   agentId: string,
   durationMs: number,
@@ -78,24 +76,15 @@ export function notifyAgentFinished(
       ? `${ctx.sessionName} - ${name} ended with an error`
       : `${ctx.sessionName} - ${name} completed in ${seconds}s`;
 
-  // Remote devices decide visibility from their own focus, so forward
-  // regardless of whether this desktop window is focused.
-  remoteNotify({
+  dispatch({
     agent_id: agentId,
     session_id: agent?.session_id ?? null,
+    tool_use_id: null,
+    tool_name: null,
     kind: subtype === "error" ? "failed" : "finished",
     title,
     body,
-  }).catch(() => {});
-
-  if (!canNotify()) {
-    return;
-  }
-  const n = new Notification(title, { body });
-  n.onclick = () => {
-    focusAgent(agentId);
-    n.close();
-  };
+  });
 }
 
 export function notifyPermissionRequested(
@@ -110,20 +99,13 @@ export function notifyPermissionRequested(
   const title = `${project} agent needs approval`;
   const body = `${ctx.sessionName} - ${name} requested ${request.tool_name}`;
 
-  remoteNotify({
+  dispatch({
     agent_id: agentId,
     session_id: agent?.session_id ?? null,
+    tool_use_id: request.tool_use_id,
+    tool_name: request.tool_name,
     kind: "permission",
     title,
     body,
-  }).catch(() => {});
-
-  if (!canNotify()) {
-    return;
-  }
-  const n = new Notification(title, { body, requireInteraction: true });
-  n.onclick = () => {
-    focusAgent(agentId);
-    n.close();
-  };
+  });
 }

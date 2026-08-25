@@ -51,6 +51,9 @@ import type {
   RegisteredRunner,
   RemoteDevice,
   RemotePairingStart,
+  RemotePushConfig,
+  RemotePushConfigPatch,
+  RemotePushTestResult,
   RemoteStatus,
   RunnerOnboardingStep,
   Session,
@@ -1455,6 +1458,19 @@ export const remoteSetConfig = (config: {
   tunnelToken?: string;
 }): Promise<RemoteStatus> => invoke("remote_set_config", { config });
 
+/** Push credential state for background notifications to paired phones. */
+export const remoteGetPushConfig = (): Promise<RemotePushConfig> =>
+  invoke("remote_get_push_config", {});
+
+export const remoteSetPushConfig = (
+  patch: RemotePushConfigPatch,
+): Promise<RemotePushConfig> => invoke("remote_set_push_config", { patch });
+
+/** Send a test push to one paired device and report why it failed, if it did. */
+export const remoteTestPush = (
+  deviceId: string,
+): Promise<RemotePushTestResult> => invoke("remote_test_push", { deviceId });
+
 export const remoteListDevices = (): Promise<RemoteDevice[]> =>
   invoke("remote_list_devices", {});
 
@@ -1957,16 +1973,32 @@ export const debugRunCommand = (
 export const revealInFinder = (path: string): Promise<void> =>
   invoke("reveal_in_finder", { path });
 
-/** Mirror a notification to connected remote devices (fire-and-forget). */
-export interface RemoteNotifyPayload {
+export interface NotifyAgentPayload {
   agent_id: string | null;
   body: string;
   kind: "failed" | "finished" | "permission" | "push";
   session_id: string | null;
   title: string;
+  /** The requested tool — the main process derives the quick actions from it. */
+  tool_name: string | null;
+  /** The prompt a quick action answers; only set for "permission". */
+  tool_use_id: string | null;
 }
-export const remoteNotify = (payload: RemoteNotifyPayload): Promise<void> =>
-  invoke("remote_notify", payload as unknown as Record<string, unknown>);
+
+/**
+ * Show a notification on this Mac (when `showLocal`) and mirror it to every
+ * paired device. The main process owns both halves so the banner can carry
+ * quick actions (which Electron cannot render from the renderer) and so the
+ * action set is decided in exactly one place.
+ */
+export const notifyAgent = (
+  payload: NotifyAgentPayload,
+  showLocal: boolean,
+): Promise<void> =>
+  invoke("notify_agent", {
+    payload: payload as unknown as Record<string, unknown>,
+    showLocal,
+  });
 
 /** Open a file/folder with the system's default handler. */
 export const openPath = (path: string): Promise<void> =>

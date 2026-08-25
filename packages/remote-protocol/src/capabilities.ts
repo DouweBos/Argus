@@ -37,6 +37,14 @@ export const REMOTE_METHODS = {
   "device.rename": "monitor",
   /** Read this device's own current capability grants (to reflect live toggles). */
   "device.capabilities": "monitor",
+  /** What the desktop can push with — including the VAPID key a browser needs
+   * before it can create a Web Push subscription. */
+  "device.push_info": "monitor",
+  /** Register this device's APNs/FCM token or Web Push subscription so the
+   * desktop can reach it while the app is backgrounded or closed. */
+  "device.register_push": "monitor",
+  /** Forget this device's push token (user turned notifications off). */
+  "device.unregister_push": "monitor",
   /** Models, slash commands, and subagent types for an agent's input pickers. */
   "agents.capabilities": "control",
   /** Send a chat message (optionally with image attachments) to an agent. */

@@ -15,6 +15,19 @@ import {
 import type { DeviceIdentity } from "../lib/keystore";
 import { parseMediaMessage, type MediaMessage } from "../lib/media";
 import { showRemoteNotification } from "../lib/notify";
+import {
+  clearPendingDecision,
+  queuePendingDecision,
+  readPendingDecisions,
+  type PendingDecision,
+} from "../lib/pendingDecisions";
+import {
+  forgetRegisteredToken,
+  getPushRegistration,
+  pushPreference,
+  rememberRegisteredToken,
+  setPushPreference,
+} from "../lib/push";
 import type {
   EventEnvelope,
   RemoteAgentCapabilities,
@@ -57,6 +70,16 @@ export function imageKey(agentId: string, imageId: string): string {
   return `${agentId}:${imageId}`;
 }
 
+/**
+ * Background-push status, purely for what the settings screen tells the user.
+ * "unconfigured" = we registered, but the desktop has no APNs/FCM credentials.
+ */
+export type PushState =
+  | "off"
+  | "registered"
+  | "unavailable"
+  | "unconfigured";
+
 /** Messages fetched per transcript page (tail on open, older on scroll-up). */
 const TRANSCRIPT_PAGE = 80;
 
@@ -96,10 +119,21 @@ interface AppState {
   /** Locally-chosen effort per agent (not surfaced by the monitor snapshot). */
   effortByAgent: Record<string, string | null>;
   devices: RemoteDevice[];
+  /** Background push: whether the user wants it and whether it is live. */
+  pushEnabled: boolean;
+  /** "off" | "registered" | "unavailable" | "unconfigured" — for settings copy. */
+  pushState: PushState;
 
+  /** Answer a prompt from a notification button, even while offline. */
+  decidePrompt: (
+    agentId: string,
+    toolUseId: string,
+    decision: "allow" | "deny",
+  ) => Promise<void>;
   init: () => Promise<void>;
   pairComplete: (identity: DeviceIdentity) => Promise<void>;
   setDeviceName: (name: string) => Promise<void>;
+  setPushEnabled: (enabled: boolean) => Promise<void>;
   unpair: () => Promise<void>;
   refreshProjects: () => Promise<void>;
   loadRecentAgents: () => Promise<void>;
@@ -306,6 +340,75 @@ export const useAppStore = create<AppState>((set, get) => {
     }
   }
 
+  /**
+   * Hand the desktop this install's native push token so it can wake us while
+   * the app is backgrounded. Skipped when the user opted out or the OS won't
+   * mint a token (permission denied, simulator, no entitlement).
+   */
+  async function registerPush(transport: Transport): Promise<PushState> {
+    if (!(await pushPreference())) {
+      return "off";
+    }
+    const registration = await getPushRegistration();
+    if (!registration) {
+      return "unavailable";
+    }
+    try {
+      const res = await transport.request<{ configured: boolean }>(
+        "device.register_push",
+        registration,
+      );
+      await rememberRegisteredToken(registration.token);
+
+      return res.configured ? "registered" : "unconfigured";
+    } catch {
+      return "unavailable";
+    }
+  }
+
+  /**
+   * Replay a queued Approve/Deny. The gateway only accepts answers to prompts
+   * it forwarded to *this* connection, and it re-forwards pending ones when we
+   * subscribe — so subscribe first, then retry while the replay lands.
+   */
+  async function flushDecision(
+    transport: Transport,
+    decision: PendingDecision,
+  ): Promise<boolean> {
+    transport.subscribe(decision.agentId, true);
+    try {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          await transport.request("permission.respond", {
+            agent_id: decision.agentId,
+            tool_use_id: decision.toolUseId,
+            decision: decision.decision,
+          });
+
+          return true;
+        } catch {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+      }
+
+      return false;
+    } finally {
+      transport.subscribe(decision.agentId, false);
+    }
+  }
+
+  async function flushPendingDecisions(transport: Transport): Promise<void> {
+    const pending = await readPendingDecisions(Date.now());
+    for (const decision of pending) {
+      const sent = await flushDecision(transport, decision);
+      // Drop it either way: a prompt that never came back is gone for good.
+      await clearPendingDecision(decision);
+      if (sent) {
+        scheduleTranscript(decision.agentId);
+      }
+    }
+  }
+
   function connect(identity: DeviceIdentity): Transport {
     const transport = new Transport(identity, {
       onState: (connection) => {
@@ -322,6 +425,12 @@ export const useAppStore = create<AppState>((set, get) => {
             .request<{ capabilities: string[] }>("device.capabilities", {})
             .then((r) => set({ capabilities: r.capabilities }))
             .catch(() => {});
+          registerPush(transport)
+            .then((pushState) => set({ pushState }))
+            .catch(() => {});
+          flushPendingDecisions(transport).catch(() => {});
+        } else {
+          set({ pushState: "off" });
         }
       },
       onEvent,
@@ -354,12 +463,29 @@ export const useAppStore = create<AppState>((set, get) => {
     answered: {},
     imageCache: {},
     capabilities: [],
+    pushEnabled: true,
+    pushState: "off",
     capabilitiesByAgent: {},
     statusByAgent: {},
     effortByAgent: {},
     devices: [],
 
+    decidePrompt: async (agentId, toolUseId, decision) => {
+      const pending: PendingDecision = {
+        agentId,
+        toolUseId,
+        decision,
+        at: Date.now(),
+      };
+      await queuePendingDecision(pending);
+      const transport = get().transport;
+      if (get().connection === "ready" && transport) {
+        await flushPendingDecisions(transport).catch(() => {});
+      }
+    },
+
     init: async () => {
+      set({ pushEnabled: await pushPreference() });
       const identity = await loadIdentity();
       if (!identity) {
         set({ loaded: true });
@@ -385,6 +511,25 @@ export const useAppStore = create<AppState>((set, get) => {
         capabilities: identity.capabilities,
         transport: connect(identity),
       });
+    },
+
+    setPushEnabled: async (enabled) => {
+      set({ pushEnabled: enabled });
+      await setPushPreference(enabled);
+      const transport = get().transport;
+      if (get().connection !== "ready" || !transport) {
+        set({ pushState: "off" });
+
+        return;
+      }
+      if (enabled) {
+        set({ pushState: await registerPush(transport) });
+
+        return;
+      }
+      await transport.request("device.unregister_push", {}).catch(() => {});
+      await forgetRegisteredToken();
+      set({ pushState: "off" });
     },
 
     setDeviceName: async (rawName) => {

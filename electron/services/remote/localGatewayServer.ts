@@ -96,6 +96,9 @@ function serveStatic(
   }
   res.writeHead(200, {
     "content-type": MIME[path.extname(file)] ?? "application/octet-stream",
+    // The service worker must never be served stale, or a rebuilt client keeps
+    // running the old push handler.
+    ...(path.basename(file) === "sw.js" ? { "cache-control": "no-cache" } : {}),
   });
   createReadStream(file).pipe(res);
 }

@@ -28,6 +28,9 @@ export type RemoteMethod =
   | "permission.respond"
   | "device.rename"
   | "device.capabilities"
+  | "device.push_info"
+  | "device.register_push"
+  | "device.unregister_push"
   | "agents.capabilities"
   | "agents.send"
   | "agents.interrupt"
@@ -241,12 +244,21 @@ export interface RemotePermissionRequest {
   tool_name: string;
   tool_input: Record<string, unknown>;
 }
+/** A quick-action button on a notification, chosen by the desktop. */
+export interface RemoteNotificationAction {
+  id: "approve" | "deny";
+  title: string;
+}
+
 export interface RemoteNotification {
   agent_id: string | null;
   session_id: string | null;
+  /** The prompt an action answers; only set for `kind: "permission"`. */
+  tool_use_id: string | null;
   kind: "failed" | "finished" | "permission" | "push";
   title: string;
   body: string;
+  actions: RemoteNotificationAction[];
 }
 
 // Envelopes -----------------------------------------------------------------

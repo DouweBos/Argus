@@ -29,6 +29,8 @@ import {
   remoteStartPairing,
 } from "../../../lib/ipc";
 import styles from "./RemoteAccessSection.module.css";
+import { RemoteDeviceRow } from "./RemoteDeviceRow";
+import { RemotePushFields } from "./RemotePushFields";
 
 type PairPhase = "awaiting-sas" | "idle" | "starting" | "waiting-device";
 
@@ -42,22 +44,6 @@ const MODE_OPTIONS = [
   { value: "quick" as const, label: "Quick tunnel" },
   { value: "token" as const, label: "Named tunnel" },
 ];
-
-function lastSeenLabel(ts: number | null): string {
-  if (!ts) {
-    return "never connected";
-  }
-  const mins = Math.floor((Date.now() - ts) / 60_000);
-  if (mins < 1) {
-    return "just now";
-  }
-  if (mins < 60) {
-    return `${mins}m ago`;
-  }
-  const hrs = Math.floor(mins / 60);
-
-  return hrs < 24 ? `${hrs}h ago` : `${Math.floor(hrs / 24)}d ago`;
-}
 
 /** Monospace code with a copy button that reveals on hover, like chat. */
 function CopyableCode({ value }: { value: string }) {
@@ -93,55 +79,6 @@ function tunnelTone(status: string): "error" | "idle" | "success" {
   }
 
   return status === "error" ? "error" : "idle";
-}
-
-function DeviceRow({
-  device,
-  connected,
-  onRevoke,
-  onSetControl,
-  busy,
-}: {
-  busy: boolean;
-  connected: boolean;
-  device: RemoteDevice;
-  onRevoke: (id: string) => void;
-  onSetControl: (id: string, control: boolean) => void;
-}) {
-  const hasControl = device.capabilities.includes("control");
-
-  return (
-    <div className={styles.device}>
-      <div className={styles.deviceInfo}>
-        <span className={styles.deviceLabel}>{device.label}</span>
-        <span className={styles.deviceMeta}>
-          {connected ? (
-            <StatusDot tone="success" pulse label="connected" />
-          ) : (
-            lastSeenLabel(device.last_seen)
-          )}{" "}
-          · {hasControl ? "monitor + control" : "monitor only"}
-        </span>
-      </div>
-      <div className={styles.deviceActions}>
-        <label className={styles.controlToggle}>
-          <span>Control</span>
-          <Toggle
-            checked={hasControl}
-            disabled={busy}
-            onChange={(next) => onSetControl(device.device_id, next)}
-          />
-        </label>
-        <Button
-          variant="ghost"
-          disabled={busy}
-          onClick={() => onRevoke(device.device_id)}
-        >
-          Revoke
-        </Button>
-      </div>
-    </div>
-  );
 }
 
 export function RemoteAccessSection() {
@@ -415,6 +352,8 @@ export function RemoteAccessSection() {
           </div>
         </SettingsScreenField>
 
+        <RemotePushFields disabled={busy || !enabled} />
+
         <SettingsScreenField
           label="Pair a device"
           caption="Scan the QR on your phone, then confirm the 6-digit code matches on both screens."
@@ -480,7 +419,7 @@ export function RemoteAccessSection() {
           <SettingsScreenField label="Paired devices">
             <div className={styles.deviceList}>
               {status.devices.map((d) => (
-                <DeviceRow
+                <RemoteDeviceRow
                   key={d.device_id}
                   device={d}
                   connected={status.connectedDeviceIds.includes(d.device_id)}

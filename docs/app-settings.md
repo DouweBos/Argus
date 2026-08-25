@@ -340,14 +340,15 @@ tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** 
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
-| Setting                  | Default | Description                                                                                                                                         |
-| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access** | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                    |
-| **Provider**             | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`. |
-| **Tunnel** (Cloudflare)  | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                          |
-| **Connector token**      | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                    |
-| **Public URL**           | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                |
-| **Paired devices**       | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                  |
+| Setting                  | Default | Description                                                                                                                                                           |
+| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access** | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                                      |
+| **Provider**             | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`.                   |
+| **Tunnel** (Cloudflare)  | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                            |
+| **Connector token**      | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                      |
+| **Public URL**           | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                  |
+| **Paired devices**       | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                                    |
+| **Background push**      | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Browsers need no setup; phones need your own Apple/Firebase credentials (below). |
 
 ### Choosing a provider
 
@@ -365,6 +366,79 @@ but cannot spawn agents, send messages, or run commands.
   account** — just the `tailscale` CLI, signed into a tailnet with
   [Funnel](https://tailscale.com/kb/1223/funnel) enabled. Often the sweet spot
   for a stable URL without owning a domain.
+
+### Background push notifications
+
+While a client is connected it gets notifications in-band over the gateway
+socket. Once the app is backgrounded, killed, or the last browser tab is closed
+that socket is gone, so Argus sends a real push instead — **signed and sent by
+your desktop directly**, over APNs (iOS), FCM (Android), or Web Push (browsers).
+There is no Argus push server, and the notification body never touches a third
+party other than Apple, Google, or Mozilla.
+
+Pushes fire for the same events the desktop notifies about — an agent finished,
+an agent failed, and an agent needs approval — plus anything an agent sends
+through the `push_notification` MCP tool. Devices with a live connection are
+skipped, so you never get the alert twice.
+
+### Quick actions
+
+A notification asking for approval carries **Approve** and **Deny** buttons, and
+they are the same buttons everywhere: on the macOS banner, on the phone, and in
+the browser. The desktop decides the action set once, so no surface can drift
+out of step. Answering from the button never opens the app — the decision goes
+straight to the agent, and every other surface clears the prompt.
+
+`AskUserQuestion` prompts deliberately get no buttons: picking an option isn't a
+yes/no, so those open the app to be answered properly.
+
+Actions survive being offline. Approve a prompt on a locked phone with the app
+killed and the answer is queued, then replayed the moment the gateway comes
+back (dropped after 30 minutes, on the grounds that a stale answer is worse than
+none). The same holds for a browser actioned with every tab closed.
+
+One gap worth knowing: **Android buttons only render while the app's process is
+alive.** A push delivered to a fully-stopped Android app is drawn by the system
+from the raw FCM payload, which can't carry them — you get the notification, but
+you have to open it to answer. iOS and desktop browsers show the buttons in all
+cases.
+
+**Browsers** need nothing from you. Argus generates its own VAPID signing key
+the first time a browser subscribes, encrypts each notification for that
+subscription (RFC 8291), and posts it to whatever push service the browser
+picked. The only thing worth setting is the **contact** — a `mailto:` or
+`https:` address push services use to reach you if your messages misbehave.
+
+Web Push needs a **secure context**, so it works over a Cloudflare/Tailscale
+tunnel but _not_ over a plain `http://<lan-ip>` address — browsers refuse to
+register a service worker there. Safari only offers it to a PWA you've added to
+the Home Screen / Dock.
+
+Phones, on the other hand, need the credentials for the app you installed,
+because your desktop is impersonating that app's own server:
+
+**Apple (iOS)** — from Apple Developer → **Keys**, create a key with the _Apple
+Push Notifications service (APNs)_ capability and download the `.p8`. Paste the
+key contents plus its **Key ID**, your **Team ID**, and the app's **bundle
+identifier** (`dev.houwert.argus.remote` unless you rebuilt it). Argus figures
+out sandbox vs. production on its own — if the first send is rejected as the
+wrong environment it retries the other one and remembers which worked.
+
+**Firebase (Android)** — from Firebase → Project settings → **Service
+accounts**, generate a private key and paste the whole JSON blob. The Android
+build also needs the matching `google-services.json` at
+`clients/argus-remote/google-services.json` plus
+`"googleServicesFile": "./google-services.json"` under `android` in
+`app.json`, otherwise the app can't obtain an FCM token to register.
+
+Credentials are stored in the same `safeStorage`-encrypted file as the device
+keys (`~/.argus/remote-devices.json`), never in plaintext `app-settings.json`,
+and are never read back into the UI — the settings screen only shows whether a
+key is present. **Test push** next to a paired device sends a real notification
+and shows the provider's rejection reason if it fails.
+
+On the phone, **Settings → Background push** turns registration on or off. A
+device that has registered shows _push registered_ in the desktop's paired list.
 
 ### Web client on this network
 
@@ -397,7 +471,7 @@ Argus keeps everything under `~/.argus/`:
   app-settings.json           ← MCP servers, remote-access tunnel + kill-switch
   claude-accounts.json        ← Signed-in Claude accounts + the active one
   claude-accounts/            ← Per-account Claude credentials
-  remote-devices.json         ← Remote-access identity key + paired devices (encrypted)
+  remote-devices.json         ← Remote-access identity key, paired devices, push credentials (encrypted)
   user-project-settings.json  ← Per-developer project prefs (branch prefix, …)
   telemetry-id                ← Anonymous install id (only present if telemetry is on)
 ```
