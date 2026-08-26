@@ -1,17 +1,17 @@
 /**
- * Fans a desktop notification out to paired phones that aren't currently
- * connected. Connected devices already get the notification in-band over the
- * gateway socket; the rest need a real APNs/FCM push to wake up.
+ * Fans a desktop notification out to paired devices that aren't currently
+ * connected. Connected devices already get it in-band over the gateway socket;
+ * the rest need a real push to wake up.
  *
- * Browsers are reached directly — Web Push keys are self-asserted, so no
- * third party is involved. Phones can't be: only the team that owns the app's
- * bundle id may push to it, so APNs/FCM go through the relay, which holds that
- * credential and receives nothing but a sealed blob. A desktop configured with
- * its own Apple/Firebase credentials skips the relay entirely.
+ * Browsers are reached directly — Web Push keys are self-asserted, so no third
+ * party is involved. Phones can't be: only the team that owns the app's bundle
+ * id may push to it, so APNs/FCM go through the relay, which holds that
+ * credential and receives nothing but a blob sealed for the target device.
  */
 
 import type { RemoteNotificationPayload } from "../../notifications/broadcast";
 import type { PairedDevice, PushConfig } from "../deviceStore";
+import type { PushOutcome } from "./types";
 import { log, warn } from "../../../../app/lib/logger";
 import {
   clearDevicePush,
@@ -20,24 +20,9 @@ import {
   setDevicePushEnvironment,
 } from "../deviceStore";
 import { getConnectedDeviceIds } from "../gateway";
-import {
-  isApnsConfigured,
-  isApnsTokenDead,
-  sendApns,
-  type ApnsEnvironment,
-  type PushOutcome,
-} from "./apns";
-import { isFcmConfigured, isFcmTokenDead, sendFcm } from "./fcm";
-import {
-  DEFAULT_RELAY_URL,
-  isRelayRegistrationDead,
-  sendViaRelay,
-} from "./relay";
-import {
-  collapseId as sealedCollapseId,
-  seal,
-  toSealedNotification,
-} from "./seal";
+import { relayUrlFor } from "./config";
+import { isRelayRegistrationDead, sendViaRelay } from "./relay";
+import { collapseId, seal, toSealedNotification } from "./seal";
 import { isWebPushSubscriptionDead, sendWebPush } from "./webpush";
 
 /** Give a transient failure exactly one more chance before dropping it. */
@@ -47,7 +32,8 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function payloadData(n: RemoteNotificationPayload): Record<string, string> {
+/** Browsers render the notification themselves, so they get it in the clear. */
+function webPushData(n: RemoteNotificationPayload): Record<string, string> {
   const data: Record<string, string> = { kind: n.kind, label: n.title };
   if (n.agent_id) {
     data.agentId = n.agent_id;
@@ -58,35 +44,9 @@ function payloadData(n: RemoteNotificationPayload): Record<string, string> {
   if (n.tool_use_id) {
     data.toolUseId = n.tool_use_id;
   }
-  // FCM and Web Push carry data as strings, so the buttons ride along encoded.
-  if (n.actions.length > 0) {
-    data.actions = JSON.stringify(n.actions);
-    data.categoryId = PERMISSION_CATEGORY;
-  }
 
   return data;
 }
-
-/**
- * iOS renders quick actions from a category the app registered, so the wire
- * only carries its name. Keep it in sync with the phone client's `notify.ts`.
- */
-const PERMISSION_CATEGORY = "argus.permission";
-
-/** One notification per agent at a time — a newer one replaces the unread old. */
-function collapseId(n: RemoteNotificationPayload): string | undefined {
-  return n.agent_id ? `agent-${n.agent_id}` : undefined;
-}
-
-/**
- * A token minted by a development build only works against the APNs sandbox
- * (and vice versa), and the phone can't always tell which build it is. Rather
- * than guess, retry the other environment once and remember what worked.
- */
-const OTHER_ENV: Record<ApnsEnvironment, ApnsEnvironment> = {
-  production: "sandbox",
-  sandbox: "production",
-};
 
 async function sendOnce(
   device: PairedDevice,
@@ -97,14 +57,6 @@ async function sendOnce(
   if (!push) {
     return { ok: false, retryable: false, reason: "no token" };
   }
-  const common = {
-    title: n.title,
-    body: n.body,
-    data: payloadData(n),
-    collapseId: collapseId(n),
-    actions: n.actions,
-    category: n.actions.length > 0 ? PERMISSION_CATEGORY : undefined,
-  };
 
   if (push.service === "webpush") {
     if (!push.keys) {
@@ -118,73 +70,23 @@ async function sendOnce(
     return sendWebPush(
       config,
       { endpoint: push.token, ...push.keys },
-      common,
+      {
+        title: n.title,
+        body: n.body,
+        data: webPushData(n),
+        collapseId: n.agent_id ? `agent-${n.agent_id}` : undefined,
+        actions: n.actions,
+      },
       Date.now(),
     );
   }
 
-  // Own credentials for this service? Then talk to Apple/Google directly and
-  // leave the relay out of it.
-  const direct =
-    push.service === "apns"
-      ? isApnsConfigured(config)
-      : isFcmConfigured(config);
-  if (!direct) {
-    return sendSealed(device, config, n);
-  }
-
-  if (push.service === "fcm") {
-    return sendFcm(config, push.token, common, Date.now());
-  }
-
-  const environment: ApnsEnvironment = push.environment ?? "production";
-  const outcome = await sendApns(
-    config,
-    push.token,
-    environment,
-    common,
-    Date.now(),
-  );
-  if (outcome.ok || !isApnsEnvironmentMismatch(outcome.reason)) {
-    return outcome;
-  }
-
-  const fallback = OTHER_ENV[environment];
-  const retried = await sendApns(
-    config,
-    push.token,
-    fallback,
-    common,
-    Date.now(),
-  );
-  if (retried.ok) {
-    await setDevicePushEnvironment(device.device_id, fallback);
-    push.environment = fallback;
-  }
-
-  return retried;
-}
-
-/**
- * Push through the relay. The notification is encrypted for this device first,
- * so the relay forwards a blob it cannot read; the device's notification
- * extension decrypts it before anything is shown.
- */
-async function sendSealed(
-  device: PairedDevice,
-  config: PushConfig,
-  n: RemoteNotificationPayload,
-): Promise<PushOutcome> {
-  const push = device.push;
-  if (!push?.push_key || !push.auth_key) {
+  if (!push.push_key || !push.auth_key) {
     return {
       ok: false,
       retryable: false,
       reason: "device has not registered relay keys",
     };
-  }
-  if (push.service === "webpush") {
-    return { ok: false, retryable: false, reason: "unsupported service" };
   }
 
   let sealed: string;
@@ -195,7 +97,7 @@ async function sendSealed(
   }
 
   const result = await sendViaRelay(
-    config.relay_url || DEFAULT_RELAY_URL,
+    relayUrlFor(config),
     {
       service: push.service,
       token: push.token,
@@ -203,7 +105,7 @@ async function sendSealed(
       environment: push.environment,
     },
     sealed,
-    n.agent_id ? sealedCollapseId(push.push_key, n.agent_id) : undefined,
+    n.agent_id ? collapseId(push.push_key, n.agent_id) : undefined,
     Date.now(),
   );
 
@@ -220,24 +122,13 @@ async function sendSealed(
   return result;
 }
 
-function isApnsEnvironmentMismatch(reason: string): boolean {
-  return reason === "BadDeviceToken" || reason === "DeviceTokenNotForTopic";
-}
-
 function isTokenDead(
   service: "apns" | "fcm" | "webpush",
   reason: string,
 ): boolean {
-  if (service === "webpush") {
-    return isWebPushSubscriptionDead(reason);
-  }
-
-  // A native device may have gone out either way — direct or via the relay —
-  // so a verdict from either means the same thing: stop pushing to it.
-  return (
-    isRelayRegistrationDead(reason) ||
-    (service === "apns" ? isApnsTokenDead(reason) : isFcmTokenDead(reason))
-  );
+  return service === "webpush"
+    ? isWebPushSubscriptionDead(reason)
+    : isRelayRegistrationDead(reason);
 }
 
 async function pushToDevice(
@@ -266,7 +157,7 @@ async function pushToDevice(
  * forget — notification delivery must never block or fail the caller.
  */
 export function dispatchRemotePush(n: RemoteNotificationPayload): void {
-  (async () => {
+  const run = async (): Promise<void> => {
     const config = await getPushConfig();
     if (!config.enabled) {
       return;
@@ -279,7 +170,8 @@ export function dispatchRemotePush(n: RemoteNotificationPayload): void {
       return;
     }
     await Promise.all(targets.map((d) => pushToDevice(d, config, n)));
-  })().catch((err: unknown) => {
+  };
+  run().catch((err: unknown) => {
     warn(`[push] dispatch failed: ${(err as Error).message}`);
   });
 }

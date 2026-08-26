@@ -1093,30 +1093,19 @@ export interface RemoteDevice {
   push?: RemoteDevicePush | null;
 }
 
-/** Push credential state — presence flags only, never the secrets. */
+/** Push settings — presence flags only, never the keys. */
 export interface RemotePushConfig {
-  apnsBundleId: string;
-  apnsConfigured: boolean;
-  apnsKeyId: string;
-  apnsTeamId: string;
   enabled: boolean;
-  fcmConfigured: boolean;
-  fcmProjectId: string | null;
+  /** Where phones register their relay auth key. */
+  relayUrl: string;
   /** VAPID contact claim sent to the browser's push service. */
   vapidSubject: string;
-  /** Browsers need no user credentials — true once the VAPID key is minted. */
+  /** True once the browser signing key has been minted. */
   webPushConfigured: boolean;
 }
 
 export interface RemotePushConfigPatch {
-  apnsBundleId?: string;
-  apnsKeyId?: string;
-  /** Contents of an APNs `.p8` auth key. Omit to leave the stored key alone. */
-  apnsKeyP8?: string;
-  apnsTeamId?: string;
   enabled?: boolean;
-  /** Firebase service-account JSON. Omit to leave the stored one alone. */
-  fcmServiceAccount?: string;
   /** `mailto:`/`https:` contact the browser's push service can reach you at. */
   vapidSubject?: string;
 }

@@ -1007,33 +1007,10 @@ export function registerIpcHandlers(): void {
   );
   handle("remote_get_push_config", () => getPushConfigStatus());
   handle("remote_set_push_config", (a) => {
-    const patch = a.patch as {
-      apnsBundleId?: string;
-      apnsKeyId?: string;
-      apnsKeyP8?: string;
-      apnsTeamId?: string;
-      enabled?: boolean;
-      fcmServiceAccount?: string;
-      vapidSubject?: string;
-    };
+    const patch = a.patch as { enabled?: boolean; vapidSubject?: string };
 
     return setPushConfig({
       ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
-      ...(patch.apnsKeyP8 !== undefined
-        ? { apns_key_p8: patch.apnsKeyP8.trim() }
-        : {}),
-      ...(patch.apnsKeyId !== undefined
-        ? { apns_key_id: patch.apnsKeyId.trim() }
-        : {}),
-      ...(patch.apnsTeamId !== undefined
-        ? { apns_team_id: patch.apnsTeamId.trim() }
-        : {}),
-      ...(patch.apnsBundleId !== undefined
-        ? { apns_bundle_id: patch.apnsBundleId.trim() }
-        : {}),
-      ...(patch.fcmServiceAccount !== undefined
-        ? { fcm_service_account: patch.fcmServiceAccount.trim() }
-        : {}),
       ...(patch.vapidSubject !== undefined
         ? { vapid_subject: patch.vapidSubject.trim() }
         : {}),

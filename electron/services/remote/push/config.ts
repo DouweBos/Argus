@@ -5,26 +5,17 @@
  */
 
 import { getPushConfig, savePushConfig, type PushConfig } from "../deviceStore";
-import { closeApnsSessions, isApnsConfigured, resetApnsToken } from "./apns";
-import { isFcmConfigured, resetFcmToken } from "./fcm";
 import { DEFAULT_RELAY_URL } from "./relay";
 import { generateVapidKeys, isWebPushConfigured } from "./webpush";
 
-/** What the renderer sees — presence flags, never the secrets themselves. */
+/** What the renderer sees — never the keys themselves. */
 export interface PushConfigStatus {
   enabled: boolean;
-  apnsConfigured: boolean;
-  apnsKeyId: string;
-  apnsTeamId: string;
-  apnsBundleId: string;
-  fcmConfigured: boolean;
-  /** Firebase project the service account belongs to, for display. */
-  fcmProjectId: string | null;
   webPushConfigured: boolean;
   /** VAPID contact claim sent to the browser's push service. */
   vapidSubject: string;
-  /** Where phones register, or null when this desktop pushes Apple/Google direct. */
-  relayUrl: string | null;
+  /** Where phones register their relay auth key. */
+  relayUrl: string;
 }
 
 /**
@@ -39,22 +30,9 @@ export async function isPushConfigured(): Promise<boolean> {
 }
 
 /**
- * Where native clients register their relay auth key. Null means this desktop
- * has its own Apple/Firebase credentials and talks to them directly — a
- * self-hosted build, which is expected to configure every platform it ships.
- */
-export function relayUrlFor(config: PushConfig): string | null {
-  if (isApnsConfigured(config) || isFcmConfigured(config)) {
-    return null;
-  }
-
-  return config.relay_url || DEFAULT_RELAY_URL;
-}
-
-/**
  * The VAPID public key browsers subscribe with, minting the keypair on first
- * ask. Unlike APNs/FCM this needs nothing from the user — Argus is its own
- * application server — so generating it lazily keeps web push zero-config.
+ * ask. Argus is its own application server for Web Push, so generating it
+ * lazily keeps browsers zero-config.
  */
 export async function ensureVapidPublicKey(): Promise<string> {
   const config = await getPushConfig();
@@ -70,15 +48,9 @@ export async function ensureVapidPublicKey(): Promise<string> {
   return keys.publicKey;
 }
 
-function projectId(config: PushConfig): string | null {
-  try {
-    return (
-      (JSON.parse(config.fcm_service_account) as { project_id?: string })
-        .project_id ?? null
-    );
-  } catch {
-    return null;
-  }
+/** Where native clients register their relay auth key. */
+export function relayUrlFor(config: PushConfig): string {
+  return config.relay_url || DEFAULT_RELAY_URL;
 }
 
 export async function getPushConfigStatus(): Promise<PushConfigStatus> {
@@ -86,26 +58,17 @@ export async function getPushConfigStatus(): Promise<PushConfigStatus> {
 
   return {
     enabled: config.enabled,
-    apnsConfigured: isApnsConfigured(config),
-    apnsKeyId: config.apns_key_id,
-    apnsTeamId: config.apns_team_id,
-    apnsBundleId: config.apns_bundle_id,
-    fcmConfigured: isFcmConfigured(config),
-    fcmProjectId: projectId(config),
     webPushConfigured: isWebPushConfigured(config),
     vapidSubject: config.vapid_subject,
     relayUrl: relayUrlFor(config),
   };
 }
 
-/** Persist a credential patch and drop any cached provider tokens. */
+/** Persist a config patch. */
 export async function setPushConfig(
   patch: Partial<PushConfig>,
 ): Promise<PushConfigStatus> {
   await savePushConfig(patch);
-  resetApnsToken();
-  resetFcmToken();
-  closeApnsSessions();
 
   return getPushConfigStatus();
 }
