@@ -11,6 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.houwert.argus.remote",
+      "appleTeamId": "CKZT75PN5T",
       "infoPlist": {
         "NSCameraUsageDescription": "Scan the pairing QR code shown in Argus, or take a photo to send to an agent."
       },
