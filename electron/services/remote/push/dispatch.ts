@@ -22,7 +22,12 @@ import {
 import { getConnectedDeviceIds } from "../gateway";
 import { relayUrlFor } from "./config";
 import { isRelayRegistrationDead, sendViaRelay } from "./relay";
-import { collapseId, seal, toSealedNotification } from "./seal";
+import {
+  collapseId,
+  collapseSubject,
+  seal,
+  toSealedNotification,
+} from "./seal";
 import { isWebPushSubscriptionDead, sendWebPush } from "./webpush";
 
 /** Give a transient failure exactly one more chance before dropping it. */
@@ -74,7 +79,7 @@ async function sendOnce(
         title: n.title,
         body: n.body,
         data: webPushData(n),
-        collapseId: n.agent_id ? `agent-${n.agent_id}` : undefined,
+        collapseId: collapseSubject(n) ?? undefined,
         actions: n.actions,
       },
       Date.now(),
@@ -89,6 +94,7 @@ async function sendOnce(
     };
   }
 
+  const subject = collapseSubject(n);
   let sealed: string;
   try {
     sealed = seal(push.push_key, toSealedNotification(n));
@@ -105,7 +111,7 @@ async function sendOnce(
       environment: push.environment,
     },
     sealed,
-    n.agent_id ? collapseId(push.push_key, n.agent_id) : undefined,
+    subject ? collapseId(push.push_key, subject) : undefined,
     Date.now(),
   );
 

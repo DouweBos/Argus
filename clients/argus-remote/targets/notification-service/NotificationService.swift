@@ -41,12 +41,15 @@ class NotificationService: UNNotificationServiceExtension {
       content.categoryIdentifier = "argus.permission"
     }
 
+    // expo-notifications reads a *remote* notification's `content.data` from
+    // userInfo["body"], not the top level — flat keys here never reach JS.
+    var routing: [String: Any] = ["label": opened.title, "kind": opened.kind]
+    routing["agentId"] = opened.agentId
+    routing["sessionId"] = opened.sessionId
+    routing["toolUseId"] = opened.toolUseId
+
     var info = content.userInfo
-    info["agentId"] = opened.agentId as Any
-    info["sessionId"] = opened.sessionId as Any
-    info["toolUseId"] = opened.toolUseId as Any
-    info["label"] = opened.title
-    info["kind"] = opened.kind
+    info["body"] = routing
     info.removeValue(forKey: "e")
     content.userInfo = info
 

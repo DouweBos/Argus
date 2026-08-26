@@ -51,6 +51,17 @@ export function openSealed(
   }
 }
 
+function collapseIdentifier(n: SealedNotification): string | null {
+  if (n.kind === "finished" || n.kind === "failed") {
+    return n.agentId ? `agent-${n.agentId}` : null;
+  }
+  if (n.kind === "permission") {
+    return n.toolUseId ? `prompt-${n.toolUseId}` : null;
+  }
+
+  return null;
+}
+
 async function handleSealed(sealed: string): Promise<void> {
   const keys = await ensureRelayKeys();
   const opened = openSealed(keys.pushKey, sealed);
@@ -58,9 +69,9 @@ async function handleSealed(sealed: string): Promise<void> {
     return;
   }
   await Notifications.scheduleNotificationAsync({
-    // Matches the desktop's collapse key, so a newer alert about the same
-    // agent replaces the unread one instead of stacking.
-    identifier: opened.agentId ? `agent-${opened.agentId}` : undefined,
+    // Matches the desktop's collapse rule: turn results supersede per agent,
+    // pending approvals stay distinct, MCP pushes never replace anything.
+    identifier: collapseIdentifier(opened) ?? undefined,
     content: {
       title: opened.title,
       body: opened.body,

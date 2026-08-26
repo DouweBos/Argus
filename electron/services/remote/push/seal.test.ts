@@ -1,7 +1,12 @@
 import { gcm } from "@noble/ciphers/aes.js";
 import { createDecipheriv, randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { collapseId, seal, toSealedNotification } from "./seal";
+import {
+  collapseId,
+  collapseSubject,
+  seal,
+  toSealedNotification,
+} from "./seal";
 
 const PUSH_KEY = randomBytes(32).toString("base64");
 
@@ -96,11 +101,35 @@ describe("seal", () => {
   });
 });
 
-describe("collapseId", () => {
-  it("is stable per agent but reveals no agent id to the relay", () => {
-    const id = collapseId(PUSH_KEY, "agent-1");
+describe("collapseSubject", () => {
+  it("lets a newer turn result supersede the last one for that agent", () => {
+    expect(collapseSubject({ ...NOTIFICATION, kind: "finished" })).toBe(
+      "agent-agent-1",
+    );
+    expect(collapseSubject({ ...NOTIFICATION, kind: "failed" })).toBe(
+      "agent-agent-1",
+    );
+  });
 
-    expect(id).toBe(collapseId(PUSH_KEY, "agent-1"));
+  it("keeps two pending approvals apart — collapsing would hide one", () => {
+    const first = collapseSubject(NOTIFICATION);
+    const second = collapseSubject({ ...NOTIFICATION, tool_use_id: "tool-2" });
+
+    expect(first).toBe("prompt-tool-1");
+    expect(second).toBe("prompt-tool-2");
+    expect(first).not.toBe(second);
+  });
+
+  it("never collapses an MCP push — each one is its own event", () => {
+    expect(collapseSubject({ ...NOTIFICATION, kind: "push" })).toBeNull();
+  });
+});
+
+describe("collapseId", () => {
+  it("is stable per subject but reveals nothing to the relay", () => {
+    const id = collapseId(PUSH_KEY, "agent-agent-1");
+
+    expect(id).toBe(collapseId(PUSH_KEY, "agent-agent-1"));
     expect(id).not.toContain("agent-1");
     expect(id).not.toBe(collapseId(PUSH_KEY, "agent-2"));
     // APNs caps the header at 64 bytes.
