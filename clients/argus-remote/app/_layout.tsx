@@ -56,10 +56,23 @@ function Root() {
     registerNotificationCategories().catch(() => {});
     startSealedPushHandling().catch(() => {});
     setNotificationOpener((agentId, label) => {
-      router.push({
-        pathname: "/agent/[id]",
-        params: { id: agentId, label },
-      });
+      // The alert may be from a computer we're not currently connected to —
+      // switch to the one that owns the agent before opening it.
+      const store = useAppStore.getState();
+      store
+        .hostForAgent(agentId)
+        .then((hostId) =>
+          hostId && hostId !== store.activeHostId
+            ? store.selectHost(hostId)
+            : undefined,
+        )
+        .catch(() => {})
+        .finally(() => {
+          router.push({
+            pathname: "/agent/[id]",
+            params: { id: agentId, label },
+          });
+        });
     });
     setNotificationDecider((agentId, toolUseId, decision) => {
       useAppStore
@@ -108,8 +121,10 @@ function Root() {
           contentStyle: { backgroundColor: theme.bg },
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Projects" }} />
-        <Stack.Screen name="pair" options={{ title: "Pair a device" }} />
+        <Stack.Screen name="index" options={{ title: "Argus" }} />
+        <Stack.Screen name="projects" options={{ title: "Projects" }} />
+        <Stack.Screen name="computer/[id]" options={{ title: "Computer" }} />
+        <Stack.Screen name="pair" options={{ title: "Pair a computer" }} />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
         <Stack.Screen name="devices" options={{ title: "Devices" }} />
       </Stack>

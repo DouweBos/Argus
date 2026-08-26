@@ -14,6 +14,8 @@ export interface PairingPayload {
 export interface PairingGrant {
   device_id: string;
   capabilities: string[];
+  /** The computer's name — labels it in the phone's paired-computer list. */
+  host_name?: string;
 }
 
 export type RemoteMethod =

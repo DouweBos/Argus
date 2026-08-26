@@ -1,7 +1,8 @@
 # Argus Remote
 
-Drive your Argus agents from a phone. Pairs with the desktop over an
-end-to-end-encrypted channel (Noise IK). The desktop runs a local gateway
+Drive your Argus agents from a phone. Pairs with one or more desktops over an
+end-to-end-encrypted channel (Noise IK); the home screen lists the paired
+computers and the app talks to one at a time. The desktop runs a local gateway
 exposed through a Cloudflare or Tailscale tunnel; the tunnel only ever sees
 ciphertext.
 
@@ -41,27 +42,33 @@ an EAS dev build) once, then `npx expo start --dev-client` day to day.
 
 1. On the desktop: **Settings → Remote Access**, pick a tunnel provider
    (Cloudflare or Tailscale), enable remote access, then **Start pairing**.
-2. In this app: **Pair a device** → scan the QR (or paste the code if the
+2. In this app: **Pair a computer** → scan the QR (or paste the code if the
    camera is unavailable).
 3. Confirm the 6-digit code matches on both screens, then tap **Codes match —
    pair** on the desktop.
+
+Repeat for as many computers as you like. Each pairing keeps its own key and
+grant; tapping one on the home screen connects to it and drops the previous
+one's data. Tapping a notification switches to the computer that owns the agent
+it came from.
 
 ## Security notes
 
 - The device key lives in the Secure Enclave / Keystore (`expo-secure-store`)
   behind a biometric gate.
 - Revoke a device from the desktop (**Settings → Remote Access**) to
-  cryptographically cut it off immediately.
+  cryptographically cut it off immediately. Unpairing on the phone (home screen
+  → **…** → **Unpair**) only drops the phone's copy of that computer's key.
 
 ## Layout
 
 ```
-app/                 Expo Router screens (projects, project, agent, changes,
-                     devices, device, settings, pair)
+app/                 Expo Router screens (home, computer, projects, project,
+                     agent, changes, devices, device, settings, pair)
 modules/argus-video/ Local Expo module: native H.264 surface (iOS + Android)
 src/crypto/          Noise IK + derivations (mirror of the desktop)
-src/lib/             keystore, socket, transport, protocol, diff, activity,
-                     images, notifications, storage
+src/lib/             keystore (multi-pairing), socket, transport, protocol,
+                     diff, activity, images, notifications, storage
 src/stores/          zustand app store
 src/components/      RN component kit (transcript, tool calls, chat input, …)
 ```

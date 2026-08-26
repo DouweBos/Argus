@@ -1,11 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
 import { ConnectionBadge } from "../src/components/ConnectionBadge";
 import * as Icons from "../src/components/Icons";
-import { AgentRow, agentMetaLabel, mapAgentStatus } from "../src/components/rows";
 import {
-  Banner,
+  Badge,
   Body,
   Btn,
   Card,
@@ -16,146 +15,119 @@ import {
   Row,
   Screen,
   SectionHeader,
-  Title,
 } from "../src/components/ui";
-import { useLiveRefresh } from "../src/hooks/useLiveRefresh";
+import { gatewayHost, hostLabel } from "../src/lib/keystore";
 import { useAppStore } from "../src/stores/appStore";
 import { useTheme } from "../src/theme";
 
-function toTildePath(absPath: string): string {
-  const match = absPath.match(/^(\/(?:Users|home)\/[^/]+)/);
+/** Only jump straight into the last computer once per launch — after that the
+ *  user came back here deliberately. */
+let autoOpened = false;
 
-  return match ? absPath.replace(match[1], "~") : absPath;
-}
-
-export default function ProjectsScreen() {
+/**
+ * Home: the computers this phone is paired with. Picking one connects to it
+ * (only one at a time) and opens its projects.
+ */
+export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const identity = useAppStore((s) => s.identity);
   const loaded = useAppStore((s) => s.loaded);
+  const hosts = useAppStore((s) => s.hosts);
+  const activeHostId = useAppStore((s) => s.activeHostId);
   const connection = useAppStore((s) => s.connection);
-  const projects = useAppStore((s) => s.projects);
-  const refreshProjects = useAppStore((s) => s.refreshProjects);
-  const loadRecentAgents = useAppStore((s) => s.loadRecentAgents);
+  const selectHost = useAppStore((s) => s.selectHost);
+  const opening = useRef(false);
 
-  const refresh = useCallback(() => {
-    refreshProjects().catch(() => {});
-    loadRecentAgents().catch(() => {});
-  }, [refreshProjects, loadRecentAgents]);
-  useLiveRefresh(Boolean(identity) && connection === "ready", refresh);
+  const open = useCallback(
+    (deviceId: string) => {
+      if (opening.current) {
+        return;
+      }
+      opening.current = true;
+      selectHost(deviceId)
+        .catch(() => {})
+        .finally(() => {
+          opening.current = false;
+          router.push("/projects");
+        });
+    },
+    [router, selectHost],
+  );
 
-  if (loaded && !identity) {
-    return (
-      <Screen>
-        <Title>Welcome</Title>
-        <Muted>Pair this device with Argus on your computer to begin.</Muted>
-        <Btn label="Pair a device" onPress={() => router.push("/pair")} />
-      </Screen>
-    );
-  }
+  useEffect(() => {
+    if (loaded && !autoOpened && activeHostId) {
+      autoOpened = true;
+      router.push("/projects");
+    }
+  }, [loaded, activeHostId, router]);
 
   return (
     <Screen>
       <Stack.Screen
         options={{
           headerRight: () => (
-            <Row gap={2}>
-              <ConnectionBadge state={connection} />
-              <IconBtn label="Devices" onPress={() => router.push("/devices")}>
-                <Icons.Simulator size={16} color={theme.textSecondary} />
-              </IconBtn>
-              <IconBtn
-                label="Refresh"
-                disabled={connection !== "ready"}
-                onPress={refresh}
-              >
-                <Icons.Refresh size={16} color={theme.textSecondary} />
-              </IconBtn>
-              <IconBtn label="Settings" onPress={() => router.push("/settings")}>
-                <Icons.Gear size={16} color={theme.textSecondary} />
-              </IconBtn>
-            </Row>
+            <IconBtn label="Settings" onPress={() => router.push("/settings")}>
+              <Icons.Gear size={16} color={theme.textSecondary} />
+            </IconBtn>
           ),
         }}
       />
 
-      {connection === "offline" && (
-        <Banner>Lost the connection to Argus — retrying automatically.</Banner>
-      )}
-
-      <RecentAgents />
-
-      {!loaded || (connection !== "ready" && projects.length === 0) ? (
-        <Loading label="Connecting to Argus…" />
-      ) : projects.length === 0 ? (
-        <EmptyState
-          icon={<Icons.Folder size={22} color={theme.textMuted} />}
-          title="No projects open"
-          body="Open a repository in Argus on your computer and it'll show up here."
-        />
+      {!loaded ? (
+        <Loading label="Unlocking…" />
+      ) : hosts.length === 0 ? (
+        <>
+          <EmptyState
+            icon={<Icons.Desktop size={22} color={theme.textMuted} />}
+            title="No computers paired"
+            body="Pair with Argus on your Mac to drive its agents from here. Open Settings → Remote Access on the computer to get a code."
+          />
+          <Btn label="Pair a computer" onPress={() => router.push("/pair")} />
+        </>
       ) : (
         <>
-          <SectionHeader count={projects.length}>Projects</SectionHeader>
-          {projects.map((p) => (
-            <Card
-              key={p.repo_root}
-              onPress={() =>
-                router.push({
-                  pathname: "/project/[repo]",
-                  params: { repo: p.repo_root, name: p.name },
-                })
-              }
-            >
-              <Row gap={8}>
-                <Icons.Folder size={14} color={theme.textSecondary} />
-                <View style={{ flex: 1 }}>
-                  <Body numberOfLines={1}>{p.name}</Body>
-                  <Muted numberOfLines={1}>{toTildePath(p.repo_root)}</Muted>
-                </View>
-                <Icons.ChevronRight size={14} color={theme.textMuted} />
-              </Row>
-            </Card>
-          ))}
+          <SectionHeader count={hosts.length}>Computers</SectionHeader>
+          {hosts.map((host) => {
+            const active = host.deviceId === activeHostId;
+
+            return (
+              <Card key={host.deviceId} onPress={() => open(host.deviceId)}>
+                <Row gap={8}>
+                  <Icons.Desktop
+                    size={16}
+                    color={active ? theme.accent : theme.textSecondary}
+                  />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Body numberOfLines={1}>{hostLabel(host)}</Body>
+                    <Muted numberOfLines={1}>{gatewayHost(host.url)}</Muted>
+                  </View>
+                  {active ? (
+                    <ConnectionBadge state={connection} />
+                  ) : (
+                    <Badge label="Tap to connect" />
+                  )}
+                  <IconBtn
+                    label={`${hostLabel(host)} settings`}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/computer/[id]",
+                        params: { id: host.deviceId },
+                      })
+                    }
+                  >
+                    <Icons.Ellipsis size={16} color={theme.textMuted} />
+                  </IconBtn>
+                </Row>
+              </Card>
+            );
+          })}
+          <Btn
+            label="Pair another computer"
+            tone="secondary"
+            onPress={() => router.push("/pair")}
+          />
         </>
       )}
     </Screen>
-  );
-}
-
-/** Most-recently-active agents across all projects — a quick jump back to what
- *  you're driving. */
-function RecentAgents() {
-  const router = useRouter();
-  const recentAgents = useAppStore((s) => s.recentAgents);
-  const recent = [...recentAgents]
-    .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
-    .slice(0, 8);
-
-  if (recent.length === 0) {
-    return null;
-  }
-
-  return (
-    <>
-      <SectionHeader count={recent.length}>Recent agents</SectionHeader>
-      {recent.map((a) => {
-        const name = a.title?.trim() || `Agent ${a.agent_id.slice(0, 8)}`;
-
-        return (
-          <AgentRow
-            key={a.agent_id}
-            name={name}
-            status={mapAgentStatus(a.status)}
-            meta={a.session_label ?? agentMetaLabel(a.status)}
-            onPress={() =>
-              router.push({
-                pathname: "/agent/[id]",
-                params: { id: a.agent_id, label: name },
-              })
-            }
-          />
-        );
-      })}
-    </>
   );
 }

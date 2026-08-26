@@ -11,6 +11,7 @@ import {
   SegmentedControl,
   TextField,
 } from "../src/components/ui";
+import { hostLabel } from "../src/lib/keystore";
 import {
   notificationStatus,
   requestNotificationPermission,
@@ -46,17 +47,19 @@ const PUSH_LABEL: Record<PushState, string> = {
     "Registered, but Argus on your computer has no Apple/Firebase push credentials yet.",
   unavailable:
     "Unavailable on this build — needs notification permission and a real device.",
+  unsupported:
+    "The computer you're connected to is running an older Argus. Update it to enable background push.",
   off: "Off — you'll only see alerts while the app is connected.",
 };
 
 export default function SettingsScreen() {
   const router = useRouter();
   const identity = useAppStore((s) => s.identity);
+  const hosts = useAppStore((s) => s.hosts);
   const deviceName = useAppStore((s) => s.deviceName);
   const setDeviceName = useAppStore((s) => s.setDeviceName);
   const connection = useAppStore((s) => s.connection);
   const capabilities = useAppStore((s) => s.capabilities);
-  const unpair = useAppStore((s) => s.unpair);
   const pushEnabled = useAppStore((s) => s.pushEnabled);
   const pushState = useAppStore((s) => s.pushState);
   const setPushEnabled = useAppStore((s) => s.setPushEnabled);
@@ -105,7 +108,7 @@ export default function SettingsScreen() {
 
       <Field
         label="Device name"
-        caption="Shown in Argus on your computer under paired devices."
+        caption="Shown under paired devices in Argus on every computer you pair with."
       >
         <TextField
           value={name}
@@ -159,26 +162,30 @@ export default function SettingsScreen() {
         <Muted>{PUSH_LABEL[pushState]}</Muted>
       </Field>
 
-      {identity ? (
-        <Field
-          label="Paired device"
-          caption="Removes the stored key from this phone. You'll need to pair again from Argus to reconnect."
-        >
-          <Body>{identity.deviceId.slice(0, 8)}</Body>
-          <Muted>Gateway: {identity.url}</Muted>
-          <Btn
-            label="Unpair this device"
-            tone="danger"
-            onPress={() => {
-              unpair()
-                .catch(() => {})
-                .finally(() => router.replace("/"));
-            }}
-          />
-        </Field>
-      ) : (
-        <Btn label="Pair a device" onPress={() => router.push("/pair")} />
-      )}
+      <Field
+        label="Computers"
+        caption="Pair with as many computers as you like; the app talks to one at a time. Manage or unpair them from the home screen."
+      >
+        {identity ? (
+          <Body>
+            Connected to {hostLabel(identity)}
+            {hosts.length > 1 ? ` — ${hosts.length} paired` : ""}
+          </Body>
+        ) : (
+          <Muted>
+            {hosts.length === 0
+              ? "No computers paired yet."
+              : `${hosts.length} paired, none connected.`}
+          </Muted>
+        )}
+        <Btn
+          label={hosts.length === 0 ? "Pair a computer" : "Manage computers"}
+          tone="secondary"
+          onPress={() =>
+            hosts.length === 0 ? router.push("/pair") : router.dismissTo("/")
+          }
+        />
+      </Field>
     </Screen>
   );
 }

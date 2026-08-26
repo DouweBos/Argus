@@ -15,6 +15,8 @@ const MAX_QUEUED = 10;
 
 export interface PendingDecision {
   agentId: string;
+  /** The computer that owns this agent; only it can accept the answer. */
+  hostId: string | null;
   toolUseId: string;
   decision: "allow" | "deny";
   at: number;
@@ -26,10 +28,15 @@ function key(d: Pick<PendingDecision, "agentId" | "toolUseId">): string {
 
 export async function readPendingDecisions(
   now: number,
+  hostId?: string,
 ): Promise<PendingDecision[]> {
   const all = await readJson<PendingDecision[]>(KEY, []);
+  const fresh = all.filter((d) => now - d.at < MAX_AGE_MS);
 
-  return all.filter((d) => now - d.at < MAX_AGE_MS);
+  // An answer for another computer waits until that one is connected again.
+  return hostId
+    ? fresh.filter((d) => d.hostId == null || d.hostId === hostId)
+    : fresh;
 }
 
 /** Queue an answer, replacing any earlier one for the same prompt. */

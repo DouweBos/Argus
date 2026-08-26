@@ -1,16 +1,27 @@
 /**
- * App store: owns the identity, the live Transport, and the data it fetches.
- * Screens read slices and call actions; the Transport pushes events back in
- * through `onEvent`. Mirrors the web client's store, with SecureStore-backed
- * (async) identity persistence.
+ * App store: owns the paired computers, the live Transport to the active one,
+ * and the data it fetches. Screens read slices and call actions; the Transport
+ * pushes events back in through `onEvent`. Mirrors the web client's store, with
+ * SecureStore-backed (async) identity persistence.
+ *
+ * Several computers can be paired; exactly one is connected at a time, and
+ * everything fetched is cleared when that changes.
  */
 
 import { create } from "zustand";
 import {
-  clearIdentity,
-  defaultDeviceName,
-  loadIdentity,
-  saveIdentity,
+  forgetHostAgents,
+  hostForAgent,
+  rememberAgentHosts,
+} from "../lib/agentHosts";
+import {
+  addHost,
+  loadDeviceName,
+  loadHosts,
+  removeHost,
+  saveDeviceName,
+  setActiveHost,
+  updateHost,
 } from "../lib/keystore";
 import type { DeviceIdentity } from "../lib/keystore";
 import { parseMediaMessage, type MediaMessage } from "../lib/media";
@@ -80,14 +91,50 @@ export type PushState =
   | "off"
   | "registered"
   | "unavailable"
-  | "unconfigured";
+  | "unconfigured"
+  | "unsupported";
+
+/**
+ * Everything fetched from one computer. Cleared whenever the active computer
+ * changes so nothing from the previous one bleeds into the next.
+ */
+function emptyHostData() {
+  return {
+    projects: [],
+    sessionsByRepo: {},
+    agentsByRepo: {},
+    recentAgents: [],
+    messagesByAgent: {},
+    optimisticByAgent: {},
+    queuedByAgent: {},
+    tasksByAgent: {},
+    todosByAgent: {},
+    pendingToolByAgent: {},
+    prevBeforeByAgent: {},
+    gitStatusBySession: {},
+    prompts: {},
+    answered: {},
+    imageCache: {},
+    capabilities: [],
+    capabilitiesByAgent: {},
+    statusByAgent: {},
+    effortByAgent: {},
+    devices: [],
+    pushState: "off" as PushState,
+  };
+}
 
 /** Messages fetched per transcript page (tail on open, older on scroll-up). */
 const TRANSCRIPT_PAGE = 80;
 
 interface AppState {
+  /** Every computer this phone is paired with. */
+  hosts: DeviceIdentity[];
+  /** The connected computer's id — null when none is chosen yet. */
+  activeHostId: string | null;
+  /** The active computer's identity, mirrored for convenience. */
   identity: DeviceIdentity | null;
-  /** False until the stored identity has been read back from the keychain. */
+  /** False until the stored pairings have been read back from the keychain. */
   loaded: boolean;
   deviceName: string;
   connection: ConnectionState;
@@ -134,9 +181,14 @@ interface AppState {
   ) => Promise<void>;
   init: () => Promise<void>;
   pairComplete: (identity: DeviceIdentity) => Promise<void>;
+  /** Connect to a paired computer, dropping the previous one's data. */
+  selectHost: (deviceId: string) => Promise<void>;
+  renameHost: (deviceId: string, name: string) => Promise<void>;
+  unpairHost: (deviceId: string) => Promise<void>;
+  /** Which computer a notification's agent belongs to, if we've seen it. */
+  hostForAgent: (agentId: string) => Promise<string | null>;
   setDeviceName: (name: string) => Promise<void>;
   setPushEnabled: (enabled: boolean) => Promise<void>;
-  unpair: () => Promise<void>;
   refreshProjects: () => Promise<void>;
   loadRecentAgents: () => Promise<void>;
   loadSessions: (repoRoot: string) => Promise<void>;
@@ -327,6 +379,10 @@ export const useAppStore = create<AppState>((set, get) => {
       if (a.status === "idle") {
         get().flushQueue(a.agent_id);
       }
+      const hostId = get().activeHostId;
+      if (hostId) {
+        rememberAgentHosts(hostId, [a.agent_id]).catch(() => {});
+      }
     } else if (ev.event === "agent.capabilities" && ev.agent_id) {
       set((s) => ({
         capabilitiesByAgent: {
@@ -359,8 +415,12 @@ export const useAppStore = create<AppState>((set, get) => {
     let info: { configured: boolean; relay_url: string | null };
     try {
       info = await transport.request("device.push_info", {});
-    } catch {
-      return "unavailable";
+    } catch (err) {
+      // A desktop from before background push existed rejects the method
+      // outright, which is worth saying plainly rather than blaming the phone.
+      return String(err).includes("unknown method")
+        ? "unsupported"
+        : "unavailable";
     }
     if (!info.configured) {
       return "unconfigured";
@@ -426,7 +486,8 @@ export const useAppStore = create<AppState>((set, get) => {
   }
 
   async function flushPendingDecisions(transport: Transport): Promise<void> {
-    const pending = await readPendingDecisions(Date.now());
+    const hostId = get().activeHostId ?? undefined;
+    const pending = await readPendingDecisions(Date.now(), hostId);
     for (const decision of pending) {
       const sent = await flushDecision(transport, decision);
       // Drop it either way: a prompt that never came back is gone for good.
@@ -470,6 +531,8 @@ export const useAppStore = create<AppState>((set, get) => {
   }
 
   return {
+    hosts: [],
+    activeHostId: null,
     identity: null,
     loaded: false,
     deviceName: "",
@@ -501,6 +564,7 @@ export const useAppStore = create<AppState>((set, get) => {
     decidePrompt: async (agentId, toolUseId, decision) => {
       const pending: PendingDecision = {
         agentId,
+        hostId: (await hostForAgent(agentId)) ?? get().activeHostId,
         toolUseId,
         decision,
         at: Date.now(),
@@ -513,33 +577,97 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     init: async () => {
-      set({ pushEnabled: await pushPreference() });
-      const identity = await loadIdentity();
-      if (!identity) {
-        set({ loaded: true });
-
-        return;
-      }
       set({
-        identity,
-        loaded: true,
-        deviceName: identity.name || defaultDeviceName(),
-        capabilities: identity.capabilities,
-        transport: connect(identity),
+        pushEnabled: await pushPreference(),
+        deviceName: await loadDeviceName(),
       });
+      const { hosts, activeId } = await loadHosts();
+      const identity = hosts.find((h) => h.deviceId === activeId) ?? null;
+      set({ hosts, activeHostId: identity?.deviceId ?? null, loaded: true });
+      if (identity) {
+        set({
+          identity,
+          capabilities: identity.capabilities,
+          transport: connect(identity),
+        });
+      }
     },
 
     pairComplete: async (identity) => {
-      await saveIdentity(identity);
+      const { hosts } = await addHost(identity);
       get().transport?.disconnect();
       set({
+        ...emptyHostData(),
+        hosts,
+        activeHostId: identity.deviceId,
         identity,
         loaded: true,
-        deviceName: identity.name || defaultDeviceName(),
         capabilities: identity.capabilities,
         transport: connect(identity),
       });
     },
+
+    selectHost: async (deviceId) => {
+      if (get().activeHostId === deviceId && get().transport) {
+        return;
+      }
+      const identity = get().hosts.find((h) => h.deviceId === deviceId);
+      if (!identity) {
+        return;
+      }
+      get().transport?.disconnect();
+      await setActiveHost(deviceId);
+      set({
+        ...emptyHostData(),
+        activeHostId: deviceId,
+        identity,
+        connection: "offline",
+        capabilities: identity.capabilities,
+        transport: connect(identity),
+      });
+    },
+
+    renameHost: async (deviceId, name) => {
+      const hostName = name.trim();
+      if (!hostName) {
+        return;
+      }
+      const { hosts } = await updateHost(deviceId, { hostName });
+      set((s) => ({
+        hosts,
+        identity:
+          s.identity?.deviceId === deviceId
+            ? { ...s.identity, hostName }
+            : s.identity,
+      }));
+    },
+
+    unpairHost: async (deviceId) => {
+      const wasActive = get().activeHostId === deviceId;
+      if (wasActive) {
+        // Best-effort: stop the desktop pushing here before we drop its key.
+        await get()
+          .transport?.request("device.unregister_push", {})
+          .catch(() => {});
+        get().transport?.disconnect();
+      }
+      const { hosts } = await removeHost(deviceId);
+      await forgetHostAgents(deviceId);
+      set({
+        hosts,
+        ...(wasActive
+          ? {
+              ...emptyHostData(),
+              activeHostId: null,
+              identity: null,
+              transport: null,
+              connection: "offline" as const,
+            }
+          : {}),
+      });
+    },
+
+    hostForAgent: (agentId) => hostForAgent(agentId),
 
     setPushEnabled: async (enabled) => {
       set({ pushEnabled: enabled });
@@ -566,48 +694,12 @@ export const useAppStore = create<AppState>((set, get) => {
         return;
       }
       set({ deviceName: name });
-      const identity = get().identity;
-      if (identity) {
-        const next = { ...identity, name };
-        await saveIdentity(next);
-        set({ identity: next });
-      }
+      await saveDeviceName(name);
       if (get().connection === "ready") {
         await get()
           .transport?.request("device.rename", { name })
           .catch(() => {});
       }
-    },
-
-    unpair: async () => {
-      get().transport?.disconnect();
-      await clearIdentity();
-      set({
-        identity: null,
-        deviceName: "",
-        transport: null,
-        connection: "offline",
-        projects: [],
-        sessionsByRepo: {},
-        agentsByRepo: {},
-        recentAgents: [],
-        messagesByAgent: {},
-        optimisticByAgent: {},
-        queuedByAgent: {},
-        tasksByAgent: {},
-        todosByAgent: {},
-        pendingToolByAgent: {},
-        prevBeforeByAgent: {},
-        gitStatusBySession: {},
-        prompts: {},
-        answered: {},
-        imageCache: {},
-        capabilities: [],
-        capabilitiesByAgent: {},
-        statusByAgent: {},
-        effortByAgent: {},
-        devices: [],
-      });
     },
 
     refreshProjects: async () => {
@@ -632,6 +724,13 @@ export const useAppStore = create<AppState>((set, get) => {
         {},
       );
       set({ recentAgents: agents });
+      const hostId = get().activeHostId;
+      if (hostId) {
+        await rememberAgentHosts(
+          hostId,
+          agents.map((a) => a.agent_id),
+        );
+      }
     },
 
     loadSessions: async (repoRoot) => {
@@ -658,6 +757,13 @@ export const useAppStore = create<AppState>((set, get) => {
         { repo_root: repoRoot },
       );
       set((s) => ({ agentsByRepo: { ...s.agentsByRepo, [repoRoot]: agents } }));
+      const hostId = get().activeHostId;
+      if (hostId) {
+        await rememberAgentHosts(
+          hostId,
+          agents.map((a) => a.agent_id),
+        );
+      }
     },
 
     loadTranscript: async (agentId) => {

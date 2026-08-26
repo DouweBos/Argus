@@ -96,6 +96,8 @@ export class PairingClient {
         desktopPubB64: toBase64(fromBase64Url(this.payload.ds_pub)),
         url: this.payload.url,
         capabilities: grant.capabilities,
+        hostName: grant.host_name,
+        pairedAt: Date.now(),
       });
     } catch {
       this.handlers.onError("could not read pairing grant");
