@@ -9,7 +9,7 @@
  * from someone the phone never authorised.
  */
 
-import type { PushOutcome } from "./apns";
+import type { PushOutcome } from "./types";
 import { createHash, createHmac } from "node:crypto";
 
 export const DEFAULT_RELAY_URL = "https://houwert.dev/argus/push";

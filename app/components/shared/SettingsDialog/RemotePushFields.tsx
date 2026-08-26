@@ -5,54 +5,18 @@ import {
   Input,
   SettingsScreenField,
   StatusDot,
-  TextArea,
   Toggle,
 } from "@argus/peacock";
 import { remoteGetPushConfig, remoteSetPushConfig } from "../../../lib/ipc";
 import styles from "./RemoteAccessSection.module.css";
 
-interface ApnsDraft {
-  bundleId: string;
-  keyId: string;
-  keyP8: string;
-  teamId: string;
-}
-
-const EMPTY_APNS: ApnsDraft = {
-  bundleId: "",
-  keyId: "",
-  keyP8: "",
-  teamId: "",
-};
-
 /**
- * Browsers need no credentials at all, so "no Apple/Firebase key" is a normal
- * state rather than an error — it only means phones won't get pushes.
- */
-function pushReadiness(
-  enabled: boolean,
-  hasNativeCredentials: boolean,
-): { label: string; tone: "idle" | "success" } {
-  if (!enabled) {
-    return { tone: "idle", label: "off" };
-  }
-
-  // No Apple/Firebase key just means phones go through the relay, which is the
-  // normal path — not a problem to flag.
-  return hasNativeCredentials
-    ? { tone: "success", label: "self-hosted" }
-    : { tone: "success", label: "ready" };
-}
-
-/**
- * Credentials for pushing to a backgrounded phone. Argus talks to APNs and FCM
- * directly from this machine, so these are your own provider keys — there is no
- * Argus push server in the path.
+ * Background push settings. There is nothing to configure: browsers get a
+ * signing key Argus generates itself, and phones go through the relay, which
+ * holds the Apple credentials so they never have to ship in this app.
  */
 export function RemotePushFields({ disabled }: { disabled: boolean }) {
   const [config, setConfig] = useState<RemotePushConfig | null>(null);
-  const [apns, setApns] = useState<ApnsDraft>(EMPTY_APNS);
-  const [fcm, setFcm] = useState("");
   const [subject, setSubject] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,12 +25,6 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
     try {
       const next = await remoteGetPushConfig();
       setConfig(next);
-      setApns({
-        bundleId: next.apnsBundleId,
-        keyId: next.apnsKeyId,
-        teamId: next.apnsTeamId,
-        keyP8: "",
-      });
       setSubject(next.vapidSubject);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -89,33 +47,13 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
     }
   };
 
-  const saveApns = async () => {
-    await save({
-      apnsBundleId: apns.bundleId,
-      apnsKeyId: apns.keyId,
-      apnsTeamId: apns.teamId,
-      // An empty box means "keep the stored key" — we never read it back out.
-      ...(apns.keyP8.trim() ? { apnsKeyP8: apns.keyP8 } : {}),
-    });
-    setApns((prev) => ({ ...prev, keyP8: "" }));
-  };
-
-  const saveFcm = async () => {
-    await save({ fcmServiceAccount: fcm });
-    setFcm("");
-  };
-
   const enabled = config?.enabled ?? false;
-  const hasNativeCredentials = Boolean(
-    config && (config.apnsConfigured || config.fcmConfigured),
-  );
-  const readiness = pushReadiness(enabled, hasNativeCredentials);
 
   return (
     <>
       <SettingsScreenField
         label="Background push"
-        caption="Wake paired phones and browsers with a real notification when they're not connected — agent finished, agent failed, or a prompt needs approval. Nothing to set up: browsers are reached directly, and phones go through the Argus relay, which only ever handles a blob encrypted for your device."
+        caption="Wake paired phones and browsers with a real notification when they're not connected — agent finished, agent failed, or a prompt needs approval. Nothing to set up: every notification is encrypted for the device it's going to before it leaves this machine."
       >
         <div className={styles.toggleRow}>
           <Toggle
@@ -124,107 +62,18 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
             onChange={(next) => save({ enabled: next })}
           />
           {config && (
-            <StatusDot tone={readiness.tone} label={readiness.label} />
+            <StatusDot
+              tone={enabled ? "success" : "idle"}
+              label={enabled ? "ready" : "off"}
+            />
           )}
         </div>
       </SettingsScreenField>
 
       {enabled && (
-        <>
-          <SettingsScreenField
-            label="Apple push (iOS) — self-hosted only"
-            caption={
-              config?.apnsConfigured
-                ? "A key is stored, so this desktop pushes Apple directly and skips the relay. Paste a new .p8 to replace it, or leave it empty to keep the current one."
-                : "Only needed if you rebuilt the phone app under your own bundle id — then Argus pushes Apple directly instead of using the relay. Leave empty otherwise."
-            }
-          >
-            <div className={styles.pushForm}>
-              <Input
-                placeholder="Key ID"
-                value={apns.keyId}
-                disabled={disabled || busy}
-                onChange={(e) =>
-                  setApns((p) => ({ ...p, keyId: e.target.value }))
-                }
-              />
-              <Input
-                placeholder="Team ID"
-                value={apns.teamId}
-                disabled={disabled || busy}
-                onChange={(e) =>
-                  setApns((p) => ({ ...p, teamId: e.target.value }))
-                }
-              />
-              <Input
-                placeholder="Bundle identifier"
-                value={apns.bundleId}
-                disabled={disabled || busy}
-                onChange={(e) =>
-                  setApns((p) => ({ ...p, bundleId: e.target.value }))
-                }
-              />
-              <TextArea
-                mono
-                rows={4}
-                placeholder={
-                  config?.apnsConfigured
-                    ? "•••• stored ••••"
-                    : "-----BEGIN PRIVATE KEY-----"
-                }
-                value={apns.keyP8}
-                disabled={disabled || busy}
-                onChange={(e) =>
-                  setApns((p) => ({ ...p, keyP8: e.target.value }))
-                }
-              />
-              <Button
-                variant="secondary"
-                disabled={disabled || busy}
-                onClick={saveApns}
-              >
-                Save Apple credentials
-              </Button>
-            </div>
-          </SettingsScreenField>
-
-          <SettingsScreenField
-            label="Firebase push (Android) — self-hosted only"
-            caption={
-              config?.fcmConfigured
-                ? `Service account stored for project ${config.fcmProjectId ?? "unknown"}. Paste a new one to replace it.`
-                : "Only needed if you rebuilt the Android app under your own package name. Leave empty to use the relay."
-            }
-          >
-            <div className={styles.pushForm}>
-              <TextArea
-                mono
-                rows={4}
-                placeholder={
-                  config?.fcmConfigured
-                    ? "•••• stored ••••"
-                    : '{ "type": "service_account", … }'
-                }
-                value={fcm}
-                disabled={disabled || busy}
-                onChange={(e) => setFcm(e.target.value)}
-              />
-              <Button
-                variant="secondary"
-                disabled={disabled || busy || !fcm.trim()}
-                onClick={saveFcm}
-              >
-                Save Firebase credentials
-              </Button>
-            </div>
-          </SettingsScreenField>
-        </>
-      )}
-
-      {enabled && (
         <SettingsScreenField
-          label="Browsers (Web Push)"
-          caption="Nothing to configure — Argus generates its own signing key the first time a browser subscribes. The contact below is what push services (Mozilla, Google, Apple) use to reach you if a message misbehaves."
+          label="Push service contact"
+          caption="What Mozilla, Google, and Apple use to reach you if a browser notification misbehaves. Never shown to anyone else."
         >
           <div className={styles.pushForm}>
             <Input
@@ -242,9 +91,8 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
             </Button>
           </div>
           <p className={styles.muted}>
-            {config?.webPushConfigured
-              ? "Signing key ready."
-              : "Signing key is created the first time a browser turns background push on."}
+            Phones are reached through {config?.relayUrl ?? "the Argus relay"},
+            which only ever handles ciphertext.
           </p>
         </SettingsScreenField>
       )}

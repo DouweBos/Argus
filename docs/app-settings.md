@@ -340,15 +340,15 @@ tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** 
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
-| Setting                  | Default | Description                                                                                                                                                           |
-| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access** | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                                      |
-| **Provider**             | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`.                   |
-| **Tunnel** (Cloudflare)  | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                            |
-| **Connector token**      | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                      |
-| **Public URL**           | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                  |
-| **Paired devices**       | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                                    |
-| **Background push**      | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Browsers need no setup; phones need your own Apple/Firebase credentials (below). |
+| Setting                  | Default | Description                                                                                                                                         |
+| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access** | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                    |
+| **Provider**             | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`. |
+| **Tunnel** (Cloudflare)  | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                          |
+| **Connector token**      | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                    |
+| **Public URL**           | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                |
+| **Paired devices**       | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                  |
+| **Background push**      | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                          |
 
 ### Choosing a provider
 
@@ -418,12 +418,9 @@ The relay is deliberately given as little as possible:
   first registration for a token wins — replacing one requires signing with the
   key already on file.
 
-Nothing here needs configuring. The **Apple push** and **Firebase push** fields
-are only for people who rebuilt the phone app under their own bundle id or
-package name: fill them in and Argus talks to Apple and Google directly,
-skipping the relay entirely. If you do that, configure every platform you ship —
-a half-configured desktop sends the rest through a relay whose credentials don't
-match your app.
+Nothing here needs configuring. The one editable field is the **push service
+contact** — a `mailto:` or `https:` address Mozilla, Google, and Apple use to
+reach you if a browser notification misbehaves.
 
 ### Quick actions
 

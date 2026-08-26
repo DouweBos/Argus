@@ -52,20 +52,13 @@ export interface PairedDevice {
 }
 
 /**
- * Credentials the desktop uses to talk to APNs/FCM directly. Kept in the same
- * safeStorage-encrypted blob as the device keys — they are provider secrets,
- * not settings, so they never land in plaintext `app-settings.json`.
+ * Push settings. The VAPID key is a real secret, so this lives in the same
+ * safeStorage-encrypted blob as the device keys rather than in plaintext
+ * `app-settings.json`. APNs/FCM credentials are deliberately absent — those
+ * belong to the phone app's Apple team and live in the relay.
  */
 export interface PushConfig {
   enabled: boolean;
-  /** Contents of an APNs `.p8` auth key (PEM). */
-  apns_key_p8: string;
-  apns_key_id: string;
-  apns_team_id: string;
-  /** The phone app's bundle id — the APNs topic. */
-  apns_bundle_id: string;
-  /** A Firebase service-account JSON blob, verbatim. */
-  fcm_service_account: string;
   /** VAPID signing key for browsers (PEM), generated on first use. */
   vapid_private_pem: string;
   /** The matching raw P-256 public key, base64url — browsers subscribe with it. */
@@ -78,11 +71,6 @@ export interface PushConfig {
 
 export const EMPTY_PUSH_CONFIG: PushConfig = {
   enabled: false,
-  apns_key_p8: "",
-  apns_key_id: "",
-  apns_team_id: "",
-  apns_bundle_id: "",
-  fcm_service_account: "",
   vapid_private_pem: "",
   vapid_public: "",
   vapid_subject: "mailto:argus@localhost",

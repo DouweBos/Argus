@@ -9,7 +9,7 @@
  */
 
 import type { PushConfig } from "../deviceStore";
-import type { PushOutcome } from "./apns";
+import type { PushOutcome } from "./types";
 import type { KeyObject } from "node:crypto";
 import {
   createCipheriv,
