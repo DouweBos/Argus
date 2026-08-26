@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   Text,
+  AppState,
   TextInput,
   View,
   type NativeSyntheticEvent,
@@ -33,7 +34,13 @@ import {
   contextLimitForModel,
   tokensInContext,
 } from "../lib/contextWindow";
-import { captureImage, pickImages, type PendingImage } from "../lib/images";
+import {
+  captureImage,
+  clipboardHasImage,
+  pasteImage,
+  pickImages,
+  type PendingImage,
+} from "../lib/images";
 import { buildLinkedProjectsPreamble } from "../lib/linkedProjects";
 import type { RemotePermissionMode, RemoteSlashCommand } from "../lib/protocol";
 import { readJson, readString, removeKey, writeJson, writeString } from "../lib/storage";
@@ -96,6 +103,7 @@ export function ChatInput({
   const [pending, setPending] = useState<PendingImage[]>([]);
   const [linked, setLinked] = useState<string[]>([]);
   const [picker, setPicker] = useState<Picker>(null);
+  const [canPasteImage, setCanPasteImage] = useState(false);
 
   const {
     mentionContext,
@@ -121,6 +129,24 @@ export function ChatInput({
     loadCapabilities(agentId).catch(() => {});
     loadAgentStatus(agentId).catch(() => {});
   }, [agentId, loadCapabilities, loadAgentStatus]);
+
+  // Only offer the paste button when there's actually an image to paste. Worth
+  // re-checking on foreground: that's when you've just screenshotted elsewhere.
+  useEffect(() => {
+    const check = () => {
+      clipboardHasImage()
+        .then(setCanPasteImage)
+        .catch(() => {});
+    };
+    check();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        check();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
 
   // Restore the persisted draft + linked projects when switching agents.
   useEffect(() => {
@@ -362,6 +388,16 @@ export function ChatInput({
         >
           <Icons.Camera size={17} color={theme.textSecondary} />
         </IconBtn>
+        {canPasteImage && (
+          <IconBtn
+            label="Paste image"
+            onPress={() => {
+              pasteImage().then(addImages).catch(() => {});
+            }}
+          >
+            <Icons.Clipboard size={17} color={theme.accent} />
+          </IconBtn>
+        )}
         <View style={{ flex: 1 }} />
         {isRunning && (text.trim() || pending.length > 0) ? (
           <SendButton label="Queue message" onPress={submit} tone={theme.accent} />

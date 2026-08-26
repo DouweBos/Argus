@@ -10,7 +10,10 @@
  * confirms.
  */
 
+import { execFile } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
+import { hostname } from "node:os";
+import { promisify } from "node:util";
 import {
   PairingGrant,
   PairingPayload,
@@ -27,6 +30,27 @@ import { NoiseHandshake, type NoiseSession } from "./noise";
 
 const PAIRING_TIMEOUT_MS = 2 * 60 * 1000;
 const encoder = new TextEncoder();
+const execFileAsync = promisify(execFile);
+
+/** Friendly computer name for the phone's list ("Douwe's MacBook Pro"). */
+async function computerName(): Promise<string> {
+  if (process.platform === "darwin") {
+    try {
+      const { stdout } = await execFileAsync("scutil", [
+        "--get",
+        "ComputerName",
+      ]);
+      const name = stdout.trim();
+      if (name) {
+        return name;
+      }
+    } catch {
+      // Fall through to the network hostname.
+    }
+  }
+
+  return hostname().replace(/\.local$/, "");
+}
 
 export interface PairingStart {
   /** JSON payload to render as a QR code. */
@@ -110,6 +134,7 @@ class PairingSession {
     const grant: PairingGrant = {
       device_id: this.pendingDevice.device_id,
       capabilities: this.pendingDevice.capabilities,
+      host_name: await computerName(),
     };
     this.sendFn(
       this.session.encrypt(

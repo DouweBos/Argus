@@ -28,6 +28,8 @@ export type PairingPayload = z.infer<typeof PairingPayload>;
 export const PairingGrant = z.object({
   device_id: z.string(),
   capabilities: z.array(z.string()),
+  /** This computer's name, so a phone paired with several can tell them apart. */
+  host_name: z.string().optional(),
 });
 export type PairingGrant = z.infer<typeof PairingGrant>;
 

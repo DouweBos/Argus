@@ -80,6 +80,20 @@ export const Agent = (p: IconProps) => (
     <Circle cx="15" cy="13" r="1" />
   </Icon>
 );
+export const Desktop = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="3" y="4" width="18" height="12" rx="2" />
+    <Path d="M8 20h8" />
+    <Path d="M12 16v4" />
+  </Icon>
+);
+export const Trash = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M4 7h16" />
+    <Path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    <Path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+  </Icon>
+);
 export const Gear = (p: IconProps) => (
   <Icon {...p}>
     <Circle cx="12" cy="12" r="3" />
@@ -112,6 +126,12 @@ export const Send = (p: IconProps) => (
 export const Paperclip = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7.5-7.5" />
+  </Icon>
+);
+export const Clipboard = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="8" y="2" width="8" height="4" rx="1" />
+    <Path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
   </Icon>
 );
 export const Camera = (p: IconProps) => (

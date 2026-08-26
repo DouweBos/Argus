@@ -14,7 +14,6 @@ import {
   TextField,
   Title,
 } from "../src/components/ui";
-import { defaultDeviceName } from "../src/lib/keystore";
 import { PairingClient, parsePairingInput } from "../src/lib/pairingClient";
 import { useAppStore } from "../src/stores/appStore";
 import { useTheme } from "../src/theme";
@@ -55,10 +54,9 @@ export default function PairScreen() {
           setPhase("await-confirm");
         },
         onPaired: (identity) => {
-          // Seed a friendly label so the desktop's device list isn't "New device".
-          pairComplete({ ...identity, name: defaultDeviceName() })
+          pairComplete(identity)
             .catch(() => {})
-            .finally(() => router.replace("/"));
+            .finally(() => router.replace("/projects"));
         },
         onError: (message) => {
           setError(message);
@@ -107,7 +105,7 @@ export default function PairScreen() {
 
   return (
     <Screen>
-      <Title>Pair a device</Title>
+      <Title>Pair a computer</Title>
       <Muted>In Argus, open Settings → Remote Access → Start pairing.</Muted>
 
       {permission?.granted ? (

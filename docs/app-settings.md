@@ -367,6 +367,21 @@ but cannot spawn agents, send messages, or run commands.
   [Funnel](https://tailscale.com/kb/1223/funnel) enabled. Often the sweet spot
   for a stable URL without owning a domain.
 
+### One phone, several computers
+
+A phone can pair with as many computers as you like — a laptop and a desktop,
+say. Each pairing keeps its own key, URL and grant, and the phone's home screen
+lists them all with their connection state; tapping one connects to it and shows
+its projects. The app talks to a single computer at a time, so switching clears
+what the previous one had loaded. Tapping a notification switches to whichever
+computer the agent belongs to before opening the chat.
+
+The computer's name (from macOS **Computer Name**) travels in the pairing grant
+so the list reads "Douwe's MacBook Pro" rather than a tunnel URL; you can rename
+it on the phone. Unpairing there removes the phone's copy of that computer's
+key — to cut a lost phone off for good, **Revoke** it under **Paired devices**
+on the computer as well.
+
 ### Background push notifications
 
 While a client is connected it gets notifications in-band over the gateway
