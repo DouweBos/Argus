@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.12.2
+
+### Patch Changes
+
+- e0c539b: Fix the sub-agent loading indicator wobbling instead of spinning.
+
 ## 0.12.1
 
 ### Patch Changes
