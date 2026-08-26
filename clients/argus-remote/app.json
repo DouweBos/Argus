@@ -16,7 +16,10 @@
         "NSCameraUsageDescription": "Scan the pairing QR code shown in Argus, or take a photo to send to an agent."
       },
       "entitlements": {
-        "aps-environment": "production"
+        "aps-environment": "production",
+        "com.apple.security.application-groups": [
+          "group.dev.houwert.argus.remote"
+        ]
       }
     },
     "android": {
@@ -59,7 +62,8 @@
             "kotlinVersion": "1.9.25"
           }
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ]
   }
 }

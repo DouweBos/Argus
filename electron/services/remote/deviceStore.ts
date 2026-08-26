@@ -29,6 +29,13 @@ export interface DevicePushToken {
   environment?: "production" | "sandbox";
   /** Web Push only — the subscription's encryption keys (base64url). */
   keys?: { auth: string; p256dh: string };
+  /**
+   * APNs/FCM via the relay: the 32-byte AES key this device minted, base64.
+   * Notifications are sealed with it so the relay only ever sees ciphertext.
+   */
+  push_key?: string;
+  /** The 32-byte HMAC key the device registered with the relay, base64. */
+  auth_key?: string;
   updated_at: number;
 }
 
@@ -65,6 +72,8 @@ export interface PushConfig {
   vapid_public: string;
   /** VAPID `sub` claim: a mailto:/https: contact for the push service. */
   vapid_subject: string;
+  /** Override the push relay. Empty means the bundled default. */
+  relay_url: string;
 }
 
 export const EMPTY_PUSH_CONFIG: PushConfig = {
@@ -77,6 +86,7 @@ export const EMPTY_PUSH_CONFIG: PushConfig = {
   vapid_private_pem: "",
   vapid_public: "",
   vapid_subject: "mailto:argus@localhost",
+  relay_url: "",
 };
 
 /** The desktop's long-lived identity + all paired devices. */
@@ -309,7 +319,9 @@ export async function setDevicePush(
     prev.token === push.token &&
     prev.environment === push.environment &&
     prev.keys?.p256dh === push.keys?.p256dh &&
-    prev.keys?.auth === push.keys?.auth
+    prev.keys?.auth === push.keys?.auth &&
+    prev.push_key === push.push_key &&
+    prev.auth_key === push.auth_key
   ) {
     return;
   }

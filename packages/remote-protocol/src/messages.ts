@@ -90,6 +90,13 @@ export const MethodParams = {
         auth: z.string().min(1).max(64),
       })
       .optional(),
+    /**
+     * APNs/FCM via the relay. `push_key` seals the notification so the relay
+     * can't read it; `auth_key` is what the device registered with the relay,
+     * so only desktops it paired with may push to it. Both 32 bytes, base64.
+     */
+    push_key: z.string().min(1).max(128).optional(),
+    auth_key: z.string().min(1).max(128).optional(),
   }),
   "device.unregister_push": z.object({}),
   "agents.capabilities": z.object({ agent_id: z.string() }),
@@ -216,6 +223,11 @@ export const MethodResult = {
     enabled: z.boolean(),
     /** VAPID application-server key for `PushManager.subscribe`, base64url. */
     vapid_public_key: z.string().nullable(),
+    /**
+     * Where native clients register their relay auth key, or null when this
+     * desktop has its own APNs/FCM credentials and pushes Apple/Google direct.
+     */
+    relay_url: z.string().nullable(),
   }),
   "device.register_push": z.object({
     accepted: z.boolean(),

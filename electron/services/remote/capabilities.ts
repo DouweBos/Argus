@@ -805,19 +805,26 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       enabled: status.enabled,
       // Minted on first ask — web push needs no user-supplied credentials.
       vapid_public_key: status.enabled ? await ensureVapidPublicKey() : null,
+      relay_url: status.enabled ? status.relayUrl : null,
     };
   },
 
   "device.register_push": async (params, ctx) => {
-    const { service, token, environment, keys } = parse(
-      "device.register_push",
-      params,
-    );
+    const {
+      service,
+      token,
+      environment,
+      keys,
+      push_key: pushKey,
+      auth_key: authKey,
+    } = parse("device.register_push", params);
     const registration = {
       service,
       token,
       environment,
       keys,
+      push_key: pushKey,
+      auth_key: authKey,
       updated_at: Date.now(),
     };
     await setDevicePush(ctx.device.device_id, registration);

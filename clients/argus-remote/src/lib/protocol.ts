@@ -28,6 +28,7 @@ export type RemoteMethod =
   | "permission.respond"
   | "device.rename"
   | "device.capabilities"
+  | "device.push_info"
   | "device.register_push"
   | "device.unregister_push"
   | "agents.capabilities"
