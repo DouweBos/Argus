@@ -40,6 +40,8 @@ const PUSH_OPTIONS: { label: string; value: "off" | "on" }[] = [
 
 const PUSH_LABEL: Record<PushState, string> = {
   registered: "Registered — your computer can wake this phone.",
+  conflict:
+    "A previous install of this app still holds this device's push slot. It clears itself within 90 days, or unpair and pair again.",
   unconfigured:
     "Registered, but Argus on your computer has no Apple/Firebase push credentials yet.",
   unavailable:

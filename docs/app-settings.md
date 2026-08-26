@@ -371,15 +371,44 @@ but cannot spawn agents, send messages, or run commands.
 
 While a client is connected it gets notifications in-band over the gateway
 socket. Once the app is backgrounded, killed, or the last browser tab is closed
-that socket is gone, so Argus sends a real push instead — **signed and sent by
-your desktop directly**, over APNs (iOS), FCM (Android), or Web Push (browsers).
-There is no Argus push server, and the notification body never touches a third
-party other than Apple, Google, or Mozilla.
+that socket is gone, so Argus sends a real push instead.
 
-Pushes fire for the same events the desktop notifies about — an agent finished,
-an agent failed, and an agent needs approval — plus anything an agent sends
-through the `push_notification` MCP tool. Devices with a live connection are
-skipped, so you never get the alert twice.
+**Browsers** are reached directly. Web Push keys (VAPID) are self-asserted, so
+Argus generates its own on first use, encrypts each notification for that
+subscription (RFC 8291), and posts it to whatever push service the browser
+picked. No third party is involved and there is nothing to configure. It does
+need a **secure context**, so it works over a Cloudflare/Tailscale tunnel but
+_not_ over a plain `http://<lan-ip>` address — browsers refuse to register a
+service worker there. Safari only offers it to a PWA you've added to the Home
+Screen / Dock.
+
+**Phones** can't work that way: only the Apple team that owns the app's bundle
+id may push to it, so that credential can't live in your copy of Argus. It sits
+in the **Argus push relay** instead (a Cloudflare Function at
+`houwert.dev/argus/push`), which forwards to APNs and FCM on your behalf.
+
+The relay is deliberately given as little as possible:
+
+- **It can't read your notifications.** Argus encrypts the whole thing — title,
+  body, which agent, which project — with AES-256-GCM under a key your _phone_
+  minted and shared over the paired, Noise-encrypted gateway. The relay
+  forwards a blob; the alert Apple carries is a fixed "Argus — New activity"
+  placeholder, and the phone's notification extension swaps in the real text
+  before anything is shown. Even the collapse header is a keyed digest, so your
+  agent ids never leave your machine.
+- **It won't push to you on a stranger's say-so.** Your phone registers a
+  second key with the relay, and every send must be signed with it. The
+  signature covers the device, the payload, and a timestamp, so it can't be
+  replayed elsewhere. A leaked device token on its own buys nothing, and the
+  first registration for a token wins — replacing one requires signing with the
+  key already on file.
+
+Nothing here needs configuring. The **Apple push** and **Firebase push** fields
+are only for people who rebuilt the phone app under their own bundle id or
+package name: fill them in and Argus talks to Apple and Google directly,
+skipping the relay entirely. If you do that, configure every platform you ship —
+a half-configured desktop sends the rest through a relay whose credentials don't
+match your app.
 
 ### Quick actions
 
@@ -397,11 +426,10 @@ killed and the answer is queued, then replayed the moment the gateway comes
 back (dropped after 30 minutes, on the grounds that a stale answer is worse than
 none). The same holds for a browser actioned with every tab closed.
 
-One gap worth knowing: **Android buttons only render while the app's process is
-alive.** A push delivered to a fully-stopped Android app is drawn by the system
-from the raw FCM payload, which can't carry them — you get the notification, but
-you have to open it to answer. iOS and desktop browsers show the buttons in all
-cases.
+Android buttons now survive a stopped app too: because the payload is
+encrypted, Android can't have the system draw it, so a background task decrypts
+and posts the notification itself — and gets to attach the buttons while it
+does.
 
 **Browsers** need nothing from you. Argus generates its own VAPID signing key
 the first time a browser subscribes, encrypts each notification for that

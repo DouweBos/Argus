@@ -7,6 +7,7 @@
 import { getPushConfig, savePushConfig, type PushConfig } from "../deviceStore";
 import { closeApnsSessions, isApnsConfigured, resetApnsToken } from "./apns";
 import { isFcmConfigured, resetFcmToken } from "./fcm";
+import { DEFAULT_RELAY_URL } from "./relay";
 import { generateVapidKeys, isWebPushConfigured } from "./webpush";
 
 /** What the renderer sees — presence flags, never the secrets themselves. */
@@ -22,16 +23,32 @@ export interface PushConfigStatus {
   webPushConfigured: boolean;
   /** VAPID contact claim sent to the browser's push service. */
   vapidSubject: string;
+  /** Where phones register, or null when this desktop pushes Apple/Google direct. */
+  relayUrl: string | null;
 }
 
+/**
+ * Whether a push would actually reach anything. Browsers always can (VAPID
+ * needs no credentials) and phones can via the relay, so in practice this only
+ * says no when the whole feature is switched off.
+ */
 export async function isPushConfigured(): Promise<boolean> {
   const config = await getPushConfig();
 
-  return (
-    isApnsConfigured(config) ||
-    isFcmConfigured(config) ||
-    isWebPushConfigured(config)
-  );
+  return config.enabled;
+}
+
+/**
+ * Where native clients register their relay auth key. Null means this desktop
+ * has its own Apple/Firebase credentials and talks to them directly — a
+ * self-hosted build, which is expected to configure every platform it ships.
+ */
+export function relayUrlFor(config: PushConfig): string | null {
+  if (isApnsConfigured(config) || isFcmConfigured(config)) {
+    return null;
+  }
+
+  return config.relay_url || DEFAULT_RELAY_URL;
 }
 
 /**
@@ -77,6 +94,7 @@ export async function getPushConfigStatus(): Promise<PushConfigStatus> {
     fcmProjectId: projectId(config),
     webPushConfigured: isWebPushConfigured(config),
     vapidSubject: config.vapid_subject,
+    relayUrl: relayUrlFor(config),
   };
 }
 

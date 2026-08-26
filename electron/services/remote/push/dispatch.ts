@@ -3,8 +3,11 @@
  * connected. Connected devices already get the notification in-band over the
  * gateway socket; the rest need a real APNs/FCM push to wake up.
  *
- * Both providers are spoken directly from this machine, so nothing here
- * depends on an Argus-operated server.
+ * Browsers are reached directly — Web Push keys are self-asserted, so no
+ * third party is involved. Phones can't be: only the team that owns the app's
+ * bundle id may push to it, so APNs/FCM go through the relay, which holds that
+ * credential and receives nothing but a sealed blob. A desktop configured with
+ * its own Apple/Firebase credentials skips the relay entirely.
  */
 
 import type { RemoteNotificationPayload } from "../../notifications/broadcast";
@@ -18,12 +21,23 @@ import {
 } from "../deviceStore";
 import { getConnectedDeviceIds } from "../gateway";
 import {
+  isApnsConfigured,
   isApnsTokenDead,
   sendApns,
   type ApnsEnvironment,
   type PushOutcome,
 } from "./apns";
-import { isFcmTokenDead, sendFcm } from "./fcm";
+import { isFcmConfigured, isFcmTokenDead, sendFcm } from "./fcm";
+import {
+  DEFAULT_RELAY_URL,
+  isRelayRegistrationDead,
+  sendViaRelay,
+} from "./relay";
+import {
+  collapseId as sealedCollapseId,
+  seal,
+  toSealedNotification,
+} from "./seal";
 import { isWebPushSubscriptionDead, sendWebPush } from "./webpush";
 
 /** Give a transient failure exactly one more chance before dropping it. */
@@ -109,6 +123,16 @@ async function sendOnce(
     );
   }
 
+  // Own credentials for this service? Then talk to Apple/Google directly and
+  // leave the relay out of it.
+  const direct =
+    push.service === "apns"
+      ? isApnsConfigured(config)
+      : isFcmConfigured(config);
+  if (!direct) {
+    return sendSealed(device, config, n);
+  }
+
   if (push.service === "fcm") {
     return sendFcm(config, push.token, common, Date.now());
   }
@@ -141,6 +165,61 @@ async function sendOnce(
   return retried;
 }
 
+/**
+ * Push through the relay. The notification is encrypted for this device first,
+ * so the relay forwards a blob it cannot read; the device's notification
+ * extension decrypts it before anything is shown.
+ */
+async function sendSealed(
+  device: PairedDevice,
+  config: PushConfig,
+  n: RemoteNotificationPayload,
+): Promise<PushOutcome> {
+  const push = device.push;
+  if (!push?.push_key || !push.auth_key) {
+    return {
+      ok: false,
+      retryable: false,
+      reason: "device has not registered relay keys",
+    };
+  }
+  if (push.service === "webpush") {
+    return { ok: false, retryable: false, reason: "unsupported service" };
+  }
+
+  let sealed: string;
+  try {
+    sealed = seal(push.push_key, toSealedNotification(n));
+  } catch (err) {
+    return { ok: false, retryable: false, reason: (err as Error).message };
+  }
+
+  const result = await sendViaRelay(
+    config.relay_url || DEFAULT_RELAY_URL,
+    {
+      service: push.service,
+      token: push.token,
+      authKey: push.auth_key,
+      environment: push.environment,
+    },
+    sealed,
+    n.agent_id ? sealedCollapseId(push.push_key, n.agent_id) : undefined,
+    Date.now(),
+  );
+
+  // The relay resolves sandbox-vs-production itself; remember what worked.
+  if (
+    result.ok &&
+    result.environment &&
+    result.environment !== push.environment
+  ) {
+    await setDevicePushEnvironment(device.device_id, result.environment);
+    push.environment = result.environment;
+  }
+
+  return result;
+}
+
 function isApnsEnvironmentMismatch(reason: string): boolean {
   return reason === "BadDeviceToken" || reason === "DeviceTokenNotForTopic";
 }
@@ -149,13 +228,16 @@ function isTokenDead(
   service: "apns" | "fcm" | "webpush",
   reason: string,
 ): boolean {
-  if (service === "apns") {
-    return isApnsTokenDead(reason);
+  if (service === "webpush") {
+    return isWebPushSubscriptionDead(reason);
   }
 
-  return service === "fcm"
-    ? isFcmTokenDead(reason)
-    : isWebPushSubscriptionDead(reason);
+  // A native device may have gone out either way — direct or via the relay —
+  // so a verdict from either means the same thing: stop pushing to it.
+  return (
+    isRelayRegistrationDead(reason) ||
+    (service === "apns" ? isApnsTokenDead(reason) : isFcmTokenDead(reason))
+  );
 }
 
 async function pushToDevice(

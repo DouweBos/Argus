@@ -25,6 +25,7 @@ import {
   forgetRegisteredToken,
   getPushRegistration,
   pushPreference,
+  registerWithRelay,
   rememberRegisteredToken,
   setPushPreference,
 } from "../lib/push";
@@ -75,6 +76,7 @@ export function imageKey(agentId: string, imageId: string): string {
  * "unconfigured" = we registered, but the desktop has no APNs/FCM credentials.
  */
 export type PushState =
+  | "conflict"
   | "off"
   | "registered"
   | "unavailable"
@@ -353,14 +355,40 @@ export const useAppStore = create<AppState>((set, get) => {
     if (!registration) {
       return "unavailable";
     }
+
+    let info: { configured: boolean; relay_url: string | null };
     try {
-      const res = await transport.request<{ configured: boolean }>(
-        "device.register_push",
-        registration,
-      );
+      info = await transport.request("device.push_info", {});
+    } catch {
+      return "unavailable";
+    }
+    if (!info.configured) {
+      return "unconfigured";
+    }
+
+    // The relay verifies our signature against a key only we can register, so
+    // this has to land before the desktop tries to push.
+    if (info.relay_url) {
+      const result = await registerWithRelay(info.relay_url, registration);
+      if (result === "conflict") {
+        return "conflict";
+      }
+      if (result === "failed") {
+        return "unavailable";
+      }
+    }
+
+    try {
+      await transport.request("device.register_push", {
+        service: registration.service,
+        token: registration.token,
+        environment: registration.environment,
+        push_key: registration.pushKey,
+        auth_key: registration.authKey,
+      });
       await rememberRegisteredToken(registration.token);
 
-      return res.configured ? "registered" : "unconfigured";
+      return "registered";
     } catch {
       return "unavailable";
     }

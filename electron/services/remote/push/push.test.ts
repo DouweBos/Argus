@@ -26,6 +26,7 @@ function config(overrides: Partial<PushConfig> = {}): PushConfig {
     vapid_private_pem: "",
     vapid_public: "",
     vapid_subject: "mailto:argus@localhost",
+    relay_url: "",
     ...overrides,
   };
 }

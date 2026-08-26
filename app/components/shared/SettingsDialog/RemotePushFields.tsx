@@ -37,9 +37,11 @@ function pushReadiness(
     return { tone: "idle", label: "off" };
   }
 
+  // No Apple/Firebase key just means phones go through the relay, which is the
+  // normal path — not a problem to flag.
   return hasNativeCredentials
-    ? { tone: "success", label: "ready" }
-    : { tone: "idle", label: "browsers only" };
+    ? { tone: "success", label: "self-hosted" }
+    : { tone: "success", label: "ready" };
 }
 
 /**
@@ -113,7 +115,7 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
     <>
       <SettingsScreenField
         label="Background push"
-        caption="Wake paired phones with a real notification when they're not connected — agent finished, agent failed, or a prompt needs approval. Argus signs and sends these to Apple and Google itself; nothing routes through an Argus server."
+        caption="Wake paired phones and browsers with a real notification when they're not connected — agent finished, agent failed, or a prompt needs approval. Nothing to set up: browsers are reached directly, and phones go through the Argus relay, which only ever handles a blob encrypted for your device."
       >
         <div className={styles.toggleRow}>
           <Toggle
@@ -130,11 +132,11 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
       {enabled && (
         <>
           <SettingsScreenField
-            label="Apple push (iOS)"
+            label="Apple push (iOS) — self-hosted only"
             caption={
               config?.apnsConfigured
-                ? "A key is stored. Paste a new .p8 to replace it, or leave it empty to keep the current one."
-                : "From Apple Developer → Keys → a key with the Apple Push Notifications service enabled. The bundle id is the phone app's — dev.houwert.argus.remote unless you rebuilt it."
+                ? "A key is stored, so this desktop pushes Apple directly and skips the relay. Paste a new .p8 to replace it, or leave it empty to keep the current one."
+                : "Only needed if you rebuilt the phone app under your own bundle id — then Argus pushes Apple directly instead of using the relay. Leave empty otherwise."
             }
           >
             <div className={styles.pushForm}>
@@ -187,11 +189,11 @@ export function RemotePushFields({ disabled }: { disabled: boolean }) {
           </SettingsScreenField>
 
           <SettingsScreenField
-            label="Firebase push (Android)"
+            label="Firebase push (Android) — self-hosted only"
             caption={
               config?.fcmConfigured
                 ? `Service account stored for project ${config.fcmProjectId ?? "unknown"}. Paste a new one to replace it.`
-                : "From Firebase → Project settings → Service accounts → Generate new private key. Paste the whole JSON file."
+                : "Only needed if you rebuilt the Android app under your own package name. Leave empty to use the relay."
             }
           >
             <div className={styles.pushForm}>

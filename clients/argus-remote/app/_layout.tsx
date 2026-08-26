@@ -13,6 +13,7 @@ import {
   setNotificationOpener,
   startNotificationRouting,
 } from "../src/lib/notify";
+import { startSealedPushHandling } from "../src/lib/pushBackground";
 import { useThemeBootstrap, useTheme } from "../src/theme";
 import { useAppStore } from "../src/stores/appStore";
 
@@ -53,6 +54,7 @@ function Root() {
   // answer is queued and sent once the gateway is back.
   useEffect(() => {
     registerNotificationCategories().catch(() => {});
+    startSealedPushHandling().catch(() => {});
     setNotificationOpener((agentId, label) => {
       router.push({
         pathname: "/agent/[id]",
