@@ -62,13 +62,34 @@ export function seal(
 }
 
 /**
+ * What a notification is allowed to replace on the lock screen, or null to let
+ * it stack.
+ *
+ * A turn result supersedes the previous one for that agent. Two pending
+ * approvals are separate decisions, so they collapse per prompt rather than
+ * per agent — collapsing those would hide one. Anything an agent pushes
+ * through the MCP tool is its own event and never replaces anything.
+ */
+export function collapseSubject(n: RemoteNotificationPayload): string | null {
+  switch (n.kind) {
+    case "failed":
+    case "finished":
+      return n.agent_id ? `agent-${n.agent_id}` : null;
+    case "permission":
+      return n.tool_use_id ? `prompt-${n.tool_use_id}` : null;
+    default:
+      return null;
+  }
+}
+
+/**
  * An opaque, per-device collapse id. Apple and Google both see this header, so
- * it must not be the agent id — a keyed digest gives the same "replace the
+ * it must not name the agent — a keyed digest gives the same "replace the
  * unread one" behaviour while telling the relay nothing.
  */
-export function collapseId(pushKey: string, agentId: string): string {
+export function collapseId(pushKey: string, subject: string): string {
   return createHmac("sha256", Buffer.from(pushKey, "base64"))
-    .update(agentId)
+    .update(subject)
     .digest("base64url")
     .slice(0, 22);
 }

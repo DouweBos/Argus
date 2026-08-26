@@ -130,15 +130,31 @@ export function startNotificationRouting(): () => void {
   return () => sub.remove();
 }
 
+/**
+ * What this notification replaces, or null to let it stack. Mirrors
+ * `collapseSubject` on the desktop: turn results supersede per agent, pending
+ * approvals are distinct decisions, and MCP pushes never replace anything.
+ */
+function collapseIdentifier(n: RemoteNotification): string | null {
+  if (n.kind === "finished" || n.kind === "failed") {
+    return n.agent_id ? `agent-${n.agent_id}` : null;
+  }
+  if (n.kind === "permission") {
+    return n.tool_use_id ? `prompt-${n.tool_use_id}` : null;
+  }
+
+  return null;
+}
+
 export function showRemoteNotification(n: RemoteNotification): void {
   // Suppress while the user is looking at the app (matches the desktop).
   if (AppState.currentState === "active") {
     return;
   }
   Notifications.scheduleNotificationAsync({
-    // Same id as the desktop's push collapse key, so an in-band alert and a
-    // push about the same agent replace each other instead of stacking.
-    identifier: n.agent_id ? `agent-${n.agent_id}` : undefined,
+    // Same rule as the desktop's push collapse key, so an in-band alert and a
+    // pushed one about the same thing replace each other instead of stacking.
+    identifier: collapseIdentifier(n) ?? undefined,
     content: {
       title: n.title,
       body: n.body,

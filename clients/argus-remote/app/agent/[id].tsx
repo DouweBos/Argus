@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { KeyboardAvoidingView, Platform, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { AgentTranscript } from "../../src/components/AgentTranscript";
@@ -10,6 +11,7 @@ import { useTheme } from "../../src/theme";
 
 export default function AgentScreen() {
   const theme = useTheme();
+  const headerHeight = useHeaderHeight();
   const router = useRouter();
   const { id, label } = useLocalSearchParams<{ id: string; label?: string }>();
   const agentId = id ?? "";
@@ -30,7 +32,10 @@ export default function AgentScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.bg }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 92 : 0}
+      // Measured, not guessed: a hardcoded offset is wrong on any device whose
+      // header isn't the size it was picked for, and the input ends up under
+      // the keyboard.
+      keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 0}
     >
       <Stack.Screen
         options={{
