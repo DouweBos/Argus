@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { AgentTranscript } from "../../src/components/AgentTranscript";
 import { ChatInput } from "../../src/components/ChatInput";
@@ -21,12 +21,56 @@ export default function AgentScreen() {
   const sessionId = useAppStore((s) => s.statusByAgent[agentId]?.session_id);
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const stopAgentProcess = useAppStore((s) => s.stopAgentProcess);
+  const devices = useAppStore((s) => s.devices);
+  const refreshDevices = useAppStore((s) => s.refreshDevices);
 
   useEffect(() => {
     if (!sessionId) {
       loadAgentStatus(agentId).catch(() => {});
     }
   }, [agentId, sessionId, loadAgentStatus]);
+
+  // Fetched once, not polled: this only decides where the device button goes.
+  useEffect(() => {
+    if (connection === "ready") {
+      refreshDevices().catch(() => {});
+    }
+  }, [connection, refreshDevices]);
+
+  // Straight to the screen when there's only one device to mean; otherwise
+  // the list, which is also what explains an empty one.
+  const openDevices = useCallback(() => {
+    const only = devices.length === 1 ? devices[0] : null;
+    if (only) {
+      router.push({
+        pathname: "/device/[id]",
+        params: { id: only.id, platform: only.platform, name: only.name },
+      });
+
+      return;
+    }
+    router.push("/devices");
+  }, [devices, router]);
+
+  // Stopping kills the agent and its queue — not something to do on a mistap.
+  const confirmStop = useCallback(() => {
+    Alert.alert(
+      "Stop this agent?",
+      "It stops mid-turn and anything still queued for it is discarded.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Stop agent",
+          style: "destructive",
+          onPress: () => {
+            stopAgentProcess(agentId)
+              .then(() => router.back())
+              .catch(() => {});
+          },
+        },
+      ],
+    );
+  }, [agentId, router, stopAgentProcess]);
 
   return (
     <KeyboardAvoidingView
@@ -55,11 +99,11 @@ export default function AgentScreen() {
                   <Icons.Branch size={16} color={theme.textSecondary} />
                 </IconBtn>
               ) : null}
+              <IconBtn label="Devices" onPress={openDevices}>
+                <Icons.Simulator size={16} color={theme.textSecondary} />
+              </IconBtn>
               {hasControl ? (
-                <IconBtn
-                  label="Stop agent"
-                  onPress={() => stopAgentProcess(agentId).catch(() => {})}
-                >
+                <IconBtn label="Stop agent" onPress={confirmStop}>
                   <Icons.Stop size={16} color={theme.textSecondary} />
                 </IconBtn>
               ) : null}

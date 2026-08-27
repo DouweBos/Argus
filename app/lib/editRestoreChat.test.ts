@@ -10,6 +10,7 @@ import { editAndRestoreFromMessage } from "./editRestoreChat";
 import { restoreAgentAtTurn, sendAgentMessage } from "./ipc";
 
 vi.mock("./ipc", () => ({
+  clearQueuedMessages: vi.fn(async () => {}),
   restoreAgentAtTurn: vi.fn(),
   sendAgentMessage: vi.fn(),
 }));
@@ -57,7 +58,6 @@ function seedConversation(messages: ConversationMessage[]): void {
     conversations: {
       [AGENT]: {
         messages,
-        queuedMessages: [],
         model: "sonnet",
         sessionId: CLAUDE_SID,
         title: "Test convo",
@@ -98,7 +98,6 @@ describe("editAndRestoreFromMessage", () => {
       conversations: {
         [AGENT]: {
           messages: [userMsg("m1", "hi")],
-          queuedMessages: [],
           model: "sonnet",
         },
       },

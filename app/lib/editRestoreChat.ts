@@ -4,6 +4,7 @@ import {
   getConversationState,
   setConversationState,
 } from "../stores/conversationStore";
+import { clearQueue } from "../stores/queueStore";
 import { notifyMessageSent } from "./agentEventService";
 import { restoreAgentAtTurn, sendAgentMessage } from "./ipc";
 
@@ -92,11 +93,13 @@ export async function editAndRestoreFromMessage(
           resuming: false,
           lastEventType: "user_sent",
           messages: [...backfill, userMsg],
-          queuedMessages: [],
         },
       },
     };
   });
+
+  // The queued follow-ups were written against turns that no longer exist.
+  clearQueue(agentId);
 
   // Backend kills + forks + respawns atomically under the same agentId.
   const { claude_session_id: newClaudeSessionId } = await restoreAgentAtTurn(

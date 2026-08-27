@@ -110,6 +110,13 @@ button {
   gap: 6px;
 }
 
+/* Header actions centre a 14px glyph in a 24px box, so their content sits 5px
+   from the button edge. The dot matches that with margin rather than a wrapper
+   element, which would claim a slot of its own. */
+.aw-header-dot {
+  margin: 0 5px;
+}
+
 .aw-card {
   background: var(--surface-3);
   border: 1px solid var(--border);

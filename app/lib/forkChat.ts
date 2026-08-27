@@ -4,6 +4,7 @@ import {
   loadSavedMessages,
 } from "../stores/conversationStore";
 import { addSession, selectSession } from "../stores/sessionStore";
+import { saveAgentConversation } from "./agentEventService";
 import { startAgentInSession } from "./agentLifecycle";
 import { type ForkReplayOp, forkChatInSession, forkSession } from "./ipc";
 
@@ -181,6 +182,9 @@ export async function forkChatFromMessage(
     newClaudeSessionId != null,
     conversation.title,
   );
+  // Hydration is renderer-only state. Publish it so the web and phone clients
+  // see the restored transcript instead of an empty chat.
+  saveAgentConversation(agent.agent_id);
 }
 
 /**
@@ -230,4 +234,7 @@ export async function forkChatIntoNewAgent(
     newClaudeSessionId != null,
     conversation.title,
   );
+  // Hydration is renderer-only state. Publish it so the web and phone clients
+  // see the restored transcript instead of an empty chat.
+  saveAgentConversation(agent.agent_id);
 }

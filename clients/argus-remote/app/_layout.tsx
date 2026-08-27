@@ -6,6 +6,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ImageViewer } from "../src/components/ImageViewer";
 import { Btn, Muted, Screen, Title } from "../src/components/ui";
 import {
   registerNotificationCategories,
@@ -128,6 +129,7 @@ function Root() {
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
         <Stack.Screen name="devices" options={{ title: "Devices" }} />
       </Stack>
+      <ImageViewer />
     </>
   );
 }

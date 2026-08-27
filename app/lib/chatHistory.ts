@@ -9,6 +9,8 @@ import type { ConversationMessage } from "../stores/conversationStore";
 
 /** Lightweight summary stored in the index file — enough for list rendering. */
 export interface ChatHistoryEntry {
+  /** Agent that produced this conversation — absent on older records. */
+  agentId?: string;
   createdAt: number;
   endedAt: number;
   id: string;

@@ -158,7 +158,12 @@ describe("control capability gating", () => {
     const res = (await dispatch("agents.spawn", { session_id: "s1" }, ctx)) as {
       agent: { agent_id: string };
     };
-    expect(startAgent).toHaveBeenCalledWith("s1", undefined, undefined);
+    expect(startAgent).toHaveBeenCalledWith(
+      "s1",
+      undefined,
+      undefined,
+      undefined,
+    );
     expect(res.agent.agent_id).toBe("a1");
   });
 

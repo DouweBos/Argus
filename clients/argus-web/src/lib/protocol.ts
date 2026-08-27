@@ -39,6 +39,10 @@ export type RemoteMethod =
   | "agents.set_permission_mode"
   | "agents.set_effort"
   | "agents.spawn"
+  | "agents.queue_list"
+  | "agents.queue_add"
+  | "agents.queue_remove"
+  | "agents.queue_update"
   | "sessions.create"
   | "sessions.delete"
   | "sessions.rename"
@@ -154,6 +158,19 @@ export interface RemoteAgentStatus {
   permission_mode?: string | null;
   parent_agent_id?: string | null;
   created_at?: number;
+}
+
+/**
+ * A message waiting for a busy agent's turn to end. The queue lives on the
+ * computer, so it survives a reload and is shared with the desktop — which is
+ * also what drains it.
+ */
+export interface RemoteQueuedMessage {
+  id: string;
+  text: string;
+  display_text?: string;
+  images?: RemoteImageAttachment[];
+  queued_at: number;
 }
 
 export interface RemoteImageRef {

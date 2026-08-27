@@ -41,6 +41,39 @@ export const RemoteAgentStatus = z.object({
 export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
 
 /**
+ * A finished agent conversation saved to the project's chat history — what a
+ * remote sees of an agent that has already stopped. Addressed by `history_id`
+ * rather than an agent id, since the agent itself is long gone.
+ */
+export const RemoteStoppedAgent = z.object({
+  history_id: z.string(),
+  /** Runner session id, so a control client can resume the conversation. */
+  runner_session_id: z.string(),
+  title: z.string(),
+  branch: z.string(),
+  description: z.string().optional(),
+  model: z.string().nullable().optional(),
+  message_count: z.number().int().nonnegative(),
+  started_at: z.number(),
+  ended_at: z.number(),
+});
+export type RemoteStoppedAgent = z.infer<typeof RemoteStoppedAgent>;
+
+/** A message waiting for a busy agent's turn to end. Stored on the desktop. */
+export const RemoteQueuedMessage = z.object({
+  id: z.string(),
+  /** What will be sent — may carry a preamble the user never typed. */
+  text: z.string(),
+  /** What to show instead, when it differs from `text`. */
+  display_text: z.string().optional(),
+  images: z
+    .array(z.object({ data: z.string(), media_type: z.string() }))
+    .optional(),
+  queued_at: z.number(),
+});
+export type RemoteQueuedMessage = z.infer<typeof RemoteQueuedMessage>;
+
+/**
  * Reference to an image whose bytes live in the desktop snapshot. The client
  * fetches the base64 payload lazily via `agents.image` keyed by `image_id`,
  * so transcripts stay cheap to re-fetch on every live event.

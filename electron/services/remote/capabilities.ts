@@ -23,6 +23,7 @@ import {
   type RemoteMethod,
   type RemotePlatform,
   type RemoteSession,
+  type RemoteStoppedAgent,
   type RemoteTask,
   type RemoteToolCall,
   type RemoteToolCallChild,
@@ -41,6 +42,13 @@ import {
   startAgent,
   stopAgent,
 } from "../agent/agentService";
+import { loadConversation, loadHistoryIndex } from "../agent/chatHistory";
+import {
+  enqueueMessage,
+  listQueue,
+  removeQueuedMessage,
+  updateQueuedMessage,
+} from "../agent/messageQueue";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { collectAllProjects } from "../mcp/projects";
 import { listOrganizations } from "../organization/manager";
@@ -565,6 +573,64 @@ function parseSnapshot(agentId: string): RawConversation {
   }
 }
 
+/**
+ * Read a stopped agent's conversation back off disk. Its live snapshot is gone
+ * the moment the agent is torn down, so saved chat history is the only record.
+ */
+function loadStoppedConversation(
+  repoRoot: string,
+  historyId: string,
+): RawConversation {
+  const saved = loadConversation(repoRoot, historyId);
+  if (!saved) {
+    throw new GatewayError("not_found", `no stopped agent ${historyId}`);
+  }
+
+  return {
+    messages: saved.messages as RawMessage[],
+    model: saved.model ?? null,
+    title: saved.title,
+  };
+}
+
+/**
+ * Slice a transcript into a page. `before` → the page ending there (older
+ * history); `after` → forward from there; neither → the tail, so a fresh open
+ * lands at the newest messages and lazy-loads older ones on scroll-up.
+ */
+function transcriptPage(
+  conv: RawConversation,
+  cursor: { after?: number; before?: number; limit?: number },
+): {
+  messages: RemoteMessage[];
+  next_after: number | null;
+  prev_before: number | null;
+  total: number;
+} {
+  const raw = conv.messages ?? [];
+  const total = raw.length;
+  const size = cursor.limit ?? 100;
+  let start: number;
+  let end: number;
+  if (cursor.before != null) {
+    end = Math.min(cursor.before, total);
+    start = Math.max(0, end - size);
+  } else if (cursor.after != null) {
+    start = cursor.after;
+    end = Math.min(total, start + size);
+  } else {
+    start = Math.max(0, total - size);
+    end = total;
+  }
+
+  return {
+    messages: raw.slice(start, end).map(toRemoteMessage),
+    next_after: end < total ? end : null,
+    prev_before: start > 0 ? start : null,
+    total,
+  };
+}
+
 // --- Handlers --------------------------------------------------------------
 
 type Handler = (params: unknown, ctx: GatewayContext) => Promise<unknown>;
@@ -704,31 +770,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       params,
     );
     const conv = parseSnapshot(agent_id);
-    const raw = conv.messages ?? [];
-    const total = raw.length;
-    const size = limit ?? 100;
-    // `before` → the page ending there (older history); `after` → forward from
-    // there; neither → the tail (most-recent page), so a fresh open lands at the
-    // newest messages and lazy-loads older ones on scroll-up.
-    let start: number;
-    let end: number;
-    if (before != null) {
-      end = Math.min(before, total);
-      start = Math.max(0, end - size);
-    } else if (after != null) {
-      start = after;
-      end = Math.min(total, start + size);
-    } else {
-      start = Math.max(0, total - size);
-      end = total;
-    }
-    const messages = raw.slice(start, end).map(toRemoteMessage);
 
     return {
-      messages,
-      next_after: end < total ? end : null,
-      prev_before: start > 0 ? start : null,
-      total,
+      ...transcriptPage(conv, { after, before, limit }),
       tasks: toRemoteTasks(conv),
       todos: toRemoteTodos(conv),
       model: conv.model ?? null,
@@ -740,6 +784,63 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { agent_id, image_id } = parse("agents.image", params);
     const conv = parseSnapshot(agent_id);
     const found = findImage(conv, image_id);
+    if (!found) {
+      throw new GatewayError("not_found", `no image ${image_id}`);
+    }
+
+    return { data: found.data, media_type: found.media_type };
+  },
+
+  "agents.stopped": async (params) => {
+    const { repo_root, limit } = parse("agents.stopped", params);
+    requireKnownRepoRoot(repo_root);
+    // The index is already newest-first. Chat history is also written while an
+    // agent is still running, so drop anything still live — those belong to
+    // `agents.list`, and listing them here would double them up.
+    const agents = loadHistoryIndex(repo_root)
+      .filter((e) => !e.agentId || !appState.agents.has(e.agentId))
+      .slice(0, limit ?? 20)
+      .map(
+        (e): RemoteStoppedAgent => ({
+          history_id: e.id,
+          runner_session_id: e.sessionId,
+          title: e.title,
+          branch: e.sessionBranch,
+          description: e.sessionDescription,
+          model: e.model ?? null,
+          message_count: e.messageCount,
+          started_at: e.createdAt,
+          ended_at: e.endedAt,
+        }),
+      );
+
+    return { agents };
+  },
+
+  "agents.stopped_transcript": async (params) => {
+    const { repo_root, history_id, after, before, limit } = parse(
+      "agents.stopped_transcript",
+      params,
+    );
+    requireKnownRepoRoot(repo_root);
+    const conv = loadStoppedConversation(repo_root, history_id);
+
+    return {
+      ...transcriptPage(conv, { after, before, limit }),
+      model: conv.model ?? null,
+    };
+  },
+
+  "agents.stopped_image": async (params) => {
+    const { repo_root, history_id, image_id } = parse(
+      "agents.stopped_image",
+      params,
+    );
+    requireKnownRepoRoot(repo_root);
+    const found = findImage(
+      loadStoppedConversation(repo_root, history_id),
+      image_id,
+    );
     if (!found) {
       throw new GatewayError("not_found", `no image ${image_id}`);
     }
@@ -909,12 +1010,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "agents.spawn": async (params) => {
-    const { session_id, model, permission_mode } = parse(
+    const { session_id, model, permission_mode, resume_session_id } = parse(
       "agents.spawn",
       params,
     );
     const info = await control(() =>
-      startAgent(session_id, model, permission_mode),
+      startAgent(session_id, model, permission_mode, resume_session_id),
     );
     // Announce the agent exactly like the start_agent IPC does — the desktop
     // renderer listens for this to track the agent, subscribe to its event
@@ -928,6 +1029,43 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { agent: toRemoteAgentStatus(agent) };
+  },
+
+  "agents.queue_list": async (params) => {
+    const { agent_id } = parse("agents.queue_list", params);
+
+    return { messages: listQueue(agent_id) };
+  },
+
+  "agents.queue_add": async (params) => {
+    const { agent_id, message, display_text, images } = parse(
+      "agents.queue_add",
+      params,
+    );
+    requireAgent(agent_id);
+    const queued = await control(() =>
+      enqueueMessage(agent_id, {
+        text: message,
+        displayText: display_text,
+        images,
+      }),
+    );
+
+    return { message: queued };
+  },
+
+  "agents.queue_remove": async (params) => {
+    const { agent_id, id } = parse("agents.queue_remove", params);
+    removeQueuedMessage(agent_id, id);
+
+    return { accepted: true };
+  },
+
+  "agents.queue_update": async (params) => {
+    const { agent_id, id, message } = parse("agents.queue_update", params);
+    updateQueuedMessage(agent_id, id, message);
+
+    return { accepted: true };
   },
 
   "sessions.create": async (params) => {

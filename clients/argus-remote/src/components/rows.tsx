@@ -95,6 +95,61 @@ export function AgentRow({
   );
 }
 
+/** "just now" / "12m ago" / "3h ago" / "yesterday" — matches the desktop's home. */
+export function timeAgo(ms: number): string {
+  const delta = Date.now() - ms;
+  if (delta < 60_000) {
+    return "just now";
+  }
+  const m = Math.floor(delta / 60_000);
+  if (m < 60) {
+    return `${m}m ago`;
+  }
+  const h = Math.floor(m / 60);
+  if (h < 24) {
+    return `${h}h ago`;
+  }
+  const d = Math.floor(h / 24);
+
+  return d === 1 ? "yesterday" : `${d}d ago`;
+}
+
+/** A finished agent from the computer's saved history — read-only, no status. */
+export function StoppedAgentRow({
+  title,
+  branch,
+  endedAt,
+  messageCount,
+  onPress,
+}: {
+  title: string;
+  branch: string;
+  endedAt: number;
+  messageCount: number;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Card onPress={onPress} style={{ paddingVertical: 10 }}>
+      <Row gap={9}>
+        <Icons.History size={15} color={theme.textMuted} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Body numberOfLines={1}>{title}</Body>
+          <Row gap={6}>
+            <Muted>{timeAgo(endedAt)}</Muted>
+            <Muted numberOfLines={1}>
+              · {messageCount} message{messageCount === 1 ? "" : "s"}
+            </Muted>
+            {branch ? <Muted numberOfLines={1}>· {branch}</Muted> : null}
+          </Row>
+        </View>
+        <Icons.ChevronRight size={14} color={theme.textMuted} />
+      </Row>
+    </Card>
+  );
+}
+
 export function SessionCard({
   title,
   branch,

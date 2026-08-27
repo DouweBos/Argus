@@ -5,6 +5,7 @@ import * as Icons from "../../src/components/Icons";
 import {
   AgentRow,
   SessionCard,
+  StoppedAgentRow,
   agentMetaLabel,
   mapAgentStatus,
 } from "../../src/components/rows";
@@ -15,6 +16,7 @@ import {
   Muted,
   Row,
   Screen,
+  SectionHeader,
   TextField,
 } from "../../src/components/ui";
 import { useLiveRefresh } from "../../src/hooks/useLiveRefresh";
@@ -130,7 +132,77 @@ export default function ProjectScreen() {
           onChanged={refresh}
         />
       ))}
+
+      <StoppedAgents repoRoot={repoRoot} />
     </Screen>
+  );
+}
+
+/**
+ * Agents that have already finished, read back from the computer's saved chat
+ * history. Collapsed by default — this is a look-back, not the live picture.
+ */
+function StoppedAgents({ repoRoot }: { repoRoot: string }) {
+  const theme = useTheme();
+  const router = useRouter();
+  const connection = useAppStore((s) => s.connection);
+  const stopped = useAppStore((s) => s.stoppedByRepo[repoRoot]);
+  const loadStoppedAgents = useAppStore((s) => s.loadStoppedAgents);
+  const [open, setOpen] = useState(false);
+
+  // Fetched on mount (for the count) and whenever the section is opened, not
+  // on the list poll — it reads the project's history index off disk.
+  useEffect(() => {
+    if (connection === "ready") {
+      loadStoppedAgents(repoRoot).catch(() => {});
+    }
+  }, [connection, loadStoppedAgents, repoRoot, open]);
+
+  if (!stopped || stopped.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <Btn
+        label={
+          open
+            ? "Hide stopped agents"
+            : `Show ${stopped.length} recently stopped agent${stopped.length === 1 ? "" : "s"}`
+        }
+        tone="ghost"
+        size="sm"
+        icon={<Icons.History size={12} color={theme.textSecondary} />}
+        onPress={() => setOpen((v) => !v)}
+      />
+
+      {open && (
+        <>
+          <SectionHeader count={stopped.length}>Recently stopped</SectionHeader>
+          {stopped.map((a) => (
+            <StoppedAgentRow
+              key={a.history_id}
+              title={a.title}
+              branch={a.branch}
+              endedAt={a.ended_at}
+              messageCount={a.message_count}
+              onPress={() =>
+                router.push({
+                  pathname: "/stopped/[history]",
+                  params: {
+                    history: a.history_id,
+                    repo: repoRoot,
+                    label: a.title,
+                    branch: a.branch,
+                    runner: a.runner_session_id,
+                  },
+                })
+              }
+            />
+          ))}
+        </>
+      )}
+    </>
   );
 }
 

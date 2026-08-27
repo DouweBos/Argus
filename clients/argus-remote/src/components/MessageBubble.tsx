@@ -1,9 +1,10 @@
 /** Chat bubble for one transcript message — role styling, text, images, tools. */
 
 import type { ReactNode } from "react";
-import { Image, View } from "react-native";
+import { Image, Pressable, View } from "react-native";
 import { Markdown } from "./Markdown";
 import { Badge, Muted, Row } from "./ui";
+import { openImageViewer } from "../stores/imageViewerStore";
 import { useTheme } from "../theme";
 
 export interface MessageImage {
@@ -67,17 +68,22 @@ export function MessageBubble({
       {images && images.length > 0 && (
         <Row gap={6} style={{ flexWrap: "wrap" }}>
           {images.map((img, i) => (
-            <Image
+            <Pressable
               key={i}
-              source={{ uri: img.uri }}
-              resizeMode="cover"
-              style={{
-                width: 96,
-                height: 96,
-                borderRadius: theme.radiusSm,
-                backgroundColor: theme.bgTertiary,
-              }}
-            />
+              accessibilityLabel="View image"
+              onPress={() => openImageViewer(images.map((x) => x.uri), i)}
+            >
+              <Image
+                source={{ uri: img.uri }}
+                resizeMode="cover"
+                style={{
+                  width: 96,
+                  height: 96,
+                  borderRadius: theme.radiusSm,
+                  backgroundColor: theme.bgTertiary,
+                }}
+              />
+            </Pressable>
           ))}
         </Row>
       )}

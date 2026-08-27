@@ -10,7 +10,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  AppState,
   TextInput,
   View,
   type NativeSyntheticEvent,
@@ -34,13 +33,8 @@ import {
   contextLimitForModel,
   tokensInContext,
 } from "../lib/contextWindow";
-import {
-  captureImage,
-  clipboardHasImage,
-  pasteImage,
-  pickImages,
-  type PendingImage,
-} from "../lib/images";
+import { captureImage, pickImages, type PendingImage } from "../lib/images";
+import { addImagePasteListener } from "../../modules/argus-paste";
 import { buildLinkedProjectsPreamble } from "../lib/linkedProjects";
 import type { RemotePermissionMode, RemoteSlashCommand } from "../lib/protocol";
 import { readJson, readString, removeKey, writeJson, writeString } from "../lib/storage";
@@ -99,11 +93,13 @@ export function ChatInput({
   const refreshProjects = useAppStore((s) => s.refreshProjects);
 
   const inputRef = useRef<TextInput>(null);
+  // Previous screens stay mounted in the nav stack, so every ChatInput hears
+  // the paste. Only the focused one is the input iOS pasted into.
+  const focusedRef = useRef(false);
   const [text, setText] = useState("");
   const [pending, setPending] = useState<PendingImage[]>([]);
   const [linked, setLinked] = useState<string[]>([]);
   const [picker, setPicker] = useState<Picker>(null);
-  const [canPasteImage, setCanPasteImage] = useState(false);
 
   const {
     mentionContext,
@@ -129,24 +125,6 @@ export function ChatInput({
     loadCapabilities(agentId).catch(() => {});
     loadAgentStatus(agentId).catch(() => {});
   }, [agentId, loadCapabilities, loadAgentStatus]);
-
-  // Only offer the paste button when there's actually an image to paste. Worth
-  // re-checking on foreground: that's when you've just screenshotted elsewhere.
-  useEffect(() => {
-    const check = () => {
-      clipboardHasImage()
-        .then(setCanPasteImage)
-        .catch(() => {});
-    };
-    check();
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
-        check();
-      }
-    });
-
-    return () => sub.remove();
-  }, []);
 
   // Restore the persisted draft + linked projects when switching agents.
   useEffect(() => {
@@ -219,6 +197,25 @@ export function ChatInput({
     }
   }, []);
 
+  // iOS's own Paste action on the focused input, routed through the native
+  // module — React Native's text view drops images otherwise.
+  useEffect(
+    () =>
+      addImagePasteListener((image) => {
+        if (!focusedRef.current) {
+          return;
+        }
+        addImages([
+          {
+            name: "pasted image",
+            previewUri: `data:${image.mediaType};base64,${image.data}`,
+            attachment: { data: image.data, media_type: image.mediaType },
+          },
+        ]);
+      }),
+    [addImages],
+  );
+
   const submit = useCallback(() => {
     const value = text.trim();
     if (!value && pending.length === 0) {
@@ -227,10 +224,10 @@ export function ChatInput({
     const images = pending.length > 0 ? pending.map((p) => p.attachment) : undefined;
     const displayText = value || "(see attached images)";
     const message = buildLinkedProjectsPreamble(linked, displayText);
-    // Busy agent → hold the message and flush it when the turn ends, mirroring
-    // the desktop. Idle → send straight away.
+    // Busy agent → park it on the computer's queue, which the desktop drains
+    // when the turn ends. Idle → send straight away.
     if (isRunning) {
-      queueMessage(agentId, message, images, displayText);
+      queueMessage(agentId, message, images, displayText).catch(() => {});
     } else {
       sendMessage(agentId, message, images, displayText).catch(() => {});
     }
@@ -328,6 +325,12 @@ export function ChatInput({
         value={text}
         onChangeText={onChangeText}
         onSelectionChange={onSelectionChange}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+        }}
         placeholder="Message the agent… (/ for commands, @ for files)"
         placeholderTextColor={theme.textMuted}
         style={{
@@ -388,16 +391,6 @@ export function ChatInput({
         >
           <Icons.Camera size={17} color={theme.textSecondary} />
         </IconBtn>
-        {canPasteImage && (
-          <IconBtn
-            label="Paste image"
-            onPress={() => {
-              pasteImage().then(addImages).catch(() => {});
-            }}
-          >
-            <Icons.Clipboard size={17} color={theme.accent} />
-          </IconBtn>
-        )}
         <View style={{ flex: 1 }} />
         {isRunning && (text.trim() || pending.length > 0) ? (
           <SendButton label="Queue message" onPress={submit} tone={theme.accent} />

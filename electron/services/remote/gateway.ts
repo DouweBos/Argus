@@ -328,6 +328,12 @@ export class DeviceConnection implements DeviceMediaController {
         }
         break;
       }
+      case "queue":
+        this.pushEvent("agent.queue", agentId, {
+          agent_id: agentId,
+          messages: args[0],
+        });
+        break;
       case "capabilities": {
         const init = appState.agents.get(agentId)?.handle.initializeResponse();
         if (init) {

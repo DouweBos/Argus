@@ -24,6 +24,9 @@ const MAX_ENTRIES = 100;
 export interface ChatHistoryEntry {
   id: string;
   sessionId: string;
+  /** Agent that produced this conversation — absent on records saved before
+   *  the field existed. Lets callers tell a finished chat from a live one. */
+  agentId?: string;
   title: string;
   sessionBranch: string;
   sessionDescription: string;
@@ -154,6 +157,7 @@ export function saveConversation(
   const entry: ChatHistoryEntry = {
     id: conversation.id,
     sessionId: conversation.sessionId,
+    agentId: conversation.agentId,
     title: conversation.title,
     sessionBranch: conversation.sessionBranch,
     sessionDescription: conversation.sessionDescription,

@@ -26,6 +26,9 @@ export type RemoteMethod =
   | "agents.vitals"
   | "agents.transcript"
   | "agents.image"
+  | "agents.stopped"
+  | "agents.stopped_transcript"
+  | "agents.stopped_image"
   | "orgs.list"
   | "permission.respond"
   | "device.rename"
@@ -41,6 +44,10 @@ export type RemoteMethod =
   | "agents.set_permission_mode"
   | "agents.set_effort"
   | "agents.spawn"
+  | "agents.queue_list"
+  | "agents.queue_add"
+  | "agents.queue_remove"
+  | "agents.queue_update"
   | "sessions.create"
   | "sessions.delete"
   | "sessions.rename"
@@ -156,6 +163,35 @@ export interface RemoteAgentStatus {
   permission_mode?: string | null;
   parent_agent_id?: string | null;
   created_at?: number;
+}
+
+/**
+ * A finished agent conversation, read back from the computer's saved chat
+ * history. Addressed by `history_id` — the agent process itself is gone.
+ */
+export interface RemoteStoppedAgent {
+  history_id: string;
+  runner_session_id: string;
+  title: string;
+  branch: string;
+  description?: string;
+  model?: string | null;
+  message_count: number;
+  started_at: number;
+  ended_at: number;
+}
+
+/**
+ * A message waiting for a busy agent's turn to end. The queue lives on the
+ * computer, so it survives reinstalling this app and is shared with the
+ * desktop — which is also what drains it.
+ */
+export interface RemoteQueuedMessage {
+  id: string;
+  text: string;
+  display_text?: string;
+  images?: RemoteImageAttachment[];
+  queued_at: number;
 }
 
 export interface RemoteImageRef {
