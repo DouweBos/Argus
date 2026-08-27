@@ -340,15 +340,16 @@ tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** 
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
-| Setting                  | Default | Description                                                                                                                                         |
-| ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access** | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                    |
-| **Provider**             | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`. |
-| **Tunnel** (Cloudflare)  | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                          |
-| **Connector token**      | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                    |
-| **Public URL**           | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                |
-| **Paired devices**       | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                  |
-| **Background push**      | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                          |
+| Setting                                     | Default | Description                                                                                                                                         |
+| ------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                    |
+| **Provider**                                | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`. |
+| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                          |
+| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                    |
+| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                |
+| **Paired devices**                          | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                  |
+| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                          |
+| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.               |
 
 ### Choosing a provider
 
@@ -479,6 +480,14 @@ and shows the provider's rejection reason if it fails.
 
 On the phone, **Settings → Background push** turns registration on or off. A
 device that has registered shows _push registered_ in the desktop's paired list.
+
+### Notify my devices while I'm using Argus
+
+By default a notification only leaves this machine when the Argus window isn't
+focused — otherwise your phone buzzes for an agent you're already watching on
+screen. Turn this on to mirror every notification to your devices regardless.
+The local banner is unaffected: it is always suppressed while the window has
+focus.
 
 ### Web client on this network
 

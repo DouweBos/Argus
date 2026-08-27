@@ -6,10 +6,7 @@ import { notifyAgent, type NotifyAgentPayload } from "./ipc";
 
 const MIN_TURN_DURATION_MS = 10_000;
 
-/**
- * Whether to raise a banner on this Mac. Remote devices judge their own focus,
- * so this only gates the local half — the fan-out always happens.
- */
+/** Whether to raise a banner on this Mac. */
 function showLocally(): boolean {
   if (typeof Notification === "undefined") {
     return false;

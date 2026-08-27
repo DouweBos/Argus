@@ -139,6 +139,7 @@ export function RemoteAccessSection() {
   const applyConfig = async (cfg: {
     enabled?: boolean;
     lanWeb?: boolean;
+    notifyWhenFocused?: boolean;
     provider?: RemoteTunnelProvider;
     publicUrl?: string;
     tunnelMode?: RemoteTunnelMode;
@@ -353,6 +354,19 @@ export function RemoteAccessSection() {
         </SettingsScreenField>
 
         <RemotePushFields disabled={busy || !enabled} />
+
+        <SettingsScreenField
+          label="Notify my devices while I'm using Argus"
+          caption="Off by default: your phone and browsers stay quiet whenever the Argus window is focused, so they only interrupt you when you've stepped away."
+        >
+          <div className={styles.toggleRow}>
+            <Toggle
+              checked={status?.notifyWhenFocused ?? false}
+              disabled={busy || !enabled}
+              onChange={(next) => applyConfig({ notifyWhenFocused: next })}
+            />
+          </div>
+        </SettingsScreenField>
 
         <SettingsScreenField
           label="Pair a device"

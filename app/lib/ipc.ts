@@ -1454,6 +1454,7 @@ export const remoteGetStatus = (): Promise<RemoteStatus> =>
 export const remoteSetConfig = (config: {
   enabled?: boolean;
   lanWeb?: boolean;
+  notifyWhenFocused?: boolean;
   provider?: "cloudflare" | "none" | "tailscale";
   publicUrl?: string;
   tunnelMode?: "quick" | "token";

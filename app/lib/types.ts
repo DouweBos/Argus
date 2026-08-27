@@ -1145,6 +1145,8 @@ export interface RemoteStatus {
   hasTunnelToken: boolean;
   lanUrl: string | null;
   lanWebEnabled: boolean;
+  /** Mirror notifications to devices even while the desktop window is focused. */
+  notifyWhenFocused: boolean;
   provider: RemoteTunnelProvider;
   publicUrl: string | null;
   tunnelError: string | null;
