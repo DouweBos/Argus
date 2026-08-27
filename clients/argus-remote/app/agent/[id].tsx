@@ -1,17 +1,16 @@
 import { useCallback, useEffect } from "react";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { Alert, KeyboardAvoidingView, Platform, View } from "react-native";
+import { Alert, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { AgentTranscript } from "../../src/components/AgentTranscript";
 import { ChatInput } from "../../src/components/ChatInput";
 import * as Icons from "../../src/components/Icons";
-import { Banner, IconBtn, Row } from "../../src/components/ui";
+import { Banner, IconBtn, Row, useKeyboardInset } from "../../src/components/ui";
 import { useAppStore } from "../../src/stores/appStore";
 import { useTheme } from "../../src/theme";
 
 export default function AgentScreen() {
   const theme = useTheme();
-  const headerHeight = useHeaderHeight();
+  const keyboardInset = useKeyboardInset();
   const router = useRouter();
   const { id, label } = useLocalSearchParams<{ id: string; label?: string }>();
   const agentId = id ?? "";
@@ -73,13 +72,10 @@ export default function AgentScreen() {
   }, [agentId, router, stopAgentProcess]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      // Measured, not guessed: a hardcoded offset is wrong on any device whose
-      // header isn't the size it was picked for, and the input ends up under
-      // the keyboard.
-      keyboardVerticalOffset={Platform.OS === "ios" ? headerHeight : 0}
+    // Padding by the keyboard's measured height keeps the transcript ending
+    // exactly at the input's top edge, so nothing is ever hidden behind either.
+    <View
+      style={{ flex: 1, backgroundColor: theme.bg, paddingBottom: keyboardInset }}
     >
       <Stack.Screen
         options={{
@@ -121,6 +117,6 @@ export default function AgentScreen() {
       <AgentTranscript agentId={agentId} />
 
       {hasControl && <ChatInput agentId={agentId} sessionId={sessionId} />}
-    </KeyboardAvoidingView>
+    </View>
   );
 }

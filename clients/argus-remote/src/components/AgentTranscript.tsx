@@ -242,7 +242,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
 
   // Keep the newest message in view as the transcript streams — but only when
   // the user is already at the bottom, so scrolling up to read isn't yanked.
-  const onContentSizeChange = useCallback(() => {
+  const stickToBottom = useCallback(() => {
     if (atBottomRef.current) {
       scrollRef.current?.scrollToEnd({ animated: false });
     }
@@ -258,10 +258,11 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         ref={scrollRef}
         onScroll={onScroll}
         scrollEventThrottle={64}
-        onContentSizeChange={onContentSizeChange}
+        onContentSizeChange={stickToBottom}
+        // The viewport shrinks when the keyboard opens; without this the last
+        // message stays scrolled off the bottom.
+        onLayout={stickToBottom}
         keyboardShouldPersistTaps="handled"
-        // Scrolling means you want to read, not type.
-        keyboardDismissMode="on-drag"
         contentContainerStyle={{
           padding: theme.space,
           paddingBottom: theme.space + insets.bottom,
