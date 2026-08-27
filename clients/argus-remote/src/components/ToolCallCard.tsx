@@ -19,6 +19,7 @@ import {
   type Question,
 } from "../lib/questions";
 import { formatInput, isPathTool, toolSummary } from "../lib/toolCall";
+import { openImageViewer } from "../stores/imageViewerStore";
 import { useTheme } from "../theme";
 
 const RESULT_PREVIEW_CHARS = 500;
@@ -350,17 +351,22 @@ function ResultBlocks({
           const uri = resolveImage(block.image_id);
 
           return uri ? (
-            <Image
+            <Pressable
               key={i}
-              source={{ uri }}
-              resizeMode="contain"
-              style={{
-                width: "100%",
-                height: 220,
-                borderRadius: theme.radiusSm,
-                backgroundColor: theme.mediaBg,
-              }}
-            />
+              accessibilityLabel="View image"
+              onPress={() => openImageViewer([uri])}
+            >
+              <Image
+                source={{ uri }}
+                resizeMode="contain"
+                style={{
+                  width: "100%",
+                  height: 220,
+                  borderRadius: theme.radiusSm,
+                  backgroundColor: theme.mediaBg,
+                }}
+              />
+            </Pressable>
           ) : null;
         }
         const text = block.text.slice(0, RESULT_PREVIEW_CHARS);

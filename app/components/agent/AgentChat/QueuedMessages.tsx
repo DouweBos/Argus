@@ -1,3 +1,4 @@
+import type { QueuedMessage as QueuedMessageData } from "../../../lib/types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
@@ -11,12 +12,11 @@ import {
   buildLinkedProjectsPreamble,
   parseLinkedProjectsPreamble,
 } from "../../../lib/linkedProjectsPreamble";
+import { openImageViewer } from "../../../stores/imageViewerStore";
 import {
-  type QueuedMessage as QueuedMessageData,
   removeQueuedMessage,
   updateQueuedMessage,
-} from "../../../stores/conversationStore";
-import { openImageViewer } from "../../../stores/imageViewerStore";
+} from "../../../stores/queueStore";
 import styles from "./AgentChat.module.css";
 
 interface QueuedMessagesProps {

@@ -4,6 +4,7 @@
  * Node.js is single-threaded for IPC handlers, so no Mutex is needed.
  */
 
+import type { QueuedMessage } from "./services/agent/messageQueue";
 import type { AgentSession } from "./services/agent/models";
 import type { PermissionRequestPayload } from "./services/llm/runners/claudeCode/controlHandler";
 import type { Organization } from "./services/organization/models";
@@ -119,6 +120,13 @@ class AppState {
     string,
     Map<string, PermissionRequestPayload>
   >();
+
+  /**
+   * Messages waiting for each agent's current turn to end, oldest first. Owned
+   * by the backend and mirrored to disk so the queue outlives any one client —
+   * see `services/agent/messageQueue.ts`.
+   */
+  agentQueues = new Map<string, QueuedMessage[]>();
 }
 
 /** Singleton instance. */

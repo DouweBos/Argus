@@ -646,10 +646,14 @@ export function StatusDot({
   tone = "muted",
   pulse,
   size = 8,
+  style,
+  accessibilityLabel,
 }: {
   tone?: Tone;
   pulse?: boolean;
   size?: number;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }) {
   const theme = useTheme();
   const opacity = useRef(new Animated.Value(1)).current;
@@ -683,13 +687,17 @@ export function StatusDot({
 
   return (
     <Animated.View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: toneColor(theme, tone),
-        opacity,
-      }}
+      accessibilityLabel={accessibilityLabel}
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: toneColor(theme, tone),
+          opacity,
+        },
+        style,
+      ]}
     />
   );
 }

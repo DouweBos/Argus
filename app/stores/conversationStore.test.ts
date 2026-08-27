@@ -5,11 +5,9 @@ import {
   appendEvent,
   cancelPermission,
   clearConversation,
-  dequeueMessage,
   getConversationState,
   hasRunningSubagents,
   migrateConversation,
-  queueMessage,
   setCapabilities,
   setConversationState,
   setPermissionPending,
@@ -35,23 +33,6 @@ describe("conversationStore", () => {
     addUserMessage("agent-1", "hello");
     clearConversation("agent-1");
     expect(getConversationState().conversations["agent-1"]).toBeUndefined();
-  });
-
-  it("queues and dequeues messages", () => {
-    queueMessage("agent-1", "first");
-    queueMessage("agent-1", "second");
-
-    const conv = getConversationState().conversations["agent-1"];
-    expect(conv.queuedMessages).toHaveLength(2);
-
-    const first = dequeueMessage("agent-1");
-    expect(first?.text).toBe("first");
-
-    const second = dequeueMessage("agent-1");
-    expect(second?.text).toBe("second");
-
-    const empty = dequeueMessage("agent-1");
-    expect(empty).toBeUndefined();
   });
 
   it("migrates conversation to new agent ID", () => {
@@ -399,7 +380,7 @@ describe("conversationStore", () => {
       };
       setConversationState({
         conversations: {
-          "agent-1": { messages: [message], queuedMessages: [] },
+          "agent-1": { messages: [message] },
         },
       });
     }

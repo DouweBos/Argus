@@ -254,6 +254,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const tasks = useAppStore((s) => s.tasksByAgent[agentId]);
   const todos = useAppStore((s) => s.todosByAgent[agentId]);
   const loadTranscript = useAppStore((s) => s.loadTranscript);
+  const loadQueue = useAppStore((s) => s.loadQueue);
   const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
   const loadImage = useAppStore((s) => s.loadImage);
   const watchAgent = useAppStore((s) => s.watchAgent);
@@ -289,6 +290,8 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       return;
     }
     const refresh = () => loadTranscript(agentId).catch(() => {});
+    // The queue lives on the computer; fetch it once, then follow agent.queue.
+    loadQueue(agentId).catch(() => {});
     refresh();
     watchAgent(agentId, true);
     // Subscriptions are fire-and-forget, so any event the agent emits before the
@@ -312,7 +315,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [connection, agentId, loadTranscript, watchAgent]);
+  }, [connection, agentId, loadQueue, loadTranscript, watchAgent]);
 
   // Track scroll position: toggle the bottom pill, and lazy-load older history
   // when the user nears the top.
@@ -429,12 +432,23 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
           {queued.map((q) => (
             <QueuedMessage
               key={q.id}
-              text={q.displayText}
+              text={q.display_text ?? q.text}
               actions={
                 <QueuedMessageAction
                   icon={<Icons.CloseIcon size={12} />}
                   label="Remove queued message"
-                  onClick={() => removeQueued(agentId, q.id)}
+                  onClick={() => {
+                    // Dropping it throws away what you typed, so ask first.
+                    const preview = q.display_text ?? q.text;
+                    if (
+                      !window.confirm(
+                        `Remove this queued message?\n\n${preview.slice(0, 200)}`,
+                      )
+                    ) {
+                      return;
+                    }
+                    removeQueued(agentId, q.id).catch(() => {});
+                  }}
                 />
               }
             />

@@ -29,6 +29,12 @@ export const REMOTE_METHODS = {
   "agents.transcript": "monitor",
   /** Resolve a transcript image reference to its bytes. */
   "agents.image": "monitor",
+  /** Recently stopped agents, read back from the project's saved chat history. */
+  "agents.stopped": "monitor",
+  /** Read a stopped agent's saved transcript. */
+  "agents.stopped_transcript": "monitor",
+  /** Resolve an image inside a stopped agent's saved transcript. */
+  "agents.stopped_image": "monitor",
   "orgs.list": "monitor",
   /** Approve/deny a permission prompt the gateway forwarded — approving a
    * tool call runs code on the host, so this needs control, not monitor. */
@@ -58,6 +64,12 @@ export const REMOTE_METHODS = {
   "agents.set_effort": "control",
   /** Spawn a new agent inside an existing session. */
   "agents.spawn": "control",
+  /** Messages waiting for a busy agent. The queue is the desktop's, shared by
+   *  every client, so reading it is monitor and changing it is control. */
+  "agents.queue_list": "monitor",
+  "agents.queue_add": "control",
+  "agents.queue_remove": "control",
+  "agents.queue_update": "control",
   /** Create a new session inside an existing project (never a new project). */
   "sessions.create": "control",
   /** Delete a session (optionally its branch). */
@@ -97,6 +109,8 @@ export function isRemoteMethod(value: string): value is RemoteMethod {
 export const REMOTE_EVENTS = [
   "agent.event",
   "agent.status",
+  /** The agent's queued messages changed (from any client). */
+  "agent.queue",
   /** Models/commands/subagents became available (post-CLI-handshake). */
   "agent.capabilities",
   "permission.request",

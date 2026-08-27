@@ -17,6 +17,7 @@ import {
   SidebarRepoGroup,
   SidebarSection,
   Spinner,
+  StatusBulb,
 } from "@argus/peacock";
 import {
   notificationsSupported,
@@ -127,9 +128,20 @@ function Pair() {
 
 // --- Monitor ---------------------------------------------------------------
 
+/**
+ * A healthy connection is the normal case and doesn't need saying, so it
+ * shrinks to a dot — only trouble gets words.
+ */
 function ConnectionBadge({ state }: { state: ConnectionState }) {
   if (state === "ready") {
-    return <Badge tone="success">Connected</Badge>;
+    return (
+      <StatusBulb
+        tone="success"
+        size="sm"
+        aria-label="Connected"
+        className="aw-header-dot"
+      />
+    );
   }
   if (state === "offline") {
     return <Badge tone="warning">Reconnecting…</Badge>;
@@ -152,6 +164,8 @@ function Monitor() {
   const refreshProjects = useAppStore((s) => s.refreshProjects);
   const hasControl = useAppStore((s) => s.hasControl());
   const stopAgentProcess = useAppStore((s) => s.stopAgentProcess);
+  const devices = useAppStore((s) => s.devices);
+  const refreshDevices = useAppStore((s) => s.refreshDevices);
   const pushEnabled = useAppStore((s) => s.pushEnabled);
   const setPushEnabled = useAppStore((s) => s.setPushEnabled);
   const agentSessionId = useAppStore((s) =>
@@ -159,6 +173,14 @@ function Monitor() {
       ? s.statusByAgent[view.agentId]?.session_id
       : undefined,
   );
+
+  // Fetched once, not polled: this only decides where the device button in an
+  // agent's header goes.
+  useEffect(() => {
+    if (connection === "ready" && view.name === "agent") {
+      void refreshDevices().catch(() => {});
+    }
+  }, [connection, refreshDevices, view.name]);
 
   // Let a notification click navigate to its agent — from this tab, or
   // forwarded by the service worker when a background push is tapped.
@@ -261,6 +283,26 @@ function Monitor() {
             <ConnectionBadge state={connection} />
             {view.name === "agent" && (
               <>
+                <SidebarHeaderAction
+                  onClick={() => {
+                    const only = devices.length === 1 ? devices[0] : null;
+                    push(
+                      only
+                        ? {
+                            name: "device",
+                            deviceId: only.id,
+                            platform: only.platform,
+                            deviceName: only.name,
+                            isTv: only.is_tv,
+                          }
+                        : { name: "devices" },
+                    );
+                  }}
+                  title="Devices"
+                  aria-label="Devices"
+                >
+                  <Icons.SimulatorIcon size={14} />
+                </SidebarHeaderAction>
                 {agentSessionId && (
                   <SidebarHeaderAction
                     onClick={() =>
@@ -278,9 +320,20 @@ function Monitor() {
                 )}
                 {hasControl && (
                   <SidebarHeaderAction
-                    onClick={() =>
-                      stopAgentProcess(view.agentId).catch(() => {})
-                    }
+                    onClick={() => {
+                      // Stopping kills the agent and its queue — not something
+                      // to do on a mis-click.
+                      if (
+                        !window.confirm(
+                          "Stop this agent? It stops mid-turn and anything still queued for it is discarded.",
+                        )
+                      ) {
+                        return;
+                      }
+                      stopAgentProcess(view.agentId)
+                        .then(back)
+                        .catch(() => {});
+                    }}
                     title="Stop agent"
                     aria-label="Stop agent"
                   >

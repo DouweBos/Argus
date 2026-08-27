@@ -63,6 +63,15 @@ import {
   setAgentPermissionMode,
 } from "./services/agent/claude";
 import {
+  clearQueue,
+  dequeueMessage,
+  enqueueMessage,
+  listQueue,
+  removeQueuedMessage,
+  updateQueuedMessage,
+  type QueuedImage,
+} from "./services/agent/messageQueue";
+import {
   loadAppSettings,
   saveAppSettings,
   type AppSettings,
@@ -1733,6 +1742,37 @@ export function registerIpcHandlers(): void {
   });
   handle("list_popped_out_agents", () =>
     Promise.resolve(Array.from(appState.agentPopouts.keys())),
+  );
+
+  handle("list_queued_messages", (a) =>
+    Promise.resolve(listQueue(a.agentId as string)),
+  );
+  handle("queue_message", (a) =>
+    Promise.resolve(
+      enqueueMessage(a.agentId as string, {
+        text: a.text as string,
+        displayText: a.displayText as string | undefined,
+        images: a.images as QueuedImage[] | undefined,
+      }),
+    ),
+  );
+  handle("remove_queued_message", (a) => {
+    removeQueuedMessage(a.agentId as string, a.id as string);
+
+    return Promise.resolve();
+  });
+  handle("update_queued_message", (a) => {
+    updateQueuedMessage(a.agentId as string, a.id as string, a.text as string);
+
+    return Promise.resolve();
+  });
+  handle("clear_queued_messages", (a) => {
+    clearQueue(a.agentId as string);
+
+    return Promise.resolve();
+  });
+  handle("dequeue_message", (a) =>
+    Promise.resolve(dequeueMessage(a.agentId as string) ?? null),
   );
 
   handle("publish_agent_snapshot", (a) => {

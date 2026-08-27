@@ -128,12 +128,6 @@ export const Paperclip = (p: IconProps) => (
     <Path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.5 3.5 0 0 1 5 5l-8 8a2 2 0 0 1-3-3l7.5-7.5" />
   </Icon>
 );
-export const Clipboard = (p: IconProps) => (
-  <Icon {...p}>
-    <Rect x="8" y="2" width="8" height="4" rx="1" />
-    <Path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-  </Icon>
-);
 export const Camera = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -187,5 +181,35 @@ export const Keyboard = (p: IconProps) => (
 export const Check = (p: IconProps) => (
   <Icon {...p}>
     <Polyline points="4 12.5 9.5 18 20 6.5" />
+  </Icon>
+);
+export const History = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 4.5V9h4.5" />
+    <Path d="M12 7.5V12l3 1.8" />
+  </Icon>
+);
+export const Search = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="11" cy="11" r="6.5" />
+    <Path d="m20 20-4.4-4.4" />
+  </Icon>
+);
+export const Terminal = (p: IconProps) => (
+  <Icon {...p}>
+    <Polyline points="5 7 9.5 12 5 17" />
+    <Path d="M12.5 17H19" />
+  </Icon>
+);
+export const Pencil = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M4 20h4L19.5 8.5a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z" />
+    <Path d="M14.5 6.5 18 10" />
+  </Icon>
+);
+export const Web = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="8.5" />
+    <Path d="M3.5 12h17M12 3.5c4 4.5 4 12.5 0 17-4-4.5-4-12.5 0-17" />
   </Icon>
 );

@@ -30,6 +30,7 @@ import type {
   EventEnvelope,
   RemoteAgentCapabilities,
   RemoteAgentStatus,
+  RemoteQueuedMessage,
   RemoteDevice,
   RemoteGitStatus,
   RemoteImageAttachment,
@@ -71,7 +72,7 @@ interface AppState {
   /** Locally-appended user messages awaiting confirmation in the next snapshot. */
   optimisticByAgent: Record<string, RemoteMessage[]>;
   /** Messages typed while the agent is busy, flushed in order once it goes idle. */
-  queuedByAgent: Record<string, QueuedMessage[]>;
+  queuedByAgent: Record<string, RemoteQueuedMessage[]>;
   tasksByAgent: Record<string, RemoteTask[] | null>;
   todosByAgent: Record<string, RemoteTodo[] | null>;
   /** Name of the tool currently executing per agent (drives the activity row). */
@@ -140,17 +141,17 @@ interface AppState {
     /** Text to show in the optimistic bubble (message minus any preamble). */
     displayText?: string,
   ) => Promise<void>;
-  /** Hold a message until the agent is idle, then flush it (in order). */
+  /** Park a message on the computer's queue until the agent's turn ends. */
   queueMessage: (
     agentId: string,
     message: string,
     images: RemoteImageAttachment[] | undefined,
     displayText: string,
-  ) => void;
+  ) => Promise<void>;
   /** Drop a still-queued message before it's sent. */
-  removeQueued: (agentId: string, id: string) => void;
-  /** Send the oldest queued message if the agent is idle (called on idle). */
-  flushQueue: (agentId: string) => void;
+  removeQueued: (agentId: string, id: string) => Promise<void>;
+  /** Fetch the computer's queue for an agent (then follow `agent.queue`). */
+  loadQueue: (agentId: string) => Promise<void>;
   interrupt: (agentId: string) => Promise<void>;
   setModel: (agentId: string, model: string) => Promise<void>;
   setPermissionMode: (
@@ -226,14 +227,6 @@ interface AppState {
 
 export function imageKey(agentId: string, imageId: string): string {
   return `${agentId}:${imageId}`;
-}
-
-/** A message typed while the agent was busy, awaiting flush on idle. */
-export interface QueuedMessage {
-  id: string;
-  message: string;
-  displayText: string;
-  images?: RemoteImageAttachment[];
 }
 
 /** Messages fetched per transcript page (tail on open, older on scroll-up). */
@@ -320,10 +313,14 @@ export const useAppStore = create<AppState>((set, get) => {
           statusByAgent: { ...s.statusByAgent, [a.agent_id]: a },
         };
       });
-      // Flush the next queued message once the agent goes idle.
-      if (a.status === "idle") {
-        get().flushQueue(a.agent_id);
-      }
+    } else if (ev.event === "agent.queue" && ev.agent_id) {
+      const { messages } = ev.payload as { messages: RemoteQueuedMessage[] };
+      set((s) => ({
+        queuedByAgent: {
+          ...s.queuedByAgent,
+          [ev.agent_id as string]: messages,
+        },
+      }));
     } else if (ev.event === "agent.capabilities" && ev.agent_id) {
       // Pickers become available once the CLI handshake completes.
       set((s) => ({
@@ -859,49 +856,38 @@ export const useAppStore = create<AppState>((set, get) => {
         .catch(() => {});
     },
 
-    queueMessage: (agentId, message, images, displayText) => {
-      const id = `queued-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-      set((s) => ({
-        queuedByAgent: {
-          ...s.queuedByAgent,
-          [agentId]: [
-            ...(s.queuedByAgent[agentId] ?? []),
-            { id, message, images, displayText },
-          ],
-        },
-      }));
+    queueMessage: async (agentId, message, images, displayText) => {
+      // The computer owns the queue, so it outlives this tab and the desktop
+      // is what eventually drains it.
+      await get().transport?.request("agents.queue_add", {
+        agent_id: agentId,
+        message,
+        ...(displayText && displayText !== message
+          ? { display_text: displayText }
+          : {}),
+        ...(images?.length ? { images } : {}),
+      });
     },
 
-    removeQueued: (agentId, id) => {
-      set((s) => ({
-        queuedByAgent: {
-          ...s.queuedByAgent,
-          [agentId]: (s.queuedByAgent[agentId] ?? []).filter(
-            (q) => q.id !== id,
-          ),
-        },
-      }));
+    removeQueued: async (agentId, id) => {
+      await get().transport?.request("agents.queue_remove", {
+        agent_id: agentId,
+        id,
+      });
     },
 
-    flushQueue: (agentId) => {
-      const queue = get().queuedByAgent[agentId] ?? [];
-      const next = queue[0];
-      if (!next) {
+    loadQueue: async (agentId) => {
+      const t = get().transport;
+      if (!t) {
         return;
       }
-      // Drop it from the queue first so the agent.status → idle that this send
-      // triggers can't double-send the same message.
+      const { messages } = await t.request<{ messages: RemoteQueuedMessage[] }>(
+        "agents.queue_list",
+        { agent_id: agentId },
+      );
       set((s) => ({
-        queuedByAgent: {
-          ...s.queuedByAgent,
-          [agentId]: (s.queuedByAgent[agentId] ?? []).filter(
-            (q) => q.id !== next.id,
-          ),
-        },
+        queuedByAgent: { ...s.queuedByAgent, [agentId]: messages },
       }));
-      get()
-        .sendMessage(agentId, next.message, next.images, next.displayText)
-        .catch(() => {});
     },
 
     interrupt: async (agentId) => {

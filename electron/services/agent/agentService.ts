@@ -67,6 +67,7 @@ import { loadArgusConfig } from "../session/setup";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
+import { clearQueue } from "./messageQueue";
 
 // ---------------------------------------------------------------------------
 // Lazy device helpers
@@ -1000,6 +1001,7 @@ export async function stopAgent(agentId: string): Promise<void> {
   appState.agents.delete(agentId);
   appState.agentSnapshots.delete(agentId);
   appState.agentPendingPermissions.delete(agentId);
+  clearQueue(agentId);
 
   emitAgentStatus(agentId, "stopped");
   info(`[agent:${agentId}] stopped`);

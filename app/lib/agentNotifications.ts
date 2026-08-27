@@ -87,10 +87,75 @@ export function notifyAgentFinished(
   });
 }
 
+/**
+ * Tools that stop and wait for the user even when nothing asked permission.
+ * In `auto` mode the CLI's classifier approves these itself, so no
+ * `can_use_tool` request is ever sent — the prompt just appears in the
+ * transcript. Without this they would be the one thing that needs an answer
+ * and never says so.
+ */
+const AWAITS_ANSWER = new Set(["AskUserQuestion", "ExitPlanMode"]);
+
+/** Whichever path notices first wins; the other is a no-op. */
+const notified = new Set<string>();
+
+export function isAwaitingAnswerTool(toolName: string): boolean {
+  return AWAITS_ANSWER.has(toolName);
+}
+
+/** Notify for a tool that is waiting on the user, if nothing has yet. */
+export function notifyAwaitingAnswer(
+  agentId: string,
+  toolUseId: string,
+  toolName: string,
+): void {
+  if (!claimNotification(agentId, toolUseId)) {
+    return;
+  }
+
+  const agent = getAgentState().agents[agentId];
+  const ctx = sessionContext(agent?.session_id);
+  const name = agentLabel(agentId);
+  const project = ctx.projectName ?? "Project";
+  const what =
+    toolName === "ExitPlanMode"
+      ? "wants to run its plan by you"
+      : "asked you a question";
+
+  dispatch({
+    agent_id: agentId,
+    session_id: agent?.session_id ?? null,
+    tool_use_id: toolUseId,
+    tool_name: toolName,
+    kind: "permission",
+    title: `${project} agent needs you`,
+    body: `${ctx.sessionName} - ${name} ${what}`,
+  });
+}
+
+/** False when this prompt has already been announced. */
+function claimNotification(agentId: string, toolUseId: string): boolean {
+  const key = `${agentId}:${toolUseId}`;
+  if (notified.has(key)) {
+    return false;
+  }
+  notified.add(key);
+  // Bound the set — a long session would otherwise accumulate every prompt.
+  if (notified.size > 500) {
+    notified.delete(notified.values().next().value as string);
+  }
+
+  return true;
+}
+
 export function notifyPermissionRequested(
   agentId: string,
   request: PermissionRequest,
 ): void {
+  if (!claimNotification(agentId, request.tool_use_id)) {
+    return;
+  }
+
   const agent = getAgentState().agents[agentId];
   const ctx = sessionContext(agent?.session_id);
   const name = agentLabel(agentId);

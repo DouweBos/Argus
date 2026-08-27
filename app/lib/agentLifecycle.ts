@@ -6,14 +6,11 @@ import {
   setActiveAgent,
   updateAgent,
 } from "../stores/agentStore";
-import {
-  addUserMessage,
-  queueMessage,
-  setCapabilities,
-} from "../stores/conversationStore";
+import { addUserMessage, setCapabilities } from "../stores/conversationStore";
 import { setActiveCenterView } from "../stores/editorStore";
 import { pushError } from "../stores/notificationsStore";
 import { clearPrewarm, getPrewarmSlot } from "../stores/prewarmStore";
+import { queueMessage } from "../stores/queueStore";
 import { selectSession } from "../stores/sessionStore";
 import { getDefaultPermissionMode } from "../stores/settingsStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";

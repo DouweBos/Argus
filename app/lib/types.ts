@@ -151,6 +151,26 @@ export interface TerminalSession {
   title: string;
 }
 
+/** An image attached to a queued message, as the backend stores it. */
+export interface QueuedImage {
+  data: string;
+  media_type: string;
+}
+
+/**
+ * A message waiting for an agent's current turn to end. Owned by the backend
+ * (`electron/services/agent/messageQueue.ts`) so the queue survives restarts
+ * and is shared with the web and phone clients.
+ */
+export interface QueuedMessage {
+  /** What the clients show, when it differs from `text` (e.g. a preamble). */
+  display_text?: string;
+  id: string;
+  images?: QueuedImage[];
+  queued_at: number;
+  text: string;
+}
+
 export interface AgentStatus {
   agent_id: string;
   /**

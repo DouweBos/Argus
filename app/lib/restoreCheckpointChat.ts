@@ -4,6 +4,7 @@ import {
   getConversationState,
   setConversationState,
 } from "../stores/conversationStore";
+import { clearQueue } from "../stores/queueStore";
 import { restoreAgentAtTurn, restoreCheckpoint } from "./ipc";
 
 function countUserTurns(
@@ -80,11 +81,13 @@ export async function restoreFromMessage(
           resuming: false,
           lastEventType: undefined,
           messages: backfill,
-          queuedMessages: [],
         },
       },
     };
   });
+
+  // The queued follow-ups were written against turns that no longer exist.
+  clearQueue(agentId);
 
   // Kill + fork transcript + respawn under the same agentId.
   const { claude_session_id: newClaudeSessionId } = await restoreAgentAtTurn(

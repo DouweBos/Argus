@@ -21,7 +21,6 @@ import {
   cancelPermission,
   clearConversation,
   clearPermission,
-  dequeueMessage,
   flushPendingUnread,
   getConversationState,
   setCapabilities,
@@ -29,9 +28,12 @@ import {
   setModel,
   setPermissionPending,
 } from "../stores/conversationStore";
+import { dequeueMessage, getQueuedMessages } from "../stores/queueStore";
 import { getSessionState } from "../stores/sessionStore";
 import {
+  isAwaitingAnswerTool,
   notifyAgentFinished,
+  notifyAwaitingAnswer,
   notifyPermissionRequested,
 } from "./agentNotifications";
 import { deriveTitle } from "./chatHistory";
@@ -162,6 +164,7 @@ export function saveAgentConversation(agentId: string): void {
   const saved: SavedConversation = {
     id: crypto.randomUUID(),
     sessionId: conv.sessionId,
+    agentId,
     title: conv.title ?? deriveTitle(conv.messages),
     sessionBranch: session.branch ?? "",
     sessionDescription: session.description ?? "",
@@ -318,6 +321,29 @@ interface McpSystemMessagePayload {
     | "spawn_agents_batch";
 }
 
+/**
+ * Grace period before announcing a question or plan. One that is approved
+ * outright resolves within a tick, and notifying for that would be noise.
+ */
+const AWAITING_ANSWER_GRACE_MS = 750;
+
+/** Announce a prompt only if it is genuinely still waiting on the user. */
+function notifyIfStillUnanswered(
+  agentId: string,
+  toolUseId: string,
+  toolName: string,
+): void {
+  setTimeout(() => {
+    const conv = getConversationState().conversations[agentId];
+    const answered = conv?.messages.some((m) =>
+      m.toolCalls.some((tc) => tc.id === toolUseId && tc.result !== undefined),
+    );
+    if (!answered) {
+      notifyAwaitingAnswer(agentId, toolUseId, toolName);
+    }
+  }, AWAITING_ANSWER_GRACE_MS);
+}
+
 /** Subscribe to all agent event channels. */
 export function startAgentListening(agentId: string): void {
   if (listeners.has(agentId)) {
@@ -332,6 +358,17 @@ export function startAgentListening(agentId: string): void {
       const parsed: LlmStreamEvent = JSON.parse(event.payload);
       appendEvent(agentId, parsed);
       scheduleAgentSave(agentId);
+
+      // A question or plan can land without a permission request behind it —
+      // in `auto` mode the CLI approves these itself — so announce them here.
+      // Duplicate calls are dropped, so the permission path can also fire.
+      if (parsed.type === "assistant") {
+        for (const block of parsed.message.content) {
+          if (block.type === "tool_use" && isAwaitingAnswerTool(block.name)) {
+            notifyIfStillUnanswered(agentId, block.id, block.name);
+          }
+        }
+      }
 
       // A "result" event means Claude finished processing the current prompt.
       // Clear the in-flight flag and drain queued messages. If nothing is
@@ -684,18 +721,28 @@ function trySendNextQueued(agentId: string): boolean {
   if (inflight.has(agentId)) {
     return false;
   }
-  const next = dequeueMessage(agentId);
-  if (!next) {
+  // The queue lives in the backend; this reads the mirrored copy to decide
+  // synchronously, then pops for real. Claiming `inflight` before the await
+  // keeps a second caller from draining underneath this one.
+  if (getQueuedMessages(agentId).length === 0) {
     return false;
   }
   inflight.add(agentId);
   updateAgent(agentId, { status: "running" });
 
-  // Capture a checkpoint right before the prompt is dispatched so the user
-  // can later revert the worktree to its pre-prompt state. Best-effort —
-  // a git failure shouldn't block the queued send.
   const sessionId = getAgentState().agents[agentId]?.session_id;
   (async () => {
+    const next = await dequeueMessage(agentId);
+    if (!next) {
+      inflight.delete(agentId);
+      trySetIdle(agentId);
+
+      return;
+    }
+
+    // Capture a checkpoint right before the prompt is dispatched so the user
+    // can later revert the worktree to its pre-prompt state. Best-effort —
+    // a git failure shouldn't block the queued send.
     let checkpointId: string | undefined;
     if (sessionId) {
       try {

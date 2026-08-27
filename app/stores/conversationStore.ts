@@ -10,13 +10,6 @@ import type {
 import { create } from "zustand";
 import { persistLastKnownCapabilities } from "../lib/lastKnownCapabilities";
 
-export interface QueuedMessage {
-  id: string;
-  images?: ImageAttachment[];
-  text: string;
-  timestamp: number;
-}
-
 export interface TodoItem {
   activeForm?: string;
   content: string;
@@ -117,7 +110,6 @@ export interface AgentConversation {
   /** Name of the tool currently executing (awaiting result). Null when thinking/idle. */
   pendingToolName?: string | null;
   /** Messages waiting to be sent when the agent becomes idle. */
-  queuedMessages: QueuedMessage[];
   /** When true, skip replayed events from a --resume until the first result. */
   resuming?: boolean;
   /** Claude CLI session ID from the init event, used for --resume. */
@@ -190,7 +182,7 @@ interface ConversationStoreData {
 }
 
 function emptyConversation(): AgentConversation {
-  return { messages: [], queuedMessages: [] };
+  return { messages: [] };
 }
 
 function extractTodos(toolCalls: ToolCallInfo[]): TodoItem[] | null {
@@ -807,101 +799,6 @@ export function migrateConversation(oldAgentId: string, newAgentId: string) {
   });
 }
 
-export function queueMessage(
-  agentId: string,
-  text: string,
-  images?: ImageAttachment[],
-) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId] ?? emptyConversation();
-    const queued: QueuedMessage = {
-      id: crypto.randomUUID(),
-      text,
-      images,
-      timestamp: Date.now(),
-    };
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: {
-          ...existing,
-          queuedMessages: [...existing.queuedMessages, queued],
-        },
-      },
-    };
-  });
-}
-
-export function removeQueuedMessage(agentId: string, id: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-    const next = existing.queuedMessages.filter((m) => m.id !== id);
-    if (next.length === existing.queuedMessages.length) {
-      return state;
-    }
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, queuedMessages: next },
-      },
-    };
-  });
-}
-
-export function updateQueuedMessage(agentId: string, id: string, text: string) {
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing) {
-      return state;
-    }
-    let changed = false;
-    const next = existing.queuedMessages.map((m) => {
-      if (m.id !== id) {
-        return m;
-      }
-      changed = true;
-
-      return { ...m, text };
-    });
-    if (!changed) {
-      return state;
-    }
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, queuedMessages: next },
-      },
-    };
-  });
-}
-
-export function dequeueMessage(agentId: string): QueuedMessage | undefined {
-  let msg: QueuedMessage | undefined;
-  conversationStore.setState((state) => {
-    const existing = state.conversations[agentId];
-    if (!existing || existing.queuedMessages.length === 0) {
-      return state;
-    }
-    const [first, ...rest] = existing.queuedMessages;
-    msg = first;
-
-    return {
-      conversations: {
-        ...state.conversations,
-        [agentId]: { ...existing, queuedMessages: rest },
-      },
-    };
-  });
-
-  return msg;
-}
-
 export function addUserMessage(
   agentId: string,
   text: string,
@@ -1424,7 +1321,6 @@ export function loadSavedMessages(
         ...state.conversations,
         [agentId]: {
           messages,
-          queuedMessages: [],
           model,
           sessionId,
           resuming,

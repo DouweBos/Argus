@@ -30,6 +30,8 @@ import type {
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
+  QueuedImage,
+  QueuedMessage,
   ReleaseNoteEntry,
   ReleaseNotePatternConfig,
   SessionReleaseNotesResult,
@@ -1670,6 +1672,37 @@ export const closeAgentPopout = (agentId: string): Promise<void> =>
 
 export const listPoppedOutAgents = (): Promise<string[]> =>
   invoke("list_popped_out_agents");
+
+// Message queue — owned by the backend so it survives an app restart and is
+// shared with the web/phone clients. See electron/services/agent/messageQueue.ts.
+export const listQueuedMessages = (agentId: string): Promise<QueuedMessage[]> =>
+  invoke("list_queued_messages", { agentId });
+
+export const queueMessage = (
+  agentId: string,
+  text: string,
+  images?: QueuedImage[],
+  displayText?: string,
+): Promise<QueuedMessage> =>
+  invoke("queue_message", { agentId, text, images, displayText });
+
+export const removeQueuedMessage = (
+  agentId: string,
+  id: string,
+): Promise<void> => invoke("remove_queued_message", { agentId, id });
+
+export const updateQueuedMessage = (
+  agentId: string,
+  id: string,
+  text: string,
+): Promise<void> => invoke("update_queued_message", { agentId, id, text });
+
+export const clearQueuedMessages = (agentId: string): Promise<void> =>
+  invoke("clear_queued_messages", { agentId });
+
+export const dequeueMessage = (
+  agentId: string,
+): Promise<QueuedMessage | null> => invoke("dequeue_message", { agentId });
 
 // Cross-window conversation snapshot sharing — lets a newly opened popout (or
 // reloaded main) hydrate an agent's conversation from whichever window last

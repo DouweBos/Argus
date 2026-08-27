@@ -1,28 +1,27 @@
 /**
  * The agent transcript: structured messages with inline tool calls, pending
  * permission forms (Allow/Deny, AskUserQuestion, ExitPlanMode), task/todo
- * lists, queued messages and the working indicator. Live-refreshes off agent
- * events with a poll + refocus fallback, and lazy-loads older history on
- * scroll-up.
+ * lists, queued messages and the working indicator. Runs of tool-call-only
+ * messages fold into a collapsed group. Live-refreshes off agent events with a
+ * poll + refocus fallback, and lazy-loads older history on scroll-up.
  */
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   AppState,
+  Image,
   Pressable,
   ScrollView,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
+import { CollapsedToolGroup } from "./CollapsedToolGroup";
 import * as Icons from "./Icons";
-import { MessageBubble } from "./MessageBubble";
-import { PlanApproval } from "./PlanApproval";
-import { QuestionForm } from "./QuestionForm";
 import { TaskList, TodoList } from "./TaskList";
-import { ToolCallCard } from "./ToolCallCard";
+import { TranscriptMessage } from "./TranscriptMessage";
 import {
-  Btn,
   Card,
   EmptyState,
   Loading,
@@ -32,24 +31,90 @@ import {
   useContentInsets,
 } from "./ui";
 import { WorkingIndicator } from "./WorkingIndicator";
-import type { RemoteMessage, RemoteToolCall } from "../lib/protocol";
-import { parseQuestions } from "../lib/questions";
-import { imageKey, useAppStore } from "../stores/appStore";
+import type {
+  RemoteMessage,
+  RemoteQueuedMessage,
+  RemoteToolCall,
+} from "../lib/protocol";
+import { groupMessages } from "../lib/toolGroups";
+import { openImageViewer } from "../stores/imageViewerStore";
+import { useAppStore } from "../stores/appStore";
 import { useTheme } from "../theme";
-
-// Deny messages mirror the desktop's ToolCallCard so the agent gets the same
-// guidance whichever client answers.
-const CANCEL_QUESTION_MSG =
-  "The user cancelled the question prompt without answering. Proceed with reasonable assumptions and note them.";
-const KEEP_PLANNING_MSG =
-  "The user rejected the plan and wants to keep refining it. Incorporate their feedback once provided.";
-const planFeedbackMsg = (feedback: string) =>
-  `The user wants to refine the plan before approving it. Their feedback:\n\n${feedback}\n\nIncorporate this feedback and propose an updated plan via ExitPlanMode.`;
 
 const POLL_MS = 5000;
 /** Scroll-from-top distance that triggers loading the previous page. */
 const LOAD_OLDER_THRESHOLD = 160;
 const AT_BOTTOM_THRESHOLD = 60;
+
+/** A message still waiting to be sent, with whatever was attached to it. */
+function QueuedCard({
+  message,
+  onRemove,
+}: {
+  message: RemoteQueuedMessage;
+  onRemove: () => void;
+}) {
+  const theme = useTheme();
+  const uris = (message.images ?? []).map(
+    (img) => `data:${img.media_type};base64,${img.data}`,
+  );
+
+  return (
+    <Card style={{ opacity: 0.75, gap: 8 }}>
+      <Row gap={8}>
+        <Muted numberOfLines={3} style={{ flex: 1 }}>
+          Queued · {message.display_text ?? message.text}
+        </Muted>
+        <Pressable
+          accessibilityLabel="Remove queued message"
+          hitSlop={8}
+          onPress={onRemove}
+        >
+          <Icons.Close size={13} color={theme.textMuted} />
+        </Pressable>
+      </Row>
+
+      {uris.length > 0 && (
+        <Row gap={6} style={{ flexWrap: "wrap" }}>
+          {uris.map((uri, i) => (
+            <Pressable
+              key={i}
+              accessibilityLabel="View attached image"
+              onPress={() => openImageViewer(uris, i)}
+            >
+              <Image
+                source={{ uri }}
+                resizeMode="cover"
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: theme.radiusSm,
+                  backgroundColor: theme.bgTertiary,
+                }}
+              />
+            </Pressable>
+          ))}
+        </Row>
+      )}
+    </Card>
+  );
+}
+
+/** Dropping a queued message throws away what you typed, so ask first. */
+function confirmRemoveQueued(
+  message: RemoteQueuedMessage,
+  remove: () => void,
+): void {
+  const preview = message.display_text ?? message.text;
+  Alert.alert(
+    "Remove queued message?",
+    preview.length > 120 ? `${preview.slice(0, 120)}…` : preview,
+    [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: remove },
+    ],
+  );
+}
 
 /** Every image id referenced by a transcript, for lazy preloading. */
 function collectImageIds(messages: RemoteMessage[]): string[] {
@@ -74,130 +139,6 @@ function collectImageIds(messages: RemoteMessage[]): string[] {
   return ids;
 }
 
-const Message = memo(function Message({
-  agentId,
-  msg,
-}: {
-  agentId: string;
-  msg: RemoteMessage;
-}) {
-  const imageCache = useAppStore((s) => s.imageCache);
-  const prompts = useAppStore((s) => s.prompts);
-  const answered = useAppStore((s) => s.answered);
-  const respond = useAppStore((s) => s.respond);
-
-  const resolveImage = useCallback(
-    (imageId: string) => imageCache[imageKey(agentId, imageId)],
-    [agentId, imageCache],
-  );
-
-  const trimmed = msg.text_blocks.map((t) => t.trim()).filter((t) => t.length > 0);
-  const images = (msg.images ?? [])
-    .map((img) => imageCache[imageKey(agentId, img.image_id)])
-    .filter((uri): uri is string => Boolean(uri))
-    .map((uri) => ({ uri }));
-
-  const toolCalls =
-    msg.tool_calls.length > 0
-      ? msg.tool_calls.map((tc) => {
-          // Drive pending rendering off the live prompt too — the snapshot's own
-          // flag can lag the permission.request event.
-          const isPending =
-            !answered[`${agentId}:${tc.id}`] &&
-            (tc.status === "pending" ||
-              !!tc.pending_permission ||
-              prompts[`${agentId}:${tc.id}`] != null);
-          const form = isPending ? pendingForm(agentId, tc, respond) : undefined;
-
-          return (
-            <ToolCallCard
-              key={tc.id}
-              toolCall={tc}
-              resolveImage={resolveImage}
-              isPending={isPending}
-              pendingForm={form}
-              permissionActions={
-                isPending && !form ? (
-                  <>
-                    <Btn
-                      label="Allow"
-                      size="sm"
-                      onPress={() => respond(agentId, tc.id, "allow")}
-                    />
-                    <Btn
-                      label="Deny"
-                      size="sm"
-                      tone="ghost"
-                      onPress={() => respond(agentId, tc.id, "deny")}
-                    />
-                  </>
-                ) : undefined
-              }
-            />
-          );
-        })
-      : undefined;
-
-  const mcpLabel =
-    msg.role === "system" && msg.source?.kind === "mcp"
-      ? msg.source.parent_label?.trim()
-        ? `${msg.source.parent_label} → ${msg.source.tool}`
-        : `MCP · ${msg.source.tool}`
-      : undefined;
-
-  return (
-    <MessageBubble
-      role={msg.role}
-      mcpLabel={mcpLabel}
-      isError={msg.is_error}
-      timestamp={msg.timestamp}
-      toolOnly={trimmed.length === 0 && !!toolCalls}
-      textBlocks={trimmed}
-      toolCalls={toolCalls}
-      images={images}
-    />
-  );
-});
-
-/** The AskUserQuestion / ExitPlanMode forms rendered inline on a pending call. */
-function pendingForm(
-  agentId: string,
-  tc: RemoteToolCall,
-  respond: (
-    agentId: string,
-    toolUseId: string,
-    decision: "allow" | "deny",
-    message?: string,
-  ) => Promise<void>,
-): React.ReactNode {
-  if (tc.name === "AskUserQuestion") {
-    const questions = parseQuestions(tc.input);
-    if (questions.length > 0) {
-      return (
-        <QuestionForm
-          questions={questions}
-          onSubmit={(answer) => respond(agentId, tc.id, "deny", answer)}
-          onCancel={() => respond(agentId, tc.id, "deny", CANCEL_QUESTION_MSG)}
-        />
-      );
-    }
-  }
-  if (tc.name === "ExitPlanMode" && typeof tc.input.plan === "string") {
-    return (
-      <PlanApproval
-        plan={tc.input.plan}
-        onApprove={() => respond(agentId, tc.id, "allow")}
-        onReject={() => respond(agentId, tc.id, "deny", KEEP_PLANNING_MSG)}
-        onSubmitFeedback={(f) =>
-          respond(agentId, tc.id, "deny", planFeedbackMsg(f))
-        }
-      />
-    );
-  }
-
-  return undefined;
-}
-
 export function AgentTranscript({ agentId }: { agentId: string }) {
   const theme = useTheme();
   const insets = useContentInsets();
@@ -209,6 +150,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const queued = useAppStore((s) => s.queuedByAgent[agentId]);
   const removeQueued = useAppStore((s) => s.removeQueued);
   const loadTranscript = useAppStore((s) => s.loadTranscript);
+  const loadQueue = useAppStore((s) => s.loadQueue);
   const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
   const loadImage = useAppStore((s) => s.loadImage);
   const watchAgent = useAppStore((s) => s.watchAgent);
@@ -226,6 +168,10 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         : [...serverMessages, ...(optimistic ?? [])],
     [serverMessages, optimistic],
   );
+  const segments = useMemo(
+    () => (messages ? groupMessages(messages) : []),
+    [messages],
+  );
 
   useEffect(() => {
     if (connection !== "ready") {
@@ -233,6 +179,8 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
     }
     const refresh = () => loadTranscript(agentId).catch(() => {});
     refresh();
+    // The queue lives on the computer; fetch it once, then follow agent.queue.
+    loadQueue(agentId).catch(() => {});
     watchAgent(agentId, true);
     // Subscriptions are fire-and-forget, so an event the agent emits before the
     // gateway registers ours is never delivered (e.g. the first question). A
@@ -252,7 +200,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       clearInterval(poll);
       sub.remove();
     };
-  }, [agentId, connection, loadTranscript, watchAgent]);
+  }, [agentId, connection, loadQueue, loadTranscript, watchAgent]);
 
   // Lazily fetch any images the transcript references.
   const imageIds = useMemo(
@@ -312,6 +260,8 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         scrollEventThrottle={64}
         onContentSizeChange={onContentSizeChange}
         keyboardShouldPersistTaps="handled"
+        // Scrolling means you want to read, not type.
+        keyboardDismissMode="on-drag"
         contentContainerStyle={{
           padding: theme.space,
           paddingBottom: theme.space + insets.bottom,
@@ -337,28 +287,35 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         {tasks && tasks.length > 0 ? <TaskList tasks={tasks} /> : null}
         {todos && todos.length > 0 ? <TodoList todos={todos} /> : null}
 
-        {messages.map((m) => (
-          <Message key={m.id} agentId={agentId} msg={m} />
-        ))}
+        {segments.map((segment) =>
+          segment.type === "collapsed" ? (
+            <CollapsedToolGroup
+              key={segment.messages[0].id}
+              agentId={agentId}
+              messages={segment.messages}
+            />
+          ) : (
+            <TranscriptMessage
+              key={segment.message.id}
+              agentId={agentId}
+              msg={segment.message}
+            />
+          ),
+        )}
 
         <WorkingIndicator agentId={agentId} />
 
         {queued && queued.length > 0
           ? queued.map((q) => (
-              <Card key={q.id} style={{ opacity: 0.75 }}>
-                <Row gap={8}>
-                  <Muted numberOfLines={3} style={{ flex: 1 }}>
-                    Queued · {q.displayText}
-                  </Muted>
-                  <Pressable
-                    accessibilityLabel="Remove queued message"
-                    hitSlop={8}
-                    onPress={() => removeQueued(agentId, q.id)}
-                  >
-                    <Icons.Close size={13} color={theme.textMuted} />
-                  </Pressable>
-                </Row>
-              </Card>
+              <QueuedCard
+                key={q.id}
+                message={q}
+                onRemove={() =>
+                  confirmRemoveQueued(q, () => {
+                    removeQueued(agentId, q.id).catch(() => {});
+                  })
+                }
+              />
             ))
           : null}
       </ScrollView>

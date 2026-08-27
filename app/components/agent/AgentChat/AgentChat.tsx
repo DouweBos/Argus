@@ -60,12 +60,16 @@ import {
   clearAgentUnread,
   clearConversation,
   clearPermission,
-  queueMessage,
   setDraft,
   useConversation,
   useHasRunningSubagents,
   useUnreadMessageIds,
 } from "../../../stores/conversationStore";
+import {
+  queueMessage,
+  useQueuedMessages,
+  watchQueue,
+} from "../../../stores/queueStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { useSessions } from "../../../stores/sessionStore";
 import {
@@ -180,7 +184,7 @@ export function AgentChat({
   const [searchOpen, setSearchOpen] = useState(false);
 
   const messages = conversation?.messages ?? EMPTY_MESSAGES;
-  const queuedMessages = conversation?.queuedMessages ?? [];
+  const queuedMessages = useQueuedMessages(agentId);
   const slashCommands = conversation?.slashCommands;
   const capabilitiesModels = conversation?.capabilities?.models;
 
@@ -400,6 +404,13 @@ export function AgentChat({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
     // The scroll handler will update isAtBottom from the new position.
+  }, [agentId]);
+
+  // The queue lives in the backend — mirror it for as long as the chat is open.
+  useEffect(() => {
+    if (agentId) {
+      watchQueue(agentId);
+    }
   }, [agentId]);
 
   // While a chat is open, unread messages for it never accumulate: we clear

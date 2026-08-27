@@ -55,7 +55,9 @@ import type {
   RemotePermissionRequest,
   RemotePlatform,
   RemoteProject,
+  RemoteQueuedMessage,
   RemoteSession,
+  RemoteStoppedAgent,
   RemoteTask,
   RemoteTodo,
   RemoteTranscript,
@@ -70,16 +72,31 @@ const jsonEq = (a: unknown, b: unknown): boolean =>
 const sameRefs = <T>(a: readonly T[], b: readonly T[]): boolean =>
   a.length === b.length && a.every((x, i) => x === b[i]);
 
-/** A message typed while the agent was busy, awaiting flush on idle. */
-export interface QueuedMessage {
-  id: string;
-  message: string;
-  displayText: string;
-  images?: RemoteImageAttachment[];
-}
-
 export function imageKey(agentId: string, imageId: string): string {
   return `${agentId}:${imageId}`;
+}
+
+/**
+ * Stopped agents have no agent id to key transcripts by — the process is gone
+ * and only the computer's saved chat history remains. This mints a stand-in
+ * key from the history record so the same transcript state and component work
+ * for both live and stopped agents.
+ */
+const STOPPED_PREFIX = "stopped:";
+
+export function stoppedAgentKey(repoRoot: string, historyId: string): string {
+  return `${STOPPED_PREFIX}${historyId}\n${repoRoot}`;
+}
+
+function parseStoppedKey(
+  key: string,
+): { historyId: string; repoRoot: string } | null {
+  if (!key.startsWith(STOPPED_PREFIX)) {
+    return null;
+  }
+  const [historyId, repoRoot] = key.slice(STOPPED_PREFIX.length).split("\n");
+
+  return historyId && repoRoot ? { historyId, repoRoot } : null;
 }
 
 /**
@@ -104,6 +121,7 @@ function emptyHostData() {
     sessionsByRepo: {},
     agentsByRepo: {},
     recentAgents: [],
+    stoppedByRepo: {},
     messagesByAgent: {},
     optimisticByAgent: {},
     queuedByAgent: {},
@@ -144,11 +162,13 @@ interface AppState {
   agentsByRepo: Record<string, RemoteAgentStatus[]>;
   /** All agents across every project, for the home "Recent agents" section. */
   recentAgents: RemoteAgentStatus[];
+  /** Finished agents per project, newest first (from the computer's history). */
+  stoppedByRepo: Record<string, RemoteStoppedAgent[]>;
   messagesByAgent: Record<string, RemoteMessage[]>;
   /** Locally-appended user messages awaiting confirmation in the next snapshot. */
   optimisticByAgent: Record<string, RemoteMessage[]>;
-  /** Messages typed while the agent is busy, flushed in order once it goes idle. */
-  queuedByAgent: Record<string, QueuedMessage[]>;
+  /** The computer's queue per agent — messages waiting on a busy agent. */
+  queuedByAgent: Record<string, RemoteQueuedMessage[]>;
   tasksByAgent: Record<string, RemoteTask[] | null>;
   todosByAgent: Record<string, RemoteTodo[] | null>;
   /** Name of the tool currently executing per agent (drives the activity row). */
@@ -193,6 +213,7 @@ interface AppState {
   loadRecentAgents: () => Promise<void>;
   loadSessions: (repoRoot: string) => Promise<void>;
   loadAgents: (repoRoot: string) => Promise<void>;
+  loadStoppedAgents: (repoRoot: string) => Promise<void>;
   loadTranscript: (agentId: string) => Promise<void>;
   loadOlderMessages: (agentId: string) => Promise<void>;
   loadImage: (agentId: string, imageId: string) => Promise<void>;
@@ -220,9 +241,9 @@ interface AppState {
     message: string,
     images: RemoteImageAttachment[] | undefined,
     displayText: string,
-  ) => void;
-  removeQueued: (agentId: string, id: string) => void;
-  flushQueue: (agentId: string) => void;
+  ) => Promise<void>;
+  removeQueued: (agentId: string, id: string) => Promise<void>;
+  loadQueue: (agentId: string) => Promise<void>;
   interrupt: (agentId: string) => Promise<void>;
   setModel: (agentId: string, model: string) => Promise<void>;
   setPermissionMode: (
@@ -232,7 +253,12 @@ interface AppState {
   setEffort: (agentId: string, level: string | null) => Promise<void>;
   spawnAgent: (
     sessionId: string,
-    opts?: { model?: string; permissionMode?: RemotePermissionMode },
+    opts?: {
+      model?: string;
+      permissionMode?: RemotePermissionMode;
+      /** Resume a stopped agent's conversation instead of starting empty. */
+      resumeSessionId?: string;
+    },
   ) => Promise<RemoteAgentStatus>;
   createSession: (params: {
     repoRoot: string;
@@ -375,14 +401,18 @@ export const useAppStore = create<AppState>((set, get) => {
           statusByAgent: { ...s.statusByAgent, [a.agent_id]: a },
         };
       });
-      // Flush the next queued message once the agent goes idle.
-      if (a.status === "idle") {
-        get().flushQueue(a.agent_id);
-      }
       const hostId = get().activeHostId;
       if (hostId) {
         rememberAgentHosts(hostId, [a.agent_id]).catch(() => {});
       }
+    } else if (ev.event === "agent.queue" && ev.agent_id) {
+      const { messages } = ev.payload as { messages: RemoteQueuedMessage[] };
+      set((s) => ({
+        queuedByAgent: {
+          ...s.queuedByAgent,
+          [ev.agent_id as string]: messages,
+        },
+      }));
     } else if (ev.event === "agent.capabilities" && ev.agent_id) {
       set((s) => ({
         capabilitiesByAgent: {
@@ -542,6 +572,7 @@ export const useAppStore = create<AppState>((set, get) => {
     sessionsByRepo: {},
     agentsByRepo: {},
     recentAgents: [],
+    stoppedByRepo: {},
     messagesByAgent: {},
     optimisticByAgent: {},
     queuedByAgent: {},
@@ -766,11 +797,24 @@ export const useAppStore = create<AppState>((set, get) => {
       }
     },
 
+    loadStoppedAgents: async (repoRoot) => {
+      const t = get().transport;
+      if (!t) {
+        return;
+      }
+      const { agents } = await t.request<{ agents: RemoteStoppedAgent[] }>(
+        "agents.stopped",
+        { repo_root: repoRoot },
+      );
+      set((s) => ({ stoppedByRepo: { ...s.stoppedByRepo, [repoRoot]: agents } }));
+    },
+
     loadTranscript: async (agentId) => {
       const t = get().transport;
       if (!t) {
         return;
       }
+      const stopped = parseStoppedKey(agentId);
       const firstLoad = get().messagesByAgent[agentId] === undefined;
       // No snapshot yet (agent hasn't produced output) surfaces as an error —
       // treat as empty so the UI shows an empty state rather than spinning.
@@ -778,10 +822,16 @@ export const useAppStore = create<AppState>((set, get) => {
       // scroll-up via loadOlderMessages.
       let res: RemoteTranscript = { messages: [], next_after: null };
       try {
-        res = await t.request<RemoteTranscript>("agents.transcript", {
-          agent_id: agentId,
-          limit: TRANSCRIPT_PAGE,
-        });
+        res = stopped
+          ? await t.request<RemoteTranscript>("agents.stopped_transcript", {
+              repo_root: stopped.repoRoot,
+              history_id: stopped.historyId,
+              limit: TRANSCRIPT_PAGE,
+            })
+          : await t.request<RemoteTranscript>("agents.transcript", {
+              agent_id: agentId,
+              limit: TRANSCRIPT_PAGE,
+            });
       } catch {
         res = { messages: [], next_after: null };
       }
@@ -867,11 +917,19 @@ export const useAppStore = create<AppState>((set, get) => {
       if (!t || cursor == null) {
         return;
       }
-      const res = await t.request<RemoteTranscript>("agents.transcript", {
-        agent_id: agentId,
-        before: cursor,
-        limit: TRANSCRIPT_PAGE,
-      });
+      const stopped = parseStoppedKey(agentId);
+      const res = stopped
+        ? await t.request<RemoteTranscript>("agents.stopped_transcript", {
+            repo_root: stopped.repoRoot,
+            history_id: stopped.historyId,
+            before: cursor,
+            limit: TRANSCRIPT_PAGE,
+          })
+        : await t.request<RemoteTranscript>("agents.transcript", {
+            agent_id: agentId,
+            before: cursor,
+            limit: TRANSCRIPT_PAGE,
+          });
       set((s) => {
         const existing = s.messagesByAgent[agentId] ?? [];
         const existingIds = new Set(existing.map((m) => m.id));
@@ -900,10 +958,17 @@ export const useAppStore = create<AppState>((set, get) => {
         return;
       }
       try {
-        const { data, media_type } = await t.request<RemoteImageData>(
-          "agents.image",
-          { agent_id: agentId, image_id: imageId },
-        );
+        const stopped = parseStoppedKey(agentId);
+        const { data, media_type } = stopped
+          ? await t.request<RemoteImageData>("agents.stopped_image", {
+              repo_root: stopped.repoRoot,
+              history_id: stopped.historyId,
+              image_id: imageId,
+            })
+          : await t.request<RemoteImageData>("agents.image", {
+              agent_id: agentId,
+              image_id: imageId,
+            });
         const uri = `data:${media_type};base64,${data}`;
         set((s) => ({ imageCache: { ...s.imageCache, [key]: uri } }));
       } catch {
@@ -912,6 +977,10 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     watchAgent: (agentId, on) => {
+      // A stopped agent has no event stream to subscribe to.
+      if (parseStoppedKey(agentId)) {
+        return;
+      }
       get().transport?.subscribe(agentId, on);
     },
 
@@ -1026,47 +1095,36 @@ export const useAppStore = create<AppState>((set, get) => {
         .catch(() => {});
     },
 
-    queueMessage: (agentId, message, images, displayText) => {
-      const id = `queued-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-      set((s) => ({
-        queuedByAgent: {
-          ...s.queuedByAgent,
-          [agentId]: [
-            ...(s.queuedByAgent[agentId] ?? []),
-            { id, message, images, displayText },
-          ],
-        },
-      }));
+    queueMessage: async (agentId, message, images, displayText) => {
+      // The computer owns the queue, so it outlives this app and the desktop
+      // is what eventually drains it.
+      await get().transport?.request("agents.queue_add", {
+        agent_id: agentId,
+        message,
+        ...(displayText && displayText !== message
+          ? { display_text: displayText }
+          : {}),
+        ...(images?.length ? { images } : {}),
+      });
     },
 
-    removeQueued: (agentId, id) => {
-      set((s) => ({
-        queuedByAgent: {
-          ...s.queuedByAgent,
-          [agentId]: (s.queuedByAgent[agentId] ?? []).filter((q) => q.id !== id),
-        },
-      }));
+    removeQueued: async (agentId, id) => {
+      await get().transport?.request("agents.queue_remove", {
+        agent_id: agentId,
+        id,
+      });
     },
 
-    flushQueue: (agentId) => {
-      const queue = get().queuedByAgent[agentId] ?? [];
-      const next = queue[0];
-      if (!next) {
+    loadQueue: async (agentId) => {
+      const t = get().transport;
+      if (!t) {
         return;
       }
-      // Drop it from the queue first so the agent.status → idle that this send
-      // triggers can't double-send the same message.
-      set((s) => ({
-        queuedByAgent: {
-          ...s.queuedByAgent,
-          [agentId]: (s.queuedByAgent[agentId] ?? []).filter(
-            (q) => q.id !== next.id,
-          ),
-        },
-      }));
-      get()
-        .sendMessage(agentId, next.message, next.images, next.displayText)
-        .catch(() => {});
+      const { messages } = await t.request<{ messages: RemoteQueuedMessage[] }>(
+        "agents.queue_list",
+        { agent_id: agentId },
+      );
+      set((s) => ({ queuedByAgent: { ...s.queuedByAgent, [agentId]: messages } }));
     },
 
     interrupt: async (agentId) => {
@@ -1107,6 +1165,9 @@ export const useAppStore = create<AppState>((set, get) => {
           ...(opts?.model ? { model: opts.model } : {}),
           ...(opts?.permissionMode
             ? { permission_mode: opts.permissionMode }
+            : {}),
+          ...(opts?.resumeSessionId
+            ? { resume_session_id: opts.resumeSessionId }
             : {}),
         },
       );

@@ -18,7 +18,9 @@ import {
   RemoteOrganization,
   RemotePermissionRequest,
   RemoteProject,
+  RemoteQueuedMessage,
   RemoteSession,
+  RemoteStoppedAgent,
   RemoteTask,
   RemoteTodo,
 } from "./models";
@@ -62,6 +64,22 @@ export const MethodParams = {
   /** Resolve a transcript image reference to its bytes. */
   "agents.image": z.object({
     agent_id: z.string(),
+    image_id: z.string(),
+  }),
+  "agents.stopped": z.object({
+    repo_root: z.string(),
+    limit: z.number().int().positive().max(100).optional(),
+  }),
+  "agents.stopped_transcript": z.object({
+    repo_root: z.string(),
+    history_id: z.string(),
+    after: z.number().int().nonnegative().optional(),
+    before: z.number().int().nonnegative().optional(),
+    limit: z.number().int().positive().max(500).optional(),
+  }),
+  "agents.stopped_image": z.object({
+    repo_root: z.string(),
+    history_id: z.string(),
     image_id: z.string(),
   }),
   "orgs.list": z.object({}),
@@ -122,6 +140,22 @@ export const MethodParams = {
     session_id: z.string(),
     model: z.string().optional(),
     permission_mode: RemotePermissionMode.optional(),
+    /** Resume a stopped agent's conversation instead of starting empty. */
+    resume_session_id: z.string().optional(),
+  }),
+  "agents.queue_list": z.object({ agent_id: z.string() }),
+  "agents.queue_add": z.object({
+    agent_id: z.string(),
+    message: z.string().max(100_000),
+    /** What the clients show, when the sent text carries a preamble. */
+    display_text: z.string().max(100_000).optional(),
+    images: z.array(RemoteImageAttachment).max(20).optional(),
+  }),
+  "agents.queue_remove": z.object({ agent_id: z.string(), id: z.string() }),
+  "agents.queue_update": z.object({
+    agent_id: z.string(),
+    id: z.string(),
+    message: z.string().max(100_000),
   }),
   "sessions.create": z.object({
     repo_root: z.string(),
@@ -212,6 +246,18 @@ export const MethodResult = {
     data: z.string(),
     media_type: z.string(),
   }),
+  "agents.stopped": z.object({ agents: z.array(RemoteStoppedAgent) }),
+  "agents.stopped_transcript": z.object({
+    messages: z.array(RemoteMessage),
+    next_after: z.number().int().nonnegative().nullable(),
+    prev_before: z.number().int().nonnegative().nullable().optional(),
+    total: z.number().int().nonnegative().optional(),
+    model: z.string().nullable().optional(),
+  }),
+  "agents.stopped_image": z.object({
+    data: z.string(),
+    media_type: z.string(),
+  }),
   "orgs.list": z.object({ organizations: z.array(RemoteOrganization) }),
   "permission.respond": z.object({ accepted: z.boolean() }),
   "device.rename": z.object({ accepted: z.boolean() }),
@@ -243,6 +289,12 @@ export const MethodResult = {
   "agents.set_permission_mode": z.object({ accepted: z.boolean() }),
   "agents.set_effort": z.object({ accepted: z.boolean() }),
   "agents.spawn": z.object({ agent: RemoteAgentStatus }),
+  "agents.queue_list": z.object({
+    messages: z.array(RemoteQueuedMessage),
+  }),
+  "agents.queue_add": z.object({ message: RemoteQueuedMessage }),
+  "agents.queue_remove": z.object({ accepted: z.boolean() }),
+  "agents.queue_update": z.object({ accepted: z.boolean() }),
   "sessions.create": z.object({ session: RemoteSession }),
   "sessions.files": z.object({ files: z.array(z.string()) }),
   "sessions.resolve_mention_path": RemoteMentionPathResult,
@@ -324,6 +376,10 @@ export type Envelope = z.infer<typeof Envelope>;
 export const EventPayloads = {
   "agent.event": z.object({ agent_id: z.string(), event: z.unknown() }),
   "agent.status": RemoteAgentStatus,
+  "agent.queue": z.object({
+    agent_id: z.string(),
+    messages: z.array(RemoteQueuedMessage),
+  }),
   "agent.capabilities": RemoteAgentCapabilities,
   "permission.request": RemotePermissionRequest,
   "permission.cancel": z.object({

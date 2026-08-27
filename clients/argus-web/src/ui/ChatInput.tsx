@@ -340,10 +340,10 @@ export function ChatInput({
       pending.length > 0 ? pending.map((p) => p.attachment) : undefined;
     const displayText = value || "(see attached images)";
     const message = buildLinkedProjectsPreamble(linked, displayText);
-    // Busy agent → hold the message and flush it when the turn ends, mirroring
-    // the desktop. Idle → send straight away.
+    // Busy agent → park it on the computer's queue, which the desktop drains
+    // when the turn ends. Idle → send straight away.
     if (isRunning) {
-      queueMessage(agentId, message, images, displayText);
+      queueMessage(agentId, message, images, displayText).catch(() => {});
     } else {
       sendMessage(agentId, message, images, displayText).catch(() => {});
     }
