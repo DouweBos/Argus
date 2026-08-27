@@ -1,18 +1,15 @@
 
 ### Minor Changes
 
-- c2680dd: Phone notifications no longer need any setup. Argus encrypts each one for your device before it leaves your machine and sends it through a relay that only ever handles the ciphertext — it can't read your notifications, and it won't deliver one unless your phone authorised the sender. Browsers are still reached directly.
-- 1096d49: The Argus Remote mobile app now uses the Argus app icon on the home screen, including an adaptive and themed icon on Android.
-- 080f717: The Argus Remote phone app can now be paired with several computers. Its new home screen lists every paired computer with its connection state, connects to whichever one you tap, and lets you rename or unpair them.
-- 918142e: Approval notifications now carry Approve and Deny buttons — on the macOS banner, on your phone, and in the browser. Answering from the button sends the decision straight to the agent without opening anything, and it still works if you tap it while offline: the answer is queued and delivered as soon as you reconnect.
-- 918142e: Argus can now wake your paired phone with a real notification when an agent finishes, fails, or needs approval — even with the app closed. Add your Apple and/or Firebase push credentials under Settings → Remote access; the notifications go straight from your computer to Apple or Google, with no Argus server in between.
-- 918142e: The web client can now notify you after you close every tab. Turn on Background push in its settings — your computer signs and encrypts these itself, with no Argus server in between and nothing to configure. Needs an https address, so use a tunnel rather than a plain LAN one.
+- e812ef1: Messages you queue up for a busy agent now live on your computer instead of in whichever client you typed them into. Reloading the web client or reinstalling the phone app no longer throws the queue away, and the same queue is visible and editable from all three.
+- e812ef1: A round of fixes to the phone and web clients: tapping any image now opens a full-screen viewer, images attached to a queued message are visible instead of hidden, removing a queued message or stopping an agent asks first, scrolling a chat puts the keyboard away, you can jump to a running device from inside a chat, and the "Connected" label in the header is now just a small dot.
+- e812ef1: The mobile app can now look back at agents that have already finished: each project lists its recently stopped agents, opens their full transcript, and can pick the conversation back up in a new agent. Long runs of tool calls also fold into a single line you can tap open, instead of scrolling past every one.
 
 ### Patch Changes
 
-- 080f717: You can now attach a copied screenshot to a message in the mobile app. A paste button appears next to the camera whenever there's an image on the clipboard.
-- 1b4e7d3: Backing out of a chat in the web client now returns you to the top of the home screen instead of leaving it scrolled down.
-- d08c489: Zed now shows up in the "Open in" list when it's installed.
-- Updated dependencies [e0c539b]
-  - @argus/peacock@0.12.2
+- e812ef1: Pasting an image into the mobile message box now works: use the keyboard's own Paste action instead of a separate paste button.
+- e812ef1: You now get a notification when an agent asks you a question or puts a plan up for approval. Previously these only reached you if the agent also happened to need permission, so in auto mode they waited silently.
+- b9ce61b: Fixes three things in the mobile app: notifications about different events no longer replace each other on the lock screen, tapping a pushed notification now opens the agent it came from, and the keyboard no longer covers the message box.
+- b919a71: Background push settings are down to a single switch. The Apple and Firebase credential fields are gone — notifications go through the Argus relay, which holds those credentials, so there was never anything to fill in.
+- e812ef1: A chat resumed or forked on the desktop no longer shows up empty in the web and phone clients until you send a message.
 
