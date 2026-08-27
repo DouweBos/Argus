@@ -9,6 +9,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Easing,
   Keyboard,
   Pressable,
@@ -17,6 +18,7 @@ import {
   Text,
   TextInput,
   View,
+  type KeyboardEvent,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
@@ -52,6 +54,34 @@ export function useContentInsets(): { top: number; bottom: number } {
   const headerShown = useContext(HeaderShownContext);
 
   return { top: headerShown ? 0 : insets.top, bottom: insets.bottom };
+}
+
+/**
+ * How much of the window the keyboard currently covers, in points.
+ *
+ * Measured from the keyboard's own frame rather than derived from the header
+ * height, so it can't drift out of step with the navigation bar the way
+ * `KeyboardAvoidingView`'s `keyboardVerticalOffset` does. Apply it as bottom
+ * padding and the content above ends exactly at the keyboard's top edge.
+ */
+export function useKeyboardInset(): number {
+  const [inset, setInset] = useState(0);
+
+  useEffect(() => {
+    const onFrame = (e: KeyboardEvent) => {
+      const windowHeight = Dimensions.get("window").height;
+      setInset(Math.max(0, windowHeight - e.endCoordinates.screenY));
+    };
+    const change = Keyboard.addListener("keyboardWillChangeFrame", onFrame);
+    const hide = Keyboard.addListener("keyboardWillHide", () => setInset(0));
+
+    return () => {
+      change.remove();
+      hide.remove();
+    };
+  }, []);
+
+  return inset;
 }
 
 /** Whether the software keyboard is up — it already covers the home indicator. */
