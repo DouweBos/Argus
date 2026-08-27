@@ -12,6 +12,7 @@ import { Notification } from "electron";
 import { warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../mainWindow";
 import { respondToPermission } from "../agent/agentService";
+import { loadAppSettings } from "../appSettings/store";
 import { broadcastRemoteNotification, permissionActions } from "./broadcast";
 
 /** What a caller describes; the quick actions are derived from it here. */
@@ -32,11 +33,23 @@ export type NotificationUrgency = "critical" | "normal";
 export interface ShowNotificationOptions {
   /**
    * Whether to raise a banner on this Mac. The renderer passes false when the
-   * window is focused (you're already looking at it) — remote devices decide
-   * that for themselves, so the fan-out happens either way.
+   * window is focused (you're already looking at it).
    */
   showLocal: boolean;
   urgency?: NotificationUrgency;
+}
+
+/**
+ * Whether the phone and browsers should hear about this. While you're sitting
+ * in a focused Argus window they're unattended surfaces buzzing for something
+ * already on screen, so they stay quiet unless you opt back in.
+ */
+function shouldNotifyRemote(): boolean {
+  if (loadAppSettings().remote_notify_when_focused) {
+    return true;
+  }
+
+  return !getMainWindow()?.isFocused();
 }
 
 function focusWindow(): void {
@@ -86,8 +99,8 @@ function runAction(
 }
 
 /**
- * Show the notification locally (when asked) and mirror it to every paired
- * device. Returns whether a local banner was raised.
+ * Show the notification locally (when asked) and mirror it to paired devices
+ * when they aren't redundant. Returns whether a local banner was raised.
  */
 export function showAgentNotification(
   input: AgentNotificationInput,
@@ -101,7 +114,9 @@ export function showAgentNotification(
         ? permissionActions(input.tool_name ?? "")
         : [],
   };
-  broadcastRemoteNotification(payload);
+  if (shouldNotifyRemote()) {
+    broadcastRemoteNotification(payload);
+  }
 
   if (!options.showLocal || !Notification.isSupported()) {
     return false;

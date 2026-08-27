@@ -56,6 +56,12 @@ export interface AppSettings {
    * is still gated by Noise pairing; this only changes reachability.
    */
   remote_lan_web?: boolean;
+  /**
+   * Mirror notifications to paired devices even while the Argus window is
+   * focused. Off by default — otherwise your phone buzzes for every agent you
+   * are already watching on screen.
+   */
+  remote_notify_when_focused?: boolean;
 }
 
 interface AppSettingsFile {

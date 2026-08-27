@@ -3,9 +3,8 @@
  *
  * Used by the MCP `push_notification` tool so an agent can alert the user
  * about something it is monitoring (a build that failed, a long-running
- * process that finished, etc.) regardless of whether the Argus window is
- * focused. Unlike the in-app `broadcastNotification` toast channel, these
- * surface in the OS notification center.
+ * process that finished, etc.). Unlike the in-app `broadcastNotification`
+ * toast channel, these surface in the OS notification center.
  */
 
 import { Notification } from "electron";

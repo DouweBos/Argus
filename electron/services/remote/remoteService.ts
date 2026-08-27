@@ -88,6 +88,8 @@ export interface RemoteStatus {
   tunnelError: string | null;
   lanWebEnabled: boolean;
   lanUrl: string | null;
+  /** Mirror notifications to devices even while the desktop window is focused. */
+  notifyWhenFocused: boolean;
   devices: PairedDevice[];
   /** Device IDs with a live connection right now. */
   connectedDeviceIds: string[];
@@ -108,6 +110,7 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
     tunnelError: tunnel.error,
     lanWebEnabled,
     lanUrl: lanWebEnabled && running ? getLanUrl() : null,
+    notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
     devices: await listDevices(),
     connectedDeviceIds: getConnectedDeviceIds(),
   };
@@ -120,6 +123,7 @@ export async function setRemoteConfig(cfg: {
   tunnelToken?: string;
   publicUrl?: string;
   lanWeb?: boolean;
+  notifyWhenFocused?: boolean;
 }): Promise<RemoteStatus> {
   const patch: Parameters<typeof saveAppSettings>[0] = {};
   if (cfg.enabled !== undefined) {
@@ -139,6 +143,9 @@ export async function setRemoteConfig(cfg: {
   }
   if (cfg.lanWeb !== undefined) {
     patch.remote_lan_web = cfg.lanWeb;
+  }
+  if (cfg.notifyWhenFocused !== undefined) {
+    patch.remote_notify_when_focused = cfg.notifyWhenFocused;
   }
   if (Object.keys(patch).length > 0) {
     saveAppSettings(patch);

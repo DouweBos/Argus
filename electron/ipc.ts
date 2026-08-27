@@ -1007,6 +1007,7 @@ export function registerIpcHandlers(): void {
       a.config as {
         enabled?: boolean;
         lanWeb?: boolean;
+        notifyWhenFocused?: boolean;
         provider?: "cloudflare" | "none" | "tailscale";
         publicUrl?: string;
         tunnelMode?: "quick" | "token";
