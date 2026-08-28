@@ -28,7 +28,13 @@ import {
   setModel,
   setPermissionPending,
 } from "../stores/conversationStore";
-import { dequeueMessage, getQueuedMessages } from "../stores/queueStore";
+import {
+  dequeueMessage,
+  getQueuedMessages,
+  unwatchQueue,
+  useQueueStore,
+  watchQueue,
+} from "../stores/queueStore";
 import { getSessionState } from "../stores/sessionStore";
 import {
   isAwaitingAnswerTool,
@@ -352,6 +358,11 @@ export function startAgentListening(agentId: string): void {
 
   // Store placeholder so we know listening has been requested
   listeners.set(agentId, () => {});
+
+  // Mirror the backend queue for every live agent, not just the chats the user
+  // has open — otherwise a message queued from the phone is invisible here and
+  // never drains when the turn ends.
+  watchQueue(agentId);
 
   listen<string>(`agent:event:${agentId}`, (event) => {
     try {
@@ -761,6 +772,23 @@ function trySendNextQueued(agentId: string): boolean {
 }
 
 /**
+ * A message queued from another client (phone, web) can land after the agent
+ * has already gone idle, so no `result` or idle event follows to drain it.
+ * Watch the mirrored queue and dispatch as soon as one shows up.
+ */
+useQueueStore.subscribe((state, prev) => {
+  for (const [agentId, messages] of Object.entries(state.queues)) {
+    if (messages.length === 0 || messages === prev.queues[agentId]) {
+      continue;
+    }
+    if (getAgentState().agents[agentId]?.status !== "idle") {
+      continue;
+    }
+    trySendNextQueued(agentId);
+  }
+});
+
+/**
  * Set the agent to idle — but only if no message is currently in-flight.
  * This prevents stale idle signals from hiding the activity indicator.
  */
@@ -775,6 +803,7 @@ function trySetIdle(agentId: string): void {
 /** Unsubscribe all listeners for an agent and clean up tracking state. */
 export function stopAgentListening(agentId: string): void {
   inflight.delete(agentId);
+  unwatchQueue(agentId);
   const unlisten = listeners.get(agentId);
   if (unlisten) {
     unlisten();
