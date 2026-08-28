@@ -71,6 +71,16 @@ export function unwatchQueue(agentId: string): void {
   }
   subscriptions.delete(agentId);
   sub.then((un) => un()).catch(() => {});
+  // Drop the cache too, so a queue emptied server-side after the last
+  // broadcast we saw can't linger in the UI.
+  queueStore.setState((state) => {
+    if (!(agentId in state.queues)) {
+      return state;
+    }
+    const { [agentId]: _dropped, ...rest } = state.queues;
+
+    return { queues: rest };
+  });
 }
 
 export function queueMessage(
