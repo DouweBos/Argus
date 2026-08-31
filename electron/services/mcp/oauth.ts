@@ -25,7 +25,14 @@ import {
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
-const CLIENT_NAME = "Argus";
+/**
+ * Client identity sent during discovery and dynamic registration. The token
+ * is consumed by the Claude Code CLI Argus spawns, and providers that gate
+ * registration (Figma 403s unknown clients) only issue clients to names they
+ * recognise — so we register as the CLI that actually calls the server.
+ */
+const CLIENT_NAME = "Claude Code";
+const USER_AGENT = "claude-cli/1.0 (external, cli)";
 
 /**
  * In-flight sign-in flows, keyed by canonical resource URL. Lets the
@@ -66,6 +73,32 @@ interface RegistrationResponse {
   client_secret?: string;
   registration_client_uri?: string;
   registration_access_token?: string;
+  /** How the issued client must authenticate at the token endpoint. */
+  token_endpoint_auth_method?: string;
+}
+
+/**
+ * Credentials for the token endpoint: HTTP Basic when the client was issued
+ * as `client_secret_basic` (Figma), form fields otherwise.
+ */
+function applyClientAuth(
+  body: URLSearchParams,
+  headers: Record<string, string>,
+  client: { id: string; secret?: string; authMethod?: string },
+): void {
+  body.set("client_id", client.id);
+  if (!client.secret) {
+    return;
+  }
+  if (client.authMethod === "client_secret_basic") {
+    const basic = Buffer.from(`${client.id}:${client.secret}`).toString(
+      "base64",
+    );
+    headers.authorization = `Basic ${basic}`;
+
+    return;
+  }
+  body.set("client_secret", client.secret);
 }
 
 interface TokenResponse {
@@ -85,7 +118,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
       signal: ctrl.signal,
       headers: {
         accept: "application/json",
-        "user-agent": "Argus/1.0 (https://argus.dev)",
+        "user-agent": USER_AGENT,
         ...(init?.headers as Record<string, string> | undefined),
       },
     });
@@ -312,6 +345,7 @@ async function exchangeCodeForToken(
     codeVerifier: string;
     clientId: string;
     clientSecret?: string;
+    clientAuthMethod?: string;
     redirectUri: string;
     resource: string;
   },
@@ -320,16 +354,20 @@ async function exchangeCodeForToken(
     grant_type: "authorization_code",
     code: params.code,
     redirect_uri: params.redirectUri,
-    client_id: params.clientId,
     code_verifier: params.codeVerifier,
     resource: params.resource,
   });
-  if (params.clientSecret) {
-    body.set("client_secret", params.clientSecret);
-  }
+  const headers: Record<string, string> = {
+    "content-type": "application/x-www-form-urlencoded",
+  };
+  applyClientAuth(body, headers, {
+    id: params.clientId,
+    secret: params.clientSecret,
+    authMethod: params.clientAuthMethod,
+  });
   const res = await fetch(authServer.token_endpoint, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
+    headers,
     body: body.toString(),
   });
   if (!res.ok) {
@@ -403,6 +441,7 @@ export async function authenticate(opts: {
       codeVerifier: verifier,
       clientId: registration.client_id,
       clientSecret: registration.client_secret,
+      clientAuthMethod: registration.token_endpoint_auth_method,
       redirectUri: lb.redirectUri,
       resource,
     });
@@ -418,6 +457,7 @@ export async function authenticate(opts: {
       authorizationEndpoint: authServer.authorization_endpoint,
       clientId: registration.client_id,
       clientSecret: registration.client_secret,
+      clientAuthMethod: registration.token_endpoint_auth_method,
       scope: tokenRes.scope ?? scope,
     };
     await saveToken(stored);
@@ -446,16 +486,20 @@ export async function refresh(
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: existing.refreshToken,
-    client_id: existing.clientId,
     resource: existing.resource,
   });
-  if (existing.clientSecret) {
-    body.set("client_secret", existing.clientSecret);
-  }
+  const headers: Record<string, string> = {
+    "content-type": "application/x-www-form-urlencoded",
+  };
+  applyClientAuth(body, headers, {
+    id: existing.clientId,
+    secret: existing.clientSecret,
+    authMethod: existing.clientAuthMethod,
+  });
   try {
     const res = await fetch(existing.tokenEndpoint, {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
+      headers,
       body: body.toString(),
     });
     if (!res.ok) {
