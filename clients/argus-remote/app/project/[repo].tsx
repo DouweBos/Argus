@@ -237,10 +237,20 @@ function SessionGroup({
   const renameSessionBranch = useAppStore((s) => s.renameSessionBranch);
   const [renaming, setRenaming] = useState<"branch" | "name" | null>(null);
   const [value, setValue] = useState("");
+  // Only the project root can manage branches — session worktrees are pinned
+  // to theirs, and the computer rejects branch ops on them.
+  const canManageBranches = hasControl && session?.kind === "project_root";
 
   useEffect(() => {
     loadGitStatus(sessionId).catch(() => {});
   }, [sessionId, loadGitStatus]);
+
+  const openBranches = useCallback(() => {
+    router.push({
+      pathname: "/branches/[session]",
+      params: { session: sessionId, repo: repoRoot, label },
+    });
+  }, [router, sessionId, repoRoot, label]);
 
   const openChanges = useCallback(() => {
     router.push({
@@ -272,6 +282,9 @@ function SessionGroup({
   const showActions = useCallback(() => {
     Alert.alert(label, undefined, [
       { text: "View changes", onPress: openChanges },
+      ...(canManageBranches
+        ? [{ text: "Branches", onPress: openBranches }]
+        : []),
       ...(hasControl
         ? [
             {
@@ -297,7 +310,15 @@ function SessionGroup({
         : []),
       { text: "Cancel", style: "cancel" as const },
     ]);
-  }, [confirmDelete, hasControl, label, openChanges, session]);
+  }, [
+    canManageBranches,
+    confirmDelete,
+    hasControl,
+    label,
+    openBranches,
+    openChanges,
+    session,
+  ]);
 
   const submitRename = useCallback(() => {
     const v = value.trim();
@@ -373,6 +394,15 @@ function SessionGroup({
           icon={<Icons.Branch size={12} color={theme.textSecondary} />}
           onPress={openChanges}
         />
+        {canManageBranches && (
+          <Btn
+            label="Branches"
+            size="sm"
+            tone="ghost"
+            icon={<Icons.Branch size={12} color={theme.textSecondary} />}
+            onPress={openBranches}
+          />
+        )}
         {hasControl && (
           <Btn
             label="New agent"

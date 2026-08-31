@@ -323,3 +323,22 @@ export const RemoteGitStatus = z.object({
   diff_deletions: z.number().optional(),
 });
 export type RemoteGitStatus = z.infer<typeof RemoteGitStatus>;
+
+/**
+ * A branch offered to a remote client's branch switcher. `name` is always the
+ * checkout target: for remote-only branches that's the short name, which git
+ * DWIMs into a local tracking branch.
+ */
+export const RemoteGitBranch = z.object({
+  name: z.string(),
+  scope: z.enum(["local", "remote"]),
+  /** Remote it lives on ("origin"), for scope "remote". */
+  remote: z.string().optional(),
+  is_current: z.boolean(),
+  upstream: z.string().nullable().optional(),
+  ahead: z.number().int().nonnegative(),
+  behind: z.number().int().nonnegative(),
+  last_commit_subject: z.string().optional(),
+  last_commit_at: z.number().optional(),
+});
+export type RemoteGitBranch = z.infer<typeof RemoteGitBranch>;

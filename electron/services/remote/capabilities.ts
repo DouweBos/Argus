@@ -20,6 +20,7 @@ import {
   type RemoteGitStatus,
   type RemoteMessage,
   type RemoteDevice,
+  type RemoteGitBranch,
   type RemoteMethod,
   type RemotePlatform,
   type RemoteSession,
@@ -52,6 +53,16 @@ import {
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { collectAllProjects } from "../mcp/projects";
 import { listOrganizations } from "../organization/manager";
+import {
+  gitCheckout,
+  gitCreateBranch,
+  gitDeleteBranch,
+  gitDiscardAndCheckout,
+  gitListLocalBranches,
+  gitListRemoteBranches,
+  gitStashAndCheckout,
+} from "../session/gitBranchOps";
+import { GitError } from "../session/gitError";
 import { gitStatus } from "../session/gitStatus";
 import {
   createSession,
@@ -650,6 +661,16 @@ function parse<M extends RemoteMethod>(
   return result.data;
 }
 
+/** Git refuses to delete a branch whose commits live nowhere else. */
+function isUnmergedBranch(err: unknown): boolean {
+  const text =
+    err instanceof Error
+      ? `${err.message} ${err instanceof GitError ? (err.stderr ?? "") : ""}`
+      : String(err);
+
+  return /not fully merged/i.test(text);
+}
+
 /** Look up a live agent or throw a gateway not_found. */
 function requireAgent(agentId: string): AgentSession {
   const agent = appState.agents.get(agentId);
@@ -1164,6 +1185,108 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
         diff_deletions: diff.deletions,
       } satisfies RemoteGitStatus,
     };
+  },
+
+  "sessions.branches": async (params) => {
+    const { session_id } = parse("sessions.branches", params);
+    requireSession(session_id);
+    const [local, remote] = await control(() =>
+      Promise.all([
+        gitListLocalBranches(session_id),
+        gitListRemoteBranches(session_id),
+      ]),
+    );
+    const localNames = new Set(local.map((b) => b.name));
+    const branches: RemoteGitBranch[] = [
+      ...local.map((b) => ({
+        name: b.name,
+        scope: "local" as const,
+        is_current: b.isCurrent,
+        upstream: b.upstream,
+        ahead: b.ahead,
+        behind: b.behind,
+        last_commit_subject: b.lastCommit?.subject,
+        last_commit_at: b.lastCommit?.timestamp,
+      })),
+      // Remote-only branches: checking one out DWIMs a local tracking branch.
+      ...remote
+        .filter((b) => !localNames.has(b.branchName))
+        .map((b) => ({
+          name: b.branchName,
+          scope: "remote" as const,
+          remote: b.remote,
+          is_current: false,
+          ahead: 0,
+          behind: 0,
+          last_commit_subject: b.lastCommit?.subject,
+          last_commit_at: b.lastCommit?.timestamp,
+        })),
+    ];
+
+    return { branches };
+  },
+
+  "sessions.checkout": async (params) => {
+    const { session_id, branch, dirty } = parse("sessions.checkout", params);
+    requireSession(session_id);
+    try {
+      if (dirty === "stash") {
+        await gitStashAndCheckout(session_id, { branch });
+      } else if (dirty === "discard") {
+        await gitDiscardAndCheckout(session_id, { branch });
+      } else {
+        await gitCheckout(session_id, { branch });
+      }
+    } catch (err) {
+      // Report a dirty tree back instead of failing, so the client can offer
+      // stash/discard the way the desktop's checkout dialog does.
+      if (err instanceof GitError && err.kind === "dirty-working-tree") {
+        return { accepted: false, blocked_by: "dirty" as const };
+      }
+      throw new GatewayError(
+        "bad_request",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+
+    return { accepted: true };
+  },
+
+  "sessions.create_branch": async (params) => {
+    const { session_id, name, start_point, checkout } = parse(
+      "sessions.create_branch",
+      params,
+    );
+    requireSession(session_id);
+    await control(() =>
+      gitCreateBranch(session_id, {
+        name,
+        startPoint: start_point,
+        checkout: checkout ?? true,
+      }),
+    );
+
+    return { accepted: true };
+  },
+
+  "sessions.delete_branch": async (params) => {
+    const { session_id, name, force } = parse("sessions.delete_branch", params);
+    requireSession(session_id);
+    try {
+      await gitDeleteBranch(session_id, { name, force });
+    } catch (err) {
+      // Unmerged commits are a question for the user, not a failure — the
+      // client re-sends with force once they confirm.
+      if (!force && isUnmergedBranch(err)) {
+        return { accepted: false, blocked_by: "unmerged" as const };
+      }
+      throw new GatewayError(
+        "bad_request",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+
+    return { accepted: true };
   },
 
   "sessions.diff": async (params) => {

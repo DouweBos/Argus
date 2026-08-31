@@ -9,8 +9,8 @@ ciphertext.
 **Scope: whatever the desktop granted this device.** Every paired device can
 monitor — projects, sessions, agents, transcripts, changes — and approve or deny
 permission prompts. Devices granted **control** can also message agents, spawn
-them, create/rename/delete sessions, switch model / permission mode / effort,
-and touch and type on mirrored simulators. That boundary is enforced by the
+them, create/rename/delete sessions, manage the project root's branches
+(switch, create, delete), switch model / permission mode / effort, and touch and type on mirrored simulators. That boundary is enforced by the
 desktop gateway, not this UI.
 
 Native iOS/Android. The crypto/transport/protocol modules under `src/lib` mirror

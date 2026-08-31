@@ -54,6 +54,38 @@ vi.mock("../session/gitStatus", () => ({
     lastFetchAt: null,
   })),
 }));
+vi.mock("../session/gitBranchOps", () => ({
+  gitCheckout: vi.fn(),
+  gitCreateBranch: vi.fn(),
+  gitDeleteBranch: vi.fn(),
+  gitStashAndCheckout: vi.fn(),
+  gitDiscardAndCheckout: vi.fn(),
+  gitListLocalBranches: vi.fn(async () => [
+    {
+      name: "main",
+      fullName: "refs/heads/main",
+      upstream: "origin/main",
+      ahead: 0,
+      behind: 1,
+      isCurrent: true,
+      lastCommit: { hash: "abc", subject: "init", author: "a", timestamp: 5 },
+    },
+  ]),
+  gitListRemoteBranches: vi.fn(async () => [
+    {
+      name: "origin/main",
+      remote: "origin",
+      branchName: "main",
+      lastCommit: null,
+    },
+    {
+      name: "origin/dev",
+      remote: "origin",
+      branchName: "dev",
+      lastCommit: null,
+    },
+  ]),
+}));
 vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => "diff --git a b"),
   getSessionFullDiff: vi.fn(async () => "diff --git HEAD"),
@@ -70,6 +102,9 @@ const { sendAgentMessage, startAgent, stopAgent } = vi.mocked(
 const { getSessionFullDiff, getSessionBranchDiff } = vi.mocked(
   await import("../session/sessionOps"),
 );
+const { gitCheckout, gitCreateBranch, gitDeleteBranch, gitStashAndCheckout } =
+  vi.mocked(await import("../session/gitBranchOps"));
+const { GitError } = await import("../session/gitError");
 
 function makeCtx(capabilities: PairedDevice["capabilities"]): GatewayContext {
   return {
@@ -97,6 +132,9 @@ const CONTROL_METHODS = [
   "sessions.delete",
   "sessions.rename",
   "sessions.rename_branch",
+  "sessions.checkout",
+  "sessions.create_branch",
+  "sessions.delete_branch",
   "sessions.files",
   "sessions.resolve_mention_path",
   "agents.capabilities",
@@ -110,6 +148,10 @@ describe("control capability gating", () => {
     stopAgent.mockClear();
     getSessionFullDiff.mockClear();
     getSessionBranchDiff.mockClear();
+    gitCheckout.mockClear();
+    gitCreateBranch.mockClear();
+    gitDeleteBranch.mockClear();
+    gitStashAndCheckout.mockClear();
     appState.sessions.clear();
     appState.sessions.set("s1", {
       id: "s1",
@@ -173,6 +215,87 @@ describe("control capability gating", () => {
     expect(stopAgent).toHaveBeenCalledWith("a1");
   });
 
+  it("switches branch for a control device", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    const res = MethodResult["sessions.checkout"].parse(
+      await dispatch(
+        "sessions.checkout",
+        { session_id: "s1", branch: "dev" },
+        ctx,
+      ),
+    );
+    expect(gitCheckout).toHaveBeenCalledWith("s1", { branch: "dev" });
+    expect(res.accepted).toBe(true);
+  });
+
+  it("reports a dirty tree back instead of failing the checkout", async () => {
+    gitCheckout.mockRejectedValueOnce(
+      new GitError(
+        "dirty-working-tree",
+        "Working tree has uncommitted changes",
+      ),
+    );
+    const res = MethodResult["sessions.checkout"].parse(
+      await dispatch(
+        "sessions.checkout",
+        { session_id: "s1", branch: "dev" },
+        makeCtx(["monitor", "control"]),
+      ),
+    );
+    expect(res).toEqual({ accepted: false, blocked_by: "dirty" });
+  });
+
+  it("stashes when the client retries with a dirty strategy", async () => {
+    await dispatch(
+      "sessions.checkout",
+      { session_id: "s1", branch: "dev", dirty: "stash" },
+      makeCtx(["monitor", "control"]),
+    );
+    expect(gitStashAndCheckout).toHaveBeenCalledWith("s1", { branch: "dev" });
+  });
+
+  it("creates a branch and checks it out by default", async () => {
+    await dispatch(
+      "sessions.create_branch",
+      { session_id: "s1", name: "feature/y", start_point: "main" },
+      makeCtx(["monitor", "control"]),
+    );
+    expect(gitCreateBranch).toHaveBeenCalledWith("s1", {
+      name: "feature/y",
+      startPoint: "main",
+      checkout: true,
+    });
+  });
+
+  it("deletes a branch", async () => {
+    const res = MethodResult["sessions.delete_branch"].parse(
+      await dispatch(
+        "sessions.delete_branch",
+        { session_id: "s1", name: "old" },
+        makeCtx(["monitor", "control"]),
+      ),
+    );
+    expect(gitDeleteBranch).toHaveBeenCalledWith("s1", {
+      name: "old",
+      force: undefined,
+    });
+    expect(res.accepted).toBe(true);
+  });
+
+  it("asks before dropping unmerged commits instead of failing", async () => {
+    gitDeleteBranch.mockRejectedValueOnce(
+      new GitError("unknown", "error: the branch 'old' is not fully merged"),
+    );
+    const res = MethodResult["sessions.delete_branch"].parse(
+      await dispatch(
+        "sessions.delete_branch",
+        { session_id: "s1", name: "old" },
+        makeCtx(["monitor", "control"]),
+      ),
+    );
+    expect(res).toEqual({ accepted: false, blocked_by: "unmerged" });
+  });
+
   it("never exposes project creation on the wire", () => {
     expect("projects.create" in REMOTE_METHODS).toBe(false);
   });
@@ -184,6 +307,36 @@ describe("read-only changes review (monitor scope)", () => {
     getSessionBranchDiff.mockClear();
     appState.sessions.clear();
     appState.sessions.set("s1", { id: "s1", base_branch: "main" } as never);
+  });
+
+  it("lists local branches plus remote-only ones for monitor", async () => {
+    const res = MethodResult["sessions.branches"].parse(
+      await dispatch(
+        "sessions.branches",
+        { session_id: "s1" },
+        makeCtx(["monitor"]),
+      ),
+    );
+    expect(res.branches).toEqual([
+      {
+        name: "main",
+        scope: "local",
+        is_current: true,
+        upstream: "origin/main",
+        ahead: 0,
+        behind: 1,
+        last_commit_subject: "init",
+        last_commit_at: 5,
+      },
+      {
+        name: "dev",
+        scope: "remote",
+        remote: "origin",
+        is_current: false,
+        ahead: 0,
+        behind: 0,
+      },
+    ]);
   });
 
   it("git_status is allowed for monitor and maps to snake_case", async () => {
