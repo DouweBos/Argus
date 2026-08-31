@@ -45,6 +45,7 @@ import type {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
   RemoteDevice,
+  RemoteGitBranch,
   RemoteGitStatus,
   RemoteImageAttachment,
   RemoteImageData,
@@ -280,6 +281,30 @@ interface AppState {
     branch: string,
   ) => Promise<void>;
   loadGitStatus: (sessionId: string) => Promise<void>;
+  /** Branches available to a session's repo, for the branch switcher. */
+  listBranches: (sessionId: string) => Promise<RemoteGitBranch[]>;
+  /**
+   * Switch a session's checked-out branch. Resolves "dirty" when uncommitted
+   * changes blocked it, so the caller can re-try with stash/discard.
+   */
+  checkoutBranch: (
+    sessionId: string,
+    repoRoot: string,
+    branch: string,
+    dirty?: "stash" | "discard",
+  ) => Promise<"ok" | "dirty">;
+  createBranch: (
+    sessionId: string,
+    repoRoot: string,
+    name: string,
+    opts?: { checkout?: boolean; startPoint?: string },
+  ) => Promise<void>;
+  /** Resolves "unmerged" when the branch still holds unmerged commits. */
+  deleteBranch: (
+    sessionId: string,
+    name: string,
+    force?: boolean,
+  ) => Promise<"ok" | "unmerged">;
   loadDiff: (
     sessionId: string,
     mode: "branch" | "working",
@@ -1256,6 +1281,77 @@ export const useAppStore = create<AppState>((set, get) => {
       } catch {
         // Session may be initializing / gone — leave any prior status.
       }
+    },
+
+    listBranches: async (sessionId) => {
+      const t = get().transport;
+      if (!t) {
+        return [];
+      }
+      const { branches } = await t.request<{ branches: RemoteGitBranch[] }>(
+        "sessions.branches",
+        { session_id: sessionId },
+      );
+
+      return branches;
+    },
+
+    checkoutBranch: async (sessionId, repoRoot, branch, dirty) => {
+      const t = get().transport;
+      if (!t) {
+        throw new Error("Not connected");
+      }
+      const res = await t.request<{
+        accepted: boolean;
+        blocked_by?: "dirty";
+      }>("sessions.checkout", { session_id: sessionId, branch, dirty });
+      if (!res.accepted) {
+        return "dirty";
+      }
+      await Promise.all([
+        get()
+          .loadSessions(repoRoot)
+          .catch(() => {}),
+        get()
+          .loadGitStatus(sessionId)
+          .catch(() => {}),
+      ]);
+
+      return "ok";
+    },
+
+    createBranch: async (sessionId, repoRoot, name, opts) => {
+      const t = get().transport;
+      if (!t) {
+        throw new Error("Not connected");
+      }
+      await t.request("sessions.create_branch", {
+        session_id: sessionId,
+        name,
+        start_point: opts?.startPoint,
+        checkout: opts?.checkout ?? true,
+      });
+      await Promise.all([
+        get()
+          .loadSessions(repoRoot)
+          .catch(() => {}),
+        get()
+          .loadGitStatus(sessionId)
+          .catch(() => {}),
+      ]);
+    },
+
+    deleteBranch: async (sessionId, name, force) => {
+      const t = get().transport;
+      if (!t) {
+        throw new Error("Not connected");
+      }
+      const res = await t.request<{
+        accepted: boolean;
+        blocked_by?: "unmerged";
+      }>("sessions.delete_branch", { session_id: sessionId, name, force });
+
+      return res.accepted ? "ok" : "unmerged";
     },
 
     loadDiff: async (sessionId, mode) => {

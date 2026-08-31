@@ -11,6 +11,7 @@ import {
   RemoteAgentStatus,
   RemoteAgentVitals,
   RemoteDevice,
+  RemoteGitBranch,
   RemoteGitStatus,
   RemoteImageAttachment,
   RemoteMentionPathResult,
@@ -182,6 +183,29 @@ export const MethodParams = {
     branch: z.string().trim().min(1),
   }),
   "sessions.git_status": z.object({ session_id: z.string() }),
+  "sessions.branches": z.object({ session_id: z.string() }),
+  "sessions.checkout": z.object({
+    session_id: z.string(),
+    branch: z.string().trim().min(1),
+    /**
+     * How to treat uncommitted changes. "fail" (the default) reports the
+     * blockage back so the client can offer stash/discard itself.
+     */
+    dirty: z.enum(["fail", "stash", "discard"]).optional(),
+  }),
+  "sessions.create_branch": z.object({
+    session_id: z.string(),
+    name: z.string().trim().min(1),
+    /** Ref to branch from; defaults to the current HEAD. */
+    start_point: z.string().optional(),
+    checkout: z.boolean().optional(),
+  }),
+  "sessions.delete_branch": z.object({
+    session_id: z.string(),
+    name: z.string().trim().min(1),
+    /** `git branch -D` — needed for a branch that isn't fully merged. */
+    force: z.boolean().optional(),
+  }),
   "sessions.diff": z.object({
     session_id: z.string(),
     mode: z.enum(["branch", "working"]).optional(),
@@ -302,6 +326,18 @@ export const MethodResult = {
   "sessions.rename": z.object({ accepted: z.boolean() }),
   "sessions.rename_branch": z.object({ accepted: z.boolean() }),
   "sessions.git_status": z.object({ status: RemoteGitStatus }),
+  "sessions.branches": z.object({ branches: z.array(RemoteGitBranch) }),
+  "sessions.checkout": z.object({
+    accepted: z.boolean(),
+    /** Set when the checkout was refused because the tree is dirty. */
+    blocked_by: z.literal("dirty").optional(),
+  }),
+  "sessions.create_branch": z.object({ accepted: z.boolean() }),
+  "sessions.delete_branch": z.object({
+    accepted: z.boolean(),
+    /** Set when the branch has commits that aren't merged anywhere. */
+    blocked_by: z.literal("unmerged").optional(),
+  }),
   "sessions.diff": z.object({
     diff: z.string(),
     base_branch: z.string().nullable().optional(),

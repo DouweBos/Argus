@@ -55,6 +55,10 @@ export type RemoteMethod =
   | "sessions.files"
   | "sessions.resolve_mention_path"
   | "sessions.git_status"
+  | "sessions.branches"
+  | "sessions.checkout"
+  | "sessions.create_branch"
+  | "sessions.delete_branch"
   | "sessions.diff"
   | "devices.list"
   | "devices.watch"
@@ -139,6 +143,19 @@ export interface RemoteGitStatus {
   in_progress: RemoteGitInProgress | null;
   diff_additions?: number;
   diff_deletions?: number;
+}
+
+/** A branch the switcher can offer; `name` is always the checkout target. */
+export interface RemoteGitBranch {
+  name: string;
+  scope: "local" | "remote";
+  remote?: string;
+  is_current: boolean;
+  upstream?: string | null;
+  ahead: number;
+  behind: number;
+  last_commit_subject?: string;
+  last_commit_at?: number;
 }
 
 export interface RemoteProject {

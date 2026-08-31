@@ -84,6 +84,13 @@ export const REMOTE_METHODS = {
   "sessions.resolve_mention_path": "control",
   /** Read a session's git status (ahead/behind/dirty/conflicts). */
   "sessions.git_status": "monitor",
+  /** List the branches of a session's repo (local, plus remote-only ones). */
+  "sessions.branches": "monitor",
+  /** Switch the checked-out branch. Host-side these branch ops only work on a
+   *  project root — session worktrees are pinned to their own branch. */
+  "sessions.checkout": "control",
+  "sessions.create_branch": "control",
+  "sessions.delete_branch": "control",
   /** Read a session's diff (what the agent changed) as unified-diff text. */
   "sessions.diff": "monitor",
   /** List connected simulators/emulators. */
