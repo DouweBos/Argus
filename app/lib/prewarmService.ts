@@ -107,6 +107,17 @@ function reconcile(): void {
   prewarmFor(target).catch(() => {});
 }
 
+/**
+ * Drop and re-spawn the slot after something invalidated it (a runner switch
+ * changes the subprocess env, so the warmed child is no longer the right one).
+ */
+export function refreshPrewarm(sessionId: string): void {
+  discardSlot(sessionId);
+  if (shouldPrewarm(sessionId)) {
+    prewarmFor(sessionId).catch(() => {});
+  }
+}
+
 export function initPrewarm(): () => void {
   reconcile();
 

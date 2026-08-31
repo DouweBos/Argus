@@ -15,7 +15,11 @@ import {
   extractImageFilesFromClipboard,
   filesToPendingImages,
 } from "../../../lib/imageAttachments";
-import { listProjects, setSessionClaudeAccount } from "../../../lib/ipc";
+import {
+  listProjects,
+  setSessionClaudeAccount,
+  setSessionRunner,
+} from "../../../lib/ipc";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
   type CanonicalPermissionMode,
@@ -37,6 +41,7 @@ import {
   usePendingImages,
 } from "../../../stores/conversationStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
+import { pushError } from "../../../stores/notificationsStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { updateSession, useSessions } from "../../../stores/sessionStore";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
@@ -62,6 +67,11 @@ interface ChatInputProps {
     | "running"
     | "stopped"
     | null;
+  /**
+   * True while the conversation is still empty — the session's runner is
+   * only switchable up to the first message.
+   */
+  canSwitchRunner?: boolean;
   /** Max context-window size for the active model (tokens). */
   contextLimit?: number;
   /** Tokens currently resident in the model's context window. */
@@ -114,6 +124,7 @@ export function ChatInput({
   onInterrupt,
   agentId,
   agentStatus,
+  canSwitchRunner = false,
   contextTokens,
   contextLimit,
   disabled = false,
@@ -162,11 +173,22 @@ export function ChatInput({
   const currentRepoRoot = currentSession?.repo_root ?? null;
   const registeredRunners = useRegisteredRunners();
   const sessionRunnerId = currentSession?.runner_id ?? "claude-code";
-  // Existing-session picker: runner is locked per Resolved Decision 4.
+  // The runner locks as soon as the conversation starts — the transcript
+  // belongs to the CLI and gateway that produced it.
   const runnerSelection: RunnerSelection = {
     currentId: sessionRunnerId,
-    locked: true,
+    locked: !canSwitchRunner,
     available: registeredRunners,
+    onSelect: (id) => {
+      if (!sessionId || id === sessionRunnerId) {
+        return;
+      }
+      // Optimistic; the backend re-broadcasts the session with its new model.
+      updateSession(sessionId, { runner_id: id });
+      setSessionRunner(sessionId, id).catch((err) =>
+        pushError(String(err), "set_session_runner"),
+      );
+    },
   };
   // Pinning is only offered once a second account exists — with one account
   // there's nothing to switch between.

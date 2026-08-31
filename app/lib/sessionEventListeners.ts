@@ -45,11 +45,21 @@ export function initSessionEventListeners(): void {
     branch?: string;
     display_name?: string | null;
     id: string;
+    model?: string | null;
     path?: string;
+    runner_id?: string | null;
     status?: Session["status"];
   }>("session:updated", (event) => {
-    const { id, display_name, branch, path, base_branch, status } =
-      event.payload;
+    const {
+      id,
+      display_name,
+      branch,
+      path,
+      base_branch,
+      status,
+      runner_id,
+      model,
+    } = event.payload;
     if (!getSessionState().sessions.some((w) => w.id === id)) {
       return;
     }
@@ -68,6 +78,12 @@ export function initSessionEventListeners(): void {
     }
     if (status !== undefined) {
       patch.status = status;
+    }
+    if (runner_id !== undefined) {
+      patch.runner_id = runner_id;
+    }
+    if (model !== undefined) {
+      patch.model = model;
     }
     updateSession(id, patch);
   });
