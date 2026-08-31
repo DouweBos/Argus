@@ -213,3 +213,15 @@ export const Web = (p: IconProps) => (
     <Path d="M3.5 12h17M12 3.5c4 4.5 4 12.5 0 17-4-4.5-4-12.5 0-17" />
   </Icon>
 );
+export const Eye = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M2.5 12S6.2 5.5 12 5.5 21.5 12 21.5 12 17.8 18.5 12 18.5 2.5 12 2.5 12z" />
+    <Circle cx="12" cy="12" r="3.25" />
+  </Icon>
+);
+export const Lock = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="4.5" y="10.5" width="15" height="9.5" rx="2.5" />
+    <Path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+  </Icon>
+);

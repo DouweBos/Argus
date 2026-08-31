@@ -2,12 +2,13 @@
 import "react-native-get-random-values";
 
 import { useCallback, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ImageViewer } from "../src/components/ImageViewer";
-import { Btn, Muted, Screen, Title } from "../src/components/ui";
+import { LockScreen } from "../src/components/LockScreen";
 import {
   registerNotificationCategories,
   setNotificationDecider,
@@ -17,6 +18,20 @@ import {
 import { startSealedPushHandling } from "../src/lib/pushBackground";
 import { useThemeBootstrap, useTheme } from "../src/theme";
 import { useAppStore } from "../src/stores/appStore";
+
+/** What the unlock button should promise — Face ID, Touch ID, or nothing. */
+async function describeBiometry(): Promise<string | null> {
+  const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+  const { AuthenticationType } = LocalAuthentication;
+  if (types.includes(AuthenticationType.FACIAL_RECOGNITION)) {
+    return Platform.OS === "ios" ? "Face ID" : "Face Unlock";
+  }
+  if (types.includes(AuthenticationType.FINGERPRINT)) {
+    return Platform.OS === "ios" ? "Touch ID" : "Fingerprint";
+  }
+
+  return null;
+}
 
 export default function RootLayout() {
   return (
@@ -32,6 +47,7 @@ function Root() {
   const init = useAppStore((s) => s.init);
   const [unlocked, setUnlocked] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
+  const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
 
   useThemeBootstrap();
 
@@ -45,6 +61,7 @@ function Root() {
 
         return;
       }
+      setBiometryLabel(await describeBiometry());
       setNeedsAuth(true);
     })();
   }, [init]);
@@ -103,11 +120,11 @@ function Root() {
 
   if (!unlocked) {
     return (
-      <Screen>
-        <Title>Argus Remote</Title>
-        <Muted>Locked. Authenticate to continue.</Muted>
-        {needsAuth && <Btn label="Unlock" onPress={authenticate} />}
-      </Screen>
+      <LockScreen
+        canAuthenticate={needsAuth}
+        biometryLabel={biometryLabel}
+        onUnlock={authenticate}
+      />
     );
   }
 

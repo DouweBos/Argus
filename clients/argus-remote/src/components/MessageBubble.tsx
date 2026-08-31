@@ -80,6 +80,8 @@ export function MessageBubble({
                   width: 96,
                   height: 96,
                   borderRadius: theme.radiusSm,
+                  borderWidth: 1,
+                  borderColor: theme.borderStrong,
                   backgroundColor: theme.bgTertiary,
                 }}
               />
