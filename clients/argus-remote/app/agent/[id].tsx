@@ -18,6 +18,9 @@ export default function AgentScreen() {
   const connection = useAppStore((s) => s.connection);
   const hasControl = useAppStore((s) => s.hasControl());
   const sessionId = useAppStore((s) => s.statusByAgent[agentId]?.session_id);
+  const isRunning = useAppStore(
+    (s) => s.statusByAgent[agentId]?.status === "running",
+  );
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const stopAgentProcess = useAppStore((s) => s.stopAgentProcess);
   const devices = useAppStore((s) => s.devices);
@@ -51,15 +54,17 @@ export default function AgentScreen() {
     router.push("/devices");
   }, [devices, router]);
 
-  // Stopping kills the agent and its queue — not something to do on a mistap.
+  // Shutting down kills the agent process and its queue — not a mistap action.
   const confirmStop = useCallback(() => {
     Alert.alert(
-      "Stop this agent?",
-      "It stops mid-turn and anything still queued for it is discarded.",
+      "Shut down this agent?",
+      isRunning
+        ? "It stops mid-turn and anything still queued for it is discarded."
+        : "Its process ends and anything still queued for it is discarded.",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Stop agent",
+          text: "Shut down",
           style: "destructive",
           onPress: () => {
             stopAgentProcess(agentId)
@@ -69,7 +74,7 @@ export default function AgentScreen() {
         },
       ],
     );
-  }, [agentId, router, stopAgentProcess]);
+  }, [agentId, isRunning, router, stopAgentProcess]);
 
   return (
     // Padding by the keyboard's measured height keeps the transcript ending
@@ -99,7 +104,7 @@ export default function AgentScreen() {
                 <Icons.Simulator size={16} color={theme.textSecondary} />
               </IconBtn>
               {hasControl ? (
-                <IconBtn label="Stop agent" onPress={confirmStop}>
+                <IconBtn label="Shut down agent" onPress={confirmStop}>
                   <Icons.Stop size={16} color={theme.textSecondary} />
                 </IconBtn>
               ) : null}
