@@ -1,5 +1,9 @@
 
+### Minor Changes
+
+- d711ff2: You can now switch a session's runner from the model picker until the first message is sent — in the start-agent dialog and in a fresh chat. The picker also lists the runner's own models instead of Claude's.
+
 ### Patch Changes
 
-- 9ba72af: Messages queued from the phone or web client now continue automatically when the agent's turn ends, even if that chat isn't open on the desktop.
+- aa89e70: Signing in to MCP servers that only accept known clients — Figma among them — now works instead of failing with a registration error.
 
