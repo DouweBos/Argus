@@ -2217,6 +2217,15 @@ export const listRunnerOnboardingSteps = (): Promise<RunnerOnboardingStep[]> =>
 export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
   invoke("llm_list_runners");
 
+/**
+ * Re-bind a session to another runner. Rejects once the session's agent has
+ * started working; message-free agents are restarted under the new runner.
+ */
+export const setSessionRunner = (
+  sessionId: string,
+  runnerId: string,
+): Promise<void> => invoke("set_session_runner", { sessionId, runnerId });
+
 export const listCustomRunners = (): Promise<CustomRunnerConfig[]> =>
   invoke("llm_list_custom_runners");
 

@@ -1116,6 +1116,7 @@ export function AgentChat({
         <ChatInput
           agentId={agentId}
           agentStatus={agentStatus}
+          canSwitchRunner={messages.length === 0}
           contextLimit={contextLimit}
           contextTokens={contextTokens}
           disabled={!isAlive}

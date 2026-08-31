@@ -173,6 +173,7 @@ import {
   listRunners as listLlmRunners,
   syncCustomRunners,
 } from "./services/llm/registry";
+import { setSessionRunner } from "./services/llm/sessionRunner";
 import { generateChatTitle } from "./services/llm/titleGenerator";
 import { testMcpServer } from "./services/mcp/connectivity";
 import {
@@ -2277,6 +2278,13 @@ export function registerIpcHandlers(): void {
   // Custom runners — official runners re-pointed at another endpoint. Every
   // mutation re-syncs the registry so the picker and resolver see the change
   // without an app restart.
+  // Re-binding a session to another runner. Only legal while the session has
+  // no conversation yet — the handler enforces it.
+  handle("set_session_runner", (a) =>
+    setSessionRunner(a.sessionId as string, a.runnerId as string).then(
+      () => null,
+    ),
+  );
   handle("llm_list_custom_runners", () => listCustomRunners());
   handle("llm_list_custom_runner_presets", () => CUSTOM_RUNNER_PRESETS);
   handle("llm_save_custom_runner", (a) => {

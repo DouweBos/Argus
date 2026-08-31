@@ -284,10 +284,10 @@ export async function startAgent(
     previousAgentForModel?.permissionMode ??
     DEFAULT_AGENT_PERMISSION_MODE;
 
-  // Resolve the runner. Runner is fixed at session creation
-  // (`session.runner_id`) and immutable for the session's lifetime — every
-  // agent in this session inherits it. Legacy sessions persisted before
-  // `runner_id` existed default to `"claude-code"` via `sessionRunnerId`.
+  // Resolve the runner. It's stamped on the session (`session.runner_id`)
+  // and inherited by every agent in it; the user can only swap it before the
+  // first message. Legacy sessions persisted before `runner_id` existed
+  // default to `"claude-code"` via `sessionRunnerId`.
   const runnerId = sessionRunnerId(argusSession);
   let runner: LlmRunner | null = getRunnerById(runnerId);
   if (!runner) {
@@ -1454,6 +1454,44 @@ export function listAgents(sessionId: string): AgentInfo[] {
   }
 
   return result;
+}
+
+/**
+ * Restart a message-free agent in place so it picks up new spawn-time
+ * settings — today only a session runner switch. The agent id is reused so
+ * the tab and conversation slot survive the swap.
+ */
+export async function respawnAgent(agentId: string): Promise<void> {
+  const session = appState.agents.get(agentId);
+  if (!session) {
+    return;
+  }
+  const { sessionId, parentAgentId } = session;
+
+  // Silence the kill → spawn status flicker in the UI.
+  session.suppressStatus = true;
+  // The old runner's model id means nothing to the new one; drop it so the
+  // spawn cascade falls through to the session/runner default.
+  session.model = null;
+
+  await session.handle.kill();
+  session.handle.cleanup();
+
+  await startAgent(
+    sessionId,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    parentAgentId ?? undefined,
+    agentId,
+  );
+
+  const fresh = appState.agents.get(agentId);
+  if (fresh) {
+    fresh.suppressStatus = false;
+  }
 }
 
 // ---------------------------------------------------------------------------

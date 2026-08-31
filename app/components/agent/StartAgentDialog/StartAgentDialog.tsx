@@ -17,18 +17,19 @@ import {
   extractImageFilesFromClipboard,
   filesToPendingImages,
 } from "../../../lib/imageAttachments";
-import { listProjects } from "../../../lib/ipc";
+import { listProjects, setSessionRunner } from "../../../lib/ipc";
 import { getLastKnownCapabilities } from "../../../lib/lastKnownCapabilities";
 import { buildLinkedProjectsPreamble } from "../../../lib/linkedProjectsPreamble";
 import {
   type CanonicalPermissionMode,
   permissionModeDisplayName,
 } from "../../../lib/permissionModes";
+import { refreshPrewarm } from "../../../lib/prewarmService";
 import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { usePrewarmSlot } from "../../../stores/prewarmStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
-import { useSessions } from "../../../stores/sessionStore";
+import { updateSession, useSessions } from "../../../stores/sessionStore";
 import { getDefaultPermissionMode } from "../../../stores/settingsStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 import { FileMentionPicker } from "../../shared/FileMentionPicker";
@@ -85,10 +86,6 @@ export function StartAgentDialog({
   // localStorage cache) when prewarm is still spawning or has failed.
   const prewarmSlot = usePrewarmSlot(sessionId);
   const cached = useMemo(() => getLastKnownCapabilities(), []);
-  const knownModels =
-    prewarmSlot?.models.length && prewarmSlot.models.length > 0
-      ? prewarmSlot.models
-      : cached.models;
   const slashCommands =
     prewarmSlot?.slashCommands.length && prewarmSlot.slashCommands.length > 0
       ? prewarmSlot.slashCommands
@@ -110,16 +107,44 @@ export function StartAgentDialog({
   const [modelValue, setModelValue] = useState<string>("default");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
 
-  // The runner is locked to whatever this session was created with —
-  // Resolved Decision 4 of the LLM-routing plan.
+  // No agent has been started yet, so the runner is still switchable — it
+  // only locks once the session's agent has sent its first message.
   const sessions = useSessions();
   const session = sessions.find((s) => s.id === sessionId) ?? null;
   const registeredRunners = useRegisteredRunners();
+  const runnerId = session?.runner_id ?? "claude-code";
   const runnerSelection: RunnerSelection = {
-    currentId: session?.runner_id ?? "claude-code",
-    locked: true,
+    currentId: runnerId,
+    locked: false,
     available: registeredRunners,
+    onSelect: (id) => {
+      if (id === runnerId) {
+        return;
+      }
+      const next = registeredRunners.find((r) => r.id === id);
+      // Models don't carry across runners — a gateway rejects the other
+      // runner's ids, so reset to the newly picked runner's default.
+      setModelValue(
+        next?.defaultModel ?? next?.models?.[0]?.value ?? "default",
+      );
+      updateSession(sessionId, { runner_id: id });
+      setSessionRunner(sessionId, id)
+        // The warmed subprocess ran under the old runner's env.
+        .then(() => refreshPrewarm(sessionId))
+        .catch((err) => pushError(String(err), "set_session_runner"));
+    },
   };
+
+  // A custom runner declares its own models; the CLI handshake only knows
+  // the base runner's, which the gateway it's pointed at won't accept.
+  const knownModels = useMemo(() => {
+    const declared = registeredRunners.find((r) => r.id === runnerId)?.models;
+    if (declared?.length) {
+      return declared;
+    }
+
+    return prewarmSlot?.models.length ? prewarmSlot.models : cached.models;
+  }, [registeredRunners, runnerId, prewarmSlot, cached.models]);
   const [suggestions, setSuggestions] = useState<SlashCommand[]>([]);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
 

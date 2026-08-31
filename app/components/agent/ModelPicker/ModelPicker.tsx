@@ -22,11 +22,11 @@ export interface ModelOption {
 /**
  * Runner state surfaced at the top of the picker.
  *
- * - `locked: true` (existing session): the runner is read-only — Resolved
- *   Decision 4 of the LLM-routing plan pins runner at session creation.
+ * - `locked: true`: the runner is read-only — the session's conversation has
+ *   started, and its transcript belongs to that runner.
  * - `locked: false` + `available` provided: the user can switch between
- *   registered runners. Today only `claude-code` is registered, so the
- *   list collapses to a single non-interactive entry.
+ *   registered runners. With only one registered the list collapses to a
+ *   single non-interactive entry.
  */
 export interface RunnerSelection {
   /** Registered runners surfaced as choices. Required when `locked` is false. */
@@ -225,9 +225,8 @@ function RunnerSection({ runner }: { runner: RunnerSelection }) {
     available.find((r) => r.id === runner.currentId) ??
     fallbackRunner(runner.currentId);
 
-  // Locked (existing session) or only one registered runner: render a
-  // single read-only row. Resolved Decision 4 forbids changing the runner
-  // on an existing session.
+  // Locked (the conversation has started) or only one registered runner:
+  // render a single read-only row.
   const selectable = !runner.locked && available.length > 1;
 
   if (!selectable) {
