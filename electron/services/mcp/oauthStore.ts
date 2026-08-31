@@ -31,6 +31,11 @@ export interface StoredMcpToken {
   clientId: string;
   /** Dynamic-registration client_secret, when one was issued. */
   clientSecret?: string;
+  /**
+   * Token-endpoint auth method the client was issued with, e.g.
+   * `client_secret_basic`. Decides how the secret is presented on refresh.
+   */
+  clientAuthMethod?: string;
   /** Scopes actually granted (server may narrow what we asked for). */
   scope?: string;
 }
