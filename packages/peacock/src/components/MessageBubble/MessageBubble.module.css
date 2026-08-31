@@ -198,13 +198,15 @@
 
 .userAttachment {
   display: block;
+  box-sizing: border-box;
   width: 32px;
   height: 32px;
   padding: 0;
   border-radius: var(--border-radius-sm);
   overflow: hidden;
-  border: none;
-  background: transparent;
+  /* Outline keeps thumbnails legible when the image edge matches the bubble. */
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
   cursor: zoom-in;
   transition: transform var(--transition-base);
 }
