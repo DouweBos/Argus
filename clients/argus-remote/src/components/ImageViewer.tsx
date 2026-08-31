@@ -1,12 +1,12 @@
 /**
  * Full-screen image viewer. Mounted once at the app root and driven by
- * `imageViewerStore`, so any thumbnail can open it. Swipe between images in
- * the same message, tap the backdrop to dismiss.
+ * `imageViewerStore`, so any thumbnail can open it. Pinch/double-tap to zoom,
+ * drag to pan, swipe sideways between images, swipe down or tap to dismiss.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Image,
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Icons from "./Icons";
+import { ZoomableImage } from "./ZoomableImage";
 import { Muted } from "./ui";
 import {
   closeImageViewer,
@@ -32,16 +33,26 @@ export function ImageViewer() {
   const index = useImageViewerStore((s) => s.index);
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+  const dismissProgress = useRef(new Animated.Value(0)).current;
 
   const open = index !== null;
+
+  // Chrome and backdrop fade out as the image is dragged away.
+  const chromeOpacity = useMemo(
+    () => dismissProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+    [dismissProgress],
+  );
 
   // Jump to the tapped image once the pager has its width.
   useEffect(() => {
     if (open && index !== null) {
       setPage(index);
+      setZoomed(false);
+      dismissProgress.setValue(0);
       scrollRef.current?.scrollTo({ x: index * width, animated: false });
     }
-  }, [open, index, width]);
+  }, [open, index, width, dismissProgress]);
 
   if (!open) {
     return null;
@@ -49,33 +60,41 @@ export function ImageViewer() {
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
+    setZoomed(false);
   };
 
   return (
     <Modal
       visible
-      transparent={false}
+      transparent
       animationType="fade"
       statusBarTranslucent
       onRequestClose={closeImageViewer}
     >
-      <View style={{ flex: 1, backgroundColor: theme.mediaBg }}>
+      <Animated.View
+        style={{ flex: 1, backgroundColor: theme.mediaBg, opacity: chromeOpacity }}
+      >
         <ScrollView
           ref={scrollRef}
           horizontal
           pagingEnabled
+          // A zoomed image owns the drag, so paging waits until it is back at rest.
+          scrollEnabled={!zoomed}
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={onScroll}
         >
           {uris.map((uri, i) => (
-            // Tapping the image (or the space around it) closes the viewer.
-            <Pressable key={i} onPress={closeImageViewer} style={{ width, height }}>
-              <Image
-                source={{ uri }}
-                resizeMode="contain"
-                style={{ width, height }}
-              />
-            </Pressable>
+            <ZoomableImage
+              key={i}
+              active={i === page}
+              uri={uri}
+              width={width}
+              height={height}
+              dismissProgress={dismissProgress}
+              onZoomChange={setZoomed}
+              onTap={closeImageViewer}
+              onDismiss={closeImageViewer}
+            />
           ))}
         </ScrollView>
 
@@ -111,7 +130,7 @@ export function ImageViewer() {
             </Muted>
           </View>
         )}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
