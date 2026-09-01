@@ -33,6 +33,25 @@ export function mapAgentStatus(status: string): AgentStatusTone {
   }
 }
 
+/**
+ * Sort weight for the agent lists — anything that wants you (needs input) or is
+ * mid-flight outranks the idle and finished ones, however recent those are.
+ */
+export function agentActivityRank(status: string): number {
+  switch (status) {
+    case "requires_action":
+      return 0;
+    case "running":
+      return 1;
+    case "error":
+      return 2;
+    case "stopped":
+      return 4;
+    default:
+      return 3;
+  }
+}
+
 export function agentMetaLabel(status: string): string {
   switch (status) {
     case "running":
@@ -205,7 +224,9 @@ export function SessionCard({
           {additions ? (
             <Chip label={`+${additions}`} tone="success" mono />
           ) : null}
-          {deletions ? <Chip label={`-${deletions}`} tone="danger" mono /> : null}
+          {deletions ? (
+            <Chip label={`-${deletions}`} tone="danger" mono />
+          ) : null}
           {divergence && divergence.ahead > 0 ? (
             <Chip label={`↑${divergence.ahead}`} mono />
           ) : null}

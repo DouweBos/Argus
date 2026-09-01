@@ -3,7 +3,12 @@ import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
 import { ConnectionBadge } from "../src/components/ConnectionBadge";
 import * as Icons from "../src/components/Icons";
-import { AgentRow, agentMetaLabel, mapAgentStatus } from "../src/components/rows";
+import {
+  AgentRow,
+  agentActivityRank,
+  agentMetaLabel,
+  mapAgentStatus,
+} from "../src/components/rows";
 import {
   Banner,
   Body,
@@ -74,7 +79,10 @@ export default function ProjectsScreen() {
               >
                 <Icons.Refresh size={16} color={theme.textSecondary} />
               </IconBtn>
-              <IconBtn label="Settings" onPress={() => router.push("/settings")}>
+              <IconBtn
+                label="Settings"
+                onPress={() => router.push("/settings")}
+              >
                 <Icons.Gear size={16} color={theme.textSecondary} />
               </IconBtn>
             </Row>
@@ -83,7 +91,9 @@ export default function ProjectsScreen() {
       />
 
       {connection === "offline" && (
-        <Banner>Lost the connection to {hostName} — retrying automatically.</Banner>
+        <Banner>
+          Lost the connection to {hostName} — retrying automatically.
+        </Banner>
       )}
 
       <RecentAgents />
@@ -125,13 +135,17 @@ export default function ProjectsScreen() {
   );
 }
 
-/** Most-recently-active agents across all projects — a quick jump back to what
- *  you're driving. */
+/** Agents across all projects, the ones still working (or waiting on you)
+ *  first, then the most recent — a quick jump back to what you're driving. */
 function RecentAgents() {
   const router = useRouter();
   const recentAgents = useAppStore((s) => s.recentAgents);
   const recent = [...recentAgents]
-    .sort((a, b) => (b.created_at ?? 0) - (a.created_at ?? 0))
+    .sort(
+      (a, b) =>
+        agentActivityRank(a.status) - agentActivityRank(b.status) ||
+        (b.created_at ?? 0) - (a.created_at ?? 0),
+    )
     .slice(0, 8);
 
   if (recent.length === 0) {
