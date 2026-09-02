@@ -6,6 +6,7 @@ import {
   AgentRow,
   SessionCard,
   StoppedAgentRow,
+  agentAwaitingLabel,
   agentMetaLabel,
   mapAgentStatus,
 } from "../../src/components/rows";
@@ -379,6 +380,7 @@ function SessionGroup({
             key={a.agent_id}
             name={agentName}
             status={mapAgentStatus(a.status)}
+            attention={agentAwaitingLabel(a)}
             model={a.model ?? undefined}
             meta={agentMetaLabel(a.status)}
             onPress={() => onOpenAgent(a.agent_id, agentName)}

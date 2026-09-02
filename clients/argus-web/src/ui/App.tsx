@@ -499,6 +499,23 @@ function mapAgentStatus(status: string): AgentStatus {
   }
 }
 
+/**
+ * What the agent needs from you — derived on the computer, so an agent that
+ * looks idle still reads as blocked on an answer.
+ */
+function agentAwaitingLabel(a: RemoteAgentStatus): string | null {
+  switch (a.awaiting) {
+    case "permission":
+      return "needs approval";
+    case "question":
+      return "answer needed";
+    case "plan":
+      return "review plan";
+    default:
+      return null;
+  }
+}
+
 function agentMetaLabel(status: string): string {
   switch (status) {
     case "running":
@@ -540,8 +557,10 @@ function RecentAgents({
           <AgentRow
             key={a.agent_id}
             name={name}
-            status={mapAgentStatus(a.status)}
-            meta={a.session_label ?? agentMetaLabel(a.status)}
+            status={a.awaiting ? "pending" : mapAgentStatus(a.status)}
+            meta={
+              agentAwaitingLabel(a) ?? a.session_label ?? agentMetaLabel(a.status)
+            }
             role="button"
             tabIndex={0}
             style={{ cursor: "pointer" }}
@@ -906,9 +925,9 @@ function SessionGroup({
           <AgentRow
             key={a.agent_id}
             name={name}
-            status={mapAgentStatus(a.status)}
+            status={a.awaiting ? "pending" : mapAgentStatus(a.status)}
             model={a.model ?? undefined}
-            meta={agentMetaLabel(a.status)}
+            meta={agentAwaitingLabel(a) ?? agentMetaLabel(a.status)}
             role="button"
             tabIndex={0}
             style={{ cursor: "pointer" }}
