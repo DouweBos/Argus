@@ -158,6 +158,8 @@ export interface RemoteAgentStatus {
   permission_mode?: string | null;
   parent_agent_id?: string | null;
   created_at?: number;
+  /** What the agent is blocked on the user for, if anything. */
+  awaiting?: "permission" | "question" | "plan" | null;
 }
 
 /**

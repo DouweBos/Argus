@@ -231,6 +231,53 @@ function agentTitle(agentId: string): string | null {
   }
 }
 
+/**
+ * What an agent is blocked on the user for. Permission prompts are tracked
+ * host-side; questions and plan approvals never raise one in auto-approving
+ * modes, so those come from the unresolved tool call in the snapshot.
+ */
+function agentAwaiting(agentId: string): RemoteAgentStatus["awaiting"] {
+  const pending = appState.agentPendingPermissions.get(agentId);
+  const prompt = pending ? [...pending.values()][0] : undefined;
+  if (prompt) {
+    return awaitingForTool(prompt.tool_name) ?? "permission";
+  }
+
+  const snapshot = appState.agentSnapshots.get(agentId);
+  if (!snapshot) {
+    return null;
+  }
+  try {
+    const conv = JSON.parse(snapshot) as RawConversation;
+    for (const message of (conv.messages ?? []).slice(-3).reverse()) {
+      for (const tc of message.toolCalls ?? []) {
+        if (tc.result != null) {
+          continue;
+        }
+        if (tc.pendingPermission) {
+          return awaitingForTool(tc.name) ?? "permission";
+        }
+        const awaiting = awaitingForTool(tc.name);
+        if (awaiting) {
+          return awaiting;
+        }
+      }
+    }
+  } catch {
+    // Corrupt snapshot — treat as nothing pending.
+  }
+
+  return null;
+}
+
+function awaitingForTool(name: string | undefined): "plan" | "question" | null {
+  if (name === "AskUserQuestion") {
+    return "question";
+  }
+
+  return name === "ExitPlanMode" ? "plan" : null;
+}
+
 export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
   return {
     agent_id: a.agentId,
@@ -242,6 +289,7 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     permission_mode: a.permissionMode ?? null,
     parent_agent_id: a.parentAgentId,
     created_at: a.createdAt,
+    awaiting: agentAwaiting(a.agentId),
   };
 }
 

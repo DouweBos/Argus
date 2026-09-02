@@ -356,6 +356,7 @@ export class DeviceConnection implements DeviceMediaController {
           tool_name: p.tool_name,
           tool_input: p.tool_input,
         });
+        this.pushAgentStatus(agentId);
         break;
       }
       case "permission-cancel": {
@@ -367,6 +368,7 @@ export class DeviceConnection implements DeviceMediaController {
           agent_id: agentId,
           tool_use_id: p.tool_use_id,
         });
+        this.pushAgentStatus(agentId);
         break;
       }
     }
@@ -393,6 +395,15 @@ export class DeviceConnection implements DeviceMediaController {
         tool_name: p.tool_name,
         tool_input: p.tool_input,
       });
+    }
+  }
+
+  /** Re-publish an agent's status so `awaiting` tracks prompts appearing and
+   *  being answered, not just runner state changes. */
+  private pushAgentStatus(agentId: string): void {
+    const agent = appState.agents.get(agentId);
+    if (agent) {
+      this.pushEvent("agent.status", agentId, toRemoteAgentStatus(agent));
     }
   }
 

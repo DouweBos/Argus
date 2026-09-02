@@ -15,6 +15,7 @@ vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),
     agentSnapshots: new Map<string, string>(),
+    agentPendingPermissions: new Map(),
     sessions: new Map(),
   },
 }));

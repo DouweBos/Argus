@@ -6,6 +6,7 @@ import * as Icons from "../src/components/Icons";
 import {
   AgentRow,
   agentActivityRank,
+  agentAwaitingLabel,
   agentMetaLabel,
   mapAgentStatus,
 } from "../src/components/rows";
@@ -143,7 +144,7 @@ function RecentAgents() {
   const recent = [...recentAgents]
     .sort(
       (a, b) =>
-        agentActivityRank(a.status) - agentActivityRank(b.status) ||
+        agentActivityRank(a) - agentActivityRank(b) ||
         (b.created_at ?? 0) - (a.created_at ?? 0),
     )
     .slice(0, 8);
@@ -163,6 +164,7 @@ function RecentAgents() {
             key={a.agent_id}
             name={name}
             status={mapAgentStatus(a.status)}
+            attention={agentAwaitingLabel(a)}
             meta={a.session_label ?? agentMetaLabel(a.status)}
             onPress={() =>
               router.push({

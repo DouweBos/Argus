@@ -14,6 +14,7 @@ import {
   StatusDot,
   type Tone,
 } from "./ui";
+import type { RemoteAgentStatus } from "../lib/protocol";
 import { useTheme } from "../theme";
 
 export type AgentStatusTone = "done" | "error" | "idle" | "pending" | "running";
@@ -34,11 +35,35 @@ export function mapAgentStatus(status: string): AgentStatusTone {
 }
 
 /**
+ * What the agent needs from you, as a short badge label — the computer derives
+ * this, so an idle-looking agent still shows it's blocked on an answer.
+ */
+export function agentAwaitingLabel(
+  agent: Pick<RemoteAgentStatus, "awaiting">,
+): string | null {
+  switch (agent.awaiting) {
+    case "permission":
+      return "needs approval";
+    case "question":
+      return "answer needed";
+    case "plan":
+      return "review plan";
+    default:
+      return null;
+  }
+}
+
+/**
  * Sort weight for the agent lists — anything that wants you (needs input) or is
  * mid-flight outranks the idle and finished ones, however recent those are.
  */
-export function agentActivityRank(status: string): number {
-  switch (status) {
+export function agentActivityRank(
+  agent: Pick<RemoteAgentStatus, "awaiting" | "status">,
+): number {
+  if (agent.awaiting) {
+    return 0;
+  }
+  switch (agent.status) {
     case "requires_action":
       return 0;
     case "running":
@@ -87,12 +112,15 @@ export function AgentRow({
   status,
   meta,
   model,
+  attention,
   onPress,
 }: {
   name: string;
   status: AgentStatusTone;
   meta?: string;
   model?: string;
+  /** Short "it wants you" label — badges the row and warns the status dot. */
+  attention?: string | null;
   onPress: () => void;
 }) {
   const theme = useTheme();
@@ -100,7 +128,10 @@ export function AgentRow({
   return (
     <Card onPress={onPress} style={{ paddingVertical: 10 }}>
       <Row gap={9}>
-        <StatusDot tone={statusTone(status)} pulse={status === "running"} />
+        <StatusDot
+          tone={attention ? "warning" : statusTone(status)}
+          pulse={status === "running" && !attention}
+        />
         <View style={{ flex: 1, gap: 2 }}>
           <Body numberOfLines={1}>{name}</Body>
           <Row gap={6}>
@@ -108,6 +139,7 @@ export function AgentRow({
             {model ? <Muted numberOfLines={1}>· {model}</Muted> : null}
           </Row>
         </View>
+        {attention ? <Badge label={attention} tone="warning" /> : null}
         <Icons.ChevronRight size={14} color={theme.textMuted} />
       </Row>
     </Card>

@@ -5,7 +5,12 @@ import { MethodResult } from "@argus/remote-protocol";
 
 // Only the snapshot map matters here — seed it per test.
 vi.mock("../../state", () => ({
-  appState: { agents: new Map(), agentSnapshots: new Map<string, string>() },
+  appState: {
+    agents: new Map(),
+    agentSnapshots: new Map<string, string>(),
+    agentPendingPermissions: new Map(),
+    sessions: new Map(),
+  },
 }));
 vi.mock("../agent/agentService", () => ({
   respondToPermission: vi.fn(),
@@ -115,6 +120,121 @@ const SNAPSHOT = {
     },
   ],
 };
+
+const AGENT = {
+  agentId: "a1",
+  sessionId: "s1",
+  status: "idle",
+  model: "m",
+  permissionMode: "ask",
+  parentAgentId: null,
+  createdAt: 0,
+};
+
+describe("agent status attention", () => {
+  beforeEach(() => {
+    appState.agents.clear();
+    appState.agents.set("a1", AGENT as never);
+    appState.agentSnapshots.clear();
+    appState.agentPendingPermissions.clear();
+  });
+
+  async function statusOf() {
+    const res = MethodResult["agents.status"].parse(
+      await dispatch("agents.status", { agent_id: "a1" }, ctx),
+    );
+
+    return res.agent.awaiting;
+  }
+
+  it("is null when nothing is pending", async () => {
+    await expect(statusOf()).resolves.toBeNull();
+  });
+
+  it("flags an outstanding permission prompt", async () => {
+    appState.agentPendingPermissions.set(
+      "a1",
+      new Map([
+        [
+          "tu1",
+          {
+            request_id: "r1",
+            tool_use_id: "tu1",
+            tool_name: "Bash",
+            tool_input: {},
+          },
+        ],
+      ]),
+    );
+    await expect(statusOf()).resolves.toBe("permission");
+  });
+
+  it("flags an unanswered question even with no permission prompt", async () => {
+    appState.agentSnapshots.set(
+      "a1",
+      JSON.stringify({
+        messages: [
+          {
+            id: "m1",
+            role: "assistant",
+            toolCalls: [{ id: "q1", name: "AskUserQuestion", input: {} }],
+          },
+        ],
+      }),
+    );
+    await expect(statusOf()).resolves.toBe("question");
+  });
+
+  it("flags a plan waiting for approval", async () => {
+    appState.agentSnapshots.set(
+      "a1",
+      JSON.stringify({
+        messages: [
+          {
+            id: "m1",
+            role: "assistant",
+            toolCalls: [{ id: "p1", name: "ExitPlanMode", input: {} }],
+          },
+        ],
+      }),
+    );
+    await expect(statusOf()).resolves.toBe("plan");
+  });
+
+  it("ignores a tool that is merely still running", async () => {
+    appState.agentSnapshots.set(
+      "a1",
+      JSON.stringify({
+        messages: [
+          {
+            id: "m1",
+            role: "assistant",
+            toolCalls: [{ id: "b1", name: "Bash", input: {} }],
+          },
+        ],
+      }),
+    );
+    await expect(statusOf()).resolves.toBeNull();
+  });
+
+  it("clears once the question has an answer", async () => {
+    appState.agentSnapshots.set(
+      "a1",
+      JSON.stringify({
+        messages: [
+          {
+            id: "m1",
+            role: "assistant",
+            toolCalls: [
+              { id: "q1", name: "AskUserQuestion", input: {}, result: "ok" },
+            ],
+          },
+        ],
+      }),
+    );
+    await expect(statusOf()).resolves.toBeNull();
+  });
+});
 
 describe("gateway transcript mapping", () => {
   beforeEach(() => {

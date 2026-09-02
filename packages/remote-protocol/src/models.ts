@@ -37,6 +37,11 @@ export const RemoteAgentStatus = z.object({
   permission_mode: z.string().nullable().optional(),
   parent_agent_id: z.string().nullable().optional(),
   created_at: z.number().optional(),
+  /**
+   * What the agent is blocked on the user for, if anything. Derived host-side
+   * so a client can flag it without holding the transcript.
+   */
+  awaiting: z.enum(["permission", "question", "plan"]).nullable().optional(),
 });
 export type RemoteAgentStatus = z.infer<typeof RemoteAgentStatus>;
 
