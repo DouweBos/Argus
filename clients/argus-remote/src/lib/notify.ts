@@ -90,7 +90,24 @@ export async function notificationStatus(): Promise<
   return current.canAskAgain ? "unset" : "blocked";
 }
 
+/**
+ * A tap is delivered twice on a cold start — once through the listener and once
+ * as `getLastNotificationResponseAsync` — so remember the last one handled.
+ */
+let lastHandled: string | null = null;
+
+function responseKey(res: Notifications.NotificationResponse): string {
+  const { identifier } = res.notification.request;
+
+  return `${identifier}:${res.actionIdentifier}:${res.notification.date}`;
+}
+
 function routeResponse(res: Notifications.NotificationResponse): void {
+  const key = responseKey(res);
+  if (key === lastHandled) {
+    return;
+  }
+  lastHandled = key;
   const data = res.notification.request.content.data as {
     agentId?: string;
     label?: string;
@@ -123,9 +140,8 @@ export function startNotificationRouting(): () => void {
       }
     })
     .catch(() => {});
-  const sub = Notifications.addNotificationResponseReceivedListener(
-    routeResponse,
-  );
+  const sub =
+    Notifications.addNotificationResponseReceivedListener(routeResponse);
 
   return () => sub.remove();
 }

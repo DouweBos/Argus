@@ -152,12 +152,14 @@ export interface RemoteAgentStatus {
   agent_id: string;
   session_id: string;
   session_label?: string;
+  project_name?: string;
   title?: string | null;
   status: string;
   model?: string | null;
   permission_mode?: string | null;
   parent_agent_id?: string | null;
   created_at?: number;
+  last_activity_at?: number;
   /** What the agent is blocked on the user for, if anything. */
   awaiting?: "permission" | "question" | "plan" | null;
 }

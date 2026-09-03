@@ -280,7 +280,9 @@ export function ToolCall(props: ToolCallProps) {
         onClick={() => setUserExpanded((v) => !v)}
       >
         {subAgentRunning && (
-          <Spinner size="xs" tone="primary" className={styles.runningSpinner} />
+          <span className={styles.runningSpinner}>
+            <Spinner size="xs" tone="primary" />
+          </span>
         )}
         <span className={styles.chevron}>
           {expanded ? (

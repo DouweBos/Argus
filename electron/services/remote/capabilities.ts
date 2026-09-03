@@ -216,6 +216,13 @@ function sessionLabel(sessionId: string): string {
   return s.display_name ?? s.branch;
 }
 
+/** Repository the session lives in, named the way `projects.list` names it. */
+function sessionProjectName(sessionId: string): string | undefined {
+  const repoRoot = appState.sessions.get(sessionId)?.repo_root;
+
+  return repoRoot ? (repoRoot.split("/").pop() ?? repoRoot) : undefined;
+}
+
 /** The agent's generated conversation title, read from its published snapshot. */
 function agentTitle(agentId: string): string | null {
   const snapshot = appState.agentSnapshots.get(agentId);
@@ -283,12 +290,14 @@ export function toRemoteAgentStatus(a: AgentSession): RemoteAgentStatus {
     agent_id: a.agentId,
     session_id: a.sessionId,
     session_label: sessionLabel(a.sessionId),
+    project_name: sessionProjectName(a.sessionId),
     title: agentTitle(a.agentId),
     status: a.status,
     model: a.model,
     permission_mode: a.permissionMode ?? null,
     parent_agent_id: a.parentAgentId,
     created_at: a.createdAt,
+    last_activity_at: a.lastEventAt,
     awaiting: agentAwaiting(a.agentId),
   };
 }

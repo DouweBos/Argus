@@ -24,6 +24,7 @@ import {
 } from "../src/components/ui";
 import { useLiveRefresh } from "../src/hooks/useLiveRefresh";
 import { hostLabel } from "../src/lib/keystore";
+import type { RemoteAgentStatus } from "../src/lib/protocol";
 import { useAppStore } from "../src/stores/appStore";
 import { useTheme } from "../src/theme";
 
@@ -136,8 +137,21 @@ export default function ProjectsScreen() {
   );
 }
 
+/** When the agent last showed a sign of life; creation time until it speaks. */
+function lastActivityAt(a: RemoteAgentStatus): number {
+  return a.last_activity_at ?? a.created_at ?? 0;
+}
+
+/** Where the agent is working — "Argus · main" — since the list spans projects. */
+function agentLocation(a: RemoteAgentStatus): string | null {
+  const parts = [a.project_name, a.session_label].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 /** Agents across all projects, the ones still working (or waiting on you)
- *  first, then the most recent — a quick jump back to what you're driving. */
+ *  first, then the most recently active — a quick jump back to what you're
+ *  driving. */
 function RecentAgents() {
   const router = useRouter();
   const recentAgents = useAppStore((s) => s.recentAgents);
@@ -145,7 +159,7 @@ function RecentAgents() {
     .sort(
       (a, b) =>
         agentActivityRank(a) - agentActivityRank(b) ||
-        (b.created_at ?? 0) - (a.created_at ?? 0),
+        lastActivityAt(b) - lastActivityAt(a),
     )
     .slice(0, 8);
 
@@ -165,7 +179,7 @@ function RecentAgents() {
             name={name}
             status={mapAgentStatus(a.status)}
             attention={agentAwaitingLabel(a)}
-            meta={a.session_label ?? agentMetaLabel(a.status)}
+            meta={agentLocation(a) ?? agentMetaLabel(a.status)}
             onPress={() =>
               router.push({
                 pathname: "/agent/[id]",
