@@ -135,12 +135,15 @@
   flex-shrink: 0;
 }
 
-/* Sits in the dot's slot on the left while the sub-agent runs. */
+/* Sits in the dot's slot on the left while the sub-agent runs. The wrapper
+   owns the centering transform: on the spinner itself it would compose with
+   its rotate, making it orbit instead of spin in place. */
 .runningSpinner {
   position: absolute;
   left: 5px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
   flex-shrink: 0;
 }
 

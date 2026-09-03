@@ -29,6 +29,8 @@ export const RemoteAgentStatus = z.object({
   session_id: z.string(),
   /** Human label for the agent's session (branch / display name / "project root"). */
   session_label: z.string().optional(),
+  /** Repository the agent's session belongs to, for cross-project lists. */
+  project_name: z.string().optional(),
   /** Generated conversation title, if one has been produced. */
   title: z.string().nullable().optional(),
   status: z.enum(["error", "idle", "requires_action", "running", "stopped"]),
@@ -37,6 +39,8 @@ export const RemoteAgentStatus = z.object({
   permission_mode: z.string().nullable().optional(),
   parent_agent_id: z.string().nullable().optional(),
   created_at: z.number().optional(),
+  /** Unix ms of the agent's most recent stream event — its last sign of life. */
+  last_activity_at: z.number().optional(),
   /**
    * What the agent is blocked on the user for, if anything. Derived host-side
    * so a client can flag it without holding the transcript.

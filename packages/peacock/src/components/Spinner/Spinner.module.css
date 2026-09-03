@@ -4,7 +4,8 @@
   border-style: solid;
   border-color: var(--glass-border);
   border-top-color: var(--accent);
-  /* `rotate`, not `transform` — consumers position with transform. */
+  /* `rotate`, not `transform`: any transform on the spinner composes with the
+     rotation and swings it off-centre, so consumers position a wrapper. */
   animation: peacockSpinnerRotate 700ms linear infinite;
   flex-shrink: 0;
 }

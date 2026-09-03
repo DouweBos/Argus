@@ -1,10 +1,15 @@
 // MUST be first: Hermes has no crypto.getRandomValues; noble needs it.
 import "react-native-get-random-values";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
-import { Stack, useRouter } from "expo-router";
+import {
+  Stack,
+  useGlobalSearchParams,
+  usePathname,
+  useRouter,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ImageViewer } from "../src/components/ImageViewer";
@@ -48,6 +53,10 @@ function Root() {
   const [unlocked, setUnlocked] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
   const [biometryLabel, setBiometryLabel] = useState<string | null>(null);
+  // A notification tap can land before the gate is passed, and the navigator
+  // only exists once it is — so hold the jump and replay it after unlock.
+  const unlockedRef = useRef(false);
+  const pendingOpen = useRef<{ agentId: string; label: string } | null>(null);
 
   useThemeBootstrap();
 
@@ -66,14 +75,18 @@ function Root() {
     })();
   }, [init]);
 
-  // Tapping a notification jumps to the agent it came from; its Approve/Deny
-  // buttons answer the prompt without opening the app at all. Registered
-  // outside the biometric gate so a background tap is never dropped — the
-  // answer is queued and sent once the gateway is back.
-  useEffect(() => {
-    registerNotificationCategories().catch(() => {});
-    startSealedPushHandling().catch(() => {});
-    setNotificationOpener((agentId, label) => {
+  // Which agent is on screen right now, so a notification for it doesn't stack
+  // a second copy of the same screen.
+  const pathname = usePathname();
+  const { id } = useGlobalSearchParams<{ id?: string }>();
+  const openAgentRef = useRef<string | null>(null);
+  openAgentRef.current = pathname.startsWith("/agent/") ? (id ?? null) : null;
+
+  const openAgent = useCallback(
+    (agentId: string, label: string) => {
+      if (openAgentRef.current === agentId) {
+        return;
+      }
       // The alert may be from a computer we're not currently connected to —
       // switch to the one that owns the agent before opening it.
       const store = useAppStore.getState();
@@ -91,6 +104,35 @@ function Root() {
             params: { id: agentId, label },
           });
         });
+    },
+    [router],
+  );
+
+  // Replays a tap that arrived while locked, once the navigator is mounted.
+  useEffect(() => {
+    unlockedRef.current = unlocked;
+    const pending = pendingOpen.current;
+    if (!unlocked || !pending) {
+      return;
+    }
+    pendingOpen.current = null;
+    openAgent(pending.agentId, pending.label);
+  }, [unlocked, openAgent]);
+
+  // Tapping a notification jumps to the agent it came from; its Approve/Deny
+  // buttons answer the prompt without opening the app at all. Registered
+  // outside the biometric gate so a background tap is never dropped — the
+  // answer is queued and sent once the gateway is back.
+  useEffect(() => {
+    registerNotificationCategories().catch(() => {});
+    startSealedPushHandling().catch(() => {});
+    setNotificationOpener((agentId, label) => {
+      if (!unlockedRef.current) {
+        pendingOpen.current = { agentId, label };
+
+        return;
+      }
+      openAgent(agentId, label);
     });
     setNotificationDecider((agentId, toolUseId, decision) => {
       useAppStore
@@ -105,7 +147,7 @@ function Root() {
       setNotificationDecider(null);
       stop();
     };
-  }, [router]);
+  }, [openAgent]);
 
   const authenticate = useCallback(async () => {
     const res = await LocalAuthentication.authenticateAsync({
