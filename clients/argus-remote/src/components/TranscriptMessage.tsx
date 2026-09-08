@@ -8,10 +8,13 @@ import { MessageBubble } from "./MessageBubble";
 import { PlanApproval } from "./PlanApproval";
 import { QuestionForm } from "./QuestionForm";
 import { ToolCallCard } from "./ToolCallCard";
-import { Btn } from "./ui";
+import { Chip, Btn } from "./ui";
+import * as Icons from "./Icons";
 import type { RemoteMessage, RemoteToolCall } from "../lib/protocol";
+import { parseLinkedProjectsPreamble } from "../lib/linkedProjects";
 import { parseQuestions } from "../lib/questions";
 import { imageKey, useAppStore } from "../stores/appStore";
+import { useTheme } from "../theme";
 
 // Deny messages mirror the desktop's ToolCallCard so the agent gets the same
 // guidance whichever client answers.
@@ -92,13 +95,36 @@ export const TranscriptMessage = memo(function TranscriptMessage({
   const prompts = useAppStore((s) => s.prompts);
   const answered = useAppStore((s) => s.answered);
   const respond = useAppStore((s) => s.respond);
+  const theme = useTheme();
 
   const resolveImage = useCallback(
     (imageId: string) => imageCache[imageKey(agentId, imageId)],
     [agentId, imageCache],
   );
 
-  const trimmed = msg.text_blocks.map((t) => t.trim()).filter((t) => t.length > 0);
+  // A user message may lead with the synthetic linked-projects preamble; show
+  // those paths as chips rather than leaking the raw bracket text.
+  const parsedPreamble =
+    msg.role === "user" && msg.text_blocks.length > 0
+      ? parseLinkedProjectsPreamble(msg.text_blocks[0])
+      : null;
+  const displayBlocks = parsedPreamble
+    ? parsedPreamble.rest.length > 0
+      ? [parsedPreamble.rest, ...msg.text_blocks.slice(1)]
+      : msg.text_blocks.slice(1)
+    : msg.text_blocks;
+  const trimmed = displayBlocks
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+  const chips = parsedPreamble
+    ? parsedPreamble.paths.map((path) => (
+        <Chip
+          key={path}
+          label={path.split("/").filter(Boolean).pop() ?? path}
+          leading={<Icons.Folder size={11} color={theme.textSecondary} />}
+        />
+      ))
+    : undefined;
   const images = (msg.images ?? [])
     .map((img) => imageCache[imageKey(agentId, img.image_id)])
     .filter((uri): uri is string => Boolean(uri))
@@ -108,7 +134,9 @@ export const TranscriptMessage = memo(function TranscriptMessage({
     msg.tool_calls.length > 0
       ? msg.tool_calls.map((tc) => {
           const isPending = isToolCallPending(agentId, tc, prompts, answered);
-          const form = isPending ? pendingForm(agentId, tc, respond) : undefined;
+          const form = isPending
+            ? pendingForm(agentId, tc, respond)
+            : undefined;
 
           return (
             <ToolCallCard
@@ -154,6 +182,7 @@ export const TranscriptMessage = memo(function TranscriptMessage({
       timestamp={msg.timestamp}
       toolOnly={trimmed.length === 0 && !!toolCalls}
       textBlocks={trimmed}
+      chips={chips}
       toolCalls={toolCalls}
       images={images}
     />

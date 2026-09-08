@@ -18,3 +18,38 @@ export function buildLinkedProjectsPreamble(
 
   return `${PREAMBLE_HEAD}\n${lines}]\n\n${baseMessage}`;
 }
+
+export interface ParsedLinkedProjectsPreamble {
+  paths: string[];
+  rest: string;
+}
+
+/**
+ * Detect and strip the linked-projects preamble from a user message so the
+ * transcript can render chips instead of the raw bracket text.
+ * Returns null when the text does not start with the preamble.
+ */
+export function parseLinkedProjectsPreamble(
+  text: string,
+): ParsedLinkedProjectsPreamble | null {
+  if (!text.startsWith(PREAMBLE_HEAD)) {
+    return null;
+  }
+  const afterHead = text.slice(PREAMBLE_HEAD.length);
+  const closeIdx = afterHead.indexOf("]");
+  if (closeIdx === -1) {
+    return null;
+  }
+  const paths: string[] = [];
+  for (const line of afterHead.slice(0, closeIdx).split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("- ")) {
+      paths.push(trimmed.slice(2).trim());
+    }
+  }
+  if (paths.length === 0) {
+    return null;
+  }
+
+  return { paths, rest: afterHead.slice(closeIdx + 1).replace(/^\n+/, "") };
+}
