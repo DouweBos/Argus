@@ -14,6 +14,7 @@ export interface MessageImage {
 export function MessageBubble({
   role,
   textBlocks,
+  chips,
   toolCalls,
   images,
   mcpLabel,
@@ -23,6 +24,7 @@ export function MessageBubble({
 }: {
   role: "assistant" | "system" | "user";
   textBlocks: string[];
+  chips?: ReactNode;
   toolCalls?: ReactNode;
   images?: MessageImage[];
   mcpLabel?: string;
@@ -48,6 +50,18 @@ export function MessageBubble({
         </Row>
       )}
 
+      {chips ? (
+        <Row
+          gap={6}
+          style={{
+            flexWrap: "wrap",
+            justifyContent: isUser ? "flex-end" : "flex-start",
+          }}
+        >
+          {chips}
+        </Row>
+      ) : null}
+
       {textBlocks.length > 0 && (
         <View
           style={{
@@ -71,7 +85,12 @@ export function MessageBubble({
             <Pressable
               key={i}
               accessibilityLabel="View image"
-              onPress={() => openImageViewer(images.map((x) => x.uri), i)}
+              onPress={() =>
+                openImageViewer(
+                  images.map((x) => x.uri),
+                  i,
+                )
+              }
             >
               <Image
                 source={{ uri: img.uri }}
@@ -93,7 +112,12 @@ export function MessageBubble({
       {toolCalls ? <View style={{ gap: 6 }}>{toolCalls}</View> : null}
 
       {timestamp ? (
-        <Muted style={{ fontSize: 10, alignSelf: isUser ? "flex-end" : "flex-start" }}>
+        <Muted
+          style={{
+            fontSize: 10,
+            alignSelf: isUser ? "flex-end" : "flex-start",
+          }}
+        >
           {new Date(timestamp).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
