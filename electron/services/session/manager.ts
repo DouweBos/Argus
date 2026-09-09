@@ -18,7 +18,7 @@ import {
 } from "../llm/titleGenerator";
 import { orgHostDir } from "../organizationTask/paths";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
-import { createTerminal } from "../terminal/multiplexer";
+import { createTerminal, setupShellCommand } from "../terminal/multiplexer";
 import {
   applyBranchPrefix,
   loadUserProjectSettings,
@@ -614,16 +614,14 @@ async function finalizeSession(
     }
 
     // --- Phase 9: spawn setup terminal ---------------------------------
-    // Use the user's default shell (same as a normal terminal tab) so the
-    // shell's rc files load — without that, version-manager shims (mise,
-    // asdf, rbenv, nvm) aren't on PATH and setup commands fall back to the
-    // system Ruby/Node/etc. The PTY is a tty, so the shell auto-enables
-    // interactive mode and sources `.zshrc` / `.bashrc`. We still run
-    // commands non-interactively by writing them with a sentinel and
-    // parsing exit codes.
+    // Boot through the user's login shell so rc files load — without that,
+    // version-manager shims (mise, asdf, rbenv, nvm) aren't on PATH and setup
+    // commands fall back to the system Ruby/Node/etc. It then hands off to a
+    // line-editor-free shell so the commands the pipeline writes arrive
+    // verbatim; see setupShellCommand().
     let setupTerminalId: string | null = null;
     try {
-      setupTerminalId = createTerminal(id);
+      setupTerminalId = createTerminal(id, undefined, setupShellCommand());
       const t = appState.terminals.get(setupTerminalId);
       if (t) {
         t.locked = true;

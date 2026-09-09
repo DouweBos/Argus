@@ -197,6 +197,29 @@ export function commandShell(command: string): [string, string[]] {
 }
 
 /**
+ * Command that turns a setup PTY into a shell the pipeline can safely feed
+ * commands to, one line at a time.
+ *
+ * The setup terminal must load the user's rc files (version-manager shims), so
+ * it starts as an interactive login shell — but an interactive *line editor*
+ * (zsh's zle plus prompt frameworks like powerlevel10k) redraws and reorders
+ * whatever we write into it. A long command written just as the previous one
+ * finished can end up split across the prompt redraw, so its trailing
+ * `; printf SENTINEL` half is left sitting at the prompt unsubmitted and setup
+ * waits forever. Handing off to a shell with line editing disabled keeps the
+ * tty (and the rc-loaded environment) while making written lines arrive
+ * verbatim through the kernel's canonical input buffer.
+ */
+export function setupShellCommand(): string {
+  const bash = fs.existsSync("/bin/bash") ? "/bin/bash" : null;
+  if (bash) {
+    return `PS1= ; export PS1; exec ${bash} --noediting --norc --noprofile -i`;
+  }
+
+  return "PS1= ; export PS1; exec /bin/sh";
+}
+
+/**
  * Compute a deterministic per-session integer from `sessionId` using a
  * simple djb2-style hash, bounded by `range`.
  *
