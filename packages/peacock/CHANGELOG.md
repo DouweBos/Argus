@@ -1,5 +1,12 @@
 # @argus/peacock
 
+## 0.12.3
+
+### Patch Changes
+
+- 5d18ded: Image attachments in chat messages now have a subtle outline so they stand out from the background.
+- 43edb2d: The loading spinner on a running sub-agent tool call now spins in place instead of swinging around an off-centre point.
+
 ## 0.12.2
 
 ### Patch Changes
