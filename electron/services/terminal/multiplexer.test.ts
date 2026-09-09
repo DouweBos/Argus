@@ -1,6 +1,11 @@
 import type { WorkspaceEnvConfig } from "../session/models";
 import { describe, expect, it, vi } from "vitest";
-import { workspaceEnvValue, defaultShell, commandShell } from "./multiplexer";
+import {
+  workspaceEnvValue,
+  defaultShell,
+  commandShell,
+  setupShellCommand,
+} from "./multiplexer";
 
 // Mock node-pty (native module) and other Electron deps
 vi.mock("node-pty", () => ({ spawn: vi.fn() }));
@@ -123,5 +128,16 @@ describe("commandShell", () => {
     process.env.SHELL = "/usr/bin/nu";
     expect(commandShell("echo hi")).toEqual(["sh", ["-c", "echo hi"]]);
     process.env.SHELL = original;
+  });
+});
+
+describe("setupShellCommand", () => {
+  it("execs a shell with line editing disabled", () => {
+    const cmd = setupShellCommand();
+    expect(cmd).toMatch(/exec \S*(bash --noediting|\/bin\/sh)/);
+  });
+
+  it("blanks the prompt so it can't be mistaken for command output", () => {
+    expect(setupShellCommand()).toContain("PS1=");
   });
 });

@@ -11,7 +11,11 @@ import { promisify } from "node:util";
 import { info, warn } from "../../../app/lib/logger";
 import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
-import { createTerminal } from "../terminal/multiplexer";
+import {
+  createTerminal,
+  setupShellCommand,
+  stripAnsi,
+} from "../terminal/multiplexer";
 import {
   type BrowserPresetConfig,
   defaultArgusConfig,
@@ -32,6 +36,9 @@ import {
 } from "./models";
 
 const execFileAsync = promisify(execFile);
+
+/** Give up on a setup command that has been silent this long (ms). */
+const SETUP_IDLE_TIMEOUT_MS = 20 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -958,7 +965,7 @@ export async function runSetupPipeline(
   // the standard terminal:data / terminal:exit channels.
   let terminalId = preCreatedTerminalId ?? null;
   if (!terminalId || !appState.terminals.has(terminalId)) {
-    terminalId = createTerminal(sessionId);
+    terminalId = createTerminal(sessionId, undefined, setupShellCommand());
   }
   const terminal = appState.terminals.get(terminalId);
   if (!terminal) {
@@ -1009,16 +1016,24 @@ export async function runSetupPipeline(
       const re = new RegExp(`${sentinel}:(\\d+)`);
       let buffer = "";
       let settled = false;
+      let lastOutputAt = Date.now();
+      const finish = () => {
+        settled = true;
+        dataDisposable.dispose();
+        exitDisposable.dispose();
+        clearInterval(idleTimer);
+      };
       const dataDisposable = setupPty.onData((data: string) => {
         if (settled) {
           return;
         }
-        buffer += data;
+        lastOutputAt = Date.now();
+        // Strip escape sequences before matching: prompt redraws and progress
+        // spinners can interleave cursor moves with the sentinel line.
+        buffer += stripAnsi(data);
         const match = buffer.match(re);
         if (match) {
-          settled = true;
-          dataDisposable.dispose();
-          exitDisposable.dispose();
+          finish();
           resolve(parseInt(match[1], 10));
 
           return;
@@ -1034,15 +1049,26 @@ export async function runSetupPipeline(
         if (settled) {
           return;
         }
-        settled = true;
-        dataDisposable.dispose();
-        exitDisposable.dispose();
+        finish();
         reject(
           `Setup PTY exited before command completed (exitCode=${exitCode}${
             signal ? `, signal=${signal}` : ""
           }) while running: ${cmd}`,
         );
       });
+      // A swallowed sentinel used to leave the session stuck in "initializing"
+      // forever. Fail loudly after a long silence instead.
+      const idleTimer = setInterval(() => {
+        if (settled || Date.now() - lastOutputAt < SETUP_IDLE_TIMEOUT_MS) {
+          return;
+        }
+        finish();
+        reject(
+          `Setup command produced no output for ${Math.round(
+            SETUP_IDLE_TIMEOUT_MS / 60000,
+          )} minutes and never reported an exit code: ${cmd}`,
+        );
+      }, 30_000);
       // Chain the sentinel printf with `;` so it runs regardless of cmd's
       // exit status and reports it via `$?`. Newline terminates the input
       // line so the shell actually executes.
@@ -1055,8 +1081,9 @@ export async function runSetupPipeline(
   const handoffToUserShell = () => {
     const userShell = process.env.SHELL ?? "/bin/sh";
     // Clear the current input line (in case anything queued while locked) and
-    // exec the login shell so it replaces this `sh` process in-place.
-    setupPty.write(`exec ${userShell} -l\n`);
+    // exec the login shell so it replaces the setup shell in-place. `PS1` is
+    // dropped so the setup shell's blank prompt doesn't leak into it.
+    setupPty.write(`unset PS1; exec ${userShell} -l\n`);
     const t = appState.terminals.get(terminalId);
     if (t) {
       t.locked = false;
