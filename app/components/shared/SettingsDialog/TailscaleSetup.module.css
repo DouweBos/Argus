@@ -1,0 +1,27 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.hint,
+.ready {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.error {
+  margin: 0;
+  color: var(--error);
+  font-size: 12px;
+  white-space: pre-wrap;
+}

@@ -246,6 +246,11 @@ import {
   setRemoteConfig,
   setRemoteStatusListener,
 } from "./services/remote/remoteService";
+import {
+  applyTailscaleFix,
+  diagnoseTailscale,
+  type TailscaleFixKind,
+} from "./services/remote/tailscaleSetup";
 import { reconfigureAutoFetchForRepo } from "./services/session/autoFetch";
 import { loadCommandMetrics } from "./services/session/commandMetrics";
 import { gitAmendTip } from "./services/session/gitAmend";
@@ -1006,16 +1011,30 @@ export function registerIpcHandlers(): void {
   handle("remote_set_config", (a) =>
     setRemoteConfig(
       a.config as {
+        cloudflareEnabled?: boolean;
         enabled?: boolean;
         lanWeb?: boolean;
         notifyWhenFocused?: boolean;
-        provider?: "cloudflare" | "none" | "tailscale";
         publicUrl?: string;
+        tailscaleEnabled?: boolean;
         tunnelMode?: "quick" | "token";
         tunnelToken?: string;
       },
     ),
   );
+  handle("remote_tailscale_diagnose", () => diagnoseTailscale());
+  handle("remote_tailscale_fix", async (a) => {
+    const result = await applyTailscaleFix(
+      a.fix as TailscaleFixKind,
+      a.url as string | undefined,
+    );
+    // Browser-completed fixes (sign-in, enabling Funnel) hand back a URL.
+    if (result.openUrl) {
+      openExternalUrl(result.openUrl);
+    }
+
+    return result;
+  });
   handle("remote_get_push_config", () => getPushConfigStatus());
   handle("remote_set_push_config", (a) => {
     const patch = a.patch as { enabled?: boolean; vapidSubject?: string };

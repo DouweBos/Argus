@@ -351,3 +351,15 @@ export const RemoteGitBranch = z.object({
   last_commit_at: z.number().optional(),
 });
 export type RemoteGitBranch = z.infer<typeof RemoteGitBranch>;
+
+/**
+ * One address a phone can reach this desktop on. Desktops expose several at
+ * once (LAN, Tailscale, Cloudflare); clients probe them and keep the
+ * best-ranked one that completes a handshake. Lower `priority` is simpler.
+ */
+export const RemoteEndpoint = z.object({
+  kind: z.enum(["lan", "tailscale", "cloudflare"]),
+  url: z.string(),
+  priority: z.number().int().nonnegative(),
+});
+export type RemoteEndpoint = z.infer<typeof RemoteEndpoint>;

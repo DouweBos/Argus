@@ -19,6 +19,7 @@ export interface PairingGrant {
 }
 
 export type RemoteMethod =
+  | "host.endpoints"
   | "projects.list"
   | "sessions.list"
   | "agents.list"

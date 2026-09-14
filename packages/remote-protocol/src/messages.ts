@@ -11,6 +11,7 @@ import {
   RemoteAgentStatus,
   RemoteAgentVitals,
   RemoteDevice,
+  RemoteEndpoint,
   RemoteGitBranch,
   RemoteGitStatus,
   RemoteImageAttachment,
@@ -43,6 +44,7 @@ const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
 // --- Request params per method ---------------------------------------------
 
 export const MethodParams = {
+  "host.endpoints": z.object({}),
   "projects.list": z.object({}),
   "sessions.list": z.object({ repo_root: z.string() }),
   "agents.list": z.object({
@@ -244,6 +246,7 @@ export const MethodParams = {
 // --- Result payloads per method --------------------------------------------
 
 export const MethodResult = {
+  "host.endpoints": z.object({ endpoints: z.array(RemoteEndpoint) }),
   "projects.list": z.object({ projects: z.array(RemoteProject) }),
   "sessions.list": z.object({ sessions: z.array(RemoteSession) }),
   "agents.list": z.object({ agents: z.array(RemoteAgentStatus) }),
@@ -410,6 +413,7 @@ export type Envelope = z.infer<typeof Envelope>;
 // --- Event payload schemas -------------------------------------------------
 
 export const EventPayloads = {
+  "host.endpoints": z.object({ endpoints: z.array(RemoteEndpoint) }),
   "agent.event": z.object({ agent_id: z.string(), event: z.unknown() }),
   "agent.status": RemoteAgentStatus,
   "agent.queue": z.object({

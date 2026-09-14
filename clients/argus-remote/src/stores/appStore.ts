@@ -23,7 +23,7 @@ import {
   setActiveHost,
   updateHost,
 } from "../lib/keystore";
-import type { DeviceIdentity } from "../lib/keystore";
+import type { DeviceIdentity, RemoteEndpoint } from "../lib/keystore";
 import { parseMediaMessage, type MediaMessage } from "../lib/media";
 import { showRemoteNotification } from "../lib/notify";
 import {
@@ -63,7 +63,12 @@ import type {
   RemoteTodo,
   RemoteTranscript,
 } from "../lib/protocol";
-import { Transport, type ConnectionState } from "../lib/transport";
+import { connectBestEndpoint } from "../lib/connectBest";
+import {
+  Transport,
+  type ConnectionState,
+  type TransportHandlers,
+} from "../lib/transport";
 
 /** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
 const jsonEq = (a: unknown, b: unknown): boolean =>
@@ -389,6 +394,26 @@ export const useAppStore = create<AppState>((set, get) => {
   };
 
   function onEvent(ev: EventEnvelope): void {
+    if (ev.event === "host.endpoints") {
+      // A tunnel came up or died — remember the new routes for the next connect.
+      const { endpoints } = ev.payload as { endpoints: RemoteEndpoint[] };
+      const deviceId = get().identity?.deviceId;
+      if (deviceId && endpoints.length > 0) {
+        updateHost(deviceId, { endpoints })
+          .then(({ hosts }) =>
+            set((s) => ({
+              hosts,
+              identity:
+                s.identity?.deviceId === deviceId
+                  ? { ...s.identity, endpoints }
+                  : s.identity,
+            })),
+          )
+          .catch(() => {});
+      }
+
+      return;
+    }
     if (ev.event === "permission.request") {
       const p = ev.payload as RemotePermissionRequest;
       set((s) => ({
@@ -553,36 +578,104 @@ export const useAppStore = create<AppState>((set, get) => {
     }
   }
 
-  function connect(identity: DeviceIdentity): Transport {
-    const transport = new Transport(identity, {
+  /**
+   * Bumped on every connect so a probe that finishes after the user has already
+   * switched computers can't overwrite the newer connection.
+   */
+  let connectGeneration = 0;
+
+  /**
+   * Re-sync the computer's addresses and remember them, so the next connect can
+   * pick a different route without the user re-pairing.
+   */
+  async function syncEndpoints(
+    transport: Transport,
+    deviceId: string,
+  ): Promise<void> {
+    const { endpoints } = await transport.request<{
+      endpoints: RemoteEndpoint[];
+    }>("host.endpoints", {});
+    if (endpoints.length === 0) {
+      return;
+    }
+    const { hosts } = await updateHost(deviceId, {
+      endpoints,
+      url: transport.url,
+    });
+    set((s) => ({
+      hosts,
+      identity:
+        s.identity?.deviceId === deviceId
+          ? { ...s.identity, endpoints, url: transport.url }
+          : s.identity,
+    }));
+  }
+
+  /** Everything that should happen once a connection is usable. */
+  function onReady(transport: Transport, identity: DeviceIdentity): void {
+    // Push our display name so the desktop's paired-device list shows a
+    // friendly label, and re-read grants (they may have changed while we
+    // were offline).
+    const name = get().deviceName.trim();
+    if (name) {
+      transport.request("device.rename", { name }).catch(() => {});
+    }
+    transport
+      .request<{ capabilities: string[] }>("device.capabilities", {})
+      .then((r) => set({ capabilities: r.capabilities }))
+      .catch(() => {});
+    registerPush(transport)
+      .then((pushState) => set({ pushState }))
+      .catch(() => {});
+    flushPendingDecisions(transport).catch(() => {});
+    syncEndpoints(transport, identity.deviceId).catch(() => {});
+  }
+
+  /**
+   * Probe every known address for this computer and adopt the simplest one that
+   * completes a handshake. The winner isn't known until the probes race, so the
+   * result lands in the store rather than being returned.
+   */
+  function connect(identity: DeviceIdentity): void {
+    const generation = ++connectGeneration;
+    set({ connection: "connecting", transport: null });
+
+    let winner: Transport | null = null;
+    const handlers: TransportHandlers = {
       onState: (connection) => {
+        // A probe that lost, or a stale generation, must not touch the store.
+        if (generation !== connectGeneration) {
+          return;
+        }
         set({ connection });
         if (connection === "ready") {
-          // Push our display name so the desktop's paired-device list shows a
-          // friendly label, and re-read grants (they may have changed while we
-          // were offline).
-          const name = get().deviceName.trim();
-          if (name) {
-            transport.request("device.rename", { name }).catch(() => {});
+          if (winner) {
+            onReady(winner, identity);
           }
-          transport
-            .request<{ capabilities: string[] }>("device.capabilities", {})
-            .then((r) => set({ capabilities: r.capabilities }))
-            .catch(() => {});
-          registerPush(transport)
-            .then((pushState) => set({ pushState }))
-            .catch(() => {});
-          flushPendingDecisions(transport).catch(() => {});
         } else {
           set({ pushState: "off" });
         }
       },
       onEvent,
       onMedia,
-    });
-    transport.connect();
+    };
 
-    return transport;
+    connectBestEndpoint(identity, handlers)
+      .then(({ transport }) => {
+        if (generation !== connectGeneration) {
+          transport.disconnect();
+
+          return;
+        }
+        winner = transport;
+        set({ transport, connection: "ready" });
+        onReady(transport, identity);
+      })
+      .catch(() => {
+        if (generation === connectGeneration) {
+          set({ connection: "offline", transport: null });
+        }
+      });
   }
 
   return {
@@ -641,11 +734,8 @@ export const useAppStore = create<AppState>((set, get) => {
       const identity = hosts.find((h) => h.deviceId === activeId) ?? null;
       set({ hosts, activeHostId: identity?.deviceId ?? null, loaded: true });
       if (identity) {
-        set({
-          identity,
-          capabilities: identity.capabilities,
-          transport: connect(identity),
-        });
+        set({ identity, capabilities: identity.capabilities });
+        connect(identity);
       }
     },
 
@@ -659,8 +749,8 @@ export const useAppStore = create<AppState>((set, get) => {
         identity,
         loaded: true,
         capabilities: identity.capabilities,
-        transport: connect(identity),
       });
+      connect(identity);
     },
 
     selectHost: async (deviceId) => {
@@ -679,8 +769,8 @@ export const useAppStore = create<AppState>((set, get) => {
         identity,
         connection: "offline",
         capabilities: identity.capabilities,
-        transport: connect(identity),
       });
+      connect(identity);
     },
 
     renameHost: async (deviceId, name) => {

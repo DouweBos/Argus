@@ -38,23 +38,42 @@ export class Transport {
   private recvSeq = -1;
   private readonly pending = new Map<string, (res: ResponseEnvelope) => void>();
 
+  private lastState: ConnectionState = "offline";
+
   constructor(
     private readonly identity: DeviceIdentity,
-    private readonly handlers: TransportHandlers,
+    private handlers: TransportHandlers,
+    /** Address to dial; defaults to the paired URL. Set when probing endpoints. */
+    readonly url: string = identity.url,
   ) {
-    this.socket = new GatewaySocket(`${identity.url}/device`, {
+    this.socket = new GatewaySocket(`${url}/device`, {
       onOpen: () => this.startHandshake(),
       onFrame: (bytes) => this.onData(bytes),
       onClose: () => {
         this.reset();
-        this.handlers.onState("offline");
+        this.setState("offline");
       },
     });
   }
 
   connect(): void {
-    this.handlers.onState("connecting");
+    this.setState("connecting");
     this.socket.connect();
+  }
+
+  /**
+   * Take over a transport that was connected by someone else (endpoint
+   * probing). The new owner is told the current state by the caller, so this
+   * only swaps the handlers — re-emitting here would fire before the caller
+   * has recorded which transport won.
+   */
+  adopt(handlers: TransportHandlers): void {
+    this.handlers = handlers;
+  }
+
+  private setState(state: ConnectionState): void {
+    this.lastState = state;
+    this.handlers.onState(state);
   }
 
   disconnect(): void {
@@ -70,7 +89,7 @@ export class Transport {
   }
 
   private startHandshake(): void {
-    this.handlers.onState("handshaking");
+    this.setState("handshaking");
     this.hs = new NoiseHandshake({
       role: "initiator",
       staticKey: keypairFromIdentity(this.identity),
@@ -87,10 +106,10 @@ export class Transport {
       try {
         this.hs.readMessage(bytes);
         this.session = this.hs.session();
-        this.handlers.onState("ready");
+        this.setState("ready");
       } catch {
         this.reset();
-        this.handlers.onState("offline");
+        this.setState("offline");
       }
 
       return;

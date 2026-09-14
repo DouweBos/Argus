@@ -1,7 +1,11 @@
 /**
- * Manages the child process that exposes the local gateway server to the
- * internet without opening an inbound port — the daemon dials out and proxies
- * back to 127.0.0.1. Argus owns its lifecycle, like it does `conductor`.
+ * Manages the child processes that expose the local gateway server to the
+ * internet without opening an inbound port — each daemon dials out and proxies
+ * back to 127.0.0.1. Argus owns their lifecycle, like it does `conductor`.
+ *
+ * Providers run concurrently and independently: a phone syncs every reachable
+ * address and picks the simplest one, so enabling Tailscale must not tear down
+ * Cloudflare. Each provider therefore gets its own child + state.
  *
  * Two providers:
  *   - "cloudflare" (`cloudflared`): "quick" = ephemeral trycloudflare URL (no
@@ -28,21 +32,53 @@ export interface TunnelState {
   error: string | null;
 }
 
-let child: ChildProcess | null = null;
-let state: TunnelState = { status: "stopped", publicUrl: null, error: null };
-let onChange: ((s: TunnelState) => void) | null = null;
+const STOPPED: TunnelState = {
+  status: "stopped",
+  publicUrl: null,
+  error: null,
+};
 
-export function getTunnelState(): TunnelState {
-  return state;
+interface Runtime {
+  child: ChildProcess | null;
+  state: TunnelState;
 }
 
-export function onTunnelChange(cb: ((s: TunnelState) => void) | null): void {
+export const TUNNEL_PROVIDERS: TunnelProvider[] = ["tailscale", "cloudflare"];
+
+const runtimes = new Map<TunnelProvider, Runtime>();
+let onChange: (() => void) | null = null;
+
+function runtimeFor(provider: TunnelProvider): Runtime {
+  const existing = runtimes.get(provider);
+  if (existing) {
+    return existing;
+  }
+  const fresh: Runtime = { child: null, state: { ...STOPPED } };
+  runtimes.set(provider, fresh);
+
+  return fresh;
+}
+
+export function getTunnelState(provider: TunnelProvider): TunnelState {
+  return runtimes.get(provider)?.state ?? { ...STOPPED };
+}
+
+/** Every provider's state, for status reporting. */
+export function getTunnelStates(): Record<TunnelProvider, TunnelState> {
+  return {
+    cloudflare: getTunnelState("cloudflare"),
+    tailscale: getTunnelState("tailscale"),
+  };
+}
+
+export function onTunnelChange(cb: (() => void) | null): void {
   onChange = cb;
 }
 
-function setState(next: Partial<TunnelState>): void {
-  state = { ...state, ...next };
-  onChange?.(state);
+function setState(provider: TunnelProvider, next: Partial<TunnelState>): void {
+  const rt = runtimeFor(provider);
+  rt.state = { ...rt.state, ...next };
+  onChange?.();
 }
 
 function httpsToWss(url: string): string {
@@ -54,6 +90,75 @@ function httpsToWss(url: string): string {
 
 const CF_QUICK_URL_RE = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/i;
 const TS_URL_RE = /https:\/\/[a-z0-9.-]+\.ts\.net/i;
+
+/** Noise that shows up on stderr but never explains a failure. */
+const IGNORABLE_OUTPUT_RE = /^\s*(Warning: client version|#|$)/;
+
+/** Last few KB of a child's output, enough to explain why it gave up. */
+const OUTPUT_TAIL_LIMIT = 4000;
+
+/**
+ * Turn a CLI's dying breath into something a user can act on. Providers report
+ * setup problems (missing daemon, logged out, feature disabled) on stderr and
+ * then exit, so the exit code alone tells the user nothing.
+ */
+function describeFailure(
+  provider: TunnelProvider,
+  bin: string,
+  output: string,
+  code: number | null,
+): string {
+  const lines = output
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !IGNORABLE_OUTPUT_RE.test(l));
+  const joined = lines.join("\n");
+
+  // Tailscale prints the exact admin-console link that fixes each problem.
+  const tsLink = /https:\/\/login\.tailscale\.com\/\S+/i.exec(joined)?.[0];
+
+  if (provider === "tailscale") {
+    if (
+      /is Tailscale running|failed to connect to local Tailscale|tailscaled\.socket|Failed to connect to local Tailscale daemon/i.test(
+        joined,
+      )
+    ) {
+      return "Tailscale isn't running. Open the Tailscale app (or start tailscaled), then try again.";
+    }
+    if (/Funnel is not enabled|Funnel.*not (enabled|available)/i.test(joined)) {
+      return tsLink
+        ? `Tailscale Funnel isn't enabled on your tailnet. Enable it at ${tsLink}, then try again.`
+        : "Tailscale Funnel isn't enabled on your tailnet. Enable Funnel in the Tailscale admin console, then try again.";
+    }
+    if (/Logged out|Log in at|NeedsLogin|not logged in/i.test(joined)) {
+      return tsLink
+        ? `Tailscale is logged out. Sign in at ${tsLink}, then try again.`
+        : "Tailscale is logged out. Run `tailscale login`, then try again.";
+    }
+    if (/HTTPS|cert/i.test(joined) && /not enabled|disabled/i.test(joined)) {
+      return tsLink
+        ? `Tailscale needs HTTPS certificates enabled for your tailnet. Enable them at ${tsLink}, then try again.`
+        : "Tailscale needs HTTPS certificates enabled for your tailnet before Funnel works.";
+    }
+    if (/denied|permission|attribute/i.test(joined)) {
+      return `Tailscale denied the Funnel request — check your tailnet's Funnel policy.\n${joined}`;
+    }
+  }
+
+  if (
+    provider === "cloudflare" &&
+    /Unauthorized|invalid token|token/i.test(joined) &&
+    /fail|error|invalid/i.test(joined)
+  ) {
+    return `Cloudflare rejected the connector token. Check the token and try again.\n${joined}`;
+  }
+
+  if (joined) {
+    return joined.length > 600 ? joined.slice(-600) : joined;
+  }
+
+  return `${bin} exited (${code ?? "signal"}) without explanation.`;
+}
 
 export interface StartTunnelOpts {
   provider: TunnelProvider;
@@ -112,63 +217,90 @@ function planFor(opts: StartTunnelOpts): Plan {
 }
 
 export function startTunnel(opts: StartTunnelOpts): void {
-  stopTunnel();
+  const { provider } = opts;
+  stopTunnel(provider);
   const plan = planFor(opts);
 
-  setState({ status: "starting", error: null, publicUrl: plan.presetUrl });
+  setState(provider, {
+    status: "starting",
+    error: null,
+    publicUrl: plan.presetUrl,
+  });
 
   let proc: ChildProcess;
   try {
     proc = spawn(plan.bin, plan.args, { stdio: ["ignore", "pipe", "pipe"] });
   } catch (e) {
-    setState({
+    setState(provider, {
       status: "error",
       error: `failed to launch ${plan.bin}: ${(e as Error).message}`,
     });
 
     return;
   }
-  child = proc;
+  const rt = runtimeFor(provider);
+  rt.child = proc;
 
+  let tail = "";
   const scan = (buf: Buffer) => {
     const text = buf.toString();
-    if (plan.urlRe && !state.publicUrl) {
+    tail = (tail + text).slice(-OUTPUT_TAIL_LIMIT);
+    if (plan.urlRe && !getTunnelState(provider).publicUrl) {
       const match = plan.urlRe.exec(text);
       if (match) {
-        setState({ status: "running", publicUrl: httpsToWss(match[0]) });
+        setState(provider, {
+          status: "running",
+          publicUrl: httpsToWss(match[0]),
+        });
       }
     } else if (plan.runningSignal?.test(text)) {
-      setState({ status: "running" });
+      setState(provider, { status: "running" });
     }
   };
   proc.stdout?.on("data", scan);
   proc.stderr?.on("data", scan);
 
-  proc.on("error", (err) => setState({ status: "error", error: err.message }));
+  proc.on("error", (err) => {
+    const enoent = (err as NodeJS.ErrnoException).code === "ENOENT";
+    setState(provider, {
+      status: "error",
+      error: enoent
+        ? `\`${plan.bin}\` isn't on Argus's PATH. Install it (\`brew install ${plan.bin}\`) and restart Argus.`
+        : err.message,
+    });
+  });
   proc.on("exit", (code) => {
-    if (child === proc) {
-      child = null;
-      if (state.status !== "stopped") {
-        setState({
+    if (rt.child === proc) {
+      rt.child = null;
+      if (rt.state.status !== "stopped") {
+        setState(provider, {
           status: "error",
-          error: `${plan.bin} exited (${code ?? "signal"})`,
+          error: describeFailure(provider, plan.bin, tail, code),
         });
       }
     }
   });
 }
 
-export function stopTunnel(): void {
-  if (child) {
-    const proc = child;
-    child = null;
-    proc.removeAllListeners();
-    proc.kill();
-    // Escalate to SIGKILL if the daemon ignores SIGTERM, so it can't orphan.
-    const kill = setTimeout(() => proc.kill("SIGKILL"), 2000);
-    kill.unref();
-    proc.once("exit", () => clearTimeout(kill));
+/** Stop one provider, or every running tunnel when none is named. */
+export function stopTunnel(provider?: TunnelProvider): void {
+  const targets = provider ? [provider] : [...runtimes.keys()];
+  for (const target of targets) {
+    const rt = runtimes.get(target);
+    if (!rt) {
+      continue;
+    }
+    if (rt.child) {
+      const proc = rt.child;
+      rt.child = null;
+      proc.removeAllListeners();
+      proc.kill();
+      // Escalate to SIGKILL if the daemon ignores SIGTERM, so it can't orphan.
+      const kill = setTimeout(() => proc.kill("SIGKILL"), 2000);
+      kill.unref();
+      proc.once("exit", () => clearTimeout(kill));
+    }
+    rt.state = { ...STOPPED };
   }
-  state = { status: "stopped", publicUrl: null, error: null };
-  onChange?.(state);
+  onChange?.();
 }

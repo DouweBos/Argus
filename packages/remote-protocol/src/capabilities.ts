@@ -102,6 +102,8 @@ export const REMOTE_METHODS = {
   "devices.touch": "control",
   "devices.button": "control",
   "devices.keyboard": "control",
+  /** Every address this desktop is reachable on, so a client can pick one. */
+  "host.endpoints": "monitor",
 } as const satisfies Record<string, Capability>;
 
 export type RemoteMethod = keyof typeof REMOTE_METHODS;
@@ -126,5 +128,7 @@ export const REMOTE_EVENTS = [
   "projects.changed",
   /** A user-facing notification (agent finished, needs approval, MCP push). */
   "notification",
+  /** The desktop's reachable addresses changed (a tunnel came up or died). */
+  "host.endpoints",
 ] as const;
 export type RemoteEventType = (typeof REMOTE_EVENTS)[number];

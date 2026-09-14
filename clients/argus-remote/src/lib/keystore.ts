@@ -25,14 +25,69 @@ export interface DeviceIdentity {
   devPubB64: string;
   /** Pinned desktop static public key (base64). */
   desktopPubB64: string;
-  /** Public wss:// URL of the desktop gateway (via the tunnel). */
+  /**
+   * Public wss:// URL of the desktop gateway. Kept as the last known good
+   * address and as the fallback for pairings made before endpoint sync.
+   */
   url: string;
+  /**
+   * Every address this computer advertised, best first. Re-synced on each
+   * connect, so a phone paired on Wi-Fi learns the tunnel addresses too.
+   */
+  endpoints?: RemoteEndpoint[];
   capabilities: string[];
   /** The computer's name, from the pairing grant or renamed on this phone. */
   hostName?: string;
   pairedAt?: number;
   /** @deprecated Superseded by the app-wide device name. */
   name?: string;
+}
+
+/** One route to a computer. Mirrors the desktop's `host.endpoints` payload. */
+export interface RemoteEndpoint {
+  kind: "cloudflare" | "lan" | "tailscale";
+  url: string;
+  /** Lower is simpler; probed in this order. */
+  priority: number;
+}
+
+const KIND_PRIORITY: Record<RemoteEndpoint["kind"], number> = {
+  lan: 0,
+  tailscale: 1,
+  cloudflare: 2,
+};
+
+/**
+ * Classify a bare URL from a pre-endpoint-sync pairing, so a legacy identity
+ * still sorts sensibly once real endpoints arrive alongside it.
+ */
+export function inferEndpointKind(url: string): RemoteEndpoint["kind"] {
+  if (/\.ts\.net(?::\d+)?(?:\/|$)/i.test(url)) {
+    return "tailscale";
+  }
+  if (/trycloudflare\.com|^wss:\/\//i.test(url)) {
+    return "cloudflare";
+  }
+
+  return "lan";
+}
+
+/**
+ * Addresses to try for a computer, best first. Falls back to the single paired
+ * URL when the desktop has never synced its list.
+ */
+export function identityEndpoints(identity: DeviceIdentity): RemoteEndpoint[] {
+  const known = identity.endpoints ?? [];
+  const seen = new Set(known.map((e) => e.url));
+  const all = [...known];
+  // The paired URL stays a candidate — it's the only one a legacy identity has,
+  // and it's still valid if the desktop is mid-restart and advertising nothing.
+  if (identity.url && !seen.has(identity.url)) {
+    const kind = inferEndpointKind(identity.url);
+    all.push({ kind, url: identity.url, priority: KIND_PRIORITY[kind] });
+  }
+
+  return all.sort((a, b) => a.priority - b.priority);
 }
 
 export interface PairedHosts {
