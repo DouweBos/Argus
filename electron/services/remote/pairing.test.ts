@@ -31,7 +31,6 @@ vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: async () => "",
   getSessionFullDiff: async () => "",
 }));
-vi.mock("../organization/manager", () => ({ listOrganizations: () => [] }));
 
 const IDENTITY = generateKeypair();
 const dec = new TextDecoder();

@@ -52,7 +52,6 @@ import {
 } from "../agent/messageQueue";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { collectAllProjects } from "../mcp/projects";
-import { listOrganizations } from "../organization/manager";
 import {
   gitCheckout,
   gitCreateBranch,
@@ -209,9 +208,6 @@ function sessionLabel(sessionId: string): string {
   }
   if (s.kind === "project_root") {
     return "Project root";
-  }
-  if (s.kind === "org_host") {
-    return s.display_name ?? "Organization";
   }
 
   return s.display_name ?? s.branch;
@@ -931,17 +927,6 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return { data: found.data, media_type: found.media_type };
-  },
-
-  "orgs.list": async () => {
-    const organizations = listOrganizations().map((o) => ({
-      id: o.id,
-      name: o.name,
-      accent: o.accent,
-      member_repo_roots: o.members.map((m) => m.repo_root),
-    }));
-
-    return { organizations };
   },
 
   "permission.respond": async (params, ctx) => {

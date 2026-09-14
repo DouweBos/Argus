@@ -6,7 +6,7 @@
  * behind {@link LlmRunner}. This module is responsible for:
  *
  * - Resolving a runner via the registry (today: always Claude Code).
- * - Building the per-agent system prompt + runtime section + org context.
+ * - Building the per-agent system prompt + runtime section.
  * - MCP injection (gated on {@link RunnerCapabilities.supportsMcp}).
  * - Simulator + browser device acquisition for `can_use_tool` interception.
  * - Tracking `agent_vitals` counters by listening on the runner's
@@ -59,8 +59,6 @@ import { resolveModelForAgent } from "../llm/resolve";
 import { toCanonicalPermissionMode } from "../llm/runners/claudeCode/permissionModes";
 import { getMcpAuthToken, getMcpPort } from "../mcp/server";
 import { buildMergedMcpServers } from "../mcp/userConfig";
-import { organizationsForRepo } from "../organization/manager";
-import { findOrgTaskForSession } from "../organizationTask/manager";
 import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { loadArgusConfig } from "../session/setup";
@@ -113,7 +111,6 @@ export async function ensureWebBrowserForAgent(
 const cachedPrompts: Record<string, string | null> = {
   worktree: null,
   repo_root: null,
-  org_host: null,
 };
 
 function loadPromptFile(filename: string): string {
@@ -130,79 +127,15 @@ function loadPromptFile(filename: string): string {
   }
 }
 
-function getSystemPromptForKind(
-  kind: "org_host" | "project_root" | "worktree",
-): string {
+function getSystemPromptForKind(kind: "project_root" | "worktree"): string {
   if (cachedPrompts[kind] === null) {
-    if (kind === "project_root") {
-      cachedPrompts[kind] = loadPromptFile("root-agent-system-prompt.md");
-    } else if (kind === "org_host") {
-      cachedPrompts[kind] = loadPromptFile("org-host-agent-system-prompt.md");
-    } else {
-      cachedPrompts[kind] = loadPromptFile("worktree-agent-system-prompt.md");
-    }
+    cachedPrompts[kind] =
+      kind === "project_root"
+        ? loadPromptFile("root-agent-system-prompt.md")
+        : loadPromptFile("worktree-agent-system-prompt.md");
   }
 
   return cachedPrompts[kind] ?? "";
-}
-
-function buildOrganizationContext(repoRoot: string, sessionId: string): string {
-  const task = findOrgTaskForSession(sessionId);
-  const taskOrg = task
-    ? (appState.organizations.get(task.organization_id) ?? null)
-    : null;
-  const orgs = taskOrg ? [taskOrg] : organizationsForRepo(repoRoot);
-  if (orgs.length === 0) {
-    return "";
-  }
-
-  const sections = orgs.map((org) => {
-    const lines: string[] = [`### Organization: ${org.name}`];
-    if (org.description) {
-      lines.push(org.description);
-    }
-    if (org.system_prompt) {
-      lines.push("", org.system_prompt);
-    }
-    lines.push("", "**Member repos:**");
-    for (const m of org.members) {
-      const marker = m.repo_root === repoRoot ? " _(this repo)_" : "";
-      const role = m.role || "(no role described)";
-      lines.push(`- \`${m.repo_root}\` — ${role}${marker}`);
-    }
-    lines.push(
-      "",
-      "Use `spawn_agent` with a member's `project_path` to delegate work to the project responsible for that slice of the product.",
-    );
-
-    return lines.join("\n");
-  });
-
-  let base = `## Organization Context\n\n${sections.join("\n\n")}`;
-
-  if (task) {
-    const scopeLines = task.scope
-      .map((s) => `- \`${s.repo_root}\` — ${s.role || "(no role described)"}`)
-      .join("\n");
-    const taskLines: string[] = [
-      "",
-      "## Current Cross-Repo Task",
-      "",
-      `**Task:** ${task.title}`,
-      "",
-      "**Shared prompt:**",
-      "",
-      task.prompt,
-      "",
-      "**In-scope repos:**",
-      "",
-      scopeLines,
-    ];
-
-    base += "\n" + taskLines.join("\n");
-  }
-
-  return base;
 }
 
 // ---------------------------------------------------------------------------
@@ -240,8 +173,7 @@ const DEFAULT_AGENT_PERMISSION_MODE = "auto";
 /**
  * Spawn a new agent process for the given session. See claude.ts for the
  * full lifecycle docs — Phase 1 preserves the legacy signature exactly so
- * callers (`ipc.ts`, `mcp/server.ts`, `organizationTask/orchestrator.ts`)
- * don't change.
+ * callers (`ipc.ts`, `mcp/server.ts`) don't change.
  */
 export async function startAgent(
   sessionId: string,
@@ -369,8 +301,8 @@ export async function startAgent(
   // `agentSession` skeleton; the handle is wired below.
   const previous = reuseAgentId ? appState.agents.get(reuseAgentId) : null;
 
-  // Combine prompts: kind-specific → project context → org context →
-  // project-level → runtime → caller-provided.
+  // Combine prompts: kind-specific → project context → project-level →
+  // runtime → caller-provided.
   let projectPrompt: string | null = null;
   let browserUrl: string | null = null;
   let configPlatforms: RuntimePlatform[] | null = null;
@@ -397,14 +329,9 @@ export async function startAgent(
 
   const systemPrompt = getSystemPromptForKind(argusSession.kind);
   const projectContext = `## Current Project\n\nYou are working in **${argusSession.repo_root}**. When using MCP tools that accept a \`project_path\` parameter, always pass \`${argusSession.repo_root}\` for work in this project. Use \`list_projects\` to discover paths for other projects.\n\nYour own agent ID is \`${agentId}\`. The Argus MCP already knows who you are, so you normally don't need to pass it — \`parent_agent_id\` on \`spawn_agent\`/\`create_session\`/\`send_agent_message\` defaults to you automatically.`;
-  const orgContext = buildOrganizationContext(
-    argusSession.repo_root,
-    argusSession.id,
-  );
   const combinedPrompt = [
     systemPrompt,
     projectContext,
-    orgContext,
     projectPrompt,
     runtimeSection,
     appendSystemPrompt,

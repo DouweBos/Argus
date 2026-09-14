@@ -3,10 +3,9 @@
  * `electron/services/llm/runners/claudeCode/` in Phase 1 of the LLM routing
  * abstraction. The runner-agnostic agent service lives in `agentService.ts`.
  *
- * Existing importers (`electron/ipc.ts`, `electron/services/mcp/server.ts`,
- * `electron/services/organizationTask/orchestrator.ts`) keep importing from
- * `./agent/claude` for now — they will migrate to `./agent/agentService` in
- * a follow-up cleanup. No behavior change.
+ * Existing importers (`electron/ipc.ts`, `electron/services/mcp/server.ts`)
+ * keep importing from `./agent/claude` for now — they will migrate to
+ * `./agent/agentService` in a follow-up cleanup. No behavior change.
  */
 
 export {

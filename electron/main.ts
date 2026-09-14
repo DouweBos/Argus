@@ -42,8 +42,6 @@ import { stopAllDebugStreams } from "./services/conductor/debug";
 import { initConductorOverride } from "./services/conductor/override";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
-import { initOrganizations } from "./services/organization/manager";
-import { initOrgTasks } from "./services/organizationTask/manager";
 import {
   applyRemoteSettings,
   setWebClientDir,
@@ -442,11 +440,6 @@ function buildAppMenu(): Menu {
           label: "Notifications",
           accelerator: "CmdOrCtrl+5",
           click: () => goto("/notifications"),
-        },
-        {
-          label: "Organizations",
-          accelerator: "CmdOrCtrl+6",
-          click: () => goto("/organizations"),
         },
         { type: "separator" },
         {
@@ -915,19 +908,6 @@ app.whenReady().then(() => {
   startMjpegServer().catch((e) =>
     log("Failed to start MJPEG server: %s", String(e)),
   );
-
-  // Load persisted organizations and register their member repos.
-  try {
-    initOrganizations();
-  } catch (e) {
-    log("initOrganizations failed: %s", String(e));
-  }
-
-  try {
-    initOrgTasks();
-  } catch (e) {
-    log("initOrgTasks failed: %s", String(e));
-  }
 
   // Sync system dark/light theme to all active Conductor-managed browsers.
   nativeTheme.on("updated", () => {

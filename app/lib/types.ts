@@ -11,14 +11,12 @@ export interface Session {
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
   id: string;
-  kind: "org_host" | "project_root" | "worktree";
+  kind: "project_root" | "worktree";
   /**
    * Default model id (runner-specific) for agents spawned in this session.
    * `null` lets the cascade fall through to project / app / runner defaults.
    */
   model?: string | null;
-  /** OrgTask that owns this session (if spawned from a cross-repo task). */
-  organization_task_id?: string | null;
   path: string;
   repo_root: string;
   /**
@@ -800,37 +798,6 @@ export interface AgentCapabilities {
 }
 
 // ---------------------------------------------------------------------------
-// Organizations
-// ---------------------------------------------------------------------------
-
-export interface OrganizationMember {
-  repo_root: string;
-  role: string;
-}
-
-export interface Organization {
-  accent: string;
-  created_at: number;
-  description: string;
-  id: string;
-  members: OrganizationMember[];
-  name: string;
-  system_prompt: string;
-  updated_at: number;
-}
-
-// ---------------------------------------------------------------------------
-// Organization tasks
-// ---------------------------------------------------------------------------
-
-export type OrgTaskStatus = "cancelled" | "completed" | "failed" | "running";
-
-export interface OrgTaskScopeEntry {
-  repo_root: string;
-  role: string;
-}
-
-// ---------------------------------------------------------------------------
 // Claude account
 // ---------------------------------------------------------------------------
 
@@ -1071,21 +1038,6 @@ export interface PullRequestDetail {
   title: string;
   updatedAt: string;
   url: string;
-}
-
-export interface OrgTask {
-  created_at: number;
-  /** Human-readable reason a task is in a failed state (e.g. initialize failed). */
-  error?: string | null;
-  host_agent_id: string | null;
-  host_session_id: string | null;
-  id: string;
-  organization_id: string;
-  prompt: string;
-  scope: OrgTaskScopeEntry[];
-  status: OrgTaskStatus;
-  title: string;
-  updated_at: number;
 }
 
 // ---------------------------------------------------------------------------

@@ -41,7 +41,6 @@ import {
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
 import { openOpenPalette } from "../../../stores/openPaletteStore";
-import { useOrgTaskSync } from "../../../stores/orgTaskStore";
 import { usePullRequestsSync } from "../../../stores/pullRequestStore";
 import {
   getSelectedSessionId,
@@ -62,7 +61,6 @@ import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
 import { NotificationsScreen } from "../../notifications";
-import { OrganizationsScreen } from "../../organizations";
 import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
 import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
 import { RuntimeScreen } from "../../runtimes";
@@ -108,7 +106,6 @@ function renderCenter(
     | "devices"
     | "home"
     | "notifications"
-    | "organizations"
     | "pull-request-detail"
     | "pull-requests"
     | "runtimes",
@@ -128,9 +125,6 @@ function renderCenter(
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;
-  }
-  if (centerView === "organizations") {
-    return <OrganizationsScreen />;
   }
   if (centerView === "pull-requests" || centerView === "pull-request-detail") {
     // Detail is an overlay on top of the list — the list stays mounted behind
@@ -156,7 +150,6 @@ export function AppShell() {
   const setLeftWidth = setLeftPanelWidth;
   useWindowFocus();
   useSuppressSpacePageScroll();
-  useOrgTaskSync();
   usePullRequestsSync();
   useTrackSessionPanel();
   useToolProjectMaskSync();

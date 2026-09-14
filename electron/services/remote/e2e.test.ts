@@ -27,9 +27,6 @@ vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => ""),
   getSessionFullDiff: vi.fn(async () => ""),
 }));
-vi.mock("../organization/manager", () => ({
-  listOrganizations: vi.fn(() => []),
-}));
 vi.mock("./deviceStore", () => ({
   findDeviceByStaticKey: async (pub: string) =>
     DEVICES.find((d) => d.dev_static_pub === pub) ?? null,

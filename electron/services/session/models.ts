@@ -5,9 +5,8 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
-/** Whether this session is backed by a git worktree, the repo root itself,
- * or a neutral directory hosting a cross-repo org task agent. */
-export type SessionKind = "org_host" | "project_root" | "worktree";
+/** Whether this session is backed by a git worktree or the repo root itself. */
+export type SessionKind = "project_root" | "worktree";
 
 /**
  * Lifecycle state of a session.
@@ -45,8 +44,6 @@ export interface Session {
   env_index?: number | null;
   /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
-  /** OrgTask that owns this session (if spawned from a cross-repo task). */
-  organization_task_id?: string | null;
   /**
    * Transient terminal id for the setup pipeline's PTY, included on the
    * response from `create_session` so the renderer can attach a Setup tab

@@ -12,8 +12,6 @@
  * - `/devices`                                   → devices screen
  * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
  * - `/notifications`                             → notifications screen
- * - `/organizations`                             → organizations list
- * - `/organizations/:organizationId`             → single organization detail
  * - `/pull-requests`                             → outstanding PRs of interest
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
  * - `/runtimes`                                  → runtimes overview
@@ -47,7 +45,6 @@ export type AppView =
   | "devices"
   | "home"
   | "notifications"
-  | "organizations"
   | "pull-request-detail"
   | "pull-requests"
   | "runtimes"
@@ -111,7 +108,6 @@ export interface ParsedRoute {
   gitRefName: string | null;
   /** Sub-view inside the git panel (working/branches/history/…). */
   gitView: GitSubView | null;
-  organizationId: string | null;
   /** Session panel (agents/git/home). Only meaningful when view=session. */
   panel: SessionPanel;
   /** Identifies which PR to show when view === "pull-request-detail". */
@@ -157,22 +153,9 @@ export function parseRoute(pathname: string): ParsedRoute {
     return {
       view: "session",
       sessionId: segments[1],
-      organizationId: null,
       panel: validPanel,
       gitView,
       gitRefName,
-      pr: null,
-    };
-  }
-
-  if (segments[0] === "organizations") {
-    return {
-      view: "organizations",
-      sessionId: null,
-      organizationId: segments[1] ?? null,
-      panel: "home",
-      gitView: null,
-      gitRefName: null,
       pr: null,
     };
   }
@@ -189,7 +172,6 @@ export function parseRoute(pathname: string): ParsedRoute {
       return {
         view: "pull-request-detail",
         sessionId: null,
-        organizationId: null,
         panel: "agents",
         gitView: null,
         gitRefName: null,
@@ -219,7 +201,6 @@ function emptyRoute(view: AppView): ParsedRoute {
   return {
     view,
     sessionId: null,
-    organizationId: null,
     panel: "agents",
     gitView: null,
     gitRefName: null,
@@ -230,7 +211,7 @@ function emptyRoute(view: AppView): ParsedRoute {
 /**
  * Sanitised route template for the current pathname — never contains IDs,
  * names, or any other dynamic segment that could leak project / session /
- * org / repo identifiers into telemetry.
+ * repo identifiers into telemetry.
  *
  * Example: `/sessions/abc-123/git` → `/sessions/:sessionId/git`.
  */
@@ -249,10 +230,6 @@ export function routePattern(pathname: string): string {
       return route.panel === "home"
         ? "/sessions/:sessionId"
         : `/sessions/:sessionId/${route.panel}`;
-    case "organizations":
-      return route.organizationId
-        ? "/organizations/:organizationId"
-        : "/organizations";
     case "pull-request-detail":
       return "/pull-requests/:owner/:repo/:number";
   }
@@ -273,11 +250,6 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
         : "";
 
     return `/sessions/${route.sessionId}${panel}${gitView}${gitRef}`;
-  }
-  if (route.view === "organizations") {
-    return route.organizationId
-      ? `/organizations/${route.organizationId}`
-      : "/organizations";
   }
   if (route.view === "pull-request-detail" && route.pr) {
     const { owner, repo, number } = route.pr;

@@ -19,9 +19,7 @@ export function SidebarNavItem({
 }: SidebarNavItemProps) {
   const location = useLocation();
   const route = parseRoute(location.pathname);
-  const active =
-    route.view === view &&
-    (view !== "organizations" || route.organizationId === null);
+  const active = route.view === view;
 
   return (
     <SidebarItem

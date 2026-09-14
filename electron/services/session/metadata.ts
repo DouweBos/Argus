@@ -19,7 +19,6 @@ export interface SessionMeta {
   display_name?: string | null;
   description: string;
   base_branch?: string | null;
-  organization_task_id?: string | null;
   /**
    * LLM runner bound to this session at creation time. Legacy entries
    * persisted before this field existed default to `"claude-code"` on read

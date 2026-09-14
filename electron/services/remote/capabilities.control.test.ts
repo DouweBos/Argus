@@ -91,9 +91,6 @@ vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => "diff --git a b"),
   getSessionFullDiff: vi.fn(async () => "diff --git HEAD"),
 }));
-vi.mock("../organization/manager", () => ({
-  listOrganizations: vi.fn(() => []),
-}));
 
 const { appState } = await import("../../state");
 const { dispatch } = await import("./capabilities");

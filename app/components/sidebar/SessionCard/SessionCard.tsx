@@ -16,11 +16,7 @@ import {
 } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useUnreadByAgent } from "../../../stores/conversationStore";
-import { useOrgTasks } from "../../../stores/orgTaskStore";
-import {
-  selectSession,
-  useSetupProgressBySessionId,
-} from "../../../stores/sessionStore";
+import { useSetupProgressBySessionId } from "../../../stores/sessionStore";
 import { useSessionIsRunning } from "../../../stores/terminalStore";
 import { BranchSwitcher } from "../BranchSwitcher";
 import styles from "./SessionCard.module.css";
@@ -47,7 +43,7 @@ function toTildePath(absPath: string): string {
 }
 
 interface SessionCardProps {
-  /** Override the default branch/repo icon (e.g. TaskIcon for org task hosts). */
+  /** Override the default branch/repo icon. */
   iconOverride?: ReactNode;
   isSelected: boolean;
   onBranchChanged?: () => void;
@@ -142,11 +138,6 @@ export function SessionCard({
     enabled: isSessionReady(session.status),
   });
   const isRunning = useSessionIsRunning(session.id);
-  const orgTasks = useOrgTasks();
-  const orgTask = session.organization_task_id
-    ? orgTasks.find((t) => t.id === session.organization_task_id)
-    : null;
-
   const closeMenu = useCallback(() => setMenuPosition(null), []);
 
   const handleDelete = async () => {
@@ -331,21 +322,6 @@ export function SessionCard({
         ) : undefined
       }
     >
-      {orgTask && (
-        <button
-          type="button"
-          className={styles.orgTaskPill}
-          title={`Part of task: ${orgTask.title}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (orgTask.host_session_id) {
-              selectSession(orgTask.host_session_id);
-            }
-          }}
-        >
-          task: {orgTask.title}
-        </button>
-      )}
       {isProject && repoRoot && repoBranch && onBranchChanged && isSelected && (
         <div className={styles.branchRow} onClick={(e) => e.stopPropagation()}>
           <BranchSwitcher

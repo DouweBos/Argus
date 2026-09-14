@@ -8,11 +8,9 @@ import {
 } from "@argus/peacock";
 import { useChatHistory } from "../../../hooks/useChatHistory";
 import { clearSessionSetupError, retrySessionSetup } from "../../../lib/ipc";
-import { useOrgTaskForSession } from "../../../stores/orgTaskStore";
 import { useRecentProjects } from "../../../stores/recentProjectsStore";
 import { setPendingPrompt, useSessions } from "../../../stores/sessionStore";
 import { ChatHistoryList } from "../../agent/ChatHistoryList";
-import { TaskWidgets } from "../../organizations/TaskWidgets";
 import { ActiveAgentsPanel } from "../ActiveAgentsPanel";
 import { ChangeBaseBranchDialog } from "../ChangeBaseBranchDialog";
 import { OpenInEditorButton } from "../OpenInEditor/OpenInEditorButton";
@@ -50,7 +48,6 @@ export function SessionHomeScreen({
   const sessions = useSessions();
   const recent = useRecentProjects();
   const history = useChatHistory(repoRoot);
-  const orgTask = useOrgTaskForSession(sessionId);
 
   const session = useMemo(
     () => sessions.find((w) => w.id === sessionId) ?? null,
@@ -229,8 +226,6 @@ export function SessionHomeScreen({
             }
           />
         )}
-
-        {orgTask && <TaskWidgets task={orgTask} />}
 
         <ActiveAgentsPanel repoRoot={repoRoot} sessionId={sessionId} />
 

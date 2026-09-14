@@ -7,8 +7,6 @@
 import type { QueuedMessage } from "./services/agent/messageQueue";
 import type { AgentSession } from "./services/agent/models";
 import type { PermissionRequestPayload } from "./services/llm/runners/claudeCode/controlHandler";
-import type { Organization } from "./services/organization/models";
-import type { OrgTask } from "./services/organizationTask/models";
 import type { Session } from "./services/session/models";
 import type { WatcherHandle } from "./services/session/watcher";
 import type { TerminalSession } from "./services/terminal/multiplexer";
@@ -64,12 +62,6 @@ class AppState {
 
   /** Live Claude Code agent sessions, keyed by agent UUID. */
   agents = new Map<string, AgentSession>();
-
-  /** User-defined organizations grouping related repos, keyed by org UUID. */
-  organizations = new Map<string, Organization>();
-
-  /** Cross-repo tasks that fan out across org members, keyed by task UUID. */
-  organizationTasks = new Map<string, OrgTask>();
 
   /** Active iOS simulator capture sessions, keyed by UDID. */
   simulators = new Map<string, SimulatorSession>();

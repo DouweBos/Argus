@@ -7,7 +7,7 @@ export interface GridScreenProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Screen shell for list-style views (Organizations, Pull requests, etc).
+ * Screen shell for list-style views (Projects, Pull requests, etc).
  *
  * Compose with `GridScreen.Header`, `GridScreen.Section`, and
  * `GridScreen.Grid` to get consistent headings, grouped sections, and a

@@ -1424,7 +1424,7 @@ export function WarningIcon({ size = 14, className, ...rest }: IconProps) {
   );
 }
 
-/** A cluster of four rounded squares — used to represent an organization grouping multiple repos. */
+/** A cluster of four rounded squares — used for the signed-in account's organization. */
 export function OrganizationIcon({ size = 12, className, ...rest }: IconProps) {
   return (
     <svg
@@ -1537,31 +1537,6 @@ export function SlidersIcon({ size = 12, className, ...rest }: IconProps) {
       <circle cx="5" cy="4" fill="currentColor" r="1.5" stroke="none" />
       <circle cx="10" cy="8" fill="currentColor" r="1.5" stroke="none" />
       <circle cx="6" cy="12" fill="currentColor" r="1.5" stroke="none" />
-    </svg>
-  );
-}
-
-export function TaskIcon({
-  size = 12,
-  className,
-  done = false,
-  ...rest
-}: IconProps & { done?: boolean }) {
-  return (
-    <svg
-      className={className}
-      {...rest}
-      fill="none"
-      height={size}
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.6"
-      viewBox="0 0 16 16"
-      width={size}
-    >
-      <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="2.25" />
-      {done && <path d="M5.25 8.25 L7.25 10.25 L10.75 5.75" />}
     </svg>
   );
 }
