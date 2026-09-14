@@ -15,6 +15,7 @@ import type { H264Config } from "../simulator/h264-parser";
 import {
   Envelope,
   EventPayloads,
+  type RemoteEndpoint,
   type RemoteEventType,
   type RemotePlatform,
 } from "@argus/remote-protocol";
@@ -294,6 +295,11 @@ export class DeviceConnection implements DeviceMediaController {
     }
   }
 
+  /** Tell this device every address it could reach the desktop on. */
+  pushEndpoints(endpoints: RemoteEndpoint[]): void {
+    this.pushEvent("host.endpoints", null, { endpoints });
+  }
+
   /** Forward a tapped renderer broadcast to this device, if relevant. */
   handleBroadcast(channel: string, args: unknown[]): void {
     // User-facing notifications go to every connected device, regardless of
@@ -494,6 +500,16 @@ export function disconnectDevice(deviceId: string): void {
     if (c.device.device_id === deviceId) {
       c.close();
     }
+  }
+}
+
+/**
+ * Announce the desktop's addresses to every live device. Called when a tunnel
+ * comes up or dies so phones learn new routes without re-pairing.
+ */
+export function broadcastEndpoints(endpoints: RemoteEndpoint[]): void {
+  for (const c of connections) {
+    c.pushEndpoints(endpoints);
   }
 }
 

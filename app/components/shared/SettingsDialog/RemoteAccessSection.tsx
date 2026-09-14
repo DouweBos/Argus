@@ -1,8 +1,8 @@
 import type {
+  RemoteEndpointKind,
   RemoteDevice,
   RemoteStatus,
   RemoteTunnelMode,
-  RemoteTunnelProvider,
 } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -31,14 +31,9 @@ import {
 import styles from "./RemoteAccessSection.module.css";
 import { RemoteDeviceRow } from "./RemoteDeviceRow";
 import { RemotePushFields } from "./RemotePushFields";
+import { TailscaleSetup } from "./TailscaleSetup";
 
 type PairPhase = "awaiting-sas" | "idle" | "starting" | "waiting-device";
-
-const PROVIDER_OPTIONS = [
-  { value: "none" as const, label: "LAN only" },
-  { value: "cloudflare" as const, label: "Cloudflare" },
-  { value: "tailscale" as const, label: "Tailscale" },
-];
 
 const MODE_OPTIONS = [
   { value: "quick" as const, label: "Quick tunnel" },
@@ -73,12 +68,39 @@ function CopyableCode({ value }: { value: string }) {
   );
 }
 
+const ENDPOINT_LABELS: Record<RemoteEndpointKind, string> = {
+  lan: "Local network",
+  tailscale: "Tailscale",
+  cloudflare: "Cloudflare",
+};
+
 function tunnelTone(status: string): "error" | "idle" | "success" {
   if (status === "running") {
     return "success";
   }
 
   return status === "error" ? "error" : "idle";
+}
+
+/** Green once any address is live, red only when every enabled way in failed. */
+function reachabilityTone(status: RemoteStatus): "error" | "idle" | "success" {
+  if (status.endpoints.length > 0) {
+    return "success";
+  }
+  const failed = Object.values(status.tunnels).some(
+    (t) => t.status === "error",
+  );
+
+  return failed ? "error" : "idle";
+}
+
+function reachabilityLabel(status: RemoteStatus): string {
+  const count = status.endpoints.length;
+  if (count > 0) {
+    return count === 1 ? "1 way in" : `${count} ways in`;
+  }
+
+  return reachabilityTone(status) === "error" ? "unreachable" : "starting";
 }
 
 export function RemoteAccessSection() {
@@ -137,11 +159,12 @@ export function RemoteAccessSection() {
   });
 
   const applyConfig = async (cfg: {
+    cloudflareEnabled?: boolean;
     enabled?: boolean;
     lanWeb?: boolean;
     notifyWhenFocused?: boolean;
-    provider?: RemoteTunnelProvider;
     publicUrl?: string;
+    tailscaleEnabled?: boolean;
     tunnelMode?: RemoteTunnelMode;
     tunnelToken?: string;
   }) => {
@@ -211,7 +234,8 @@ export function RemoteAccessSection() {
   };
 
   const enabled = status?.enabled ?? false;
-  const provider = status?.provider ?? "cloudflare";
+  const tailscaleOn = status?.tailscaleEnabled ?? false;
+  const cloudflareOn = status?.cloudflareEnabled ?? false;
   const mode = status?.tunnelMode ?? "quick";
   const canPair = enabled && Boolean(status?.publicUrl);
 
@@ -224,7 +248,7 @@ export function RemoteAccessSection() {
       <SettingsScreenDetailBody>
         <SettingsScreenField
           label="Enable remote access"
-          caption="Starts the local gateway and the Cloudflare tunnel."
+          caption="Starts the local gateway and every enabled tunnel below."
         >
           <div className={styles.toggleRow}>
             <Toggle
@@ -234,36 +258,99 @@ export function RemoteAccessSection() {
             />
             {status && (
               <StatusDot
-                tone={enabled ? tunnelTone(status.tunnelStatus) : "idle"}
-                label={enabled ? status.tunnelStatus : "off"}
+                tone={enabled ? reachabilityTone(status) : "idle"}
+                label={enabled ? reachabilityLabel(status) : "off"}
               />
             )}
           </div>
         </SettingsScreenField>
 
         <SettingsScreenField
-          label="Provider"
-          caption="How to reach the gateway off your network. LAN only = no tunnel, no external process (pair over Wi-Fi below). Cloudflare/Tailscale expose it beyond the LAN and need that provider's CLI on your PATH; traffic stays end-to-end encrypted either way."
+          label="Ways in"
+          caption="Enable as many as you like — they run side by side. A paired phone syncs every address and connects over the simplest one that works: Wi-Fi first, then Tailscale, then Cloudflare."
         >
-          <SegmentedControl<RemoteTunnelProvider>
-            aria-label="Tunnel provider"
-            value={provider}
-            options={PROVIDER_OPTIONS}
-            onChange={(p) => applyConfig({ provider: p })}
-          />
+          <div className={styles.providerList}>
+            <div className={styles.providerRow}>
+              <Toggle
+                checked={status?.lanWebEnabled ?? false}
+                disabled={busy}
+                onChange={(next) => applyConfig({ lanWeb: next })}
+              />
+              <span className={styles.providerName}>Local network</span>
+              <StatusDot
+                tone={status?.lanUrl ? "success" : "idle"}
+                label={status?.lanUrl ?? "off"}
+              />
+            </div>
+            <div className={styles.providerRow}>
+              <Toggle
+                checked={tailscaleOn}
+                disabled={busy}
+                onChange={(next) => applyConfig({ tailscaleEnabled: next })}
+              />
+              <span className={styles.providerName}>Tailscale</span>
+              {status && (
+                <StatusDot
+                  tone={
+                    tailscaleOn
+                      ? tunnelTone(status.tunnels.tailscale.status)
+                      : "idle"
+                  }
+                  label={
+                    tailscaleOn
+                      ? (status.tunnels.tailscale.publicUrl ??
+                        status.tunnels.tailscale.status)
+                      : "off"
+                  }
+                />
+              )}
+            </div>
+            {tailscaleOn && status?.tunnels.tailscale.error && (
+              <p className={styles.tunnelError}>
+                {status.tunnels.tailscale.error}
+              </p>
+            )}
+            <div className={styles.providerRow}>
+              <Toggle
+                checked={cloudflareOn}
+                disabled={busy}
+                onChange={(next) => applyConfig({ cloudflareEnabled: next })}
+              />
+              <span className={styles.providerName}>Cloudflare</span>
+              {status && (
+                <StatusDot
+                  tone={
+                    cloudflareOn
+                      ? tunnelTone(status.tunnels.cloudflare.status)
+                      : "idle"
+                  }
+                  label={
+                    cloudflareOn
+                      ? (status.tunnels.cloudflare.publicUrl ??
+                        status.tunnels.cloudflare.status)
+                      : "off"
+                  }
+                />
+              )}
+            </div>
+            {cloudflareOn && status?.tunnels.cloudflare.error && (
+              <p className={styles.tunnelError}>
+                {status.tunnels.cloudflare.error}
+              </p>
+            )}
+          </div>
         </SettingsScreenField>
 
-        {provider === "tailscale" && (
-          <SettingsScreenField label="Tailscale Funnel">
-            <p className={styles.muted}>
-              Uses `tailscale funnel` to expose the gateway at your stable
-              `*.ts.net` address — no domain or Cloudflare account. Requires the
-              tailscale CLI, signed into a tailnet with Funnel enabled.
-            </p>
+        {tailscaleOn && (
+          <SettingsScreenField
+            label="Tailscale Funnel"
+            caption="Exposes the gateway at your stable `*.ts.net` address — no domain or Cloudflare account. Argus checks each prerequisite below and can fix them for you."
+          >
+            <TailscaleSetup />
           </SettingsScreenField>
         )}
 
-        {provider === "cloudflare" && (
+        {cloudflareOn && (
           <SettingsScreenField
             label="Tunnel"
             caption="Quick = ephemeral trycloudflare.com URL (no account). Named = stable hostname via a Cloudflare connector token; survives restarts so devices stay paired."
@@ -277,7 +364,7 @@ export function RemoteAccessSection() {
           </SettingsScreenField>
         )}
 
-        {provider === "cloudflare" && mode === "token" && (
+        {cloudflareOn && mode === "token" && (
           <>
             <SettingsScreenField
               label="Connector token"
@@ -327,31 +414,40 @@ export function RemoteAccessSection() {
           </>
         )}
 
-        <SettingsScreenField label="Current address">
-          <span className={styles.deviceMeta}>
-            {status?.publicUrl ?? (enabled ? "resolving…" : "—")}
-          </span>
+        <SettingsScreenField
+          label="Addresses"
+          caption="Synced to every paired device on connect, in the order they're tried."
+        >
+          {status && status.endpoints.length > 0 ? (
+            <ol className={styles.endpointList}>
+              {status.endpoints.map((endpoint) => (
+                <li key={endpoint.kind} className={styles.endpointRow}>
+                  <span className={styles.endpointKind}>
+                    {ENDPOINT_LABELS[endpoint.kind]}
+                  </span>
+                  <code className={styles.endpointUrl}>{endpoint.url}</code>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <span className={styles.deviceMeta}>
+              {enabled ? "resolving…" : "—"}
+            </span>
+          )}
         </SettingsScreenField>
 
-        <SettingsScreenField
-          label="Web client on this network"
-          caption="Serve the web client to other devices on your Wi-Fi. Open the address below in a browser and pair it like any other device — access is still gated by pairing."
-        >
-          <div className={styles.toggleRow}>
-            <Toggle
-              checked={status?.lanWebEnabled ?? false}
-              disabled={busy || !enabled}
-              onChange={(next) => applyConfig({ lanWeb: next })}
-            />
-            {status?.lanWebEnabled && (
-              <span className={styles.deviceMeta}>
-                {status.lanUrl
-                  ? status.lanUrl.replace(/^ws:/, "http:")
-                  : "no LAN address"}
-              </span>
-            )}
-          </div>
-        </SettingsScreenField>
+        {status?.lanWebEnabled && (
+          <SettingsScreenField
+            label="Web client on this network"
+            caption="With Local network on, Argus serves the web client to other devices on your Wi-Fi. Open this in a browser and pair it like any other device."
+          >
+            <span className={styles.deviceMeta}>
+              {status.lanUrl
+                ? status.lanUrl.replace(/^ws:/, "http:")
+                : "no LAN address"}
+            </span>
+          </SettingsScreenField>
+        )}
 
         <RemotePushFields disabled={busy || !enabled} />
 
@@ -446,9 +542,7 @@ export function RemoteAccessSection() {
           </SettingsScreenField>
         )}
 
-        {(error || status?.tunnelError) && (
-          <p className={styles.error}>{error ?? status?.tunnelError}</p>
-        )}
+        {error && <p className={styles.error}>{error}</p>}
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

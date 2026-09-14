@@ -36,11 +36,17 @@ export interface AppSettings {
    */
   remote_enabled?: boolean;
   /**
-   * How the gateway is exposed off-network. "none" = LAN only (no tunnel, no
-   * external process). Defaults to "none" — enabling remote access never spawns
-   * a tunnel unless you pick one.
+   * @deprecated Superseded by the per-provider `remote_*_enabled` flags. Still
+   * read once to migrate installs that predate concurrent providers.
    */
   remote_provider?: "cloudflare" | "none" | "tailscale";
+  /**
+   * Run `tailscale funnel` alongside any other provider. Providers are
+   * independent — a phone syncs every reachable address and picks the simplest.
+   */
+  remote_tailscale_enabled?: boolean;
+  /** Run `cloudflared` alongside any other provider. */
+  remote_cloudflare_enabled?: boolean;
   /**
    * Cloudflare tunnel mode: "quick" (ephemeral trycloudflare URL, no account)
    * or "token" (stable named tunnel via a connector token). Defaults to quick.

@@ -57,6 +57,9 @@ import type {
   RemotePushConfigPatch,
   RemotePushTestResult,
   RemoteStatus,
+  TailscaleDiagnosis,
+  TailscaleFixKind,
+  TailscaleFixResult,
   RunnerOnboardingStep,
   Session,
   UserProjectSettings,
@@ -1452,14 +1455,25 @@ export const remoteGetStatus = (): Promise<RemoteStatus> =>
   invoke("remote_get_status", {});
 
 export const remoteSetConfig = (config: {
+  cloudflareEnabled?: boolean;
   enabled?: boolean;
   lanWeb?: boolean;
   notifyWhenFocused?: boolean;
-  provider?: "cloudflare" | "none" | "tailscale";
   publicUrl?: string;
+  tailscaleEnabled?: boolean;
   tunnelMode?: "quick" | "token";
   tunnelToken?: string;
 }): Promise<RemoteStatus> => invoke("remote_set_config", { config });
+
+/** Ordered Tailscale prerequisite checks for Funnel (CLI, daemon, login, Funnel). */
+export const remoteTailscaleDiagnose = (): Promise<TailscaleDiagnosis> =>
+  invoke("remote_tailscale_diagnose", {});
+
+/** Run one in-app fix, then return a fresh diagnosis. */
+export const remoteTailscaleFix = (
+  fix: TailscaleFixKind,
+  url?: string | null,
+): Promise<TailscaleFixResult> => invoke("remote_tailscale_fix", { fix, url });
 
 /** Push credential state for background notifications to paired phones. */
 export const remoteGetPushConfig = (): Promise<RemotePushConfig> =>

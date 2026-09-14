@@ -1136,22 +1136,70 @@ export interface RemotePushTestResult {
 }
 
 export type RemoteTunnelMode = "quick" | "token";
-export type RemoteTunnelProvider = "cloudflare" | "none" | "tailscale";
+export type RemoteTunnelProvider = "cloudflare" | "tailscale";
+export type RemoteEndpointKind = RemoteTunnelProvider | "lan";
+export type RemoteTunnelStatus = "error" | "running" | "starting" | "stopped";
+
+export interface RemoteTunnelState {
+  error: string | null;
+  publicUrl: string | null;
+  status: RemoteTunnelStatus;
+}
+
+/** One address a phone can reach this desktop on. Lower priority wins. */
+export interface RemoteEndpoint {
+  kind: RemoteEndpointKind;
+  priority: number;
+  url: string;
+}
 
 export interface RemoteStatus {
+  cloudflareEnabled: boolean;
   connectedDeviceIds: string[];
   devices: RemoteDevice[];
   enabled: boolean;
+  endpoints: RemoteEndpoint[];
   hasTunnelToken: boolean;
   lanUrl: string | null;
   lanWebEnabled: boolean;
   /** Mirror notifications to devices even while the desktop window is focused. */
   notifyWhenFocused: boolean;
-  provider: RemoteTunnelProvider;
   publicUrl: string | null;
-  tunnelError: string | null;
+  tailscaleEnabled: boolean;
   tunnelMode: RemoteTunnelMode;
-  tunnelStatus: string;
+  tunnels: Record<RemoteTunnelProvider, RemoteTunnelState>;
+}
+
+export type TailscaleStepId = "cli" | "daemon" | "funnel" | "login";
+export type TailscaleStepState = "blocked" | "fail" | "ok";
+export type TailscaleFixKind =
+  | "install-cli"
+  | "open-url"
+  | "sign-in"
+  | "start-daemon";
+
+export interface TailscaleStep {
+  detail: string | null;
+  fix: TailscaleFixKind | null;
+  fixLabel: string | null;
+  id: TailscaleStepId;
+  message: string;
+  state: TailscaleStepState;
+  title: string;
+  url: string | null;
+}
+
+export interface TailscaleDiagnosis {
+  bin: string | null;
+  dnsName: string | null;
+  ready: boolean;
+  steps: TailscaleStep[];
+}
+
+export interface TailscaleFixResult {
+  diagnosis: TailscaleDiagnosis;
+  error: string | null;
+  openUrl: string | null;
 }
 
 export interface RemotePairingStart {

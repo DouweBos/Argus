@@ -340,23 +340,29 @@ tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** 
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
-| Setting                                     | Default | Description                                                                                                                                         |
-| ------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + tunnel stay down and pairing is refused.                                                                    |
-| **Provider**                                | `none`  | **LAN only** (no tunnel), **Cloudflare** (`cloudflared`), or **Tailscale** (`tailscale funnel`). A tunnel needs that provider's CLI on your `PATH`. |
-| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                          |
-| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                    |
-| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                |
-| **Paired devices**                          | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                  |
-| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                          |
-| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.               |
+| Setting                                     | Default | Description                                                                                                                                                                            |
+| ------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                 |
+| **Ways in**                                 | All off | **Local network**, **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side. A tunnel needs that provider's CLI on your `PATH`. |
+| **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                              |
+| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                             |
+| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                       |
+| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                   |
+| **Paired devices**                          | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                                                     |
+| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                             |
+| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                  |
 
-### Choosing a provider
+### Choosing ways in
 
-- **LAN only**: no tunnel and no external process at all — pair over Wi-Fi with
-  the web client below. Enabling remote access with this provider spawns
-  nothing beyond the local gateway. Pick a tunnel only when you need access
-  from _off_ your network.
+These are not mutually exclusive — enable as many as you like and they run at
+the same time, each in its own process. The phone then picks between them (see
+[Picking a route](#picking-a-route)), so the usual setup is **Local network +
+Tailscale**: fast at home, reachable everywhere else.
+
+- **Local network**: no tunnel and no external process at all — pair over Wi-Fi
+  with the web client below. Enabling remote access with only this spawns
+  nothing beyond the local gateway. Add a tunnel when you need access from
+  _off_ your network.
 - **Cloudflare — Quick**: zero setup, just the
   [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
   binary. The URL rotates each run, so you re-pair after a restart. Good for a
@@ -366,7 +372,29 @@ but cannot spawn agents, send messages, or run commands.
 - **Tailscale**: stable `*.ts.net` address with **no domain and no Cloudflare
   account** — just the `tailscale` CLI, signed into a tailnet with
   [Funnel](https://tailscale.com/kb/1223/funnel) enabled. Often the sweet spot
-  for a stable URL without owning a domain.
+  for a stable URL without owning a domain. Argus checks each prerequisite (CLI,
+  service, sign-in, Funnel) in Settings and offers a one-click fix for each.
+
+### Picking a route
+
+A desktop usually has several addresses at once, so the phone doesn't make you
+choose. On connect it dials **every** known address in parallel and keeps the
+simplest one that completes the pinned-key handshake:
+
+1. Local network
+2. Tailscale
+3. Cloudflare
+
+The full handshake — not just a socket open — is what counts as success, so a
+stale LAN IP that now belongs to another machine, or a captive portal that
+accepts any connection, can never win: only the real desktop holds the pinned
+key. If a worse-ranked address answers first, the phone waits briefly for a
+better one before settling.
+
+The address list is re-synced on every connect and whenever a tunnel comes up or
+dies, so **turning on a new way in doesn't require re-pairing** — an existing
+phone learns the new address the next time it connects over any route that still
+works.
 
 ### One phone, several computers
 

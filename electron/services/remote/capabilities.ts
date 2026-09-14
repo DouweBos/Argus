@@ -97,6 +97,7 @@ import {
   setDevicePush,
   type PairedDevice,
 } from "./deviceStore";
+import { getEndpoints } from "./endpoints";
 import {
   ensureVapidPublicKey,
   getPushConfigStatus,
@@ -772,6 +773,12 @@ async function control<T>(fn: () => Promise<T> | T): Promise<T> {
 }
 
 const HANDLERS: Record<RemoteMethod, Handler> = {
+  // Lets a client re-sync every address on connect, so a phone that paired on
+  // the LAN can reach this desktop over a tunnel without being re-paired.
+  "host.endpoints": async () => {
+    return { endpoints: getEndpoints() };
+  },
+
   "projects.list": async () => {
     const projects = collectAllProjects().map((p) => ({
       repo_root: p.path,

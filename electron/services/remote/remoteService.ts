@@ -6,7 +6,6 @@
  * Started from `main.ts` and re-applied whenever the settings change.
  */
 
-import { networkInterfaces } from "node:os";
 import { loadAppSettings, saveAppSettings } from "../appSettings/store";
 import {
   getDesktopIdentity,
@@ -15,33 +14,32 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import {
+  getEndpoints,
+  getLanUrl,
+  LOCAL_GATEWAY_PORT,
+  setGatewayActive,
+  type RemoteEndpoint,
+} from "./endpoints";
+import {
+  broadcastEndpoints,
   clearConnections,
   getConnectedDeviceIds,
   setConnectionsChangedListener,
 } from "./gateway";
 import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
 import {
-  getTunnelState,
+  getTunnelStates,
   onTunnelChange,
   startTunnel,
   stopTunnel,
+  TUNNEL_PROVIDERS,
   type CloudflareMode,
   type TunnelProvider,
+  type TunnelState,
 } from "./tunnelManager";
 
-/** Provider choice including "none" (LAN only, no tunnel). */
-export type RemoteProvider = TunnelProvider | "none";
-
-/**
- * Loopback/LAN port the gateway (and the web client it serves) listens on.
- * Overridable via `ARGUS_REMOTE_PORT` — `pnpm dev` sets it to 47616 so a dev
- * instance and an installed release can run side by side without fighting over
- * the socket.
- */
-export const LOCAL_GATEWAY_PORT = parseInt(
-  process.env.ARGUS_REMOTE_PORT ?? "47615",
-  10,
-);
+export { getEndpoints, getLanUrl, LOCAL_GATEWAY_PORT };
+export type { EndpointKind, RemoteEndpoint } from "./endpoints";
 
 let running = false;
 let webClientDir: string | null = null;
@@ -55,37 +53,60 @@ export function isRemoteActive(): boolean {
   return running;
 }
 
-/** First non-internal IPv4 LAN address as a ws:// URL, or null. */
-export function getLanUrl(): string | null {
-  for (const addrs of Object.values(networkInterfaces())) {
-    for (const a of addrs ?? []) {
-      if (a.family === "IPv4" && !a.internal) {
-        return `ws://${a.address}:${LOCAL_GATEWAY_PORT}`;
-      }
-    }
-  }
+/**
+ * Which tunnels should be running. Installs that predate concurrent providers
+ * only have the old exclusive `remote_provider`, so fold it in as a default.
+ */
+export function enabledProviders(): TunnelProvider[] {
+  const settings = loadAppSettings();
+  const legacy = settings.remote_provider;
 
-  return null;
+  return TUNNEL_PROVIDERS.filter((provider) => {
+    const flag =
+      provider === "tailscale"
+        ? settings.remote_tailscale_enabled
+        : settings.remote_cloudflare_enabled;
+
+    return flag ?? legacy === provider;
+  });
 }
 
-/** The tunnel URL if up, else the LAN URL (used to seed the pairing payload). */
-export function getPublicUrl(): string | null {
-  const tunnel = getTunnelState().publicUrl;
-  if (tunnel) {
-    return tunnel;
+/** Cloudflare can't start without a token in named-tunnel mode. */
+function isStartable(provider: TunnelProvider): boolean {
+  const settings = loadAppSettings();
+  if (provider !== "cloudflare") {
+    return true;
   }
 
-  return loadAppSettings().remote_lan_web ? getLanUrl() : null;
+  return (
+    (settings.remote_tunnel_mode ?? "quick") !== "token" ||
+    Boolean(settings.remote_tunnel_token)
+  );
+}
+
+/**
+ * Address to seed the pairing payload with. Prefers a tunnel so a QR scanned at
+ * home keeps working away from the LAN; the full list is synced after connect.
+ */
+export function getPublicUrl(): string | null {
+  const endpoints = getEndpoints();
+  const tunnelled = endpoints.find((e) => e.kind !== "lan");
+
+  return (tunnelled ?? endpoints[0])?.url ?? null;
 }
 
 export interface RemoteStatus {
   enabled: boolean;
-  provider: RemoteProvider;
+  /** Independently enabled tunnel providers. */
+  tailscaleEnabled: boolean;
+  cloudflareEnabled: boolean;
+  /** Per-provider runtime state, keyed by provider. */
+  tunnels: Record<TunnelProvider, TunnelState>;
+  /** Every address a phone could use right now, best first. */
+  endpoints: RemoteEndpoint[];
   tunnelMode: CloudflareMode;
   hasTunnelToken: boolean;
   publicUrl: string | null;
-  tunnelStatus: string;
-  tunnelError: string | null;
   lanWebEnabled: boolean;
   lanUrl: string | null;
   /** Mirror notifications to devices even while the desktop window is focused. */
@@ -97,17 +118,18 @@ export interface RemoteStatus {
 
 export async function getRemoteStatus(): Promise<RemoteStatus> {
   const settings = loadAppSettings();
-  const tunnel = getTunnelState();
+  const enabled = enabledProviders();
   const lanWebEnabled = Boolean(settings.remote_lan_web);
 
   return {
     enabled: Boolean(settings.remote_enabled),
-    provider: settings.remote_provider ?? "none",
+    tailscaleEnabled: enabled.includes("tailscale"),
+    cloudflareEnabled: enabled.includes("cloudflare"),
+    tunnels: getTunnelStates(),
+    endpoints: getEndpoints(),
     tunnelMode: settings.remote_tunnel_mode ?? "quick",
     hasTunnelToken: Boolean(settings.remote_tunnel_token),
     publicUrl: getPublicUrl(),
-    tunnelStatus: tunnel.status,
-    tunnelError: tunnel.error,
     lanWebEnabled,
     lanUrl: lanWebEnabled && running ? getLanUrl() : null,
     notifyWhenFocused: Boolean(settings.remote_notify_when_focused),
@@ -118,7 +140,8 @@ export async function getRemoteStatus(): Promise<RemoteStatus> {
 
 export async function setRemoteConfig(cfg: {
   enabled?: boolean;
-  provider?: RemoteProvider;
+  tailscaleEnabled?: boolean;
+  cloudflareEnabled?: boolean;
   tunnelMode?: CloudflareMode;
   tunnelToken?: string;
   publicUrl?: string;
@@ -129,8 +152,11 @@ export async function setRemoteConfig(cfg: {
   if (cfg.enabled !== undefined) {
     patch.remote_enabled = cfg.enabled;
   }
-  if (cfg.provider !== undefined) {
-    patch.remote_provider = cfg.provider;
+  if (cfg.tailscaleEnabled !== undefined) {
+    patch.remote_tailscale_enabled = cfg.tailscaleEnabled;
+  }
+  if (cfg.cloudflareEnabled !== undefined) {
+    patch.remote_cloudflare_enabled = cfg.cloudflareEnabled;
   }
   if (cfg.tunnelMode !== undefined) {
     patch.remote_tunnel_mode = cfg.tunnelMode;
@@ -164,7 +190,16 @@ let statusListener: (() => void) | null = null;
 let unsubscribeDevices: (() => void) | null = null;
 export function setRemoteStatusListener(cb: (() => void) | null): void {
   statusListener = cb;
-  onTunnelChange(cb ? () => cb() : null);
+  // A tunnel coming up or dying changes the routes a phone can take, so tell
+  // connected devices as well as the renderer.
+  onTunnelChange(
+    cb
+      ? () => {
+          broadcastEndpoints(getEndpoints());
+          cb();
+        }
+      : null,
+  );
   setConnectionsChangedListener(cb ? () => cb() : null);
   unsubscribeDevices?.();
   unsubscribeDevices = cb ? onDevicesChanged(() => cb()) : null;
@@ -186,15 +221,13 @@ export async function applyRemoteSettings(): Promise<void> {
     staticDir: lanWeb ? webClientDir : null,
   });
 
-  // Off-network access via a tunnel is entirely optional — LAN mode works with
-  // no tunnel at all, and "none" never spawns an external process.
-  const provider: RemoteProvider = settings.remote_provider ?? "none";
+  // Tunnels are optional and independent — LAN mode works with none enabled,
+  // and each enabled provider gets its own process.
   const cloudflareMode: CloudflareMode = settings.remote_tunnel_mode ?? "quick";
-  const needsToken =
-    provider === "cloudflare" &&
-    cloudflareMode === "token" &&
-    !settings.remote_tunnel_token;
-  if (provider !== "none" && !needsToken) {
+  for (const provider of enabledProviders()) {
+    if (!isStartable(provider)) {
+      continue;
+    }
     startTunnel({
       provider,
       localPort: LOCAL_GATEWAY_PORT,
@@ -204,11 +237,13 @@ export async function applyRemoteSettings(): Promise<void> {
     });
   }
   running = true;
+  setGatewayActive(true);
   statusListener?.();
 }
 
 export function stopRemote(): void {
   running = false;
+  setGatewayActive(false);
   stopTunnel();
   stopLocalGateway();
   clearConnections();
