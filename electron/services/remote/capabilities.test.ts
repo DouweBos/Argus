@@ -34,9 +34,6 @@ vi.mock("../session/manager", () => ({
   listSessions: vi.fn(async () => []),
   createSession: vi.fn(),
 }));
-vi.mock("../organization/manager", () => ({
-  listOrganizations: vi.fn(() => []),
-}));
 
 const { appState } = await import("../../state");
 const { dispatch } = await import("./capabilities");

@@ -35,7 +35,6 @@ export const REMOTE_METHODS = {
   "agents.stopped_transcript": "monitor",
   /** Resolve an image inside a stopped agent's saved transcript. */
   "agents.stopped_image": "monitor",
-  "orgs.list": "monitor",
   /** Approve/deny a permission prompt the gateway forwarded — approving a
    * tool call runs code on the host, so this needs control, not monitor. */
   "permission.respond": "control",

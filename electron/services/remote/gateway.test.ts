@@ -22,9 +22,6 @@ vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => ""),
   getSessionFullDiff: vi.fn(async () => ""),
 }));
-vi.mock("../organization/manager", () => ({
-  listOrganizations: vi.fn(() => []),
-}));
 
 const { DeviceConnection } = await import("./gateway");
 

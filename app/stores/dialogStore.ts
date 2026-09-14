@@ -1,29 +1,18 @@
 import { create } from "zustand";
 import { getSessionState } from "./sessionStore";
 
-/**
- * `null` → dialog hidden. `{ mode: "create" }` → create form. `{ mode: "edit", id }`
- * → edit form pre-populated from the org with that id.
- */
-export type OrganizationDialogState =
-  | { id: string; mode: "edit" }
-  | { mode: "create" }
-  | null;
-
 interface DialogState {
   /** Shows the CreateSessionDialog rooted at this repo path when non-null. */
   createSessionRepoRoot: string | null;
   /** Shows the NewSessionPicker (repo chooser) when true. */
   newSessionPickerOpen: boolean;
   openProjectVisible: boolean;
-  organizationDialog: OrganizationDialogState;
 }
 
 const store = create<DialogState>(() => ({
   openProjectVisible: false,
   newSessionPickerOpen: false,
   createSessionRepoRoot: null,
-  organizationDialog: null,
 }));
 
 export const showOpenProjectDialog = () =>
@@ -69,11 +58,3 @@ export const useNewSessionPickerOpen = () =>
   store((s) => s.newSessionPickerOpen);
 export const useCreateSessionRepoRoot = () =>
   store((s) => s.createSessionRepoRoot);
-
-export const showCreateOrganizationDialog = () =>
-  store.setState({ organizationDialog: { mode: "create" } });
-export const showEditOrganizationDialog = (id: string) =>
-  store.setState({ organizationDialog: { mode: "edit", id } });
-export const hideOrganizationDialog = () =>
-  store.setState({ organizationDialog: null });
-export const useOrganizationDialog = () => store((s) => s.organizationDialog);

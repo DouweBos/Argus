@@ -14,7 +14,6 @@ vi.mock("../lib/router", () => ({
   getCurrentRoute: () => ({
     view: "session",
     sessionId: "ws-1",
-    organizationId: null,
     panel: "agents",
   }),
 }));

@@ -32,8 +32,8 @@ export const FlatList: Story = {
   render: () => (
     <GridScreen>
       <GridScreen.Header
-        title="Organizations"
-        subtitle="4 organizations · 2 running tasks"
+        title="Projects"
+        subtitle="4 projects · 2 running sessions"
       />
       <GridScreen.Grid>
         <Card label="Argus OS" />

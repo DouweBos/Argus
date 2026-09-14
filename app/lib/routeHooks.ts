@@ -29,10 +29,6 @@ export function useRouteSessionId(): string | null {
   return useCurrentRoute().sessionId;
 }
 
-export function useRouteOrganizationId(): string | null {
-  return useCurrentRoute().organizationId;
-}
-
 export function useRouteSessionPanel(): SessionPanel {
   return useCurrentRoute().panel;
 }

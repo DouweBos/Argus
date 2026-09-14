@@ -11,7 +11,6 @@ import type {
   PrereqId,
   PrereqResult,
 } from "./services/onboarding/types";
-import type { OrganizationMember } from "./services/organization/models";
 import type { ToolId } from "./services/tools/types";
 import {
   Menu,
@@ -207,23 +206,6 @@ import {
   suggestArgusJson as onboardingSuggestArgusJson,
   writeArgusJson as onboardingWriteArgusJson,
 } from "./services/onboarding";
-import {
-  createOrganization,
-  updateOrganization,
-  deleteOrganization,
-  addRepoToOrganization,
-  removeRepoFromOrganization,
-  listOrganizations,
-} from "./services/organization/manager";
-import {
-  deleteOrgTask,
-  getOrgTask,
-  listOrgTasks,
-} from "./services/organizationTask/manager";
-import {
-  cancelOrgTask,
-  startOrgTask,
-} from "./services/organizationTask/orchestrator";
 import {
   listDevices as listRemoteDevices,
   revokeDevice,
@@ -809,53 +791,6 @@ export function registerIpcHandlers(): void {
       a.forkTurnNumber as number,
     ),
   );
-
-  // Organizations
-  handle("list_organizations", () => listOrganizations());
-  handle("create_organization", (a) =>
-    createOrganization({
-      name: a.name as string,
-      description: a.description as string | undefined,
-      system_prompt: a.systemPrompt as string | undefined,
-      accent: a.accent as string | undefined,
-      members: a.members as OrganizationMember[] | undefined,
-    }),
-  );
-  handle("update_organization", (a) =>
-    updateOrganization(a.id as string, {
-      name: a.name as string | undefined,
-      description: a.description as string | undefined,
-      system_prompt: a.systemPrompt as string | undefined,
-      accent: a.accent as string | undefined,
-      members: a.members as OrganizationMember[] | undefined,
-    }),
-  );
-  handle("delete_organization", (a) => deleteOrganization(a.id as string));
-  handle("add_repo_to_organization", (a) =>
-    addRepoToOrganization(a.id as string, {
-      repo_root: a.repoRoot as string,
-      role: (a.role as string | undefined) ?? "",
-    }),
-  );
-  handle("remove_repo_from_organization", (a) =>
-    removeRepoFromOrganization(a.id as string, a.repoRoot as string),
-  );
-
-  // Organization tasks — cross-repo feature work that fans out to members.
-  handle("list_org_tasks", (a) =>
-    listOrgTasks(a.organizationId as string | undefined),
-  );
-  handle("get_org_task", (a) => getOrgTask(a.id as string));
-  handle("start_org_task", (a) =>
-    startOrgTask({
-      organizationId: a.organizationId as string,
-      title: a.title as string,
-      prompt: a.prompt as string,
-      scope: a.scope as { repo_root: string }[],
-    }),
-  );
-  handle("cancel_org_task", (a) => cancelOrgTask(a.id as string));
-  handle("delete_org_task", (a) => deleteOrgTask(a.id as string));
 
   // Session ops
   handle("get_repo_branch", (a) => getRepoBranch(a.repoRoot as string));

@@ -1,1 +1,0 @@
-export { OrganizationsScreen } from "./OrganizationsScreen";

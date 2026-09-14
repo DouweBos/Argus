@@ -17,7 +17,7 @@ export type RemoteProject = z.infer<typeof RemoteProject>;
 export const RemoteSession = z.object({
   id: z.string(),
   repo_root: z.string(),
-  kind: z.enum(["org_host", "project_root", "worktree"]),
+  kind: z.enum(["project_root", "worktree"]),
   branch: z.string(),
   display_name: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
@@ -241,14 +241,6 @@ export const RemoteDevice = z.object({
   height: z.number().optional(),
 });
 export type RemoteDevice = z.infer<typeof RemoteDevice>;
-
-export const RemoteOrganization = z.object({
-  id: z.string(),
-  name: z.string(),
-  accent: z.string().nullable().optional(),
-  member_repo_roots: z.array(z.string()),
-});
-export type RemoteOrganization = z.infer<typeof RemoteOrganization>;
 
 // --- Control-scoped models (mirror app/lib/types.ts input shapes) ----------
 

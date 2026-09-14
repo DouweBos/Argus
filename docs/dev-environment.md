@@ -11,7 +11,7 @@ pnpm dev
 
 `pnpm dev` is **isolated by default**. It points the dev build at a
 parallel `~/.argus-dev/` state directory so your prod install's
-`config.json`, `tools.json`, organizations, sessions, and worktrees
+`config.json`, `tools.json`, sessions, and worktrees
 stay untouched. Electron's `userData` dir (Application Support) is
 already routed to `argus-dev` separately.
 

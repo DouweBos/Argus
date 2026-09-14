@@ -160,7 +160,6 @@ the renderer:
 | Real path                                | Sent as                               |
 | ---------------------------------------- | ------------------------------------- |
 | `/sessions/abc-123/editor`               | `/sessions/:sessionId/editor`         |
-| `/organizations/houwert`                 | `/organizations/:organizationId`      |
 | `/pull-requests/foo/bar/42`              | `/pull-requests/:owner/:repo/:number` |
 | `/agents`, `/devices`, `/runtimes`, etc. | unchanged (no dynamic segments)       |
 
@@ -173,7 +172,7 @@ is a fixed literal, not the user's machine or any external origin.
 | Event             | Source | When                     | Extra props                                                                                 |
 | ----------------- | ------ | ------------------------ | ------------------------------------------------------------------------------------------- |
 | `session_created` | main   | A new session is created | `has_explicit_branch`, `has_description`, `use_existing_branch`, `has_explicit_base_branch` |
-| `session_deleted` | main   | A session is deleted     | `kind` (`worktree` \| `org_host` \| `project_root`), `delete_branch`, `is_org_task`         |
+| `session_deleted` | main   | A session is deleted     | `kind` (`worktree` \| `project_root`), `delete_branch`                                      |
 
 ## Merges
 
@@ -195,12 +194,6 @@ initial attempt from a `continue` after the user resolved conflicts.
 | `agent_exited`      | main   | The agent process exited              | `exit_code`, `success`, `turns_completed`, `tool_uses`, `duration_ms`         |
 | `agent_stopped`     | main   | The agent was stopped                 | —                                                                             |
 | `agent_interrupted` | main   | The agent was interrupted             | —                                                                             |
-
-## Org tasks
-
-| Event              | Source | When                         | Extra props  |
-| ------------------ | ------ | ---------------------------- | ------------ |
-| `org_task_started` | main   | An organisation task started | `scope_size` |
 
 ## Onboarding
 

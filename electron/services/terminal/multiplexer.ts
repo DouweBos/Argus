@@ -256,15 +256,14 @@ export function workspaceEnvValue(
  */
 function buildWorkspaceEnv(
   sessionId: string,
-  sessionKind: "org_host" | "project_root" | "worktree",
+  sessionKind: "project_root" | "worktree",
   envIndex: number | undefined,
   repoRoot: string,
 ): Record<string, string> {
   const extra: Record<string, string> = {};
 
-  // workspace_env only applies to worktree sessions, not the repo root or
-  // neutral org-host sessions.
-  if (sessionKind === "project_root" || sessionKind === "org_host") {
+  // workspace_env only applies to worktree sessions, not the repo root.
+  if (sessionKind === "project_root") {
     return extra;
   }
 

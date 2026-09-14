@@ -14,10 +14,6 @@ import { useProjects } from "../../../hooks/useSessions";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
-  useOrganizations,
-  useOrganizationSync,
-} from "../../../stores/organizationStore";
-import {
   useAwaitingMyReviewCount,
   usePrList,
 } from "../../../stores/pullRequestStore";
@@ -29,7 +25,6 @@ import {
 import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useTotalRunningTerminals } from "../../../stores/terminalStore";
 import { OpenProjectDialog } from "../OpenProjectDialog";
-import { OrganizationSegment } from "../OrganizationSegment";
 import { ProjectSegment } from "../ProjectSegment";
 import styles from "./SessionSidebar.module.css";
 import { SidebarNavItem } from "./SidebarNavItem";
@@ -59,13 +54,6 @@ export function SessionSidebar() {
     ) : (
       awaitingMyReviewCount
     );
-  useOrganizationSync();
-  const organizations = useOrganizations();
-  const organizationsCount = organizations.length;
-  const sortedOrgs = [...organizations].sort(
-    (a, b) => a.created_at - b.created_at,
-  );
-
   const totalProjects = projects.length;
 
   const [dragRoot, setDragRoot] = useState<string | null>(null);
@@ -178,13 +166,6 @@ export function SessionSidebar() {
           Runtimes
         </SidebarNavItem>
         <SidebarNavItem
-          view="organizations"
-          leading={<Icons.OrganizationIcon size={12} />}
-          count={organizationsCount}
-        >
-          Organizations
-        </SidebarNavItem>
-        <SidebarNavItem
           view="pull-requests"
           leading={<Icons.MergeIcon size={12} />}
           count={prNavCount}
@@ -194,17 +175,6 @@ export function SessionSidebar() {
       </SidebarNavGroup>
 
       <SidebarScroll>
-        <SidebarSection count={organizationsCount}>
-          Organizations
-        </SidebarSection>
-        {sortedOrgs.length === 0 ? (
-          <p className={styles.empty}>No organizations yet.</p>
-        ) : (
-          sortedOrgs.map((org) => (
-            <OrganizationSegment key={org.id} org={org} />
-          ))
-        )}
-
         <SidebarSection count={totalProjects}>Projects</SidebarSection>
         {projects.length === 0 ? (
           <p className={styles.empty}>No active projects.</p>

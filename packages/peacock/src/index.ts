@@ -63,7 +63,6 @@ export * from "./components/ImageDiff/ImageDiff";
 export * from "./components/Input/Input";
 export * from "./components/Kbd/Kbd";
 export * from "./components/LogEntry/LogEntry";
-export * from "./components/OrganizationCard/OrganizationCard";
 export * from "./components/PalettePill/PalettePill";
 export * from "./components/Planet/Planet";
 export * from "./components/PlanApproval/PlanApproval";

@@ -40,28 +40,6 @@
   color: var(--text-secondary);
 }
 
-.orgTaskPill {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  font-size: 10px;
-  font-family: var(--font-mono);
-  padding: 1px 6px;
-  margin-top: 2px;
-  border-radius: var(--border-radius-xs);
-  background: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  cursor: pointer;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.orgTaskPill:hover {
-  background: var(--brand-purple-overlay-md);
-}
-
 .branchRow {
   padding-left: 22px;
 }

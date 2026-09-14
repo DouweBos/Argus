@@ -1,8 +1,8 @@
 /**
  * Persisted onboarding + defaults registry at `~/.argus/config.json`.
  *
- * Pattern mirrors `electron/services/organization/store.ts` — atomic writes
- * via tmp + rename, schema versioning, graceful recovery on parse failure.
+ * Atomic writes via tmp + rename, schema versioning, graceful recovery on
+ * parse failure.
  */
 
 import type {
@@ -35,7 +35,7 @@ const DEFAULT_STATE: OnboardingStateData = {
  *   ARGUS_HOME="$HOME/.argus-dev" pnpm dev
  *
  * Every file under this directory — `config.json`, `tools.json`, agent
- * logs, organizations, worktrees — is keyed off this single helper. Override
+ * logs, sessions, worktrees — is keyed off this single helper. Override
  * it once and the whole install switches to the parallel home.
  */
 /** @deprecated Prefer `argusHomeDir` from `electron/lib/argusHome.ts` directly. */
@@ -66,7 +66,7 @@ export function loadConfig(): OnboardingConfigFile {
     // Missing config.json — always start at welcome. The onboarding flow is
     // skippable end-to-end, so there's no reason to gate it on prior state;
     // doing so (as we used to, via detectPriorArgusState) meant anyone with
-    // `organizations.json`/`extensions`/`bin` silently jumped past the flow
+    // `projects.json`/`extensions`/`bin` silently jumped past the flow
     // and never saw it.
     return {
       onboarding: { ...DEFAULT_STATE },

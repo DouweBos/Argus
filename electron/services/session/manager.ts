@@ -16,7 +16,6 @@ import {
   generateSessionTitle,
   humanizeBranchName,
 } from "../llm/titleGenerator";
-import { orgHostDir } from "../organizationTask/paths";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { createTerminal, setupShellCommand } from "../terminal/multiplexer";
 import {
@@ -190,7 +189,6 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.display_name = m.display_name;
       ws.description = m.description;
       ws.base_branch = m.base_branch;
-      ws.organization_task_id = m.organization_task_id ?? null;
       ws.runner_id = m.runner_id ?? null;
       ws.model = m.model ?? null;
       ws.claude_account_id = m.claude_account_id ?? null;
@@ -212,7 +210,6 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         display_name: w.display_name,
         description: w.description,
         base_branch: w.base_branch,
-        organization_task_id: w.organization_task_id ?? null,
         runner_id: w.runner_id ?? null,
         model: w.model ?? null,
         claude_account_id: w.claude_account_id ?? null,
@@ -334,7 +331,6 @@ export async function createSession(
     status: "initializing",
     env_index: nextIndex,
     base_branch: explicitBaseBranch ?? null,
-    organization_task_id: null,
     runner_id: chosenRunner.id,
     model: initialModel,
   };
@@ -1016,49 +1012,6 @@ function applyReplayOps(
 }
 
 // ---------------------------------------------------------------------------
-// create_org_host_session
-// ---------------------------------------------------------------------------
-
-/**
- * Create a neutral "org host" session for a cross-repo OrgTask.
- *
- * Unlike worktree sessions, this session is not tied to any git repo —
- * it's a plain directory at `~/.argus/org-hosts/{orgId}/{taskId}/` where a
- * single agent runs with access to every scope repo via MCP tools.
- *
- * No git operations, no setup pipeline, no file watchers. Returns the
- * session in `ready` status.
- */
-export async function createOrgHostSession(options: {
-  organizationId: string;
-  taskId: string;
-  displayName: string;
-}): Promise<Session> {
-  const dir = orgHostDir(options.organizationId, options.taskId);
-  fs.mkdirSync(dir, { recursive: true });
-
-  const ws: Session = {
-    id: crypto.randomUUID(),
-    kind: "org_host",
-    branch: "",
-    display_name: options.displayName,
-    description: "",
-    path: dir,
-    repo_root: dir,
-    status: "ready",
-    env_index: null,
-    base_branch: null,
-    organization_task_id: null,
-  };
-
-  appState.sessions.set(ws.id, ws);
-  getMainWindow()?.webContents.send("session:created", { ...ws });
-  info(`Created org-host session ${ws.id} at ${dir}`);
-
-  return { ...ws };
-}
-
-// ---------------------------------------------------------------------------
 // create_project_root_session
 // ---------------------------------------------------------------------------
 
@@ -1328,7 +1281,6 @@ export async function deleteSession(
   telemetryCapture("session_deleted", {
     kind: session.kind,
     delete_branch: Boolean(shouldDeleteBranch),
-    is_org_task: session.organization_task_id !== null,
   });
 
   // Kill all agent sessions for this session.
@@ -1381,20 +1333,6 @@ export async function deleteSession(
     appState.sessions.delete(id);
     win?.webContents.send("session:deleted", id);
     info(`Deleted session ${id}`);
-
-    return;
-  }
-
-  if (session.kind === "org_host") {
-    // Neutral org-host session — just remove the directory.
-    try {
-      fs.rmSync(session.path, { force: true, recursive: true });
-    } catch (e) {
-      info(`deleteSession: rm org-host dir failed: ${String(e)}`);
-    }
-    appState.sessions.delete(id);
-    win?.webContents.send("session:deleted", id);
-    info(`Deleted org-host session ${id}`);
 
     return;
   }

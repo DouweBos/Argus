@@ -16,8 +16,6 @@ No Zustand store mirrors the route. Reads go through URL-derived hooks
 | `/agents`                                       | Agents overview                    | All agents across all sessions.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/devices`                                      | Devices                            | iOS simulators + Android emulators.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `/notifications`                                | Notifications                      | Warnings & errors.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `/organizations`                                | Organizations list                 | All organizations.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `/organizations/:organizationId`                | Single organization                | Org detail + tasks.                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `/pull-requests`                                | Pull requests                      | GitHub PRs of interest across open projects.                                                                                                                                                                                                                                                                                                                                                                                      |
 | `/pull-requests/:owner/:repo/:number`           | Pull request detail                | Single PR view: description, checks, files, comments.                                                                                                                                                                                                                                                                                                                                                                             |
 | `/runtimes`                                     | Runtimes overview                  | All running dev servers / terminals.                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -43,13 +41,11 @@ interface ParsedRoute {
     | "devices"
     | "home"
     | "notifications"
-    | "organizations"
     | "pull-request-detail"
     | "pull-requests"
     | "runtimes"
     | "session";
   sessionId: string | null; // set when view === "session"
-  organizationId: string | null; // set on /organizations/:organizationId
   panel: "agents" | "git" | "home"; // only meaningful when view === "session"
   gitView:
     | "working"
@@ -84,7 +80,6 @@ import {
   useCurrentRoute,
   useRouteView,
   useRouteSessionId,
-  useRouteOrganizationId,
   useRouteSessionPanel,
 } from "app/lib/routeHooks";
 ```
@@ -93,7 +88,7 @@ Or the semantic aliases exposed by the stores — they read the URL under the
 hood:
 
 - `useSelectedSessionId()` (in `sessionStore`)
-- `useCenterView()` / `useSelectedOrganizationId()` (in `centerViewStore`)
+- `useCenterView()` (in `centerViewStore`)
 - `useActiveCenterView()` (in `editorStore`) — the session panel
 
 For non-hook callers (event handlers, async helpers, services), use the
@@ -113,7 +108,6 @@ import { appNavigate } from "app/lib/router";
 
 appNavigate({ view: "session", sessionId: "abc", panel: "git" });
 appNavigate({ view: "notifications" });
-appNavigate({ view: "organizations", organizationId: "org-1" });
 appNavigate({ view: "home" }, { replace: true });
 ```
 
@@ -125,7 +119,6 @@ whichever reads best:
 | `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                          |
 | `selectSession(null)`        | `/`                                                      |
 | `setCenterView(view)`        | `/{view}`                                                |
-| `openOrganization(id)`       | `/organizations/{id}`                                    |
 | `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route) |
 | `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                 |
 

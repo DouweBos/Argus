@@ -37,9 +37,6 @@ import type {
   SessionReleaseNotesResult,
   OnboardingConfigFile,
   OnboardingStep,
-  OrgTask,
-  Organization,
-  OrganizationMember,
   PrereqId,
   PrereqResult,
   ProjectEntry,
@@ -2076,74 +2073,6 @@ export const showImageContextMenu = (
   src: string,
   suggestedName?: string,
 ): Promise<void> => invoke("show_image_context_menu", { src, suggestedName });
-
-// Organizations
-export const listOrganizations = (): Promise<Organization[]> =>
-  invoke("list_organizations");
-
-export interface CreateOrganizationInput {
-  accent?: string;
-  description?: string;
-  members?: OrganizationMember[];
-  name: string;
-  systemPrompt?: string;
-}
-
-export const createOrganization = (
-  input: CreateOrganizationInput,
-): Promise<Organization> => invoke("create_organization", { ...input });
-
-export interface UpdateOrganizationInput {
-  accent?: string;
-  description?: string;
-  id: string;
-  members?: OrganizationMember[];
-  name?: string;
-  systemPrompt?: string;
-}
-
-export const updateOrganization = (
-  input: UpdateOrganizationInput,
-): Promise<Organization> => invoke("update_organization", { ...input });
-
-export const deleteOrganization = (id: string): Promise<void> =>
-  invoke("delete_organization", { id });
-
-export const addRepoToOrganization = (
-  id: string,
-  repoRoot: string,
-  role: string,
-): Promise<Organization> =>
-  invoke("add_repo_to_organization", { id, repoRoot, role });
-
-export const removeRepoFromOrganization = (
-  id: string,
-  repoRoot: string,
-): Promise<Organization> =>
-  invoke("remove_repo_from_organization", { id, repoRoot });
-
-// Organization tasks
-export interface StartOrgTaskInput {
-  organizationId: string;
-  prompt: string;
-  scope: { repo_root: string }[];
-  title: string;
-}
-
-export const listOrgTasks = (organizationId?: string): Promise<OrgTask[]> =>
-  invoke("list_org_tasks", organizationId ? { organizationId } : {});
-
-export const getOrgTask = (id: string): Promise<OrgTask | null> =>
-  invoke("get_org_task", { id });
-
-export const startOrgTask = (input: StartOrgTaskInput): Promise<OrgTask> =>
-  invoke("start_org_task", { ...input });
-
-export const cancelOrgTask = (id: string): Promise<OrgTask> =>
-  invoke("cancel_org_task", { id });
-
-export const deleteOrgTaskIpc = (id: string): Promise<void> =>
-  invoke("delete_org_task", { id });
 
 // UI state — lightweight persisted key/value blobs (e.g. last route).
 export const getUiState = (key: string): Promise<string | null> =>

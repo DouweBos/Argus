@@ -17,7 +17,6 @@ import {
   RemoteImageAttachment,
   RemoteMentionPathResult,
   RemoteMessage,
-  RemoteOrganization,
   RemotePermissionRequest,
   RemoteProject,
   RemoteQueuedMessage,
@@ -85,7 +84,6 @@ export const MethodParams = {
     history_id: z.string(),
     image_id: z.string(),
   }),
-  "orgs.list": z.object({}),
   "permission.respond": z.object({
     agent_id: z.string(),
     tool_use_id: z.string(),
@@ -285,7 +283,6 @@ export const MethodResult = {
     data: z.string(),
     media_type: z.string(),
   }),
-  "orgs.list": z.object({ organizations: z.array(RemoteOrganization) }),
   "permission.respond": z.object({ accepted: z.boolean() }),
   "device.rename": z.object({ accepted: z.boolean() }),
   "device.capabilities": z.object({ capabilities: z.array(z.string()) }),
