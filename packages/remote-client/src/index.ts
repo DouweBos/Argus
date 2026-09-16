@@ -1,6 +1,7 @@
 export * from "./base64";
 export * from "./derive";
 export * from "./envelopes";
+export * from "./media";
 export * from "./noise";
 export * from "./pairing";
 export * from "./socket";

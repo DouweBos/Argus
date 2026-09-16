@@ -1,7 +1,6 @@
 import type { DeviceInfo } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAndroidVideoDecoder } from "../../../hooks/useAndroidVideoDecoder";
-import { useIosVideoDecoder } from "../../../hooks/useIosVideoDecoder";
+import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import { useVideoInputStream } from "../../../hooks/useVideoInputStream";
 import {
   androidMetaStateFromEvent,
@@ -109,7 +108,7 @@ function IosPreview({
   const [active, setActive] = useState(false);
   const udid = device.reservationKey;
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useIosVideoDecoder(active, udid);
+    useDeviceVideo(active, udid, "ios");
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -270,11 +269,7 @@ function AndroidPreview({
   const [active, setActive] = useState(false);
   const serial = device.reservationKey;
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useAndroidVideoDecoder(
-      active,
-      `android_video_config:${serial}`,
-      `android_video_frame:${serial}`,
-    );
+    useDeviceVideo(active, serial, "android");
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

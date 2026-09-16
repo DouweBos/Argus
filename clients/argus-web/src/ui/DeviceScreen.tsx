@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Banner, Button, Icons } from "@argus/peacock";
-import { H264CanvasDecoder } from "../lib/h264Decoder";
+import { H264CanvasDecoder } from "@argus/remote-client";
 import { toNativeKey } from "../lib/keymap";
 import type { RemotePlatform } from "../lib/protocol";
 import { useAppStore } from "../lib/store";

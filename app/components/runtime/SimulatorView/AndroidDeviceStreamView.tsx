@@ -1,4 +1,4 @@
-import { useAndroidVideoDecoder } from "../../../hooks/useAndroidVideoDecoder";
+import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
 import { CanvasStreamBody } from "./CanvasStreamBody";
@@ -49,11 +49,7 @@ export function AndroidDeviceStreamView({
   onTouch,
 }: AndroidDeviceStreamViewProps) {
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useAndroidVideoDecoder(
-      capturing && !!serial,
-      serial ? `android_video_config:${serial}` : "",
-      serial ? `android_video_frame:${serial}` : "",
-    );
+    useDeviceVideo(capturing, serial, "android");
 
   const titleChrome = (
     <RuntimeTitleBar

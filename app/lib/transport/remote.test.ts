@@ -11,8 +11,10 @@ type EventHandler = (env: {
 
 let capturedOnEvent: EventHandler | null;
 
-vi.mock("@argus/remote-client", () => ({
-  RemoteError: class RemoteError extends Error {},
+// Only the socket is faked — MediaRouter and the frame parser are the real
+// ones, so this exercises the actual fan-out.
+vi.mock("@argus/remote-client", async (importOriginal) => ({
+  ...((await importOriginal()) as Record<string, unknown>),
   Transport: class {
     constructor(
       _credentials: unknown,
@@ -129,5 +131,34 @@ describe("remoteTransport", () => {
       { agentId: "a1", on: true },
       { agentId: "a1", on: false },
     ]);
+  });
+});
+
+/** A minimal TAG_MEDIA frame body for `streamId`, as the host builds it. */
+function frameBody(streamId: number): Uint8Array {
+  const bytes = new Uint8Array(13);
+  new DataView(bytes.buffer).setUint16(2, streamId, true);
+  bytes[0] = 1;
+
+  return bytes;
+}
+
+describe("remote media", () => {
+  it("fans binary frames out to the stream's sink", () => {
+    const transport = makeTransport();
+    const frames: unknown[] = [];
+    transport.media.register(7, (msg) => frames.push(msg));
+    transport.media.push(frameBody(7));
+    expect(frames).toHaveLength(1);
+  });
+
+  it("drops stream ids when the socket goes away", () => {
+    const transport = makeTransport();
+    const frames: unknown[] = [];
+    transport.media.register(7, (msg) => frames.push(msg));
+    transport.disconnect();
+    // Stream ids belong to one socket; the panel re-watches and gets new ones.
+    transport.media.push(frameBody(7));
+    expect(frames).toHaveLength(0);
   });
 });

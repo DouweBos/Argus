@@ -1,3 +1,5 @@
+import type { MediaRouter } from "@argus/remote-client";
+
 /**
  * The one shape `invoke()` / `send()` / `listen()` talk to. Local mode is
  * Electron IPC on this Mac; remote mode is the Noise gateway on a paired host.
@@ -5,6 +7,12 @@
  */
 export interface ArgusTransport {
   invoke: <T>(channel: string, args?: Record<string, unknown>) => Promise<T>;
+  /**
+   * Binary device-screen frames. Remote mode only: video rides the TAG_MEDIA
+   * channel, not the forwarded event path, so local mode leaves it unset and
+   * the runtime panel falls back to its IPC frames.
+   */
+  media?: MediaRouter;
   on: <T>(event: string, callback: (payload: T) => void) => () => void;
   send: (channel: string, args?: Record<string, unknown>) => void;
 }

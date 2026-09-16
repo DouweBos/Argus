@@ -1,9 +1,12 @@
 /**
- * Framework-agnostic WebCodecs H.264 decoder that renders access units to a
- * canvas. Ported from the desktop's `useAndroidVideoDecoder` hook (same decode
- * lifecycle, config-dedup, keyframe-resync, and queue-drop guards) minus the
- * React/IPC coupling — the remote client drives it from the binary media
- * channel instead.
+ * The client half of the TAG_MEDIA channel: parse the host's binary device-screen
+ * messages, route them to whoever is watching that stream, and decode H.264
+ * access units to a canvas with WebCodecs.
+ *
+ * Lives here rather than in Peacock because none of it is UI — it is the media
+ * half of the gateway transport this package already owns, and Peacock must stay
+ * free of wire formats. The desktop's runtime panel and the web client share
+ * this one implementation; before, each had its own.
  */
 
 /** Cap wire-controlled dimensions — a 65535² frame is a multi-GB allocation. */
@@ -14,6 +17,8 @@ export interface H264DecoderCallbacks {
   onDimensions?: (width: number, height: number) => void;
   /** Fired once the first frame has rendered. */
   onFirstFrame?: () => void;
+  /** The decoder accepted a config (SPS/PPS) and is ready for access units. */
+  onConfigured?: (configured: boolean) => void;
 }
 
 export class H264CanvasDecoder {
@@ -93,7 +98,10 @@ export class H264CanvasDecoder {
           canvas.height = frame.displayHeight;
           this.width = frame.displayWidth;
           this.height = frame.displayHeight;
-          this.callbacks.onDimensions?.(frame.displayWidth, frame.displayHeight);
+          this.callbacks.onDimensions?.(
+            frame.displayWidth,
+            frame.displayHeight,
+          );
         }
         this.ctx?.drawImage(frame, 0, 0);
         frame.close();
@@ -111,14 +119,17 @@ export class H264CanvasDecoder {
     // rather than tearing down the media read path.
     try {
       decoder.configure({ codec, codedWidth, codedHeight, description });
-    } catch (e) {
-      console.warn("H264 decoder configure failed", e);
+    } catch {
+      this.decoder = null;
+      this.configKey = null;
+      this.callbacks.onConfigured?.(false);
 
       return;
     }
 
     this.decoder = decoder;
     this.awaitingKeyframe = true;
+    this.callbacks.onConfigured?.(true);
   }
 
   decode(data: Uint8Array, keyFrame: boolean, timestamp: number): void {
@@ -162,6 +173,7 @@ export class H264CanvasDecoder {
     this.configKey = null;
     this.awaitingKeyframe = true;
     this.receiving = false;
+    this.callbacks.onConfigured?.(false);
   }
 }
 
@@ -204,9 +216,7 @@ export function parseMediaMessage(bytes: Uint8Array): MediaMessage | null {
     const codedWidth = view.getUint16(12, true);
     const codedHeight = view.getUint16(14, true);
     const codecLen = view.getUint8(16);
-    const codec = new TextDecoder().decode(
-      bytes.subarray(17, 17 + codecLen),
-    );
+    const codec = new TextDecoder().decode(bytes.subarray(17, 17 + codecLen));
     const description = bytes.slice(17 + codecLen);
 
     return {
@@ -227,4 +237,65 @@ export function parseMediaMessage(bytes: Uint8Array): MediaMessage | null {
     timestamp,
     data: bytes.slice(12),
   };
+}
+
+export type MediaSink = (msg: MediaMessage) => void;
+
+/**
+ * Fans the single TAG_MEDIA byte stream out to per-stream sinks.
+ *
+ * Frames that arrive before a view registers are briefly buffered: the host
+ * emits the config the instant `devices.watch` starts the capture, which
+ * usually beats the watch response back to the client, and without the config
+ * the decoder can never start.
+ */
+export class MediaRouter {
+  private readonly sinks = new Map<number, MediaSink>();
+  private readonly buffered = new Map<number, MediaMessage[]>();
+
+  /** Frames held per stream while nobody is listening yet. */
+  private static readonly BUFFER_CAP = 120;
+
+  /** Feed one media message body (the bytes after the transport's media tag). */
+  push(bytes: Uint8Array): void {
+    const msg = parseMediaMessage(bytes);
+    if (!msg) {
+      return;
+    }
+    const sink = this.sinks.get(msg.streamId);
+    if (sink) {
+      sink(msg);
+
+      return;
+    }
+    const buf = this.buffered.get(msg.streamId) ?? [];
+    buf.push(msg);
+    if (buf.length > MediaRouter.BUFFER_CAP) {
+      buf.shift();
+    }
+    this.buffered.set(msg.streamId, buf);
+  }
+
+  /** Attach a consumer to a stream; returns the detach. */
+  register(streamId: number, sink: MediaSink): () => void {
+    this.sinks.set(streamId, sink);
+    const pending = this.buffered.get(streamId);
+    this.buffered.delete(streamId);
+    for (const msg of pending ?? []) {
+      sink(msg);
+    }
+
+    return () => {
+      if (this.sinks.get(streamId) === sink) {
+        this.sinks.delete(streamId);
+      }
+      this.buffered.delete(streamId);
+    };
+  }
+
+  /** Drop everything — stream ids belong to one connection, not the next. */
+  clear(): void {
+    this.sinks.clear();
+    this.buffered.clear();
+  }
 }
