@@ -44,6 +44,7 @@ import {
   type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
+import { releaseConnection } from "./deviceClaims";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -140,6 +141,8 @@ function parseAgentChannel(
 
 /** One authenticated device: a Noise transport plus its subscriptions. */
 export class DeviceConnection implements DeviceMediaController {
+  /** Identifies this connection for claims; a reconnect is a new holder. */
+  private readonly connectionId = crypto.randomUUID();
   private sendSeq = 0;
   private recvSeq = -1;
   private readonly subscriptions = new Set<string>();
@@ -159,7 +162,12 @@ export class DeviceConnection implements DeviceMediaController {
     private readonly session: NoiseSession,
     private readonly sink: (bytes: Uint8Array) => void,
   ) {
-    this.ctx = { device, outstandingPermissions: new Set(), media: this };
+    this.ctx = {
+      device,
+      connectionId: this.connectionId,
+      outstandingPermissions: new Set(),
+      media: this,
+    };
     // An admin device is another desktop: it runs the real UI off the host's
     // own IPC channels, so it gets raw broadcasts rather than the typed mirrors
     // the phone and web clients render — sending both would double the stream.
@@ -180,11 +188,16 @@ export class DeviceConnection implements DeviceMediaController {
     this.closer?.();
   }
 
-  /** Release all screen streams. Called when the connection goes away. */
+  /**
+   * Release everything this connection held — screen streams and any device
+   * claim. Called when the connection goes away, so a dropped client never
+   * leaves a simulator locked to a socket that no longer exists.
+   */
   dispose(): void {
     for (const deviceId of [...this.watched.keys()]) {
       this.unwatch(deviceId);
     }
+    releaseConnection(this.connectionId);
   }
 
   // --- DeviceMediaController -------------------------------------------------
@@ -358,7 +371,10 @@ export class DeviceConnection implements DeviceMediaController {
     const key = permissionKey(parsed.agentId, toolUseId);
     if (parsed.kind === "permission") {
       this.ctx.outstandingPermissions.add(key);
-    } else if (parsed.kind === "permission-cancel") {
+    } else if (
+      parsed.kind === "permission-cancel" ||
+      parsed.kind === "permission-resolved"
+    ) {
       this.ctx.outstandingPermissions.delete(key);
     }
   }
@@ -377,6 +393,14 @@ export class DeviceConnection implements DeviceMediaController {
     if (channel === "remote:notification") {
       const p = args[0] as { agent_id?: string | null } | undefined;
       this.pushEvent("notification", p?.agent_id ?? null, p);
+
+      return;
+    }
+
+    // Losing the device claim is otherwise invisible to a typed client until
+    // its next HID event comes back capability_denied.
+    if (channel === "devices:claim-changed") {
+      this.pushEvent("device.claim", null, args[0]);
 
       return;
     }
@@ -435,6 +459,9 @@ export class DeviceConnection implements DeviceMediaController {
         this.pushAgentStatus(agentId);
         break;
       }
+      // Answered — by this device, another client, or the host's own window.
+      // Every attached client must drop the prompt, not just the responder.
+      case "permission-resolved":
       case "permission-cancel": {
         const p = args[0] as { tool_use_id: string };
         this.ctx.outstandingPermissions.delete(

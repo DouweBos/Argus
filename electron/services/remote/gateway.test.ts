@@ -235,6 +235,21 @@ describe("raw broadcast forwarding", () => {
     ]);
   });
 
+  it("tells typed clients when the device claim changes", () => {
+    const { conn, fromGateway } = connect(["monitor", "control"]);
+    conn.handleBroadcast("devices:claim-changed", [
+      {
+        device_id: "sim-1",
+        holder: { connection_id: "c2", device_id: "dev-2", label: "Phone" },
+      },
+    ]);
+    expect(fromGateway).toHaveLength(1);
+    expect(fromGateway[0] as { event?: string }).toMatchObject({
+      event: "device.claim",
+      payload: { device_id: "sim-1", holder: { label: "Phone" } },
+    });
+  });
+
   it("keeps typed events for control devices", () => {
     const { conn, fromGateway } = connect(["control"]);
     conn.handleBroadcast("remote:notification", [

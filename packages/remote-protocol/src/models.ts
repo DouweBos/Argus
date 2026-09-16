@@ -242,6 +242,18 @@ export const RemoteDevice = z.object({
 });
 export type RemoteDevice = z.infer<typeof RemoteDevice>;
 
+/**
+ * Who currently holds interaction on a device. Two clients may both watch a
+ * screen, but only the holder may inject HID events.
+ */
+export const RemoteDeviceClaim = z.object({
+  connection_id: z.string(),
+  /** The paired device (phone/Mac) holding the claim, not the simulator. */
+  device_id: z.string(),
+  label: z.string(),
+});
+export type RemoteDeviceClaim = z.infer<typeof RemoteDeviceClaim>;
+
 // --- Control-scoped models (mirror app/lib/types.ts input shapes) ----------
 
 /** A model the agent can switch to, plus its effort/fast-mode support. */

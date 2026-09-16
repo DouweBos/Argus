@@ -167,6 +167,8 @@ export const REMOTE_EVENTS = [
   "agent.capabilities",
   "permission.request",
   "permission.cancel",
+  /** Device interaction claim changed (taken, released or stolen). */
+  "device.claim",
   "sessions.changed",
   "projects.changed",
   /** A user-facing notification (agent finished, needs approval, MCP push). */

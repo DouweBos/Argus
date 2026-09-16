@@ -114,6 +114,7 @@ function makeCtx(capabilities: PairedDevice["capabilities"]): GatewayContext {
       created_at: 0,
       last_seen: null,
     },
+    connectionId: "conn-1",
     outstandingPermissions: new Set(),
   };
 }
