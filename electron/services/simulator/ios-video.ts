@@ -7,14 +7,13 @@
  * forwards config/frame events to the renderer — the same WebCodecs decode path
  * the Android bridge uses.
  *
- * Frames are broadcast to every BrowserWindow (main + simulator popouts) so a
- * popped-out device view keeps rendering, matching what the old MJPEG-over-HTTP
- * stream provided.
+ * Frames go out on the shared broadcast bus, so every window (main + simulator
+ * popouts) and every tap (the remote gateway) sees them.
  */
 
-import { BrowserWindow } from "electron";
 import * as net from "node:net";
 import { error, log } from "../../../app/lib/logger";
+import { broadcastToRenderers } from "../../broadcast";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
@@ -25,14 +24,6 @@ interface IosVideoStream {
 
 /** Per-UDID stream registry, mirroring the bridge registry in ios.ts. */
 const streamsByUdid = new Map<string, IosVideoStream>();
-
-function broadcast(channel: string, payload: unknown): void {
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) {
-      win.webContents.send(channel, payload);
-    }
-  }
-}
 
 /**
  * Connect to the bridge's H.264 stream port for a UDID and start emitting
@@ -51,11 +42,15 @@ export function startIosVideoStream(udid: string, port: number): void {
       log(
         `[IosVideo] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)} (${udid})`,
       );
-      broadcast(`ios_video_config:${udid}`, config);
+      broadcastToRenderers(`ios_video_config:${udid}`, config);
       emitVideoConfig(udid, config);
     },
     onFrame: (data, keyFrame, timestamp) => {
-      broadcast(`ios_video_frame:${udid}`, { data, keyFrame, timestamp });
+      broadcastToRenderers(`ios_video_frame:${udid}`, {
+        data,
+        keyFrame,
+        timestamp,
+      });
       emitVideoFrame(udid, data, keyFrame, timestamp);
     },
   });

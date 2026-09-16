@@ -1,8 +1,8 @@
 /**
  * Fan-out hub for H.264 device frames to non-renderer consumers (the remote
- * gateway). The desktop UI receives frames via `webContents.send` directly;
+ * gateway). The desktop UI receives frames over the renderer broadcast bus;
  * this module lets the gateway subscribe to the same config/frame stream
- * without going through Electron IPC or the renderer broadcast tap.
+ * without going through Electron IPC.
  *
  * Keyed by device id (iOS UDID / Android serial). The last-seen config is
  * cached per device so a late subscriber can configure its decoder
