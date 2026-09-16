@@ -191,3 +191,46 @@ describe("gateway capability boundary", () => {
     expect(out).toHaveLength(2);
   });
 });
+
+describe("raw broadcast forwarding", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const ipcEvents = (sent: Envelope[]) =>
+    sent.filter(
+      (e) => (e as { type?: string; event?: string }).event === "ipc",
+    );
+
+  it("mirrors an unscoped renderer channel to an admin device", () => {
+    const { conn, fromGateway } = connect(["admin"]);
+    conn.handleBroadcast("projects:changed", [{ repo_root: "/r" }]);
+    expect(ipcEvents(fromGateway)).toHaveLength(1);
+    expect(
+      (fromGateway[0] as unknown as { payload: { channel: string } }).payload,
+    ).toEqual({ channel: "projects:changed", args: [{ repo_root: "/r" }] });
+  });
+
+  it("drops terminal output nobody subscribed to", () => {
+    const { conn, fromGateway } = connect(["admin"]);
+    conn.handleBroadcast("terminal:data:t1", ["aGk="]);
+    expect(ipcEvents(fromGateway)).toHaveLength(0);
+  });
+
+  it("sends nothing raw to control devices", () => {
+    const { conn, fromGateway } = connect(["control"]);
+    conn.handleBroadcast("projects:changed", [{}]);
+    expect(ipcEvents(fromGateway)).toHaveLength(0);
+  });
+
+  it("skips video, which TAG_MEDIA already carries", () => {
+    const { conn, fromGateway } = connect(["admin"]);
+    conn.handleBroadcast("ios_video_frame:abc", [{}]);
+    conn.handleBroadcast("android_video_config:abc", [{}]);
+    expect(ipcEvents(fromGateway)).toHaveLength(0);
+  });
+
+  it("still gates agent channels on subscription", () => {
+    const { conn, fromGateway } = connect(["admin"]);
+    conn.handleBroadcast("agent:event:unsubscribed", [{}]);
+    expect(ipcEvents(fromGateway)).toHaveLength(0);
+  });
+});
