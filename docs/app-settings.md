@@ -576,8 +576,9 @@ While attached to a host:
 - **Sign-in links** open in the browser in front of you, not on the host.
 - **Reveal in Finder** and **Open in editor** are unavailable and say so —
   those files live on the other machine. Use VS Code / Cursor over SSH.
-- **Terminals and device video** are not yet carried over the wire; the runtime
-  panel stays quiet until they are.
+- **Device video** is not yet carried over the wire, so the simulator view
+  stays empty. Terminal output does come through, streamed on the same
+  encrypted channel as everything else.
 - If the connection drops, agents keep running on the host. The window shows a
   disconnected banner and re-pulls a fresh snapshot when it reconnects.
 

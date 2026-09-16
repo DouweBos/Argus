@@ -18,13 +18,27 @@ import { localTransport } from "./local";
 import { commandTarget } from "./routing";
 import { RemoteUnavailableError, type ArgusTransport } from "./types";
 
-/** `agent:event:<id>` → the agent id, for per-agent gateway subscriptions. */
-function agentIdFor(channel: string): string | null {
+/**
+ * The gateway's subscription id for a channel, mirroring the host's
+ * `rawSubscriptionScope`. Unsubscribed scopes are dropped before they reach the
+ * wire, so a desktop watching four agents never streams a fifth's tokens.
+ *
+ * `agent:<kind>:<id>` → `<id>`; `terminal:data|exit:<id>` → `terminal:<id>`.
+ * Everything else is unscoped and arrives without subscribing.
+ */
+function subscriptionScope(channel: string): string | null {
   const parts = channel.split(":");
+  if (parts.length < 3) {
+    return null;
+  }
+  if (parts[0] === "agent") {
+    return parts.slice(2).join(":");
+  }
+  if (parts[0] === "terminal" && (parts[1] === "data" || parts[1] === "exit")) {
+    return `terminal:${parts.slice(2).join(":")}`;
+  }
 
-  return parts.length >= 3 && parts[0] === "agent"
-    ? parts.slice(2).join(":")
-    : null;
+  return null;
 }
 
 export interface RemoteTransportHandlers {
@@ -37,8 +51,8 @@ export class RemoteTransport implements ArgusTransport {
     string,
     Set<(payload: unknown) => void>
   >();
-  /** Live gateway subscriptions, ref-counted by listening channel. */
-  private readonly agentRefs = new Map<string, number>();
+  /** Live gateway subscriptions, ref-counted by scope id. */
+  private readonly subscriptionRefs = new Map<string, number>();
 
   constructor(
     private readonly host: RemoteHost,
@@ -114,30 +128,30 @@ export class RemoteTransport implements ArgusTransport {
     };
   }
 
-  /** Subscribe on the gateway so this host only streams agents we watch. */
+  /** Subscribe on the gateway so this host only streams what we watch. */
   private retain(channel: string): void {
-    const agentId = agentIdFor(channel);
-    if (!agentId) {
+    const scope = subscriptionScope(channel);
+    if (!scope) {
       return;
     }
-    const next = (this.agentRefs.get(agentId) ?? 0) + 1;
-    this.agentRefs.set(agentId, next);
+    const next = (this.subscriptionRefs.get(scope) ?? 0) + 1;
+    this.subscriptionRefs.set(scope, next);
     if (next === 1) {
-      this.transport.subscribe(agentId, true);
+      this.transport.subscribe(scope, true);
     }
   }
 
   private release(channel: string): void {
-    const agentId = agentIdFor(channel);
-    if (!agentId) {
+    const scope = subscriptionScope(channel);
+    if (!scope) {
       return;
     }
-    const next = (this.agentRefs.get(agentId) ?? 1) - 1;
+    const next = (this.subscriptionRefs.get(scope) ?? 1) - 1;
     if (next <= 0) {
-      this.agentRefs.delete(agentId);
-      this.transport.subscribe(agentId, false);
+      this.subscriptionRefs.delete(scope);
+      this.transport.subscribe(scope, false);
     } else {
-      this.agentRefs.set(agentId, next);
+      this.subscriptionRefs.set(scope, next);
     }
   }
 

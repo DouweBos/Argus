@@ -6,7 +6,11 @@ import { generateKeypair, NoiseHandshake, type NoiseSession } from "./noise";
 // The gateway calls into the service layer + appState; stub them so the test
 // stays focused on dispatch/capability behaviour, not on spinning up agents.
 vi.mock("../../state", () => ({
-  appState: { agents: new Map(), agentSnapshots: new Map() },
+  appState: {
+    agents: new Map(),
+    agentSnapshots: new Map(),
+    agentPendingPermissions: new Map(),
+  },
 }));
 vi.mock("../agent/agentService", () => ({
   listAgents: vi.fn(() => []),
@@ -213,6 +217,38 @@ describe("raw broadcast forwarding", () => {
     const { conn, fromGateway } = connect(["admin"]);
     conn.handleBroadcast("terminal:data:t1", ["aGk="]);
     expect(ipcEvents(fromGateway)).toHaveLength(0);
+  });
+
+  it("forwards only the subscribed terminal's output", async () => {
+    const { conn, send, fromGateway } = connect(["admin"]);
+    await send({ type: "sub", action: "subscribe", agent_id: "terminal:t1" });
+    conn.handleBroadcast("terminal:data:t1", ["aGk="]);
+    conn.handleBroadcast("terminal:data:t2", ["bm8="]);
+    conn.handleBroadcast("terminal:exit:t1", [0]);
+    expect(
+      ipcEvents(fromGateway).map(
+        (e) => (e as unknown as { payload: { channel: string } }).payload,
+      ),
+    ).toEqual([
+      { channel: "terminal:data:t1", args: ["aGk="] },
+      { channel: "terminal:exit:t1", args: [0] },
+    ]);
+  });
+
+  it("keeps typed events for control devices", () => {
+    const { conn, fromGateway } = connect(["control"]);
+    conn.handleBroadcast("remote:notification", [
+      {
+        agent_id: null,
+        session_id: null,
+        tool_use_id: null,
+        kind: "finished",
+        title: "t",
+        body: "b",
+      },
+    ]);
+    expect(fromGateway).toHaveLength(1);
+    expect((fromGateway[0] as { event?: string }).event).toBe("notification");
   });
 
   it("sends nothing raw to control devices", () => {
