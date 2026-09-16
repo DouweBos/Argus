@@ -159,7 +159,21 @@ const sessionProjectPathArg = z
  * scopes the branch/display-name search so a name shared across projects
  * resolves unambiguously.
  */
+/** Aliases for the project-root session, which has no stable display name. */
+const ROOT_SESSION_ALIASES = new Set(["root", "project_root", "project-root"]);
+
 function resolveSession(idOrBranch: string, projectPath: string) {
+  // "root" addresses the checkout the user already has open, so callers can
+  // delegate into it without knowing its branch or inventing a worktree.
+  if (ROOT_SESSION_ALIASES.has(idOrBranch)) {
+    const root = [...appState.sessions.values()].find(
+      (ws) => ws.repo_root === projectPath && ws.kind === "project_root",
+    );
+    if (root) {
+      return root;
+    }
+  }
+
   // Try by ID first — session IDs are UUIDs. Validate it belongs to the
   // given project so a stale/cross-project ID surfaces as an error rather
   // than acting on the wrong project.
@@ -585,7 +599,7 @@ export function createMcpServer(
 
   server.tool(
     "create_session",
-    "Create a new isolated git worktree session. Returns the session ID and branch name. The session is initialized with the project's setup pipeline (dependency installs, symlinks, etc.) in the background. Pass `prompt` to also spawn an agent with that prompt as soon as setup completes — equivalent to a follow-up `spawn_agent` call but lets you do it in one round-trip. Requires project_path — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
+    "Create a new isolated git worktree session. Returns the session ID and branch name. Only needed when work must be isolated from the user's checkout — to run an agent on the current branch, skip this and call `spawn_agent` with `session: \"root\"`. The session is initialized with the project's setup pipeline (dependency installs, symlinks, etc.) in the background. Pass `prompt` to also spawn an agent with that prompt as soon as setup completes — equivalent to a follow-up `spawn_agent` call but lets you do it in one round-trip. Requires project_path — use the path from your system prompt for the current project, or a path from list_projects for another project. The project will be auto-registered if needed.",
     {
       name: z
         .string()
@@ -756,7 +770,7 @@ export function createMcpServer(
 
   server.tool(
     "list_sessions",
-    'List all sessions (worktrees and project root) for a project. Returns session IDs, branches, paths, and statuses. The `status` field is `"initializing"` while `git worktree add` and the project\'s setup pipeline run, `"ready"` once provisioning completes, or an error object if setup failed. Sessions in `initializing` cannot host agents yet — spawning into them is queued by `spawn_agent`/`spawn_agents_batch` until ready, so freshly-created sessions may legitimately show no agents in `list_agents` for several seconds (or longer if dependency installs are running).',
+    'List all sessions for a project. Exactly one has `kind: "project_root"` — that is the checkout the user has open, always `ready`, and addressable as `"root"` in any tool taking a `session`; the rest are worktrees. Returns session IDs, branches, paths, and statuses. The `status` field is `"initializing"` while `git worktree add` and the project\'s setup pipeline run, `"ready"` once provisioning completes, or an error object if setup failed. Sessions in `initializing` cannot host agents yet — spawning into them is queued by `spawn_agent`/`spawn_agents_batch` until ready, so freshly-created sessions may legitimately show no agents in `list_agents` for several seconds (or longer if dependency installs are running).',
     {
       project_path: z
         .string()
@@ -839,12 +853,12 @@ export function createMcpServer(
 
   server.tool(
     "spawn_agent",
-    "Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. Use this to delegate work to a parallel agent in another worktree. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don't need to pass parent_agent_id. This call blocks internally until the session's setup pipeline (worktree provisioning, dependency installs) completes — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created. If you're spawning into a session you just made, prefer `create_session` with a `prompt` to do both in one round-trip.",
+    'Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don\'t need to pass parent_agent_id.\n\nThis does NOT create a worktree. Pass `session: "root"` to run the agent in the checkout the user already has open — that is what "spawn an agent" means by default, and it is the right choice when the work belongs on the current branch or the user asked for help with what is in front of them. Only use a separate session when the work genuinely needs isolation (a risky refactor, a parallel attempt at the same files, something that must not touch the working tree) — create it first with `create_session`, or use `create_session` with a `prompt` to do both in one round-trip.\n\nThis call blocks internally until the session is ready — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created.',
     {
       session: z
         .string()
         .describe(
-          "Session ID, branch name, or display name to run the agent in",
+          'Which session to run the agent in: `"root"` for the project root — the checkout the user already has open, no worktree involved — or a session ID, branch name, or display name. Prefer `"root"` unless the work needs isolation.',
         ),
       project_path: sessionProjectPathArg,
       prompt: z
@@ -958,7 +972,7 @@ export function createMcpServer(
 
   server.tool(
     "spawn_agents_batch",
-    'Create multiple sessions and spawn agents in them in parallel. Each entry creates a new worktree and starts an agent with the given prompt. Agents may target different projects — set `project_path` per-agent to spawn across projects in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once after each session has finished provisioning. If your MCP transport drops mid-call, sessions may already exist while their agents are still being started server-side; treat absent agents as "not yet visible" rather than "failed" and verify by polling `list_sessions` (status → ready) and `list_agents` for ~30s before respawning.',
+    'Create multiple ISOLATED sessions and spawn agents in them in parallel. Each entry creates a new git worktree on its own branch and starts an agent there.\n\nUse this only when the agents genuinely need separate checkouts — parallel attempts at the same files, or work that must not touch the user\'s working tree. To run several agents against the checkout the user already has open, call `spawn_agent` with `session: "root"` once per agent instead; that is the usual meaning of "spawn some agents" and it needs no worktree. Agents sharing the root session see each other\'s edits, so give them non-overlapping files. Agents may target different projects — set `project_path` per-agent to spawn across projects in one call. Much more efficient than sequential create_session + spawn_agent calls. Returns all agent IDs at once after each session has finished provisioning. If your MCP transport drops mid-call, sessions may already exist while their agents are still being started server-side; treat absent agents as "not yet visible" rather than "failed" and verify by polling `list_sessions` (status → ready) and `list_agents` for ~30s before respawning.',
     {
       project_path: z
         .string()

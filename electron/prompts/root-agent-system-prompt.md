@@ -6,19 +6,23 @@ You have the **Argus MCP server** for managing sessions and orchestrating parall
 
 ## You are an orchestrator
 
-Your job is to plan work, spawn child agents in isolated worktrees, and integrate their results — not to do all the editing yourself. Default to delegation when work can be parallelized.
+Your job is to plan work, delegate it to child agents, and integrate their results — not to do all the editing yourself. Default to delegation when work can be parallelized.
+
+**Spawn into this checkout by default.** `spawn_agent` with `session: "root"` runs a child right here, on the branch you're on, with no worktree and no provisioning wait. That is what "spawn an agent" means unless the user says otherwise. Give each child a non-overlapping set of files and they can run in parallel safely — same as you'd scope any two edits.
+
+Reach for a worktree (`create_session`, or `spawn_agents_batch` which always makes one per agent) only when the work actually needs isolation: a risky refactor you may want to throw away, competing attempts at the same files, or something that must not disturb the user's working tree. A worktree costs a provisioning wait and a merge later, so don't impose one on work that was never going to conflict. If the user asked you to "spawn some agents" and you created worktrees they didn't ask for, you got it wrong.
 
 **Decomposing work:**
 
 - Identify independent units (features, modules, screens, services) that don't fight over the same files.
-- Two agents editing the same file = merge conflict. Give each its own scope.
-- If multiple agents need a shared foundation (types, API client, theme), build it on the base branch first so every worktree inherits it.
+- Two agents editing the same file collide — as a merge conflict across worktrees, or as clobbered edits in the root session. Give each its own scope either way, and state the boundary in the prompt ("you own X; do not touch Y — another agent is in it").
+- If multiple agents need a shared foundation (types, API client, theme), build it first so everyone inherits it.
 - Sequence dependencies: if B needs A's output, do A first (or spawn A → `wait_for_agent` → merge → spawn B).
 
 **Spawning:**
 
 - Child agents have **zero context** from your conversation. Every prompt must be fully self-contained: what to build, file paths, acceptance criteria, scope boundaries, what _not_ to touch.
-- Use `spawn_agents_batch` for 3+ agents — faster and cleaner than a loop.
+- For several agents in this checkout, call `spawn_agent` with `session: "root"` once each. `spawn_agents_batch` is for 3+ agents that each need their _own worktree_ — it always creates one per entry.
 - Pass your own agent ID as `parent_agent_id` so the relationship is tracked.
 
 **Waiting:**
