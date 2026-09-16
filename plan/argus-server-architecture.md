@@ -15,8 +15,9 @@ This is not a greenfield project. Roughly half the server already ships:
 
 - **A capability-gated RPC gateway** — `electron/services/remote/` (~3.3k lines):
   Noise `IK`/`IKpsk1` mutual auth over WebSocket, per-device static-key pinning,
-  server-side per-method allowlist, SAS-confirmed pairing, device revocation.
-  `plan/security-audit-remote-control.md` found the crypto/auth core sound.
+  server-side per-method allowlist, SAS-confirmed pairing, device revocation. A
+  prior audit found the crypto/auth core sound; its open findings are inlined in
+  §4.5 rather than cited, since the audit doc itself is gone.
 - **A shared wire protocol** — `@argus/remote-protocol` (`messages.ts`, `models.ts`,
   `capabilities.ts`): zod-validated request/response envelopes, event payloads, and
   the `REMOTE_METHODS` → capability map.
@@ -139,8 +140,8 @@ export const HOST_ONLY_COMMANDS = new Set([
 Properties worth being explicit about:
 
 - `monitor` and `control` keep the existing strict `REMOTE_METHODS` allowlist,
-  **unchanged**. The phone and web clients are unaffected, and the security audit's
-  invariant ("a method is reachable iff it is in the map") still holds for them.
+  **unchanged**. The phone and web clients are unaffected, and the original invariant
+  ("a method is reachable iff it is in the map") still holds for them.
 - `admin` inverts to a denylist. That is a real, deliberate weakening — justified only
   because an `admin` grant is a console-confirmed SAS pairing with a specific device
   key, and revocable. Never grant it to a browser.
@@ -191,8 +192,8 @@ repo is on the same machine as the window:
 | `reveal_in_finder`, `open_path`, `open_in_editor`, `open_in_custom_editor` | host-only; disable in server mode, or re-target at the client (see below)                                |
 | `open_external_url`                                                        | flip to a client-executed event — an OAuth link must open in _your_ browser, not the mini's              |
 | drag-and-drop attachments (`webUtils.getPathForFile`)                      | path is local to the laptop; must upload bytes. `agents.send` already carries base64 images — generalise |
-| `read_file` / `write_file`                                                 | the audit left these unreachable. `admin` needs them; scope with `assertInsideSession` first             |
-| `resolve_mention_path`                                                     | audit finding **M2** — no path containment today. Fix before it is server-side                           |
+| `read_file` / `write_file`                                                 | deliberately unreachable from the wire today. `admin` needs them; scope with `assertInsideSession` first |
+| `resolve_mention_path`                                                     | no path containment today (§4.5) — fix before it is server-side                                          |
 
 Only the project picker genuinely blocks the switch; the rest degrade gracefully if
 disabled. The honest answer for "open in editor" against a server host is VS Code
@@ -201,17 +202,34 @@ back to the laptop.
 
 ### 4.5 Identity and credentials
 
-A permanently-on, unattended host converts several audit findings into blockers:
+A permanently-on, unattended host turns four known weaknesses into blockers. Each
+needs re-verifying against current code before acting — these were true as of the
+remote-control audit and parts may already be fixed:
 
-- **H1** — drop `"trusted"`/`bypassPermissions` from `RemotePermissionMode`. Nobody is
-  sitting at the mini to see a prompt.
-- **M3** — `repo_root` is client-supplied and unvalidated. Allowlist it against
-  `collectAllProjects()`.
-- **M1** — `permission.respond` sits in the default `monitor` tier. On a server,
-  approving a prompt is remote code execution on a machine nobody is watching.
-- **M5/M6** — LAN mode serves the client bundle and `ws://` as plaintext on
-  `0.0.0.0`. For an always-on server prefer Tailscale (already supported); treat
-  raw-LAN as opt-in with a warning.
+- **Unattended `bypassPermissions`.** `RemotePermissionMode` includes `"trusted"`, and
+  `agents.spawn` passes `permission_mode` straight to `startAgent`, where `trusted` ==
+  `bypassPermissions` — the CLI then auto-runs every tool with no prompt forwarded to
+  anyone. On a mini nobody is sitting at, that is silent RCE. Drop `"trusted"` from the
+  remote enum and keep `bypassPermissions` host-only.
+- **`permission.respond` sits in the default `monitor` tier.** A device paired without
+  ticking "control" can still approve any forwarded tool-use prompt — which in an
+  agentic IDE is code execution. Move it behind `control`, or give it its own
+  `approve` capability.
+- **`repo_root` is client-supplied and unvalidated.** `createSession` never checks it
+  against `appState.repoRoots`, so a device paired "to watch one project" can read and
+  drive every project — and `sessions.create` against an attacker-influenced repo runs
+  that repo's `.argus.json` setup pipeline. Allowlist it against `collectAllProjects()`,
+  optionally with per-device `allowedRepoRoots`.
+- **`resolve_mention_path` has no path containment.** It expands `~/` and takes a
+  leading `/` verbatim with no `assertInsideSession`, so `{query:"~/.ssh/"}` returns a
+  directory listing. Filenames only, not bytes — but it must be confined to the session
+  worktree plus registered project roots before it is server-side.
+
+Two more matter for an always-on host but don't block the switch: the web client
+persists its device private key extractably in `localStorage`, and LAN mode serves the
+bundle and `ws://` as plaintext on `0.0.0.0` — so a LAN MITM can inject same-origin JS
+and steal that key. Prefer Tailscale (already supported); treat raw-LAN as opt-in with
+a warning.
 
 Claude credentials now live on the mini: `claudeAuth/accounts.ts` becomes server-side
 state, and `claude_auth_login_start` must drive an OAuth flow whose browser opens on
@@ -255,8 +273,9 @@ Worth stating, because it bounds the blast radius:
 
 ## 6. Phasing
 
-**Phase 0 — security preconditions.** H1, M1, M2, M3 from the audit. Small,
-independent, required before anything is permanently reachable.
+**Phase 0 — security preconditions.** The four items in §4.5. Small, independent, and
+required before anything is permanently reachable. Re-verify each against current code
+first — some may already be fixed.
 
 **Phase 1 — headless host mode.** `Argus.app --host`: skip `createWindow()`, keep the
 tray, gateway and tunnel; launchd _agent_ plist (not a daemon) + auto-login +
