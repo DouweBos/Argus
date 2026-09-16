@@ -22,9 +22,16 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { log as emitLog } from "../app/lib/logger";
 import { broadcastToRenderers } from "./broadcast";
+import { startDevTrust, stopDevTrust } from "./devTrust";
 import { registerIpcHandlers } from "./ipc";
+import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
 import { setMainWindow } from "./mainWindow";
+import {
+  isServerMode,
+  startPowerAssertion,
+  stopPowerAssertion,
+} from "./serverMode";
 import { destroyAllAgents } from "./services/agent/agentService";
 import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
 import { stopAllScreencasts } from "./services/browser/cdpScreencast";
@@ -43,7 +50,9 @@ import { initConductorOverride } from "./services/conductor/override";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { startMcpServer, stopMcpServer } from "./services/mcp/server";
 import {
+  LOCAL_GATEWAY_PORT,
   applyRemoteSettings,
+  setRemoteConfig,
   setWebClientDir,
   stopRemote,
 } from "./services/remote/remoteService";
@@ -97,7 +106,10 @@ if (process.platform === "win32") {
 // side-by-side. The single-instance lock lives under userData, so sharing it
 // makes `pnpm dev` silently quit (exit 0) whenever the packaged app is open.
 if (!app.isPackaged) {
-  const devUserData = path.join(app.getPath("appData"), "argus-dev");
+  const devUserData = path.join(
+    app.getPath("appData"),
+    isServerMode() ? "argus-server-dev" : "argus-dev",
+  );
   app.setPath("userData", devUserData);
 }
 
@@ -172,7 +184,9 @@ function resolveMenuIconPath(filename: string): string | null {
 // external callers (MCP, Slack previews, custom URL openers) can jump straight
 // into a screen. Uses setAsDefaultProtocolClient; the actual URL is received
 // via `open-url` (macOS) or the `second-instance` argv on Linux/Windows.
-if (!app.isDefaultProtocolClient("argus")) {
+// Skipped on the server: claiming the scheme there would steal `argus://`
+// links from the desktop app on the same Mac.
+if (!isServerMode() && !app.isDefaultProtocolClient("argus")) {
   app.setAsDefaultProtocolClient("argus");
 }
 
@@ -657,7 +671,7 @@ function createWindow(): void {
 
 // macOS: keep process alive when all windows are closed (Cmd+W / traffic light).
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+  if (process.platform !== "darwin" && !isServerMode()) {
     app.quit();
   }
 });
@@ -688,7 +702,12 @@ app.on("before-quit", (e) => {
     }
   }
 
-  if (runningAgentIds.length > 0 && !bypassRunningAgentsGuard) {
+  // The server has no renderer to answer the guard prompt, so it never asks.
+  if (
+    runningAgentIds.length > 0 &&
+    !bypassRunningAgentsGuard &&
+    !isServerMode()
+  ) {
     log(
       "before-quit: %d running agents, asking renderer",
       runningAgentIds.length,
@@ -717,6 +736,8 @@ app.on("before-quit", (e) => {
   stopAllScreencasts();
   stopAllDebugStreams();
   destroyTray();
+  stopDevTrust();
+  stopPowerAssertion();
   webBrowserPool.releaseAll().catch((err) => {
     log("webBrowserPool.releaseAll failed: %s", err);
   });
@@ -763,6 +784,7 @@ function syncShutdownCleanup(): void {
   } catch {
     // Best-effort; we're on the way out.
   }
+  stopPowerAssertion();
 }
 app.on("will-quit", syncShutdownCleanup);
 process.on("exit", syncShutdownCleanup);
@@ -776,6 +798,9 @@ for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
 
 // macOS: re-show window when dock icon is clicked.
 app.on("activate", () => {
+  if (isServerMode()) {
+    return;
+  }
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   } else {
@@ -871,7 +896,12 @@ app.whenReady().then(() => {
     log("reapOrphanedAgentProcesses failed: %s", err);
   });
 
-  if (process.platform === "darwin" && app.dock) {
+  if (isServerMode()) {
+    // Accessory app: no Dock tile, no window, just the tray. Also keeps the
+    // mini awake for as long as the server runs.
+    app.dock?.hide();
+    startPowerAssertion();
+  } else if (process.platform === "darwin" && app.dock) {
     const iconPath = resolveAppIconPath();
     if (iconPath) {
       const image = nativeImage.createFromPath(iconPath);
@@ -898,11 +928,15 @@ app.whenReady().then(() => {
     log("Failed to start MCP server: %s", String(e)),
   );
 
-  // Bring up phone/LAN remote access if the user has enabled it.
+  // Bring up phone/LAN remote access if the user has enabled it. On the server
+  // the gateway is the only way in, so it is forced on rather than a setting.
   setWebClientDir(resolveWebClientDir());
-  applyRemoteSettings().catch((e) =>
-    log("Failed to start remote access: %s", String(e)),
-  );
+  const remoteReady = isServerMode()
+    ? setRemoteConfig({ enabled: true }).then(() => undefined)
+    : applyRemoteSettings();
+  remoteReady
+    .then(() => startDevTrust())
+    .catch((e) => log("Failed to start remote access: %s", String(e)));
 
   // Start the MJPEG server for streaming browser frames via CDP screencast.
   startMjpegServer().catch((e) =>
@@ -988,8 +1022,11 @@ app.whenReady().then(() => {
         "style-src 'self' 'unsafe-inline'",
         "font-src 'self' data:",
         "img-src 'self' argus-file: data: blob: https: http://127.0.0.1:*",
-        "connect-src 'self' data: https://*.i.posthog.com" +
-          (isDev ? " ws://localhost:* http://localhost:*" : ""),
+        // ws:/wss: are open because remote mode dials an arbitrary paired host
+        // (LAN, Tailscale or tunnel). The gateway's Noise static-key pinning,
+        // not CSP, is what authenticates that connection.
+        "connect-src 'self' data: ws: wss: https://*.i.posthog.com" +
+          (isDev ? " http://localhost:*" : ""),
         "worker-src 'self' blob: data:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];
@@ -1001,14 +1038,25 @@ app.whenReady().then(() => {
   // Register all IPC handlers before creating the window.
   registerIpcHandlers();
 
-  Menu.setApplicationMenu(buildAppMenu());
-
-  createWindow();
+  if (!isServerMode()) {
+    Menu.setApplicationMenu(buildAppMenu());
+    createWindow();
+  }
 
   // Menu-bar tray with a live "running agents" dropdown. macOS-only — the
   // helper no-ops on other platforms.
   initTray({
+    describeHost: isServerMode()
+      ? () => [
+          `Argus Server ${app.getVersion()}`,
+          `Gateway: ws://127.0.0.1:${LOCAL_GATEWAY_PORT}`,
+          `State: ${argusHomeDir()}`,
+        ]
+      : undefined,
     navigateMainWindow: (route, agentId) => {
+      if (isServerMode()) {
+        return;
+      }
       if (!mainWindow || mainWindow.isDestroyed()) {
         createWindow();
       }
