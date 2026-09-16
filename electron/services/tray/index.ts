@@ -16,6 +16,7 @@ import type { Session } from "../session/models";
 import { Menu, Tray, app, nativeImage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
+import { isServerMode } from "../../serverMode";
 import { appState } from "../../state";
 
 let tray: Tray | null = null;
@@ -33,6 +34,11 @@ interface TrayHooks {
    * session and a plain navigate() would be a no-op.
    */
   navigateMainWindow: (path: string, agentId?: string) => void;
+  /**
+   * Extra read-only lines for the top of the menu. The headless server has no
+   * window, so the tray is where its gateway URL and state directory live.
+   */
+  describeHost?: () => string[];
 }
 
 let hooks: TrayHooks | null = null;
@@ -186,6 +192,13 @@ function buildMenu(): Menu {
   }
 
   const template: Electron.MenuItemConstructorOptions[] = [];
+  const hostLines = hooks?.describeHost?.() ?? [];
+  for (const line of hostLines) {
+    template.push({ label: line, enabled: false });
+  }
+  if (hostLines.length > 0) {
+    template.push({ type: "separator" });
+  }
   let runningCount = 0;
   let totalAgentCount = 0;
   for (const agents of sessionAgents.values()) {
@@ -259,10 +272,12 @@ function buildMenu(): Menu {
   }
 
   template.push({ type: "separator" });
-  template.push({
-    label: "Show Argus",
-    click: () => hooks?.navigateMainWindow("/"),
-  });
+  if (!isServerMode()) {
+    template.push({
+      label: "Show Argus",
+      click: () => hooks?.navigateMainWindow("/"),
+    });
+  }
   template.push({ role: "quit" });
 
   return Menu.buildFromTemplate(template);
@@ -290,10 +305,11 @@ function refreshTray(): void {
       running += 1;
     }
   }
+  const name = isServerMode() ? "Argus Server" : "Argus";
   tray.setToolTip(
     total === 0
-      ? "Argus — no agents running"
-      : `Argus — ${running}/${total} agent${total === 1 ? "" : "s"} active`,
+      ? `${name} — no agents running`
+      : `${name} — ${running}/${total} agent${total === 1 ? "" : "s"} active`,
   );
 
   // Rebuild the dropdown so the next click reflects current state. We do this

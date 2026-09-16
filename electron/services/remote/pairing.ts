@@ -21,8 +21,10 @@ import {
 } from "@argus/remote-protocol";
 import { derivePairingPsk, deriveSas } from "./derive";
 import {
+  capabilitiesFor,
   getDesktopIdentity,
   saveDevice,
+  type DeviceGrants,
   type PairedDevice,
 } from "./deviceStore";
 import { setPairingHandler } from "./localGatewayServer";
@@ -122,15 +124,12 @@ class PairingSession {
     this.cb.onSas(deriveSas(handshake.handshakeHash()));
   }
 
-  async confirm(control = false): Promise<void> {
+  async confirm(grants: DeviceGrants = {}): Promise<void> {
     if (this.done || !this.session || !this.pendingDevice || !this.sendFn) {
       throw new Error("no pairing awaiting confirmation");
     }
-    // Grant "control" only when the user opted in on the confirm screen.
-    this.pendingDevice.capabilities = [
-      "monitor",
-      ...(control ? (["control"] as const) : []),
-    ];
+    // Grant "control"/"admin" only when the user opted in on the confirm screen.
+    this.pendingDevice.capabilities = capabilitiesFor(grants);
     const grant: PairingGrant = {
       device_id: this.pendingDevice.device_id,
       capabilities: this.pendingDevice.capabilities,
@@ -220,11 +219,16 @@ export async function startPairing(
   };
 }
 
-export async function confirmPairing(control = false): Promise<void> {
+/** `grants` accepts the legacy boolean for the control-only confirm screen. */
+export async function confirmPairing(
+  grants: DeviceGrants | boolean = false,
+): Promise<void> {
   if (!active) {
     throw new Error("no pairing in progress");
   }
-  await active.confirm(control);
+  await active.confirm(
+    typeof grants === "boolean" ? { control: grants } : grants,
+  );
 }
 
 export function cancelPairing(): void {

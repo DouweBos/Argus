@@ -13,6 +13,11 @@ vi.mock("./deviceStore", () => ({
     saved.push(d);
   },
   findDeviceByStaticKey: async () => null,
+  capabilitiesFor: (g: { control?: boolean; admin?: boolean }) => [
+    "monitor",
+    ...(g.control || g.admin ? ["control"] : []),
+    ...(g.admin ? ["admin"] : []),
+  ],
 }));
 vi.mock("../../broadcast", () => ({
   addBroadcastTap: () => () => {},

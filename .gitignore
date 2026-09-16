@@ -67,3 +67,6 @@ vendor/bundle
 
 # Generated macOS iconset (built from build/icon.svg)
 build/icon.iconset/
+
+# Headless server app build output
+release-server
