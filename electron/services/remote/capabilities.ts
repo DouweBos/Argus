@@ -93,6 +93,12 @@ import {
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
 import {
+  claimDevice,
+  getClaim,
+  releaseDevice,
+  type ClaimHolder,
+} from "./deviceClaims";
+import {
   clearDevicePush,
   renameDevice,
   setDevicePush,
@@ -134,6 +140,8 @@ export interface DeviceMediaController {
 /** Per-connection context handed to each handler. */
 export interface GatewayContext {
   device: PairedDevice;
+  /** Identifies this connection, not the device — a reconnect is a new id. */
+  connectionId: string;
   /** `agentId::toolUseId` prompts this device was forwarded and may answer. */
   outstandingPermissions: Set<string>;
   /** Screen-stream control, present when the transport carries a media channel. */
@@ -142,6 +150,28 @@ export interface GatewayContext {
 
 export function permissionKey(agentId: string, toolUseId: string): string {
   return `${agentId}::${toolUseId}`;
+}
+
+function claimHolder(ctx: GatewayContext): ClaimHolder {
+  return {
+    connectionId: ctx.connectionId,
+    deviceId: ctx.device.device_id,
+    label: ctx.device.label,
+  };
+}
+
+/**
+ * Take the interaction claim on behalf of this connection, or refuse the input.
+ * Watching stays unclaimed — only HID injection arbitrates.
+ */
+function requireDeviceInput(deviceId: string, ctx: GatewayContext): void {
+  const result = claimDevice(deviceId, claimHolder(ctx));
+  if (!result.granted) {
+    throw new GatewayError(
+      "capability_denied",
+      `device is being controlled by ${result.holder?.label ?? "another client"}`,
+    );
+  }
 }
 
 /** Map a booted iOS simulator to the remote device shape. */
@@ -1394,14 +1424,17 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   "devices.unwatch": async (params, ctx) => {
     const { device_id } = parse("devices.unwatch", params);
     ctx.media?.unwatch(device_id);
+    // A client that stopped watching can't be interacting either.
+    releaseDevice(device_id, ctx.connectionId);
 
     return { accepted: true };
   },
-  "devices.touch": async (params) => {
+  "devices.touch": async (params, ctx) => {
     const { device_id, platform, x, y, event_type } = parse(
       "devices.touch",
       params,
     );
+    requireDeviceInput(device_id, ctx);
     await control(() =>
       platform === "ios"
         ? simulatorTouch(device_id, x, y, event_type)
@@ -1410,8 +1443,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { accepted: true };
   },
-  "devices.button": async (params) => {
+  "devices.button": async (params, ctx) => {
     const { device_id, platform, button } = parse("devices.button", params);
+    requireDeviceInput(device_id, ctx);
     await control(() =>
       platform === "ios"
         ? simulatorButton(device_id, button)
@@ -1420,11 +1454,12 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { accepted: true };
   },
-  "devices.keyboard": async (params) => {
+  "devices.keyboard": async (params, ctx) => {
     const { device_id, platform, key_code, modifiers, is_down } = parse(
       "devices.keyboard",
       params,
     );
+    requireDeviceInput(device_id, ctx);
     await control(() =>
       platform === "ios"
         ? simulatorKeyboard(device_id, key_code, modifiers, is_down)
@@ -1432,6 +1467,31 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     );
 
     return { accepted: true };
+  },
+};
+
+/**
+ * Gateway-local methods: the device claim arbitrates between connected clients
+ * instead of calling the service layer, so it dispatches here rather than from
+ * `REMOTE_METHODS` — the shared schemas below are the same ones a client
+ * compiles against. Gated on `control`, same as the HID injection it guards.
+ */
+const LOCAL_HANDLERS: Record<string, Handler> = {
+  "devices.claim": async (params, ctx) => {
+    const { device_id, force } = MethodParams["devices.claim"].parse(params);
+
+    return claimDevice(device_id, claimHolder(ctx), force ?? false);
+  },
+  "devices.release": async (params, ctx) => {
+    const { device_id } = MethodParams["devices.release"].parse(params);
+    releaseDevice(device_id, ctx.connectionId);
+
+    return { accepted: true };
+  },
+  "devices.claim_status": async (params) => {
+    const { device_id } = MethodParams["devices.claim_status"].parse(params);
+
+    return { holder: getClaim(device_id) };
   },
 };
 
@@ -1473,14 +1533,31 @@ async function dispatchAdmin(
  * Dispatch a decrypted request. Enforces the capability grant, then routes to
  * the handler. Throws `GatewayError` (mapped to a wire error by the caller).
  *
- * Dotted names (`agents.spawn`) are the monitor/control allowlist; anything
- * else is a raw IPC command name and needs `admin`.
+ * Dotted names (`agents.spawn`) are the monitor/control allowlist, plus the
+ * gateway-local claim methods; anything else is a raw IPC command name and
+ * needs `admin`.
  */
 export async function dispatch(
   method: string,
   params: unknown,
   ctx: GatewayContext,
 ): Promise<unknown> {
+  if (Object.hasOwn(LOCAL_HANDLERS, method)) {
+    if (!hasCapability(ctx, "control")) {
+      throw new GatewayError(
+        "capability_denied",
+        "device lacks 'control' capability",
+      );
+    }
+    try {
+      return await LOCAL_HANDLERS[method](params, ctx);
+    } catch (err) {
+      if (err instanceof GatewayError) {
+        throw err;
+      }
+      throw new GatewayError("bad_request", `invalid params for ${method}`);
+    }
+  }
   if (!(method in REMOTE_METHODS)) {
     if (ctx.device.capabilities.includes("admin")) {
       return dispatchAdmin(method, params);

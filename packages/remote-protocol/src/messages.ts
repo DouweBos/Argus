@@ -11,6 +11,7 @@ import {
   RemoteAgentStatus,
   RemoteAgentVitals,
   RemoteDevice,
+  RemoteDeviceClaim,
   RemoteEndpoint,
   RemoteGitBranch,
   RemoteGitStatus,
@@ -217,6 +218,13 @@ export const MethodParams = {
     platform: RemotePlatform,
   }),
   "devices.unwatch": z.object({ device_id: z.string() }),
+  /** Take interaction on a device; `force` steals it from a live holder. */
+  "devices.claim": z.object({
+    device_id: z.string(),
+    force: z.boolean().optional(),
+  }),
+  "devices.release": z.object({ device_id: z.string() }),
+  "devices.claim_status": z.object({ device_id: z.string() }),
   /** Normalized [0..1] touch. event_type: 0=down, 1=move, 2=up. */
   "devices.touch": z.object({
     device_id: z.string(),
@@ -345,6 +353,13 @@ export const MethodResult = {
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),
+  /** `holder` is the incumbent when `granted` is false. */
+  "devices.claim": z.object({
+    granted: z.boolean(),
+    holder: RemoteDeviceClaim.nullable(),
+  }),
+  "devices.release": z.object({ accepted: z.boolean() }),
+  "devices.claim_status": z.object({ holder: RemoteDeviceClaim.nullable() }),
   "devices.touch": z.object({ accepted: z.boolean() }),
   "devices.button": z.object({ accepted: z.boolean() }),
   "devices.keyboard": z.object({ accepted: z.boolean() }),
@@ -425,6 +440,11 @@ export const EventPayloads = {
   }),
   /** `channel` is the renderer IPC channel; `args` its broadcast arguments. */
   ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
+  /** The claim on a device changed — including being stolen from you. */
+  "device.claim": z.object({
+    device_id: z.string(),
+    holder: RemoteDeviceClaim.nullable(),
+  }),
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
   notification: z.object({

@@ -46,7 +46,11 @@ const device: PairedDevice = {
   created_at: 0,
   last_seen: null,
 };
-const ctx: GatewayContext = { device, outstandingPermissions: new Set() };
+const ctx: GatewayContext = {
+  device,
+  connectionId: "conn-1",
+  outstandingPermissions: new Set(),
+};
 
 // Snapshot exercising an Edit, a Bash, a Read + base64 image, a Task with
 // children, message-level image attachment, and a todo/task list.

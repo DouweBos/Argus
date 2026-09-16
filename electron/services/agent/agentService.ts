@@ -1499,6 +1499,19 @@ export function respondToPermission(
     throw `No agent found: ${agentId}`;
   }
 
+  // Two attached clients can answer the same prompt; only the first reply may
+  // reach the runner, a second write would desync its control protocol. Still
+  // re-broadcast so the loser's UI clears.
+  const pending = appState.agentPendingPermissions.get(agentId);
+  if (pending && !pending.has(toolUseId)) {
+    broadcastToRenderers(`agent:permission-resolved:${agentId}`, {
+      tool_use_id: toolUseId,
+      decision,
+    });
+
+    return;
+  }
+
   try {
     session.handle.respondToPermission({
       toolUseId,
@@ -1519,6 +1532,7 @@ export function respondToPermission(
   // permission" forever, on the desktop and in the mirrored remote transcript.
   broadcastToRenderers(`agent:permission-resolved:${agentId}`, {
     tool_use_id: toolUseId,
+    decision,
   });
 }
 
