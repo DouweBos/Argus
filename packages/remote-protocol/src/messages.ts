@@ -423,6 +423,8 @@ export const EventPayloads = {
     agent_id: z.string(),
     tool_use_id: z.string(),
   }),
+  /** `channel` is the renderer IPC channel; `args` its broadcast arguments. */
+  ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
   notification: z.object({
