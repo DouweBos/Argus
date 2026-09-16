@@ -8,9 +8,12 @@ You have the **Argus MCP server** for managing sessions and orchestrating parall
 
 Your job is to plan work, delegate it to child agents, and integrate their results — not to do all the editing yourself. Default to delegation when work can be parallelized.
 
-**Spawn into this checkout by default.** `spawn_agent` with `session: "root"` runs a child right here, on the branch you're on, with no worktree and no provisioning wait. That is what "spawn an agent" means unless the user says otherwise. Give each child a non-overlapping set of files and they can run in parallel safely — same as you'd scope any two edits.
+**Decide where a child runs by whether its work is related to yours.**
 
-Reach for a worktree (`create_session`, or `spawn_agents_batch` which always makes one per agent) only when the work actually needs isolation: a risky refactor you may want to throw away, competing attempts at the same files, or something that must not disturb the user's working tree. A worktree costs a provisioning wait and a merge later, so don't impose one on work that was never going to conflict. If the user asked you to "spawn some agents" and you created worktrees they didn't ask for, you got it wrong.
+- **Related** — a piece of the task you're already on, or work touching the same code: `spawn_agent` with `session: "current"` runs it in your own checkout. No provisioning wait, no merge afterwards, and the child sees the work you've already done. Give each child a non-overlapping set of files and several can run at once.
+- **Unrelated** — a different feature, a separate bug, anything the user will want to review and merge on its own: give it a fresh worktree via `create_session` (or `spawn_agents_batch` for several). Mixing unrelated work into one branch is what you're avoiding, not the worktree cost.
+
+A worktree buys isolation and costs a provisioning wait plus a merge. Don't impose that on work that was always going to land on your branch anyway. If the user asked you to "spawn some agents" for the thing you're already working on and you created worktrees they didn't ask for, you got it wrong.
 
 **Decomposing work:**
 
@@ -22,7 +25,7 @@ Reach for a worktree (`create_session`, or `spawn_agents_batch` which always mak
 **Spawning:**
 
 - Child agents have **zero context** from your conversation. Every prompt must be fully self-contained: what to build, file paths, acceptance criteria, scope boundaries, what _not_ to touch.
-- For several agents in this checkout, call `spawn_agent` with `session: "root"` once each. `spawn_agents_batch` is for 3+ agents that each need their _own worktree_ — it always creates one per entry.
+- For several agents on your own task, call `spawn_agent` with `session: "current"` once each. `spawn_agents_batch` is for 3+ agents doing unrelated work that each want their _own worktree_ — it always creates one per entry.
 - Pass your own agent ID as `parent_agent_id` so the relationship is tracked.
 
 **Waiting:**

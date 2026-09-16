@@ -157,6 +157,18 @@ const { createMcpServer } = await import("./server");
 
 let client: Client;
 
+/** A client whose connection is bound to a specific caller agent id. */
+async function connectClient(callerAgentId: string) {
+  const server = createMcpServer(callerAgentId);
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  const caller = new Client({ name: "caller-client", version: "1.0.0" });
+  await caller.connect(clientTransport);
+
+  return { client: caller, cleanup: () => caller.close() };
+}
+
 beforeAll(async () => {
   const server = createMcpServer();
   const [clientTransport, serverTransport] =
@@ -1094,6 +1106,34 @@ describe("resolveSession (via delete_session)", () => {
     });
     expect(result.isError).toBeFalsy();
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-y", false);
+  });
+
+  it('resolves "current" to the caller\'s own worktree, not the root', async () => {
+    appState.sessions.set(
+      "ws-root",
+      mockSession({ id: "ws-root", kind: "project_root" }),
+    );
+    appState.sessions.set(
+      "ws-mine",
+      mockSession({ id: "ws-mine", branch: "feat/mine" }),
+    );
+    appState.agents.set("agent-1", {
+      agentId: "agent-1",
+      sessionId: "ws-mine",
+    } as unknown as never);
+    mockDeleteSession.mockResolvedValue(undefined);
+
+    const { client: caller, cleanup } = await connectClient("agent-1");
+    try {
+      const result = await caller.callTool({
+        name: "delete_session",
+        arguments: { session: "current", project_path: "/projects/frontend" },
+      });
+      expect(result.isError).toBeFalsy();
+      expect(mockDeleteSession).toHaveBeenCalledWith("ws-mine", false);
+    } finally {
+      await cleanup();
+    }
   });
 
   it('resolves "root" to the project_root session', async () => {
