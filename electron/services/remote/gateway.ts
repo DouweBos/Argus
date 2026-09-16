@@ -105,6 +105,27 @@ function buildFrameBody(
   return body;
 }
 
+/**
+ * Device video already rides the binary TAG_MEDIA channel, so mirroring these
+ * IPC frames onto the raw path would send every frame twice.
+ */
+const VIDEO_CHANNEL_RE = /^(?:ios|android)_video_/;
+
+/**
+ * The subscription id a raw channel is scoped to, or null when it fans out to
+ * every raw connection. Agent and terminal streams are per-id so a desktop
+ * watching four agents doesn't receive a fifth's tokens (or another PTY's).
+ */
+function rawSubscriptionScope(channel: string): string | null {
+  const agent = parseAgentChannel(channel);
+  if (agent) {
+    return agent.agentId;
+  }
+  const terminal = /^terminal:(?:data|exit):(.+)$/.exec(channel);
+
+  return terminal ? `terminal:${terminal[1]}` : null;
+}
+
 /** Parsed agent channel, e.g. `agent:permission:<id>` → kind + agentId. */
 function parseAgentChannel(
   channel: string,
@@ -123,6 +144,8 @@ export class DeviceConnection implements DeviceMediaController {
   private recvSeq = -1;
   private readonly subscriptions = new Set<string>();
   private readonly ctx: GatewayContext;
+  /** Forward raw renderer broadcasts instead of typed events (admin devices). */
+  private readonly raw: boolean;
   private closer: (() => void) | null = null;
   private bufferedProbe: (() => number) | null = null;
   /** Active screen streams for this connection, keyed by device id. */
@@ -137,6 +160,10 @@ export class DeviceConnection implements DeviceMediaController {
     private readonly sink: (bytes: Uint8Array) => void,
   ) {
     this.ctx = { device, outstandingPermissions: new Set(), media: this };
+    // An admin device is another desktop: it runs the real UI off the host's
+    // own IPC channels, so it gets raw broadcasts rather than the typed mirrors
+    // the phone and web clients render — sending both would double the stream.
+    this.raw = device.capabilities.includes("admin");
   }
 
   /** Register how to tear down the underlying socket (set by the server). */
@@ -300,8 +327,51 @@ export class DeviceConnection implements DeviceMediaController {
     this.pushEvent("host.endpoints", null, { endpoints });
   }
 
+  /**
+   * Mirror a renderer broadcast verbatim. Subscription-scoped channels (agents,
+   * terminals) are dropped unless this connection asked for that id; everything
+   * else — session/project/git/device changes, notifications — fans out.
+   */
+  private forwardRawBroadcast(channel: string, args: unknown[]): void {
+    if (VIDEO_CHANNEL_RE.test(channel)) {
+      return;
+    }
+    const scope = rawSubscriptionScope(channel);
+    if (scope !== null && !this.subscriptions.has(scope)) {
+      return;
+    }
+    this.pushEvent("ipc", null, { channel, args });
+  }
+
+  /**
+   * Keep `outstandingPermissions` accurate on raw connections too — the typed
+   * `permission.respond` method validates against it, and an admin device may
+   * answer a prompt through either dialect.
+   */
+  private trackPermissions(channel: string, args: unknown[]): void {
+    const parsed = parseAgentChannel(channel);
+    const toolUseId = (args[0] as { tool_use_id?: string } | undefined)
+      ?.tool_use_id;
+    if (!parsed || !toolUseId) {
+      return;
+    }
+    const key = permissionKey(parsed.agentId, toolUseId);
+    if (parsed.kind === "permission") {
+      this.ctx.outstandingPermissions.add(key);
+    } else if (parsed.kind === "permission-cancel") {
+      this.ctx.outstandingPermissions.delete(key);
+    }
+  }
+
   /** Forward a tapped renderer broadcast to this device, if relevant. */
   handleBroadcast(channel: string, args: unknown[]): void {
+    if (this.raw) {
+      this.trackPermissions(channel, args);
+      this.forwardRawBroadcast(channel, args);
+
+      return;
+    }
+
     // User-facing notifications go to every connected device, regardless of
     // which agent it happens to be subscribed to — that's the whole point.
     if (channel === "remote:notification") {
