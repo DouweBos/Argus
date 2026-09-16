@@ -319,63 +319,72 @@ Worth stating, because it bounds the blast radius:
 - `REMOTE_METHODS` and the `monitor`/`control` tiers — phone and web are untouched.
 - `@argus/remote-protocol` stays the one schema both sides compile against.
 
-## 7. Phasing
+## 7. Workstreams
 
-Ordered so working software arrives earliest: **case 3 needs no packaging**, so the
-client transport can be built and dogfooded against an ordinary second desktop before
-any server app exists.
+Not phases — all of this is in scope. But some of it is only testable once something
+else exists, so the dependency edges are marked. Everything else can proceed in
+parallel.
 
-**Phase 0 — security preconditions.** The four items in §5.1. Small, independent,
-required before anything is permanently reachable.
+**A. Security preconditions** (§5.1) — the four items. Independent of everything;
+blocking only in the sense that no host should be permanently reachable until they
+land.
 
-**Phase 1 — the client transport (unlocks case 3).** `admin` capability + passthrough
-dispatch + host-only denylist (§3.1); transport switch behind `app/lib/ipc.ts` +
-connection picker (§3.6); `state.hydrate` and reconnect (§3.5); host-side project
-picker (§3.4). Test it against a second Mac running the ordinary desktop app —
-`remote_enabled` is all that host needs. At the end of this phase, case 3 works minus
-terminals and device video.
+**B. Protocol + admin tier** (§3.1) — `admin` capability, passthrough dispatch,
+host-only denylist, denylist-vs-`ipc.ts` test. _Everything on the wire depends on
+this._
 
-**Phase 2 — the runtime panel.** Event-bus leaks (§3.2), `TAG_PTY` (§3.3), shared
-H.264 decoder. This is what makes remote mode feel like Argus rather than a remote
-transcript viewer.
+**C. Client transport** (§3.5, §3.6) — transport switch behind `app/lib/ipc.ts`,
+connection picker, `state.hydrate`, reconnect, host-side project picker (§3.4).
+_Depends on B._ At this point case 3 works against any second Mac with
+`remote_enabled` ticked — no packaging needed.
 
-**Phase 3 — the headless server app (unlocks case 2).** Second electron-builder target,
-separate `ARGUS_HOME`/port/worktrees, launchd _agent_ plist (not a daemon), auto-login,
-`caffeinate`, tray. No protocol change — by this point the client already speaks to it.
-Dev-loopback pairing (§4.3) lands here, or earlier if it's needed to build Phase 1.
+**D. Event bus + runtime panel** (§3.2, §3.3) — fix the `getMainWindow()` and
+`getAllWindows()` leaks, add `TAG_PTY`, move the H.264 decoder into Peacock. _Depends
+on B for the wire format; testable only with C._
 
-**Phase 4 — concurrency hardening.** Permission-prompt resolution broadcast, queue
-arbitration, device claim (§5.3). Partly deferrable in case 2, not in case 3.
+**E. Server app** (§4.2) — second electron-builder target, `appId`, separate
+`ARGUS_HOME`/port/worktrees, launchd _agent_, auto-login, `caffeinate`, tray.
+Packaging work, independent of A–D. Dev-loopback pairing (§4.3) is a prerequisite for
+comfortably developing C and D on one machine, so it lands early.
 
-**Phase 5 — the command registry.** Collapse `ipc.ts` + `capabilities.ts` into a single
-`defineCommand(name, {tier, params, handler})`, annotate all 325 commands, and retire
-the `admin` denylist in favour of a declared tier per command. It collapses the
-four-step IPC contract to two and makes every future command remotable for free — but
-only once the switch has proven the shape.
+**F. Concurrency** (§5.3) — permission-prompt resolution broadcast, queue arbitration,
+device claim. _Depends on C_ (needs two real clients to exercise).
 
-**Phase 6 — optional core extraction.** `@argus/host` as plain Node behind a
-`HostPlatform` interface (`openExternal`, `secretStorage`, `appVersion`, `notify`,
-`revealInFinder`). Unlocks Linux hosts for Android-only work, faster service tests, and
-an `argus-cli`.
+**G. Filesystem boundary** (§3.4) — client-executed `open_external_url`, attachment
+upload, scoped `read_file`/`write_file`. _Depends on B._
 
-**Phase 7 — multi-host.** One desktop, several hosts at once (mini for iOS, Linux box
-for Android/backend) rather than one at a time. The project list becomes host-scoped.
-Worth designing the shape for in Phase 1 even if unimplemented.
+**H. Command registry** (§3.1 end state) — collapse `ipc.ts` + `capabilities.ts` into
+`defineCommand(name, {tier, params, handler})`, annotate all 325 commands, retire the
+`admin` denylist. _Do after C proves the shape_ — annotating 325 commands against a
+design that then changes is the one genuinely wasteful ordering.
 
-## 8. Open questions
+**I. Core extraction** — `@argus/host` as plain Node behind a `HostPlatform` interface
+(`openExternal`, `secretStorage`, `appVersion`, `notify`, `revealInFinder`). Unlocks
+Linux hosts for Android-only work, faster service tests, an `argus-cli`.
 
-1. **Does the desktop keep local mode forever?** Keeping both doubles the tested
-   surface. An alternative worth weighing: the desktop is _always_ a client, and even
-   "local" means loopback to a co-located server app — one code path instead of two, at
-   the cost of making case 1 depend on the server shipping.
-2. **Single-tenant or multi-user?** "My Mac mini" and "the team's build server" are
-   different products; the second needs per-user Claude accounts, quotas and audit
-   logs, and would invalidate the §3.1 passthrough. Recommend committing to
-   single-tenant-with-many-devices.
-3. **Attachment/file transfer budget.** Images are base64-in-JSON today; large diffs
+**J. Multi-host** — several hosts attached at once (mini for iOS, Linux box for
+Android/backend) rather than one at a time. The project list becomes host-scoped.
+Worth designing the route shape for during C.
+
+## 8. Decided
+
+- **The desktop keeps local mode.** Case 1 continues to run agents in the Electron
+  main process with no server involved. Two transports to test, but no regression risk
+  to how Argus works today, and case 1 never depends on the server app shipping.
+- **Single-tenant, many devices.** One person's Claude accounts and projects, several
+  paired devices. This is what licenses the `admin` passthrough in §3.1 — a shared
+  team host with per-user accounts, quotas and audit logs would invalidate it and
+  force the full command registry up front.
+- **The server app is fully standalone** — its own `ARGUS_HOME`, worktrees, gateway
+  port, signature and update channel. It never shares a worktree with a co-located
+  desktop.
+
+## 9. Still open
+
+1. **Attachment/file transfer budget.** Images are base64-in-JSON today; large diffs
    and screenshots need a size cap and probably a chunked channel.
-4. **Does the embedded browser (`services/browser/`, CDP + MJPEG) follow?** Another
+2. **Does the embedded browser (`services/browser/`, CDP + MJPEG) follow?** Another
    local-window assumption needing the same treatment as simulators.
-5. **What does the client show when the host goes away mid-agent?** Read-only replay
+3. **What does the client show when the host goes away mid-agent?** Read-only replay
    from the last snapshot, or a hard disconnected state? Case 3 makes this routine —
    the peer just closed its lid.
