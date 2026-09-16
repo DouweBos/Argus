@@ -99,6 +99,24 @@ describe("remoteTransport", () => {
     expect(seen).toEqual([{ id: "s1" }]);
   });
 
+  it("scopes terminal streams so an unwatched PTY is never sent", () => {
+    const transport = makeTransport();
+    const off = transport.on("terminal:data:t1", () => undefined);
+    const offExit = transport.on("terminal:exit:t1", () => undefined);
+    expect(subscriptions).toEqual([{ agentId: "terminal:t1", on: true }]);
+    off();
+    offExit();
+    expect(subscriptions).toEqual([
+      { agentId: "terminal:t1", on: true },
+      { agentId: "terminal:t1", on: false },
+    ]);
+  });
+
+  it("does not subscribe for unscoped channels", () => {
+    makeTransport().on("session:created", () => undefined);
+    expect(subscriptions).toHaveLength(0);
+  });
+
   it("subscribes once per agent and releases on the last listener", () => {
     const transport = makeTransport();
     const offA = transport.on("agent:event:a1", () => undefined);
