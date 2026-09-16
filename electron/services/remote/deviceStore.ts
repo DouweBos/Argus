@@ -277,6 +277,30 @@ export async function setDeviceCapabilities(
   emitDevicesChanged();
 }
 
+/** The grants a user ticks on the confirm screen / the device row. */
+export interface DeviceGrants {
+  control?: boolean;
+  /** Raw IPC passthrough — another Mac of yours, never a browser. */
+  admin?: boolean;
+}
+
+/** Expand the ticked grants into the stored capability list. */
+export function capabilitiesFor(grants: DeviceGrants): Capability[] {
+  return [
+    "monitor",
+    ...(grants.control || grants.admin ? (["control"] as const) : []),
+    ...(grants.admin ? (["admin"] as const) : []),
+  ];
+}
+
+/** Set a device's grants from the ticked toggles (the `control`/`admin` pair). */
+export async function setDeviceGrants(
+  deviceId: string,
+  grants: DeviceGrants,
+): Promise<void> {
+  await setDeviceCapabilities(deviceId, capabilitiesFor(grants));
+}
+
 export async function updateLastSeen(
   deviceId: string,
   when: number,
