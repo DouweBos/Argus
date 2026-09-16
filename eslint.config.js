@@ -177,6 +177,9 @@ export default tseslint.config(
     ignores: [
       "dist",
       "dist-electron",
+      // Packaged app output — bundled vendor JS, never ours to lint.
+      "release",
+      "release-server",
       "vendor",
       "**/storybook-static/**",
       "packages/peacock/vite.config.ts",
@@ -202,6 +205,7 @@ export default tseslint.config(
             "./tsconfig.node.json",
             "./packages/peacock/tsconfig.json",
             "./packages/remote-protocol/tsconfig.json",
+            "./packages/remote-client/tsconfig.json",
           ],
         },
       },
@@ -217,6 +221,7 @@ export default tseslint.config(
           "./tsconfig.node.json",
           "./packages/peacock/tsconfig.json",
           "./packages/remote-protocol/tsconfig.json",
+          "./packages/remote-client/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },
