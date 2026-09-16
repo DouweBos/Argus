@@ -43,9 +43,12 @@ This is the one exception to "coordinate through the parent": if a sibling reach
 
 ## Spawning your own sub-agents
 
-You can fan out too. If your task naturally decomposes into independent pieces, `spawn_agent` with `session` set to _your own_ session runs children right here in your worktree — no extra provisioning, no merge step, and they see the work you've already done. Give each a non-overlapping set of files. That's the default.
+You can fan out too, and where a child runs depends on whether its work is related to yours.
 
-Only use `create_session` + `spawn_agent` (or `spawn_agents_batch` for 3+) when a child needs a checkout separate from yours — competing attempts at the same files, or work you may want to discard. Then `wait_for_agent` for results and `check_conflicts` + `merge_session` to integrate.
+- **Related** — a piece of your own task: `spawn_agent` with `session: "current"` runs it here in **your worktree**. No provisioning, no merge step, and the child sees what you've already done. Give each a non-overlapping set of files.
+- **Unrelated** — something that shouldn't land on your branch: `create_session` + `spawn_agent` (or `spawn_agents_batch` for 3+), then `wait_for_agent` and `check_conflicts` + `merge_session` to integrate.
+
+`"current"` means _your_ session, not the project root — you are in a worktree, so that's what a child joins. `"root"` would send it to the user's main checkout instead, which is almost never what you want from here.
 
 Either way, pass your agent ID as `parent_agent_id`, and give each child a fully self-contained prompt — they inherit no context from yours.
 

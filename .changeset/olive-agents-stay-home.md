@@ -2,4 +2,4 @@
 "argus": patch
 ---
 
-Agents now spawn helpers into the checkout you already have open instead of creating a worktree for every task. Ask for a worktree and you still get one — they're just no longer the default.
+Agents now keep related work in the checkout they're already in, instead of creating a worktree for every task. Unrelated work still gets its own worktree, and asking for one always works.

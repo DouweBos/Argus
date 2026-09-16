@@ -162,9 +162,27 @@ const sessionProjectPathArg = z
 /** Aliases for the project-root session, which has no stable display name. */
 const ROOT_SESSION_ALIASES = new Set(["root", "project_root", "project-root"]);
 
-function resolveSession(idOrBranch: string, projectPath: string) {
-  // "root" addresses the checkout the user already has open, so callers can
-  // delegate into it without knowing its branch or inventing a worktree.
+/** Aliases for "wherever the calling agent already is" — root or worktree. */
+const CURRENT_SESSION_ALIASES = new Set(["current", "here", "self"]);
+
+function resolveSession(
+  idOrBranch: string,
+  projectPath: string,
+  callerAgentId: string | null = null,
+) {
+  // "current" is the caller's own checkout, whatever kind it is. An agent in a
+  // worktree gets that worktree, not the project root — the two are only the
+  // same session for an agent that happens to be running in the root.
+  if (CURRENT_SESSION_ALIASES.has(idOrBranch) && callerAgentId) {
+    const sessionId = appState.agents.get(callerAgentId)?.sessionId;
+    const own = sessionId ? appState.sessions.get(sessionId) : undefined;
+    if (own && own.repo_root === projectPath) {
+      return own;
+    }
+  }
+
+  // "root" addresses the checkout the user has open, so callers can delegate
+  // into it without knowing its branch or inventing a worktree.
   if (ROOT_SESSION_ALIASES.has(idOrBranch)) {
     const root = [...appState.sessions.values()].find(
       (ws) => ws.repo_root === projectPath && ws.kind === "project_root",
@@ -820,7 +838,7 @@ export function createMcpServer(
         .describe("Also delete the git branch (default: false)"),
     },
     async ({ session, project_path, delete_branch }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -853,12 +871,12 @@ export function createMcpServer(
 
   server.tool(
     "spawn_agent",
-    'Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don\'t need to pass parent_agent_id.\n\nThis does NOT create a worktree. Pass `session: "root"` to run the agent in the checkout the user already has open — that is what "spawn an agent" means by default, and it is the right choice when the work belongs on the current branch or the user asked for help with what is in front of them. Only use a separate session when the work genuinely needs isolation (a risky refactor, a parallel attempt at the same files, something that must not touch the working tree) — create it first with `create_session`, or use `create_session` with a `prompt` to do both in one round-trip.\n\nThis call blocks internally until the session is ready — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created.',
+    'Start a new Claude Code agent in a session. The agent runs as an independent process with its own conversation. The parent-child relationship is tracked automatically (the spawn is attributed to you), so you don\'t need to pass parent_agent_id.\n\nThis does NOT create a worktree — it runs the agent in a session that already exists. Pass `session: "current"` to run it in YOUR OWN checkout, whichever that is: if you are in a worktree the child joins that worktree, and only if you are the root agent does it mean the project root. Decide by whether the work is related to yours — a piece of the task you are already doing, or something touching the same code, belongs in your session where the child can see what you have already done and needs no merge afterwards.\n\nSpawn into a fresh worktree instead when the work is unrelated to what your session is for — a different feature, a separate bug, anything that would muddy your branch or that the user will want to review and merge on its own. Create it with `create_session` (optionally with a `prompt` to spawn in one round-trip), or `spawn_agents_batch` for several.\n\nThis call blocks internally until the session is ready — it will not return early with an `initializing` status, so do not poll/retry just because the session is freshly created.',
     {
       session: z
         .string()
         .describe(
-          'Which session to run the agent in: `"root"` for the project root — the checkout the user already has open, no worktree involved — or a session ID, branch name, or display name. Prefer `"root"` unless the work needs isolation.',
+          'Which session to run the agent in. `"current"` is your own checkout — your worktree if you are in one, the project root if you are the root agent. `"root"` is always the project root specifically. Otherwise a session ID, branch name, or display name. Prefer `"current"` for work related to your own task; use a fresh session for unrelated work.',
         ),
       project_path: sessionProjectPathArg,
       prompt: z
@@ -905,7 +923,7 @@ export function createMcpServer(
       parent_agent_id,
       attachments,
     }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -1213,7 +1231,7 @@ export function createMcpServer(
     async ({ project_path, session }) => {
       let agents;
       if (session) {
-        const ws = resolveSession(session, project_path);
+        const ws = resolveSession(session, project_path, callerAgentId);
         if (!ws) {
           return {
             content: [
@@ -1903,7 +1921,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -1972,7 +1990,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, title }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2185,7 +2203,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2249,7 +2267,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, scope, max_bytes }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2328,7 +2346,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2418,7 +2436,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, file_path, max_bytes }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2516,7 +2534,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2566,7 +2584,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2617,7 +2635,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2668,7 +2686,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2722,7 +2740,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, file_path, content, stage }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2778,7 +2796,7 @@ export function createMcpServer(
       project_path: sessionProjectPathArg,
     },
     async ({ session, project_path }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
@@ -2822,7 +2840,7 @@ export function createMcpServer(
         ),
     },
     async ({ session, project_path, delete_branch }) => {
-      const ws = resolveSession(session, project_path);
+      const ws = resolveSession(session, project_path, callerAgentId);
       if (!ws) {
         return {
           content: [
