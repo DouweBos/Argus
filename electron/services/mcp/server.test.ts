@@ -1096,6 +1096,41 @@ describe("resolveSession (via delete_session)", () => {
     expect(mockDeleteSession).toHaveBeenCalledWith("ws-y", false);
   });
 
+  it('resolves "root" to the project_root session', async () => {
+    appState.sessions.set(
+      "ws-wt",
+      mockSession({ id: "ws-wt", branch: "feat/side" }),
+    );
+    appState.sessions.set(
+      "ws-root",
+      mockSession({ id: "ws-root", branch: "main", kind: "project_root" }),
+    );
+    mockDeleteSession.mockResolvedValue(undefined);
+
+    const result = await client.callTool({
+      name: "delete_session",
+      arguments: { session: "root", project_path: "/projects/frontend" },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-root", false);
+  });
+
+  it('lets the "root" alias win over a session literally named root', async () => {
+    appState.sessions.set(
+      "ws-root",
+      mockSession({ id: "ws-root", kind: "project_root" }),
+    );
+    appState.sessions.set("root", mockSession({ id: "root" }));
+    mockDeleteSession.mockResolvedValue(undefined);
+
+    const result = await client.callTool({
+      name: "delete_session",
+      arguments: { session: "root", project_path: "/projects/frontend" },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(mockDeleteSession).toHaveBeenCalledWith("ws-root", false);
+  });
+
   it("returns null (error) when nothing matches", async () => {
     appState.sessions.set("ws-z", mockSession({ id: "ws-z" }));
 
