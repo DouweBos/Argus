@@ -141,6 +141,11 @@ export const REMOTE_METHODS = {
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */
   "devices.watch": "monitor",
   "devices.unwatch": "monitor",
+  /** Claim interaction on a device. Two clients may watch one screen, but both
+   *  injecting HID events into it is nonsense, so it is arbitrated. */
+  "devices.claim": "control",
+  "devices.release": "control",
+  "devices.claim_status": "control",
   /** Drive a device — taps mutate it, so control-gated like agents.send. */
   "devices.touch": "control",
   "devices.button": "control",

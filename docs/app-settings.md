@@ -576,9 +576,10 @@ While attached to a host:
 - **Sign-in links** open in the browser in front of you, not on the host.
 - **Reveal in Finder** and **Open in editor** are unavailable and say so —
   those files live on the other machine. Use VS Code / Cursor over SSH.
-- **Device video** is not yet carried over the wire, so the simulator view
-  stays empty. Terminal output does come through, streamed on the same
-  encrypted channel as everything else.
+- **Terminals and device screens** come through on the same encrypted
+  connection as everything else — the simulator streams live video from the
+  host, and taps and keystrokes go back to it. Nothing arbitrates who is
+  driving a device yet, so avoid pointing two Macs at the same simulator.
 - If the connection drops, agents keep running on the host. The window shows a
   disconnected banner and re-pulls a fresh snapshot when it reconnects.
 

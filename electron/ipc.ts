@@ -142,6 +142,7 @@ import {
   statFile,
   listPath,
 } from "./services/file/operations";
+import { uploadSessionAttachment } from "./services/file/uploads";
 import { listGhIssues } from "./services/github/issues";
 import {
   ghPrClose,
@@ -580,6 +581,13 @@ function toolHandle(
   });
 }
 
+/**
+ * Marker separating a git error's human message from its serialised envelope.
+ * Mirrored by `GIT_ERROR_TAG` in `app/lib/ipc.ts` — the renderer mirror of
+ * `GitError` is already a deliberate duplicate for the same reason.
+ */
+const GIT_ERROR_TAG = "\u0000argus-git-error:";
+
 /** Helper: register a handler that unwraps args. */
 function handle(
   channel: string,
@@ -594,10 +602,17 @@ function handle(
       // renderer can rehydrate kind/recovery. Electron preserves own
       // enumerable properties on thrown Error objects across IPC, so we
       // attach the payload fields as enumerable props on a fresh Error.
+      //
+      // Those props stop at Electron's boundary: the gateway's admin
+      // passthrough reduces a thrown error to `{code, message}`, so the
+      // envelope also rides inside the message behind a tag, which
+      // `app/lib/ipc.ts` strips before anything renders the text.
       if (err instanceof GitError) {
-        const payload = serializeGitError(err);
-        const wrapped = new Error(payload.message);
-        Object.assign(wrapped, payload);
+        const { message, ...rest } = serializeGitError(err);
+        const wrapped = new Error(
+          `${message}${GIT_ERROR_TAG}${JSON.stringify(err.toPayload())}`,
+        );
+        Object.assign(wrapped, rest);
         throw wrapped;
       }
       throw err;
@@ -619,6 +634,12 @@ export function registerIpcHandlers(): void {
   handle("list_session_files", (a) => listSessionFiles(a.id as string));
   handle("resolve_mention_path", (a) =>
     resolveMentionPath(a.id as string, a.query as string),
+  );
+
+  // Attachment upload — a file dropped on a client whose disk the host does not
+  // share arrives as bytes and lands in the session's staging directory.
+  handle("upload_session_attachment", (a) =>
+    uploadSessionAttachment(a.id as string, a.name as string, a.data as string),
   );
 
   // Absolute-path directory listing (used by the project-settings glob input).

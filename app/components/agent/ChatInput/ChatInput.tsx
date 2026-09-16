@@ -10,6 +10,7 @@ import {
   ImageAttachmentStrip,
 } from "@argus/peacock";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
+import { resolveDroppedFilePaths } from "../../../lib/droppedFiles";
 import {
   ACCEPTED_IMAGE_TYPES,
   extractImageFilesFromClipboard,
@@ -469,25 +470,27 @@ export function ChatInput({
       setIsDragOver(false);
 
       const imageFiles: File[] = [];
-      const paths: string[] = [];
+      const otherFiles: File[] = [];
       for (const file of Array.from(files)) {
-        if (file.type.startsWith("image/")) {
-          imageFiles.push(file);
-          continue;
-        }
-        const p = window.argus.getFilePath?.(file) ?? "";
-        if (p) {
-          paths.push(p);
-        }
+        (file.type.startsWith("image/") ? imageFiles : otherFiles).push(file);
       }
       if (imageFiles.length > 0) {
         addImageFiles(imageFiles);
       }
-      if (paths.length > 0) {
-        insertFilePathMentions(paths);
+      if (otherFiles.length === 0) {
+        return;
       }
+      // Attached to a host, the drop is uploaded before it can be mentioned.
+      resolveDroppedFilePaths(sessionId, otherFiles)
+        .then(({ paths, errors }) => {
+          errors.forEach((message) => pushError(message, "attachment"));
+          if (paths.length > 0) {
+            insertFilePathMentions(paths);
+          }
+        })
+        .catch((err: unknown) => pushError(String(err), "attachment"));
     },
-    [addImageFiles, insertFilePathMentions],
+    [addImageFiles, insertFilePathMentions, sessionId],
   );
 
   const handlePaste = useCallback(

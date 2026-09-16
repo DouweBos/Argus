@@ -61,6 +61,7 @@ import type {
   TailscaleFixResult,
   RunnerOnboardingStep,
   Session,
+  UploadedAttachment,
   UserProjectSettings,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
@@ -81,21 +82,60 @@ declare global {
   }
 }
 
+/**
+ * Marker the host appends to a git error's message, carrying the serialised
+ * envelope. Mirrors `GIT_ERROR_TAG` in `electron/ipc.ts`; needed because the
+ * gateway flattens a remote error to `{code, message}` and own props don't
+ * make the crossing.
+ */
+const GIT_ERROR_TAG = "\u0000argus-git-error:";
+
+/**
+ * Pull the git-error envelope back out of a message, whichever transport
+ * mangled it, and strip the tag so nothing renders it.
+ */
+function unpackGitError(err: unknown): unknown {
+  if (typeof err !== "object" || err === null) {
+    return err;
+  }
+  const e = err as { message?: unknown };
+  if (typeof e.message !== "string") {
+    return err;
+  }
+  const at = e.message.indexOf(GIT_ERROR_TAG);
+  if (at === -1) {
+    return err;
+  }
+  const tail = e.message.slice(at + GIT_ERROR_TAG.length);
+  e.message = e.message.slice(0, at).trimEnd();
+  try {
+    const payload: unknown = JSON.parse(tail);
+    if (rehydrateGitError(payload)) {
+      return payload;
+    }
+  } catch {
+    // Truncated or re-wrapped envelope; the plain message still stands.
+  }
+
+  return err;
+}
+
 function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
   return getTransport()
     .invoke<T>(channel, args)
-    .catch((err) => {
+    .catch((err: unknown) => {
       // Rehydrate structured GitError payloads — the main process attaches
-      // the `__gitError` envelope as own props on the thrown Error so it
-      // survives Electron's IPC error serialisation.
-      const gitErr = rehydrateGitError(err);
+      // the `__gitError` envelope as own props on the thrown Error (local
+      // IPC) and behind `GIT_ERROR_TAG` in the message (the gateway).
+      const unpacked = unpackGitError(err);
+      const gitErr = rehydrateGitError(unpacked);
       if (gitErr) {
         throw gitErr;
       }
-      throw err;
+      throw unpacked;
     });
 }
 
@@ -1283,6 +1323,18 @@ export const writeFile = (
 
 export const statFile = (id: string, relativePath: string): Promise<FileStat> =>
   invoke("stat_file", { id, relativePath });
+
+/**
+ * Upload a dropped file's bytes to the machine holding the session and get the
+ * path it landed on. Used when the window and the worktree are on different
+ * Macs, where the client's own path means nothing.
+ */
+export const uploadSessionAttachment = (
+  id: string,
+  name: string,
+  data: string,
+): Promise<UploadedAttachment> =>
+  invoke("upload_session_attachment", { id, name, data });
 
 // System / peer-dependency probes
 export const checkDependencies = (): Promise<DependencyReport> =>
