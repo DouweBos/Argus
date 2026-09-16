@@ -12,6 +12,7 @@ import {
   sendUserMessageToAgent,
   startAgentInSession,
 } from "../../../lib/agentLifecycle";
+import { resolveDroppedFilePaths } from "../../../lib/droppedFiles";
 import {
   ACCEPTED_IMAGE_TYPES,
   extractImageFilesFromClipboard,
@@ -343,18 +344,17 @@ export function StartAgentDialog({
         return;
       }
       e.preventDefault();
-      const paths: string[] = [];
-      for (const file of Array.from(files)) {
-        const p = window.argus.getFilePath?.(file) ?? "";
-        if (p) {
-          paths.push(p);
-        }
-      }
-      if (paths.length > 0) {
-        insertFilePathMentions(paths);
-      }
+      // Attached to a host, the drop is uploaded before it can be mentioned.
+      resolveDroppedFilePaths(sessionId, Array.from(files))
+        .then(({ paths, errors }) => {
+          errors.forEach((message) => pushError(message, "attachment"));
+          if (paths.length > 0) {
+            insertFilePathMentions(paths);
+          }
+        })
+        .catch((err: unknown) => pushError(String(err), "attachment"));
     },
-    [insertFilePathMentions],
+    [insertFilePathMentions, sessionId],
   );
 
   const trimmedPrompt = prompt.trim();

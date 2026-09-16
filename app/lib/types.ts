@@ -1071,6 +1071,14 @@ export interface HostDirectoryListing {
   path: string;
 }
 
+/** Where a client-side file landed after being uploaded to the host. */
+export interface UploadedAttachment {
+  name: string;
+  /** Absolute path on the host. */
+  path: string;
+  size: number;
+}
+
 export interface RemoteDevicePush {
   environment?: "production" | "sandbox";
   /** Web Push only — the subscription's encryption keys. */

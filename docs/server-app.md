@@ -100,6 +100,44 @@ re-arms, so it always holds the current code, and it is deleted on quit.
 This bypasses the anti-MITM confirmation, so it is gated twice: on the env var
 and on `app.isPackaged` being false. It cannot happen in a release build.
 
+## When the files are on the other Mac
+
+A desktop attached to a host draws the same UI, but the repo is on the host's
+disk. Everything that touches a filesystem resolves on the host; the handful of
+actions that only make sense where the window is stay local.
+
+| action                                           | attached to a host                                                              |
+| ------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Add project                                      | browses the **host's** folders, not yours                                       |
+| Reveal in Finder, Open, Open in editor           | refused with a notice — Argus never syncs a worktree back                       |
+| OAuth and other external links                   | open in **your** browser                                                        |
+| Dropping a file into the chat, importing a patch | the bytes are uploaded to the host, and the mention points at where they landed |
+| Images pasted or dropped into the chat           | already travel as bytes; unchanged                                              |
+
+### Uploaded attachments
+
+A dropped file's path belongs to the machine you dropped it on, which is why
+the bytes travel instead. They are staged under `$ARGUS_HOME/uploads/<session>/`
+on the host — never inside the worktree, so nothing shows up in the session's
+diff — and staged files are swept seven days after their last use.
+
+One upload is capped at **8 MB**. The cap is enforced on the host as well as in
+the window, and an oversize file is refused by name rather than truncated; drop
+a smaller file or put the big one on the host yourself.
+
+### What a client may read and write
+
+`read_file` and `write_file` are reachable by an admin-paired desktop. Both
+resolve their target, follow symlinks, and refuse anything that lands outside
+the session's worktree or a registered project root — a symlink inside the
+worktree pointing at `~/.ssh` is not a way out.
+
+### Git errors keep their detail
+
+A failed git command carries a kind, the raw stderr and a suggested recovery.
+That structure survives the connection, so a push rejected on the host offers
+the same "pull then push" action it would locally.
+
 ## Unattended operation on a Mac mini
 
 ### Auto-login is required

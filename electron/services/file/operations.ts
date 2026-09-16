@@ -43,15 +43,19 @@ export interface DirEntry {
  * Rejects binary files (null bytes in the first 8 KB) and files larger than
  * 5 MB.
  *
- * @throws string if the session is not found, the path escapes the root,
+ * Accepts a session-relative or absolute path; either way the canonical
+ * target must sit inside this session's worktree or a registered project.
+ *
+ * @throws string if the session is not found, the path escapes those roots,
  *   the file is binary, the file is too large, or the file cannot be read.
  */
 export async function readFile(
   id: string,
   relativePath: string,
 ): Promise<string> {
-  const root = sessionPath(id);
-  const target = await resolveSafePath(root, relativePath);
+  const target = await resolveContainedPath(id, relativePath, {
+    mustExist: true,
+  });
 
   let stat: fs.Stats;
   try {
@@ -92,10 +96,11 @@ export async function readFile(
 /**
  * Write a text file to a session.
  *
- * Creates parent directories if they do not already exist.
+ * Creates parent directories if they do not already exist. Containment
+ * matches {@link readFile}.
  *
- * @throws string if the session is not found, the path escapes the root, or
- *   the file cannot be written.
+ * @throws string if the session is not found, the path escapes the allowed
+ *   roots, or the file cannot be written.
  */
 /**
  * Stat a file or directory inside a session.
@@ -131,20 +136,12 @@ export async function writeFile(
   relativePath: string,
   content: string,
 ): Promise<void> {
-  const root = sessionPath(id);
-
-  // Resolve the target path. For new files the final path component will not
-  // exist yet, so we resolve only the parent to validate containment and then
-  // re-join the filename.
-  const joined = path.join(root, relativePath);
-  const parent = path.dirname(joined);
-  const filename = path.basename(joined);
-
-  const safeParent = await resolveSafeDir(root, parent);
-  const target = path.join(safeParent, filename);
+  const target = await resolveContainedPath(id, relativePath, {
+    mustExist: false,
+  });
 
   try {
-    await fs.promises.mkdir(safeParent, { recursive: true });
+    await fs.promises.mkdir(path.dirname(target), { recursive: true });
   } catch (e) {
     throw `Failed to create parent directories: ${String(e)}`;
   }
@@ -410,6 +407,54 @@ function sessionPath(id: string): string {
 }
 
 /**
+ * Roots `read_file`/`write_file` may touch: every session worktree plus every
+ * registered project root.
+ *
+ * Both commands are reachable by an admin-granted device now, so containment
+ * can no longer be "whatever the renderer asked for". Registered projects are
+ * in scope because the chat's edit/undo actions replay absolute paths from tool
+ * events, which legitimately land in a linked project.
+ */
+async function allowedFileRoots(): Promise<string[]> {
+  const roots = await canonicalSessionRoots();
+  for (const repoRoot of appState.repoRoots) {
+    try {
+      roots.push(await fs.promises.realpath(repoRoot));
+    } catch {
+      // Project directory is gone; it grants nothing.
+    }
+  }
+
+  return roots;
+}
+
+/**
+ * Resolve a session-relative (or absolute) path and assert the canonical
+ * result — symlinks followed — sits inside {@link allowedFileRoots}.
+ *
+ * @throws string if the path cannot be resolved or escapes every allowed root.
+ */
+async function resolveContainedPath(
+  id: string,
+  requested: string,
+  options: { mustExist: boolean },
+): Promise<string> {
+  const root = sessionPath(id);
+  const joined = path.isAbsolute(requested)
+    ? requested
+    : path.join(root, requested);
+  const canonical = await canonicalize(joined, options.mustExist);
+
+  for (const allowed of await allowedFileRoots()) {
+    if (canonical === allowed || canonical.startsWith(allowed + path.sep)) {
+      return canonical;
+    }
+  }
+
+  throw `Path is outside this session and every registered project: ${requested}`;
+}
+
+/**
  * Resolve `relative` within `root` and assert the canonical result stays
  * inside `root`. Used for paths that must already exist on disk.
  *
@@ -442,33 +487,4 @@ async function resolveSafePath(
   }
 
   return canonicalTarget;
-}
-
-/**
- * Variant of {@link resolveSafePath} for a directory that may not yet exist.
- *
- * Resolves as many path components as do exist, then verifies containment
- * using string prefix matching on the normalized path.
- *
- * @throws string if the resolved directory escapes the session root.
- */
-async function resolveSafeDir(root: string, dir: string): Promise<string> {
-  let canonicalRoot: string;
-  try {
-    canonicalRoot = await fs.promises.realpath(root);
-  } catch (e) {
-    throw `Failed to resolve session root: ${String(e)}`;
-  }
-
-  // Normalise without requiring the path to exist
-  const normalised = path.normalize(dir);
-
-  if (
-    normalised !== canonicalRoot &&
-    !normalised.startsWith(canonicalRoot + path.sep)
-  ) {
-    throw "Path escapes session root";
-  }
-
-  return normalised;
 }
