@@ -61,6 +61,9 @@ vi.mock("../organization/manager", () => ({
 }));
 
 const { dispatch, GatewayError } = await import("./capabilities");
+const { releaseDevice } = await import("./deviceClaims");
+const { resolveMentionPath } = await import("../file/operations");
+const { collectAllProjects } = await import("../mcp/projects");
 
 function makeCtx(capabilities: PairedDevice["capabilities"]): GatewayContext {
   return {
@@ -163,5 +166,39 @@ describe("remote permission modes", () => {
         makeCtx(["monitor", "control"]),
       ),
     ).rejects.toBeInstanceOf(GatewayError);
+  });
+});
+
+describe("admin passthrough guards", () => {
+  it("confines the @-mention browse to registered projects", async () => {
+    invokeHandlers.set("resolve_mention_path", () => ({
+      entries: [{ name: "unconfined", is_dir: false }],
+      resolvedPath: "/etc",
+    }));
+    vi.mocked(collectAllProjects).mockReturnValue([
+      { path: "/repo", name: "repo" },
+    ] as never);
+
+    const res = await dispatch(
+      "resolve_mention_path",
+      { id: "s1", query: "/etc/" },
+      makeCtx(["monitor", "admin"]),
+    );
+
+    expect(resolveMentionPath).toHaveBeenCalledWith("s1", "/etc/", ["/repo"]);
+    expect(res).toEqual({ entries: [], resolvedPath: "" });
+  });
+
+  it("arbitrates raw HID between two admin devices", async () => {
+    invokeHandlers.set("simulator_touch", () => null);
+    const first = makeCtx(["monitor", "admin"]);
+    const second = { ...makeCtx(["monitor", "admin"]), connectionId: "conn-2" };
+
+    await dispatch("simulator_touch", { udid: "sim-1", x: 1, y: 2 }, first);
+    await expect(
+      dispatch("simulator_touch", { udid: "sim-1", x: 3, y: 4 }, second),
+    ).rejects.toMatchObject({ code: "capability_denied" });
+
+    releaseDevice("sim-1", "conn-1");
   });
 });

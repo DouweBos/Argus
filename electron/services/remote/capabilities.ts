@@ -1495,6 +1495,20 @@ function hasCapability(ctx: GatewayContext, required: Capability): boolean {
 }
 
 /**
+ * Raw HID commands and the param field naming the device they drive. Admin
+ * rides the passthrough, so without this it would skip the arbitration the
+ * typed `devices.*` path gets and two desktops would both inject into one sim.
+ */
+const ADMIN_HID_DEVICE_KEY: Record<string, string> = {
+  simulator_touch: "udid",
+  simulator_button: "udid",
+  simulator_keyboard: "udid",
+  android_touch: "serial",
+  android_button: "serial",
+  android_keyboard: "serial",
+};
+
+/**
  * Run a raw `ipcMain.handle` command on behalf of an admin device — the same
  * command the host's own renderer would invoke. Bounded only by
  * `HOST_ONLY_COMMANDS`; see §3.1 of the server-architecture plan for why this
@@ -1503,6 +1517,7 @@ function hasCapability(ctx: GatewayContext, required: Capability): boolean {
 async function dispatchAdmin(
   command: string,
   params: unknown,
+  ctx: GatewayContext,
 ): Promise<unknown> {
   if (isHostOnlyCommand(command)) {
     throw new GatewayError("capability_denied", `host-only command ${command}`);
@@ -1510,6 +1525,23 @@ async function dispatchAdmin(
   if (!hasHostCommand(command)) {
     throw new GatewayError("not_found", `unknown command ${command}`);
   }
+
+  const args = (params ?? {}) as Record<string, unknown>;
+
+  const deviceKey = ADMIN_HID_DEVICE_KEY[command];
+  if (deviceKey && typeof args[deviceKey] === "string") {
+    requireDeviceInput(args[deviceKey] as string, ctx);
+  }
+
+  // The host's own picker browses the whole disk; a paired device must not.
+  if (command === "resolve_mention_path") {
+    const roots = collectAllProjects().map((p) => p.path);
+
+    return control(() =>
+      resolveMentionPath(args.id as string, args.query as string, roots),
+    );
+  }
+
   try {
     return (await invokeHostCommand(command, params)) ?? null;
   } catch (err) {
@@ -1534,7 +1566,7 @@ export async function dispatch(
 ): Promise<unknown> {
   if (!(method in REMOTE_METHODS)) {
     if (ctx.device.capabilities.includes("admin")) {
-      return dispatchAdmin(method, params);
+      return dispatchAdmin(method, params, ctx);
     }
 
     throw new GatewayError("capability_denied", `unknown method ${method}`);
