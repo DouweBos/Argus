@@ -15,6 +15,27 @@ export const PERMISSION_MODE_LABELS: Record<PermissionMode, string> = {
   trusted: "Bypass permissions (yolo)",
 };
 
+/**
+ * A paired Argus host this Mac can attach to. Holds this device's Noise static
+ * keypair for that host — client-local, never sent anywhere but the host it was
+ * minted for. The host decides what the grant allows; driving a host as a
+ * second keyboard needs `admin`.
+ */
+export interface RemoteHost {
+  /** Capabilities the host granted at pairing (informational — the host enforces). */
+  capabilities: string[];
+  devPrivB64: string;
+  devPubB64: string;
+  hostPubB64: string;
+  /** Device id the host issued us. Stable across reconnects. */
+  id: string;
+  /** User-facing name for the machine ("Mac mini"). */
+  label: string;
+  pairedAt: number;
+  /** `ws://` or `wss://` origin of that host's gateway. */
+  url: string;
+}
+
 export interface CustomEditor {
   command: string;
   id: string;
@@ -50,6 +71,13 @@ export interface DefaultLlm {
 export const DEFAULT_LLM_RUNNER = "claude-code";
 
 interface SettingsState {
+  /**
+   * Which host the UI drives. `null` is This Mac — local IPC, today's
+   * behaviour. Deliberately not in the route: transport is not "what you are
+   * looking at", and a deep link must not strand someone on an unreachable
+   * machine.
+   */
+  activeRemoteHostId: string | null;
   /** Map of `rememberKey` → user opted out of the corresponding confirm dialog. */
   confirmPreferences: Record<string, boolean>;
   /** Conventional Commits prefix picker on/off (Phase 2 W10). */
@@ -79,6 +107,8 @@ interface SettingsState {
    * Replayed as the default for new agents on the same runner.
    */
   lastEffortByRunner: Record<string, string | null>;
+  /** Paired hosts, in pairing order. */
+  remoteHosts: RemoteHost[];
   showAssumeUnchangedFiles: boolean;
   /**
    * Working copy view toggles.
@@ -195,6 +225,38 @@ function sanitizeCustomEditors(input: unknown): CustomEditor[] {
   });
 }
 
+function sanitizeRemoteHosts(input: unknown): RemoteHost[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return input.flatMap((raw): RemoteHost[] => {
+    if (!raw || typeof raw !== "object") {
+      return [];
+    }
+    const o = raw as Record<string, unknown>;
+    const strings = ["id", "url", "devPrivB64", "devPubB64", "hostPubB64"];
+    if (strings.some((k) => typeof o[k] !== "string" || !o[k])) {
+      return [];
+    }
+
+    return [
+      {
+        id: o.id as string,
+        label: typeof o.label === "string" ? o.label : "Host",
+        url: o.url as string,
+        devPrivB64: o.devPrivB64 as string,
+        devPubB64: o.devPubB64 as string,
+        hostPubB64: o.hostPubB64 as string,
+        capabilities: Array.isArray(o.capabilities)
+          ? o.capabilities.filter((c): c is string => typeof c === "string")
+          : [],
+        pairedAt: typeof o.pairedAt === "number" ? o.pairedAt : 0,
+      },
+    ];
+  });
+}
+
 function load(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -251,6 +313,11 @@ function load(): SettingsState {
         lastEffortByRunner: sanitizeLastEffortByRunner(
           parsed.lastEffortByRunner,
         ),
+        remoteHosts: sanitizeRemoteHosts(parsed.remoteHosts),
+        activeRemoteHostId:
+          typeof parsed.activeRemoteHostId === "string"
+            ? parsed.activeRemoteHostId
+            : null,
       };
     }
   } catch {
@@ -279,6 +346,8 @@ function load(): SettingsState {
     showAssumeUnchangedFiles: false,
     showNonModifiedFiles: false,
     lastEffortByRunner: {},
+    remoteHosts: [],
+    activeRemoteHostId: null,
   };
 }
 
@@ -570,3 +639,50 @@ export const hideSettingsDialog = () => dialogStore.setState({ open: false });
 export const useSettingsDialogOpen = () => dialogStore((s) => s.open);
 export const useSettingsInitialSection = () =>
   dialogStore((s) => s.initialSectionId);
+
+// --- Paired hosts -----------------------------------------------------------
+
+export const useRemoteHosts = (): RemoteHost[] => store((s) => s.remoteHosts);
+
+export const getRemoteHosts = (): RemoteHost[] => store.getState().remoteHosts;
+
+export const useActiveRemoteHostId = (): string | null =>
+  store((s) => s.activeRemoteHostId);
+
+export const getActiveRemoteHostId = (): string | null =>
+  store.getState().activeRemoteHostId;
+
+export const getRemoteHost = (id: string | null): RemoteHost | null =>
+  id ? (store.getState().remoteHosts.find((h) => h.id === id) ?? null) : null;
+
+export const addRemoteHost = (host: RemoteHost): void => {
+  store.setState((s) => ({
+    remoteHosts: [...s.remoteHosts.filter((h) => h.id !== host.id), host],
+  }));
+  persist(store.getState());
+};
+
+export const renameRemoteHost = (id: string, label: string): void => {
+  store.setState((s) => ({
+    remoteHosts: s.remoteHosts.map((h) => (h.id === id ? { ...h, label } : h)),
+  }));
+  persist(store.getState());
+};
+
+export const forgetRemoteHost = (id: string): void => {
+  store.setState((s) => ({
+    remoteHosts: s.remoteHosts.filter((h) => h.id !== id),
+    activeRemoteHostId:
+      s.activeRemoteHostId === id ? null : s.activeRemoteHostId,
+  }));
+  persist(store.getState());
+};
+
+/**
+ * Choose the host the app drives. Takes effect on the next boot — switching
+ * transports is a full remount, so callers reload the window.
+ */
+export const setActiveRemoteHostId = (id: string | null): void => {
+  store.setState({ activeRemoteHostId: id });
+  persist(store.getState());
+};

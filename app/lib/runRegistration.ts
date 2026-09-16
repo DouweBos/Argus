@@ -9,6 +9,7 @@ import {
   setRunningTerminal,
 } from "../stores/terminalStore";
 import { startListening, stopListening } from "./terminalBufferService";
+import { getTransport } from "./transport";
 
 export interface RunRegistrationDependency {
   sessionId: string;
@@ -45,7 +46,7 @@ export function registerRunTerminal({
     startListening(dep.sessionId);
     const depTitle = dep.title;
     const depId = dep.sessionId;
-    const unlistenDep = window.argus.on<number>(
+    const unlistenDep = getTransport().on<number>(
       `terminal:exit:${depId}`,
       () => {
         clearRunningTerminalIfMatches(sessionId, depTitle, depId);
@@ -61,7 +62,7 @@ export function registerRunTerminal({
   setActiveSession(sessionId, terminalSessionId);
   setActiveToolForSession(sessionId, "terminal");
 
-  const unlisten = window.argus.on<number>(
+  const unlisten = getTransport().on<number>(
     `terminal:exit:${terminalSessionId}`,
     () => {
       clearRunningTerminalIfMatches(sessionId, title, terminalSessionId);

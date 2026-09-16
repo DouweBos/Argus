@@ -27,6 +27,8 @@ import type {
   ExampleProject,
   FileStat,
   GitStatus,
+  HostDirectoryListing,
+  HostSnapshot,
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
@@ -62,6 +64,7 @@ import type {
   UserProjectSettings,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
+import { getTransport } from "./transport";
 
 declare global {
   interface Window {
@@ -82,21 +85,23 @@ function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  return window.argus.invoke<T>(channel, args).catch((err) => {
-    // Rehydrate structured GitError payloads — the main process attaches
-    // the `__gitError` envelope as own props on the thrown Error so it
-    // survives Electron's IPC error serialisation.
-    const gitErr = rehydrateGitError(err);
-    if (gitErr) {
-      throw gitErr;
-    }
-    throw err;
-  });
+  return getTransport()
+    .invoke<T>(channel, args)
+    .catch((err) => {
+      // Rehydrate structured GitError payloads — the main process attaches
+      // the `__gitError` envelope as own props on the thrown Error so it
+      // survives Electron's IPC error serialisation.
+      const gitErr = rehydrateGitError(err);
+      if (gitErr) {
+        throw gitErr;
+      }
+      throw err;
+    });
 }
 
 /** Fire-and-forget IPC — skips the invoke reply round-trip. */
 export function send(channel: string, args?: Record<string, unknown>): void {
-  window.argus.send(channel, args);
+  getTransport().send(channel, args);
 }
 
 // Window
@@ -179,6 +184,22 @@ export const removeRepoRoot = (path: string): Promise<void> =>
 
 export const listProjects = (): Promise<ProjectEntry[]> =>
   invoke("list_projects");
+
+/**
+ * Everything the backend is running right now, in one round trip. Local mode
+ * never needs it; remote mode pulls it on connect and after every reconnect.
+ */
+export const hostStateSnapshot = (): Promise<HostSnapshot> =>
+  invoke("state_hydrate", {});
+
+/**
+ * Directories under `path` on the machine the backend runs on — the host-side
+ * half of picking a project root, since a native open dialog would browse the
+ * wrong Mac. Omit `path` for the host's home directory.
+ */
+export const listHostDirectory = (
+  path?: string,
+): Promise<HostDirectoryListing> => invoke("list_host_directory", { path });
 
 export const showOpenDirectoryDialog = (
   title?: string,
@@ -1494,18 +1515,30 @@ export const remoteRevokeDevice = (deviceId: string): Promise<RemoteStatus> =>
 export const remoteStartPairing = (): Promise<RemotePairingStart> =>
   invoke("remote_start_pairing", {});
 
-export const remoteConfirmPairing = (control = false): Promise<void> =>
-  invoke("remote_confirm_pairing", { control });
+/**
+ * Confirm the SAS and grant the device. `admin` is another Mac of yours driving
+ * this one — it implies control and must never be given to a browser.
+ */
+export const remoteConfirmPairing = (
+  grants: { admin?: boolean; control?: boolean } = {},
+): Promise<void> =>
+  invoke("remote_confirm_pairing", {
+    control: grants.control === true,
+    admin: grants.admin === true,
+  });
 
 export const remoteCancelPairing = (): Promise<void> =>
   invoke("remote_cancel_pairing", {});
 
-/** Grant or revoke the "control" capability for an already-paired device. */
-export const remoteSetDeviceControl = (
+/**
+ * Set an already-paired device's grants. `admin` is another Mac driving this
+ * one as if sitting at its keyboard — only ever for a machine you own.
+ */
+export const remoteSetDeviceGrants = (
   deviceId: string,
-  control: boolean,
+  grants: { admin: boolean; control: boolean },
 ): Promise<RemoteDevice[]> =>
-  invoke("remote_set_device_control", { deviceId, control });
+  invoke("remote_set_device_control", { deviceId, ...grants });
 
 /**
  * Enumerate MCP servers Argus inherits from Claude Code (plugins,

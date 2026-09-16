@@ -1044,6 +1044,33 @@ export interface PullRequestDetail {
 // Remote access (phone/web control)
 // ---------------------------------------------------------------------------
 
+/**
+ * One snapshot of everything the backend is running. Remote mode rebuilds from
+ * this on connect; local mode never drops, so it never needs it.
+ */
+export interface HostSnapshot {
+  agents: AgentStatus[];
+  projects: ProjectEntry[];
+  sessions: Session[];
+}
+
+/** A directory on the host, for the remote project picker. */
+export interface HostDirectoryEntry {
+  /** True when the directory looks like a git repo — a candidate project root. */
+  is_repo: boolean;
+  name: string;
+  path: string;
+}
+
+export interface HostDirectoryListing {
+  entries: HostDirectoryEntry[];
+  /** The host's home directory, for a "start over" affordance. */
+  home: string;
+  /** Absolute parent path, or null at the filesystem root. */
+  parent: string | null;
+  path: string;
+}
+
 export interface RemoteDevicePush {
   environment?: "production" | "sandbox";
   /** Web Push only — the subscription's encryption keys. */

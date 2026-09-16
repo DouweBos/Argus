@@ -24,7 +24,11 @@ export function derivePairingPsk(pairingSecret: Uint8Array): Uint8Array {
 
 export function deriveSas(handshakeHash: Uint8Array): string {
   const digest = sha256(handshakeHash);
-  const view = new DataView(digest.buffer, digest.byteOffset, digest.byteLength);
+  const view = new DataView(
+    digest.buffer,
+    digest.byteOffset,
+    digest.byteLength,
+  );
   const code = view.getUint32(0, false) % 10 ** SAS_DIGITS;
 
   return code.toString().padStart(SAS_DIGITS, "0");

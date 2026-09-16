@@ -6,11 +6,13 @@
  * (errors are thrown as plain strings).
  */
 
+import type { AgentInfo } from "./services/agent/models";
 import type {
   OnboardingStep,
   PrereqId,
   PrereqResult,
 } from "./services/onboarding/types";
+import type { Session } from "./services/session/models";
 import type { ToolId } from "./services/tools/types";
 import {
   Menu,
@@ -131,6 +133,7 @@ import {
 } from "./services/conductor/override";
 import { listConductorVersions } from "./services/conductor/registry";
 import { checkDependencies } from "./services/dependencies/check";
+import { listHostDirectory } from "./services/file/hostBrowse";
 import {
   listSessionFiles,
   resolveMentionPath,
@@ -209,7 +212,7 @@ import {
 import {
   listDevices as listRemoteDevices,
   revokeDevice,
-  setDeviceCapabilities,
+  setDeviceGrants,
 } from "./services/remote/deviceStore";
 import { disconnectDevice } from "./services/remote/gateway";
 import {
@@ -621,6 +624,12 @@ export function registerIpcHandlers(): void {
   // Absolute-path directory listing (used by the project-settings glob input).
   handle("list_path", (a) => listPath(a.path as string));
 
+  // Host-side directory browser — how a remote client picks a project root,
+  // since a native open dialog would draw on the wrong machine.
+  handle("list_host_directory", (a) =>
+    listHostDirectory(a.path as string | undefined),
+  );
+
   // Window
   handle("close_window", () => {
     getMainWindow()?.close();
@@ -745,6 +754,24 @@ export function registerIpcHandlers(): void {
   handle("add_repo_root", (a) => addRepoRoot(a.path as string));
   handle("remove_repo_root", (a) => removeRepoRoot(a.path as string));
   handle("list_projects", () => collectAllProjects());
+
+  // One snapshot of everything this backend is running. Local IPC never drops
+  // so the desktop never needs it; a client attaching over the gateway does —
+  // on connect and after every reconnect (§3.5).
+  handle("state_hydrate", async () => {
+    const projects = await collectAllProjects();
+    const sessions: Session[] = [];
+    const agents: AgentInfo[] = [];
+    for (const project of projects.filter((p) => p.registered)) {
+      const projectSessions = await listSessions(project.path);
+      sessions.push(...projectSessions);
+      for (const session of projectSessions) {
+        agents.push(...listAgents(session.id));
+      }
+    }
+
+    return { projects, sessions, agents };
+  });
   handle("list_sessions", (a) => listSessions(a.repoRoot as string));
   handle("create_session", (a) =>
     createSession(
@@ -1000,17 +1027,20 @@ export function registerIpcHandlers(): void {
     }),
   );
   handle("remote_confirm_pairing", (a) =>
-    confirmPairing(a.control as boolean | undefined),
+    confirmPairing({
+      control: a.control === true,
+      admin: a.admin === true,
+    }),
   );
   handle("remote_cancel_pairing", () => {
     cancelPairing();
   });
   handle("remote_set_device_control", async (a) => {
     const deviceId = a.deviceId as string;
-    await setDeviceCapabilities(
-      deviceId,
-      a.control ? ["monitor", "control"] : ["monitor"],
-    );
+    await setDeviceGrants(deviceId, {
+      control: a.control === true,
+      admin: a.admin === true,
+    });
     // Drop any live connection so it reconnects with the fresh grants — the
     // gateway pins capabilities per-connection at handshake time.
     disconnectDevice(deviceId);

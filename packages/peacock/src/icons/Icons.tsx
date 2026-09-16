@@ -1685,3 +1685,46 @@ export function EnvelopeIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** This machine — the local, "This Mac" side of the connection picker. */
+export function LaptopIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="7" rx="1" width="11" x="2.5" y="3" />
+      <path d="M1 12.5h14" />
+    </svg>
+  );
+}
+
+/** A paired Argus host — headless mini or another Mac, the client can't tell. */
+export function HostIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="4.5" rx="1" width="12" x="2" y="2.5" />
+      <rect height="4.5" rx="1" width="12" x="2" y="9" />
+      <path d="M4.5 4.75h.01M4.5 11.25h.01" />
+    </svg>
+  );
+}
