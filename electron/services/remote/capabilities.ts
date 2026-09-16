@@ -15,6 +15,8 @@ import type { z } from "zod";
 import {
   MethodParams,
   REMOTE_METHODS,
+  isHostOnlyCommand,
+  type Capability,
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
   type RemoteGitStatus,
@@ -97,6 +99,7 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
+import { hasHostCommand, invokeHostCommand } from "./ipcPassthrough";
 import {
   ensureVapidPublicKey,
   getPushConfigStatus,
@@ -753,6 +756,17 @@ function requireKnownRepoRoot(repoRoot: string): void {
   }
 }
 
+/**
+ * Belt-and-braces rejection of "trusted" (bypassPermissions). The wire schema
+ * already excludes it, but an unattended host auto-approving every tool call is
+ * the one failure worth checking twice.
+ */
+function requireRemotePermissionMode(mode: string | undefined): void {
+  if (mode && !["ask", "auto", "plan", "review"].includes(mode)) {
+    throw new GatewayError("capability_denied", `permission mode ${mode}`);
+  }
+}
+
 /** Run a control-service call, mapping its string throws to gateway errors. */
 async function control<T>(fn: () => Promise<T> | T): Promise<T> {
   try {
@@ -1067,6 +1081,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
   "agents.set_permission_mode": async (params) => {
     const { agent_id, mode } = parse("agents.set_permission_mode", params);
+    requireRemotePermissionMode(mode);
     await control(() => setAgentPermissionMode(agent_id, mode));
 
     return { accepted: true };
@@ -1084,6 +1099,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       "agents.spawn",
       params,
     );
+    requireRemotePermissionMode(permission_mode);
     const info = await control(() =>
       startAgent(session_id, model, permission_mode, resume_session_id),
     );
@@ -1419,9 +1435,46 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 };
 
+/** Admin implies the narrower tiers — it is a superset, not a sibling. */
+function hasCapability(ctx: GatewayContext, required: Capability): boolean {
+  return (
+    ctx.device.capabilities.includes(required) ||
+    ctx.device.capabilities.includes("admin")
+  );
+}
+
+/**
+ * Run a raw `ipcMain.handle` command on behalf of an admin device — the same
+ * command the host's own renderer would invoke. Bounded only by
+ * `HOST_ONLY_COMMANDS`; see §3.1 of the server-architecture plan for why this
+ * tier inverts to a denylist.
+ */
+async function dispatchAdmin(
+  command: string,
+  params: unknown,
+): Promise<unknown> {
+  if (isHostOnlyCommand(command)) {
+    throw new GatewayError("capability_denied", `host-only command ${command}`);
+  }
+  if (!hasHostCommand(command)) {
+    throw new GatewayError("not_found", `unknown command ${command}`);
+  }
+  try {
+    return (await invokeHostCommand(command, params)) ?? null;
+  } catch (err) {
+    throw new GatewayError(
+      "bad_request",
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+}
+
 /**
  * Dispatch a decrypted request. Enforces the capability grant, then routes to
  * the handler. Throws `GatewayError` (mapped to a wire error by the caller).
+ *
+ * Dotted names (`agents.spawn`) are the monitor/control allowlist; anything
+ * else is a raw IPC command name and needs `admin`.
  */
 export async function dispatch(
   method: string,
@@ -1429,10 +1482,14 @@ export async function dispatch(
   ctx: GatewayContext,
 ): Promise<unknown> {
   if (!(method in REMOTE_METHODS)) {
+    if (ctx.device.capabilities.includes("admin")) {
+      return dispatchAdmin(method, params);
+    }
+
     throw new GatewayError("capability_denied", `unknown method ${method}`);
   }
   const required = REMOTE_METHODS[method as RemoteMethod];
-  if (!ctx.device.capabilities.includes(required)) {
+  if (!hasCapability(ctx, required)) {
     throw new GatewayError(
       "capability_denied",
       `device lacks '${required}' capability`,

@@ -16,6 +16,7 @@ import {
   generateSessionTitle,
   humanizeBranchName,
 } from "../llm/titleGenerator";
+import { collectAllProjects } from "../mcp/projects";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { createTerminal, setupShellCommand } from "../terminal/multiplexer";
 import {
@@ -273,6 +274,20 @@ export interface CreateSessionOptions {
   postWorktreeReady?: (session: Session) => Promise<void>;
 }
 
+/**
+ * Reject a repo root that isn't a known project. `.argus.json`'s setup pipeline
+ * runs on create, so an unvetted root — from a remote device or an MCP caller —
+ * would be arbitrary code execution. Callers register the project first.
+ */
+function requireKnownProject(repoRoot: string): void {
+  if (
+    !appState.repoRoots.has(repoRoot) &&
+    !collectAllProjects().some((p) => p.path === repoRoot)
+  ) {
+    throw `unknown project: ${repoRoot}`;
+  }
+}
+
 export async function createSession(
   repoRoot: string,
   branch: string,
@@ -282,6 +297,7 @@ export async function createSession(
   sessionLlm?: AppDefaultLlm,
   opts?: Pick<CreateSessionOptions, "awaitWorktreeReady" | "postWorktreeReady">,
 ): Promise<Session> {
+  requireKnownProject(repoRoot);
   const id = crypto.randomUUID();
 
   // Resolve the runner *now* — it's immutable for the session's lifetime.

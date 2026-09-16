@@ -63,6 +63,8 @@ async function waitForStatusError(id: string): Promise<string> {
 describe("createSession — one-session-per-branch enforcement", () => {
   beforeEach(() => {
     appState.sessions.clear();
+    // createSession only accepts registered projects.
+    appState.repoRoots.add("/repo");
   });
 
   it("rejects creating a new-branch session whose branch is already claimed", async () => {

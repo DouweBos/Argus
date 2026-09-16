@@ -4,7 +4,9 @@
  *
  * v1 grants only "monitor". The desktop gateway builds its dispatch allowlist
  * from `REMOTE_METHODS`, so adding a method here (and a handler there) is the
- * only way to widen the remote surface — there is no implicit escalation.
+ * only way to widen the remote surface for monitor/control — there is no
+ * implicit escalation. The "admin" tier is the one exception: it dispatches raw
+ * IPC command names, bounded by the `HOST_ONLY_COMMANDS` denylist.
  */
 
 /**
@@ -15,9 +17,51 @@
  *   model/mode/effort, spawn agents, create sessions, and approve prompts.
  *   Opt-in per device. Deliberately never grants project creation — that
  *   stays host-only.
+ * - "admin": another Argus desktop driving this host as if sitting at its
+ *   keyboard. Inverts the model — any raw IPC command except
+ *   {@link HOST_ONLY_COMMANDS}. Only ever grant it to a paired Mac you own,
+ *   never to a browser.
  */
-export const CAPABILITIES = ["monitor", "control"] as const;
+export const CAPABILITIES = ["monitor", "control", "admin"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
+
+/**
+ * Commands that never cross the wire, at any tier. They act on the machine the
+ * *window* is on, or mutate the trust store that authorises the wire itself.
+ *
+ * `updater_get_state` is deliberately absent: reading the host's update status
+ * is useful, restarting it under other clients is not.
+ */
+export const HOST_ONLY_COMMANDS = new Set([
+  // window/dialog surface — meaningless on a headless host
+  "show_open_dialog",
+  "show_image_context_menu",
+  "open_agent_popout",
+  "close_agent_popout",
+  "close_window",
+  // act on the client's machine, not the host's
+  "open_external_url",
+  "open_path",
+  "reveal_in_finder",
+  "open_in_editor",
+  "open_in_custom_editor",
+  // the host updates itself; a client must not restart it under other clients
+  "updater_check",
+  "updater_download",
+  "updater_quit_and_install",
+  // pairing/revocation is the root of trust — console-only, never remote
+  "remote_start_pairing",
+  "remote_confirm_pairing",
+  "remote_cancel_pairing",
+  "remote_revoke_device",
+  "remote_set_device_control",
+  "remote_set_config",
+]);
+
+/** Whether a raw IPC command is barred from the wire even for admin devices. */
+export function isHostOnlyCommand(command: string): boolean {
+  return HOST_ONLY_COMMANDS.has(command);
+}
 
 /** Every request method the remote client may send, and the grant it needs. */
 export const REMOTE_METHODS = {
