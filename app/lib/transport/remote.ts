@@ -9,6 +9,7 @@
 
 import type { RemoteHost } from "../../stores/settingsStore";
 import {
+  MediaRouter,
   RemoteError,
   Transport,
   type ConnectionState,
@@ -46,6 +47,8 @@ export interface RemoteTransportHandlers {
 }
 
 export class RemoteTransport implements ArgusTransport {
+  /** Device-screen frames, keyed by the stream id `devices.watch` hands back. */
+  readonly media = new MediaRouter();
   private readonly transport: Transport;
   private readonly listeners = new Map<
     string,
@@ -66,8 +69,9 @@ export class RemoteTransport implements ArgusTransport {
         hostPubB64: host.hostPubB64,
       },
       {
-        onState: (state) => this.handlers.onState(state),
+        onState: (state) => this.onState(state),
         onEvent: (env) => this.onEvent(env),
+        onMedia: (bytes) => this.media.push(bytes),
       },
     );
   }
@@ -78,6 +82,16 @@ export class RemoteTransport implements ArgusTransport {
 
   disconnect(): void {
     this.transport.disconnect();
+    this.media.clear();
+  }
+
+  private onState(state: ConnectionState): void {
+    // Stream ids belong to one socket. The runtime panel re-watches on
+    // reconnect and gets fresh ones, so nothing may survive the gap.
+    if (state === "offline") {
+      this.media.clear();
+    }
+    this.handlers.onState(state);
   }
 
   invoke<T>(channel: string, args?: Record<string, unknown>): Promise<T> {

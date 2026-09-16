@@ -48,8 +48,12 @@ import type {
   RemoteTodo,
   RemoteTranscript,
 } from "./protocol";
-import { parseMediaMessage, type MediaMessage } from "./h264Decoder";
-import { Transport, type ConnectionState } from "@argus/remote-client";
+import {
+  MediaRouter,
+  Transport,
+  type ConnectionState,
+  type MediaMessage,
+} from "@argus/remote-client";
 
 /** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
 const jsonEq = (a: unknown, b: unknown): boolean =>
@@ -235,31 +239,7 @@ const TRANSCRIPT_PAGE = 80;
 
 export const useAppStore = create<AppState>((set, get) => {
   // Binary media routing (kept out of reactive state — hot path, no re-render).
-  // `mediaSinks` maps a stream id to the device view consuming it; frames that
-  // arrive before a view registers (e.g. the config sent just before the watch
-  // response) are briefly buffered so the decoder can still configure.
-  const mediaSinks = new Map<number, (msg: MediaMessage) => void>();
-  const mediaBuffer = new Map<number, MediaMessage[]>();
-  const MEDIA_BUFFER_CAP = 120;
-
-  function onMedia(bytes: Uint8Array): void {
-    const msg = parseMediaMessage(bytes);
-    if (!msg) {
-      return;
-    }
-    const sink = mediaSinks.get(msg.streamId);
-    if (sink) {
-      sink(msg);
-
-      return;
-    }
-    const buf = mediaBuffer.get(msg.streamId) ?? [];
-    buf.push(msg);
-    if (buf.length > MEDIA_BUFFER_CAP) {
-      buf.shift();
-    }
-    mediaBuffer.set(msg.streamId, buf);
-  }
+  const media = new MediaRouter();
 
   // Debounce live transcript refreshes so a burst of events → one refetch.
   const refetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -406,7 +386,7 @@ export const useAppStore = create<AppState>((set, get) => {
         }
       },
       onEvent,
-      onMedia,
+      onMedia: (bytes) => media.push(bytes),
     });
     transport.connect();
 
@@ -1081,23 +1061,7 @@ export const useAppStore = create<AppState>((set, get) => {
         .catch(() => {});
     },
 
-    registerMediaSink: (streamId, sink) => {
-      mediaSinks.set(streamId, sink);
-      // Flush anything buffered before this view registered (e.g. the initial
-      // config emitted right before the watch response arrived).
-      const buffered = mediaBuffer.get(streamId);
-      if (buffered) {
-        mediaBuffer.delete(streamId);
-        for (const msg of buffered) {
-          sink(msg);
-        }
-      }
-
-      return () => {
-        mediaSinks.delete(streamId);
-        mediaBuffer.delete(streamId);
-      };
-    },
+    registerMediaSink: (streamId, sink) => media.register(streamId, sink),
 
     deviceTouch: (deviceId, platform, x, y, eventType) => {
       // Unawaited: touch-move latency compounds if we round-trip each event.

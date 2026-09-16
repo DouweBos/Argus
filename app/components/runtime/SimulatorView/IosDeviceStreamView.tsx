@@ -1,4 +1,4 @@
-import { useIosVideoDecoder } from "../../../hooks/useIosVideoDecoder";
+import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
 import { CanvasStreamBody } from "./CanvasStreamBody";
@@ -66,7 +66,7 @@ export function IosDeviceStreamView({
   onTouch,
 }: IosDeviceStreamViewProps) {
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useIosVideoDecoder(capturing, udid);
+    useDeviceVideo(capturing, udid, "ios");
 
   const titleChrome = (
     <RuntimeTitleBar
