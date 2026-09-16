@@ -24,13 +24,15 @@ import {
   requestNotificationPermission,
   setNotificationOpener,
 } from "../lib/notify";
-import { PairingClient, parsePairingInput } from "../lib/pairingClient";
+import { PairingClient, parsePairingInput } from "@argus/remote-client";
 import {
   setNotificationDecider,
   startServiceWorkerRouting,
 } from "../lib/webpush";
 import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
-import type { ConnectionState } from "../lib/transport";
+import type { ConnectionState } from "@argus/remote-client";
+import { identityFromPairing } from "../lib/keystore";
+import { wsOrigin } from "../lib/origin";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChangesView } from "./ChangesView";
@@ -68,14 +70,20 @@ function Pair() {
     setError(null);
     try {
       const payload = parsePairingInput(code);
-      const client = new PairingClient(payload, {
+      const client = new PairingClient(
+        payload,
+        {
         onSas: setSas,
-        onPaired: (id) => pairComplete(id),
+        onPaired: (result) => pairComplete(identityFromPairing(result)),
         onError: (m) => {
           setError(m);
           setSas(null);
         },
-      });
+        },
+        // The host serves this bundle, so our own origin is the route that
+        // definitely works — the URL in the code may not be.
+        { url: wsOrigin() },
+      );
       clientRef.current = client;
       client.start();
     } catch {

@@ -1,0 +1,115 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const requests: { method: string; params: unknown }[] = [];
+const subscriptions: { agentId: string; on: boolean }[] = [];
+type EventHandler = (env: {
+  event: string;
+  payload: unknown;
+  seq: number;
+  type: "evt";
+}) => void;
+
+let capturedOnEvent: EventHandler | null;
+
+vi.mock("@argus/remote-client", () => ({
+  RemoteError: class RemoteError extends Error {},
+  Transport: class {
+    constructor(
+      _credentials: unknown,
+      handlers: { onEvent: (env: never) => void },
+    ) {
+      capturedOnEvent = handlers.onEvent as EventHandler;
+    }
+    connect() {}
+    disconnect() {}
+    request(method: string, params: unknown) {
+      requests.push({ method, params });
+
+      return Promise.resolve("ok");
+    }
+    subscribe(agentId: string, on: boolean) {
+      subscriptions.push({ agentId, on });
+    }
+  },
+}));
+
+const localInvoke = vi.fn().mockResolvedValue("local");
+const localSend = vi.fn();
+
+vi.stubGlobal("window", {
+  argus: { invoke: localInvoke, send: localSend, on: vi.fn() },
+});
+
+const { RemoteTransport } = await import("./remote");
+
+const host = {
+  id: "d1",
+  label: "Mac mini",
+  url: "ws://mini",
+  devPrivB64: "",
+  devPubB64: "",
+  hostPubB64: "",
+  capabilities: ["admin"],
+  pairedAt: 0,
+};
+
+function makeTransport() {
+  return new RemoteTransport(host, { onState: () => undefined });
+}
+
+describe("remoteTransport", () => {
+  beforeEach(() => {
+    requests.length = 0;
+    subscriptions.length = 0;
+    localInvoke.mockClear();
+  });
+
+  it("sends the raw IPC channel name as the wire method", async () => {
+    await makeTransport().invoke("start_agent", { sessionId: "s1" });
+    expect(requests).toEqual([
+      { method: "start_agent", params: { sessionId: "s1" } },
+    ]);
+  });
+
+  it("runs client-executed commands here instead", async () => {
+    await makeTransport().invoke("open_external_url", { url: "https://x" });
+    expect(requests).toHaveLength(0);
+    expect(localInvoke).toHaveBeenCalledWith("open_external_url", {
+      url: "https://x",
+    });
+  });
+
+  it("rejects commands that would act on the wrong machine", async () => {
+    await expect(
+      makeTransport().invoke("reveal_in_finder", { path: "/tmp" }),
+    ).rejects.toThrow(/reveal_in_finder/);
+    expect(requests).toHaveLength(0);
+  });
+
+  it("delivers forwarded broadcasts on their original channel", () => {
+    const transport = makeTransport();
+    const seen: unknown[] = [];
+    transport.on("session:created", (payload) => seen.push(payload));
+    capturedOnEvent?.({
+      type: "evt",
+      seq: 1,
+      event: "ipc",
+      payload: { channel: "session:created", args: [{ id: "s1" }] },
+    });
+    expect(seen).toEqual([{ id: "s1" }]);
+  });
+
+  it("subscribes once per agent and releases on the last listener", () => {
+    const transport = makeTransport();
+    const offA = transport.on("agent:event:a1", () => undefined);
+    const offB = transport.on("agent:status:a1", () => undefined);
+    expect(subscriptions).toEqual([{ agentId: "a1", on: true }]);
+    offA();
+    expect(subscriptions).toHaveLength(1);
+    offB();
+    expect(subscriptions).toEqual([
+      { agentId: "a1", on: true },
+      { agentId: "a1", on: false },
+    ]);
+  });
+});

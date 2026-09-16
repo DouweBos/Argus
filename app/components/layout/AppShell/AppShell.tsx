@@ -74,6 +74,7 @@ import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
 import { ToolRail } from "../../toolrail/ToolRail";
 import { BottomPanel } from "../BottomPanel";
+import { ConnectionBanner } from "../ConnectionBanner";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { PermissionBanner } from "../PermissionBanner";
 import { ResizablePanel } from "../ResizablePanel";
@@ -320,6 +321,7 @@ export function AppShell() {
   return (
     <div className={styles.shell}>
       <TitleBar />
+      <ConnectionBanner />
       <div className={styles.body}>
         <ResizablePanel
           collapsed={!leftVisible}

@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
+import { getTransport } from "../lib/transport";
 
 type UnlistenFn = () => void;
 
 /**
- * Subscribe to an Electron backend event. The handler is stable across
+ * Subscribe to a backend event (local main process, or the attached host). The handler is stable across
  * re-renders via a ref so callers do not need to memoize it.
  */
 export function useIpcEvent<T>(
@@ -22,7 +23,7 @@ export function useIpcEvent<T>(
     }
     let unlisten: UnlistenFn | null = null;
 
-    unlisten = window.argus.on<T>(event, (payload) => {
+    unlisten = getTransport().on<T>(event, (payload) => {
       handlerRef.current(payload);
     });
 

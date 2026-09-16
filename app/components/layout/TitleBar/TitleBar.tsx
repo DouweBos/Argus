@@ -16,6 +16,7 @@ import {
   useSessions,
 } from "../../../stores/sessionStore";
 import { PencilIcon } from "../../shared/Icons";
+import { ConnectionPicker } from "../ConnectionPicker";
 import { NavigationButtons } from "../NavigationButtons";
 import styles from "./TitleBar.module.css";
 
@@ -140,6 +141,7 @@ export function TitleBar() {
       onToggleLeft={toggleLeftSidebar}
       onToggleRight={session ? toggleRightPanel : undefined}
       left={<NavigationButtons />}
+      right={<ConnectionPicker />}
     />
   );
 }

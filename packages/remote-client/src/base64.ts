@@ -11,7 +11,8 @@ export function toBase64(bytes: Uint8Array): string {
     const b2 = bytes[i + 2];
     out += B64_ALPHABET[b0 >> 2];
     out += B64_ALPHABET[((b0 & 3) << 4) | (b1 >> 4)];
-    out += i + 1 < bytes.length ? B64_ALPHABET[((b1 & 15) << 2) | (b2 >> 6)] : "=";
+    out +=
+      i + 1 < bytes.length ? B64_ALPHABET[((b1 & 15) << 2) | (b2 >> 6)] : "=";
     out += i + 2 < bytes.length ? B64_ALPHABET[b2 & 63] : "=";
   }
 

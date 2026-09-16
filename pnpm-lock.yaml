@@ -11,6 +11,9 @@ importers:
       '@argus/peacock':
         specifier: workspace:*
         version: link:packages/peacock
+      '@argus/remote-client':
+        specifier: workspace:*
+        version: link:packages/remote-client
       '@argus/remote-protocol':
         specifier: workspace:*
         version: link:packages/remote-protocol
@@ -225,6 +228,9 @@ importers:
       '@argus/peacock':
         specifier: workspace:*
         version: link:../../packages/peacock
+      '@argus/remote-client':
+        specifier: workspace:*
+        version: link:../../packages/remote-client
       '@noble/ciphers':
         specifier: ^2.2.0
         version: 2.2.0
@@ -317,6 +323,22 @@ importers:
       vite:
         specifier: ^7.0.4
         version: 7.3.1(@types/node@22.19.15)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/remote-client:
+    dependencies:
+      '@noble/ciphers':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@noble/curves':
+        specifier: ^2.2.0
+        version: 2.2.0
+      '@noble/hashes':
+        specifier: ^2.2.0
+        version: 2.2.0
+    devDependencies:
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
 
   packages/remote-protocol:
     dependencies:

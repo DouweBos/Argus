@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, Icons } from "@argus/peacock";
+import { showOpenDirectoryDialog } from "../../../lib/ipc";
+import { useConnection } from "../../../stores/connectionStore";
 import {
   removeRecentProject,
   useRecentProjects,
 } from "../../../stores/recentProjectsStore";
 import { Dialog } from "../../shared/Dialog";
+import { HostProjectBrowser } from "./HostProjectBrowser";
 import projectStyles from "./OpenProjectDialog.module.css";
 
 interface OpenProjectDialogProps {
@@ -14,19 +18,31 @@ interface OpenProjectDialogProps {
 
 export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
   const projects = useRecentProjects();
+  const connection = useConnection();
+  const [browsingHost, setBrowsingHost] = useState(false);
 
   const handleBrowse = async () => {
+    // A native open dialog is host-only: attached elsewhere it would browse
+    // this Mac's disk, which holds none of the host's repos.
+    if (connection.mode === "remote") {
+      setBrowsingHost(true);
+
+      return;
+    }
     try {
-      const selected = await window.argus.invoke<string | null>(
-        "show_open_dialog",
-      );
-      if (selected && typeof selected === "string") {
+      const selected = await showOpenDirectoryDialog();
+      if (selected) {
         onClose();
         await onOpen(selected);
       }
     } catch {
       // Dialog cancelled or failed — no-op
     }
+  };
+
+  const pickHostPath = async (path: string) => {
+    onClose();
+    await onOpen(path);
   };
 
   const handleSelectProject = async (path: string) => {
@@ -37,16 +53,26 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
   return createPortal(
     <Dialog title="Open Project" titleId="open-project-title" onClose={onClose}>
       <div className={projectStyles.body}>
-        <Button
-          variant="ghost"
-          className={projectStyles.browseBtn}
-          leading={<Icons.FolderIcon size={13} />}
-          onClick={handleBrowse}
-        >
-          Browse...
-        </Button>
+        {browsingHost ? (
+          <HostProjectBrowser
+            hostLabel={connection.hostLabel ?? "the host"}
+            onCancel={() => setBrowsingHost(false)}
+            onPick={(path) => {
+              pickHostPath(path).catch(() => undefined);
+            }}
+          />
+        ) : (
+          <Button
+            variant="ghost"
+            className={projectStyles.browseBtn}
+            leading={<Icons.FolderIcon size={13} />}
+            onClick={handleBrowse}
+          >
+            Browse...
+          </Button>
+        )}
 
-        {projects.length > 0 && (
+        {!browsingHost && projects.length > 0 && (
           <div className={projectStyles.recentsSection}>
             <span className={projectStyles.recentsLabel}>Recent Projects</span>
             <ul className={projectStyles.recentsList}>

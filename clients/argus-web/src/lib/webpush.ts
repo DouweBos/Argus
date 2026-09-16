@@ -7,7 +7,7 @@
  * `http://<lan-ip>` browsers refuse to register a service worker at all.
  */
 
-import type { Transport } from "./transport";
+import type { Transport } from "@argus/remote-client";
 import { routeAgentOpen } from "./notify";
 
 type Decide = (

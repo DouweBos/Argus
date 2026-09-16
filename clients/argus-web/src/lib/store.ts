@@ -7,6 +7,7 @@
 import { create } from "zustand";
 import {
   clearIdentity,
+  credentialsFor,
   defaultDeviceName,
   loadIdentity,
   saveIdentity,
@@ -48,7 +49,7 @@ import type {
   RemoteTranscript,
 } from "./protocol";
 import { parseMediaMessage, type MediaMessage } from "./h264Decoder";
-import { Transport, type ConnectionState } from "./transport";
+import { Transport, type ConnectionState } from "@argus/remote-client";
 
 /** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
 const jsonEq = (a: unknown, b: unknown): boolean =>
@@ -380,7 +381,7 @@ export const useAppStore = create<AppState>((set, get) => {
   }
 
   function connect(identity: DeviceIdentity): Transport {
-    const transport = new Transport(identity, {
+    const transport = new Transport(credentialsFor(identity), {
       onState: (connection) => {
         set({ connection });
         // Push our display name once the secure channel is up, so the desktop's

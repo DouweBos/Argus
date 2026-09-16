@@ -348,7 +348,7 @@ but cannot spawn agents, send messages, or run commands.
 | **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                             |
 | **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                       |
 | **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                   |
-| **Paired devices**                          | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                                                     |
+| **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
 | **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                             |
 | **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                  |
 
@@ -410,6 +410,18 @@ so the list reads "Douwe's MacBook Pro" rather than a tunnel URL; you can rename
 it on the phone. Unpairing there removes the phone's copy of that computer's
 key — to cut a lost phone off for good, **Revoke** it under **Paired devices**
 on the computer as well.
+
+### Granting admin to another Mac
+
+**Control** is the phone's grant: watch agents, answer prompts, send messages.
+**Admin** is a different thing — it lets another Mac running Argus drive this
+one as if you were sitting at its keyboard, which is what the **Hosts** setting
+below attaches to. Tick it while confirming the pairing code, or on the device
+row afterwards. Admin implies control.
+
+Give it only to a Mac you own. A few things never cross the wire whatever the
+grant: opening Finder or an editor, the updater, the popout windows, and
+pairing or revoking devices — those stay on the machine they belong to.
 
 ### Background push notifications
 
@@ -534,6 +546,43 @@ impersonate your desktop.
 
 The desktop identity key lives in `~/.argus/remote-devices.json` (encrypted via
 `safeStorage`); the tunnel settings live in `app-settings.json`.
+
+---
+
+## Hosts
+
+The other side of remote access: machines **this** Mac can run agents on. A
+paired host can be a headless Mac mini working overnight or a workstation
+running the ordinary app — from here they look identical.
+
+| Setting          | Default    | Description                                                                                                                                 |
+| ---------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pair a host**  | —          | Paste the pairing code from the other Mac's **Remote access** screen, compare the 6-digit code, and approve it there with **Admin** ticked. |
+| **Paired hosts** | —          | Rename, **Attach**, or **Forget**. Forgetting deletes this Mac's key for that host; revoke it there too to be thorough.                     |
+| **Connection**   | `This Mac` | Which machine the window drives. Also in the title bar, next to the panel toggles.                                                          |
+
+Attaching restarts the window: every panel, subscription and cache belongs to
+one machine, so switching is a clean remount rather than a live swap. The
+choice is remembered and reconnected on launch; if the host can't be reached
+Argus falls back to this Mac and says so in a banner. It is deliberately not
+part of the URL — a link you share must never point someone at a machine they
+cannot reach.
+
+While attached to a host:
+
+- **Projects** come from the host's registered projects, not this Mac's recent
+  list. **Browse…** walks the _host's_ folders instead of opening a native
+  dialog, since the repos are on its disk.
+- **Sign-in links** open in the browser in front of you, not on the host.
+- **Reveal in Finder** and **Open in editor** are unavailable and say so —
+  those files live on the other machine. Use VS Code / Cursor over SSH.
+- **Terminals and device video** are not yet carried over the wire; the runtime
+  panel stays quiet until they are.
+- If the connection drops, agents keep running on the host. The window shows a
+  disconnected banner and re-pulls a fresh snapshot when it reconnects.
+
+Host keys are stored in this Mac's `localStorage` alongside the other UI
+preferences.
 
 ---
 

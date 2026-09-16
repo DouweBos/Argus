@@ -85,6 +85,7 @@ import {
 } from "../McpServersField";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
+import { HostsSection } from "./HostsSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
@@ -169,6 +170,13 @@ function SettingsDialogContent() {
           description: "Phone & web control",
           icon: <Icons.SimulatorIcon size={12} />,
           render: () => <RemoteAccessSection />,
+        },
+        {
+          id: "hosts",
+          label: "Hosts",
+          description: "Run agents on another Mac",
+          icon: <Icons.HostIcon size={12} />,
+          render: () => <HostsSection />,
         },
         {
           id: "git",

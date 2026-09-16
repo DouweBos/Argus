@@ -1,7 +1,8 @@
 import { create } from "zustand";
+import { scopedStorageKey } from "../lib/transport/scope";
 
-const STORAGE_KEY = "argus:recentProjects";
-const OPEN_PROJECTS_KEY = "argus:openProjects";
+const STORAGE_KEY = scopedStorageKey("argus:recentProjects");
+const OPEN_PROJECTS_KEY = scopedStorageKey("argus:openProjects");
 const MAX_PROJECTS = 10;
 
 export interface RecentProject {

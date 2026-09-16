@@ -3,6 +3,7 @@ import type { LogLevel, LogSource } from "@argus/peacock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icons, Input, LogEntry } from "@argus/peacock";
 import { debugStartStream, debugStopStream } from "../../../../lib/ipc";
+import { getTransport } from "../../../../lib/transport";
 import styles from "./DebugTool.module.css";
 
 interface StreamViewProps {
@@ -192,7 +193,7 @@ export function StreamView({ deviceKey, tool }: StreamViewProps) {
     setEntries([]);
     setPausedSnapshot(null);
 
-    const unsubData = window.argus.on<{
+    const unsubData = getTransport().on<{
       source: "stderr" | "stdout";
       text: string;
     }>(`debug:data:${streamId}`, (payload) => {
@@ -226,7 +227,7 @@ export function StreamView({ deviceKey, tool }: StreamViewProps) {
         return next;
       });
     });
-    const unsubExit = window.argus.on<{
+    const unsubExit = getTransport().on<{
       code: number | null;
       error?: string;
       signal: string | null;
