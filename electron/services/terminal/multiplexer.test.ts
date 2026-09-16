@@ -1,17 +1,25 @@
-import type { WorkspaceEnvConfig } from "../session/models";
-import { describe, expect, it, vi } from "vitest";
+import type { Session, WorkspaceEnvConfig } from "../session/models";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { addBroadcastTap } from "../../broadcast";
+import { appState } from "../../state";
 import {
   workspaceEnvValue,
   defaultShell,
   commandShell,
   setupShellCommand,
+  createTerminal,
+  destroyTerminal,
 } from "./multiplexer";
 
-// Mock node-pty (native module) and other Electron deps
-vi.mock("node-pty", () => ({ spawn: vi.fn() }));
-vi.mock("../../main", () => ({ getMainWindow: () => null }));
+// broadcast.ts imports electron at runtime; vitest has no windows.
+vi.mock("electron", () => ({ BrowserWindow: { getAllWindows: () => [] } }));
 vi.mock("../../state", () => ({
   appState: { sessions: new Map(), terminals: new Map() },
+}));
+vi.mock("../session/setup", () => ({ loadArgusConfig: () => ({}) }));
+vi.mock("../claudeAuth/accounts", () => ({
+  envForAccount: () => process.env,
+  resolveAccountForSession: () => null,
 }));
 
 describe("workspaceEnvValue", () => {
@@ -139,5 +147,72 @@ describe("setupShellCommand", () => {
 
   it("blanks the prompt so it can't be mistaken for command output", () => {
     expect(setupShellCommand()).toContain("PS1=");
+  });
+});
+
+describe("terminal events on the broadcast bus", () => {
+  const SESSION_ID = "session-broadcast";
+  let events: { channel: string; args: unknown[] }[];
+  let untap: () => void;
+  let originalShell: string | undefined;
+
+  beforeEach(() => {
+    events = [];
+    untap = addBroadcastTap((channel, args) => {
+      events.push({ channel, args });
+    });
+    // Unrecognised shell → `sh -c <command>`, skipping the user's rc files.
+    originalShell = process.env.SHELL;
+    process.env.SHELL = "/bin/sh";
+    appState.sessions.set(SESSION_ID, {
+      id: SESSION_ID,
+      kind: "project_root",
+      path: process.cwd(),
+      repo_root: process.cwd(),
+    } as Session);
+  });
+
+  afterEach(() => {
+    untap();
+    process.env.SHELL = originalShell;
+    appState.sessions.clear();
+    appState.terminals.clear();
+  });
+
+  /** Resolve with the args of the first broadcast on `channel`. */
+  function waitForChannel(channel: string): Promise<unknown[]> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        clearInterval(poll);
+        reject(new Error(`timed out waiting for ${channel}`));
+      }, 5000);
+      const poll = setInterval(() => {
+        const hit = events.find((e) => e.channel === channel);
+        if (hit) {
+          clearInterval(poll);
+          clearTimeout(timer);
+          resolve(hit.args);
+        }
+      }, 10);
+    });
+  }
+
+  it("publishes PTY output and exit to a registered tap", async () => {
+    const id = createTerminal(SESSION_ID, undefined, "printf hello; exit 3");
+
+    await expect(waitForChannel(`terminal:exit:${id}`)).resolves.toEqual([3]);
+
+    const data = events
+      .filter((e) => e.channel === `terminal:data:${id}`)
+      .map((e) => Buffer.from(e.args[0] as string, "base64").toString())
+      .join("");
+    expect(data).toBe("hello");
+  });
+
+  it("publishes terminal:exit with -1 when a terminal is destroyed", async () => {
+    const id = createTerminal(SESSION_ID, undefined, "sleep 30");
+    destroyTerminal(id);
+
+    await expect(waitForChannel(`terminal:exit:${id}`)).resolves.toEqual([-1]);
   });
 });
