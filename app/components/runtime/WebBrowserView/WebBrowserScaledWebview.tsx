@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { useSimulatorCapture } from "../../../hooks/useSimulatorCapture";
+import { useBrowserStream } from "../../../hooks/useBrowserStream";
 import styles from "./WebBrowserView.module.css";
 
 const DRAG_THROTTLE_MS = 17;
@@ -7,7 +7,6 @@ const DRAG_THROTTLE_MS = 17;
 interface Props {
   internalHeight: number;
   internalWidth: number;
-  mjpegPort: number | null;
   onKeyboardEvent: (type: "down" | "press" | "up", key: string) => void;
   onMouseEvent: (
     type: "click" | "down" | "move" | "up",
@@ -20,7 +19,7 @@ interface Props {
 }
 
 /**
- * Renders the Playwright browser's MJPEG stream and captures pointer/keyboard
+ * Renders the embedded browser's live picture and captures pointer/keyboard
  * events, forwarding them to the backend as viewport-pixel coordinates.
  *
  * Mirrors the iOS simulator's IosDeviceStreamView pattern: an `<img>` element
@@ -30,18 +29,12 @@ interface Props {
 export function WebBrowserScaledWebview({
   internalHeight,
   internalWidth,
-  mjpegPort,
   onKeyboardEvent,
   onMouseEvent,
   onWheelEvent,
   sessionId,
 }: Props) {
-  const streamUrl =
-    mjpegPort && sessionId
-      ? `http://127.0.0.1:${mjpegPort}/stream/${encodeURIComponent(sessionId)}`
-      : null;
-
-  const { imgRef, isReceiving } = useSimulatorCapture(streamUrl);
+  const { imgRef, isReceiving, streamUrl } = useBrowserStream(sessionId, true);
 
   const lastDragTime = useRef(0);
   const isPointerDown = useRef(false);
@@ -161,15 +154,13 @@ export function WebBrowserScaledWebview({
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
       >
-        {streamUrl && (
-          <img
-            ref={imgRef}
-            alt="Web browser"
-            className={styles.browserCanvas}
-            draggable={false}
-            src={streamUrl}
-          />
-        )}
+        <img
+          ref={imgRef}
+          alt="Web browser"
+          className={styles.browserCanvas}
+          draggable={false}
+          src={streamUrl ?? undefined}
+        />
         {!isReceiving && (
           <div className={styles.browserConnecting}>
             <p>Waiting for frames...</p>

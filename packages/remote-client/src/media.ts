@@ -196,6 +196,13 @@ export type MediaMessage =
       keyFrame: boolean;
       timestamp: number;
       data: Uint8Array;
+    }
+  /** A self-contained JPEG — the embedded browser's screencast, not H.264. */
+  | {
+      kind: "jpeg";
+      streamId: number;
+      timestamp: number;
+      data: Uint8Array;
     };
 
 export function parseMediaMessage(bytes: Uint8Array): MediaMessage | null {
@@ -227,6 +234,10 @@ export function parseMediaMessage(bytes: Uint8Array): MediaMessage | null {
       codedHeight,
       description,
     };
+  }
+
+  if (msgType === 2) {
+    return { kind: "jpeg", streamId, timestamp, data: bytes.slice(12) };
   }
 
   // frame

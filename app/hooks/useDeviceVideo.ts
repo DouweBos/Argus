@@ -126,7 +126,7 @@ export function useDeviceVideo(
               msg.codedHeight,
               msg.description,
             );
-          } else {
+          } else if (msg.kind === "frame") {
             decoder.decode(msg.data, msg.keyFrame, msg.timestamp);
           }
         });
