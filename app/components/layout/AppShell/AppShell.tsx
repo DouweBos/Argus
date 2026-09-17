@@ -14,7 +14,7 @@ import {
 } from "../../../lib/runRegistration";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
 import { openHostTab } from "../../../lib/tabActions";
-import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
+import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
 import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
@@ -303,8 +303,8 @@ export function AppShell() {
   const { openProject } = useProjects();
 
   const handleOpenProjectPath = useCallback(
-    async (path: string) => {
-      await openProject(path);
+    async (path: string, hostId: HostId) => {
+      await openProject(path, { hostId });
       hideOpenProjectDialog();
     },
     [openProject],
