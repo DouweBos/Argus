@@ -27,6 +27,7 @@ import {
   getConnectedDeviceIds,
   setConnectionsChangedListener,
 } from "./gateway";
+import { endAllRooms } from "./huddle";
 import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
 import {
   getTunnelState,
@@ -265,6 +266,9 @@ export async function applyRemoteSettings(): Promise<void> {
 }
 
 export function stopRemote(): void {
+  // Rooms are in memory and die with the gateway: end them first so guest
+  // grants are revoked and their URL leases handed back before it goes down.
+  endAllRooms();
   running = false;
   // Anything we raised is gone with it, and a tunnel that comes back up after a
   // settings change belongs to the user, not to a huddle.
