@@ -136,6 +136,9 @@ export interface DeviceMediaController {
   /** Start streaming a device's screen; returns the binary-frame stream id. */
   watch: (deviceId: string, platform: RemotePlatform) => Promise<number>;
   unwatch: (deviceId: string) => void;
+  /** Same, for an embedded browser session's JPEG frames. */
+  watchBrowser: (sessionId: string) => number;
+  unwatchBrowser: (sessionId: string) => void;
 }
 
 /** Per-connection context handed to each handler. */
@@ -159,6 +162,14 @@ function claimHolder(ctx: GatewayContext): ClaimHolder {
     deviceId: ctx.device.device_id,
     label: ctx.device.label,
   };
+}
+
+/**
+ * Claim key for an embedded browser session. Namespaced so it can't collide
+ * with a simulator UDID or an Android serial in the one claim table.
+ */
+export function browserClaimId(sessionId: string): string {
+  return `browser:${sessionId}`;
 }
 
 /**
@@ -1430,6 +1441,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { accepted: true };
   },
+  "browser.watch": async (params, ctx) => {
+    const { session_id } = parse("browser.watch", params);
+    if (!ctx.media) {
+      throw new GatewayError("internal", "media channel unavailable");
+    }
+
+    return { stream_id: ctx.media.watchBrowser(session_id) };
+  },
+  "browser.unwatch": async (params, ctx) => {
+    const { session_id } = parse("browser.unwatch", params);
+    ctx.media?.unwatchBrowser(session_id);
+    // A client that stopped watching can't be driving the browser either.
+    releaseDevice(browserClaimId(session_id), ctx.connectionId);
+
+    return { accepted: true };
+  },
   "devices.claim": async (params, ctx) => {
     const { device_id, force } = parse("devices.claim", params);
 
@@ -1496,17 +1523,31 @@ function hasCapability(ctx: GatewayContext, required: Capability): boolean {
 }
 
 /**
- * Raw HID commands and the param field naming the device they drive. Admin
- * rides the passthrough, so without this it would skip the arbitration the
- * typed `devices.*` path gets and two desktops would both inject into one sim.
+ * Raw input commands and the param field naming what they drive. Admin rides
+ * the passthrough, so without this it would skip the arbitration the typed
+ * `devices.*` path gets and two desktops would both inject into one sim — or
+ * both steer one embedded browser.
+ *
+ * `browser` entries are namespaced by `browserClaimId` so a session id can
+ * never collide with a simulator UDID in the shared claim table.
  */
-const ADMIN_HID_DEVICE_KEY: Record<string, string> = {
-  simulator_touch: "udid",
-  simulator_button: "udid",
-  simulator_keyboard: "udid",
-  android_touch: "serial",
-  android_button: "serial",
-  android_keyboard: "serial",
+const ADMIN_INPUT_SUBJECT: Record<string, { browser?: true; param: string }> = {
+  simulator_touch: { param: "udid" },
+  simulator_button: { param: "udid" },
+  simulator_keyboard: { param: "udid" },
+  android_touch: { param: "serial" },
+  android_button: { param: "serial" },
+  android_keyboard: { param: "serial" },
+  // Pointer, key and wheel input into the embedded browser, plus the
+  // navigation that changes what every viewer of it sees.
+  browser_mouse_event: { browser: true, param: "sessionId" },
+  browser_keyboard_event: { browser: true, param: "sessionId" },
+  browser_wheel_event: { browser: true, param: "sessionId" },
+  browser_view_navigate: { browser: true, param: "sessionId" },
+  browser_view_back: { browser: true, param: "sessionId" },
+  browser_view_forward: { browser: true, param: "sessionId" },
+  browser_view_reload: { browser: true, param: "sessionId" },
+  browser_update_preset: { browser: true, param: "sessionId" },
 };
 
 /**
@@ -1536,9 +1577,13 @@ async function dispatchAdmin(
 
   const args = (params ?? {}) as Record<string, unknown>;
 
-  const deviceKey = ADMIN_HID_DEVICE_KEY[command];
-  if (deviceKey && typeof args[deviceKey] === "string") {
-    requireDeviceInput(args[deviceKey] as string, ctx);
+  const subject = ADMIN_INPUT_SUBJECT[command];
+  const subjectId = subject ? args[subject.param] : undefined;
+  if (typeof subjectId === "string") {
+    requireDeviceInput(
+      subject?.browser ? browserClaimId(subjectId) : subjectId,
+      ctx,
+    );
   }
 
   // The host's own picker browses the whole disk; a paired device must not.

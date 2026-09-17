@@ -22,6 +22,7 @@ import {
 import { addHostEventSink } from "@argus/host/bus";
 import { log } from "@argus/host/logger";
 import { appState } from "../../state";
+import { onBrowserFrame } from "../browser/frameForward";
 import {
   forceStopAndroidCapture,
   isAndroidCapturing,
@@ -56,6 +57,7 @@ const TAG_MEDIA = 0x01;
 /** Media message types (first header byte after the tag). */
 const MEDIA_CONFIG = 0;
 const MEDIA_FRAME = 1;
+const MEDIA_JPEG = 2;
 
 /** Drop delta frames once the socket's send buffer exceeds this (bytes). */
 const BACKPRESSURE_LIMIT = 1_000_000;
@@ -99,6 +101,23 @@ function buildFrameBody(
   const view = new DataView(body.buffer);
   view.setUint8(0, MEDIA_FRAME);
   view.setUint8(1, keyFrame ? 1 : 0);
+  view.setUint16(2, streamId, true);
+  view.setFloat64(4, timestamp, true);
+  body.set(data, 12);
+
+  return body;
+}
+
+/** Build the binary body for a standalone JPEG frame (embedded browser). */
+function buildJpegBody(
+  streamId: number,
+  data: Uint8Array,
+  timestamp: number,
+): Uint8Array {
+  const body = new Uint8Array(12 + data.length);
+  const view = new DataView(body.buffer);
+  view.setUint8(0, MEDIA_JPEG);
+  view.setUint8(1, 0);
   view.setUint16(2, streamId, true);
   view.setFloat64(4, timestamp, true);
   body.set(data, 12);
@@ -156,6 +175,11 @@ export class DeviceConnection implements DeviceMediaController {
     string,
     { streamId: number; platform: RemotePlatform; unsub: () => void }
   >();
+  /** Active embedded-browser streams for this connection, by session id. */
+  private readonly watchedBrowsers = new Map<
+    string,
+    { streamId: number; unsub: () => void }
+  >();
 
   constructor(
     readonly device: PairedDevice,
@@ -196,6 +220,9 @@ export class DeviceConnection implements DeviceMediaController {
   dispose(): void {
     for (const deviceId of [...this.watched.keys()]) {
       this.unwatch(deviceId);
+    }
+    for (const sessionId of [...this.watchedBrowsers.keys()]) {
+      this.unwatchBrowser(sessionId);
     }
     releaseConnection(this.connectionId);
   }
@@ -271,6 +298,36 @@ export class DeviceConnection implements DeviceMediaController {
         forceStopAndroidCapture(deviceId);
       }
     }
+  }
+
+  watchBrowser(sessionId: string): number {
+    const existing = this.watchedBrowsers.get(sessionId);
+    if (existing) {
+      return existing.streamId;
+    }
+
+    const streamId = allocStreamId();
+    log(`[remote] watch browser ${sessionId} → stream ${String(streamId)}`);
+    const unsub = onBrowserFrame(sessionId, (data, timestamp) => {
+      // Every JPEG stands alone, so shedding under backpressure only costs
+      // staleness — no reference chain to break, unlike H.264 deltas.
+      if (this.bufferedProbe && this.bufferedProbe() > BACKPRESSURE_LIMIT) {
+        return;
+      }
+      this.emitMedia(buildJpegBody(streamId, data, timestamp));
+    });
+    this.watchedBrowsers.set(sessionId, { streamId, unsub });
+
+    return streamId;
+  }
+
+  unwatchBrowser(sessionId: string): void {
+    const entry = this.watchedBrowsers.get(sessionId);
+    if (!entry) {
+      return;
+    }
+    entry.unsub();
+    this.watchedBrowsers.delete(sessionId);
   }
 
   /** Handle one encrypted inbound frame from the transport. */

@@ -151,6 +151,10 @@ export const REMOTE_METHODS = {
   "devices.claim": "control",
   "devices.release": "control",
   "devices.claim_status": "control",
+  /** Begin/stop streaming an embedded browser's screen. Frames ride the same
+   *  binary channel as device video; watching is read-only, so monitor. */
+  "browser.watch": "monitor",
+  "browser.unwatch": "monitor",
   /** Drive a device — taps mutate it, so control-gated like agents.send. */
   "devices.touch": "control",
   "devices.button": "control",
