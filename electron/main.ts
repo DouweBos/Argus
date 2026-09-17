@@ -973,7 +973,7 @@ app.whenReady().then(() => {
   // the gateway is the only way in, so it is forced on rather than a setting.
   setWebClientDir(resolveWebClientDir());
   const remoteReady = isServerMode()
-    ? setRemoteConfig({ enabled: true }).then(() => undefined)
+    ? setRemoteConfig({ enabled: true, lanWeb: true }).then(() => undefined)
     : applyRemoteSettings();
   remoteReady
     .then(() => startDevTrust())
