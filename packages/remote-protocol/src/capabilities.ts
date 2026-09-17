@@ -187,6 +187,8 @@ export const REMOTE_EVENTS = [
   "notification",
   /** The desktop's reachable addresses changed (a tunnel came up or died). */
   "host.endpoints",
+  /** A huddle guest's standing changed — approved, denied, or the room ended. */
+  "huddle.state",
   /** Raw renderer broadcast, forwarded verbatim to "admin" devices only —
    * another desktop wants the host's own IPC channels, not the typed mirrors. */
   "ipc",

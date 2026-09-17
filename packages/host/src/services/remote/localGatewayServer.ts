@@ -25,7 +25,13 @@ import {
   updateLastSeen,
   type DesktopIdentity,
 } from "./deviceStore";
-import { DeviceConnection, addConnection, removeConnection } from "./gateway";
+import {
+  DeviceConnection,
+  addConnection,
+  createGuestConnection,
+  removeConnection,
+} from "./gateway";
+import { hasOpenRooms } from "./huddle";
 import { NoiseHandshake } from "./noise";
 
 /** A /pair socket handler supplied by the active pairing session. */
@@ -43,6 +49,13 @@ export interface PairingSocketHandler {
 const MAX_PAYLOAD = 16 * 1024 * 1024;
 const HANDSHAKE_TIMEOUT_MS = 10_000;
 const MAX_CONNECTIONS = 64;
+
+/**
+ * How long a guest socket may sit without presenting a room token. Unknown
+ * keys are only accepted at all while a room is open, and this stops one
+ * parking on the tunnel once it is.
+ */
+const HUDDLE_JOIN_TIMEOUT_MS = 30_000;
 
 let httpServer: Server | null = null;
 let wss: WebSocketServer | null = null;
@@ -103,6 +116,17 @@ function serveStatic(
   createReadStream(file).pipe(res);
 }
 
+/** Drop a guest socket that never presents a room token. */
+function armJoinDeadline(ws: WebSocket, conn: DeviceConnection): void {
+  const timer = setTimeout(() => {
+    if (conn.isUnjoinedGuest()) {
+      ws.close();
+    }
+  }, HUDDLE_JOIN_TIMEOUT_MS);
+  timer.unref?.();
+  ws.on("close", () => clearTimeout(timer));
+}
+
 function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
   let handshake: NoiseHandshake | null = null;
   let connection: DeviceConnection | null = null;
@@ -139,20 +163,37 @@ function handleDeviceSocket(ws: WebSocket, identity: DesktopIdentity): void {
     );
     findDeviceByStaticKey(clientPub)
       .then((device) => {
-        if (!device || !handshake) {
+        if (!handshake) {
+          ws.close();
+
+          return;
+        }
+        // An unknown key is a huddle guest — but only while a room is open, so
+        // with no share running the surface is exactly what it was: pinned
+        // devices only. The guest still gets nothing until it presents a valid
+        // token AND the host approves it.
+        if (!device && !hasOpenRooms()) {
           ws.close();
 
           return;
         }
         send(ws, handshake.writeMessage(new Uint8Array(0)));
-        const conn = new DeviceConnection(device, handshake.session(), (out) =>
-          send(ws, out),
-        );
+        const conn = device
+          ? new DeviceConnection(device, handshake.session(), (out) =>
+              send(ws, out),
+            )
+          : createGuestConnection(clientPub, handshake.session(), (out) =>
+              send(ws, out),
+            );
         conn.setCloser(() => ws.close());
         conn.setBufferedProbe(() => ws.bufferedAmount);
         connection = conn;
         addConnection(conn);
-        updateLastSeen(device.device_id, Date.now()).catch(() => {});
+        if (device) {
+          updateLastSeen(device.device_id, Date.now()).catch(() => {});
+        } else {
+          armJoinDeadline(ws, conn);
+        }
       })
       .catch(() => ws.close());
   });

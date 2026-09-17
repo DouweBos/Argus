@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { REMOTE_EVENTS } from "./capabilities";
+import { HuddleStatePayload } from "./huddle";
 import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
@@ -450,6 +451,8 @@ export const EventPayloads = {
   ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
   /** The claim on a device changed — including being stolen from you. */
   "device.claim": RemoteDeviceClaimState,
+  /** This guest's standing in its huddle room changed (host approved/denied/ended). */
+  "huddle.state": HuddleStatePayload,
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
   notification: z.object({

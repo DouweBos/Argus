@@ -15,9 +15,13 @@ import type { H264Config } from "../simulator/h264-parser";
 import {
   Envelope,
   EventPayloads,
+  HuddleJoinParams,
   isAgentInScope,
   isDeviceInScope,
+  isHuddleMethod,
+  type Capability,
   type GrantScope,
+  type HuddleStatePayload,
   type RemoteEndpoint,
   type RemoteEventType,
   type RemotePlatform,
@@ -45,12 +49,14 @@ import {
   dispatch,
   GatewayError,
   permissionKey,
+  scopeSafeCapabilities,
   toRemoteAgentCapabilities,
   toRemoteAgentStatus,
   type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
 import { releaseConnection } from "./deviceClaims";
+import { guestState, joinRoom, leaveGuest } from "./huddle";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -163,6 +169,16 @@ function parseAgentChannel(
   return { kind: parts[1], agentId: parts.slice(2).join(":") };
 }
 
+/**
+ * What an approved huddle guest gets: control-tier, so they can send messages,
+ * answer the agent's permission prompts and drive the device — bounded to the
+ * room by the scope. Never admin; `scopeSafeCapabilities` enforces that again.
+ */
+const GUEST_CAPABILITIES: Capability[] = ["monitor", "control"];
+
+/** The scope of a guest that has not been approved: nothing at all. */
+const EMPTY_SCOPE: GrantScope = { agent_ids: [], device_keys: [] };
+
 /** One authenticated device: a Noise transport plus its subscriptions. */
 export class DeviceConnection implements DeviceMediaController {
   /** Identifies this connection for claims; a reconnect is a new holder. */
@@ -191,13 +207,22 @@ export class DeviceConnection implements DeviceMediaController {
     buffered: () => this.bufferedProbe?.() ?? 0,
   });
 
+  /**
+   * Narrows this connection to one agent + device (a huddle guest). Mutable:
+   * a guest socket starts with an empty scope and no capabilities, and the
+   * host approving swaps in the room's scope on the live connection.
+   */
+  private scope?: GrantScope;
+  /** Ephemeral key + room of a huddle guest; null for every paired device. */
+  private guest: { devStaticPub: string; roomId: string | null } | null = null;
+
   constructor(
     readonly device: PairedDevice,
     private readonly session: NoiseSession,
     private readonly sink: (bytes: Uint8Array) => void,
-    /** Narrows this connection to one agent + device (a huddle guest). */
-    private readonly scope?: GrantScope,
+    scope?: GrantScope,
   ) {
+    this.scope = scope;
     this.ctx = {
       device,
       connectionId: this.connectionId,
@@ -222,6 +247,51 @@ export class DeviceConnection implements DeviceMediaController {
     this.bufferedProbe = fn;
   }
 
+  /**
+   * Mark this socket as an unapproved huddle guest. It keeps no capabilities
+   * and an empty scope, so `dispatch` refuses everything; `huddle.*` is all it
+   * can reach until the host approves it.
+   */
+  markGuest(devStaticPub: string): void {
+    this.guest = { devStaticPub, roomId: null };
+  }
+
+  isGuest(): boolean {
+    return this.guest !== null;
+  }
+
+  /** A guest socket that has not yet presented a room token. */
+  isUnjoinedGuest(): boolean {
+    return this.guest !== null && this.guest.roomId === null;
+  }
+
+  /**
+   * Approval: install the room's grant on the live connection. Run through
+   * `scopeSafeCapabilities` so a scoped grant can never be admin.
+   */
+  applyGuestGrant(scope: GrantScope): void {
+    this.device.capabilities = scopeSafeCapabilities(GUEST_CAPABILITIES);
+    this.scope = scope;
+    this.ctx.scope = scope;
+  }
+
+  /**
+   * Denial, revocation or the room ending: the grant goes first (so an in-
+   * flight request can't land after the room closed), then the socket.
+   */
+  revokeGuestGrant(): void {
+    this.device.capabilities = [];
+    this.scope = EMPTY_SCOPE;
+    this.ctx.scope = EMPTY_SCOPE;
+    this.subscriptions.clear();
+    this.close();
+  }
+
+  /** Push this guest its standing (approved, denied, room ended). */
+  pushHuddleState(payload: HuddleStatePayload): void {
+    this.pushEvent("huddle.state", null, payload);
+  }
+
   close(): void {
     this.closer?.();
   }
@@ -240,6 +310,9 @@ export class DeviceConnection implements DeviceMediaController {
     }
     // A transfer cut off mid-flight must leave no partial behind.
     this.transfers.dispose();
+    if (this.guest?.roomId) {
+      leaveGuest(this.guest.roomId, this.guest.devStaticPub);
+    }
     releaseConnection(this.connectionId);
   }
 
@@ -408,9 +481,7 @@ export class DeviceConnection implements DeviceMediaController {
     params: unknown,
   ): Promise<void> {
     try {
-      const ok = method.startsWith("transfer.")
-        ? await this.handleTransfer(method, params)
-        : await dispatch(method, params, this.ctx);
+      const ok = await this.route(method, params);
       this.emit({ type: "res", seq: this.nextSeq(), id, ok });
     } catch (err) {
       const code =
@@ -429,6 +500,67 @@ export class DeviceConnection implements DeviceMediaController {
   /** Tell this device every address it could reach the desktop on. */
   pushEndpoints(endpoints: RemoteEndpoint[]): void {
     this.pushEvent("host.endpoints", null, { endpoints });
+  }
+
+  /** Pick the dialect a request belongs to: huddle, transfer, or the allowlist. */
+  private async route(method: string, params: unknown): Promise<unknown> {
+    if (isHuddleMethod(method)) {
+      return this.handleHuddle(method, params);
+    }
+    if (method.startsWith("transfer.")) {
+      return await this.handleTransfer(method, params);
+    }
+
+    return await dispatch(method, params, this.ctx);
+  }
+
+  /**
+   * The huddle control plane: the only thing a pending guest may call.
+   *
+   * Presenting a valid token gets a guest a place in the queue and nothing
+   * else — no agent, no transcript, no device — until the host approves them,
+   * which is what mints the grant (see `plan/huddle-rooms.md` §6).
+   */
+  private handleHuddle(method: string, params: unknown): HuddleStatePayload {
+    const guest = this.guest;
+    if (!guest) {
+      throw new GatewayError("capability_denied", `unknown method ${method}`);
+    }
+    if (method === "huddle.state") {
+      const state = guest.roomId
+        ? guestState(guest.roomId, guest.devStaticPub)
+        : null;
+      if (!state) {
+        throw new GatewayError("not_found", "not in a huddle");
+      }
+
+      return state;
+    }
+    const parsed = HuddleJoinParams.safeParse(params);
+    if (!parsed.success) {
+      throw new GatewayError("bad_request", "invalid huddle.join");
+    }
+    // The claim overlay names the holder, so the guest's chosen label has to
+    // land on the device record too, not just in the room's guest list.
+    this.device.label = parsed.data.label ?? "Guest";
+    const outcome = joinRoom(
+      parsed.data.token,
+      guest.devStaticPub,
+      parsed.data.label ?? "Guest",
+      {
+        grant: (scope) => this.applyGuestGrant(scope),
+        revoke: () => this.revokeGuestGrant(),
+        notify: (payload) => this.pushHuddleState(payload),
+      },
+    );
+    if (!outcome.ok) {
+      throw outcome.reason === "denied"
+        ? new GatewayError("capability_denied", "not approved for this huddle")
+        : new GatewayError("not_found", "no such huddle");
+    }
+    guest.roomId = outcome.room_id;
+
+    return outcome.payload;
   }
 
   /**
@@ -705,6 +837,44 @@ export class DeviceConnection implements DeviceMediaController {
   }
 }
 
+/**
+ * The ephemeral, never-persisted device record behind a guest socket. It is
+ * shaped like a `PairedDevice` so the connection machinery is unchanged, but it
+ * is not one: it never reaches `deviceStore`, and every writer there is a
+ * no-op for an id it does not know.
+ */
+function guestDevice(devStaticPub: string): PairedDevice {
+  return {
+    device_id: `guest:${crypto.randomUUID()}`,
+    label: "Guest",
+    dev_static_pub: devStaticPub,
+    capabilities: [],
+    created_at: Date.now(),
+    last_seen: null,
+  };
+}
+
+/**
+ * A browser that handshook with a key we have never seen. It gets a socket and
+ * nothing else: no capabilities, an empty scope, and only `huddle.*` reachable
+ * until it presents a room token and the host approves it.
+ */
+export function createGuestConnection(
+  devStaticPub: string,
+  session: NoiseSession,
+  sink: (bytes: Uint8Array) => void,
+): DeviceConnection {
+  const conn = new DeviceConnection(
+    guestDevice(devStaticPub),
+    session,
+    sink,
+    EMPTY_SCOPE,
+  );
+  conn.markGuest(devStaticPub);
+
+  return conn;
+}
+
 // --- Registry + broadcast tap ----------------------------------------------
 
 const connections = new Set<DeviceConnection>();
@@ -718,7 +888,11 @@ export function setConnectionsChangedListener(cb: (() => void) | null): void {
 
 /** Device IDs with a live connection right now. */
 export function getConnectedDeviceIds(): string[] {
-  return [...new Set([...connections].map((c) => c.device.device_id))];
+  return [
+    ...new Set(
+      [...connections].filter((c) => !c.isGuest()).map((c) => c.device.device_id),
+    ),
+  ];
 }
 
 /** Register a live device connection so it receives forwarded events. */
