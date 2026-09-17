@@ -8,8 +8,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const invokeMock = vi.fn();
 
+const transport = { invoke: invokeMock, on: vi.fn(), send: vi.fn() };
+
 vi.mock("./transport", () => ({
-  getTransport: () => ({ invoke: invokeMock, on: vi.fn(), send: vi.fn() }),
+  getTransport: () => transport,
+  getTransportFor: () => transport,
+  getTransportForCommand: () => transport,
   isRemoteMode: () => true,
 }));
 
