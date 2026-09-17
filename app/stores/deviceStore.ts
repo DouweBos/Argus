@@ -1,7 +1,10 @@
+import type { HostId } from "../lib/transport/hostId";
 import type { DeviceInfo } from "../lib/types";
 import { useEffect } from "react";
 import { create } from "zustand";
-import { listDevices as ipcListDevices } from "../lib/ipc";
+import { listDevices as ipcListDevices, onHost } from "../lib/ipc";
+import { hostScopedKey } from "../lib/transport/hostId";
+import { getConnections } from "./connectionStore";
 
 interface DeviceStoreData {
   devices: DeviceInfo[];
@@ -26,17 +29,33 @@ export const subscribeDevices = (
   listener: (devices: DeviceInfo[]) => void,
 ): (() => void) => deviceStore.subscribe((s) => listener(s.devices));
 
+/**
+ * Every attached host's devices in one list, each tagged with the machine it
+ * is plugged into — two hosts can have a simulator with the same udid, and
+ * booting one must not drive the other.
+ */
 export async function refreshDevices(): Promise<void> {
   deviceStore.setState({ loading: true });
-  try {
-    const devices = await ipcListDevices();
-    deviceStore.setState({ devices, loading: false, error: null });
-  } catch (e) {
-    deviceStore.setState({
-      loading: false,
-      error: e instanceof Error ? e.message : String(e),
-    });
-  }
+  const results = await Promise.all(
+    getConnections().map(async (connection) => {
+      try {
+        const devices = await onHost(connection.hostId, () => ipcListDevices());
+
+        return devices.map((device) => ({
+          ...device,
+          hostId: connection.hostId,
+        }));
+      } catch {
+        // One host being down must not blank out the others' devices.
+        return [];
+      }
+    }),
+  );
+  deviceStore.setState({
+    devices: results.flat(),
+    loading: false,
+    error: null,
+  });
 }
 
 let globalPollTimer: ReturnType<typeof setInterval> | null = null;
@@ -65,6 +84,17 @@ export function useDevicePoller(intervalMs = 5000): void {
 }
 
 /** Find an in-memory device by key (may be stale until the next poll). */
-export function findDevice(deviceKey: string): DeviceInfo | undefined {
-  return getDevices().find((d) => d.deviceKey === deviceKey);
+export function findDevice(
+  deviceKey: string,
+  hostId?: HostId,
+): DeviceInfo | undefined {
+  return getDevices().find(
+    (d) =>
+      d.deviceKey === deviceKey &&
+      (hostId === undefined || d.hostId === hostId),
+  );
 }
+
+/** Identity for a device across hosts — for React keys and grid selection. */
+export const deviceKeyFor = (device: DeviceInfo): string =>
+  hostScopedKey(device.hostId ?? "local", device.deviceKey);
