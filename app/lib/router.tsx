@@ -13,6 +13,9 @@
  *
  * - `/`                                          → home / project picker
  * - `/agents`                                    → global agents overview
+ * - `/automations`                               → automations list
+ * - `/automations/:automationId`                 → automation config + run history
+ * - `/automations/:automationId/runs/:runId`     → a single automation run
  * - `/devices`                                   → devices screen
  * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
  * - `/notifications`                             → notifications screen
@@ -47,6 +50,7 @@ import { LOCAL_HOST_ID, type HostId } from "./transport/hostId";
 
 export type AppView =
   | "agents"
+  | "automations"
   | "devices"
   | "home"
   | "notifications"
@@ -103,6 +107,10 @@ export interface PullRequestRef {
 }
 
 export interface ParsedRoute {
+  /** Which automation is open. Only meaningful when view === "automations". */
+  automationId: string | null;
+  /** Which run of that automation is open, if any. */
+  automationRunId: string | null;
   /**
    * Trailing ref name for ref-scoped git sub-views. When `gitView` is
    * `"branches"` or `"tags"` the URL may carry an additional segment naming
@@ -154,6 +162,20 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
     return emptyRoute("home");
   }
 
+  if (segments[0] === "automations") {
+    const automationId = segments[1] ? decodeSegment(segments[1]) : null;
+    const runId =
+      automationId && segments[2] === "runs" && segments[3]
+        ? decodeSegment(segments[3])
+        : null;
+
+    return {
+      ...emptyRoute("automations"),
+      automationId,
+      automationRunId: runId,
+    };
+  }
+
   if (segments[0] === "sessions" && segments[1]) {
     const panel = (segments[2] ?? "home") as SessionPanel;
     const validPanel: SessionPanel = VALID_PANELS.includes(panel)
@@ -179,6 +201,8 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
 
     return {
       view: "session",
+      automationId: null,
+      automationRunId: null,
       sessionId: segments[1],
       panel: validPanel,
       gitView,
@@ -198,6 +222,8 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
     if (Number.isFinite(number)) {
       return {
         view: "pull-request-detail",
+        automationId: null,
+        automationRunId: null,
         sessionId: null,
         panel: "agents",
         gitView: null,
@@ -224,9 +250,19 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
   return emptyRoute("home");
 }
 
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
   return {
     view,
+    automationId: null,
+    automationRunId: null,
     sessionId: null,
     panel: "agents",
     gitView: null,
@@ -247,6 +283,12 @@ export function routePattern(pathname: string): string {
   switch (route.view) {
     case "home":
       return "/";
+    case "automations":
+      if (route.automationId && route.automationRunId) {
+        return "/automations/:automationId/runs/:runId";
+      }
+
+      return route.automationId ? "/automations/:automationId" : "/automations";
     case "agents":
     case "devices":
     case "notifications":
@@ -293,6 +335,16 @@ function routePathname(route: Partial<ParsedRoute>): string {
         : "";
 
     return `/sessions/${route.sessionId}${panel}${gitView}${gitRef}`;
+  }
+  if (route.view === "automations") {
+    if (!route.automationId) {
+      return "/automations";
+    }
+    const base = `/automations/${encodeURIComponent(route.automationId)}`;
+
+    return route.automationRunId
+      ? `${base}/runs/${encodeURIComponent(route.automationRunId)}`
+      : base;
   }
   if (route.view === "pull-request-detail" && route.pr) {
     const { owner, repo, number } = route.pr;

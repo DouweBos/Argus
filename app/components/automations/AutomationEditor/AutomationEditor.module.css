@@ -1,0 +1,61 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 2px;
+}
+
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  background: var(--surface-1);
+}
+
+.preview {
+  max-width: 320px;
+}
+
+.catchUp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.repos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.repo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.noRepos {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.playbook {
+  min-height: 260px;
+  line-height: 1.55;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--error);
+}

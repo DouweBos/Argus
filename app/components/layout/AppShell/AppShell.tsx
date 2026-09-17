@@ -16,6 +16,7 @@ import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
 import { openHostTab } from "../../../lib/tabActions";
 import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
 import { cycleActiveAgent } from "../../../stores/agentStore";
+import { useAutomationsSync } from "../../../stores/automationStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
@@ -59,6 +60,7 @@ import {
 } from "../../../tools/store";
 import { CenterPanel } from "../../agent/CenterPanel";
 import { AgentsScreen } from "../../agents/AgentsScreen";
+import { AutomationsRoot } from "../../automations";
 import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
@@ -108,6 +110,7 @@ function renderCenter(
   selectedId: string | null,
   centerView:
     | "agents"
+    | "automations"
     | "devices"
     | "home"
     | "notifications"
@@ -127,6 +130,9 @@ function renderCenter(
   }
   if (centerView === "agents") {
     return <AgentsScreen />;
+  }
+  if (centerView === "automations") {
+    return <AutomationsRoot />;
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;
@@ -156,6 +162,7 @@ export function AppShell() {
   useWindowFocus();
   useSuppressSpacePageScroll();
   usePullRequestsSync();
+  useAutomationsSync();
   useTrackSessionPanel();
   useToolProjectMaskSync();
   // Reconcile the tool store against the persisted backend state once at
