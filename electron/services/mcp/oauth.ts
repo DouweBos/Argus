@@ -86,19 +86,20 @@ function applyClientAuth(
   headers: Record<string, string>,
   client: { id: string; secret?: string; authMethod?: string },
 ): void {
-  body.set("client_id", client.id);
-  if (!client.secret) {
-    return;
-  }
-  if (client.authMethod === "client_secret_basic") {
-    const basic = Buffer.from(`${client.id}:${client.secret}`).toString(
-      "base64",
-    );
+  if (client.secret && client.authMethod === "client_secret_basic") {
+    // RFC 6749 §2.3: Basic-authenticating clients must not also put
+    // client_id in the body — Linear rejects that as multiple auth methods.
+    const basic = Buffer.from(
+      `${encodeURIComponent(client.id)}:${encodeURIComponent(client.secret)}`,
+    ).toString("base64");
     headers.authorization = `Basic ${basic}`;
 
     return;
   }
-  body.set("client_secret", client.secret);
+  body.set("client_id", client.id);
+  if (client.secret) {
+    body.set("client_secret", client.secret);
+  }
 }
 
 interface TokenResponse {
