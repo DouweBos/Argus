@@ -149,8 +149,6 @@ this Mac. `selectSession(id)` names the session's own host: selecting a session
 that lives on the mini moves the view there. Detaching a host falls the view
 back to this Mac.
 
-> > > > > > > 2173a8ed (test(remote): cover per-host routing, event scoping and one host failing)
-
 ## Building paths
 
 `routeToPath(route)` converts a `Partial<ParsedRoute>` into a pathname.
