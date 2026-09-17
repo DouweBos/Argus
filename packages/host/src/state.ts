@@ -1,0 +1,111 @@
+/**
+ * Global application state — singleton Maps.
+ *
+ * Node.js is single-threaded for IPC handlers, so no Mutex is needed.
+ */
+
+import type { QueuedMessage } from "./services/agent/messageQueue";
+import type { AgentSession } from "./services/agent/models";
+import type { PermissionRequestPayload } from "./services/llm/runners/claudeCode/controlHandler";
+import type { Session } from "./services/session/models";
+import type { WatcherHandle } from "./services/session/watcher";
+import type { TerminalSession } from "./services/terminal/multiplexer";
+
+export interface BrowserSession {
+  id: string;
+  url: string;
+  /** @deprecated No longer backed by Electron WebContents. */
+  webContentsId: number | null;
+}
+
+export interface SimulatorSession {
+  udid: string;
+  deviceName: string;
+  captureActive: boolean;
+  mjpegPort: number | null;
+}
+
+export interface AndroidDeviceSession {
+  serial: string;
+  deviceName: string;
+  type: "emulator" | "physical";
+  captureActive: boolean;
+}
+
+/** A web browser reserved for exclusive use by a single agent. */
+export interface WebBrowserReservation {
+  agentId: string;
+  deviceId: string; // "web:chromium:a1b2c3d4"
+  cdpPort: number; // Chromium's remote-debugging-port
+  cdpTargetId: string; // CDP target for the page
+  driverPort: number; // Conductor's web-server HTTP port
+}
+
+/** A simulator reserved for exclusive use by a single agent. */
+export interface SimulatorReservation {
+  agentId: string;
+  udid: string;
+  deviceName: string; // e.g. "MyApp-1"
+  repoRoot: string;
+}
+
+class AppState {
+  /** Set of absolute paths to all open repository roots. */
+  repoRoots = new Set<string>();
+
+  /** All managed sessions, keyed by their UUID. */
+  sessions = new Map<string, Session>();
+
+  /** Active PTY sessions, keyed by session ID. */
+  terminals = new Map<string, TerminalSession>();
+
+  /** Live Claude Code agent sessions, keyed by agent UUID. */
+  agents = new Map<string, AgentSession>();
+
+  /** Active iOS simulator capture sessions, keyed by UDID. */
+  simulators = new Map<string, SimulatorSession>();
+
+  /** Active Android device capture sessions, keyed by serial. */
+  androidDevices = new Map<string, AndroidDeviceSession>();
+
+  /** Active file system watchers, keyed by session UUID. */
+  watchers = new Map<string, WatcherHandle>();
+
+  /** Simulator reservations for agents, keyed by agent UUID. */
+  simulatorReservations = new Map<string, SimulatorReservation>();
+
+  /** Web browser sessions, keyed by session ID (storeKey). */
+  browserSessions = new Map<string, BrowserSession>();
+
+  /** Web browser reservations for agents, keyed by agent UUID. */
+  webBrowserReservations = new Map<string, WebBrowserReservation>();
+
+  /**
+   * Latest conversation snapshot per agent, serialized as a JSON string.
+   * Published by whichever window currently owns the agent (main or popout)
+   * on every meaningful state change. Lets a newly opened window (or popout)
+   * hydrate its conversation store without round-tripping to disk.
+   */
+  agentSnapshots = new Map<string, string>();
+
+  /**
+   * Currently-outstanding permission prompts per agent (`toolUseId` → payload).
+   * A durable source of truth so the remote gateway can replay pending prompts
+   * to a device that connects (or reconnects) after the prompt was raised —
+   * otherwise a remote answer is rejected as "no such outstanding prompt".
+   */
+  agentPendingPermissions = new Map<
+    string,
+    Map<string, PermissionRequestPayload>
+  >();
+
+  /**
+   * Messages waiting for each agent's current turn to end, oldest first. Owned
+   * by the backend and mirrored to disk so the queue outlives any one client —
+   * see `services/agent/messageQueue.ts`.
+   */
+  agentQueues = new Map<string, QueuedMessage[]>();
+}
+
+/** Singleton instance. */
+export const appState = new AppState();

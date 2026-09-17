@@ -9,25 +9,16 @@
  */
 
 import type { PrereqId } from "../lib/types";
+import type { ToolId } from "@argus/host/services/tools/types";
 import type { ReactNode, SVGProps } from "react";
 
-/**
- * Closed union of every tool id Argus ships. Adding a tool = adding an
- * entry here AND a manifest in `registry.ts`. We never load arbitrary code,
- * so the union stays exhaustive.
- */
-export type ToolId =
-  | "device-control"
-  | "device-debug"
-  | "device-inspector"
-  | "device-recording";
-
-export const TOOL_IDS: readonly ToolId[] = [
-  "device-control",
-  "device-debug",
-  "device-inspector",
-  "device-recording",
-] as const;
+// Tool ids and the project mask are owned by `@argus/host` — the host gates
+// IPC handlers on them and cannot import renderer types.
+export type {
+  ProjectToolConfig,
+  ToolId,
+} from "@argus/host/services/tools/types";
+export { TOOL_IDS } from "@argus/host/services/tools/types";
 
 /**
  * Theme grouping used to render section headers in Settings → Tools and the
@@ -111,13 +102,4 @@ export interface ToolManifest {
   prereqs?: PrereqId[];
   /** Tools required for this one to function. Disabling a base disables dependents. */
   requires?: ToolId[];
-}
-
-/**
- * Project-level mask read from `.argus.json`. A project can disable tools
- * for everyone working on it but cannot force-enable a tool the user has
- * turned off.
- */
-export interface ProjectToolConfig {
-  disabled?: ToolId[];
 }

@@ -15,14 +15,14 @@
 import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
-import { log } from "../app/lib/logger";
-import { argusHomeDir } from "./lib/argusHome";
+import { argusHomeDir } from "@argus/host/lib/argusHome";
 import {
   cancelPairing,
   confirmPairing,
   startPairing,
-} from "./services/remote/pairing";
-import { LOCAL_GATEWAY_PORT } from "./services/remote/remoteService";
+} from "@argus/host/services/remote/pairing";
+import { LOCAL_GATEWAY_PORT } from "@argus/host/services/remote/remoteService";
+import { log } from "../app/lib/logger";
 
 /** Where the current loopback pairing code is published for a dev client. */
 export function devPairingFile(): string {

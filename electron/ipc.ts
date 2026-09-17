@@ -8,15 +8,15 @@
  * (errors are thrown as plain strings).
  */
 
-import type { AgentInfo } from "./services/agent/models";
-import type { CommandTier } from "./services/command/registry";
+import type { AgentInfo } from "@argus/host/services/agent/models";
+import type { CommandTier } from "@argus/host/services/command/registry";
 import type {
   OnboardingStep,
   PrereqId,
   PrereqResult,
-} from "./services/onboarding/types";
-import type { Session } from "./services/session/models";
-import type { ToolId } from "./services/tools/types";
+} from "@argus/host/services/onboarding/types";
+import type { Session } from "@argus/host/services/session/models";
+import type { ToolId } from "@argus/host/services/tools/types";
 import {
   Menu,
   app,
@@ -28,27 +28,18 @@ import {
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
-import { createLogger } from "../app/lib/logger";
-import {
-  closeFloatingAgentWindow,
-  closeFloatingDeviceWindow,
-  createFloatingAgentWindow,
-  createFloatingDeviceWindow,
-  getMainWindow,
-  markQuitConfirmedDespiteAgents,
-} from "./main";
 import {
   saveConversation,
   loadHistoryIndex,
   loadConversation,
   deleteHistoryEntry,
   searchChatHistory,
-} from "./services/agent/chatHistory";
+} from "@argus/host/services/agent/chatHistory";
 import {
   createCheckpoint,
   deleteCheckpoint,
   restoreCheckpoint,
-} from "./services/agent/checkpoints";
+} from "@argus/host/services/agent/checkpoints";
 import {
   checkClaudeCli,
   claimPrewarmAgent,
@@ -64,7 +55,7 @@ import {
   setAgentEffort,
   setAgentModel,
   setAgentPermissionMode,
-} from "./services/agent/claude";
+} from "@argus/host/services/agent/claude";
 import {
   clearQueue,
   dequeueMessage,
@@ -73,17 +64,17 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
   type QueuedImage,
-} from "./services/agent/messageQueue";
+} from "@argus/host/services/agent/messageQueue";
 import {
   loadAppSettings,
   saveAppSettings,
   type AppSettings,
-} from "./services/appSettings/store";
+} from "@argus/host/services/appSettings/store";
 import {
   startScreencast,
   stopScreencast,
   restartScreencast,
-} from "./services/browser/cdpScreencast";
+} from "@argus/host/services/browser/cdpScreencast";
 import {
   type BrowserPreset,
   type NavState,
@@ -95,16 +86,16 @@ import {
   goForward as conductorGoForward,
   reload as conductorReload,
   setViewport as conductorSetViewport,
-} from "./services/browser/conductorInput";
-import { getMjpegPort } from "./services/browser/mjpegServer";
-import { webBrowserPool } from "./services/browser/pool";
+} from "@argus/host/services/browser/conductorInput";
+import { getMjpegPort } from "@argus/host/services/browser/mjpegServer";
+import { webBrowserPool } from "@argus/host/services/browser/pool";
 import {
   getActiveAccountId,
   listClaudeAccounts,
   removeClaudeAccount,
   renameClaudeAccount,
   setActiveAccount,
-} from "./services/claudeAuth/accounts";
+} from "@argus/host/services/claudeAuth/accounts";
 import {
   claudeAddAccount,
   claudeLoginCancel,
@@ -114,29 +105,32 @@ import {
   claudeRefreshAccount,
   emitAccountsChanged,
   getClaudeAuthStatus,
-} from "./services/claudeAuth/claudeAuth";
-import { defineCommand } from "./services/command/registry";
+} from "@argus/host/services/claudeAuth/claudeAuth";
+import { defineCommand } from "@argus/host/services/command/registry";
 import {
   listDebugStreams,
   runDebugCommand,
   startDebugStream,
   stopDebugStream,
-} from "./services/conductor/debug";
+} from "@argus/host/services/conductor/debug";
 import {
   listDevices,
   stopDevice,
   type DevicePlatform,
-} from "./services/conductor/devices";
-import { conductorLogStore, execConductor } from "./services/conductor/logger";
-import { openDeepLink } from "./services/conductor/openLink";
+} from "@argus/host/services/conductor/devices";
+import {
+  conductorLogStore,
+  execConductor,
+} from "@argus/host/services/conductor/logger";
+import { openDeepLink } from "@argus/host/services/conductor/openLink";
 import {
   getConductorStatus,
   readBundledVersion,
   setConductorOverrideVersion,
-} from "./services/conductor/override";
-import { listConductorVersions } from "./services/conductor/registry";
-import { checkDependencies } from "./services/dependencies/check";
-import { listHostDirectory } from "./services/file/hostBrowse";
+} from "@argus/host/services/conductor/override";
+import { listConductorVersions } from "@argus/host/services/conductor/registry";
+import { checkDependencies } from "@argus/host/services/dependencies/check";
+import { listHostDirectory } from "@argus/host/services/file/hostBrowse";
 import {
   listSessionFiles,
   resolveMentionPath,
@@ -144,56 +138,56 @@ import {
   writeFile,
   statFile,
   listPath,
-} from "./services/file/operations";
-import { uploadSessionAttachment } from "./services/file/uploads";
-import { listGhIssues } from "./services/github/issues";
+} from "@argus/host/services/file/operations";
+import { uploadSessionAttachment } from "@argus/host/services/file/uploads";
+import { listGhIssues } from "@argus/host/services/github/issues";
 import {
   ghPrClose,
   ghPrComment,
   ghPrCreate,
   ghPrMerge,
   type MergeStrategy,
-} from "./services/github/prActions";
+} from "@argus/host/services/github/prActions";
 import {
   getPullRequestDetail,
   getPullRequestDiff,
-} from "./services/github/prDetail";
-import { listInterestingPullRequests } from "./services/github/pullRequests";
-import { captureUi } from "./services/inspection/capture";
-import { setNodeProperty } from "./services/inspection/edit";
+} from "@argus/host/services/github/prDetail";
+import { listInterestingPullRequests } from "@argus/host/services/github/pullRequests";
+import { captureUi } from "@argus/host/services/inspection/capture";
+import { setNodeProperty } from "@argus/host/services/inspection/edit";
 import {
   launchInjected,
   listInstalledApps,
   probeInjection,
-} from "./services/inspection/launcher";
-import { getNodeProps } from "./services/inspection/props";
-import { CUSTOM_RUNNER_PRESETS } from "./services/llm/customRunners/presets";
+} from "@argus/host/services/inspection/launcher";
+import { getNodeProps } from "@argus/host/services/inspection/props";
+import { CUSTOM_RUNNER_PRESETS } from "@argus/host/services/llm/customRunners/presets";
 import {
   deleteCustomRunner,
   listCustomRunners,
   saveCustomRunner,
   type CustomRunner,
-} from "./services/llm/customRunners/store";
+} from "@argus/host/services/llm/customRunners/store";
 import {
   listRunnerOnboardingSteps,
   listRunners as listLlmRunners,
   syncCustomRunners,
-} from "./services/llm/registry";
-import { setSessionRunner } from "./services/llm/sessionRunner";
-import { generateChatTitle } from "./services/llm/titleGenerator";
-import { testMcpServer } from "./services/mcp/connectivity";
+} from "@argus/host/services/llm/registry";
+import { setSessionRunner } from "@argus/host/services/llm/sessionRunner";
+import { generateChatTitle } from "@argus/host/services/llm/titleGenerator";
+import { testMcpServer } from "@argus/host/services/mcp/connectivity";
 import {
   authenticate,
   cancelAuthentication,
   signOut,
-} from "./services/mcp/oauth";
-import { listAuthorized, loadToken } from "./services/mcp/oauthStore";
-import { collectAllProjects } from "./services/mcp/projects";
-import { listInheritedMcpServers } from "./services/mcp/userConfig";
+} from "@argus/host/services/mcp/oauth";
+import { listAuthorized, loadToken } from "@argus/host/services/mcp/oauthStore";
+import { collectAllProjects } from "@argus/host/services/mcp/projects";
+import { listInheritedMcpServers } from "@argus/host/services/mcp/userConfig";
 import {
   showAgentNotification,
   type AgentNotificationInput,
-} from "./services/notifications/osNotification";
+} from "@argus/host/services/notifications/osNotification";
 import {
   addSkipped as onboardingAddSkipped,
   argusDirPath,
@@ -212,37 +206,37 @@ import {
   setLastStep,
   suggestArgusJson as onboardingSuggestArgusJson,
   writeArgusJson as onboardingWriteArgusJson,
-} from "./services/onboarding";
+} from "@argus/host/services/onboarding/index";
 import {
   listDevices as listRemoteDevices,
   revokeDevice,
   setDeviceGrants,
-} from "./services/remote/deviceStore";
-import { disconnectDevice } from "./services/remote/gateway";
+} from "@argus/host/services/remote/deviceStore";
+import { disconnectDevice } from "@argus/host/services/remote/gateway";
+import {
+  applyTailscaleFix,
+  diagnoseTailscale,
+  type TailscaleFixKind,
+} from "@argus/host/services/remote/tailscaleSetup";
 import {
   cancelPairing,
   confirmPairing,
   startPairing,
-} from "./services/remote/pairing";
+} from "@argus/host/services/remote/pairing";
 import {
   getPushConfigStatus,
   setPushConfig,
-} from "./services/remote/push/config";
-import { sendTestPush } from "./services/remote/push/dispatch";
+} from "@argus/host/services/remote/push/config";
+import { sendTestPush } from "@argus/host/services/remote/push/dispatch";
 import {
   getPublicUrl,
   getRemoteStatus,
   setRemoteConfig,
   setRemoteStatusListener,
-} from "./services/remote/remoteService";
-import {
-  applyTailscaleFix,
-  diagnoseTailscale,
-  type TailscaleFixKind,
-} from "./services/remote/tailscaleSetup";
-import { reconfigureAutoFetchForRepo } from "./services/session/autoFetch";
-import { loadCommandMetrics } from "./services/session/commandMetrics";
-import { gitAmendTip } from "./services/session/gitAmend";
+} from "@argus/host/services/remote/remoteService";
+import { reconfigureAutoFetchForRepo } from "@argus/host/services/session/autoFetch";
+import { loadCommandMetrics } from "@argus/host/services/session/commandMetrics";
+import { gitAmendTip } from "@argus/host/services/session/gitAmend";
 import {
   gitBisectBad,
   gitBisectGood,
@@ -250,9 +244,9 @@ import {
   gitBisectSkip,
   gitBisectStart,
   gitBisectStatus,
-} from "./services/session/gitBisect";
-import { gitBlameFile } from "./services/session/gitBlame";
-import { gitReadBlobAtRef } from "./services/session/gitBlob";
+} from "@argus/host/services/session/gitBisect";
+import { gitBlameFile } from "@argus/host/services/session/gitBlame";
+import { gitReadBlobAtRef } from "@argus/host/services/session/gitBlob";
 import {
   gitCheckout,
   gitCreateBranch,
@@ -265,9 +259,12 @@ import {
   gitRenameBranch,
   gitSetUpstream,
   gitStashAndCheckout,
-} from "./services/session/gitBranchOps";
-import { gitCompareBranches } from "./services/session/gitCompare";
-import { gitGetConfig, gitSetConfig } from "./services/session/gitConfig";
+} from "@argus/host/services/session/gitBranchOps";
+import { gitCompareBranches } from "@argus/host/services/session/gitCompare";
+import {
+  gitGetConfig,
+  gitSetConfig,
+} from "@argus/host/services/session/gitConfig";
 import {
   gitAbortCherryPick,
   gitAbortMerge,
@@ -279,40 +276,43 @@ import {
   gitMarkResolved,
   gitSkipRebase,
   gitWriteConflictMerged,
-} from "./services/session/gitConflicts";
+} from "@argus/host/services/session/gitConflicts";
 import {
   checkSshKeys,
   getGlobalCredentialHelper,
   setGlobalCredentialHelper,
-} from "./services/session/gitCredentials";
+} from "@argus/host/services/session/gitCredentials";
 import {
   addToGitignore,
   gitDiscardFile,
   gitDiscardHunk,
   gitDiscardLines,
   gitUntrackFile,
-} from "./services/session/gitDiscard";
+} from "@argus/host/services/session/gitDiscard";
 import {
   gitCherryPick,
   gitReset,
   gitRevert,
-} from "./services/session/gitHistoryOps";
-import { gitListHooks, gitRunHook } from "./services/session/gitHooks";
-import { gitLfsFiles, gitLfsPull } from "./services/session/gitLfs";
-import { gitAm, gitFormatPatch } from "./services/session/gitPatches";
+} from "@argus/host/services/session/gitHistoryOps";
+import {
+  gitListHooks,
+  gitRunHook,
+} from "@argus/host/services/session/gitHooks";
+import { gitLfsFiles, gitLfsPull } from "@argus/host/services/session/gitLfs";
+import { gitAm, gitFormatPatch } from "@argus/host/services/session/gitPatches";
 import {
   gitPullV2,
   gitPushV2,
   type PullV2Opts,
   type PushV2Opts,
-} from "./services/session/gitPushPull";
+} from "@argus/host/services/session/gitPushPull";
 import {
   gitRebaseAutosquash,
   gitRebaseInteractivePlan,
   gitRebaseInteractiveRun,
   type RebasePlanEntry,
-} from "./services/session/gitRebase";
-import { gitReflog } from "./services/session/gitReflog";
+} from "@argus/host/services/session/gitRebase";
+import { gitReflog } from "@argus/host/services/session/gitReflog";
 import {
   gitAddRemote,
   gitListRemotes,
@@ -320,36 +320,36 @@ import {
   gitRemoveRemote,
   gitRenameRemote,
   gitSetRemoteUrl,
-} from "./services/session/gitRemoteOps";
+} from "@argus/host/services/session/gitRemoteOps";
 import {
   gitGetRemotes,
   gitListRecentIssues,
-} from "./services/session/gitRemotes";
+} from "@argus/host/services/session/gitRemotes";
 import {
   gitDiffRange,
   gitFileHistory,
   gitSearchLog,
   type LogSearchCursor,
   type LogSearchFilters,
-} from "./services/session/gitSearch";
-import { gitStatus } from "./services/session/gitStatus";
+} from "@argus/host/services/session/gitSearch";
+import { gitStatus } from "@argus/host/services/session/gitStatus";
 import {
   gitSubmoduleDeinit,
   gitSubmoduleInit,
   gitSubmoduleList,
   gitSubmoduleUpdate,
-} from "./services/session/gitSubmodules";
+} from "@argus/host/services/session/gitSubmodules";
 import {
   gitCreateTag,
   gitDeleteTag,
   gitListTags,
   gitPushTag,
-} from "./services/session/gitTags";
+} from "@argus/host/services/session/gitTags";
 import {
   gitListAssumeUnchangedFiles,
   gitListIgnoredFiles,
-} from "./services/session/gitWorkingCopyFilters";
-import { gitWorktreeList } from "./services/session/gitWorktrees";
+} from "@argus/host/services/session/gitWorkingCopyFilters";
+import { gitWorktreeList } from "@argus/host/services/session/gitWorktrees";
 import {
   addRepoRoot,
   removeRepoRoot,
@@ -363,13 +363,13 @@ import {
   renameSessionBranch,
   clearSessionSetupError,
   retrySessionSetup,
-} from "./services/session/manager";
-import { autofillPullRequestBody } from "./services/session/prAutofill";
-import { readPullRequestTemplate } from "./services/session/pullRequest";
+} from "@argus/host/services/session/manager";
+import { autofillPullRequestBody } from "@argus/host/services/session/prAutofill";
+import { readPullRequestTemplate } from "@argus/host/services/session/pullRequest";
 import {
   getSessionReleaseNotes,
   previewReleaseNotes,
-} from "./services/session/releaseNotes";
+} from "@argus/host/services/session/releaseNotes";
 import {
   getRepoBranch,
   listBranches,
@@ -422,17 +422,17 @@ import {
   gitStashApply,
   gitStashDrop,
   gitCheckoutPaths,
-} from "./services/session/sessionOps";
+} from "@argus/host/services/session/sessionOps";
 import {
   listEditors,
   openInCustomEditor,
   openInEditor,
-} from "./services/shell/editors";
+} from "@argus/host/services/shell/editors";
 import {
   openExternalUrl,
   openPath,
   revealInFinder,
-} from "./services/shell/operations";
+} from "@argus/host/services/shell/operations";
 import {
   checkAndroidTools,
   listAndroidDevices,
@@ -444,8 +444,8 @@ import {
   androidTouch,
   androidKeyboard,
   androidButton,
-} from "./services/simulator/android";
-import { getDeviceInputEndpoint } from "./services/simulator/deviceInput";
+} from "@argus/host/services/simulator/android";
+import { getDeviceInputEndpoint } from "@argus/host/services/simulator/deviceInput";
 import {
   checkIosTools,
   listSimulators,
@@ -457,8 +457,8 @@ import {
   simulatorTouch,
   simulatorButton,
   simulatorKeyboard,
-} from "./services/simulator/ios";
-import { getAnonymousId } from "./services/telemetry/anonymousId";
+} from "@argus/host/services/simulator/ios";
+import { getAnonymousId } from "@argus/host/services/telemetry/anonymousId";
 import {
   capture as telemetryCapture,
   captureException as telemetryCaptureException,
@@ -466,7 +466,7 @@ import {
   getTelemetryMode,
   isTelemetryConfigured,
   setTelemetryMode,
-} from "./services/telemetry/telemetry";
+} from "@argus/host/services/telemetry/telemetry";
 import {
   createTerminal,
   createRunTerminal,
@@ -477,19 +477,13 @@ import {
   terminalWrite,
   terminalResize,
   updateTerminalTitle,
-} from "./services/terminal/multiplexer";
+} from "@argus/host/services/terminal/multiplexer";
 import {
   getEnabledToolsForRenderer,
   toolEnabled,
   setEnabledToolsFromRenderer,
-} from "./services/tools/state";
-import { getUiState, setUiState } from "./services/uiState";
-import {
-  checkForUpdates as updaterCheck,
-  downloadUpdate as updaterDownload,
-  getUpdaterState,
-  quitAndInstallUpdate,
-} from "./services/updater";
+} from "@argus/host/services/tools/state";
+import { getUiState, setUiState } from "@argus/host/services/uiState";
 import {
   archiveBranch as archiveBranchSetting,
   listArchivedBranches as listArchivedBranchesSetting,
@@ -500,8 +494,24 @@ import {
   unarchiveBranch as unarchiveBranchSetting,
   unpinBranch as unpinBranchSetting,
   type UserProjectSettings,
-} from "./services/userProjectSettings/store";
-import { appState } from "./state";
+} from "@argus/host/services/userProjectSettings/store";
+import { appState } from "@argus/host/state";
+import { createLogger } from "../app/lib/logger";
+import {
+  closeFloatingAgentWindow,
+  closeFloatingDeviceWindow,
+  createFloatingAgentWindow,
+  createFloatingDeviceWindow,
+  getMainWindow,
+  markQuitConfirmedDespiteAgents,
+} from "./main";
+import { agentPopouts } from "./popouts";
+import {
+  checkForUpdates as updaterCheck,
+  downloadUpdate as updaterDownload,
+  getUpdaterState,
+  quitAndInstallUpdate,
+} from "./services/updater";
 
 type Args = Record<string, unknown>;
 
@@ -1779,7 +1789,7 @@ export function registerIpcHandlers(): void {
     return Promise.resolve();
   });
   handle("list_popped_out_agents", "admin", () =>
-    Promise.resolve(Array.from(appState.agentPopouts.keys())),
+    Promise.resolve(Array.from(agentPopouts.keys())),
   );
 
   handle("list_queued_messages", "admin", (a) =>

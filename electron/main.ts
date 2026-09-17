@@ -21,6 +21,52 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { emitHostEvent } from "@argus/host/bus";
+import { argusHomeDir } from "@argus/host/lib/argusHome";
+import { writeLogLine } from "@argus/host/lib/logFile";
+import {
+  isServerMode,
+  startPowerAssertion,
+  stopPowerAssertion,
+} from "@argus/host/serverMode";
+import { destroyAllAgents } from "@argus/host/services/agent/agentService";
+import { reapOrphanedAgentProcesses } from "@argus/host/services/agent/reapOrphans";
+import { stopAllScreencasts } from "@argus/host/services/browser/cdpScreencast";
+import { setColorScheme } from "@argus/host/services/browser/conductorInput";
+import {
+  startMjpegServer,
+  stopMjpegServer,
+} from "@argus/host/services/browser/mjpegServer";
+import { webBrowserPool } from "@argus/host/services/browser/pool";
+import {
+  applyActiveAccountToProcessEnv,
+  ensureDefaultAccountSeeded,
+} from "@argus/host/services/claudeAuth/accounts";
+import { stopAllDebugStreams } from "@argus/host/services/conductor/debug";
+import { initConductorOverride } from "@argus/host/services/conductor/override";
+import { startMcpServer, stopMcpServer } from "@argus/host/services/mcp/server";
+import {
+  LOCAL_GATEWAY_PORT,
+  applyRemoteSettings,
+  setRemoteConfig,
+  setWebClientDir,
+  stopRemote,
+} from "@argus/host/services/remote/remoteService";
+import { refreshAllBranches } from "@argus/host/services/session/watcher";
+import { stopAndroidCapture } from "@argus/host/services/simulator/android";
+import { stopSimulatorCapture } from "@argus/host/services/simulator/ios";
+import { getVideoDims } from "@argus/host/services/simulator/videoForward";
+import {
+  initTelemetry,
+  shutdownTelemetry,
+  capture as telemetryCapture,
+} from "@argus/host/services/telemetry/telemetry";
+import {
+  destroyAllTerminals,
+  destroyAllTerminalsAndWait,
+} from "@argus/host/services/terminal/multiplexer";
+import { reapOrphanedSpawnHelpers } from "@argus/host/services/terminal/reapOrphans";
+import { fixProcessPath } from "@argus/host/services/terminal/shellEnv";
+import { appState } from "@argus/host/state";
 import { log as emitLog } from "../app/lib/logger";
 import { installRendererEventSink } from "./broadcast";
 import { installCrashHooks } from "./crashHooks";
@@ -28,60 +74,15 @@ import { startDevTrust, stopDevTrust } from "./devTrust";
 import { installHostPlatform } from "./hostPlatform";
 import { registerIpcHandlers } from "./ipc";
 import { installIpcCommandBridge } from "./ipcBridge";
-import { argusHomeDir } from "./lib/argusHome";
-import { writeLogLine } from "./lib/logFile";
 import { setMainWindow } from "./mainWindow";
-import {
-  isServerMode,
-  startPowerAssertion,
-  stopPowerAssertion,
-} from "./serverMode";
-import { destroyAllAgents } from "./services/agent/agentService";
-import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
-import { stopAllScreencasts } from "./services/browser/cdpScreencast";
-import { setColorScheme } from "./services/browser/conductorInput";
-import {
-  startMjpegServer,
-  stopMjpegServer,
-} from "./services/browser/mjpegServer";
-import { webBrowserPool } from "./services/browser/pool";
-import {
-  applyActiveAccountToProcessEnv,
-  ensureDefaultAccountSeeded,
-} from "./services/claudeAuth/accounts";
-import { stopAllDebugStreams } from "./services/conductor/debug";
-import { initConductorOverride } from "./services/conductor/override";
+import { agentPopouts, devicePopouts } from "./popouts";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
-import { startMcpServer, stopMcpServer } from "./services/mcp/server";
-import {
-  LOCAL_GATEWAY_PORT,
-  applyRemoteSettings,
-  setRemoteConfig,
-  setWebClientDir,
-  stopRemote,
-} from "./services/remote/remoteService";
-import { refreshAllBranches } from "./services/session/watcher";
-import { stopAndroidCapture } from "./services/simulator/android";
-import { stopSimulatorCapture } from "./services/simulator/ios";
-import { getVideoDims } from "./services/simulator/videoForward";
-import {
-  initTelemetry,
-  shutdownTelemetry,
-  capture as telemetryCapture,
-} from "./services/telemetry/telemetry";
-import {
-  destroyAllTerminals,
-  destroyAllTerminalsAndWait,
-} from "./services/terminal/multiplexer";
-import { reapOrphanedSpawnHelpers } from "./services/terminal/reapOrphans";
-import { fixProcessPath } from "./services/terminal/shellEnv";
 import { destroyTray, initTray } from "./services/tray";
 import {
   checkForUpdates,
   initUpdater,
   setBeforeQuitAndInstallHook,
 } from "./services/updater";
-import { appState } from "./state";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
 // and Argus connects via CDP to Conductor's Chromium instance.
@@ -1195,7 +1196,7 @@ export function createFloatingDeviceWindow(options: {
   const { platform, deviceKey, deviceName, runtime, online, capturing } =
     options;
   const key = popoutKey(platform, deviceKey);
-  const existing = appState.devicePopouts.get(key);
+  const existing = devicePopouts.get(key);
   if (existing && !existing.isDestroyed()) {
     existing.show();
     existing.focus();
@@ -1252,7 +1253,7 @@ export function createFloatingDeviceWindow(options: {
 
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
-    appState.devicePopouts.delete(key);
+    devicePopouts.delete(key);
     // Release the capture reference acquired at open_device_popout. If the main
     // window still holds one for this device the bridge keeps running; other
     // devices are unaffected. Video inputs stream straight from the renderer,
@@ -1264,7 +1265,7 @@ export function createFloatingDeviceWindow(options: {
     }
   });
 
-  appState.devicePopouts.set(key, win);
+  devicePopouts.set(key, win);
 
   return win;
 }
@@ -1275,11 +1276,11 @@ export function closeFloatingDeviceWindow(
   deviceKey: string,
 ): void {
   const key = popoutKey(platform, deviceKey);
-  const win = appState.devicePopouts.get(key);
+  const win = devicePopouts.get(key);
   if (win && !win.isDestroyed()) {
     win.close();
   }
-  appState.devicePopouts.delete(key);
+  devicePopouts.delete(key);
 }
 
 /**
@@ -1303,7 +1304,7 @@ export function createFloatingAgentWindow(options: {
   cursorY?: number;
 }): BrowserWindow {
   const { agentId, sessionId, title, cursorX, cursorY } = options;
-  const existing = appState.agentPopouts.get(agentId);
+  const existing = agentPopouts.get(agentId);
   if (existing && !existing.isDestroyed()) {
     existing.show();
     existing.focus();
@@ -1353,20 +1354,20 @@ export function createFloatingAgentWindow(options: {
 
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
-    appState.agentPopouts.delete(agentId);
+    agentPopouts.delete(agentId);
     emitHostEvent("agent:popout-closed", { agentId });
   });
 
-  appState.agentPopouts.set(agentId, win);
+  agentPopouts.set(agentId, win);
 
   return win;
 }
 
 /** Close the popout window for a given agentId, if any. */
 export function closeFloatingAgentWindow(agentId: string): void {
-  const win = appState.agentPopouts.get(agentId);
+  const win = agentPopouts.get(agentId);
   if (win && !win.isDestroyed()) {
     win.close();
   }
-  appState.agentPopouts.delete(agentId);
+  agentPopouts.delete(agentId);
 }

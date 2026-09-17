@@ -43,15 +43,15 @@ module.exports = {
       to: "emulator_controller.proto",
     },
     {
-      from: "electron/prompts/worktree-agent-system-prompt.md",
+      from: "packages/host/prompts/worktree-agent-system-prompt.md",
       to: "worktree-agent-system-prompt.md",
     },
     {
-      from: "electron/prompts/root-agent-system-prompt.md",
+      from: "packages/host/prompts/root-agent-system-prompt.md",
       to: "root-agent-system-prompt.md",
     },
     {
-      from: "electron/prompts/org-host-agent-system-prompt.md",
+      from: "packages/host/prompts/org-host-agent-system-prompt.md",
       to: "org-host-agent-system-prompt.md",
     },
     { from: "docs/project-settings.md", to: "docs/project-settings.md" },

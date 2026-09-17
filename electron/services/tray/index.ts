@@ -11,13 +11,13 @@
  * happening" at a glance.
  */
 
-import type { AgentSession } from "../agent/models";
-import type { Session } from "../session/models";
+import type { AgentSession } from "@argus/host/services/agent/models";
+import type { Session } from "@argus/host/services/session/models";
 import { Menu, Tray, app, nativeImage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
-import { isServerMode } from "../../serverMode";
-import { appState } from "../../state";
+import { isServerMode } from "@argus/host/serverMode";
+import { appState } from "@argus/host/state";
 
 let tray: Tray | null = null;
 let pollTimer: NodeJS.Timeout | null = null;

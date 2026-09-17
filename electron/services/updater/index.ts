@@ -11,8 +11,8 @@ import { app } from "electron";
 import { autoUpdater } from "electron-updater";
 import type { UpdateInfo } from "electron-updater";
 import { emitHostEvent } from "@argus/host/bus";
+import { loadAppSettings } from "@argus/host/services/appSettings/store";
 import { createLogger } from "../../../app/lib/logger";
-import { loadAppSettings } from "../appSettings/store";
 
 const logger = createLogger("updater");
 

@@ -52,6 +52,12 @@ export interface HostPlatform {
   notificationsSupported: () => boolean;
   notify: (options: HostNotificationOptions) => void;
 
+  /**
+   * Close the floating device popout for `platform:deviceKey`, if one is open.
+   * No-op when there is no window server.
+   */
+  closeDevicePopout: (key: string) => void;
+
   /** Whether the host's own window currently has focus. */
   isForeground: () => boolean;
   /** Raise and focus the host's window. No-op when headless. */
@@ -86,6 +92,7 @@ export function nodeHostPlatform(
     },
     notificationsSupported: () => false,
     notify: () => undefined,
+    closeDevicePopout: () => undefined,
     isForeground: () => false,
     focusUi: () => undefined,
   };

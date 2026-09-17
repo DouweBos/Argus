@@ -7,14 +7,32 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./logger": "./src/logger.ts",
-    "./platform": "./src/platform.ts",
-    "./bus": "./src/bus.ts"
+    "./*": "./src/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "typescript": "~5.8.3"
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "typescript": "~5.8.3",
+    "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "@argus/remote-protocol": "workspace:*",
+    "@grpc/grpc-js": "^1.14.4",
+    "@grpc/proto-loader": "^0.8.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@noble/ciphers": "^2.2.0",
+    "@noble/curves": "^2.2.0",
+    "@noble/hashes": "^2.2.0",
+    "chokidar": "^4.0.0",
+    "fast-glob": "^3.3.0",
+    "fast-xml-parser": "^5.7.2",
+    "node-pty": "^1.0.0",
+    "posthog-node": "^5.30.4",
+    "ws": "^8.21.0",
+    "yaml": "^2.8.3",
+    "zod": "^4.3.6"
   }
 }
