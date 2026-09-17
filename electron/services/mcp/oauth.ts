@@ -10,10 +10,10 @@
  * `userConfig.ts` so spawned agents inherit the bearer transparently.
  */
 
-import { shell } from "electron";
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { hostPlatform } from "@argus/host/platform";
 import { warn } from "../../../app/lib/logger";
 import {
   canonicalResource,
@@ -424,7 +424,7 @@ export async function authenticate(opts: {
       authUrl.searchParams.set("scope", scope);
     }
 
-    await shell.openExternal(authUrl.toString());
+    await hostPlatform().openExternal(authUrl.toString());
 
     const code = await Promise.race([
       lb.waitForCode(),

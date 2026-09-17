@@ -18,8 +18,8 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { z } from "zod";
+import { emitHostEvent } from "@argus/host/bus";
 import { createLogger, info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { resolveAttachments, mcpAttachmentSchema } from "../agent/attachments";
 import {
@@ -301,7 +301,7 @@ async function spawnAgentInSession(
     opts.parentAgentId,
   );
 
-  getMainWindow()?.webContents.send("agent:started", {
+  emitHostEvent("agent:started", {
     agent_id: agentInfo.agent_id,
     session_id: agentInfo.session_id,
     status: agentInfo.status,
@@ -694,7 +694,7 @@ export function createMcpServer(
       const isNew = !appState.repoRoots.has(repoRoot);
       ensureRepoRegistered(repoRoot);
       if (isNew) {
-        getMainWindow()?.webContents.send("project:added", repoRoot);
+        emitHostEvent("project:added", repoRoot);
       }
 
       // Append a short unique suffix to prevent branch name collisions when
@@ -711,7 +711,7 @@ export function createMcpServer(
       );
 
       // Notify the renderer so the sidebar updates immediately.
-      getMainWindow()?.webContents.send("session:created", {
+      emitHostEvent("session:created", {
         id: ws.id,
         kind: ws.kind,
         branch: ws.branch,
@@ -1094,7 +1094,7 @@ export function createMcpServer(
         const isNew = !appState.repoRoots.has(rr);
         ensureRepoRegistered(rr);
         if (isNew) {
-          getMainWindow()?.webContents.send("project:added", rr);
+          emitHostEvent("project:added", rr);
         }
       }
 
@@ -2016,7 +2016,7 @@ export function createMcpServer(
         // Surface the run in the bottom terminal panel as if the user had
         // pressed the Run button themselves: the renderer subscribes to this
         // event and registers tabs / opens the panel for `ws.id`.
-        getMainWindow()?.webContents.send("run:triggered", {
+        emitHostEvent("run:triggered", {
           sessionId: ws.id,
           title: result.title,
           terminalSessionId: result.sessionId,

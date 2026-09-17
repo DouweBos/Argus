@@ -17,8 +17,8 @@
  */
 
 import { type ChildProcess, spawn } from "node:child_process";
+import { emitHostEvent } from "@argus/host/bus";
 import { createLogger } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { getConductorBinPath } from "../cli/conductor";
 import { conductorLogStore, execConductor } from "./logger";
 
@@ -34,7 +34,7 @@ interface DebugStream {
 const streams = new Map<string, DebugStream>();
 
 function send(event: string, payload: unknown): void {
-  getMainWindow()?.webContents.send(event, payload);
+  emitHostEvent(event, payload);
 }
 
 function ensureDeviceFlag(deviceKey: string, args: string[]): string[] {

@@ -7,7 +7,6 @@
 
 import type { RemoteNotificationAction } from "./actions";
 import { emitHostEvent } from "@argus/host/bus";
-import { getMainWindow } from "../../mainWindow";
 import { dispatchRemotePush } from "../remote/push/dispatch";
 
 export {
@@ -25,7 +24,7 @@ export interface NotificationPayload {
 }
 
 export function broadcastNotification(payload: NotificationPayload): void {
-  getMainWindow()?.webContents.send("notification", payload);
+  emitHostEvent("notification", payload);
 }
 
 /** A user-facing notification, mirrored to every surface that can show it. */

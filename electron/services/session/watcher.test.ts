@@ -7,8 +7,8 @@ import { WatcherHandle, startWatcher } from "./watcher";
 // ---------------------------------------------------------------------------
 
 const mockSend = vi.fn();
-vi.mock("../../mainWindow", () => ({
-  getMainWindow: () => ({ webContents: { send: mockSend } }),
+vi.mock("@argus/host/bus", () => ({
+  emitHostEvent: (...args: unknown[]) => mockSend(...args),
 }));
 
 const gitMock = vi.fn<(cwd: string, args: string[]) => Promise<string>>();

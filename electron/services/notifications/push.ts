@@ -7,7 +7,7 @@
  * toast channel, these surface in the OS notification center.
  */
 
-import { Notification } from "electron";
+import { hostPlatform } from "@argus/host/platform";
 import { appState } from "../../state";
 import { showAgentNotification } from "./osNotification";
 
@@ -53,7 +53,7 @@ function resolveAgentContext(agentId: string | undefined): {
 export function sendPushNotification(
   input: PushNotificationInput,
 ): PushNotificationResult {
-  if (!Notification.isSupported()) {
+  if (!hostPlatform().notificationsSupported()) {
     return { delivered: false, reason: "OS notifications are not supported" };
   }
 

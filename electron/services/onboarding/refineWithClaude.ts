@@ -7,10 +7,10 @@
  * asking for JSON output. The caller decides what to do with the result.
  */
 
-import { app } from "electron";
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { hostPlatform } from "@argus/host/platform";
 import { warn } from "../../../app/lib/logger";
 
 const CLAUDE_BIN = "claude";
@@ -22,8 +22,8 @@ function loadSchemaDoc(): string {
   if (cachedSchemaDoc !== null) {
     return cachedSchemaDoc;
   }
-  const docPath = app.isPackaged
-    ? path.join(process.resourcesPath, "docs", "project-settings.md")
+  const docPath = hostPlatform().isPackaged()
+    ? path.join(hostPlatform().resourcesPath(), "docs", "project-settings.md")
     : path.join(process.cwd(), "docs", "project-settings.md");
   try {
     cachedSchemaDoc = readFileSync(docPath, "utf-8");

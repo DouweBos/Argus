@@ -1,17 +1,18 @@
 /**
- * Shell operations — wrappers around Electron's shell module for renderer access.
+ * Shell operations — reveal, open and browse, routed through `HostPlatform`
+ * so the core stays Electron-free.
  */
 
-import { shell } from "electron";
+import { hostPlatform } from "@argus/host/platform";
 
 /** Open the system file manager with the given path selected. */
 export function revealInFinder(fullPath: string): void {
-  shell.showItemInFolder(fullPath);
+  hostPlatform().revealInFinder(fullPath);
 }
 
 /** Open a file/path with the system's default handler. */
 export async function openPath(fullPath: string): Promise<void> {
-  const err = await shell.openPath(fullPath);
+  const err = await hostPlatform().openPath(fullPath);
   if (err) {
     throw err;
   }
@@ -22,5 +23,7 @@ export function openExternalUrl(url: string): void {
   if (!/^https?:\/\//i.test(url)) {
     throw `Refusing to open non-http(s) URL: ${url}`;
   }
-  shell.openExternal(url).catch(() => undefined);
+  hostPlatform()
+    .openExternal(url)
+    .catch(() => undefined);
 }

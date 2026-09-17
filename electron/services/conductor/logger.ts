@@ -8,7 +8,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { getMainWindow } from "../../mainWindow";
+import { emitHostEvent } from "@argus/host/bus";
 import { getConductorBinPath } from "../cli/conductor";
 
 const execFileAsync = promisify(execFile);
@@ -59,7 +59,7 @@ class ConductorLogStore {
     if (bucket.length > MAX_ENTRIES_PER_DEVICE) {
       bucket.splice(0, bucket.length - MAX_ENTRIES_PER_DEVICE);
     }
-    getMainWindow()?.webContents.send("conductor:log", full);
+    emitHostEvent("conductor:log", full);
 
     return full;
   }
