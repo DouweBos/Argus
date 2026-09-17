@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@argus/host':
+        specifier: workspace:*
+        version: link:packages/host
       '@argus/peacock':
         specifier: workspace:*
         version: link:packages/peacock
@@ -271,6 +274,12 @@ importers:
       vite:
         specifier: ^7.0.4
         version: 7.3.1(@types/node@22.19.15)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/host:
+    devDependencies:
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
 
   packages/peacock:
     dependencies:
