@@ -37,6 +37,13 @@ export interface AppSettings {
    */
   server_auto_install_updates?: boolean;
   /**
+   * Master kill-switch for the automation scheduler. When false no automation
+   * fires on its clock; manual runs still work. Defaults to true — the
+   * automations shipped with Argus are seeded disabled, so nothing runs until
+   * you turn one on.
+   */
+  automations_enabled?: boolean;
+  /**
    * Master kill-switch for phone remote access. When false (default) the local
    * gateway + tunnel stay down and pairing is refused.
    */

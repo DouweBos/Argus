@@ -5,8 +5,11 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
-/** Whether this session is backed by a git worktree or the repo root itself. */
-export type SessionKind = "project_root" | "worktree";
+/**
+ * What a session is backed by: a git worktree, the repo root itself, or — for
+ * an automation run — a neutral directory that is not a checkout at all.
+ */
+export type SessionKind = "automation_host" | "project_root" | "worktree";
 
 /**
  * Lifecycle state of a session.

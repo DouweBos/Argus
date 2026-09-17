@@ -30,6 +30,8 @@ import {
 } from "@argus/host/serverMode";
 import { destroyAllAgents } from "@argus/host/services/agent/agentService";
 import { reapOrphanedAgentProcesses } from "@argus/host/services/agent/reapOrphans";
+import { initAutomations } from "@argus/host/services/automation/manager";
+import { startAutomationScheduler } from "@argus/host/services/automation/scheduler";
 import { stopAllScreencasts } from "@argus/host/services/browser/cdpScreencast";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
 import {
@@ -923,6 +925,11 @@ app.whenReady().then(() => {
   // Restore a user-pinned conductor version, installing it in the background
   // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
   initConductorOverride();
+
+  // Automations. Nothing else starts the clock — the scheduler has no
+  // neighbours since organizations were removed.
+  initAutomations();
+  startAutomationScheduler();
 
   // Sweep up node-pty spawn-helpers from prior Argus runs that didn't get a
   // chance to clean up (SIGKILL'd dev process, OS crash, etc.) — they
