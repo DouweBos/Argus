@@ -164,7 +164,9 @@ let applying: string | null = null;
 
 function go(path: string): void {
   applying = path;
-  navigateToPath(path);
+  // Exact: a saved route already says which host it reads from, and a local
+  // tab's "/" must not pick up the host of the tab being left.
+  navigateToPath(path, { exact: true });
 }
 
 function patch(id: string, change: Partial<WindowTab>): void {

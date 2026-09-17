@@ -392,11 +392,18 @@ export function appNavigate(
  * Navigate to a raw path (deep links from the main process, and the git
  * sub-views that build their own query strings). Carries the focused host
  * along unless the path names one itself.
+ *
+ * `exact` takes the path as given — window tabs restore a whole saved route,
+ * including "no host", and must not inherit the host of the tab being left.
  */
-export function navigateToPath(path: string): void {
-  const resolved = path.includes("host=")
-    ? path
-    : withHostParam(path, getCurrentRoute().hostId);
+export function navigateToPath(
+  path: string,
+  options?: { exact?: boolean },
+): void {
+  const resolved =
+    options?.exact || path.includes("host=")
+      ? path
+      : withHostParam(path, getCurrentRoute().hostId);
   if (!navigator) {
     return;
   }
