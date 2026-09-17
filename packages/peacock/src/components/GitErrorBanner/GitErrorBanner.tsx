@@ -28,6 +28,7 @@ export type GitErrorKind =
   | "nothing-to-commit"
   | "nothing-to-pull"
   | "nothing-to-push"
+  | "output-too-large"
   | "rebase-conflict"
   | "signing-failed"
   | "unknown";
@@ -92,12 +93,15 @@ const TONE_BY_KIND: Record<GitErrorKind, "error" | "info" | "warning"> = {
   "nothing-to-commit": "info",
   "nothing-to-pull": "info",
   "nothing-to-push": "info",
+  "output-too-large": "warning",
   "rebase-conflict": "warning",
   "signing-failed": "error",
   unknown: "error",
 };
 
 const DEFAULT_ACTIONS: Record<GitErrorKind, GitErrorAction[]> = {
+  // Nothing to offer: the change really is too big to render in one go.
+  "output-too-large": [],
   "no-upstream": [
     { id: "publish-branch", label: "Publish branch", variant: "primary" },
   ],
