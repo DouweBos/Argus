@@ -13,7 +13,7 @@ import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
 import { setActiveAgent } from "../../../stores/agentStore";
 import { setCenterView } from "../../../stores/centerViewStore";
-import { useDevicePoller } from "../../../stores/deviceStore";
+import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
   showCreateSessionDialog,
   showOpenProjectDialog,
@@ -320,7 +320,7 @@ export function HomeScreen() {
                     <div className={styles.rowList}>
                       {runningDevices.slice(0, 6).map((d) => (
                         <AgentRow
-                          key={`${d.platform}:${d.deviceKey}`}
+                          key={deviceKeyFor(d)}
                           name={d.name}
                           project={
                             d.repoRoot
