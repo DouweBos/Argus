@@ -34,7 +34,11 @@
 }
 
 .panel {
-  width: 260px;
+  /* Sized by its rows, not fixed: `HostConnectionList` is 260px wide before
+     this panel's padding, and a long host label needs more than that. */
+  width: max-content;
+  min-width: 276px;
+  max-width: 380px;
   position: fixed;
   z-index: 1000;
   padding: 8px;

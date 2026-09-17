@@ -31,7 +31,7 @@ export function ConnectionPicker() {
   const attachedIds = useAttachedRemoteHostIds();
   const { entries, busyId, attach, detach, focus } = useHostEntries();
   const [open, setOpen] = useState(false);
-  const [anchor, setAnchor] = useState({ x: 0, y: 0 });
+  const [anchor, setAnchor] = useState({ right: 0, y: 0 });
   const panelRef = useRef<HTMLDivElement>(null);
 
   useOutsideClick(panelRef, open, () => setOpen(false));
@@ -46,7 +46,12 @@ export function ConnectionPicker() {
         type="button"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
-          setAnchor({ x: rect.right - 260, y: rect.bottom + 4 });
+          // Pinned by its right edge so the panel can grow leftward with a
+          // long host name instead of being clipped at a fixed width.
+          setAnchor({
+            right: window.innerWidth - rect.right,
+            y: rect.bottom + 4,
+          });
           setOpen((was) => !was);
         }}
       >
@@ -67,7 +72,7 @@ export function ConnectionPicker() {
           <div
             ref={panelRef}
             className={styles.panel}
-            style={{ left: anchor.x, top: anchor.y }}
+            style={{ right: anchor.right, top: anchor.y }}
           >
             <p className={styles.heading}>Machines</p>
             <p className={styles.hint}>Pick a machine to open its tab</p>
