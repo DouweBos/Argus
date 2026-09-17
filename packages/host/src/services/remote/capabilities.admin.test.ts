@@ -159,6 +159,26 @@ describe("host-only denylist", () => {
     expect(HOST_ONLY_COMMANDS.has("updater_get_state")).toBe(false);
     expect(declaredTiers.get("updater_get_state")).toBe("admin");
   });
+
+  /**
+   * Grants are decided at the host's console and nowhere else. If any of these
+   * became remotable, an admin device could widen its own grant — or pair a new
+   * device to the host — which is the one escalation the tier model must not
+   * allow. The denylist test above only proves the mirror matches the registry;
+   * this names the commands that must be in it.
+   */
+  it("never lets a client change who is paired or what they may do", () => {
+    for (const command of [
+      "remote_start_pairing",
+      "remote_confirm_pairing",
+      "remote_cancel_pairing",
+      "remote_set_device_control",
+      "remote_revoke_device",
+    ]) {
+      expect(declaredTiers.get(command)).toBe("host");
+      expect(HOST_ONLY_COMMANDS.has(command)).toBe(true);
+    }
+  });
 });
 
 describe("admin passthrough dispatch", () => {
