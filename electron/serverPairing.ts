@@ -15,6 +15,7 @@ import { clipboard } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 import { argusHomeDir } from "@argus/host/lib/argusHome";
+import { isGatewayOnLan } from "@argus/host/services/remote/localGatewayServer";
 import {
   cancelPairing,
   confirmPairing,
@@ -82,7 +83,9 @@ function clearCodeFile(): void {
  * only reports the LAN when `remote_lan_web` happens to be on.
  */
 export async function startServerPairing(): Promise<void> {
-  const url = getPublicUrl() ?? getLanUrl();
+  // Only offer the LAN address if the gateway is actually listening on it —
+  // otherwise the code carries a URL that can never be dialled.
+  const url = getPublicUrl() ?? (isGatewayOnLan() ? getLanUrl() : null);
   if (!url) {
     transition({
       kind: "error",

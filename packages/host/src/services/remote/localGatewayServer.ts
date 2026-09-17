@@ -189,6 +189,17 @@ function handlePairSocket(ws: WebSocket): void {
   ws.on("error", () => ws.close());
 }
 
+/** Interface the gateway is actually bound to, or null when it is not up. */
+let boundHost: string | null = null;
+
+/**
+ * True when the gateway accepts connections from off-box. Pairing must not
+ * advertise a LAN address the socket is not listening on.
+ */
+export function isGatewayOnLan(): boolean {
+  return boundHost !== null && boundHost !== "127.0.0.1";
+}
+
 export interface LocalGatewayOpts {
   /** Bind address: "127.0.0.1" (tunnel-only) or "0.0.0.0" (LAN). */
   host: string;
@@ -243,6 +254,7 @@ export function startLocalGateway(
       warn(`[remote] local gateway server error: ${err.message}`);
       reject(err);
     });
+    boundHost = opts.host;
     server.listen(port, opts.host, () => {
       httpServer = server;
       wss = sockets;
@@ -253,6 +265,7 @@ export function startLocalGateway(
 }
 
 export function stopLocalGateway(): void {
+  boundHost = null;
   pairingHandler = null;
   wss?.close();
   wss = null;

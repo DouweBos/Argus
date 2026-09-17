@@ -35,7 +35,11 @@ vi.mock("@argus/host/services/remote/pairing", () => pairing);
 const urls = {
   publicUrl: null as string | null,
   lanUrl: null as string | null,
+  onLan: true,
 };
+vi.mock("@argus/host/services/remote/localGatewayServer", () => ({
+  isGatewayOnLan: () => urls.onLan,
+}));
 vi.mock("@argus/host/services/remote/remoteService", () => ({
   getPublicUrl: () => urls.publicUrl,
   getLanUrl: () => urls.lanUrl,
@@ -75,6 +79,7 @@ describe("server tray pairing", () => {
     vi.clearAllMocks();
     urls.publicUrl = null;
     urls.lanUrl = null;
+    urls.onLan = true;
     cancelServerPairing();
   });
 
@@ -100,6 +105,17 @@ describe("server tray pairing", () => {
     expect(pairing.startPairing.mock.calls[0][0]).toBe(
       "wss://mini.example.ts.net",
     );
+  });
+
+  it("refuses a LAN address the gateway is not listening on", async () => {
+    urls.lanUrl = "ws://192.168.1.79:47617";
+    urls.onLan = false;
+
+    await startServerPairing();
+
+    // Advertising it would hand out a code that can never be dialled.
+    expect(pairing.startPairing).not.toHaveBeenCalled();
+    expect(getServerPairingState().kind).toBe("error");
   });
 
   it("errors instead of arming when nothing is reachable", async () => {
