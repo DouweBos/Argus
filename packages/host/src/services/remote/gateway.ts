@@ -890,7 +890,9 @@ export function setConnectionsChangedListener(cb: (() => void) | null): void {
 export function getConnectedDeviceIds(): string[] {
   return [
     ...new Set(
-      [...connections].filter((c) => !c.isGuest()).map((c) => c.device.device_id),
+      [...connections]
+        .filter((c) => !c.isGuest())
+        .map((c) => c.device.device_id),
     ),
   ];
 }

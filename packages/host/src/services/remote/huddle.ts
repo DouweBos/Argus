@@ -289,7 +289,9 @@ export function leaveGuest(roomId: string, devStaticPub: string): void {
     return;
   }
   entry.links.delete(devStaticPub);
-  const guest = entry.room.guests.find((g) => g.dev_static_pub === devStaticPub);
+  const guest = entry.room.guests.find(
+    (g) => g.dev_static_pub === devStaticPub,
+  );
   if (!guest) {
     return;
   }
