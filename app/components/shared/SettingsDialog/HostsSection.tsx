@@ -15,9 +15,9 @@ import {
   type PairingResult,
 } from "@argus/remote-client";
 import { useHostEntries } from "../../../hooks/useHostEntries";
+import { forgetHost } from "../../../lib/transport";
 import {
   addRemoteHost,
-  forgetRemoteHost,
   renameRemoteHost,
   useRemoteHosts,
 } from "../../../stores/settingsStore";
@@ -71,6 +71,9 @@ function HostRow({
 export function HostsSection() {
   const hosts = useRemoteHosts();
   const { entries, busyId, attach, detach, focus } = useHostEntries();
+  const forget = useCallback((id: string) => {
+    forgetHost(id).catch(() => undefined);
+  }, []);
 
   const [code, setCode] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -194,11 +197,7 @@ export function HostsSection() {
           ) : (
             <div className={styles.hostList}>
               {hosts.map((host) => (
-                <HostRow
-                  key={host.id}
-                  host={host}
-                  onForget={forgetRemoteHost}
-                />
+                <HostRow key={host.id} host={host} onForget={forget} />
               ))}
             </div>
           )}

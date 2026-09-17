@@ -82,7 +82,7 @@ vi.stubGlobal("localStorage", {
 
 const { attachHost, detachHost, resetRegistry, subscribe } =
   await import("./registry");
-const { getTransportForCommand } = await import("./index");
+const { detachFrom, getTransportForCommand } = await import("./index");
 const { LOCAL_HOST_ID } = await import("./hostId");
 const { rememberSessionHost, resetHostIndex } = await import("./hostIndex");
 const { resetConnections, getHostConnection } =
@@ -246,6 +246,23 @@ describe("connection registry", () => {
     // Read-only replay: the entry survives so the last snapshot stays on
     // screen, but it is no longer trusted as current.
     expect(getHostConnection("mini")?.hydrated).toBe(false);
+  });
+
+  it("leaves an explicitly detached host's sessions routed to it", async () => {
+    await attach("mini");
+    rememberSessionHost("s-ios", "mini");
+
+    await detachFrom("mini");
+
+    // The tab keeps showing the last snapshot; writes must say the host is
+    // gone rather than quietly running on this Mac.
+    await expect(
+      getTransportForCommand("start_agent", { sessionId: "s-ios" }).invoke(
+        "start_agent",
+        { sessionId: "s-ios" },
+      ),
+    ).rejects.toThrow(/not connected/);
+    expect(localInvoke).not.toHaveBeenCalled();
   });
 
   it("fails fast for a host nobody is attached to", async () => {

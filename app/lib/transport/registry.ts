@@ -18,7 +18,6 @@ import {
   setHostConnection,
 } from "../../stores/connectionStore";
 import { LOCAL_HOST_ID, isLocalHost, type HostId } from "./hostId";
-import { forgetHost } from "./hostIndex";
 import { localTransport } from "./local";
 import { RemoteTransport } from "./remote";
 import { HostUnavailableError } from "./types";
@@ -171,7 +170,11 @@ export function attachHost(
   return waitForReady(host.id, options.timeoutMs ?? 8000);
 }
 
-/** Take a host offline and forget everything routed to it. */
+/**
+ * Take a host's socket down. Its routing entries stay: a call about one of its
+ * sessions must still resolve to it and fail loudly, never fall through to
+ * this Mac. `forgetHost()` in `hostIndex` clears those when a host is unpaired.
+ */
 export function detachHost(hostId: HostId): void {
   if (isLocalHost(hostId)) {
     return;
@@ -187,7 +190,6 @@ export function detachHost(hostId: HostId): void {
   connection.remote?.disconnect();
   connections.delete(hostId);
   removeHostConnection(hostId);
-  forgetHost(hostId);
 }
 
 function handleState(hostId: HostId, state: ConnectionState): void {
