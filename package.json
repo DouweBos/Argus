@@ -31,7 +31,7 @@
     "certs": "bundle exec fastlane mac certs",
     "preview": "vite preview",
     "storybook": "pnpm --filter @argus/peacock storybook",
-    "lint": "tsc --noEmit && pnpm typecheck:electron && eslint . && prettier --check . && pnpm run lint:css-modules",
+    "lint": "tsc --noEmit && pnpm typecheck:electron && pnpm typecheck:host && eslint . && prettier --check . && pnpm run lint:css-modules",
     "build:bridge": "make -C native/argus-sim-bridge",
     "build:icon": "tsx scripts/generate-icon.ts",
     "build:mobile-icon": "tsx scripts/generate-mobile-icon.ts",
@@ -45,9 +45,12 @@
     "test:coverage": "vitest run --coverage",
     "typecheck:app": "tsc --noEmit",
     "typecheck:electron": "tsc -p tsconfig.main.json --noEmit",
+    "typecheck:host": "tsc -p packages/host/tsconfig.json --noEmit",
     "postinstall": "tsx scripts/fetch-scrcpy-server.ts && tsx scripts/prepare-conductor.ts"
   },
   "dependencies": {
+    "@argus/host": "workspace:*",
+    "@argus/host": "workspace:*",
     "@argus/peacock": "workspace:*",
     "@argus/remote-client": "workspace:*",
     "@argus/remote-protocol": "workspace:*",
