@@ -7,6 +7,7 @@ import type {
 } from "react";
 import { StarIcon } from "../../icons/HomeIcons";
 import { FolderIcon, PlusIcon } from "../../icons/Icons";
+import { HostBadge } from "../HostBadge/HostBadge";
 import { PlatformChip, type Platform } from "../PlatformChip/PlatformChip";
 import styles from "./ProjectCard.module.css";
 
@@ -28,6 +29,8 @@ export interface ProjectCardProps extends HTMLAttributes<HTMLDivElement> {
   lastOpened?: string;
   /** Override the default folder badge icon. */
   icon?: ReactNode;
+  /** Machine this repo lives on. Omit for this Mac — only shown when it matters. */
+  hostLabel?: string;
 }
 
 function pickPillStatus(agents: ProjectCardAgent[]): AgentStatus | "empty" {
@@ -67,6 +70,7 @@ function pickPillClass(
 export function ProjectCard({
   name,
   path,
+  hostLabel,
   platform,
   accent,
   starred,
@@ -118,9 +122,10 @@ export function ProjectCard({
         </button>
       </div>
 
-      {(platform || path) && (
+      {(platform || path || hostLabel) && (
         <div className={styles.meta}>
           {platform && <PlatformChip platform={platform} />}
+          {hostLabel && <HostBadge label={hostLabel} />}
           {path && <span className={styles.path}>{path}</span>}
         </div>
       )}

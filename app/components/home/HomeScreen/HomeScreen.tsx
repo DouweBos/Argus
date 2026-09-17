@@ -11,8 +11,10 @@ import {
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
 import { checkDependencies } from "../../../lib/ipc";
+import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { setActiveAgent } from "../../../stores/agentStore";
 import { setCenterView } from "../../../stores/centerViewStore";
+import { useHostConnections } from "../../../stores/connectionStore";
 import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
   showCreateSessionDialog,
@@ -51,6 +53,7 @@ function agentMeta(status: string): string {
 
 export function HomeScreen() {
   useDevicePoller(5000);
+  const connections = useHostConnections();
   const data = useHomeData();
   const { openProject } = useProjects();
   const [openingPath, setOpeningPath] = useState<string | null>(null);
@@ -75,15 +78,22 @@ export function HomeScreen() {
     updater.updateVersion !== null &&
     updater.updateVersion !== updater.currentVersion;
 
+  // Only name the machine when it isn't this one — with the same repos on both
+  // machines the badge is the only thing telling two cards apart.
+  const hostLabelFor = (hostId: string): string | undefined =>
+    hostId === LOCAL_HOST_ID
+      ? undefined
+      : (connections.find((c) => c.hostId === hostId)?.label ?? hostId);
+
   const handleOpenProject = async (p: HomeProject) => {
     setOpenError(null);
     setOpeningPath(p.path);
     try {
-      await openProject(p.path);
+      await openProject(p.path, { hostId: p.hostId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setOpenError(msg);
-      removeRecentProject(p.path);
+      removeRecentProject(p.path, p.hostId);
     } finally {
       setOpeningPath(null);
     }
@@ -235,6 +245,7 @@ export function HomeScreen() {
                         key={p.id}
                         name={p.name}
                         path={p.path}
+                        hostLabel={hostLabelFor(p.hostId)}
                         accent={p.accent}
                         agents={p.agents.map((a) => ({ status: a.status }))}
                         lastOpened={formatLastOpened(p.lastOpened)}
@@ -251,7 +262,7 @@ export function HomeScreen() {
                               `Remove ${p.name} from recent projects?`,
                             )
                           ) {
-                            removeRecentProject(p.path);
+                            removeRecentProject(p.path, p.hostId);
                           }
                         }}
                       />
