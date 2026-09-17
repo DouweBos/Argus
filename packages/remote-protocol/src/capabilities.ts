@@ -63,11 +63,6 @@ export const HOST_ONLY_COMMANDS = new Set([
   "remote_set_config",
 ]);
 
-/** Whether a raw IPC command is barred from the wire even for admin devices. */
-export function isHostOnlyCommand(command: string): boolean {
-  return HOST_ONLY_COMMANDS.has(command);
-}
-
 /** Every request method the remote client may send, and the grant it needs. */
 export const REMOTE_METHODS = {
   "projects.list": "monitor",
