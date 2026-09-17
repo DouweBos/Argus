@@ -56,7 +56,26 @@ export type RemoteMethod =
   | "devices.unwatch"
   | "devices.touch"
   | "devices.button"
-  | "devices.keyboard";
+  | "devices.keyboard"
+  | "devices.claim"
+  | "devices.release"
+  | "devices.claim_status"
+  | "huddle.join"
+  | "huddle.state";
+
+/** Where a huddle guest stands with the host; `ended` means the room is gone. */
+export type HuddleConnectionState = "approved" | "denied" | "ended" | "pending";
+
+/**
+ * The guest's own view of the room. `agent_id`/`device_key` stay null until
+ * approval — a pending guest is not told what it is waiting for.
+ */
+export interface HuddleStatePayload {
+  room_id: string;
+  state: HuddleConnectionState;
+  agent_id: string | null;
+  device_key: string | null;
+}
 
 export type RemotePlatform = "ios" | "android";
 
@@ -71,6 +90,19 @@ export interface RemoteDevice {
   capturing: boolean;
   width?: number;
   height?: number;
+}
+
+/** Who currently holds input on a device — only the holder may inject events. */
+export interface RemoteDeviceClaim {
+  connection_id: string;
+  /** The paired client holding the claim, not the simulator. */
+  device_id: string;
+  label: string;
+}
+
+export interface RemoteDeviceClaimState {
+  device_id: string;
+  holder: RemoteDeviceClaim | null;
 }
 
 export type RemotePermissionMode =
