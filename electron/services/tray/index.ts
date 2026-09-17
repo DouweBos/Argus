@@ -315,20 +315,30 @@ function buildPairingItems(): Electron.MenuItemConstructorOptions[] {
         { label: "Cancel pairing", click: () => cancelServerPairing() },
       ];
     case "awaiting_sas":
+      // Least privilege first: the top entry is the safe one, and admin — which
+      // hands over the whole machine — is the deliberate reach past two others.
       return [
         { label: `Confirm this matches: ${state.sas}`, enabled: false },
         {
-          label: "Approve — full control",
+          label: "Approve — watch only",
           click: () => {
-            confirmServerPairing({ admin: true, control: true }).catch(
+            confirmServerPairing({ admin: false, control: false }).catch(
               () => undefined,
             );
           },
         },
         {
-          label: "Approve — view only",
+          label: "Approve — run agents",
           click: () => {
-            confirmServerPairing({ admin: false, control: false }).catch(
+            confirmServerPairing({ admin: false, control: true }).catch(
+              () => undefined,
+            );
+          },
+        },
+        {
+          label: "Approve — full control of this Mac",
+          click: () => {
+            confirmServerPairing({ admin: true, control: true }).catch(
               () => undefined,
             );
           },

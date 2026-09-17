@@ -203,10 +203,20 @@ against the one on the desktop's screen** — that comparison is what makes a
 man-in-the-middle impossible, and it is the reason pairing can never happen over
 the wire. If they match, approve:
 
-| choice                     | grants                                                                                    |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| **Approve — full control** | `admin` — drives the host as if you were sitting at it. What you want for a mini you own. |
-| **Approve — view only**    | `monitor` — watches agents, changes nothing.                                              |
+The server decides what the device may do. The device never asks for a tier, and
+nothing it sends afterwards can widen one — pairing and grant changes are
+host-tier commands that never cross the wire. Pick the narrowest that works:
+
+| choice                                 | grants    | what it can do                                                                                                   |
+| -------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Approve — watch only**               | `monitor` | Read agents, sessions and device screens. Cannot answer a tool-use prompt, which is a code-execution act.        |
+| **Approve — run agents**               | `control` | The above, plus send messages, spawn agents, create sessions and answer prompts. The right tier for a phone.     |
+| **Approve — full control of this Mac** | `admin`   | Drives the host as if you were at its keyboard — every command except the host-only set. Only for a Mac you own. |
+
+Least privilege is listed first deliberately: `admin` inverts the allowlist to a
+denylist, so it should be a deliberate reach rather than the obvious click. You
+can change a device's grants later, or revoke it, from Settings → Remote access
+on the host.
 
 **Reject** if the numbers differ. The code file is deleted the moment pairing
 settles either way, and on quit.

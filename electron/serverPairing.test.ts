@@ -150,6 +150,21 @@ describe("server tray pairing", () => {
     });
   });
 
+  it("can grant control without admin", async () => {
+    urls.lanUrl = "ws://10.0.0.2:47617";
+    const cb = armWith();
+    await startServerPairing();
+    cb()?.onSas("482913");
+
+    await confirmServerPairing({ admin: false, control: true });
+
+    // Driving agents is not the same as driving the machine.
+    expect(pairing.confirmPairing).toHaveBeenCalledWith({
+      admin: false,
+      control: true,
+    });
+  });
+
   it("never grants admin from the view-only choice", async () => {
     urls.lanUrl = "ws://10.0.0.2:47617";
     const cb = armWith();
