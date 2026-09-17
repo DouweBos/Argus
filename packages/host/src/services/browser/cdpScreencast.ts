@@ -15,6 +15,7 @@
 import http from "node:http";
 import type { Duplex } from "node:stream";
 import { info } from "@argus/host/logger";
+import { clearBrowserFrames, emitBrowserFrame } from "./frameForward";
 import { pushFrame } from "./mjpegServer";
 
 interface ActiveScreencast {
@@ -271,6 +272,9 @@ export async function startScreencast(
       if (msg.method === "Page.screencastFrame") {
         const jpeg = Buffer.from(msg.params.data, "base64");
         pushFrame(sessionId, jpeg);
+        // Same frames, second consumer: attached desktops read them off the
+        // gateway's media channel instead of the host's localhost MJPEG port.
+        emitBrowserFrame(sessionId, jpeg);
         ws.send(
           JSON.stringify({
             id: nextId++,
@@ -335,6 +339,7 @@ export async function stopScreencast(sessionId: string): Promise<void> {
   }
 
   screencasts.delete(sessionId);
+  clearBrowserFrames(sessionId);
   info(`[cdp-screencast] Stopped for session ${sessionId}`);
 }
 

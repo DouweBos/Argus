@@ -218,6 +218,9 @@ export const MethodParams = {
     platform: RemotePlatform,
   }),
   "devices.unwatch": z.object({ device_id: z.string() }),
+  /** Begin streaming an embedded browser's screen; returns its stream id. */
+  "browser.watch": z.object({ session_id: z.string() }),
+  "browser.unwatch": z.object({ session_id: z.string() }),
   /** Take interaction on a device; `force` steals it from a live holder. */
   "devices.claim": z.object({
     device_id: z.string(),
@@ -353,6 +356,8 @@ export const MethodResult = {
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),
+  "browser.watch": z.object({ stream_id: z.number().int().nonnegative() }),
+  "browser.unwatch": z.object({ accepted: z.boolean() }),
   /** `holder` is the incumbent when `granted` is false. */
   "devices.claim": z.object({
     granted: z.boolean(),
