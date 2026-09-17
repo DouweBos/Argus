@@ -47,6 +47,15 @@ export const TUNNEL_PROVIDERS: TunnelProvider[] = ["tailscale", "cloudflare"];
 
 const runtimes = new Map<TunnelProvider, Runtime>();
 let onChange: (() => void) | null = null;
+/** Extra listeners (huddle lifecycle) that must coexist with the status one. */
+const changeSubscribers = new Set<() => void>();
+
+function emitChange(): void {
+  onChange?.();
+  for (const cb of [...changeSubscribers]) {
+    cb();
+  }
+}
 
 function runtimeFor(provider: TunnelProvider): Runtime {
   const existing = runtimes.get(provider);
@@ -75,10 +84,17 @@ export function onTunnelChange(cb: (() => void) | null): void {
   onChange = cb;
 }
 
+/** Additional change listener; returns an unsubscribe. */
+export function subscribeTunnelChange(cb: () => void): () => void {
+  changeSubscribers.add(cb);
+
+  return () => changeSubscribers.delete(cb);
+}
+
 function setState(provider: TunnelProvider, next: Partial<TunnelState>): void {
   const rt = runtimeFor(provider);
   rt.state = { ...rt.state, ...next };
-  onChange?.();
+  emitChange();
 }
 
 function httpsToWss(url: string): string {
@@ -143,6 +159,13 @@ function describeFailure(
     if (/denied|permission|attribute/i.test(joined)) {
       return `Tailscale denied the Funnel request — check your tailnet's Funnel policy.\n${joined}`;
     }
+  }
+
+  if (
+    provider === "cloudflare" &&
+    /429|rate.?limit|too many (requests|connections)|quota/i.test(joined)
+  ) {
+    return "Cloudflare is rate-limiting free quick tunnels right now. Wait a minute and try again, or use Tailscale or a named tunnel for a link that doesn't depend on them.";
   }
 
   if (
@@ -302,5 +325,5 @@ export function stopTunnel(provider?: TunnelProvider): void {
     }
     rt.state = { ...STOPPED };
   }
-  onChange?.();
+  emitChange();
 }

@@ -18,6 +18,7 @@ import {
   getLanUrl,
   LOCAL_GATEWAY_PORT,
   setGatewayActive,
+  type EndpointKind,
   type RemoteEndpoint,
 } from "./endpoints";
 import {
@@ -28,10 +29,12 @@ import {
 } from "./gateway";
 import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
 import {
+  getTunnelState,
   getTunnelStates,
   onTunnelChange,
   startTunnel,
   stopTunnel,
+  subscribeTunnelChange,
   TUNNEL_PROVIDERS,
   type CloudflareMode,
   type TunnelProvider,
@@ -205,6 +208,30 @@ export function setRemoteStatusListener(cb: (() => void) | null): void {
   unsubscribeDevices = cb ? onDevicesChanged(() => cb()) : null;
 }
 
+/**
+ * Bind address and static dir are two separate decisions:
+ *
+ * | LAN web | tunnel | bind      | bundle |
+ * | ------- | ------ | --------- | ------ |
+ * | off     | off    | 127.0.0.1 | served |
+ * | off     | on     | 127.0.0.1 | served |
+ * | on      | off    | 0.0.0.0   | served |
+ * | on      | on     | 0.0.0.0   | served |
+ *
+ * Only LAN web widens the bind — a tunnel reaches the gateway over loopback, so
+ * binding 0.0.0.0 for it would expose the host on the Wi-Fi nobody asked to be
+ * on. Serving the bundle is unconditional instead: over a tunnel the URL *is*
+ * the web client, and on loopback-only it reaches no one but this machine. It
+ * also has to be decided up front, since a huddle can raise a tunnel later
+ * without restarting the server.
+ */
+function gatewayOpts(): { host: string; staticDir: string | null } {
+  return {
+    host: loadAppSettings().remote_lan_web ? "0.0.0.0" : "127.0.0.1",
+    staticDir: webClientDir,
+  };
+}
+
 /** Tear down then, if enabled, bring up the local gateway (+ optional tunnel). */
 export async function applyRemoteSettings(): Promise<void> {
   stopRemote();
@@ -213,13 +240,9 @@ export async function applyRemoteSettings(): Promise<void> {
   if (!settings.remote_enabled) {
     return;
   }
-  const lanWeb = Boolean(settings.remote_lan_web);
   const identity = await getDesktopIdentity();
 
-  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, {
-    host: lanWeb ? "0.0.0.0" : "127.0.0.1",
-    staticDir: lanWeb ? webClientDir : null,
-  });
+  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts());
 
   // Tunnels are optional and independent — LAN mode works with none enabled,
   // and each enabled provider gets its own process.
@@ -243,8 +266,199 @@ export async function applyRemoteSettings(): Promise<void> {
 
 export function stopRemote(): void {
   running = false;
+  // Anything we raised is gone with it, and a tunnel that comes back up after a
+  // settings change belongs to the user, not to a huddle.
+  huddleOwnsCloudflare = false;
+  huddleStartedGateway = false;
   setGatewayActive(false);
   stopTunnel();
   stopLocalGateway();
   clearConnections();
+}
+
+/**
+ * On-demand public URL for huddles. A huddle link only works if some endpoint
+ * off this machine reaches the gateway, but remote access may be off entirely,
+ * so it can raise a Cloudflare quick tunnel and drop it again afterwards.
+ *
+ * Reference-counted: overlapping huddles share one tunnel and only the last
+ * release tears it down. A tunnel the user enabled in Settings is reused and
+ * never stopped here.
+ */
+const QUICK_TUNNEL_TIMEOUT_MS = 30_000;
+
+let publicUrlRefs = 0;
+let huddleOwnsCloudflare = false;
+let huddleStartedGateway = false;
+
+export interface PublicUrlLease {
+  /** `wss://` gateway address. */
+  url: string;
+  /** `https://` origin serving the web client — this is the shareable link. */
+  webUrl: string;
+  kind: EndpointKind;
+  /** True when huddles raised this tunnel, so the last release drops it. */
+  raised: boolean;
+}
+
+function wssToHttps(url: string): string {
+  return url.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+}
+
+function leaseFor(kind: EndpointKind, url: string): PublicUrlLease {
+  return { url, webUrl: wssToHttps(url), kind, raised: huddleOwnsCloudflare };
+}
+
+/** Outstanding huddle leases; exported for status and tests. */
+export function publicUrlLeaseCount(): number {
+  return publicUrlRefs;
+}
+
+/** Wait for a provider to publish its URL, or explain why it never will. */
+function waitForTunnelUrl(
+  provider: TunnelProvider,
+  timeoutMs: number,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (err: Error | null, url?: string) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      unsubscribe();
+      clearTimeout(timer);
+      if (err) {
+        reject(err);
+      } else {
+        resolve(url as string);
+      }
+    };
+    const check = () => {
+      const state = getTunnelState(provider);
+      if (state.publicUrl) {
+        finish(null, state.publicUrl);
+      } else if (state.status === "error") {
+        finish(new Error(state.error ?? `${provider} tunnel failed`));
+      } else if (state.status === "stopped") {
+        finish(new Error(`${provider} tunnel stopped before it was reachable`));
+      }
+    };
+    const timer = setTimeout(
+      () => finish(new Error(`no URL after ${Math.round(timeoutMs / 1000)}s`)),
+      timeoutMs,
+    );
+    timer.unref?.();
+    const unsubscribe = subscribeTunnelChange(check);
+    check();
+  });
+}
+
+function quickTunnelFailure(reason: string): Error {
+  return new Error(
+    `Couldn't get a public link: ${reason}\n` +
+      "Cloudflare rate-limits and rotates its free quick tunnels. Wait a minute " +
+      "and try again, or set up Tailscale or a named Cloudflare tunnel in " +
+      "Settings → Remote access for a link that doesn't depend on them.",
+  );
+}
+
+/** The gateway has to be listening before a tunnel has anything to point at. */
+async function ensureGatewayUp(): Promise<void> {
+  if (running) {
+    return;
+  }
+  const identity = await getDesktopIdentity();
+  await startLocalGateway(LOCAL_GATEWAY_PORT, identity, gatewayOpts());
+  running = true;
+  huddleStartedGateway = true;
+  setGatewayActive(true);
+  statusListener?.();
+}
+
+function stopHuddleGateway(): void {
+  huddleStartedGateway = false;
+  running = false;
+  setGatewayActive(false);
+  stopLocalGateway();
+  clearConnections();
+  statusListener?.();
+}
+
+/**
+ * Claim a publicly reachable URL, raising a Cloudflare quick tunnel only if
+ * nothing already reaches this host. Every successful call must be matched by
+ * `releasePublicUrl()`.
+ */
+export async function acquirePublicUrl(
+  opts: { timeoutMs?: number } = {},
+): Promise<PublicUrlLease> {
+  const timeoutMs = opts.timeoutMs ?? QUICK_TUNNEL_TIMEOUT_MS;
+  await ensureGatewayUp();
+
+  // Already reachable — the user's own tunnel, a Tailscale funnel, or one an
+  // earlier huddle raised. getEndpoints() ranks Tailscale above Cloudflare.
+  const live = getEndpoints().find((e) => e.kind !== "lan");
+  if (live) {
+    publicUrlRefs += 1;
+
+    return leaseFor(live.kind, live.url);
+  }
+
+  // A provider the user enabled is still coming up: wait for it rather than
+  // racing a second tunnel onto the same port.
+  const pending = enabledProviders().find(
+    (p) => isStartable(p) && getTunnelState(p).status === "starting",
+  );
+  if (pending) {
+    try {
+      const url = await waitForTunnelUrl(pending, timeoutMs);
+      publicUrlRefs += 1;
+
+      return leaseFor(pending, url);
+    } catch {
+      // Fall through: a failing Tailscale funnel is exactly when a quick
+      // tunnel earns its keep.
+    }
+  }
+
+  startTunnel({
+    provider: "cloudflare",
+    localPort: LOCAL_GATEWAY_PORT,
+    cloudflareMode: "quick",
+  });
+  huddleOwnsCloudflare = true;
+  try {
+    const url = await waitForTunnelUrl("cloudflare", timeoutMs);
+    publicUrlRefs += 1;
+
+    return leaseFor("cloudflare", url);
+  } catch (e) {
+    if (publicUrlRefs === 0) {
+      huddleOwnsCloudflare = false;
+      stopTunnel("cloudflare");
+      if (huddleStartedGateway) {
+        stopHuddleGateway();
+      }
+    }
+    throw quickTunnelFailure((e as Error).message);
+  }
+}
+
+/** Drop one lease; the last one takes down whatever the huddles raised. */
+export function releasePublicUrl(): void {
+  if (publicUrlRefs === 0) {
+    return;
+  }
+  publicUrlRefs -= 1;
+  if (publicUrlRefs > 0) {
+    return;
+  }
+  if (huddleOwnsCloudflare) {
+    huddleOwnsCloudflare = false;
+    stopTunnel("cloudflare");
+  }
+  if (huddleStartedGateway) {
+    stopHuddleGateway();
+  }
 }
