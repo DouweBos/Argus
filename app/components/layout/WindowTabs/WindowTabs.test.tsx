@@ -62,7 +62,6 @@ describe("windowTabs", () => {
     renderStrip();
 
     expect(tabs()).toHaveLength(1);
-    expect(screen.getByTitle("This Mac")).toBeTruthy();
     expect(screen.queryAllByLabelText(/^Close /)).toHaveLength(0);
   });
 
@@ -119,11 +118,18 @@ describe("windowTabs", () => {
       expect(screen.getByText(`Tab ${i}`)).toBeTruthy();
     }
   });
-  it("names the machine on every tab, local included", () => {
+  it("leaves the machine unnamed while this Mac is the only tab", () => {
     renderStrip();
 
-    // The machine is the point of the strip, so it has to be readable — not
-    // just a tooltip, or two same-named sessions on different Macs look alike.
+    // One local tab is just "the window" — naming the machine there is noise.
+    expect(screen.queryByText("This Mac")).toBeNull();
+  });
+
+  it("names the machine once a second tab exists", () => {
+    openTab({ title: "Docs", background: true });
+    renderStrip();
+
+    // With more than one, which machine a tab drives stops being obvious.
     expect(screen.getAllByText("This Mac").length).toBeGreaterThan(0);
   });
 });

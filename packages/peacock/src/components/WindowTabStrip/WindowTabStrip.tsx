@@ -110,6 +110,8 @@ export function WindowTabStrip({
     setDrop(null);
   }, []);
 
+  const soleLocalTab = tabs.length === 1 && Boolean(tabs[0]?.local);
+
   return (
     <div className={styles.strip} role="tablist">
       <div className={styles.tabs}>
@@ -158,10 +160,14 @@ export function WindowTabStrip({
               }}
             >
               {tab.local ? (
-                <span className={styles.localMark} title={tab.hostLabel}>
-                  <LaptopIcon size={11} />
-                  <span className={styles.localLabel}>{tab.hostLabel}</span>
-                </span>
+                // A lone local tab is just "the window" — naming the machine
+                // there is noise. A remote tab always says so, however few.
+                !soleLocalTab && (
+                  <span className={styles.localMark} title={tab.hostLabel}>
+                    <LaptopIcon size={11} />
+                    <span className={styles.localLabel}>{tab.hostLabel}</span>
+                  </span>
+                )
               ) : (
                 <HostBadge
                   className={styles.host}
