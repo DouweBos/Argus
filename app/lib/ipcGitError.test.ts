@@ -1,7 +1,7 @@
 /**
  * A git failure on a paired host must arrive as a typed GitError. The gateway
- * flattens errors to `{code, message}`, so the envelope rides in the message
- * behind a tag; this checks it is unpacked and the tag never reaches the UI.
+ * carries the envelope in the wire error's `data` field; local IPC keeps it as
+ * own props on the thrown Error. Both must rehydrate.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,11 +17,33 @@ const { gitPush } = await import("./ipc");
 const { GitError } = await import("./gitError");
 type GitErrorInstance = InstanceType<typeof GitError>;
 
-const TAG = "\u0000argus-git-error:";
+const ENVELOPE = {
+  __gitError: true,
+  kind: "no-upstream",
+  message: "Branch has no upstream configured",
+  recovery: "publish-branch",
+  stderr: "fatal: no upstream branch",
+};
 
-function rejectsWith(message: string): void {
-  invokeMock.mockRejectedValue(new Error(message));
+function rehydrated(err: unknown): Record<string, unknown> {
+  const e = err as GitErrorInstance;
+
+  return {
+    isGitError: e instanceof GitError,
+    kind: e.kind,
+    recovery: e.recovery,
+    stderr: e.stderr,
+    message: e.message,
+  };
 }
+
+const REHYDRATED = {
+  isGitError: true,
+  kind: "no-upstream",
+  recovery: "publish-branch",
+  stderr: "fatal: no upstream branch",
+  message: "Branch has no upstream configured",
+};
 
 describe("git errors over the wire", () => {
   beforeEach(() => {
@@ -29,28 +51,34 @@ describe("git errors over the wire", () => {
     invokeMock.mockReset();
   });
 
-  it("rehydrates the structured payload from a flattened remote error", async () => {
-    const envelope = JSON.stringify({
-      __gitError: true,
-      kind: "no-upstream",
-      message: "Branch has no upstream configured",
-      recovery: "publish-branch",
-      stderr: "fatal: no upstream branch",
-    });
-    rejectsWith(`Branch has no upstream configured${TAG}${envelope}`);
+  it("rehydrates the payload a remote error carries in `data`", async () => {
+    const remote = Object.assign(
+      new Error("Branch has no upstream configured"),
+      { code: "bad_request", data: ENVELOPE },
+    );
+    invokeMock.mockRejectedValue(remote);
 
-    const err = (await gitPush("s1").catch(
-      (e: unknown) => e,
-    )) as GitErrorInstance;
-    expect(err).toBeInstanceOf(GitError);
-    expect(err.kind).toBe("no-upstream");
-    expect(err.recovery).toBe("publish-branch");
-    expect(err.stderr).toBe("fatal: no upstream branch");
-    expect(err.message).toBe("Branch has no upstream configured");
+    expect(rehydrated(await gitPush("s1").catch((e: unknown) => e))).toEqual(
+      REHYDRATED,
+    );
   });
 
-  it("strips the tag even when the envelope is unreadable", async () => {
-    rejectsWith(`push failed${TAG}{truncated`);
+  it("rehydrates the own props local IPC preserves", async () => {
+    const local = Object.assign(
+      new Error("Branch has no upstream configured"),
+      ENVELOPE,
+    );
+    invokeMock.mockRejectedValue(local);
+
+    expect(rehydrated(await gitPush("s1").catch((e: unknown) => e))).toEqual(
+      REHYDRATED,
+    );
+  });
+
+  it("leaves an error with unreadable data alone", async () => {
+    invokeMock.mockRejectedValue(
+      Object.assign(new Error("push failed"), { data: "{truncated" }),
+    );
 
     const err = (await gitPush("s1").catch((e: unknown) => e)) as Error;
     expect(err).toBeInstanceOf(Error);
@@ -58,7 +86,7 @@ describe("git errors over the wire", () => {
   });
 
   it("leaves ordinary errors alone", async () => {
-    rejectsWith("boom");
+    invokeMock.mockRejectedValue(new Error("boom"));
 
     const err = (await gitPush("s1").catch((e: unknown) => e)) as Error;
     expect(err.message).toBe("boom");

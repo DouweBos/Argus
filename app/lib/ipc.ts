@@ -82,44 +82,6 @@ declare global {
   }
 }
 
-/**
- * Marker the host appends to a git error's message, carrying the serialised
- * envelope. Mirrors `GIT_ERROR_TAG` in `electron/ipc.ts`; needed because the
- * gateway flattens a remote error to `{code, message}` and own props don't
- * make the crossing.
- */
-const GIT_ERROR_TAG = "\u0000argus-git-error:";
-
-/**
- * Pull the git-error envelope back out of a message, whichever transport
- * mangled it, and strip the tag so nothing renders it.
- */
-function unpackGitError(err: unknown): unknown {
-  if (typeof err !== "object" || err === null) {
-    return err;
-  }
-  const e = err as { message?: unknown };
-  if (typeof e.message !== "string") {
-    return err;
-  }
-  const at = e.message.indexOf(GIT_ERROR_TAG);
-  if (at === -1) {
-    return err;
-  }
-  const tail = e.message.slice(at + GIT_ERROR_TAG.length);
-  e.message = e.message.slice(0, at).trimEnd();
-  try {
-    const payload: unknown = JSON.parse(tail);
-    if (rehydrateGitError(payload)) {
-      return payload;
-    }
-  } catch {
-    // Truncated or re-wrapped envelope; the plain message still stands.
-  }
-
-  return err;
-}
-
 function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
@@ -127,15 +89,15 @@ function invoke<T>(
   return getTransport()
     .invoke<T>(channel, args)
     .catch((err: unknown) => {
-      // Rehydrate structured GitError payloads — the main process attaches
-      // the `__gitError` envelope as own props on the thrown Error (local
-      // IPC) and behind `GIT_ERROR_TAG` in the message (the gateway).
-      const unpacked = unpackGitError(err);
-      const gitErr = rehydrateGitError(unpacked);
+      // Rehydrate structured GitError payloads. Local IPC keeps the
+      // `__gitError` envelope as own props on the thrown Error; the gateway
+      // carries it in the wire error's `data` field.
+      const data = (err as { data?: unknown } | null)?.data;
+      const gitErr = rehydrateGitError(data) ?? rehydrateGitError(err);
       if (gitErr) {
         throw gitErr;
       }
-      throw unpacked;
+      throw err;
     });
 }
 

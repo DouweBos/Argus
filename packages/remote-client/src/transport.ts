@@ -48,6 +48,8 @@ export class RemoteError extends Error {
   constructor(
     readonly code: string,
     message: string,
+    /** Structured payload the host attached (e.g. a serialised GitError). */
+    readonly data?: unknown,
   ) {
     super(message);
     this.name = "RemoteError";
@@ -212,7 +214,9 @@ export class Transport {
       this.pending.set(id, (res) => {
         clearTimeout(timer);
         if (res.error) {
-          reject(new RemoteError(res.error.code, res.error.message));
+          reject(
+            new RemoteError(res.error.code, res.error.message, res.error.data),
+          );
         } else {
           resolve(res.ok as T);
         }

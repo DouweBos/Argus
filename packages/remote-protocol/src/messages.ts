@@ -391,6 +391,8 @@ export const ResponseEnvelope = z.object({
         "internal",
       ]),
       message: z.string(),
+      /** Structured payload for errors the client rehydrates (e.g. GitError). */
+      data: z.unknown().optional(),
     })
     .optional(),
 });

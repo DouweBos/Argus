@@ -18,7 +18,7 @@ export interface ResponseEnvelope {
   seq: number;
   id: string;
   ok?: unknown;
-  error?: { code: string; message: string };
+  error?: { code: string; message: string; data?: unknown };
 }
 
 export interface SubscribeEnvelope {
