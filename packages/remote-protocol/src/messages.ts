@@ -12,6 +12,7 @@ import {
   RemoteAgentVitals,
   RemoteDevice,
   RemoteDeviceClaim,
+  RemoteDeviceClaimState,
   RemoteEndpoint,
   RemoteGitBranch,
   RemoteGitStatus,
@@ -448,10 +449,7 @@ export const EventPayloads = {
   /** `channel` is the renderer IPC channel; `args` its broadcast arguments. */
   ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
   /** The claim on a device changed — including being stolen from you. */
-  "device.claim": z.object({
-    device_id: z.string(),
-    holder: RemoteDeviceClaim.nullable(),
-  }),
+  "device.claim": RemoteDeviceClaimState,
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
   notification: z.object({

@@ -1728,3 +1728,24 @@ export function HostIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** Locked out — someone else holds input on a device or browser. */
+export function LockIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="7" rx="1.2" width="10" x="3" y="7" />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+    </svg>
+  );
+}

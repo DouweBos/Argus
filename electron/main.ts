@@ -76,6 +76,7 @@ import { registerIpcHandlers } from "./ipc";
 import { installIpcCommandBridge } from "./ipcBridge";
 import { setMainWindow } from "./mainWindow";
 import { agentPopouts, devicePopouts } from "./popouts";
+import { initServerUpdates } from "./serverUpdates";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { destroyTray, initTray } from "./services/tray";
 import {
@@ -1122,6 +1123,9 @@ app.whenReady().then(() => {
     bypassRunningAgentsGuard = true;
   });
   initUpdater();
+  // The server has no window to show an update banner in, so its tray owns the
+  // flow instead. No-ops on the desktop.
+  initServerUpdates();
 
   // Refresh branch names when the window regains focus — fallback for cases
   // where fs.watch on .git/HEAD misses events (network drives, sleep/wake).

@@ -208,11 +208,58 @@ This is the same flow the desktop runs in a dialog, on a different surface. It
 is not the `ARGUS_DEV_TRUST` bypass, which skips the comparison entirely and
 cannot run in a packaged build.
 
+## Updating the server
+
+A mini nobody sits at still needs new builds, and the install command is
+deliberately host-tier — a client must never restart a host out from under
+someone else's running agents. So updating happens in the tray, next to pairing.
+
+The menu shows where the update stands:
+
+| menu says                  | meaning                                                       |
+| -------------------------- | ------------------------------------------------------------- |
+| **Check for Updates…**     | nothing known yet, or the last check came back clean          |
+| _Checking for updates…_    | a feed check is in flight                                     |
+| _Up to date_               | the running version is the newest on the channel              |
+| _Update available: 1.2.3_  | pick **Download Update** — downloads never start on their own |
+| _Downloading update — 42%_ | progress; the menu updates live                               |
+| _Update ready: 1.2.3_      | pick **Restart and Install**                                  |
+| _Update failed: …_         | the feed error, shortened; **Check for Updates…** retries     |
+
+The running version is the first line of the menu, so only the new version is
+named here.
+
+Checks also run in the background once an hour, the same as the desktop. That is
+already far tighter than a machine that runs for weeks needs, so the server adds
+no second timer.
+
+### Restarting is refused while agents are running
+
+Installing an update quits the process, which kills every agent on the machine.
+So **Restart and Install** is replaced by a disabled `3 agents running — cannot
+restart` whenever anything is working — including an agent whose prompt is still
+in flight between tool calls. Stop or wait out the agents and the item comes
+back. It never restarts silently, and the count tells you what it is waiting on.
+
+### Install automatically when idle
+
+**Install Automatically When Idle** is a checkbox in the same section, **off by
+default**. With it on, a downloaded update installs itself the moment the last
+agent finishes — the same guard, just without a human to click it. The server
+re-checks for idleness every minute, so an unattended restart lands within about
+a minute of the fleet going quiet.
+
+Off by default because a mini rebooting unprompted is a surprise; turn it on for
+a machine you want to stay current without visiting.
+
+The setting is stored in `$ARGUS_HOME/app-settings.json` as
+`server_auto_install_updates`.
+
 ## The tray is the whole UI
 
 The server's only surface is the menu-bar item: the same live agent tree the
 desktop shows, plus its version, gateway URL and state directory, the pairing
-flow above, and Quit. Menu entries don't navigate anywhere — there is no window
+and update flows above, and Quit. Menu entries don't navigate anywhere — there is no window
 to navigate.
 
 Quitting the server does not prompt about running agents the way the desktop

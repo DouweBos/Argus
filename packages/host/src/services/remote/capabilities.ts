@@ -12,6 +12,7 @@ import type { AgentSession } from "../agent/models";
 import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
 import type { Session } from "../session/models";
 import {
+  browserClaimId,
   MethodParams,
   REMOTE_METHODS,
   type Capability,
@@ -94,6 +95,7 @@ import {
 import { getVideoDims } from "../simulator/videoForward";
 import {
   claimDevice,
+  claimState,
   getClaim,
   releaseDevice,
   type ClaimHolder,
@@ -165,16 +167,13 @@ function claimHolder(ctx: GatewayContext): ClaimHolder {
 }
 
 /**
- * Claim key for an embedded browser session. Namespaced so it can't collide
- * with a simulator UDID or an Android serial in the one claim table.
- */
-export function browserClaimId(sessionId: string): string {
-  return `browser:${sessionId}`;
-}
-
-/**
  * Take the interaction claim on behalf of this connection, or refuse the input.
  * Watching stays unclaimed — only HID injection arbitrates.
+ *
+ * The refusal carries the claim state verbatim, so a client that raced the
+ * `device.claim` event can show "controlled by …" from the error alone. Both
+ * the typed `devices.*` handlers and the raw admin passthrough come through
+ * here, which is what keeps a desktop and a phone agreeing on who is driving.
  */
 function requireDeviceInput(deviceId: string, ctx: GatewayContext): void {
   const result = claimDevice(deviceId, claimHolder(ctx));
@@ -182,6 +181,7 @@ function requireDeviceInput(deviceId: string, ctx: GatewayContext): void {
     throw new GatewayError(
       "capability_denied",
       `device is being controlled by ${result.holder?.label ?? "another client"}`,
+      claimState(deviceId),
     );
   }
 }
