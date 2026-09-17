@@ -15,6 +15,7 @@ import {
   setHostPlatform,
 } from "@argus/host/platform";
 import { getMainWindow } from "./mainWindow";
+import { closeDevicePopout } from "./popouts";
 
 const electronHostPlatform: HostPlatform = {
   name: "electron",
@@ -52,6 +53,8 @@ const electronHostPlatform: HostPlatform = {
     }
     notification.show();
   },
+
+  closeDevicePopout,
 
   isForeground: () => getMainWindow()?.isFocused() ?? false,
   focusUi: () => {

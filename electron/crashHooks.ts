@@ -7,7 +7,7 @@
  */
 
 import { app } from "electron";
-import { captureException } from "./services/telemetry/telemetry";
+import { captureException } from "@argus/host/services/telemetry/telemetry";
 
 export function installCrashHooks(): void {
   // Capture crashes from any render process (renderer windows, popouts).

@@ -12,7 +12,7 @@ import {
   type CommandArgs,
   dispatchCommand,
   setCommandBinder,
-} from "./services/command/registry";
+} from "@argus/host/services/command/registry";
 
 export function installIpcCommandBridge(): void {
   setCommandBinder(({ name }) => {
