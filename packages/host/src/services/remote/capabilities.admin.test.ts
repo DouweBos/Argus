@@ -59,7 +59,7 @@ vi.mock("../organization/manager", () => ({
 const { dispatch, GatewayError } = await import("./capabilities");
 const { defineCommand } = await import("../command/registry");
 
-const { releaseDevice } = await import("./deviceClaims");
+const { releaseDevice, resetClaims } = await import("./deviceClaims");
 const { resolveMentionPath } = await import("../file/operations");
 const { collectAllProjects } = await import("../mcp/projects");
 const { GitError } = await import("../session/gitError");
@@ -84,6 +84,7 @@ const FIXTURES: [string, CommandTier, (args: CommandArgs) => unknown][] = [
     }),
   ],
   ["simulator_touch", "admin", () => null],
+  ["browser_mouse_event", "admin", () => null],
   [
     "git_boom",
     "admin",
@@ -275,5 +276,44 @@ describe("admin passthrough guards", () => {
     ).rejects.toMatchObject({ code: "capability_denied" });
 
     releaseDevice("sim-1", "conn-1");
+  });
+
+  it("carries the claim state on a refused raw HID event", async () => {
+    resetClaims();
+    const first = makeCtx(["monitor", "admin"]);
+    const second = { ...makeCtx(["monitor", "admin"]), connectionId: "conn-2" };
+
+    await dispatch("simulator_touch", { udid: "sim-1", x: 1, y: 2 }, first);
+    // Same payload the `device.claim` event carries, so a client that raced
+    // the broadcast can show "controlled by …" straight off the refusal.
+    await expect(
+      dispatch("simulator_touch", { udid: "sim-1", x: 3, y: 4 }, second),
+    ).rejects.toMatchObject({
+      code: "capability_denied",
+      data: {
+        device_id: "sim-1",
+        holder: { connection_id: "conn-1", label: "Mac mini" },
+      },
+    });
+    resetClaims();
+  });
+
+  it("arbitrates the embedded browser under its namespaced claim key", async () => {
+    resetClaims();
+    const first = makeCtx(["monitor", "admin"]);
+    const second = { ...makeCtx(["monitor", "admin"]), connectionId: "conn-2" };
+
+    await dispatch("browser_mouse_event", { sessionId: "s1" }, first);
+    await expect(
+      dispatch("browser_mouse_event", { sessionId: "s1" }, second),
+    ).rejects.toMatchObject({
+      code: "capability_denied",
+      data: { device_id: "browser:s1" },
+    });
+    // A simulator that happens to share the id is a different claim entirely.
+    await expect(
+      dispatch("simulator_touch", { udid: "s1", x: 0, y: 0 }, second),
+    ).resolves.toBeDefined();
+    resetClaims();
   });
 });
