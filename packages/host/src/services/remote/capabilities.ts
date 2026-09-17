@@ -1553,8 +1553,13 @@ const ADMIN_INPUT_SUBJECT: Record<string, { browser?: true; param: string }> = {
 /**
  * Run a raw command on behalf of an admin device — the same command the host's
  * own renderer would invoke, looked up in the shared registry. The registry's
- * tier is the bound: "host" never leaves the machine. See §3.1 of the
- * server-architecture plan for why this tier inverts to a denylist.
+ * tier is the bound: "host" never leaves the machine.
+ *
+ * This tier deliberately inverts the model: monitor/control are an allowlist,
+ * admin is a denylist. An allowlist exists to constrain a phone, but a Mac you
+ * own driving your own host is the same trust level as sitting at its keyboard,
+ * and an admin grant is a console-confirmed pairing against a pinned key that
+ * you can revoke. Never grant it to a browser.
  */
 async function dispatchAdmin(
   command: string,
