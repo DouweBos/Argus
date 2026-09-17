@@ -61,6 +61,9 @@ export const HOST_ONLY_COMMANDS = new Set([
   "remote_revoke_device",
   "remote_set_device_control",
   "remote_set_config",
+  // Reconfiguring how the host is reachable is console-only, like pairing.
+  "remote_tailscale_diagnose",
+  "remote_tailscale_fix",
 ]);
 
 /** Every request method the remote client may send, and the grant it needs. */
