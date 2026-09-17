@@ -542,10 +542,14 @@ focus.
 ### Web client on this network
 
 Toggling **Web client on this network** binds the gateway to your Wi-Fi
-interface and serves a browser client from it. Open `http://<your-ip>:47615` on
-any device on the same network — no app install, no tunnel. It still pairs and
-Noise-authenticates exactly like the phone, so being on the LAN grants no
-access on its own. You can also reach it from the Home screen's **Remote access**
+interface. Open `http://<your-ip>:47615` on any device on the same network — no
+app install, no tunnel. It still pairs and Noise-authenticates exactly like the
+phone, so being on the LAN grants no access on its own.
+
+The browser client itself is served over **every** way in, not just the LAN: a
+Tailscale or Cloudflare URL opens the same app in a browser. This toggle only
+decides whether the gateway also listens on your Wi-Fi interface — leave it off
+and the gateway stays loopback-only, reachable solely through a tunnel. You can also reach it from the Home screen's **Remote access**
 button. (Build the bundle once with `pnpm --filter argus-web build`.)
 
 **Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation
