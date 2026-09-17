@@ -152,6 +152,25 @@ describe("remote media", () => {
     expect(frames).toHaveLength(1);
   });
 
+  it("parses the browser's JPEG frames off the same channel", () => {
+    const transport = makeTransport();
+    const frames: { data?: Uint8Array; kind: string }[] = [];
+    transport.media.register(9, (msg) => frames.push(msg));
+    const bytes = new Uint8Array(14);
+    bytes[0] = 2; // MEDIA_JPEG
+    new DataView(bytes.buffer).setUint16(2, 9, true);
+    bytes.set([0xff, 0xd8], 12);
+    transport.media.push(bytes);
+    expect(frames).toEqual([
+      {
+        kind: "jpeg",
+        streamId: 9,
+        timestamp: 0,
+        data: new Uint8Array([0xff, 0xd8]),
+      },
+    ]);
+  });
+
   it("drops stream ids when the socket goes away", () => {
     const transport = makeTransport();
     const frames: unknown[] = [];

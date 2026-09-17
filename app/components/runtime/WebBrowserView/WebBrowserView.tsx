@@ -34,7 +34,6 @@ export function WebBrowserView({
     inputUrl,
     internalHeight,
     internalWidth,
-    mjpegPort,
     setInputUrl,
   } = useWebBrowserView(sessionId, isActive);
 
@@ -65,7 +64,6 @@ export function WebBrowserView({
         <WebBrowserScaledWebview
           internalHeight={internalHeight}
           internalWidth={internalWidth}
-          mjpegPort={mjpegPort}
           onKeyboardEvent={handleKeyboardEvent}
           onMouseEvent={handleMouseEvent}
           onWheelEvent={handleWheelEvent}

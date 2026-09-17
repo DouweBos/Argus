@@ -137,6 +137,27 @@ describe("connection registry", () => {
     expect(fakes.get("mini")?.invoked[0].args).toEqual({ sessionId: "s-ios" });
   });
 
+  it("drives each host's embedded browser from its own session", async () => {
+    await attach("mini");
+    await attach("droid");
+    rememberSessionHost("s-mini", "mini");
+    rememberSessionHost("s-droid", "droid");
+
+    for (const sessionId of ["s-mini", "s-droid"]) {
+      await getTransportForCommand("browser_mouse_event", { sessionId }).invoke(
+        "browser_mouse_event",
+        { sessionId, type: "click", x: 1, y: 2 },
+      );
+    }
+
+    expect(fakes.get("mini")?.invoked.map((c) => c.args)).toEqual([
+      { sessionId: "s-mini", type: "click", x: 1, y: 2 },
+    ]);
+    expect(fakes.get("droid")?.invoked.map((c) => c.args)).toEqual([
+      { sessionId: "s-droid", type: "click", x: 1, y: 2 },
+    ]);
+  });
+
   it("keeps a call about a local session on this Mac", async () => {
     await attach("mini");
     rememberSessionHost("s-here", LOCAL_HOST_ID);

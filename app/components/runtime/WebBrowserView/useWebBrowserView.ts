@@ -11,7 +11,6 @@ import {
   resolvePreset,
 } from "../../../lib/browserPresets";
 import {
-  browserGetMjpegPort,
   browserKeyboardEvent,
   browserMouseEvent,
   browserUpdatePreset,
@@ -56,21 +55,9 @@ export function useWebBrowserView(
   const [canGoForward, setCanGoForward] = useState(false);
   const [hasLoadedDefault, setHasLoadedDefault] = useState(false);
   const [customPresets, setCustomPresets] = useState<BrowserPresetConfig[]>([]);
-  const [mjpegPort, setMjpegPort] = useState<number | null>(null);
 
   const preset = resolvePreset(browserPreset, customPresets);
   const { internalWidth, internalHeight } = preset;
-
-  // Fetch MJPEG server port once on mount.
-  useEffect(() => {
-    browserGetMjpegPort()
-      .then((port) => {
-        if (port > 0) {
-          setMjpegPort(port);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   // Pick the default URL once per session, and push it to the backend.
   useEffect(() => {
@@ -258,7 +245,6 @@ export function useWebBrowserView(
     inputUrl,
     internalHeight,
     internalWidth,
-    mjpegPort,
     preset,
     setInputUrl,
   };
