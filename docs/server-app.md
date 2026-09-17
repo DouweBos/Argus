@@ -179,11 +179,41 @@ pinned awake. The display is free to sleep.
 For a mini on mains power, also set System Settings → Energy → "Prevent
 automatic sleeping when the display is off".
 
+## Pairing your first device
+
+The server has no window, so pairing happens in the tray:
+
+**Pair a device…** arms a pairing session, copies the pairing code to the
+clipboard, and writes it to `$ARGUS_HOME/pairing-code.txt` (mode 0600) for a
+machine you only reach over SSH — the code is far too long to read off a menu
+item. Paste it into the desktop's _Add host_ field.
+
+When the desktop connects, the menu shows a six-digit number. **Compare it
+against the one on the desktop's screen** — that comparison is what makes a
+man-in-the-middle impossible, and it is the reason pairing can never happen over
+the wire. If they match, approve:
+
+| choice                     | grants                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| **Approve — full control** | `admin` — drives the host as if you were sitting at it. What you want for a mini you own. |
+| **Approve — view only**    | `monitor` — watches agents, changes nothing.                                              |
+
+**Reject** if the numbers differ. The code file is deleted the moment pairing
+settles either way, and on quit.
+
+If the menu says _no reachable address_, the gateway has no LAN address or
+tunnel yet — check the network, or turn on a tunnel.
+
+This is the same flow the desktop runs in a dialog, on a different surface. It
+is not the `ARGUS_DEV_TRUST` bypass, which skips the comparison entirely and
+cannot run in a packaged build.
+
 ## The tray is the whole UI
 
 The server's only surface is the menu-bar item: the same live agent tree the
-desktop shows, plus its version, gateway URL and state directory, and Quit.
-Menu entries don't navigate anywhere — there is no window to navigate.
+desktop shows, plus its version, gateway URL and state directory, the pairing
+flow above, and Quit. Menu entries don't navigate anywhere — there is no window
+to navigate.
 
 Quitting the server does not prompt about running agents the way the desktop
 does; there is no renderer to ask. It tears down PTYs and agent subprocesses and
