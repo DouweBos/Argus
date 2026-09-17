@@ -160,6 +160,7 @@ export function WindowTabStrip({
               {tab.local ? (
                 <span className={styles.localMark} title={tab.hostLabel}>
                   <LaptopIcon size={11} />
+                  <span className={styles.localLabel}>{tab.hostLabel}</span>
                 </span>
               ) : (
                 <HostBadge
