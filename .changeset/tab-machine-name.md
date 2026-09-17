@@ -2,4 +2,4 @@
 "argus": patch
 ---
 
-Every window tab now names the machine it reads from, including "This Mac".
+Window tabs name the machine they read from once you have more than one tab open, and a remote tab always says so.

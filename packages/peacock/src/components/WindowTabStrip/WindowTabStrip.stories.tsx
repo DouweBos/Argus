@@ -22,6 +22,7 @@ const local: WindowTabItem = {
 
 const noop = () => undefined;
 
+/** One local tab is just "the window" — the machine name is left off. */
 export const OnlyTheLocalTab: Story = {
   render: () => (
     <WindowTabStrip
@@ -33,6 +34,7 @@ export const OnlyTheLocalTab: Story = {
   ),
 };
 
+/** Two or more tabs: each says which machine it drives. */
 export const SeveralMachines: Story = {
   render: () => (
     <WindowTabStrip
