@@ -2,12 +2,12 @@
  * The command registry — one table behind both local IPC and the wire.
  *
  * `defineCommand` is the only place a command is born: it records the
- * definition (name, tier, handler) and registers the matching `ipcMain.handle`
- * itself. The remote gateway looks commands up here rather than reading
+ * definition (name, tier, handler) and hands it to whatever binder the process
+ * installed — `ipcMain.handle` in the desktop app, nothing at all in a headless
+ * host. The remote gateway looks commands up here rather than reading
  * Electron's private `_invokeHandlers` map, so the two surfaces cannot drift.
  */
 
-import { ipcMain } from "electron";
 import { createLogger } from "../../../app/lib/logger";
 import { GitError, serializeGitError } from "../session/gitError";
 
@@ -40,33 +40,65 @@ export interface CommandDefinition extends CommandOptions {
 const commands = new Map<string, CommandDefinition>();
 
 /**
- * Register a command: one entry in the registry, one `ipcMain.handle`.
- *
- * Errors thrown by the handler reject the renderer's promise. `GitError` keeps
- * its structured payload as own enumerable props, which Electron preserves
- * across the IPC boundary; the gateway carries the same payload in the wire
- * error's `data` field.
+ * Publishes a command on a local transport. The desktop installs one that
+ * calls `ipcMain.handle`; a CLI or headless host installs none.
+ */
+export type CommandBinder = (definition: CommandDefinition) => void;
+
+let binder: CommandBinder | null = null;
+
+/**
+ * Install the local transport binder. Replays every command defined so far, so
+ * import order between `ipc.ts` and the bridge doesn't matter.
+ */
+export function setCommandBinder(next: CommandBinder | null): void {
+  binder = next;
+  if (!next) {
+    return;
+  }
+  for (const definition of commands.values()) {
+    next(definition);
+  }
+}
+
+/**
+ * Register a command: one entry in the registry, one binder call.
  */
 export function defineCommand(name: string, options: CommandOptions): void {
   if (commands.has(name)) {
     throw new Error(`duplicate command registration: ${name}`);
   }
-  commands.set(name, { name, ...options });
+  const definition: CommandDefinition = { name, ...options };
+  commands.set(name, definition);
+  binder?.(definition);
+}
 
-  ipcMain.handle(name, async (_event, args: CommandArgs = {}) => {
-    try {
-      return await options.handler(args);
-    } catch (err) {
-      createLogger(`ipc:${name}`).error("handler threw:", err);
-      if (err instanceof GitError) {
-        const { message, ...rest } = serializeGitError(err);
-        const wrapped = new Error(message);
-        Object.assign(wrapped, rest);
-        throw wrapped;
-      }
-      throw err;
+/**
+ * Run a command for a local transport: log what threw, and flatten `GitError`
+ * into a plain `Error` carrying the structured payload as own enumerable props
+ * (Electron preserves those across IPC). The gateway carries the same payload
+ * in the wire error's `data` field, so it dispatches through `invokeCommand`.
+ */
+export async function dispatchCommand(
+  name: string,
+  args: CommandArgs = {},
+): Promise<unknown> {
+  const definition = commands.get(name);
+  if (!definition) {
+    throw new Error(`unknown command ${name}`);
+  }
+  try {
+    return await definition.handler(args);
+  } catch (err) {
+    createLogger(`ipc:${name}`).error("handler threw:", err);
+    if (err instanceof GitError) {
+      const { message, ...rest } = serializeGitError(err);
+      const wrapped = new Error(message);
+      Object.assign(wrapped, rest);
+      throw wrapped;
     }
-  });
+    throw err;
+  }
 }
 
 /** The definition registered for a command, or null when there is none. */
@@ -115,4 +147,5 @@ export async function invokeCommand(
 /** Test-only: drop every registration so a suite can start from empty. */
 export function resetCommandRegistry(): void {
   commands.clear();
+  binder = null;
 }

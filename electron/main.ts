@@ -27,6 +27,7 @@ import { installCrashHooks } from "./crashHooks";
 import { startDevTrust, stopDevTrust } from "./devTrust";
 import { installHostPlatform } from "./hostPlatform";
 import { registerIpcHandlers } from "./ipc";
+import { installIpcCommandBridge } from "./ipcBridge";
 import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
 import { setMainWindow } from "./mainWindow";
@@ -1048,6 +1049,8 @@ app.whenReady().then(() => {
   });
 
   // Register all IPC handlers before creating the window.
+  // Publish every registry command on ipcMain as it is defined.
+  installIpcCommandBridge();
   registerIpcHandlers();
 
   if (!isServerMode()) {
