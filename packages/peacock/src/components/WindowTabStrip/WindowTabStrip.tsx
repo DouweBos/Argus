@@ -110,8 +110,6 @@ export function WindowTabStrip({
     setDrop(null);
   }, []);
 
-  const soleLocalTab = tabs.length === 1 && Boolean(tabs[0]?.local);
-
   return (
     <div className={styles.strip} role="tablist">
       <div className={styles.tabs}>
@@ -160,14 +158,10 @@ export function WindowTabStrip({
               }}
             >
               {tab.local ? (
-                // A lone local tab is just "the window" — naming the machine
-                // there is noise. A remote tab always says so, however few.
-                !soleLocalTab && (
-                  <span className={styles.localMark} title={tab.hostLabel}>
-                    <LaptopIcon size={11} />
-                    <span className={styles.localLabel}>{tab.hostLabel}</span>
-                  </span>
-                )
+                // This Mac is the default — the mark is enough, the name is noise.
+                <span className={styles.localMark} title={tab.hostLabel}>
+                  <LaptopIcon size={11} />
+                </span>
               ) : (
                 <HostBadge
                   className={styles.host}

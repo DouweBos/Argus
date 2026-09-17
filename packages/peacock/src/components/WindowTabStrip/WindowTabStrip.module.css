@@ -102,18 +102,8 @@
 .localMark {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   color: var(--text-muted);
   flex-shrink: 0;
-}
-
-/* Matches `HostBadge`'s label so a local tab and a remote one read alike. */
-.localLabel {
-  max-width: 90px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--font-size-xs);
 }
 
 .tab.active .localMark {

@@ -2,4 +2,4 @@
 "argus": patch
 ---
 
-Window tabs name the machine they read from once you have more than one tab open, and a remote tab always says so.
+A paired machine's tab now shows only that machine's projects, while this Mac's tab keeps the combined view with each project badged. Tabs no longer label this Mac by name.

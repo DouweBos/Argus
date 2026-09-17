@@ -118,18 +118,11 @@ describe("windowTabs", () => {
       expect(screen.getByText(`Tab ${i}`)).toBeTruthy();
     }
   });
-  it("leaves the machine unnamed while this Mac is the only tab", () => {
-    renderStrip();
-
-    // One local tab is just "the window" — naming the machine there is noise.
-    expect(screen.queryByText("This Mac")).toBeNull();
-  });
-
-  it("names the machine once a second tab exists", () => {
+  it("never names this Mac on a tab, however many are open", () => {
     openTab({ title: "Docs", background: true });
     renderStrip();
 
-    // With more than one, which machine a tab drives stops being obvious.
-    expect(screen.getAllByText("This Mac").length).toBeGreaterThan(0);
+    // This Mac is the default; only a paired machine's tab says which one.
+    expect(screen.queryByText("This Mac")).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Icons,
   SidebarFooter,
@@ -11,7 +11,8 @@ import {
   StatusDot,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
-import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
+import { useRouteHostId } from "../../../lib/routeHooks";
+import { LOCAL_HOST_ID, isLocalHost } from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useHostConnections } from "../../../stores/connectionStore";
 import { useDevices } from "../../../stores/deviceStore";
@@ -33,7 +34,17 @@ import styles from "./SessionSidebar.module.css";
 import { SidebarNavItem } from "./SidebarNavItem";
 
 export function SessionSidebar() {
-  const { projects, openProject, closeProject } = useProjects();
+  const { projects: allProjects, openProject, closeProject } = useProjects();
+  // This Mac's tab is the combined view, with every project badged by machine.
+  // A paired machine's tab shows only its own — its projects, its sessions.
+  const routeHostId = useRouteHostId();
+  const projects = useMemo(
+    () =>
+      isLocalHost(routeHostId)
+        ? allProjects
+        : allProjects.filter((p) => p.hostId === routeHostId),
+    [allProjects, routeHostId],
+  );
   const devices = useDevices();
   const agentsRecord = useAgentsRecord();
   const [showOpenProject, setShowOpenProject] = useState(false);

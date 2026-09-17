@@ -2,7 +2,12 @@ import type { AgentStatus, DeviceInfo, Session } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useMemo } from "react";
 import { projectAccent } from "@argus/peacock";
-import { hostScopedKey, type HostId } from "../../../lib/transport/hostId";
+import { useRouteHostId } from "../../../lib/routeHooks";
+import {
+  hostScopedKey,
+  isLocalHost,
+  type HostId,
+} from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
@@ -90,11 +95,19 @@ export function useHomeData(): HomeData & {
   const agentsRecord = useAgentsRecord();
   const conversations = useConversations();
   const devices = useDevices();
+  // This Mac's home is the combined view — every machine's projects, each
+  // badged. A paired machine's tab shows only what lives on that machine.
+  const routeHostId = useRouteHostId();
+
+  const showsEveryHost = isLocalHost(routeHostId);
 
   return useMemo(() => {
     const projectsByKey = new Map<string, HomeProject>();
 
     recent.forEach((rp: RecentProject) => {
+      if (!showsEveryHost && rp.hostId !== routeHostId) {
+        return;
+      }
       projectsByKey.set(hostScopedKey(rp.hostId, rp.path), {
         id: hostScopedKey(rp.hostId, rp.path),
         hostId: rp.hostId,
@@ -111,6 +124,9 @@ export function useHomeData(): HomeData & {
 
     sessions.forEach((ws) => {
       const hostId = sessionHostId(ws.id);
+      if (!showsEveryHost && hostId !== routeHostId) {
+        return;
+      }
       const key = hostScopedKey(hostId, ws.repo_root);
       let proj = projectsByKey.get(key);
       if (!proj) {
@@ -183,7 +199,15 @@ export function useHomeData(): HomeData & {
     };
 
     return { projects, activeAgents, devices, stats, formatLastOpened };
-  }, [recent, sessions, agentsRecord, conversations, devices]);
+  }, [
+    recent,
+    sessions,
+    agentsRecord,
+    conversations,
+    devices,
+    routeHostId,
+    showsEveryHost,
+  ]);
 }
 
 function basename(p: string): string {
