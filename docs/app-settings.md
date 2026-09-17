@@ -555,20 +555,24 @@ The other side of remote access: machines **this** Mac can run agents on. A
 paired host can be a headless Mac mini working overnight or a workstation
 running the ordinary app — from here they look identical.
 
-| Setting          | Default    | Description                                                                                                                                 |
-| ---------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pair a host**  | —          | Paste the pairing code from the other Mac's **Remote access** screen, compare the 6-digit code, and approve it there with **Admin** ticked. |
-| **Paired hosts** | —          | Rename, **Attach**, or **Forget**. Forgetting deletes this Mac's key for that host; revoke it there too to be thorough.                     |
-| **Connection**   | `This Mac` | Which machine the window drives. Also in the title bar, next to the panel toggles.                                                          |
+| Setting          | Default    | Description                                                                                                                                    |
+| ---------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pair a host**  | —          | Paste the pairing code from the other Mac's **Remote access** screen, compare the 6-digit code, and approve it there with **Admin** ticked.    |
+| **Paired hosts** | —          | Rename, **Attach** / **Detach**, **Show**, or **Forget**. Forgetting deletes this Mac's key for that host; revoke it there too to be thorough. |
+| **Machines**     | `This Mac` | The connection menu in the title bar: every machine this window drives, with its link state.                                                   |
 
-Attaching restarts the window: every panel, subscription and cache belongs to
-one machine, so switching is a clean remount rather than a live swap. The
-choice is remembered and reconnected on launch; if the host can't be reached
-Argus falls back to this Mac and says so in a banner. It is deliberately not
-part of the URL — a link you share must never point someone at a machine they
-cannot reach.
+Several hosts can be attached at once — this Mac, a mini for iOS, a Linux box
+for Android — and their projects sit alongside each other in the sidebar.
+Attaching and showing are separate: **Attach** brings a host's projects in and
+keeps its agents streaming in the background, while **Show** points the current
+view at one. Attachments are remembered and restored on launch; a host that
+can't be reached is skipped with a banner, and the others carry on without it.
 
-While attached to a host:
+Which host a view reads from _is_ part of the URL, so back/forward moves
+between machines. A link to a host you aren't attached to falls back to this
+Mac rather than stranding you.
+
+While reading from a host:
 
 - **Projects** come from the host's registered projects, not this Mac's recent
   list. **Browse…** walks the _host's_ folders instead of opening a native
@@ -581,7 +585,8 @@ While attached to a host:
   host, and taps and keystrokes go back to it. Nothing arbitrates who is
   driving a device yet, so avoid pointing two Macs at the same simulator.
 - If the connection drops, agents keep running on the host. The window shows a
-  disconnected banner and re-pulls a fresh snapshot when it reconnects.
+  disconnected banner, reconnects on its own, and re-pulls a fresh snapshot
+  when it does. Only that host is affected; the rest keep working.
 
 Host keys are stored in this Mac's `localStorage` alongside the other UI
 preferences.

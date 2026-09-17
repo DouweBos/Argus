@@ -8,6 +8,11 @@ bar navigation buttons) always returns to the previous URL.
 No Zustand store mirrors the route. Reads go through URL-derived hooks
 (`useCurrentRoute` and friends); writes go through `appNavigate(route)`.
 
+Every URL may also carry `?host=<hostId>`, naming the machine the screen reads
+from. Several hosts can be attached at once (this Mac plus any paired host), so
+"whose projects am I looking at" is part of what you are looking at, not
+transport state. Omitted for this Mac (`hostId: "local"`).
+
 ## URL inventory
 
 | URL                                             | Screen                             | Notes                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -66,6 +71,7 @@ interface ParsedRoute {
     | "settings"
     | null; // only meaningful when panel === "git"
   gitRefName: string | null; // set when gitView is "branches"/"tags" and a name segment follows
+  hostId: string; // "?host=" — the attached host this screen reads from; "local" for this Mac
 }
 ```
 
@@ -114,13 +120,21 @@ appNavigate({ view: "home" }, { replace: true });
 The following store helpers are thin wrappers around `appNavigate` — use
 whichever reads best:
 
-| Helper                       | Effect                                                   |
-| ---------------------------- | -------------------------------------------------------- |
-| `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                          |
-| `selectSession(null)`        | `/`                                                      |
-| `setCenterView(view)`        | `/{view}`                                                |
-| `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route) |
-| `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                 |
+| Helper                       | Effect                                                      |
+| ---------------------------- | ----------------------------------------------------------- |
+| `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                             |
+| `selectSession(null)`        | `/`                                                         |
+| `setCenterView(view)`        | `/{view}`                                                   |
+| `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route)    |
+| `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                    |
+| `setFocusedHost(hostId)`     | `?host={hostId}` — points the view at another attached host |
+
+`appNavigate` carries the current `?host=` forward unless the descriptor names
+a different one, so moving between screens never silently drops you back onto
+this Mac. `selectSession(id)` names the session's own host: selecting a session
+that lives on the mini moves the view there. Detaching a host falls the view
+back to this Mac.
+>>>>>>> 2173a8ed (test(remote): cover per-host routing, event scoping and one host failing)
 
 ## Building paths
 
@@ -154,3 +168,7 @@ forwards it to `navigate(path)`.
    session / view is active, it reads it from the URL.
 3. **State that is not in the URL is not routable.** If a "screen" is worth a
    back-button entry, add it to the URL inventory above.
+4. **The focused host is route state; the connections are not.** `?host=`
+   says which machine a screen reads from. Which hosts are _attached_ lives in
+   `connectionStore` + app settings — they keep streaming whether or not you
+   are looking at them, and a shared link must not try to attach anything.
