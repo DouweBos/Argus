@@ -179,3 +179,9 @@
   background: var(--bg-hover);
   color: var(--text-primary);
 }
+
+/* Another client holds the device — the overlay next to it says who. */
+.blocked {
+  opacity: 0.4;
+  pointer-events: none;
+}

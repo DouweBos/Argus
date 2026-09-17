@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Icons } from "@argus/peacock";
+import { DeviceControlOverlay, Icons } from "@argus/peacock";
 import { error } from "@logger";
 import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
 import {
@@ -265,7 +265,8 @@ export function IosSimulatorView({
   // attached and each arbitrates its own devices.
   const hostId = useRouteHostId();
   const claim = useDeviceClaim(selectedUdid, hostId, capturing);
-  const { reportInputError } = claim;
+  const { reportInputError, takeControl } = claim;
+  const handleTakeControl = useCallback(() => takeControl(), [takeControl]);
 
   const handleTouch = useCallback(
     (x: number, y: number, eventType: number) => {
@@ -461,6 +462,10 @@ export function IosSimulatorView({
                 height={videoHeight || undefined}
                 width={videoWidth || undefined}
               />
+              <DeviceControlOverlay
+                holderLabel={claim.holderLabel}
+                onTakeControl={handleTakeControl}
+              />
               {!isReceiving && (
                 <div className={styles.connecting}>
                   <p>
@@ -471,7 +476,7 @@ export function IosSimulatorView({
                 </div>
               )}
             </div>
-            <AppleTVRemote udid={selectedUdid} />
+            <AppleTVRemote claim={claim} udid={selectedUdid} />
           </div>
         )
       : undefined;
