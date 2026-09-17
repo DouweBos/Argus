@@ -110,6 +110,7 @@ export * from "./components/SessionCard/SessionCard";
 export * from "./components/SettingsScreen/SettingsScreen";
 export * from "./components/SettingsDialogShell/SettingsDialogShell";
 export * from "./components/TreeNode/TreeNode";
+export * from "./components/WindowTabStrip/WindowTabStrip";
 
 export * as Icons from "./icons/Icons";
 export * from "./icons/HomeIcons";
