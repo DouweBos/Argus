@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, Icons } from "@argus/peacock";
 import { showOpenDirectoryDialog } from "../../../lib/ipc";
+import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
 import { useFocusedConnection } from "../../../stores/connectionStore";
 import {
   removeRecentProject,
@@ -13,7 +14,8 @@ import projectStyles from "./OpenProjectDialog.module.css";
 
 interface OpenProjectDialogProps {
   onClose: () => void;
-  onOpen: (path: string) => Promise<void>;
+  /** `hostId` is the machine the path belongs to — a host path is meaningless here. */
+  onOpen: (path: string, hostId: HostId) => Promise<void>;
 }
 
 export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
@@ -33,7 +35,8 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
       const selected = await showOpenDirectoryDialog();
       if (selected) {
         onClose();
-        await onOpen(selected);
+        // The native dialog only ever browses this Mac.
+        await onOpen(selected, LOCAL_HOST_ID);
       }
     } catch {
       // Dialog cancelled or failed — no-op
@@ -42,12 +45,12 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
 
   const pickHostPath = async (path: string) => {
     onClose();
-    await onOpen(path);
+    await onOpen(path, connection.hostId);
   };
 
-  const handleSelectProject = async (path: string) => {
+  const handleSelectProject = async (path: string, hostId: HostId) => {
     onClose();
-    await onOpen(path);
+    await onOpen(path, hostId);
   };
 
   return createPortal(
@@ -77,11 +80,16 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
             <span className={projectStyles.recentsLabel}>Recent Projects</span>
             <ul className={projectStyles.recentsList}>
               {projects.map((project) => (
-                <li key={project.path} className={projectStyles.recentsItem}>
+                <li
+                  key={`${project.hostId} ${project.path}`}
+                  className={projectStyles.recentsItem}
+                >
                   <button
                     className={projectStyles.recentsBtn}
                     title={project.path}
-                    onClick={() => handleSelectProject(project.path)}
+                    onClick={() =>
+                      handleSelectProject(project.path, project.hostId)
+                    }
                   >
                     <Icons.FolderIcon size={14} />
                     <span className={projectStyles.recentsInfo}>

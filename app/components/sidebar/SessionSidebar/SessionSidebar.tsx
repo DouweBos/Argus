@@ -249,7 +249,7 @@ export function SessionSidebar() {
       {showOpenProject && (
         <OpenProjectDialog
           onClose={() => setShowOpenProject(false)}
-          onOpen={openProject}
+          onOpen={(path, hostId) => openProject(path, { hostId })}
         />
       )}
     </SidebarNav>

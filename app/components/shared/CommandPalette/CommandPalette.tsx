@@ -463,7 +463,7 @@ function CommandPaletteContent() {
         keywords: `${p.name} ${p.path} repo project open`,
         run: () => {
           closeCommandPalette();
-          openProject(p.path).catch(() => {});
+          openProject(p.path, { hostId: p.hostId }).catch(() => {});
         },
       });
     });
