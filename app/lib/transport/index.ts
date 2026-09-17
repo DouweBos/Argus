@@ -13,6 +13,7 @@ import type { HostId } from "./hostId";
 import type { ArgusTransport } from "./types";
 import { getFocusedConnection } from "../../stores/connectionStore";
 import {
+  forgetRemoteHost,
   getAttachedHostIds,
   getRemoteHost,
   setAttachedHostIds,
@@ -109,20 +110,38 @@ export async function attachTo(hostId: HostId): Promise<void> {
   await hydrateHost(hostId);
 }
 
-/** Take a host away: its sockets, its projects, its sessions, its place in the URL. */
+/**
+ * Stop driving a host: close its socket and stop restoring it on launch.
+ *
+ * Its tabs stay exactly where they are, showing the last snapshot read-only —
+ * the same degradation as a host that merely dropped. Nothing is yanked back
+ * to this Mac, and writes fail with `HostUnavailableError` rather than landing
+ * on the wrong machine. Use {@link forgetHost} to drop the data as well.
+ */
 export async function detachFrom(hostId: HostId): Promise<void> {
   if (hostId === LOCAL_HOST_ID) {
     return;
   }
+  detachHost(hostId);
+  setAttachedHostIds(getAttachedHostIds().filter((id) => id !== hostId));
+}
+
+/**
+ * Unpair a host: detach it, then forget everything it owned — its projects,
+ * its sessions and its routing entries. Unlike a detach this does clear the
+ * screen, because the keys to reach that machine are gone too.
+ */
+export async function forgetHost(hostId: HostId): Promise<void> {
+  await detachFrom(hostId);
   const { dropHostProjects } = await import("../hostHydration");
+  const { forgetHost: forgetHostRoutes } = await import("./hostIndex");
   const { setFocusedHost } = await import("../../stores/connectionStore");
   if (getFocusedConnection().hostId === hostId) {
-    // Nothing on screen belongs to this host any more.
     setFocusedHost(LOCAL_HOST_ID);
   }
   dropHostProjects(hostId);
-  detachHost(hostId);
-  setAttachedHostIds(getAttachedHostIds().filter((id) => id !== hostId));
+  forgetHostRoutes(hostId);
+  forgetRemoteHost(hostId);
 }
 
 /**

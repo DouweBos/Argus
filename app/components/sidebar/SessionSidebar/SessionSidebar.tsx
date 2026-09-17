@@ -63,9 +63,12 @@ export function SessionSidebar() {
   // once, and `~/Work/app` can exist on more than one of them.
   const connections = useHostConnections();
   const hostLabels = new Map(connections.map((c) => [c.hostId, c.label]));
-  const offlineHosts = new Set(
-    connections.filter((c) => c.state === "offline").map((c) => c.hostId),
-  );
+  // Detached counts as offline: the projects stay on screen read-only, so the
+  // badge has to say nothing can be run on them.
+  const hostOffline = (hostId: string): boolean =>
+    hostId !== LOCAL_HOST_ID &&
+    (connections.find((c) => c.hostId === hostId)?.state ?? "offline") ===
+      "offline";
 
   const [dragRoot, setDragRoot] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{
@@ -225,7 +228,7 @@ export function SessionSidebar() {
                       ? null
                       : (hostLabels.get(project.hostId) ?? project.hostId)
                   }
-                  hostOffline={offlineHosts.has(project.hostId)}
+                  hostOffline={hostOffline(project.hostId)}
                   isCollapsed={project.isCollapsed}
                   repoRoot={project.repoRoot}
                   onClose={() => closeProject(project.repoRoot, project.hostId)}
