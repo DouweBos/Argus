@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AgentRow,
   type AgentStatus,
-  Badge,
   Banner,
   Button,
   ContextMenu,
@@ -17,7 +16,6 @@ import {
   SidebarRepoGroup,
   SidebarSection,
   Spinner,
-  StatusBulb,
 } from "@argus/peacock";
 import {
   notificationsSupported,
@@ -30,15 +28,17 @@ import {
   startServiceWorkerRouting,
 } from "../lib/webpush";
 import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
-import type { ConnectionState } from "@argus/remote-client";
+import { parseHuddleToken } from "../lib/huddleIdentity";
 import { identityFromPairing } from "../lib/keystore";
 import { wsOrigin } from "../lib/origin";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
+import { ConnectionBadge } from "./ConnectionBadge";
 import { DevicesView } from "./DevicesView";
 import { DeviceScreen } from "./DeviceScreen";
+import { HuddleGuest } from "./HuddleGuest";
 import { Settings } from "./Settings";
 import { useHistoryView, type View } from "./useHistoryView";
 import { useScrollRestore } from "./useScrollRestore";
@@ -47,10 +47,19 @@ import { useLiveRefresh } from "./useLiveRefresh";
 export function App() {
   const identity = useAppStore((s) => s.identity);
   const init = useAppStore((s) => s.init);
+  // Read once: a huddle link is a different app, and switching a live tab
+  // between guest and paired mode is not a thing that should happen.
+  const [huddleToken] = useState(() => parseHuddleToken(window.location.hash));
 
   useEffect(() => {
-    init();
-  }, [init]);
+    if (!huddleToken) {
+      init();
+    }
+  }, [huddleToken, init]);
+
+  if (huddleToken) {
+    return <HuddleGuest token={huddleToken} />;
+  }
 
   return identity ? <Monitor /> : <Pair />;
 }
@@ -135,35 +144,6 @@ function Pair() {
 }
 
 // --- Monitor ---------------------------------------------------------------
-
-/**
- * A healthy connection is the normal case and doesn't need saying, so it
- * shrinks to a dot — only trouble gets words.
- */
-function ConnectionBadge({ state }: { state: ConnectionState }) {
-  if (state === "ready") {
-    return (
-      <StatusBulb
-        tone="success"
-        size="sm"
-        aria-label="Connected"
-        className="aw-header-dot"
-      />
-    );
-  }
-  if (state === "offline") {
-    return <Badge tone="warning">Reconnecting…</Badge>;
-  }
-
-  return (
-    <span className="aw-inline">
-      <Spinner size="xs" />
-      <Badge tone="neutral">
-        {state === "handshaking" ? "Securing" : "Connecting"}
-      </Badge>
-    </span>
-  );
-}
 
 function Monitor() {
   const { view, push, back, canGoBack } = useHistoryView();
