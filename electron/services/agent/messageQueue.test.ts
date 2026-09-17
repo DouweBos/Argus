@@ -12,8 +12,8 @@ import {
 const broadcasts: { event: string; payload: unknown }[] = [];
 
 vi.mock("../../state", () => ({ appState: { agentQueues: new Map() } }));
-vi.mock("../../broadcast", () => ({
-  broadcastToRenderers: (event: string, payload: unknown) => {
+vi.mock("@argus/host/bus", () => ({
+  emitHostEvent: (event: string, payload: unknown) => {
     broadcasts.push({ event, payload });
   },
 }));

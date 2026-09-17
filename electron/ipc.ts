@@ -27,8 +27,8 @@ import {
 } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { emitHostEvent } from "@argus/host/bus";
 import { createLogger } from "../app/lib/logger";
-import { broadcastToRenderers } from "./broadcast";
 import {
   closeFloatingAgentWindow,
   closeFloatingDeviceWindow,
@@ -1044,11 +1044,10 @@ export function registerIpcHandlers(): void {
   });
   handle("remote_start_pairing", "host", () =>
     startPairing(getPublicUrl(), {
-      onSas: (sas) => broadcastToRenderers("remote:pairing-sas", { sas }),
+      onSas: (sas) => emitHostEvent("remote:pairing-sas", { sas }),
       onPaired: (device) =>
-        broadcastToRenderers("remote:pairing-complete", { device }),
-      onError: (message) =>
-        broadcastToRenderers("remote:pairing-error", { message }),
+        emitHostEvent("remote:pairing-complete", { device }),
+      onError: (message) => emitHostEvent("remote:pairing-error", { message }),
     }),
   );
   handle("remote_confirm_pairing", "host", (a) =>
@@ -1076,7 +1075,7 @@ export function registerIpcHandlers(): void {
   // tunnel finishing startup and revealing its URL).
   setRemoteStatusListener(() => {
     getRemoteStatus()
-      .then((status) => broadcastToRenderers("remote:status", status))
+      .then((status) => emitHostEvent("remote:status", status))
       .catch(() => {});
   });
   handle("list_inherited_mcp_servers", "admin", (a) =>
@@ -1525,7 +1524,7 @@ export function registerIpcHandlers(): void {
       undefined, // reuseAgentId — IPC callers are always fresh starts
       a.agentId as string | undefined, // presetAgentId — renderer-minted optimistic id
     );
-    broadcastToRenderers("agent:started", info);
+    emitHostEvent("agent:started", info);
 
     return info;
   });
@@ -1767,7 +1766,7 @@ export function registerIpcHandlers(): void {
     });
     // Broadcast so every window (including the one that requested it) can
     // hide the agent from its tab bar in sync.
-    broadcastToRenderers("agent:popout-opened", { agentId, sessionId });
+    emitHostEvent("agent:popout-opened", { agentId, sessionId });
 
     return Promise.resolve();
   });

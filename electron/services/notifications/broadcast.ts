@@ -6,7 +6,7 @@
  */
 
 import type { RemoteNotificationAction } from "./actions";
-import { broadcastToRenderers } from "../../broadcast";
+import { emitHostEvent } from "@argus/host/bus";
 import { getMainWindow } from "../../mainWindow";
 import { dispatchRemotePush } from "../remote/push/dispatch";
 
@@ -43,7 +43,7 @@ export interface RemoteNotificationPayload {
 
 /**
  * Fan a notification out to every connected remote device. Routed through
- * `broadcastToRenderers` so the gateway's broadcast tap picks it up; the
+ * `emitHostEvent` so the gateway's broadcast tap picks it up; the
  * desktop renderer has no listener for this channel and ignores it.
  *
  * Devices that are *not* connected can't see that event, so they get a real
@@ -52,6 +52,6 @@ export interface RemoteNotificationPayload {
 export function broadcastRemoteNotification(
   payload: RemoteNotificationPayload,
 ): void {
-  broadcastToRenderers("remote:notification", payload);
+  emitHostEvent("remote:notification", payload);
   dispatchRemotePush(payload);
 }

@@ -10,8 +10,8 @@
 import { app } from "electron";
 import { autoUpdater } from "electron-updater";
 import type { UpdateInfo } from "electron-updater";
+import { emitHostEvent } from "@argus/host/bus";
 import { createLogger } from "../../../app/lib/logger";
-import { broadcastToRenderers } from "../../broadcast";
 import { loadAppSettings } from "../appSettings/store";
 
 const logger = createLogger("updater");
@@ -73,7 +73,7 @@ export function setBeforeQuitAndInstallHook(hook: () => void): void {
 
 function setState(patch: Partial<UpdaterState>): void {
   state = { ...state, ...patch };
-  broadcastToRenderers("updater:state", state);
+  emitHostEvent("updater:state", state);
 }
 
 function normalizeReleaseNotes(

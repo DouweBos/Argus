@@ -14,8 +14,8 @@ import type { AndroidCaptureBackend } from "./android-backend";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import * as net from "node:net";
 import { promisify } from "node:util";
+import { emitHostEvent } from "@argus/host/bus";
 import { log } from "../../../app/lib/logger";
-import { broadcastToRenderers } from "../../broadcast";
 import { resolveAssetPath } from "../tools/assets";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
@@ -430,11 +430,11 @@ export class AndroidBridge implements AndroidCaptureBackend {
         log(
           `[AndroidBridge] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
-        broadcastToRenderers(`android_video_config:${this.serial}`, config);
+        emitHostEvent(`android_video_config:${this.serial}`, config);
         emitVideoConfig(this.serial, config);
       },
       onFrame: (data, keyFrame, timestamp) => {
-        broadcastToRenderers(`android_video_frame:${this.serial}`, {
+        emitHostEvent(`android_video_frame:${this.serial}`, {
           data,
           keyFrame,
           timestamp,

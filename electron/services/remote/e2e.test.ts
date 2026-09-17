@@ -6,9 +6,9 @@ import { generateKeypair, NoiseHandshake } from "./noise";
 // Real gateway dispatch over the real local WS server, but stub the
 // electron-bound service layer + broadcast + device lookup.
 const DEVICES: PairedDevice[] = [];
-vi.mock("../../broadcast", () => ({
-  addBroadcastTap: () => () => {},
-  broadcastToRenderers: () => {},
+vi.mock("@argus/host/bus", () => ({
+  addHostEventSink: () => () => {},
+  emitHostEvent: () => {},
 }));
 vi.mock("../../state", () => ({
   appState: { agents: new Map(), agentSnapshots: new Map() },

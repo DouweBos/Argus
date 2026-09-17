@@ -1,6 +1,6 @@
 import type { Session, WorkspaceEnvConfig } from "../session/models";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addBroadcastTap } from "../../broadcast";
+import { addHostEventSink } from "@argus/host/bus";
 import { appState } from "../../state";
 import {
   workspaceEnvValue,
@@ -158,7 +158,7 @@ describe("terminal events on the broadcast bus", () => {
 
   beforeEach(() => {
     events = [];
-    untap = addBroadcastTap((channel, args) => {
+    untap = addHostEventSink((channel, args) => {
       events.push({ channel, args });
     });
     // Unrecognised shell → `sh -c <command>`, skipping the user's rc files.

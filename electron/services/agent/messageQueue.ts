@@ -14,7 +14,7 @@
  * gateway; both funnel here, and every change broadcasts `agent:queue:<id>`.
  */
 
-import { broadcastToRenderers } from "../../broadcast";
+import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 
 /** Cap per agent so a runaway client can't grow a queue without bound. */
@@ -36,7 +36,7 @@ export interface QueuedMessage {
 }
 
 function emit(agentId: string): void {
-  broadcastToRenderers(`agent:queue:${agentId}`, listQueue(agentId));
+  emitHostEvent(`agent:queue:${agentId}`, listQueue(agentId));
 }
 
 /** Everything waiting for this agent, oldest first. */

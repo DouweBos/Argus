@@ -19,9 +19,9 @@ vi.mock("./deviceStore", () => ({
     ...(g.admin ? ["admin"] : []),
   ],
 }));
-vi.mock("../../broadcast", () => ({
-  addBroadcastTap: () => () => {},
-  broadcastToRenderers: () => {},
+vi.mock("@argus/host/bus", () => ({
+  addHostEventSink: () => () => {},
+  emitHostEvent: () => {},
 }));
 vi.mock("../../state", () => ({
   appState: { agents: new Map(), agentSnapshots: new Map() },

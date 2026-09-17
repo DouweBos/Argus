@@ -18,8 +18,8 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { emitHostEvent } from "@argus/host/bus";
 import { createLogger } from "../../../app/lib/logger";
-import { broadcastToRenderers } from "../../broadcast";
 import { argusHomeDir } from "../../lib/argusHome";
 import { ensureArgusDir } from "../onboarding/state";
 import { resolveAssetPath } from "../tools/assets";
@@ -163,7 +163,7 @@ export function getConductorStatus(): ConductorStatus {
 function setState(next: ProvisionState, err: string | null = null): void {
   state = next;
   error = err;
-  broadcastToRenderers(CONDUCTOR_STATUS_EVENT, getConductorStatus());
+  emitHostEvent(CONDUCTOR_STATUS_EVENT, getConductorStatus());
 }
 
 // ---------------------------------------------------------------------------

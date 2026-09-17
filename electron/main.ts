@@ -20,8 +20,9 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { emitHostEvent } from "@argus/host/bus";
 import { log as emitLog } from "../app/lib/logger";
-import { broadcastToRenderers } from "./broadcast";
+import { installRendererEventSink } from "./broadcast";
 import { startDevTrust, stopDevTrust } from "./devTrust";
 import { registerIpcHandlers } from "./ipc";
 import { argusHomeDir } from "./lib/argusHome";
@@ -874,6 +875,10 @@ app.whenReady().then(() => {
     process.resourcesPath,
   );
 
+  // Renderers are the first sink on the host bus, so they keep receiving
+  // events in the order they were emitted even once the gateway taps it too.
+  installRendererEventSink();
+
   // Anonymous telemetry. Starts disabled — the renderer pushes the user's
   // consent state (collected during onboarding, kept in localStorage) once
   // it boots. Until that arrives, no events are sent.
@@ -1339,7 +1344,7 @@ export function createFloatingAgentWindow(options: {
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
     appState.agentPopouts.delete(agentId);
-    broadcastToRenderers("agent:popout-closed", { agentId });
+    emitHostEvent("agent:popout-closed", { agentId });
   });
 
   appState.agentPopouts.set(agentId, win);

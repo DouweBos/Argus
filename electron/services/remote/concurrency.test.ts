@@ -16,9 +16,9 @@ vi.mock("../../state", () => ({
     agentPendingPermissions: new Map(),
   },
 }));
-vi.mock("../../broadcast", () => ({
-  addBroadcastTap: vi.fn(() => () => undefined),
-  broadcastToRenderers: vi.fn(),
+vi.mock("@argus/host/bus", () => ({
+  addHostEventSink: vi.fn(() => () => undefined),
+  emitHostEvent: vi.fn(),
 }));
 vi.mock("../agent/agentService", () => ({
   listAgents: vi.fn(() => []),

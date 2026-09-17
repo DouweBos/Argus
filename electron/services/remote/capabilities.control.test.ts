@@ -10,7 +10,7 @@ import type { AgentSession } from "../agent/models";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MethodResult, REMOTE_METHODS } from "@argus/remote-protocol";
 
-vi.mock("../../broadcast", () => ({ broadcastToRenderers: vi.fn() }));
+vi.mock("@argus/host/bus", () => ({ emitHostEvent: vi.fn() }));
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),

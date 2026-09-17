@@ -24,8 +24,8 @@ import {
   type ChildProcess,
 } from "node:child_process";
 import { promisify } from "node:util";
+import { emitHostEvent } from "@argus/host/bus";
 import { log } from "../../../app/lib/logger";
-import { broadcastToRenderers } from "../../broadcast";
 import { resolveAssetPath } from "../tools/assets";
 import { discoverEmulatorGrpc } from "./emulator-discovery";
 import { ANDROID_TO_EVDEV, BUTTON_TO_KEY } from "./emulator-input";
@@ -302,10 +302,10 @@ export class EmulatorGrpcBridge implements AndroidCaptureBackend {
         log(
           `[EmulatorGrpc] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)}`,
         );
-        broadcastToRenderers(`android_video_config:${this.serial}`, config);
+        emitHostEvent(`android_video_config:${this.serial}`, config);
       },
       onFrame: (data, keyFrame, timestamp) => {
-        broadcastToRenderers(`android_video_frame:${this.serial}`, {
+        emitHostEvent(`android_video_frame:${this.serial}`, {
           data,
           keyFrame,
           timestamp,
