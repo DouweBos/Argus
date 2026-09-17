@@ -28,6 +28,7 @@ import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
+import { initHuddleRooms } from "./stores/huddleStore";
 import { getTelemetryMode } from "./stores/settingsStore";
 
 export function boot(popoutMode: string | null, params: URLSearchParams): void {
@@ -101,6 +102,9 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
     // Poll the device list so the sidebar count updates even before the
     // Devices screen has been opened.
     initDevicePolling();
+    // Mirror live huddle rooms so the share button and join prompts are
+    // driven by the host's broadcast rather than by polling.
+    initHuddleRooms();
     // Subscribe to project/session lifecycle events once for the whole app —
     // components no longer install their own listeners on mount.
     initSessionEventListeners();

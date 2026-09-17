@@ -1195,3 +1195,14 @@ export interface RemotePairingStart {
   pairingCode: string;
   qrPayload: string;
 }
+
+/**
+ * Huddle rooms — a temporary link that lets a guest talk to one agent and
+ * drive one device. The shapes are the host's, re-exported here so components
+ * import them like every other backend type.
+ */
+export type {
+  HuddleGuest,
+  HuddleGuestState,
+  HuddleRoom,
+} from "@argus/remote-protocol";

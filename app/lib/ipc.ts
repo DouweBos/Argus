@@ -29,6 +29,7 @@ import type {
   GitStatus,
   HostDirectoryListing,
   HostSnapshot,
+  HuddleRoom,
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
@@ -1564,6 +1565,36 @@ export const remoteCancelPairing = (): Promise<void> =>
  * Set an already-paired device's grants. `admin` is another Mac driving this
  * one as if sitting at its keyboard — only ever for a machine you own.
  */
+/**
+ * Share one agent — plus whatever device the host has open — over a temporary
+ * link. Resolves to the room, with `url` already set to the link to paste.
+ * Pass an empty `deviceKey` when no device is open: the room is chat-only.
+ */
+export const huddleStart = (
+  agentId: string,
+  deviceKey: string,
+): Promise<HuddleRoom> => invoke("huddle_start", { agentId, deviceKey });
+
+/** End one share: guests revoked and dropped, the public URL given back. */
+export const huddleStop = (roomId: string): Promise<boolean> =>
+  invoke("huddle_stop", { roomId });
+
+/** Every live room. Rooms are in memory, so this is empty after a restart. */
+export const huddleList = (): Promise<HuddleRoom[]> =>
+  invoke("huddle_list", {});
+
+/** Let a pending guest in. This is what mints their scoped grant. */
+export const huddleApproveGuest = (
+  roomId: string,
+  devStaticPub: string,
+): Promise<boolean> => invoke("huddle_approve_guest", { roomId, devStaticPub });
+
+/** Turn a pending guest away. The key stays denied for the room's lifetime. */
+export const huddleDenyGuest = (
+  roomId: string,
+  devStaticPub: string,
+): Promise<boolean> => invoke("huddle_deny_guest", { roomId, devStaticPub });
+
 export const remoteSetDeviceGrants = (
   deviceId: string,
   grants: { admin: boolean; control: boolean },

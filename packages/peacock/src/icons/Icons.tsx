@@ -1749,3 +1749,46 @@ export function LockIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+export function ShareIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 10V2.5" />
+      <path d="m5.25 5.25 2.75-2.75 2.75 2.75" />
+      <path d="M3.5 9.5v3.25a.75.75 0 0 0 .75.75h7.5a.75.75 0 0 0 .75-.75V9.5" />
+    </svg>
+  );
+}
+
+export function GuestsIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <circle cx="6.25" cy="5.5" r="2.25" />
+      <path d="M2.25 13.25c0-2.07 1.79-3.5 4-3.5s4 1.43 4 3.5" />
+      <path d="M10.75 3.6a2.25 2.25 0 0 1 0 4.3" />
+      <path d="M11.75 10.1c1.3.45 2.25 1.58 2.25 3.15" />
+    </svg>
+  );
+}

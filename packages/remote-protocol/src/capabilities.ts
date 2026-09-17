@@ -64,6 +64,13 @@ export const HOST_ONLY_COMMANDS = new Set([
   // Reconfiguring how the host is reachable is console-only, like pairing.
   "remote_tailscale_diagnose",
   "remote_tailscale_fix",
+  // Sharing an agent, letting a guest in, and ending a share are trust
+  // decisions — same root as pairing, and `huddle_list` hands back room tokens.
+  "huddle_start",
+  "huddle_stop",
+  "huddle_list",
+  "huddle_approve_guest",
+  "huddle_deny_guest",
 ]);
 
 /** Every request method the remote client may send, and the grant it needs. */
