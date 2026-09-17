@@ -40,7 +40,11 @@
   padding: 8px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--border-radius-md);
-  background: var(--surface-2);
+  /* Floats over the window, so it needs a fill of its own — the `--surface-*`
+     scale is translucent and only reads correctly on an opaque parent. */
+  background: var(--bg-secondary-90);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow: var(--shadow-md);
 }
 
