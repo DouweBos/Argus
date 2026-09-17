@@ -2,7 +2,7 @@
  * IPC command registration — routes commands to service functions.
  *
  * Every command is declared through `defineCommand` (via the local `handle`
- * helpers), which owns both the registry entry and the `ipcMain.handle` call.
+ * helpers), which owns the registry entry; `ipcBridge.ts` publishes it on IPC.
  * Each handler unwraps the args object and delegates to the appropriate service.
  * Errors thrown in handlers automatically reject the renderer's promise
  * (errors are thrown as plain strings).
@@ -584,7 +584,7 @@ function toolHandle(
   });
 }
 
-/** Helper: register a command in the registry, which owns `ipcMain.handle`. */
+/** Helper: register a command in the registry, which publishes it on IPC. */
 function handle(
   channel: string,
   tier: CommandTier,
