@@ -90,6 +90,7 @@ export async function initTransport(): Promise<void> {
  * answers — every other host carries on either way.
  */
 export async function attachTo(hostId: HostId): Promise<void> {
+  wireRehydration();
   const host = getRemoteHost(hostId);
   if (!host) {
     throw new HostUnavailableError(hostId, hostId);
@@ -136,18 +137,28 @@ export async function focusHost(hostId: HostId): Promise<void> {
   setFocusedHost(hostId);
 }
 
+let rehydrationWired = false;
+
 /**
  * Re-hydrate a host that dropped and came back: it kept running agents while
- * we were away, so the snapshot we are showing is stale.
+ * we were away, so the snapshot we are showing is stale. Wired on first attach
+ * rather than at module load — `ipc.ts` imports this file, so module scope
+ * here runs while half the renderer is still initialising.
  */
-onHostState((hostId, state, previous) => {
-  if (state !== "ready" || previous !== "offline") {
+function wireRehydration(): void {
+  if (rehydrationWired) {
     return;
   }
-  import("../hostHydration")
-    .then(({ hydrateHost }) => hydrateHost(hostId))
-    .catch(() => undefined);
-});
+  rehydrationWired = true;
+  onHostState((hostId, state, previous) => {
+    if (state !== "ready" || previous !== "offline") {
+      return;
+    }
+    import("../hostHydration")
+      .then(({ hydrateHost }) => hydrateHost(hostId))
+      .catch(() => undefined);
+  });
+}
 
 export { subscribe, isAttached, detachHost, attachHost, onHostState };
 export { localTransport };
