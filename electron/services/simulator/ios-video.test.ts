@@ -1,7 +1,8 @@
 import type { H264Config } from "./h264-parser";
 import * as net from "node:net";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addBroadcastTap } from "../../broadcast";
+import { addHostEventSink } from "@argus/host/bus";
+import { installRendererEventSink } from "../../broadcast";
 import { startIosVideoStream, stopIosVideoStream } from "./ios-video";
 import { onVideo } from "./videoForward";
 
@@ -71,8 +72,9 @@ describe("iOS video on the broadcast bus", () => {
   }
 
   it("delivers config and frames to renderers, taps and videoForward", async () => {
+    const unsink = installRendererEventSink();
     const tapped: { channel: string; args: unknown[] }[] = [];
-    const untap = addBroadcastTap((channel, args) => {
+    const untap = addHostEventSink((channel, args) => {
       tapped.push({ channel, args });
     });
     const forwarded: { config?: H264Config; frames: number } = { frames: 0 };
@@ -92,6 +94,7 @@ describe("iOS video on the broadcast bus", () => {
     startIosVideoStream(UDID, port);
     await done;
     untap();
+    unsink();
 
     expect(forwarded.config?.codedWidth).toBe(64);
     expect(forwarded.frames).toBe(1);

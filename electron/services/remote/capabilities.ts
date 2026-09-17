@@ -12,6 +12,7 @@ import type { AgentSession } from "../agent/models";
 import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
 import type { Session } from "../session/models";
 import type { z } from "zod";
+import { emitHostEvent } from "@argus/host/bus";
 import {
   MethodParams,
   REMOTE_METHODS,
@@ -32,7 +33,6 @@ import {
   type RemoteToolResultBlock,
   type RemoteTodo,
 } from "@argus/remote-protocol";
-import { broadcastToRenderers } from "../../broadcast";
 import { appState } from "../../state";
 import {
   interruptAgent,
@@ -1077,7 +1077,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // The desktop renderer records the user bubble only for sends it initiates;
     // mirror this remote send so the prompt (not just the response) shows and
     // lands in the published snapshot the web client reads back.
-    broadcastToRenderers(`agent:remote-message:${agent_id}`, {
+    emitHostEvent(`agent:remote-message:${agent_id}`, {
       message,
       images,
     });
@@ -1139,7 +1139,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // stream, and publish the transcript snapshots the remote monitor reads.
     // Without it the agent is a backend-only "ghost": never shown on the
     // desktop and producing no snapshot for us to read back.
-    broadcastToRenderers("agent:started", info);
+    emitHostEvent("agent:started", info);
     const agent = appState.agents.get(info.agent_id);
     if (!agent) {
       throw new GatewayError("internal", "spawned agent vanished");

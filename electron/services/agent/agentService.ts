@@ -42,8 +42,8 @@ import { app } from "electron";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "../../../app/lib/logger";
-import { broadcastToRenderers } from "../../broadcast";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
 import { webBrowserPool } from "../browser/pool";
@@ -195,7 +195,7 @@ export async function startAgent(
   }
   if (!existsSync(argusSession.path)) {
     appState.sessions.delete(sessionId);
-    broadcastToRenderers("session:deleted", sessionId);
+    emitHostEvent("session:deleted", sessionId);
     throw `Session working directory no longer exists: ${argusSession.path}`;
   }
   const worktreePath = argusSession.path;
@@ -472,7 +472,7 @@ export async function startAgent(
       warn(`[agent:${agentId}] account ${accountId} needs re-authentication`);
       emitAccountsChanged();
     }
-    broadcastToRenderers(`agent:stderr:${agentId}`, line);
+    emitHostEvent(`agent:stderr:${agentId}`, line);
   });
 
   handle.on("permission-request", (payload: unknown) => {
@@ -485,7 +485,7 @@ export async function startAgent(
       }
       pending.set(p.tool_use_id, p);
     }
-    broadcastToRenderers(`agent:permission:${agentId}`, payload);
+    emitHostEvent(`agent:permission:${agentId}`, payload);
   });
 
   handle.on("permission-cancel", (payload: unknown) => {
@@ -493,16 +493,16 @@ export async function startAgent(
     if (p?.tool_use_id) {
       appState.agentPendingPermissions.get(agentId)?.delete(p.tool_use_id);
     }
-    broadcastToRenderers(`agent:permission-cancel:${agentId}`, payload);
+    emitHostEvent(`agent:permission-cancel:${agentId}`, payload);
   });
 
   handle.on("capabilities", (payload: unknown) => {
-    broadcastToRenderers(`agent:capabilities:${agentId}`, payload);
+    emitHostEvent(`agent:capabilities:${agentId}`, payload);
   });
 
   handle.on("stream-event", (line: string) => {
     onStreamLine(agentId, line);
-    broadcastToRenderers(eventChannel, line);
+    emitHostEvent(eventChannel, line);
   });
 
   handle.on("exit", (exitCode: number) => {
@@ -545,7 +545,7 @@ export async function startAgent(
       warn(`[agent:${agentId}] web browser release failed: ${String(e)}`);
     });
 
-    broadcastToRenderers(`agent:exit:${agentId}`, exitCode);
+    emitHostEvent(`agent:exit:${agentId}`, exitCode);
     info(`[agent:${agentId}] process exited with code ${exitCode}`);
 
     if (agentEntry) {
@@ -702,17 +702,11 @@ function onStreamLine(agentId: string, line: string): void {
             session.prePlanPermissionMode ?? DEFAULT_AGENT_PERMISSION_MODE;
           session.prePlanPermissionMode = null;
           session.permissionMode = restore;
-          broadcastToRenderers(
-            `agent:permission-mode-changed:${agentId}`,
-            restore,
-          );
+          emitHostEvent(`agent:permission-mode-changed:${agentId}`, restore);
           session.handle.setPermissionMode(restore).catch(() => {});
         } else if (canonical !== session.permissionMode) {
           session.permissionMode = canonical;
-          broadcastToRenderers(
-            `agent:permission-mode-changed:${agentId}`,
-            canonical,
-          );
+          emitHostEvent(`agent:permission-mode-changed:${agentId}`, canonical);
         }
       }
     } catch {
@@ -1273,7 +1267,7 @@ export function emitMcpSystemMessage(
     parentLabel,
     timestamp: Date.now(),
   };
-  broadcastToRenderers(`agent:mcp-message:${recipientAgentId}`, full);
+  emitHostEvent(`agent:mcp-message:${recipientAgentId}`, full);
 }
 
 // ---------------------------------------------------------------------------
@@ -1296,7 +1290,7 @@ export async function setAgentModel(
 
   session.model = model;
 
-  broadcastToRenderers(`agent:model-changed:${agentId}`, model);
+  emitHostEvent(`agent:model-changed:${agentId}`, model);
   info(`[agent:${agentId}] model changed to ${model}`);
 }
 
@@ -1332,7 +1326,7 @@ export async function setAgentPermissionMode(
 
   session.permissionMode = mode;
 
-  broadcastToRenderers(`agent:permission-mode-changed:${agentId}`, mode);
+  emitHostEvent(`agent:permission-mode-changed:${agentId}`, mode);
   info(`[agent:${agentId}] permission mode changed to ${mode}`);
 }
 
@@ -1354,7 +1348,7 @@ export async function setAgentEffort(
 
   await session.handle.setEffort(level);
 
-  broadcastToRenderers(`agent:effort-changed:${agentId}`, level);
+  emitHostEvent(`agent:effort-changed:${agentId}`, level);
   info(`[agent:${agentId}] effort changed to ${level ?? "(default)"}`);
 }
 
@@ -1504,7 +1498,7 @@ export function respondToPermission(
   // re-broadcast so the loser's UI clears.
   const pending = appState.agentPendingPermissions.get(agentId);
   if (pending && !pending.has(toolUseId)) {
-    broadcastToRenderers(`agent:permission-resolved:${agentId}`, {
+    emitHostEvent(`agent:permission-resolved:${agentId}`, {
       tool_use_id: toolUseId,
       decision,
     });
@@ -1530,7 +1524,7 @@ export function respondToPermission(
   // and republishes the snapshot. Essential when a remote (web) client answers:
   // otherwise the renderer never learns and the tool call stays "awaiting
   // permission" forever, on the desktop and in the mirrored remote transcript.
-  broadcastToRenderers(`agent:permission-resolved:${agentId}`, {
+  emitHostEvent(`agent:permission-resolved:${agentId}`, {
     tool_use_id: toolUseId,
     decision,
   });
@@ -1706,5 +1700,5 @@ function emitAgentStatus(agentId: string, status: AgentStatusValue): void {
   if (session?.suppressStatus) {
     return;
   }
-  broadcastToRenderers(`agent:status:${agentId}`, status);
+  emitHostEvent(`agent:status:${agentId}`, status);
 }

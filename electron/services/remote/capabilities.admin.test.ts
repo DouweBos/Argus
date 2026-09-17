@@ -17,7 +17,7 @@ vi.mock("electron", () => ({
   ipcMain: { handle: vi.fn() },
   safeStorage: { isEncryptionAvailable: () => false },
 }));
-vi.mock("../../broadcast", () => ({ broadcastToRenderers: vi.fn() }));
+vi.mock("@argus/host/bus", () => ({ emitHostEvent: vi.fn() }));
 vi.mock("../../state", () => ({
   appState: {
     agents: new Map(),

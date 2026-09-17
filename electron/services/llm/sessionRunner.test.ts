@@ -10,7 +10,7 @@ vi.mock("../agent/agentService", () => ({
   respawnAgent: (id: string) => respawnAgent(id),
   stopAgent: (id: string) => stopAgent(id),
 }));
-vi.mock("../../broadcast", () => ({ broadcastToRenderers: () => {} }));
+vi.mock("@argus/host/bus", () => ({ emitHostEvent: () => {} }));
 vi.mock("../session/git", () => ({ worktreesRoot: () => "/worktrees" }));
 vi.mock("../session/metadata", () => ({
   loadMetadata: () => new Map(),

@@ -12,6 +12,7 @@ import type { PairedDevice } from "./deviceStore";
 import type { NoiseSession } from "./noise";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { H264Config } from "../simulator/h264-parser";
+import { addHostEventSink } from "@argus/host/bus";
 import {
   Envelope,
   EventPayloads,
@@ -20,7 +21,6 @@ import {
   type RemotePlatform,
 } from "@argus/remote-protocol";
 import { log } from "../../../app/lib/logger";
-import { addBroadcastTap } from "../../broadcast";
 import { appState } from "../../state";
 import {
   forceStopAndroidCapture,
@@ -573,7 +573,7 @@ export function getConnectedDeviceIds(): string[] {
 export function addConnection(conn: DeviceConnection): void {
   connections.add(conn);
   if (!untap) {
-    untap = addBroadcastTap((channel, args) => {
+    untap = addHostEventSink((channel, args) => {
       for (const c of connections) {
         c.handleBroadcast(channel, args);
       }

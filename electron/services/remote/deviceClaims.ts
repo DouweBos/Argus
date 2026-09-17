@@ -12,7 +12,7 @@
  * keeps direct control, and the claim only arbitrates between remote clients.
  */
 
-import { broadcastToRenderers } from "../../broadcast";
+import { emitHostEvent } from "@argus/host/bus";
 
 /** A claim left untouched this long is up for grabs without an explicit takeover. */
 export const CLAIM_IDLE_MS = 30_000;
@@ -69,7 +69,7 @@ export function getClaim(deviceId: string): PublicClaim | null {
 }
 
 function publish(deviceId: string): void {
-  broadcastToRenderers("devices:claim-changed", {
+  emitHostEvent("devices:claim-changed", {
     device_id: deviceId,
     holder: getClaim(deviceId),
   });

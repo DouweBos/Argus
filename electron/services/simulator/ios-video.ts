@@ -12,8 +12,8 @@
  */
 
 import * as net from "node:net";
+import { emitHostEvent } from "@argus/host/bus";
 import { error, log } from "../../../app/lib/logger";
-import { broadcastToRenderers } from "../../broadcast";
 import { H264AccessUnitParser } from "./h264-parser";
 import { clearVideo, emitVideoConfig, emitVideoFrame } from "./videoForward";
 
@@ -42,11 +42,11 @@ export function startIosVideoStream(udid: string, port: number): void {
       log(
         `[IosVideo] H.264 config: ${config.codec}, ${String(config.codedWidth)}x${String(config.codedHeight)} (${udid})`,
       );
-      broadcastToRenderers(`ios_video_config:${udid}`, config);
+      emitHostEvent(`ios_video_config:${udid}`, config);
       emitVideoConfig(udid, config);
     },
     onFrame: (data, keyFrame, timestamp) => {
-      broadcastToRenderers(`ios_video_frame:${udid}`, {
+      emitHostEvent(`ios_video_frame:${udid}`, {
         data,
         keyFrame,
         timestamp,

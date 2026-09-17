@@ -8,7 +8,7 @@
  * started agent) are restarted so they run under the new runner's env.
  */
 
-import { broadcastToRenderers } from "../../broadcast";
+import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 import { respawnAgent, stopAgent } from "../agent/agentService";
 import { worktreesRoot } from "../session/git";
@@ -68,7 +68,7 @@ export async function setSessionRunner(
     }
   }
 
-  broadcastToRenderers("session:updated", {
+  emitHostEvent("session:updated", {
     id: sessionId,
     runner_id: session.runner_id,
     model: session.model,

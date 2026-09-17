@@ -26,7 +26,7 @@ import type { IPty } from "node-pty";
 import type * as NodePty from "node-pty";
 import fs from "node:fs";
 import path from "node:path";
-import { broadcastToRenderers } from "../../broadcast";
+import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 import {
   envForAccount,
@@ -395,7 +395,7 @@ export function createTerminal(
     }
     const combined = pendingChunks.join("");
     pendingChunks = [];
-    broadcastToRenderers(
+    emitHostEvent(
       `terminal:data:${terminalId}`,
       Buffer.from(combined).toString("base64"),
     );
@@ -465,14 +465,14 @@ export function createTerminal(
         terminal.outputLog = terminal.outputLog.slice(overflow);
         terminal.outputDroppedBytes += overflow;
       }
-      broadcastToRenderers(
+      emitHostEvent(
         `terminal:data:${terminalId}`,
         Buffer.from(line).toString("base64"),
       );
     }
     terminal.exitCode = exitCode;
     terminal.exitedAt = Date.now();
-    broadcastToRenderers(`terminal:exit:${terminalId}`, exitCode);
+    emitHostEvent(`terminal:exit:${terminalId}`, exitCode);
     // Wake any pending waiters so they unblock immediately. We deliberately
     // KEEP the entry in `appState.terminals` after exit so that follow-up
     // reads still return the captured output and exit code; entries are
@@ -957,7 +957,7 @@ export function destroyTerminal(sessionId: string): void {
   session.waiters = [];
 
   // Notify the renderer that the session has ended.
-  broadcastToRenderers(`terminal:exit:${sessionId}`, -1);
+  emitHostEvent(`terminal:exit:${sessionId}`, -1);
 }
 
 /**
