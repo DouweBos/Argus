@@ -8,8 +8,17 @@
  */
 
 import { useEffect, useState } from "react";
-import { Icons, SidebarHeader, SidebarHeaderAction, Spinner } from "@argus/peacock";
-import { huddlePanes, type HuddlePane, type HuddleView } from "../lib/huddleSession";
+import {
+  Icons,
+  SidebarHeader,
+  SidebarHeaderAction,
+  Spinner,
+} from "@argus/peacock";
+import {
+  huddlePanes,
+  type HuddlePane,
+  type HuddleView,
+} from "../lib/huddleSession";
 import { readGuestLabel, rememberGuestLabel } from "../lib/huddleIdentity";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
