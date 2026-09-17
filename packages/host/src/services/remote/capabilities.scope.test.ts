@@ -140,6 +140,7 @@ function agentFixture(agentId: string, sessionId: string) {
   } as never;
 }
 
+/** Dispatch expecting a refusal; resolves to "<code>: <message>". */
 async function denied(
   method: string,
   params: unknown,
@@ -150,14 +151,15 @@ async function denied(
   } catch (err) {
     const e = err as { code?: string; message: string };
 
-    expect(e.code).toBe("capability_denied");
-
-    return e.message;
+    return `${e.code ?? "?"}: ${e.message}`;
   }
   throw new Error(`${method} was allowed but should have been denied`);
 }
 
-beforeEach(() => {
+const OUT_OF_SCOPE = /^capability_denied: .+ is outside this grant's scope$/;
+
+/** Two agents, in two sessions, in two projects. */
+function seed(): void {
   resetClaims();
   appState.agents.clear();
   appState.agents.set("a1", agentFixture("a1", "s1"));
@@ -177,10 +179,12 @@ beforeEach(() => {
     branch: "b2",
     status: "ready",
   } as never);
-});
+}
 
 describe("an unscoped context is unaffected", () => {
   const ctx = makeCtx();
+
+  beforeEach(seed);
 
   it("reaches every agent", async () => {
     await expect(
@@ -218,6 +222,8 @@ describe("an unscoped context is unaffected", () => {
 describe("a scoped context reaching its own subjects", () => {
   const ctx = makeCtx(SCOPE);
 
+  beforeEach(seed);
+
   it("allows its agent", async () => {
     await expect(
       dispatch("agents.status", { agent_id: "a1" }, ctx),
@@ -246,59 +252,111 @@ describe("a scoped context reaching its own subjects", () => {
 describe("a scoped context reaching anything else", () => {
   const ctx = makeCtx(SCOPE);
 
+  beforeEach(seed);
+
   it("denies another agent", async () => {
-    for (const method of [
+    const methods = [
       "agents.status",
       "agents.vitals",
       "agents.transcript",
+      "agents.image",
+      "agents.capabilities",
       "agents.send",
       "agents.interrupt",
       "agents.stop",
-      "agents.queue_list",
       "agents.set_model",
-    ]) {
-      expect(
-        await denied(method, { agent_id: "a2", message: "hi" }, ctx),
-      ).toContain("outside this grant's scope");
-    }
+      "agents.set_permission_mode",
+      "agents.set_effort",
+      "agents.queue_list",
+      "agents.queue_add",
+      "agents.queue_remove",
+      "agents.queue_update",
+      "permission.respond",
+    ];
+    const results = await Promise.all(
+      methods.map((m) =>
+        denied(m, { agent_id: "a2", message: "hi", id: "q1" }, ctx),
+      ),
+    );
+
+    expect(results).toEqual(
+      methods.map(() => expect.stringMatching(OUT_OF_SCOPE)),
+    );
   });
 
   it("denies another device and another browser", async () => {
-    await denied("devices.watch", { device_id: "udid-2" }, ctx);
-    await denied(
-      "devices.touch",
-      { device_id: "udid-2", platform: "ios", x: 0, y: 0, event_type: 0 },
-      ctx,
+    const results = await Promise.all([
+      denied("devices.watch", { device_id: "udid-2" }, ctx),
+      denied("devices.claim", { device_id: "udid-2" }, ctx),
+      denied(
+        "devices.touch",
+        { device_id: "udid-2", platform: "ios", x: 0, y: 0, event_type: 0 },
+        ctx,
+      ),
+      denied("browser.watch", { session_id: "s2" }, ctx),
+    ]);
+
+    expect(results).toEqual(
+      results.map(() => expect.stringMatching(OUT_OF_SCOPE)),
     );
-    await denied("browser.watch", { session_id: "s2" }, ctx);
+    expect(results).toHaveLength(4);
   });
 
   it("denies another session", async () => {
-    await denied("sessions.diff", { session_id: "s2" }, ctx);
-    await denied("sessions.git_status", { session_id: "s2" }, ctx);
+    const results = await Promise.all([
+      denied("sessions.diff", { session_id: "s2" }, ctx),
+      denied("sessions.git_status", { session_id: "s2" }, ctx),
+      denied("sessions.files", { session_id: "s2" }, ctx),
+    ]);
+
+    expect(results).toEqual([
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+    ]);
   });
 
   it("denies creating and destroying things outright", async () => {
-    await denied("agents.spawn", { session_id: "s1" }, ctx);
-    await denied("sessions.create", { repo_root: "/repo/one" }, ctx);
-    await denied("sessions.delete", { id: "s1" }, ctx);
-    await denied("sessions.checkout", { session_id: "s1", branch: "x" }, ctx);
-    await denied(
-      "agents.stopped_transcript",
-      { repo_root: "/repo/one", history_id: "h1" },
-      ctx,
-    );
+    const results = await Promise.all([
+      denied("agents.spawn", { session_id: "s1" }, ctx),
+      denied("sessions.create", { repo_root: "/repo/one" }, ctx),
+      denied("sessions.delete", { id: "s1" }, ctx),
+      denied("sessions.checkout", { session_id: "s1", branch: "x" }, ctx),
+      denied(
+        "agents.stopped_transcript",
+        { repo_root: "/repo/one", history_id: "h1" },
+        ctx,
+      ),
+    ]);
+
+    expect(results).toEqual([
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+    ]);
   });
 
   it("denies a missing or non-string subject rather than falling through", async () => {
-    await denied("agents.status", {}, ctx);
-    await denied("agents.status", { agent_id: 7 }, ctx);
-    await denied("agents.status", null, ctx);
+    const results = await Promise.all([
+      denied("agents.status", {}, ctx),
+      denied("agents.status", { agent_id: 7 }, ctx),
+      denied("agents.status", null, ctx),
+    ]);
+
+    expect(results).toEqual([
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+      expect.stringMatching(OUT_OF_SCOPE),
+    ]);
   });
 });
 
 describe("enumerating methods are filtered, not refused", () => {
   const ctx = makeCtx(SCOPE);
+
+  beforeEach(seed);
 
   it("narrows agents.list to the scoped agent", async () => {
     const res = (await dispatch("agents.list", {}, ctx)) as {
@@ -346,6 +404,8 @@ describe("enumerating methods are filtered, not refused", () => {
 });
 
 describe("a scoped grant can never be admin", () => {
+  beforeEach(seed);
+
   it("strips admin when minting one", () => {
     expect(scopeSafeCapabilities(["monitor", "control", "admin"])).toEqual([
       "monitor",
@@ -356,17 +416,21 @@ describe("a scoped grant can never be admin", () => {
   it("ignores an admin grant that somehow got scoped", async () => {
     const ctx = makeCtx(SCOPE, ["admin"]);
     // Admin no longer implies the narrower tiers…
-    expect(await denied("agents.status", { agent_id: "a1" }, ctx)).toContain(
-      "lacks 'monitor'",
-    );
+    await expect(
+      denied("agents.status", { agent_id: "a1" }, ctx),
+    ).resolves.toContain("lacks 'monitor'");
     // …and the raw IPC passthrough is unreachable.
-    expect(await denied("list_projects", {}, ctx)).toContain("unknown method");
+    await expect(denied("list_projects", {}, ctx)).resolves.toContain(
+      "unknown method",
+    );
   });
 
   it("refuses the admin passthrough even for a scoped admin+control grant", async () => {
     const ctx = makeCtx(SCOPE, ["admin", "control", "monitor"]);
 
-    expect(await denied("list_projects", {}, ctx)).toContain("unknown method");
+    await expect(denied("list_projects", {}, ctx)).resolves.toContain(
+      "unknown method",
+    );
   });
 });
 
@@ -382,38 +446,42 @@ describe("the scope table covers every method", () => {
    * anything carrying an `agent_id`/`device_id` param must be scope-checked
    * against that param, not quietly marked open or filtered.
    */
+  const shapeOf = (method: RemoteMethod): string[] =>
+    Object.keys(
+      (MethodParams[method] as { shape: Record<string, unknown> }).shape,
+    );
+
+  /**
+   * The guard that makes a forgotten method a hole the build catches: anything
+   * carrying an `agent_id`/`device_id` param must be scope-checked against that
+   * param, not quietly marked open, filtered or denied.
+   */
   it("scope-checks every agent- and device-addressed method", () => {
-    for (const method of ALL_REMOTE_METHODS) {
-      const shape = Object.keys(
-        (MethodParams[method] as { shape: Record<string, unknown> }).shape,
-      );
-      const rule = METHOD_SCOPE[method as RemoteMethod];
-      if (shape.includes("agent_id")) {
-        expect([method, rule]).toEqual([
-          method,
-          { kind: "agent", param: "agent_id" },
-        ]);
-      }
-      if (shape.includes("device_id")) {
-        expect([method, rule]).toEqual([
-          method,
-          { kind: "device", param: "device_id" },
-        ]);
-      }
-    }
+    const byParam = (param: string, kind: string) =>
+      ALL_REMOTE_METHODS.filter((m) => shapeOf(m).includes(param)).map((m) => [
+        m,
+        METHOD_SCOPE[m].kind === kind &&
+          (METHOD_SCOPE[m] as { param?: string }).param === param,
+      ]);
+
+    expect(byParam("agent_id", "agent").map(([, ok]) => ok)).not.toContain(
+      false,
+    );
+    expect(byParam("device_id", "device").map(([, ok]) => ok)).not.toContain(
+      false,
+    );
+    // …and the tables aren't vacuously empty.
+    expect(byParam("agent_id", "agent").length).toBeGreaterThan(15);
+    expect(byParam("device_id", "device").length).toBeGreaterThan(5);
   });
 
   it("names a param that the method's schema actually has", () => {
-    for (const method of ALL_REMOTE_METHODS) {
-      const rule = METHOD_SCOPE[method as RemoteMethod];
-      if (!("param" in rule)) {
-        continue;
-      }
-      const shape = Object.keys(
-        (MethodParams[method] as { shape: Record<string, unknown> }).shape,
-      );
+    const strays = ALL_REMOTE_METHODS.filter((m) => {
+      const rule = METHOD_SCOPE[m];
 
-      expect([method, shape.includes(rule.param)]).toEqual([method, true]);
-    }
+      return "param" in rule && !shapeOf(m).includes(rule.param);
+    });
+
+    expect(strays).toEqual([]);
   });
 });

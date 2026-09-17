@@ -127,12 +127,14 @@ function connect(scope?: GrantScope, overrides: Partial<PairedDevice> = {}) {
 const events = (sent: Envelope[], name: string) =>
   sent.filter((e) => (e as { event?: string }).event === name);
 
-beforeEach(() => {
+function seed(): void {
   vi.clearAllMocks();
   resetClaims();
-});
+}
 
 describe("a scoped connection's subscriptions", () => {
+  beforeEach(seed);
+
   it("forwards its own agent's events", async () => {
     const g = connect(SCOPE);
     await g.send({ type: "sub", action: "subscribe", agent_id: "ag1" });
@@ -180,6 +182,8 @@ describe("a scoped connection's subscriptions", () => {
 });
 
 describe("a scoped connection's broadcast events", () => {
+  beforeEach(seed);
+
   it("only sees notifications for its own agent", () => {
     const g = connect(SCOPE);
     for (const agent_id of ["ag1", "ag2", null]) {
