@@ -10,7 +10,10 @@ import { useCallback, useState } from "react";
 import { useRouteHostId } from "../lib/routeHooks";
 import { attachTo, detachFrom, focusHost } from "../lib/transport";
 import { LOCAL_HOST_ID } from "../lib/transport/hostId";
-import { useHostConnections } from "../stores/connectionStore";
+import {
+  useHostConnections,
+  useUnreachableHosts,
+} from "../stores/connectionStore";
 import { pushError } from "../stores/notificationsStore";
 import { useRemoteHosts } from "../stores/settingsStore";
 
@@ -21,18 +24,19 @@ function labelFromUrl(url: string): string {
 
 export function hostLinkState(
   connection: HostConnectionInfo | undefined,
+  unreachable = false,
 ): HostLinkState {
   if (!connection) {
-    return "detached";
+    return unreachable ? "failed" : "detached";
   }
+  // A host that has already handed us a snapshot is coming back, not starting
+  // up — worth saying, because its last snapshot is still onscreen.
   switch (connection.state) {
     case "ready":
       return "connected";
     case "offline":
-      return "failed";
+      return connection.hydrated ? "reconnecting" : "failed";
     default:
-      // A host that has already handed us a snapshot is coming back, not
-      // starting up — worth saying, because its last snapshot is still onscreen.
       return connection.hydrated ? "reconnecting" : "connecting";
   }
 }
@@ -51,6 +55,7 @@ export function useHostEntries(): HostEntries {
   const connections = useHostConnections();
   const paired = useRemoteHosts();
   const focusedId = useRouteHostId();
+  const unreachable = useUnreachableHosts();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const byId = new Map(connections.map((c) => [c.hostId, c]));
@@ -74,7 +79,7 @@ export function useHostEntries(): HostEntries {
         label: host.label,
         attached: connection !== undefined,
         focused: focusedId === host.id,
-        state: hostLinkState(connection),
+        state: hostLinkState(connection, unreachable.includes(host.label)),
         detail: connection?.lastError ?? labelFromUrl(host.url),
       };
     }),
