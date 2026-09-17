@@ -1,5 +1,7 @@
 import type { AgentStatus } from "../lib/types";
 import { create } from "zustand";
+import { rememberAgentHost } from "../lib/transport/hostIndex";
+import { sessionHostId } from "./sessionStore";
 
 export interface SplitPair {
   left: string;
@@ -97,6 +99,9 @@ function replaceInOrder(
 const useAgentStore = agentStore;
 
 export const addAgent = (agent: AgentStatus) => {
+  // An agent belongs to its session's machine — every later call about it
+  // (interrupt, transcript, permission reply) has to reach the same one.
+  rememberAgentHost(agent.agent_id, sessionHostId(agent.session_id));
   agentStore.setState((state) => ({
     agents: { ...state.agents, [agent.agent_id]: agent },
     order: appendOrder(state.order, agent.session_id, agent.agent_id),

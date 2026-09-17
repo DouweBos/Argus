@@ -223,6 +223,8 @@ export type DevicePlatform = "android" | "ios" | "video" | "web";
 export interface DeviceInfo {
   agentId: string | null;
   deviceKey: string;
+  /** Machine the device is attached to. Unset means this Mac. */
+  hostId?: string;
   name: string;
   online: boolean;
   platform: DevicePlatform;

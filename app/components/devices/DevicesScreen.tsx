@@ -24,7 +24,7 @@ import {
   useDevicesViewMode,
   useGridTileSize,
 } from "../../stores/deviceGridStore";
-import { refreshDevices } from "../../stores/deviceStore";
+import { deviceKeyFor, refreshDevices } from "../../stores/deviceStore";
 import {
   useDevicePoller,
   useDevices,
@@ -244,7 +244,7 @@ export function DevicesScreen() {
             <div className={styles.pillBar}>
               {onlineDevices.map((d) => (
                 <Chip
-                  key={`${d.platform}:${d.deviceKey}`}
+                  key={`${d.platform}:${deviceKeyFor(d)}`}
                   interactive
                   selected={selectedSet.has(d.deviceKey)}
                   leading={
@@ -283,7 +283,7 @@ export function DevicesScreen() {
           <tbody>
             {devices.map((d) => (
               <tr
-                key={`${d.platform}:${d.deviceKey}`}
+                key={`${d.platform}:${deviceKeyFor(d)}`}
                 className={styles.row}
                 onClick={() => setOpen(d)}
                 onContextMenu={handleContextMenu(d)}
