@@ -74,9 +74,10 @@ interface HuddleRoom {
   token: string;
   /** The one agent guests may talk to. */
   agent_id: string;
-  /** The one device guests may drive, or null for chat-only. */
-  device_key: string | null;
+  /** The device guests may drive — whatever the host has open when sharing. */
+  device_key: string;
   created_at: number;
+  /** Backstop only — the engineer normally ends the huddle by hand. */
   expires_at: number;
   guests: HuddleGuest[];
 }
@@ -107,7 +108,8 @@ is worth protecting in review: **the token must never be sufficient by itself.**
 
 ### 3.3 Joining, end to end
 
-1. Engineer picks an agent, hits **Share**, chooses whether the device comes too.
+1. Engineer picks an agent and hits **Share**. Whatever device they have
+   open comes with it — there is no choice to make.
 2. Host starts a quick tunnel if one isn't up, creates the room, shows the link.
 3. Designer opens the link. The web client generates an ephemeral keypair,
    handshakes, and presents the room token. The host records a pending guest.
@@ -201,16 +203,33 @@ drop a quick tunnel around a huddle.
   scoped to one agent. No extra confirmation step — see §6.
 - **Rooms are in memory.** No persistence, no surviving a restart. Ending the
   app ends every share.
+- **The device is always bundled.** Sharing an agent shares whatever device the
+  host has open — one button, no toggle. `device_key` is therefore required, not
+  nullable. If the host has no device open the room is chat-only by
+  circumstance, not by choice.
+- **Several guests, no cap.** Each is approved individually. The device claim
+  already arbitrates input, so a third person joining costs nothing mechanically
+  — but the guest list and the "Controlled by {label}" overlay have to read
+  sensibly with three people and two of them reaching for the simulator. Build
+  the UI for N from the start rather than assuming two.
+- **Manual end, with a long timeout as a backstop.** The engineer ends the
+  huddle; `expires_at` defaults to a few hours so a forgotten share does not
+  live all day. Quitting Argus ends every room anyway, since they are in memory.
+- **The share dialog is one line plus a details disclosure.** Sharing is a
+  repeat action and should stay fast, but "they can approve tool calls that run
+  code on your machine" is genuinely surprising and must be in the details, not
+  omitted. See §8.1.
 
 ## 8. Still open
 
-1. **Is the device optional?** Chat-only sharing is easier and may cover most
-   huddles. Cheap to support either way since `device_key` is already nullable.
-2. **More than one guest?** The design allows it and the device claim already
-   arbitrates. Worth confirming the UI reads sensibly with three people in a
-   room and two of them fighting over the simulator.
-3. **Quick-tunnel reliability.** Cloudflare rate-limits and rotates quick
-   tunnels. Fine for a 30-minute huddle; needs a clear error when it isn't.
-4. **Does the engineer keep working while sharing?** If the shared agent is the
-   one they are using, the guest sees everything they type. Probably intended,
-   but the share dialog should say so out loud.
+1. **Exact wording of the share disclosure.** It has to cover, at minimum: the
+   guest sees this agent's whole transcript including everything the engineer
+   types; they can send messages; they can approve tool calls that run code on
+   the host; they can drive the simulator. Needs writing, not deciding.
+2. **Quick-tunnel reliability.** Cloudflare rate-limits and rotates quick
+   tunnels. Fine for a huddle; needs a clear error when it isn't, and a decision
+   on whether to fall back to Tailscale when that is already configured.
+3. **What a guest sees when the engineer switches agents.** The room is pinned
+   to one agent; the engineer moving on elsewhere in the app is invisible to the
+   guest, which is correct but may look like the huddle died. Possibly needs a
+   "the host is elsewhere" hint.
