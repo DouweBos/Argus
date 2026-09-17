@@ -267,6 +267,20 @@ describe("joining a huddle", () => {
     guest.close();
   });
 
+  it("publishes the host key only while a room is open", async () => {
+    const keyUrl = `${url.replace("ws://", "http://")}/huddle/host-key`;
+
+    expect((await fetch(keyUrl)).status).toBe(404);
+
+    room();
+    const res = await fetch(keyUrl);
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ds_pub: Buffer.from(IDENTITY.pub).toString("base64"),
+    });
+  });
+
   it("refuses an unknown token outright", async () => {
     room();
     const guest = new GuestClient();

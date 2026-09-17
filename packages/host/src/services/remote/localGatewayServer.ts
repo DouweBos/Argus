@@ -8,6 +8,8 @@
  *             identify it by the transmitted static key. Only a pinned device
  *             completes the handshake and gets a capability-gated connection.
  *   /pair   — enrollment. Delegated to the active PairingSession (IKpsk1).
+ *   GET /huddle/host-key — the desktop's static public key, so a huddle guest
+ *             with only a link can handshake. Served only while a room is open.
  *   GET *   — the static web client bundle (when a dir is configured), so a LAN
  *             browser can load the client from this same origin.
  *
@@ -114,6 +116,31 @@ function serveStatic(
     ...(path.basename(file) === "sw.js" ? { "cache-control": "no-cache" } : {}),
   });
   createReadStream(file).pipe(res);
+}
+
+/** Path a huddle guest reads the host's static public key from. */
+export const HOST_KEY_PATH = "/huddle/host-key";
+
+/**
+ * The host's static public key, so a guest with only a link can run the Noise
+ * IK handshake — it has no pairing to learn the key from. Public by design
+ * (pairing prints it in the QR) and served only while a room is open, so a
+ * host that is not sharing publishes nothing.
+ */
+function serveHostKey(identity: DesktopIdentity, res: ServerResponse): void {
+  if (!hasOpenRooms()) {
+    res.writeHead(404).end("no huddle");
+
+    return;
+  }
+  res
+    .writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    })
+    .end(
+      JSON.stringify({ ds_pub: Buffer.from(identity.pub).toString("base64") }),
+    );
 }
 
 /** Drop a guest socket that never presents a room token. */
@@ -255,7 +282,12 @@ export function startLocalGateway(
 ): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
-      if (opts.staticDir && req.method === "GET") {
+      if (
+        req.method === "GET" &&
+        (req.url ?? "").split("?")[0] === HOST_KEY_PATH
+      ) {
+        serveHostKey(identity, res);
+      } else if (opts.staticDir && req.method === "GET") {
         serveStatic(opts.staticDir, req.url ?? "/", res);
       } else {
         res.writeHead(426).end("upgrade required");
