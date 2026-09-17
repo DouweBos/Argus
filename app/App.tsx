@@ -9,10 +9,12 @@ import { DiagramViewer } from "./components/shared/DiagramViewer/DiagramViewer";
 import { ImageViewer } from "./components/shared/ImageViewer/ImageViewer";
 import { UpdaterHost } from "./components/shared/Updater/UpdaterHost";
 import { useOnboarding } from "./hooks/useOnboarding";
+import { useTabRouteSync } from "./hooks/useTabRouteSync";
 import { useRegisterNavigator } from "./lib/router";
 
 function RouterGlue() {
   useRegisterNavigator();
+  useTabRouteSync();
 
   return <NavigationDeepLinkBridge />;
 }

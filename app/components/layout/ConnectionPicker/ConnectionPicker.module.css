@@ -45,10 +45,17 @@
 }
 
 .heading {
-  margin: 0 0 6px;
+  margin: 0 0 2px;
   padding: 0 4px;
   color: var(--text-muted);
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+.hint {
+  margin: 0 0 6px;
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
 }

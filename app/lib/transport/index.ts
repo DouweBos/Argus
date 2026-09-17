@@ -126,15 +126,13 @@ export async function detachFrom(hostId: HostId): Promise<void> {
 }
 
 /**
- * Point the current view at a host. Attaching is separate — this only moves
- * the focus, so the other hosts keep streaming in the background.
+ * Show a machine: attach it if nothing is connected yet, then bring its window
+ * tab forward (opening one if there isn't one). Tabs carry the host now, so
+ * "look at the mini" is a tab switch, not a re-point of whatever is on screen.
  */
 export async function focusHost(hostId: HostId): Promise<void> {
-  const { setFocusedHost } = await import("../../stores/connectionStore");
-  if (hostId !== LOCAL_HOST_ID && !isAttached(hostId)) {
-    await attachTo(hostId);
-  }
-  setFocusedHost(hostId);
+  const { openHostTab } = await import("../tabActions");
+  await openHostTab(hostId);
 }
 
 let rehydrationWired = false;

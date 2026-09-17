@@ -13,6 +13,8 @@ import {
   type RunRegistrationDependency,
 } from "../../../lib/runRegistration";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
+import { openHostTab } from "../../../lib/tabActions";
+import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { cycleActiveAgent } from "../../../stores/agentStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
@@ -49,6 +51,7 @@ import {
   useSelectedSessionId,
 } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
+import { closeActiveTab, cycleTab } from "../../../stores/tabStore";
 import { useToolProjectMaskSync } from "../../../tools/projectSync";
 import {
   bootstrapToolStore,
@@ -79,6 +82,7 @@ import { ErrorBoundary } from "../ErrorBoundary";
 import { PermissionBanner } from "../PermissionBanner";
 import { ResizablePanel } from "../ResizablePanel";
 import { TitleBar } from "../TitleBar";
+import { WindowTabs } from "../WindowTabs";
 import styles from "./AppShell.module.css";
 
 const PEEK_ENTER_DELAY_MS = 200;
@@ -226,6 +230,14 @@ export function AppShell() {
       settings: showSettingsDialog,
       "next-agent-tab": () => cycleAgentTab(1),
       "prev-agent-tab": () => cycleAgentTab(-1),
+      "new-tab": () => {
+        openHostTab(LOCAL_HOST_ID, { reuse: false }).catch(() => {});
+      },
+      "close-tab": () => {
+        closeActiveTab();
+      },
+      "next-tab": () => cycleTab(1),
+      "prev-tab": () => cycleTab(-1),
       "go-home": () => selectSession(null),
       "go-project-home": goToProjectHome,
     }),
@@ -245,6 +257,10 @@ export function AppShell() {
   const shortcuts = useMemo(
     () =>
       (Object.keys(shortcutHandlers) as ShortcutId[])
+        // Cmd+W arrives as `menu:close-intent` from the main process so views
+        // get a crack at it first; registering a keydown too would close two
+        // things at once.
+        .filter((id) => id !== "close-tab")
         .filter((id) => !gitPanelActive || !GIT_PANEL_SUPPRESSED.has(id))
         .map((id) => ({
           ...SHORTCUTS[id],
@@ -321,6 +337,7 @@ export function AppShell() {
   return (
     <div className={styles.shell}>
       <TitleBar />
+      <WindowTabs />
       <ConnectionBanner />
       <div className={styles.body}>
         <ResizablePanel
