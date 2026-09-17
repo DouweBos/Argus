@@ -17,7 +17,7 @@
     },
     {
       "title": "Dev: Server",
-      "command": "ARGUS_HOME=\"$HOME/.argus-server-dev-$ARGUS_PORT\" ARGUS_REMOTE_PORT=$((47617 + 2 * (ARGUS_PORT - 1420))) ARGUS_DEV_TRUST=1 pnpm dev:server",
+      "command": "ARGUS_HOME=\"$HOME/.argus-server-dev-$ARGUS_PORT\" ARGUS_REMOTE_PORT=$((47617 + 2 * (ARGUS_PORT - 1420))) pnpm dev:server",
       "restartOnRerun": true
     },
     {
