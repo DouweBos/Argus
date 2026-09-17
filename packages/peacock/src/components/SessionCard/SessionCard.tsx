@@ -1,5 +1,10 @@
 import type { BadgeTone } from "../Badge/Badge";
-import type { HTMLAttributes, KeyboardEvent, ReactNode } from "react";
+import type {
+  HTMLAttributes,
+  KeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from "react";
 import { Badge } from "../Badge/Badge";
 import { BranchDivergence } from "../BranchDivergence/BranchDivergence";
 import { DiffStat } from "../DiffStat/DiffStat";
@@ -43,7 +48,8 @@ export interface SessionCardProps extends Omit<
   selected?: boolean;
   /** Wires role/tabIndex/aria-selected/cursor + Enter-to-select. */
   interactive?: boolean;
-  onSelect?: () => void;
+  /** The event is passed so callers can treat a modifier-click differently. */
+  onSelect?: (event?: MouseEvent<HTMLDivElement>) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 
   /** Below-header content: progress, org pill, agent rows, forms, etc. */

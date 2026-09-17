@@ -9,6 +9,7 @@ import {
 } from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
+import { openSessionTab } from "../../../lib/tabActions";
 import {
   isSessionReady,
   type Session,
@@ -140,6 +141,19 @@ export function SessionCard({
   const isRunning = useSessionIsRunning(session.id);
   const closeMenu = useCallback(() => setMenuPosition(null), []);
 
+  // Cmd-click opens the session in its own tab, as a browser would.
+  const handleSelect = useCallback(
+    (event?: React.MouseEvent<HTMLElement>) => {
+      if (event?.metaKey || event?.ctrlKey) {
+        openSessionTab(session.id, session.display_name ?? session.branch);
+
+        return;
+      }
+      onSelect();
+    },
+    [onSelect, session.id, session.display_name, session.branch],
+  );
+
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
@@ -204,6 +218,12 @@ export function SessionCard({
     (diffStats!.additions > 0 || diffStats!.deletions > 0);
 
   const copyItems: ContextMenuItem[] = [
+    {
+      icon: <Icons.PlusIcon size={12} />,
+      label: "Open in New Tab",
+      onClick: () => openSessionTab(session.id, projectName),
+    },
+    { separator: true },
     {
       icon: <Icons.CopyIcon size={12} />,
       label: "Copy Absolute Path",
@@ -286,7 +306,7 @@ export function SessionCard({
       selected={isSelected}
       interactive
       actionReveal="hover"
-      onSelect={onSelect}
+      onSelect={handleSelect}
       onContextMenu={handleContextMenu}
       status={
         showStatusBadge

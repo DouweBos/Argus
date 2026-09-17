@@ -20,9 +20,10 @@ const STATE_TONE = {
 } as const satisfies Record<ConnectionState, "error" | "success" | "warning">;
 
 /**
- * Which machines this window is driving, and which one the view reads from.
- * Several hosts run at once, so focusing and attaching are separate acts: one
- * is a route change, the other a transport that outlives the view.
+ * Which machines this window is driving. Attaching and detaching live here;
+ * which machine you are *looking at* is the window tab you are on, so picking
+ * a row opens or brings forward that machine's tab rather than re-pointing
+ * whatever is on screen.
  */
 export function ConnectionPicker() {
   const focused = useFocusedConnection();
@@ -41,11 +42,7 @@ export function ConnectionPicker() {
     <>
       <button
         className={styles.trigger}
-        title={
-          remote
-            ? `Reading from ${focused.label}`
-            : "This view reads from this Mac"
-        }
+        title="Machines — attach, detach and pair"
         type="button"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -73,6 +70,7 @@ export function ConnectionPicker() {
             style={{ left: anchor.x, top: anchor.y }}
           >
             <p className={styles.heading}>Machines</p>
+            <p className={styles.hint}>Pick a machine to open its tab</p>
             <HostConnectionList
               busyId={busyId}
               hosts={entries}

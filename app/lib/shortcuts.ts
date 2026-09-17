@@ -6,15 +6,19 @@
  */
 
 export type ShortcutId =
+  | "close-tab"
   | "command-palette"
   | "go-home"
   | "go-project-home"
   | "new-agent"
   | "new-session"
+  | "new-tab"
   | "next-agent-tab"
+  | "next-tab"
   | "open-palette"
   | "open-repo"
   | "prev-agent-tab"
+  | "prev-tab"
   | "settings"
   | "toggle-bottom-panel"
   | "toggle-changes"
@@ -103,6 +107,10 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
     key: "[",
     label: "Previous agent tab",
   },
+  "new-tab": { meta: true, key: "t", label: "New tab" },
+  "close-tab": { meta: true, key: "w", label: "Close tab" },
+  "next-tab": { meta: true, key: "Tab", label: "Next tab" },
+  "prev-tab": { meta: true, shift: true, key: "Tab", label: "Previous tab" },
   "go-home": { meta: true, shift: true, key: "h", label: "Go to app home" },
   "go-project-home": {
     meta: true,
@@ -114,6 +122,7 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
 
 const KEY_LABELS: Record<string, string> = {
   ",": ",",
+  Tab: "⇥",
   "[": "[",
   "]": "]",
 };
