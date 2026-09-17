@@ -381,12 +381,17 @@ Worth designing the route shape for during C.
 
 ## 9. Still open
 
-1. **Attachment/file transfer budget.** Images are base64-in-JSON today; large diffs
-   and screenshots need a size cap and probably a chunked channel.
+1. **Attachment/file transfer budget.** Partly settled: uploads are capped at 8 MiB
+   and enforced host-side on the encoded length, under the gateway's 16 MiB
+   `maxPayload` (base64 inflates 4/3). Still base64-in-JSON, so a chunked channel is
+   the remaining work — `TAG_MEDIA` is the obvious carrier now that it takes JPEG.
 2. ~~**Does the embedded browser (`services/browser/`, CDP + MJPEG) follow?**~~ Done:
    its JPEG frames ride the same `TAG_MEDIA` channel as device video (`browser.watch`),
    input goes to the host over the admin passthrough, and it arbitrates through the
    same soft claim simulators use. Local mode still reads the MJPEG server.
-3. **What does the client show when the host goes away mid-agent?** Read-only replay
-   from the last snapshot, or a hard disconnected state? Case 3 makes this routine —
-   the peer just closed its lid.
+3. ~~**What does the client show when the host goes away mid-agent?**~~ Decided:
+   **read-only replay**. The host keeps its projects, sessions and last snapshot on
+   screen with `hydrated: false` and an offline badge; writes fail fast with
+   `HostUnavailableError` rather than hanging on the request timeout; other attached
+   hosts are untouched. Case 3 is routine enough that the last transcript is the most
+   useful thing to leave on screen.
