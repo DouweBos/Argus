@@ -13,9 +13,14 @@ import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
 import type { Session } from "../session/models";
 import {
   browserClaimId,
+  isAgentInScope,
+  isBrowserInScope,
+  isDeviceInScope,
+  METHOD_SCOPE,
   MethodParams,
   REMOTE_METHODS,
   type Capability,
+  type GrantScope,
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
   type RemoteGitStatus,
@@ -152,6 +157,11 @@ export interface GatewayContext {
   outstandingPermissions: Set<string>;
   /** Screen-stream control, present when the transport carries a media channel. */
   media?: DeviceMediaController;
+  /**
+   * Narrows this connection to specific agents and devices (a huddle guest).
+   * Absent — the case for every paired device — means no narrowing at all.
+   */
+  scope?: GrantScope;
 }
 
 export function permissionKey(agentId: string, toolUseId: string): string {
@@ -1514,12 +1524,146 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 };
 
-/** Admin implies the narrower tiers — it is a superset, not a sibling. */
+/**
+ * Strip "admin" from a grant that is about to be scoped. Admin is the raw IPC
+ * passthrough — scoping it is not meaningful — so a scoped grant can only ever
+ * be monitor/control. Call this wherever a scoped grant is minted; `dispatch`
+ * enforces the same rule again at call time.
+ */
+export function scopeSafeCapabilities(
+  capabilities: readonly Capability[],
+): Capability[] {
+  return capabilities.filter((c) => c !== "admin");
+}
+
+/**
+ * Admin implies the narrower tiers — it is a superset, not a sibling. A scoped
+ * context is the exception: its admin grant (if one ever got minted) counts for
+ * nothing, so it can neither satisfy `admin` nor imply control/monitor.
+ */
 function hasCapability(ctx: GatewayContext, required: Capability): boolean {
-  return (
-    ctx.device.capabilities.includes(required) ||
-    ctx.device.capabilities.includes("admin")
+  const granted = ctx.scope
+    ? scopeSafeCapabilities(ctx.device.capabilities)
+    : ctx.device.capabilities;
+
+  return granted.includes(required) || granted.includes("admin");
+}
+
+/** Sessions the scoped agents are running in — nothing else is addressable. */
+function scopedSessionIds(scope: GrantScope): Set<string> {
+  const ids = new Set<string>();
+  for (const agentId of scope.agent_ids) {
+    const sessionId = appState.agents.get(agentId)?.sessionId;
+    if (sessionId) {
+      ids.add(sessionId);
+    }
+  }
+
+  return ids;
+}
+
+/** Repos behind the scoped agents' sessions. */
+function scopedRepoRoots(scope: GrantScope): Set<string> {
+  const roots = new Set<string>();
+  for (const sessionId of scopedSessionIds(scope)) {
+    const repoRoot = appState.sessions.get(sessionId)?.repo_root;
+    if (repoRoot) {
+      roots.add(repoRoot);
+    }
+  }
+
+  return roots;
+}
+
+function denyScope(method: string): never {
+  throw new GatewayError(
+    "capability_denied",
+    `${method} is outside this grant's scope`,
   );
+}
+
+/**
+ * Second gate, after the capability tier: a scoped grant may only address what
+ * its scope names. Unscoped contexts — every paired device today — skip this
+ * entirely, so their behaviour is unchanged.
+ */
+function requireInScope(
+  method: RemoteMethod,
+  params: unknown,
+  scope: GrantScope,
+): void {
+  const rule = METHOD_SCOPE[method];
+  if (rule.kind === "open" || rule.kind === "filter") {
+    return;
+  }
+  if (rule.kind === "denied") {
+    denyScope(method);
+  }
+  // Read the subject off the raw params: the schema parse happens inside the
+  // handler, and a malformed request must be denied, not let through.
+  const subject = (params as Record<string, unknown> | null | undefined)?.[
+    rule.param
+  ];
+  if (typeof subject !== "string") {
+    denyScope(method);
+  }
+  const allowed = {
+    agent: () => isAgentInScope(scope, subject),
+    device: () => isDeviceInScope(scope, subject),
+    browser: () => isBrowserInScope(scope, subject),
+    session: () => scopedSessionIds(scope).has(subject),
+  }[rule.kind]();
+  if (!allowed) {
+    denyScope(method);
+  }
+}
+
+/**
+ * Narrow an enumerating method's result to the scope, so a guest sees one agent
+ * instead of an error. Refusing these would make the client unusable — it has
+ * to list something before it can address anything.
+ */
+function filterForScope(
+  method: RemoteMethod,
+  result: unknown,
+  scope: GrantScope,
+): unknown {
+  const r = result as Record<string, unknown[]>;
+  switch (method) {
+    case "projects.list": {
+      const roots = scopedRepoRoots(scope);
+
+      return {
+        projects: (r.projects as { repo_root: string }[]).filter((p) =>
+          roots.has(p.repo_root),
+        ),
+      };
+    }
+    case "sessions.list": {
+      const ids = scopedSessionIds(scope);
+
+      return {
+        sessions: (r.sessions as { id: string }[]).filter((s) => ids.has(s.id)),
+      };
+    }
+    case "agents.list":
+      return {
+        agents: (r.agents as { agent_id: string }[]).filter((a) =>
+          isAgentInScope(scope, a.agent_id),
+        ),
+      };
+    // Stopped agents are keyed by history id, so none of them can be in scope.
+    case "agents.stopped":
+      return { agents: [] };
+    case "devices.list":
+      return {
+        devices: (r.devices as { id: string }[]).filter((d) =>
+          isDeviceInScope(scope, d.id),
+        ),
+      };
+    default:
+      return result;
+  }
 }
 
 /**
@@ -1566,6 +1710,15 @@ async function dispatchAdmin(
   params: unknown,
   ctx: GatewayContext,
 ): Promise<unknown> {
+  // Belt and braces: a scoped grant is never admin (see `hasCapability`), so
+  // this is unreachable — but the passthrough is 200-odd unscopable commands,
+  // and the safe answer for a scoped context is always no.
+  if (ctx.scope) {
+    throw new GatewayError(
+      "capability_denied",
+      "scoped grants cannot use the admin passthrough",
+    );
+  }
   const definition = getCommand(command);
   if (!definition) {
     throw new GatewayError("not_found", `unknown command ${command}`);
@@ -1632,19 +1785,29 @@ export async function dispatch(
   ctx: GatewayContext,
 ): Promise<unknown> {
   if (!(method in REMOTE_METHODS)) {
-    if (ctx.device.capabilities.includes("admin")) {
+    if (!ctx.scope && ctx.device.capabilities.includes("admin")) {
       return dispatchAdmin(method, params, ctx);
     }
 
     throw new GatewayError("capability_denied", `unknown method ${method}`);
   }
-  const required = REMOTE_METHODS[method as RemoteMethod];
+  const remoteMethod = method as RemoteMethod;
+  const required = REMOTE_METHODS[remoteMethod];
   if (!hasCapability(ctx, required)) {
     throw new GatewayError(
       "capability_denied",
       `device lacks '${required}' capability`,
     );
   }
+  if (!ctx.scope) {
+    return HANDLERS[remoteMethod](params, ctx);
+  }
 
-  return HANDLERS[method as RemoteMethod](params, ctx);
+  requireInScope(remoteMethod, params, ctx.scope);
+
+  return filterForScope(
+    remoteMethod,
+    await HANDLERS[remoteMethod](params, ctx),
+    ctx.scope,
+  );
 }

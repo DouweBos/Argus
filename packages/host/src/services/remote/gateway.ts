@@ -15,6 +15,9 @@ import type { H264Config } from "../simulator/h264-parser";
 import {
   Envelope,
   EventPayloads,
+  isAgentInScope,
+  isDeviceInScope,
+  type GrantScope,
   type RemoteEndpoint,
   type RemoteEventType,
   type RemotePlatform,
@@ -192,17 +195,21 @@ export class DeviceConnection implements DeviceMediaController {
     readonly device: PairedDevice,
     private readonly session: NoiseSession,
     private readonly sink: (bytes: Uint8Array) => void,
+    /** Narrows this connection to one agent + device (a huddle guest). */
+    private readonly scope?: GrantScope,
   ) {
     this.ctx = {
       device,
       connectionId: this.connectionId,
       outstandingPermissions: new Set(),
       media: this,
+      ...(scope ? { scope } : {}),
     };
     // An admin device is another desktop: it runs the real UI off the host's
     // own IPC channels, so it gets raw broadcasts rather than the typed mirrors
     // the phone and web clients render — sending both would double the stream.
-    this.raw = device.capabilities.includes("admin");
+    // A scoped grant is never admin, and raw broadcasts cannot be scoped.
+    this.raw = !scope && device.capabilities.includes("admin");
   }
 
   /** Register how to tear down the underlying socket (set by the server). */
@@ -375,6 +382,11 @@ export class DeviceConnection implements DeviceMediaController {
 
     if (envelope.type === "sub") {
       if (envelope.action === "subscribe") {
+        // Subscribing out of scope would leak another agent's transcript and —
+        // via the forwarded prompts — let a guest answer its permissions.
+        if (this.scope && !isAgentInScope(this.scope, envelope.agent_id)) {
+          return;
+        }
         this.subscriptions.add(envelope.agent_id);
         this.replayPendingPermissions(envelope.agent_id);
       } else {
@@ -514,7 +526,13 @@ export class DeviceConnection implements DeviceMediaController {
     // which agent it happens to be subscribed to — that's the whole point.
     if (channel === "remote:notification") {
       const p = args[0] as { agent_id?: string | null } | undefined;
-      this.pushEvent("notification", p?.agent_id ?? null, p);
+      const agentId = p?.agent_id ?? null;
+      // "Every device" stops at the scope: a guest is told about its own
+      // agent, not about everything else happening on the host.
+      if (this.scope && (!agentId || !isAgentInScope(this.scope, agentId))) {
+        return;
+      }
+      this.pushEvent("notification", agentId, p);
 
       return;
     }
@@ -522,6 +540,11 @@ export class DeviceConnection implements DeviceMediaController {
     // Losing the device claim is otherwise invisible to a typed client until
     // its next HID event comes back capability_denied.
     if (channel === "devices:claim-changed") {
+      const deviceId = (args[0] as { device_id?: string } | undefined)
+        ?.device_id;
+      if (this.scope && (!deviceId || !isDeviceInScope(this.scope, deviceId))) {
+        return;
+      }
       this.pushEvent("device.claim", null, args[0]);
 
       return;
