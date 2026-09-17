@@ -23,14 +23,11 @@ import { acquirePublicUrl, releasePublicUrl } from "./remoteService";
 
 export { approveGuest, denyGuest, getRoom, listRooms };
 
-let listening = false;
-
-/** One release per ended room, whichever way it ended. */
-function ensureReleaseOnEnd(): void {
-  if (listening) {
-    return;
-  }
-  listening = true;
+/**
+ * One release per ended room, whichever way it ended. A single-slot setter, so
+ * re-registering on every share is idempotent.
+ */
+function releaseOnEnd(): void {
   setRoomEndedListener(() => releasePublicUrl());
 }
 
@@ -47,7 +44,7 @@ export interface StartHuddleOpts {
  * link for the engineer to paste.
  */
 export async function startHuddle(opts: StartHuddleOpts): Promise<HuddleRoom> {
-  ensureReleaseOnEnd();
+  releaseOnEnd();
   const lease = await acquirePublicUrl();
   let room: HuddleRoom;
   try {
