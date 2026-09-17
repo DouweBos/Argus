@@ -1,10 +1,14 @@
+import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useCallback, useRef } from "react";
+import { DeviceControlOverlay } from "@argus/peacock";
 import styles from "./RuntimeView.module.css";
 
 const DRAG_THROTTLE_MS = 17;
 
 interface CanvasStreamBodyProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  /** Input arbitration on the host. Omitted where nothing can contend for it. */
+  claim?: DeviceClaimState;
   /** Whether the decoder has received its H.264 config (SPS/PPS). */
   isConfigured: boolean;
   isReceiving: boolean;
@@ -22,6 +26,7 @@ interface CanvasStreamBodyProps {
  */
 export function CanvasStreamBody({
   canvasRef,
+  claim,
   videoWidth,
   videoHeight,
   isReceiving,
@@ -30,6 +35,9 @@ export function CanvasStreamBody({
   onKeyDown,
   onKeyUp,
 }: CanvasStreamBodyProps) {
+  const blocked = claim?.blocked ?? false;
+  const takeControl = claim?.takeControl;
+  const handleTakeControl = useCallback(() => takeControl?.(), [takeControl]);
   const touchFailed = useRef(false);
   const lastDragTime = useRef(0);
   const isPointerDown = useRef(false);
@@ -75,6 +83,9 @@ export function CanvasStreamBody({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       touchFailed.current = false;
       isPointerDown.current = true;
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -86,12 +97,17 @@ export function CanvasStreamBody({
         touchFailed.current = true;
       }
     },
-    [getNormCoords, onTouch],
+    [blocked, getNormCoords, onTouch],
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isPointerDown.current || e.buttons === 0 || touchFailed.current) {
+      if (
+        blocked ||
+        !isPointerDown.current ||
+        e.buttons === 0 ||
+        touchFailed.current
+      ) {
         return;
       }
       const now = performance.now();
@@ -106,26 +122,29 @@ export function CanvasStreamBody({
         touchFailed.current = true;
       }
     },
-    [getNormCoords, onTouch],
+    [blocked, getNormCoords, onTouch],
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       isPointerDown.current = false;
       e.currentTarget.releasePointerCapture(e.pointerId);
       document.body.classList.remove("sim-touching");
       const { x, y } = getNormCoords(e);
       onTouch(x, y, 2);
     },
-    [getNormCoords, onTouch],
+    [blocked, getNormCoords, onTouch],
   );
 
   return (
     <div
       className={styles.streamBody}
       tabIndex={0}
-      onKeyDown={onKeyDown}
-      onKeyUp={onKeyUp}
+      onKeyDown={blocked ? undefined : onKeyDown}
+      onKeyUp={blocked ? undefined : onKeyUp}
     >
       <div
         className={styles.canvasContainer}
@@ -140,6 +159,12 @@ export function CanvasStreamBody({
           height={videoHeight || undefined}
           width={videoWidth || undefined}
         />
+        {claim && (
+          <DeviceControlOverlay
+            holderLabel={claim.holderLabel}
+            onTakeControl={handleTakeControl}
+          />
+        )}
         {!isReceiving && (
           <div className={styles.connecting}>
             <p>

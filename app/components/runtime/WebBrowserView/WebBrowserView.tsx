@@ -21,6 +21,7 @@ export function WebBrowserView({
     browserPreset,
     canGoBack,
     canGoForward,
+    claim,
     currentUrl,
     customPresets,
     handleBack,
@@ -62,6 +63,7 @@ export function WebBrowserView({
       {titleBar}
       <div className={styles.browserViewport}>
         <WebBrowserScaledWebview
+          claim={claim}
           internalHeight={internalHeight}
           internalWidth={internalWidth}
           onKeyboardEvent={handleKeyboardEvent}

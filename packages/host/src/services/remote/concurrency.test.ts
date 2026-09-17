@@ -126,7 +126,7 @@ const events = (sent: Envelope[], name: string) =>
 
 const lastError = (sent: Envelope[]) =>
   [...sent].reverse().find((e) => (e as { error?: unknown }).error) as
-    | { error: { code: string; message: string } }
+    | { error: { code: string; data?: unknown; message: string } }
     | undefined;
 
 describe("two attached clients — permission prompts", () => {
@@ -296,6 +296,20 @@ describe("device claim", () => {
       ok: { holder: { label: string } | null };
     };
     expect(res.ok.holder?.label).toBe("Mac mini");
+  });
+
+  it("tells a refused typed client who holds the device", async () => {
+    const a = connect();
+    const b = connect({ device_id: "dev-2", label: "Mac mini" });
+    await sendTouch(a, "t1");
+    await sendTouch(b, "t2");
+
+    // Identical to what the raw admin path returns — one arbitration scheme,
+    // so a desktop and a phone on the same host agree about who is driving.
+    expect(lastError(b.fromGateway)?.error.data).toMatchObject({
+      device_id: "sim-1",
+      holder: { device_id: "dev-1", label: "Laptop" },
+    });
   });
 
   it("keeps the claim out of reach of monitor-only devices", async () => {

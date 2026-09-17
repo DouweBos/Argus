@@ -1,10 +1,14 @@
+import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useCallback, useRef } from "react";
+import { DeviceControlOverlay } from "@argus/peacock";
 import { useBrowserStream } from "../../../hooks/useBrowserStream";
 import styles from "./WebBrowserView.module.css";
 
 const DRAG_THROTTLE_MS = 17;
 
 interface Props {
+  /** Host-side input arbitration for this browser session. */
+  claim?: DeviceClaimState;
   internalHeight: number;
   internalWidth: number;
   onKeyboardEvent: (type: "down" | "press" | "up", key: string) => void;
@@ -27,6 +31,7 @@ interface Props {
  * converts display coordinates to the browser's viewport coordinate space.
  */
 export function WebBrowserScaledWebview({
+  claim,
   internalHeight,
   internalWidth,
   onKeyboardEvent,
@@ -36,6 +41,9 @@ export function WebBrowserScaledWebview({
 }: Props) {
   const { imgRef, isReceiving, streamUrl } = useBrowserStream(sessionId, true);
 
+  const blocked = claim?.blocked ?? false;
+  const takeControl = claim?.takeControl;
+  const handleTakeControl = useCallback(() => takeControl?.(), [takeControl]);
   const lastDragTime = useRef(0);
   const isPointerDown = useRef(false);
 
@@ -78,17 +86,20 @@ export function WebBrowserScaledWebview({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       isPointerDown.current = true;
       e.currentTarget.setPointerCapture(e.pointerId);
       const { x, y } = toViewport(e);
       onMouseEvent("down", x, y, "left");
     },
-    [toViewport, onMouseEvent],
+    [blocked, toViewport, onMouseEvent],
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isPointerDown.current || e.buttons === 0) {
+      if (blocked || !isPointerDown.current || e.buttons === 0) {
         return;
       }
       const now = performance.now();
@@ -99,43 +110,55 @@ export function WebBrowserScaledWebview({
       const { x, y } = toViewport(e);
       onMouseEvent("move", x, y);
     },
-    [toViewport, onMouseEvent],
+    [blocked, toViewport, onMouseEvent],
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       isPointerDown.current = false;
       e.currentTarget.releasePointerCapture(e.pointerId);
       const { x, y } = toViewport(e);
       onMouseEvent("up", x, y, "left");
     },
-    [toViewport, onMouseEvent],
+    [blocked, toViewport, onMouseEvent],
   );
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       const { x, y } = toViewport(
         e as unknown as React.PointerEvent<HTMLDivElement>,
       );
       onWheelEvent(x, y, e.deltaX, e.deltaY);
     },
-    [toViewport, onWheelEvent],
+    [blocked, toViewport, onWheelEvent],
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       e.preventDefault();
       onKeyboardEvent("down", e.key);
     },
-    [onKeyboardEvent],
+    [blocked, onKeyboardEvent],
   );
 
   const handleKeyUp = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       e.preventDefault();
       onKeyboardEvent("up", e.key);
     },
-    [onKeyboardEvent],
+    [blocked, onKeyboardEvent],
   );
 
   return (
@@ -161,6 +184,13 @@ export function WebBrowserScaledWebview({
           draggable={false}
           src={streamUrl ?? undefined}
         />
+        {claim && (
+          <DeviceControlOverlay
+            holderLabel={claim.holderLabel}
+            subject="browser"
+            onTakeControl={handleTakeControl}
+          />
+        )}
         {!isReceiving && (
           <div className={styles.browserConnecting}>
             <p>Waiting for frames...</p>
