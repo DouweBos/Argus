@@ -21,7 +21,11 @@
  * | `terminal:exit:{session_id}`  | Exit code (`number`)     |
  */
 
-import type { RunCommand, WorkspaceEnvConfig } from "../session/models";
+import type {
+  RunCommand,
+  SessionKind,
+  WorkspaceEnvConfig,
+} from "../session/models";
 import type { IPty } from "node-pty";
 import type * as NodePty from "node-pty";
 import fs from "node:fs";
@@ -256,14 +260,14 @@ export function workspaceEnvValue(
  */
 function buildWorkspaceEnv(
   sessionId: string,
-  sessionKind: "project_root" | "worktree",
+  sessionKind: SessionKind,
   envIndex: number | undefined,
   repoRoot: string,
 ): Record<string, string> {
   const extra: Record<string, string> = {};
 
-  // workspace_env only applies to worktree sessions, not the repo root.
-  if (sessionKind === "project_root") {
+  // workspace_env only applies to worktree sessions.
+  if (sessionKind !== "worktree") {
     return extra;
   }
 

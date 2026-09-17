@@ -9,6 +9,10 @@
  */
 
 import type { AgentInfo } from "@argus/host/services/agent/models";
+import type {
+  CreateAutomationInput,
+  UpdateAutomationInput,
+} from "@argus/host/services/automation/models";
 import type { CommandTier } from "@argus/host/services/command/registry";
 import type {
   OnboardingStep,
@@ -70,6 +74,19 @@ import {
   saveAppSettings,
   type AppSettings,
 } from "@argus/host/services/appSettings/store";
+import {
+  createAutomation,
+  deleteAutomation,
+  getAutomationRun,
+  listAutomationRuns,
+  listAutomations,
+  setAutomationEnabled,
+  updateAutomation,
+} from "@argus/host/services/automation/manager";
+import {
+  cancelAutomationRun,
+  startAutomationRun,
+} from "@argus/host/services/automation/runner";
 import {
   startScreencast,
   stopScreencast,
@@ -1002,6 +1019,34 @@ export function registerIpcHandlers(): void {
   handle("git_list_pinned_branches", "admin", (a) =>
     listPinnedBranchesSetting(a.repoRoot as string),
   );
+  // Automations — host state, deliberately remotable so a desktop driving a
+  // headless mini manages the mini's automations as if they were its own.
+  handle("automations_list", "admin", () => listAutomations());
+  handle("automation_create", "admin", (a) =>
+    createAutomation(a.input as CreateAutomationInput),
+  );
+  handle("automation_update", "admin", (a) =>
+    updateAutomation(a.id as string, a.patch as UpdateAutomationInput),
+  );
+  handle("automation_delete", "admin", (a) => {
+    deleteAutomation(a.id as string);
+  });
+  handle("automation_set_enabled", "admin", (a) =>
+    setAutomationEnabled(a.id as string, a.enabled as boolean),
+  );
+  handle("automation_run_now", "admin", (a) =>
+    startAutomationRun(a.id as string, "manual"),
+  );
+  handle("automation_cancel_run", "admin", (a) =>
+    cancelAutomationRun(a.runId as string),
+  );
+  handle("automation_runs_list", "admin", (a) =>
+    listAutomationRuns(a.automationId as string | undefined),
+  );
+  handle("automation_run_get", "admin", (a) =>
+    getAutomationRun(a.runId as string),
+  );
+
   handle("get_app_settings", "admin", () => loadAppSettings());
   handle("set_app_settings", "admin", (a) =>
     saveAppSettings(a.settings as AppSettings),

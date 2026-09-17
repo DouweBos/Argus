@@ -18,7 +18,7 @@
 // Inlined rather than imported so this module stays usable from both the
 // renderer (`app/`) and the main process (`electron/`) without dragging in
 // electron-side type imports.
-type SessionKind = "org_host" | "project_root" | "worktree";
+type SessionKind = "automation_host" | "project_root" | "worktree";
 type MergePhase = "attempt" | "continue";
 type MergeAbortKind = "merge" | "rebase";
 

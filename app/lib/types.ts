@@ -11,7 +11,7 @@ export interface Session {
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
   id: string;
-  kind: "project_root" | "worktree";
+  kind: "automation_host" | "project_root" | "worktree";
   /**
    * Default model id (runner-specific) for agents spawned in this session.
    * `null` lets the cascade fall through to project / app / runner defaults.
@@ -620,6 +620,11 @@ export interface McpOAuthStatus {
 
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
+  /**
+   * Master switch for the automation scheduler. Defaults to true; manual runs
+   * work regardless.
+   */
+  automations_enabled?: boolean;
   /** App-level default LLM picked in Settings, mirrored for the main process. */
   default_llm?: { model?: string | null; runner?: string | null };
   /** User-defined MCP servers merged into every spawned agent. */
@@ -658,6 +663,90 @@ export interface UserProjectSettings {
    */
   suppress_lfs_warning?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Automations
+// ---------------------------------------------------------------------------
+
+/** What causes an automation to fire. */
+export type AutomationTrigger =
+  | {
+      /** Fire once after a missed window instead of backfilling every slot. */
+      catch_up: boolean;
+      /** 5-field cron: `min hour dom mon dow`. */
+      cron: string;
+      kind: "schedule";
+      /** IANA zone the cron fields are read in. */
+      timezone: string;
+    }
+  | { kind: "manual" };
+
+export type AutomationTriggerKind = AutomationTrigger["kind"];
+
+/** A persisted "when X, do Y" object. */
+export interface Automation {
+  created_at: number;
+  description: string;
+  enabled: boolean;
+  id: string;
+  last_run_at: number | null;
+  /** Model for the run's agent; null inherits the app default. */
+  model: string | null;
+  name: string;
+  /** Next scheduled fire, epoch ms. Null when there is no clock. */
+  next_run_at: number | null;
+  /** The instructions handed to the run's agent. Markdown. */
+  playbook: string;
+  /** Projects the run may read. */
+  scope: { repo_roots: string[] };
+  /** Built-in template this was seeded from. */
+  template_id: string | null;
+  trigger: AutomationTrigger;
+  updated_at: number;
+}
+
+export type AutomationRunStatus =
+  | "cancelled"
+  | "failed"
+  | "queued"
+  | "running"
+  | "skipped"
+  | "succeeded";
+
+/** One firing of an automation. */
+export interface AutomationRun {
+  automation_id: string;
+  cost_usd: number | null;
+  /** Failure message, or — for a `skipped` run — why it did not fire. */
+  error: string | null;
+  finished_at: number | null;
+  host_agent_id: string | null;
+  /** The `automation_host` session the run's agent lives in. */
+  host_session_id: string | null;
+  id: string;
+  /** The agent's final message. Plain markdown. */
+  report_markdown: string | null;
+  started_at: number;
+  status: AutomationRunStatus;
+  /** Human-readable cause: `"manual"`, `"schedule 07:30"`, `"catch-up …"`. */
+  trigger_reason: string;
+}
+
+/** Fields accepted when creating an automation. */
+export interface CreateAutomationInput {
+  description?: string;
+  enabled?: boolean;
+  model?: string | null;
+  name: string;
+  playbook: string;
+  scope?: { repo_roots: string[] };
+  template_id?: string | null;
+  trigger: AutomationTrigger;
+}
+
+export type UpdateAutomationInput = Partial<
+  Omit<Automation, "created_at" | "id" | "updated_at">
+>;
 
 // ---------------------------------------------------------------------------
 // Claude Code stream-json event types

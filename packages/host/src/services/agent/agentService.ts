@@ -37,7 +37,7 @@ import type {
 } from "../../state";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
-import type { RuntimePlatform } from "../session/models";
+import type { RuntimePlatform, SessionKind } from "../session/models";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -127,7 +127,12 @@ function loadPromptFile(filename: string): string {
   }
 }
 
-function getSystemPromptForKind(kind: "project_root" | "worktree"): string {
+function getSystemPromptForKind(kind: SessionKind): string {
+  // An automation host is not a checkout, so neither repo prompt applies —
+  // its instructions come from the automation's playbook instead.
+  if (kind === "automation_host") {
+    return "";
+  }
   if (cachedPrompts[kind] === null) {
     cachedPrompts[kind] =
       kind === "project_root"

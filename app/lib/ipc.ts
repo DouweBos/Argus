@@ -15,6 +15,10 @@ import type {
   AndroidDevice,
   ArgusConfig,
   ArgusConfigSuggestion,
+  Automation,
+  AutomationRun,
+  CreateAutomationInput,
+  UpdateAutomationInput,
   BranchList,
   ClaudeAccountsState,
   ClaudeAuthStatus,
@@ -1498,6 +1502,43 @@ export const getAppSettings = (): Promise<AppSettings> =>
 
 export const setAppSettings = (settings: AppSettings): Promise<AppSettings> =>
   invoke("set_app_settings", { settings });
+
+// Automations. Host state, so these reach an attached host as readily as this
+// machine — the clock lives wherever the sessions do.
+export const listAutomations = (): Promise<Automation[]> =>
+  invoke("automations_list", {});
+
+export const createAutomation = (
+  input: CreateAutomationInput,
+): Promise<Automation> => invoke("automation_create", { input });
+
+export const updateAutomation = (
+  id: string,
+  patch: UpdateAutomationInput,
+): Promise<Automation> => invoke("automation_update", { id, patch });
+
+export const deleteAutomation = (id: string): Promise<void> =>
+  invoke("automation_delete", { id });
+
+export const setAutomationEnabled = (
+  id: string,
+  enabled: boolean,
+): Promise<Automation> => invoke("automation_set_enabled", { id, enabled });
+
+/** Fire an automation now. Resolves once the run record exists, not when it ends. */
+export const runAutomationNow = (id: string): Promise<AutomationRun> =>
+  invoke("automation_run_now", { id });
+
+export const cancelAutomationRun = (runId: string): Promise<AutomationRun> =>
+  invoke("automation_cancel_run", { runId });
+
+export const listAutomationRuns = (
+  automationId?: string,
+): Promise<AutomationRun[]> => invoke("automation_runs_list", { automationId });
+
+export const getAutomationRun = (
+  runId: string,
+): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
 
 // Remote access (phone/web control).
 export const remoteGetStatus = (): Promise<RemoteStatus> =>
