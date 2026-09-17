@@ -214,11 +214,6 @@ import {
 } from "@argus/host/services/remote/deviceStore";
 import { disconnectDevice } from "@argus/host/services/remote/gateway";
 import {
-  applyTailscaleFix,
-  diagnoseTailscale,
-  type TailscaleFixKind,
-} from "@argus/host/services/remote/tailscaleSetup";
-import {
   cancelPairing,
   confirmPairing,
   startPairing,
@@ -234,6 +229,11 @@ import {
   setRemoteConfig,
   setRemoteStatusListener,
 } from "@argus/host/services/remote/remoteService";
+import {
+  applyTailscaleFix,
+  diagnoseTailscale,
+  type TailscaleFixKind,
+} from "@argus/host/services/remote/tailscaleSetup";
 import { reconfigureAutoFetchForRepo } from "@argus/host/services/session/autoFetch";
 import { loadCommandMetrics } from "@argus/host/services/session/commandMetrics";
 import { gitAmendTip } from "@argus/host/services/session/gitAmend";
