@@ -13,7 +13,8 @@ vi.mock("../../state", () => ({
 }));
 
 const { appState } = await import("../../state");
-const { MAX_UPLOAD_BYTES, uploadSessionAttachment } = await import("./uploads");
+const { MAX_BASE64_UPLOAD_BYTES, uploadSessionAttachment } =
+  await import("./uploads");
 
 let home: string;
 
@@ -43,9 +44,13 @@ describe("uploadSessionAttachment", () => {
     await expect(fs.promises.readFile(result.path)).resolves.toHaveLength(8);
   });
 
-  it("refuses a payload over the cap", async () => {
+  it("refuses a payload larger than one base64 envelope", async () => {
     await expect(
-      uploadSessionAttachment("s1", "huge.bin", base64Of(MAX_UPLOAD_BYTES + 1)),
+      uploadSessionAttachment(
+        "s1",
+        "huge.bin",
+        base64Of(MAX_BASE64_UPLOAD_BYTES + 1),
+      ),
     ).rejects.toMatch(/larger than the 8 MB attachment limit/);
   });
 

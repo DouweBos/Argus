@@ -107,6 +107,10 @@ describe("gateway capability boundary", () => {
     "write_session_file",
     "terminal.run",
     "spawn_agent",
+    // The transfer channel writes to the host's disk: admin only, like the
+    // `upload_session_attachment` / `write_file` commands it replaces.
+    "transfer.upload.open",
+    "transfer.download.open",
   ])(
     "rejects out-of-scope method %s with capability_denied",
     async (method) => {

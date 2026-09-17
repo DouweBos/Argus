@@ -5,4 +5,5 @@ export * from "./media";
 export * from "./noise";
 export * from "./pairing";
 export * from "./socket";
+export * from "./transfer";
 export * from "./transport";

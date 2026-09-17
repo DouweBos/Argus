@@ -17,12 +17,23 @@ import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
 
 /**
- * Cap for a single upload. The gateway's WebSocket accepts 16 MiB frames, and
- * base64 inflates by 4/3, so 8 MiB of file is the largest that still fits with
- * room for the JSON envelope. Enforced on both ends: the renderer to fail fast
- * with a readable message, here because a host can't trust its clients.
+ * Cap for a single upload, now that chunking has replaced the framing limit.
+ *
+ * 512 MiB is a decision about the host's disk, not about the wire: a screen
+ * recording or a repo-sized archive fits, while a hostile or runaway client
+ * cannot fill a developer's Mac before the 7-day sweep reclaims the staging
+ * directory. Enforced host-side as bytes arrive, never on the declared total.
  */
-export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 512 * 1024 * 1024;
+
+/**
+ * What the legacy base64-in-JSON upload can still carry. The gateway's
+ * WebSocket accepts 16 MiB frames and base64 inflates by 4/3, so 8 MiB is the
+ * most that fits in one envelope. This is a limit of *that path*, not of an
+ * attachment — clients that speak the chunked transfer channel get the full
+ * {@link MAX_UPLOAD_BYTES}.
+ */
+export const MAX_BASE64_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 /** Staged uploads older than this are swept on the next upload. */
 const UPLOAD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -39,7 +50,7 @@ export interface UploadedAttachment {
  * return the host-side path.
  *
  * @throws string if the session is unknown, the payload exceeds
- *   {@link MAX_UPLOAD_BYTES}, or the write fails.
+ *   {@link MAX_BASE64_UPLOAD_BYTES}, or the write fails.
  */
 export async function uploadSessionAttachment(
   id: string,
@@ -52,8 +63,8 @@ export async function uploadSessionAttachment(
 
   // Reject on the encoded length first — decoding a hostile payload just to
   // measure it is the allocation we are trying to avoid.
-  if (approximateDecodedBytes(dataBase64) > MAX_UPLOAD_BYTES) {
-    throw tooLargeMessage(name);
+  if (approximateDecodedBytes(dataBase64) > MAX_BASE64_UPLOAD_BYTES) {
+    throw tooLargeMessage(name, MAX_BASE64_UPLOAD_BYTES);
   }
 
   let bytes: Buffer;
@@ -62,8 +73,8 @@ export async function uploadSessionAttachment(
   } catch {
     throw `Attachment "${name}" is not valid base64`;
   }
-  if (bytes.length > MAX_UPLOAD_BYTES) {
-    throw tooLargeMessage(name);
+  if (bytes.length > MAX_BASE64_UPLOAD_BYTES) {
+    throw tooLargeMessage(name, MAX_BASE64_UPLOAD_BYTES);
   }
 
   const dir = path.join(uploadsRoot(), id, crypto.randomUUID());
@@ -82,10 +93,33 @@ export async function uploadSessionAttachment(
 }
 
 /** Human-readable size, so the refusal says what to do about it. */
-function tooLargeMessage(name: string): string {
-  const cap = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
+function tooLargeMessage(name: string, limit: number): string {
+  const cap = Math.round(limit / (1024 * 1024));
 
   return `"${name}" is larger than the ${cap} MB attachment limit`;
+}
+
+/**
+ * Reserve a staging slot for a chunked attachment upload.
+ *
+ * The destination is fixed here, when the transfer is *opened* — a later chunk
+ * carries only a transfer id, so it has nothing left to redirect.
+ */
+export async function prepareAttachmentDestination(
+  id: string,
+  name: string,
+): Promise<{ dir: string; finalPath: string; stagingPath: string }> {
+  if (!appState.sessions.has(id)) {
+    throw `Session not found: ${id}`;
+  }
+  const dir = path.join(uploadsRoot(), id, crypto.randomUUID());
+  await sweepExpired(path.join(uploadsRoot(), id));
+
+  return {
+    dir,
+    finalPath: path.join(dir, safeName(name)),
+    stagingPath: path.join(dir, `.${safeName(name)}.part`),
+  };
 }
 
 function uploadsRoot(): string {

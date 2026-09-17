@@ -13,6 +13,7 @@ import { fromBase64, fromUtf8, toUtf8 } from "./base64";
 import {
   TAG_MEDIA,
   TAG_JSON,
+  TAG_XFER,
   type Envelope,
   type EventEnvelope,
   type ResponseEnvelope,
@@ -42,6 +43,8 @@ export interface TransportHandlers {
   onEvent: (event: EventEnvelope) => void;
   /** Binary device-screen frame (after the media tag byte). */
   onMedia?: (bytes: Uint8Array) => void;
+  /** Binary transfer message (after the transfer tag byte). */
+  onXfer?: (bytes: Uint8Array) => void;
 }
 
 export class RemoteError extends Error {
@@ -165,6 +168,11 @@ export class Transport {
 
       return;
     }
+    if (plain[0] === TAG_XFER) {
+      this.handlers.onXfer?.(plain.subarray(1));
+
+      return;
+    }
     let env: Envelope;
     try {
       env = JSON.parse(toUtf8(plain.subarray(1))) as Envelope;
@@ -223,6 +231,22 @@ export class Transport {
       });
       this.emit(env);
     });
+  }
+
+  /** Send one transfer message body on the encrypted channel. */
+  sendXfer(body: Uint8Array): void {
+    if (!this.session) {
+      return;
+    }
+    const plain = new Uint8Array(1 + body.length);
+    plain[0] = TAG_XFER;
+    plain.set(body, 1);
+    this.socket.send(this.session.encrypt(plain));
+  }
+
+  /** Bytes queued on the socket — transfers pause on this rather than drop. */
+  get bufferedAmount(): number {
+    return this.socket.bufferedAmount;
   }
 
   private emitSubscribe(agentId: string, on: boolean): void {

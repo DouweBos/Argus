@@ -80,6 +80,19 @@
   pointer-events: none;
 }
 
+.upload {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px 0;
+  flex-shrink: 0;
+}
+
+.uploadLabel {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
 .attachments {
   padding: 8px 10px 0;
   flex-shrink: 0;
