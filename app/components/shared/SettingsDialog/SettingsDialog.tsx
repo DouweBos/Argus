@@ -268,6 +268,54 @@ function AppearanceSection() {
   );
 }
 
+/**
+ * Master switch for the automation scheduler. Host state rather than renderer
+ * state, so it follows whichever machine the automations live on.
+ */
+function AutomationsToggle() {
+  const [enabled, setEnabled] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAppSettings().then(
+      (settings) => {
+        if (!cancelled) {
+          setEnabled(settings.automations_enabled !== false);
+          setLoaded(true);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const change = (next: boolean) => {
+    setEnabled(next);
+    setAppSettings({ automations_enabled: next }).catch(() => {
+      setEnabled(!next);
+    });
+  };
+
+  return (
+    <SettingsScreenField
+      label="Automations"
+      caption="Let automations start agents on their schedule. Running one by hand always works."
+    >
+      <Toggle checked={enabled} disabled={!loaded} onChange={change}>
+        Run automations on their schedule
+      </Toggle>
+    </SettingsScreenField>
+  );
+}
+
 function PermissionsSection() {
   const mode = useDefaultPermissionMode();
   const defaultModel = useDefaultModel();
@@ -329,6 +377,7 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <AutomationsToggle />
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

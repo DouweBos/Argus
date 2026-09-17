@@ -63,9 +63,10 @@ files across accounts.
 
 ## Agents
 
-| Setting                     | Default | Description                                                                                            |
-| --------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| **Default permission mode** | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker. |
+| Setting                     | Default | Description                                                                                                  |
+| --------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| **Default permission mode** | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
+| **Automations**             | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
 
 Permission modes:
 
@@ -80,6 +81,12 @@ Permission modes:
 The mode is applied at spawn time, so it takes effect for the agent's very
 first action. Agents restored to an earlier turn keep the mode they were
 running with.
+
+**Automations** is a master switch for the scheduler, not for automations
+themselves: with it off nothing fires on a clock, and every automation can
+still be run by hand. It is a host setting, so when you drive another Mac the
+switch belongs to that machine's automations. Automations shipped with Argus
+start disabled, so nothing ever runs until you turn one on.
 
 ---
 
@@ -615,7 +622,10 @@ Argus keeps everything under `~/.argus/`:
 ~/.argus/
   worktrees/                  ← Session worktrees (one dir per repo)
   sessions/                   ← Session metadata
-  app-settings.json           ← MCP servers, remote-access tunnel + kill-switch
+  app-settings.json           ← MCP servers, remote-access tunnel + kill-switch, automations switch
+  automations.json            ← Your automations
+  automation-runs.json        ← Automation run history (last 50 per automation)
+  automation-runs/            ← One working directory per run
   claude-accounts.json        ← Signed-in Claude accounts + the active one
   claude-accounts/            ← Per-account Claude credentials
   remote-devices.json         ← Remote-access identity key, paired devices, push credentials (encrypted)
