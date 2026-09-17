@@ -18,6 +18,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { isServerMode } from "@argus/host/serverMode";
 import { appState } from "@argus/host/state";
+import {
+  cancelServerPairing,
+  confirmServerPairing,
+  dismissServerPairing,
+  getServerPairingState,
+  setServerPairingListener,
+  startServerPairing,
+} from "../../serverPairing";
 
 let tray: Tray | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
@@ -272,7 +280,12 @@ function buildMenu(): Menu {
   }
 
   template.push({ type: "separator" });
-  if (!isServerMode()) {
+  if (isServerMode()) {
+    for (const item of buildPairingItems()) {
+      template.push(item);
+    }
+    template.push({ type: "separator" });
+  } else {
     template.push({
       label: "Show Argus",
       click: () => hooks?.navigateMainWindow("/"),
@@ -281,6 +294,65 @@ function buildMenu(): Menu {
   template.push({ role: "quit" });
 
   return Menu.buildFromTemplate(template);
+}
+
+/**
+ * The server's pairing flow, rendered as menu items.
+ *
+ * The SAS is shown so a human can compare it against the client's screen — the
+ * whole point of the confirmation — and the two grant choices are separate
+ * items so admin is never what you get by clicking the obvious one.
+ */
+function buildPairingItems(): Electron.MenuItemConstructorOptions[] {
+  const state = getServerPairingState();
+  switch (state.kind) {
+    case "idle":
+      return [
+        {
+          label: "Pair a device…",
+          click: () => {
+            startServerPairing().catch(() => undefined);
+          },
+        },
+      ];
+    case "armed":
+      return [
+        { label: "Pairing code copied to clipboard", enabled: false },
+        { label: "Waiting for a device to connect…", enabled: false },
+        { label: "Cancel pairing", click: () => cancelServerPairing() },
+      ];
+    case "awaiting_sas":
+      return [
+        { label: `Confirm this matches: ${state.sas}`, enabled: false },
+        {
+          label: "Approve — full control",
+          click: () => {
+            confirmServerPairing({ admin: true, control: true }).catch(
+              () => undefined,
+            );
+          },
+        },
+        {
+          label: "Approve — view only",
+          click: () => {
+            confirmServerPairing({ admin: false, control: false }).catch(
+              () => undefined,
+            );
+          },
+        },
+        { label: "Reject", click: () => cancelServerPairing() },
+      ];
+    case "paired":
+      return [
+        { label: `Paired with ${state.label}`, enabled: false },
+        { label: "Dismiss", click: () => dismissServerPairing() },
+      ];
+    case "error":
+      return [
+        { label: `Pairing failed: ${state.message}`, enabled: false },
+        { label: "Dismiss", click: () => dismissServerPairing() },
+      ];
+  }
 }
 
 function refreshTray(): void {
@@ -329,6 +401,9 @@ export function initTray(initHooks: TrayHooks): void {
 
   hooks = initHooks;
   tray = new Tray(loadTrayImage(false));
+  // Pairing changes are event-driven; the 1.5s agent poll is too slow to watch
+  // a SAS appear while someone is standing at the machine.
+  setServerPairingListener(() => refreshTray());
   tray.setIgnoreDoubleClickEvents(true);
   refreshTray();
 
@@ -343,6 +418,7 @@ export function refreshTrayNow(): void {
 }
 
 export function destroyTray(): void {
+  setServerPairingListener(null);
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
