@@ -34,6 +34,7 @@ export * from "./components/ToolResultImage/ToolResultImage";
 export * from "./components/ConfirmDialog/ConfirmDialog";
 export * from "./components/DestructiveConfirm/DestructiveConfirm";
 export * from "./components/ContextMenu/ContextMenu";
+export * from "./components/DeviceControlOverlay/DeviceControlOverlay";
 export * from "./components/DiffStat/DiffStat";
 export * from "./components/DirectoryBrowser/DirectoryBrowser";
 export * from "./components/EmptyHome/EmptyHome";

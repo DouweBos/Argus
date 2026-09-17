@@ -31,6 +31,12 @@ export interface AppSettings {
    */
   updater_channel?: "beta" | "latest";
   /**
+   * Headless server only: install a downloaded update and restart as soon as
+   * no agent is running. Off by default — a mini restarting unprompted is a
+   * surprise. Toggled from the server's tray menu.
+   */
+  server_auto_install_updates?: boolean;
+  /**
    * Master kill-switch for phone remote access. When false (default) the local
    * gateway + tunnel stay down and pairing is refused.
    */

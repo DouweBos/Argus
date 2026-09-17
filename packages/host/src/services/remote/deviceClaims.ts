@@ -12,6 +12,7 @@
  * keeps direct control, and the claim only arbitrates between remote clients.
  */
 
+import type { RemoteDeviceClaimState } from "@argus/remote-protocol";
 import { emitHostEvent } from "@argus/host/bus";
 
 /** A claim left untouched this long is up for grabs without an explicit takeover. */
@@ -37,6 +38,28 @@ interface Claim {
 }
 
 const claims = new Map<string, Claim>();
+/** Announces the idle lapse — without it a client stays stuck on "controlled by". */
+const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function cancelExpiry(deviceId: string): void {
+  const timer = expiryTimers.get(deviceId);
+  if (timer) {
+    clearTimeout(timer);
+    expiryTimers.delete(deviceId);
+  }
+}
+
+function scheduleExpiry(deviceId: string): void {
+  cancelExpiry(deviceId);
+  const timer = setTimeout(() => {
+    expiryTimers.delete(deviceId);
+    if (claims.delete(deviceId)) {
+      publish(deviceId);
+    }
+  }, CLAIM_IDLE_MS + 1);
+  timer.unref?.();
+  expiryTimers.set(deviceId, timer);
+}
 
 /** The live claim, dropping it first if it has gone idle. */
 function activeClaim(deviceId: string): Claim | null {
@@ -46,6 +69,7 @@ function activeClaim(deviceId: string): Claim | null {
   }
   if (Date.now() - claim.lastInputAt > CLAIM_IDLE_MS) {
     claims.delete(deviceId);
+    cancelExpiry(deviceId);
 
     return null;
   }
@@ -69,10 +93,12 @@ export function getClaim(deviceId: string): PublicClaim | null {
 }
 
 function publish(deviceId: string): void {
-  emitHostEvent("devices:claim-changed", {
-    device_id: deviceId,
-    holder: getClaim(deviceId),
-  });
+  emitHostEvent("devices:claim-changed", claimState(deviceId));
+}
+
+/** The claim as every client sees it — the event payload and the denial data. */
+export function claimState(deviceId: string): RemoteDeviceClaimState {
+  return { device_id: deviceId, holder: getClaim(deviceId) };
 }
 
 export interface ClaimResult {
@@ -97,6 +123,7 @@ export function claimDevice(
   }
 
   claims.set(deviceId, { holder, lastInputAt: Date.now() });
+  scheduleExpiry(deviceId);
   if (!mine) {
     publish(deviceId);
   }
@@ -111,6 +138,7 @@ export function releaseDevice(deviceId: string, connectionId: string): void {
     return;
   }
   claims.delete(deviceId);
+  cancelExpiry(deviceId);
   publish(deviceId);
 }
 
@@ -119,6 +147,7 @@ export function releaseConnection(connectionId: string): void {
   for (const [deviceId, claim] of [...claims]) {
     if (claim.holder.connectionId === connectionId) {
       claims.delete(deviceId);
+      cancelExpiry(deviceId);
       publish(deviceId);
     }
   }
@@ -127,4 +156,8 @@ export function releaseConnection(connectionId: string): void {
 /** Test seam: forget every claim without broadcasting. */
 export function resetClaims(): void {
   claims.clear();
+  for (const timer of expiryTimers.values()) {
+    clearTimeout(timer);
+  }
+  expiryTimers.clear();
 }

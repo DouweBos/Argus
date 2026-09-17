@@ -254,6 +254,37 @@ export const RemoteDeviceClaim = z.object({
 });
 export type RemoteDeviceClaim = z.infer<typeof RemoteDeviceClaim>;
 
+/**
+ * Who holds a claim, and on what. The one shape the host publishes for a claim
+ * change and attaches to a refused input, so the typed `devices.*` path and the
+ * raw admin path tell every client the same thing.
+ */
+export const RemoteDeviceClaimState = z.object({
+  device_id: z.string(),
+  holder: RemoteDeviceClaim.nullable(),
+});
+export type RemoteDeviceClaimState = z.infer<typeof RemoteDeviceClaimState>;
+
+/** Namespace prefix keeping browser claims out of the simulator UDID space. */
+export const BROWSER_CLAIM_PREFIX = "browser:";
+
+/**
+ * Claim key for an embedded browser session. Shared vocabulary: the host keys
+ * its claim table with it and clients pass the same string to
+ * `devices.claim` / `devices.release` / `devices.claim_status`.
+ */
+export function browserClaimId(sessionId: string): string {
+  return `${BROWSER_CLAIM_PREFIX}${sessionId}`;
+}
+
+export const RemoteOrganization = z.object({
+  id: z.string(),
+  name: z.string(),
+  accent: z.string().nullable().optional(),
+  member_repo_roots: z.array(z.string()),
+});
+export type RemoteOrganization = z.infer<typeof RemoteOrganization>;
+
 // --- Control-scoped models (mirror app/lib/types.ts input shapes) ----------
 
 /** A model the agent can switch to, plus its effort/fast-mode support. */

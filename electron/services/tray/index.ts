@@ -26,6 +26,17 @@ import {
   setServerPairingListener,
   startServerPairing,
 } from "../../serverPairing";
+import {
+  canInstallServerUpdate,
+  checkServerUpdates,
+  downloadServerUpdate,
+  getServerUpdateState,
+  installServerUpdate,
+  isServerAutoInstallEnabled,
+  setServerAutoInstallEnabled,
+  setServerUpdateListener,
+} from "../../serverUpdates";
+import { isAgentActive } from "../agentActivity";
 
 let tray: Tray | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
@@ -83,28 +94,6 @@ function loadTrayImage(active: boolean): Electron.NativeImage {
   image.setTemplateImage(true);
 
   return image;
-}
-
-/**
- * Whether the agent is doing work right now. The CLI's `session_state_changed`
- * can flip to `idle` between tool calls within the same turn, so process
- * status alone understates activity — we also count any in-flight prompt that
- * hasn't emitted its final `result` event yet. This mirrors the renderer's
- * `inflight` tracking so the tray view agrees with the agents screen.
- */
-function isAgentActive(a: AgentSession): boolean {
-  if (a.prewarmed) {
-    return false;
-  }
-  if (a.status === "stopped" || a.status === "error") {
-    return false;
-  }
-
-  return (
-    a.status === "running" ||
-    a.status === "requires_action" ||
-    a.inflightPrompts > 0
-  );
 }
 
 /** Whether at least one agent is in a "doing work" state. */
@@ -285,6 +274,10 @@ function buildMenu(): Menu {
       template.push(item);
     }
     template.push({ type: "separator" });
+    for (const item of buildUpdateItems()) {
+      template.push(item);
+    }
+    template.push({ type: "separator" });
   } else {
     template.push({
       label: "Show Argus",
@@ -355,6 +348,93 @@ function buildPairingItems(): Electron.MenuItemConstructorOptions[] {
   }
 }
 
+/**
+ * The server's update flow, rendered as menu items.
+ *
+ * The running version is already the first line of the menu, so only the new
+ * version is named. Restarting is shown as a refusal with a count rather than
+ * hidden — "nothing happened" is the worst possible answer at a menu bar.
+ */
+function buildUpdateItems(): Electron.MenuItemConstructorOptions[] {
+  const state = getServerUpdateState();
+  const items: Electron.MenuItemConstructorOptions[] = [];
+  const check: Electron.MenuItemConstructorOptions = {
+    label: "Check for Updates…",
+    click: () => {
+      checkServerUpdates().catch(() => undefined);
+    },
+  };
+
+  switch (state.kind) {
+    case "idle":
+      items.push(check);
+      break;
+    case "checking":
+      items.push({ label: "Checking for updates…", enabled: false });
+      break;
+    case "up_to_date":
+      items.push({ label: "Up to date", enabled: false }, check);
+      break;
+    case "available":
+      items.push(
+        { label: `Update available: ${state.version}`, enabled: false },
+        {
+          label: "Download Update",
+          click: () => {
+            downloadServerUpdate().catch(() => undefined);
+          },
+        },
+      );
+      break;
+    case "downloading":
+      items.push({
+        label: `Downloading update — ${state.percent}%`,
+        enabled: false,
+      });
+      break;
+    case "ready":
+      items.push(
+        { label: `Update ready: ${state.version}`, enabled: false },
+        buildInstallItem(),
+      );
+      break;
+    case "error":
+      items.push(
+        { label: `Update failed: ${state.message}`, enabled: false },
+        check,
+      );
+      break;
+  }
+
+  items.push({
+    label: "Install Automatically When Idle",
+    type: "checkbox",
+    checked: isServerAutoInstallEnabled(),
+    click: (item) => setServerAutoInstallEnabled(item.checked),
+  });
+
+  return items;
+}
+
+function buildInstallItem(): Electron.MenuItemConstructorOptions {
+  const verdict = canInstallServerUpdate();
+  if (!verdict.ok && verdict.reason === "agents_running") {
+    const n = verdict.activeAgents;
+
+    return {
+      label: `${n} agent${n === 1 ? "" : "s"} running — cannot restart`,
+      enabled: false,
+    };
+  }
+
+  return {
+    label: "Restart and Install",
+    click: () => {
+      installServerUpdate();
+    },
+  };
+}
+
 function refreshTray(): void {
   if (!tray) {
     return;
@@ -404,6 +484,7 @@ export function initTray(initHooks: TrayHooks): void {
   // Pairing changes are event-driven; the 1.5s agent poll is too slow to watch
   // a SAS appear while someone is standing at the machine.
   setServerPairingListener(() => refreshTray());
+  setServerUpdateListener(() => refreshTray());
   tray.setIgnoreDoubleClickEvents(true);
   refreshTray();
 
@@ -419,6 +500,7 @@ export function refreshTrayNow(): void {
 
 export function destroyTray(): void {
   setServerPairingListener(null);
+  setServerUpdateListener(null);
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;
