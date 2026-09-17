@@ -383,8 +383,10 @@ Worth designing the route shape for during C.
 
 1. **Attachment/file transfer budget.** Images are base64-in-JSON today; large diffs
    and screenshots need a size cap and probably a chunked channel.
-2. **Does the embedded browser (`services/browser/`, CDP + MJPEG) follow?** Another
-   local-window assumption needing the same treatment as simulators.
+2. ~~**Does the embedded browser (`services/browser/`, CDP + MJPEG) follow?**~~ Done:
+   its JPEG frames ride the same `TAG_MEDIA` channel as device video (`browser.watch`),
+   input goes to the host over the admin passthrough, and it arbitrates through the
+   same soft claim simulators use. Local mode still reads the MJPEG server.
 3. **What does the client show when the host goes away mid-agent?** Read-only replay
    from the last snapshot, or a hard disconnected state? Case 3 makes this routine —
    the peer just closed its lid.
