@@ -90,8 +90,10 @@ interface HuddleGuest {
 }
 ```
 
-Rooms live in the same `safeStorage`-encrypted store as paired devices, or in
-memory only — see §7.
+**Rooms are in memory only.** They are not written to disk: a huddle that
+outlives the app is not a thing to design for, and an in-memory store fails safe
+— a crash or a quit ends every share rather than leaving a live link behind.
+`HuddleGuest` keys never reach `remote-devices.json`.
 
 ### 3.2 The link is not a credential
 
@@ -185,24 +187,30 @@ drop a quick tunnel around a huddle.
   it. The tunnel does not widen the trust model.
 - **Scope must be enforced host-side**, in `dispatch()`, never by the client
   hiding UI.
-- **Guests can answer permission prompts if granted `control`.** That is a
-  code-execution act on the engineer's machine. Consider whether guests should be
-  `monitor` plus an explicit device grant instead — see §7.
+- **Guests can answer permission prompts.** Decided: a guest granted `control`
+  gets `permission.respond`, same as any control-tier client. It is a
+  code-execution act on the engineer's machine, and it is the point — a designer
+  who cannot unblock the agent cannot drive the huddle. The bound is the scope:
+  they can only answer prompts belonging to the room's agent, and the host is
+  sitting right there. Do not add a separate confirmation step for guest
+  approvals; that would make the feature useless in a huddle.
 
-## 7. Open questions
+## 7. Decided
 
-1. **Can a guest approve a tool-use prompt?** `control` includes
-   `permission.respond`. Letting a designer approve a file write on someone
-   else's laptop is a real decision, not an implementation detail. A third tier —
-   chat and device input, but never permissions — may be warranted.
-2. **Do rooms survive a restart?** In-memory is simpler and fails safe. Persisted
-   survives an app crash mid-huddle. Leaning in-memory.
-3. **Is the device optional?** Chat-only sharing is easier and may cover most
-   huddles.
-4. **More than one guest?** The design allows it; the device claim already
-   arbitrates. Worth confirming the UI reads sensibly with three people.
-5. **Quick-tunnel reliability.** Cloudflare rate-limits and rotates quick
+- **A guest can approve tool-use prompts.** They are a control-tier client
+  scoped to one agent. No extra confirmation step — see §6.
+- **Rooms are in memory.** No persistence, no surviving a restart. Ending the
+  app ends every share.
+
+## 8. Still open
+
+1. **Is the device optional?** Chat-only sharing is easier and may cover most
+   huddles. Cheap to support either way since `device_key` is already nullable.
+2. **More than one guest?** The design allows it and the device claim already
+   arbitrates. Worth confirming the UI reads sensibly with three people in a
+   room and two of them fighting over the simulator.
+3. **Quick-tunnel reliability.** Cloudflare rate-limits and rotates quick
    tunnels. Fine for a 30-minute huddle; needs a clear error when it isn't.
-6. **Does the engineer keep working while sharing?** If the shared agent is the
+4. **Does the engineer keep working while sharing?** If the shared agent is the
    one they are using, the guest sees everything they type. Probably intended,
-   but it should be said out loud in the share dialog.
+   but the share dialog should say so out loud.
