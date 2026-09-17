@@ -1,9 +1,11 @@
+import type { HostId } from "../../../lib/transport/hostId";
 import type { Session } from "../../../lib/types";
 import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ContextMenu,
   type ContextMenuItem,
+  HostBadge,
   Icons,
   projectAccent,
   SidebarRepoAction,
@@ -12,6 +14,7 @@ import {
 import { useGitObservation } from "../../../hooks/useGitObservation";
 import { useProjectSessions } from "../../../hooks/useSessions";
 import { createTerminal, revealInFinder } from "../../../lib/ipc";
+import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { isSessionReady, sessionStatusLabel } from "../../../lib/types";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useUnreadByAgent } from "../../../stores/conversationStore";
@@ -31,6 +34,12 @@ import { SetupConfigDialog } from "../SetupConfigDialog";
 import styles from "./ProjectSegment.module.css";
 
 interface ProjectSegmentProps {
+  /** Machine this repo lives on. */
+  hostId?: HostId;
+  /** Shown as a badge when the project is not on this Mac. */
+  hostLabel?: string | null;
+  /** The host's socket is down — this is its last snapshot, read-only. */
+  hostOffline?: boolean;
   isCollapsed: boolean;
   onClose: () => void;
   onToggleCollapsed: () => void;
@@ -49,12 +58,17 @@ function toTildePath(absPath: string): string {
 
 export function ProjectSegment({
   repoRoot,
+  hostId = LOCAL_HOST_ID,
+  hostLabel,
+  hostOffline,
   isCollapsed,
   onToggleCollapsed,
   onClose,
 }: ProjectSegmentProps) {
-  const { sessions, repoBranch, deleteSession, refresh } =
-    useProjectSessions(repoRoot);
+  const { sessions, repoBranch, deleteSession, refresh } = useProjectSessions(
+    repoRoot,
+    hostId,
+  );
   const selectedId = useSelectedSessionId();
   const [showCreate, setShowCreate] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
@@ -198,6 +212,12 @@ export function ProjectSegment({
                 aria-label="Unread messages"
                 className={styles.unreadDot}
                 title="Unread agent messages"
+              />
+            )}
+            {hostLabel && (
+              <HostBadge
+                label={hostLabel}
+                state={hostOffline ? "offline" : "connected"}
               />
             )}
             {repoRootSession && <RepoHeaderMeta session={repoRootSession} />}

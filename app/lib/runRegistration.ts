@@ -9,7 +9,7 @@ import {
   setRunningTerminal,
 } from "../stores/terminalStore";
 import { startListening, stopListening } from "./terminalBufferService";
-import { getTransport } from "./transport";
+import { subscribe } from "./transport";
 
 export interface RunRegistrationDependency {
   sessionId: string;
@@ -46,14 +46,11 @@ export function registerRunTerminal({
     startListening(dep.sessionId);
     const depTitle = dep.title;
     const depId = dep.sessionId;
-    const unlistenDep = getTransport().on<number>(
-      `terminal:exit:${depId}`,
-      () => {
-        clearRunningTerminalIfMatches(sessionId, depTitle, depId);
-        unlistenDep();
-        stopListening(depId);
-      },
-    );
+    const unlistenDep = subscribe<number>(`terminal:exit:${depId}`, () => {
+      clearRunningTerminalIfMatches(sessionId, depTitle, depId);
+      unlistenDep();
+      stopListening(depId);
+    });
   }
 
   setRunningTerminal(sessionId, title, terminalSessionId);
@@ -62,7 +59,7 @@ export function registerRunTerminal({
   setActiveSession(sessionId, terminalSessionId);
   setActiveToolForSession(sessionId, "terminal");
 
-  const unlisten = getTransport().on<number>(
+  const unlisten = subscribe<number>(
     `terminal:exit:${terminalSessionId}`,
     () => {
       clearRunningTerminalIfMatches(sessionId, title, terminalSessionId);

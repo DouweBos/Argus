@@ -33,3 +33,18 @@ export class RemoteUnavailableError extends Error {
     this.name = "RemoteUnavailableError";
   }
 }
+
+/**
+ * A call aimed at a host that is not answering — detached, or its socket is
+ * down. Thrown instead of hanging on the request timeout so the UI can say
+ * which machine is missing while the rest keep working.
+ */
+export class HostUnavailableError extends Error {
+  constructor(
+    readonly hostId: string,
+    hostLabel: string,
+  ) {
+    super(`${hostLabel} is not connected right now.`);
+    this.name = "HostUnavailableError";
+  }
+}

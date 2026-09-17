@@ -1,4 +1,5 @@
 import type { CreateSessionLlm } from "../lib/ipc";
+import type { HostId } from "../lib/transport/hostId";
 import type { Session } from "../lib/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { listen } from "../lib/events";
@@ -11,6 +12,7 @@ import {
 } from "../lib/projectsService";
 import { refreshRepoBranch } from "../lib/repoBranchSync";
 import { startListening } from "../lib/terminalBufferService";
+import { LOCAL_HOST_ID } from "../lib/transport/hostId";
 import {
   getSessionState,
   mergeSessionsForProject,
@@ -20,6 +22,7 @@ import {
   updateSession,
   useSelectedSessionId,
   useSessionLoading,
+  sessionHostId,
   useSessionProjects,
   useSessions,
 } from "../stores/sessionStore";
@@ -115,30 +118,38 @@ export function useProjects() {
 // useProjectSessions — per-project hook for session management
 // ---------------------------------------------------------------------------
 
-export function useProjectSessions(repoRoot: string) {
+export function useProjectSessions(
+  repoRoot: string,
+  hostId: HostId = LOCAL_HOST_ID,
+) {
   const allSessions = useSessions();
   const allProjects = useSessionProjects();
   const listenersRef = useRef<Map<string, () => void>>(new Map());
 
+  // Two hosts can hold this path; only the sessions belonging to this one.
   const sessions = useMemo(
-    () => allSessions.filter((w) => w.repo_root === repoRoot),
-    [allSessions, repoRoot],
+    () =>
+      allSessions.filter(
+        (w) => w.repo_root === repoRoot && sessionHostId(w.id) === hostId,
+      ),
+    [allSessions, repoRoot, hostId],
   );
   const project = useMemo(
-    () => allProjects.find((p) => p.repoRoot === repoRoot),
-    [allProjects, repoRoot],
+    () =>
+      allProjects.find((p) => p.repoRoot === repoRoot && p.hostId === hostId),
+    [allProjects, repoRoot, hostId],
   );
   const repoBranch = project?.repoBranch ?? null;
 
   const refresh = useCallback(async () => {
     try {
       const ws = await listSessions(repoRoot);
-      mergeSessionsForProject(repoRoot, ws);
-      refreshRepoBranch(repoRoot).catch(() => {});
+      mergeSessionsForProject(repoRoot, ws, hostId);
+      refreshRepoBranch(repoRoot, hostId).catch(() => {});
     } catch {
       // Ignore refresh errors
     }
-  }, [repoRoot]);
+  }, [repoRoot, hostId]);
 
   const hasInitializing = sessions.some((w) => w.status === "initializing");
   useEffect(() => {
@@ -151,14 +162,14 @@ export function useProjectSessions(repoRoot: string) {
       }
       try {
         const ws = await listSessions(repoRoot);
-        mergeSessionsForProject(repoRoot, ws);
+        mergeSessionsForProject(repoRoot, ws, hostId);
       } catch {
         // Ignore poll errors
       }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [hasInitializing, repoRoot]);
+  }, [hasInitializing, repoRoot, hostId]);
 
   const repoRootSession = sessions.find((w) => w.kind === "project_root");
   const repoRootId = repoRootSession?.id ?? null;
@@ -170,15 +181,16 @@ export function useProjectSessions(repoRoot: string) {
       `session:branch-changed:${repoRootId}`,
       (event) => {
         const { branch } = event.payload;
-        setProjectBranch(repoRoot, branch);
+        setProjectBranch(repoRoot, branch, hostId);
         updateSession(repoRootId, { branch });
       },
+      { hostId },
     );
 
     return () => {
       unlisten.then((fn) => fn());
     };
-  }, [repoRootId, repoRoot]);
+  }, [repoRootId, repoRoot, hostId]);
 
   const sessionIds = sessions
     .map((w) => w.id)
@@ -186,7 +198,7 @@ export function useProjectSessions(repoRoot: string) {
     .join(",");
   useEffect(() => {
     const currentSessions = getSessionState().sessions.filter(
-      (w) => w.repo_root === repoRoot,
+      (w) => w.repo_root === repoRoot && sessionHostId(w.id) === hostId,
     );
     const currentIds = new Set(currentSessions.map((w) => w.id));
 
@@ -218,7 +230,7 @@ export function useProjectSessions(repoRoot: string) {
         });
       }
     }
-  }, [sessionIds, repoRoot]);
+  }, [sessionIds, repoRoot, hostId]);
 
   useEffect(() => {
     const listeners = listenersRef.current;
