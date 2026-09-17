@@ -131,7 +131,12 @@ export async function git(cwd: string, args: string[]): Promise<string> {
   // is holding the index lock". Equivalent to `GIT_OPTIONAL_LOCKS=0`.
   const finalArgs = ["--no-optional-locks", ...args];
   try {
-    const { stdout } = await execFileAsync("git", finalArgs, { cwd });
+    // Node defaults to 1 MB, which a large `diff` or `log` blows past with
+    // ENOBUFS. Matches the ceiling the blob and merge paths already use.
+    const { stdout } = await execFileAsync("git", finalArgs, {
+      cwd,
+      maxBuffer: 50 * 1024 * 1024,
+    });
 
     return stdout;
   } catch (err: unknown) {
