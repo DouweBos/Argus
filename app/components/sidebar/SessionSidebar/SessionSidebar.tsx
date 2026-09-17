@@ -14,6 +14,7 @@ import { useProjects } from "../../../hooks/useSessions";
 import { useRouteHostId } from "../../../lib/routeHooks";
 import { LOCAL_HOST_ID, isLocalHost } from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useAutomations } from "../../../stores/automationStore";
 import { useHostConnections } from "../../../stores/connectionStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
@@ -53,6 +54,8 @@ export function SessionSidebar() {
   const runningAgents = Object.values(agentsRecord).filter(
     (a) => a.status === "running",
   ).length;
+  const automations = useAutomations();
+  const enabledAutomations = automations.filter((a) => a.enabled).length;
   const awaitingMyReviewCount = useAwaitingMyReviewCount();
   const prList = usePrList();
   // Show a spinner until the first fetch has landed; swapping to `0`
@@ -190,6 +193,13 @@ export function SessionSidebar() {
           count={runningRuntimes}
         >
           Runtimes
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="automations"
+          leading={<Icons.ClockIcon size={12} />}
+          count={enabledAutomations}
+        >
+          Automations
         </SidebarNavItem>
         <SidebarNavItem
           view="pull-requests"

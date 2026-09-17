@@ -24,6 +24,9 @@ switching tabs is a navigation, not a second source of truth. See
 | ----------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`                                             | Home / project picker              | Default route on launch.                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `/agents`                                       | Agents overview                    | All agents across all sessions.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `/automations`                                  | Automations                        | Every automation on the focused host: trigger, last run, next run, enable switch.                                                                                                                                                                                                                                                                                                                                                 |
+| `/automations/:automationId`                    | Automation config + run history    | Name, playbook, trigger, model and the list of past runs.                                                                                                                                                                                                                                                                                                                                                                         |
+| `/automations/:automationId/runs/:runId`        | Automation run                     | Status, cost, duration, the run's markdown report and a link to its host session.                                                                                                                                                                                                                                                                                                                                                 |
 | `/devices`                                      | Devices                            | iOS simulators + Android emulators.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `/notifications`                                | Notifications                      | Warnings & errors.                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/pull-requests`                                | Pull requests                      | GitHub PRs of interest across open projects.                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -48,6 +51,7 @@ Every URL parses into a `ParsedRoute`:
 interface ParsedRoute {
   view:
     | "agents"
+    | "automations"
     | "devices"
     | "home"
     | "notifications"
@@ -76,6 +80,8 @@ interface ParsedRoute {
     | "settings"
     | null; // only meaningful when panel === "git"
   gitRefName: string | null; // set when gitView is "branches"/"tags" and a name segment follows
+  automationId: string | null; // set on /automations/:automationId and below
+  automationRunId: string | null; // set on /automations/:automationId/runs/:runId
   hostId: string; // "?host=" — the attached host this screen reads from; "local" for this Mac
 }
 ```
@@ -130,6 +136,9 @@ whichever reads best:
 | `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                             |
 | `selectSession(null)`        | `/`                                                         |
 | `setCenterView(view)`        | `/{view}`                                                   |
+| `openAutomations()`          | `/automations`                                              |
+| `openAutomation(id)`         | `/automations/{id}`                                         |
+| `openAutomationRun(id, run)` | `/automations/{id}/runs/{run}`                              |
 | `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route)    |
 | `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                    |
 | `setFocusedHost(hostId)`     | `?host={hostId}` — points the view at another attached host |

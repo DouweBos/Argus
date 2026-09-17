@@ -23,6 +23,7 @@ import styles from "./TitleBar.module.css";
 const ROUTE_TITLES: Record<string, string> = {
   "": "Home",
   agents: "Agents",
+  automations: "Automations",
   devices: "Devices",
   runtimes: "Runtimes",
   "pull-requests": "Pull requests",
