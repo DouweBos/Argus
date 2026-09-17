@@ -23,6 +23,7 @@ export type GitErrorKind =
   | "nothing-to-commit"
   | "nothing-to-pull"
   | "nothing-to-push"
+  | "output-too-large"
   | "rebase-conflict"
   | "signing-failed"
   | "unknown";

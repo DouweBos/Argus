@@ -8,7 +8,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
-import { classifyGitStderr } from "./gitError";
+import { GitError, classifyGitStderr } from "./gitError";
 
 const execFileAsync = promisify(execFile);
 
@@ -142,7 +142,21 @@ export async function git(cwd: string, args: string[]): Promise<string> {
   } catch (err: unknown) {
     // execFile rejects with an object that has stdout/stderr when the process
     // exits with a non-zero code.
-    const e = err as { stdout?: string; stderr?: string; message?: string };
+    const e = err as {
+      code?: string;
+      stdout?: string;
+      stderr?: string;
+      message?: string;
+    };
+    // Overflowing maxBuffer rejects with no stderr, so it would otherwise land
+    // as a generic failure and read as "the diff is broken" rather than "too big".
+    if (e.code === "ENOBUFS") {
+      throw new GitError(
+        "output-too-large",
+        `git ${args[0] ?? ""} produced more output than Argus can read at once`,
+        { recovery: "Narrow the range, or view the change file by file." },
+      );
+    }
     const stdout = e.stdout ?? "";
     const stderr = e.stderr ?? "";
     const combined =
