@@ -45,6 +45,8 @@ export type Envelope =
 /** Plaintext tag distinguishing JSON envelopes from binary media frames. */
 export const TAG_JSON = 0x00;
 export const TAG_MEDIA = 0x01;
+/** Chunked file transfers, in either direction. */
+export const TAG_XFER = 0x02;
 
 /** Pairing code payload, as encoded in the desktop's QR / pasteable code. */
 export interface PairingPayload {

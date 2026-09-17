@@ -31,6 +31,11 @@ export class GatewaySocket {
     this.ws = null;
   }
 
+  /** Bytes queued on the socket, for transfer backpressure. */
+  get bufferedAmount(): number {
+    return this.ws?.bufferedAmount ?? 0;
+  }
+
   send(bytes: Uint8Array): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(bytes);

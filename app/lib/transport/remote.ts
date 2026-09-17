@@ -12,6 +12,7 @@ import {
   MediaRouter,
   RemoteError,
   Transport,
+  TransferChannel,
   type ConnectionState,
   type EventEnvelope,
 } from "@argus/remote-client";
@@ -53,6 +54,8 @@ export interface RemoteTransportHandlers {
 export class RemoteTransport implements ArgusTransport {
   /** Device-screen frames, keyed by the stream id `devices.watch` hands back. */
   readonly media = new MediaRouter();
+  /** Chunked file transfers — attachments and large reads, in both directions. */
+  readonly transfers: TransferChannel;
   private readonly transport: Transport;
   private readonly listeners = new Map<
     string,
@@ -77,8 +80,14 @@ export class RemoteTransport implements ArgusTransport {
         onState: (state) => this.onState(state),
         onEvent: (env) => this.onEvent(env),
         onMedia: (bytes) => this.media.push(bytes),
+        onXfer: (bytes) => this.transfers.pushFrame(bytes),
       },
     );
+    this.transfers = new TransferChannel({
+      request: (method, params) => this.transport.request(method, params),
+      sendXfer: (body) => this.transport.sendXfer(body),
+      buffered: () => this.transport.bufferedAmount,
+    });
   }
 
   connect(): void {
@@ -88,6 +97,7 @@ export class RemoteTransport implements ArgusTransport {
   disconnect(): void {
     this.transport.disconnect();
     this.media.clear();
+    this.transfers.reset();
   }
 
   get connectionState(): ConnectionState {
@@ -100,6 +110,8 @@ export class RemoteTransport implements ArgusTransport {
     // reconnect and gets fresh ones, so nothing may survive the gap.
     if (state === "offline") {
       this.media.clear();
+      // Transfer ids belong to one socket; nothing in flight may hang.
+      this.transfers.reset();
     }
     this.handlers.onState(state);
   }

@@ -36,6 +36,8 @@ import {
   stopSimulatorCapture,
 } from "../simulator/ios";
 import { onVideo } from "../simulator/videoForward";
+import { TransferHub } from "../transfer/hub";
+import { TAG_XFER } from "../transfer/protocol";
 import {
   dispatch,
   GatewayError,
@@ -180,6 +182,11 @@ export class DeviceConnection implements DeviceMediaController {
     string,
     { streamId: number; unsub: () => void }
   >();
+  /** Chunked file transfers in either direction, admin devices only. */
+  private readonly transfers = new TransferHub({
+    send: (body) => this.emitXfer(body),
+    buffered: () => this.bufferedProbe?.() ?? 0,
+  });
 
   constructor(
     readonly device: PairedDevice,
@@ -224,6 +231,8 @@ export class DeviceConnection implements DeviceMediaController {
     for (const sessionId of [...this.watchedBrowsers.keys()]) {
       this.unwatchBrowser(sessionId);
     }
+    // A transfer cut off mid-flight must leave no partial behind.
+    this.transfers.dispose();
     releaseConnection(this.connectionId);
   }
 
@@ -335,6 +344,16 @@ export class DeviceConnection implements DeviceMediaController {
     let envelope: Envelope;
     try {
       const plain = this.session.decrypt(cipher);
+      // Transfer chunks are handled synchronously, before any await, so the
+      // socket's frame order is the order the receiver sees — the `end` message
+      // always lands before the `transfer.complete` request that follows it.
+      if (plain.length > 0 && plain[0] === TAG_XFER) {
+        if (this.raw) {
+          this.transfers.onBody(plain.subarray(1));
+        }
+
+        return;
+      }
       // Inbound media (tag 0x01) is client→gateway only in theory; the client
       // never sends it, so drop anything that isn't a JSON envelope.
       if (plain.length === 0 || plain[0] !== TAG_JSON) {
@@ -377,7 +396,9 @@ export class DeviceConnection implements DeviceMediaController {
     params: unknown,
   ): Promise<void> {
     try {
-      const ok = await dispatch(method, params, this.ctx);
+      const ok = method.startsWith("transfer.")
+        ? await this.handleTransfer(method, params)
+        : await dispatch(method, params, this.ctx);
       this.emit({ type: "res", seq: this.nextSeq(), id, ok });
     } catch (err) {
       const code =
@@ -396,6 +417,49 @@ export class DeviceConnection implements DeviceMediaController {
   /** Tell this device every address it could reach the desktop on. */
   pushEndpoints(endpoints: RemoteEndpoint[]): void {
     this.pushEvent("host.endpoints", null, { endpoints });
+  }
+
+  /**
+   * The `transfer.*` control plane.
+   *
+   * Transport machinery rather than a command: it manipulates this socket's own
+   * state, so it never reaches the command registry. Gated on `admin`, the same
+   * tier `upload_session_attachment`, `read_file` and `write_file` carry — a
+   * monitor/control client has no business writing to the host's disk.
+   */
+  private async handleTransfer(
+    method: string,
+    params: unknown,
+  ): Promise<unknown> {
+    if (!this.raw) {
+      throw new GatewayError(
+        "capability_denied",
+        "device lacks 'admin' capability",
+      );
+    }
+    const p = (params ?? {}) as Record<string, unknown>;
+    switch (method) {
+      case "transfer.upload.open":
+        return await this.transfers.openUpload({
+          purpose: p.purpose === "file" ? "file" : "attachment",
+          session_id: String(p.session_id ?? ""),
+          name: String(p.name ?? ""),
+          size: Number(p.size ?? -1),
+        });
+      case "transfer.upload.complete":
+        return await this.transfers.completeUpload(Number(p.transfer_id));
+      case "transfer.download.open":
+        return await this.transfers.openDownload({
+          session_id: String(p.session_id ?? ""),
+          path: String(p.path ?? ""),
+        });
+      case "transfer.abort":
+        this.transfers.abort(Number(p.transfer_id));
+
+        return null;
+      default:
+        throw new GatewayError("capability_denied", `unknown method ${method}`);
+    }
   }
 
   /**
@@ -605,6 +669,14 @@ export class DeviceConnection implements DeviceMediaController {
   private emitMedia(body: Uint8Array): void {
     const plain = new Uint8Array(1 + body.length);
     plain[0] = TAG_MEDIA;
+    plain.set(body, 1);
+    this.sink(this.session.encrypt(plain));
+  }
+
+  /** Send one transfer chunk on the same encrypted channel. */
+  private emitXfer(body: Uint8Array): void {
+    const plain = new Uint8Array(1 + body.length);
+    plain[0] = TAG_XFER;
     plain.set(body, 1);
     this.sink(this.session.encrypt(plain));
   }

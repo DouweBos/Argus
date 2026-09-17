@@ -434,7 +434,7 @@ async function allowedFileRoots(): Promise<string[]> {
  *
  * @throws string if the path cannot be resolved or escapes every allowed root.
  */
-async function resolveContainedPath(
+export async function resolveContainedPath(
   id: string,
   requested: string,
   options: { mustExist: boolean },

@@ -1,4 +1,4 @@
-import type { MediaRouter } from "@argus/remote-client";
+import type { MediaRouter, TransferChannel } from "@argus/remote-client";
 
 /**
  * The one shape `invoke()` / `send()` / `listen()` talk to. Local mode is
@@ -15,6 +15,12 @@ export interface ArgusTransport {
   media?: MediaRouter;
   on: <T>(event: string, callback: (payload: T) => void) => () => void;
   send: (channel: string, args?: Record<string, unknown>) => void;
+  /**
+   * Chunked binary file transfer. Remote mode only: locally a dropped file is
+   * already a path on the machine holding the worktree, so nothing serialises.
+   * Callers feature-detect this the way the video hooks pick their source.
+   */
+  transfers?: TransferChannel;
 }
 
 /**

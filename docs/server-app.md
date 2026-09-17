@@ -121,16 +121,26 @@ the bytes travel instead. They are staged under `$ARGUS_HOME/uploads/<session>/`
 on the host — never inside the worktree, so nothing shows up in the session's
 diff — and staged files are swept seven days after their last use.
 
-One upload is capped at **8 MB**. The cap is enforced on the host as well as in
-the window, and an oversize file is refused by name rather than truncated; drop
-a smaller file or put the big one on the host yourself.
+The bytes move as a chunked binary transfer over the same encrypted connection
+that carries device video, not as one giant message, so a screen recording or a
+large patch goes through the way a small text file does. The chat shows a
+progress bar while a drop is uploading, and the transfer is only accepted once
+its length and checksum both match — a connection that drops mid-upload leaves
+nothing half-written behind.
+
+One upload is capped at **512 MB**, a limit on what the host is willing to stage
+on its own disk. It is enforced on the host as the bytes arrive, and an oversize
+file is refused by name rather than truncated; put a bigger one on the host
+yourself.
 
 ### What a client may read and write
 
 `read_file` and `write_file` are reachable by an admin-paired desktop. Both
 resolve their target, follow symlinks, and refuse anything that lands outside
 the session's worktree or a registered project root — a symlink inside the
-worktree pointing at `~/.ssh` is not a way out.
+worktree pointing at `~/.ssh` is not a way out. Chunked transfers go through the
+same check, once, when the transfer opens: a chunk carries a transfer id and
+nothing else, so there is no later opportunity to redirect where it lands.
 
 ### Git errors keep their detail
 

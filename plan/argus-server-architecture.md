@@ -381,10 +381,14 @@ Worth designing the route shape for during C.
 
 ## 9. Still open
 
-1. **Attachment/file transfer budget.** Partly settled: uploads are capped at 8 MiB
-   and enforced host-side on the encoded length, under the gateway's 16 MiB
-   `maxPayload` (base64 inflates 4/3). Still base64-in-JSON, so a chunked channel is
-   the remaining work — `TAG_MEDIA` is the obvious carrier now that it takes JPEG.
+1. ~~**Attachment/file transfer budget.**~~ Done: a chunked binary channel rides
+   `TAG_XFER` (0x02) alongside `TAG_JSON` and `TAG_MEDIA`, with `transfer.*` control
+   on the request/response layer. It runs both ways — uploads and session writes in,
+   file reads out — pauses on backpressure instead of dropping (a shed chunk
+   corrupts the file), stages then renames behind a length + SHA-256 check, and
+   sweeps partials on abort or disconnect. The attachment cap is now 512 MiB,
+   enforced host-side as bytes arrive. Local mode still passes paths and serialises
+   nothing.
 2. ~~**Does the embedded browser (`services/browser/`, CDP + MJPEG) follow?**~~ Done:
    its JPEG frames ride the same `TAG_MEDIA` channel as device video (`browser.watch`),
    input goes to the host over the admin passthrough, and it arbitrates through the
