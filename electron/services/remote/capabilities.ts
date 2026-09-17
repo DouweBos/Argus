@@ -15,7 +15,6 @@ import type { z } from "zod";
 import {
   MethodParams,
   REMOTE_METHODS,
-  isHostOnlyCommand,
   type Capability,
   type RemoteAgentCapabilities,
   type RemoteAgentStatus,
@@ -52,6 +51,7 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { collectAllProjects } from "../mcp/projects";
 import {
@@ -63,7 +63,7 @@ import {
   gitListRemoteBranches,
   gitStashAndCheckout,
 } from "../session/gitBranchOps";
-import { GitError } from "../session/gitError";
+import { GitError, serializeGitError } from "../session/gitError";
 import { gitStatus } from "../session/gitStatus";
 import {
   createSession,
@@ -105,7 +105,6 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
-import { hasHostCommand, invokeHostCommand } from "./ipcPassthrough";
 import {
   ensureVapidPublicKey,
   getPushConfigStatus,
@@ -120,6 +119,8 @@ export class GatewayError extends Error {
       | "internal"
       | "not_found",
     message: string,
+    /** Structured payload the client rehydrates (e.g. a serialised GitError). */
+    readonly data?: unknown,
   ) {
     super(message);
     this.name = "GatewayError";
@@ -1509,21 +1510,28 @@ const ADMIN_HID_DEVICE_KEY: Record<string, string> = {
 };
 
 /**
- * Run a raw `ipcMain.handle` command on behalf of an admin device — the same
- * command the host's own renderer would invoke. Bounded only by
- * `HOST_ONLY_COMMANDS`; see §3.1 of the server-architecture plan for why this
- * tier inverts to a denylist.
+ * Run a raw command on behalf of an admin device — the same command the host's
+ * own renderer would invoke, looked up in the shared registry. The registry's
+ * tier is the bound: "host" never leaves the machine. See §3.1 of the
+ * server-architecture plan for why this tier inverts to a denylist.
  */
 async function dispatchAdmin(
   command: string,
   params: unknown,
   ctx: GatewayContext,
 ): Promise<unknown> {
-  if (isHostOnlyCommand(command)) {
+  const definition = getCommand(command);
+  if (!definition) {
+    throw new GatewayError("not_found", `unknown command ${command}`);
+  }
+  if (definition.tier === "host") {
     throw new GatewayError("capability_denied", `host-only command ${command}`);
   }
-  if (!hasHostCommand(command)) {
-    throw new GatewayError("not_found", `unknown command ${command}`);
+  if (!hasCapability(ctx, definition.tier)) {
+    throw new GatewayError(
+      "capability_denied",
+      `device lacks '${definition.tier}' capability`,
+    );
   }
 
   const args = (params ?? {}) as Record<string, unknown>;
@@ -1543,8 +1551,17 @@ async function dispatchAdmin(
   }
 
   try {
-    return (await invokeHostCommand(command, params)) ?? null;
+    return (await invokeCommand(command, params)) ?? null;
   } catch (err) {
+    // GitError rides the envelope's `data` field so the client can rehydrate
+    // kind/recovery instead of parsing a message string.
+    if (err instanceof GitError) {
+      throw new GatewayError(
+        "bad_request",
+        err.message,
+        serializeGitError(err),
+      );
+    }
     throw new GatewayError(
       "bad_request",
       err instanceof Error ? err.message : String(err),

@@ -326,11 +326,12 @@ export class DeviceConnection implements DeviceMediaController {
       const code =
         err instanceof GatewayError ? err.code : ("internal" as const);
       const message = err instanceof Error ? err.message : "error";
+      const data = err instanceof GatewayError ? err.data : undefined;
       this.emit({
         type: "res",
         seq: this.nextSeq(),
         id,
-        error: { code, message },
+        error: { code, message, data },
       });
     }
   }

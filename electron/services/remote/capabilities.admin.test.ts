@@ -1,24 +1,20 @@
 /**
- * The admin tier: raw IPC passthrough for a paired Mac, bounded by the
- * host-only denylist. monitor/control must stay on the strict allowlist, and
- * every denylisted name must still exist in `ipc.ts` — a rename there would
- * otherwise silently open a hole.
+ * The admin tier: raw command passthrough for a paired Mac, bounded by the
+ * registry's tier. monitor/control must stay on the strict allowlist, and the
+ * host-tier registrations in `ipc.ts` must still match `HOST_ONLY_COMMANDS` —
+ * a rename there would otherwise silently open a hole.
  */
 
 import type { GatewayContext } from "./capabilities";
 import type { PairedDevice } from "./deviceStore";
+import type { CommandArgs, CommandTier } from "../command/registry";
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { HOST_ONLY_COMMANDS, REMOTE_METHODS } from "@argus/remote-protocol";
 
-/** Stand-in for the real registrations made by `registerIpcHandlers()`. */
-const invokeHandlers = new Map<
-  string,
-  (event: unknown, args: unknown) => unknown
->();
 vi.mock("electron", () => ({
-  ipcMain: { _invokeHandlers: invokeHandlers },
+  ipcMain: { handle: vi.fn() },
   safeStorage: { isEncryptionAvailable: () => false },
 }));
 vi.mock("../../broadcast", () => ({ broadcastToRenderers: vi.fn() }));
@@ -61,9 +57,49 @@ vi.mock("../organization/manager", () => ({
 }));
 
 const { dispatch, GatewayError } = await import("./capabilities");
+const { defineCommand } = await import("../command/registry");
+
 const { releaseDevice } = await import("./deviceClaims");
 const { resolveMentionPath } = await import("../file/operations");
 const { collectAllProjects } = await import("../mcp/projects");
+const { GitError } = await import("../session/gitError");
+
+/** Stand-in for the real registrations made by `registerIpcHandlers()`. */
+const FIXTURES: [string, CommandTier, (args: CommandArgs) => unknown][] = [
+  ["list_projects", "admin", (args) => ({ args, ok: true })],
+  ["show_open_dialog", "host", () => ({ paths: [] })],
+  [
+    "boom",
+    "admin",
+    () => {
+      throw "nope";
+    },
+  ],
+  [
+    "resolve_mention_path",
+    "admin",
+    () => ({
+      entries: [{ name: "unconfined", is_dir: false }],
+      resolvedPath: "/etc",
+    }),
+  ],
+  ["simulator_touch", "admin", () => null],
+  [
+    "git_boom",
+    "admin",
+    () => {
+      throw new GitError("merge-conflict", "merge conflict", {
+        recovery: "resolve it",
+      });
+    },
+  ],
+];
+
+const fixtureNames = FIXTURES.map(([name, tier, handler]) => {
+  defineCommand(name, { tier, handler });
+
+  return name;
+});
 
 function makeCtx(capabilities: PairedDevice["capabilities"]): GatewayContext {
   return {
@@ -85,28 +121,36 @@ const ipcSource = fs.readFileSync(
   "utf-8",
 );
 
-/** Command names registered in `ipc.ts`, via `handle()` or `toolHandle()`. */
-const registered = new Set(
-  [...ipcSource.matchAll(/\b(?:toolHandle|handle)\(\s*"([a-z0-9_]+)"/g)].map(
-    (m) => m[1],
-  ),
+/** Every `defineCommand` registration in `ipc.ts`, with its declared tier. */
+const declaredTiers = new Map(
+  [
+    ...ipcSource.matchAll(
+      /\b(?:toolHandle|handle)\(\s*"([a-z0-9_]+)",\s*"(host|monitor|control|admin)"/g,
+    ),
+  ].map((m) => [m[1], m[2]]),
 );
 
 describe("host-only denylist", () => {
-  it("only names commands that still exist in ipc.ts", () => {
-    const missing = [...HOST_ONLY_COMMANDS].filter((c) => !registered.has(c));
-    expect(missing).toEqual([]);
+  it("matches the commands registered at the host tier", () => {
+    const hostTier = [...declaredTiers]
+      .filter(([, tier]) => tier === "host")
+      .map(([name]) => name)
+      .sort();
+    expect(hostTier).toEqual([...HOST_ONLY_COMMANDS].sort());
   });
 
   it("keeps updater_get_state remotable", () => {
     expect(HOST_ONLY_COMMANDS.has("updater_get_state")).toBe(false);
-    expect(registered.has("updater_get_state")).toBe(true);
+    expect(declaredTiers.get("updater_get_state")).toBe("admin");
   });
 });
 
 describe("admin passthrough dispatch", () => {
+  it("registers every fixture command", () => {
+    expect(fixtureNames).toHaveLength(FIXTURES.length);
+  });
+
   it("invokes a raw IPC command for an admin device", async () => {
-    invokeHandlers.set("list_projects", (_e, args) => ({ args, ok: true }));
     const res = await dispatch(
       "list_projects",
       { a: 1 },
@@ -116,10 +160,21 @@ describe("admin passthrough dispatch", () => {
   });
 
   it("refuses host-only commands even for admin", async () => {
-    invokeHandlers.set("show_open_dialog", () => ({ paths: [] }));
     await expect(
       dispatch("show_open_dialog", {}, makeCtx(["monitor", "admin"])),
     ).rejects.toMatchObject({ code: "capability_denied" });
+  });
+
+  it("keeps host-tier commands unreachable at every tier", async () => {
+    for (const caps of [
+      ["monitor"],
+      ["monitor", "control"],
+      ["monitor", "control", "admin"],
+    ] as const) {
+      await expect(
+        dispatch("show_open_dialog", {}, makeCtx([...caps])),
+      ).rejects.toMatchObject({ code: "capability_denied" });
+    }
   });
 
   it("reports an unregistered command as not_found", async () => {
@@ -129,16 +184,26 @@ describe("admin passthrough dispatch", () => {
   });
 
   it("maps a throwing handler to a wire error", async () => {
-    invokeHandlers.set("boom", () => {
-      throw "nope";
-    });
     await expect(
       dispatch("boom", {}, makeCtx(["monitor", "admin"])),
     ).rejects.toBeInstanceOf(GatewayError);
   });
 
+  it("carries a GitError envelope in the wire error's data", async () => {
+    await expect(
+      dispatch("git_boom", {}, makeCtx(["monitor", "admin"])),
+    ).rejects.toMatchObject({
+      code: "bad_request",
+      message: "merge conflict",
+      data: {
+        __gitError: true,
+        kind: "merge-conflict",
+        recovery: "resolve it",
+      },
+    });
+  });
+
   it("does not widen monitor or control", async () => {
-    invokeHandlers.set("list_projects", () => ({ ok: true }));
     for (const caps of [["monitor"], ["monitor", "control"]] as const) {
       await expect(
         dispatch("list_projects", {}, makeCtx([...caps])),
@@ -171,10 +236,6 @@ describe("remote permission modes", () => {
 
 describe("admin passthrough guards", () => {
   it("confines the @-mention browse to registered projects", async () => {
-    invokeHandlers.set("resolve_mention_path", () => ({
-      entries: [{ name: "unconfined", is_dir: false }],
-      resolvedPath: "/etc",
-    }));
     vi.mocked(collectAllProjects).mockReturnValue([
       { path: "/repo", name: "repo" },
     ] as never);
@@ -190,7 +251,6 @@ describe("admin passthrough guards", () => {
   });
 
   it("arbitrates raw HID between two admin devices", async () => {
-    invokeHandlers.set("simulator_touch", () => null);
     const first = makeCtx(["monitor", "admin"]);
     const second = { ...makeCtx(["monitor", "admin"]), connectionId: "conn-2" };
 

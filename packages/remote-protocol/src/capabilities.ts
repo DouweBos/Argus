@@ -6,7 +6,8 @@
  * from `REMOTE_METHODS`, so adding a method here (and a handler there) is the
  * only way to widen the remote surface for monitor/control — there is no
  * implicit escalation. The "admin" tier is the one exception: it dispatches raw
- * IPC command names, bounded by the `HOST_ONLY_COMMANDS` denylist.
+ * IPC command names, bounded by the tier its command registry declares —
+ * mirrored here as `HOST_ONLY_COMMANDS` for the renderer.
  */
 
 /**
@@ -28,6 +29,10 @@ export type Capability = (typeof CAPABILITIES)[number];
 /**
  * Commands that never cross the wire, at any tier. They act on the machine the
  * *window* is on, or mutate the trust store that authorises the wire itself.
+ *
+ * The host registers these at the "host" tier in its command registry, which is
+ * what actually bars them; this set is the renderer-visible mirror (the
+ * registry lives in the main process) and is asserted equal to it by test.
  *
  * `updater_get_state` is deliberately absent: reading the host's update status
  * is useful, restarting it under other clients is not.
