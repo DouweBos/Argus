@@ -21,9 +21,9 @@ import type {
   EventMap,
   EventName,
 } from "../../../app/lib/telemetryEvents";
-import { app } from "electron";
 import os from "node:os";
 import { PostHog } from "posthog-node";
+import { hostPlatform } from "@argus/host/platform";
 import { createLogger, setErrorSink } from "../../../app/lib/logger";
 import { getAnonymousId } from "./anonymousId";
 
@@ -47,8 +47,8 @@ let heartbeatSent = false;
 
 function baseProps(): Record<string, boolean | number | string> {
   return {
-    app_version: app.getVersion(),
-    is_packaged: app.isPackaged,
+    app_version: hostPlatform().appVersion(),
+    is_packaged: hostPlatform().isPackaged(),
     platform: process.platform,
     arch: process.arch,
     os_release: os.release(),
@@ -61,7 +61,7 @@ export function initTelemetry(): void {
   distinctId = getAnonymousId();
 
   // eslint-disable-next-line no-constant-condition, no-constant-binary-expression
-  if (false && !app.isPackaged) {
+  if (false && !hostPlatform().isPackaged()) {
     log.info("disabled — dev build");
 
     return;
@@ -82,25 +82,6 @@ export function initTelemetry(): void {
     disableGeoip: true,
   });
   log.info(`initialized; host=${HOST}`);
-
-  // Capture crashes from any render process (renderer windows, popouts).
-  app.on("render-process-gone", (_event, _wc, details) => {
-    captureException(new Error(`render-process-gone: ${details.reason}`), {
-      reason: details.reason,
-      exitCode: details.exitCode,
-      source: "render-process-gone",
-    });
-  });
-
-  app.on("child-process-gone", (_event, details) => {
-    captureException(new Error(`child-process-gone: ${details.type}`), {
-      type: details.type,
-      reason: details.reason,
-      exitCode: details.exitCode,
-      source: "child-process-gone",
-      // Intentionally drop `name` — it can be a window title (PII risk).
-    });
-  });
 
   process.on("uncaughtException", (err) => {
     captureException(err, { source: "uncaughtException" });
@@ -238,7 +219,7 @@ function captureHeartbeat(): void {
       properties: {
         $current_url: "argus:///",
         $pathname: "/",
-        app_version: app.getVersion(),
+        app_version: hostPlatform().appVersion(),
         source: "heartbeat",
       },
     });

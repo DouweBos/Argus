@@ -12,8 +12,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { emitHostEvent } from "@argus/host/bus";
 import { warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { effectiveAutoFetchMinutes, reconfigureAutoFetch } from "./autoFetch";
 import { git } from "./git";
@@ -143,10 +143,7 @@ export class WatcherHandle {
         untrackedPaths,
       );
 
-      getMainWindow()?.webContents.send(
-        `session:diff-changed:${this.sessionId}`,
-        stats,
-      );
+      emitHostEvent(`session:diff-changed:${this.sessionId}`, stats);
     } catch {
       // Git command failure is non-fatal (e.g. worktree deleted).
     }
@@ -266,7 +263,7 @@ async function emitBranchAndDiff(
   sessionId: string,
   branch: string,
 ): Promise<void> {
-  getMainWindow()?.webContents.send(`session:branch-changed:${sessionId}`, {
+  emitHostEvent(`session:branch-changed:${sessionId}`, {
     branch,
   });
 
@@ -275,10 +272,7 @@ async function emitBranchAndDiff(
     // is empty; stats are just the working-tree view.
     const numstat = await git(repoRoot, ["diff", "HEAD", "--numstat"]);
     const stats = combineDiffStats("", numstat, []);
-    getMainWindow()?.webContents.send(
-      `session:diff-changed:${sessionId}`,
-      stats,
-    );
+    emitHostEvent(`session:diff-changed:${sessionId}`, stats);
   } catch {
     // Diff stat failure is non-fatal.
   }

@@ -8,8 +8,8 @@
  * never touches the network.
  */
 
-import { app } from "electron";
 import path from "node:path";
+import { hostPlatform } from "@argus/host/platform";
 
 interface AssetSpec {
   /** Filename or directory name under `process.resourcesPath` when packaged. */
@@ -45,8 +45,8 @@ export function resolveAssetPath(assetName: string): string {
       `Tool asset not registered: ${assetName} (no resolver entry)`,
     );
   }
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, spec.name);
+  if (hostPlatform().isPackaged()) {
+    return path.join(hostPlatform().resourcesPath(), spec.name);
   }
 
   return path.join(process.cwd(), spec.source);

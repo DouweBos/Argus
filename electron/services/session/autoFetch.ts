@@ -13,8 +13,8 @@
  */
 
 import type { Session } from "./models";
+import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { git } from "./git";
 
@@ -58,12 +58,9 @@ async function runFetch(sessionId: string, repoRoot: string): Promise<void> {
       timers.get(sessionId)!.inFlight = false;
     }
     // Notify every session in this repo so their status strips refresh.
-    const win = getMainWindow();
-    if (win) {
-      for (const ws of appState.sessions.values()) {
-        if (ws.repo_root === repoRoot) {
-          win.webContents.send("git_status_changed", { sessionId: ws.id });
-        }
+    for (const ws of appState.sessions.values()) {
+      if (ws.repo_root === repoRoot) {
+        emitHostEvent("git_status_changed", { sessionId: ws.id });
       }
     }
   }

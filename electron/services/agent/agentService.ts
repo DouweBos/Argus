@@ -38,11 +38,11 @@ import type {
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
 import type { LlmRunner, PermissionPreHook } from "../llm/runners/types";
 import type { RuntimePlatform } from "../session/models";
-import { app } from "electron";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
+import { hostPlatform } from "@argus/host/platform";
 import { info, warn } from "../../../app/lib/logger";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
@@ -115,8 +115,8 @@ const cachedPrompts: Record<string, string | null> = {
 
 function loadPromptFile(filename: string): string {
   try {
-    const promptPath = app.isPackaged
-      ? path.join(process.resourcesPath, filename)
+    const promptPath = hostPlatform().isPackaged()
+      ? path.join(hostPlatform().resourcesPath(), filename)
       : path.join(process.cwd(), "electron", "prompts", filename);
 
     return readFileSync(promptPath, "utf-8");

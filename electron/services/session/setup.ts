@@ -8,8 +8,8 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import {
   createTerminal,
@@ -975,7 +975,7 @@ export async function runSetupPipeline(
 
   // Fire the setup-terminal event so listeners registered via the realtime
   // path (not via the synchronous create_session response) still attach a tab.
-  getMainWindow()?.webContents.send(`session:setup_terminal:${sessionId}`, {
+  emitHostEvent(`session:setup_terminal:${sessionId}`, {
     terminalId,
     title: "Setup",
   });
@@ -987,7 +987,7 @@ export async function runSetupPipeline(
   // the line editor and don't interfere with any command in flight.
   const emit = (msg: string) => {
     const encoded = Buffer.from(msg).toString("base64");
-    getMainWindow()?.webContents.send(`terminal:data:${terminalId}`, encoded);
+    emitHostEvent(`terminal:data:${terminalId}`, encoded);
   };
 
   const emitProgressItem = (
@@ -996,7 +996,7 @@ export async function runSetupPipeline(
     total: number,
     phase: "command" | "copy" | "matching" | "symlink",
   ) => {
-    getMainWindow()?.webContents.send(progressEvent, {
+    emitHostEvent(progressEvent, {
       item,
       current,
       total,

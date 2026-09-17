@@ -8,9 +8,9 @@
  */
 
 import type { RemoteNotificationPayload } from "./broadcast";
-import { Notification } from "electron";
+import { emitHostEvent } from "@argus/host/bus";
+import { hostPlatform } from "@argus/host/platform";
 import { warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { respondToPermission } from "../agent/agentService";
 import { loadAppSettings } from "../appSettings/store";
 import { broadcastRemoteNotification, permissionActions } from "./broadcast";
@@ -49,19 +49,11 @@ function shouldNotifyRemote(): boolean {
     return true;
   }
 
-  return !getMainWindow()?.isFocused();
+  return !hostPlatform().isForeground();
 }
 
 function focusWindow(): void {
-  const win = getMainWindow();
-  if (!win) {
-    return;
-  }
-  if (win.isMinimized()) {
-    win.restore();
-  }
-  win.show();
-  win.focus();
+  hostPlatform().focusUi();
 }
 
 /** Navigate the renderer to the agent a notification came from. */
@@ -69,7 +61,7 @@ function routeToAgent(payload: RemoteNotificationPayload): void {
   if (!payload.agent_id || !payload.session_id) {
     return;
   }
-  getMainWindow()?.webContents.send("agent_notification_clicked", {
+  emitHostEvent("agent_notification_clicked", {
     agent_id: payload.agent_id,
     session_id: payload.session_id,
   });
@@ -118,29 +110,26 @@ export function showAgentNotification(
     broadcastRemoteNotification(payload);
   }
 
-  if (!options.showLocal || !Notification.isSupported()) {
+  if (!options.showLocal || !hostPlatform().notificationsSupported()) {
     return false;
   }
 
-  const notification = new Notification({
+  hostPlatform().notify({
     title: payload.title,
     body: payload.body,
     urgency: options.urgency === "critical" ? "critical" : "normal",
-    // Buttons are macOS-only in Electron; elsewhere this is simply ignored.
-    actions: payload.actions.map((a) => ({ type: "button", text: a.title })),
+    actions: payload.actions.map((a) => a.title),
+    onAction: (index) => {
+      const action = payload.actions[index];
+      if (action) {
+        runAction(payload, action.id);
+      }
+    },
+    onClick: () => {
+      focusWindow();
+      routeToAgent(payload);
+    },
   });
-
-  notification.on("action", (_event, index) => {
-    const action = payload.actions[index];
-    if (action) {
-      runAction(payload, action.id);
-    }
-  });
-  notification.on("click", () => {
-    focusWindow();
-    routeToAgent(payload);
-  });
-  notification.show();
 
   return true;
 }

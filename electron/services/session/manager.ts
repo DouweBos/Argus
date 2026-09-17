@@ -5,8 +5,8 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
 import { type AppDefaultLlm, resolveRunnerForSession } from "../llm/resolve";
@@ -351,7 +351,7 @@ export async function createSession(
     model: initialModel,
   };
   appState.sessions.set(id, { ...pending });
-  getMainWindow()?.webContents.send("session:created", { ...pending });
+  emitHostEvent("session:created", { ...pending });
 
   telemetryCapture("session_created", {
     has_explicit_branch: branch.trim().length > 0,
@@ -424,7 +424,7 @@ async function finalizeSession(
     }
     ws.status = { error: msg };
     appState.sessions.set(id, ws);
-    getMainWindow()?.webContents.send(`session:status:${id}`, `error:${msg}`);
+    emitHostEvent(`session:status:${id}`, `error:${msg}`);
     signalWorktreeFailed?.(msg);
   };
 
@@ -538,7 +538,7 @@ async function finalizeSession(
     ws.status = "initializing";
     appState.sessions.set(id, ws);
 
-    getMainWindow()?.webContents.send("session:updated", {
+    emitHostEvent("session:updated", {
       id,
       branch: ws.branch,
       path: ws.path,
@@ -615,7 +615,7 @@ async function finalizeSession(
             // Non-fatal
           }
 
-          getMainWindow()?.webContents.send("session:updated", {
+          emitHostEvent("session:updated", {
             id,
             display_name: title,
           });
@@ -647,7 +647,7 @@ async function finalizeSession(
         stored.setup_terminal_id = setupTerminalId;
         appState.sessions.set(id, stored);
       }
-      getMainWindow()?.webContents.send(`session:setup_terminal:${id}`, {
+      emitHostEvent(`session:setup_terminal:${id}`, {
         terminalId: setupTerminalId,
         title: "Setup",
       });
@@ -667,7 +667,7 @@ async function finalizeSession(
           current.status = finalStatus;
           appState.sessions.set(id, current);
         }
-        getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+        emitHostEvent(`session:status:${id}`, "ready");
         const session = appState.sessions.get(id);
         if (session) {
           reconfigureAutoFetch(
@@ -689,10 +689,7 @@ async function finalizeSession(
           current.status = { error: errMsg };
           appState.sessions.set(id, current);
         }
-        getMainWindow()?.webContents.send(
-          `session:status:${id}`,
-          `error:${errMsg}`,
-        );
+        emitHostEvent(`session:status:${id}`, `error:${errMsg}`);
       });
   } catch (e) {
     const errMsg =
@@ -1096,7 +1093,7 @@ export function createHeadSession(repoRoot: string): Session {
     // Config parse failure is non-fatal here.
   }
 
-  getMainWindow()?.webContents.send("session:created", { ...ws });
+  emitHostEvent("session:created", { ...ws });
 
   info(`Created repo-root (HEAD) session ${ws.id}`);
 
@@ -1129,7 +1126,7 @@ export function clearSessionSetupError(id: string): void {
 
   session.status = "ready";
   appState.sessions.set(id, session);
-  getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+  emitHostEvent(`session:status:${id}`, "ready");
 }
 
 /**
@@ -1149,7 +1146,7 @@ export function retrySessionSetup(id: string): void {
 
   session.status = "initializing";
   appState.sessions.set(id, session);
-  getMainWindow()?.webContents.send(`session:status:${id}`, "initializing");
+  emitHostEvent(`session:status:${id}`, "initializing");
 
   const config = loadArgusConfig(session.repo_root) ?? defaultArgusConfig();
 
@@ -1166,7 +1163,7 @@ export function retrySessionSetup(id: string): void {
         current.status = "ready";
         appState.sessions.set(id, current);
       }
-      getMainWindow()?.webContents.send(`session:status:${id}`, "ready");
+      emitHostEvent(`session:status:${id}`, "ready");
       reconfigureAutoFetch(
         id,
         session.repo_root,
@@ -1185,10 +1182,7 @@ export function retrySessionSetup(id: string): void {
         current.status = { error: errMsg };
         appState.sessions.set(id, current);
       }
-      getMainWindow()?.webContents.send(
-        `session:status:${id}`,
-        `error:${errMsg}`,
-      );
+      emitHostEvent(`session:status:${id}`, `error:${errMsg}`);
     });
 }
 
@@ -1219,7 +1213,7 @@ export function renameSession(id: string, displayName: string): void {
     info(`renameSession: persist metadata failed for ${id}:`, e);
   }
 
-  getMainWindow()?.webContents.send("session:updated", {
+  emitHostEvent("session:updated", {
     id,
     display_name: trimmed,
   });
@@ -1271,7 +1265,7 @@ export async function renameSessionBranch(
   session.branch = slug;
   appState.sessions.set(id, session);
 
-  getMainWindow()?.webContents.send("session:updated", {
+  emitHostEvent("session:updated", {
     id,
     branch: slug,
   });
@@ -1334,20 +1328,16 @@ export async function deleteSession(
   }
   detachGitWatcher(id);
 
-  const win = getMainWindow();
-
   // Notify the renderer that agents were killed.
-  if (win) {
-    for (const agentId of killedAgentIds) {
-      win.webContents.send(`agent:exit:${agentId}`, 0);
-    }
+  for (const agentId of killedAgentIds) {
+    emitHostEvent(`agent:exit:${agentId}`, 0);
   }
 
   if (session.kind === "project_root") {
     // Repo-root sessions don't have a worktree to remove on disk — delete
     // immediately.
     appState.sessions.delete(id);
-    win?.webContents.send("session:deleted", id);
+    emitHostEvent("session:deleted", id);
     info(`Deleted session ${id}`);
 
     return;
@@ -1358,7 +1348,7 @@ export async function deleteSession(
   // deletions from the file watcher) while the worktree is removed on disk.
   session.status = "deleting";
   appState.sessions.set(id, session);
-  win?.webContents.send(`session:status:${id}`, "deleting");
+  emitHostEvent(`session:status:${id}`, "deleting");
 
   const taskRepoRoot = repoRoot;
   const taskSessionPath = session.path;
@@ -1408,11 +1398,8 @@ export async function deleteSession(
         ws.status = { error: errMsg };
         appState.sessions.set(taskId, ws);
       }
-      getMainWindow()?.webContents.send(
-        `session:status:${taskId}`,
-        `error:${errMsg}`,
-      );
-      getMainWindow()?.webContents.send("session:delete-failed", {
+      emitHostEvent(`session:status:${taskId}`, `error:${errMsg}`);
+      emitHostEvent("session:delete-failed", {
         id: taskId,
         error: errMsg,
       });
@@ -1439,7 +1426,7 @@ export async function deleteSession(
     }
 
     appState.sessions.delete(taskId);
-    getMainWindow()?.webContents.send("session:deleted", taskId);
+    emitHostEvent("session:deleted", taskId);
     info(`Deleted session ${taskId} (background)`);
   })();
 }

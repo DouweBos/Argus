@@ -20,8 +20,8 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import { promisify } from "node:util";
+import { emitHostEvent } from "@argus/host/bus";
 import { info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import {
   accountCredentialDir,
   clearAuthFailure,
@@ -93,7 +93,7 @@ export async function claudeLogout(accountId?: string): Promise<void> {
 
 /** Tell the renderer the account list or active account moved. */
 export function emitAccountsChanged(): void {
-  getMainWindow()?.webContents.send("claude-auth:accounts-changed", {});
+  emitHostEvent("claude-auth:accounts-changed", {});
 }
 
 // Only one interactive login can be in flight at a time. The `claude auth
@@ -109,7 +109,7 @@ let loginAccountIsNew = false;
 let loginSuppressed = false;
 
 function emitLoginResult(ok: boolean, error?: string): void {
-  getMainWindow()?.webContents.send("claude-auth:login-result", { ok, error });
+  emitHostEvent("claude-auth:login-result", { ok, error });
 }
 
 /**
@@ -201,7 +201,7 @@ export async function claudeLoginStart(args: {
       /paste|authorization code|enter the code/i.test(output)
     ) {
       needsCodeEmitted = true;
-      getMainWindow()?.webContents.send("claude-auth:login-needs-code", {});
+      emitHostEvent("claude-auth:login-needs-code", {});
     }
   };
 

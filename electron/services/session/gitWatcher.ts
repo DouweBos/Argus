@@ -11,8 +11,8 @@
 import chokidar, { type FSWatcher } from "chokidar";
 import fs from "node:fs";
 import path from "node:path";
+import { emitHostEvent } from "@argus/host/bus";
 import { warn } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { git } from "./git";
 
@@ -80,7 +80,7 @@ export async function startGitWatcher(
   let timer: ReturnType<typeof setTimeout> | null = null;
   const flush = () => {
     timer = null;
-    getMainWindow()?.webContents.send("git_status_changed", { sessionId });
+    emitHostEvent("git_status_changed", { sessionId });
   };
   const schedule = () => {
     if (timer) {

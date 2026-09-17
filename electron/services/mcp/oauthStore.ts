@@ -11,9 +11,9 @@
  * authenticate at all.
  */
 
-import { safeStorage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { hostPlatform } from "@argus/host/platform";
 import { warn } from "../../../app/lib/logger";
 import { argusDirPath } from "../onboarding/state";
 
@@ -107,7 +107,7 @@ export async function loadToken(
     return null;
   }
   if (entry.enc) {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!hostPlatform().secretStorage.isAvailable()) {
       warn(
         "[mcp-oauth] encryption unavailable but token is encrypted; cannot decrypt",
       );
@@ -115,9 +115,9 @@ export async function loadToken(
       return null;
     }
     try {
-      const json = safeStorage
-        .decryptString(Buffer.from(entry.data, "base64"))
-        .toString();
+      const json = hostPlatform().secretStorage.decrypt(
+        Buffer.from(entry.data, "base64"),
+      );
 
       return JSON.parse(json) as StoredMcpToken;
     } catch (err) {
@@ -133,8 +133,8 @@ export async function loadToken(
 export async function saveToken(token: StoredMcpToken): Promise<void> {
   const key = canonicalResource(token.resource);
   const file = await readFile();
-  if (safeStorage.isEncryptionAvailable()) {
-    const buf = safeStorage.encryptString(JSON.stringify(token));
+  if (hostPlatform().secretStorage.isAvailable()) {
+    const buf = hostPlatform().secretStorage.encrypt(JSON.stringify(token));
     file.servers[key] = { enc: true, data: buf.toString("base64") };
   } else {
     warn(

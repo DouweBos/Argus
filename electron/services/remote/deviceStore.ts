@@ -7,15 +7,15 @@
  * `electron/services/mcp/oauthStore.ts`. Public keys are not secret but live in
  * the same encrypted blob for simplicity.
  *
- * If `safeStorage.isEncryptionAvailable()` is false we fall back to plaintext
+ * If `hostPlatform().secretStorage.isAvailable()` is false we fall back to plaintext
  * with a warning, matching the OAuth store — remote access still works, just
  * without at-rest encryption on that host.
  */
 
 import type { Capability } from "@argus/remote-protocol";
-import { safeStorage } from "electron";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { hostPlatform } from "@argus/host/platform";
 import { warn } from "../../../app/lib/logger";
 import { argusDirPath } from "../onboarding/state";
 import { generateKeypair } from "./noise";
@@ -121,7 +121,7 @@ async function readState(): Promise<RemoteState | null> {
 
   const file = JSON.parse(raw) as FileShape;
   if (file.enc) {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!hostPlatform().secretStorage.isAvailable()) {
       warn(
         "[remote] encryption unavailable but store is encrypted; cannot read",
       );
@@ -129,9 +129,9 @@ async function readState(): Promise<RemoteState | null> {
       return null;
     }
     try {
-      const json = safeStorage
-        .decryptString(Buffer.from(file.data as string, "base64"))
-        .toString();
+      const json = hostPlatform().secretStorage.decrypt(
+        Buffer.from(file.data as string, "base64"),
+      );
 
       return JSON.parse(json) as RemoteState;
     } catch (err) {
@@ -149,8 +149,8 @@ async function readState(): Promise<RemoteState | null> {
 async function writeState(state: RemoteState): Promise<void> {
   await fs.mkdir(argusDirPath(), { recursive: true });
   let file: FileShape;
-  if (safeStorage.isEncryptionAvailable()) {
-    const buf = safeStorage.encryptString(JSON.stringify(state));
+  if (hostPlatform().secretStorage.isAvailable()) {
+    const buf = hostPlatform().secretStorage.encrypt(JSON.stringify(state));
     file = { enc: true, data: buf.toString("base64") };
   } else {
     warn(

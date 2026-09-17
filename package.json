@@ -50,7 +50,6 @@
   },
   "dependencies": {
     "@argus/host": "workspace:*",
-    "@argus/host": "workspace:*",
     "@argus/peacock": "workspace:*",
     "@argus/remote-client": "workspace:*",
     "@argus/remote-protocol": "workspace:*",

@@ -10,8 +10,8 @@ import type { SessionMergeStatus } from "./merge";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import nodePath from "node:path";
+import { emitHostEvent } from "@argus/host/bus";
 import { info } from "../../../app/lib/logger";
-import { getMainWindow } from "../../mainWindow";
 import { appState } from "../../state";
 import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { git, worktreesRoot } from "./git";
@@ -427,7 +427,7 @@ export async function gitCommit(
     if (ws) {
       const hash = (await git(ws.path, ["log", "-1", "--format=%h"])).trim();
       const subject = (await git(ws.path, ["log", "-1", "--format=%s"])).trim();
-      getMainWindow()?.webContents.send("session:commit-landed", {
+      emitHostEvent("session:commit-landed", {
         sessionId: id,
         branch: ws.branch,
         hash,
@@ -858,7 +858,7 @@ export function writeArgusConfig(repoRoot: string, content: string): void {
   const filePath = `${repoRoot}/.argus.json`;
   fs.writeFileSync(filePath, content, "utf8");
   info(`Wrote .argus.json to ${filePath}`);
-  getMainWindow()?.webContents.send("argus_config:changed", { repoRoot });
+  emitHostEvent("argus_config:changed", { repoRoot });
 }
 
 // ---------------------------------------------------------------------------
@@ -1066,7 +1066,7 @@ export async function mergeSessionIntoBase(id: string): Promise<void> {
     doMergeSessionIntoBase(ws.repo_root, ws.path, ws.branch, ws.base_branch!),
   );
 
-  getMainWindow()?.webContents.send("session:merged", {
+  emitHostEvent("session:merged", {
     sessionId: id,
     branch: ws.branch,
     baseBranch: ws.base_branch,
@@ -1097,7 +1097,7 @@ export async function attemptSessionMerge(id: string) {
   );
 
   if (result.state === "merged") {
-    getMainWindow()?.webContents.send("session:merged", {
+    emitHostEvent("session:merged", {
       sessionId: id,
       branch: ws.branch,
       baseBranch: ws.base_branch,
@@ -1124,7 +1124,7 @@ export async function continueSessionMerge(id: string) {
   );
 
   if (result.state === "merged") {
-    getMainWindow()?.webContents.send("session:merged", {
+    emitHostEvent("session:merged", {
       sessionId: id,
       branch: ws.branch,
       baseBranch: ws.base_branch,

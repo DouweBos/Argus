@@ -23,7 +23,9 @@ import { pathToFileURL } from "node:url";
 import { emitHostEvent } from "@argus/host/bus";
 import { log as emitLog } from "../app/lib/logger";
 import { installRendererEventSink } from "./broadcast";
+import { installCrashHooks } from "./crashHooks";
 import { startDevTrust, stopDevTrust } from "./devTrust";
+import { installHostPlatform } from "./hostPlatform";
 import { registerIpcHandlers } from "./ipc";
 import { argusHomeDir } from "./lib/argusHome";
 import { writeLogLine } from "./lib/logFile";
@@ -875,6 +877,10 @@ app.whenReady().then(() => {
     process.resourcesPath,
   );
 
+  // Supply the core with the capabilities it can't reach as plain Node. The
+  // headless server app has no window, so its UI-shaped capabilities no-op.
+  installHostPlatform({ headless: isServerMode() });
+
   // Renderers are the first sink on the host bus, so they keep receiving
   // events in the order they were emitted even once the gateway taps it too.
   installRendererEventSink();
@@ -883,6 +889,7 @@ app.whenReady().then(() => {
   // consent state (collected during onboarding, kept in localStorage) once
   // it boots. Until that arrives, no events are sent.
   initTelemetry();
+  installCrashHooks();
 
   // Restore a user-pinned conductor version, installing it in the background
   // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
