@@ -1,0 +1,129 @@
+import { Avatar } from "../Avatar/Avatar";
+import { Badge } from "../Badge/Badge";
+import { Button } from "../Button/Button";
+import { StatusBulb } from "../StatusBulb/StatusBulb";
+import styles from "./GuestList.module.css";
+
+export type GuestListItemState = "approved" | "denied" | "pending";
+
+export interface GuestListItem {
+  /** Stable identity — the ephemeral key a guest handshook with. */
+  id: string;
+  label: string;
+  state: GuestListItemState;
+  /** Whether their socket is live right now (they may have closed the tab). */
+  connected: boolean;
+  /**
+   * They hold the device claim. At most one guest ever does, so the list reads
+   * the same with two people or with six: one row is marked, the rest are not.
+   */
+  driving?: boolean;
+}
+
+export interface GuestListProps {
+  guests: GuestListItem[];
+  /** Omitted for a read-only list (a guest looking at the other guests). */
+  onApprove?: (id: string) => void;
+  onDeny?: (id: string) => void;
+  /** Shown instead of a row when nobody has opened the link yet. */
+  emptyLabel?: string;
+  className?: string;
+}
+
+function statusLine(guest: GuestListItem): string {
+  if (guest.state === "pending") {
+    return "Wants to join";
+  }
+  if (guest.state === "denied") {
+    return "Turned away";
+  }
+
+  return guest.connected ? "In the huddle" : "Tab closed — link still works";
+}
+
+function bulbTone(
+  guest: GuestListItem,
+): "error" | "neutral" | "pending" | "success" {
+  if (guest.state === "pending") {
+    return "pending";
+  }
+  if (guest.state === "denied") {
+    return "error";
+  }
+
+  return guest.connected ? "success" : "neutral";
+}
+
+/**
+ * Everyone in a shared room, however many that is — waiting, in, or turned
+ * away — with the approve/deny decision on the rows that need one.
+ *
+ * Built for N from the start: pending guests sort to the top so a fourth
+ * person arriving is never buried under the three already in, and exactly one
+ * row can carry the "driving" mark, because the host's device claim only ever
+ * grants one.
+ */
+export function GuestList({
+  guests,
+  onApprove,
+  onDeny,
+  emptyLabel = "Nobody has opened the link yet.",
+  className,
+}: GuestListProps) {
+  const order: Record<GuestListItemState, number> = {
+    pending: 0,
+    approved: 1,
+    denied: 2,
+  };
+  const sorted = [...guests].sort((a, b) => order[a.state] - order[b.state]);
+
+  if (sorted.length === 0) {
+    return <p className={styles.empty}>{emptyLabel}</p>;
+  }
+
+  return (
+    <ul className={[styles.list, className].filter(Boolean).join(" ")}>
+      {sorted.map((guest) => (
+        <li key={guest.id} className={styles.row}>
+          <Avatar className={styles.avatar} name={guest.label} size={22} />
+          <span className={styles.body}>
+            <span className={styles.name}>
+              {guest.label}
+              {guest.driving && (
+                <Badge size="pill" tone="accent">
+                  Driving the device
+                </Badge>
+              )}
+            </span>
+            <span className={styles.status}>
+              <StatusBulb
+                size="sm"
+                tone={bulbTone(guest)}
+                pulse={guest.state === "pending"}
+              />
+              {statusLine(guest)}
+            </span>
+          </span>
+          {guest.state === "pending" && onApprove && onDeny && (
+            <span className={styles.actions}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onDeny(guest.id)}
+              >
+                Deny
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => onApprove(guest.id)}
+              >
+                Allow
+              </Button>
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}

@@ -214,6 +214,13 @@ import {
 } from "@argus/host/services/remote/deviceStore";
 import { disconnectDevice } from "@argus/host/services/remote/gateway";
 import {
+  approveGuest as approveHuddleGuest,
+  denyGuest as denyHuddleGuest,
+  listRooms as listHuddleRooms,
+  startHuddle,
+  stopHuddle,
+} from "@argus/host/services/remote/huddleService";
+import {
   cancelPairing,
   confirmPairing,
   startPairing,
@@ -1081,6 +1088,23 @@ export function registerIpcHandlers(): void {
 
     return listRemoteDevices();
   });
+  // Huddles — sharing one agent and one device over a temporary link. Host
+  // tier throughout: minting a link, letting a guest in and ending a share are
+  // trust decisions, and a room token must never leave this machine's console.
+  handle("huddle_start", "host", (a) =>
+    startHuddle({
+      agent_id: a.agentId as string,
+      device_key: (a.deviceKey as string | null) ?? "",
+    }),
+  );
+  handle("huddle_stop", "host", (a) => stopHuddle(a.roomId as string));
+  handle("huddle_list", "host", () => listHuddleRooms());
+  handle("huddle_approve_guest", "host", (a) =>
+    approveHuddleGuest(a.roomId as string, a.devStaticPub as string),
+  );
+  handle("huddle_deny_guest", "host", (a) =>
+    denyHuddleGuest(a.roomId as string, a.devStaticPub as string),
+  );
   // Push status to the renderer whenever the tunnel state changes (e.g. a quick
   // tunnel finishing startup and revealing its URL).
   setRemoteStatusListener(() => {
