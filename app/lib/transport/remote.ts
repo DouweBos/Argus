@@ -17,7 +17,11 @@ import {
 } from "@argus/remote-client";
 import { localTransport } from "./local";
 import { commandTarget } from "./routing";
-import { RemoteUnavailableError, type ArgusTransport } from "./types";
+import {
+  HostUnavailableError,
+  RemoteUnavailableError,
+  type ArgusTransport,
+} from "./types";
 
 /**
  * The gateway's subscription id for a channel, mirroring the host's
@@ -56,6 +60,7 @@ export class RemoteTransport implements ArgusTransport {
   >();
   /** Live gateway subscriptions, ref-counted by scope id. */
   private readonly subscriptionRefs = new Map<string, number>();
+  private state: ConnectionState = "connecting";
 
   constructor(
     private readonly host: RemoteHost,
@@ -85,7 +90,12 @@ export class RemoteTransport implements ArgusTransport {
     this.media.clear();
   }
 
+  get connectionState(): ConnectionState {
+    return this.state;
+  }
+
   private onState(state: ConnectionState): void {
+    this.state = state;
     // Stream ids belong to one socket. The runtime panel re-watches on
     // reconnect and gets fresh ones, so nothing may survive the gap.
     if (state === "offline") {
@@ -109,6 +119,15 @@ export class RemoteTransport implements ArgusTransport {
         return Promise.reject(error);
       }
       default:
+        if (this.state === "offline") {
+          // Fail now rather than after the 15s request timeout: the last
+          // snapshot stays on screen, but nothing may pretend to be writing
+          // to a machine that isn't there.
+          return Promise.reject(
+            new HostUnavailableError(this.host.id, this.host.label),
+          );
+        }
+
         return this.transport.request<T>(channel, args ?? {});
     }
   }

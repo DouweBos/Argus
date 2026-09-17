@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, Icons } from "@argus/peacock";
 import { showOpenDirectoryDialog } from "../../../lib/ipc";
-import { useConnection } from "../../../stores/connectionStore";
+import { useFocusedConnection } from "../../../stores/connectionStore";
 import {
   removeRecentProject,
   useRecentProjects,
@@ -18,7 +18,7 @@ interface OpenProjectDialogProps {
 
 export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
   const projects = useRecentProjects();
-  const connection = useConnection();
+  const connection = useFocusedConnection();
   const [browsingHost, setBrowsingHost] = useState(false);
 
   const handleBrowse = async () => {
@@ -55,7 +55,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
       <div className={projectStyles.body}>
         {browsingHost ? (
           <HostProjectBrowser
-            hostLabel={connection.hostLabel ?? "the host"}
+            hostLabel={connection.label ?? "the host"}
             onCancel={() => setBrowsingHost(false)}
             onPick={(path) => {
               pickHostPath(path).catch(() => undefined);

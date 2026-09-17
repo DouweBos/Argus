@@ -11,13 +11,16 @@ import {
   StatusDot,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
+import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useHostConnections } from "../../../stores/connectionStore";
 import { useDevices } from "../../../stores/deviceStore";
 import {
   useAwaitingMyReviewCount,
   usePrList,
 } from "../../../stores/pullRequestStore";
 import { reorderOpenProjects } from "../../../stores/recentProjectsStore";
+import { projectKey } from "../../../stores/sessionStore";
 import {
   reorderProjects,
   toggleProjectCollapsed,
@@ -56,6 +59,14 @@ export function SessionSidebar() {
     );
   const totalProjects = projects.length;
 
+  // Projects carry the machine they live on: several hosts are attached at
+  // once, and `~/Work/app` can exist on more than one of them.
+  const connections = useHostConnections();
+  const hostLabels = new Map(connections.map((c) => [c.hostId, c.label]));
+  const offlineHosts = new Set(
+    connections.filter((c) => c.state === "offline").map((c) => c.hostId),
+  );
+
   const [dragRoot, setDragRoot] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{
     position: "after" | "before";
@@ -64,11 +75,12 @@ export function SessionSidebar() {
 
   const handleAdd = () => setShowOpenProject(true);
 
+  // Keyed by `projectKey()` — two hosts may hold a repo at the same path.
   const handleDragStart =
-    (repoRoot: string) => (e: React.DragEvent<HTMLDivElement>) => {
-      setDragRoot(repoRoot);
+    (key: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      setDragRoot(key);
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", repoRoot);
+      e.dataTransfer.setData("text/plain", key);
     };
 
   const handleDragOver =
@@ -180,8 +192,9 @@ export function SessionSidebar() {
           <p className={styles.empty}>No active projects.</p>
         ) : (
           projects.map((project) => {
-            const isDragging = dragRoot === project.repoRoot;
-            const isTarget = dropTarget?.root === project.repoRoot;
+            const key = projectKey(project);
+            const isDragging = dragRoot === key;
+            const isTarget = dropTarget?.root === key;
             const slotClass = [
               styles.projectSlot,
               isDragging ? styles.dragging : "",
@@ -197,20 +210,27 @@ export function SessionSidebar() {
 
             return (
               <div
-                key={project.repoRoot}
+                key={key}
                 className={slotClass}
                 draggable
-                onDragStart={handleDragStart(project.repoRoot)}
-                onDragOver={handleDragOver(project.repoRoot)}
-                onDrop={handleDrop(project.repoRoot)}
+                onDragStart={handleDragStart(key)}
+                onDragOver={handleDragOver(key)}
+                onDrop={handleDrop(key)}
                 onDragEnd={handleDragEnd}
               >
                 <ProjectSegment
+                  hostId={project.hostId}
+                  hostLabel={
+                    project.hostId === LOCAL_HOST_ID
+                      ? null
+                      : (hostLabels.get(project.hostId) ?? project.hostId)
+                  }
+                  hostOffline={offlineHosts.has(project.hostId)}
                   isCollapsed={project.isCollapsed}
                   repoRoot={project.repoRoot}
-                  onClose={() => closeProject(project.repoRoot)}
+                  onClose={() => closeProject(project.repoRoot, project.hostId)}
                   onToggleCollapsed={() =>
-                    toggleProjectCollapsed(project.repoRoot)
+                    toggleProjectCollapsed(project.repoRoot, project.hostId)
                   }
                 />
               </div>

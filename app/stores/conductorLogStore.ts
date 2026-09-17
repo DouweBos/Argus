@@ -2,7 +2,7 @@ import type { ConductorLogEntry } from "../lib/types";
 import { useEffect } from "react";
 import { create } from "zustand";
 import { listConductorLogs } from "../lib/ipc";
-import { getTransport } from "../lib/transport";
+import { subscribe } from "../lib/transport";
 
 let initialized = false;
 
@@ -15,7 +15,7 @@ export function initConductorLogListener(): void {
     return;
   }
   initialized = true;
-  getTransport().on<ConductorLogEntry>("conductor:log", (entry) => {
+  subscribe<ConductorLogEntry>("conductor:log", (entry) => {
     appendConductorLog(entry);
   });
 }

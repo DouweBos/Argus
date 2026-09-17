@@ -8,9 +8,15 @@
  * `useProjectSessions.refresh()` — one event-driven path for the whole app.
  */
 
-import { getSessionState, setProjectBranch } from "../stores/sessionStore";
+import type { HostId } from "./transport/hostId";
+import {
+  getSessionState,
+  sessionHostId,
+  setProjectBranch,
+} from "../stores/sessionStore";
 import { listen } from "./events";
 import { getRepoBranch } from "./ipc";
+import { LOCAL_HOST_ID } from "./transport/hostId";
 import {
   GIT_STATUS_CHANGED_EVENT,
   type GitStatusChangedPayload,
@@ -18,18 +24,21 @@ import {
 
 let initialized = false;
 
-async function refreshFor(repoRoot: string): Promise<void> {
+async function refreshFor(repoRoot: string, hostId: HostId): Promise<void> {
   try {
     const branch = await getRepoBranch(repoRoot);
-    setProjectBranch(repoRoot, branch);
+    setProjectBranch(repoRoot, branch, hostId);
   } catch {
-    setProjectBranch(repoRoot, null);
+    setProjectBranch(repoRoot, null, hostId);
   }
 }
 
 /** Trigger an immediate refresh — used by BranchSwitcher after a checkout. */
-export function refreshRepoBranch(repoRoot: string): Promise<void> {
-  return refreshFor(repoRoot);
+export function refreshRepoBranch(
+  repoRoot: string,
+  hostId: HostId = LOCAL_HOST_ID,
+): Promise<void> {
+  return refreshFor(repoRoot, hostId);
 }
 
 export function initRepoBranchSync(): void {
@@ -44,6 +53,6 @@ export function initRepoBranchSync(): void {
     if (!session || session.kind !== "project_root") {
       return;
     }
-    refreshFor(session.repo_root).catch(() => {});
+    refreshFor(session.repo_root, sessionHostId(session.id)).catch(() => {});
   });
 }

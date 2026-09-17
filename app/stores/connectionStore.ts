@@ -1,47 +1,162 @@
 /**
- * Which machine the UI is driving, and how that connection is doing.
+ * Every host the UI is attached to, and how each one is doing.
  *
- * Transport state, not route state — the URL says what you are looking at, not
- * where it runs. Kept in a store (rather than the route) so a shared link can
- * never strand someone on a machine they cannot reach.
+ * Several can be live at once — this Mac plus a Mac mini for iOS plus a Linux
+ * box for Android — so this is a registry, not a single active connection.
+ * Which host a given view *reads from* is the route's business
+ * (`ParsedRoute.hostId`); this store only knows who is attached and whether
+ * their socket is up.
  */
 
 import type { ConnectionState } from "@argus/remote-client";
 import { create } from "zustand";
+import { useRouteHostId } from "../lib/routeHooks";
+import { appNavigate, getCurrentRoute } from "../lib/router";
+import { LOCAL_HOST_ID, type HostId } from "../lib/transport/hostId";
 
 export type ConnectionMode = "local" | "remote";
 
-export interface ConnectionInfo {
-  /** Set when a saved host could not be reached and we booted local instead. */
-  fallbackFrom: string | null;
-  hostId: string | null;
-  hostLabel: string | null;
-  /** True once a snapshot has been pulled from the host in this attachment. */
+export interface HostConnectionInfo {
+  /** When the host was attached in this window. */
+  attachedAt: number;
+  hostId: HostId;
+  /** True once a snapshot has been pulled from this host in this attachment. */
   hydrated: boolean;
+  label: string;
   lastError: string | null;
   mode: ConnectionMode;
   state: ConnectionState;
 }
 
-const store = create<ConnectionInfo>(() => ({
+interface ConnectionStoreData {
+  connections: Record<HostId, HostConnectionInfo>;
+  /** Hosts whose saved attachment could not be restored at launch. */
+  unreachable: string[];
+}
+
+const localConnection: HostConnectionInfo = {
+  hostId: LOCAL_HOST_ID,
+  label: "This Mac",
   mode: "local",
-  hostId: null,
-  hostLabel: null,
   state: "ready",
   hydrated: true,
   lastError: null,
-  fallbackFrom: null,
-}));
-
-export const useConnection = (): ConnectionInfo => store();
-export const getConnection = (): ConnectionInfo => store.getState();
-
-export const setConnectionInfo = (patch: Partial<ConnectionInfo>): void => {
-  store.setState(patch);
+  attachedAt: 0,
 };
 
-export const useIsRemote = (): boolean => store((s) => s.mode === "remote");
+const store = create<ConnectionStoreData>(() => ({
+  connections: { [LOCAL_HOST_ID]: localConnection },
+  unreachable: [],
+}));
 
-/** Label for the machine the UI is driving, for menus and banners. */
-export const useConnectionLabel = (): string =>
-  store((s) => (s.mode === "local" ? "This Mac" : (s.hostLabel ?? "Host")));
+export const getConnections = (): HostConnectionInfo[] =>
+  Object.values(store.getState().connections);
+
+export const getHostConnection = (hostId: HostId): HostConnectionInfo | null =>
+  store.getState().connections[hostId] ?? null;
+
+export const isHostAttached = (hostId: HostId): boolean =>
+  store.getState().connections[hostId] !== undefined;
+
+/** Attached hosts, this Mac first and the rest in attachment order. */
+export const useHostConnections = (): HostConnectionInfo[] => {
+  const connections = store((s) => s.connections);
+
+  return Object.values(connections).sort((a, b) => a.attachedAt - b.attachedAt);
+};
+
+export const useHostConnection = (hostId: HostId): HostConnectionInfo | null =>
+  store((s) => s.connections[hostId] ?? null);
+
+export const useUnreachableHosts = (): string[] => store((s) => s.unreachable);
+
+export const addHostConnection = (info: HostConnectionInfo): void => {
+  store.setState((s) => ({
+    connections: { ...s.connections, [info.hostId]: info },
+    unreachable: s.unreachable.filter((label) => label !== info.label),
+  }));
+};
+
+export const setHostConnection = (
+  hostId: HostId,
+  patch: Partial<HostConnectionInfo>,
+): void => {
+  store.setState((s) => {
+    const existing = s.connections[hostId];
+    if (!existing) {
+      return s;
+    }
+
+    return {
+      connections: { ...s.connections, [hostId]: { ...existing, ...patch } },
+    };
+  });
+};
+
+export const removeHostConnection = (hostId: HostId): void => {
+  if (hostId === LOCAL_HOST_ID) {
+    return;
+  }
+  store.setState((s) => ({
+    connections: Object.fromEntries(
+      Object.entries(s.connections).filter(([id]) => id !== hostId),
+    ),
+  }));
+};
+
+export const markHostUnreachable = (label: string): void => {
+  store.setState((s) => ({
+    unreachable: s.unreachable.includes(label)
+      ? s.unreachable
+      : [...s.unreachable, label],
+  }));
+};
+
+export const dismissUnreachableHost = (label: string): void => {
+  store.setState((s) => ({
+    unreachable: s.unreachable.filter((l) => l !== label),
+  }));
+};
+
+// --- Focus -----------------------------------------------------------------
+
+/**
+ * Point the view at a host. Lives in the URL, not here: "which machine am I
+ * reading from" is part of what you're looking at, and back/forward should
+ * take you between them. Detached hosts fall back to this Mac.
+ */
+export const setFocusedHost = (hostId: HostId): void => {
+  const route = getCurrentRoute();
+  if (route.hostId === hostId) {
+    return;
+  }
+  appNavigate({
+    ...(isHostAttached(hostId) ? { hostId } : { hostId: LOCAL_HOST_ID }),
+    view: "home",
+  });
+};
+
+/** The host the current view reads from, as a connection record. */
+export const useFocusedConnection = (): HostConnectionInfo => {
+  const hostId = useRouteHostId();
+  const connections = store((s) => s.connections);
+
+  return connections[hostId] ?? connections[LOCAL_HOST_ID] ?? localConnection;
+};
+
+export const getFocusedConnection = (): HostConnectionInfo =>
+  getHostConnection(getCurrentRoute().hostId) ?? localConnection;
+
+export const useIsRemote = (): boolean =>
+  useFocusedConnection().mode === "remote";
+
+/** Label for the machine the current view is driving, for menus and banners. */
+export const useConnectionLabel = (): string => useFocusedConnection().label;
+
+/** Test seam. */
+export const resetConnections = (): void => {
+  store.setState({
+    connections: { [LOCAL_HOST_ID]: localConnection },
+    unreachable: [],
+  });
+};

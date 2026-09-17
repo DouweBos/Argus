@@ -72,12 +72,11 @@ export const DEFAULT_LLM_RUNNER = "claude-code";
 
 interface SettingsState {
   /**
-   * Which host the UI drives. `null` is This Mac — local IPC, today's
-   * behaviour. Deliberately not in the route: transport is not "what you are
-   * looking at", and a deep link must not strand someone on an unreachable
-   * machine.
+   * Hosts attached at launch. Several can be live at once — a Mac mini for
+   * iOS work, a Linux box for Android — and each keeps its own connection.
+   * Which one a screen *reads from* lives in the URL, not here.
    */
-  activeRemoteHostId: string | null;
+  attachedRemoteHostIds: string[];
   /** Map of `rememberKey` → user opted out of the corresponding confirm dialog. */
   confirmPreferences: Record<string, boolean>;
   /** Conventional Commits prefix picker on/off (Phase 2 W10). */
@@ -225,6 +224,21 @@ function sanitizeCustomEditors(input: unknown): CustomEditor[] {
   });
 }
 
+/**
+ * Reads both the current list and the single `activeRemoteHostId` written by
+ * versions that could only attach to one host at a time.
+ */
+function sanitizeHostIds(parsed: Record<string, unknown>): string[] {
+  const list = parsed.attachedRemoteHostIds;
+  if (Array.isArray(list)) {
+    return list.filter((id): id is string => typeof id === "string");
+  }
+
+  return typeof parsed.activeRemoteHostId === "string"
+    ? [parsed.activeRemoteHostId]
+    : [];
+}
+
 function sanitizeRemoteHosts(input: unknown): RemoteHost[] {
   if (!Array.isArray(input)) {
     return [];
@@ -314,10 +328,9 @@ function load(): SettingsState {
           parsed.lastEffortByRunner,
         ),
         remoteHosts: sanitizeRemoteHosts(parsed.remoteHosts),
-        activeRemoteHostId:
-          typeof parsed.activeRemoteHostId === "string"
-            ? parsed.activeRemoteHostId
-            : null,
+        attachedRemoteHostIds: sanitizeHostIds(
+          parsed as Record<string, unknown>,
+        ),
       };
     }
   } catch {
@@ -347,7 +360,7 @@ function load(): SettingsState {
     showNonModifiedFiles: false,
     lastEffortByRunner: {},
     remoteHosts: [],
-    activeRemoteHostId: null,
+    attachedRemoteHostIds: [],
   };
 }
 
@@ -646,11 +659,11 @@ export const useRemoteHosts = (): RemoteHost[] => store((s) => s.remoteHosts);
 
 export const getRemoteHosts = (): RemoteHost[] => store.getState().remoteHosts;
 
-export const useActiveRemoteHostId = (): string | null =>
-  store((s) => s.activeRemoteHostId);
+export const useAttachedRemoteHostIds = (): string[] =>
+  store((s) => s.attachedRemoteHostIds);
 
-export const getActiveRemoteHostId = (): string | null =>
-  store.getState().activeRemoteHostId;
+export const getAttachedHostIds = (): string[] =>
+  store.getState().attachedRemoteHostIds;
 
 export const getRemoteHost = (id: string | null): RemoteHost | null =>
   id ? (store.getState().remoteHosts.find((h) => h.id === id) ?? null) : null;
@@ -672,17 +685,13 @@ export const renameRemoteHost = (id: string, label: string): void => {
 export const forgetRemoteHost = (id: string): void => {
   store.setState((s) => ({
     remoteHosts: s.remoteHosts.filter((h) => h.id !== id),
-    activeRemoteHostId:
-      s.activeRemoteHostId === id ? null : s.activeRemoteHostId,
+    attachedRemoteHostIds: s.attachedRemoteHostIds.filter((h) => h !== id),
   }));
   persist(store.getState());
 };
 
-/**
- * Choose the host the app drives. Takes effect on the next boot — switching
- * transports is a full remount, so callers reload the window.
- */
-export const setActiveRemoteHostId = (id: string | null): void => {
-  store.setState({ activeRemoteHostId: id });
+/** Remember which hosts to bring back up at the next launch. */
+export const setAttachedHostIds = (ids: string[]): void => {
+  store.setState({ attachedRemoteHostIds: ids });
   persist(store.getState());
 };

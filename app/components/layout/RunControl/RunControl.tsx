@@ -11,7 +11,7 @@ import {
 } from "../../../lib/ipc";
 import { registerRunTerminal } from "../../../lib/runRegistration";
 import { stopListening } from "../../../lib/terminalBufferService";
-import { getTransport } from "../../../lib/transport";
+import { subscribe } from "../../../lib/transport";
 import { getSessionState, useSessions } from "../../../stores/sessionStore";
 import {
   clearRunningTerminalIfMatches,
@@ -106,7 +106,7 @@ export function RunControl({ sessionId }: RunControlProps) {
           setRunningTerminal(sessionId, t.runTitle, t.id);
           const runTitle = t.runTitle;
           const terminalId = t.id;
-          const unlisten = getTransport().on<number>(
+          const unlisten = subscribe<number>(
             `terminal:exit:${terminalId}`,
             () => {
               clearRunningTerminalIfMatches(sessionId, runTitle, terminalId);
@@ -241,7 +241,7 @@ export function RunControl({ sessionId }: RunControlProps) {
               unlisten();
               resolve();
             }, 8000);
-            const unlisten = getTransport().on<number>(
+            const unlisten = subscribe<number>(
               `terminal:exit:${c.terminalId}`,
               () => {
                 clearTimeout(timeout);

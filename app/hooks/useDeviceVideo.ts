@@ -1,8 +1,9 @@
 import type { AndroidVideoConfig, AndroidVideoFrame } from "../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { H264CanvasDecoder } from "@argus/remote-client";
-import { getTransport } from "../lib/transport";
-import { useConnection } from "../stores/connectionStore";
+import { useRouteHostId } from "../lib/routeHooks";
+import { getTransportFor } from "../lib/transport";
+import { useHostConnection } from "../stores/connectionStore";
 import { useIpcEvent } from "./useIpcEvent";
 
 /** The two platforms that produce an H.264 device stream. */
@@ -48,9 +49,12 @@ export function useDeviceVideo(
   const [dims, setDims] = useState({ width: 0, height: 0 });
 
   const on = active && !!deviceId;
+  // The device belongs to whichever host the view is reading from — several
+  // are attached, and each streams over its own socket.
+  const hostId = useRouteHostId();
   // Remote mode only — `media` is unset on the local transport.
-  const media = on ? (getTransport().media ?? null) : null;
-  const connectionState = useConnection().state;
+  const media = on ? (getTransportFor(hostId).media ?? null) : null;
+  const connectionState = useHostConnection(hostId)?.state ?? "ready";
 
   useEffect(() => {
     if (!on) {
@@ -94,12 +98,12 @@ export function useDeviceVideo(
     let cancelled = false;
     let unregister: (() => void) | null = null;
     const release = () => {
-      getTransport()
+      getTransportFor(hostId)
         .invoke("devices.unwatch", { device_id: deviceId })
         .catch(() => undefined);
     };
 
-    getTransport()
+    getTransportFor(hostId)
       .invoke<{ stream_id: number }>("devices.watch", {
         device_id: deviceId,
         platform,
@@ -136,7 +140,7 @@ export function useDeviceVideo(
     };
     // `connectionState` is a dependency on purpose: a reconnect invalidates the
     // host's stream id, so the watch has to be re-established.
-  }, [on, media, deviceId, platform, connectionState]);
+  }, [on, media, deviceId, hostId, platform, connectionState]);
 
   // --- Local: the main process broadcasts config and frames per device ---
   const ipcActive = on && !media;
@@ -153,6 +157,7 @@ export function useDeviceVideo(
         toBytes(config.description),
       );
     }, []),
+    hostId,
   );
 
   useIpcEvent<AndroidVideoFrame>(
@@ -164,6 +169,7 @@ export function useDeviceVideo(
         frame.timestamp,
       );
     }, []),
+    hostId,
   );
 
   return {

@@ -17,7 +17,6 @@ import {
   initExternalAgentStarted,
 } from "./lib/agentEventService";
 import { initAgentPopoutSync } from "./lib/agentPopoutService";
-import { hydrateFromHost } from "./lib/hostHydration";
 import { getTelemetryInit, setTelemetryModeOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
@@ -27,7 +26,6 @@ import { initPushNotificationsListener } from "./lib/pushNotificationsService";
 import { initRepoBranchSync } from "./lib/repoBranchSync";
 import { initSessionEventListeners } from "./lib/sessionEventListeners";
 import { initTelemetry, capture as telemetryCapture } from "./lib/telemetry";
-import { isRemoteMode } from "./lib/transport";
 import { initConductorLogListener } from "./stores/conductorLogStore";
 import { initDevicePolling } from "./stores/deviceStore";
 import { getTelemetryMode } from "./stores/settingsStore";
@@ -109,11 +107,10 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
     // Refetch the repo branch whenever the project_root session's git state
     // changes — replaces per-component getRepoBranch polls.
     initRepoBranchSync();
-    // Hydrate projects exactly once. Attached to a host, the list comes from
-    // the host's registered roots — this Mac's recent paths are a different
-    // disk. Lives outside React so StrictMode / HMR can't re-trigger it.
-    const hydrate = isRemoteMode() ? hydrateFromHost() : bootstrapProjects();
-    hydrate.catch(() => undefined);
+    // Hydrate this Mac's projects exactly once. Attached hosts bring their own
+    // in as they connect — their registered roots are paths on another disk.
+    // Lives outside React so StrictMode / HMR can't re-trigger it.
+    bootstrapProjects().catch(() => undefined);
     // Surface backend `notification` events (e.g. failed title generation)
     // as user-visible toasts in the notifications panel.
     initNotificationsListener();

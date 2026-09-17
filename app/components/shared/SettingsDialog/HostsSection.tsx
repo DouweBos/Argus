@@ -2,25 +2,23 @@ import type { RemoteHost } from "../../../stores/settingsStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
+  HostConnectionList,
   Input,
   SettingsScreenDetail,
   SettingsScreenDetailBody,
   SettingsScreenDetailHeader,
   SettingsScreenField,
-  StatusDot,
 } from "@argus/peacock";
 import {
   PairingClient,
   parsePairingInput,
   type PairingResult,
 } from "@argus/remote-client";
-import { switchConnection } from "../../../lib/transport";
-import { useConnection } from "../../../stores/connectionStore";
+import { useHostEntries } from "../../../hooks/useHostEntries";
 import {
   addRemoteHost,
   forgetRemoteHost,
   renameRemoteHost,
-  useActiveRemoteHostId,
   useRemoteHosts,
 } from "../../../stores/settingsStore";
 import styles from "./HostsSection.module.css";
@@ -34,10 +32,8 @@ function labelFromUrl(url: string): string {
 
 function HostRow({
   host,
-  active,
   onForget,
 }: {
-  active: boolean;
   host: RemoteHost;
   onForget: (id: string) => void;
 }) {
@@ -60,13 +56,6 @@ function HostRow({
         </span>
       </div>
       <div className={styles.hostActions}>
-        {active ? (
-          <StatusDot tone="success" label="attached" />
-        ) : (
-          <Button variant="ghost" onClick={() => switchConnection(host.id)}>
-            Attach
-          </Button>
-        )}
         <Button variant="ghost" onClick={() => onForget(host.id)}>
           Forget
         </Button>
@@ -81,8 +70,7 @@ function HostRow({
  */
 export function HostsSection() {
   const hosts = useRemoteHosts();
-  const activeId = useActiveRemoteHostId();
-  const connection = useConnection();
+  const { entries, busyId, attach, detach, focus } = useHostEntries();
 
   const [code, setCode] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -185,8 +173,21 @@ export function HostsSection() {
         </SettingsScreenField>
 
         <SettingsScreenField
+          label="Attached hosts"
+          caption="Several can be attached at once — a Mac mini for iOS, another box for Android. Each keeps its own projects and its own connection."
+        >
+          <HostConnectionList
+            busyId={busyId}
+            hosts={entries}
+            onAttach={attach}
+            onDetach={detach}
+            onFocus={focus}
+          />
+        </SettingsScreenField>
+
+        <SettingsScreenField
           label="Paired hosts"
-          caption="Switching hosts restarts the window — every panel belongs to one machine."
+          caption="Rename or forget a machine this Mac has pairing keys for."
         >
           {hosts.length === 0 ? (
             <p className={styles.meta}>No hosts paired yet.</p>
@@ -196,16 +197,10 @@ export function HostsSection() {
                 <HostRow
                   key={host.id}
                   host={host}
-                  active={host.id === activeId}
                   onForget={forgetRemoteHost}
                 />
               ))}
             </div>
-          )}
-          {connection.mode === "remote" && (
-            <Button variant="ghost" onClick={() => switchConnection(null)}>
-              Switch back to This Mac
-            </Button>
           )}
         </SettingsScreenField>
       </SettingsScreenDetailBody>

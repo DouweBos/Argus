@@ -65,7 +65,8 @@ import type {
   UserProjectSettings,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
-import { getTransport } from "./transport";
+import { getTransportForCommand } from "./transport";
+import { runOnHost } from "./transport/hostRouting";
 
 declare global {
   interface Window {
@@ -82,11 +83,17 @@ declare global {
   }
 }
 
+/**
+ * Send a command to the machine that owns its subject. Several hosts are
+ * attached at once, so the target is resolved per call from the session,
+ * agent, terminal or repo root in `args` — never from ambient "current host"
+ * state. See `transport/hostRouting.ts`.
+ */
 function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  return getTransport()
+  return getTransportForCommand(channel, args)
     .invoke<T>(channel, args)
     .catch((err: unknown) => {
       // Rehydrate structured GitError payloads. Local IPC keeps the
@@ -103,7 +110,16 @@ function invoke<T>(
 
 /** Fire-and-forget IPC — skips the invoke reply round-trip. */
 export function send(channel: string, args?: Record<string, unknown>): void {
-  getTransport().send(channel, args);
+  getTransportForCommand(channel, args).send(channel, args);
+}
+
+/**
+ * Run a wrapper against a named host. For the calls that name no session or
+ * repo of their own — listing a host's devices, hydrating it — where the
+ * subject can't say which machine is meant.
+ */
+export function onHost<T>(hostId: string, call: () => T): T {
+  return runOnHost(hostId, call);
 }
 
 // Window

@@ -7,6 +7,10 @@
  *
  * ## Route inventory
  *
+ * Every URL may carry `?host=<hostId>` naming the machine the view reads from
+ * (omitted for this Mac). Several hosts can be attached at once, so which one
+ * a screen is showing is part of what you are looking at.
+ *
  * - `/`                                          → home / project picker
  * - `/agents`                                    → global agents overview
  * - `/devices`                                   → devices screen
@@ -39,6 +43,7 @@ import { useEffect } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 import { capturePageview } from "./telemetry";
+import { LOCAL_HOST_ID, type HostId } from "./transport/hostId";
 
 export type AppView =
   | "agents"
@@ -108,6 +113,13 @@ export interface ParsedRoute {
   gitRefName: string | null;
   /** Sub-view inside the git panel (working/branches/history/…). */
   gitView: GitSubView | null;
+  /**
+   * Which attached host the view reads from. `?host=<id>` in the URL;
+   * `LOCAL_HOST_ID` (this Mac) when absent. Two hosts may hold a project at
+   * the same path, so screens that are not pinned to a session read this to
+   * know whose projects, devices and agents they are showing.
+   */
+  hostId: HostId;
   /** Session panel (agents/git/home). Only meaningful when view=session. */
   panel: SessionPanel;
   /** Identifies which PR to show when view === "pull-request-detail". */
@@ -118,8 +130,23 @@ export interface ParsedRoute {
 
 const VALID_PANELS: SessionPanel[] = ["agents", "git", "home"];
 
-/** Parse a pathname into a normalised route descriptor. */
-export function parseRoute(pathname: string): ParsedRoute {
+/**
+ * Parse a URL (pathname, optionally with a query string) into a normalised
+ * route descriptor. `?host=` names the attached host the view reads from.
+ */
+export function parseRoute(url: string): ParsedRoute {
+  const queryAt = url.indexOf("?");
+  const pathname = queryAt === -1 ? url : url.slice(0, queryAt);
+  const search = queryAt === -1 ? "" : url.slice(queryAt + 1);
+  const hostId = new URLSearchParams(search).get("host");
+
+  return {
+    ...parsePathname(pathname),
+    hostId: hostId && hostId.length > 0 ? hostId : LOCAL_HOST_ID,
+  };
+}
+
+function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const segments = clean.split("/").filter(Boolean);
 
@@ -197,7 +224,7 @@ export function parseRoute(pathname: string): ParsedRoute {
   return emptyRoute("home");
 }
 
-function emptyRoute(view: AppView): ParsedRoute {
+function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
   return {
     view,
     sessionId: null,
@@ -235,8 +262,24 @@ export function routePattern(pathname: string): string {
   }
 }
 
-/** Build a pathname for a given route descriptor. */
+/**
+ * Build a URL for a given route descriptor, including `?host=` when the view
+ * reads from a machine other than this one.
+ */
 export function routeToPath(route: Partial<ParsedRoute>): string {
+  return withHostParam(routePathname(route), route.hostId);
+}
+
+/** Append the focused host to a path, leaving any existing query intact. */
+export function withHostParam(path: string, hostId?: HostId): string {
+  if (!hostId || hostId === LOCAL_HOST_ID) {
+    return path;
+  }
+
+  return `${path}${path.includes("?") ? "&" : "?"}host=${encodeURIComponent(hostId)}`;
+}
+
+function routePathname(route: Partial<ParsedRoute>): string {
   if (route.view === "session" && route.sessionId) {
     const panel =
       route.panel && route.panel !== "home" ? `/${route.panel}` : "";
@@ -286,22 +329,25 @@ export function useRegisterNavigator(): void {
 
   useEffect(() => {
     navigator = nav;
-    lastPath = loc.pathname;
+    // Search included: `?host=` is part of the route, and non-hook callers
+    // read the focused host back out of `getCurrentPath()`.
+    const full = `${loc.pathname}${loc.search}`;
+    lastPath = full;
 
     if (historyStack.length === 0) {
-      historyStack.push(loc.pathname);
+      historyStack.push(full);
       historyCursor = 0;
     } else if (navType === "PUSH") {
       historyStack.length = historyCursor + 1;
-      historyStack.push(loc.pathname);
+      historyStack.push(full);
       historyCursor = historyStack.length - 1;
     } else if (navType === "POP") {
-      const idx = historyStack.lastIndexOf(loc.pathname);
+      const idx = historyStack.lastIndexOf(full);
       if (idx >= 0) {
         historyCursor = idx;
       }
     } else if (navType === "REPLACE") {
-      historyStack[historyCursor] = loc.pathname;
+      historyStack[historyCursor] = full;
     }
 
     window.dispatchEvent(
@@ -318,7 +364,7 @@ export function useRegisterNavigator(): void {
     return () => {
       navigator = null;
     };
-  }, [nav, loc.pathname, navType]);
+  }, [nav, loc.pathname, loc.search, navType]);
 }
 
 /** Navigate to a route descriptor. No-op if already there. */
@@ -326,7 +372,12 @@ export function appNavigate(
   route: Partial<ParsedRoute>,
   options?: { replace?: boolean },
 ): void {
-  const path = routeToPath(route);
+  // The focused host sticks until something names a different one — moving
+  // between screens must not silently drop you back onto this Mac.
+  const path = routeToPath({
+    hostId: getCurrentRoute().hostId,
+    ...route,
+  });
   if (path === lastPath && !options?.replace) {
     return;
   }
@@ -337,13 +388,20 @@ export function appNavigate(
   navigator?.(path, { replace: options?.replace });
 }
 
-/** Navigate to a raw pathname (used for deep links from the main process). */
+/**
+ * Navigate to a raw path (deep links from the main process, and the git
+ * sub-views that build their own query strings). Carries the focused host
+ * along unless the path names one itself.
+ */
 export function navigateToPath(path: string): void {
+  const resolved = path.includes("host=")
+    ? path
+    : withHostParam(path, getCurrentRoute().hostId);
   if (!navigator) {
     return;
   }
-  lastPath = path;
-  navigator(path);
+  lastPath = resolved;
+  navigator(resolved);
 }
 
 /** Current path as last observed by the registered navigator hook. */

@@ -24,3 +24,31 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.count {
+  padding: 0 3px;
+  border-radius: var(--border-radius-sm);
+  background: var(--surface-4);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.panel {
+  width: 260px;
+  position: fixed;
+  z-index: 1000;
+  padding: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-md);
+}
+
+.heading {
+  margin: 0 0 6px;
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

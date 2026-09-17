@@ -54,6 +54,8 @@ export * from "./components/GitToolbar/GitToolbar";
 export * from "./components/GitToolbar/toolbarIcons";
 export * from "./components/ThreeWayMerge/ThreeWayMerge";
 export * from "./components/GridScreen/GridScreen";
+export * from "./components/HostBadge/HostBadge";
+export * from "./components/HostConnectionList/HostConnectionList";
 export * from "./lib/diff";
 export * from "./components/HomeCTA/HomeCTA";
 export * from "./components/HoverActionBar/HoverActionBar";

@@ -1,18 +1,34 @@
 import type { ImageAttachment } from "../lib/ipc";
+import type { HostId } from "../lib/transport/hostId";
 import type { Session } from "../lib/types";
 import { create } from "zustand";
 import { useRouteSessionId } from "../lib/routeHooks";
 import { appNavigate, getCurrentRoute } from "../lib/router";
+import { LOCAL_HOST_ID, hostScopedKey } from "../lib/transport/hostId";
+import { rememberSessionHost, sessionHost } from "../lib/transport/hostIndex";
 import { forgetSessionPanel, getLastPanelForSession } from "./editorStore";
 import { forgetSessionTools } from "./layoutStore";
 import { migrateSessions } from "./terminalStore";
 
 export interface Project {
   addedAt: number;
+  /** Machine this repo lives on — two hosts may hold the same path. */
+  hostId: HostId;
   isCollapsed: boolean;
   repoBranch: string | null;
   repoRoot: string;
 }
+
+/** Stable identity for a project across hosts, for React keys and drag targets. */
+export const projectKey = (project: Pick<Project, "hostId" | "repoRoot">) =>
+  hostScopedKey(project.hostId, project.repoRoot);
+
+/** Which host a session's worktree is on. */
+export const sessionHostId = (sessionId: string): HostId =>
+  sessionHost(sessionId) ?? LOCAL_HOST_ID;
+
+const ownedBy = (session: Session, repoRoot: string, hostId: HostId) =>
+  session.repo_root === repoRoot && sessionHostId(session.id) === hostId;
 
 interface SessionStoreData {
   isLoading: boolean;
@@ -59,9 +75,14 @@ const sessionStore = create<SessionStoreData>(() => ({
 
 const useSessionStore = sessionStore;
 
-export const addProject = (repoRoot: string) => {
+export const addProject = (
+  repoRoot: string,
+  hostId: HostId = LOCAL_HOST_ID,
+) => {
   sessionStore.setState((state) => {
-    if (state.projects.some((p) => p.repoRoot === repoRoot)) {
+    if (
+      state.projects.some((p) => p.repoRoot === repoRoot && p.hostId === hostId)
+    ) {
       return state;
     }
 
@@ -70,6 +91,7 @@ export const addProject = (repoRoot: string) => {
         ...state.projects,
         {
           repoRoot,
+          hostId,
           repoBranch: null,
           isCollapsed: false,
           addedAt: Date.now(),
@@ -79,12 +101,15 @@ export const addProject = (repoRoot: string) => {
   });
 };
 
-export const removeProject = (repoRoot: string) => {
+export const removeProject = (
+  repoRoot: string,
+  hostId: HostId = LOCAL_HOST_ID,
+) => {
   const selectedId = getSelectedSessionId();
   let removedIds: string[] = [];
   sessionStore.setState((state) => {
     const wsIds = state.sessions
-      .filter((w) => w.repo_root === repoRoot)
+      .filter((w) => ownedBy(w, repoRoot, hostId))
       .map((w) => w.id);
     removedIds = wsIds;
     const selectedGone = selectedId != null && wsIds.includes(selectedId);
@@ -92,9 +117,13 @@ export const removeProject = (repoRoot: string) => {
       appNavigate({ view: "home" });
     }
 
+    const removed = new Set(wsIds);
+
     return {
-      projects: state.projects.filter((p) => p.repoRoot !== repoRoot),
-      sessions: state.sessions.filter((w) => w.repo_root !== repoRoot),
+      projects: state.projects.filter(
+        (p) => p.repoRoot !== repoRoot || p.hostId !== hostId,
+      ),
+      sessions: state.sessions.filter((w) => !removed.has(w.id)),
     };
   });
   for (const id of removedIds) {
@@ -103,20 +132,21 @@ export const removeProject = (repoRoot: string) => {
   }
 };
 
+/** Reorder by `projectKey()` — the same path on two hosts is two rows. */
 export const reorderProjects = (
-  fromRoot: string,
-  toRoot: string,
+  fromKey: string,
+  toKey: string,
   position: "after" | "before",
 ) => {
   sessionStore.setState((state) => {
-    const fromIdx = state.projects.findIndex((p) => p.repoRoot === fromRoot);
-    const toIdx = state.projects.findIndex((p) => p.repoRoot === toRoot);
-    if (fromIdx === -1 || toIdx === -1 || fromRoot === toRoot) {
+    const fromIdx = state.projects.findIndex((p) => projectKey(p) === fromKey);
+    const toIdx = state.projects.findIndex((p) => projectKey(p) === toKey);
+    if (fromIdx === -1 || toIdx === -1 || fromKey === toKey) {
       return state;
     }
     const next = [...state.projects];
     const [moved] = next.splice(fromIdx, 1);
-    const insertIdx = next.findIndex((p) => p.repoRoot === toRoot);
+    const insertIdx = next.findIndex((p) => projectKey(p) === toKey);
     const anchor = position === "after" ? insertIdx + 1 : insertIdx;
     next.splice(anchor, 0, moved);
 
@@ -140,7 +170,10 @@ export const reorderSessions = (
     }
     const from = state.sessions[fromIdx];
     const to = state.sessions[toIdx];
-    if (from.repo_root !== to.repo_root) {
+    if (
+      from.repo_root !== to.repo_root ||
+      sessionHostId(from.id) !== sessionHostId(to.id)
+    ) {
       return state;
     }
     const next = [...state.sessions];
@@ -153,19 +186,38 @@ export const reorderSessions = (
   });
 };
 
-export const setProjectBranch = (repoRoot: string, branch: string | null) => {
+export const setProjectBranch = (
+  repoRoot: string,
+  branch: string | null,
+  hostId: HostId = LOCAL_HOST_ID,
+) => {
   sessionStore.setState((state) => ({
     projects: state.projects.map((p) =>
-      p.repoRoot === repoRoot ? { ...p, repoBranch: branch } : p,
+      p.repoRoot === repoRoot && p.hostId === hostId
+        ? { ...p, repoBranch: branch }
+        : p,
     ),
   }));
 };
 
-export const toggleProjectCollapsed = (repoRoot: string) => {
+export const toggleProjectCollapsed = (
+  repoRoot: string,
+  hostId: HostId = LOCAL_HOST_ID,
+) => {
   sessionStore.setState((state) => ({
     projects: state.projects.map((p) =>
-      p.repoRoot === repoRoot ? { ...p, isCollapsed: !p.isCollapsed } : p,
+      p.repoRoot === repoRoot && p.hostId === hostId
+        ? { ...p, isCollapsed: !p.isCollapsed }
+        : p,
     ),
+  }));
+};
+
+/** Drop everything a detached host contributed to the sidebar. */
+export const dropHostSessions = (hostId: HostId) => {
+  sessionStore.setState((state) => ({
+    projects: state.projects.filter((p) => p.hostId !== hostId),
+    sessions: state.sessions.filter((w) => sessionHostId(w.id) !== hostId),
   }));
 };
 
@@ -176,18 +228,24 @@ export const setSessions = (sessions: Session[]) => {
 export const mergeSessionsForProject = (
   repoRoot: string,
   incoming: Session[],
+  hostId: HostId = LOCAL_HOST_ID,
 ) => {
+  for (const session of incoming) {
+    rememberSessionHost(session.id, hostId);
+  }
   sessionStore.setState((state) => {
     const normalizePath = (p: string) =>
       p.replace(/\\/g, "/").replace(/\/+$/, "").replace(/\/+/g, "/");
 
-    const existing = state.sessions.filter((w) => w.repo_root === repoRoot);
+    const existing = state.sessions.filter((w) => ownedBy(w, repoRoot, hostId));
     const byPath = new Map(existing.map((w) => [normalizePath(w.path), w]));
 
     const merged = incoming.map((backend) => {
       const key = normalizePath(backend.path);
       const prev = byPath.get(key);
       if (prev) {
+        rememberSessionHost(prev.id, hostId);
+
         return { ...backend, id: prev.id };
       }
 
@@ -226,9 +284,8 @@ export const mergeSessionsForProject = (
       }
     }
 
-    const otherSessions = state.sessions.filter(
-      (w) => w.repo_root !== repoRoot,
-    );
+    const existingIds = new Set(existing.map((w) => w.id));
+    const otherSessions = state.sessions.filter((w) => !existingIds.has(w.id));
 
     // Preserve in-flight placeholders — the backend hasn't materialized them
     // on disk yet (no worktree path) so they would otherwise be wiped by the
@@ -242,7 +299,11 @@ export const mergeSessionsForProject = (
   });
 };
 
-export const addSession = (session: Session) => {
+export const addSession = (
+  session: Session,
+  hostId: HostId = LOCAL_HOST_ID,
+) => {
+  rememberSessionHost(session.id, hostId);
   sessionStore.setState((state) => {
     if (state.sessions.some((w) => w.id === session.id)) {
       return state;
@@ -279,6 +340,9 @@ export const selectSession = (id: string | null) => {
     appNavigate({
       view: "session",
       sessionId: id,
+      // Selecting a session on another machine moves the view there too —
+      // the session and everything it opens belong to that host.
+      hostId: sessionHostId(id),
       panel: getLastPanelForSession(id) ?? "home",
     });
   } else {
