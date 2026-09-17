@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, Icons } from "@argus/peacock";
 import { showOpenDirectoryDialog } from "../../../lib/ipc";
@@ -19,8 +19,14 @@ interface OpenProjectDialogProps {
 }
 
 export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
-  const projects = useRecentProjects();
+  const allRecents = useRecentProjects();
   const connection = useFocusedConnection();
+  // Only this machine's history: opening another machine's project would
+  // follow that session to its host and quietly turn this tab into that one.
+  const projects = useMemo(
+    () => allRecents.filter((p) => p.hostId === connection.hostId),
+    [allRecents, connection.hostId],
+  );
   const [browsingHost, setBrowsingHost] = useState(false);
 
   const handleBrowse = async () => {
