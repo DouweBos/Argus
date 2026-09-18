@@ -12,6 +12,7 @@ import {
   formatTimestamp,
   isRunActive,
 } from "../../../lib/automations";
+import { renderedReport } from "../../../lib/report";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import {
   openAutomation,
@@ -19,9 +20,10 @@ import {
   useAutomationRun,
 } from "../../../stores/automationStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
-import { Markdown } from "../../shared/Markdown";
 import { CancelRunButton, RunStatusBadge } from "../RunControls";
 import styles from "./AutomationRunScreen.module.css";
+import { RunReport } from "./RunReport";
+import { useReportRefResolvers } from "./reportRefs";
 
 /** `/automations/:automationId/runs/:runId` — one firing, and what it wrote. */
 export function AutomationRunScreen() {
@@ -29,6 +31,7 @@ export function AutomationRunScreen() {
   const automation = useAutomation(automationId);
   const run = useAutomationRun(automationRunId);
   const sessions = useSessions();
+  const { resolveProposal, resolveSession } = useReportRefResolvers();
 
   if (!run) {
     return (
@@ -48,6 +51,7 @@ export function AutomationRunScreen() {
     );
   }
 
+  const report = renderedReport(run.report_markdown);
   const hostSession = run.host_session_id
     ? (sessions.find((s) => s.id === run.host_session_id) ?? null)
     : null;
@@ -104,15 +108,12 @@ export function AutomationRunScreen() {
       {run.error && <p className={styles.error}>{run.error}</p>}
 
       <SectionPanel title="Report">
-        {run.report_markdown ? (
-          <Markdown className={styles.markdown} text={run.report_markdown} />
-        ) : (
-          <p className={styles.pending}>
-            {active
-              ? "The agent is still working. The report lands here when it finishes."
-              : "This run produced no report."}
-          </p>
-        )}
+        <RunReport
+          active={active}
+          report={report}
+          resolveProposal={resolveProposal}
+          resolveSession={resolveSession}
+        />
       </SectionPanel>
     </div>
   );

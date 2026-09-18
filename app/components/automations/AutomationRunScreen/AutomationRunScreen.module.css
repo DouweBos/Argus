@@ -74,6 +74,10 @@
   color: var(--text-muted);
 }
 
+.report {
+  padding: 4px 2px;
+}
+
 .markdown {
   padding: 4px 2px;
   font-size: 13px;
