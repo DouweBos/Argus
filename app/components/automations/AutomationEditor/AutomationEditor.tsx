@@ -1,4 +1,9 @@
-import type { Automation, AutomationTrigger } from "../../../lib/types";
+import type { AutonomyChoice } from "./AutonomyFields";
+import type {
+  Automation,
+  AutomationGuardrails,
+  AutomationTrigger,
+} from "../../../lib/types";
 import { useCallback, useMemo, useState } from "react";
 import {
   Button,
@@ -19,13 +24,16 @@ import {
 import { saveAutomation } from "../../../stores/automationStore";
 import { useSessionProjects } from "../../../stores/sessionStore";
 import styles from "./AutomationEditor.module.css";
+import { AutonomyFields } from "./AutonomyFields";
 
 const PREVIEW_COUNT = 5;
 
 interface Draft {
+  autonomy: AutonomyChoice;
   catchUp: boolean;
   cron: string;
   description: string;
+  guardrails: AutomationGuardrails;
   kind: AutomationTrigger["kind"];
   model: string;
   name: string;
@@ -48,6 +56,8 @@ function toDraft(automation: Automation): Draft {
     timezone: schedule?.timezone ?? localTimezone(),
     catchUp: schedule?.catch_up ?? true,
     repoRoots: automation.scope.repo_roots,
+    autonomy: automation.autonomy ?? "inherit",
+    guardrails: automation.guardrails,
   };
 }
 
@@ -111,6 +121,8 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
         model: draft.model.trim() || null,
         trigger: toTrigger(draft),
         scope: { repo_roots: draft.repoRoots },
+        autonomy: draft.autonomy === "inherit" ? null : draft.autonomy,
+        guardrails: draft.guardrails,
       });
     } catch (e) {
       setError(typeof e === "string" ? e : String(e));
@@ -242,6 +254,13 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
             onChange={(e) => patch("model", e.target.value)}
           />
         </FormField>
+
+        <AutonomyFields
+          autonomy={draft.autonomy}
+          guardrails={draft.guardrails}
+          onAutonomyChange={(value) => patch("autonomy", value)}
+          onGuardrailsChange={(value) => patch("guardrails", value)}
+        />
 
         <FormField
           label="Playbook"

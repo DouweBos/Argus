@@ -19,6 +19,7 @@ import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { computeNextRun, isValidCron } from "./cron";
+import { normalizeGuardrails } from "./guardrails";
 import { disposeAutomationHostSession } from "./hostSession";
 import { automationRunsDir } from "./paths";
 import { deleteProposalsForAutomation } from "./proposals/manager";
@@ -41,6 +42,8 @@ function automationCache(): Automation[] {
     // the next save, so fill them in on the way out of the file.
     for (const automation of automations) {
       automation.source_ids ??= [];
+      automation.autonomy ??= null;
+      automation.guardrails = normalizeGuardrails(automation.guardrails);
     }
     seedBuiltIns(automations);
   }
@@ -92,6 +95,8 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     scope: { repo_roots: input.scope?.repo_roots ?? [] },
     source_ids: input.source_ids ?? [],
     playbook: input.playbook,
+    autonomy: input.autonomy ?? null,
+    guardrails: normalizeGuardrails(input.guardrails),
     model: input.model ?? null,
     template_id: input.template_id ?? null,
     created_at: now,
@@ -209,6 +214,7 @@ export function updateAutomation(
   }
 
   Object.assign(automation, patch, { trigger, updated_at: Date.now() });
+  automation.guardrails = normalizeGuardrails(automation.guardrails);
   if (patch.next_run_at === undefined) {
     // The clock changed, or the switch did — either way the old fire is stale.
     automation.next_run_at = nextRunFor(automation, Date.now());

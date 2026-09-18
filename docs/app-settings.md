@@ -64,10 +64,13 @@ files across accounts.
 
 ## Agents
 
-| Setting                     | Default | Description                                                                                                  |
-| --------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| **Default permission mode** | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
-| **Automations**             | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
+| Setting                            | Default | Description                                                                                                  |
+| ---------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| **Default permission mode**        | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
+| **Automations**                    | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
+| **Default autonomy**               | Propose | How far an automation may go when it does not set its own level.                                             |
+| **Concurrent automation sessions** | 3       | How many sessions automations may have running at once, across all of them.                                  |
+| **Daily automation budget**        | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                             |
 
 Permission modes:
 
@@ -88,6 +91,29 @@ themselves: with it off nothing fires on a clock, and every automation can
 still be run by hand. It is a host setting, so when you drive another Mac the
 switch belongs to that machine's automations. Automations shipped with Argus
 start disabled, so nothing ever runs until you turn one on.
+
+### Autonomy
+
+**Default autonomy** is the ladder an automation climbs, and each rung contains
+the one before it:
+
+- **Propose** — writes a proposal into the inbox and touches nothing.
+- **Draft** — opens a worktree, implements the change and commits, then stops.
+- **Pull request** — also pushes the branch and opens a draft PR.
+- **Auto-merge** — also merges once CI is green. Never a default; opt in per
+  automation.
+
+An automation can set its own level, and a project can set a ceiling in its
+Project Settings. Argus takes the **lowest** of the three, so a repository can
+always ask for less autonomy than this setting allows and never for more.
+
+The limits are enforced by Argus, not by the instructions an automation is
+given: a playbook that tells the agent to start a session anyway still produces
+a proposal that waits for you.
+
+**Concurrent automation sessions** caps how much work automations can have in
+flight at once. Once the cap is reached, further proposals land in the inbox
+instead of starting, and you can start them by hand.
 
 ---
 

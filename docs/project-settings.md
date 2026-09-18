@@ -48,6 +48,7 @@ Two ways to change project settings:
 | `auto_fetch_minutes`                                                 | yes (Git settings panel) |
 | `llm`                                                                | yes (LLM)                |
 | `related_projects`                                                   | yes (Related projects)   |
+| `automations`                                                        | yes (Automations)        |
 
 ---
 
@@ -73,7 +74,8 @@ Two ways to change project settings:
   "min_argus_version":  "0.10.0",
   "mcp_servers":        { "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] } },
   "auto_fetch_minutes": 15,
-  "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" }
+  "llm":                { "runner": "claude-code", "model": "claude-opus-4-7" },
+  "automations":        { "autonomy_ceiling": "draft", "disabled": [...], "path_denylist": [...] }
 }
 ```
 
@@ -538,6 +540,37 @@ Effective enable = the user has the tool on **and** this list doesn't contain it
 Edit via **Project Settings → Tools** — the dialog lists every tool and toggles them straight into this field. The list is checked into `.argus.json` so the mask travels with the repo.
 
 Valid ids: `device-recording`, `device-inspector`, `device-control`, `device-debug`. Unknown ids are ignored (no error, no warning) so the field tolerates renames across releases.
+
+---
+
+## `automations` — how far automations may go here
+
+Argus automations run on a clock and can start work on their own. This block is
+how a repository caps that, and it is shared with the team.
+
+```jsonc
+"automations": {
+  "autonomy_ceiling": "draft",          // this repo never goes past draft
+  "disabled": ["regression-sweep"],     // automation ids or template ids
+  "path_denylist": ["infra/**", "**/migrations/**"]
+}
+```
+
+- **`autonomy_ceiling`** — the highest rung any automation reaches in this
+  repo: `propose` (inbox only), `draft` (implement and commit), `pr` (also push
+  and open a draft PR) or `auto_merge` (also merge on green CI). Argus takes the
+  lowest of the app default, the automation's own level and this ceiling, so the
+  field can only ever tighten. Omit it for no repo-level cap.
+- **`disabled`** — automations that must not act on this repo at all. Match
+  either the automation's id or the built-in template id (e.g.
+  `morning-triage`, `take-the-easy-ones`).
+- **`path_denylist`** — globs no automation-started branch may touch. Checked
+  against the branch's actual changes immediately before it is pushed, and
+  added to whatever the automation already forbids.
+
+Edit via **Project Settings → Automations**. The limits are enforced by Argus
+itself, not by the instructions an automation is handed — a playbook telling the
+agent to push anyway is refused at the tool call.
 
 ---
 

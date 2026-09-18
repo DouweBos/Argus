@@ -2,10 +2,10 @@
  * Accepting a proposal: turn it into a worktree session with an agent already
  * working on it.
  *
- * This is the *human* path — you read the proposal in the inbox and press
- * Start. The automatic path, where a run starts the session itself because the
- * autonomy ladder allowed it, is the same landing but a different gate; it
- * arrives with guardrails.
+ * This is the landing for both paths. A human pressing Start in the inbox and
+ * the autonomy gate in `automation/autoStart.ts` come through here; only the
+ * resulting status and the brief differ. The gate itself lives upstream — by
+ * the time we are here the decision has been made.
  */
 
 import type { Proposal } from "./models";
@@ -27,9 +27,16 @@ export interface AcceptProposalResult {
   agent_id: string;
 }
 
+export interface AcceptProposalOptions {
+  /** `auto_started` when the autonomy gate opened it, not a human. */
+  status?: "accepted" | "auto_started";
+}
+
 export async function acceptProposal(
   proposalId: string,
+  options: AcceptProposalOptions = {},
 ): Promise<AcceptProposalResult> {
+  const status = options.status ?? "accepted";
   const proposal = requireProposal(proposalId);
   if (proposal.session_id) {
     throw `Proposal already started in session ${proposal.session_id}`;
@@ -54,7 +61,7 @@ export async function acceptProposal(
 
   await waitForSessionReady(session.id);
 
-  const prompt = buildPrompt(proposal);
+  const prompt = buildPrompt(proposal, status);
   const agent = await startAgent(session.id);
 
   // Backend-initiated spawns are invisible to the UI without this — the
@@ -71,10 +78,10 @@ export async function acceptProposal(
   sendAgentMessage(agent.agent_id, prompt);
 
   const updated = updateProposal(proposal.id, {
-    status: "accepted",
+    status,
     session_id: session.id,
   });
-  info(`Proposal ${proposal.id} accepted into session ${session.id}`);
+  info(`Proposal ${proposal.id} ${status} into session ${session.id}`);
 
   return {
     proposal: updated,
@@ -106,7 +113,10 @@ async function waitForSessionReady(sessionId: string): Promise<void> {
 }
 
 /** The proposal, restated as the agent's brief. */
-function buildPrompt(proposal: Proposal): string {
+function buildPrompt(
+  proposal: Proposal,
+  status: "accepted" | "auto_started",
+): string {
   const lines = [
     `# ${proposal.title}`,
     "",
@@ -130,7 +140,9 @@ function buildPrompt(proposal: Proposal): string {
     "",
     "---",
     "",
-    "This came from an Argus automation and a human accepted it. Start by confirming the proposal still matches what the code and the source item actually say; if it does not, say so before changing anything.",
+    status === "auto_started"
+      ? "This came from an Argus automation that started it on its own — no human has read it yet. Start by confirming the proposal still matches what the code and the source item actually say; if it does not, stop and say so rather than changing anything."
+      : "This came from an Argus automation and a human accepted it. Start by confirming the proposal still matches what the code and the source item actually say; if it does not, say so before changing anything.",
   );
 
   return lines.join("\n");

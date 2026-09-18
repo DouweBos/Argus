@@ -7,6 +7,7 @@
 import type { Automation, AutomationRun } from "../lib/types";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_GUARDRAILS } from "../lib/automations";
 
 type Listener = (payload: unknown, hostId: string) => void;
 
@@ -58,6 +59,8 @@ function automation(id: string, name: string): Automation {
     name,
     description: "",
     enabled: true,
+    autonomy: null,
+    guardrails: DEFAULT_GUARDRAILS,
     playbook: "do the thing",
     model: null,
     template_id: null,

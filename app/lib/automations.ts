@@ -9,14 +9,34 @@ import type {
   AutomationRun,
   AutomationRunStatus,
   AutomationTrigger,
+  AutonomyLevel,
 } from "./types";
 import type { BadgeTone } from "@argus/peacock";
 import {
   computeNextRun,
   isValidCron,
 } from "@argus/host/services/automation/cron";
+import {
+  AUTONOMY_LEVELS,
+  DEFAULT_GUARDRAILS,
+} from "@argus/host/services/automation/guardrails";
 
-export { isValidCron };
+export { AUTONOMY_LEVELS, DEFAULT_GUARDRAILS, isValidCron };
+
+/** What each rung on the ladder actually permits, for the editor and Settings. */
+export const AUTONOMY_LABELS: Record<AutonomyLevel, string> = {
+  propose: "Propose",
+  draft: "Draft",
+  pr: "Pull request",
+  auto_merge: "Auto-merge",
+};
+
+export const AUTONOMY_CAPTIONS: Record<AutonomyLevel, string> = {
+  propose: "Put it in the inbox and touch nothing.",
+  draft: "Open a worktree, implement it, commit — then stop.",
+  pr: "Also push the branch and open a draft pull request.",
+  auto_merge: "Also merge it once CI is green. Opt-in only.",
+};
 
 /** The zone the machine is in — the default for a new schedule. */
 export function localTimezone(): string {

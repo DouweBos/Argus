@@ -26,6 +26,32 @@ export type AutomationTrigger =
 
 export type AutomationTriggerKind = AutomationTrigger["kind"];
 
+/**
+ * The autonomy ladder. Each rung strictly contains the one before it; the
+ * ladder order lives in `AUTONOMY_LEVELS` (`guardrails.ts`), not here.
+ */
+export type AutonomyLevel =
+  | "auto_merge" // pr + merge when CI is green (never a default)
+  | "draft" // create the worktree, implement, commit — then stop
+  | "pr" // draft + push + open a draft PR
+  | "propose"; // write a proposal into the inbox; touch nothing
+
+/** The limits a run is held to, whatever its playbook says. */
+export interface AutomationGuardrails {
+  /** 0..1. A proposal below this never auto-starts. */
+  confidence_threshold: number;
+  /** Auto-started sessions this automation may have in flight at once. */
+  max_concurrent_sessions: number;
+  /** Post-condition: a branch touching more files than this cannot be pushed. */
+  max_files_changed: number;
+  /** Ceiling on a single run's spend. */
+  max_cost_usd_per_run: number;
+  /** Globs no auto-started branch may touch, e.g. `["infra/**"]`. */
+  path_denylist: string[];
+  /** Gates `auto_merge`: CI must be green before the merge is allowed. */
+  require_clean_ci: boolean;
+}
+
 /** A persisted automation. */
 export interface Automation {
   id: string;
@@ -39,6 +65,10 @@ export interface Automation {
   source_ids: string[];
   /** The instructions handed to the run's agent. Markdown. */
   playbook: string;
+  /** How far a run may go on its own. Null inherits the app-wide default. */
+  autonomy: AutonomyLevel | null;
+  /** Limits enforced in Node, never in the prompt. */
+  guardrails: AutomationGuardrails;
   /** Model id for the run's agent; null inherits the app default. */
   model: string | null;
   /** Built-in template this was seeded from, for upgrade-on-release. */
@@ -86,6 +116,8 @@ export interface CreateAutomationInput {
   scope?: { repo_roots: string[] };
   source_ids?: string[];
   playbook: string;
+  autonomy?: AutonomyLevel | null;
+  guardrails?: Partial<AutomationGuardrails>;
   model?: string | null;
   template_id?: string | null;
 }

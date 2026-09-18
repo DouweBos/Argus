@@ -10,8 +10,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { appState } from "../../state";
+import { autoStartIfAllowed } from "../automation/autoStart";
 import { listAutomationRuns } from "../automation/manager";
 import { createProposal } from "../automation/proposals/manager";
+import { registerAutomationPrTool } from "./automationPrTool";
 
 /** The run an agent is the host of, or null if it is not an automation host. */
 export function automationRunForAgent(
@@ -43,6 +45,8 @@ export function registerAutomationTools(
   if (!isAutomationHostAgent(callerAgentId)) {
     return;
   }
+
+  registerAutomationPrTool(server, callerAgentId);
 
   server.tool(
     "emit_proposal",
@@ -116,12 +120,7 @@ export function registerAutomationTools(
         };
       }
 
-      // The autonomy gate goes here: when guardrails ship, a `start_session`
-      // proposal that clears the threshold, the concurrency cap and the
-      // project's ceiling starts its session right away and lands as
-      // `auto_started`. Until then every proposal waits for a human, which is
-      // what keeps a P2 run's blast radius at zero.
-      const proposal = createProposal({
+      const created = createProposal({
         run_id: context.runId,
         automation_id: context.automationId,
         title,
@@ -133,6 +132,11 @@ export function registerAutomationTools(
         repo_root: repo_root ?? null,
       });
 
+      // The gate. Every rung, threshold and cap is decided in Node from
+      // persisted state — a playbook instructing the agent to start work
+      // regardless changes nothing about what happens on this line.
+      const { proposal, decision } = autoStartIfAllowed(created);
+
       return {
         content: [
           {
@@ -141,6 +145,7 @@ export function registerAutomationTools(
               {
                 proposal_id: proposal.id,
                 status: proposal.status,
+                gate: decision.reason,
               },
               null,
               2,

@@ -60,6 +60,7 @@ import {
   stripAnsi,
   waitForTerminal,
 } from "../terminal/multiplexer";
+import { automationMergeBlock, automationWorkBlock } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
 import {
   isGitRepo,
@@ -691,6 +692,16 @@ export function createMcpServer(
     }) => {
       const repoRoot = project_path;
 
+      // An automation run below `draft` may not create work, whatever its
+      // playbook says. Same check as `emit_proposal`, different door.
+      const blocked = automationWorkBlock(callerAgentId, repoRoot);
+      if (blocked) {
+        return {
+          content: [{ type: "text" as const, text: blocked }],
+          isError: true,
+        };
+      }
+
       // Auto-register the repo root if targeting a cross-project session.
       const isNew = !appState.repoRoots.has(repoRoot);
       ensureRepoRegistered(repoRoot);
@@ -937,6 +948,14 @@ export function createMcpServer(
         };
       }
 
+      const blocked = automationWorkBlock(callerAgentId, ws.repo_root);
+      if (blocked) {
+        return {
+          content: [{ type: "text" as const, text: blocked }],
+          isError: true,
+        };
+      }
+
       let images;
       try {
         images = resolveAttachments(attachments);
@@ -1083,6 +1102,16 @@ export function createMcpServer(
           ],
           isError: true,
         };
+      }
+
+      for (const rr of resolvedRepoRoots) {
+        const blocked = automationWorkBlock(callerAgentId, rr);
+        if (blocked) {
+          return {
+            content: [{ type: "text" as const, text: blocked }],
+            isError: true,
+          };
+        }
       }
 
       // Register each unique repo once, notifying the renderer when it's new.
@@ -2595,6 +2624,14 @@ export function createMcpServer(
         };
       }
 
+      const mergeBlocked = await automationMergeBlock(callerAgentId, ws);
+      if (mergeBlocked) {
+        return {
+          content: [{ type: "text" as const, text: mergeBlocked }],
+          isError: true,
+        };
+      }
+
       try {
         const result = await attemptSessionMerge(ws.id);
 
@@ -2810,6 +2847,14 @@ export function createMcpServer(
         };
       }
 
+      const mergeBlocked = await automationMergeBlock(callerAgentId, ws);
+      if (mergeBlocked) {
+        return {
+          content: [{ type: "text" as const, text: mergeBlocked }],
+          isError: true,
+        };
+      }
+
       await mergeSessionIntoBase(ws.id);
 
       return {
@@ -2850,6 +2895,14 @@ export function createMcpServer(
           isError: true,
         };
       }
+      const mergeBlocked = await automationMergeBlock(callerAgentId, ws);
+      if (mergeBlocked) {
+        return {
+          content: [{ type: "text" as const, text: mergeBlocked }],
+          isError: true,
+        };
+      }
+
       const wsId = ws.id;
       const wsBranch = ws.branch;
       const baseBranch = ws.base_branch;
