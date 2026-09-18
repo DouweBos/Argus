@@ -11,6 +11,7 @@ import { promisify } from "node:util";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { appState } from "../../state";
+import { isAutonomyLevel } from "../automation/guardrails";
 import {
   createTerminal,
   setupShellCommand,
@@ -24,6 +25,7 @@ import {
   type ReleaseNoteFormat,
   type ReleaseNoteLabelConfig,
   type ReleaseNoteLabelTone,
+  type ProjectAutomationConfig,
   type ReleaseNotePatternConfig,
   type RunCommand,
   type SetupConfig,
@@ -143,7 +145,45 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
     auto_fetch_minutes: normalizeAutoFetchMinutes(parsed.auto_fetch_minutes),
     llm: normalizeLlmConfig(parsed.llm, repoRoot),
     tools: normalizeToolsConfig(parsed.tools),
+    automations: normalizeProjectAutomations(parsed.automations),
   };
+}
+
+/**
+ * Normalise the optional `automations` block. An unparseable ceiling is
+ * dropped rather than defaulted — a typo must never raise what a repo allows.
+ */
+function normalizeProjectAutomations(
+  input: unknown,
+): ProjectAutomationConfig | null {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+  const raw = input as Record<string, unknown>;
+  const ceiling = isAutonomyLevel(raw.autonomy_ceiling)
+    ? raw.autonomy_ceiling
+    : null;
+  const disabled = stringList(raw.disabled);
+  const denylist = stringList(raw.path_denylist);
+  if (!ceiling && disabled.length === 0 && denylist.length === 0) {
+    return null;
+  }
+
+  return {
+    ...(ceiling ? { autonomy_ceiling: ceiling } : {}),
+    ...(disabled.length > 0 ? { disabled } : {}),
+    ...(denylist.length > 0 ? { path_denylist: denylist } : {}),
+  };
+}
+
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    .map((v) => v.trim());
 }
 
 /**
@@ -789,6 +829,7 @@ function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
       local.auto_fetch_minutes ?? base.auto_fetch_minutes ?? null,
     llm: mergeLlmConfig(base.llm ?? null, local.llm ?? null),
     tools: local.tools ?? base.tools ?? null,
+    automations: local.automations ?? base.automations ?? null,
   };
 }
 

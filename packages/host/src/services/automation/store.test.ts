@@ -8,6 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { DEFAULT_GUARDRAILS } from "./guardrails";
 import {
   MAX_RUNS_PER_AUTOMATION,
   loadAutomationRuns,
@@ -34,6 +35,8 @@ function automation(overrides: Partial<Automation> = {}): Automation {
     scope: { repo_roots: ["/repo"] },
     source_ids: [],
     playbook: "do the thing",
+    autonomy: null,
+    guardrails: DEFAULT_GUARDRAILS,
     model: null,
     template_id: "standup-digest",
     created_at: 1,

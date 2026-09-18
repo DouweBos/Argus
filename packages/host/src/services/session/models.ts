@@ -5,6 +5,8 @@
  * `<repo>-argus-worktrees/<branch>/` directory.
  */
 
+import type { AutonomyLevel } from "../automation/models";
+
 /**
  * What a session is backed by: a git worktree, the repo root itself, or — for
  * an automation run — a neutral directory that is not a checkout at all.
@@ -358,6 +360,22 @@ export interface ArgusConfig {
    * ignored. Set/parsed in `electron/services/session/setup.ts`.
    */
   tools?: { disabled?: string[] } | null;
+  /**
+   * How far Argus automations may go in this repo. The ceiling caps the app
+   * default and the automation's own setting — a repo can always ask for less
+   * autonomy, never more. Parsed in `session/setup.ts`.
+   */
+  automations?: ProjectAutomationConfig | null;
+}
+
+/** The `automations` block of `.argus.json`. Every field is optional. */
+export interface ProjectAutomationConfig {
+  /** Highest rung any automation may reach in this repo. */
+  autonomy_ceiling?: AutonomyLevel | null;
+  /** Automation ids or template ids this repo opts out of entirely. */
+  disabled?: string[];
+  /** Globs no automation-started branch may touch. Added to the automation's own list. */
+  path_denylist?: string[];
 }
 
 /** Tone for label badges, mirrored from Peacock's `Badge.tone`. */
@@ -439,5 +457,6 @@ export function defaultArgusConfig(): ArgusConfig {
     auto_fetch_minutes: null,
     llm: null,
     tools: null,
+    automations: null,
   };
 }

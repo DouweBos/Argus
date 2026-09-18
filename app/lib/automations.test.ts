@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_GUARDRAILS,
   cronError,
   formatDuration,
   nextFireTimes,
@@ -57,6 +58,8 @@ describe("labels", () => {
         description: "",
         enabled: false,
         playbook: "",
+        autonomy: null,
+        guardrails: DEFAULT_GUARDRAILS,
         model: null,
         template_id: null,
         trigger: {

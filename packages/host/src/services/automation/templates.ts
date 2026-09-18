@@ -9,6 +9,7 @@ import { GITHUB_SOURCE_ID } from "../signals/sources/github";
 
 export const STANDUP_DIGEST_TEMPLATE_ID = "standup-digest";
 export const MORNING_TRIAGE_TEMPLATE_ID = "morning-triage";
+export const EASY_ONES_TEMPLATE_ID = "take-the-easy-ones";
 
 const MORNING_TRIAGE_PLAYBOOK = `# Morning triage
 
@@ -75,6 +76,39 @@ than padding it out.
 - If a project directory is unreadable, note it and carry on with the rest.
 `;
 
+const EASY_ONES_PLAYBOOK = `# Take the easy ones
+
+You have been handed the work items assigned to you. Pick out only the ones an
+agent can finish on its own, and hand each to a session.
+
+An item qualifies when **all** of these hold:
+
+- The change it asks for is obvious from the description — no design decision
+  is left open.
+- It is small: a handful of files, no schema change, no dependency bump.
+- It maps to a project you were given, so \`repo_root\` can be set.
+
+Everything else is somebody else's morning. Skip it; do not lower your bar to
+fill a list.
+
+For each item that qualifies, call \`emit_proposal\` with
+\`recommended_action: "start_session"\`, an honest \`confidence\`, and the
+\`repo_root\` of the project. Argus decides what happens next: above the
+confidence threshold and within the session cap it starts the work itself,
+otherwise it waits for a human. Either way the answer comes back in the tool
+result — read it and report what actually happened.
+
+Finally write the report: what you started, what you left pending, and why.
+
+## Rules
+
+- Do not call \`create_session\` or \`spawn_agent\` yourself. Proposals are the
+  only route; the direct calls are refused unless the autonomy level allows
+  them, and going around the gate is not your call to make.
+- Work only from the items you were given.
+- Do not call ExitPlanMode. Nobody is watching this run.
+`;
+
 /** Every template shipped with the app, keyed by its stable id. */
 export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
   [STANDUP_DIGEST_TEMPLATE_ID]: {
@@ -107,5 +141,23 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
     source_ids: [GITHUB_SOURCE_ID],
     playbook: MORNING_TRIAGE_PLAYBOOK,
     template_id: MORNING_TRIAGE_TEMPLATE_ID,
+  },
+  [EASY_ONES_TEMPLATE_ID]: {
+    name: "Take the easy ones",
+    description:
+      "Implements the assigned issues it is confident about, in their own worktrees, and stops at the commit.",
+    enabled: false,
+    trigger: {
+      kind: "schedule",
+      cron: "0 8 * * 1-5",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      catch_up: false,
+    },
+    source_ids: [GITHUB_SOURCE_ID],
+    playbook: EASY_ONES_PLAYBOOK,
+    // Implements and commits; never pushes and never merges.
+    autonomy: "draft",
+    guardrails: { confidence_threshold: 0.85, max_concurrent_sessions: 2 },
+    template_id: EASY_ONES_TEMPLATE_ID,
   },
 };
