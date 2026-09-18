@@ -208,7 +208,9 @@ function buildPrompt(
     "",
     "## Output",
     "",
-    "Your final assistant message is the report. Write it as markdown — no preamble, no offer to do more, no request for approval.",
+    "Call `emit_report` with the report as blocks — stats, tables, lists, a series — and keep your final assistant message to a one-line summary. Blocks render as a dashboard; a final message only renders as text, so reach for markdown blocks only for the prose parts.",
+    "",
+    "Whatever you write, no preamble, no offer to do more, no request for approval. If `emit_report` is not available to you, write the report as your final message in markdown instead.",
   ].join("\n");
 }
 

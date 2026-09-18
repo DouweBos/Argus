@@ -1,7 +1,8 @@
 /**
  * How a run's report gets rendered: as structured blocks when the agent emitted
- * a valid report document, as plain markdown otherwise. Reports written before
- * the block union existed keep rendering exactly as they did.
+ * a valid report document, as plain markdown otherwise. Blocks published
+ * through `emit_report` win; a report that only carries the agent's final
+ * message still renders exactly as it did.
  */
 
 import { type ReportBlock, parseReportBlocks } from "@argus/remote-protocol";
@@ -11,13 +12,19 @@ export type RenderedReport =
   | { kind: "empty" }
   | { kind: "markdown"; text: string };
 
-export function renderedReport(text: string | null): RenderedReport {
+export function renderedReport(
+  text: string | null,
+  blocks?: ReportBlock[] | null,
+): RenderedReport {
+  if (blocks && blocks.length > 0) {
+    return { blocks, kind: "blocks" };
+  }
   if (!text || text.trim() === "") {
     return { kind: "empty" };
   }
-  const blocks = parseReportBlocks(text);
-  if (blocks) {
-    return { blocks, kind: "blocks" };
+  const parsed = parseReportBlocks(text);
+  if (parsed) {
+    return { blocks: parsed, kind: "blocks" };
   }
 
   return { kind: "markdown", text };

@@ -51,7 +51,7 @@ export function AutomationRunScreen() {
     );
   }
 
-  const report = renderedReport(run.report_markdown);
+  const report = renderedReport(run.report_markdown, run.report_blocks);
   const hostSession = run.host_session_id
     ? (sessions.find((s) => s.id === run.host_session_id) ?? null)
     : null;

@@ -1,3 +1,5 @@
+import type { ReportBlock } from "@argus/remote-protocol";
+
 export interface Session {
   /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
@@ -774,6 +776,8 @@ export interface AutomationRun {
   /** The `automation_host` session the run's agent lives in. */
   host_session_id: string | null;
   id: string;
+  /** Structured blocks from `emit_report`, preferred over the markdown. */
+  report_blocks?: ReportBlock[] | null;
   /** The agent's final message. Plain markdown. */
   report_markdown: string | null;
   started_at: number;
