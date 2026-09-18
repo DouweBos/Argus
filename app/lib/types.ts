@@ -791,12 +791,12 @@ export interface AutomationRun {
 /** How an automation's proposals have actually turned out. */
 export interface AutomationCalibration {
   abandoned: number;
-  accepted: number;
   /**
    * Accepted + auto-started over everything decided. Null while nothing has
    * been decided.
    */
   acceptance_rate: number | null;
+  accepted: number;
   auto_started: number;
   automation_id: string;
   dismissals: { reason: string; title: string }[];
