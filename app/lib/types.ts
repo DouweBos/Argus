@@ -788,6 +788,26 @@ export interface AutomationRun {
   trigger_reason: string;
 }
 
+/** How an automation's proposals have actually turned out. */
+export interface AutomationCalibration {
+  abandoned: number;
+  accepted: number;
+  /**
+   * Accepted + auto-started over everything decided. Null while nothing has
+   * been decided.
+   */
+  acceptance_rate: number | null;
+  auto_started: number;
+  automation_id: string;
+  dismissals: { reason: string; title: string }[];
+  dismissed: number;
+  merged: number;
+  pending: number;
+  reverted: number;
+  /** Proposals considered — the newest twenty. */
+  sample: number;
+}
+
 /** A signal source a run can be fed from, as the editor lists them. */
 export interface SignalSourceInfo {
   /** False when the source has nothing to answer with — no `gh`, no MCP. */

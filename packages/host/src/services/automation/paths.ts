@@ -25,6 +25,16 @@ export function automationRunsDir(automationId: string): string {
   return path.join(argusHomeDir(), "automation-runs", automationId);
 }
 
+/** Sessions automations started, so their claims survive a restart. */
+export function automationSessionsFilePath(): string {
+  return path.join(argusHomeDir(), "automation-sessions.json");
+}
+
+/** How the proposals turned out — the calibration loop's half of the record. */
+export function outcomesFilePath(): string {
+  return path.join(argusHomeDir(), "automation-outcomes.json");
+}
+
 /** Proposals emitted by runs, across every automation. */
 export function proposalsFilePath(): string {
   return path.join(argusHomeDir(), "automation-proposals.json");

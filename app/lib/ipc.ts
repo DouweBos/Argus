@@ -17,6 +17,7 @@ import type {
   ArgusConfigSuggestion,
   AcceptProposalResult,
   Automation,
+  AutomationCalibration,
   AutomationRun,
   CreateAutomationInput,
   Proposal,
@@ -1543,6 +1544,12 @@ export const listAutomationRuns = (
 export const getAutomationRun = (
   runId: string,
 ): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
+
+/** How an automation's proposals have turned out. Drives the acceptance rate. */
+export const getAutomationCalibration = (
+  automationId: string,
+): Promise<AutomationCalibration> =>
+  invoke("automation_calibration", { automationId });
 
 /** The signal sources a run can be fed from, with availability resolved. */
 export const listSignalSources = (): Promise<SignalSourceInfo[]> =>

@@ -31,6 +31,7 @@ import {
 import { destroyAllAgents } from "@argus/host/services/agent/agentService";
 import { reapOrphanedAgentProcesses } from "@argus/host/services/agent/reapOrphans";
 import { initAutomations } from "@argus/host/services/automation/manager";
+import { initAutomationOutcomes } from "@argus/host/services/automation/outcomes";
 import { startAutomationScheduler } from "@argus/host/services/automation/scheduler";
 import { stopAllScreencasts } from "@argus/host/services/browser/cdpScreencast";
 import { setColorScheme } from "@argus/host/services/browser/conductorInput";
@@ -929,6 +930,7 @@ app.whenReady().then(() => {
   // Automations. Nothing else starts the clock — the scheduler has no
   // neighbours since organizations were removed.
   initAutomations();
+  initAutomationOutcomes();
   startAutomationScheduler();
 
   // Sweep up node-pty spawn-helpers from prior Argus runs that didn't get a

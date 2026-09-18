@@ -26,6 +26,7 @@ import {
   useHasActiveRun,
 } from "../../../stores/automationStore";
 import { AutomationEditor } from "../AutomationEditor/AutomationEditor";
+import { AutomationTrackRecord } from "../AutomationTrackRecord";
 import {
   CancelRunButton,
   RunStatusBadge,
@@ -130,6 +131,11 @@ export function AutomationDetailScreen() {
           {triggerLabel(automation.trigger)} · next {nextRunLabel(automation)}
         </p>
       </div>
+
+      <AutomationTrackRecord
+        automationId={automation.id}
+        refreshKey={runs.length}
+      />
 
       <AutomationEditor key={automation.id} automation={automation} />
 
