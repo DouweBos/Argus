@@ -6,6 +6,7 @@
  * Per-developer; never written into the repository.
  */
 
+import type { AutonomyLevel } from "../automation/models";
 import type { McpServers } from "../mcp/userConfig";
 import fs from "node:fs";
 import path from "node:path";
@@ -43,6 +44,24 @@ export interface AppSettings {
    * you turn one on.
    */
   automations_enabled?: boolean;
+  /**
+   * Screen Argus opens on. `home` is the project picker; `inbox` is the
+   * briefing. Defaults to `home` — the inbox only earns the launch slot once
+   * automations are actually producing proposals.
+   */
+  launch_route?: "home" | "inbox";
+  /**
+   * How far an automation may go by default when it does not set its own
+   * level. Ships as `"propose"`; a repo can cap it lower, never higher.
+   */
+  default_autonomy?: AutonomyLevel;
+  /**
+   * Ceiling on auto-started automation sessions running at once, across every
+   * automation. Defaults to 3.
+   */
+  max_concurrent_automation_sessions?: number;
+  /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
+  automation_daily_budget_usd?: number;
   /**
    * Master kill-switch for phone remote access. When false (default) the local
    * gateway + tunnel stay down and pairing is refused.

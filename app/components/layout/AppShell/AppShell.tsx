@@ -44,6 +44,7 @@ import {
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
 import { openOpenPalette } from "../../../stores/openPaletteStore";
+import { useProposalsSync } from "../../../stores/proposalStore";
 import { usePullRequestsSync } from "../../../stores/pullRequestStore";
 import {
   getSelectedSessionId,
@@ -65,6 +66,7 @@ import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
+import { InboxScreen } from "../../inbox";
 import { NotificationsScreen } from "../../notifications";
 import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
 import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
@@ -113,6 +115,7 @@ function renderCenter(
     | "automations"
     | "devices"
     | "home"
+    | "inbox"
     | "notifications"
     | "pull-request-detail"
     | "pull-requests"
@@ -133,6 +136,9 @@ function renderCenter(
   }
   if (centerView === "automations") {
     return <AutomationsRoot />;
+  }
+  if (centerView === "inbox") {
+    return <InboxScreen />;
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;
@@ -163,6 +169,7 @@ export function AppShell() {
   useSuppressSpacePageScroll();
   usePullRequestsSync();
   useAutomationsSync();
+  useProposalsSync();
   useTrackSessionPanel();
   useToolProjectMaskSync();
   // Reconcile the tool store against the persisted backend state once at

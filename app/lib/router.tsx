@@ -18,6 +18,7 @@
  * - `/automations/:automationId/runs/:runId`     → a single automation run
  * - `/devices`                                   → devices screen
  * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
+ * - `/inbox`                                     → the briefing: what Argus wants you to decide
  * - `/notifications`                             → notifications screen
  * - `/pull-requests`                             → outstanding PRs of interest
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
@@ -53,6 +54,7 @@ export type AppView =
   | "automations"
   | "devices"
   | "home"
+  | "inbox"
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"
@@ -240,6 +242,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
   if (
     segments[0] === "agents" ||
     segments[0] === "devices" ||
+    segments[0] === "inbox" ||
     segments[0] === "notifications" ||
     segments[0] === "pull-requests" ||
     segments[0] === "runtimes"
@@ -291,6 +294,7 @@ export function routePattern(pathname: string): string {
       return route.automationId ? "/automations/:automationId" : "/automations";
     case "agents":
     case "devices":
+    case "inbox":
     case "notifications":
     case "pull-requests":
     case "runtimes":
@@ -354,6 +358,7 @@ function routePathname(route: Partial<ParsedRoute>): string {
   if (
     route.view === "agents" ||
     route.view === "devices" ||
+    route.view === "inbox" ||
     route.view === "notifications" ||
     route.view === "pull-requests" ||
     route.view === "runtimes"

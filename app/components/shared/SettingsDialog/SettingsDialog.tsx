@@ -1,3 +1,4 @@
+import type { LaunchRoute } from "../../../lib/launchRoute";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -83,6 +84,7 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../McpServersField";
+import { AutomationDefaults } from "./AutomationDefaults";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
 import { HostsSection } from "./HostsSection";
@@ -263,8 +265,62 @@ function AppearanceSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <LaunchRouteField />
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
+  );
+}
+
+/**
+ * Which screen Argus opens on. Host state like the automations switch: the
+ * inbox it would open is that machine's inbox.
+ */
+function LaunchRouteField() {
+  const [route, setRoute] = useState<LaunchRoute>("home");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAppSettings().then(
+      (settings) => {
+        if (!cancelled) {
+          setRoute(settings.launch_route ?? "home");
+          setLoaded(true);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const change = (next: LaunchRoute) => {
+    const previous = route;
+    setRoute(next);
+    setAppSettings({ launch_route: next }).catch(() => setRoute(previous));
+  };
+
+  return (
+    <SettingsScreenField
+      label="Launch screen"
+      caption="Where Argus lands when it opens. Restored window tabs still win."
+    >
+      <SegmentedControl<LaunchRoute>
+        aria-label="Launch screen"
+        onChange={change}
+        options={[
+          { value: "home", label: "Home", disabled: !loaded },
+          { value: "inbox", label: "Inbox", disabled: !loaded },
+        ]}
+        value={route}
+      />
+    </SettingsScreenField>
   );
 }
 
@@ -378,6 +434,7 @@ function PermissionsSection() {
           </div>
         </SettingsScreenField>
         <AutomationsToggle />
+        <AutomationDefaults />
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );

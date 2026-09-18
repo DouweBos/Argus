@@ -142,6 +142,9 @@ export const useAutomationRuns = (automationId: string | null) =>
     automationId ? s.runs.filter((r) => r.automation_id === automationId) : [],
   );
 
+/** Every cached run, newest first — the inbox needs them across automations. */
+export const useAllRuns = (): AutomationRun[] => store((s) => s.runs);
+
 /** The newest run of an automation, whatever its status. */
 export const useLatestRun = (automationId: string): AutomationRun | null =>
   store((s) => s.runs.find((r) => r.automation_id === automationId) ?? null);

@@ -10,6 +10,7 @@ const VIEW_TITLES: Record<AppView, string> = {
   automations: "Automations",
   devices: "Devices",
   home: "Home",
+  inbox: "Inbox",
   notifications: "Notifications",
   "pull-request-detail": "Pull request",
   "pull-requests": "Pull requests",
