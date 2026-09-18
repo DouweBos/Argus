@@ -17,6 +17,7 @@ vi.mock("../automation/manager", () => ({
   listAutomationRuns: vi.fn(() => []),
   // No automation behind the run, so the gate refuses and the proposal waits.
   getAutomation: vi.fn(() => null),
+  updateRun: vi.fn(),
 }));
 
 vi.mock("../automation/proposals/manager", () => ({

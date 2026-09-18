@@ -8,6 +8,8 @@
  * radius at zero.
  */
 
+import type { ReportBlock } from "@argus/remote-protocol";
+
 /** What causes an automation to fire. */
 export type AutomationTrigger =
   | {
@@ -101,8 +103,10 @@ export interface AutomationRun {
   host_session_id: string | null;
   host_agent_id: string | null;
   cost_usd: number | null;
-  /** The agent's final message, rendered as plain markdown in P1. */
+  /** The agent's final message, rendered as plain markdown. */
   report_markdown: string | null;
+  /** Structured blocks from `emit_report`. Preferred over the markdown. */
+  report_blocks: ReportBlock[] | null;
   /** Failure message, or — for a `skipped` run — why it did not fire. */
   error: string | null;
 }

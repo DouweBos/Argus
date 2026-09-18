@@ -4,7 +4,7 @@
  * Registration is bound to caller identity, not to a prompt: the tool exists
  * on the connection only when that connection's agent lives in an
  * `automation_host` session. An ordinary agent cannot call `emit_proposal`
- * because it is not on its tool list at all.
+ * or `emit_report` because they are not on its tool list at all.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -14,6 +14,7 @@ import { autoStartIfAllowed } from "../automation/autoStart";
 import { listAutomationRuns } from "../automation/manager";
 import { createProposal } from "../automation/proposals/manager";
 import { registerAutomationPrTool } from "./automationPrTool";
+import { registerAutomationReportTool } from "./automationReportTool";
 
 /** The run an agent is the host of, or null if it is not an automation host. */
 export function automationRunForAgent(
@@ -47,6 +48,7 @@ export function registerAutomationTools(
   }
 
   registerAutomationPrTool(server, callerAgentId);
+  registerAutomationReportTool(server, callerAgentId);
 
   server.tool(
     "emit_proposal",
