@@ -24,3 +24,8 @@ export function automationRunDir(automationId: string, runId: string): string {
 export function automationRunsDir(automationId: string): string {
   return path.join(argusHomeDir(), "automation-runs", automationId);
 }
+
+/** Proposals emitted by runs, across every automation. */
+export function proposalsFilePath(): string {
+  return path.join(argusHomeDir(), "automation-proposals.json");
+}

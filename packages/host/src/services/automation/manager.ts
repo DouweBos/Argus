@@ -21,6 +21,7 @@ import { info, warn } from "@argus/host/logger";
 import { computeNextRun, isValidCron } from "./cron";
 import { disposeAutomationHostSession } from "./hostSession";
 import { automationRunsDir } from "./paths";
+import { deleteProposalsForAutomation } from "./proposals/manager";
 import {
   applyRetention,
   loadAutomationRuns,
@@ -36,6 +37,11 @@ let runs: AutomationRun[] | null = null;
 function automationCache(): Automation[] {
   if (!automations) {
     automations = loadAutomations();
+    // Fields added after an automation was written stay absent on disk until
+    // the next save, so fill them in on the way out of the file.
+    for (const automation of automations) {
+      automation.source_ids ??= [];
+    }
     seedBuiltIns(automations);
   }
 
@@ -84,6 +90,7 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     enabled: input.enabled ?? false,
     trigger,
     scope: { repo_roots: input.scope?.repo_roots ?? [] },
+    source_ids: input.source_ids ?? [],
     playbook: input.playbook,
     model: input.model ?? null,
     template_id: input.template_id ?? null,
@@ -230,6 +237,7 @@ export function deleteAutomation(id: string): void {
   }
   runs = runCache().filter((r) => r.automation_id !== id);
   saveAutomationRuns(runs);
+  deleteProposalsForAutomation(id);
 
   try {
     fs.rmSync(automationRunsDir(id), { force: true, recursive: true });

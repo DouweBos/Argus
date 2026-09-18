@@ -13,6 +13,7 @@ import type {
   CreateAutomationInput,
   UpdateAutomationInput,
 } from "@argus/host/services/automation/models";
+import type { ProposalStatus } from "@argus/host/services/automation/proposals/models";
 import type { CommandTier } from "@argus/host/services/command/registry";
 import type {
   OnboardingStep,
@@ -83,6 +84,12 @@ import {
   setAutomationEnabled,
   updateAutomation,
 } from "@argus/host/services/automation/manager";
+import { acceptProposal } from "@argus/host/services/automation/proposals/accept";
+import {
+  dismissProposal,
+  getProposal,
+  listProposals,
+} from "@argus/host/services/automation/proposals/manager";
 import {
   cancelAutomationRun,
   startAutomationRun,
@@ -1045,6 +1052,20 @@ export function registerIpcHandlers(): void {
   );
   handle("automation_run_get", "admin", (a) =>
     getAutomationRun(a.runId as string),
+  );
+  // Proposals — what a run wants you to do. Remotable for the same reason the
+  // automations are: the inbox belongs to whichever machine runs the clock.
+  handle("proposals_list", "admin", (a) =>
+    listProposals({
+      automationId: a.automationId as string | undefined,
+      runId: a.runId as string | undefined,
+      status: a.status as ProposalStatus | undefined,
+    }),
+  );
+  handle("proposal_get", "admin", (a) => getProposal(a.id as string));
+  handle("proposal_accept", "admin", (a) => acceptProposal(a.id as string));
+  handle("proposal_dismiss", "admin", (a) =>
+    dismissProposal(a.id as string, a.reason as string | undefined),
   );
 
   handle("get_app_settings", "admin", () => loadAppSettings());

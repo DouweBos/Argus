@@ -60,6 +60,7 @@ import {
   stripAnsi,
   waitForTerminal,
 } from "../terminal/multiplexer";
+import { registerAutomationTools } from "./automationTools";
 import {
   isGitRepo,
   ensureRepoRegistered,
@@ -2951,6 +2952,10 @@ export function createMcpServer(
       };
     },
   );
+
+  // Automation-only tools, registered against caller identity rather than
+  // advertised to everyone and refused later.
+  registerAutomationTools(server, callerAgentId);
 
   return server;
 }

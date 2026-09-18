@@ -35,6 +35,8 @@ export interface Automation {
   trigger: AutomationTrigger;
   /** Repos the run may read. Registered with MCP before the agent starts. */
   scope: { repo_roots: string[] };
+  /** Signal sources feeding the run, by id. Empty = the run gets no signals. */
+  source_ids: string[];
   /** The instructions handed to the run's agent. Markdown. */
   playbook: string;
   /** Model id for the run's agent; null inherits the app default. */
@@ -82,6 +84,7 @@ export interface CreateAutomationInput {
   enabled?: boolean;
   trigger: AutomationTrigger;
   scope?: { repo_roots: string[] };
+  source_ids?: string[];
   playbook: string;
   model?: string | null;
   template_id?: string | null;

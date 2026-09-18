@@ -1,16 +1,12 @@
 /**
  * Persisted automations and their run history.
  *
- * Two versioned JSON envelopes under `$ARGUS_HOME`. A schema mismatch renames
- * the file to `.bak` and starts fresh — automations are cheap to recreate and
- * a half-understood file is worse than none. Runs are capped per automation so
- * the history file cannot grow without bound.
+ * Two versioned JSON envelopes under `$ARGUS_HOME` (see `jsonFile.ts`). Runs
+ * are capped per automation so the history file cannot grow without bound.
  */
 
 import type { Automation, AutomationRun } from "./models";
-import fs from "node:fs";
-import path from "node:path";
-import { info, warn } from "@argus/host/logger";
+import { readEnvelope, writeJson } from "./jsonFile";
 import { automationRunsFilePath, automationsFilePath } from "./paths";
 
 const SCHEMA_VERSION = 1;
@@ -28,57 +24,12 @@ interface AutomationRunsFile {
   runs: AutomationRun[];
 }
 
-function backup(filePath: string, label: string): void {
-  try {
-    fs.renameSync(filePath, `${filePath}.bak`);
-    info(`${label} schema mismatch; backed up to ${filePath}.bak`);
-  } catch (e) {
-    warn(`Failed to back up ${label}: ${String(e)}`);
-  }
-}
-
-function readEnvelope<T>(
-  filePath: string,
-  label: string,
-  key: "automations" | "runs",
-): T[] {
-  let raw: string;
-  try {
-    raw = fs.readFileSync(filePath, "utf8");
-  } catch {
-    return [];
-  }
-
-  let file: Record<string, unknown>;
-  try {
-    file = JSON.parse(raw) as Record<string, unknown>;
-  } catch (e) {
-    warn(`Failed to parse ${label}:`, e);
-
-    return [];
-  }
-
-  if (file.version !== SCHEMA_VERSION || !Array.isArray(file[key])) {
-    backup(filePath, label);
-
-    return [];
-  }
-
-  return file[key] as T[];
-}
-
-function writeJson(filePath: string, value: unknown): void {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const tmp = `${filePath}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(value, null, 2), "utf8");
-  fs.renameSync(tmp, filePath);
-}
-
 export function loadAutomations(): Automation[] {
   return readEnvelope<Automation>(
     automationsFilePath(),
     "automations.json",
     "automations",
+    SCHEMA_VERSION,
   );
 }
 
@@ -92,6 +43,7 @@ export function loadAutomationRuns(): AutomationRun[] {
     automationRunsFilePath(),
     "automation-runs.json",
     "runs",
+    SCHEMA_VERSION,
   );
 }
 
