@@ -749,6 +749,63 @@ export type UpdateAutomationInput = Partial<
 >;
 
 // ---------------------------------------------------------------------------
+// Proposals
+// ---------------------------------------------------------------------------
+
+export type ProposalStatus =
+  | "accepted"
+  | "auto_started"
+  | "dismissed"
+  | "pending";
+
+export type ProposalAction =
+  | "ignore"
+  | "needs_info"
+  | "review"
+  | "start_session";
+
+/** The work item a proposal came from, when it has one. */
+export interface ProposalSourceRef {
+  /** Id within the source, e.g. `acme/app#412`. */
+  external_id: string;
+  /** Signal source that produced it, e.g. `github`. */
+  source_id: string;
+  url: string;
+}
+
+/** One thing an automation run wants you to do. */
+export interface Proposal {
+  automation_id: string;
+  /** 0..1, self-reported by the run's agent. */
+  confidence: number;
+  created_at: number;
+  /** Why it was dismissed, verbatim. */
+  dismissed_reason: string | null;
+  id: string;
+  /** Why the run ranked it where it did. */
+  rationale: string;
+  /** What the run thinks should happen. */
+  recommended_action: ProposalAction;
+  /** Project the work would happen in. Null when it maps to no local repo. */
+  repo_root: string | null;
+  run_id: string;
+  /** Session doing the work, once the proposal was started. */
+  session_id: string | null;
+  source_ref: ProposalSourceRef | null;
+  status: ProposalStatus;
+  /** What the work is, in markdown. */
+  summary: string;
+  title: string;
+}
+
+/** What accepting a proposal produced. */
+export interface AcceptProposalResult {
+  agent_id: string;
+  proposal: Proposal;
+  session_id: string;
+}
+
+// ---------------------------------------------------------------------------
 // Claude Code stream-json event types
 // ---------------------------------------------------------------------------
 

@@ -8,6 +8,7 @@
  */
 
 import type { Automation, AutomationRun } from "./models";
+import type { GatheredSignals } from "../signals/registry";
 import { emitHostEvent } from "@argus/host/bus";
 import { error, info } from "@argus/host/logger";
 import { appState } from "../../state";
@@ -18,6 +19,7 @@ import {
   waitForAgent,
 } from "../agent/agentService";
 import { ensureRepoRegistered } from "../mcp/projects";
+import { gatherSignals, serializeWorkItems } from "../signals/registry";
 import { createAutomationHostSession } from "./hostSession";
 import {
   createRun,
@@ -91,6 +93,13 @@ async function execute(automation: Automation, runId: string): Promise<void> {
     }
   }
 
+  // Native sources are fetched here and serialized into the prompt; agent-mode
+  // sources hand the agent instructions and let it do the fetching itself.
+  const signals = await gatherSignals({
+    sourceIds: automation.source_ids,
+    repoRoots: automation.scope.repo_roots,
+  });
+
   const session = createAutomationHostSession({
     automationId: automation.id,
     runId,
@@ -105,7 +114,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   );
   updateRun(runId, { host_agent_id: agentInfo.agent_id });
 
-  const prompt = buildPrompt(automation);
+  const prompt = buildPrompt(automation, signals);
 
   // Without this the renderer never registers the agent or subscribes to its
   // event channels, and the session view falls back to the "Start agent"
@@ -160,7 +169,7 @@ async function stopAgentQuietly(agentId: string): Promise<void> {
   }
 }
 
-function buildPrompt(automation: Automation): string {
+function buildPrompt(automation: Automation, signals: GatheredSignals): string {
   const scopeLines =
     automation.scope.repo_roots.length > 0
       ? automation.scope.repo_roots.map((r) => `- \`${r}\``).join("\n")
@@ -180,11 +189,49 @@ function buildPrompt(automation: Automation): string {
     scopeLines,
     "",
     "You are in a neutral working directory that is not a checkout of any of them. Read the projects at their absolute paths; never write to them.",
+    ...signalSections(automation, signals),
     "",
     "## Output",
     "",
     "Your final assistant message is the report. Write it as markdown — no preamble, no offer to do more, no request for approval.",
   ].join("\n");
+}
+
+/**
+ * The signals half of the prompt: what Node already fetched, plus whatever the
+ * agent-mode sources want the agent to fetch for itself.
+ */
+function signalSections(
+  automation: Automation,
+  signals: GatheredSignals,
+): string[] {
+  if (automation.source_ids.length === 0) {
+    return [];
+  }
+
+  const lines = [
+    "",
+    "## Work items",
+    "",
+    "These were fetched for you. Do not go looking for more.",
+    "",
+    "```json",
+    serializeWorkItems(signals.items),
+    "```",
+  ];
+
+  for (const instructions of signals.instructions) {
+    lines.push("", instructions);
+  }
+
+  if (signals.unavailable.length > 0) {
+    lines.push(
+      "",
+      `Unavailable sources: ${signals.unavailable.join(", ")}. Note this in the report; do not treat it as "there is no work".`,
+    );
+  }
+
+  return lines;
 }
 
 /** Stop a run that is still in flight. */

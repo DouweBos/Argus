@@ -15,9 +15,12 @@ import type {
   AndroidDevice,
   ArgusConfig,
   ArgusConfigSuggestion,
+  AcceptProposalResult,
   Automation,
   AutomationRun,
   CreateAutomationInput,
+  Proposal,
+  ProposalStatus,
   UpdateAutomationInput,
   BranchList,
   ClaudeAccountsState,
@@ -1539,6 +1542,26 @@ export const listAutomationRuns = (
 export const getAutomationRun = (
   runId: string,
 ): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
+
+// Proposals — the inbox. Same host-state reasoning as the automations above.
+export const listProposals = (filter?: {
+  automationId?: string;
+  runId?: string;
+  status?: ProposalStatus;
+}): Promise<Proposal[]> => invoke("proposals_list", { ...filter });
+
+export const getProposal = (id: string): Promise<Proposal | null> =>
+  invoke("proposal_get", { id });
+
+/** Start a proposal: creates its session and spawns an agent prompted with it. */
+export const acceptProposal = (id: string): Promise<AcceptProposalResult> =>
+  invoke("proposal_accept", { id });
+
+/** Dismiss a proposal. The reason is kept — it is the training signal. */
+export const dismissProposal = (
+  id: string,
+  reason?: string,
+): Promise<Proposal> => invoke("proposal_dismiss", { id, reason });
 
 // Remote access (phone/web control).
 export const remoteGetStatus = (): Promise<RemoteStatus> =>

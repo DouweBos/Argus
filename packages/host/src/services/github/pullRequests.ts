@@ -58,7 +58,7 @@ async function gh(args: string[]): Promise<string> {
  * configured as a second remote (`upstream`, etc). We want those to show up
  * on the Pull requests screen too.
  */
-async function getGithubSlugs(repoRoot: string): Promise<string[]> {
+export async function getGithubSlugs(repoRoot: string): Promise<string[]> {
   try {
     const { stdout } = await execFileAsync(
       "git",

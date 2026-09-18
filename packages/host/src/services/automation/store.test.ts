@@ -32,6 +32,7 @@ function automation(overrides: Partial<Automation> = {}): Automation {
       catch_up: true,
     },
     scope: { repo_roots: ["/repo"] },
+    source_ids: [],
     playbook: "do the thing",
     model: null,
     template_id: "standup-digest",
