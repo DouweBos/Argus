@@ -1,0 +1,274 @@
+# Automations — Argus starting the work itself
+
+Everything else in Argus starts with you clicking **Start agent**. An automation
+is the exception: a persisted "when this, do that" object that fires on a clock,
+looks at what work exists, and either tells you what it found or does it.
+
+The intended shape of a morning: you open your laptop, Argus has already triaged
+the issues assigned to you, already implemented the two it was confident about,
+and is asking about the third.
+
+Automations live at **`/automations`**. What they want from you lands in the
+**Inbox** at **`/inbox`**.
+
+---
+
+## The pieces
+
+| Thing          | What it is                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| **Automation** | The persisted object: a trigger, a playbook, the projects it may look at, and how far it may go.      |
+| **Run**        | One firing. Each run gets its own session and its own agent, and produces a report.                   |
+| **Signal**     | Work the automation is handed before it starts thinking — assigned issues, PRs waiting on you.        |
+| **Proposal**   | One thing a run wants done. Either Argus starts it, or it waits for you in the Inbox.                 |
+| **Report**     | What the run found, rendered as a dashboard. Written by the run's agent, not scraped from its output. |
+
+A run is an ordinary Argus session with an ordinary agent in it — you can open
+it, read the transcript and talk to it like any other. It just has no worktree:
+it is a neutral directory, because the run orchestrates work rather than doing
+it. The work it starts happens in real worktree sessions, one per proposal.
+
+---
+
+## Triggers
+
+**Schedule** — a 5-field cron expression (`min hour dom mon dow`) interpreted in
+an IANA timezone you pick, so a seeded `07:30` means half past seven where you
+are, not in UTC.
+
+Two behaviours matter more than the cron itself:
+
+- **Missed fires coalesce.** A laptop closed over the weekend produces at most
+  one catch-up run, never one per missed slot. There is no backfill queue.
+  Catch-up is per-automation: a nightly regression sweep is stale by morning, so
+  it skips; a Monday dependency report is not, so it catches up.
+- **Runs never overlap.** A fire while the previous run of the same automation
+  is still going records a `skipped` run with the reason, and the schedule moves
+  on. Two agents in one place is not a thing to design for.
+
+**Manual** — no clock at all. It only runs when you press **Run now**, which
+every automation supports regardless of its trigger.
+
+---
+
+## The autonomy ladder
+
+How far a run may go on its own. Each rung strictly contains the one before it:
+
+| Rung             | What it may do                                                        |
+| ---------------- | --------------------------------------------------------------------- |
+| **Propose**      | Write proposals into the Inbox. Touches nothing else — not one file.  |
+| **Draft**        | Open a worktree, implement the change, commit — then stop.            |
+| **Pull request** | Also push the branch and open a draft PR.                             |
+| **Auto-merge**   | Also merge, once CI is green. Never a default; opt in per automation. |
+
+The effective level is the **lowest** of three: the app-wide default
+([App settings → Agents → Autonomy](./app-settings.md#autonomy)), the
+automation's own setting, and the project's ceiling
+([`.argus.json` → `automations`](./project-settings.md#automations--how-far-automations-may-go-here)).
+A repository can always ask for less than the app allows, and never for more.
+
+**The app default is Propose.** So is the floor a project drops to when it lists
+an automation as disabled.
+
+### The ladder is code, not instructions
+
+This is the part worth trusting. The rungs are not a paragraph in the playbook
+that the model could reinterpret — they are enforced in three places, all in
+Node:
+
+1. **The MCP layer.** A `propose` run that calls `create_session` or
+   `spawn_agent` directly is refused, told why, and pointed back at
+   `emit_proposal`. A playbook that explicitly instructs the agent to start work
+   anyway still produces a proposal that waits for you.
+2. **The shell.** Every agent Argus starts on an automation's behalf — the run's
+   own agent and each session it started — has its publishing commands checked
+   on the permission request itself. Below `pr`, `git push` and `gh pr create`
+   are denied outright, in any spelling, whatever the permission mode says.
+3. **The permission mode.** A `propose` run is started in plan mode, so the CLI
+   refuses edits before Argus is even asked.
+
+---
+
+## Guardrails
+
+Per-automation limits, applied to every proposal before it may start work:
+
+| Guardrail                 | Default | What it does                                                       |
+| ------------------------- | ------- | ------------------------------------------------------------------ |
+| `confidence_threshold`    | `0.8`   | A proposal the run is less sure about than this never auto-starts. |
+| `max_concurrent_sessions` | `2`     | Sessions this automation may have in flight at once.               |
+| `max_files_changed`       | `25`    | A branch touching more files than this cannot be pushed.           |
+| `max_cost_usd_per_run`    | `5`     | Ceiling on one run's spend.                                        |
+| `path_denylist`           | empty   | Globs no automation-started branch may touch, e.g. `["infra/**"]`. |
+| `require_clean_ci`        | `true`  | Gates auto-merge: CI must be green.                                |
+
+Two more caps live above the individual automation, in
+[App settings](./app-settings.md#autonomy): **concurrent automation sessions**
+across all of them (default 3), and a **daily spend budget** in USD (unset means
+no budget).
+
+A "session in flight" frees its slot when the session is **deleted**, not when
+its agent goes idle — the branch is still open, unreviewed and unmerged, and
+counting it as finished would let an automation stack up branches forever.
+
+Project-level guardrails are additive: a repo's `path_denylist` is added to the
+automation's, never substituted for it.
+
+### What happens when a limit is hit
+
+Nothing is killed mid-thought. A proposal that fails the gate lands as
+**pending** in the Inbox with the reason attached, and you can start it by hand.
+**Cost ceilings stop the next turn, not the current one** — a run that crosses
+its ceiling finishes what it is saying, records what it spent, and is marked
+failed with the reason; it does not lose its work.
+
+---
+
+## Signal sources
+
+What a run is handed before it starts thinking. Sources are per-automation, and
+one that is not configured drops out of the run rather than failing it.
+
+| Source                   | Mode   | Needs                          | Provides                                                       |
+| ------------------------ | ------ | ------------------------------ | -------------------------------------------------------------- |
+| **GitHub**               | native | `gh` logged in                 | Issues assigned to you, PRs requesting your review.            |
+| **GitHub pull requests** | native | `gh` logged in                 | Your open PRs, with CI state and comments since the last push. |
+| **Linear**               | agent  | A Linear MCP server configured | Your assigned issues, fetched by the agent itself.             |
+
+_Native_ sources are fetched by Argus and serialized into the run's prompt.
+_Agent_ sources hand the agent instructions and let it do the fetching. With
+`gh` logged out, a triage run reports an empty morning instead of failing.
+
+---
+
+## Proposals and the Inbox
+
+A run asks for work by calling `emit_proposal`: a title, a summary, a rationale,
+a self-reported confidence, the project it applies to, and what it thinks should
+happen (`start_session`, `review`, `needs_info` or `ignore`).
+
+Argus decides what happens next, synchronously, and the answer comes back in the
+tool result so the run can report what actually happened:
+
+- **Auto-started** — the rung allows it, confidence clears the threshold, a
+  session slot is free and the budget holds. Argus creates the worktree session
+  and prompts an agent with the proposal.
+- **Pending** — anything else. It waits in `/inbox` with the reason. You press
+  **Start** and get the same session you would have got, or **Dismiss** and the
+  reason is kept.
+
+The Inbox groups by what you would do about it, not by which automation produced
+it: proposals to decide on, work that was started and is waiting for review, and
+runs that failed.
+
+---
+
+## Reports
+
+A run's final assistant message is its report. Runs can do better than markdown
+by calling `emit_report` with structured blocks — stats, tables, lists, session
+references — which render as a dashboard rather than as prose. When both exist
+the blocks win.
+
+Reports are visible at `/automations/:automationId/runs/:runId`, along with the
+run's status, cost, duration and a link to its host session.
+
+---
+
+## Built-in templates
+
+Seven ship with Argus, seeded on first launch and then editable like anything
+else — the playbook is yours to rewrite.
+
+**Every one of them ships disabled.** An automation that spawns an agent
+unprompted has to be a deliberate choice, not something an update turns on, and
+that holds even for the read-only ones.
+
+| Template               | Default schedule  | Autonomy | What it does                                                                                                            |
+| ---------------------- | ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Standup digest**     | `09:00`, weekdays | Propose  | Read-only summary of what landed, what is in flight and what stalled across your projects.                              |
+| **Morning triage**     | `07:30`, weekdays | Propose  | Ranks assigned issues and review requests, one proposal each.                                                           |
+| **Take the easy ones** | `08:00`, weekdays | Draft    | Implements the assigned issues it is confident about in their own worktrees, stops at the commit.                       |
+| **PR shepherd**        | every 30 minutes  | Draft    | Red CI on your PRs goes back to the session that wrote the branch; new review comments get a reply drafted.             |
+| **Regression sweep**   | `02:00`, nightly  | Draft    | Boots each project on a simulator, runs its run commands and a conductor smoke flow, reports failures with screenshots. |
+| **Branch janitor**     | `03:00`, nightly  | Propose  | Proposes cleanup for merged worktrees, summarises stalled sessions. Never deletes anything itself.                      |
+| **Dependency watch**   | `09:00`, Mondays  | Propose  | What is behind, what actually changed in it, and which upgrades are worth a branch.                                     |
+
+Schedules are seeded in your machine's timezone. Branch janitor and dependency
+watch are pinned at Propose on purpose: deleting a worktree with unpushed work
+in it is not undoable, and no major version bump is ever as easy as it looks.
+
+---
+
+## The calibration loop
+
+Argus records how each proposal turned out — started and merged, started and
+abandoned, dismissed and why — and hands the next run of the same automation a
+short block of its own track record. An automation whose high-confidence
+proposals keep getting dismissed is told so, in its own prompt, before it ranks
+anything.
+
+This is what makes an automation not-a-cron: it gets told whether it was right.
+
+---
+
+## Where state lives
+
+All of it under your Argus home (`~/.argus`, or `~/.argus-server` for the
+[server app](./server-app.md) — the two never share):
+
+| File                                      | Contents                            |
+| ----------------------------------------- | ----------------------------------- |
+| `automations.json`                        | The automations themselves.         |
+| `automation-runs.json`                    | Run history, with reports.          |
+| `automation-runs/<automationId>/<runId>/` | One run's working directory.        |
+| `automation-proposals.json`               | Proposals, across every automation. |
+| `automation-outcomes.json`                | The calibration record.             |
+| `automation-sessions.json`                | Which sessions an automation owns.  |
+
+Deleting an automation cleans up its run directories. Run records survive a
+restart; so does the schedule — `next_run_at` is persisted, which is what makes
+catch-up possible at all.
+
+---
+
+## On a headless host
+
+Automations are the main reason to run
+[Argus Server](./server-app.md) on a Mac mini: a clock that only ticks when your
+laptop is open is not much of a clock.
+
+The scheduler starts with the app, before and independently of any window, and
+touches no renderer — every state change goes out on the host bus. So a headless
+server runs it unchanged, and the mini keeps triaging overnight.
+
+When you pair a desktop to that host as **admin** and switch to it
+([App settings → Hosts](./app-settings.md#hosts)), the automations you see are
+the _host's_. Creating one, editing a playbook, pressing Run now, watching a run
+progress live and starting a proposal from the Inbox all act on the machine that
+runs the clock, and its live events stream back to you. There is nothing to
+duplicate: your laptop is a window onto the mini's automations, not a second
+copy of them.
+
+Two things to know when the host is headless:
+
+- **Its automations are its own.** A server has its own `ARGUS_HOME`, so it has
+  its own automations, its own inbox and its own run history. Enabling something
+  on your laptop does not enable it on the mini.
+- **A huddle guest sees none of this.** Sharing an agent with someone hands them
+  that agent and nothing else — the automation surface is not reachable from a
+  scoped grant at all, and automation events are never forwarded to one.
+
+---
+
+## Turning it all off
+
+**App settings → Agents → Automations enabled** is the master switch for the
+clock. With it off, nothing fires on a schedule and every automation can still
+be run by hand. It is host state, so when you drive another Mac the switch
+belongs to that machine.
+
+Per project, `.argus.json` can name automations that must not act on that repo
+at all, or cap the whole repo at a lower rung. See
+[`automations` in Project settings](./project-settings.md#automations--how-far-automations-may-go-here).

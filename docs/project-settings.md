@@ -545,8 +545,9 @@ Valid ids: `device-recording`, `device-inspector`, `device-control`, `device-deb
 
 ## `automations` — how far automations may go here
 
-Argus automations run on a clock and can start work on their own. This block is
-how a repository caps that, and it is shared with the team.
+Argus automations run on a clock and can start work on their own — see
+[Automations](./automations.md). This block is how a repository caps that, and
+it is shared with the team.
 
 ```jsonc
 "automations": {

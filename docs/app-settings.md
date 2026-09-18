@@ -100,7 +100,8 @@ running with.
 themselves: with it off nothing fires on a clock, and every automation can
 still be run by hand. It is a host setting, so when you drive another Mac the
 switch belongs to that machine's automations. Automations shipped with Argus
-start disabled, so nothing ever runs until you turn one on.
+start disabled, so nothing ever runs until you turn one on. See
+[Automations](./automations.md) for what they are and what each rung permits.
 
 ### Autonomy
 

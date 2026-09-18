@@ -150,6 +150,11 @@ the same "pull then push" action it would locally.
 
 ## Unattended operation on a Mac mini
 
+A mini that stays awake is the machine to run [automations](./automations.md)
+on: the scheduler starts with the app, needs no window, and keeps triaging
+overnight while your laptop is shut. A paired desktop granted admin manages the
+server's automations as if they were its own.
+
 ### Auto-login is required
 
 CoreSimulator needs a logged-in Aqua session. `simctl boot` fails under a
