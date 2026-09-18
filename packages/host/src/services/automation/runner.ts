@@ -31,6 +31,7 @@ import {
   requireAutomation,
   updateRun,
 } from "./manager";
+import { calibrationBlock } from "./outcomes";
 
 /**
  * How long a run may take before it is abandoned. Nobody is watching an
@@ -205,6 +206,7 @@ function buildPrompt(
     "You are in a neutral working directory that is not a checkout of any of them. Read the projects at their absolute paths; never write to them.",
     ...autonomySection(automation, autonomy),
     ...signalSections(automation, signals),
+    ...(calibrationBlock(automation.id)?.split("\n") ?? []),
     "",
     "## Output",
     "",
@@ -262,10 +264,14 @@ function signalSections(
     "",
     "## Work items",
     "",
-    "These were fetched for you. Do not go looking for more.",
+    signals.instructions.length > 0
+      ? "These were fetched for you. The sections below name the sources you fetch yourself; beyond those two, do not go looking for more."
+      : "These were fetched for you. Do not go looking for more.",
     "",
     "```json",
-    serializeWorkItems(signals.items),
+    serializeWorkItems(signals.items, {
+      agentSources: signals.instructions.length > 0,
+    }),
     "```",
   ];
 
