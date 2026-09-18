@@ -99,6 +99,18 @@ html[data-theme="dark"] {
   --brand-purple-overlay-md: rgba(124, 92, 252, 0.12);
   --brand-purple-overlay-lg: rgba(124, 92, 252, 0.2);
 
+  /* ─── Chart palette ─── data-viz roles for SeriesChart / ReportView.
+     Aliases on purpose: each resolves against whichever theme block is
+     active, so a chart never reaches for --accent (or a raw colour) itself.
+     Reports carry one series at a time; a second hue would have to be
+     validated for CVD separation before it is added here. */
+  --chart-mark: var(--accent);
+  --chart-mark-hover: var(--accent-hover);
+  --chart-mark-soft: var(--accent-overlay-2xl);
+  --chart-grid: var(--border-subtle);
+  --chart-axis: var(--border);
+  --chart-label: var(--text-muted);
+
   /* ─── Git file status badges ─── solid-fill chips.
      Background uses the semantic palette so the badge reads identically
      across light/dark themes; foreground stays white for contrast on the
