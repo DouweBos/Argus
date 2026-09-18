@@ -521,6 +521,13 @@ export async function startAgent(
   });
 
   handle.on("stream-event", (line: string) => {
+    // A revoked token reaches us as an API error in the stream, not on stderr.
+    if (line.includes("authentication_error") || line.includes("api_key")) {
+      if (noteAuthFailure(accountId, line)) {
+        warn(`[agent:${agentId}] account ${accountId} needs re-authentication`);
+        emitAccountsChanged();
+      }
+    }
     onStreamLine(agentId, line);
     emitHostEvent(eventChannel, line);
   });

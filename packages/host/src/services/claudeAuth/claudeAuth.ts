@@ -133,7 +133,9 @@ function discardPendingAccount(): void {
   }
   const id = loginAccountId;
   loginAccountIsNew = false;
-  removeClaudeAccount(id)
+  // No logout: the account never authenticated, and revoking through the CLI
+  // would fall back to the shared store and kill a live login.
+  removeClaudeAccount(id, { logout: false })
     .then(emitAccountsChanged)
     .catch(() => {});
 }

@@ -64,6 +64,8 @@ describe("claude accounts", () => {
     });
 
     it("namespaces other accounts by directory", () => {
+      upsertClaudeAccount({ id: "abc" });
+
       expect(claudeAccountEnv("abc")).toEqual({
         [CREDENTIAL_ENV]: accountCredentialDir("abc"),
         [CONFIG_ENV]: accountConfigDir("abc"),
@@ -71,11 +73,17 @@ describe("claude accounts", () => {
     });
 
     it("gives the account its own .claude.json", () => {
+      upsertClaudeAccount({ id: "abc" });
       claudeAccountEnv("abc");
 
       expect(
         fs.existsSync(path.join(accountConfigDir("abc"), ".claude.json")),
       ).toBe(true);
+    });
+
+    it("falls back to the CLI's store for a removed account", () => {
+      expect(claudeAccountEnv("gone")).toEqual({});
+      expect(fs.existsSync(accountCredentialDir("gone"))).toBe(false);
     });
   });
 
@@ -101,6 +109,7 @@ describe("claude accounts", () => {
     });
 
     it("overwrites an inherited namespace for a pinned account", () => {
+      upsertClaudeAccount({ id: "abc" });
       const env = envForAccount("abc", { [CONFIG_ENV]: "/somewhere/else" });
 
       expect(env[CREDENTIAL_ENV]).toBe(accountCredentialDir("abc"));

@@ -196,7 +196,9 @@ function seedConfigJson(): string {
  * config. Empty for the default account, which uses the CLI's own stores.
  */
 export function claudeAccountEnv(id: string): Record<string, string> {
-  if (id === DEFAULT_ACCOUNT_ID) {
+  // An id we don't know is a removed account — pointing the CLI at its
+  // namespace would recreate an empty one and every run would 401.
+  if (id === DEFAULT_ACCOUNT_ID || !getClaudeAccount(id)) {
     return {};
   }
 
@@ -232,7 +234,7 @@ export function envForAccount(
  * failed run is the only signal that a re-login is needed.
  */
 const AUTH_FAILURE =
-  /OAuth (?:token|session) expired|could not be refreshed|Failed to authenticate|invalid_grant|authentication_error|Please run [`"]?\/login/i;
+  /OAuth (?:token|session) expired|(?:token|credentials) (?:has|have) been revoked|could not be refreshed|Failed to authenticate|invalid_grant|invalid_api_key|authentication_error|Could not resolve authentication method|Please run [`"]?\/login/i;
 
 /** Clear the flag once the account signs in again. */
 export function clearAuthFailure(id: string): void {
@@ -373,15 +375,23 @@ export async function syncAccountIdentity(
  * The default account is logged out but kept in the list — it represents the
  * CLI's own store, which always exists.
  */
-export async function removeClaudeAccount(id: string): Promise<void> {
-  try {
-    await execFileAsync(CLAUDE_BIN, ["auth", "logout"], {
-      timeout: 12_000,
-      env: envForAccount(id),
-    });
-  } catch (e) {
-    // Already logged out, or the CLI is missing — the entry still goes.
-    warn(`[claudeAccounts] logout for ${id} failed:`, e);
+export async function removeClaudeAccount(
+  id: string,
+  opts: { logout?: boolean } = {},
+): Promise<void> {
+  // `auth logout` revokes the token server-side. Skip it for an account that
+  // never authenticated — there is nothing of its own to revoke, and the CLI
+  // would fall back to the shared store and kill a live login instead.
+  if (opts.logout ?? true) {
+    try {
+      await execFileAsync(CLAUDE_BIN, ["auth", "logout"], {
+        timeout: 12_000,
+        env: envForAccount(id),
+      });
+    } catch (e) {
+      // Already logged out, or the CLI is missing — the entry still goes.
+      warn(`[claudeAccounts] logout for ${id} failed:`, e);
+    }
   }
 
   if (id !== DEFAULT_ACCOUNT_ID) {
