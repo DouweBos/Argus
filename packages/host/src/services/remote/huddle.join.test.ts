@@ -190,6 +190,7 @@ function agentFixture(agentId: string, sessionId: string) {
     createdAt: 0,
     lastEventAt: 0,
     toolUsesTotal: 0,
+    costUsd: 0,
     turnsCompleted: 0,
     handle: { initializeResponse: () => null },
   } as never;

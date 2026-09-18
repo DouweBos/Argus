@@ -85,6 +85,9 @@ export class ClaudeCodeRunner implements LlmRunner {
     if (nativeMode) {
       cliArgs.push("--permission-mode", nativeMode);
     }
+    if (args.disallowedTools && args.disallowedTools.length > 0) {
+      cliArgs.push("--disallowed-tools", ...args.disallowedTools);
+    }
     if (args.resumeRef) {
       cliArgs.push("--resume", args.resumeRef);
     }

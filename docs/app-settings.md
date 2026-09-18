@@ -69,8 +69,18 @@ files across accounts.
 | **Default permission mode**        | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
 | **Automations**                    | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
 | **Default autonomy**               | Propose | How far an automation may go when it does not set its own level.                                             |
-| **Concurrent automation sessions** | 3       | How many sessions automations may have running at once, across all of them.                                  |
+| **Concurrent automation sessions** | 3       | How many sessions automations may have open at once, across all of them.                                     |
 | **Daily automation budget**        | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                             |
+
+A session counts against the concurrency limit from the moment an automation
+creates it until it is merged or deleted — not until its agent stops. A branch
+waiting for you to review it is still work in flight.
+
+Once the day's automation spend reaches the daily budget, scheduled runs are
+skipped with the reason recorded, and no automation may start another session
+until tomorrow. Spend is counted per run, including the sessions a run started.
+Each automation also has its own per-run ceiling in its guardrails: a run that
+reaches it is stopped mid-flight.
 
 Permission modes:
 

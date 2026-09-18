@@ -34,6 +34,7 @@ import {
   ensureWebBrowserForAgent,
   emitMcpSystemMessage,
 } from "../agent/claude";
+import { forgetAutomationSession } from "../automation/ownedSessions";
 import { sendPushNotification } from "../notifications/push";
 import { createSession, deleteSession, listSessions } from "../session/manager";
 import {
@@ -60,7 +61,12 @@ import {
   stripAnsi,
   waitForTerminal,
 } from "../terminal/multiplexer";
-import { automationMergeBlock, automationWorkBlock } from "./automationGuards";
+import {
+  automationMergeBlock,
+  automationSessionToolBlock,
+  automationWorkBlock,
+  recordAutomationSessionForCaller,
+} from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
 import {
   isGitRepo,
@@ -722,6 +728,11 @@ export function createMcpServer(
         base_branch,
       );
 
+      // An automation's own session: it holds one of its concurrency slots
+      // until it is merged away, and the shell guard recognises it as the
+      // automation's.
+      recordAutomationSessionForCaller(callerAgentId, ws.id);
+
       // Notify the renderer so the sidebar updates immediately.
       emitHostEvent("session:created", {
         id: ws.id,
@@ -862,9 +873,22 @@ export function createMcpServer(
           isError: true,
         };
       }
+      const blocked = automationSessionToolBlock(
+        callerAgentId,
+        ws,
+        "delete_session",
+      );
+      if (blocked) {
+        return {
+          content: [{ type: "text" as const, text: blocked }],
+          isError: true,
+        };
+      }
+
       const wsId = ws.id;
       const wsName = ws.display_name ?? ws.branch;
       await deleteSession(wsId, delete_branch ?? false);
+      forgetAutomationSession(wsId);
 
       return {
         content: [
@@ -1143,6 +1167,7 @@ export function createMcpServer(
 
           // `createSession` already broadcasts `session:created`, so don't
           // re-emit here.
+          recordAutomationSessionForCaller(callerAgentId, ws.id);
 
           return { session: ws, spec };
         }),
@@ -2033,6 +2058,18 @@ export function createMcpServer(
         };
       }
 
+      const blocked = automationSessionToolBlock(
+        callerAgentId,
+        ws,
+        "trigger_run",
+      );
+      if (blocked) {
+        return {
+          content: [{ type: "text" as const, text: blocked }],
+          isError: true,
+        };
+      }
+
       try {
         const result = createRunTerminal(ws.id, title);
         // Boot the primary terminal plus every auto-spawned dependency so
@@ -2784,6 +2821,18 @@ export function createMcpServer(
           content: [
             { type: "text" as const, text: `Session not found: ${session}` },
           ],
+          isError: true,
+        };
+      }
+
+      const blocked = automationSessionToolBlock(
+        callerAgentId,
+        ws,
+        "write_session_file",
+      );
+      if (blocked) {
+        return {
+          content: [{ type: "text" as const, text: blocked }],
           isError: true,
         };
       }

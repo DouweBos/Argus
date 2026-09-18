@@ -63,6 +63,7 @@ function run(
     host_agent_id: null,
     cost_usd: null,
     report_markdown: null,
+    report_blocks: null,
     error: null,
   };
 }

@@ -709,6 +709,7 @@ describe("agent_status", () => {
       createdAt: 1_700_000_000_000,
       lastEventAt: 1_700_000_000_000,
       toolUsesTotal: 0,
+      costUsd: 0,
       lastToolUseAt: null,
       lastToolName: null,
       inflightPrompts: 0,

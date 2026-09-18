@@ -144,6 +144,11 @@ export interface AutoStartInput {
   activeTotal: number;
   /** App-wide cap on concurrent automation sessions. */
   maxTotalSessions: number;
+  /**
+   * Why spend forbids more work — the run's own ceiling or the daily budget.
+   * Null when there is room. Resolved by the caller from live spend.
+   */
+  costBlock?: string | null;
 }
 
 /**
@@ -180,6 +185,9 @@ export function evaluateAutoStart(input: AutoStartInput): GateDecision {
       allowed: false,
       reason: `this automation already has ${input.activeForAutomation} session(s) in flight (max ${input.guardrails.max_concurrent_sessions})`,
     };
+  }
+  if (input.costBlock) {
+    return { allowed: false, reason: input.costBlock };
   }
   if (input.activeTotal >= input.maxTotalSessions) {
     return {

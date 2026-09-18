@@ -14,6 +14,11 @@ import { appState } from "../../state";
 import { resolvePolicy } from "../automation/autonomy";
 import { evaluateMerge, atLeastAutonomy } from "../automation/guardrails";
 import { getAutomation } from "../automation/manager";
+import {
+  automationOwningSession,
+  recordAutomationSession,
+} from "../automation/ownedSessions";
+import { listProposals } from "../automation/proposals/manager";
 import { branchChecksClean } from "../github/checks";
 import { automationRunForAgent } from "./automationTools";
 
@@ -85,4 +90,59 @@ export async function automationMergeBlock(
 /** Session lookup by id for the automation-only tools. */
 export function sessionById(id: string): Session | null {
   return appState.sessions.get(id) ?? null;
+}
+
+/**
+ * Claim a session an automation host just created, so it counts against the
+ * automation's concurrency and is recognised as its own by the shell guard.
+ */
+export function recordAutomationSessionForCaller(
+  callerAgentId: string | null,
+  sessionId: string,
+): void {
+  const context = automationRunForAgent(callerAgentId);
+  if (!context) {
+    return;
+  }
+  recordAutomationSession(context.automationId, context.runId, sessionId);
+}
+
+/** Whether `sessionId` is one this automation started. */
+function ownsSession(automationId: string, sessionId: string): boolean {
+  if (automationOwningSession(sessionId)?.automation_id === automationId) {
+    return true;
+  }
+
+  return listProposals({ automationId, status: "auto_started" }).some(
+    (p) => p.session_id === sessionId,
+  );
+}
+
+/**
+ * Refusal text when an automation host reaches into a session with one of the
+ * tools that act on an existing one — `write_session_file`, `trigger_run`,
+ * `delete_session`. Two conditions, both of which `automationWorkBlock` alone
+ * would miss: the ladder (a `propose` run may not act at all) and ownership (a
+ * run may not edit, run or delete a session a human made).
+ */
+export function automationSessionToolBlock(
+  callerAgentId: string | null,
+  session: Session,
+  action: string,
+): string | null {
+  const resolved = callerPolicy(callerAgentId, session.repo_root);
+  if (!resolved) {
+    return null;
+  }
+  const ladder = automationWorkBlock(callerAgentId, session.repo_root);
+  if (ladder) {
+    return ladder;
+  }
+  const run = automationRunForAgent(callerAgentId);
+  const isOwnHost = run !== null && session.kind === "automation_host";
+  if (isOwnHost || ownsSession(resolved.automation.id, session.id)) {
+    return null;
+  }
+
+  return `Refused: ${action} targets session "${session.display_name || session.branch}", which this automation did not create. Automations may only act on their own sessions — emit a proposal if a human should touch this one.`;
 }

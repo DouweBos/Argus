@@ -32,6 +32,7 @@ import {
   updateRun,
 } from "./manager";
 import { calibrationBlock } from "./outcomes";
+import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
 
 /**
  * How long a run may take before it is abandoned. Nobody is watching an
@@ -39,6 +40,9 @@ import { calibrationBlock } from "./outcomes";
  * hostage forever.
  */
 const RUN_TIMEOUT_MS = 20 * 60 * 1000;
+
+/** How often a run's spend is compared against its ceiling. */
+const COST_POLL_MS = 15 * 1000;
 
 /**
  * A `propose` run never leaves plan mode, so the CLI itself blocks every
@@ -65,6 +69,18 @@ export function startAutomationRun(
       "skipped",
       triggerReason,
       "The previous run is still in progress.",
+    );
+  }
+
+  // The budget is a limit, not a report: a run that would exceed it does not
+  // happen at all.
+  const overBudget = dailyBudgetBlock();
+  if (overBudget) {
+    return createRun(
+      automationId,
+      "skipped",
+      triggerReason,
+      `Skipped — ${overBudget}.`,
     );
   }
 
@@ -116,6 +132,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   updateRun(runId, { host_session_id: session.id });
 
   const autonomy = resolveHostAutonomy(automation);
+  const guardrails = normalizeGuardrails(automation.guardrails);
   const permissionMode = permissionModeFor(autonomy);
 
   const agentInfo = await startAgent(
@@ -143,13 +160,33 @@ async function execute(automation: Automation, runId: string): Promise<void> {
 
   sendAgentMessage(agentInfo.agent_id, prompt);
 
+  const costWatch = watchRunCost(runId, guardrails.max_cost_usd_per_run, () =>
+    stopAgentQuietly(agentInfo.agent_id),
+  );
+
   let outcome: Awaited<ReturnType<typeof waitForAgent>>;
   try {
     outcome = await waitForAgent(agentInfo.agent_id, RUN_TIMEOUT_MS);
   } catch (e) {
+    clearInterval(costWatch);
     await stopAgentQuietly(agentInfo.agent_id);
     finish(runId, "failed", {
       error: typeof e === "string" ? e : String(e),
+      cost_usd: runSpendUsd(runId),
+    });
+
+    return;
+  }
+  clearInterval(costWatch);
+
+  const spent = runSpendUsd(runId);
+  const overRunBudget = runBudgetBlock(runId, guardrails.max_cost_usd_per_run);
+  if (overRunBudget) {
+    await stopAgentQuietly(agentInfo.agent_id);
+    finish(runId, "failed", {
+      cost_usd: spent,
+      report_markdown: outcome.result?.result ?? null,
+      error: `Stopped — ${overRunBudget}.`,
     });
 
     return;
@@ -158,7 +195,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   const result = outcome.result;
   const failed = outcome.status === "error" || result?.subtype === "error";
   finish(runId, failed ? "failed" : "succeeded", {
-    cost_usd: result?.total_cost_usd ?? null,
+    cost_usd: spent || (result?.total_cost_usd ?? null),
     report_markdown: result?.result ?? null,
     error: failed
       ? (result?.result ?? "The run's agent exited with an error.")
@@ -166,6 +203,28 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   });
 
   await stopAgentQuietly(agentInfo.agent_id);
+}
+
+/**
+ * Poll the run's spend while its agent works. The ceiling has to be enforced
+ * mid-flight: a fan-out's cost is only knowable as its children finish, and by
+ * the time the host's own turn ends the money is gone.
+ */
+function watchRunCost(
+  runId: string,
+  maxCostUsdPerRun: number,
+  stop: () => Promise<void>,
+): NodeJS.Timeout {
+  const timer = setInterval(() => {
+    if (!runBudgetBlock(runId, maxCostUsdPerRun)) {
+      return;
+    }
+    clearInterval(timer);
+    info(`automation run ${runId}: cost ceiling reached, stopping the agent`);
+    stop().catch(() => {});
+  }, COST_POLL_MS);
+
+  return timer;
 }
 
 async function stopAgentQuietly(agentId: string): Promise<void> {

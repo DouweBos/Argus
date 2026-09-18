@@ -15,6 +15,7 @@ import { evaluateAutoStart } from "./guardrails";
 import { getAutomation } from "./manager";
 import { acceptProposal } from "./proposals/accept";
 import { updateProposal } from "./proposals/manager";
+import { dailyBudgetBlock, runBudgetBlock } from "./spend";
 
 /** Decide whether a freshly emitted proposal may start its own session. */
 export function gateProposal(proposal: Proposal): GateDecision {
@@ -31,8 +32,12 @@ export function gateProposal(proposal: Proposal): GateDecision {
     };
   }
   const active = countActiveAutomationSessions(automation.id);
+  const costBlock =
+    dailyBudgetBlock() ??
+    runBudgetBlock(proposal.run_id, policy.guardrails.max_cost_usd_per_run);
 
   return evaluateAutoStart({
+    costBlock,
     recommendedAction: proposal.recommended_action,
     confidence: proposal.confidence,
     repoRoot: proposal.repo_root,

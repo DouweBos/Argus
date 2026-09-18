@@ -46,6 +46,10 @@ import { info, warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { argusHomeDir } from "../../lib/argusHome";
 import { appState } from "../../state";
+import {
+  automationDisallowedTools,
+  automationPermissionPreHook,
+} from "../automation/shellGuard";
 import { webBrowserPool } from "../browser/pool";
 import {
   envForAccount,
@@ -346,7 +350,16 @@ export async function startAgent(
 
   // Permission pre-hook: intercept can_use_tool for Bash to splice in a
   // simulator UDID when the agent runs `conductor` without --device.
+  // An agent Argus started on behalf of an automation is held to that
+  // automation's rung at the shell too — `git push` from Bash is the same act
+  // as `open_session_pr` over MCP, and only this sees it.
+  const automationGuard = automationPermissionPreHook(sessionId);
+
   const permissionPreHook: PermissionPreHook = (req) => {
+    const refused = automationGuard(req);
+    if (refused) {
+      return refused;
+    }
     if (req.toolName !== "Bash") {
       return null;
     }
@@ -436,6 +449,7 @@ export async function startAgent(
     debugLogPath,
     env,
     permissionPreHook,
+    disallowedTools: automationDisallowedTools(sessionId),
   });
 
   // Construct the AgentSession now so event handlers can mutate it. The
@@ -456,6 +470,7 @@ export async function startAgent(
     createdAt: previous?.createdAt ?? Date.now(),
     lastEventAt: Date.now(),
     toolUsesTotal: previous?.toolUsesTotal ?? 0,
+    costUsd: previous?.costUsd ?? 0,
     lastToolUseAt: previous?.lastToolUseAt ?? null,
     lastToolName: previous?.lastToolName ?? null,
     inflightPrompts: 0,
@@ -736,6 +751,7 @@ function onStreamLine(agentId: string, line: string): void {
           total_cost_usd: parsed.total_cost_usd ?? 0,
           duration_ms: parsed.duration_ms ?? 0,
         };
+        session.costUsd += parsed.total_cost_usd ?? 0;
         if (session.inflightPrompts > 0) {
           session.inflightPrompts -= 1;
         }
