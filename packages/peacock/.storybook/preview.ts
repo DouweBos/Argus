@@ -1,18 +1,21 @@
+import { withThemeByDataAttribute } from "@storybook/addon-themes";
 import type { Preview } from "@storybook/react";
 import "../src/styles/fonts.css";
 import "../src/styles/tokens.css";
 import "./preview.css";
 
 const preview: Preview = {
+  // Every story renders in both themes — the toolbar switch flips
+  // `data-theme` on <html>, which is exactly what the app does.
+  decorators: [
+    withThemeByDataAttribute({
+      themes: { dark: "dark", light: "light" },
+      defaultTheme: "dark",
+      attributeName: "data-theme",
+    }),
+  ],
   parameters: {
-    backgrounds: {
-      default: "argus",
-      values: [
-        { name: "argus", value: "#15151c" },
-        { name: "secondary", value: "#1c1c25" },
-        { name: "tertiary", value: "#252531" },
-      ],
-    },
+    backgrounds: { disable: true },
     layout: "centered",
     controls: {
       matchers: { color: /(background|color)$/i, date: /Date$/i },

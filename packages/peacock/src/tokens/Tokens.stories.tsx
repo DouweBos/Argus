@@ -146,6 +146,52 @@ export const Colors: Story = {
           />
         </div>
       </section>
+      <section>
+        <h3 className="eyebrow">Chart</h3>
+        <p
+          style={{
+            margin: "0 0 8px",
+            fontSize: 11,
+            color: "var(--text-muted)",
+          }}
+        >
+          Data-viz roles used by SeriesChart and ReportView. Aliases, so each
+          resolves against the active theme — charts never reach for a raw
+          colour or for --accent directly.
+        </p>
+        <div style={row}>
+          <Token
+            name="--chart-mark"
+            value="var(--accent)"
+            preview={<div style={swatch("var(--chart-mark)")} />}
+          />
+          <Token
+            name="--chart-mark-hover"
+            value="var(--accent-hover)"
+            preview={<div style={swatch("var(--chart-mark-hover)")} />}
+          />
+          <Token
+            name="--chart-mark-soft"
+            value="var(--accent-overlay-2xl)"
+            preview={<div style={swatch("var(--chart-mark-soft)")} />}
+          />
+          <Token
+            name="--chart-grid"
+            value="var(--border-subtle)"
+            preview={<div style={swatch("var(--chart-grid)")} />}
+          />
+          <Token
+            name="--chart-axis"
+            value="var(--border)"
+            preview={<div style={swatch("var(--chart-axis)")} />}
+          />
+          <Token
+            name="--chart-label"
+            value="var(--text-muted)"
+            preview={<div style={swatch("var(--chart-label)")} />}
+          />
+        </div>
+      </section>
     </div>
   ),
 };

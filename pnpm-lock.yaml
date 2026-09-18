@@ -338,6 +338,9 @@ importers:
 
   packages/peacock:
     dependencies:
+      '@argus/remote-protocol':
+        specifier: workspace:*
+        version: link:../remote-protocol
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
