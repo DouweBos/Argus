@@ -66,6 +66,7 @@ function automation(id: string, name: string): Automation {
     template_id: null,
     trigger: { kind: "manual" },
     scope: { repo_roots: [] },
+    source_ids: [],
     created_at: 0,
     updated_at: 0,
     last_run_at: null,

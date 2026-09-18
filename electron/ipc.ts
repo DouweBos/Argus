@@ -464,6 +464,7 @@ import {
   openPath,
   revealInFinder,
 } from "@argus/host/services/shell/operations";
+import { describeSignalSources } from "@argus/host/services/signals/registry";
 import {
   checkAndroidTools,
   listAndroidDevices,
@@ -1053,6 +1054,7 @@ export function registerIpcHandlers(): void {
   handle("automation_run_get", "admin", (a) =>
     getAutomationRun(a.runId as string),
   );
+  handle("signal_sources_list", "admin", () => describeSignalSources());
   // Proposals — what a run wants you to do. Remotable for the same reason the
   // automations are: the inbox belongs to whichever machine runs the clock.
   handle("proposals_list", "admin", (a) =>

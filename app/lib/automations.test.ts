@@ -69,6 +69,7 @@ describe("labels", () => {
           catch_up: false,
         },
         scope: { repo_roots: [] },
+        source_ids: [],
         created_at: 0,
         updated_at: 0,
         last_run_at: null,

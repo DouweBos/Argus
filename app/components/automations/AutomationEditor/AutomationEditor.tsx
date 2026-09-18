@@ -3,8 +3,9 @@ import type {
   Automation,
   AutomationGuardrails,
   AutomationTrigger,
+  SignalSourceInfo,
 } from "../../../lib/types";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   CronSchedulePreview,
@@ -21,12 +22,30 @@ import {
   localTimezone,
   nextFireTimes,
 } from "../../../lib/automations";
+import { listSignalSources } from "../../../lib/ipc";
 import { saveAutomation } from "../../../stores/automationStore";
 import { useSessionProjects } from "../../../stores/sessionStore";
 import styles from "./AutomationEditor.module.css";
 import { AutonomyFields } from "./AutonomyFields";
 
 const PREVIEW_COUNT = 5;
+
+/** Availability is a host question, so it is asked once per mount. */
+function useSignalSources(): SignalSourceInfo[] {
+  const [sources, setSources] = useState<SignalSourceInfo[]>([]);
+  useEffect(() => {
+    let live = true;
+    listSignalSources()
+      .then((list) => live && setSources(list))
+      .catch(() => undefined);
+
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return sources;
+}
 
 interface Draft {
   autonomy: AutonomyChoice;
@@ -39,6 +58,7 @@ interface Draft {
   name: string;
   playbook: string;
   repoRoots: string[];
+  sourceIds: string[];
   timezone: string;
 }
 
@@ -56,6 +76,7 @@ function toDraft(automation: Automation): Draft {
     timezone: schedule?.timezone ?? localTimezone(),
     catchUp: schedule?.catch_up ?? true,
     repoRoots: automation.scope.repo_roots,
+    sourceIds: automation.source_ids,
     autonomy: automation.autonomy ?? "inherit",
     guardrails: automation.guardrails,
   };
@@ -78,6 +99,7 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const projects = useSessionProjects();
+  const sources = useSignalSources();
 
   // Save is explicit, so the button only lights up once the form differs from
   // what the host holds.
@@ -110,6 +132,15 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
     }));
   }, []);
 
+  const toggleSource = useCallback((id: string) => {
+    setDraft((d) => ({
+      ...d,
+      sourceIds: d.sourceIds.includes(id)
+        ? d.sourceIds.filter((s) => s !== id)
+        : [...d.sourceIds, id],
+    }));
+  }, []);
+
   const save = async () => {
     setSaving(true);
     setError(null);
@@ -121,6 +152,7 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
         model: draft.model.trim() || null,
         trigger: toTrigger(draft),
         scope: { repo_roots: draft.repoRoots },
+        source_ids: draft.sourceIds,
         autonomy: draft.autonomy === "inherit" ? null : draft.autonomy,
         guardrails: draft.guardrails,
       });
@@ -237,6 +269,33 @@ export function AutomationEditor({ automation }: { automation: Automation }) {
                     onChange={() => toggleRepo(project.repoRoot)}
                   />
                   <span>{project.repoRoot}</span>
+                </label>
+              ))
+            )}
+          </div>
+        </FormField>
+
+        <FormField
+          label="Signal sources"
+          helper="Where the run's work items come from. Argus fetches native sources itself; an agent source is fetched by the run's own agent through its MCP tools."
+        >
+          <div className={styles.repos}>
+            {sources.length === 0 ? (
+              <span className={styles.noRepos}>No sources are available.</span>
+            ) : (
+              sources.map((source) => (
+                <label key={source.id} className={styles.source}>
+                  <input
+                    type="checkbox"
+                    checked={draft.sourceIds.includes(source.id)}
+                    onChange={() => toggleSource(source.id)}
+                  />
+                  <span>{source.label}</span>
+                  <span className={styles.sourceMode}>
+                    {source.available
+                      ? source.mode
+                      : `${source.mode} · not configured`}
+                  </span>
                 </label>
               ))
             )}

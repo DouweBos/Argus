@@ -21,6 +21,7 @@ import type {
   CreateAutomationInput,
   Proposal,
   ProposalStatus,
+  SignalSourceInfo,
   UpdateAutomationInput,
   BranchList,
   ClaudeAccountsState,
@@ -1542,6 +1543,10 @@ export const listAutomationRuns = (
 export const getAutomationRun = (
   runId: string,
 ): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
+
+/** The signal sources a run can be fed from, with availability resolved. */
+export const listSignalSources = (): Promise<SignalSourceInfo[]> =>
+  invoke("signal_sources_list");
 
 // Proposals — the inbox. Same host-state reasoning as the automations above.
 export const listProposals = (filter?: {

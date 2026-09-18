@@ -44,6 +44,21 @@
   cursor: pointer;
 }
 
+.source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.sourceMode {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
 .noRepos {
   font-size: 12px;
   color: var(--text-muted);
