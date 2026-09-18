@@ -751,6 +751,8 @@ export interface Automation {
   playbook: string;
   /** Projects the run may read. */
   scope: { repo_roots: string[] };
+  /** Signal sources feeding the run, by id. Empty = no signals. */
+  source_ids: string[];
   /** Built-in template this was seeded from. */
   template_id: string | null;
   trigger: AutomationTrigger;
@@ -786,6 +788,16 @@ export interface AutomationRun {
   trigger_reason: string;
 }
 
+/** A signal source a run can be fed from, as the editor lists them. */
+export interface SignalSourceInfo {
+  /** False when the source has nothing to answer with — no `gh`, no MCP. */
+  available: boolean;
+  id: string;
+  label: string;
+  /** `native` = Argus fetches it; `agent` = the run's agent fetches it. */
+  mode: "agent" | "native";
+}
+
 /** Fields accepted when creating an automation. */
 export interface CreateAutomationInput {
   autonomy?: AutonomyLevel | null;
@@ -796,6 +808,7 @@ export interface CreateAutomationInput {
   name: string;
   playbook: string;
   scope?: { repo_roots: string[] };
+  source_ids?: string[];
   template_id?: string | null;
   trigger: AutomationTrigger;
 }

@@ -10,8 +10,10 @@
 import type { SignalSource, WorkItem } from "./types";
 import { warn } from "@argus/host/logger";
 import { githubSource } from "./sources/github";
+import { githubPrsSource } from "./sources/githubPrs";
+import { linearSource } from "./sources/linear";
 
-const SOURCES: SignalSource[] = [githubSource];
+const SOURCES: SignalSource[] = [githubSource, githubPrsSource, linearSource];
 
 export function listSignalSources(): SignalSource[] {
   return [...SOURCES];
@@ -19,6 +21,30 @@ export function listSignalSources(): SignalSource[] {
 
 export function getSignalSource(id: string): SignalSource | null {
   return SOURCES.find((s) => s.id === id) ?? null;
+}
+
+/** One source as the automation editor shows it. */
+export interface SignalSourceInfo {
+  id: string;
+  label: string;
+  mode: SignalSource["mode"];
+  /** False when the source has nothing to answer with — no `gh`, no MCP. */
+  available: boolean;
+}
+
+/**
+ * Every source with its availability resolved, so the editor can say *why* a
+ * source is greyed out instead of letting a run discover it at 07:30.
+ */
+export async function describeSignalSources(): Promise<SignalSourceInfo[]> {
+  return Promise.all(
+    SOURCES.map(async ({ id, label, mode, isAvailable }) => ({
+      id,
+      label,
+      mode,
+      available: await isAvailable().catch(() => false),
+    })),
+  );
 }
 
 export interface GatheredSignals {
@@ -74,9 +100,14 @@ export async function gatherSignals(opts: {
 }
 
 /** The work items a run's agent sees, as the prompt renders them. */
-export function serializeWorkItems(items: WorkItem[]): string {
+export function serializeWorkItems(
+  items: WorkItem[],
+  { agentSources = false }: { agentSources?: boolean } = {},
+): string {
   if (items.length === 0) {
-    return "(no work items — say so in the report rather than inventing any)";
+    return agentSources
+      ? "(nothing was fetched natively — everything comes from the sources below)"
+      : "(no work items — say so in the report rather than inventing any)";
   }
 
   return JSON.stringify(items, null, 2);
