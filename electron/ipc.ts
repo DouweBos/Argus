@@ -84,6 +84,7 @@ import {
   setAutomationEnabled,
   updateAutomation,
 } from "@argus/host/services/automation/manager";
+import { calibrationFor } from "@argus/host/services/automation/outcomes";
 import { acceptProposal } from "@argus/host/services/automation/proposals/accept";
 import {
   dismissProposal,
@@ -1055,6 +1056,9 @@ export function registerIpcHandlers(): void {
     getAutomationRun(a.runId as string),
   );
   handle("signal_sources_list", "admin", () => describeSignalSources());
+  handle("automation_calibration", "admin", (a) =>
+    calibrationFor(a.automationId as string),
+  );
   // Proposals — what a run wants you to do. Remotable for the same reason the
   // automations are: the inbox belongs to whichever machine runs the clock.
   handle("proposals_list", "admin", (a) =>
