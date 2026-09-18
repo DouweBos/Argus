@@ -570,7 +570,9 @@ how a repository caps that, and it is shared with the team.
 
 Edit via **Project Settings → Automations**. The limits are enforced by Argus
 itself, not by the instructions an automation is handed — a playbook telling the
-agent to push anyway is refused at the tool call.
+agent to push anyway is refused at the tool call, and so is the agent running
+`git push` or `gh pr create` from a terminal in a session the automation
+started.
 
 ---
 

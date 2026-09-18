@@ -7,7 +7,6 @@
  */
 
 import type { Automation, AutomationGuardrails, AutonomyLevel } from "./models";
-import { appState } from "../../state";
 import { loadAppSettings } from "../appSettings/store";
 import { loadArgusConfig } from "../session/setup";
 import {
@@ -16,6 +15,7 @@ import {
   minAutonomy,
   normalizeGuardrails,
 } from "./guardrails";
+import { liveOwnedSessions } from "./ownedSessions";
 import { listProposals } from "./proposals/manager";
 
 /** App-wide cap on automation sessions running at once. */
@@ -116,30 +116,14 @@ export function resolveHostAutonomy(automation: Automation): AutonomyLevel {
 }
 
 /**
- * An auto-started proposal is "in flight" until its session is gone or its
- * agent has stopped. A proposal whose session has not been created yet counts
- * too, or two proposals emitted back to back would both take the last slot.
+ * What "in flight" means: a session the automation started that still exists.
+ *
+ * The agent going idle is not the end of the work — the branch is still open,
+ * unreviewed and unmerged, and counting it as finished would let an automation
+ * stack up branches forever without ever reaching `max_concurrent_sessions`.
+ * The slot frees when the session is deleted, which is what merging or
+ * abandoning it does.
  */
-function isInFlight(sessionId: string | null): boolean {
-  if (!sessionId) {
-    return true;
-  }
-  if (!appState.sessions.has(sessionId)) {
-    return false;
-  }
-  for (const agent of appState.agents.values()) {
-    if (agent.sessionId !== sessionId) {
-      continue;
-    }
-    if (agent.status !== "stopped" && agent.status !== "error") {
-      return true;
-    }
-  }
-
-  // The session exists but no agent has been attached yet — still coming up.
-  return ![...appState.agents.values()].some((a) => a.sessionId === sessionId);
-}
-
 export interface ActiveSessionCounts {
   forAutomation: number;
   total: number;
@@ -148,10 +132,16 @@ export interface ActiveSessionCounts {
 export function countActiveAutomationSessions(
   automationId: string,
 ): ActiveSessionCounts {
-  let forAutomation = 0;
-  let total = 0;
+  const live = liveOwnedSessions();
+  let forAutomation = live.filter(
+    (s) => s.automation_id === automationId,
+  ).length;
+  let total = live.length;
+
+  // A proposal that cleared the gate but whose session is still being created
+  // holds its slot too, or two proposals emitted back to back both take it.
   for (const proposal of listProposals({ status: "auto_started" })) {
-    if (!isInFlight(proposal.session_id)) {
+    if (proposal.session_id !== null) {
       continue;
     }
     total += 1;

@@ -72,6 +72,11 @@ export interface AgentSession {
    */
   toolUsesTotal: number;
   /**
+   * Cumulative USD spend across this agent's turns. `AgentResult` carries one
+   * turn; this is what an automation's cost ceiling is measured against.
+   */
+  costUsd: number;
+  /**
    * Unix ms timestamp of the most recent observed tool-use block, or null if
    * the agent has not made any tool calls yet. Reads better than
    * `lastEventAt` for "is this child making forward progress" because it

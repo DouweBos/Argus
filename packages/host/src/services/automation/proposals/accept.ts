@@ -16,6 +16,7 @@ import { appState } from "../../../state";
 import { sendAgentMessage, startAgent } from "../../agent/agentService";
 import { ensureRepoRegistered } from "../../mcp/projects";
 import { createSession } from "../../session/manager";
+import { recordAutomationSession } from "../ownedSessions";
 import { requireProposal, updateProposal } from "./manager";
 
 /** Setup pipelines can install dependencies, so give them room. */
@@ -58,6 +59,18 @@ export async function acceptProposal(
     { awaitWorktreeReady: true },
   );
   emitSessionCreated(session);
+
+  // Claim the session before its agent can run: the shell guard resolves the
+  // automation through this link, so a gap here is a window in which an
+  // auto-started agent is unconstrained.
+  if (status === "auto_started") {
+    recordAutomationSession(
+      proposal.automation_id,
+      proposal.run_id,
+      session.id,
+    );
+  }
+  updateProposal(proposal.id, { session_id: session.id });
 
   await waitForSessionReady(session.id);
 

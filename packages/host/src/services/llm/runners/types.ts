@@ -105,6 +105,11 @@ export interface LlmRunnerSpawnArgs {
    * {@link PermissionPreHook} doc.
    */
   permissionPreHook?: PermissionPreHook;
+  /**
+   * Tool patterns the runner must refuse outright, e.g. `Bash(git push:*)`.
+   * Enforced by the runner itself, ahead of any permission mode.
+   */
+  disallowedTools?: string[];
 }
 
 // ---------------------------------------------------------------------------
