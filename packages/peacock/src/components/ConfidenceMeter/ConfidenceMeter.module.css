@@ -1,0 +1,38 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bar {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.segment {
+  width: 10px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.empty {
+  background: var(--border);
+}
+
+.high {
+  background: var(--success);
+}
+
+.medium {
+  background: var(--warning);
+}
+
+.low {
+  background: var(--text-muted);
+}
+
+.label {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

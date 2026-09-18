@@ -17,6 +17,7 @@ import { useAgentsRecord } from "../../../stores/agentStore";
 import { useAutomations } from "../../../stores/automationStore";
 import { useHostConnections } from "../../../stores/connectionStore";
 import { useDevices } from "../../../stores/deviceStore";
+import { usePendingProposals } from "../../../stores/proposalStore";
 import {
   useAwaitingMyReviewCount,
   usePrList,
@@ -55,6 +56,7 @@ export function SessionSidebar() {
     (a) => a.status === "running",
   ).length;
   const automations = useAutomations();
+  const pendingProposals = usePendingProposals().length;
   const enabledAutomations = automations.filter((a) => a.enabled).length;
   const awaitingMyReviewCount = useAwaitingMyReviewCount();
   const prList = usePrList();
@@ -172,6 +174,13 @@ export function SessionSidebar() {
           count="—"
         >
           Home
+        </SidebarNavItem>
+        <SidebarNavItem
+          view="inbox"
+          leading={<Icons.EnvelopeIcon size={12} />}
+          count={pendingProposals}
+        >
+          Inbox
         </SidebarNavItem>
         <SidebarNavItem
           view="agents"

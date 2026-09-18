@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { DragLayer } from "@argus/peacock";
 import { AppShell } from "./components/layout/AppShell";
@@ -10,11 +11,17 @@ import { ImageViewer } from "./components/shared/ImageViewer/ImageViewer";
 import { UpdaterHost } from "./components/shared/Updater/UpdaterHost";
 import { useOnboarding } from "./hooks/useOnboarding";
 import { useTabRouteSync } from "./hooks/useTabRouteSync";
+import { applyLaunchRoute } from "./lib/launchRoute";
 import { useRegisterNavigator } from "./lib/router";
 
 function RouterGlue() {
   useRegisterNavigator();
   useTabRouteSync();
+  // After the tab restore above, so a saved route always wins over the
+  // preference.
+  useEffect(() => {
+    applyLaunchRoute().catch(() => undefined);
+  }, []);
 
   return <NavigationDeepLinkBridge />;
 }

@@ -25,6 +25,7 @@ const ROUTE_TITLES: Record<string, string> = {
   agents: "Agents",
   automations: "Automations",
   devices: "Devices",
+  inbox: "Inbox",
   runtimes: "Runtimes",
   "pull-requests": "Pull requests",
   notifications: "Notifications",

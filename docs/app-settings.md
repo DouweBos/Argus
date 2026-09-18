@@ -14,10 +14,11 @@ targets, related projects, …) see
 
 ## Appearance
 
-| Setting          | Default   | Description                                                                                                                  |
-| ---------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Theme**        | `system`  | `system`, `light`, or `dark`. `system` follows the OS appearance.                                                            |
-| **Display size** | `default` | One of `larger`, `large`, `default`, `small`, `smaller`. Scales the whole app — useful on very large or very small displays. |
+| Setting           | Default   | Description                                                                                                                                                                                                            |
+| ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Theme**         | `system`  | `system`, `light`, or `dark`. `system` follows the OS appearance.                                                                                                                                                      |
+| **Display size**  | `default` | One of `larger`, `large`, `default`, `small`, `smaller`. Scales the whole app — useful on very large or very small displays.                                                                                           |
+| **Launch screen** | `home`    | Which screen Argus opens on: **Home** (the project picker) or **Inbox** (what your automations want from you). A restored window tab still wins — the preference only applies when a window opens with no saved route. |
 
 ---
 

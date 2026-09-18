@@ -475,6 +475,16 @@ export interface LlmConfig {
  */
 export type SetupCopyEntry = string | { exclude?: string[]; path: string };
 
+/** The `automations` block of `.argus.json`. */
+export interface ProjectAutomationConfig {
+  /** Highest rung any automation may reach here. Never raises the app default. */
+  autonomy_ceiling?: AutonomyLevel;
+  /** Automation ids or template ids this repo opts out of entirely. */
+  disabled?: string[];
+  /** Globs no automation-started branch may touch. Added to the automation's own list. */
+  path_denylist?: string[];
+}
+
 export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
@@ -483,6 +493,8 @@ export interface ArgusConfig {
    * in the background. Set to 0 or omit to disable.
    */
   auto_fetch_minutes?: number;
+  /** How far Argus automations may go in this repo. Caps the app default. */
+  automations?: ProjectAutomationConfig;
   /** Custom browser device presets for the web browser panel. */
   browser_presets?: BrowserPresetConfig[];
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
@@ -620,13 +632,24 @@ export interface McpOAuthStatus {
 
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
+  /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
+  automation_daily_budget_usd?: number;
   /**
    * Master switch for the automation scheduler. Defaults to true; manual runs
    * work regardless.
    */
   automations_enabled?: boolean;
+  /**
+   * How far an automation may go when it does not set its own level. Ships as
+   * `propose`; a project can cap it lower, never higher.
+   */
+  default_autonomy?: AutonomyLevel;
   /** App-level default LLM picked in Settings, mirrored for the main process. */
   default_llm?: { model?: string | null; runner?: string | null };
+  /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
+  launch_route?: "home" | "inbox";
+  /** Auto-started automation sessions allowed at once. Defaults to 3. */
+  max_concurrent_automation_sessions?: number;
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: Record<string, Record<string, unknown>>;
   /**
@@ -683,11 +706,38 @@ export type AutomationTrigger =
 
 export type AutomationTriggerKind = AutomationTrigger["kind"];
 
+/** The autonomy ladder. Each rung contains the one before it. */
+export type AutonomyLevel =
+  | "auto_merge" // draft + push + open a PR + merge when CI is green
+  | "draft" // create the worktree, implement, commit — then stop
+  | "pr" // draft + push + open a draft PR
+  | "propose"; // write a proposal into the inbox; touch nothing
+
+/** The limits a run is held to, enforced in the host, not in the prompt. */
+export interface AutomationGuardrails {
+  /** 0..1. A proposal below this never auto-starts. */
+  confidence_threshold: number;
+  /** Auto-started sessions this automation may have in flight at once. */
+  max_concurrent_sessions: number;
+  /** Ceiling on a single run's spend. */
+  max_cost_usd_per_run: number;
+  /** A branch touching more files than this cannot be pushed. */
+  max_files_changed: number;
+  /** Globs no automation-started branch may touch. */
+  path_denylist: string[];
+  /** Gates `auto_merge`: CI must be green first. */
+  require_clean_ci: boolean;
+}
+
 /** A persisted "when X, do Y" object. */
 export interface Automation {
+  /** How far this automation may go. Null inherits the app-wide default. */
+  autonomy: AutonomyLevel | null;
   created_at: number;
   description: string;
   enabled: boolean;
+  /** The limits it is held to. */
+  guardrails: AutomationGuardrails;
   id: string;
   last_run_at: number | null;
   /** Model for the run's agent; null inherits the app default. */
@@ -734,8 +784,10 @@ export interface AutomationRun {
 
 /** Fields accepted when creating an automation. */
 export interface CreateAutomationInput {
+  autonomy?: AutonomyLevel | null;
   description?: string;
   enabled?: boolean;
+  guardrails?: Partial<AutomationGuardrails>;
   model?: string | null;
   name: string;
   playbook: string;

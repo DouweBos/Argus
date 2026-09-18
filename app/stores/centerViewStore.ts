@@ -12,6 +12,7 @@ export type CenterView =
   | "automations"
   | "devices"
   | "home"
+  | "inbox"
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"
