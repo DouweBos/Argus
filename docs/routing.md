@@ -25,6 +25,8 @@ switching tabs is a navigation, not a second source of truth. See
 | `/`                                             | Home / project picker              | Default route on launch (see `launch_route` in [App settings](./app-settings.md)).                                                                                                                                                                                                                                                                                                                                                |
 | `/agents`                                       | Agents overview                    | All agents across all sessions.                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `/automations`                                  | Automations                        | Every automation on the focused host: trigger, last run, next run, enable switch.                                                                                                                                                                                                                                                                                                                                                 |
+| `/automations/quick`                            | Quick run                          | Compose a one-off run — playbook and scope — and every ad-hoc run's history. No automation is created.                                                                                                                                                                                                                                                                                                                            |
+| `/automations/quick/runs/:runId`                | Quick run detail                   | One ad-hoc run: its report, and the button that turns it into a real automation.                                                                                                                                                                                                                                                                                                                                                  |
 | `/automations/:automationId`                    | Automation config + run history    | Name, playbook, trigger, model and the list of past runs.                                                                                                                                                                                                                                                                                                                                                                         |
 | `/automations/:automationId/runs/:runId`        | Automation run                     | Status, cost, duration, the run's markdown report and a link to its host session.                                                                                                                                                                                                                                                                                                                                                 |
 | `/devices`                                      | Devices                            | iOS simulators + Android emulators.                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -83,7 +85,8 @@ interface ParsedRoute {
     | null; // only meaningful when panel === "git"
   gitRefName: string | null; // set when gitView is "branches"/"tags" and a name segment follows
   automationId: string | null; // set on /automations/:automationId and below
-  automationRunId: string | null; // set on /automations/:automationId/runs/:runId
+  automationQuick: boolean; // true on /automations/quick and below
+  automationRunId: string | null; // set on either …/runs/:runId
   hostId: string; // "?host=" — the attached host this screen reads from; "local" for this Mac
 }
 ```
@@ -142,6 +145,8 @@ whichever reads best:
 | `openAutomations()`          | `/automations`                                              |
 | `openAutomation(id)`         | `/automations/{id}`                                         |
 | `openAutomationRun(id, run)` | `/automations/{id}/runs/{run}`                              |
+| `openQuickRuns()`            | `/automations/quick`                                        |
+| `openQuickRun(run)`          | `/automations/quick/runs/{run}`                             |
 | `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route)    |
 | `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                    |
 | `setFocusedHost(hostId)`     | `?host={hostId}` — points the view at another attached host |
