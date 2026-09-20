@@ -101,6 +101,27 @@ private func xcodeDevDir() -> String {
         ?? "/Applications/Xcode.app/Contents/Developer"
 }
 
+private var simKitPathCache: String?
+
+/// Resolve SimulatorKit.framework — Xcode 27 moved it from the developer dir's
+/// PrivateFrameworks into the app bundle's SharedFrameworks.
+private func simKitFrameworkPath() -> String {
+    if let cached = simKitPathCache { return cached }
+
+    let devDir = xcodeDevDir()
+    let candidates = [
+        devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit",
+        URL(fileURLWithPath: devDir)
+            .deletingLastPathComponent()
+            .appendingPathComponent("SharedFrameworks/SimulatorKit.framework/SimulatorKit")
+            .path,
+    ]
+    let resolved = candidates.first { FileManager.default.fileExists(atPath: $0) }
+        ?? candidates[0]
+    simKitPathCache = resolved
+    return resolved
+}
+
 // MARK: - Framework loading
 
 private var coreSimLoaded = false
@@ -133,8 +154,7 @@ private func ensureSimKitLoaded() -> Bool {
 
     ensureCoreSimLoaded()
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
     guard dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) != nil else {
         NSLog("[SimKit] Failed to load SimulatorKit from %@", simKitPath)
         simKitOk = false
@@ -151,8 +171,7 @@ private func ensureIndigoLoaded() -> Bool {
 
     guard ensureSimKitLoaded() else { return false }
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
 
     guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
         NSLog("[IndigoHID] Failed to load SimulatorKit from %@", simKitPath)
@@ -174,8 +193,7 @@ private func ensureIndigoKeyboardLoaded() -> Bool {
 
     guard ensureSimKitLoaded() else { return false }
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
 
     guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
         NSLog("[IndigoHID] Failed to load SimulatorKit for keyboard")
@@ -197,8 +215,7 @@ private func ensureIndigoButtonLoaded() -> Bool {
 
     guard ensureSimKitLoaded() else { return false }
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
 
     guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
         NSLog("[IndigoHID] Failed to load SimulatorKit for button")
