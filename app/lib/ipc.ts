@@ -1694,6 +1694,15 @@ export const huddleSetDevice = (
 export const huddleStop = (roomId: string): Promise<boolean> =>
   invoke("huddle_stop", { roomId });
 
+/**
+ * Take a guest out of the room: grant revoked, socket dropped, row gone. Unlike
+ * denying, it leaves no "turned away" row and they may ask to come back in.
+ */
+export const huddleRemoveGuest = (
+  roomId: string,
+  devStaticPub: string,
+): Promise<boolean> => invoke("huddle_remove_guest", { roomId, devStaticPub });
+
 /** Every live room. Rooms are in memory, so this is empty after a restart. */
 export const huddleList = (): Promise<HuddleRoom[]> =>
   invoke("huddle_list", {});

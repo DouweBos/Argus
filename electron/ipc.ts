@@ -248,6 +248,7 @@ import {
   approveGuest as approveHuddleGuest,
   denyGuest as denyHuddleGuest,
   listRooms as listHuddleRooms,
+  removeGuest as removeHuddleGuest,
   setHuddleDevice,
   startHuddle,
   stopHuddle,
@@ -1207,6 +1208,9 @@ export function registerIpcHandlers(): void {
   );
   handle("huddle_deny_guest", "host", (a) =>
     denyHuddleGuest(a.roomId as string, a.devStaticPub as string),
+  );
+  handle("huddle_remove_guest", "host", (a) =>
+    removeHuddleGuest(a.roomId as string, a.devStaticPub as string),
   );
   // Push status to the renderer whenever the tunnel state changes (e.g. a quick
   // tunnel finishing startup and revealing its URL).

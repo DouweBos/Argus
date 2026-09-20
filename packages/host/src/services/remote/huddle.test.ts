@@ -26,6 +26,7 @@ const {
   leaveGuest,
   listRooms,
   refreshDriving,
+  removeGuest,
   resetRooms,
   setRoomDevice,
   setRoomEndedListener,
@@ -507,6 +508,35 @@ describe("a guest who closes the tab and comes back", () => {
     joinRoom(r.token, "pub-2", "Douwe", link(), "client-b");
 
     expect(getRoom(r.id)!.guests).toHaveLength(2);
+  });
+});
+
+describe("removing a guest", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  it("takes the row out and drops their socket", () => {
+    const r = room();
+    const l = link();
+    joinRoom(r.token, "pub-1", "Douwe", l, "client-a");
+    approveGuest(r.id, "pub-1");
+
+    expect(removeGuest(r.id, "pub-1")).toBe(true);
+
+    expect(getRoom(r.id)!.guests).toEqual([]);
+    expect(l.revoke).toHaveBeenCalled();
+  });
+
+  it("leaves no tombstone, so they may ask to come back", () => {
+    const r = room();
+    joinRoom(r.token, "pub-1", "Douwe", link(), "client-a");
+    approveGuest(r.id, "pub-1");
+    removeGuest(r.id, "pub-1");
+
+    const outcome = joinRoom(r.token, "pub-3", "Douwe", link(), "client-a");
+
+    expect(outcome).toMatchObject({ ok: true });
+    expect(getRoom(r.id)!.guests[0].state).toBe("pending");
   });
 });
 

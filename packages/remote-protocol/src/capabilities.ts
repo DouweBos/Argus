@@ -72,6 +72,7 @@ export const HOST_ONLY_COMMANDS = new Set([
   "huddle_list",
   "huddle_approve_guest",
   "huddle_deny_guest",
+  "huddle_remove_guest",
 ]);
 
 /** Every request method the remote client may send, and the grant it needs. */
