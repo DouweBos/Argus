@@ -11,6 +11,7 @@ import type { HostId } from "../lib/transport/hostId";
 import type { Automation, AutomationRun } from "../lib/types";
 import { useEffect } from "react";
 import { create } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { useIpcEvent } from "../hooks/useIpcEvent";
 import {
   cancelAutomationRun as cancelAutomationRunIpc,
@@ -140,8 +141,12 @@ export const useAutomationRun = (runId: string | null): AutomationRun | null =>
 
 /** Every run of one automation, newest first. */
 export const useAutomationRuns = (automationId: string | null) =>
-  store((s) =>
-    automationId ? s.runs.filter((r) => r.automation_id === automationId) : [],
+  store(
+    useShallow((s) =>
+      automationId
+        ? s.runs.filter((r) => r.automation_id === automationId)
+        : [],
+    ),
   );
 
 /**
@@ -149,7 +154,7 @@ export const useAutomationRuns = (automationId: string | null) =>
  * picked out of the same cache by the spec they carry.
  */
 export const useScratchRuns = (): AutomationRun[] =>
-  store((s) => s.runs.filter((r) => r.scratch !== null));
+  store(useShallow((s) => s.runs.filter((r) => r.scratch !== null)));
 
 /** Every cached run, newest first — the inbox needs them across automations. */
 export const useAllRuns = (): AutomationRun[] => store((s) => s.runs);

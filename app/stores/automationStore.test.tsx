@@ -52,8 +52,10 @@ vi.mock("../lib/routeHooks", () => ({ useRouteHostId: () => "local" }));
 const {
   getAutomationState,
   setAutomationState,
+  useAutomationRuns,
   useAutomationsSync,
   useHasActiveRun,
+  useScratchRuns,
 } = await import("./automationStore");
 
 function automation(id: string, name: string): Automation {
@@ -173,5 +175,27 @@ describe("automation store", () => {
 
     act(() => emit("automation_run:changed", run("r-1", "succeeded")));
     expect(result.current).toBe(false);
+  });
+
+  // The filtering selectors build a new array per call, so without a shallow
+  // compare every snapshot looks changed and React loops until it bails out
+  // with "Maximum update depth exceeded".
+  it("keeps filtered run lists referentially stable across re-renders", () => {
+    setAutomationState({
+      automations: [],
+      runs: [run("r-1", "succeeded")],
+      loading: false,
+      error: null,
+    });
+
+    const runs = renderHook(() => useAutomationRuns("a-1"));
+    const first = runs.result.current;
+    runs.rerender();
+    expect(runs.result.current).toBe(first);
+
+    const scratch = renderHook(() => useScratchRuns());
+    const firstScratch = scratch.result.current;
+    scratch.rerender();
+    expect(scratch.result.current).toBe(firstScratch);
   });
 });
