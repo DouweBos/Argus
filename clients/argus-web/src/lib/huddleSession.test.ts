@@ -47,7 +47,7 @@ describe("joining a huddle", () => {
       state: "pending",
       roomId: "room-1",
       agentId: null,
-      deviceKey: null,
+      deviceKey: null, members: [], you: null
     });
   });
 
@@ -66,7 +66,7 @@ describe("joining a huddle", () => {
       state: "approved",
       roomId: "room-1",
       agentId: "ag1",
-      deviceKey: "udid-1",
+      deviceKey: "udid-1", members: [], you: null
     });
     expect(huddleCapabilities(view.state)).toEqual(["monitor", "control"]);
   });
@@ -118,7 +118,7 @@ describe("what a guest is offered", () => {
     state: "approved",
     roomId: "room-1",
     agentId: "ag1",
-    deviceKey: "udid-1",
+    deviceKey: "udid-1", members: [], you: null
   };
 
   it("offers one agent and one device, and nothing else", () => {
@@ -126,11 +126,11 @@ describe("what a guest is offered", () => {
   });
 
   it("drops the device pane when the room has no device", () => {
-    expect(huddlePanes({ ...approved, deviceKey: "" })).toEqual(["agent"]);
+    expect(huddlePanes({ ...approved, deviceKey: "", members: [], you: null })).toEqual(["agent"]);
   });
 
   it("drops the device pane for an embedded browser it cannot render", () => {
-    expect(huddlePanes({ ...approved, deviceKey: "browser:s1" })).toEqual([
+    expect(huddlePanes({ ...approved, deviceKey: "browser:s1", members: [], you: null })).toEqual([
       "agent",
     ]);
   });

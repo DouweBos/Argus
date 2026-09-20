@@ -257,6 +257,9 @@ describe("joining a huddle", () => {
       state: "pending",
       agent_id: null,
       device_key: null,
+      // Not even who else is in the room — that's the host's to announce.
+      members: [],
+      you: null,
     });
 
     for (const [method, params] of SCOPED_CALLS) {

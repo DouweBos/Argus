@@ -8,7 +8,7 @@
  * room id and nothing else, and holds no capabilities, so it must offer nothing.
  */
 
-import type { HuddleStatePayload } from "./protocol";
+import type { HuddleMember, HuddleStatePayload } from "./protocol";
 
 /**
  * Where the guest stands. `connecting` covers the socket and the join round
@@ -19,6 +19,7 @@ export type HuddleState =
   | "connecting"
   | "denied"
   | "ended"
+  | "left"
   | "pending"
   | "unavailable";
 
@@ -29,6 +30,10 @@ export interface HuddleView {
   agentId: string | null;
   /** The one device this guest may drive; null until approved. */
   deviceKey: string | null;
+  /** Everyone else the host has let in. Empty until we are approved. */
+  members: HuddleMember[];
+  /** Our own `member_id`, so the list can mark which row is us. */
+  you: string | null;
 }
 
 export const INITIAL_HUDDLE_VIEW: HuddleView = {
@@ -36,6 +41,8 @@ export const INITIAL_HUDDLE_VIEW: HuddleView = {
   roomId: null,
   agentId: null,
   deviceKey: null,
+  members: [],
+  you: null,
 };
 
 /** What the host can tell us, folded into our view. */
@@ -45,6 +52,8 @@ export function applyHuddleState(payload: HuddleStatePayload): HuddleView {
     roomId: payload.room_id,
     agentId: payload.agent_id,
     deviceKey: payload.device_key,
+    members: payload.members ?? [],
+    you: payload.you ?? null,
   };
 }
 

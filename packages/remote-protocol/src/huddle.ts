@@ -51,14 +51,35 @@ export const HuddleJoinParams = z.object({
 export type HuddleJoinParams = z.infer<typeof HuddleJoinParams>;
 
 /**
- * The guest's own view of where it stands. `agent_id`/`device_key` stay null
- * until approval — a pending guest is not told what it is waiting for.
+ * One other person in the room, as a guest sees them. Deliberately thin: a
+ * display name and whether they are here right now. Never the key they
+ * handshook with or the browser id they presented — a guest has no business
+ * identifying another guest's hardware.
+ */
+export const HuddleMember = z.object({
+  /** Opaque per-room id, stable across the member reopening the link. */
+  member_id: z.string(),
+  label: z.string(),
+  connected: z.boolean(),
+  /** They hold the device claim. At most one member ever does. */
+  driving: z.boolean().default(false),
+});
+export type HuddleMember = z.infer<typeof HuddleMember>;
+
+/**
+ * The guest's own view of where it stands. `agent_id`/`device_key`/`members`
+ * stay empty until approval — a pending guest is not told what it is waiting
+ * for, nor who else is already inside.
  */
 export const HuddleStatePayload = z.object({
   room_id: z.string(),
   state: HuddleConnectionState,
   agent_id: z.string().nullable(),
   device_key: z.string().nullable(),
+  /** Everyone the host has let in. Empty for anyone not approved themselves. */
+  members: z.array(HuddleMember).default([]),
+  /** Which of `members` is the recipient, so a client can mark "you". */
+  you: z.string().nullable().default(null),
 });
 export type HuddleStatePayload = z.infer<typeof HuddleStatePayload>;
 

@@ -8,6 +8,7 @@
  */
 
 import type { HuddleRoom } from "@argus/remote-protocol";
+import { setClaimChangedListener } from "./deviceClaims";
 import {
   approveGuest,
   createRoom,
@@ -16,6 +17,7 @@ import {
   endRoom,
   getRoom,
   listRooms,
+  refreshDriving,
   setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
@@ -39,6 +41,8 @@ export function setHuddleDevice(roomId: string, deviceKey: string): boolean {
  */
 function releaseOnEnd(): void {
   setRoomEndedListener(() => releasePublicUrl());
+  // Single-slot too, so re-registering on every share stays idempotent.
+  setClaimChangedListener((deviceId) => refreshDriving(deviceId));
 }
 
 export interface StartHuddleOpts {

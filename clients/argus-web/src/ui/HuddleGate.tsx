@@ -45,6 +45,23 @@ export function HuddleGate({
     );
   }
 
+  if (state === "left") {
+    return (
+      <Shell>
+        <EmptyState
+          icon={<Icons.GuestsIcon size={22} />}
+          title="You left the huddle"
+          body="Nothing is being shared with you any more. The host has to let you back in."
+          action={
+            <Button variant="primary" onClick={() => onJoin(defaultLabel)}>
+              Ask to rejoin
+            </Button>
+          }
+        />
+      </Shell>
+    );
+  }
+
   if (state === "ended") {
     return (
       <Shell>

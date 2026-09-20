@@ -565,6 +565,7 @@ export class DeviceConnection implements DeviceMediaController {
       guest.devStaticPub,
       parsed.data.label ?? "Guest",
       {
+        connectionId: this.connectionId,
         grant: (scope) => this.applyGuestGrant(scope),
         revoke: () => this.revokeGuestGrant(),
         notify: (payload) => this.pushHuddleState(payload),

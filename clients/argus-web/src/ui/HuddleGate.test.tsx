@@ -36,6 +36,15 @@ describe("the huddle gate", () => {
     expect(screen.queryByText("the huddle")).toBeNull();
   });
 
+  it("offers a way back in after the guest leaves on purpose", () => {
+    const onJoin = vi.fn();
+    gate({ state: "left", defaultLabel: "Sam", onJoin });
+
+    expect(screen.getByText("You left the huddle")).toBeTruthy();
+    screen.getByRole("button", { name: "Ask to rejoin" }).click();
+    expect(onJoin).toHaveBeenCalledWith("Sam");
+  });
+
   it("distinguishes the huddle ending from a dead link", () => {
     gate({ state: "ended" });
 
