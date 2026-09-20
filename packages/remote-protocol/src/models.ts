@@ -402,3 +402,67 @@ export const RemoteEndpoint = z.object({
   priority: z.number().int().nonnegative(),
 });
 export type RemoteEndpoint = z.infer<typeof RemoteEndpoint>;
+
+// --- Automations -----------------------------------------------------------
+
+/**
+ * An automation, as a client that only views and fires them needs it.
+ *
+ * Deliberately not the whole `Automation`: the playbook, guardrails and signal
+ * sources are what you edit, and editing one from a phone is not a thing. A
+ * client that wants the full object is another desktop, and it rides the admin
+ * passthrough instead.
+ */
+export const RemoteAutomation = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  trigger_kind: z.enum(["manual", "schedule"]),
+  /** 5-field cron and its IANA zone — only for `schedule`. */
+  cron: z.string().nullable(),
+  timezone: z.string().nullable(),
+  /** The rung it runs at, or null when it inherits the host's default. */
+  autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  /** Project names it may look at — paths mean nothing on a phone. */
+  projects: z.array(z.string()),
+  last_run_at: z.number().nullable(),
+  next_run_at: z.number().nullable(),
+  /** Whether a run of this automation is in flight right now. */
+  running: z.boolean(),
+});
+export type RemoteAutomation = z.infer<typeof RemoteAutomation>;
+
+export const RemoteAutomationRunStatus = z.enum([
+  "cancelled",
+  "failed",
+  "queued",
+  "running",
+  "skipped",
+  "succeeded",
+]);
+export type RemoteAutomationRunStatus = z.infer<
+  typeof RemoteAutomationRunStatus
+>;
+
+/**
+ * One firing. `automation_name` is resolved host-side — a quick run has no
+ * automation to join against, and the client should not have to know that.
+ */
+export const RemoteAutomationRun = z.object({
+  id: z.string(),
+  automation_id: z.string(),
+  automation_name: z.string(),
+  /** True for an ad-hoc run: nothing is persisted behind it. */
+  is_quick: z.boolean(),
+  status: RemoteAutomationRunStatus,
+  trigger_reason: z.string(),
+  started_at: z.number(),
+  finished_at: z.number().nullable(),
+  cost_usd: z.number().nullable(),
+  error: z.string().nullable(),
+  /** The run's own session, so a client can open the agent that did the work. */
+  host_session_id: z.string().nullable(),
+  host_agent_id: z.string().nullable(),
+});
+export type RemoteAutomationRun = z.infer<typeof RemoteAutomationRun>;

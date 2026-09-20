@@ -166,6 +166,14 @@ export const REMOTE_METHODS = {
   "devices.touch": "control",
   "devices.button": "control",
   "devices.keyboard": "control",
+  /** Automations and their runs. The clock belongs to the host, so a phone
+   *  reads the host's automations; firing one starts an agent, hence control. */
+  "automations.list": "monitor",
+  "automations.runs": "monitor",
+  /** One run with its report — the list omits it because reports are large. */
+  "automations.run": "monitor",
+  "automations.run_now": "control",
+  "automations.cancel_run": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
 } as const satisfies Record<string, Capability>;

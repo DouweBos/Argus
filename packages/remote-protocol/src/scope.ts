@@ -125,6 +125,14 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "devices.button": device(),
   "devices.keyboard": device(),
 
+  // Automations are the host's own surface, not an agent's. A huddle guest is
+  // handed one agent and nothing else — least of all the clock behind it.
+  "automations.list": DENIED,
+  "automations.runs": DENIED,
+  "automations.run": DENIED,
+  "automations.run_now": DENIED,
+  "automations.cancel_run": DENIED,
+
   // Browser streams share the claim table under a `browser:` prefix, so the
   // session id has to be namespaced before it is matched against device_keys.
   "browser.watch": browser(),
