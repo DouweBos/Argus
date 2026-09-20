@@ -171,6 +171,8 @@ export const RemoteMessage = z.object({
   /** Image attachments carried by the message (user/MCP), as references. */
   images: z.array(RemoteImageRef).optional(),
   source: RemoteMessageSource.optional(),
+  /** Who sent a user message, when it came from a remote client or huddle guest. */
+  author: z.string().optional(),
   is_error: z.boolean().optional(),
   timestamp: z.number().optional(),
   /** Token usage (assistant turns only) — drives the context-window meter. */

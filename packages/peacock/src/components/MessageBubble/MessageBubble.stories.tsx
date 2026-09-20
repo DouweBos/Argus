@@ -17,6 +17,16 @@ export const User: Story = {
   },
 };
 
+/** A message a huddle guest sent, attributed so the room knows who spoke. */
+export const UserFromGuest: Story = {
+  args: {
+    role: "user",
+    author: "Sam Rivera",
+    timestamp: Date.parse("2026-07-12T10:00:30Z"),
+    textBlocks: ["Try tapping the second tab — it crashes for me."],
+  },
+};
+
 export const Assistant: Story = {
   args: {
     role: "assistant",

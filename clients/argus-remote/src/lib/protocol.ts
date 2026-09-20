@@ -261,6 +261,8 @@ export interface RemoteMessage {
   tool_calls: RemoteToolCall[];
   images?: RemoteImageRef[];
   source?: RemoteMessageSource;
+  /** Who sent a user message, when a huddle guest rather than the host did. */
+  author?: string;
   is_error?: boolean;
   timestamp?: number;
   usage?: RemoteTokenUsage;
