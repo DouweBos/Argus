@@ -24,6 +24,7 @@ import type {
   Proposal,
   ProposalStatus,
   SignalSourceInfo,
+  StartScratchRunInput,
   UpdateAutomationInput,
   BranchList,
   ClaudeAccountsState,
@@ -1545,6 +1546,24 @@ export const listAutomationRuns = (
 export const getAutomationRun = (
   runId: string,
 ): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
+
+/**
+ * Run a playbook once, against these repos, with nothing saved. Resolves as
+ * soon as the run record exists — no automation is created by this.
+ */
+export const startScratchRun = (
+  input: StartScratchRunInput,
+): Promise<AutomationRun> => invoke("automation_run_scratch", { input });
+
+/** Turn an ad-hoc run into a real automation, prefilled with what it ran. */
+export const saveScratchRunAsAutomation = (
+  runId: string,
+  name?: string,
+): Promise<Automation> => invoke("automation_scratch_save", { runId, name });
+
+/** Every ad-hoc run on the focused host, newest first. */
+export const listScratchRuns = (): Promise<AutomationRun[]> =>
+  invoke("automation_scratch_runs_list", {});
 
 /** How an automation's proposals have turned out. Drives the acceptance rate. */
 export const getAutomationCalibration = (

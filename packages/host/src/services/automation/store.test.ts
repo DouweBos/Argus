@@ -55,6 +55,7 @@ function run(
   return {
     id,
     automation_id: automationId,
+    scratch: null,
     status: "succeeded",
     trigger_reason: "manual",
     started_at: startedAt,

@@ -12,6 +12,7 @@ import type {
   AutomationRun,
   CreateAutomationInput,
   RunStatus,
+  ScratchSpec,
   UpdateAutomationInput,
 } from "./models";
 import crypto from "node:crypto";
@@ -174,8 +175,49 @@ export function listAutomations(): Automation[] {
 
 export function getAutomation(id: string): Automation | null {
   const found = automationCache().find((a) => a.id === id);
+  if (found) {
+    return { ...found };
+  }
 
-  return found ? { ...found } : null;
+  // An ad-hoc run is backed by no persisted automation, so its policy is
+  // resolved from a synthetic one rebuilt from the run record. Doing it here
+  // means the gate, the shell guard and the MCP guards all see an ad-hoc run
+  // as exactly what it is — an automation with no autonomy of its own, which
+  // therefore inherits the app default and is floored by the project ceiling.
+  const scratchRun = runCache().find(
+    (r) => r.automation_id === id && r.scratch !== null,
+  );
+
+  return scratchRun ? scratchAutomationForRun(scratchRun) : null;
+}
+
+/** The synthetic, never-persisted automation an ad-hoc run runs as. */
+export function scratchAutomationForRun(run: AutomationRun): Automation | null {
+  const spec = run.scratch;
+  if (!spec) {
+    return null;
+  }
+
+  return {
+    id: run.automation_id,
+    name: spec.name,
+    description: "",
+    enabled: false,
+    trigger: { kind: "manual" },
+    scope: { repo_roots: [...spec.scope.repo_roots] },
+    source_ids: [...spec.source_ids],
+    playbook: spec.playbook,
+    // Never a level of its own: an ad-hoc run must not be a way to ask for a
+    // higher rung than the app default allows.
+    autonomy: null,
+    guardrails: normalizeGuardrails(spec.guardrails),
+    model: spec.model,
+    template_id: null,
+    created_at: run.started_at,
+    updated_at: run.started_at,
+    last_run_at: run.started_at,
+    next_run_at: null,
+  };
 }
 
 export function requireAutomation(id: string): Automation {
@@ -276,6 +318,14 @@ export function rescheduleAutomation(id: string, from: number): void {
 // Runs
 // ---------------------------------------------------------------------------
 
+/** Ad-hoc runs, newest first — the ones no automation backs. */
+export function listScratchRuns(): AutomationRun[] {
+  return runCache()
+    .filter((r) => r.scratch !== null)
+    .sort((a, b) => b.started_at - a.started_at)
+    .map((r) => ({ ...r }));
+}
+
 export function listAutomationRuns(automationId?: string): AutomationRun[] {
   return runCache()
     .filter((r) => !automationId || r.automation_id === automationId)
@@ -303,11 +353,13 @@ export function createRun(
   status: RunStatus,
   triggerReason: string,
   error: string | null = null,
+  scratch: ScratchSpec | null = null,
 ): AutomationRun {
   const now = Date.now();
   const run: AutomationRun = {
     id: crypto.randomUUID(),
     automation_id: automationId,
+    scratch,
     status,
     trigger_reason: triggerReason,
     started_at: now,

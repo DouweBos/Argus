@@ -82,6 +82,34 @@ export interface Automation {
   next_run_at: number | null;
 }
 
+/**
+ * The one-off spec behind an ad-hoc run — a playbook and a scope, run once,
+ * with no `Automation` persisted for it.
+ *
+ * It is carried on the run record rather than in `automations.json`, and
+ * `getAutomation` synthesizes an `Automation` from it on demand. That keeps the
+ * autonomy ladder, the gate, the shell guard and the spend ceilings reading the
+ * exact same shape they read for a scheduled run.
+ */
+export interface ScratchSpec {
+  name: string;
+  playbook: string;
+  scope: { repo_roots: string[] };
+  source_ids: string[];
+  model: string | null;
+  guardrails: AutomationGuardrails;
+}
+
+/** Fields accepted when starting an ad-hoc run. */
+export interface StartScratchRunInput {
+  name?: string;
+  playbook: string;
+  repo_roots?: string[];
+  source_ids?: string[];
+  model?: string | null;
+  guardrails?: Partial<AutomationGuardrails>;
+}
+
 export type RunStatus =
   | "cancelled"
   | "failed"
@@ -93,7 +121,10 @@ export type RunStatus =
 /** One firing of an automation. */
 export interface AutomationRun {
   id: string;
+  /** For an ad-hoc run this is the synthetic id of its {@link scratch} spec. */
   automation_id: string;
+  /** Set only on an ad-hoc run: the one-off spec no automation backs. */
+  scratch: ScratchSpec | null;
   status: RunStatus;
   /** Human-readable cause: `"manual"`, `"schedule 07:30"`, `"catch-up"`. */
   trigger_reason: string;

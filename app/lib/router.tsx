@@ -14,6 +14,8 @@
  * - `/`                                          → home / project picker
  * - `/agents`                                    → global agents overview
  * - `/automations`                               → automations list
+ * - `/automations/quick`                         → ad-hoc runs: compose one, and their history
+ * - `/automations/quick/runs/:runId`             → a single ad-hoc run
  * - `/automations/:automationId`                 → automation config + run history
  * - `/automations/:automationId/runs/:runId`     → a single automation run
  * - `/devices`                                   → devices screen
@@ -111,6 +113,12 @@ export interface PullRequestRef {
 export interface ParsedRoute {
   /** Which automation is open. Only meaningful when view === "automations". */
   automationId: string | null;
+  /**
+   * The ad-hoc surface at `/automations/quick`. Ad-hoc runs have no automation
+   * to hang off, so they get their own segment rather than borrowing the
+   * synthetic id the host runs them under.
+   */
+  automationQuick: boolean;
   /** Which run of that automation is open, if any. */
   automationRunId: string | null;
   /**
@@ -165,15 +173,18 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
   }
 
   if (segments[0] === "automations") {
-    const automationId = segments[1] ? decodeSegment(segments[1]) : null;
+    const quick = segments[1] === "quick";
+    const automationId =
+      !quick && segments[1] ? decodeSegment(segments[1]) : null;
     const runId =
-      automationId && segments[2] === "runs" && segments[3]
+      (quick || automationId) && segments[2] === "runs" && segments[3]
         ? decodeSegment(segments[3])
         : null;
 
     return {
       ...emptyRoute("automations"),
       automationId,
+      automationQuick: quick,
       automationRunId: runId,
     };
   }
@@ -204,6 +215,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
     return {
       view: "session",
       automationId: null,
+      automationQuick: false,
       automationRunId: null,
       sessionId: segments[1],
       panel: validPanel,
@@ -225,6 +237,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
       return {
         view: "pull-request-detail",
         automationId: null,
+        automationQuick: false,
         automationRunId: null,
         sessionId: null,
         panel: "agents",
@@ -265,6 +278,7 @@ function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
   return {
     view,
     automationId: null,
+    automationQuick: false,
     automationRunId: null,
     sessionId: null,
     panel: "agents",
@@ -287,6 +301,11 @@ export function routePattern(pathname: string): string {
     case "home":
       return "/";
     case "automations":
+      if (route.automationQuick) {
+        return route.automationRunId
+          ? "/automations/quick/runs/:runId"
+          : "/automations/quick";
+      }
       if (route.automationId && route.automationRunId) {
         return "/automations/:automationId/runs/:runId";
       }
@@ -341,6 +360,11 @@ function routePathname(route: Partial<ParsedRoute>): string {
     return `/sessions/${route.sessionId}${panel}${gitView}${gitRef}`;
   }
   if (route.view === "automations") {
+    if (route.automationQuick) {
+      return route.automationRunId
+        ? `/automations/quick/runs/${encodeURIComponent(route.automationRunId)}`
+        : "/automations/quick";
+    }
     if (!route.automationId) {
       return "/automations";
     }

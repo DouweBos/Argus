@@ -767,8 +767,33 @@ export type AutomationRunStatus =
   | "skipped"
   | "succeeded";
 
+/**
+ * The one-off spec behind an ad-hoc run. No automation is persisted for it —
+ * the host rebuilds a synthetic one from this when it resolves the run's
+ * policy, and the spec goes when the run is swept.
+ */
+export interface AutomationScratchSpec {
+  guardrails: AutomationGuardrails;
+  model: string | null;
+  name: string;
+  playbook: string;
+  scope: { repo_roots: string[] };
+  source_ids: string[];
+}
+
+/** Fields accepted when starting an ad-hoc run. */
+export interface StartScratchRunInput {
+  guardrails?: Partial<AutomationGuardrails>;
+  model?: string | null;
+  name?: string;
+  playbook: string;
+  repo_roots?: string[];
+  source_ids?: string[];
+}
+
 /** One firing of an automation. */
 export interface AutomationRun {
+  /** For an ad-hoc run, the synthetic id of its `scratch` spec. */
   automation_id: string;
   cost_usd: number | null;
   /** Failure message, or — for a `skipped` run — why it did not fire. */
@@ -782,6 +807,8 @@ export interface AutomationRun {
   report_blocks?: ReportBlock[] | null;
   /** The agent's final message. Plain markdown. */
   report_markdown: string | null;
+  /** Set only on an ad-hoc run: the one-off spec no automation backs. */
+  scratch: AutomationScratchSpec | null;
   started_at: number;
   status: AutomationRunStatus;
   /** Human-readable cause: `"manual"`, `"schedule 07:30"`, `"catch-up …"`. */

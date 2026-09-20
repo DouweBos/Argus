@@ -11,6 +11,7 @@
 import type { AgentInfo } from "@argus/host/services/agent/models";
 import type {
   CreateAutomationInput,
+  StartScratchRunInput,
   UpdateAutomationInput,
 } from "@argus/host/services/automation/models";
 import type { ProposalStatus } from "@argus/host/services/automation/proposals/models";
@@ -82,6 +83,7 @@ import {
   getAutomationRun,
   listAutomationRuns,
   listAutomations,
+  listScratchRuns,
   setAutomationEnabled,
   updateAutomation,
 } from "@argus/host/services/automation/manager";
@@ -96,6 +98,10 @@ import {
   cancelAutomationRun,
   startAutomationRun,
 } from "@argus/host/services/automation/runner";
+import {
+  saveScratchRunAsAutomation,
+  startScratchRun,
+} from "@argus/host/services/automation/scratch";
 import {
   startScreencast,
   stopScreencast,
@@ -1068,6 +1074,19 @@ export function registerIpcHandlers(): void {
   handle("automation_calibration", "admin", (a) =>
     calibrationFor(a.automationId as string),
   );
+  // Ad-hoc runs: a playbook run once, with no automation persisted for it.
+  // Admin-tier and remotable like the rest — running something one-off on a
+  // headless mini from the desktop is the same act as pressing Run now there.
+  handle("automation_run_scratch", "admin", (a) =>
+    startScratchRun(a.input as StartScratchRunInput),
+  );
+  handle("automation_scratch_save", "admin", (a) =>
+    saveScratchRunAsAutomation(a.runId as string, {
+      name: a.name as string | undefined,
+      description: a.description as string | undefined,
+    }),
+  );
+  handle("automation_scratch_runs_list", "admin", () => listScratchRuns());
   // Proposals — what a run wants you to do. Remotable for the same reason the
   // automations are: the inbox belongs to whichever machine runs the clock.
   handle("proposals_list", "admin", (a) =>

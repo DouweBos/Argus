@@ -16,12 +16,14 @@ import {
 import {
   createAutomation,
   openAutomation,
+  openQuickRuns,
   setAutomationEnabled,
   useAutomations,
   useAutomationsError,
   useAutomationsLoading,
   useHasActiveRun,
   useLatestRun,
+  useScratchRuns,
 } from "../../../stores/automationStore";
 import { DescribeAutomationDialog } from "../DescribeAutomationDialog/DescribeAutomationDialog";
 import {
@@ -68,6 +70,7 @@ function Row({ automation }: { automation: Automation }) {
 /** `/automations` — every automation on the focused host. */
 export function AutomationsScreen() {
   const automations = useAutomations();
+  const quickRuns = useScratchRuns();
   const loading = useAutomationsLoading();
   const error = useAutomationsError();
   const [creating, setCreating] = useState(false);
@@ -116,7 +119,7 @@ export function AutomationsScreen() {
       <EmptyState
         icon={<Icons.ClockIcon size={18} />}
         title="No automations yet"
-        body="An automation is a playbook plus a clock: it wakes an agent up on a schedule, or when you press Run."
+        body="An automation is a playbook plus a clock: it wakes an agent up on a schedule, or when you press Run. To run something once without saving it, use a quick run."
         action={
           <Button size="sm" onClick={() => setDescribing(true)}>
             Describe it
@@ -134,6 +137,14 @@ export function AutomationsScreen() {
           {automations.length} automation{automations.length === 1 ? "" : "s"}
         </span>
         <span className={styles.spacer} />
+        <Button
+          size="sm"
+          variant="secondary"
+          leading={<Icons.PlayIcon size={11} />}
+          onClick={() => openQuickRuns()}
+        >
+          Quick run{quickRuns.length > 0 ? ` (${quickRuns.length})` : ""}
+        </Button>
         <Button
           size="sm"
           variant="secondary"

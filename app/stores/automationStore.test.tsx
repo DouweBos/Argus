@@ -42,6 +42,9 @@ vi.mock("../lib/ipc", () => ({
   runAutomationNow: vi.fn(),
   cancelAutomationRun: vi.fn(),
   getAutomationRun: vi.fn(),
+  startScratchRun: vi.fn(),
+  saveScratchRunAsAutomation: vi.fn(),
+  listScratchRuns: vi.fn(),
 }));
 
 vi.mock("../lib/routeHooks", () => ({ useRouteHostId: () => "local" }));
@@ -86,6 +89,7 @@ function run(id: string, status: AutomationRun["status"]): AutomationRun {
     host_agent_id: null,
     cost_usd: null,
     report_markdown: null,
+    scratch: null,
     error: null,
   };
 }
