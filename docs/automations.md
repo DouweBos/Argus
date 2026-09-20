@@ -49,6 +49,41 @@ Two behaviours matter more than the cron itself:
 **Manual** — no clock at all. It only runs when you press **Run now**, which
 every automation supports regardless of its trigger.
 
+**No automation at all** — see [Quick runs](#quick-runs-one-off-without-saving).
+
+---
+
+## Quick runs — one-off, without saving
+
+Sometimes you just want a playbook run once. **Automations → Quick run**
+(`/automations/quick`) is a box to type one into, a list of projects to point it
+at, and a **Run once** button. Nothing is saved: no automation appears in the
+list, and nothing is written to `automations.json`.
+
+Everything else is identical to a scheduled run. It is the same runner, the same
+neutral host session, the same agent you can open and talk to, the same report,
+and — this is the part that matters — the same
+[autonomy ladder](#the-autonomy-ladder). A quick run has no autonomy of its own,
+so it inherits the app default and is still floored by every project's ceiling.
+It cannot ask for a higher rung, because there is no field in which to ask.
+The MCP gate, the shell guard and the spend ceilings all see it as exactly what
+it is.
+
+Quick runs are kept in the same history as everything else — they live at
+`/automations/quick`, open at `/automations/quick/runs/:runId`, and are swept
+under one shared cap of fifty rather than one cap each.
+
+### Save as an automation
+
+A finished quick run has a **Save as automation** button. It creates a real
+automation prefilled with the playbook and the projects you just used, so
+nothing is retyped — which is what makes a one-off the way you write an
+automation, rather than a dead end. It is saved **paused**, with a **manual**
+trigger: a run you did by hand must not turn into a clock you never asked for.
+Give it a schedule and enable it when you mean to.
+
+The run itself stays a quick run. Its history is what actually happened.
+
 ---
 
 ## The autonomy ladder
@@ -243,14 +278,14 @@ This is what makes an automation not-a-cron: it gets told whether it was right.
 All of it under your Argus home (`~/.argus`, or `~/.argus-server` for the
 [server app](./server-app.md) — the two never share):
 
-| File                                      | Contents                            |
-| ----------------------------------------- | ----------------------------------- |
-| `automations.json`                        | The automations themselves.         |
-| `automation-runs.json`                    | Run history, with reports.          |
-| `automation-runs/<automationId>/<runId>/` | One run's working directory.        |
-| `automation-proposals.json`               | Proposals, across every automation. |
-| `automation-outcomes.json`                | The calibration record.             |
-| `automation-sessions.json`                | Which sessions an automation owns.  |
+| File                                      | Contents                                                                                                         |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `automations.json`                        | The automations themselves.                                                                                      |
+| `automation-runs.json`                    | Run history, with reports. A quick run's playbook and scope live here, on the run — never in `automations.json`. |
+| `automation-runs/<automationId>/<runId>/` | One run's working directory.                                                                                     |
+| `automation-proposals.json`               | Proposals, across every automation.                                                                              |
+| `automation-outcomes.json`                | The calibration record.                                                                                          |
+| `automation-sessions.json`                | Which sessions an automation owns.                                                                               |
 
 Deleting an automation cleans up its run directories. Run records survive a
 restart; so does the schedule — `next_run_at` is persisted, which is what makes
