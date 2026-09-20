@@ -252,3 +252,19 @@
   flex-direction: column;
   gap: 0;
 }
+
+/* Attribution for a user message someone else sent (huddle guest, remote). */
+.userAuthor {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-bottom: 5px;
+  align-self: flex-end;
+}
+
+.userAuthorName {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}

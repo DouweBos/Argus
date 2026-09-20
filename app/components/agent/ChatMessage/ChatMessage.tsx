@@ -375,6 +375,7 @@ export function ChatMessage({
       <MessageBubble
         role="user"
         rootRef={userMsgRef}
+        author={message.author}
         timestamp={message.timestamp}
         textBlocks={trimmedUserBlocks}
         renderText={(text) => <MentionedText text={text} />}

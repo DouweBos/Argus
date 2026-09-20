@@ -236,6 +236,7 @@ const Message = memo(function Message({
     <MessageBubble
       role={msg.role}
       mcp={mcp}
+      author={msg.author}
       isError={msg.is_error}
       timestamp={msg.timestamp}
       toolOnly={trimmed.length === 0 && !!toolCalls}

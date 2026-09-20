@@ -423,6 +423,7 @@ interface RawTokenUsage {
 }
 interface RawMessage {
   id?: string;
+  author?: string;
   role?: string;
   textBlocks?: string[];
   toolCalls?: RawToolCall[];
@@ -566,6 +567,7 @@ function toRemoteMessage(m: RawMessage): RemoteMessage {
           },
         }
       : {}),
+    ...(m.author ? { author: m.author } : {}),
     is_error: m.isError,
     timestamp: m.timestamp,
   };
@@ -1091,7 +1093,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { capabilities: toRemoteAgentCapabilities(init) };
   },
 
-  "agents.send": async (params) => {
+  "agents.send": async (params, ctx) => {
     const { agent_id, message, images } = parse("agents.send", params);
     requireAgent(agent_id);
     await control(() => sendAgentMessage(agent_id, message, images));
@@ -1101,6 +1103,9 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     emitHostEvent(`agent:remote-message:${agent_id}`, {
       message,
       images,
+      // A scoped connection is a huddle guest, and a shared transcript has
+      // to say whose message this is; a paired device is the engineer's own.
+      author: ctx.scope ? ctx.device.label || null : null,
     });
 
     return { accepted: true };
