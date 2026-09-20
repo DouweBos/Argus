@@ -75,6 +75,7 @@ import {
   saveAppSettings,
   type AppSettings,
 } from "@argus/host/services/appSettings/store";
+import { draftAutomation } from "@argus/host/services/automation/authoring";
 import {
   createAutomation,
   deleteAutomation,
@@ -1056,6 +1057,14 @@ export function registerIpcHandlers(): void {
     getAutomationRun(a.runId as string),
   );
   handle("signal_sources_list", "admin", () => describeSignalSources());
+  // Drafting is deliberately separate from creating: what comes back is a
+  // draft the user reviews and saves, never a live automation.
+  handle("automation_draft", "admin", (a) =>
+    draftAutomation({
+      description: a.description as string,
+      timezone: a.timezone as string | undefined,
+    }),
+  );
   handle("automation_calibration", "admin", (a) =>
     calibrationFor(a.automationId as string),
   );

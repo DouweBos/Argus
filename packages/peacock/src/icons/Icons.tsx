@@ -1792,3 +1792,23 @@ export function GuestsIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+export function SparklesIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M6.25 2.25 7.3 5.2l2.95 1.05L7.3 7.3 6.25 10.25 5.2 7.3 2.25 6.25 5.2 5.2Z" />
+      <path d="M11.75 8.75l.6 1.65 1.65.6-1.65.6-.6 1.65-.6-1.65-1.65-.6 1.65-.6Z" />
+    </svg>
+  );
+}

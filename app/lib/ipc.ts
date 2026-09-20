@@ -18,6 +18,7 @@ import type {
   AcceptProposalResult,
   Automation,
   AutomationCalibration,
+  AutomationDraft,
   AutomationRun,
   CreateAutomationInput,
   Proposal,
@@ -1554,6 +1555,16 @@ export const getAutomationCalibration = (
 /** The signal sources a run can be fed from, with availability resolved. */
 export const listSignalSources = (): Promise<SignalSourceInfo[]> =>
   invoke("signal_sources_list");
+
+/**
+ * Draft an automation from a sentence. Returns a draft to review — nothing is
+ * saved and nothing is enabled until the user presses save.
+ */
+export const draftAutomation = (
+  description: string,
+  timezone?: string,
+): Promise<AutomationDraft> =>
+  invoke("automation_draft", { description, timezone });
 
 // Proposals — the inbox. Same host-state reasoning as the automations above.
 export const listProposals = (filter?: {

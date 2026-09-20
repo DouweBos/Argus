@@ -837,6 +837,14 @@ export type UpdateAutomationInput = Partial<
   Omit<Automation, "created_at" | "id" | "updated_at">
 >;
 
+/** A Claude-drafted automation, plus what Argus had to correct about it. */
+export interface AutomationDraft {
+  /** Ready to save — always disabled, never above the default autonomy. */
+  input: CreateAutomationInput;
+  /** Repairs and drops, shown above the draft so nothing is silent. */
+  notes: string[];
+}
+
 // ---------------------------------------------------------------------------
 // Proposals
 // ---------------------------------------------------------------------------
