@@ -4,9 +4,8 @@
  * drag to pan, swipe sideways between images, swipe down or tap to dismiss.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -14,7 +13,14 @@ import {
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
 } from "react-native";
+import Animated, {
+  runOnUI,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Icons from "./Icons";
 import { ZoomableImage } from "./ZoomableImage";
@@ -31,25 +37,38 @@ export function ImageViewer() {
   const { width, height } = useWindowDimensions();
   const uris = useImageViewerStore((s) => s.uris);
   const index = useImageViewerStore((s) => s.index);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [page, setPage] = useState(0);
   const [zoomed, setZoomed] = useState(false);
-  const dismissProgress = useRef(new Animated.Value(0)).current;
+  const dismissProgress = useSharedValue(0);
 
   const open = index !== null;
+  const [syncedIndex, setSyncedIndex] = useState(index);
+
+  if (index !== syncedIndex) {
+    setSyncedIndex(index);
+    setPage(index ?? 0);
+    setZoomed(false);
+  }
+
+  // Pages report their drag rather than writing here directly, so the value
+  // stays owned by the component that animates it.
+  function setDismissProgress(value: number, animated: boolean) {
+    "worklet";
+    dismissProgress.value = animated
+      ? withSpring(value, { damping: 22, stiffness: 220, mass: 0.6 })
+      : value;
+  }
 
   // Chrome and backdrop fade out as the image is dragged away.
-  const chromeOpacity = useMemo(
-    () => dismissProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-    [dismissProgress],
-  );
+  const chromeStyle = useAnimatedStyle(() => ({
+    opacity: 1 - dismissProgress.value,
+  }));
 
   // Jump to the tapped image once the pager has its width.
   useEffect(() => {
     if (open && index !== null) {
-      setPage(index);
-      setZoomed(false);
-      dismissProgress.setValue(0);
+      runOnUI(setDismissProgress)(0, false);
       scrollRef.current?.scrollTo({ x: index * width, animated: false });
     }
   }, [open, index, width, dismissProgress]);
@@ -72,7 +91,7 @@ export function ImageViewer() {
       onRequestClose={closeImageViewer}
     >
       <Animated.View
-        style={{ flex: 1, backgroundColor: theme.mediaBg, opacity: chromeOpacity }}
+        style={[{ flex: 1, backgroundColor: theme.mediaBg }, chromeStyle]}
       >
         <ScrollView
           ref={scrollRef}
@@ -87,10 +106,11 @@ export function ImageViewer() {
             <ZoomableImage
               key={i}
               active={i === page}
+              zoomed={zoomed && i === page}
               uri={uri}
               width={width}
               height={height}
-              dismissProgress={dismissProgress}
+              onDismissProgress={setDismissProgress}
               onZoomChange={setZoomed}
               onTap={closeImageViewer}
               onDismiss={closeImageViewer}

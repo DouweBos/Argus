@@ -5,14 +5,16 @@
  * control-granted devices.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  PanResponder,
   StyleSheet,
   TextInput,
   View,
   type LayoutChangeEvent,
+  type TextInputInstance,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { ArgusVideoView, type ArgusVideoHandle } from "../../modules/argus-video";
 import * as Icons from "../../src/components/Icons";
@@ -30,7 +32,8 @@ import { useTheme } from "../../src/theme";
 
 /** No video within this window → booted but not producing a decodable stream. */
 const NO_VIDEO_TIMEOUT_MS = 10_000;
-const DRAG_THROTTLE_MS = 17;
+/** Minimum finger travel, in points, between injected drag samples. */
+const DRAG_MIN_TRAVEL = 2;
 /** A drag shorter than this (px) counts as a tap → dpad select on a TV. */
 const TV_SWIPE_THRESHOLD = 24;
 
@@ -68,15 +71,22 @@ export default function DeviceScreen() {
   const deviceKeyboard = useAppStore((s) => s.deviceKeyboard);
 
   const videoRef = useRef<ArgusVideoHandle>(null);
-  const dims = useRef({ width: 0, height: 0 });
-  const stageLayout = useRef({ width: 0, height: 0 });
-  const lastDrag = useRef(0);
-  const tvStart = useRef<{ x: number; y: number } | null>(null);
-  const keyboardRef = useRef<TextInput>(null);
+  const [dims, setDims] = useState({ width: 0, height: 0 });
+  const [stageLayout, setStageLayout] = useState({ width: 0, height: 0 });
+  const keyboardRef = useRef<TextInputInstance>(null);
   const [status, setStatus] = useState<
     "connecting" | "error" | "novideo" | "streaming"
   >("connecting");
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const lastDrag = useSharedValue({ x: 0, y: 0 });
+  const tvStart = useSharedValue<{ x: number; y: number } | null>(null);
+  const subscription = `${deviceId}:${platform}:${connection}`;
+  const [syncedSubscription, setSyncedSubscription] = useState(subscription);
+
+  if (subscription !== syncedSubscription) {
+    setSyncedSubscription(subscription);
+    setStatus("connecting");
+  }
 
   // Subscribe to the stream while connected; tear down on unmount / disconnect.
   useEffect(() => {
@@ -85,7 +95,6 @@ export default function DeviceScreen() {
     }
     let cancelled = false;
     let unregister: (() => void) | null = null;
-    setStatus("connecting");
     const watchdog = setTimeout(() => {
       if (!cancelled) {
         setStatus((s) => (s === "connecting" ? "novideo" : s));
@@ -101,7 +110,7 @@ export default function DeviceScreen() {
         }
         unregister = registerMediaSink(streamId, (msg) => {
           if (msg.kind === "config") {
-            dims.current = { width: msg.codedWidth, height: msg.codedHeight };
+            setDims({ width: msg.codedWidth, height: msg.codedHeight });
             videoRef.current
               ?.configure(msg.codec, msg.codedWidth, msg.codedHeight, msg.description)
               .catch(() => {});
@@ -128,13 +137,17 @@ export default function DeviceScreen() {
 
   const onStageLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
-    stageLayout.current = { width, height };
+    setStageLayout((prev) =>
+      prev.width === width && prev.height === height ? prev : { width, height },
+    );
   }, []);
 
   /** Normalize a touch to 0–1 within the letterboxed video, not the stage. */
-  const normCoords = useCallback((x: number, y: number) => {
-    const stage = stageLayout.current;
-    const { width, height } = dims.current;
+  const normCoords = useCallback(
+    (x: number, y: number) => {
+    "worklet";
+    const stage = stageLayout;
+    const { width, height } = dims;
     if (!width || !height || !stage.width || !stage.height) {
       return { x: 0, y: 0 };
     }
@@ -148,65 +161,78 @@ export default function DeviceScreen() {
       x: Math.max(0, Math.min(0.9999, (x - offsetX) / renderedW)),
       y: Math.max(0, Math.min(0.9999, (y - offsetY) / renderedH)),
     };
-  }, []);
+    },
+    [dims, stageLayout],
+  );
 
-  const touchResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => hasControl,
-        onMoveShouldSetPanResponder: () => hasControl,
-        onPanResponderGrant: (e) => {
-          const { locationX, locationY } = e.nativeEvent;
+  const sendTouch = useCallback(
+    (x: number, y: number, phase: 0 | 1 | 2) => {
+      deviceTouch(deviceId, platform, x, y, phase);
+    },
+    [deviceId, deviceTouch, platform],
+  );
+
+  const pressButton = useCallback(
+    (button: string) => {
+      deviceButton(deviceId, platform, button).catch(() => {});
+    },
+    [deviceButton, deviceId, platform],
+  );
+
+  // Handlers are worklets so the throttle and the per-gesture bookkeeping stay
+  // on the UI thread; only the injection itself hops back to JS.
+  const touchGesture = Gesture.Pan()
+    .enabled(hasControl)
+        .minDistance(0)
+        .onBegin((e) => {
           if (isTv) {
-            tvStart.current = { x: locationX, y: locationY };
+            tvStart.value = { x: e.x, y: e.y };
 
             return;
           }
-          const { x, y } = normCoords(locationX, locationY);
-          deviceTouch(deviceId, platform, x, y, 0);
-        },
-        onPanResponderMove: (e) => {
+          const { x, y } = normCoords(e.x, e.y);
+          runOnJS(sendTouch)(x, y, 0);
+        })
+        .onUpdate((e) => {
           if (isTv) {
             return;
           }
-          const now = Date.now();
-          if (now - lastDrag.current < DRAG_THROTTLE_MS) {
+          // Throttle by travel rather than elapsed time: no clock read, and it
+          // tracks what the far end actually needs to redraw.
+          const last = lastDrag.value;
+          if (Math.hypot(e.x - last.x, e.y - last.y) < DRAG_MIN_TRAVEL) {
             return;
           }
-          lastDrag.current = now;
-          const { locationX, locationY } = e.nativeEvent;
-          const { x, y } = normCoords(locationX, locationY);
-          deviceTouch(deviceId, platform, x, y, 1);
-        },
-        onPanResponderRelease: (e, gesture) => {
+          lastDrag.value = { x: e.x, y: e.y };
+          const { x, y } = normCoords(e.x, e.y);
+          runOnJS(sendTouch)(x, y, 1);
+        })
+        .onFinalize((e) => {
           if (isTv) {
             // A tap is Select; a drag is a directional swipe on the remote.
-            const start = tvStart.current;
-            tvStart.current = null;
+            const start = tvStart.value;
+            tvStart.value = null;
             if (!start) {
               return;
             }
-            const adx = Math.abs(gesture.dx);
-            const ady = Math.abs(gesture.dy);
+            const adx = Math.abs(e.x - start.x);
+            const ady = Math.abs(e.y - start.y);
             let button: string;
             if (adx < TV_SWIPE_THRESHOLD && ady < TV_SWIPE_THRESHOLD) {
               button = "select";
             } else if (adx > ady) {
-              button = gesture.dx > 0 ? "right" : "left";
+              button = e.x > start.x ? "right" : "left";
             } else {
-              button = gesture.dy > 0 ? "down" : "up";
+              button = e.y > start.y ? "down" : "up";
             }
-            deviceButton(deviceId, platform, button).catch(() => {});
+            runOnJS(pressButton)(button);
 
             return;
           }
-          const { locationX, locationY } = e.nativeEvent;
-          const { x, y } = normCoords(locationX, locationY);
-          deviceTouch(deviceId, platform, x, y, 2);
-        },
-      }),
-    [deviceButton, deviceId, deviceTouch, hasControl, isTv, normCoords, platform],
-  );
+          lastDrag.value = { x: 0, y: 0 };
+          const { x, y } = normCoords(e.x, e.y);
+          runOnJS(sendTouch)(x, y, 2);
+        });
 
   const sendKey = useCallback(
     (char: string) => {
@@ -263,31 +289,34 @@ export default function DeviceScreen() {
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <Stack.Screen options={{ title: params.name ?? "Device" }} />
 
-      <View
-        onLayout={onStageLayout}
-        style={{ flex: 1, backgroundColor: theme.mediaBg }}
-        {...touchResponder.panHandlers}
-      >
-        <ArgusVideoView
-          ref={videoRef}
-          style={{ flex: 1 }}
-          onFirstFrame={() => setStatus("streaming")}
-        />
-        {status !== "streaming" && (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                alignItems: "center",
-                justifyContent: "center",
-                padding: theme.space,
-              },
-            ]}
-          >
-            <Muted style={{ textAlign: "center" }}>{PLACEHOLDER[status]}</Muted>
-          </View>
-        )}
-      </View>
+      <GestureDetector gesture={touchGesture}>
+        <View
+          onLayout={onStageLayout}
+          style={{ flex: 1, backgroundColor: theme.mediaBg }}
+        >
+          <ArgusVideoView
+            ref={videoRef}
+            style={{ flex: 1 }}
+            onFirstFrame={() => setStatus("streaming")}
+          />
+          {status !== "streaming" && (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: theme.space,
+                },
+              ]}
+            >
+              <Muted style={{ textAlign: "center" }}>
+                {PLACEHOLDER[status]}
+              </Muted>
+            </View>
+          )}
+        </View>
+      </GestureDetector>
 
       {!hasControl && (
         <View style={{ padding: theme.space }}>

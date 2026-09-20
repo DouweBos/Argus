@@ -11,6 +11,7 @@ import {
   useRouter,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ImageViewer } from "../src/components/ImageViewer";
 import { LockScreen } from "../src/components/LockScreen";
@@ -40,9 +41,11 @@ async function describeBiometry(): Promise<string | null> {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <Root />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <Root />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
