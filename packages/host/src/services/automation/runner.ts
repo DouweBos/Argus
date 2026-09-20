@@ -86,14 +86,22 @@ export function startAutomationRun(
 
   const run = createRun(automationId, "running", triggerReason);
   markAutomationFired(automationId, run.started_at);
-
-  execute({ ...automation }, run.id).catch((e: unknown) => {
-    const message = typeof e === "string" ? e : String(e);
-    error(`automation run ${run.id} failed: ${message}`);
-    finish(run.id, "failed", { error: message });
-  });
+  executeRun({ ...automation }, run.id);
 
   return run;
+}
+
+/**
+ * Drive one run to completion in the background. The same path for a scheduled
+ * run and an ad-hoc one — an ad-hoc run differs only in that its `Automation`
+ * is synthetic, never in how it is executed or what it is held to.
+ */
+export function executeRun(automation: Automation, runId: string): void {
+  execute(automation, runId).catch((e: unknown) => {
+    const message = typeof e === "string" ? e : String(e);
+    error(`automation run ${runId} failed: ${message}`);
+    finish(runId, "failed", { error: message });
+  });
 }
 
 function finish(

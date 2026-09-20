@@ -16,16 +16,23 @@ import { renderedReport } from "../../../lib/report";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import {
   openAutomation,
+  openQuickRuns,
   useAutomation,
   useAutomationRun,
 } from "../../../stores/automationStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 import { CancelRunButton, RunStatusBadge } from "../RunControls";
+import { SaveQuickRunButton } from "../SaveQuickRunButton";
 import styles from "./AutomationRunScreen.module.css";
 import { RunReport } from "./RunReport";
 import { useReportRefResolvers } from "./reportRefs";
 
-/** `/automations/:automationId/runs/:runId` — one firing, and what it wrote. */
+/**
+ * One firing, and what it wrote — at `/automations/:automationId/runs/:runId`
+ * for a scheduled run, and at `/automations/quick/runs/:runId` for an ad-hoc
+ * one. An ad-hoc run has no automation to hang off, so its name and its way
+ * back both come from the spec on the run itself.
+ */
 export function AutomationRunScreen() {
   const { automationId, automationRunId } = useCurrentRoute();
   const automation = useAutomation(automationId);
@@ -40,11 +47,14 @@ export function AutomationRunScreen() {
           title="Run not found"
           body="Runs are pruned once an automation has fifty of them."
           action={
-            automationId ? (
-              <Button size="sm" onClick={() => openAutomation(automationId)}>
-                Back to the automation
-              </Button>
-            ) : null
+            <Button
+              size="sm"
+              onClick={() =>
+                automationId ? openAutomation(automationId) : openQuickRuns()
+              }
+            >
+              {automationId ? "Back to the automation" : "Back to quick runs"}
+            </Button>
           }
         />
       </div>
@@ -56,6 +66,8 @@ export function AutomationRunScreen() {
     ? (sessions.find((s) => s.id === run.host_session_id) ?? null)
     : null;
   const active = isRunActive(run);
+  const scratch = run.scratch;
+  const backLabel = scratch ? "Quick runs" : (automation?.name ?? "Automation");
 
   return (
     <div className={styles.screen}>
@@ -63,12 +75,15 @@ export function AutomationRunScreen() {
         <button
           type="button"
           className={styles.back}
-          onClick={() => automationId && openAutomation(automationId)}
+          onClick={() =>
+            automationId ? openAutomation(automationId) : openQuickRuns()
+          }
         >
           <Icons.ChevronLeftIcon size={12} />
-          {automation?.name ?? "Automation"}
+          {backLabel}
         </button>
         <span className={styles.spacer} />
+        {scratch && !active && <SaveQuickRunButton runId={run.id} />}
         {hostSession && (
           <Button
             size="sm"
@@ -87,7 +102,11 @@ export function AutomationRunScreen() {
         <h1 className={styles.titleHeading}>
           {formatTimestamp(run.started_at)}
         </h1>
-        <span className={styles.reason}>{run.trigger_reason}</span>
+        <span className={styles.reason}>
+          {scratch
+            ? `${run.trigger_reason} · ${scratch.name}`
+            : run.trigger_reason}
+        </span>
       </div>
 
       <StatsStrip>

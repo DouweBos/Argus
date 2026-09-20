@@ -19,7 +19,9 @@ import {
   listAutomationRuns,
   listAutomations,
   runAutomationNow as runAutomationNowIpc,
+  saveScratchRunAsAutomation as saveScratchRunAsAutomationIpc,
   setAutomationEnabled as setAutomationEnabledIpc,
+  startScratchRun as startScratchRunIpc,
   updateAutomation as updateAutomationIpc,
 } from "../lib/ipc";
 import { useRouteHostId } from "../lib/routeHooks";
@@ -142,6 +144,13 @@ export const useAutomationRuns = (automationId: string | null) =>
     automationId ? s.runs.filter((r) => r.automation_id === automationId) : [],
   );
 
+/**
+ * Ad-hoc runs, newest first. They have no automation to hang off, so they are
+ * picked out of the same cache by the spec they carry.
+ */
+export const useScratchRuns = (): AutomationRun[] =>
+  store((s) => s.runs.filter((r) => r.scratch !== null));
+
 /** Every cached run, newest first — the inbox needs them across automations. */
 export const useAllRuns = (): AutomationRun[] => store((s) => s.runs);
 
@@ -182,6 +191,10 @@ export const runAutomationNow = runAutomationNowIpc;
 
 export const cancelAutomationRun = cancelAutomationRunIpc;
 
+export const startScratchRun = startScratchRunIpc;
+
+export const saveScratchRunAsAutomation = saveScratchRunAsAutomationIpc;
+
 // ---------------------------------------------------------------------------
 // Navigation
 // ---------------------------------------------------------------------------
@@ -192,6 +205,23 @@ export function openAutomations(hostId?: HostId): void {
 
 export function openAutomation(automationId: string): void {
   appNavigate({ view: "automations", automationId, automationRunId: null });
+}
+
+/** `/automations/quick` — compose a one-off run, and what has been run. */
+export function openQuickRuns(): void {
+  appNavigate({
+    view: "automations",
+    automationQuick: true,
+    automationRunId: null,
+  });
+}
+
+export function openQuickRun(runId: string): void {
+  appNavigate({
+    view: "automations",
+    automationQuick: true,
+    automationRunId: runId,
+  });
 }
 
 export function openAutomationRun(automationId: string, runId: string): void {

@@ -90,6 +90,7 @@ describe("labels", () => {
       host_agent_id: null,
       cost_usd: null,
       report_markdown: null,
+      scratch: null,
       error: null,
     };
     expect(formatDuration(run, START + 90_000)).toBe("1m 30s");

@@ -28,6 +28,9 @@ vi.mock("../../../lib/ipc", () => ({
   runAutomationNow: vi.fn(),
   cancelAutomationRun: vi.fn(),
   getAutomationRun: vi.fn(),
+  startScratchRun: vi.fn(),
+  saveScratchRunAsAutomation: vi.fn(),
+  listScratchRuns: vi.fn(),
 }));
 
 vi.mock("../../../lib/transport", () => ({ subscribe: () => () => undefined }));
