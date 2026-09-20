@@ -676,6 +676,55 @@ void SHRequestKeyframe(void) {
     atomic_store(&g_forceKeyframe, true);
 }
 
+/// Read a descriptor's framebufferSurface, or NULL.
+static IOSurfaceRef _surfaceForDescriptor(id desc) {
+    @try {
+        return (__bridge IOSurfaceRef)((id (*)(id, SEL))objc_msgSend)(
+            desc, NSSelectorFromString(@"framebufferSurface"));
+    } @catch (NSException *e) {
+        return NULL;
+    }
+}
+
+/// Pick which display to capture when a device exposes more than one.
+///
+/// A folded iPhone Duo keeps a surface on both panels, but only the panel that
+/// is actually lit keeps redrawing — the dark one's IOSurface seed is frozen.
+/// Sample the seeds and take the panel that moves, so we stream the cover
+/// screen while closed and the inner screen once unfolded. Single-display
+/// devices skip the sampling entirely.
+static id _pickLiveDisplay(NSArray *candidates) {
+    if (candidates.count <= 1) {
+        return candidates.firstObject;
+    }
+
+    NSMutableArray<NSNumber *> *seeds = [NSMutableArray array];
+    for (id desc in candidates) {
+        IOSurfaceRef s = _surfaceForDescriptor(desc);
+        [seeds addObject:@(s ? IOSurfaceGetSeed(s) : 0)];
+    }
+
+    // ~360ms is enough for a lit panel to redraw at least once, and is only
+    // ever paid on a multi-display device at capture start.
+    for (int round = 0; round < 6; round++) {
+        usleep(60000);
+        for (NSUInteger i = 0; i < candidates.count; i++) {
+            IOSurfaceRef s = _surfaceForDescriptor(candidates[i]);
+            if (s && IOSurfaceGetSeed(s) != seeds[i].unsignedIntValue) {
+                NSLog(@"[Framebuffer] %lu displays, capturing the live one (#%lu)",
+                      (unsigned long)candidates.count, (unsigned long)i);
+                return candidates[i];
+            }
+        }
+    }
+
+    // Every panel is static (asleep, or a perfectly still screen) — the first
+    // one is as good a guess as any.
+    NSLog(@"[Framebuffer] %lu displays, none redrawing — capturing the first",
+          (unsigned long)candidates.count);
+    return candidates.firstObject;
+}
+
 /// (Re)create the SimDeviceIOClient and find the display descriptor.
 /// Returns YES if g_displayDescriptor is ready, NO on failure.
 static BOOL _rebuildIOClient(void) {
@@ -702,7 +751,8 @@ static BOOL _rebuildIOClient(void) {
     // There can be multiple "com.apple.framebuffer.display" ports — only the one
     // backed by SimScreen (not the bare descriptor) provides the surface.
     NSArray *ports = [g_ioClient valueForKey:@"ioPorts"];
-    g_displayDescriptor = nil;
+    NSMutableArray *candidates = [NSMutableArray array];  // descriptors with a surface
+    id fallbackDescriptor = nil;                          // surface may appear later
     for (id port in ports) {
         @try {
             id portId = ((id (*)(id, SEL))objc_msgSend)(
@@ -718,17 +768,16 @@ static BOOL _rebuildIOClient(void) {
             IOSurfaceRef surface = (__bridge IOSurfaceRef)((id (*)(id, SEL))objc_msgSend)(
                 desc, NSSelectorFromString(@"framebufferSurface"));
             if (surface) {
-                g_displayDescriptor = desc;
-                break;
-            }
-            // Keep this descriptor as a fallback (surface may appear later)
-            if (!g_displayDescriptor) {
-                g_displayDescriptor = desc;
+                [candidates addObject:desc];
+            } else if (!fallbackDescriptor) {
+                fallbackDescriptor = desc;
             }
         } @catch (NSException *e) {
             continue;
         }
     }
+
+    g_displayDescriptor = _pickLiveDisplay(candidates) ?: fallbackDescriptor;
 
     if (!g_displayDescriptor) {
         NSLog(@"[Framebuffer] No com.apple.framebuffer.display port found (%lu ports total)",
