@@ -569,6 +569,7 @@ export class DeviceConnection implements DeviceMediaController {
         revoke: () => this.revokeGuestGrant(),
         notify: (payload) => this.pushHuddleState(payload),
       },
+      parsed.data.client_id,
     );
     if (!outcome.ok) {
       throw outcome.reason === "denied"

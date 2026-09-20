@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  guestClientId,
   guestKeypair,
   parseHuddleToken,
   readGuestLabel,
@@ -33,17 +34,37 @@ describe("the guest keypair", () => {
     expect(second).toEqual(first);
   });
 
-  it("is per room and never persisted beyond the session", () => {
+  it("is per room, and never outlives the tab that earned the grant", () => {
     const mine = guestKeypair("tok");
 
     expect(guestKeypair("other").pubB64).not.toBe(mine.pubB64);
-    expect(localStorage.length).toBe(0);
+    // A grant binds to this key, so persisting it would let a closed tab walk
+    // back in on the link alone.
+    expect(localStorage.getItem("argus.huddle.key.tok")).toBeNull();
+
+    sessionStorage.clear();
+    expect(guestKeypair("tok").pubB64).not.toBe(mine.pubB64);
+  });
+});
+
+describe("the guest's identity hints", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
   });
 
-  it("remembers the name the host sees, for the same session only", () => {
+  it("remembers the name across visits, so coming back doesn't ask again", () => {
     rememberGuestLabel("Ana");
+    sessionStorage.clear();
 
     expect(readGuestLabel()).toBe("Ana");
-    expect(localStorage.length).toBe(0);
+  });
+
+  it("keeps one stable client id for the browser", () => {
+    const id = guestClientId();
+
+    expect(guestClientId()).toBe(id);
+    sessionStorage.clear();
+    expect(guestClientId()).toBe(id);
   });
 });

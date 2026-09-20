@@ -42,7 +42,9 @@ const { initHuddleRooms, setHuddleState } =
 
 function guest(overrides: Partial<HuddleGuest> = {}): HuddleGuest {
   return {
+    member_id: "mem-a",
     dev_static_pub: "pub-a",
+    client_id: null,
     label: "Ana",
     state: "pending",
     joined_at: 1,

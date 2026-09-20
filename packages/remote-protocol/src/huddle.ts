@@ -40,6 +40,13 @@ export const HuddleJoinParams = z.object({
   token: z.string().min(1).max(256),
   /** Display name the host sees in "… wants to join". */
   label: z.string().trim().min(1).max(64).optional(),
+  /**
+   * Stable per-browser id, so closing the tab and coming back updates the
+   * person already in the host's list instead of adding a second row with the
+   * same name. Purely an identity hint — it grants nothing, and the guest still
+   * needs approving, because the key the grant binds to is new.
+   */
+  client_id: z.string().trim().min(1).max(128).optional(),
 });
 export type HuddleJoinParams = z.infer<typeof HuddleJoinParams>;
 
@@ -69,8 +76,19 @@ export const HuddleMethodResult = {
 
 /** One guest in a room, as the host's guest list renders it. */
 export interface HuddleGuest {
+  /**
+   * Opaque per-room identity, minted on first join and kept when they reopen
+   * the link. What guests see each other by, so neither the Noise key nor the
+   * browser id has to travel between them.
+   */
+  member_id: string;
   /** Ephemeral X25519 public key the browser generated for this visit. */
   dev_static_pub: string;
+  /**
+   * Stable per-browser id this guest last presented, when they sent one. What
+   * the list is deduped on: the key above changes every tab, this doesn't.
+   */
+  client_id: string | null;
   label: string;
   state: HuddleGuestState;
   joined_at: number;

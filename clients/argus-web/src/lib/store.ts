@@ -13,7 +13,7 @@ import {
   saveIdentity,
 } from "./keystore";
 import type { DeviceIdentity } from "./keystore";
-import { fetchHostKey, guestKeypair } from "./huddleIdentity";
+import { fetchHostKey, guestClientId, guestKeypair } from "./huddleIdentity";
 import {
   applyHuddleState,
   huddleCapabilities,
@@ -561,6 +561,17 @@ export const useAppStore = create<AppState>((set, get) => {
           huddle: { ...(s.huddle ?? INITIAL_HUDDLE_VIEW), state: "unavailable" },
         }));
       }
+    },
+
+    leaveHuddle: () => {
+      // Dropping the socket is what tells the host, via the connection's own
+      // teardown. Keep the view so the gate can offer to go back in.
+      get().transport?.disconnect();
+      set((s) => ({
+        transport: null,
+        capabilities: [],
+        huddle: { ...(s.huddle ?? INITIAL_HUDDLE_VIEW), state: "left" },
+      }));
     },
 
     pairComplete: (identity) => {
