@@ -16,12 +16,22 @@ import {
   endRoom,
   getRoom,
   listRooms,
+  setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
 } from "./huddle";
 import { acquirePublicUrl, releasePublicUrl } from "./remoteService";
 
 export { approveGuest, denyGuest, getRoom, listRooms };
+
+/**
+ * Re-point a live room at whatever device the host now has open. Guests mirror
+ * the engineer's runtime rather than a snapshot taken when the link was minted,
+ * so starting a simulator mid-huddle hands it to everyone in the room.
+ */
+export function setHuddleDevice(roomId: string, deviceKey: string): boolean {
+  return setRoomDevice(roomId, deviceKey);
+}
 
 /**
  * One release per ended room, whichever way it ended. A single-slot setter, so

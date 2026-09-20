@@ -62,6 +62,10 @@ export function initHuddleRooms(): void {
     .catch(() => {});
 }
 
+/** Run `cb` on every change to the room list, outside React. */
+export const subscribeHuddleRooms = (cb: () => void): (() => void) =>
+  huddleStore.subscribe(cb);
+
 /** For tests */
 export const getHuddleState = () => huddleStore.getState();
 export const setHuddleState = huddleStore.setState.bind(huddleStore);

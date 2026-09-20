@@ -1680,6 +1680,16 @@ export const huddleStart = (
   deviceKey: string,
 ): Promise<HuddleRoom> => invoke("huddle_start", { agentId, deviceKey });
 
+/**
+ * Re-point a live room at the device the host now has open. Guests mirror the
+ * engineer's runtime, so this is what hands a simulator started mid-huddle to
+ * everyone in the room. An empty `deviceKey` makes the huddle chat-only again.
+ */
+export const huddleSetDevice = (
+  roomId: string,
+  deviceKey: string,
+): Promise<boolean> => invoke("huddle_set_device", { roomId, deviceKey });
+
 /** End one share: guests revoked and dropped, the public URL given back. */
 export const huddleStop = (roomId: string): Promise<boolean> =>
   invoke("huddle_stop", { roomId });

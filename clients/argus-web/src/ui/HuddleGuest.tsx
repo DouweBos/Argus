@@ -77,11 +77,21 @@ function HuddleRoom({ view }: { view: HuddleView }) {
     }
   }, [connection, agentId, loadAgentStatus]);
 
+  // Keyed on the device itself, not just "has one": the host can swap the room
+  // onto another simulator mid-huddle, and the list has to follow.
   useEffect(() => {
     if (connection === "ready" && hasDevice) {
       refreshDevices().catch(() => {});
     }
-  }, [connection, hasDevice, refreshDevices]);
+  }, [connection, hasDevice, view.deviceKey, refreshDevices]);
+
+  // The host closed the device out from under us — don't strand the guest on a
+  // pane that no longer has anything to show.
+  useEffect(() => {
+    if (!hasDevice) {
+      setPane("agent");
+    }
+  }, [hasDevice]);
 
   // The list is already scoped to the room, so this is the device or nothing.
   const device = devices.find((d) => d.id === view.deviceKey) ?? null;

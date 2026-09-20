@@ -504,6 +504,10 @@ export function useActiveDeviceKey(
   });
 }
 
+/** Run `cb` on every change to the runtime selection, outside React. */
+export const subscribeSimulator = (cb: () => void): (() => void) =>
+  simulatorStore.subscribe(cb);
+
 /** For tests */
 export const getSimulatorState = () => simulatorStore.getState();
 export const setSimulatorState = simulatorStore.setState.bind(simulatorStore);
