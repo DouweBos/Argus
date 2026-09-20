@@ -47,9 +47,21 @@ import { useLiveRefresh } from "./useLiveRefresh";
 export function App() {
   const identity = useAppStore((s) => s.identity);
   const init = useAppStore((s) => s.init);
-  // Read once: a huddle link is a different app, and switching a live tab
-  // between guest and paired mode is not a thing that should happen.
-  const [huddleToken] = useState(() => parseHuddleToken(window.location.hash));
+  // Guest vs. paired mode is decided once — a live tab never switches between
+  // them — but a second share link pasted into a guest tab is a new room.
+  const [huddleToken, setHuddleToken] = useState(() =>
+    parseHuddleToken(window.location.hash),
+  );
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = parseHuddleToken(window.location.hash);
+      setHuddleToken((prev) => (prev && next ? next : prev));
+    };
+    window.addEventListener("hashchange", onHashChange);
+
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   useEffect(() => {
     if (!huddleToken) {

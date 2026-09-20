@@ -7,7 +7,7 @@
  * UI simply never offers it.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Icons,
   SidebarHeader,
@@ -33,12 +33,16 @@ export function HuddleGuest({ token }: { token: string }) {
   // A reload of the same tab keeps the name and the key, so it rejoins without
   // asking the guest — or the host — anything a second time.
   const [label, setLabel] = useState(readGuestLabel);
+  // Keyed on the token, not on `huddle`: a fresh link after a denied or ended
+  // room is a new room, and must re-join rather than keep showing the old one.
+  const joinedToken = useRef<string | null>(null);
 
   useEffect(() => {
-    if (label && !huddle) {
+    if (label && joinedToken.current !== token) {
+      joinedToken.current = token;
       void joinHuddle(token, label);
     }
-  }, [label, huddle, joinHuddle, token]);
+  }, [label, joinHuddle, token]);
 
   return (
     <HuddleGate
