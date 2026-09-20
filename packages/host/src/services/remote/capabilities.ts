@@ -1094,8 +1094,33 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
   },
 
   "agents.send": async (params, ctx) => {
-    const { agent_id, message, images } = parse("agents.send", params);
-    requireAgent(agent_id);
+    const { agent_id, message, display_text, images } = parse(
+      "agents.send",
+      params,
+    );
+    const agent = requireAgent(agent_id);
+    // A scoped connection is a huddle guest, and a shared transcript has to say
+    // whose message this is; a paired device is the engineer's own, so it stays
+    // bare.
+    const author = ctx.scope ? ctx.device.label || undefined : undefined;
+
+    // Queue-or-send is decided here, not by the client: a remote's view of the
+    // agent's status can lag a turn that started a moment ago, and in a huddle
+    // several people send against the same agent. Anything already waiting also
+    // has to keep its place, so a send never jumps the queue.
+    if (agent.status === "running" || listQueue(agent_id).length > 0) {
+      await control(() =>
+        enqueueMessage(agent_id, {
+          text: message,
+          displayText: display_text,
+          author,
+          images,
+        }),
+      );
+
+      return { accepted: true, queued: true };
+    }
+
     await control(() => sendAgentMessage(agent_id, message, images));
     // The desktop renderer records the user bubble only for sends it initiates;
     // mirror this remote send so the prompt (not just the response) shows and
@@ -1103,9 +1128,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     emitHostEvent(`agent:remote-message:${agent_id}`, {
       message,
       images,
-      // A scoped connection is a huddle guest, and a shared transcript has
-      // to say whose message this is; a paired device is the engineer's own.
-      author: ctx.scope ? ctx.device.label || null : null,
+      author: author ?? null,
     });
 
     return { accepted: true };
@@ -1180,7 +1203,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     return { messages: listQueue(agent_id) };
   },
 
-  "agents.queue_add": async (params) => {
+  "agents.queue_add": async (params, ctx) => {
     const { agent_id, message, display_text, images } = parse(
       "agents.queue_add",
       params,
@@ -1190,6 +1213,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       enqueueMessage(agent_id, {
         text: message,
         displayText: display_text,
+        author: ctx.scope ? ctx.device.label || undefined : undefined,
         images,
       }),
     );

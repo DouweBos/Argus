@@ -75,6 +75,8 @@ export const RemoteQueuedMessage = z.object({
   text: z.string(),
   /** What to show instead, when it differs from `text`. */
   display_text: z.string().optional(),
+  /** Who queued it, when a huddle guest rather than the host did. */
+  author: z.string().optional(),
   images: z
     .array(z.object({ data: z.string(), media_type: z.string() }))
     .optional(),

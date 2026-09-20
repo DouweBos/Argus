@@ -126,6 +126,8 @@ export const MethodParams = {
     agent_id: z.string(),
     // Bounded to keep a remote from streaming an unbounded prompt into agent stdin.
     message: z.string().max(100_000),
+    /** What the clients show, when the sent text carries a preamble. */
+    display_text: z.string().max(100_000).optional(),
     images: z.array(RemoteImageAttachment).max(20).optional(),
   }),
   "agents.interrupt": z.object({ agent_id: z.string() }),
@@ -319,7 +321,11 @@ export const MethodResult = {
   }),
   "device.unregister_push": z.object({ accepted: z.boolean() }),
   "agents.capabilities": z.object({ capabilities: RemoteAgentCapabilities }),
-  "agents.send": z.object({ accepted: z.boolean() }),
+  "agents.send": z.object({
+    accepted: z.boolean(),
+    /** True when the agent was mid-turn, so the host parked it on the queue. */
+    queued: z.boolean().optional(),
+  }),
   "agents.interrupt": z.object({ accepted: z.boolean() }),
   "agents.stop": z.object({ accepted: z.boolean() }),
   "agents.set_model": z.object({ accepted: z.boolean() }),
