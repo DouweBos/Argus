@@ -234,30 +234,6 @@ export interface RunnerModelOption {
   description?: string;
 }
 
-/**
- * Onboarding step contributed by a runner.
- *
- * Runners declare any first-run UI they need (auth, install, key entry, ...) as
- * a list of these steps. The electron side only knows the metadata; the
- * renderer maps {@link kind} to a concrete React component via a small
- * registry. Adding a new runner with its own auth step is therefore purely
- * additive: the runner ships the step metadata, the renderer ships the
- * component, and the onboarding flow stitches them together by `kind`.
- */
-export interface RunnerOnboardingStep {
-  /** Stable id, also used as the onboarding "skip" key. e.g. `"claude_auth"`. */
-  id: string;
-  /** Owning runner id, e.g. `"claude-code"`. */
-  runnerId: string;
-  /** Human-readable title shown in the stepper / layout header. */
-  title: string;
-  /**
-   * Discriminator the renderer maps to a component. Must match a key in the
-   * renderer-side runner-onboarding registry.
-   */
-  kind: string;
-}
-
 export interface ForkTranscriptArgs {
   /** Source agent's resume ref (e.g. Claude Code session UUID). */
   sourceRef: string;
@@ -293,10 +269,4 @@ export interface LlmRunner {
   forkTranscript?: (
     args: ForkTranscriptArgs,
   ) => Promise<{ resumeRef: string | null }>;
-  /**
-   * Optional: onboarding steps the runner contributes to the first-run flow.
-   * Returning an empty array (or omitting the method) means the runner needs
-   * no first-run UI of its own.
-   */
-  getOnboardingSteps?: () => RunnerOnboardingStep[];
 }

@@ -1,4 +1,5 @@
 import type { LaunchRoute } from "../../../lib/launchRoute";
+import type { PrereqId } from "../../../lib/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -84,6 +85,7 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../McpServersField";
+import { PrereqList } from "../PrereqList";
 import { AutomationDefaults } from "./AutomationDefaults";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
@@ -825,6 +827,8 @@ function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
   );
 }
 
+const GIT_IDENTITY_PREREQ: PrereqId[] = ["git_identity"];
+
 const WORKING_COPY_VIEWS: { label: string; value: WorkingCopyView }[] = [
   { label: "Flat list", value: "flat" },
   { label: "Tree", value: "tree" },
@@ -862,6 +866,13 @@ function GitSection() {
         title="Git"
       />
       <SettingsScreenDetailBody>
+        <SettingsScreenField
+          label="Git identity"
+          caption="The name and email every commit Argus makes is authored with."
+        >
+          <PrereqList ids={GIT_IDENTITY_PREREQ} />
+        </SettingsScreenField>
+
         <SettingsScreenField label="Working copy view">
           <div className={styles.segmented}>
             {WORKING_COPY_VIEWS.map((v) => (

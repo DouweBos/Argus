@@ -71,7 +71,6 @@ import type {
   TailscaleDiagnosis,
   TailscaleFixKind,
   TailscaleFixResult,
-  RunnerOnboardingStep,
   Session,
   UploadedAttachment,
   UserProjectSettings,
@@ -2353,9 +2352,6 @@ export const claudeAuthLoginSubmitCode = (
 
 export const claudeAuthLoginCancel = (): Promise<void> =>
   invoke("claude_auth_login_cancel");
-
-export const listRunnerOnboardingSteps = (): Promise<RunnerOnboardingStep[]> =>
-  invoke("llm_list_onboarding_steps");
 
 export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
   invoke("llm_list_runners");

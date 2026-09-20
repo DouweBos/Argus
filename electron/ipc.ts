@@ -201,7 +201,6 @@ import {
   type CustomRunner,
 } from "@argus/host/services/llm/customRunners/store";
 import {
-  listRunnerOnboardingSteps,
   listRunners as listLlmRunners,
   syncCustomRunners,
 } from "@argus/host/services/llm/registry";
@@ -2432,11 +2431,6 @@ export function registerIpcHandlers(): void {
   });
   handle("onboarding_argus_dir_path", "admin", () => argusDirPath());
 
-  // LLM runner registry — surfaced to the renderer so onboarding can render
-  // each registered runner's contributed steps without hard-coding runner ids.
-  handle("llm_list_onboarding_steps", "admin", () =>
-    listRunnerOnboardingSteps(),
-  );
   handle("llm_list_runners", "admin", () =>
     listLlmRunners().map((r) => ({
       id: r.id,

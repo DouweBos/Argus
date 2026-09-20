@@ -252,11 +252,11 @@ Argus's device tooling — recording, control, debug streams, the UI inspector �
 | **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation.    | Android SDK (for Android), Playwright (for web)               |
 | **Device debug**        | Tail device logs, memory, and other conductor probes from the Debug panel. | Device control (auto)                                         |
 
-Pick tools during onboarding (the **Tools** step before Preflight) or at any time from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and IPC handlers are active.
+Pick tools from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and IPC handlers are active.
 
 Each tool row in Settings runs its declared prereq checks live and surfaces **Install** buttons for the ones we know how to fix. Failed prereqs don't block the toggle, but the surfaces that depend on a missing prereq will error gracefully when used.
 
-The preflight onboarding step is filtered to your enabled tools' prereqs plus the four core checks (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`). A user who picks zero tools sees only the four core checks.
+The four core checks (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`) run on the home screen instead, and only show a card when something needs fixing.
 
 ### Conductor version
 

@@ -1,12 +1,4 @@
-export const ONBOARDING_STEPS = [
-  "welcome",
-  "permissions",
-  "tools",
-  "preflight",
-  "claude_auth",
-  "telemetry",
-  "completion",
-] as const;
+export const ONBOARDING_STEPS = ["welcome", "telemetry"] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 

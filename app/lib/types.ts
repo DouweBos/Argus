@@ -1111,15 +1111,7 @@ export interface ClaudeAccountsState {
 // Onboarding
 // ---------------------------------------------------------------------------
 
-export const ONBOARDING_STEPS = [
-  "welcome",
-  "permissions",
-  "tools",
-  "preflight",
-  "claude_auth",
-  "telemetry",
-  "completion",
-] as const;
+export const ONBOARDING_STEPS = ["welcome", "telemetry"] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -1134,18 +1126,6 @@ export interface OnboardingStateData {
 export interface OnboardingConfigFile {
   onboarding: OnboardingStateData;
   recentProjects: string[];
-}
-
-/**
- * Onboarding step contributed by a registered LLM runner. Mirrors the
- * electron-side `RunnerOnboardingStep`; the renderer maps `kind` to a
- * concrete component via {@link runnerOnboardingComponents}.
- */
-export interface RunnerOnboardingStep {
-  id: string;
-  kind: string;
-  runnerId: string;
-  title: string;
 }
 
 export type PrereqId =
