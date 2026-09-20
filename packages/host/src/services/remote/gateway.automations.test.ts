@@ -140,6 +140,8 @@ describe("the automations command family", () => {
         "automation_run_now",
         "automation_runs_list",
         "automation_calibration",
+        "automation_run_scratch",
+        "automation_scratch_save",
         "proposals_list",
         "proposal_accept",
         "signal_sources_list",
