@@ -183,6 +183,7 @@ interface AppState {
   ) => Promise<void>;
   /** Drop a still-queued message before it's sent. */
   removeQueued: (agentId: string, id: string) => Promise<void>;
+  updateQueued: (agentId: string, id: string, message: string) => Promise<void>;
   /** Fetch the computer's queue for an agent (then follow `agent.queue`). */
   loadQueue: (agentId: string) => Promise<void>;
   interrupt: (agentId: string) => Promise<void>;
@@ -1007,6 +1008,16 @@ export const useAppStore = create<AppState>((set, get) => {
       await get().transport?.request("agents.queue_remove", {
         agent_id: agentId,
         id,
+      });
+    },
+
+    updateQueued: async (agentId, id, message) => {
+      // The queue lives on the computer, so the edit lands there and comes back
+      // to every client on `agent.queue` — no local mirror to keep in step.
+      await get().transport?.request("agents.queue_update", {
+        agent_id: agentId,
+        id,
+        message,
       });
     },
 
