@@ -205,6 +205,8 @@ export interface RemoteQueuedMessage {
   id: string;
   text: string;
   display_text?: string;
+  /** Who queued it, when a huddle guest rather than the host did. */
+  author?: string;
   images?: RemoteImageAttachment[];
   queued_at: number;
 }

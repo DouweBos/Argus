@@ -955,11 +955,35 @@ export const useAppStore = create<AppState>((set, get) => {
         },
       }));
 
-      await t.request("agents.send", {
+      const { queued } = await t.request<{ queued?: boolean }>("agents.send", {
         agent_id: agentId,
         message,
+        ...(displayText && displayText !== message
+          ? { display_text: displayText }
+          : {}),
         ...(images && images.length > 0 ? { images } : {}),
       });
+      // The computer may have found the agent mid-turn and parked this on the
+      // queue instead. It belongs in the queue strip, not the transcript, so
+      // retire the optimistic bubble rather than waiting for it to reconcile.
+      if (queued) {
+        set((s) => ({
+          optimisticByAgent: {
+            ...s.optimisticByAgent,
+            [agentId]: (s.optimisticByAgent[agentId] ?? []).filter(
+              (m) => m.id !== id,
+            ),
+          },
+        }));
+        get()
+          .loadQueue(agentId)
+          .catch(() => {});
+        get()
+          .loadAgentStatus(agentId)
+          .catch(() => {});
+
+        return;
+      }
       // Nudge a transcript refresh so the real message reconciles promptly.
       get()
         .loadTranscript(agentId)

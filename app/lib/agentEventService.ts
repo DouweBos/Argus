@@ -764,7 +764,7 @@ function trySendNextQueued(agentId: string): boolean {
         // Skip checkpoint.
       }
     }
-    addUserMessage(agentId, next.text, next.images, checkpointId);
+    addUserMessage(agentId, next.text, next.images, checkpointId, next.author);
     sendAgentMessage(agentId, next.text, next.images).catch(() => {});
     scheduleAgentSave(agentId);
   })().catch(() => {});

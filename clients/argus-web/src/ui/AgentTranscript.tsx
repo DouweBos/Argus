@@ -259,6 +259,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
   const loadImage = useAppStore((s) => s.loadImage);
   const watchAgent = useAppStore((s) => s.watchAgent);
+  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const queued = useAppStore((s) => s.queuedByAgent[agentId]);
   const removeQueued = useAppStore((s) => s.removeQueued);
   const endRef = useRef<HTMLDivElement>(null);
@@ -290,7 +291,12 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
     if (connection !== "ready") {
       return;
     }
-    const refresh = () => loadTranscript(agentId).catch(() => {});
+    // Status rides along with the transcript: a missed `agent.status` event
+    // otherwise leaves the composer showing "send" through a whole turn.
+    const refresh = () => {
+      loadTranscript(agentId).catch(() => {});
+      loadAgentStatus(agentId).catch(() => {});
+    };
     // The queue lives on the computer; fetch it once, then follow agent.queue.
     loadQueue(agentId).catch(() => {});
     refresh();
@@ -316,7 +322,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [connection, agentId, loadQueue, loadTranscript, watchAgent]);
+  }, [connection, agentId, loadQueue, loadTranscript, loadAgentStatus, watchAgent]);
 
   // Track scroll position: toggle the bottom pill, and lazy-load older history
   // when the user nears the top.

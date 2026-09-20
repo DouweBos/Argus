@@ -16,6 +16,7 @@ vi.mock("../../state", () => ({
     agents: new Map(),
     agentSnapshots: new Map<string, string>(),
     agentPendingPermissions: new Map(),
+    agentQueues: new Map(),
     sessions: new Map(),
   },
 }));
@@ -156,11 +157,12 @@ describe("control capability gating", () => {
       id: "s1",
       base_branch: "main",
     } as never);
+    appState.agentQueues.clear();
     appState.agents.clear();
     appState.agents.set("a1", {
       agentId: "a1",
       sessionId: "s1",
-      status: "running",
+      status: "idle",
       model: "m",
       permissionMode: "auto",
       parentAgentId: null,
@@ -192,6 +194,35 @@ describe("control capability gating", () => {
     const ctx = makeCtx(["monitor", "control"]);
     await dispatch("agents.send", { agent_id: "a1", message: "hi" }, ctx);
     expect(sendAgentMessage).toHaveBeenCalledWith("a1", "hi", undefined);
+  });
+
+  it("queues a send that lands mid-turn instead of injecting it", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    appState.agents.get("a1")!.status = "running";
+
+    const res = await dispatch(
+      "agents.send",
+      { agent_id: "a1", message: "wait for me" },
+      ctx,
+    );
+
+    expect(res).toMatchObject({ queued: true });
+    expect(sendAgentMessage).not.toHaveBeenCalled();
+    expect(appState.agentQueues.get("a1")).toHaveLength(1);
+  });
+
+  it("keeps a send behind anything already queued", async () => {
+    const ctx = makeCtx(["monitor", "control"]);
+    appState.agentQueues.set("a1", [
+      { id: "q1", text: "first", queued_at: 0 },
+    ] as never);
+
+    await dispatch("agents.send", { agent_id: "a1", message: "second" }, ctx);
+
+    expect(sendAgentMessage).not.toHaveBeenCalled();
+    expect(
+      (appState.agentQueues.get("a1") as { text: string }[]).map((m) => m.text),
+    ).toEqual(["first", "second"]);
   });
 
   it("allows a control device to spawn an agent", async () => {

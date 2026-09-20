@@ -163,6 +163,8 @@ export interface QueuedImage {
  * and is shared with the web and phone clients.
  */
 export interface QueuedMessage {
+  /** Who queued it, when a huddle guest rather than the local user did. */
+  author?: string;
   /** What the clients show, when it differs from `text` (e.g. a preamble). */
   display_text?: string;
   id: string;

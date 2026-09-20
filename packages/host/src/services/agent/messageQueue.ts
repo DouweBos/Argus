@@ -31,6 +31,8 @@ export interface QueuedMessage {
   text: string;
   /** What the clients show, when it differs from `text`. */
   display_text?: string;
+  /** Who queued it, when a huddle guest rather than the engineer did. */
+  author?: string;
   images?: QueuedImage[];
   queued_at: number;
 }
@@ -49,6 +51,7 @@ export function enqueueMessage(
   message: {
     text: string;
     displayText?: string;
+    author?: string;
     images?: QueuedImage[];
   },
 ): QueuedMessage {
@@ -58,6 +61,7 @@ export function enqueueMessage(
     ...(message.displayText && message.displayText !== message.text
       ? { display_text: message.displayText }
       : {}),
+    ...(message.author ? { author: message.author } : {}),
     ...(message.images?.length ? { images: message.images } : {}),
     queued_at: Date.now(),
   };
