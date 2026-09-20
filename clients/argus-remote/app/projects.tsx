@@ -15,7 +15,7 @@ import {
   Body,
   Card,
   EmptyState,
-  IconBtn,
+  HeaderIconBtn,
   Loading,
   Muted,
   Row,
@@ -71,22 +71,22 @@ export default function ProjectsScreen() {
           headerRight: () => (
             <Row gap={2}>
               <ConnectionBadge state={connection} />
-              <IconBtn label="Devices" onPress={() => router.push("/devices")}>
-                <Icons.Simulator size={16} color={theme.textSecondary} />
-              </IconBtn>
-              <IconBtn
+              <HeaderIconBtn
+                label="Devices"
+                icon={Icons.Simulator}
+                onPress={() => router.push("/devices")}
+              />
+              <HeaderIconBtn
                 label="Refresh"
+                icon={Icons.Refresh}
                 disabled={connection !== "ready"}
                 onPress={refresh}
-              >
-                <Icons.Refresh size={16} color={theme.textSecondary} />
-              </IconBtn>
-              <IconBtn
+              />
+              <HeaderIconBtn
                 label="Settings"
+                icon={Icons.Gear}
                 onPress={() => router.push("/settings")}
-              >
-                <Icons.Gear size={16} color={theme.textSecondary} />
-              </IconBtn>
+              />
             </Row>
           ),
         }}

@@ -119,11 +119,13 @@ export function Screen({
 }) {
   const theme = useTheme();
   const insets = useContentInsets();
+  const keyboardInset = useKeyboardInset();
   const padding = {
     padding: theme.space,
     gap: theme.space,
     paddingTop: theme.space + insets.top,
-    paddingBottom: theme.space + insets.bottom,
+    // The keyboard already covers the home indicator, so the two insets don't stack.
+    paddingBottom: theme.space + Math.max(insets.bottom, keyboardInset),
   };
 
   if (!scroll) {
@@ -139,6 +141,7 @@ export function Screen({
       style={{ flex: 1, backgroundColor: theme.bg }}
       contentContainerStyle={[padding, contentStyle]}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
     >
       {children}
     </ScrollView>
@@ -334,6 +337,46 @@ export function Btn({
           {label}
         </Text>
       )}
+    </Pressable>
+  );
+}
+
+/**
+ * Navigation-bar action. The app opts out of Liquid Glass
+ * (`UIDesignRequiresCompatibility`), so the bar honours `headerStyle` and these
+ * tint from the app's own palette like everything else.
+ */
+export function HeaderIconBtn({
+  icon: Icon,
+  onPress,
+  label,
+  disabled,
+}: {
+  icon: (props: { size?: number; color?: string }) => ReactNode;
+  onPress: () => void;
+  label: string;
+  disabled?: boolean;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => ({
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: pressed ? theme.bgHover : "transparent",
+        opacity: disabled ? 0.4 : 1,
+      })}
+    >
+      <Icon size={17} color={theme.headerIcon} />
     </Pressable>
   );
 }
@@ -587,6 +630,8 @@ export function TextField({
   autoFocus,
   onSubmitEditing,
   maxLength,
+  returnKeyType,
+  submitBehavior,
   style,
 }: {
   value: string;
@@ -596,6 +641,8 @@ export function TextField({
   autoFocus?: boolean;
   onSubmitEditing?: () => void;
   maxLength?: number;
+  returnKeyType?: TextInputProps["returnKeyType"];
+  submitBehavior?: TextInputProps["submitBehavior"];
   style?: TextInputProps["style"];
 }) {
   const theme = useTheme();
@@ -611,6 +658,8 @@ export function TextField({
       autoFocus={autoFocus}
       multiline={multiline}
       maxLength={maxLength}
+      returnKeyType={returnKeyType}
+      submitBehavior={submitBehavior}
       onSubmitEditing={onSubmitEditing}
       style={[
         {

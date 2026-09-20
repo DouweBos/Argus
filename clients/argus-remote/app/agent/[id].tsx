@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { AgentTranscript } from "../../src/components/AgentTranscript";
 import { ChatInput } from "../../src/components/ChatInput";
 import * as Icons from "../../src/components/Icons";
-import { Banner, IconBtn, Row, useKeyboardInset } from "../../src/components/ui";
+import { Banner, HeaderIconBtn, Row, useKeyboardInset } from "../../src/components/ui";
 import { useAppStore } from "../../src/stores/appStore";
 import { useTheme } from "../../src/theme";
 
@@ -88,25 +88,28 @@ export default function AgentScreen() {
           headerRight: () => (
             <Row gap={2}>
               {sessionId ? (
-                <IconBtn
+                <HeaderIconBtn
                   label="View changes"
+                  icon={Icons.Branch}
                   onPress={() =>
                     router.push({
                       pathname: "/changes/[session]",
                       params: { session: sessionId, label: label ?? "Session" },
                     })
                   }
-                >
-                  <Icons.Branch size={16} color={theme.textSecondary} />
-                </IconBtn>
+                />
               ) : null}
-              <IconBtn label="Devices" onPress={openDevices}>
-                <Icons.Simulator size={16} color={theme.textSecondary} />
-              </IconBtn>
+              <HeaderIconBtn
+                label="Devices"
+                icon={Icons.Simulator}
+                onPress={openDevices}
+              />
               {hasControl ? (
-                <IconBtn label="Shut down agent" onPress={confirmStop}>
-                  <Icons.Stop size={16} color={theme.textSecondary} />
-                </IconBtn>
+                <HeaderIconBtn
+                  label="Shut down agent"
+                  icon={Icons.Stop}
+                  onPress={confirmStop}
+                />
               ) : null}
             </Row>
           ),
