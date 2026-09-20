@@ -8,6 +8,8 @@ export interface RunHistoryRowProps {
   duration: ReactNode;
   /** Failure or skip reason, shown beneath the row. */
   error?: ReactNode;
+  /** Which automation the run belongs to. Only needed across automations. */
+  name?: ReactNode;
   onClick?: () => void;
   selected?: boolean;
   startedAt: ReactNode;
@@ -23,6 +25,7 @@ export function RunHistoryRow({
   cost,
   duration,
   error,
+  name,
   onClick,
   selected,
   startedAt,
@@ -38,6 +41,7 @@ export function RunHistoryRow({
       <button type="button" className={styles.main} onClick={onClick}>
         <span className={styles.top}>
           {status}
+          {name != null && <span className={styles.name}>{name}</span>}
           <span className={styles.started}>{startedAt}</span>
           <span className={styles.reason}>{triggerReason}</span>
           <span className={styles.spacer} />

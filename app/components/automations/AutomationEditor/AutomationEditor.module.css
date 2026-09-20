@@ -5,6 +5,10 @@
   padding: 4px 2px 2px;
 }
 
+.form > * {
+  flex-shrink: 0;
+}
+
 .schedule {
   display: flex;
   flex-direction: column;

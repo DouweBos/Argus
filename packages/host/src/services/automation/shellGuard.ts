@@ -315,31 +315,59 @@ export function automationDisallowedTools(sessionId: string): string[] {
 }
 
 /**
+ * The tools a run reports through. A `propose` run is started in plan mode, so
+ * the CLI would otherwise stop and ask before the one call the run exists to
+ * make — and nobody is watching it at 07:30. Neither tool touches a file.
+ */
+const RUN_REPORTING_TOOLS = new Set([
+  "mcp__argus__emit_proposal",
+  "mcp__argus__emit_report",
+]);
+
+/** Whether `sessionId` is an automation run's own neutral host session. */
+function isAutomationHostSession(sessionId: string): boolean {
+  return appState.sessions.get(sessionId)?.kind === "automation_host";
+}
+
+function controlResponse(
+  req: Parameters<PermissionPreHook>[0],
+  response: Record<string, unknown>,
+): void {
+  const requestId =
+    (req.rawRequest as { request_id?: string } | undefined)?.request_id ?? "";
+  req.approveRaw(
+    JSON.stringify({
+      type: "control_response",
+      response: { subtype: "success", request_id: requestId, response },
+    }),
+  );
+}
+
+/**
  * The pre-hook Argus installs on every agent. Returns `handled` after writing
  * a `deny` control response — the CLI never gets the chance to run it, and no
  * permission mode changes that, because the decision is made before the mode
- * is consulted.
+ * is consulted. The same path allows a run's reporting tools, so an unattended
+ * run never blocks on a prompt.
  */
 export function automationPermissionPreHook(
   sessionId: string,
 ): PermissionPreHook {
   return (req) => {
+    if (
+      RUN_REPORTING_TOOLS.has(req.toolName) &&
+      isAutomationHostSession(sessionId)
+    ) {
+      controlResponse(req, { behavior: "allow", updatedInput: req.input });
+
+      return { kind: "handled" };
+    }
+
     const message = automationShellBlock(sessionId, req.toolName, req.input);
     if (!message) {
       return null;
     }
-    const requestId =
-      (req.rawRequest as { request_id?: string } | undefined)?.request_id ?? "";
-    req.approveRaw(
-      JSON.stringify({
-        type: "control_response",
-        response: {
-          subtype: "success",
-          request_id: requestId,
-          response: { behavior: "deny", message },
-        },
-      }),
-    );
+    controlResponse(req, { behavior: "deny", message });
 
     return { kind: "handled" };
   };
