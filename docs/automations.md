@@ -201,6 +201,31 @@ in it is not undoable, and no major version bump is ever as easy as it looks.
 
 ---
 
+## Describing one instead of writing it
+
+**Automations → Describe it** takes a sentence — "every weekday at 8am, tell me
+which of my open PRs have gone stale" — and hands back a draft: a name, a
+playbook, a cron with a timezone, and the projects and signal sources it thinks
+apply. You read it, edit anything, and press save.
+
+Nothing is saved on your behalf, and three things about the draft are Argus's
+call rather than the model's:
+
+- **It arrives disabled**, the way every built-in template does. A model must
+  not be able to create a live, scheduled, autonomous thing by itself.
+- **It inherits the app-wide autonomy default.** A description asking for
+  auto-merge does not get it — the suggested rung is dropped and the draft says
+  so. Climb the ladder yourself, after you have read the playbook.
+- **The schedule is checked before you see it.** The cron goes through the same
+  evaluator the scheduler uses; one that does not parse — or parses but never
+  fires — is repaired where it can be and otherwise downgraded to a manual
+  trigger, with a note. The editor shows the next fire times either way.
+
+A project the draft names that is not open, and a signal source that does not
+exist, are dropped rather than saved.
+
+---
+
 ## The calibration loop
 
 Argus records how each proposal turned out — started and merged, started and

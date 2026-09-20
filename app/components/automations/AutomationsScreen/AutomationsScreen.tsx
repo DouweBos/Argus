@@ -23,6 +23,7 @@ import {
   useHasActiveRun,
   useLatestRun,
 } from "../../../stores/automationStore";
+import { DescribeAutomationDialog } from "../DescribeAutomationDialog/DescribeAutomationDialog";
 import {
   CancelRunButton,
   RunStatusBadge,
@@ -70,6 +71,7 @@ export function AutomationsScreen() {
   const loading = useAutomationsLoading();
   const error = useAutomationsError();
   const [creating, setCreating] = useState(false);
+  const [describing, setDescribing] = useState(false);
 
   const create = async () => {
     setCreating(true);
@@ -116,8 +118,8 @@ export function AutomationsScreen() {
         title="No automations yet"
         body="An automation is a playbook plus a clock: it wakes an agent up on a schedule, or when you press Run."
         action={
-          <Button size="sm" onClick={startCreate}>
-            New automation
+          <Button size="sm" onClick={() => setDescribing(true)}>
+            Describe it
           </Button>
         }
       />
@@ -134,6 +136,14 @@ export function AutomationsScreen() {
         <span className={styles.spacer} />
         <Button
           size="sm"
+          variant="secondary"
+          leading={<Icons.SparklesIcon size={11} />}
+          onClick={() => setDescribing(true)}
+        >
+          Describe it
+        </Button>
+        <Button
+          size="sm"
           leading={<Icons.PlusIcon size={11} />}
           disabled={creating}
           onClick={startCreate}
@@ -145,6 +155,10 @@ export function AutomationsScreen() {
       {error && <p className={styles.error}>{error}</p>}
 
       {body}
+
+      {describing && (
+        <DescribeAutomationDialog onClose={() => setDescribing(false)} />
+      )}
     </div>
   );
 }
