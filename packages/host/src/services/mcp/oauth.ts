@@ -81,24 +81,25 @@ interface RegistrationResponse {
  * Credentials for the token endpoint: HTTP Basic when the client was issued
  * as `client_secret_basic` (Figma), form fields otherwise.
  */
-function applyClientAuth(
+export function applyClientAuth(
   body: URLSearchParams,
   headers: Record<string, string>,
   client: { id: string; secret?: string; authMethod?: string },
 ): void {
-  body.set("client_id", client.id);
-  if (!client.secret) {
-    return;
-  }
-  if (client.authMethod === "client_secret_basic") {
-    const basic = Buffer.from(`${client.id}:${client.secret}`).toString(
-      "base64",
-    );
+  // Basic carries the client_id itself; repeating it in the body counts as a
+  // second authentication method and gets rejected (Linear 400s on it).
+  if (client.secret && client.authMethod === "client_secret_basic") {
+    const basic = Buffer.from(
+      `${encodeURIComponent(client.id)}:${encodeURIComponent(client.secret)}`,
+    ).toString("base64");
     headers.authorization = `Basic ${basic}`;
 
     return;
   }
-  body.set("client_secret", client.secret);
+  body.set("client_id", client.id);
+  if (client.secret) {
+    body.set("client_secret", client.secret);
+  }
 }
 
 interface TokenResponse {
