@@ -13,6 +13,7 @@
  */
 
 import * as Notifications from "expo-notifications";
+import { AndroidImportance } from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { toBase64 } from "./base64";
@@ -93,7 +94,7 @@ export async function getPushRegistration(): Promise<PushRegistration | null> {
     // A channel must exist before Android will display anything we post.
     await Notifications.setNotificationChannelAsync("default", {
       name: "Agent updates",
-      importance: Notifications.AndroidImportance.HIGH,
+      importance: AndroidImportance.HIGH,
     });
   }
 
