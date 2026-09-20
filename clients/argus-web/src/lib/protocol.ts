@@ -70,11 +70,24 @@ export type HuddleConnectionState = "approved" | "denied" | "ended" | "pending";
  * The guest's own view of the room. `agent_id`/`device_key` stay null until
  * approval — a pending guest is not told what it is waiting for.
  */
+/** Another approved guest, as this client sees them. */
+export interface HuddleMember {
+  member_id: string;
+  label: string;
+  connected: boolean;
+  /** They hold the device claim. At most one member ever does. */
+  driving?: boolean;
+}
+
 export interface HuddleStatePayload {
   room_id: string;
   state: HuddleConnectionState;
   agent_id: string | null;
   device_key: string | null;
+  /** Everyone the host has let in. Empty until this guest is approved. */
+  members?: HuddleMember[];
+  /** Which of `members` is us. */
+  you?: string | null;
 }
 
 export type RemotePlatform = "ios" | "android";

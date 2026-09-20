@@ -92,8 +92,22 @@ export function getClaim(deviceId: string): PublicClaim | null {
   return toPublic(activeClaim(deviceId));
 }
 
+/**
+ * Notified whenever a device changes hands. A single slot, wired by
+ * `huddleService` so a room can re-push its roster — a guest's "who's driving"
+ * mark has to move the moment the claim does.
+ */
+let claimChanged: ((deviceId: string) => void) | null = null;
+
+export function setClaimChangedListener(
+  cb: ((deviceId: string) => void) | null,
+): void {
+  claimChanged = cb;
+}
+
 function publish(deviceId: string): void {
   emitHostEvent("devices:claim-changed", claimState(deviceId));
+  claimChanged?.(deviceId);
 }
 
 /** The claim as every client sees it — the event payload and the denial data. */

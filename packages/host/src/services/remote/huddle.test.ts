@@ -4,9 +4,13 @@
  * host approving does.
  */
 
+import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@argus/host/bus", () => ({ emitHostEvent: vi.fn() }));
+
+const { claimDevice, releaseDevice, resetClaims } =
+  await import("./deviceClaims");
 
 const {
   approveGuest,
@@ -21,14 +25,17 @@ const {
   joinRoom,
   leaveGuest,
   listRooms,
+  refreshDriving,
   resetRooms,
+  setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
   sweepRooms,
 } = await import("./huddle");
 
-function link() {
+function link(connectionId = `conn-${randomUUID()}`) {
   return {
+    connectionId,
     grant: vi.fn(),
     revoke: vi.fn(),
     notify: vi.fn(),
@@ -167,12 +174,14 @@ describe("approval", () => {
       agent_ids: ["ag1"],
       device_keys: ["udid-1"],
     });
-    expect(l.notify).toHaveBeenCalledWith({
-      room_id: r.id,
-      state: "approved",
-      agent_id: "ag1",
-      device_key: "udid-1",
-    });
+    expect(l.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        room_id: r.id,
+        state: "approved",
+        agent_id: "ag1",
+        device_key: "udid-1",
+      }),
+    );
   });
 
   it("does nothing for a key that never joined", () => {
@@ -363,6 +372,68 @@ describe("the expiry backstop", () => {
   });
 });
 
+describe("mirroring the host's device", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  it("re-grants approved guests onto the new device and tells them", () => {
+    const r = room({ device_key: "" });
+    const l = link();
+    joinRoom(r.token, "pub-1", "Sam", l);
+    approveGuest(r.id, "pub-1");
+    l.grant.mockClear();
+    l.notify.mockClear();
+
+    expect(setRoomDevice(r.id, "udid-9")).toBe(true);
+
+    expect(l.grant).toHaveBeenCalledWith({
+      agent_ids: ["ag1"],
+      device_keys: ["udid-9"],
+    });
+    expect(l.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ state: "approved", device_key: "udid-9" }),
+    );
+    expect(getRoom(r.id)?.device_key).toBe("udid-9");
+  });
+
+  it("drops the device again when the host closes it", () => {
+    const r = room({ device_key: "udid-1" });
+    const l = link();
+    joinRoom(r.token, "pub-1", "Sam", l);
+    approveGuest(r.id, "pub-1");
+
+    setRoomDevice(r.id, "");
+
+    expect(guestScope(getRoom(r.id)!).device_keys).toEqual([]);
+    expect(l.notify).toHaveBeenLastCalledWith(
+      expect.objectContaining({ device_key: null }),
+    );
+  });
+
+  it("tells a pending guest nothing — they hold no grant to re-mint", () => {
+    const r = room({ device_key: "" });
+    const l = link();
+    joinRoom(r.token, "pub-1", "Sam", l);
+    l.notify.mockClear();
+
+    setRoomDevice(r.id, "udid-9");
+
+    expect(l.grant).not.toHaveBeenCalled();
+    expect(l.notify).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op when the device didn't actually change", () => {
+    const r = room({ device_key: "udid-1" });
+    const l = link();
+    joinRoom(r.token, "pub-1", "Sam", l);
+    approveGuest(r.id, "pub-1");
+    l.grant.mockClear();
+
+    expect(setRoomDevice(r.id, "udid-1")).toBe(false);
+    expect(l.grant).not.toHaveBeenCalled();
+  });
+});
+
 describe("a guest who closes the tab and comes back", () => {
   beforeEach(reset);
   afterEach(resetRooms);
@@ -439,3 +510,161 @@ describe("a guest who closes the tab and comes back", () => {
   });
 });
 
+describe("what a guest is told about the room", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  it("lists the other approved guests, and marks which one is them", () => {
+    const r = room();
+    const ana = link();
+    joinRoom(r.token, "pub-a", "Ana", ana, "client-a");
+    joinRoom(r.token, "pub-b", "Ben", link(), "client-b");
+    approveGuest(r.id, "pub-a");
+    approveGuest(r.id, "pub-b");
+
+    const payload = ana.notify.mock.calls.at(-1)![0];
+    expect(payload.members.map((m: { label: string }) => m.label)).toEqual([
+      "Ana",
+      "Ben",
+    ]);
+    const me = payload.members.find(
+      (m: { label: string }) => m.label === "Ana",
+    );
+    expect(payload.you).toBe(me.member_id);
+  });
+
+  it("never names a guest the host hasn't let in yet", () => {
+    const r = room();
+    const ana = link();
+    joinRoom(r.token, "pub-a", "Ana", ana, "client-a");
+    approveGuest(r.id, "pub-a");
+    ana.notify.mockClear();
+
+    joinRoom(r.token, "pub-b", "Ben", link(), "client-b");
+
+    const payload = ana.notify.mock.calls.at(-1)![0];
+    expect(payload.members.map((m: { label: string }) => m.label)).toEqual([
+      "Ana",
+    ]);
+  });
+
+  it("tells a pending guest nothing about who is inside", () => {
+    const r = room();
+    joinRoom(r.token, "pub-a", "Ana", link(), "client-a");
+    approveGuest(r.id, "pub-a");
+
+    const outcome = joinRoom(r.token, "pub-b", "Ben", link(), "client-b");
+
+    expect(outcome).toMatchObject({
+      ok: true,
+      payload: { members: [], you: null },
+    });
+  });
+
+  it("pushes the roster when someone drops off", () => {
+    const r = room();
+    const ana = link();
+    joinRoom(r.token, "pub-a", "Ana", ana, "client-a");
+    joinRoom(r.token, "pub-b", "Ben", link(), "client-b");
+    approveGuest(r.id, "pub-a");
+    approveGuest(r.id, "pub-b");
+    ana.notify.mockClear();
+
+    leaveGuest(r.id, "pub-b");
+
+    const members = ana.notify.mock.calls.at(-1)![0].members;
+    expect(
+      members.find((m: { label: string }) => m.label === "Ben").connected,
+    ).toBe(false);
+  });
+
+  it("keeps one member id when a guest reopens the link", () => {
+    const r = room();
+    const first = link();
+    joinRoom(r.token, "pub-a", "Ana", first, "client-a");
+    approveGuest(r.id, "pub-a");
+    const before = first.notify.mock.calls.at(-1)![0].you;
+
+    leaveGuest(r.id, "pub-a");
+    joinRoom(r.token, "pub-a2", "Ana", link(), "client-a");
+    approveGuest(r.id, "pub-a2");
+
+    expect(getRoom(r.id)!.guests[0].member_id).toBe(before);
+  });
+});
+
+describe("who is driving the shared device", () => {
+  beforeEach(() => {
+    reset();
+    resetClaims();
+  });
+  afterEach(() => {
+    resetRooms();
+    resetClaims();
+  });
+
+  function roomOfTwo() {
+    const r = room({ device_key: "udid-1" });
+    const ana = link("conn-ana");
+    const ben = link("conn-ben");
+    joinRoom(r.token, "pub-a", "Sam", ana, "client-a");
+    joinRoom(r.token, "pub-b", "Sam", ben, "client-b");
+    approveGuest(r.id, "pub-a");
+    approveGuest(r.id, "pub-b");
+
+    return { r, ana, ben };
+  }
+
+  function drivingLabels(l: ReturnType<typeof link>): string[] {
+    return l.notify.mock.calls
+      .at(-1)![0]
+      .members.filter((m: { driving: boolean }) => m.driving)
+      .map((m: { member_id: string }) => m.member_id);
+  }
+
+  it("marks the claim holder, by connection rather than by name", () => {
+    const { r, ana } = roomOfTwo();
+    // Both guests are called "Sam" — only the socket tells them apart.
+    claimDevice("udid-1", {
+      connectionId: "conn-ben",
+      deviceId: "udid-1",
+      label: "Sam",
+    });
+    refreshDriving("udid-1");
+
+    const bensId = getRoom(r.id)!.guests[1].member_id;
+    expect(drivingLabels(ana)).toEqual([bensId]);
+  });
+
+  it("nobody is driving a device that is free", () => {
+    const { ana } = roomOfTwo();
+
+    expect(drivingLabels(ana)).toEqual([]);
+  });
+
+  it("clears the mark when the device is let go", () => {
+    const { ana } = roomOfTwo();
+    claimDevice("udid-1", {
+      connectionId: "conn-ben",
+      deviceId: "udid-1",
+      label: "Sam",
+    });
+    refreshDriving("udid-1");
+    releaseDevice("udid-1", "conn-ben");
+    refreshDriving("udid-1");
+
+    expect(drivingLabels(ana)).toEqual([]);
+  });
+
+  it("ignores a claim on some other device", () => {
+    const { ana } = roomOfTwo();
+    claimDevice("udid-other", {
+      connectionId: "conn-ben",
+      deviceId: "udid-other",
+      label: "Sam",
+    });
+    refreshDriving("udid-other");
+
+    expect(drivingLabels(ana)).toEqual([]);
+  });
+});

@@ -19,6 +19,7 @@ import type {
 } from "@argus/remote-protocol";
 import { randomUUID, randomBytes, timingSafeEqual } from "node:crypto";
 import { emitHostEvent } from "@argus/host/bus";
+import { getClaim } from "./deviceClaims";
 
 /** Backstop lifetime for a forgotten share. The engineer normally ends it. */
 export const ROOM_TTL_MS = 4 * 60 * 60 * 1000;
@@ -28,6 +29,12 @@ const SWEEP_INTERVAL_MS = 60_000;
 
 /** A live guest socket, as far as the room store needs to care. */
 export interface GuestLink {
+  /**
+   * The gateway connection behind this guest. Matched against the device
+   * claim's holder so "driving" follows the socket, not the display name —
+   * two guests may well answer to the same one.
+   */
+  connectionId: string;
   /** Install the scoped grant on the socket (the host approved). */
   grant: (scope: GrantScope) => void;
   /** Strip the grant and drop the socket (denied, revoked, or room ended). */
@@ -73,21 +80,77 @@ function stopSweep(): void {
   }
 }
 
+/**
+ * The connection each guest is on right now, by key. Only a connected guest can
+ * be holding the device, so a missing entry simply isn't driving.
+ */
+function connectionIds(entry: RoomEntry): Map<string, string> {
+  const ids = new Map<string, string>();
+  for (const [pub, link] of entry.links) {
+    ids.set(pub, link.connectionId);
+  }
+
+  return ids;
+}
+
 function statePayload(
   room: HuddleRoom,
   guest: HuddleGuest | null,
   state: HuddleStatePayload["state"],
+  connections?: Map<string, string>,
 ): HuddleStatePayload {
   // A guest that is not approved learns nothing about the room beyond its id —
-  // not the agent, not the device.
+  // not the agent, not the device, not who else is in it.
   const approved = state === "approved" && guest?.state === "approved";
+  // At most one person ever holds the device, and only while the room has one.
+  const holder = approved && room.device_key ? getClaim(room.device_key) : null;
 
   return {
     room_id: room.id,
     state,
     agent_id: approved ? room.agent_id : null,
     device_key: approved && room.device_key ? room.device_key : null,
+    // Only the people the host has let in: a pending guest is the host's
+    // decision to announce, not something the room leaks early.
+    members: approved
+      ? room.guests
+          .filter((g) => g.state === "approved")
+          .map((g) => ({
+            member_id: g.member_id,
+            label: g.label,
+            connected: g.connected,
+            driving:
+              holder != null &&
+              connections?.get(g.dev_static_pub) === holder.connection_id,
+          }))
+      : [],
+    you: approved ? (guest?.member_id ?? null) : null,
   };
+}
+
+/**
+ * Tell everyone already inside that the room's membership moved. Called
+ * wherever the guest list changes, so a guest's "People" list is pushed rather
+ * than polled — and so someone being removed is visible to the rest.
+ */
+function pushRoster(entry: RoomEntry): void {
+  const connections = connectionIds(entry);
+  for (const [pub, link] of entry.links) {
+    const guest = entry.room.guests.find((g) => g.dev_static_pub === pub);
+    if (guest?.state !== "approved") {
+      continue;
+    }
+    link.notify(statePayload(entry.room, guest, "approved", connections));
+  }
+}
+
+/** A device changed hands — every room sharing it re-marks who is driving. */
+export function refreshDriving(deviceId: string): void {
+  for (const entry of rooms.values()) {
+    if (entry.room.device_key === deviceId) {
+      pushRoster(entry);
+    }
+  }
 }
 
 /** What a scoped grant for this room's guests may address. */
@@ -266,6 +329,7 @@ export function joinRoom(
   if (guest.state === "approved") {
     link.grant(guestScope(room));
   }
+  pushRoster(entry);
   emitChanged();
 
   return {
@@ -301,7 +365,7 @@ export function approveGuest(roomId: string, devStaticPub: string): boolean {
   guest.approved_at = Date.now();
   const link = entry.links.get(devStaticPub);
   link?.grant(guestScope(entry.room));
-  link?.notify(statePayload(entry.room, guest, "approved"));
+  pushRoster(entry);
   emitChanged();
 
   return true;
@@ -323,6 +387,7 @@ export function denyGuest(roomId: string, devStaticPub: string): boolean {
   entry.links.delete(devStaticPub);
   link?.notify(statePayload(entry.room, guest, "denied"));
   link?.revoke();
+  pushRoster(entry);
   emitChanged();
 
   return true;
@@ -352,6 +417,7 @@ export function leaveGuest(roomId: string, devStaticPub: string): void {
   } else {
     guest.connected = false;
   }
+  pushRoster(entry);
   emitChanged();
 }
 

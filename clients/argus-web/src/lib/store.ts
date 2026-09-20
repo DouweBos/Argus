@@ -142,6 +142,8 @@ interface AppState {
    * place, so there is no second connection.
    */
   joinHuddle: (token: string, label: string) => Promise<void>;
+  /** Hang up on a huddle from the guest side. The link still works after. */
+  leaveHuddle: () => void;
   pairComplete: (identity: DeviceIdentity) => void;
   setDeviceName: (name: string) => Promise<void>;
   setPushEnabled: (enabled: boolean) => Promise<void>;
@@ -483,7 +485,13 @@ export const useAppStore = create<AppState>((set, get) => {
           }
           // Re-present the token on every (re)connect: an already-approved key
           // is re-granted silently, so a reload costs no second approval.
-          requestJoin(transport, token, label, get().huddle ?? undefined)
+          requestJoin(
+            transport,
+            token,
+            label,
+            get().huddle ?? undefined,
+            guestClientId(),
+          )
             .then((view) => {
               set({
                 huddle: view,

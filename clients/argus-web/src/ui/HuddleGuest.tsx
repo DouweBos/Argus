@@ -9,6 +9,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  Button,
+  GuestList,
   Icons,
   SidebarHeader,
   SidebarHeaderAction,
@@ -51,6 +53,9 @@ export function HuddleGuest({ token }: { token: string }) {
       defaultLabel={label}
       onJoin={(name) => {
         rememberGuestLabel(name);
+        // Clear the guard so asking again after leaving actually re-joins,
+        // even when the name (and therefore the effect's deps) didn't change.
+        joinedToken.current = null;
         setLabel(name);
       }}
     >
@@ -64,6 +69,8 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const agentId = view.agentId ?? "";
   const panes = huddlePanes(view);
   const [pane, setPane] = useState<HuddlePane>("agent");
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const leaveHuddle = useAppStore((s) => s.leaveHuddle);
   const connection = useAppStore((s) => s.connection);
   const status = useAppStore((s) => s.statusByAgent[agentId]);
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
@@ -112,6 +119,16 @@ function HuddleRoom({ view }: { view: HuddleView }) {
         actions={
           <>
             <ConnectionBadge state={connection} />
+            <SidebarHeaderAction
+              onClick={() => setPeopleOpen((open) => !open)}
+              title="People in this huddle"
+              aria-label="People in this huddle"
+            >
+              <Icons.GuestsIcon size={14} />
+              {view.members.length > 1 && (
+                <span className="aw-people-count">{view.members.length}</span>
+              )}
+            </SidebarHeaderAction>
             {hasDevice && (
               <SidebarHeaderAction
                 onClick={() => setPane(pane === "device" ? "agent" : "device")}
@@ -128,6 +145,24 @@ function HuddleRoom({ view }: { view: HuddleView }) {
           </>
         }
       />
+
+      {peopleOpen && (
+        <div className="aw-people">
+          <GuestList
+            emptyLabel="Just you so far."
+            guests={view.members.map((m) => ({
+              id: m.member_id,
+              label: m.member_id === view.you ? `${m.label} (you)` : m.label,
+              state: "approved" as const,
+              connected: m.connected,
+              driving: m.driving,
+            }))}
+          />
+          <Button variant="danger" onClick={leaveHuddle}>
+            Leave huddle
+          </Button>
+        </div>
+      )}
 
       <div className="aw-main">
         {pane === "agent" && <AgentTranscript agentId={agentId} />}
