@@ -25,6 +25,11 @@ export interface GuestListProps {
   /** Omitted for a read-only list (a guest looking at the other guests). */
   onApprove?: (id: string) => void;
   onDeny?: (id: string) => void;
+  /**
+   * Take someone already in the room back out — also how a row left behind by
+   * a guest who has gone for good gets cleared.
+   */
+  onRemove?: (id: string) => void;
   /** Shown instead of a row when nobody has opened the link yet. */
   emptyLabel?: string;
   className?: string;
@@ -38,7 +43,11 @@ function statusLine(guest: GuestListItem): string {
     return "Turned away";
   }
 
-  return guest.connected ? "In the huddle" : "Tab closed — link still works";
+  // The grant is bound to the key that tab handshook with, so a guest who
+  // closed it cannot walk back in on the link alone.
+  return guest.connected
+    ? "In the huddle"
+    : "Left — they'd need letting in again";
 }
 
 function bulbTone(
@@ -67,6 +76,7 @@ export function GuestList({
   guests,
   onApprove,
   onDeny,
+  onRemove,
   emptyLabel = "Nobody has opened the link yet.",
   className,
 }: GuestListProps) {
@@ -119,6 +129,17 @@ export function GuestList({
                 onClick={() => onApprove(guest.id)}
               >
                 Allow
+              </Button>
+            </span>
+          )}
+          {guest.state !== "pending" && onRemove && (
+            <span className={styles.actions}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRemove(guest.id)}
+              >
+                Remove
               </Button>
             </span>
           )}

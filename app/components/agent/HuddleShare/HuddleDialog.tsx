@@ -13,6 +13,7 @@ import { shareableDeviceKey } from "../../../lib/huddleDevice";
 import {
   huddleApproveGuest,
   huddleDenyGuest,
+  huddleRemoveGuest,
   huddleStart,
   huddleStop,
 } from "../../../lib/ipc";
@@ -150,6 +151,9 @@ export function HuddleDialog({
             }}
             onDeny={(id) => {
               huddleDenyGuest(room.id, id).catch(() => {});
+            }}
+            onRemove={(id) => {
+              huddleRemoveGuest(room.id, id).catch(() => {});
             }}
           />
         </div>

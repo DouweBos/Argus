@@ -339,6 +339,32 @@ export function joinRoom(
   };
 }
 
+/**
+ * Take one guest out of the room entirely: grant revoked, socket dropped, row
+ * gone. Unlike {@link denyGuest} this leaves no "turned away" tombstone, so it
+ * doubles as the way to clear someone who has drifted out of a long huddle —
+ * and they may ask to come back in.
+ */
+export function removeGuest(roomId: string, devStaticPub: string): boolean {
+  const entry = rooms.get(roomId);
+  const guest = entry?.room.guests.find(
+    (g) => g.dev_static_pub === devStaticPub,
+  );
+  if (!entry || !guest) {
+    return false;
+  }
+  entry.room.guests = entry.room.guests.filter(
+    (g) => g.dev_static_pub !== devStaticPub,
+  );
+  const link = entry.links.get(devStaticPub);
+  entry.links.delete(devStaticPub);
+  link?.revoke();
+  pushRoster(entry);
+  emitChanged();
+
+  return true;
+}
+
 /** This guest's current standing, for a `huddle.state` request. */
 export function guestState(
   roomId: string,

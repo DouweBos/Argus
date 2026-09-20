@@ -18,13 +18,14 @@ import {
   getRoom,
   listRooms,
   refreshDriving,
+  removeGuest,
   setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
 } from "./huddle";
 import { acquirePublicUrl, releasePublicUrl } from "./remoteService";
 
-export { approveGuest, denyGuest, getRoom, listRooms };
+export { approveGuest, denyGuest, getRoom, listRooms, removeGuest };
 
 /**
  * Re-point a live room at whatever device the host now has open. Guests mirror
