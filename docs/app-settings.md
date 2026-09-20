@@ -235,9 +235,9 @@ should get, use the project-level `mcp_servers` in
 
 ## Privacy
 
-| Setting                      | Default | Description                                                                                                                                                                         |
-| ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Send anonymous telemetry** | `false` | Sends anonymous usage and crash events to PostHog so we can find bugs and prioritise features. Consent is collected once during onboarding (telemetry step); flip it any time here. |
+| Setting       | Default    | Description                                                                                                                                                                                                                                                  |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Telemetry** | `presence` | `Just count me` sends one anonymous heartbeat per launch (random install id + app version) so we can count daily active users. `Full analytics` adds usage, error and crash events. Chosen once on first launch; switch any time here. There is no full off. |
 
 ---
 
@@ -305,8 +305,8 @@ What we send (when the toggle is on):
   PostHog project, so the raw IP is not stored alongside the event —
   but PostHog still uses it at ingestion to derive these GeoIP fields
   before discarding. PostHog doesn't expose a switch to skip
-  enrichment entirely. If even city-level geography is unacceptable,
-  leave telemetry off.
+  enrichment entirely. `Just count me` keeps that exposure to one
+  request per launch.
 - Argus-specific events documented in
   [telemetry-events.md](./telemetry-events.md) — feature usage signals
   with the small, named props listed there. Never raw arguments, file
@@ -324,7 +324,7 @@ What we do **not** send:
   account.
 
 Telemetry is hard-disabled in development builds, regardless of the
-toggle.
+mode.
 
 For the full per-event catalogue and exhaustive property list, see
 [telemetry-events.md](./telemetry-events.md).
@@ -668,7 +668,7 @@ Argus keeps everything under `~/.argus/`:
   claude-accounts/            ← Per-account Claude credentials
   remote-devices.json         ← Remote-access identity key, paired devices, push credentials (encrypted)
   user-project-settings.json  ← Per-developer project prefs (branch prefix, …)
-  telemetry-id                ← Anonymous install id (only present if telemetry is on)
+  telemetry-id                ← Anonymous install id
 ```
 
 UI preferences (theme, display size, default permission mode, default

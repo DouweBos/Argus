@@ -2481,7 +2481,7 @@ export function registerIpcHandlers(): void {
   }));
   handle("telemetry_set_mode", "admin", (a) => {
     const next = a.mode;
-    if (next === "off" || next === "presence" || next === "full") {
+    if (next === "presence" || next === "full") {
       setTelemetryMode(next);
     }
   });

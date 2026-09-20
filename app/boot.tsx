@@ -32,8 +32,8 @@ import { initHuddleRooms } from "./stores/huddleStore";
 import { getTelemetryMode } from "./stores/settingsStore";
 
 export function boot(popoutMode: string | null, params: URLSearchParams): void {
-  // Anonymous, opt-out telemetry. Boots once per renderer; popout windows
-  // share the same install id and respect the same enable flag.
+  // Anonymous telemetry. Boots once per renderer; popout windows share the
+  // same install id and respect the same mode.
   async function bootTelemetry(): Promise<void> {
     try {
       const init = await getTelemetryInit();
@@ -44,8 +44,8 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
         popout: popoutMode ?? "main",
       });
       if (userMode !== init.mode) {
-        // Push the persisted user choice to main — this is what triggers the
-        // once-per-launch heartbeat (and, for `full`, `app_launched`).
+        // Push the persisted user choice to main — for `full` this is what
+        // records `app_launched`.
         await setTelemetryModeOnMain(userMode);
       }
       if (userMode === "full") {

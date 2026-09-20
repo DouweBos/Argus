@@ -47,16 +47,14 @@ export type DiffViewMode = "split" | "unified";
 export type CommitSigningFormat = "gpg" | "ssh";
 
 /**
- * Three telemetry levels:
- * - `off`: nothing is sent, ever. The privacy-maximum mode.
- * - `presence`: a single `app_heartbeat` event per launch carrying just the
+ * Two telemetry levels:
+ * - `presence`: a single anonymous heartbeat per launch carrying just the
  *   app version. Lets us count DAU without seeing what anyone does.
  * - `full`: the full event catalogue documented in `docs/telemetry-events.md`.
  */
-export type TelemetryMode = "full" | "off" | "presence";
+export type TelemetryMode = "full" | "presence";
 
 export const TELEMETRY_MODE_LABELS: Record<TelemetryMode, string> = {
-  off: "Off",
   presence: "Presence only",
   full: "Full analytics",
 };
@@ -139,24 +137,8 @@ function sanitizeDefaultLlm(input: unknown): DefaultLlm {
   return { runner, model };
 }
 
-/**
- * Map persisted telemetry state to a `TelemetryMode`. Honours the new
- * `telemetryMode` field if present; otherwise falls back to the legacy
- * `telemetryEnabled` boolean (true → `full`, false → `off` — preserves the
- * privacy promise that opting out meant zero events).
- */
-function sanitizeTelemetryMode(
-  mode: unknown,
-  legacyEnabled: unknown,
-): TelemetryMode {
-  if (mode === "off" || mode === "presence" || mode === "full") {
-    return mode;
-  }
-  if (typeof legacyEnabled === "boolean") {
-    return legacyEnabled ? "full" : "off";
-  }
-
-  return "off";
+function sanitizeTelemetryMode(mode: unknown): TelemetryMode {
+  return mode === "full" ? "full" : "presence";
 }
 
 function sanitizeLastEffortByRunner(
@@ -285,10 +267,7 @@ function load(): SettingsState {
           typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
         defaultLlm: sanitizeDefaultLlm(parsed.defaultLlm),
-        telemetryMode: sanitizeTelemetryMode(
-          parsed.telemetryMode,
-          (parsed as { telemetryEnabled?: unknown }).telemetryEnabled,
-        ),
+        telemetryMode: sanitizeTelemetryMode(parsed.telemetryMode),
         confirmPreferences:
           parsed.confirmPreferences &&
           typeof parsed.confirmPreferences === "object"
@@ -337,14 +316,12 @@ function load(): SettingsState {
     // fall through to defaults
   }
 
-  // Telemetry default opt-out — consent is collected explicitly during the
-  // telemetry onboarding step before any analytics events are sent.
   return {
     defaultPermissionMode: "auto",
     defaultModel: "",
     customEditors: [],
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
-    telemetryMode: "off",
+    telemetryMode: "presence",
     confirmPreferences: {},
     workingCopyView: "flat",
     diffView: "unified",

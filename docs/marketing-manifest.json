@@ -52,7 +52,7 @@
           "slug": "app-settings",
           "file": "app-settings.md",
           "title": "App settings",
-          "summary": "Per-developer machine-local preferences. Theme, agent defaults, editor, telemetry opt-out, and other personal toggles."
+          "summary": "Per-developer machine-local preferences. Theme, agent defaults, editor, telemetry level, and other personal toggles."
         }
       ]
     },
@@ -64,7 +64,7 @@
           "slug": "telemetry",
           "file": "telemetry-events.md",
           "title": "Telemetry events",
-          "summary": "Every event Argus sends to PostHog, with payload shapes. Anonymous distinct id only — opt out anytime in App settings."
+          "summary": "Every event Argus sends to PostHog, with payload shapes. Anonymous distinct id only — drop to a presence-only heartbeat anytime in App settings."
         }
       ]
     }

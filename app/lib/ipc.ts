@@ -2451,7 +2451,7 @@ export const updaterQuitAndInstall = (): Promise<void> =>
   invoke("updater_quit_and_install");
 
 // Telemetry
-export type TelemetryMode = "full" | "off" | "presence";
+export type TelemetryMode = "full" | "presence";
 export interface TelemetryInit {
   appVersion: string;
   configured: boolean;

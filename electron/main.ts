@@ -917,9 +917,8 @@ app.whenReady().then(() => {
   // events in the order they were emitted even once the gateway taps it too.
   installRendererEventSink();
 
-  // Anonymous telemetry. Starts disabled — the renderer pushes the user's
-  // consent state (collected during onboarding, kept in localStorage) once
-  // it boots. Until that arrives, no events are sent.
+  // Anonymous telemetry. Starts in presence mode (one heartbeat per launch);
+  // the renderer raises it to full if the user opted in during onboarding.
   initTelemetry();
   installCrashHooks();
 

@@ -618,10 +618,8 @@ function PrivacySection() {
 
   const description = (() => {
     switch (mode) {
-      case "off":
-        return "Nothing leaves your machine. We can't see this install at all.";
       case "presence":
-        return "One anonymous heartbeat per launch — install id and app version, nothing else. Lets us count daily active users without learning what anyone does.";
+        return "One anonymous heartbeat per launch — install id and app version, nothing else. Lets us count daily active users without learning what anyone does. This is the minimum; it can't be turned off.";
       case "full":
         return "Anonymous install id, app/OS info, feature usage, errors, and crashes. Never file contents, prompts, project names, branch names, or paths.";
     }
@@ -645,7 +643,6 @@ function PrivacySection() {
             value={mode}
             onChange={onChange}
             options={[
-              { value: "off", label: "Off" },
               { value: "presence", label: "Just count me" },
               { value: "full", label: "Full analytics" },
             ]}
