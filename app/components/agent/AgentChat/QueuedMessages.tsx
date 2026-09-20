@@ -1,11 +1,11 @@
 import type { QueuedMessage as QueuedMessageData } from "../../../lib/types";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Chip,
   Icons,
   QueuedMessage,
   QueuedMessageAction,
+  QueuedMessageEditor,
   QueuedMessageList,
 } from "@argus/peacock";
 import {
@@ -79,6 +79,7 @@ function QueuedMessageItem({
 
   return (
     <QueuedMessage
+      author={message.author}
       text={editing ? undefined : displayText || undefined}
       actions={
         editing ? undefined : (
@@ -144,78 +145,23 @@ function QueuedMessageItem({
     >
       {editing ? (
         <QueuedMessageEditor
-          agentId={agentId}
           initialText={displayText}
-          linkedPaths={linkedPaths}
-          message={message}
-          onDone={onStopEdit}
+          onCancel={onStopEdit}
+          onSave={(text) => {
+            // Cleared to nothing with no projects attached is a delete — there
+            // would be no message left to send.
+            if (text.length === 0 && linkedPaths.length === 0) {
+              removeQueuedMessage(agentId, message.id);
+            } else {
+              const next = buildLinkedProjectsPreamble(linkedPaths, text);
+              if (next !== message.text) {
+                updateQueuedMessage(agentId, message.id, next);
+              }
+            }
+            onStopEdit();
+          }}
         />
       ) : undefined}
     </QueuedMessage>
-  );
-}
-
-interface QueuedMessageEditorProps {
-  agentId: string;
-  initialText: string;
-  linkedPaths: readonly string[];
-  message: QueuedMessageData;
-  onDone: () => void;
-}
-
-function QueuedMessageEditor({
-  agentId,
-  initialText,
-  linkedPaths,
-  message,
-  onDone,
-}: QueuedMessageEditorProps) {
-  const [draft, setDraft] = useState(initialText);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    const ta = textareaRef.current;
-    if (ta) {
-      ta.focus();
-      ta.setSelectionRange(ta.value.length, ta.value.length);
-    }
-  }, []);
-
-  const handleSave = useCallback(() => {
-    const trimmed = draft.trim();
-    if (trimmed.length === 0 && linkedPaths.length === 0) {
-      removeQueuedMessage(agentId, message.id);
-    } else {
-      const next = buildLinkedProjectsPreamble(linkedPaths, trimmed);
-      if (next !== message.text) {
-        updateQueuedMessage(agentId, message.id, next);
-      }
-    }
-    onDone();
-  }, [agentId, draft, linkedPaths, message.id, message.text, onDone]);
-
-  const handleKeyDown = useCallback(
-    (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSave();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        onDone();
-      }
-    },
-    [handleSave, onDone],
-  );
-
-  return (
-    <textarea
-      ref={textareaRef}
-      className={styles.queuedEditArea}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onKeyDown={handleKeyDown}
-      onBlur={handleSave}
-      rows={Math.min(8, Math.max(1, draft.split("\n").length))}
-    />
   );
 }

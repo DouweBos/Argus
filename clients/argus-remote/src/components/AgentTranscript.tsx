@@ -23,12 +23,14 @@ import * as Icons from "./Icons";
 import { TaskList, TodoList } from "./TaskList";
 import { TranscriptMessage } from "./TranscriptMessage";
 import {
+  Btn,
   Card,
   EmptyState,
   Loading,
   Muted,
   Row,
   Spinner,
+  TextField,
   useContentInsets,
 } from "./ui";
 import { WorkingIndicator } from "./WorkingIndicator";
@@ -37,6 +39,10 @@ import type {
   RemoteQueuedMessage,
   RemoteToolCall,
 } from "../lib/protocol";
+import {
+  buildLinkedProjectsPreamble,
+  parseLinkedProjectsPreamble,
+} from "../lib/linkedProjects";
 import { groupMessages } from "../lib/toolGroups";
 import { openImageViewer } from "../stores/imageViewerStore";
 import { useAppStore } from "../stores/appStore";
@@ -47,33 +53,97 @@ const POLL_MS = 5000;
 const LOAD_OLDER_THRESHOLD = 160;
 const AT_BOTTOM_THRESHOLD = 60;
 
-/** A message still waiting to be sent, with whatever was attached to it. */
+/**
+ * A message still waiting to be sent, with whatever was attached to it, and
+ * editable in place — a phone is usually where you notice the typo.
+ */
 function QueuedCard({
+  agentId,
   message,
   onRemove,
 }: {
+  agentId: string;
   message: RemoteQueuedMessage;
   onRemove: () => void;
 }) {
   const theme = useTheme();
+  const updateQueued = useAppStore((s) => s.updateQueued);
+  const removeQueued = useAppStore((s) => s.removeQueued);
+  const [editing, setEditing] = useState(false);
   const uris = (message.images ?? []).map(
     (img) => `data:${img.media_type};base64,${img.data}`,
   );
 
+  // `text` carries the linked-projects preamble; the editor only ever shows
+  // what the user typed, and the preamble is rebuilt around whatever they save.
+  const parsed = parseLinkedProjectsPreamble(message.text);
+  const linkedPaths = parsed?.paths ?? [];
+  const displayText = parsed?.rest ?? message.display_text ?? message.text;
+  const [draft, setDraft] = useState(displayText);
+
+  const save = () => {
+    const trimmed = draft.trim();
+    // Cleared to nothing with no projects attached is a delete — there would be
+    // no message left to send.
+    if (trimmed.length === 0 && linkedPaths.length === 0) {
+      removeQueued(agentId, message.id).catch(() => {});
+    } else {
+      const next = buildLinkedProjectsPreamble(linkedPaths, trimmed);
+      if (next !== message.text) {
+        updateQueued(agentId, message.id, next).catch(() => {});
+      }
+    }
+    setEditing(false);
+  };
+
   return (
     <Card style={{ opacity: 0.75, gap: 8 }}>
-      <Row gap={8}>
-        <Muted numberOfLines={3} style={{ flex: 1 }}>
-          Queued · {message.display_text ?? message.text}
-        </Muted>
-        <Pressable
-          accessibilityLabel="Remove queued message"
-          hitSlop={8}
-          onPress={onRemove}
-        >
-          <Icons.Close size={13} color={theme.textMuted} />
-        </Pressable>
-      </Row>
+      {editing ? (
+        <>
+          <TextField
+            autoFocus
+            multiline
+            value={draft}
+            onChangeText={setDraft}
+            placeholder="Edit queued message"
+          />
+          <Row gap={8} style={{ justifyContent: "flex-end" }}>
+            <Btn
+              label="Cancel"
+              size="sm"
+              tone="secondary"
+              onPress={() => {
+                setDraft(displayText);
+                setEditing(false);
+              }}
+            />
+            <Btn label="Save" size="sm" tone="primary" onPress={save} />
+          </Row>
+        </>
+      ) : (
+        <Row gap={8}>
+          <Muted numberOfLines={3} style={{ flex: 1 }}>
+            Queued · {displayText}
+          </Muted>
+          <Pressable
+            accessibilityLabel="Edit queued message"
+            hitSlop={8}
+            onPress={() => {
+              setDraft(displayText);
+              setEditing(true);
+            }}
+          >
+            <Icons.Pencil size={13} color={theme.textMuted} />
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Remove queued message"
+            hitSlop={8}
+            onPress={onRemove}
+          >
+            <Icons.Close size={13} color={theme.textMuted} />
+          </Pressable>
+        </Row>
+      )}
 
       {uris.length > 0 && (
         <Row gap={6} style={{ flexWrap: "wrap" }}>
@@ -311,6 +381,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
           ? queued.map((q) => (
               <QueuedCard
                 key={q.id}
+                agentId={agentId}
                 message={q}
                 onRemove={() =>
                   confirmRemoveQueued(q, () => {
