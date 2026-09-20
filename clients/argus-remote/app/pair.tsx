@@ -134,6 +134,8 @@ export default function PairScreen() {
           value={manual}
           onChangeText={setManual}
           placeholder="paste code"
+          returnKeyType="done"
+          submitBehavior="blurAndSubmit"
         />
         <Btn label="Pair" disabled={!manual.trim()} onPress={() => begin(manual)} />
       </Card>
