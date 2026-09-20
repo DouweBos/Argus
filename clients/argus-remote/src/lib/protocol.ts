@@ -66,7 +66,12 @@ export type RemoteMethod =
   | "devices.unwatch"
   | "devices.touch"
   | "devices.button"
-  | "devices.keyboard";
+  | "devices.keyboard"
+  | "automations.list"
+  | "automations.runs"
+  | "automations.run"
+  | "automations.run_now"
+  | "automations.cancel_run";
 
 export type RemotePlatform = "ios" | "android";
 
@@ -359,3 +364,87 @@ export type Envelope =
   | ResponseEnvelope
   | SubscribeEnvelope
   | EventEnvelope;
+
+// --- Automations -----------------------------------------------------------
+
+export type RemoteAutonomy = "auto_merge" | "draft" | "pr" | "propose";
+
+/**
+ * An automation as this client needs it: enough to show what it is and when it
+ * next fires, never enough to edit it. Editing a playbook is a desktop job.
+ */
+export interface RemoteAutomation {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  trigger_kind: "manual" | "schedule";
+  /** 5-field cron and its IANA zone — only for `schedule`. */
+  cron: string | null;
+  timezone: string | null;
+  /** Null means it inherits the computer's default rung. */
+  autonomy: RemoteAutonomy | null;
+  /** Project names, not paths — a path means nothing on a phone. */
+  projects: string[];
+  last_run_at: number | null;
+  next_run_at: number | null;
+  running: boolean;
+}
+
+export type RemoteAutomationRunStatus =
+  | "cancelled"
+  | "failed"
+  | "queued"
+  | "running"
+  | "skipped"
+  | "succeeded";
+
+/** One firing. `automation_name` is resolved by the computer, quick runs too. */
+export interface RemoteAutomationRun {
+  id: string;
+  automation_id: string;
+  automation_name: string;
+  is_quick: boolean;
+  status: RemoteAutomationRunStatus;
+  trigger_reason: string;
+  started_at: number;
+  finished_at: number | null;
+  cost_usd: number | null;
+  error: string | null;
+  host_session_id: string | null;
+  host_agent_id: string | null;
+}
+
+export type RemoteReportTone = "critical" | "info" | "positive" | "warning";
+
+/**
+ * Structured report blocks, mirroring `@argus/remote-protocol`'s closed union.
+ * The computer validates them, so anything that arrives here is well-formed.
+ */
+export type RemoteReportBlock =
+  | { type: "heading"; text: string }
+  | { type: "markdown"; text: string }
+  | {
+      type: "stats";
+      items: { label: string; value: string; delta?: number }[];
+    }
+  | { type: "table"; columns: string[]; rows: (number | string)[][] }
+  | {
+      type: "list";
+      items: { text: string; href?: string; tone?: RemoteReportTone }[];
+    }
+  | {
+      type: "series";
+      kind: "bar" | "line";
+      labels: string[];
+      values: number[];
+      label?: string;
+    }
+  | { type: "proposals"; ids: string[] }
+  | { type: "sessions"; ids: string[] };
+
+export interface RemoteAutomationRunDetail {
+  run: RemoteAutomationRun;
+  report_blocks: RemoteReportBlock[] | null;
+  report_markdown: string | null;
+}

@@ -57,6 +57,8 @@ import {
   removeQueuedMessage,
   updateQueuedMessage,
 } from "../agent/messageQueue";
+import { cancelAutomationRun } from "../automation/runner";
+import { startAutomationRun } from "../automation/runner";
 import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
 import { collectAllProjects } from "../mcp/projects";
@@ -98,6 +100,12 @@ import {
   simulatorTouch,
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
+import {
+  remoteAutomationRun,
+  remoteAutomationRuns,
+  remoteAutomations,
+  toRemoteAutomationRun,
+} from "./automationsRemote";
 import {
   claimDevice,
   claimState,
@@ -1446,6 +1454,34 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const base = appState.sessions.get(session_id)?.base_branch ?? null;
 
     return { diff, base_branch: base };
+  },
+  "automations.list": async () => remoteAutomations(),
+  "automations.runs": async (params) =>
+    remoteAutomationRuns(parse("automations.runs", params)),
+  "automations.run": async (params) => {
+    const { run_id } = parse("automations.run", params);
+    const detail = remoteAutomationRun(run_id);
+    if (!detail) {
+      throw new GatewayError("not_found", `no run ${run_id}`);
+    }
+
+    return detail;
+  },
+  "automations.run_now": async (params) => {
+    const { automation_id } = parse("automations.run_now", params);
+    // Returns as soon as the record exists — a run that could not start is a
+    // `skipped` record with the reason on it, not a thrown error.
+    const run = await control(() =>
+      startAutomationRun(automation_id, "manual (remote)"),
+    );
+
+    return { run: toRemoteAutomationRun(run) };
+  },
+  "automations.cancel_run": async (params) => {
+    const { run_id } = parse("automations.cancel_run", params);
+    await control(() => cancelAutomationRun(run_id));
+
+    return { accepted: true };
   },
   "devices.list": async () => {
     // A missing toolchain (no Xcode / no Android SDK) contributes an empty

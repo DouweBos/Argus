@@ -10,6 +10,8 @@ import { HuddleStatePayload } from "./huddle";
 import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
+  RemoteAutomation,
+  RemoteAutomationRun,
   RemoteAgentVitals,
   RemoteDevice,
   RemoteDeviceClaim,
@@ -28,6 +30,7 @@ import {
   RemoteTask,
   RemoteTodo,
 } from "./models";
+import { ReportBlock } from "./report";
 
 /**
  * Permission modes a control device may switch an agent to. Deliberately
@@ -254,6 +257,15 @@ export const MethodParams = {
     modifiers: z.number(),
     is_down: z.boolean(),
   }),
+  "automations.list": z.object({}),
+  "automations.runs": z.object({
+    /** Omit for every run across every automation, newest first. */
+    automation_id: z.string().optional(),
+    limit: z.number().int().positive().max(100).optional(),
+  }),
+  "automations.run": z.object({ run_id: z.string() }),
+  "automations.run_now": z.object({ automation_id: z.string() }),
+  "automations.cancel_run": z.object({ run_id: z.string() }),
 } as const;
 
 // --- Result payloads per method --------------------------------------------
@@ -376,6 +388,18 @@ export const MethodResult = {
   "devices.touch": z.object({ accepted: z.boolean() }),
   "devices.button": z.object({ accepted: z.boolean() }),
   "devices.keyboard": z.object({ accepted: z.boolean() }),
+  "automations.list": z.object({ automations: z.array(RemoteAutomation) }),
+  "automations.runs": z.object({ runs: z.array(RemoteAutomationRun) }),
+  "automations.run": z.object({
+    run: RemoteAutomationRun,
+    /** Structured blocks when the run emitted them, else null. */
+    report_blocks: z.array(ReportBlock).nullable(),
+    /** The agent's final message. Null while the run is still going. */
+    report_markdown: z.string().nullable(),
+  }),
+  /** The run record as created — it is still queued when this returns. */
+  "automations.run_now": z.object({ run: RemoteAutomationRun }),
+  "automations.cancel_run": z.object({ accepted: z.boolean() }),
 } as const;
 
 // --- Envelopes -------------------------------------------------------------

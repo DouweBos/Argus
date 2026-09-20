@@ -193,6 +193,12 @@ function Root() {
         <Stack.Screen name="pair" options={{ title: "Pair a computer" }} />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
         <Stack.Screen name="devices" options={{ title: "Devices" }} />
+        <Stack.Screen name="automations" options={{ title: "Automations" }} />
+        <Stack.Screen
+          name="automation/[id]"
+          options={{ title: "Automation" }}
+        />
+        <Stack.Screen name="run/[id]" options={{ title: "Run" }} />
       </Stack>
       <ImageViewer />
     </>

@@ -13,6 +13,11 @@ them, create/rename/delete sessions, manage the project root's branches
 (switch, create, delete), switch model / permission mode / effort, and touch and type on mirrored simulators. That boundary is enforced by the
 desktop gateway, not this UI.
 
+**Automations.** The connected computer's automations, their runs and each
+run's report, reached from the Automations button on the projects screen.
+Watching is `monitor`; **Run now** and **Cancel** need `control`, because
+firing one starts an agent on the computer. Authoring stays on the desktop.
+
 Native iOS/Android. The crypto/transport/protocol modules under `src/lib` mirror
 the desktop's byte-for-byte, so they interoperate by construction.
 

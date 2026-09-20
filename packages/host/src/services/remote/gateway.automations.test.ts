@@ -10,8 +10,17 @@
  */
 
 import type { PairedDevice } from "./deviceStore";
-import type { Envelope, GrantScope } from "@argus/remote-protocol";
-import { HOST_ONLY_COMMANDS } from "@argus/remote-protocol";
+import type {
+  Envelope,
+  GrantScope,
+  RemoteMethod,
+} from "@argus/remote-protocol";
+import {
+  ALL_REMOTE_METHODS,
+  HOST_ONLY_COMMANDS,
+  METHOD_SCOPE,
+  REMOTE_METHODS,
+} from "@argus/remote-protocol";
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -275,3 +284,82 @@ describe("automation commands and a scoped grant", () => {
 });
 
 type Capability = PairedDevice["capabilities"][number];
+
+/**
+ * The typed `automations.*` methods a phone speaks. A paired desktop uses the
+ * admin passthrough above; this is the narrow surface, so it gets its own
+ * tier and scope assertions rather than riding the command-name ones.
+ */
+const TYPED_AUTOMATION_METHODS = ALL_REMOTE_METHODS.filter((m) =>
+  m.startsWith("automations."),
+);
+
+describe("the typed automations methods", () => {
+  it("covers reading runs and firing one", () => {
+    expect(TYPED_AUTOMATION_METHODS).toEqual(
+      expect.arrayContaining([
+        "automations.list",
+        "automations.runs",
+        "automations.run",
+        "automations.run_now",
+        "automations.cancel_run",
+      ]),
+    );
+  });
+
+  it("reads at monitor and acts at control", () => {
+    const tier = (m: RemoteMethod) => REMOTE_METHODS[m];
+
+    expect(tier("automations.list")).toBe("monitor");
+    expect(tier("automations.runs")).toBe("monitor");
+    expect(tier("automations.run")).toBe("monitor");
+    // Firing one starts an agent on the host, which is code execution.
+    expect(tier("automations.run_now")).toBe("control");
+    expect(tier("automations.cancel_run")).toBe("control");
+  });
+
+  /** A guest is handed one agent, never the clock that could start more. */
+  it("denies every one of them to a scoped grant", () => {
+    for (const method of TYPED_AUTOMATION_METHODS) {
+      expect(METHOD_SCOPE[method].kind).toBe("denied");
+    }
+  });
+});
+
+describe("typed automations methods and a huddle guest", () => {
+  const call = async (method: string, capabilities: Capability[]) => {
+    try {
+      await dispatch(method, {}, {
+        device: { ...baseDevice, capabilities },
+        connectionId: "conn-1",
+        scope: SCOPE,
+        outstandingPermissions: new Set<string>(),
+        media: {
+          watch: async () => 1,
+          unwatch: () => undefined,
+          watchBrowser: () => 2,
+          unwatchBrowser: () => undefined,
+        },
+      } as Parameters<typeof dispatch>[2]);
+    } catch (err) {
+      return err instanceof GatewayError ? err.code : "not-a-gateway-error";
+    }
+
+    return "allowed";
+  };
+
+  it("refuses them even though the guest holds monitor and control", async () => {
+    for (const method of TYPED_AUTOMATION_METHODS) {
+      await expect(call(method, ["monitor", "control"])).resolves.toBe(
+        "capability_denied",
+      );
+    }
+  });
+
+  it("refuses firing a run to a monitor-only device", async () => {
+    // The tier is checked before the scope, so this is the capability talking.
+    await expect(call("automations.run_now", ["monitor"])).resolves.toBe(
+      "capability_denied",
+    );
+  });
+});

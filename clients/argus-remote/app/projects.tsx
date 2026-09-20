@@ -72,6 +72,11 @@ export default function ProjectsScreen() {
             <Row gap={2}>
               <ConnectionBadge state={connection} />
               <HeaderIconBtn
+                label="Automations"
+                icon={Icons.Clock}
+                onPress={() => router.push("/automations")}
+              />
+              <HeaderIconBtn
                 label="Devices"
                 icon={Icons.Simulator}
                 onPress={() => router.push("/devices")}

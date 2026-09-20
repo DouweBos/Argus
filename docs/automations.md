@@ -327,6 +327,27 @@ Two things to know when the host is headless:
 
 ---
 
+## From your phone
+
+[Argus Remote](../clients/argus-remote/README.md) reaches the connected
+computer's automations from the Automations button on its projects screen: the
+automations themselves, the recent runs across all of them, and one run with
+its report — structured blocks included.
+
+It is deliberately narrower than the desktop. A phone **watches and fires**;
+it does not author. There is no playbook editor, no schedule picker and no
+inbox — those are the desktop's, and a paired Mac driving a headless mini still
+gets all of them through the admin passthrough.
+
+- **Run now and Cancel need the `control` grant.** Firing an automation starts
+  an agent on the computer, which is code execution; a monitor-only device sees
+  the runs and no buttons.
+- **A huddle guest reaches none of it**, the same as everywhere else — every
+  `automations.*` method is denied to a scoped grant.
+- The lists poll rather than stream, like every other list on the phone.
+
+---
+
 ## Turning it all off
 
 **App settings → Agents → Automations enabled** is the master switch for the
