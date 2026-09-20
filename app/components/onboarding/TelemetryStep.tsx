@@ -7,9 +7,10 @@ import {
   type TelemetryMode,
 } from "../../stores/settingsStore";
 import { OnboardingLayout } from "./OnboardingLayout";
+import styles from "./TelemetryStep.module.css";
 
 export function TelemetryStep() {
-  const { advance } = useOnboarding();
+  const { complete } = useOnboarding();
   const [busy, setBusy] = useState(false);
 
   const choose = async (mode: TelemetryMode) => {
@@ -20,7 +21,7 @@ export function TelemetryStep() {
     setTelemetryModeSetting(mode);
     setTelemetryMode(mode);
     try {
-      await advance("completion");
+      await complete();
     } finally {
       setBusy(false);
     }
@@ -30,20 +31,9 @@ export function TelemetryStep() {
     <OnboardingLayout
       currentStep="telemetry"
       title="Help improve Argus"
-      subtitle="Pick how much you want to share. You can change this any time under Settings → Privacy."
-      footerLeft={
-        <Button
-          variant="ghost"
-          disabled={busy}
-          onClick={() => {
-            choose("off").catch(() => {});
-          }}
-        >
-          {busy ? "Saving…" : "No telemetry"}
-        </Button>
-      }
+      subtitle="Pick how much you want to share, and Argus opens. Anything still missing on your Mac — the Claude CLI, a signed-in account, git identity — shows up as a card on the home screen. You can change this any time under Settings → Privacy."
       footerRight={
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className={styles.choices}>
           <Button
             variant="ghost"
             disabled={busy}
@@ -65,29 +55,13 @@ export function TelemetryStep() {
         </div>
       }
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-          fontFamily: "var(--font-ui)",
-          color: "var(--text-secondary)",
-          fontSize: 13,
-          lineHeight: 1.5,
-        }}
-      >
-        <Section
-          title="No telemetry"
-          items={[
-            "Nothing leaves your machine. No DAU count, no errors, no feedback channel.",
-            "Pick this if even city-level geography (which PostHog derives at ingest) is unacceptable.",
-          ]}
-        />
+      <div className={styles.sections}>
         <Section
           title="Just count me"
           items={[
             "One event per launch — anonymous install id + app version, nothing else.",
             "Lets us see roughly how many people are using Argus without learning what anyone does.",
+            "This is the minimum — Argus always sends this heartbeat.",
           ]}
         />
         <Section
@@ -115,33 +89,11 @@ export function TelemetryStep() {
 function Section({ title, items }: { items: string[]; title: string }) {
   return (
     <div>
-      <div
-        style={{
-          fontSize: 11,
-          textTransform: "uppercase",
-          letterSpacing: 0.6,
-          color: "var(--text-muted)",
-          marginBottom: 4,
-        }}
-      >
-        {title}
-      </div>
-      <ul
-        style={{
-          margin: 0,
-          padding: 0,
-          listStyle: "none",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-        }}
-      >
+      <div className={styles.sectionTitle}>{title}</div>
+      <ul className={styles.items}>
         {items.map((item) => (
-          <li
-            key={item}
-            style={{ display: "flex", alignItems: "flex-start", gap: 8 }}
-          >
-            <span style={{ color: "var(--text-muted)" }}>•</span>
+          <li key={item} className={styles.item}>
+            <span className={styles.bullet}>•</span>
             <span>{item}</span>
           </li>
         ))}

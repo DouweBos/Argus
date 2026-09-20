@@ -7,7 +7,7 @@
  * runner-specific modules.
  */
 
-import type { LlmRunner, RunnerOnboardingStep } from "./runners/types";
+import type { LlmRunner } from "./runners/types";
 import { warn } from "@argus/host/logger";
 import { listCustomRunners } from "./customRunners/store";
 import { ClaudeCodeRunner } from "./runners/claudeCode/runner";
@@ -43,26 +43,6 @@ export function resolveDefaultRunner(): LlmRunner {
   }
 
   return all.find((r) => !r.isCustom) ?? all[0]!;
-}
-
-/**
- * Collect the onboarding steps every registered runner contributes, in
- * registration order. The renderer maps each step's `kind` to a concrete
- * component.
- */
-export function listRunnerOnboardingSteps(): RunnerOnboardingStep[] {
-  const steps: RunnerOnboardingStep[] = [];
-  for (const runner of runners.values()) {
-    const fn = runner.getOnboardingSteps;
-    if (!fn) {
-      continue;
-    }
-    for (const step of fn.call(runner)) {
-      steps.push(step);
-    }
-  }
-
-  return steps;
 }
 
 /**

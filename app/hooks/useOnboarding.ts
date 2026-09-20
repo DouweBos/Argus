@@ -2,7 +2,6 @@ import type { OnboardingStep } from "../lib/types";
 import { useCallback, useEffect } from "react";
 import { error as logError } from "@logger";
 import {
-  addOnboardingSkipped,
   completeOnboarding,
   getOnboardingState,
   setOnboardingLastStep,
@@ -48,18 +47,6 @@ export function useOnboarding() {
     }
   }, []);
 
-  const skipStep = useCallback(
-    async (stepId: string, nextStep: OnboardingStep) => {
-      try {
-        await addOnboardingSkipped(stepId);
-      } catch (err) {
-        logError("Failed to persist skip", err);
-      }
-      await advance(nextStep);
-    },
-    [advance],
-  );
-
   const complete = useCallback(async () => {
     try {
       await completeOnboarding();
@@ -85,7 +72,6 @@ export function useOnboarding() {
   return {
     ...state,
     advance,
-    skipStep,
     complete,
   };
 }

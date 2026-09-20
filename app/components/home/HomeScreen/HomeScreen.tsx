@@ -1,5 +1,4 @@
-import type { DependencyStatus } from "../../../lib/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   AgentRow,
   Banner,
@@ -10,7 +9,6 @@ import {
   ProjectCard,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
-import { checkDependencies } from "../../../lib/ipc";
 import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { setActiveAgent } from "../../../stores/agentStore";
 import { setCenterView } from "../../../stores/centerViewStore";
@@ -29,6 +27,7 @@ import {
   openChangelogDialog,
   useUpdaterState,
 } from "../../../stores/updaterStore";
+import { SetupBanners } from "../SetupBanners";
 import styles from "./HomeScreen.module.css";
 import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
@@ -58,18 +57,6 @@ export function HomeScreen() {
   const { openProject } = useProjects();
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
-  const [missingDeps, setMissingDeps] = useState<DependencyStatus[]>([]);
-
-  useEffect(() => {
-    checkDependencies()
-      .then((report) =>
-        setMissingDeps(report.dependencies.filter((d) => !d.installed)),
-      )
-      .catch(() => setMissingDeps([]));
-  }, []);
-
-  const missingRequired = missingDeps.filter((d) => d.severity === "required");
-  const missingOptional = missingDeps.filter((d) => d.severity === "optional");
   const updater = useUpdaterState();
   const hasPendingUpdate =
     (updater.phase === "available" ||
@@ -154,16 +141,7 @@ export function HomeScreen() {
             <strong>Argus {updater.updateVersion}</strong> is {updateLabel}.
           </Banner>
         )}
-        {missingRequired.map((dep) => (
-          <Banner key={dep.id} tone="error">
-            <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}
-          </Banner>
-        ))}
-        {missingOptional.map((dep) => (
-          <Banner key={dep.id} tone="warning">
-            <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}
-          </Banner>
-        ))}
+        <SetupBanners />
         {openError && (
           <Banner tone="error">
             {openError}

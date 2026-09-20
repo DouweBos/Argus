@@ -39,3 +39,12 @@ export const Success: Story = {
     children: "Merged into main successfully.",
   },
 };
+
+export const Dismissible: Story = {
+  args: {
+    tone: "warning",
+    children:
+      "Notifications are off — Argus can't ping you when agents finish.",
+    onDismiss: () => {},
+  },
+};

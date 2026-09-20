@@ -86,11 +86,11 @@ export function loadConfig(): OnboardingConfigFile {
     ...DEFAULT_STATE,
     ...(parsed.onboarding ?? {}),
   };
-  // Migrate away from removed steps (project/argus_config/first_session/
-  // first_agent) that may live in older config.json files. Snap to completion
-  // if onboarding was already finished, else restart at welcome.
+  // Older config.json files can name steps that no longer exist (tools,
+  // preflight, claude_auth, …). Snap to the last step if onboarding was
+  // already finished, else restart at welcome.
   if (!ONBOARDING_STEPS.includes(onboarding.lastStep)) {
-    onboarding.lastStep = onboarding.completed ? "completion" : "welcome";
+    onboarding.lastStep = onboarding.completed ? "telemetry" : "welcome";
   }
 
   return {
@@ -140,7 +140,7 @@ export function completeOnboarding(): void {
   const wasAlreadyCompleted = cfg.onboarding.completed;
   cfg.onboarding.completed = true;
   cfg.onboarding.completedAt = Date.now();
-  cfg.onboarding.lastStep = "completion";
+  cfg.onboarding.lastStep = "telemetry";
   saveConfig(cfg);
   if (!wasAlreadyCompleted) {
     telemetryCapture("onboarding_completed");

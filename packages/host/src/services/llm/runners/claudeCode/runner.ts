@@ -15,7 +15,6 @@ import type {
   ForkTranscriptArgs,
   PreflightResult,
   RunnerCapabilities,
-  RunnerOnboardingStep,
 } from "../types";
 import { spawn, execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -121,17 +120,6 @@ export class ClaudeCodeRunner implements LlmRunner {
 
   async oneShot(args: OneShotArgs): Promise<string | null> {
     return runClaudePrint(args);
-  }
-
-  getOnboardingSteps(): RunnerOnboardingStep[] {
-    return [
-      {
-        id: "claude_auth",
-        runnerId: this.id,
-        title: "Connect Claude",
-        kind: "claude-auth",
-      },
-    ];
   }
 
   async forkTranscript(
