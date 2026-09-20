@@ -5,7 +5,7 @@
  */
 
 import { useEffect } from "react";
-import { Appearance, type ColorSchemeName } from "react-native";
+import { Appearance } from "react-native";
 import { create } from "zustand";
 import { readString, writeString } from "./lib/storage";
 
@@ -146,11 +146,9 @@ export function useThemeBootstrap(): void {
         }
       })
       .catch(() => {});
-    const sub = Appearance.addChangeListener(
-      ({ colorScheme }: { colorScheme: ColorSchemeName }) => {
-        store.setState({ system: colorScheme === "light" ? "light" : "dark" });
-      },
-    );
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      store.setState({ system: colorScheme === "light" ? "light" : "dark" });
+    });
 
     return () => sub.remove();
   }, []);

@@ -16,6 +16,7 @@ import {
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
 } from "react-native";
 import { CollapsedToolGroup } from "./CollapsedToolGroup";
 import * as Icons from "./Icons";
@@ -155,7 +156,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const loadImage = useAppStore((s) => s.loadImage);
   const watchAgent = useAppStore((s) => s.watchAgent);
 
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const atBottomRef = useRef(true);
   const loadingOlderRef = useRef(false);
   const [atBottom, setAtBottom] = useState(true);

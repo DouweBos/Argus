@@ -59,62 +59,73 @@ export default function BranchesScreen() {
 
   const switchTo = useCallback(
     (branch: string, dirty?: "stash" | "discard") => {
-      setBusy(branch);
-      checkoutBranch(sessionId, repoRoot, branch, dirty)
-        .then((result) => {
-          if (result === "ok") {
-            refresh();
+      // Recurse through a local binding: the retry prompts re-enter the same
+      // flow, and referencing the memoized `switchTo` from inside itself is a
+      // use-before-declaration.
+      const run = (mode?: "stash" | "discard") => {
+        setBusy(branch);
+        checkoutBranch(sessionId, repoRoot, branch, mode)
+          .then((result) => {
+            if (result === "ok") {
+              refresh();
 
-            return;
-          }
-          Alert.alert(
-            "Uncommitted changes",
-            `Switching to ${branch} would overwrite local changes.`,
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Stash & switch",
-                onPress: () => switchTo(branch, "stash"),
-              },
-              {
-                text: "Discard & switch",
-                style: "destructive",
-                onPress: () => switchTo(branch, "discard"),
-              },
-            ],
-          );
-        })
-        .catch((err: unknown) => alertError("Couldn't switch branch", err))
-        .finally(() => setBusy(null));
+              return;
+            }
+            Alert.alert(
+              "Uncommitted changes",
+              `Switching to ${branch} would overwrite local changes.`,
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Stash & switch",
+                  onPress: () => run("stash"),
+                },
+                {
+                  text: "Discard & switch",
+                  style: "destructive",
+                  onPress: () => run("discard"),
+                },
+              ],
+            );
+          })
+          .catch((err: unknown) => alertError("Couldn't switch branch", err))
+          .finally(() => setBusy(null));
+      };
+
+      run(dirty);
     },
     [checkoutBranch, refresh, repoRoot, sessionId],
   );
 
   const remove = useCallback(
     (branch: string, force?: boolean) => {
-      setBusy(branch);
-      deleteBranch(sessionId, branch, force)
-        .then((result) => {
-          if (result === "ok") {
-            refresh();
+      const run = (forced?: boolean) => {
+        setBusy(branch);
+        deleteBranch(sessionId, branch, forced)
+          .then((result) => {
+            if (result === "ok") {
+              refresh();
 
-            return;
-          }
-          Alert.alert(
-            "Unmerged commits",
-            `${branch} has commits that aren't merged anywhere. Deleting it loses them.`,
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Delete anyway",
-                style: "destructive",
-                onPress: () => remove(branch, true),
-              },
-            ],
-          );
-        })
-        .catch((err: unknown) => alertError("Couldn't delete branch", err))
-        .finally(() => setBusy(null));
+              return;
+            }
+            Alert.alert(
+              "Unmerged commits",
+              `${branch} has commits that aren't merged anywhere. Deleting it loses them.`,
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete anyway",
+                  style: "destructive",
+                  onPress: () => run(true),
+                },
+              ],
+            );
+          })
+          .catch((err: unknown) => alertError("Couldn't delete branch", err))
+          .finally(() => setBusy(null));
+      };
+
+      run(force);
     },
     [deleteBranch, refresh, sessionId],
   );

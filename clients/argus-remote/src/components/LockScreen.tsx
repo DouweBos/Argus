@@ -4,7 +4,7 @@
  * while the app waits for you.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { Eye, Lock } from "./Icons";
@@ -24,7 +24,7 @@ export function LockScreen({
 }) {
   const theme = useTheme();
   const insets = useContentInsets();
-  const enter = useRef(new Animated.Value(0)).current;
+  const enter = useState(() => new Animated.Value(0))[0];
 
   useEffect(() => {
     Animated.timing(enter, {
@@ -172,8 +172,8 @@ function Ambience({ theme }: { theme: Theme }) {
 
 /** Eye mark with two rings pulsing outward on a stagger, like a slow blink. */
 function Sigil({ theme }: { theme: Theme }) {
-  const a = useRef(new Animated.Value(0)).current;
-  const b = useRef(new Animated.Value(0)).current;
+  const a = useState(() => new Animated.Value(0))[0];
+  const b = useState(() => new Animated.Value(0))[0];
 
   useEffect(() => {
     const loop = (value: Animated.Value, delay: number) =>

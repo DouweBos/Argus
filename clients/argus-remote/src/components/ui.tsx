@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -20,12 +20,19 @@ import {
   View,
   type KeyboardEvent,
   type StyleProp,
-  type TextStyle,
+  type TextInputProps,
+  type TextProps,
+  type ViewProps,
   type ViewStyle,
 } from "react-native";
+
 import { HeaderShownContext } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, type Theme } from "../theme";
+
+// RN 0.88 types View's and Pressable's `style` props with incompatible internal
+// shapes. Our props follow View's; cast where one is handed to a Pressable.
+type PressableStyle = StyleProp<ViewStyle>;
 
 export type Tone = "accent" | "danger" | "muted" | "success" | "warning";
 
@@ -108,7 +115,7 @@ export function Screen({
 }: {
   children: ReactNode;
   scroll?: boolean;
-  contentStyle?: StyleProp<ViewStyle>;
+  contentStyle?: ViewProps["style"];
 }) {
   const theme = useTheme();
   const insets = useContentInsets();
@@ -146,11 +153,11 @@ export function Card({
 }: {
   children: ReactNode;
   onPress?: () => void;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
   tone?: Tone;
 }) {
   const theme = useTheme();
-  const cardStyle: StyleProp<ViewStyle> = [
+  const cardStyle: ViewProps["style"] = [
     {
       backgroundColor: theme.bgSecondary,
       borderRadius: theme.radius,
@@ -169,14 +176,17 @@ export function Card({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [cardStyle, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [
+        cardStyle as PressableStyle,
+        pressed && { opacity: 0.75 },
+      ]}
     >
       {children}
     </Pressable>
   );
 }
 
-export function Title({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
+export function Title({ children, style }: { children: ReactNode; style?: TextProps["style"] }) {
   const theme = useTheme();
 
   return (
@@ -193,7 +203,7 @@ export function Body({
 }: {
   children: ReactNode;
   numberOfLines?: number;
-  style?: StyleProp<TextStyle>;
+  style?: TextProps["style"];
 }) {
   const theme = useTheme();
 
@@ -214,7 +224,7 @@ export function Muted({
 }: {
   children: ReactNode;
   numberOfLines?: number;
-  style?: StyleProp<TextStyle>;
+  style?: TextProps["style"];
 }) {
   const theme = useTheme();
 
@@ -235,7 +245,7 @@ export function Mono({
 }: {
   children: ReactNode;
   numberOfLines?: number;
-  style?: StyleProp<TextStyle>;
+  style?: TextProps["style"];
 }) {
   const theme = useTheme();
 
@@ -273,7 +283,7 @@ export function Btn({
   disabled?: boolean;
   size?: "md" | "sm";
   icon?: ReactNode;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
 }) {
   const theme = useTheme();
   const bg =
@@ -313,7 +323,7 @@ export function Btn({
           borderColor: theme.border,
           opacity: disabled ? 0.4 : pressed ? 0.75 : 1,
         },
-        style,
+        style as PressableStyle,
       ]}
     >
       {icon}
@@ -586,7 +596,7 @@ export function TextField({
   autoFocus?: boolean;
   onSubmitEditing?: () => void;
   maxLength?: number;
-  style?: StyleProp<TextStyle>;
+  style?: TextInputProps["style"];
 }) {
   const theme = useTheme();
 
@@ -682,11 +692,11 @@ export function StatusDot({
   tone?: Tone;
   pulse?: boolean;
   size?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
   accessibilityLabel?: string;
 }) {
   const theme = useTheme();
-  const opacity = useRef(new Animated.Value(1)).current;
+  const opacity = useState(() => new Animated.Value(1))[0];
 
   useEffect(() => {
     if (!pulse) {
@@ -735,7 +745,7 @@ export function StatusDot({
 /** Animated "…" shown while the agent is working. */
 export function ThinkingDots() {
   const theme = useTheme();
-  const anim = useRef(new Animated.Value(0)).current;
+  const anim = useState(() => new Animated.Value(0))[0];
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -780,7 +790,7 @@ export function Row({
 }: {
   children: ReactNode;
   gap?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewProps["style"];
 }) {
   return (
     <View style={[{ flexDirection: "row", alignItems: "center", gap }, style]}>

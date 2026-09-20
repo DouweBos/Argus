@@ -80,7 +80,10 @@ function Root() {
   const pathname = usePathname();
   const { id } = useGlobalSearchParams<{ id?: string }>();
   const openAgentRef = useRef<string | null>(null);
-  openAgentRef.current = pathname.startsWith("/agent/") ? (id ?? null) : null;
+
+  useEffect(() => {
+    openAgentRef.current = pathname.startsWith("/agent/") ? (id ?? null) : null;
+  }, [pathname, id]);
 
   const openAgent = useCallback(
     (agentId: string, label: string) => {
