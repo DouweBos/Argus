@@ -124,6 +124,35 @@ function attempt(
   };
 }
 
+/** Drive the pre-hook for a non-Bash tool and return the behavior it wrote. */
+function attemptTool(
+  sessionId: string,
+  toolName: string,
+): { handled: boolean; behavior: string | null } {
+  const hook = automationPermissionPreHook(sessionId);
+  let written: string | null = null;
+  const decision = hook({
+    toolName,
+    toolUseId: "tool-1",
+    input: { title: "Do the thing" },
+    rawRequest: { request_id: "req-1" },
+    approveRaw: (line: string) => {
+      written = line;
+    },
+  });
+  if (!written) {
+    return { handled: decision?.kind === "handled", behavior: null };
+  }
+  const parsed = JSON.parse(written) as {
+    response: { response: { behavior: string } };
+  };
+
+  return {
+    handled: decision?.kind === "handled",
+    behavior: parsed.response.response.behavior,
+  };
+}
+
 describe("the shell guard", () => {
   beforeEach(() => {
     previousHome = process.env.ARGUS_HOME;
@@ -304,6 +333,33 @@ describe("the shell guard", () => {
         file_path: "git push",
       }),
     ).toBeNull();
+  });
+
+  it("lets an unattended run report without a permission prompt", () => {
+    const automation = newAutomation("propose");
+    const run = createRun(automation.id, "running", "manual");
+    updateRun(run.id, { host_session_id: HOST_SESSION_ID });
+    appState.sessions.set(HOST_SESSION_ID, {
+      ...registerWorkSession(HOST_SESSION_ID),
+      kind: "automation_host",
+    });
+
+    // Plan mode would otherwise stop and ask for the one call the run exists
+    // to make, with nobody there to answer.
+    expect(attemptTool(HOST_SESSION_ID, "mcp__argus__emit_proposal")).toEqual({
+      handled: true,
+      behavior: "allow",
+    });
+    expect(
+      attemptTool(HOST_SESSION_ID, "mcp__argus__emit_report").behavior,
+    ).toBe("allow");
+
+    // A worktree session an automation started gets no such pass.
+    registerWorkSession();
+    expect(attemptTool(WORK_SESSION_ID, "mcp__argus__emit_proposal")).toEqual({
+      handled: false,
+      behavior: null,
+    });
   });
 
   it("reads the rung a command needs without any session context", () => {

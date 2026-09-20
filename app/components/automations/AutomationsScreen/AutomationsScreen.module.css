@@ -8,6 +8,12 @@
   gap: 16px;
 }
 
+/* Cards default to flex-shrink:1, so an overflowing column squashes and clips
+   the last panel instead of scrolling. */
+.screen > * {
+  flex-shrink: 0;
+}
+
 .head {
   display: flex;
   align-items: baseline;

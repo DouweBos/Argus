@@ -121,7 +121,9 @@ Node:
    on the permission request itself. Below `pr`, `git push` and `gh pr create`
    are denied outright, in any spelling, whatever the permission mode says.
 3. **The permission mode.** A `propose` run is started in plan mode, so the CLI
-   refuses edits before Argus is even asked.
+   refuses edits before Argus is even asked. Its own `emit_proposal` and
+   `emit_report` are allowed through, so an unattended run never stops to ask
+   for the one call it exists to make.
 
 ---
 
@@ -207,7 +209,10 @@ references — which render as a dashboard rather than as prose. When both exist
 the blocks win.
 
 Reports are visible at `/automations/:automationId/runs/:runId`, along with the
-run's status, cost, duration and a link to its host session.
+run's status, cost, duration and a link to its host session. The home screen
+carries a **Recent runs** list — the newest five, across every automation and
+every quick run — because a run is the one thing in Argus that happens while
+nobody is looking.
 
 ---
 

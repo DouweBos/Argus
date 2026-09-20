@@ -29,6 +29,7 @@ import {
 } from "../../../stores/updaterStore";
 import { SetupBanners } from "../SetupBanners";
 import styles from "./HomeScreen.module.css";
+import { RecentRunsSection } from "./RecentRunsSection";
 import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
 
@@ -328,6 +329,8 @@ export function HomeScreen() {
                   )}
                 </div>
               </div>
+
+              <RecentRunsSection />
             </div>
           )}
         </div>

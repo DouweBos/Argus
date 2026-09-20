@@ -51,3 +51,6 @@ export const Skipped: Story = {
 };
 
 export const Selected: Story = { args: { selected: true } };
+
+/** Across automations — the home screen's list, where the row needs naming. */
+export const Named: Story = { args: { name: "Morning triage" } };
