@@ -127,6 +127,32 @@ export function createRoom(opts: CreateRoomOpts): HuddleRoom {
   return room;
 }
 
+/**
+ * Point a live room at a different device — the host opened, switched or closed
+ * one while sharing. Guests mirror whatever the engineer has in front of them,
+ * so the grant is re-minted on every approved socket and each is told the new
+ * key; an empty key drops the device and leaves the huddle chat-only.
+ */
+export function setRoomDevice(roomId: string, deviceKey: string): boolean {
+  const entry = rooms.get(roomId);
+  if (!entry || entry.room.device_key === deviceKey) {
+    return false;
+  }
+  entry.room.device_key = deviceKey;
+  const scope = guestScope(entry.room);
+  for (const [pub, link] of entry.links) {
+    const guest = entry.room.guests.find((g) => g.dev_static_pub === pub);
+    if (guest?.state !== "approved") {
+      continue;
+    }
+    link.grant(scope);
+    link.notify(statePayload(entry.room, guest, "approved"));
+  }
+  emitChanged();
+
+  return true;
+}
+
 /** Attach the shareable link once the tunnel has one. */
 export function setRoomUrl(roomId: string, url: string | null): void {
   const entry = rooms.get(roomId);

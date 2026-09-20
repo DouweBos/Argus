@@ -17,6 +17,7 @@ import {
   initExternalAgentStarted,
 } from "./lib/agentEventService";
 import { initAgentPopoutSync } from "./lib/agentPopoutService";
+import { initHuddleDeviceMirror } from "./lib/huddleDeviceMirror";
 import { getTelemetryInit, setTelemetryModeOnMain } from "./lib/ipc";
 import { initNotificationsListener } from "./lib/notificationsService";
 import { initPendingSessionPrompts } from "./lib/pendingSessionPrompts";
@@ -105,6 +106,9 @@ export function boot(popoutMode: string | null, params: URLSearchParams): void {
     // Mirror live huddle rooms so the share button and join prompts are
     // driven by the host's broadcast rather than by polling.
     initHuddleRooms();
+    // Keep every live huddle pointed at the device its session has open — a
+    // simulator started mid-share has to reach the guests too.
+    initHuddleDeviceMirror();
     // Subscribe to project/session lifecycle events once for the whole app —
     // components no longer install their own listeners on mount.
     initSessionEventListeners();

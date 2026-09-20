@@ -17,6 +17,7 @@ import {
   EventPayloads,
   HuddleJoinParams,
   isAgentInScope,
+  isBrowserInScope,
   isDeviceInScope,
   isHuddleMethod,
   type Capability,
@@ -55,7 +56,7 @@ import {
   type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
-import { releaseConnection } from "./deviceClaims";
+import { releaseConnection, releaseDevice } from "./deviceClaims";
 import { guestState, joinRoom, leaveGuest } from "./huddle";
 
 const encoder = new TextEncoder();
@@ -266,13 +267,29 @@ export class DeviceConnection implements DeviceMediaController {
   }
 
   /**
-   * Approval: install the room's grant on the live connection. Run through
-   * `scopeSafeCapabilities` so a scoped grant can never be admin.
+   * Approval — or the host swapping the room's device mid-huddle: install the
+   * grant on the live connection. Run through `scopeSafeCapabilities` so a
+   * scoped grant can never be admin.
+   *
+   * A narrowing re-grant has to take the old device with it: a stream already
+   * running is never re-checked against the scope, so it would keep feeding
+   * frames from a device this guest may no longer address.
    */
   applyGuestGrant(scope: GrantScope): void {
     this.device.capabilities = scopeSafeCapabilities(GUEST_CAPABILITIES);
     this.scope = scope;
     this.ctx.scope = scope;
+    for (const deviceId of [...this.watched.keys()]) {
+      if (!isDeviceInScope(scope, deviceId)) {
+        this.unwatch(deviceId);
+        releaseDevice(deviceId, this.connectionId);
+      }
+    }
+    for (const sessionId of [...this.watchedBrowsers.keys()]) {
+      if (!isBrowserInScope(scope, sessionId)) {
+        this.unwatchBrowser(sessionId);
+      }
+    }
   }
 
   /**

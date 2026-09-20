@@ -68,6 +68,7 @@ export const HOST_ONLY_COMMANDS = new Set([
   // decisions — same root as pairing, and `huddle_list` hands back room tokens.
   "huddle_start",
   "huddle_stop",
+  "huddle_set_device",
   "huddle_list",
   "huddle_approve_guest",
   "huddle_deny_guest",
