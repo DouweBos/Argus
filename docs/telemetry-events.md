@@ -1,18 +1,17 @@
 # Telemetry events
 
-Catalog of every event Argus sends to PostHog. Telemetry has **three
+Catalog of every event Argus sends to PostHog. Telemetry has **two
 levels**, picked during the one-time consent step on first launch and
 changeable any time under Settings → Privacy:
 
 | Mode       | What gets sent                                                                                                                                                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `off`      | Nothing. The privacy-maximum mode — even heartbeat `$pageview` is suppressed, so PostHog never sees this install at all.                                           |
 | `presence` | Exactly one event per app launch: a [heartbeat `$pageview`](#presence) with a fixed `argus:///` path. No baseProps, no errors, no feedback, no other `$pageview`s. |
-| `full`     | The whole catalogue below — lifecycle, sessions, merges, agents, org tasks, errors, feedback. Same as before.                                                      |
+| `full`     | The whole catalogue below — lifecycle, sessions, merges, agents, org tasks, errors, feedback.                                                                      |
 
-The default for new installs is `off` until the user makes an explicit
-choice in onboarding. Existing installs that opted out under the old
-on/off toggle keep behaving as `off`; existing opt-ins map to `full`.
+`presence` is the floor and the default — there is no mode in which the
+anonymous DAU heartbeat is suppressed. It carries nothing but a random
+install id and the app version.
 
 Events come from two channels: **main** (the Argus app process,
 covering lifecycle, sessions, merges, agents, org tasks) and
@@ -90,9 +89,8 @@ PostHog therefore includes:
 
 The accuracy is roughly city-level. The raw IP is **not** retained.
 PostHog only supports discarding the IP after enrichment — they don't
-offer an option to skip GeoIP enrichment entirely. If even city-level
-geography is unacceptable to you, leave telemetry off — that is the
-supported privacy mode.
+offer an option to skip GeoIP enrichment entirely. `presence` mode keeps
+that exposure to one request per launch.
 
 **What is _not_ sent, even when telemetry is on:**
 
@@ -112,21 +110,21 @@ supported privacy mode.
   scrubbed of `/Users/<name>`, `/home/<name>`, and `C:\Users\<name>`
   before sending.
 
-**When telemetry is hard-disabled, regardless of the toggle:**
+**When telemetry is hard-disabled, regardless of the mode:**
 
 - Development builds. Our own development sessions never appear in
   PostHog.
 
 ## Presence
 
-Sent in both `presence` and `full` modes. This is the single source of
+Sent in every mode. This is the single source of
 DAU truth — PostHog defines a Daily Active User as a `distinct_id` with
 at least one `$pageview` event in the day, so the heartbeat **has to be
 a `$pageview`** (not a custom event) for presence-only users to count.
 
-| Event       | Source | When                                                                                              | Extra props                                                                         |
-| ----------- | ------ | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `$pageview` | main   | Once per process lifetime, the first time the active mode flips from `off` to either non-off mode | `$current_url: "argus:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"` |
+| Event       | Source | When                                                                 | Extra props                                                                         |
+| ----------- | ------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `$pageview` | main   | Once per process lifetime, as soon as the PostHog client initialises | `$current_url: "argus:///"`, `$pathname: "/"`, `app_version`, `source: "heartbeat"` |
 
 The heartbeat deliberately **bypasses `baseProps()`** — no platform,
 arch, OS release, Electron or Node version is attached. The only
@@ -140,14 +138,14 @@ renderer-route `$pageview` events that `full` users also emit.
 
 Sent only in `full` mode.
 
-| Event                | Source   | When                                                                      | Extra props                                         |
-| -------------------- | -------- | ------------------------------------------------------------------------- | --------------------------------------------------- |
-| `app_launched`       | main     | Telemetry transitions off → on (first opt-in, or re-enable after opt-out) | —                                                   |
-| `app_quit`           | main     | App is quitting                                                           | —                                                   |
-| `renderer_started`   | renderer | Each renderer (main window or popout) finishes booting                    | `popout: "main" \| string`                          |
-| `$pageview`          | renderer | The renderer URL changes (initial mount + every navigation)               | `$pathname`, `$current_url` — both sanitised, see ↓ |
-| `telemetry_enabled`  | main     | User opts in                                                              | —                                                   |
-| `telemetry_disabled` | main     | User opts out (sent before the off-flip + flush)                          | —                                                   |
+| Event                | Source   | When                                                                       | Extra props                                         |
+| -------------------- | -------- | -------------------------------------------------------------------------- | --------------------------------------------------- |
+| `app_launched`       | main     | Telemetry transitions presence → full (opt-in, or replayed at each launch) | —                                                   |
+| `app_quit`           | main     | App is quitting                                                            | —                                                   |
+| `renderer_started`   | renderer | Each renderer (main window or popout) finishes booting                     | `popout: "main" \| string`                          |
+| `$pageview`          | renderer | The renderer URL changes (initial mount + every navigation)                | `$pathname`, `$current_url` — both sanitised, see ↓ |
+| `telemetry_enabled`  | main     | User opts up to full                                                       | —                                                   |
+| `telemetry_disabled` | main     | User drops back to presence (sent before the flip + flush)                 | —                                                   |
 
 ### `$pageview` sanitisation
 

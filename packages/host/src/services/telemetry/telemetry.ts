@@ -5,11 +5,10 @@
  * - Distinct id is a random UUID stored under `~/.argus/telemetry-id`.
  *   Never linked to any user account or system identifier.
  * - No autocapture, no session recording, no IP, no PII in props.
- * - Three modes (`off` / `presence` / `full`) — the renderer mirrors the
- *   user's choice via the `telemetry_set_mode` IPC. In `off` nothing leaves
- *   the process; in `presence` only a single `app_heartbeat` per launch is
- *   sent (no baseProps merge, no errors, no feedback); in `full` the whole
- *   event catalogue is enabled.
+ * - Two modes (`presence` / `full`) — the renderer mirrors the user's choice
+ *   via the `telemetry_set_mode` IPC. `presence` is the floor: a single
+ *   anonymous heartbeat per launch (no baseProps merge, no errors, no
+ *   feedback); `full` enables the whole event catalogue.
  * - Off when `POSTHOG_KEY` is not configured. The key is inlined into the
  *   main bundle at build time by `build-electron.mjs` via esbuild `define`
  *   (matching how Vite inlines `VITE_POSTHOG_KEY` for the renderer); reading
@@ -32,18 +31,13 @@ const log = createLogger("telemetry");
 const API_KEY = process.env.POSTHOG_KEY ?? "";
 const HOST = process.env.POSTHOG_HOST || "https://eu.i.posthog.com";
 
-export type TelemetryMode = "full" | "off" | "presence";
+export type TelemetryMode = "full" | "presence";
 
 let client: PostHog | null = null;
-// Default opt-out — the renderer pushes the user's consent state via
-// `telemetry_set_mode` once it boots. Until then, no events are sent.
-let mode: TelemetryMode = "off";
+// Presence is the floor — the renderer pushes the user's choice via
+// `telemetry_set_mode` once it boots, and can only ever raise it to `full`.
+let mode: TelemetryMode = "presence";
 let distinctId = "";
-// A single `$pageview` is fired at most once per process lifetime (the very
-// first time mode flips from `off` to anything else). PostHog's DAU /
-// Web Analytics insights are defined as "users with a `$pageview` event",
-// so this is what makes presence-only users countable as DAUs at all.
-let heartbeatSent = false;
 
 function baseProps(): Record<string, boolean | number | string> {
   return {
@@ -83,6 +77,10 @@ export function initTelemetry(): void {
   });
   log.info(`initialized; host=${HOST}`);
 
+  // Once per process: PostHog defines DAU as "users with a `$pageview`", so
+  // this is what makes presence-only installs countable at all.
+  captureHeartbeat();
+
   process.on("uncaughtException", (err) => {
     captureException(err, { source: "uncaughtException" });
   });
@@ -105,43 +103,20 @@ export function setTelemetryMode(next: TelemetryMode): void {
   if (next === mode) {
     return;
   }
-  const prev = mode;
-  log.info(`setTelemetryMode(${prev} -> ${next})`);
-  if (next === "off") {
-    // Capture the off-event while still on the previous mode, then flip + flush.
-    if (prev === "full") {
-      capture("telemetry_disabled");
-    }
-    mode = "off";
-    client?.flush().catch(() => undefined);
+  log.info(`setTelemetryMode(${mode} -> ${next})`);
+
+  if (next === "full") {
+    mode = "full";
+    capture("app_launched");
+    capture("telemetry_enabled");
 
     return;
   }
 
-  mode = next;
-
-  // Heartbeat: once per process, on the first arrival at any non-off mode.
-  // Sent for both presence and full users — single source of DAU truth.
-  if (!heartbeatSent) {
-    captureHeartbeat();
-    heartbeatSent = true;
-  }
-
-  if (next === "full") {
-    if (prev === "off") {
-      // First time we go from off → full (incl. post-consent), record a
-      // launch event so the install shows up in PostHog under the legacy
-      // event name dashboards may already filter on.
-      capture("app_launched");
-      capture("telemetry_enabled");
-    }
-    // presence → full: no extra event; the user is opting up but already
-    // counted in DAU via the heartbeat.
-  } else if (next === "presence" && prev === "off") {
-    // Presence is itself an "opt-in" relative to off, but only for DAU. No
-    // `telemetry_enabled` event — that signal is reserved for full mode so
-    // dashboards keep their existing meaning.
-  }
+  // full → presence: record the downgrade before the gate closes.
+  capture("telemetry_disabled");
+  mode = "presence";
+  client?.flush().catch(() => undefined);
 }
 
 export function getTelemetryMode(): TelemetryMode {
@@ -168,11 +143,6 @@ export function capture<N extends EventName>(
 ): void {
   if (!client) {
     log.info(`drop ${event}: client not initialized (no POSTHOG_KEY?)`);
-
-    return;
-  }
-  if (mode === "off") {
-    log.info(`drop ${event}: telemetry off`);
 
     return;
   }
@@ -209,7 +179,7 @@ export function capture<N extends EventName>(
  * project / session / org / PR identifiers.
  */
 function captureHeartbeat(): void {
-  if (!client || mode === "off") {
+  if (!client) {
     return;
   }
   try {
