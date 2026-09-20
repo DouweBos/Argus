@@ -1,17 +1,25 @@
 /**
- * Who a huddle guest is, for as long as the tab is open.
+ * Who a huddle guest is.
  *
- * The keypair is ephemeral and lives in `sessionStorage`, keyed by room token:
- * reloading the tab keeps it, so an approved guest is re-granted silently,
- * while a new visit generates a new key and has to be let in again. It never
- * touches `localStorage` — a guest is not adopted hardware, and nothing here
- * outlives the huddle.
+ * Split deliberately across two stores, because two different questions are
+ * being answered:
+ *
+ * - **The keypair** is what a grant binds to, and lives in `sessionStorage`,
+ *   keyed by room token. Reloading the tab keeps it, so an approved guest is
+ *   re-granted silently; closing the tab loses it, so coming back has to be
+ *   approved again. It never reaches `localStorage` — a guest is not adopted
+ *   hardware, and no grant outlives the tab that earned it.
+ * - **The client id and name** are only an identity hint, grant nothing, and
+ *   live in `localStorage`. They let the host see the person who stepped out
+ *   and came back as the same row rather than a second one with the same name,
+ *   and save them typing their name again.
  */
 
 import { freshKeypair } from "./keystore";
 
 const KEY_PREFIX = "argus.huddle.key.";
 const LABEL_KEY = "argus.huddle.label";
+const CLIENT_ID_KEY = "argus.huddle.client";
 
 /** The room token in `#/huddle/<token>`, or null for any other route. */
 export function parseHuddleToken(hash: string): string | null {
@@ -46,13 +54,28 @@ export function guestKeypair(token: string): GuestKeypair {
   return keypair;
 }
 
-/** The name the host sees. Remembered so a reload doesn't ask again. */
+/**
+ * This browser, across tabs and visits. Grants nothing on its own — it only
+ * tells the host which row to update when someone rejoins.
+ */
+export function guestClientId(): string {
+  const existing = localStorage.getItem(CLIENT_ID_KEY);
+  if (existing) {
+    return existing;
+  }
+  const id = crypto.randomUUID();
+  localStorage.setItem(CLIENT_ID_KEY, id);
+
+  return id;
+}
+
+/** The name the host sees. Remembered so coming back doesn't ask again. */
 export function readGuestLabel(): string {
-  return sessionStorage.getItem(LABEL_KEY) ?? "";
+  return localStorage.getItem(LABEL_KEY) ?? "";
 }
 
 export function rememberGuestLabel(label: string): void {
-  sessionStorage.setItem(LABEL_KEY, label);
+  localStorage.setItem(LABEL_KEY, label);
 }
 
 /**

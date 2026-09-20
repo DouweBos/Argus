@@ -75,11 +75,13 @@ export async function requestJoin(
   token: string,
   label: string,
   prev: HuddleView = INITIAL_HUDDLE_VIEW,
+  clientId?: string,
 ): Promise<HuddleView> {
   try {
     const payload = await transport.request<HuddleStatePayload>("huddle.join", {
       token,
       label,
+      ...(clientId ? { client_id: clientId } : {}),
     });
 
     return applyHuddleState(payload);

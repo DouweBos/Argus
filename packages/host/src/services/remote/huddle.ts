@@ -213,6 +213,7 @@ export function joinRoom(
   devStaticPub: string,
   label: string,
   link: GuestLink,
+  clientId?: string,
 ): JoinOutcome {
   sweepRooms();
   const entry = findByToken(token);
@@ -220,13 +221,22 @@ export function joinRoom(
     return { ok: false, reason: "unknown_room" };
   }
   const { room } = entry;
+  // The key identifies the tab; the client id identifies the person. Prefer the
+  // key (a reload, same tab) and fall back to the client id (they closed the
+  // tab and opened the link again) so one person is one row either way.
   let guest = room.guests.find((g) => g.dev_static_pub === devStaticPub);
+  const returning = !guest && clientId != null;
+  if (returning) {
+    guest = room.guests.find((g) => g.client_id === clientId);
+  }
   if (guest?.state === "denied") {
     return { ok: false, reason: "denied" };
   }
   if (!guest) {
     guest = {
+      member_id: randomUUID(),
       dev_static_pub: devStaticPub,
+      client_id: clientId ?? null,
       label,
       state: "pending",
       joined_at: Date.now(),
@@ -234,9 +244,23 @@ export function joinRoom(
       connected: true,
     };
     room.guests.push(guest);
+  } else if (returning) {
+    // A new tab handshook a new key, and the old grant was bound to the old
+    // one. Rebind the row and ask the host again rather than re-granting
+    // something this browser can no longer prove it held.
+    entry.links.get(guest.dev_static_pub)?.revoke();
+    entry.links.delete(guest.dev_static_pub);
+    guest.dev_static_pub = devStaticPub;
+    guest.label = label;
+    guest.state = "pending";
+    guest.approved_at = null;
+    guest.connected = true;
   } else {
     guest.label = label;
     guest.connected = true;
+    if (clientId != null) {
+      guest.client_id = clientId;
+    }
   }
   entry.links.set(devStaticPub, link);
   if (guest.state === "approved") {

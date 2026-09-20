@@ -362,3 +362,80 @@ describe("the expiry backstop", () => {
     });
   });
 });
+
+describe("a guest who closes the tab and comes back", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  it("updates their row rather than adding a second one", () => {
+    const r = room();
+    joinRoom(r.token, "pub-1", "Douwe", link(), "client-a");
+    approveGuest(r.id, "pub-1");
+    leaveGuest(r.id, "pub-1");
+
+    // New tab, new key, same browser.
+    joinRoom(r.token, "pub-2", "Douwe", link(), "client-a");
+
+    const guests = getRoom(r.id)!.guests;
+    expect(guests).toHaveLength(1);
+    expect(guests[0].dev_static_pub).toBe("pub-2");
+    expect(guests[0].connected).toBe(true);
+  });
+
+  it("has to be let in again — the grant was bound to the old key", () => {
+    const r = room();
+    joinRoom(r.token, "pub-1", "Douwe", link(), "client-a");
+    approveGuest(r.id, "pub-1");
+    leaveGuest(r.id, "pub-1");
+
+    const back = link();
+    const outcome = joinRoom(r.token, "pub-2", "Douwe", back, "client-a");
+
+    expect(outcome).toMatchObject({ ok: true });
+    expect(getRoom(r.id)!.guests[0].state).toBe("pending");
+    expect(back.grant).not.toHaveBeenCalled();
+  });
+
+  it("still re-grants a plain reload, which keeps its key", () => {
+    const r = room();
+    joinRoom(r.token, "pub-1", "Douwe", link(), "client-a");
+    approveGuest(r.id, "pub-1");
+
+    const reloaded = link();
+    joinRoom(r.token, "pub-1", "Douwe", reloaded, "client-a");
+
+    expect(getRoom(r.id)!.guests[0].state).toBe("approved");
+    expect(reloaded.grant).toHaveBeenCalled();
+  });
+
+  it("drops the stale socket it replaced", () => {
+    const r = room();
+    const first = link();
+    joinRoom(r.token, "pub-1", "Douwe", first, "client-a");
+    approveGuest(r.id, "pub-1");
+
+    joinRoom(r.token, "pub-2", "Douwe", link(), "client-a");
+
+    expect(first.revoke).toHaveBeenCalled();
+  });
+
+  it("stays denied — reopening the link is not a way around a no", () => {
+    const r = room();
+    joinRoom(r.token, "pub-1", "Douwe", link(), "client-a");
+    denyGuest(r.id, "pub-1");
+
+    expect(joinRoom(r.token, "pub-2", "Douwe", link(), "client-a")).toEqual({
+      ok: false,
+      reason: "denied",
+    });
+  });
+
+  it("keeps two different browsers apart", () => {
+    const r = room();
+    joinRoom(r.token, "pub-1", "Douwe", link(), "client-a");
+    joinRoom(r.token, "pub-2", "Douwe", link(), "client-b");
+
+    expect(getRoom(r.id)!.guests).toHaveLength(2);
+  });
+});
+
