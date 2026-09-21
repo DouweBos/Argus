@@ -75,11 +75,11 @@ to delegate work). The orchestration tree visualises the live hierarchy.
 
 Argus organises work around three areas:
 
-| Area          | What lives there                                                                                                                   |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Workspace** | Projects, sessions, and organisations — pick what to work on.                                                                      |
-| **Agent**     | The agent's chat thread, tool-call timeline, and prompt input.                                                                     |
-| **Runtime**   | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, git diff, VS Code editor. |
+| Area          | What lives there                                                                                                           |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Workspace** | Projects, sessions, and organisations — pick what to work on.                                                              |
+| **Agent**     | The agent's chat thread, tool-call timeline, and prompt input.                                                             |
+| **Runtime**   | Live view of the agent's work: iOS simulator, Android emulator, embedded browser, run output, terminals, and the git diff. |
 
 Every screen has a URL. `Cmd+[` and `Cmd+]` navigate back and forward;
 deep-link any session or project view directly.
@@ -90,7 +90,7 @@ deep-link any session or project view directly.
 
 A **runtime view** is anything in the Runtime area: a simulator, an
 emulator, the embedded Chromium browser, run-command output, a
-terminal, the git diff viewer, or the VS Code editor.
+terminal, or the git diff viewer.
 
 Most runtime views are **per-session** — they reflect the state of the
 session's worktree, not your primary checkout. Simulators boot fresh per

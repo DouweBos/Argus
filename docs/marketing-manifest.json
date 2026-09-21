@@ -28,13 +28,25 @@
           "slug": "features",
           "file": "features.md",
           "title": "Features",
-          "summary": "Simulators, embedded browser, terminals, run commands, git workflow, VS Code editor, permissions, and organisations."
+          "summary": "Simulators, embedded browser, terminals, run commands, git workflow, remote access, huddles, the headless server, permissions, and organisations."
         },
         {
           "slug": "automations",
           "file": "automations.md",
           "title": "Automations",
           "summary": "Work Argus starts on its own: triggers, signal sources, the autonomy ladder, guardrails, the inbox, and the built-in templates."
+        },
+        {
+          "slug": "git",
+          "file": "git.md",
+          "title": "Git",
+          "summary": "The built-in git client: branches, diffs, hunk-level staging, commits, stashes, merges and pull requests, in both session and project scope."
+        },
+        {
+          "slug": "server-app",
+          "file": "server-app.md",
+          "title": "Argus Server — the headless host",
+          "summary": "Run Argus with no window on a Mac mini so agents keep working while your laptop comes and goes."
         }
       ]
     },
@@ -52,7 +64,7 @@
           "slug": "app-settings",
           "file": "app-settings.md",
           "title": "App settings",
-          "summary": "Per-developer machine-local preferences. Theme, agent defaults, editor, telemetry level, and other personal toggles."
+          "summary": "Per-developer machine-local preferences. Theme, agent defaults, remote access, telemetry level, and other personal toggles."
         }
       ]
     },

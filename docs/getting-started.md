@@ -2,8 +2,8 @@
 
 Argus is a desktop app for macOS (Apple Silicon) that runs Claude Code agents
 in parallel — each in its own isolated git worktree, with a live iOS
-simulator, Android emulator, embedded Chromium browser, and a real VS Code
-editor side-by-side.
+simulator, Android emulator, embedded Chromium browser, and a full git
+client side-by-side.
 
 This page walks through the first five minutes: install, prerequisites, and
 opening your first project.
@@ -87,7 +87,7 @@ commit, and merge or open a PR — without leaving the app.
 - [Concepts](/argus/docs/concepts) — sessions, worktrees, agents,
   and how Argus organises work.
 - [Features](/argus/docs/features) — simulators, browser, terminals,
-  run commands, git workflow, VS Code, permissions.
+  run commands, git workflow, remote access, permissions.
 - [Project settings](/argus/docs/project-settings) — every option in
   `.argus.json`.
 - [App settings](/argus/docs/app-settings) — personal preferences.
