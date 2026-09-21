@@ -21,7 +21,6 @@ export const PR_SHEPHERD_TEMPLATE_ID = "pr-shepherd";
 export const REGRESSION_SWEEP_TEMPLATE_ID = "regression-sweep";
 export const BRANCH_JANITOR_TEMPLATE_ID = "branch-janitor";
 export const DEPENDENCY_WATCH_TEMPLATE_ID = "dependency-watch";
-export const LOCAL_BRANCH_CLEANUP_TEMPLATE_ID = "local-branch-cleanup";
 
 /** The machine's zone, so a seeded 07:30 means 07:30 where you are. */
 function localTimezone(): string {
@@ -217,33 +216,62 @@ screenshot path and a \`critical\` tone.
 
 const BRANCH_JANITOR_PLAYBOOK = `# Branch janitor
 
-Tidy up after finished work. Nothing here is urgent, so nothing here should be
-destructive on its own.
+Tidy up after finished work — the worktrees and the plain local branches both.
+Nothing here is urgent, so nothing here should be destructive on its own.
 
 For each project in scope:
 
-1. Call \`list_sessions\` and, for each session, \`list_session_changes\` and
+1. \`git fetch --prune\` so the remote-tracking refs are current. If the command
+   is refused, say so in the report and carry on with the staler view.
+2. Call \`list_sessions\` and, for each session, \`list_session_changes\` and
    \`merge_status\`.
-2. A session whose branch is fully merged into its base and has no uncommitted
-   changes is **done** — emit a proposal to delete it, with the branch name and
-   the merge commit in the rationale.
-3. A session with no commits and no uncommitted changes, older than a week, is
-   **stale** — emit a proposal to delete it, and say plainly that nothing would
-   be lost.
-4. A session with unmerged commits untouched for more than two weeks is
-   **stalled** — summarise what it was doing in two lines and emit a proposal
-   with \`recommended_action: "review"\` and no \`cta\`: the decision is the
-   user's to make from the summary. Never propose deleting one.
+3. \`git branch -vv\` for the project, so the branches no session owns are in
+   front of you too.
 
-Finish with \`emit_report\`: a \`stats\` block (done, stale, stalled) and a
-\`table\` of session / branch / age / verdict.
+A branch is **finished** when either of these holds:
+
+- \`merge_status\` says it is fully merged into its base; or
+- it is marked \`[origin/<name>: gone]\`. A squash merge rewrites the commits, so
+  the branch never becomes an ancestor of its base and the first check misses
+  it entirely — the deleted remote is the only evidence left. On a repo that
+  deletes branches on merge this is the common case, not the exception.
+
+Then, one \`emit_proposal\` each:
+
+- **Session, finished, nothing uncommitted** — propose deleting the session.
+  Name the branch and say which of the two checks found it.
+- **Session with no commits and nothing uncommitted, older than a week** —
+  stale. Propose deleting it, and say plainly that nothing would be lost.
+- **Session with unmerged commits untouched for more than two weeks** —
+  stalled. Summarise what it was doing in two lines, use
+  \`recommended_action: "review"\` and no \`cta\`: the decision is the user's to
+  make from the summary. Never propose deleting one.
+- **Branch with no session, finished** — there is no worktree to retire, only
+  the branch. Use \`recommended_action: "review"\`, no \`cta\`, and put the exact
+  \`git branch -d <branch>\` in the summary.
+- **Branch with no session whose remote is gone but that still has commits** —
+  use \`recommended_action: "needs_info"\`, list the commits that would be lost,
+  and say plainly that it would take \`-D\` and that nothing on the remote is
+  holding them any more.
+
+Never propose anything for the branch that is currently checked out or for the
+default branch. If you could not establish a branch's state, skip it and say
+why.
+
+Finish with \`emit_report\`: a \`stats\` block (done, stale, stalled, loose
+branches), a \`table\` of session / branch / age / verdict, and the single
+\`git branch -d\` line that clears every finished loose branch at once.
 
 ## Rules
 
 - Never call \`delete_session\` yourself, whatever the autonomy level says. A
   worktree with unpushed work in it is not recoverable, so a human presses the
   button.
+- This run does not delete branches either, and does not check one out. You
+  read and propose.
 - Never merge anything.
+- Never treat a \`-D\` as routine. Unmerged commits that exist nowhere else are
+  gone for good.
 - Do not call ExitPlanMode. Nobody is watching this run.
 `;
 
@@ -279,61 +307,6 @@ security ones with a \`critical\` tone.
 ## Rules
 
 - Do not install, do not edit a lockfile, do not commit. You read and propose.
-- Do not call ExitPlanMode. Nobody is watching this run.
-`;
-
-const LOCAL_BRANCH_CLEANUP_PLAYBOOK = `# Local branch cleanup
-
-A merged pull request deletes the branch on the remote and leaves the local one
-behind. Find the local branches that have nothing left in them and propose
-deleting each one.
-
-For each project in scope:
-
-1. \`git fetch --prune\` so the remote-tracking refs are current. If the command
-   is refused, say so in the report and carry on — the rest still works, it is
-   just reading a staler view.
-2. \`git branch -vv\` — a branch marked \`[origin/<name>: gone]\` had its remote
-   deleted, which is what a merged and tidied-up PR looks like.
-3. \`git branch --merged <default branch>\` — fully merged into the default
-   branch, so deleting it loses nothing.
-4. For each candidate, \`git log <default branch>..<branch> --oneline\` to see
-   what deleting it would actually lose. Empty means safe.
-
-Never propose deleting:
-
-- the branch that is currently checked out, or the default branch itself;
-- a branch that has an Argus worktree on it — call \`list_sessions\` and match on
-  the branch name. Deleting it breaks the worktree; the **Branch janitor**
-  automation is what retires those;
-- anything you could not establish the state of. Say you skipped it and why.
-
-Then, **one \`emit_proposal\` per branch**:
-
-- **Safe** — the remote is gone *and* \`git log <default>..<branch>\` is empty.
-  Use \`recommended_action: "review"\`, name the branch, give its last commit date
-  and the PR it merged in if you can find it, and put the exact
-  \`git branch -d <branch>\` in the summary.
-- **Not safe** — the remote is gone but commits remain. Use
-  \`recommended_action: "needs_info"\`, list the commits that would be lost, and
-  say plainly that this needs \`-D\` and that nothing on the remote is holding
-  them.
-
-Omit \`cta\` on both. There is no session to start and no page to open — the
-proposal is the reminder, and the command in it is the whole job.
-
-Set \`repo_root\` to the project so the proposal says which one it means.
-
-Finish with \`emit_report\`: a \`stats\` block (branches checked, safe to delete,
-needs a look), a \`table\` of branch / last commit / remote / verdict, and the
-single \`git branch -d\` line that deletes every safe one at once.
-
-## Rules
-
-- This run is read-only. Do not delete a branch, do not check one out, do not
-  commit, and do not push. You read and propose.
-- Never propose a \`-D\` as if it were routine. Unmerged commits that exist
-  nowhere else are gone for good.
 - Do not call ExitPlanMode. Nobody is watching this run.
 `;
 
@@ -430,7 +403,7 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
   [BRANCH_JANITOR_TEMPLATE_ID]: {
     name: "Branch janitor",
     description:
-      "Nightly: proposes cleanup for merged worktrees and summarises the sessions that have stalled.",
+      "Nightly: proposes cleanup for finished worktrees and the local branches a merged PR left behind, and summarises what has stalled.",
     enabled: false,
     trigger: {
       kind: "schedule",
@@ -457,21 +430,5 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
     playbook: DEPENDENCY_WATCH_PLAYBOOK,
     autonomy: "propose",
     template_id: DEPENDENCY_WATCH_TEMPLATE_ID,
-  },
-  [LOCAL_BRANCH_CLEANUP_TEMPLATE_ID]: {
-    name: "Local branch cleanup",
-    description:
-      "Weekly: local branches whose pull request already merged and whose remote is gone, one proposal each.",
-    enabled: false,
-    trigger: {
-      kind: "schedule",
-      cron: "0 10 * * 1",
-      timezone: localTimezone(),
-      catch_up: true,
-    },
-    playbook: LOCAL_BRANCH_CLEANUP_PLAYBOOK,
-    // Deleting a branch is not undoable, so this one never leaves propose.
-    autonomy: "propose",
-    template_id: LOCAL_BRANCH_CLEANUP_TEMPLATE_ID,
   },
 };
