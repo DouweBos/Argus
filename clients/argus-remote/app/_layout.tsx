@@ -184,6 +184,9 @@ function Root() {
           headerStyle: { backgroundColor: theme.bgSecondary },
           headerTintColor: theme.text,
           headerTitleStyle: { fontSize: 16 },
+          // Chevron only — the previous screen's title eats the width this
+          // screen's own title needs.
+          headerBackButtonDisplayMode: "minimal",
           contentStyle: { backgroundColor: theme.bg },
         }}
       >

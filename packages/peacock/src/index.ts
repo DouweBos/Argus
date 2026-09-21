@@ -10,6 +10,7 @@ export * from "./components/BranchDialog/BranchDialog";
 export * from "./components/BranchDivergence/BranchDivergence";
 export * from "./components/BranchPicker/BranchPicker";
 export * from "./components/BlameGutter/BlameGutter";
+export * from "./components/Breadcrumbs/Breadcrumbs";
 export * from "./components/RefBadge/RefBadge";
 export * from "./components/RunHistoryRow/RunHistoryRow";
 export * from "./components/RefBadgeList/RefBadgeList";

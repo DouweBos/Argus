@@ -381,6 +381,56 @@ export function HeaderIconBtn({
   );
 }
 
+export type TileAction = {
+  label: string;
+  icon: (props: { size?: number; color?: string }) => ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+};
+
+/**
+ * Row of equal-width icon+label tiles for screen-level actions. Lives in the
+ * content instead of the nav bar so the title keeps its width and the actions
+ * keep their labels.
+ */
+export function ActionTiles({ actions }: { actions: TileAction[] }) {
+  const theme = useTheme();
+
+  return (
+    <View style={{ flexDirection: "row", gap: 6 }}>
+      {actions.map(({ label, icon: Icon, onPress, disabled }) => (
+        <Pressable
+          key={label}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          disabled={disabled}
+          onPress={onPress}
+          style={({ pressed }) => ({
+            flex: 1,
+            paddingVertical: 9,
+            gap: 4,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: theme.radiusSm,
+            borderWidth: StyleSheet.hairlineWidth * 2,
+            borderColor: theme.border,
+            backgroundColor: pressed ? theme.bgHover : theme.bgSecondary,
+            opacity: disabled ? 0.4 : 1,
+          })}
+        >
+          <Icon size={17} color={theme.textSecondary} />
+          <Text
+            numberOfLines={1}
+            style={{ color: theme.textSecondary, fontSize: 10, fontWeight: "600" }}
+          >
+            {label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 /** Compact square icon-only button, used in headers and toolbars. */
 export function IconBtn({
   children,

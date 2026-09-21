@@ -14,32 +14,6 @@
   flex-shrink: 0;
 }
 
-.head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.back {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 12px;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.back:hover {
-  color: var(--text-primary);
-}
-
-.spacer {
-  flex: 1;
-}
-
 .titleBlock {
   display: flex;
   flex-direction: column;

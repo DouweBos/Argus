@@ -2,7 +2,6 @@ import type { AutomationRun } from "../../../lib/types";
 import {
   Button,
   EmptyState,
-  Icons,
   RunHistoryRow,
   SectionPanel,
   Toggle,
@@ -94,14 +93,6 @@ export function AutomationDetailScreen() {
   return (
     <div className={styles.screen}>
       <header className={styles.head}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => openAutomations()}
-        >
-          <Icons.ChevronLeftIcon size={12} />
-          Automations
-        </button>
         <span className={styles.spacer} />
         <Toggle
           checked={automation.enabled}

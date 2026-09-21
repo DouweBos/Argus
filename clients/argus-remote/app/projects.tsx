@@ -11,11 +11,11 @@ import {
   mapAgentStatus,
 } from "../src/components/rows";
 import {
+  ActionTiles,
   Banner,
   Body,
   Card,
   EmptyState,
-  HeaderIconBtn,
   Loading,
   Muted,
   Row,
@@ -68,38 +68,39 @@ export default function ProjectsScreen() {
       <Stack.Screen
         options={{
           title: hostName,
-          headerRight: () => (
-            <Row gap={2}>
-              <ConnectionBadge state={connection} />
-              <HeaderIconBtn
-                label="Inbox"
-                icon={Icons.Envelope}
-                onPress={() => router.push("/inbox")}
-              />
-              <HeaderIconBtn
-                label="Automations"
-                icon={Icons.Clock}
-                onPress={() => router.push("/automations")}
-              />
-              <HeaderIconBtn
-                label="Devices"
-                icon={Icons.Simulator}
-                onPress={() => router.push("/devices")}
-              />
-              <HeaderIconBtn
-                label="Refresh"
-                icon={Icons.Refresh}
-                disabled={connection !== "ready"}
-                onPress={refresh}
-              />
-              <HeaderIconBtn
-                label="Settings"
-                icon={Icons.Gear}
-                onPress={() => router.push("/settings")}
-              />
-            </Row>
-          ),
+          headerRight: () => <ConnectionBadge state={connection} />,
         }}
+      />
+
+      <ActionTiles
+        actions={[
+          {
+            label: "Inbox",
+            icon: Icons.Envelope,
+            onPress: () => router.push("/inbox"),
+          },
+          {
+            label: "Automations",
+            icon: Icons.Clock,
+            onPress: () => router.push("/automations"),
+          },
+          {
+            label: "Devices",
+            icon: Icons.Simulator,
+            onPress: () => router.push("/devices"),
+          },
+          {
+            label: "Refresh",
+            icon: Icons.Refresh,
+            onPress: refresh,
+            disabled: connection !== "ready",
+          },
+          {
+            label: "Settings",
+            icon: Icons.Gear,
+            onPress: () => router.push("/settings"),
+          },
+        ]}
       />
 
       {connection === "offline" && (
