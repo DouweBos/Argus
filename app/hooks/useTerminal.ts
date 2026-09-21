@@ -335,11 +335,14 @@ export function useTerminal({
 
           return false;
 
-        // Cmd+T — open a new terminal tab
+        // Cmd+T — open a new terminal tab. Stop propagation so the window-level
+        // shortcut doesn't also open a new window tab.
         case "t":
           if (e.shiftKey) {
             return true;
           }
+          e.preventDefault();
+          e.stopPropagation();
           onNewTabRef.current?.();
 
           return false;
