@@ -68,6 +68,7 @@ import { incrementCommandMetric } from "../session/commandMetrics";
 import { sessionRunnerId } from "../session/models";
 import { simulatorPool } from "../simulator/pool";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
+import { loadConversationByRunnerSession } from "./chatHistory";
 import { injectDeviceFlag, isConductorInvocation } from "./conductorInjection";
 import { clearQueue } from "./messageQueue";
 
@@ -178,6 +179,39 @@ export async function checkClaudeCli(): Promise<string> {
  * the app-level default permission mode explicitly.
  */
 const DEFAULT_AGENT_PERMISSION_MODE = "auto";
+
+/**
+ * Publish a saved conversation as the new agent's transcript snapshot, so a
+ * resumed agent shows the turns it is actually resuming from. No-op when
+ * nothing was saved for that runner session.
+ */
+function seedResumedSnapshot(
+  agentId: string,
+  repoRoot: string,
+  runnerSessionId: string,
+): void {
+  try {
+    const saved = loadConversationByRunnerSession(repoRoot, runnerSessionId);
+    if (!saved || saved.messages.length === 0) {
+      return;
+    }
+    appState.agentSnapshots.set(
+      agentId,
+      JSON.stringify({
+        messages: saved.messages,
+        model: saved.model,
+        sessionId: runnerSessionId,
+        // Tells the UI to drop the turn the CLI replays on --resume.
+        resuming: true,
+        title: saved.title,
+        totalCost: saved.totalCost,
+        totalDuration: saved.totalDuration,
+      }),
+    );
+  } catch (e) {
+    warn(`[agent:${agentId}] failed to seed resumed transcript: ${String(e)}`);
+  }
+}
 
 /**
  * Spawn a new agent process for the given session. See claude.ts for the
@@ -478,6 +512,15 @@ export async function startAgent(
     permissionMode: effectivePermissionMode,
   };
   appState.agents.set(agentId, agentSession);
+
+  // A resume spawn inherits a finished conversation, but the transcript lives
+  // in renderer state — seed the shared snapshot from saved history so remote
+  // clients (and the desktop, via `agent:started`) hydrate the prior turns
+  // instead of opening an empty chat. Restore-at-turn is excluded: its agent
+  // already holds a deliberately truncated transcript.
+  if (resumeSessionId && !reuseAgentId) {
+    seedResumedSnapshot(agentId, argusSession.repo_root, resumeSessionId);
+  }
 
   const eventChannel = `agent:event:${agentId}`;
 
