@@ -74,8 +74,8 @@ export function loadArgusConfig(repoRoot: string): ArgusConfig {
 }
 
 /**
- * Normalise `workspace_env` from its possible JSON forms into an array.
- * Accepts: null/undefined, a single object, or an array.
+ * Parse raw JSON into a `ArgusConfig`. The `run` field must be an array of
+ * `RunCommand` objects — the old string / single-object form is rejected.
  */
 function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
   const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -128,8 +128,12 @@ function parseArgusConfig(raw: string, repoRoot: string): ArgusConfig {
 }
 
 /**
- * Normalise the optional `automations` block. An unparseable ceiling is
- * dropped rather than defaulted — a typo must never raise what a repo allows.
+ * Merge a local config on top of a base config.
+ *
+ * - `setup.copy`, `setup.symlink`, `setup.commands` — concatenated (deduped).
+ * - `terminals` — concatenated.
+ * - `workspace_env` — local replaces base if present.
+ * - `run` — local replaces base if present.
  */
 function mergeConfig(base: ArgusConfig, local: ArgusConfig): ArgusConfig {
   function dedupExtend(target: string[], source: string[]): string[] {

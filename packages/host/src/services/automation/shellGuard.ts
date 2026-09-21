@@ -8,6 +8,12 @@
  * its publishing commands checked here, on the permission request itself,
  * before the CLI is allowed to run them.
  *
+ * The same door carries the `propose` rung's promise that a run writes
+ * nothing. Runs are unattended, so they cannot use plan mode — it prompts, and
+ * nobody is there to answer. Denying `Edit`/`Write` by tool name does not cover
+ * the shell, so `writeAction` reads the command for the ways it would put bytes
+ * on disk.
+ *
  * Two layers, both in Node, neither in the prompt:
  * 1. `automationDisallowedTools` is handed to the CLI as `--disallowed-tools`,
  *    so the recognised spellings never even reach a permission request.
@@ -260,6 +266,317 @@ function sessionAutonomy(
   return resolvePolicy(automation, repoRoot).autonomy;
 }
 
+// ---------------------------------------------------------------------------
+// Writing at `propose`
+// ---------------------------------------------------------------------------
+
+/**
+ * Commands that put bytes on disk. A `propose` run is supposed to touch
+ * nothing, and denying `Edit`/`Write` by tool name does not cover the shell —
+ * `echo x > f`, `sed -i`, `cp` and friends all go through Bash.
+ *
+ * Deliberately a denylist of the obvious spellings rather than an allowlist:
+ * an allowlist would refuse the ordinary reads these playbooks are built on
+ * (`git log`, `gh pr list`, `jq`, `rg`) the first time one grew an argument.
+ * A determined prompt injection can still find a gap — this raises the cost of
+ * an accident and of the easy attack, it is not a sandbox. Nor is there a
+ * sandbox behind it: a run's cwd is a scratch dir, but the playbooks read the
+ * scope repos at their absolute paths, so this is what stands between a
+ * `propose` run and the working copy.
+ */
+const WRITE_COMMANDS = new Set([
+  "chgrp",
+  "chmod",
+  "chown",
+  "cp",
+  "dd",
+  "install",
+  "ln",
+  "mkdir",
+  "mkfifo",
+  "mktemp",
+  "mv",
+  "patch",
+  "rm",
+  "rmdir",
+  "rsync",
+  "shred",
+  "tee",
+  "touch",
+  "truncate",
+  "unzip",
+]);
+
+/** `git` subcommands that always change the working tree, index or a ref. */
+const GIT_WRITE_SUBCOMMANDS = new Set([
+  "add",
+  "am",
+  "apply",
+  "checkout",
+  "cherry-pick",
+  "clean",
+  "clone",
+  "commit",
+  "fetch",
+  "gc",
+  "init",
+  "merge",
+  "mv",
+  "rebase",
+  "reset",
+  "restore",
+  "revert",
+  "rm",
+  "switch",
+]);
+
+/**
+ * `git` subcommands that read or write depending on their arguments, with the
+ * spellings that only read. `git branch -a` lists; `git branch foo` creates —
+ * and the digest playbooks lean on the listing forms, so treating the whole
+ * subcommand as a write would refuse the run's own instructions. Anything not
+ * recognised as a read falls through to a write, so a new spelling errs safe.
+ */
+const GIT_CONDITIONAL_SUBCOMMANDS: Record<
+  string,
+  (args: string[], flags: string[]) => boolean
+> = {
+  // Listing takes no branch name and no mutating flag.
+  branch: (args, flags) =>
+    (args.length === 0 || flags.some((f) => /^(-l|--list)$/.test(f))) &&
+    !flags.some((f) =>
+      /^(-[dDmMcC]|--delete|--move|--copy|--edit-description|--set-upstream-to|-u|--unset-upstream)/.test(
+        f,
+      ),
+    ),
+  config: (args, flags) =>
+    flags.some((f) => /^(--get|--get-all|--get-regexp|--list|-l)$/.test(f)) ||
+    (args.length <= 1 && flags.length === 0),
+  notes: (args) => args[0] === "list" || args[0] === "show",
+  remote: (args, flags) =>
+    args.length === 0 ||
+    args[0] === "show" ||
+    args[0] === "get-url" ||
+    flags.includes("-v"),
+  stash: (args) => args[0] === "list" || args[0] === "show",
+  tag: (args, flags) =>
+    (args.length === 0 || flags.some((f) => /^(-l|--list)$/.test(f))) &&
+    !flags.some((f) => /^(-[adfms]|--delete|--annotate|--force)/.test(f)),
+  worktree: (args) => args[0] === "list",
+};
+
+/** In-place edit flags: `sed -i`, `perl -i`, `ruby -i`. */
+const IN_PLACE_EDITORS = new Set(["ed", "perl", "ruby", "sed"]);
+
+/**
+ * Interpreters, which can write a file in one line and whose inline source is
+ * not worth trying to parse. Only the inline-code forms are refused — running
+ * a checked-in script is what the run commands are for.
+ */
+const INTERPRETERS = new Set([
+  "node",
+  "osascript",
+  "perl",
+  "php",
+  "python",
+  "python3",
+  "ruby",
+]);
+
+const AWK_FAMILY = new Set(["awk", "gawk", "mawk", "nawk"]);
+
+/** `-c` / `-e`, the "here is the program" flags, in their bundled spellings. */
+function hasInlineCode(words: string[]): boolean {
+  return words
+    .slice(1)
+    .some((w) => w.startsWith("-") && !w.startsWith("--") && /[ce]/.test(w));
+}
+
+/**
+ * Output redirection outside quotes. Scanned on the raw segment because
+ * `tokenize` drops the operators — and quote-aware because a read as ordinary
+ * as `git log --pretty=format:"%h > %s"` would otherwise look like a write.
+ */
+function hasRedirection(segment: string): boolean {
+  let quote: string | null = null;
+  for (let i = 0; i < segment.length; i += 1) {
+    const ch = segment[i]!;
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      continue;
+    }
+    if (ch !== ">") {
+      continue;
+    }
+    // `2>&1` and `>&2` redirect a stream to a stream, not to a file.
+    if (segment[i + 1] === "&") {
+      continue;
+    }
+    // `2>/dev/null` is how half the read commands in these playbooks are
+    // written; discarding output is not writing.
+    const target = segment
+      .slice(i + 1)
+      .replace(/^>/, "")
+      .trim()
+      .split(/\s/)[0];
+    if (target === "/dev/null") {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+function inspectWriteWords(raw: string[]): string | null {
+  const words = stripAssignments(raw);
+  if (words.length === 0) {
+    return null;
+  }
+  const head = basename(words[0]!);
+
+  if (COMMAND_WRAPPERS.has(head)) {
+    const rest = words.slice(1).filter((w) => !w.startsWith("-"));
+    const direct = rest.length > 0 ? inspectWriteWords(rest) : null;
+    if (direct) {
+      return direct;
+    }
+    for (const inner of words.slice(1)) {
+      if (/\s/.test(inner)) {
+        const found = writeAction(inner);
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  if (WRITE_COMMANDS.has(head)) {
+    return head;
+  }
+
+  if (head === "git") {
+    const subcommand = gitSubcommand(words);
+    if (!subcommand) {
+      return null;
+    }
+    if (GIT_WRITE_SUBCOMMANDS.has(subcommand)) {
+      return `git ${subcommand}`;
+    }
+    const reads = GIT_CONDITIONAL_SUBCOMMANDS[subcommand];
+    if (!reads) {
+      return null;
+    }
+    const after = words.slice(words.indexOf(subcommand) + 1);
+
+    return reads(
+      after.filter((w) => !w.startsWith("-")),
+      after.filter((w) => w.startsWith("-")),
+    )
+      ? null
+      : `git ${subcommand}`;
+  }
+
+  if (IN_PLACE_EDITORS.has(head)) {
+    // `-i`, `-i.bak`, and the bundled `-pi` / `-ne -i` spellings.
+    const inPlace = words
+      .slice(1)
+      .some((w) => /^-[A-Za-z]*i/.test(w) && !w.startsWith("--"));
+    if (inPlace) {
+      return `${head} -i`;
+    }
+  }
+
+  if (INTERPRETERS.has(head) && hasInlineCode(words)) {
+    return `${head} with inline code`;
+  }
+
+  // `awk '{print > "/tmp/x"}'` writes; `awk '$1 > 5'` compares. The redirect
+  // is the one that follows a print.
+  if (
+    AWK_FAMILY.has(head) &&
+    words.some((w) => /\b(print|printf)\b[^;}]*>/.test(w))
+  ) {
+    return `${head} printing to a file`;
+  }
+
+  return null;
+}
+
+/**
+ * The bodies of `$(...)` and backtick substitutions. They run a command of
+ * their own, which neither `splitSegments` nor `tokenize` surfaces — without
+ * this, `echo $(rm -rf x)` reads as a harmless `echo`.
+ */
+function commandSubstitutions(command: string): string[] {
+  const found: string[] = [];
+
+  for (let i = 0; i < command.length; i += 1) {
+    if (command[i] === "`") {
+      const end = command.indexOf("`", i + 1);
+      if (end === -1) {
+        break;
+      }
+      found.push(command.slice(i + 1, end));
+      i = end;
+      continue;
+    }
+    if (command[i] !== "$" || command[i + 1] !== "(") {
+      continue;
+    }
+    let depth = 0;
+    for (let j = i + 1; j < command.length; j += 1) {
+      if (command[j] === "(") {
+        depth += 1;
+      } else if (command[j] === ")") {
+        depth -= 1;
+        if (depth === 0) {
+          found.push(command.slice(i + 2, j));
+          i = j;
+          break;
+        }
+      }
+    }
+  }
+
+  return found;
+}
+
+/**
+ * What in `command` would write to disk, or null when nothing would. Only
+ * consulted below `draft` — above it, writing is the point.
+ */
+export function writeAction(command: string): string | null {
+  // Scanned whole, not per segment: `splitSegments` cuts on `&`, which would
+  // tear `2>&1` in half and leave a bare `>` behind.
+  if (hasRedirection(command)) {
+    return "redirecting output to a file";
+  }
+  for (const segment of splitSegments(command)) {
+    const found = inspectWriteWords(tokenize(segment));
+    if (found) {
+      return found;
+    }
+  }
+  for (const inner of commandSubstitutions(command)) {
+    const found = writeAction(inner);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
 /**
  * The refusal for one Bash command in one session, or null when the session is
  * not an automation's or the command publishes nothing.
@@ -276,12 +593,22 @@ export function automationShellBlock(
   if (typeof command !== "string" || !command.trim()) {
     return null;
   }
-  const action = publishingAction(command);
-  if (!action) {
+  const owner = automationSessionAutonomy(sessionId);
+  if (!owner) {
     return null;
   }
-  const owner = automationSessionAutonomy(sessionId);
-  if (!owner || atLeastAutonomy(owner.autonomy, action.level)) {
+
+  // Below `draft` the run may not write at all, so the shell is checked for
+  // that first — it is the broader refusal of the two.
+  if (!atLeastAutonomy(owner.autonomy, "draft")) {
+    const write = writeAction(command);
+    if (write) {
+      return `Refused by Argus: this session was started by the automation "${owner.automation.name}", which runs at autonomy "${owner.autonomy}" and may not write anything. \`${write}\` would. Report what you found instead — emit a proposal if it needs doing.`;
+    }
+  }
+
+  const action = publishingAction(command);
+  if (!action || atLeastAutonomy(owner.autonomy, action.level)) {
     return null;
   }
 
@@ -291,8 +618,9 @@ export function automationShellBlock(
 /**
  * The file-writing tools. A `propose` run touches nothing, which used to be
  * plan mode's job — but plan mode also prompts, and an unattended run that
- * stops to ask just times out. Denying the tools by name is the same promise
- * without the prompt.
+ * stops to ask just times out. Denying the tools by name is half the
+ * replacement; `writeAction` is the other half, for the same writes spelled as
+ * a shell command.
  */
 const EDITING_TOOLS = [
   "Edit",

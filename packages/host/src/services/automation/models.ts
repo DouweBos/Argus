@@ -162,7 +162,11 @@ export interface CreateAutomationInput {
   template_id?: string | null;
 }
 
-/** Fields accepted when patching an automation. */
+/**
+ * Fields accepted when patching an automation. `seeded_playbook_hash` is
+ * derived state the host owns — letting a caller set it would let an edited
+ * playbook pass itself off as stock and be overwritten by the next release.
+ */
 export type UpdateAutomationInput = Partial<
-  Omit<Automation, "created_at" | "id" | "updated_at">
+  Omit<Automation, "created_at" | "id" | "seeded_playbook_hash" | "updated_at">
 >;

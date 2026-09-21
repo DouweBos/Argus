@@ -47,8 +47,10 @@ const COST_POLL_MS = 15 * 1000;
 /**
  * Nobody is watching a run, so it must never stop to ask. Plan mode used to
  * hold `propose` runs read-only, but it prompts on read-only MCP calls too and
- * the run just sat there until it timed out. Writes are denied by tool name
- * instead — see `automationDisallowedTools`.
+ * the run just sat there until it timed out. A read-only run is held to it by
+ * the shell guard instead: denied write tools by name, and denied the shell
+ * spellings of the same thing — see `automationDisallowedTools` and
+ * `writeAction`.
  */
 const PERMISSION_MODE = "auto" as const;
 

@@ -37,6 +37,19 @@ const LEGACY_PLAYBOOK_HASHES: Record<string, string[]> = {
   "dependency-watch": ["6b3f0526d3313a09"],
 };
 
+/**
+ * Descriptions a template has shipped with and since moved on from. The
+ * description is its own free-text field in the editor, so a playbook that
+ * matches is no evidence that the description was not edited — without this
+ * an edit to the description alone would be silently reverted. Append the old
+ * text here whenever you change a template's description.
+ */
+const SUPERSEDED_DESCRIPTIONS: Record<string, string[]> = {
+  "standup-digest": [
+    "A daily read-only summary of what every agent and branch did yesterday.",
+  ],
+};
+
 /** Whether `automation` still carries the playbook it was seeded with. */
 function isUnmodified(automation: Automation): boolean {
   const current = playbookHash(automation.playbook);
@@ -55,12 +68,28 @@ function isUnmodified(automation: Automation): boolean {
 }
 
 /**
+ * Whether the description is still stock, and so safe to replace. Judged
+ * separately from the playbook because the two are edited separately.
+ */
+function descriptionIsStock(
+  current: string,
+  templateId: string,
+  templateDescription: string,
+): boolean {
+  return (
+    current === templateDescription ||
+    (SUPERSEDED_DESCRIPTIONS[templateId]?.includes(current) ?? false)
+  );
+}
+
+/**
  * Bring every untouched built-in up to the current template. Mutates `list`
  * and returns true when anything changed, so the caller can persist once.
  *
- * Only the playbook and the description move — the name, schedule, scope,
- * guardrails and enabled flag are yours, and a refresh must never re-enable an
- * automation you turned off.
+ * The playbook and the description are judged separately — editing one must
+ * not forfeit updates to the other, and editing either must never be undone.
+ * Name, schedule, scope, guardrails and the enabled flag are always yours; a
+ * refresh must never re-enable an automation you turned off.
  */
 export function refreshBuiltIns(list: Automation[]): boolean {
   let changed = false;
@@ -71,29 +100,45 @@ export function refreshBuiltIns(list: Automation[]): boolean {
       continue;
     }
     const template = BUILT_IN_TEMPLATES[templateId];
-    if (!template || !isUnmodified(automation)) {
+    if (!template) {
       continue;
     }
+    const templateDescription = template.description?.trim() ?? "";
+    let touched = false;
 
-    const hash = playbookHash(template.playbook);
-    if (automation.playbook === template.playbook) {
-      // Already current; just record the fingerprint so the legacy table stops
-      // being consulted for it.
+    if (isUnmodified(automation)) {
+      const hash = playbookHash(template.playbook);
+      if (automation.playbook !== template.playbook) {
+        automation.playbook = template.playbook;
+        touched = true;
+      }
+      // Record the fingerprint either way, so the legacy table stops being
+      // consulted for this automation.
       if (automation.seeded_playbook_hash !== hash) {
         automation.seeded_playbook_hash = hash;
         changed = true;
       }
-      continue;
     }
 
-    automation.playbook = template.playbook;
-    automation.description = template.description?.trim() ?? "";
-    automation.seeded_playbook_hash = hash;
-    automation.updated_at = Date.now();
-    changed = true;
-    info(
-      `Refreshed built-in automation ${automation.id} (${automation.name}) from template ${templateId}`,
-    );
+    if (
+      automation.description.trim() !== templateDescription &&
+      descriptionIsStock(
+        automation.description.trim(),
+        templateId,
+        templateDescription,
+      )
+    ) {
+      automation.description = templateDescription;
+      touched = true;
+    }
+
+    if (touched) {
+      automation.updated_at = Date.now();
+      changed = true;
+      info(
+        `Refreshed built-in automation ${automation.id} (${automation.name}) from template ${templateId}`,
+      );
+    }
   }
 
   return changed;

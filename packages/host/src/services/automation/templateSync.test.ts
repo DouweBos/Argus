@@ -79,8 +79,9 @@ describe("refreshBuiltIns", () => {
 
     expect(refreshBuiltIns(list)).toBe(true);
     expect(list[0].playbook).toBe(template.playbook);
-    expect(list[0].description).toBe(template.description);
     expect(list[0].seeded_playbook_hash).toBe(playbookHash(template.playbook));
+    // The fixture's description is not stock, so it is left as the user left it.
+    expect(list[0].description).toBe("old description");
   });
 
   it("leaves an edited playbook alone", () => {
@@ -113,6 +114,30 @@ describe("refreshBuiltIns", () => {
     expect(list[0].enabled).toBe(false);
     expect(list[0].name).toBe("My standup");
     expect(list[0].scope.repo_roots).toEqual(["/repo"]);
+  });
+
+  it("never reverts a description you edited, even with a stock playbook", () => {
+    const list = [automation({ description: "my own words" })];
+    refreshBuiltIns(list);
+
+    expect(list[0].description).toBe("my own words");
+    // The playbook is still stock, so that half must still refresh.
+    expect(list[0].playbook).toBe(template.playbook);
+  });
+
+  it("refreshes a stock description even when the playbook is edited", () => {
+    const list = [
+      automation({
+        playbook: "mine now",
+        seeded_playbook_hash: playbookHash(LEGACY_STANDUP),
+        description:
+          "A daily read-only summary of what every agent and branch did yesterday.",
+      }),
+    ];
+
+    expect(refreshBuiltIns(list)).toBe(true);
+    expect(list[0].description).toBe(template.description);
+    expect(list[0].playbook).toBe("mine now");
   });
 
   it("ignores automations that came from no template", () => {

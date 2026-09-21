@@ -24,6 +24,10 @@ import type {
 import { warn } from "@argus/host/logger";
 import { isAutonomyLevel } from "../automation/guardrails";
 
+/**
+ * Normalise `workspace_env` from its possible JSON forms into an array.
+ * Accepts: null/undefined, a single object, or an array.
+ */
 export function normalizeWorkspaceEnv(raw: unknown): WorkspaceEnvConfig[] {
   if (raw == null) {
     return [];
@@ -39,10 +43,9 @@ export function normalizeWorkspaceEnv(raw: unknown): WorkspaceEnvConfig[] {
 }
 
 /**
- * Parse raw JSON into a `ArgusConfig`. The `run` field must be an array of
- * `RunCommand` objects — the old string / single-object form is rejected.
+ * Normalise the optional `automations` block. An unparseable ceiling is
+ * dropped rather than defaulted — a typo must never raise what a repo allows.
  */
-
 export function normalizeProjectAutomations(
   input: unknown,
 ): ProjectAutomationConfig | null {

@@ -325,6 +325,61 @@ describe("the shell guard", () => {
     expect(automationDisallowedTools("no-such-session")).toEqual([]);
   });
 
+  it("refuses a shell write at propose, which no tool denylist can catch", () => {
+    autoStartedSession("propose");
+
+    for (const command of [
+      "echo pwned > /tmp/x",
+      "sed -i '' s/a/b/ file.ts",
+      "cp secrets.json /tmp/",
+      "rm -rf build",
+      "git commit -am wip",
+      "node -e \"require('fs').writeFileSync('/tmp/x','y')\"",
+    ]) {
+      expect(attempt(HOST_SESSION_ID, command).deny).toContain(
+        "may not write anything",
+      );
+    }
+  });
+
+  it("follows a write into a command substitution", () => {
+    autoStartedSession("propose");
+
+    for (const command of [
+      "echo $(rm -rf /tmp/x)",
+      "echo `touch /tmp/x`",
+      "X=$(cp a b); echo done",
+    ]) {
+      expect(attempt(HOST_SESSION_ID, command).deny).toContain(
+        "may not write anything",
+      );
+    }
+  });
+
+  it("still lets a propose run read, which is the whole job", () => {
+    autoStartedSession("propose");
+
+    for (const command of [
+      'git log --since="24 hours ago" --pretty=format:"%h %ad %an %s"',
+      "git branch -a --sort=-committerdate",
+      "git tag -l 'v*'",
+      "gh pr list --head b --json number,url 2>/dev/null",
+      "cat file 2>&1 | head -20",
+      "pnpm outdated",
+      "echo $(git rev-parse HEAD)",
+      "awk '$1 > 5' data.txt",
+    ]) {
+      expect(attempt(HOST_SESSION_ID, command).deny).toBeNull();
+    }
+  });
+
+  it("lets a draft run write — that rung exists to implement", () => {
+    autoStartedSession("draft");
+
+    expect(attempt(WORK_SESSION_ID, "echo x > file.ts").deny).toBeNull();
+    expect(attempt(WORK_SESSION_ID, "git commit -am wip").deny).toBeNull();
+  });
+
   it("denies the editing tools at propose, so the run needs no plan mode", () => {
     autoStartedSession("propose");
 
