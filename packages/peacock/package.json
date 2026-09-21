@@ -11,7 +11,8 @@
     "./icons": "./src/icons/Icons.tsx",
     "./styles": "./src/styles/tokens.css",
     "./tokens.css": "./src/styles/tokens.css",
-    "./fonts.css": "./src/styles/fonts.css"
+    "./fonts.css": "./src/styles/fonts.css",
+    "./reset.css": "./src/styles/reset.css"
   },
   "files": [
     "src"

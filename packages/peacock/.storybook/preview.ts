@@ -2,6 +2,7 @@ import { withThemeByDataAttribute } from "@storybook/addon-themes";
 import type { Preview } from "@storybook/react";
 import "../src/styles/fonts.css";
 import "../src/styles/tokens.css";
+import "../src/styles/reset.css";
 import "./preview.css";
 
 const preview: Preview = {

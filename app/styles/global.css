@@ -1,5 +1,6 @@
-/* Design tokens are defined exclusively in @argus/peacock. */
+/* Design tokens and element resets are defined exclusively in @argus/peacock. */
 @import "@argus/peacock/tokens.css";
+@import "@argus/peacock/reset.css";
 
 /* Reset */
 *,
@@ -48,25 +49,6 @@ body {
 input:focus-visible,
 textarea:focus-visible {
   outline: none;
-}
-
-/* Button reset */
-button {
-  font-family: inherit;
-  font-size: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-  color: inherit;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 /* Input reset */

@@ -1,0 +1,29 @@
+/**
+ * Element resets Peacock components rely on. Imported by the app's global.css
+ * and by Storybook, so a component looks the same in both.
+ */
+
+/* Button reset */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  /*
+   * Not `center`. A button wider than its content is almost always a row —
+   * a list item, a tree node, a table header — and centring those strands the
+   * label in the middle. The Button primitive centres its own label, and
+   * anything else that wants it says so.
+   */
+  justify-content: flex-start;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
