@@ -6,6 +6,7 @@ import type {
   PermissionCancellation,
   PermissionRequest,
 } from "./types";
+import type { AgentConversation } from "../stores/conversationStore";
 import { error } from "@logger";
 import {
   addAgent,
@@ -23,6 +24,7 @@ import {
   clearPermission,
   flushPendingUnread,
   getConversationState,
+  loadSavedMessages,
   setCapabilities,
   setConversationTitle,
   setModel,
@@ -48,6 +50,7 @@ import {
   createCheckpoint,
   generateSessionTitle,
   type ImageAttachment,
+  getAgentSnapshot,
   publishAgentSnapshot,
   saveChatHistory,
   sendAgentMessage,
@@ -227,6 +230,41 @@ export function initAppQuitSave(): void {
 }
 
 /**
+ * Seed an externally-spawned agent's transcript from the snapshot the backend
+ * published for it (a resume spawn carries the conversation it resumed). Skips
+ * agents we already have messages for so a live chat is never overwritten.
+ */
+function hydrateFromSnapshot(agentId: string): void {
+  if (getConversationState().conversations[agentId]?.messages.length) {
+    return;
+  }
+  getAgentSnapshot(agentId)
+    .then((raw) => {
+      if (!raw) {
+        return;
+      }
+      const conv = JSON.parse(raw) as AgentConversation;
+      if (
+        !conv.messages?.length ||
+        getConversationState().conversations[agentId]?.messages.length
+      ) {
+        return;
+      }
+      loadSavedMessages(
+        agentId,
+        conv.messages,
+        conv.model,
+        conv.sessionId,
+        conv.resuming,
+        conv.title,
+      );
+    })
+    .catch(() => {
+      // No snapshot or malformed JSON — the chat just starts empty.
+    });
+}
+
+/**
  * Listen for agents spawned outside the UI flow (e.g. via the MCP
  * `spawn_agent` tool). Registers them in the agent store and starts
  * subscribing to their event channels so they appear in the UI.
@@ -247,6 +285,7 @@ export function initExternalAgentStarted(): void {
       model: info.model,
     });
     startAgentListening(info.agent_id);
+    hydrateFromSnapshot(info.agent_id);
     // Derive a human-readable title from the prompt the MCP tool sent.
     // Without this, the Agents overview falls back to the branch name for
     // MCP-spawned agents, since the renderer never sees the first user

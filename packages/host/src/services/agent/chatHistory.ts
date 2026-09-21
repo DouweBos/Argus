@@ -370,3 +370,18 @@ export function deleteHistoryEntry(repoRoot: string, historyId: string): void {
     saveIndex(repoRoot, filtered);
   }
 }
+
+/**
+ * Load a saved conversation by its runner session id (the id a resume spawn
+ * passes to `--resume`). Returns null when nothing was saved for it.
+ */
+export function loadConversationByRunnerSession(
+  repoRoot: string,
+  runnerSessionId: string,
+): SavedConversation | null {
+  const entry = loadHistoryIndex(repoRoot).find(
+    (e) => e.sessionId === runnerSessionId,
+  );
+
+  return entry ? loadConversation(repoRoot, entry.id) : null;
+}
