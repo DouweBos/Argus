@@ -20,7 +20,6 @@ import {
   markRunRead,
   openAutomation,
   openQuickRuns,
-  useAutomation,
   useAutomationRun,
 } from "../../../stores/automationStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
@@ -38,7 +37,6 @@ import { useReportRefResolvers } from "./reportRefs";
  */
 export function AutomationRunScreen() {
   const { automationId, automationRunId } = useCurrentRoute();
-  const automation = useAutomation(automationId);
   const run = useAutomationRun(automationRunId);
   const sessions = useSessions();
   const { resolveProposal, resolveSession } = useReportRefResolvers();
@@ -79,21 +77,10 @@ export function AutomationRunScreen() {
     : null;
   const active = isRunActive(run);
   const scratch = run.scratch;
-  const backLabel = scratch ? "Quick runs" : (automation?.name ?? "Automation");
 
   return (
     <div className={styles.screen}>
       <header className={styles.head}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() =>
-            automationId ? openAutomation(automationId) : openQuickRuns()
-          }
-        >
-          <Icons.ChevronLeftIcon size={12} />
-          {backLabel}
-        </button>
         <span className={styles.spacer} />
         {scratch && !active && <SaveQuickRunButton runId={run.id} />}
         {hostSession && (

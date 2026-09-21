@@ -3,7 +3,6 @@ import { useCallback, useState } from "react";
 import {
   Button,
   FormField,
-  Icons,
   Input,
   RunHistoryRow,
   SectionPanel,
@@ -17,7 +16,6 @@ import {
   isUnreadReport,
 } from "../../../lib/automations";
 import {
-  openAutomations,
   openQuickRun,
   startScratchRun,
   useScratchRuns,
@@ -84,18 +82,6 @@ export function QuickRunScreen() {
 
   return (
     <div className={styles.screen}>
-      <header className={styles.head}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => openAutomations()}
-        >
-          <Icons.ChevronLeftIcon size={12} />
-          Automations
-        </button>
-        <span className={styles.spacer} />
-      </header>
-
       <div className={styles.titleBlock}>
         <h1 className={styles.titleHeading}>Quick run</h1>
         <p className={styles.meta}>
