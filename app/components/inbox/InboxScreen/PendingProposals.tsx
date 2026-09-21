@@ -1,97 +1,23 @@
-import type { Proposal, ProposalAction } from "../../../lib/types";
-import type { BadgeTone, ProposalCardAction } from "@argus/peacock";
-import { useState } from "react";
+import type { Proposal } from "../../../lib/types";
 import { Badge, ProposalCard } from "@argus/peacock";
 import { openExternalUrl } from "../../../lib/ipc";
+import {
+  PROPOSAL_ACTION_LABELS,
+  PROPOSAL_ACTION_TONES,
+  proposalProjectName,
+} from "../../../lib/proposals";
 import { useAutomations } from "../../../stores/automationStore";
-import { acceptProposal, dismissProposal } from "../../../stores/proposalStore";
-import { selectSession } from "../../../stores/sessionStore";
+import { useProposalActions } from "../useProposalActions";
 import styles from "./InboxScreen.module.css";
-
-const ACTION_LABELS: Record<ProposalAction, string> = {
-  ignore: "suggests ignoring",
-  needs_info: "needs info",
-  review: "worth a review",
-  start_session: "ready to start",
-};
-
-const ACTION_TONES: Record<ProposalAction, BadgeTone> = {
-  ignore: "neutral",
-  needs_info: "warning",
-  review: "accent",
-  start_session: "success",
-};
-
-function projectName(repoRoot: string | null): string | null {
-  return repoRoot ? (repoRoot.split("/").filter(Boolean).pop() ?? null) : null;
-}
 
 export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
   const automations = useAutomations();
-  const [busyId, setBusyId] = useState<string | null>(null);
-
-  const start = async (proposal: Proposal) => {
-    setBusyId(proposal.id);
-    try {
-      // The backend creates the session and spawns the agent; all that is
-      // left is to take the user to the work it just started.
-      const result = await acceptProposal(proposal.id);
-      selectSession(result.session_id);
-    } catch {
-      // The list refreshes from `proposals:changed`; a failed accept leaves
-      // the card exactly where it was.
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const dismiss = async (proposal: Proposal, reason: string) => {
-    setBusyId(proposal.id);
-    try {
-      await dismissProposal(proposal.id, reason || undefined);
-    } catch {
-      // Same as above — the card stays until the host says otherwise.
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  // The run writes the CTA, so the button says what it is actually for — and
-  // a proposal with nothing to start offers nothing to start.
-  const primaryAction = (
-    proposal: Proposal,
-  ): ProposalCardAction | undefined => {
-    const cta = proposal.cta;
-    if (!cta) {
-      return undefined;
-    }
-    if (cta.kind === "start_session") {
-      return {
-        kind: "start",
-        label: cta.label,
-        onClick: () => {
-          start(proposal).catch(() => undefined);
-        },
-      };
-    }
-    const url = cta.url;
-
-    return url
-      ? {
-          kind: "open",
-          label: cta.label,
-          // Client-side by design, same as the source link below.
-          onClick: () => {
-            openExternalUrl(url).catch(() => undefined);
-          },
-        }
-      : undefined;
-  };
+  const { busyId, dismiss, primaryAction } = useProposalActions();
 
   return (
     <div className={styles.cards}>
       {proposals.map((proposal) => {
-        const project = projectName(proposal.repo_root);
+        const project = proposalProjectName(proposal.repo_root);
         const automation = automations.find(
           (a) => a.id === proposal.automation_id,
         );
@@ -104,16 +30,16 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
             key={proposal.id}
             meta={
               <>
-                <Badge tone={ACTION_TONES[proposal.recommended_action]}>
-                  {ACTION_LABELS[proposal.recommended_action]}
+                <Badge
+                  tone={PROPOSAL_ACTION_TONES[proposal.recommended_action]}
+                >
+                  {PROPOSAL_ACTION_LABELS[proposal.recommended_action]}
                 </Badge>
                 {project && <Badge tone="neutral">{project}</Badge>}
                 {automation && <Badge tone="neutral">{automation.name}</Badge>}
               </>
             }
-            onDismiss={(reason) => {
-              dismiss(proposal, reason).catch(() => undefined);
-            }}
+            onDismiss={(reason) => dismiss(proposal, reason)}
             onOpenSource={
               source
                 ? () => {

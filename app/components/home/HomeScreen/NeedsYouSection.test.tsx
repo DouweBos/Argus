@@ -4,11 +4,13 @@
  * summary — past the cap it points at the inbox rather than growing.
  */
 
+import type * as RouterModule from "../../../lib/router";
 import type { AutomationRun, Proposal } from "../../../lib/types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const markAutomationRunRead = vi.fn();
+const appNavigate = vi.fn();
 
 vi.mock("../../../lib/ipc", () => ({
   listProposals: () => Promise.resolve([]),
@@ -31,6 +33,11 @@ vi.mock("../../../lib/ipc", () => ({
 }));
 
 vi.mock("../../../lib/transport", () => ({ subscribe: () => () => undefined }));
+
+vi.mock("../../../lib/router", async (importOriginal) => ({
+  ...(await importOriginal<typeof RouterModule>()),
+  appNavigate: (route: unknown) => appNavigate(route),
+}));
 
 vi.mock("../../../stores/sessionStore", () => ({
   selectSession: vi.fn(),
@@ -83,6 +90,7 @@ function failedRun(id: string): AutomationRun {
 
 describe("needsYouSection", () => {
   beforeEach(() => {
+    appNavigate.mockReset();
     markAutomationRunRead.mockReset();
     markAutomationRunRead.mockResolvedValue(undefined);
     setProposalState({ proposals: [], loading: false, error: null });
@@ -99,15 +107,27 @@ describe("needsYouSection", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("puts a pending proposal on home, with its actions", () => {
+  it("summarises a pending proposal rather than offering the decision", () => {
     setProposalState({ proposals: [proposal()], loading: false, error: null });
     render(<NeedsYouSection />);
 
     expect(
       screen.getByText("Fix the crash on a deleted worktree"),
     ).toBeDefined();
-    expect(screen.getByRole("button", { name: "Start work" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Start work" })).toBeNull();
     expect(screen.getByText("1 waiting")).toBeDefined();
+  });
+
+  it("opens the proposal's own page when its summary is clicked", () => {
+    setProposalState({ proposals: [proposal()], loading: false, error: null });
+    render(<NeedsYouSection />);
+
+    fireEvent.click(screen.getByText("Fix the crash on a deleted worktree"));
+
+    expect(appNavigate).toHaveBeenCalledWith({
+      view: "inbox",
+      proposalId: "p-1",
+    });
   });
 
   it("counts failed runs as waiting too", () => {

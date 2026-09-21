@@ -28,7 +28,22 @@ describe("inbox route", () => {
     expect(routePattern("/inbox")).toBe("/inbox");
   });
 
-  it("ignores segments below it — the inbox has no sub-screens", () => {
-    expect(parseRoute("/inbox/nonsense").view).toBe("inbox");
+  it("ignores segments it does not know", () => {
+    const route = parseRoute("/inbox/nonsense");
+    expect(route.view).toBe("inbox");
+    expect(route.proposalId).toBeNull();
+  });
+
+  it("parses a proposal's own page", () => {
+    const route = parseRoute("/inbox/proposals/p%2F1");
+    expect(route.view).toBe("inbox");
+    expect(route.proposalId).toBe("p/1");
+    expect(routeToPath(route)).toBe("/inbox/proposals/p%2F1");
+  });
+
+  it("keeps the proposal id out of telemetry", () => {
+    expect(routePattern("/inbox/proposals/p-1")).toBe(
+      "/inbox/proposals/:proposalId",
+    );
   });
 });

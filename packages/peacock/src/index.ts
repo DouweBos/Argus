@@ -83,6 +83,7 @@ export * from "./components/PlatformChip/PlatformChip";
 export * from "./components/ProgressBar/ProgressBar";
 export * from "./components/ProjectCard/ProjectCard";
 export * from "./components/ProposalCard/ProposalCard";
+export * from "./components/ProposalSummaryCard/ProposalSummaryCard";
 export * from "./components/QrCode/QrCode";
 export * from "./components/QuestionForm/QuestionForm";
 export * from "./components/QuickCard/QuickCard";

@@ -66,7 +66,7 @@ import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
-import { InboxScreen } from "../../inbox";
+import { InboxRoot } from "../../inbox";
 import { NotificationsScreen } from "../../notifications";
 import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
 import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
@@ -147,7 +147,7 @@ function renderCenter(
     return <AutomationsRoot />;
   }
   if (centerView === "inbox") {
-    return <InboxScreen />;
+    return <InboxRoot />;
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;
