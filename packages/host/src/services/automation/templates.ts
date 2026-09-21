@@ -8,9 +8,11 @@
  */
 
 import type { CreateAutomationInput } from "./models";
-import { GITHUB_SOURCE_ID } from "../signals/sources/github";
-import { GITHUB_PRS_SOURCE_ID } from "../signals/sources/githubPrs";
-import { LINEAR_SOURCE_ID } from "../signals/sources/linear";
+import {
+  GITHUB_PRS_SOURCE_ID,
+  GITHUB_SOURCE_ID,
+  LINEAR_SOURCE_ID,
+} from "../signals/sourceIds";
 
 export const STANDUP_DIGEST_TEMPLATE_ID = "standup-digest";
 export const MORNING_TRIAGE_TEMPLATE_ID = "morning-triage";
@@ -70,16 +72,20 @@ For each project:
 1. Run \`git log --since="24 hours ago" --all --date=short --pretty=format:"%h %ad %an %s"\` in the project directory to see what landed.
 2. Run \`git branch -a --sort=-committerdate\` and note branches with activity in the last day.
 3. Read the Argus sessions for the project with the \`list_sessions\` MCP tool, and \`list_agents\` for any session that looks active, to see which work is still in flight.
+4. Find the work that is finished and waiting on a decision. A session qualifies when its agent is idle and \`list_session_changes\` shows its branch is committed with nothing dirty left behind. For each one, work out which of the two it needs:
+   - **Open a PR** — the branch has no PR yet. Check with \`gh pr list --head <branch> --state all --json number,url,state\`.
+   - **Merge** — a PR exists and is green, or the branch is a local one you would merge straight back. Use \`merge_status\` and \`check_conflicts\` to say whether it would go in cleanly.
 
 Then write the digest as your final message, in markdown:
 
 - **Shipped** — what merged or landed, one bullet each, with the short SHA.
-- **In flight** — sessions and branches with uncommitted or unmerged work.
+- **Ready to ship** — finished work waiting on you. One bullet each: the branch, one line on what it does, whether it wants a PR or a merge, and any blocker (conflicts, red CI, unpushed commits). This is the section to lead with when it is not empty — these are done and costing you nothing but the decision.
+- **In flight** — sessions and branches with work still in progress.
 - **Stalled** — anything untouched for more than three days.
 - **Worth a look** — at most three things you would raise in a standup.
 
-Keep it under 300 words. If a project has no activity, say so in one line rather
-than padding it out.
+Keep it under 350 words. If a project has no activity, say so in one line rather
+than padding it out. Leave out any section that has nothing in it.
 
 ## Rules
 
@@ -270,7 +276,7 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
   [STANDUP_DIGEST_TEMPLATE_ID]: {
     name: "Standup digest",
     description:
-      "A daily read-only summary of what every agent and branch did yesterday.",
+      "A daily read-only summary of what every agent and branch did yesterday, and what is finished and waiting to ship.",
     // Seeded off: an automation that spawns an agent unprompted should be a
     // deliberate choice, not something an update turns on.
     enabled: false,
