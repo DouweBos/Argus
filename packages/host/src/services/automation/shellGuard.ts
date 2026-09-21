@@ -288,6 +288,20 @@ export function automationShellBlock(
   return `Refused by Argus: this session was started by the automation "${owner.automation.name}", which runs at autonomy "${owner.autonomy}". \`${action.what}\` needs "${action.level}". Commit your work and stop — a human decides whether it ships.`;
 }
 
+/**
+ * The file-writing tools. A `propose` run touches nothing, which used to be
+ * plan mode's job — but plan mode also prompts, and an unattended run that
+ * stops to ask just times out. Denying the tools by name is the same promise
+ * without the prompt.
+ */
+const EDITING_TOOLS = [
+  "Edit",
+  "MultiEdit",
+  "NotebookEdit",
+  "Write",
+  "mcp__argus__write_session_file",
+];
+
 /** Deny patterns handed to the CLI, so the recognised spellings never run. */
 export function automationDisallowedTools(sessionId: string): string[] {
   const owner = automationSessionAutonomy(sessionId);
@@ -299,6 +313,9 @@ export function automationDisallowedTools(sessionId: string): string[] {
     rules.push(`Bash(${prefix}:*)`, `Bash(${prefix}*)`);
   };
 
+  if (!atLeastAutonomy(owner.autonomy, "draft")) {
+    rules.push(...EDITING_TOOLS);
+  }
   if (!atLeastAutonomy(owner.autonomy, "pr")) {
     deny("git push");
     deny("gh pr create");
@@ -315,9 +332,9 @@ export function automationDisallowedTools(sessionId: string): string[] {
 }
 
 /**
- * The tools a run reports through. A `propose` run is started in plan mode, so
- * the CLI would otherwise stop and ask before the one call the run exists to
- * make — and nobody is watching it at 07:30. Neither tool touches a file.
+ * The tools a run reports through, allowed outright whatever the mode says —
+ * nobody is watching at 07:30 to answer a prompt for the one call the run
+ * exists to make. Neither tool touches a file.
  */
 const RUN_REPORTING_TOOLS = new Set([
   "mcp__argus__emit_proposal",

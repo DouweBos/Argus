@@ -2,9 +2,9 @@
  * Executing one automation run.
  *
  * Creates the neutral host session, starts an agent in it, hands it the
- * playbook, waits for the turn to finish and records the result. A `propose`
- * run stays in `plan` mode so the CLI itself refuses edits; higher rungs are
- * held by the MCP gate instead. The agent's final message is the report.
+ * playbook, waits for the turn to finish and records the result. Runs are
+ * unattended, so they never use plan mode — the ladder is held by the shell
+ * guard and the MCP gate. The agent's final message is the report.
  */
 
 import type { Automation, AutomationRun, AutonomyLevel } from "./models";
@@ -45,12 +45,12 @@ const RUN_TIMEOUT_MS = 20 * 60 * 1000;
 const COST_POLL_MS = 15 * 1000;
 
 /**
- * A `propose` run never leaves plan mode, so the CLI itself blocks every
- * write. Higher rungs need to act, and are held by the MCP gate instead.
+ * Nobody is watching a run, so it must never stop to ask. Plan mode used to
+ * hold `propose` runs read-only, but it prompts on read-only MCP calls too and
+ * the run just sat there until it timed out. Writes are denied by tool name
+ * instead — see `automationDisallowedTools`.
  */
-function permissionModeFor(autonomy: AutonomyLevel): "auto" | "plan" {
-  return autonomy === "propose" ? "plan" : "auto";
-}
+const PERMISSION_MODE = "auto" as const;
 
 /**
  * Fire an automation. Returns as soon as the run record exists — the session
@@ -99,7 +99,11 @@ export function startAutomationRun(
 export function executeRun(automation: Automation, runId: string): void {
   execute(automation, runId).catch((e: unknown) => {
     const message = typeof e === "string" ? e : String(e);
-    error(`automation run ${runId} failed: ${message}`);
+    // The run record shows the message; the log gets the stack, because a
+    // crash here happens unattended and there is nothing else to go on.
+    error(
+      `automation run ${runId} failed: ${e instanceof Error ? (e.stack ?? message) : message}`,
+    );
     finish(runId, "failed", { error: message });
   });
 }
@@ -141,12 +145,10 @@ async function execute(automation: Automation, runId: string): Promise<void> {
 
   const autonomy = resolveHostAutonomy(automation);
   const guardrails = normalizeGuardrails(automation.guardrails);
-  const permissionMode = permissionModeFor(autonomy);
-
   const agentInfo = await startAgent(
     session.id,
     automation.model ?? undefined,
-    permissionMode,
+    PERMISSION_MODE,
   );
   updateRun(runId, { host_agent_id: agentInfo.agent_id });
 
@@ -159,7 +161,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
     agent_id: agentInfo.agent_id,
     session_id: agentInfo.session_id,
     status: agentInfo.status,
-    permission_mode: permissionMode,
+    permission_mode: PERMISSION_MODE,
     parent_agent_id: agentInfo.parent_agent_id,
     created_at: agentInfo.created_at,
     initial_prompt: prompt,

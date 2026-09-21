@@ -325,6 +325,19 @@ describe("the shell guard", () => {
     expect(automationDisallowedTools("no-such-session")).toEqual([]);
   });
 
+  it("denies the editing tools at propose, so the run needs no plan mode", () => {
+    autoStartedSession("propose");
+
+    expect(automationDisallowedTools(HOST_SESSION_ID)).toContain("Edit");
+    expect(automationDisallowedTools(HOST_SESSION_ID)).toContain("Write");
+  });
+
+  it("leaves the editing tools alone once a run may implement", () => {
+    autoStartedSession("draft");
+
+    expect(automationDisallowedTools(WORK_SESSION_ID)).not.toContain("Edit");
+  });
+
   it("only looks at Bash — other tools are the MCP gate's business", () => {
     autoStartedSession("draft");
 
