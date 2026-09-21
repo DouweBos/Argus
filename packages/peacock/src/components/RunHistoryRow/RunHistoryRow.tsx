@@ -17,6 +17,8 @@ export interface RunHistoryRowProps {
   status: ReactNode;
   /** Why the run fired — "manual", "schedule 07:30", "catch-up". */
   triggerReason: ReactNode;
+  /** "card" gives the row its own surface — for lists that float on a page. */
+  variant?: "card" | "plain";
 }
 
 /** One firing of an automation, as a row in its history. */
@@ -31,10 +33,15 @@ export function RunHistoryRow({
   startedAt,
   status,
   triggerReason,
+  variant = "plain",
 }: RunHistoryRowProps) {
   return (
     <div
-      className={[styles.row, selected ? styles.selected : ""]
+      className={[
+        styles.row,
+        variant === "card" ? styles.card : "",
+        selected ? styles.selected : "",
+      ]
         .filter(Boolean)
         .join(" ")}
     >

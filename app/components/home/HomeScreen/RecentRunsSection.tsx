@@ -62,6 +62,7 @@ export function RecentRunsSection() {
           {runs.slice(0, LIMIT).map((run) => (
             <RunHistoryRow
               key={run.id}
+              variant="card"
               name={runName(run, automations)}
               status={<RunStatusBadge status={run.status} />}
               startedAt={formatRelative(run.started_at)}

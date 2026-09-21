@@ -54,3 +54,13 @@ export const Selected: Story = { args: { selected: true } };
 
 /** Across automations — the home screen's list, where the row needs naming. */
 export const Named: Story = { args: { name: "Morning triage" } };
+
+/** On a page rather than in a panel, the row carries its own surface. */
+export const Card: Story = {
+  args: {
+    variant: "card",
+    name: "Standup digest",
+    status: <Badge tone="error">failed</Badge>,
+    error: "Timeout waiting for agent b6cedde8 after 1200000ms.",
+  },
+};

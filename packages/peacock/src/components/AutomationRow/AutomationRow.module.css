@@ -22,6 +22,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* Buttons default to align-items: center, which shrink-wraps the rows. */
+  align-items: stretch;
   gap: 3px;
   text-align: left;
   background: transparent;
