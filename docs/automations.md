@@ -228,7 +228,12 @@ Reports are visible at `/automations/:automationId/runs/:runId`, along with the
 run's status, cost, duration and a link to its host session. The home screen
 carries a **Recent runs** list — the newest five, across every automation and
 every quick run — because a run is the one thing in Argus that happens while
-nobody is looking.
+nobody is looking. A report you have not opened is flagged there and listed
+first; opening it clears the flag, and so does a newer report from the same
+automation, so only the latest one ever chases you.
+
+Home also carries a **Needs you** section: the pending proposals and the runs
+that failed, with the same Start and Dismiss buttons the Inbox has.
 
 ---
 

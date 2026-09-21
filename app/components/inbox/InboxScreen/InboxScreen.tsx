@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   Button,
   EmptyState,
@@ -8,24 +7,18 @@ import {
 } from "@argus/peacock";
 import {
   openAutomations,
-  useAllRuns,
   useAutomations,
 } from "../../../stores/automationStore";
 import {
-  usePendingProposals,
   useProposals,
   useProposalsError,
   useProposalsLoading,
-  useStartedProposals,
 } from "../../../stores/proposalStore";
+import { useInboxItems } from "../useInboxItems";
 import { FailedRuns } from "./FailedRuns";
 import styles from "./InboxScreen.module.css";
 import { PendingProposals } from "./PendingProposals";
 import { StartedWork } from "./StartedWork";
-
-/** A run that failed days ago is history, not an inbox item. */
-const FAILED_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
-const MAX_FAILED_RUNS = 5;
 
 /**
  * `/inbox` — what Argus wants from you, grouped by what you would do about
@@ -34,27 +27,11 @@ const MAX_FAILED_RUNS = 5;
  * that already failed.
  */
 export function InboxScreen() {
-  const pending = usePendingProposals();
-  const started = useStartedProposals();
+  const { failed, pending, started } = useInboxItems();
   const all = useProposals();
   const loading = useProposalsLoading();
   const error = useProposalsError();
   const automations = useAutomations();
-  const runs = useAllRuns();
-  // The cut-off below is relative to now, so it has to move while the screen
-  // stays open.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60_000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const failed = runs
-    .filter(
-      (r) => r.status === "failed" && now - r.started_at < FAILED_RUN_WINDOW_MS,
-    )
-    .slice(0, MAX_FAILED_RUNS);
 
   const empty =
     pending.length === 0 && started.length === 0 && failed.length === 0;
