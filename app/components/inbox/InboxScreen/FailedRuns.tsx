@@ -1,7 +1,8 @@
 import type { AutomationRun } from "../../../lib/types";
-import { Badge, Icons, InboxItemRow } from "@argus/peacock";
+import { Badge, Button, Icons, InboxItemRow } from "@argus/peacock";
 import { formatRelative } from "../../../lib/automations";
 import {
+  dismissRun,
   openAutomationRun,
   useAutomations,
 } from "../../../stores/automationStore";
@@ -18,6 +19,16 @@ export function FailedRuns({ runs }: { runs: AutomationRun[] }) {
 
         return (
           <InboxItemRow
+            actions={
+              // A failure teaches nothing, so dismissing it asks for no reason.
+              <Button
+                onClick={() => dismissRun(run.id)}
+                size="sm"
+                variant="ghost"
+              >
+                Dismiss
+              </Button>
+            }
             key={run.id}
             leading={<Icons.WarningIcon size={12} />}
             meta={<Badge tone="error">{formatRelative(run.started_at)}</Badge>}
