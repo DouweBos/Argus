@@ -385,11 +385,20 @@ const INTERPRETERS = new Set([
 
 const AWK_FAMILY = new Set(["awk", "gawk", "mawk", "nawk"]);
 
-/** `-c` / `-e`, the "here is the program" flags, in their bundled spellings. */
+/**
+ * Whether the interpreter was handed a program rather than a checked-in file:
+ * `-c` / `-e` in their bundled spellings, a heredoc, or a bare `-` for stdin.
+ * All three are a script nobody reviewed.
+ */
 function hasInlineCode(words: string[]): boolean {
   return words
     .slice(1)
-    .some((w) => w.startsWith("-") && !w.startsWith("--") && /[ce]/.test(w));
+    .some(
+      (w) =>
+        (w.startsWith("-") && !w.startsWith("--") && /[ce]/.test(w)) ||
+        w.startsWith("<<") ||
+        w === "-",
+    );
 }
 
 /**
@@ -487,10 +496,12 @@ function inspectWriteWords(raw: string[]): string | null {
   }
 
   if (IN_PLACE_EDITORS.has(head)) {
-    // `-i`, `-i.bak`, and the bundled `-pi` / `-ne -i` spellings.
+    // `-i`, `-i.bak`, the bundled `-pi` / `-ne -i` spellings, and the long form.
     const inPlace = words
       .slice(1)
-      .some((w) => /^-[A-Za-z]*i/.test(w) && !w.startsWith("--"));
+      .some((w) =>
+        w.startsWith("--") ? /^--in-place\b/.test(w) : /^-[A-Za-z]*i/.test(w),
+      );
     if (inPlace) {
       return `${head} -i`;
     }
