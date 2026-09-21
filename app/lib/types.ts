@@ -1408,6 +1408,8 @@ export type RemoteTunnelStatus = "error" | "running" | "starting" | "stopped";
 export interface RemoteTunnelState {
   error: string | null;
   publicUrl: string | null;
+  /** Whether that URL was last seen to reach the gateway; null until probed. */
+  reachable: boolean | null;
   status: RemoteTunnelStatus;
 }
 

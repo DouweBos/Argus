@@ -3,6 +3,7 @@ import type {
   RemoteDevice,
   RemoteStatus,
   RemoteTunnelMode,
+  RemoteTunnelState,
 } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -74,12 +75,21 @@ const ENDPOINT_LABELS: Record<RemoteEndpointKind, string> = {
   cloudflare: "Cloudflare",
 };
 
-function tunnelTone(status: string): "error" | "idle" | "success" {
-  if (status === "running") {
-    return "success";
+function tunnelTone(state: RemoteTunnelState): "error" | "idle" | "success" {
+  if (state.status === "error" || state.reachable === false) {
+    return "error";
   }
 
-  return status === "error" ? "error" : "idle";
+  return state.status === "running" ? "success" : "idle";
+}
+
+/** A published URL that nothing answers on is worse than no URL — say so. */
+function tunnelLabel(state: RemoteTunnelState): string {
+  if (state.reachable === false) {
+    return "unreachable";
+  }
+
+  return state.publicUrl ?? state.status;
 }
 
 /** Green once any address is live, red only when every enabled way in failed. */
@@ -297,15 +307,10 @@ export function RemoteAccessSection() {
               {status && (
                 <StatusDot
                   tone={
-                    tailscaleOn
-                      ? tunnelTone(status.tunnels.tailscale.status)
-                      : "idle"
+                    tailscaleOn ? tunnelTone(status.tunnels.tailscale) : "idle"
                   }
                   label={
-                    tailscaleOn
-                      ? (status.tunnels.tailscale.publicUrl ??
-                        status.tunnels.tailscale.status)
-                      : "off"
+                    tailscaleOn ? tunnelLabel(status.tunnels.tailscale) : "off"
                   }
                 />
               )}
@@ -326,13 +331,12 @@ export function RemoteAccessSection() {
                 <StatusDot
                   tone={
                     cloudflareOn
-                      ? tunnelTone(status.tunnels.cloudflare.status)
+                      ? tunnelTone(status.tunnels.cloudflare)
                       : "idle"
                   }
                   label={
                     cloudflareOn
-                      ? (status.tunnels.cloudflare.publicUrl ??
-                        status.tunnels.cloudflare.status)
+                      ? tunnelLabel(status.tunnels.cloudflare)
                       : "off"
                   }
                 />

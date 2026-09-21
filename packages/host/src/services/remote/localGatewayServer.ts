@@ -10,6 +10,8 @@
  *   /pair   — enrollment. Delegated to the active PairingSession (IKpsk1).
  *   GET /huddle/host-key — the desktop's static public key, so a huddle guest
  *             with only a link can handshake. Served only while a room is open.
+ *   GET /__argus/health — unauthenticated liveness probe, so a caller can tell
+ *             a tunnel that published a URL from one that actually reaches us.
  *   GET *   — the static web client bundle (when a dir is configured), so a LAN
  *             browser can load the client from this same origin.
  *
@@ -33,6 +35,7 @@ import {
   createGuestConnection,
   removeConnection,
 } from "./gateway";
+import { HEALTH_PATH, healthBody } from "./gatewayHealth";
 import { hasOpenRooms } from "./huddle";
 import { NoiseHandshake } from "./noise";
 
@@ -282,10 +285,15 @@ export function startLocalGateway(
 ): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
-      if (
-        req.method === "GET" &&
-        (req.url ?? "").split("?")[0] === HOST_KEY_PATH
-      ) {
+      const route = (req.url ?? "").split("?")[0];
+      if (req.method === "GET" && route === HEALTH_PATH) {
+        res
+          .writeHead(200, {
+            "content-type": "application/json",
+            "cache-control": "no-store",
+          })
+          .end(healthBody());
+      } else if (req.method === "GET" && route === HOST_KEY_PATH) {
         serveHostKey(identity, res);
       } else if (opts.staticDir && req.method === "GET") {
         serveStatic(opts.staticDir, req.url ?? "/", res);
