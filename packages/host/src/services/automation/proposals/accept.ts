@@ -42,6 +42,9 @@ export async function acceptProposal(
   if (proposal.session_id) {
     throw `Proposal already started in session ${proposal.session_id}`;
   }
+  if (proposal.cta && proposal.cta.kind !== "start_session") {
+    throw `This proposal asks you to "${proposal.cta.label}", not to start a session.`;
+  }
   const repoRoot = proposal.repo_root;
   if (!repoRoot) {
     throw "This proposal has no project to work in.";

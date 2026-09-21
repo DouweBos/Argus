@@ -51,6 +51,12 @@ Then:
 - Set \`confidence\` honestly: high only when the item is unambiguous and you
   could hand it to an agent as-is. Use \`recommended_action: "needs_info"\` when
   the item is too vague to act on rather than inflating the number.
+- Set \`cta\` to the one thing the user should do. Code to write is
+  \`{ kind: "start_session", label: "Start" }\`. An item whose next move is a
+  human's — a PR needing a reviewer, a ticket needing an answer — is
+  \`{ kind: "open_url", label: "Open PR #6478", url }\`. Something worth knowing
+  but not worth acting on takes no \`cta\` at all, and the inbox shows no button.
+  Never ask for a session when there is no code to write.
 - Finally write the report as your final assistant message: a one-line summary
   of the morning, then the ranked list with a sentence each.
 
@@ -112,8 +118,8 @@ Everything else is somebody else's morning. Skip it; do not lower your bar to
 fill a list.
 
 For each item that qualifies, call \`emit_proposal\` with
-\`recommended_action: "start_session"\`, an honest \`confidence\`, and the
-\`repo_root\` of the project. Argus decides what happens next: above the
+\`recommended_action: "start_session"\`, \`cta: { kind: "start_session", label:
+"Start" }\`, an honest \`confidence\`, and the \`repo_root\` of the project. Argus decides what happens next: above the
 confidence threshold and within the session cap it starts the work itself,
 otherwise it waits for a human. Either way the answer comes back in the tool
 result — read it and report what actually happened.
@@ -152,8 +158,10 @@ Work the list in order. For each PR, exactly one of these applies:
 4. **Neither** — say so in one line and move on. Do not invent work.
 
 If no session exists for a branch and the PR needs code, emit a proposal with
-\`recommended_action: "start_session"\` and the PR's \`repo_root\`. Argus decides
-whether to start it.
+\`recommended_action: "start_session"\`, a matching \`cta\`, and the PR's
+\`repo_root\`. Argus decides whether to start it. A PR that needs no code — only
+a reviewer — takes \`cta: { kind: "open_url", label: "Open PR #123", url }\`
+instead; do not ask for a session to go and wait for a human.
 
 Finish with \`emit_report\`: a \`stats\` block (open PRs, red, awaiting reply),
 a \`table\` of PR / branch / state / what you did, and a \`sessions\` block for
@@ -223,7 +231,8 @@ For each project in scope:
    be lost.
 4. A session with unmerged commits untouched for more than two weeks is
    **stalled** — summarise what it was doing in two lines and emit a proposal
-   with \`recommended_action: "review"\`. Never propose deleting one.
+   with \`recommended_action: "review"\` and no \`cta\`: the decision is the
+   user's to make from the summary. Never propose deleting one.
 
 Finish with \`emit_report\`: a \`stats\` block (done, stale, stalled) and a
 \`table\` of session / branch / age / verdict.
@@ -256,8 +265,9 @@ Propose only what is worth a branch:
 - **Security fixes** — always, whatever the size of the jump.
 - **Patch and minor bumps** on packages the project uses heavily, batched into
   one proposal per project rather than one per package.
-- **Major bumps** — one proposal each, with \`recommended_action: "review"\` and
-  the breaking changes named. Never claim a major bump is easy.
+- **Major bumps** — one proposal each, with \`recommended_action: "review"\`, a
+  \`cta\` of \`{ kind: "open_url", label: "Open the changelog", url }\`, and the
+  breaking changes named. Never claim a major bump is easy.
 
 Skip anything you could not find release notes for, and say you skipped it.
 

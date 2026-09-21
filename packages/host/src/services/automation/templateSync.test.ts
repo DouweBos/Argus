@@ -6,12 +6,12 @@
 import type { Automation } from "./models";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_GUARDRAILS } from "./guardrails";
-import { playbookHash, refreshBuiltIns } from "./templateSync";
 import {
-  BUILT_IN_TEMPLATES,
-  MORNING_TRIAGE_TEMPLATE_ID,
-  STANDUP_DIGEST_TEMPLATE_ID,
-} from "./templates";
+  LEGACY_PLAYBOOK_HASHES,
+  playbookHash,
+  refreshBuiltIns,
+} from "./templateSync";
+import { BUILT_IN_TEMPLATES, STANDUP_DIGEST_TEMPLATE_ID } from "./templates";
 
 const template = BUILT_IN_TEMPLATES[STANDUP_DIGEST_TEMPLATE_ID];
 
@@ -147,18 +147,18 @@ describe("refreshBuiltIns", () => {
   });
 
   it("fingerprints a built-in whose template did not change, once", () => {
-    // Its legacy hash is still the current one, so there is nothing to carry
-    // over — but it should stop consulting the legacy table from now on.
-    const triage = BUILT_IN_TEMPLATES[MORNING_TRIAGE_TEMPLATE_ID];
+    // Whichever template's legacy hash is still its current one: there is
+    // nothing to carry over, but it should stop consulting the legacy table.
+    const [id, unchanged] = Object.entries(BUILT_IN_TEMPLATES).find(
+      ([tid, t]) =>
+        LEGACY_PLAYBOOK_HASHES[tid]?.includes(playbookHash(t.playbook)),
+    )!;
     const list = [
-      automation({
-        template_id: MORNING_TRIAGE_TEMPLATE_ID,
-        playbook: triage.playbook,
-      }),
+      automation({ template_id: id, playbook: unchanged.playbook }),
     ];
 
     expect(refreshBuiltIns(list)).toBe(true);
-    expect(list[0].seeded_playbook_hash).toBe(playbookHash(triage.playbook));
+    expect(list[0].seeded_playbook_hash).toBe(playbookHash(unchanged.playbook));
     expect(refreshBuiltIns(list)).toBe(false);
   });
 });

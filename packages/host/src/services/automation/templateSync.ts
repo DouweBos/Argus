@@ -27,7 +27,7 @@ export function playbookHash(playbook: string): string {
  * the only evidence that it is untouched. Append, never edit: dropping a hash
  * strands everyone still running that version on an old playbook.
  */
-const LEGACY_PLAYBOOK_HASHES: Record<string, string[]> = {
+export const LEGACY_PLAYBOOK_HASHES: Record<string, string[]> = {
   "standup-digest": ["c707f2e9ff881b9c"],
   "morning-triage": ["8ec6001128257713"],
   "take-the-easy-ones": ["a65435497213b9c4"],

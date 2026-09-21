@@ -1,3 +1,4 @@
+import type { ProposalCta, ProposalSourceRef } from "../../types";
 import type { FixtureResolver, FixtureScenario } from "../types";
 import { AGENTS, BASE_CHANNELS, BASE_STORAGE, NOW, REPO } from "./aurora";
 
@@ -77,6 +78,25 @@ const AUTOMATIONS = [
   ),
 ];
 
+/** Mirrors the host's fallback: Start for work, the source link otherwise. */
+function fixtureCta(
+  action: string,
+  sourceRef: ProposalSourceRef | null,
+): ProposalCta | null {
+  if (action === "start_session") {
+    return { kind: "start_session", label: "Start", url: null };
+  }
+  if (sourceRef) {
+    return {
+      kind: "open_url",
+      label: `Open ${sourceRef.external_id}`,
+      url: sourceRef.url,
+    };
+  }
+
+  return null;
+}
+
 function proposal(
   id: string,
   title: string,
@@ -87,10 +107,19 @@ function proposal(
   externalId: string | null,
   minutesAgo: number,
 ) {
+  const sourceRef = externalId
+    ? {
+        external_id: externalId,
+        source_id: "github",
+        url: `https://github.com/aurora/aurora/issues/${externalId.split("#")[1]}`,
+      }
+    : null;
+
   return {
     automation_id: "aut_triage",
     confidence,
     created_at: NOW - minutesAgo * MINUTES,
+    cta: fixtureCta(action, sourceRef),
     dismissed_reason: null,
     id,
     rationale,
@@ -98,13 +127,7 @@ function proposal(
     repo_root: REPO,
     run_id: "run_8821",
     session_id: null,
-    source_ref: externalId
-      ? {
-          external_id: externalId,
-          source_id: "github",
-          url: `https://github.com/aurora/aurora/issues/${externalId.split("#")[1]}`,
-        }
-      : null,
+    source_ref: sourceRef,
     status: "pending",
     summary,
     title,
@@ -150,6 +173,7 @@ function run(
   status: string,
   minutesAgo: number,
   report: string,
+  reportRead = true,
 ) {
   return {
     automation_id: automationId,
@@ -161,6 +185,7 @@ function run(
     id,
     report_blocks: null,
     report_markdown: report,
+    report_read: reportRead,
     started_at: NOW - (minutesAgo + 3) * MINUTES,
     status,
   };
@@ -173,6 +198,7 @@ const RUNS = [
     "succeeded",
     18,
     "Read 14 new issues and 3 crash groups. Three are worth acting on; the rest are duplicates of #377.",
+    false,
   ),
   run(
     "run_8820",

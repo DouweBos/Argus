@@ -59,6 +59,7 @@ function proposal(id: string, patch: Partial<Proposal> = {}): Proposal {
     confidence: 0.9,
     rationale: "",
     recommended_action: "start_session",
+    cta: { kind: "start_session", label: "Start", url: null },
     source_ref: null,
     repo_root: null,
     status: "pending",

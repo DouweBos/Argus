@@ -60,6 +60,29 @@ export function registerAutomationTools(
         .describe(
           "What you think should happen: 'start_session' to do the work, 'review' for a human read, 'needs_info' when the item is ambiguous, 'ignore' to note it and move on.",
         ),
+      cta: z
+        .object({
+          kind: z
+            .enum(["open_url", "start_session"])
+            .describe(
+              "'start_session' when an agent should go and do the work in a worktree. 'open_url' when the next move is a human's — read a PR, request a review, reply on a ticket.",
+            ),
+          label: z
+            .string()
+            .describe(
+              "Button text. Imperative and specific: 'Start', 'Open PR #6478', 'Review the migration plan'.",
+            ),
+          url: z
+            .string()
+            .optional()
+            .describe(
+              "Where 'open_url' goes. Defaults to the source_ref url. Point it at whatever the user should actually look at, which is not always the item the proposal came from.",
+            ),
+        })
+        .optional()
+        .describe(
+          "The single action you are asking for. Omit it when there is nothing to do but read the proposal and dismiss it — the inbox then shows no button rather than offering work that does not exist.",
+        ),
       source_ref: z
         .object({
           source_id: z.string().describe("Signal source id, e.g. 'github'."),
@@ -85,6 +108,7 @@ export function registerAutomationTools(
       confidence,
       rationale,
       recommended_action,
+      cta,
       source_ref,
       repo_root,
     }) => {
@@ -109,6 +133,7 @@ export function registerAutomationTools(
         confidence,
         rationale,
         recommended_action,
+        cta: cta ?? null,
         source_ref: source_ref ?? null,
         repo_root: repo_root ?? null,
       });
@@ -126,6 +151,7 @@ export function registerAutomationTools(
               {
                 proposal_id: proposal.id,
                 status: proposal.status,
+                cta: proposal.cta,
                 gate: decision.reason,
               },
               null,
