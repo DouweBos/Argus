@@ -290,6 +290,7 @@ const WRITE_COMMANDS = new Set([
   "chown",
   "cp",
   "dd",
+  "defaults",
   "install",
   "ln",
   "mkdir",
@@ -386,6 +387,29 @@ const INTERPRETERS = new Set([
 const AWK_FAMILY = new Set(["awk", "gawk", "mawk", "nawk"]);
 
 /**
+ * Package managers and build drivers, with the verbs that fetch or install.
+ * An install writes a tree and runs whatever lifecycle scripts come with it —
+ * `dependency-watch` says "do not install" in its own playbook for the same
+ * reason. The read-only verbs (`outdated`, `list`, `view`) stay open.
+ */
+const INSTALLERS: Record<string, RegExp> = {
+  brew: /^(install|upgrade|reinstall|uninstall|tap)$/,
+  bun: /^(install|add|remove|i)$/,
+  cargo: /^(install|fetch|add|remove)$/,
+  gem: /^(install|update|uninstall)$/,
+  go: /^(install|get|mod)$/,
+  make: /^install$/,
+  npm: /^(install|ci|add|remove|uninstall|update|link|i)$/,
+  pip: /^(install|uninstall|download)$/,
+  pip3: /^(install|uninstall|download)$/,
+  pnpm: /^(install|add|remove|update|link|i)$/,
+  yarn: /^(install|add|remove|upgrade|link)$/,
+};
+
+/** `gh` subcommands that post something to GitHub rather than read it. */
+const GH_POSTING = /^(close|comment|create|delete|edit|reopen|review|upload)$/;
+
+/**
  * Whether the interpreter was handed a program rather than a checked-in file:
  * `-c` / `-e` in their bundled spellings, a heredoc, or a bare `-` for stdin.
  * All three are a script nobody reviewed.
@@ -471,6 +495,43 @@ function inspectWriteWords(raw: string[]): string | null {
 
   if (WRITE_COMMANDS.has(head)) {
     return head;
+  }
+
+  // Downloads land on disk unless the output is stdout.
+  if (head === "curl") {
+    const writesFile = words
+      .slice(1)
+      .some((w) => /^(-O|--remote-name)$/.test(w) || /^(-o|--output)$/.test(w));
+
+    return writesFile ? "curl writing a file" : null;
+  }
+  if (head === "wget") {
+    // `-O -` is the read form; everything else saves.
+    const toStdout = words.includes("-O") && words.includes("-");
+
+    return toStdout ? null : "wget";
+  }
+  if (head === "tar") {
+    const extracts = words
+      .slice(1)
+      .some((w) => /^--extract$/.test(w) || /^-[a-zA-Z]*x/.test(w));
+
+    return extracts ? "tar extracting" : null;
+  }
+
+  const installVerbs = INSTALLERS[head];
+  if (installVerbs) {
+    const verb = words.slice(1).find((w) => !w.startsWith("-"));
+
+    return verb && installVerbs.test(verb) ? `${head} ${verb}` : null;
+  }
+
+  if (head === "gh") {
+    // Read-only at `propose` means nothing goes out either. The ladder's own
+    // publishing check covers pushes and PRs; this covers the rest.
+    const [, action] = ghWords(words);
+
+    return action && GH_POSTING.test(action) ? `gh ${action}` : null;
   }
 
   if (head === "git") {

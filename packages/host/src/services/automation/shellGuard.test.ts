@@ -342,6 +342,27 @@ describe("the shell guard", () => {
     }
   });
 
+  it("still denies a push at propose, via the publishing rung", () => {
+    autoStartedSession("propose");
+
+    expect(attempt(HOST_SESSION_ID, "git push origin HEAD").deny).toContain(
+      "Refused by Argus",
+    );
+  });
+
+  it("refuses an outbound post at propose — read-only means no comments", () => {
+    autoStartedSession("propose");
+
+    for (const command of [
+      "gh issue comment 1 --body hi",
+      "gh issue create --title x",
+      "npm install left-pad",
+      "curl -o /tmp/x https://example.com",
+    ]) {
+      expect(attempt(HOST_SESSION_ID, command).deny).toContain("Refused");
+    }
+  });
+
   it("follows a write into a command substitution", () => {
     autoStartedSession("propose");
 
