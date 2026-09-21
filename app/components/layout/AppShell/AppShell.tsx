@@ -92,6 +92,15 @@ import styles from "./AppShell.module.css";
 const PEEK_ENTER_DELAY_MS = 200;
 const PEEK_LEAVE_DELAY_MS = 500;
 
+// Handled elsewhere on keydown (main-process close intent, window tab strip);
+// AppShell keeps the handlers only so the app menu can invoke them.
+const MENU_ONLY_SHORTCUTS = new Set<ShortcutId>([
+  "close-tab",
+  "new-tab",
+  "next-tab",
+  "prev-tab",
+]);
+
 // App-wide shortcuts that collide with shortcuts owned by the git panel. When
 // the git panel is active these are silenced at the app layer so the GitView
 // handler is the sole owner of the keypress.
@@ -273,8 +282,9 @@ export function AppShell() {
       (Object.keys(shortcutHandlers) as ShortcutId[])
         // Cmd+W arrives as `menu:close-intent` from the main process so views
         // get a crack at it first; registering a keydown too would close two
-        // things at once.
-        .filter((id) => id !== "close-tab")
+        // things at once. The window tab strip owns the tab combos — handlers
+        // stay here for the menu, but a keydown binding would fire twice.
+        .filter((id) => !MENU_ONLY_SHORTCUTS.has(id))
         .filter((id) => !gitPanelActive || !GIT_PANEL_SUPPRESSED.has(id))
         .map((id) => ({
           ...SHORTCUTS[id],
