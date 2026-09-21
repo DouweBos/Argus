@@ -66,7 +66,7 @@ vi.mock("../terminal/multiplexer", () => ({
   startTerminal: vi.fn(),
 }));
 
-vi.mock("../session/setup", () => ({
+vi.mock("../session/argusConfig", () => ({
   loadArgusConfig: vi.fn(),
 }));
 

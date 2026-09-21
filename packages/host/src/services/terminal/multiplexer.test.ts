@@ -16,7 +16,7 @@ vi.mock("electron", () => ({ BrowserWindow: { getAllWindows: () => [] } }));
 vi.mock("../../state", () => ({
   appState: { sessions: new Map(), terminals: new Map() },
 }));
-vi.mock("../session/setup", () => ({ loadArgusConfig: () => ({}) }));
+vi.mock("../session/argusConfig", () => ({ loadArgusConfig: () => ({}) }));
 vi.mock("../claudeAuth/accounts", () => ({
   envForAccount: () => process.env,
   resolveAccountForSession: () => null,
@@ -105,16 +105,36 @@ describe("workspaceEnvValue", () => {
 });
 
 describe("defaultShell", () => {
-  it("returns SHELL env var when set", () => {
+  /** `/bin/sh` is the one shell every POSIX box is guaranteed to have. */
+  const REAL_SHELL = "/bin/sh";
+
+  it("returns SHELL when it names a shell that is actually here", () => {
     const original = process.env.SHELL;
-    process.env.SHELL = "/bin/fish";
-    expect(defaultShell()).toBe("/bin/fish");
+    process.env.SHELL = REAL_SHELL;
+    expect(defaultShell()).toBe(REAL_SHELL);
     process.env.SHELL = original;
   });
 
   it("falls back to /bin/sh", () => {
     const original = process.env.SHELL;
     delete process.env.SHELL;
+    expect(defaultShell()).toBe("/bin/sh");
+    process.env.SHELL = original;
+  });
+
+  it("ignores a SHELL that is not installed, rather than failing to spawn", () => {
+    // A CI image that exports /bin/zsh without shipping it, or a dotfile
+    // carried to a new machine. Trusting it surfaces as `posix_spawnp failed`
+    // from inside node-pty, which names nothing useful.
+    const original = process.env.SHELL;
+    process.env.SHELL = "/bin/definitely-not-installed";
+    expect(defaultShell()).toBe("/bin/sh");
+    process.env.SHELL = original;
+  });
+
+  it("ignores a bare SHELL name, since node-pty needs a path", () => {
+    const original = process.env.SHELL;
+    process.env.SHELL = "zsh";
     expect(defaultShell()).toBe("/bin/sh");
     process.env.SHELL = original;
   });

@@ -31,6 +31,7 @@ import type * as NodePty from "node-pty";
 import fs from "node:fs";
 import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
+import { warn } from "@argus/host/logger";
 import { appState } from "../../state";
 import {
   envForAccount,
@@ -168,10 +169,24 @@ export function stripAnsi(s: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Return the user's preferred shell, falling back to `/bin/sh`.
+ * The user's preferred shell, falling back to `/bin/sh`.
+ *
+ * `$SHELL` is checked against the filesystem rather than trusted: it is
+ * inherited from whatever launched us and routinely names a shell that is not
+ * installed here — a CI image exporting `/bin/zsh` it does not ship, a
+ * migrated dotfile, a container. Spawning it fails deep inside node-pty as a
+ * bare `posix_spawnp failed`, which says nothing about the cause.
  */
 export function defaultShell(): string {
-  return process.env.SHELL ?? "/bin/sh";
+  const preferred = process.env.SHELL;
+  if (preferred && path.isAbsolute(preferred) && fs.existsSync(preferred)) {
+    return preferred;
+  }
+  if (preferred) {
+    warn(`SHELL is set to ${preferred}, which does not exist — using /bin/sh`);
+  }
+
+  return "/bin/sh";
 }
 
 /**

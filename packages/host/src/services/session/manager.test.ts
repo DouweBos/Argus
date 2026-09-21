@@ -19,14 +19,10 @@ vi.mock("./git", async () => {
 });
 
 vi.mock("./setup", () => ({
-  defaultArgusConfig: () => ({
-    setup: { copy: [], symlink: [], commands: [] },
-    terminals: [],
-    workspace_env: [],
-    run: null,
-  }),
-  loadArgusConfig: () => null,
   runSetupPipeline: vi.fn(async () => {}),
+}));
+vi.mock("./argusConfig", () => ({
+  loadArgusConfig: () => null,
 }));
 
 function makeSession(partial: Partial<Session>): Session {
