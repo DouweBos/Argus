@@ -22,8 +22,11 @@ import { info, warn } from "@argus/host/logger";
 import { computeNextRun, isValidCron } from "./cron";
 import { normalizeGuardrails } from "./guardrails";
 import { disposeAutomationHostSession } from "./hostSession";
-import { automationRunsDir } from "./paths";
-import { deleteProposalsForAutomation } from "./proposals/manager";
+import { automationRunDir, automationRunsDir } from "./paths";
+import {
+  deleteProposalsForAutomation,
+  deleteProposalsForRun,
+} from "./proposals/manager";
 import {
   applyRetention,
   loadAutomationRuns,
@@ -466,6 +469,41 @@ export function markRunReportRead(runId: string): AutomationRun {
   persistRun(run);
 
   return { ...run };
+}
+
+/**
+ * Delete a run outright — the record, its report, its working directory and
+ * the proposals it emitted. An in-flight run has to be cancelled first: the
+ * agent would keep writing to a record nobody is keeping.
+ */
+export function deleteRun(runId: string): void {
+  const list = runCache();
+  const index = list.findIndex((r) => r.id === runId);
+  if (index === -1) {
+    throw `Automation run not found: ${runId}`;
+  }
+  const run = list[index];
+  if (run.status === "queued" || run.status === "running") {
+    throw "Cancel the run before deleting it.";
+  }
+  if (run.host_session_id) {
+    disposeAutomationHostSession(run.host_session_id);
+  }
+  list.splice(index, 1);
+  runs = list;
+  saveAutomationRuns(runs);
+  deleteProposalsForRun(runId);
+
+  try {
+    fs.rmSync(automationRunDir(run.automation_id, run.id), {
+      force: true,
+      recursive: true,
+    });
+  } catch (e) {
+    warn(`run ${runId}: could not remove its directory: ${String(e)}`);
+  }
+
+  emitHostEvent("automation_run:changed", null);
 }
 
 /** Retention applied on demand, e.g. after a bulk import. */

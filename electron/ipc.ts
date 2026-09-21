@@ -93,6 +93,7 @@ import {
   listAutomationRuns,
   listAutomations,
   listScratchRuns,
+  deleteRun,
   markRunReportRead,
   setAutomationEnabled,
   updateAutomation,
@@ -1080,6 +1081,7 @@ export function registerIpcHandlers(): void {
   handle("automation_run_mark_read", "admin", (a) =>
     markRunReportRead(a.runId as string),
   );
+  handle("automation_run_delete", "admin", (a) => deleteRun(a.runId as string));
   handle("signal_sources_list", "admin", () => describeSignalSources());
   handle("automation_gate_log_list", "admin", () => listGateLog());
   handle("automation_gate_log_dismiss", "admin", (a) =>

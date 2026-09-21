@@ -127,6 +127,15 @@ export function dismissProposal(id: string, reason?: string): Proposal {
   });
 }
 
+/** Drop every proposal one run emitted, e.g. when the run is deleted. */
+export function deleteProposalsForRun(runId: string): void {
+  const before = cache().length;
+  proposals = cache().filter((p) => p.run_id !== runId);
+  if (proposals.length !== before) {
+    persist();
+  }
+}
+
 /** Drop every proposal belonging to an automation, e.g. when it is deleted. */
 export function deleteProposalsForAutomation(automationId: string): void {
   const before = cache().length;

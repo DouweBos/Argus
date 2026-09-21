@@ -6,10 +6,11 @@
 
 import type { AutomationRunStatus } from "../../lib/types";
 import { useState } from "react";
-import { Badge, Button } from "@argus/peacock";
+import { Badge, Button, DestructiveConfirm } from "@argus/peacock";
 import { runStatusTone } from "../../lib/automations";
 import {
   cancelAutomationRun,
+  deleteAutomationRun,
   runAutomationNow,
   useHasActiveRun,
 } from "../../stores/automationStore";
@@ -90,5 +91,62 @@ export function CancelRunButton({ runId, size = "sm" }: CancelButtonProps) {
     >
       Cancel
     </Button>
+  );
+}
+
+interface DeleteButtonProps {
+  /** Where to go once the run is gone. Rows stay put; the run screen leaves. */
+  onDeleted?: () => void;
+  runId: string;
+  size?: "md" | "sm";
+}
+
+/**
+ * Throw a run away for good — the record, its report and the proposals it
+ * raised. Confirmed every time: unlike dismissing, nothing is recoverable.
+ */
+export function DeleteRunButton({
+  onDeleted,
+  runId,
+  size = "sm",
+}: DeleteButtonProps) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await deleteAutomationRun(runId);
+      onDeleted?.();
+    } catch {
+      // The host kept it — the list still says so.
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        disabled={busy}
+        onClick={() => setConfirming(true)}
+        size={size}
+        variant="ghost"
+      >
+        Delete
+      </Button>
+      <DestructiveConfirm
+        cancelLabel="Keep it"
+        confirmLabel="Delete run"
+        description="The run, its report and any proposals it raised are removed. This cannot be undone."
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          remove().catch(() => undefined);
+        }}
+        open={confirming}
+        title="Delete this run?"
+      />
+    </>
   );
 }

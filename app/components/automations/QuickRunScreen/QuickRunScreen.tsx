@@ -21,7 +21,11 @@ import {
   useScratchRuns,
 } from "../../../stores/automationStore";
 import { useSessionProjects } from "../../../stores/sessionStore";
-import { CancelRunButton, RunStatusBadge } from "../RunControls";
+import {
+  CancelRunButton,
+  DeleteRunButton,
+  RunStatusBadge,
+} from "../RunControls";
 import styles from "./QuickRunScreen.module.css";
 
 function HistoryRow({ run }: { run: AutomationRun }) {
@@ -35,7 +39,13 @@ function HistoryRow({ run }: { run: AutomationRun }) {
       error={run.error ?? undefined}
       unread={isUnreadReport(run)}
       onClick={() => openQuickRun(run.id)}
-      actions={isRunActive(run) ? <CancelRunButton runId={run.id} /> : null}
+      actions={
+        isRunActive(run) ? (
+          <CancelRunButton runId={run.id} />
+        ) : (
+          <DeleteRunButton runId={run.id} />
+        )
+      }
     />
   );
 }
