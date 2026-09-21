@@ -21,6 +21,7 @@
  * - `/devices`                                   → devices screen
  * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
  * - `/inbox`                                     → the briefing: what Argus wants you to decide
+ * - `/inbox/proposals/:proposalId`               → one proposal, in full
  * - `/notifications`                             → notifications screen
  * - `/pull-requests`                             → outstanding PRs of interest
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
@@ -142,6 +143,8 @@ export interface ParsedRoute {
   panel: SessionPanel;
   /** Identifies which PR to show when view === "pull-request-detail". */
   pr: PullRequestRef | null;
+  /** Which proposal is open. Only meaningful when view === "inbox". */
+  proposalId: string | null;
   sessionId: string | null;
   view: AppView;
 }
@@ -189,6 +192,15 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
     };
   }
 
+  if (segments[0] === "inbox") {
+    const proposalId =
+      segments[1] === "proposals" && segments[2]
+        ? decodeSegment(segments[2])
+        : null;
+
+    return { ...emptyRoute("inbox"), proposalId };
+  }
+
   if (segments[0] === "sessions" && segments[1]) {
     const panel = (segments[2] ?? "home") as SessionPanel;
     const validPanel: SessionPanel = VALID_PANELS.includes(panel)
@@ -221,6 +233,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
       panel: validPanel,
       gitView,
       gitRefName,
+      proposalId: null,
       pr: null,
     };
   }
@@ -243,6 +256,7 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
         panel: "agents",
         gitView: null,
         gitRefName: null,
+        proposalId: null,
         pr: {
           owner: decodeURIComponent(segments[1]),
           repo: decodeURIComponent(segments[2]),
@@ -255,7 +269,6 @@ function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
   if (
     segments[0] === "agents" ||
     segments[0] === "devices" ||
-    segments[0] === "inbox" ||
     segments[0] === "notifications" ||
     segments[0] === "pull-requests" ||
     segments[0] === "runtimes"
@@ -284,6 +297,7 @@ function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
     panel: "agents",
     gitView: null,
     gitRefName: null,
+    proposalId: null,
     pr: null,
   };
 }
@@ -311,9 +325,10 @@ export function routePattern(pathname: string): string {
       }
 
       return route.automationId ? "/automations/:automationId" : "/automations";
+    case "inbox":
+      return route.proposalId ? "/inbox/proposals/:proposalId" : "/inbox";
     case "agents":
     case "devices":
-    case "inbox":
     case "notifications":
     case "pull-requests":
     case "runtimes":
@@ -379,10 +394,14 @@ function routePathname(route: Partial<ParsedRoute>): string {
 
     return `/pull-requests/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${number}`;
   }
+  if (route.view === "inbox") {
+    return route.proposalId
+      ? `/inbox/proposals/${encodeURIComponent(route.proposalId)}`
+      : "/inbox";
+  }
   if (
     route.view === "agents" ||
     route.view === "devices" ||
-    route.view === "inbox" ||
     route.view === "notifications" ||
     route.view === "pull-requests" ||
     route.view === "runtimes"

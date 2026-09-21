@@ -100,6 +100,9 @@ export const useStartedProposals = (): Proposal[] =>
     ),
   );
 
+export const useProposal = (id: string | null): Proposal | null =>
+  store((s) => (id ? (s.proposals.find((p) => p.id === id) ?? null) : null));
+
 /** For tests. */
 export const getProposalState = () => store.getState();
 export const setProposalState = store.setState.bind(store);
@@ -121,4 +124,9 @@ export const dismissProposal = (
 
 export function openInbox(hostId?: HostId): void {
   appNavigate({ view: "inbox", ...(hostId ? { hostId } : {}) });
+}
+
+/** `/inbox/proposals/:id` — the proposal in full, where it can be decided. */
+export function openProposal(id: string, hostId?: HostId): void {
+  appNavigate({ view: "inbox", proposalId: id, ...(hostId ? { hostId } : {}) });
 }

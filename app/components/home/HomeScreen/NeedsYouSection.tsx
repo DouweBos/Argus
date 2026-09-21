@@ -2,13 +2,13 @@
  * The inbox's actionable half, on home.
  *
  * Home is where you land, so the decisions Argus is waiting on belong here —
- * not one navigation away. The cards are the inbox's own, so accepting or
- * dismissing from here is the same act, with the same guarantees.
+ * not one navigation away. Proposals show as summaries that open their own
+ * page: a decision wants the whole proposal, not a clamped one.
  */
 
 import { openInbox } from "../../../stores/proposalStore";
 import { FailedRuns } from "../../inbox/InboxScreen/FailedRuns";
-import { PendingProposals } from "../../inbox/InboxScreen/PendingProposals";
+import { ProposalSummaries } from "../../inbox/ProposalSummaries";
 import { useInboxItems } from "../../inbox/useInboxItems";
 import styles from "./HomeScreen.module.css";
 
@@ -41,7 +41,7 @@ export function NeedsYouSection() {
         </button>
       </div>
       <div className={styles.needsYou}>
-        {proposals.length > 0 && <PendingProposals proposals={proposals} />}
+        {proposals.length > 0 && <ProposalSummaries proposals={proposals} />}
         {runs.length > 0 && <FailedRuns runs={runs} />}
         {hidden > 0 && (
           <button

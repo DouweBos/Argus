@@ -43,6 +43,10 @@ export function useRoutePR(): PullRequestRef | null {
   return useCurrentRoute().pr;
 }
 
+export function useRouteProposalId(): string | null {
+  return useCurrentRoute().proposalId;
+}
+
 export function useRouteGitView(): GitSubView | null {
   return useCurrentRoute().gitView;
 }

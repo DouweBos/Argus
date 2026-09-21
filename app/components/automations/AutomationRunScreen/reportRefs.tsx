@@ -1,6 +1,12 @@
 import { useCallback } from "react";
-import { Badge, type ReportRef } from "@argus/peacock";
+import { Badge, ConfidenceMeter, type ReportRef } from "@argus/peacock";
+import {
+  PROPOSAL_ACTION_LABELS,
+  PROPOSAL_ACTION_TONES,
+  proposalProjectName,
+} from "../../../lib/proposals";
 import { sessionStatusLabel } from "../../../lib/types";
+import { openProposal, useProposals } from "../../../stores/proposalStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
 
 /**
@@ -12,6 +18,7 @@ export function useReportRefResolvers(): {
   resolveSession: (id: string) => ReportRef | null;
 } {
   const sessions = useSessions();
+  const proposals = useProposals();
 
   const resolveSession = useCallback(
     (id: string): ReportRef | null => {
@@ -34,10 +41,32 @@ export function useReportRefResolvers(): {
     [sessions],
   );
 
-  // Proposals arrive with the inbox. Until their store exists every id
-  // resolves to null and the block renders a tombstone instead of a snapshot;
-  // wiring it is this one callback.
-  const resolveProposal = useCallback((): ReportRef | null => null, []);
+  // Resolved against the live list, never the report's snapshot: a proposal
+  // decided on since the run wrote about it renders as a tombstone.
+  const resolveProposal = useCallback(
+    (id: string): ReportRef | null => {
+      const proposal = proposals.find((p) => p.id === id);
+      if (!proposal) {
+        return null;
+      }
+
+      return {
+        id,
+        title: proposal.title,
+        subtitle: proposalProjectName(proposal.repo_root) ?? undefined,
+        meta: (
+          <>
+            <Badge tone={PROPOSAL_ACTION_TONES[proposal.recommended_action]}>
+              {PROPOSAL_ACTION_LABELS[proposal.recommended_action]}
+            </Badge>
+            <ConfidenceMeter compact value={proposal.confidence} />
+          </>
+        ),
+        onOpen: () => openProposal(id),
+      };
+    },
+    [proposals],
+  );
 
   return { resolveProposal, resolveSession };
 }
