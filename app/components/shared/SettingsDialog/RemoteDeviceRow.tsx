@@ -55,19 +55,34 @@ function PushTestButton({ deviceId }: { deviceId: string }) {
   );
 }
 
+/** How a device's grants read in the paired list. */
+function grantLabel(capabilities: string[]): string {
+  if (capabilities.includes("admin")) {
+    return "full control (admin)";
+  }
+
+  return capabilities.includes("control")
+    ? "monitor + control"
+    : "monitor only";
+}
+
 export function RemoteDeviceRow({
   device,
   connected,
   onRevoke,
-  onSetControl,
+  onSetGrants,
   busy,
 }: {
   busy: boolean;
   connected: boolean;
   device: RemoteDevice;
   onRevoke: (id: string) => void;
-  onSetControl: (id: string, control: boolean) => void;
+  onSetGrants: (
+    id: string,
+    grants: { admin: boolean; control: boolean },
+  ) => void;
 }) {
+  const hasAdmin = device.capabilities.includes("admin");
   const hasControl = device.capabilities.includes("control");
 
   return (
@@ -80,7 +95,7 @@ export function RemoteDeviceRow({
           ) : (
             lastSeenLabel(device.last_seen)
           )}{" "}
-          · {hasControl ? "monitor + control" : "monitor only"}
+          · {grantLabel(device.capabilities)}
           {device.push ? ` · push via ${PUSH_LABEL[device.push.service]}` : ""}
         </span>
       </div>
@@ -90,8 +105,26 @@ export function RemoteDeviceRow({
           <span>Control</span>
           <Toggle
             checked={hasControl}
+            disabled={busy || hasAdmin}
+            onChange={(next) =>
+              onSetGrants(device.device_id, { control: next, admin: hasAdmin })
+            }
+          />
+        </label>
+        <label
+          className={styles.controlToggle}
+          title="Let this Mac drive Argus here as if sitting at the keyboard. Only for another Mac you own."
+        >
+          <span>Admin</span>
+          <Toggle
+            checked={hasAdmin}
             disabled={busy}
-            onChange={(next) => onSetControl(device.device_id, next)}
+            onChange={(next) =>
+              onSetGrants(device.device_id, {
+                control: hasControl || next,
+                admin: next,
+              })
+            }
           />
         </label>
         <Button

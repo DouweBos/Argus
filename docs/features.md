@@ -133,15 +133,16 @@ Organisations are configured in App settings.
 
 ## Onboarding
 
-- **Tools picker** — choose which device-tooling tools you want
-  active (recording, control, debug, inspector). Turning a tool off
-  hides its UI surfaces and disables its IPC handlers so Argus stays
-  focused on what you use. Skippable — every tool can be toggled
-  later in **Settings → Tools**.
-- **Preflight** — checks `git`, `claude`, and the prerequisites for the
-  tools you picked, with one-click hints to fix anything missing. A
-  user who picked zero tools sees only the four core checks
-  (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`).
+First launch is two screens: a welcome explaining what Argus does, and a
+telemetry choice. Everything else happens in place.
+
+- **Setup cards** — anything missing on your Mac (the `claude` CLI, a
+  signed-in Claude account, git, a git identity, notification
+  permission, optional device tooling) shows up as a card on the home
+  screen with a one-click fix, and disappears once resolved.
+- **Tools** — device tooling is opt-in from **Settings → Tools**.
+  Turning a tool off hides its UI surfaces and disables its IPC
+  handlers so Argus stays focused on what you use.
 - **`.argus.json` generation** — Argus inspects your project and either
   writes a sensible default (Quick generate) or asks the `claude` CLI
   for a tailored config (Generate with Claude). Both modes show the
@@ -188,12 +189,15 @@ and beta builds can break your install).
   machine.
 - **No mandatory account.** You sign into the `claude` CLI; Argus has no
   account of its own.
-- **Telemetry is off by default.** Opt in once during onboarding (or
-  any time from App settings). When on, Argus sends anonymous,
-  feature-level events to PostHog along with standard SDK properties
-  (browser/OS/screen/timezone). The raw IP is discarded post-ingestion,
-  but city-level GeoIP is still derived from it before discard. No
-  session replay, no DOM autocapture, no prompts, no file contents, no
-  project names — full audit in [Telemetry](/argus/docs/telemetry).
+- **Telemetry stops at a headcount by default.** Argus sends one
+  anonymous heartbeat per launch — a random install id and the app
+  version — so we can count daily active users. Opt in to full
+  analytics during onboarding (or any time from App settings) to also
+  send feature-level events, errors and crashes along with standard SDK
+  properties (browser/OS/screen/timezone). The raw IP is discarded
+  post-ingestion, but city-level GeoIP is still derived from it before
+  discard. No session replay, no DOM autocapture, no prompts, no file
+  contents, no project names — full audit in
+  [Telemetry](/argus/docs/telemetry).
 - **No proprietary editor.** Argus embeds VS Code; your existing
   extensions and muscle memory carry over.

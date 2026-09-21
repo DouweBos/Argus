@@ -2,6 +2,12 @@ import type { AgentStatus, DeviceInfo, Session } from "../../../lib/types";
 import type { AgentStatus as PeacockAgentStatus } from "@argus/peacock";
 import { useMemo } from "react";
 import { projectAccent } from "@argus/peacock";
+import { useRouteHostId } from "../../../lib/routeHooks";
+import {
+  hostScopedKey,
+  isLocalHost,
+  type HostId,
+} from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
 import { useConversations } from "../../../stores/conversationStore";
 import { useDevices } from "../../../stores/deviceStore";
@@ -9,7 +15,7 @@ import {
   useRecentProjects,
   type RecentProject,
 } from "../../../stores/recentProjectsStore";
-import { useSessions } from "../../../stores/sessionStore";
+import { sessionHostId, useSessions } from "../../../stores/sessionStore";
 
 export interface HomeAgent {
   branch: string;
@@ -22,6 +28,9 @@ export interface HomeAgent {
 export interface HomeProject {
   accent: string;
   agents: HomeAgent[];
+  /** The machine this repo lives on — the same path can exist on several. */
+  hostId: HostId;
+  /** `hostScopedKey(hostId, path)`, not the path: two hosts, two rows. */
   id: string;
   /** Timestamp of the most recent agent creation in this project, or null if none. */
   lastAgentCreatedAt: number | null;
@@ -86,15 +95,25 @@ export function useHomeData(): HomeData & {
   const agentsRecord = useAgentsRecord();
   const conversations = useConversations();
   const devices = useDevices();
+  // This Mac's home is the combined view — every machine's projects, each
+  // badged. A paired machine's tab shows only what lives on that machine.
+  const routeHostId = useRouteHostId();
+
+  const showsEveryHost = isLocalHost(routeHostId);
 
   return useMemo(() => {
-    const projectsByPath = new Map<string, HomeProject>();
+    const projectsByKey = new Map<string, HomeProject>();
 
     recent.forEach((rp: RecentProject) => {
-      projectsByPath.set(rp.path, {
-        id: rp.path,
+      if (!showsEveryHost && rp.hostId !== routeHostId) {
+        return;
+      }
+      projectsByKey.set(hostScopedKey(rp.hostId, rp.path), {
+        id: hostScopedKey(rp.hostId, rp.path),
+        hostId: rp.hostId,
         name: rp.name,
         path: rp.path,
+        // Keyed by path so one repo keeps its colour on every machine.
         accent: projectAccent(rp.path),
         sessions: [],
         agents: [],
@@ -104,21 +123,26 @@ export function useHomeData(): HomeData & {
     });
 
     sessions.forEach((ws) => {
-      const key = ws.repo_root;
-      let proj = projectsByPath.get(key);
+      const hostId = sessionHostId(ws.id);
+      if (!showsEveryHost && hostId !== routeHostId) {
+        return;
+      }
+      const key = hostScopedKey(hostId, ws.repo_root);
+      let proj = projectsByKey.get(key);
       if (!proj) {
         proj = {
           id: key,
-          name: basename(key),
-          path: key,
-          accent: projectAccent(key),
+          hostId,
+          name: basename(ws.repo_root),
+          path: ws.repo_root,
+          accent: projectAccent(ws.repo_root),
           sessions: [],
           agents: [],
           // Unknown — place at the top of the list by using a sentinel.
           lastOpened: 0,
           lastAgentCreatedAt: null,
         };
-        projectsByPath.set(key, proj);
+        projectsByKey.set(key, proj);
       }
       proj.sessions.push(ws);
     });
@@ -143,7 +167,9 @@ export function useHomeData(): HomeData & {
         status: mapAgentStatus(a.status),
         session: ws,
       };
-      const proj = projectsByPath.get(ws.repo_root);
+      const proj = projectsByKey.get(
+        hostScopedKey(sessionHostId(ws.id), ws.repo_root),
+      );
       if (proj) {
         proj.agents.push(entry);
         if (typeof a.created_at === "number") {
@@ -156,7 +182,7 @@ export function useHomeData(): HomeData & {
       activeAgents.push(entry);
     });
 
-    const projects = Array.from(projectsByPath.values()).sort((a, b) => {
+    const projects = Array.from(projectsByKey.values()).sort((a, b) => {
       const aKey = a.lastAgentCreatedAt ?? a.lastOpened;
       const bKey = b.lastAgentCreatedAt ?? b.lastOpened;
 
@@ -173,7 +199,15 @@ export function useHomeData(): HomeData & {
     };
 
     return { projects, activeAgents, devices, stats, formatLastOpened };
-  }, [recent, sessions, agentsRecord, conversations, devices]);
+  }, [
+    recent,
+    sessions,
+    agentsRecord,
+    conversations,
+    devices,
+    routeHostId,
+    showsEveryHost,
+  ]);
 }
 
 function basename(p: string): string {

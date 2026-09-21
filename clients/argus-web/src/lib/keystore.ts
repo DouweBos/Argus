@@ -9,8 +9,15 @@
  * needs stronger protection.
  */
 
-import { generateKeypair, type NoiseKeypair } from "../crypto/noise";
-import { fromBase64, toBase64 } from "./base64";
+import {
+  fromBase64,
+  generateKeypair,
+  toBase64,
+  type HostCredentials,
+  type NoiseKeypair,
+  type PairingResult,
+} from "@argus/remote-client";
+import { wsOrigin } from "./origin";
 
 const KEY = "argus.device";
 
@@ -77,4 +84,27 @@ export function freshKeypair(): {
 
 export function keypairFromIdentity(id: DeviceIdentity): NoiseKeypair {
   return { priv: fromBase64(id.devPrivB64), pub: fromBase64(id.devPubB64) };
+}
+
+/** Turn a completed pairing into the identity this browser persists. */
+export function identityFromPairing(result: PairingResult): DeviceIdentity {
+  return {
+    deviceId: result.deviceId,
+    devPrivB64: result.devPrivB64,
+    devPubB64: result.devPubB64,
+    desktopPubB64: result.hostPubB64,
+    url: result.url,
+    capabilities: result.capabilities,
+    name: defaultDeviceName(),
+  };
+}
+
+/** Credentials for the shared transport — always dialled on our own origin. */
+export function credentialsFor(id: DeviceIdentity): HostCredentials {
+  return {
+    url: wsOrigin(),
+    devPrivB64: id.devPrivB64,
+    devPubB64: id.devPubB64,
+    hostPubB64: id.desktopPubB64,
+  };
 }

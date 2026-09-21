@@ -21,6 +21,7 @@ export function WebBrowserView({
     browserPreset,
     canGoBack,
     canGoForward,
+    claim,
     currentUrl,
     customPresets,
     handleBack,
@@ -34,7 +35,6 @@ export function WebBrowserView({
     inputUrl,
     internalHeight,
     internalWidth,
-    mjpegPort,
     setInputUrl,
   } = useWebBrowserView(sessionId, isActive);
 
@@ -63,9 +63,9 @@ export function WebBrowserView({
       {titleBar}
       <div className={styles.browserViewport}>
         <WebBrowserScaledWebview
+          claim={claim}
           internalHeight={internalHeight}
           internalWidth={internalWidth}
-          mjpegPort={mjpegPort}
           onKeyboardEvent={handleKeyboardEvent}
           onMouseEvent={handleMouseEvent}
           onWheelEvent={handleWheelEvent}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Alert } from "react-native";
 import { ConnectionBadge } from "../../src/components/ConnectionBadge";
@@ -12,7 +12,12 @@ import {
   Screen,
   TextField,
 } from "../../src/components/ui";
-import { gatewayHost, hostLabel } from "../../src/lib/keystore";
+import {
+  endpointKindLabel,
+  gatewayHost,
+  hostLabel,
+  identityEndpoints,
+} from "../../src/lib/keystore";
 import { useAppStore } from "../../src/stores/appStore";
 
 /** One paired computer: what it granted this phone, and how to leave it. */
@@ -29,8 +34,12 @@ export default function ComputerScreen() {
   const label = host ? hostLabel(host) : "Computer";
   const [name, setName] = useState(label);
   const [saved, setSaved] = useState(false);
+  const [syncedLabel, setSyncedLabel] = useState(label);
 
-  useEffect(() => setName(label), [label]);
+  if (label !== syncedLabel) {
+    setSyncedLabel(label);
+    setName(label);
+  }
 
   const save = useCallback(() => {
     if (!host) {
@@ -73,6 +82,7 @@ export default function ComputerScreen() {
   }
 
   const active = host.deviceId === activeHostId;
+  const endpoints = identityEndpoints(host);
 
   return (
     <Screen>
@@ -112,8 +122,22 @@ export default function ComputerScreen() {
         />
       </Field>
 
+      <Field
+        label="Addresses"
+        caption="Every route this computer advertised. All are dialled at once and the simplest one that answers wins."
+      >
+        {endpoints.map((endpoint) => (
+          <Row key={endpoint.url} gap={8}>
+            <Body style={{ flex: 1 }}>{gatewayHost(endpoint.url)}</Body>
+            {endpoint.url === host.url && active && connection === "ready" ? (
+              <Badge label="In use" tone="success" />
+            ) : null}
+            <Badge label={endpointKindLabel(endpoint.kind)} />
+          </Row>
+        ))}
+      </Field>
+
       <Field label="Gateway">
-        <Body>{gatewayHost(host.url)}</Body>
         <Muted>Device {host.deviceId.slice(0, 8)}</Muted>
         {host.pairedAt ? (
           <Muted>Paired {new Date(host.pairedAt).toLocaleDateString()}</Muted>

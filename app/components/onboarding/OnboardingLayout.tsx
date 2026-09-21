@@ -10,12 +10,7 @@ import styles from "./OnboardingLayout.module.css";
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
   welcome: "Welcome",
-  permissions: "Permissions",
-  tools: "Tools",
-  preflight: "Preflight",
-  claude_auth: "Claude",
-  telemetry: "Telemetry",
-  completion: "Done",
+  telemetry: "Privacy",
 };
 
 export interface OnboardingLayoutProps {
@@ -46,9 +41,7 @@ export function OnboardingLayout({
     label: STEP_LABELS[id],
   }));
   const canGoBack =
-    currentStep !== "welcome" &&
-    currentStep !== "completion" &&
-    previousStepOf(currentStep) !== currentStep;
+    currentStep !== "welcome" && previousStepOf(currentStep) !== currentStep;
   const backButton = canGoBack ? (
     <Button
       variant="ghost"

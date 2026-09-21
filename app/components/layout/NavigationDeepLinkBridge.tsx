@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useGlobalShortcuts } from "../../hooks/useGlobalShortcuts";
 import { useIpcEvent } from "../../hooks/useIpcEvent";
 import { getAgentState, setActiveAgent } from "../../stores/agentStore";
+import { goBackInTab, goForwardInTab } from "../../stores/tabStore";
 
 /**
  * Wires navigation-related side effects inside the Router context:
- *   - back/forward keyboard shortcuts (Cmd+[ / Cmd+])
+ *   - back/forward keyboard shortcuts (Cmd+[ / Cmd+]) — per tab, since one
+ *     global history would interleave two machines' screens
  *   - mouse back/forward buttons (browser default)
  *   - `navigation:goto` IPC events from the main process (deep links)
  */
@@ -17,12 +19,12 @@ export function NavigationDeepLinkBridge() {
     {
       key: "[",
       meta: true,
-      handler: () => navigate(-1),
+      handler: goBackInTab,
     },
     {
       key: "]",
       meta: true,
-      handler: () => navigate(1),
+      handler: goForwardInTab,
     },
   ]);
 
@@ -49,16 +51,16 @@ export function NavigationDeepLinkBridge() {
     const onMouse = (e: MouseEvent) => {
       if (e.button === 3) {
         e.preventDefault();
-        navigate(-1);
+        goBackInTab();
       } else if (e.button === 4) {
         e.preventDefault();
-        navigate(1);
+        goForwardInTab();
       }
     };
     window.addEventListener("mouseup", onMouse);
 
     return () => window.removeEventListener("mouseup", onMouse);
-  }, [navigate]);
+  }, []);
 
   return null;
 }

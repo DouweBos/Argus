@@ -1,13 +1,16 @@
+import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useCallback, useRef } from "react";
-import { useSimulatorCapture } from "../../../hooks/useSimulatorCapture";
+import { DeviceControlOverlay } from "@argus/peacock";
+import { useBrowserStream } from "../../../hooks/useBrowserStream";
 import styles from "./WebBrowserView.module.css";
 
 const DRAG_THROTTLE_MS = 17;
 
 interface Props {
+  /** Host-side input arbitration for this browser session. */
+  claim?: DeviceClaimState;
   internalHeight: number;
   internalWidth: number;
-  mjpegPort: number | null;
   onKeyboardEvent: (type: "down" | "press" | "up", key: string) => void;
   onMouseEvent: (
     type: "click" | "down" | "move" | "up",
@@ -20,7 +23,7 @@ interface Props {
 }
 
 /**
- * Renders the Playwright browser's MJPEG stream and captures pointer/keyboard
+ * Renders the embedded browser's live picture and captures pointer/keyboard
  * events, forwarding them to the backend as viewport-pixel coordinates.
  *
  * Mirrors the iOS simulator's IosDeviceStreamView pattern: an `<img>` element
@@ -28,21 +31,19 @@ interface Props {
  * converts display coordinates to the browser's viewport coordinate space.
  */
 export function WebBrowserScaledWebview({
+  claim,
   internalHeight,
   internalWidth,
-  mjpegPort,
   onKeyboardEvent,
   onMouseEvent,
   onWheelEvent,
   sessionId,
 }: Props) {
-  const streamUrl =
-    mjpegPort && sessionId
-      ? `http://127.0.0.1:${mjpegPort}/stream/${encodeURIComponent(sessionId)}`
-      : null;
+  const { imgRef, isReceiving, streamUrl } = useBrowserStream(sessionId, true);
 
-  const { imgRef, isReceiving } = useSimulatorCapture(streamUrl);
-
+  const blocked = claim?.blocked ?? false;
+  const takeControl = claim?.takeControl;
+  const handleTakeControl = useCallback(() => takeControl?.(), [takeControl]);
   const lastDragTime = useRef(0);
   const isPointerDown = useRef(false);
 
@@ -85,17 +86,20 @@ export function WebBrowserScaledWebview({
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       isPointerDown.current = true;
       e.currentTarget.setPointerCapture(e.pointerId);
       const { x, y } = toViewport(e);
       onMouseEvent("down", x, y, "left");
     },
-    [toViewport, onMouseEvent],
+    [blocked, toViewport, onMouseEvent],
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isPointerDown.current || e.buttons === 0) {
+      if (blocked || !isPointerDown.current || e.buttons === 0) {
         return;
       }
       const now = performance.now();
@@ -106,43 +110,55 @@ export function WebBrowserScaledWebview({
       const { x, y } = toViewport(e);
       onMouseEvent("move", x, y);
     },
-    [toViewport, onMouseEvent],
+    [blocked, toViewport, onMouseEvent],
   );
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       isPointerDown.current = false;
       e.currentTarget.releasePointerCapture(e.pointerId);
       const { x, y } = toViewport(e);
       onMouseEvent("up", x, y, "left");
     },
-    [toViewport, onMouseEvent],
+    [blocked, toViewport, onMouseEvent],
   );
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       const { x, y } = toViewport(
         e as unknown as React.PointerEvent<HTMLDivElement>,
       );
       onWheelEvent(x, y, e.deltaX, e.deltaY);
     },
-    [toViewport, onWheelEvent],
+    [blocked, toViewport, onWheelEvent],
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       e.preventDefault();
       onKeyboardEvent("down", e.key);
     },
-    [onKeyboardEvent],
+    [blocked, onKeyboardEvent],
   );
 
   const handleKeyUp = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (blocked) {
+        return;
+      }
       e.preventDefault();
       onKeyboardEvent("up", e.key);
     },
-    [onKeyboardEvent],
+    [blocked, onKeyboardEvent],
   );
 
   return (
@@ -161,13 +177,18 @@ export function WebBrowserScaledWebview({
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
       >
-        {streamUrl && (
-          <img
-            ref={imgRef}
-            alt="Web browser"
-            className={styles.browserCanvas}
-            draggable={false}
-            src={streamUrl}
+        <img
+          ref={imgRef}
+          alt="Web browser"
+          className={styles.browserCanvas}
+          draggable={false}
+          src={streamUrl ?? undefined}
+        />
+        {claim && (
+          <DeviceControlOverlay
+            holderLabel={claim.holderLabel}
+            subject="browser"
+            onTakeControl={handleTakeControl}
           />
         )}
         {!isReceiving && (

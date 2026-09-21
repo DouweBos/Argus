@@ -445,6 +445,82 @@ int32_t SHSendButton(id client, void *fnPtr,
     return 0;
 }
 
+// IndigoHIDMessageForHIDArbitrary(IndigoHIDTarget, uint32_t usagePage,
+//   uint32_t usage, IndigoHIDButtonOp) -> IndigoHIDMessage*  (per SimulatorKit's
+// own assert string). This is the general path SimDisplayChromeView falls back
+// to for every usage it doesn't special-case, and unlike the keyboard variants
+// it carries the target — which is what makes it reach the tvOS focus engine.
+// Caller owns the returned message, same as IndigoHIDMessageForButton.
+typedef void* (*IndigoArbitraryFn)(uint32_t, uint32_t, uint32_t, uint32_t);
+
+/// Send a raw HID usage-page/usage pair (e.g. Consumer 0x0C / Menu Right 0x45)
+/// to a simulator. tvOS only acts on the remote through this path; emulated
+/// keyboard key codes are ignored outright.
+///
+/// Returns 0 on success, negative on failure.
+int32_t SHSendHIDUsage(id client, void *fnPtr,
+                       const char *udid,
+                       uint32_t target, uint32_t usagePage,
+                       uint32_t usage, uint32_t op) {
+    if (!client || !fnPtr || !udid) return -1;
+
+    IndigoArbitraryFn fn = (IndigoArbitraryFn)fnPtr;
+    void *msg = fn(target, usagePage, usage, op);
+    if (!msg) {
+        NSLog(@"[IndigoHID] IndigoHIDMessageForHIDArbitrary returned NULL for "
+              @"page=0x%x usage=0x%x op=%u", usagePage, usage, op);
+        return -3;
+    }
+
+    void *copy = malloc(SH_KEYBOARD_MSG_SIZE);
+    if (!copy) {
+        free(msg);
+        NSLog(@"[IndigoHID] HID usage message allocation failed");
+        return -5;
+    }
+    memcpy(copy, msg, SH_KEYBOARD_MSG_SIZE);
+    free(msg);
+
+    _Atomic(bool) *invalidFlag = NULL;
+    for (int i = 0; i < g_touchStateCount; i++) {
+        if (strcmp(g_touchStates[i].udid, udid) == 0) {
+            invalidFlag = &g_touchStates[i].invalid;
+            break;
+        }
+    }
+
+    SEL sel = NSSelectorFromString(@"sendWithMessage:freeWhenDone:completionQueue:completion:");
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    void (^completion)(NSError *) = ^(NSError *error) {
+        if (error) {
+            NSLog(@"[IndigoHID] HID usage send error: %@", error);
+            if (invalidFlag) atomic_store(invalidFlag, true);
+        }
+    };
+
+    ((void (*)(id, SEL, void *, BOOL, dispatch_queue_t, void(^)(NSError *)))objc_msgSend)(
+        client, sel, copy, YES, queue, completion);
+
+    return 0;
+}
+
+/// Read the device's product family id (3 = Apple TV) off its SimDeviceType.
+/// Returns 0 when it can't be determined.
+uint32_t SHProductFamilyID(id device) {
+    if (!device) return 0;
+    @try {
+        id type = ((id (*)(id, SEL))objc_msgSend)(
+            device, NSSelectorFromString(@"deviceType"));
+        if (!type) return 0;
+        SEL sel = NSSelectorFromString(@"productFamilyID");
+        if (![type respondsToSelector:sel]) return 0;
+
+        return (uint32_t)((unsigned long long (*)(id, SEL))objc_msgSend)(type, sel);
+    } @catch (NSException *e) {
+        return 0;
+    }
+}
+
 /// Enable hardware-keyboard mode on the SimDevice so physical key events are
 /// routed to the focused text field. Called once per capture session; without
 /// it, text entry via the HID keyboard path is flaky.
@@ -676,6 +752,55 @@ void SHRequestKeyframe(void) {
     atomic_store(&g_forceKeyframe, true);
 }
 
+/// Read a descriptor's framebufferSurface, or NULL.
+static IOSurfaceRef _surfaceForDescriptor(id desc) {
+    @try {
+        return (__bridge IOSurfaceRef)((id (*)(id, SEL))objc_msgSend)(
+            desc, NSSelectorFromString(@"framebufferSurface"));
+    } @catch (NSException *e) {
+        return NULL;
+    }
+}
+
+/// Pick which display to capture when a device exposes more than one.
+///
+/// A folded iPhone Duo keeps a surface on both panels, but only the panel that
+/// is actually lit keeps redrawing — the dark one's IOSurface seed is frozen.
+/// Sample the seeds and take the panel that moves, so we stream the cover
+/// screen while closed and the inner screen once unfolded. Single-display
+/// devices skip the sampling entirely.
+static id _pickLiveDisplay(NSArray *candidates) {
+    if (candidates.count <= 1) {
+        return candidates.firstObject;
+    }
+
+    NSMutableArray<NSNumber *> *seeds = [NSMutableArray array];
+    for (id desc in candidates) {
+        IOSurfaceRef s = _surfaceForDescriptor(desc);
+        [seeds addObject:@(s ? IOSurfaceGetSeed(s) : 0)];
+    }
+
+    // ~360ms is enough for a lit panel to redraw at least once, and is only
+    // ever paid on a multi-display device at capture start.
+    for (int round = 0; round < 6; round++) {
+        usleep(60000);
+        for (NSUInteger i = 0; i < candidates.count; i++) {
+            IOSurfaceRef s = _surfaceForDescriptor(candidates[i]);
+            if (s && IOSurfaceGetSeed(s) != seeds[i].unsignedIntValue) {
+                NSLog(@"[Framebuffer] %lu displays, capturing the live one (#%lu)",
+                      (unsigned long)candidates.count, (unsigned long)i);
+                return candidates[i];
+            }
+        }
+    }
+
+    // Every panel is static (asleep, or a perfectly still screen) — the first
+    // one is as good a guess as any.
+    NSLog(@"[Framebuffer] %lu displays, none redrawing — capturing the first",
+          (unsigned long)candidates.count);
+    return candidates.firstObject;
+}
+
 /// (Re)create the SimDeviceIOClient and find the display descriptor.
 /// Returns YES if g_displayDescriptor is ready, NO on failure.
 static BOOL _rebuildIOClient(void) {
@@ -702,7 +827,8 @@ static BOOL _rebuildIOClient(void) {
     // There can be multiple "com.apple.framebuffer.display" ports — only the one
     // backed by SimScreen (not the bare descriptor) provides the surface.
     NSArray *ports = [g_ioClient valueForKey:@"ioPorts"];
-    g_displayDescriptor = nil;
+    NSMutableArray *candidates = [NSMutableArray array];  // descriptors with a surface
+    id fallbackDescriptor = nil;                          // surface may appear later
     for (id port in ports) {
         @try {
             id portId = ((id (*)(id, SEL))objc_msgSend)(
@@ -718,17 +844,16 @@ static BOOL _rebuildIOClient(void) {
             IOSurfaceRef surface = (__bridge IOSurfaceRef)((id (*)(id, SEL))objc_msgSend)(
                 desc, NSSelectorFromString(@"framebufferSurface"));
             if (surface) {
-                g_displayDescriptor = desc;
-                break;
-            }
-            // Keep this descriptor as a fallback (surface may appear later)
-            if (!g_displayDescriptor) {
-                g_displayDescriptor = desc;
+                [candidates addObject:desc];
+            } else if (!fallbackDescriptor) {
+                fallbackDescriptor = desc;
             }
         } @catch (NSException *e) {
             continue;
         }
     }
+
+    g_displayDescriptor = _pickLiveDisplay(candidates) ?: fallbackDescriptor;
 
     if (!g_displayDescriptor) {
         NSLog(@"[Framebuffer] No com.apple.framebuffer.display port found (%lu ports total)",

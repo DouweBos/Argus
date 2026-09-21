@@ -12,8 +12,8 @@ import {
   Text,
   TextInput,
   View,
-  type NativeSyntheticEvent,
-  type TextInputSelectionChangeEventData,
+  type TextInputInstance,
+  type TextInputSelectionChangeEvent,
 } from "react-native";
 import { ContextMeter } from "./ContextMeter";
 import * as Icons from "./Icons";
@@ -36,7 +36,11 @@ import {
 import { captureImage, pickImages, type PendingImage } from "../lib/images";
 import { addImagePasteListener } from "../../modules/argus-paste";
 import { buildLinkedProjectsPreamble } from "../lib/linkedProjects";
-import type { RemotePermissionMode, RemoteSlashCommand } from "../lib/protocol";
+import type {
+  RemoteMessage,
+  RemotePermissionMode,
+  RemoteSlashCommand,
+} from "../lib/protocol";
 import { readJson, readString, removeKey, writeJson, writeString } from "../lib/storage";
 import { useAppStore } from "../stores/appStore";
 import { useTheme } from "../theme";
@@ -92,7 +96,7 @@ export function ChatInput({
   const projects = useAppStore((s) => s.projects);
   const refreshProjects = useAppStore((s) => s.refreshProjects);
 
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
   // Previous screens stay mounted in the nav stack, so every ChatInput hears
   // the paste. Only the focused one is the input iOS pasted into.
   const focusedRef = useRef(false);
@@ -159,7 +163,7 @@ export function ChatInput({
   );
 
   const onSelectionChange = useCallback(
-    (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+    (e: TextInputSelectionChangeEvent) => {
       updateMentions(text, e.nativeEvent.selection.start);
     },
     [text, updateMentions],
@@ -261,16 +265,7 @@ export function ChatInput({
     [agentId, selectMentionItem, text],
   );
 
-  const contextTokens = useMemo(() => {
-    for (let i = (messages?.length ?? 0) - 1; i >= 0; i--) {
-      const m = messages![i];
-      if (m.role === "assistant" && m.usage) {
-        return tokensInContext(m.usage);
-      }
-    }
-
-    return 0;
-  }, [messages]);
+  const contextTokens = latestContextTokens(messages);
   const contextLimit = contextLimitForModel(modelValue, models);
 
   return (
@@ -565,4 +560,17 @@ function Suggestions({
       </ScrollView>
     </View>
   );
+}
+
+/** Tokens in context as of the most recent assistant turn that reported usage. */
+function latestContextTokens(messages: RemoteMessage[] | undefined): number {
+  const list = messages ?? [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const m = list[i];
+    if (m.role === "assistant" && m.usage) {
+      return tokensInContext(m.usage);
+    }
+  }
+
+  return 0;
 }

@@ -1,3 +1,4 @@
+import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useCallback, useEffect, useState } from "react";
 import { error } from "@logger";
 import { simulatorButton } from "../../../lib/ipc";
@@ -64,22 +65,34 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 interface AppleTVRemoteProps {
+  /** Input arbitration on the host. Omitted where nothing can contend for it. */
+  claim?: DeviceClaimState;
   udid: string;
 }
 
-export function AppleTVRemote({ udid }: AppleTVRemoteProps) {
+export function AppleTVRemote({ claim, udid }: AppleTVRemoteProps) {
   const [activeButton, setActiveButton] = useState<Button | null>(null);
   const [hoveredZone, setHoveredZone] = useState<ClickpadZone | null>(null);
 
+  const blocked = claim?.blocked ?? false;
+  const reportInputError = claim?.reportInputError;
+
   const press = useCallback(
     (button: Button) => {
+      if (blocked) {
+        return;
+      }
       setActiveButton(button);
       setTimeout(() => setActiveButton(null), 150);
-      simulatorButton(udid, button).catch((err) =>
-        error("[Remote] button failed:", err),
-      );
+      simulatorButton(udid, button).catch((err) => {
+        // A refusal means someone else took the device — say so rather than
+        // dropping the press into the log.
+        if (!reportInputError?.(err)) {
+          error("[Remote] button failed:", err);
+        }
+      });
     },
-    [udid],
+    [blocked, reportInputError, udid],
   );
 
   const handleClickpad = useCallback(
@@ -157,7 +170,7 @@ export function AppleTVRemote({ udid }: AppleTVRemoteProps) {
   }, [press]);
 
   return (
-    <div className={styles.remote}>
+    <div className={`${styles.remote} ${blocked ? styles.blocked : ""}`}>
       <div
         className={styles.clickpad}
         onPointerDown={handleClickpad}

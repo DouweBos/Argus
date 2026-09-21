@@ -15,6 +15,18 @@ import type {
   AndroidDevice,
   ArgusConfig,
   ArgusConfigSuggestion,
+  AcceptProposalResult,
+  Automation,
+  AutomationCalibration,
+  AutomationDraft,
+  AutomationRun,
+  GateLogEntry,
+  CreateAutomationInput,
+  Proposal,
+  ProposalStatus,
+  SignalSourceInfo,
+  StartScratchRunInput,
+  UpdateAutomationInput,
   BranchList,
   ClaudeAccountsState,
   ClaudeAuthStatus,
@@ -27,6 +39,9 @@ import type {
   ExampleProject,
   FileStat,
   GitStatus,
+  HostDirectoryListing,
+  HostSnapshot,
+  HuddleRoom,
   InterestingPullRequest,
   MentionPathResult,
   PullRequestDetail,
@@ -57,11 +72,13 @@ import type {
   TailscaleDiagnosis,
   TailscaleFixKind,
   TailscaleFixResult,
-  RunnerOnboardingStep,
   Session,
+  UploadedAttachment,
   UserProjectSettings,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
+import { getTransportForCommand } from "./transport";
+import { runOnHost } from "./transport/hostRouting";
 
 declare global {
   interface Window {
@@ -78,25 +95,43 @@ declare global {
   }
 }
 
+/**
+ * Send a command to the machine that owns its subject. Several hosts are
+ * attached at once, so the target is resolved per call from the session,
+ * agent, terminal or repo root in `args` — never from ambient "current host"
+ * state. See `transport/hostRouting.ts`.
+ */
 function invoke<T>(
   channel: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  return window.argus.invoke<T>(channel, args).catch((err) => {
-    // Rehydrate structured GitError payloads — the main process attaches
-    // the `__gitError` envelope as own props on the thrown Error so it
-    // survives Electron's IPC error serialisation.
-    const gitErr = rehydrateGitError(err);
-    if (gitErr) {
-      throw gitErr;
-    }
-    throw err;
-  });
+  return getTransportForCommand(channel, args)
+    .invoke<T>(channel, args)
+    .catch((err: unknown) => {
+      // Rehydrate structured GitError payloads. Local IPC keeps the
+      // `__gitError` envelope as own props on the thrown Error; the gateway
+      // carries it in the wire error's `data` field.
+      const data = (err as { data?: unknown } | null)?.data;
+      const gitErr = rehydrateGitError(data) ?? rehydrateGitError(err);
+      if (gitErr) {
+        throw gitErr;
+      }
+      throw err;
+    });
 }
 
 /** Fire-and-forget IPC — skips the invoke reply round-trip. */
 export function send(channel: string, args?: Record<string, unknown>): void {
-  window.argus.send(channel, args);
+  getTransportForCommand(channel, args).send(channel, args);
+}
+
+/**
+ * Run a wrapper against a named host. For the calls that name no session or
+ * repo of their own — listing a host's devices, hydrating it — where the
+ * subject can't say which machine is meant.
+ */
+export function onHost<T>(hostId: string, call: () => T): T {
+  return runOnHost(hostId, call);
 }
 
 // Window
@@ -179,6 +214,22 @@ export const removeRepoRoot = (path: string): Promise<void> =>
 
 export const listProjects = (): Promise<ProjectEntry[]> =>
   invoke("list_projects");
+
+/**
+ * Everything the backend is running right now, in one round trip. Local mode
+ * never needs it; remote mode pulls it on connect and after every reconnect.
+ */
+export const hostStateSnapshot = (): Promise<HostSnapshot> =>
+  invoke("state_hydrate", {});
+
+/**
+ * Directories under `path` on the machine the backend runs on — the host-side
+ * half of picking a project root, since a native open dialog would browse the
+ * wrong Mac. Omit `path` for the host's home directory.
+ */
+export const listHostDirectory = (
+  path?: string,
+): Promise<HostDirectoryListing> => invoke("list_host_directory", { path });
 
 export const showOpenDirectoryDialog = (
   title?: string,
@@ -1263,6 +1314,18 @@ export const writeFile = (
 export const statFile = (id: string, relativePath: string): Promise<FileStat> =>
   invoke("stat_file", { id, relativePath });
 
+/**
+ * Upload a dropped file's bytes to the machine holding the session and get the
+ * path it landed on. Used when the window and the worktree are on different
+ * Macs, where the client's own path means nothing.
+ */
+export const uploadSessionAttachment = (
+  id: string,
+  name: string,
+  data: string,
+): Promise<UploadedAttachment> =>
+  invoke("upload_session_attachment", { id, name, data });
+
 // System / peer-dependency probes
 export const checkDependencies = (): Promise<DependencyReport> =>
   invoke("check_dependencies");
@@ -1447,6 +1510,111 @@ export const getAppSettings = (): Promise<AppSettings> =>
 export const setAppSettings = (settings: AppSettings): Promise<AppSettings> =>
   invoke("set_app_settings", { settings });
 
+// Automations. Host state, so these reach an attached host as readily as this
+// machine — the clock lives wherever the sessions do.
+export const listAutomations = (): Promise<Automation[]> =>
+  invoke("automations_list", {});
+
+export const createAutomation = (
+  input: CreateAutomationInput,
+): Promise<Automation> => invoke("automation_create", { input });
+
+export const updateAutomation = (
+  id: string,
+  patch: UpdateAutomationInput,
+): Promise<Automation> => invoke("automation_update", { id, patch });
+
+export const deleteAutomation = (id: string): Promise<void> =>
+  invoke("automation_delete", { id });
+
+export const setAutomationEnabled = (
+  id: string,
+  enabled: boolean,
+): Promise<Automation> => invoke("automation_set_enabled", { id, enabled });
+
+/** Fire an automation now. Resolves once the run record exists, not when it ends. */
+export const runAutomationNow = (id: string): Promise<AutomationRun> =>
+  invoke("automation_run_now", { id });
+
+export const cancelAutomationRun = (runId: string): Promise<AutomationRun> =>
+  invoke("automation_cancel_run", { runId });
+
+export const listAutomationRuns = (
+  automationId?: string,
+): Promise<AutomationRun[]> => invoke("automation_runs_list", { automationId });
+
+export const getAutomationRun = (
+  runId: string,
+): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
+
+/** What the read-only gate turned away, newest first. */
+export const listGateLog = (): Promise<GateLogEntry[]> =>
+  invoke("automation_gate_log_list", {});
+
+export const dismissGateLogEntry = (id: string): Promise<void> =>
+  invoke("automation_gate_log_dismiss", { id });
+
+export const clearGateLog = (): Promise<void> =>
+  invoke("automation_gate_log_clear", {});
+
+/**
+ * Run a playbook once, against these repos, with nothing saved. Resolves as
+ * soon as the run record exists — no automation is created by this.
+ */
+export const startScratchRun = (
+  input: StartScratchRunInput,
+): Promise<AutomationRun> => invoke("automation_run_scratch", { input });
+
+/** Turn an ad-hoc run into a real automation, prefilled with what it ran. */
+export const saveScratchRunAsAutomation = (
+  runId: string,
+  name?: string,
+): Promise<Automation> => invoke("automation_scratch_save", { runId, name });
+
+/** Every ad-hoc run on the focused host, newest first. */
+export const listScratchRuns = (): Promise<AutomationRun[]> =>
+  invoke("automation_scratch_runs_list", {});
+
+/** How an automation's proposals have turned out. Drives the acceptance rate. */
+export const getAutomationCalibration = (
+  automationId: string,
+): Promise<AutomationCalibration> =>
+  invoke("automation_calibration", { automationId });
+
+/** The signal sources a run can be fed from, with availability resolved. */
+export const listSignalSources = (): Promise<SignalSourceInfo[]> =>
+  invoke("signal_sources_list");
+
+/**
+ * Draft an automation from a sentence. Returns a draft to review — nothing is
+ * saved and nothing is enabled until the user presses save.
+ */
+export const draftAutomation = (
+  description: string,
+  timezone?: string,
+): Promise<AutomationDraft> =>
+  invoke("automation_draft", { description, timezone });
+
+// Proposals — the inbox. Same host-state reasoning as the automations above.
+export const listProposals = (filter?: {
+  automationId?: string;
+  runId?: string;
+  status?: ProposalStatus;
+}): Promise<Proposal[]> => invoke("proposals_list", { ...filter });
+
+export const getProposal = (id: string): Promise<Proposal | null> =>
+  invoke("proposal_get", { id });
+
+/** Start a proposal: creates its session and spawns an agent prompted with it. */
+export const acceptProposal = (id: string): Promise<AcceptProposalResult> =>
+  invoke("proposal_accept", { id });
+
+/** Dismiss a proposal. The reason is kept — it is the training signal. */
+export const dismissProposal = (
+  id: string,
+  reason?: string,
+): Promise<Proposal> => invoke("proposal_dismiss", { id, reason });
+
 // Remote access (phone/web control).
 export const remoteGetStatus = (): Promise<RemoteStatus> =>
   invoke("remote_get_status", {});
@@ -1494,18 +1662,79 @@ export const remoteRevokeDevice = (deviceId: string): Promise<RemoteStatus> =>
 export const remoteStartPairing = (): Promise<RemotePairingStart> =>
   invoke("remote_start_pairing", {});
 
-export const remoteConfirmPairing = (control = false): Promise<void> =>
-  invoke("remote_confirm_pairing", { control });
+/**
+ * Confirm the SAS and grant the device. `admin` is another Mac of yours driving
+ * this one — it implies control and must never be given to a browser.
+ */
+export const remoteConfirmPairing = (
+  grants: { admin?: boolean; control?: boolean } = {},
+): Promise<void> =>
+  invoke("remote_confirm_pairing", {
+    control: grants.control === true,
+    admin: grants.admin === true,
+  });
 
 export const remoteCancelPairing = (): Promise<void> =>
   invoke("remote_cancel_pairing", {});
 
-/** Grant or revoke the "control" capability for an already-paired device. */
-export const remoteSetDeviceControl = (
+/**
+ * Set an already-paired device's grants. `admin` is another Mac driving this
+ * one as if sitting at its keyboard — only ever for a machine you own.
+ */
+/**
+ * Share one agent — plus whatever device the host has open — over a temporary
+ * link. Resolves to the room, with `url` already set to the link to paste.
+ * Pass an empty `deviceKey` when no device is open: the room is chat-only.
+ */
+export const huddleStart = (
+  agentId: string,
+  deviceKey: string,
+): Promise<HuddleRoom> => invoke("huddle_start", { agentId, deviceKey });
+
+/**
+ * Re-point a live room at the device the host now has open. Guests mirror the
+ * engineer's runtime, so this is what hands a simulator started mid-huddle to
+ * everyone in the room. An empty `deviceKey` makes the huddle chat-only again.
+ */
+export const huddleSetDevice = (
+  roomId: string,
+  deviceKey: string,
+): Promise<boolean> => invoke("huddle_set_device", { roomId, deviceKey });
+
+/** End one share: guests revoked and dropped, the public URL given back. */
+export const huddleStop = (roomId: string): Promise<boolean> =>
+  invoke("huddle_stop", { roomId });
+
+/**
+ * Take a guest out of the room: grant revoked, socket dropped, row gone. Unlike
+ * denying, it leaves no "turned away" row and they may ask to come back in.
+ */
+export const huddleRemoveGuest = (
+  roomId: string,
+  devStaticPub: string,
+): Promise<boolean> => invoke("huddle_remove_guest", { roomId, devStaticPub });
+
+/** Every live room. Rooms are in memory, so this is empty after a restart. */
+export const huddleList = (): Promise<HuddleRoom[]> =>
+  invoke("huddle_list", {});
+
+/** Let a pending guest in. This is what mints their scoped grant. */
+export const huddleApproveGuest = (
+  roomId: string,
+  devStaticPub: string,
+): Promise<boolean> => invoke("huddle_approve_guest", { roomId, devStaticPub });
+
+/** Turn a pending guest away. The key stays denied for the room's lifetime. */
+export const huddleDenyGuest = (
+  roomId: string,
+  devStaticPub: string,
+): Promise<boolean> => invoke("huddle_deny_guest", { roomId, devStaticPub });
+
+export const remoteSetDeviceGrants = (
   deviceId: string,
-  control: boolean,
+  grants: { admin: boolean; control: boolean },
 ): Promise<RemoteDevice[]> =>
-  invoke("remote_set_device_control", { deviceId, control });
+  invoke("remote_set_device_control", { deviceId, ...grants });
 
 /**
  * Enumerate MCP servers Argus inherits from Claude Code (plugins,
@@ -2154,9 +2383,6 @@ export const claudeAuthLoginSubmitCode = (
 export const claudeAuthLoginCancel = (): Promise<void> =>
   invoke("claude_auth_login_cancel");
 
-export const listRunnerOnboardingSteps = (): Promise<RunnerOnboardingStep[]> =>
-  invoke("llm_list_onboarding_steps");
-
 export const listRegisteredRunners = (): Promise<RegisteredRunner[]> =>
   invoke("llm_list_runners");
 
@@ -2255,7 +2481,7 @@ export const updaterQuitAndInstall = (): Promise<void> =>
   invoke("updater_quit_and_install");
 
 // Telemetry
-export type TelemetryMode = "full" | "off" | "presence";
+export type TelemetryMode = "full" | "presence";
 export interface TelemetryInit {
   appVersion: string;
   configured: boolean;

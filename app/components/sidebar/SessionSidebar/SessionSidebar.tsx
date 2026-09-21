@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Icons,
   SidebarFooter,
@@ -11,13 +11,19 @@ import {
   StatusDot,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
+import { useRouteHostId } from "../../../lib/routeHooks";
+import { LOCAL_HOST_ID, isLocalHost } from "../../../lib/transport/hostId";
 import { useAgentsRecord } from "../../../stores/agentStore";
+import { useAutomations } from "../../../stores/automationStore";
+import { useHostConnections } from "../../../stores/connectionStore";
 import { useDevices } from "../../../stores/deviceStore";
+import { usePendingProposals } from "../../../stores/proposalStore";
 import {
   useAwaitingMyReviewCount,
   usePrList,
 } from "../../../stores/pullRequestStore";
 import { reorderOpenProjects } from "../../../stores/recentProjectsStore";
+import { projectKey } from "../../../stores/sessionStore";
 import {
   reorderProjects,
   toggleProjectCollapsed,
@@ -30,7 +36,17 @@ import styles from "./SessionSidebar.module.css";
 import { SidebarNavItem } from "./SidebarNavItem";
 
 export function SessionSidebar() {
-  const { projects, openProject, closeProject } = useProjects();
+  const { projects: allProjects, openProject, closeProject } = useProjects();
+  // This Mac's tab is the combined view, with every project badged by machine.
+  // A paired machine's tab shows only its own — its projects, its sessions.
+  const routeHostId = useRouteHostId();
+  const projects = useMemo(
+    () =>
+      isLocalHost(routeHostId)
+        ? allProjects
+        : allProjects.filter((p) => p.hostId === routeHostId),
+    [allProjects, routeHostId],
+  );
   const devices = useDevices();
   const agentsRecord = useAgentsRecord();
   const [showOpenProject, setShowOpenProject] = useState(false);
@@ -39,6 +55,9 @@ export function SessionSidebar() {
   const runningAgents = Object.values(agentsRecord).filter(
     (a) => a.status === "running",
   ).length;
+  const automations = useAutomations();
+  const pendingProposals = usePendingProposals().length;
+  const enabledAutomations = automations.filter((a) => a.enabled).length;
   const awaitingMyReviewCount = useAwaitingMyReviewCount();
   const prList = usePrList();
   // Show a spinner until the first fetch has landed; swapping to `0`
@@ -56,6 +75,17 @@ export function SessionSidebar() {
     );
   const totalProjects = projects.length;
 
+  // Projects carry the machine they live on: several hosts are attached at
+  // once, and `~/Work/app` can exist on more than one of them.
+  const connections = useHostConnections();
+  const hostLabels = new Map(connections.map((c) => [c.hostId, c.label]));
+  // Detached counts as offline: the projects stay on screen read-only, so the
+  // badge has to say nothing can be run on them.
+  const hostOffline = (hostId: string): boolean =>
+    hostId !== LOCAL_HOST_ID &&
+    (connections.find((c) => c.hostId === hostId)?.state ?? "offline") ===
+      "offline";
+
   const [dragRoot, setDragRoot] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{
     position: "after" | "before";
@@ -64,11 +94,12 @@ export function SessionSidebar() {
 
   const handleAdd = () => setShowOpenProject(true);
 
+  // Keyed by `projectKey()` — two hosts may hold a repo at the same path.
   const handleDragStart =
-    (repoRoot: string) => (e: React.DragEvent<HTMLDivElement>) => {
-      setDragRoot(repoRoot);
+    (key: string) => (e: React.DragEvent<HTMLDivElement>) => {
+      setDragRoot(key);
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", repoRoot);
+      e.dataTransfer.setData("text/plain", key);
     };
 
   const handleDragOver =
@@ -145,6 +176,13 @@ export function SessionSidebar() {
           Home
         </SidebarNavItem>
         <SidebarNavItem
+          view="inbox"
+          leading={<Icons.EnvelopeIcon size={12} />}
+          count={pendingProposals}
+        >
+          Inbox
+        </SidebarNavItem>
+        <SidebarNavItem
           view="agents"
           leading={<Icons.AgentIcon size={12} />}
           count={runningAgents}
@@ -166,6 +204,13 @@ export function SessionSidebar() {
           Runtimes
         </SidebarNavItem>
         <SidebarNavItem
+          view="automations"
+          leading={<Icons.ClockIcon size={12} />}
+          count={enabledAutomations}
+        >
+          Automations
+        </SidebarNavItem>
+        <SidebarNavItem
           view="pull-requests"
           leading={<Icons.MergeIcon size={12} />}
           count={prNavCount}
@@ -180,8 +225,9 @@ export function SessionSidebar() {
           <p className={styles.empty}>No active projects.</p>
         ) : (
           projects.map((project) => {
-            const isDragging = dragRoot === project.repoRoot;
-            const isTarget = dropTarget?.root === project.repoRoot;
+            const key = projectKey(project);
+            const isDragging = dragRoot === key;
+            const isTarget = dropTarget?.root === key;
             const slotClass = [
               styles.projectSlot,
               isDragging ? styles.dragging : "",
@@ -197,20 +243,27 @@ export function SessionSidebar() {
 
             return (
               <div
-                key={project.repoRoot}
+                key={key}
                 className={slotClass}
                 draggable
-                onDragStart={handleDragStart(project.repoRoot)}
-                onDragOver={handleDragOver(project.repoRoot)}
-                onDrop={handleDrop(project.repoRoot)}
+                onDragStart={handleDragStart(key)}
+                onDragOver={handleDragOver(key)}
+                onDrop={handleDrop(key)}
                 onDragEnd={handleDragEnd}
               >
                 <ProjectSegment
+                  hostId={project.hostId}
+                  hostLabel={
+                    project.hostId === LOCAL_HOST_ID
+                      ? null
+                      : (hostLabels.get(project.hostId) ?? project.hostId)
+                  }
+                  hostOffline={hostOffline(project.hostId)}
                   isCollapsed={project.isCollapsed}
                   repoRoot={project.repoRoot}
-                  onClose={() => closeProject(project.repoRoot)}
+                  onClose={() => closeProject(project.repoRoot, project.hostId)}
                   onToggleCollapsed={() =>
-                    toggleProjectCollapsed(project.repoRoot)
+                    toggleProjectCollapsed(project.repoRoot, project.hostId)
                   }
                 />
               </div>
@@ -226,7 +279,7 @@ export function SessionSidebar() {
       {showOpenProject && (
         <OpenProjectDialog
           onClose={() => setShowOpenProject(false)}
-          onOpen={openProject}
+          onOpen={(path, hostId) => openProject(path, { hostId })}
         />
       )}
     </SidebarNav>

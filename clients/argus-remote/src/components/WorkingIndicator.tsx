@@ -3,7 +3,7 @@
  * blocked — pulsing dot + verb + animated dots, mirroring the desktop.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Row, StatusDot, ThinkingDots, Muted } from "./ui";
 import { deriveActivity, randomSpinnerVerb } from "../lib/activity";
 import { useAppStore } from "../stores/appStore";
@@ -38,16 +38,15 @@ export function WorkingIndicator({ agentId }: { agentId: string }) {
   const isThinking = activity.description === "Thinking";
 
   // Hold one verb stable per thinking episode so it doesn't flicker per render.
-  const [verb, setVerb] = useState(randomSpinnerVerb);
+  const [episode, setEpisode] = useState(0);
   const [wasThinking, setWasThinking] = useState(false);
-  useEffect(() => {
-    if (isThinking && !wasThinking) {
-      setVerb(randomSpinnerVerb());
-      setWasThinking(true);
-    } else if (!isThinking && wasThinking) {
-      setWasThinking(false);
+
+  if (isThinking !== wasThinking) {
+    setWasThinking(isThinking);
+    if (isThinking) {
+      setEpisode((e) => e + 1);
     }
-  }, [isThinking, wasThinking]);
+  }
 
   if (activity.state === "idle" || activity.state === "stopped") {
     return null;
@@ -59,8 +58,21 @@ export function WorkingIndicator({ agentId }: { agentId: string }) {
         tone={activity.state === "working" ? "accent" : "warning"}
         pulse={activity.state === "working"}
       />
-      <Muted>{isThinking ? verb : activity.description}</Muted>
+      <Muted>
+        {isThinking ? (
+          <SpinnerVerb key={episode} />
+        ) : (
+          activity.description
+        )}
+      </Muted>
       {activity.state === "working" && <ThinkingDots />}
     </Row>
   );
+}
+
+/** Remounted per thinking episode; the verb is picked once, on mount. */
+function SpinnerVerb() {
+  const [verb] = useState(randomSpinnerVerb);
+
+  return <>{verb}</>;
 }

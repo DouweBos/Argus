@@ -1685,3 +1685,130 @@ export function EnvelopeIcon({ size = 12, className, ...rest }: IconProps) {
     </svg>
   );
 }
+
+/** This machine — the local, "This Mac" side of the connection picker. */
+export function LaptopIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="7" rx="1" width="11" x="2.5" y="3" />
+      <path d="M1 12.5h14" />
+    </svg>
+  );
+}
+
+/** A paired Argus host — headless mini or another Mac, the client can't tell. */
+export function HostIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="4.5" rx="1" width="12" x="2" y="2.5" />
+      <rect height="4.5" rx="1" width="12" x="2" y="9" />
+      <path d="M4.5 4.75h.01M4.5 11.25h.01" />
+    </svg>
+  );
+}
+
+/** Locked out — someone else holds input on a device or browser. */
+export function LockIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="7" rx="1.2" width="10" x="3" y="7" />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+    </svg>
+  );
+}
+
+export function ShareIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 10V2.5" />
+      <path d="m5.25 5.25 2.75-2.75 2.75 2.75" />
+      <path d="M3.5 9.5v3.25a.75.75 0 0 0 .75.75h7.5a.75.75 0 0 0 .75-.75V9.5" />
+    </svg>
+  );
+}
+
+export function GuestsIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <circle cx="6.25" cy="5.5" r="2.25" />
+      <path d="M2.25 13.25c0-2.07 1.79-3.5 4-3.5s4 1.43 4 3.5" />
+      <path d="M10.75 3.6a2.25 2.25 0 0 1 0 4.3" />
+      <path d="M11.75 10.1c1.3.45 2.25 1.58 2.25 3.15" />
+    </svg>
+  );
+}
+
+export function SparklesIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M6.25 2.25 7.3 5.2l2.95 1.05L7.3 7.3 6.25 10.25 5.2 7.3 2.25 6.25 5.2 5.2Z" />
+      <path d="M11.75 8.75l.6 1.65 1.65.6-1.65.6-.6 1.65-.6-1.65-1.65-.6 1.65-.6Z" />
+    </svg>
+  );
+}

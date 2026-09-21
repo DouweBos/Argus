@@ -225,3 +225,15 @@ export const Lock = (p: IconProps) => (
     <Path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
   </Icon>
 );
+/** Automations — a clock, because what makes one is that it fires by itself. */
+export const Clock = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="8.5" />
+    <Path d="M12 7v5.2l3.2 1.9" />
+  </Icon>
+);
+export const Play = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M8 5.5v13l10.5-6.5z" />
+  </Icon>
+);

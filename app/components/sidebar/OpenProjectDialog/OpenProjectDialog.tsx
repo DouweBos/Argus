@@ -1,61 +1,101 @@
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button, Icons } from "@argus/peacock";
+import { showOpenDirectoryDialog } from "../../../lib/ipc";
+import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
+import { useFocusedConnection } from "../../../stores/connectionStore";
 import {
   removeRecentProject,
   useRecentProjects,
 } from "../../../stores/recentProjectsStore";
 import { Dialog } from "../../shared/Dialog";
+import { HostProjectBrowser } from "./HostProjectBrowser";
 import projectStyles from "./OpenProjectDialog.module.css";
 
 interface OpenProjectDialogProps {
   onClose: () => void;
-  onOpen: (path: string) => Promise<void>;
+  /** `hostId` is the machine the path belongs to — a host path is meaningless here. */
+  onOpen: (path: string, hostId: HostId) => Promise<void>;
 }
 
 export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
-  const projects = useRecentProjects();
+  const allRecents = useRecentProjects();
+  const connection = useFocusedConnection();
+  // Only this machine's history: opening another machine's project would
+  // follow that session to its host and quietly turn this tab into that one.
+  const projects = useMemo(
+    () => allRecents.filter((p) => p.hostId === connection.hostId),
+    [allRecents, connection.hostId],
+  );
+  const [browsingHost, setBrowsingHost] = useState(false);
 
   const handleBrowse = async () => {
+    // A native open dialog is host-only: attached elsewhere it would browse
+    // this Mac's disk, which holds none of the host's repos.
+    if (connection.mode === "remote") {
+      setBrowsingHost(true);
+
+      return;
+    }
     try {
-      const selected = await window.argus.invoke<string | null>(
-        "show_open_dialog",
-      );
-      if (selected && typeof selected === "string") {
+      const selected = await showOpenDirectoryDialog();
+      if (selected) {
         onClose();
-        await onOpen(selected);
+        // The native dialog only ever browses this Mac.
+        await onOpen(selected, LOCAL_HOST_ID);
       }
     } catch {
       // Dialog cancelled or failed — no-op
     }
   };
 
-  const handleSelectProject = async (path: string) => {
+  const pickHostPath = async (path: string) => {
     onClose();
-    await onOpen(path);
+    await onOpen(path, connection.hostId);
+  };
+
+  const handleSelectProject = async (path: string, hostId: HostId) => {
+    onClose();
+    await onOpen(path, hostId);
   };
 
   return createPortal(
     <Dialog title="Open Project" titleId="open-project-title" onClose={onClose}>
       <div className={projectStyles.body}>
-        <Button
-          variant="ghost"
-          className={projectStyles.browseBtn}
-          leading={<Icons.FolderIcon size={13} />}
-          onClick={handleBrowse}
-        >
-          Browse...
-        </Button>
+        {browsingHost ? (
+          <HostProjectBrowser
+            hostLabel={connection.label ?? "the host"}
+            onCancel={() => setBrowsingHost(false)}
+            onPick={(path) => {
+              pickHostPath(path).catch(() => undefined);
+            }}
+          />
+        ) : (
+          <Button
+            variant="ghost"
+            className={projectStyles.browseBtn}
+            leading={<Icons.FolderIcon size={13} />}
+            onClick={handleBrowse}
+          >
+            Browse...
+          </Button>
+        )}
 
-        {projects.length > 0 && (
+        {!browsingHost && projects.length > 0 && (
           <div className={projectStyles.recentsSection}>
             <span className={projectStyles.recentsLabel}>Recent Projects</span>
             <ul className={projectStyles.recentsList}>
               {projects.map((project) => (
-                <li key={project.path} className={projectStyles.recentsItem}>
+                <li
+                  key={`${project.hostId} ${project.path}`}
+                  className={projectStyles.recentsItem}
+                >
                   <button
                     className={projectStyles.recentsBtn}
                     title={project.path}
-                    onClick={() => handleSelectProject(project.path)}
+                    onClick={() =>
+                      handleSelectProject(project.path, project.hostId)
+                    }
                   >
                     <Icons.FolderIcon size={14} />
                     <span className={projectStyles.recentsInfo}>

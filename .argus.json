@@ -12,7 +12,12 @@
   "run": [
     {
       "title": "Dev",
-      "command": "ARGUS_HOME=\"$HOME/.argus-dev-$ARGUS_PORT\" pnpm dev",
+      "command": "ARGUS_HOME=\"$HOME/.argus-dev-${ARGUS_PORT:-1420}\" ARGUS_REMOTE_PORT=$((47616 + 2 * (${ARGUS_PORT:-1420} - 1420))) pnpm dev",
+      "restartOnRerun": true
+    },
+    {
+      "title": "Dev: Server",
+      "command": "ARGUS_HOME=\"$HOME/.argus-server-dev-${ARGUS_PORT:-1420}\" ARGUS_REMOTE_PORT=$((47617 + 2 * (${ARGUS_PORT:-1420} - 1420))) pnpm dev:server",
       "restartOnRerun": true
     },
     {

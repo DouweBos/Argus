@@ -10,7 +10,7 @@
  * - One pipe, one consent flag, one set of base props.
  *
  * Privacy posture is unchanged: anonymous distinct id, no autocapture,
- * scrubbed messages, opt-out via Settings.
+ * scrubbed messages, presence-only mode selectable in Settings.
  */
 import type { TelemetryMode } from "./ipc";
 import type { EventArgs, EventMap, EventName } from "./telemetryEvents";
@@ -25,14 +25,14 @@ import { createLogger, setErrorSink } from "./logger";
 const log = createLogger("telemetry");
 
 let initialized = false;
-let mode: TelemetryMode = "off";
+let mode: TelemetryMode = "presence";
 let configured = false;
 let popout = "main";
 
 /**
  * Renderer events flow only in `full` mode. Presence-only users get exactly
- * one event per launch — the `app_heartbeat` — and that's owned by the
- * main process; the renderer never participates.
+ * one heartbeat per launch, and that's owned by the main process; the
+ * renderer never participates.
  */
 function active(): boolean {
   return initialized && mode === "full" && configured;

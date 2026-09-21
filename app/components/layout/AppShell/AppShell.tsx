@@ -13,7 +13,10 @@ import {
   type RunRegistrationDependency,
 } from "../../../lib/runRegistration";
 import { SHORTCUTS, type ShortcutId } from "../../../lib/shortcuts";
+import { openHostTab } from "../../../lib/tabActions";
+import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
 import { cycleActiveAgent } from "../../../stores/agentStore";
+import { useAutomationsSync } from "../../../stores/automationStore";
 import { useCenterView } from "../../../stores/centerViewStore";
 import { toggleCommandPalette } from "../../../stores/commandPaletteStore";
 import {
@@ -41,6 +44,7 @@ import {
   useLeftSidebarVisible,
 } from "../../../stores/layoutStore";
 import { openOpenPalette } from "../../../stores/openPaletteStore";
+import { useProposalsSync } from "../../../stores/proposalStore";
 import { usePullRequestsSync } from "../../../stores/pullRequestStore";
 import {
   getSelectedSessionId,
@@ -49,6 +53,7 @@ import {
   useSelectedSessionId,
 } from "../../../stores/sessionStore";
 import { showSettingsDialog } from "../../../stores/settingsStore";
+import { closeActiveTab, cycleTab } from "../../../stores/tabStore";
 import { useToolProjectMaskSync } from "../../../tools/projectSync";
 import {
   bootstrapToolStore,
@@ -56,10 +61,12 @@ import {
 } from "../../../tools/store";
 import { CenterPanel } from "../../agent/CenterPanel";
 import { AgentsScreen } from "../../agents/AgentsScreen";
+import { AutomationsRoot } from "../../automations";
 import { DevicesScreen } from "../../devices/DevicesScreen";
 import { HomeScreen } from "../../home/HomeScreen";
 import { NewSessionPicker } from "../../home/HomeScreen/NewSessionPicker";
 import { useHomeData } from "../../home/HomeScreen/useHomeData";
+import { InboxScreen } from "../../inbox";
 import { NotificationsScreen } from "../../notifications";
 import { PullRequestDetailScreen } from "../../pullRequests/PullRequestDetailScreen";
 import { PullRequestsScreen } from "../../pullRequests/PullRequestsScreen";
@@ -74,10 +81,12 @@ import { SessionSidebar } from "../../sidebar/SessionSidebar";
 import { ToolPanel } from "../../toolrail/ToolPanel";
 import { ToolRail } from "../../toolrail/ToolRail";
 import { BottomPanel } from "../BottomPanel";
+import { ConnectionBanner } from "../ConnectionBanner";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { PermissionBanner } from "../PermissionBanner";
 import { ResizablePanel } from "../ResizablePanel";
 import { TitleBar } from "../TitleBar";
+import { WindowTabs } from "../WindowTabs";
 import styles from "./AppShell.module.css";
 
 const PEEK_ENTER_DELAY_MS = 200;
@@ -103,8 +112,10 @@ function renderCenter(
   selectedId: string | null,
   centerView:
     | "agents"
+    | "automations"
     | "devices"
     | "home"
+    | "inbox"
     | "notifications"
     | "pull-request-detail"
     | "pull-requests"
@@ -122,6 +133,12 @@ function renderCenter(
   }
   if (centerView === "agents") {
     return <AgentsScreen />;
+  }
+  if (centerView === "automations") {
+    return <AutomationsRoot />;
+  }
+  if (centerView === "inbox") {
+    return <InboxScreen />;
   }
   if (centerView === "runtimes") {
     return <RuntimeScreen />;
@@ -151,6 +168,8 @@ export function AppShell() {
   useWindowFocus();
   useSuppressSpacePageScroll();
   usePullRequestsSync();
+  useAutomationsSync();
+  useProposalsSync();
   useTrackSessionPanel();
   useToolProjectMaskSync();
   // Reconcile the tool store against the persisted backend state once at
@@ -225,6 +244,14 @@ export function AppShell() {
       settings: showSettingsDialog,
       "next-agent-tab": () => cycleAgentTab(1),
       "prev-agent-tab": () => cycleAgentTab(-1),
+      "new-tab": () => {
+        openHostTab(LOCAL_HOST_ID, { reuse: false }).catch(() => {});
+      },
+      "close-tab": () => {
+        closeActiveTab();
+      },
+      "next-tab": () => cycleTab(1),
+      "prev-tab": () => cycleTab(-1),
       "go-home": () => selectSession(null),
       "go-project-home": goToProjectHome,
     }),
@@ -244,6 +271,10 @@ export function AppShell() {
   const shortcuts = useMemo(
     () =>
       (Object.keys(shortcutHandlers) as ShortcutId[])
+        // Cmd+W arrives as `menu:close-intent` from the main process so views
+        // get a crack at it first; registering a keydown too would close two
+        // things at once.
+        .filter((id) => id !== "close-tab")
         .filter((id) => !gitPanelActive || !GIT_PANEL_SUPPRESSED.has(id))
         .map((id) => ({
           ...SHORTCUTS[id],
@@ -286,8 +317,8 @@ export function AppShell() {
   const { openProject } = useProjects();
 
   const handleOpenProjectPath = useCallback(
-    async (path: string) => {
-      await openProject(path);
+    async (path: string, hostId: HostId) => {
+      await openProject(path, { hostId });
       hideOpenProjectDialog();
     },
     [openProject],
@@ -320,6 +351,8 @@ export function AppShell() {
   return (
     <div className={styles.shell}>
       <TitleBar />
+      <WindowTabs />
+      <ConnectionBanner />
       <div className={styles.body}>
         <ResizablePanel
           collapsed={!leftVisible}

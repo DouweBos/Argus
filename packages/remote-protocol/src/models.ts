@@ -17,7 +17,7 @@ export type RemoteProject = z.infer<typeof RemoteProject>;
 export const RemoteSession = z.object({
   id: z.string(),
   repo_root: z.string(),
-  kind: z.enum(["project_root", "worktree"]),
+  kind: z.enum(["automation_host", "project_root", "worktree"]),
   branch: z.string(),
   display_name: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
@@ -75,6 +75,8 @@ export const RemoteQueuedMessage = z.object({
   text: z.string(),
   /** What to show instead, when it differs from `text`. */
   display_text: z.string().optional(),
+  /** Who queued it, when a huddle guest rather than the host did. */
+  author: z.string().optional(),
   images: z
     .array(z.object({ data: z.string(), media_type: z.string() }))
     .optional(),
@@ -171,6 +173,8 @@ export const RemoteMessage = z.object({
   /** Image attachments carried by the message (user/MCP), as references. */
   images: z.array(RemoteImageRef).optional(),
   source: RemoteMessageSource.optional(),
+  /** Who sent a user message, when it came from a remote client or huddle guest. */
+  author: z.string().optional(),
   is_error: z.boolean().optional(),
   timestamp: z.number().optional(),
   /** Token usage (assistant turns only) — drives the context-window meter. */
@@ -241,6 +245,49 @@ export const RemoteDevice = z.object({
   height: z.number().optional(),
 });
 export type RemoteDevice = z.infer<typeof RemoteDevice>;
+
+/**
+ * Who currently holds interaction on a device. Two clients may both watch a
+ * screen, but only the holder may inject HID events.
+ */
+export const RemoteDeviceClaim = z.object({
+  connection_id: z.string(),
+  /** The paired device (phone/Mac) holding the claim, not the simulator. */
+  device_id: z.string(),
+  label: z.string(),
+});
+export type RemoteDeviceClaim = z.infer<typeof RemoteDeviceClaim>;
+
+/**
+ * Who holds a claim, and on what. The one shape the host publishes for a claim
+ * change and attaches to a refused input, so the typed `devices.*` path and the
+ * raw admin path tell every client the same thing.
+ */
+export const RemoteDeviceClaimState = z.object({
+  device_id: z.string(),
+  holder: RemoteDeviceClaim.nullable(),
+});
+export type RemoteDeviceClaimState = z.infer<typeof RemoteDeviceClaimState>;
+
+/** Namespace prefix keeping browser claims out of the simulator UDID space. */
+export const BROWSER_CLAIM_PREFIX = "browser:";
+
+/**
+ * Claim key for an embedded browser session. Shared vocabulary: the host keys
+ * its claim table with it and clients pass the same string to
+ * `devices.claim` / `devices.release` / `devices.claim_status`.
+ */
+export function browserClaimId(sessionId: string): string {
+  return `${BROWSER_CLAIM_PREFIX}${sessionId}`;
+}
+
+export const RemoteOrganization = z.object({
+  id: z.string(),
+  name: z.string(),
+  accent: z.string().nullable().optional(),
+  member_repo_roots: z.array(z.string()),
+});
+export type RemoteOrganization = z.infer<typeof RemoteOrganization>;
 
 // --- Control-scoped models (mirror app/lib/types.ts input shapes) ----------
 
@@ -355,3 +402,67 @@ export const RemoteEndpoint = z.object({
   priority: z.number().int().nonnegative(),
 });
 export type RemoteEndpoint = z.infer<typeof RemoteEndpoint>;
+
+// --- Automations -----------------------------------------------------------
+
+/**
+ * An automation, as a client that only views and fires them needs it.
+ *
+ * Deliberately not the whole `Automation`: the playbook, guardrails and signal
+ * sources are what you edit, and editing one from a phone is not a thing. A
+ * client that wants the full object is another desktop, and it rides the admin
+ * passthrough instead.
+ */
+export const RemoteAutomation = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  trigger_kind: z.enum(["manual", "schedule"]),
+  /** 5-field cron and its IANA zone — only for `schedule`. */
+  cron: z.string().nullable(),
+  timezone: z.string().nullable(),
+  /** The rung it runs at, or null when it inherits the host's default. */
+  autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  /** Project names it may look at — paths mean nothing on a phone. */
+  projects: z.array(z.string()),
+  last_run_at: z.number().nullable(),
+  next_run_at: z.number().nullable(),
+  /** Whether a run of this automation is in flight right now. */
+  running: z.boolean(),
+});
+export type RemoteAutomation = z.infer<typeof RemoteAutomation>;
+
+export const RemoteAutomationRunStatus = z.enum([
+  "cancelled",
+  "failed",
+  "queued",
+  "running",
+  "skipped",
+  "succeeded",
+]);
+export type RemoteAutomationRunStatus = z.infer<
+  typeof RemoteAutomationRunStatus
+>;
+
+/**
+ * One firing. `automation_name` is resolved host-side — a quick run has no
+ * automation to join against, and the client should not have to know that.
+ */
+export const RemoteAutomationRun = z.object({
+  id: z.string(),
+  automation_id: z.string(),
+  automation_name: z.string(),
+  /** True for an ad-hoc run: nothing is persisted behind it. */
+  is_quick: z.boolean(),
+  status: RemoteAutomationRunStatus,
+  trigger_reason: z.string(),
+  started_at: z.number(),
+  finished_at: z.number().nullable(),
+  cost_usd: z.number().nullable(),
+  error: z.string().nullable(),
+  /** The run's own session, so a client can open the agent that did the work. */
+  host_session_id: z.string().nullable(),
+  host_agent_id: z.string().nullable(),
+});
+export type RemoteAutomationRun = z.infer<typeof RemoteAutomationRun>;

@@ -1,3 +1,5 @@
+import type { LaunchRoute } from "../../../lib/launchRoute";
+import type { PrereqId } from "../../../lib/types";
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -83,8 +85,11 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../McpServersField";
+import { PrereqList } from "../PrereqList";
+import { AutomationDefaults } from "./AutomationDefaults";
 import { ClaudeAccountSection } from "./ClaudeAccountSection";
 import { CustomRunnersSection } from "./CustomRunnersSection";
+import { HostsSection } from "./HostsSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
@@ -171,6 +176,13 @@ function SettingsDialogContent() {
           render: () => <RemoteAccessSection />,
         },
         {
+          id: "hosts",
+          label: "Hosts",
+          description: "Run agents on another Mac",
+          icon: <Icons.HostIcon size={12} />,
+          render: () => <HostsSection />,
+        },
+        {
           id: "git",
           label: "Git",
           description: "Diff, working copy, pull",
@@ -255,8 +267,110 @@ function AppearanceSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <LaunchRouteField />
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
+  );
+}
+
+/**
+ * Which screen Argus opens on. Host state like the automations switch: the
+ * inbox it would open is that machine's inbox.
+ */
+function LaunchRouteField() {
+  const [route, setRoute] = useState<LaunchRoute>("home");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAppSettings().then(
+      (settings) => {
+        if (!cancelled) {
+          setRoute(settings.launch_route ?? "home");
+          setLoaded(true);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const change = (next: LaunchRoute) => {
+    const previous = route;
+    setRoute(next);
+    setAppSettings({ launch_route: next }).catch(() => setRoute(previous));
+  };
+
+  return (
+    <SettingsScreenField
+      label="Launch screen"
+      caption="Where Argus lands when it opens. Restored window tabs still win."
+    >
+      <SegmentedControl<LaunchRoute>
+        aria-label="Launch screen"
+        onChange={change}
+        options={[
+          { value: "home", label: "Home", disabled: !loaded },
+          { value: "inbox", label: "Inbox", disabled: !loaded },
+        ]}
+        value={route}
+      />
+    </SettingsScreenField>
+  );
+}
+
+/**
+ * Master switch for the automation scheduler. Host state rather than renderer
+ * state, so it follows whichever machine the automations live on.
+ */
+function AutomationsToggle() {
+  const [enabled, setEnabled] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAppSettings().then(
+      (settings) => {
+        if (!cancelled) {
+          setEnabled(settings.automations_enabled !== false);
+          setLoaded(true);
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const change = (next: boolean) => {
+    setEnabled(next);
+    setAppSettings({ automations_enabled: next }).catch(() => {
+      setEnabled(!next);
+    });
+  };
+
+  return (
+    <SettingsScreenField
+      label="Automations"
+      caption="Let automations start agents on their schedule. Running one by hand always works."
+    >
+      <Toggle checked={enabled} disabled={!loaded} onChange={change}>
+        Run automations on their schedule
+      </Toggle>
+    </SettingsScreenField>
   );
 }
 
@@ -321,6 +435,8 @@ function PermissionsSection() {
             ))}
           </div>
         </SettingsScreenField>
+        <AutomationsToggle />
+        <AutomationDefaults />
       </SettingsScreenDetailBody>
     </SettingsScreenDetail>
   );
@@ -502,10 +618,8 @@ function PrivacySection() {
 
   const description = (() => {
     switch (mode) {
-      case "off":
-        return "Nothing leaves your machine. We can't see this install at all.";
       case "presence":
-        return "One anonymous heartbeat per launch — install id and app version, nothing else. Lets us count daily active users without learning what anyone does.";
+        return "One anonymous heartbeat per launch — install id and app version, nothing else. Lets us count daily active users without learning what anyone does. This is the minimum; it can't be turned off.";
       case "full":
         return "Anonymous install id, app/OS info, feature usage, errors, and crashes. Never file contents, prompts, project names, branch names, or paths.";
     }
@@ -529,7 +643,6 @@ function PrivacySection() {
             value={mode}
             onChange={onChange}
             options={[
-              { value: "off", label: "Off" },
               { value: "presence", label: "Just count me" },
               { value: "full", label: "Full analytics" },
             ]}
@@ -711,6 +824,8 @@ function CustomEditorRow({ id, name, command }: CustomEditorRowProps) {
   );
 }
 
+const GIT_IDENTITY_PREREQ: PrereqId[] = ["git_identity"];
+
 const WORKING_COPY_VIEWS: { label: string; value: WorkingCopyView }[] = [
   { label: "Flat list", value: "flat" },
   { label: "Tree", value: "tree" },
@@ -748,6 +863,13 @@ function GitSection() {
         title="Git"
       />
       <SettingsScreenDetailBody>
+        <SettingsScreenField
+          label="Git identity"
+          caption="The name and email every commit Argus makes is authored with."
+        >
+          <PrereqList ids={GIT_IDENTITY_PREREQ} />
+        </SettingsScreenField>
+
         <SettingsScreenField label="Working copy view">
           <div className={styles.segmented}>
             {WORKING_COPY_VIEWS.map((v) => (

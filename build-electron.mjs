@@ -36,11 +36,25 @@ const shared = {
   logLevel: "info",
 };
 
+// The headless `Argus Server.app` runs the same main process with one flag
+// flipped. It has to be a banner rather than a runtime check because modules
+// read ARGUS_HOME / ARGUS_REMOTE_PORT at import time, before main.ts's body.
+const serverBanner = [
+  'process.env.ARGUS_SERVER = "1";',
+  'if (!process.env.ARGUS_REMOTE_PORT) process.env.ARGUS_REMOTE_PORT = "47617";',
+].join("\n");
+
 await Promise.all([
   esbuild.build({
     ...shared,
     entryPoints: ["electron/main.ts"],
     outfile: "dist-electron/main.js",
+  }),
+  esbuild.build({
+    ...shared,
+    entryPoints: ["electron/main.ts"],
+    outfile: "dist-electron/server.js",
+    banner: { js: serverBanner },
   }),
   esbuild.build({
     ...shared,

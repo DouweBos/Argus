@@ -1,5 +1,5 @@
 /**
- * Frontend mirror of `electron/services/session/gitError.ts`.
+ * Frontend mirror of `packages/host/src/services/session/gitError.ts`.
  *
  * The renderer must not import electron-side code, so this is a separate
  * file with the same `kind` union and a runtime class. IPC errors that
@@ -24,7 +24,9 @@ export type GitErrorKind =
   | "nothing-to-commit"
   | "nothing-to-pull"
   | "nothing-to-push"
+  | "output-too-large"
   | "rebase-conflict"
+  | "signing-failed"
   | "unknown";
 
 export interface GitErrorPayload {

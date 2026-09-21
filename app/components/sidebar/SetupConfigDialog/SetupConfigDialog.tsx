@@ -1,5 +1,6 @@
 import type {
   BrowserPresetConfig,
+  ProjectAutomationConfig,
   RelatedProject,
   RuntimePlatform,
   SetupCopyEntry,
@@ -43,6 +44,7 @@ import {
   type McpEntry,
 } from "../../shared/McpServersField";
 import { GlobPathInput } from "./GlobPathInput";
+import { ProjectAutomationsField } from "./ProjectAutomationsField";
 import { ProjectToolsField } from "./ProjectToolsField";
 import { ReleaseNotesField } from "./ReleaseNotesField";
 import sectionStyles from "./SetupConfigDialog.module.css";
@@ -1777,6 +1779,7 @@ export function SetupConfigDialog({
   const [llmRunner, setLlmRunner] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [disabledTools, setDisabledTools] = useState<string[]>([]);
+  const [automations, setAutomations] = useState<ProjectAutomationConfig>({});
   const [branchPrefix, setBranchPrefix] = useState("");
   const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -1912,6 +1915,9 @@ export function SetupConfigDialog({
               description: rp.description ?? "",
             })),
           );
+        }
+        if (config.automations) {
+          setAutomations(config.automations);
         }
         const rawDisabled = config.tools?.disabled ?? [];
         if (rawDisabled.length) {
@@ -2095,6 +2101,21 @@ export function SetupConfigDialog({
       config.tools = { disabled: [...disabledTools] };
     }
 
+    const automationsConfig: ProjectAutomationConfig = {
+      ...(automations.autonomy_ceiling
+        ? { autonomy_ceiling: automations.autonomy_ceiling }
+        : {}),
+      ...(automations.path_denylist?.length
+        ? { path_denylist: automations.path_denylist }
+        : {}),
+      ...(automations.disabled?.length
+        ? { disabled: automations.disabled }
+        : {}),
+    };
+    if (Object.keys(automationsConfig).length > 0) {
+      config.automations = automationsConfig;
+    }
+
     return config;
   };
 
@@ -2126,6 +2147,7 @@ export function SetupConfigDialog({
       llmRunner,
       llmModel,
       disabledTools,
+      automations,
     ],
   );
 
@@ -2598,6 +2620,18 @@ export function SetupConfigDialog({
                 />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "automations",
+          label: "Automations",
+          description: "Autonomy ceiling for this repo",
+          icon: <Icons.GearIcon size={12} />,
+          render: () => (
+            <ProjectAutomationsField
+              value={automations}
+              onChange={setAutomations}
+            />
           ),
         },
         {

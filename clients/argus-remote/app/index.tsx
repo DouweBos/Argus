@@ -9,6 +9,7 @@ import {
   Btn,
   Card,
   EmptyState,
+  HeaderIconBtn,
   IconBtn,
   Loading,
   Muted,
@@ -66,9 +67,11 @@ export default function HomeScreen() {
       <Stack.Screen
         options={{
           headerRight: () => (
-            <IconBtn label="Settings" onPress={() => router.push("/settings")}>
-              <Icons.Gear size={16} color={theme.textSecondary} />
-            </IconBtn>
+            <HeaderIconBtn
+              label="Settings"
+              icon={Icons.Gear}
+              onPress={() => router.push("/settings")}
+            />
           ),
         }}
       />

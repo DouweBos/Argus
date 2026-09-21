@@ -1,3 +1,5 @@
+import type { ReportBlock } from "@argus/remote-protocol";
+
 export interface Session {
   /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
@@ -11,7 +13,7 @@ export interface Session {
   /** Original display name (e.g. "Testing Conductor"). Shown in UI when present. */
   display_name?: string | null;
   id: string;
-  kind: "project_root" | "worktree";
+  kind: "automation_host" | "project_root" | "worktree";
   /**
    * Default model id (runner-specific) for agents spawned in this session.
    * `null` lets the cascade fall through to project / app / runner defaults.
@@ -161,6 +163,8 @@ export interface QueuedImage {
  * and is shared with the web and phone clients.
  */
 export interface QueuedMessage {
+  /** Who queued it, when a huddle guest rather than the local user did. */
+  author?: string;
   /** What the clients show, when it differs from `text` (e.g. a preamble). */
   display_text?: string;
   id: string;
@@ -223,6 +227,8 @@ export type DevicePlatform = "android" | "ios" | "video" | "web";
 export interface DeviceInfo {
   agentId: string | null;
   deviceKey: string;
+  /** Machine the device is attached to. Unset means this Mac. */
+  hostId?: string;
   name: string;
   online: boolean;
   platform: DevicePlatform;
@@ -473,6 +479,16 @@ export interface LlmConfig {
  */
 export type SetupCopyEntry = string | { exclude?: string[]; path: string };
 
+/** The `automations` block of `.argus.json`. */
+export interface ProjectAutomationConfig {
+  /** Highest rung any automation may reach here. Never raises the app default. */
+  autonomy_ceiling?: AutonomyLevel;
+  /** Automation ids or template ids this repo opts out of entirely. */
+  disabled?: string[];
+  /** Globs no automation-started branch may touch. Added to the automation's own list. */
+  path_denylist?: string[];
+}
+
 export interface ArgusConfig {
   /** Optional prompt appended to the Claude agent's system prompt. */
   agent_prompt?: string;
@@ -481,6 +497,8 @@ export interface ArgusConfig {
    * in the background. Set to 0 or omit to disable.
    */
   auto_fetch_minutes?: number;
+  /** How far Argus automations may go in this repo. Caps the app default. */
+  automations?: ProjectAutomationConfig;
   /** Custom browser device presets for the web browser panel. */
   browser_presets?: BrowserPresetConfig[];
   /** Default URL to load in the embedded web browser (e.g. "http://localhost:3000"). */
@@ -618,8 +636,32 @@ export interface McpOAuthStatus {
 
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
+  /**
+   * Extra shell commands a read-only automation may run, beyond the built-in
+   * reads. A bare command or a prefix. Machine-local: a project cannot widen
+   * it, or a repo could authorise itself.
+   */
+  automation_allowed_commands?: string[];
+  /** Extra tools a read-only automation may call, by exact name. */
+  automation_allowed_tools?: string[];
+  /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
+  automation_daily_budget_usd?: number;
+  /**
+   * Master switch for the automation scheduler. Defaults to true; manual runs
+   * work regardless.
+   */
+  automations_enabled?: boolean;
+  /**
+   * How far an automation may go when it does not set its own level. Ships as
+   * `propose`; a project can cap it lower, never higher.
+   */
+  default_autonomy?: AutonomyLevel;
   /** App-level default LLM picked in Settings, mirrored for the main process. */
   default_llm?: { model?: string | null; runner?: string | null };
+  /** Screen Argus opens on: the project picker, or the inbox. Defaults to home. */
+  launch_route?: "home" | "inbox";
+  /** Auto-started automation sessions allowed at once. Defaults to 3. */
+  max_concurrent_automation_sessions?: number;
   /** User-defined MCP servers merged into every spawned agent. */
   mcp_servers?: Record<string, Record<string, unknown>>;
   /**
@@ -655,6 +697,262 @@ export interface UserProjectSettings {
    * never written into the repo.
    */
   suppress_lfs_warning?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Automations
+// ---------------------------------------------------------------------------
+
+/** What causes an automation to fire. */
+export type AutomationTrigger =
+  | {
+      /** Fire once after a missed window instead of backfilling every slot. */
+      catch_up: boolean;
+      /** 5-field cron: `min hour dom mon dow`. */
+      cron: string;
+      kind: "schedule";
+      /** IANA zone the cron fields are read in. */
+      timezone: string;
+    }
+  | { kind: "manual" };
+
+export type AutomationTriggerKind = AutomationTrigger["kind"];
+
+/** The autonomy ladder. Each rung contains the one before it. */
+export type AutonomyLevel =
+  | "auto_merge" // draft + push + open a PR + merge when CI is green
+  | "draft" // create the worktree, implement, commit — then stop
+  | "pr" // draft + push + open a draft PR
+  | "propose"; // write a proposal into the inbox; touch nothing
+
+/** The limits a run is held to, enforced in the host, not in the prompt. */
+export interface AutomationGuardrails {
+  /** 0..1. A proposal below this never auto-starts. */
+  confidence_threshold: number;
+  /** Auto-started sessions this automation may have in flight at once. */
+  max_concurrent_sessions: number;
+  /** Ceiling on a single run's spend. */
+  max_cost_usd_per_run: number;
+  /** A branch touching more files than this cannot be pushed. */
+  max_files_changed: number;
+  /** Globs no automation-started branch may touch. */
+  path_denylist: string[];
+  /** Gates `auto_merge`: CI must be green first. */
+  require_clean_ci: boolean;
+}
+
+/** A persisted "when X, do Y" object. */
+export interface Automation {
+  /** How far this automation may go. Null inherits the app-wide default. */
+  autonomy: AutonomyLevel | null;
+  created_at: number;
+  description: string;
+  enabled: boolean;
+  /** The limits it is held to. */
+  guardrails: AutomationGuardrails;
+  id: string;
+  last_run_at: number | null;
+  /** Model for the run's agent; null inherits the app default. */
+  model: string | null;
+  name: string;
+  /** Next scheduled fire, epoch ms. Null when there is no clock. */
+  next_run_at: number | null;
+  /** The instructions handed to the run's agent. Markdown. */
+  playbook: string;
+  /** Projects the run may read. */
+  scope: { repo_roots: string[] };
+  /** Signal sources feeding the run, by id. Empty = no signals. */
+  source_ids: string[];
+  /** Built-in template this was seeded from. */
+  template_id: string | null;
+  trigger: AutomationTrigger;
+  updated_at: number;
+}
+
+export type AutomationRunStatus =
+  | "cancelled"
+  | "failed"
+  | "queued"
+  | "running"
+  | "skipped"
+  | "succeeded";
+
+/**
+ * The one-off spec behind an ad-hoc run. No automation is persisted for it —
+ * the host rebuilds a synthetic one from this when it resolves the run's
+ * policy, and the spec goes when the run is swept.
+ */
+export interface AutomationScratchSpec {
+  guardrails: AutomationGuardrails;
+  model: string | null;
+  name: string;
+  playbook: string;
+  scope: { repo_roots: string[] };
+  source_ids: string[];
+}
+
+/** Fields accepted when starting an ad-hoc run. */
+export interface StartScratchRunInput {
+  guardrails?: Partial<AutomationGuardrails>;
+  model?: string | null;
+  name?: string;
+  playbook: string;
+  repo_roots?: string[];
+  source_ids?: string[];
+}
+
+/** One firing of an automation. */
+/** One thing a read-only automation was refused, and what would allow it. */
+export interface GateLogEntry {
+  automation_id: string;
+  automation_name: string;
+  command: string | null;
+  count: number;
+  first_seen_at: number;
+  id: string;
+  kind: "command" | "tool";
+  last_seen_at: number;
+  run_id: string;
+  /** Add this to the matching allowlist to permit it. */
+  suggested_entry: string;
+  tool_name: string;
+}
+
+export interface AutomationRun {
+  /** For an ad-hoc run, the synthetic id of its `scratch` spec. */
+  automation_id: string;
+  cost_usd: number | null;
+  /** Failure message, or — for a `skipped` run — why it did not fire. */
+  error: string | null;
+  finished_at: number | null;
+  host_agent_id: string | null;
+  /** The `automation_host` session the run's agent lives in. */
+  host_session_id: string | null;
+  id: string;
+  /** Structured blocks from `emit_report`, preferred over the markdown. */
+  report_blocks?: ReportBlock[] | null;
+  /** The agent's final message. Plain markdown. */
+  report_markdown: string | null;
+  /** Set only on an ad-hoc run: the one-off spec no automation backs. */
+  scratch: AutomationScratchSpec | null;
+  started_at: number;
+  status: AutomationRunStatus;
+  /** Human-readable cause: `"manual"`, `"schedule 07:30"`, `"catch-up …"`. */
+  trigger_reason: string;
+}
+
+/** How an automation's proposals have actually turned out. */
+export interface AutomationCalibration {
+  abandoned: number;
+  /**
+   * Accepted + auto-started over everything decided. Null while nothing has
+   * been decided.
+   */
+  acceptance_rate: number | null;
+  accepted: number;
+  auto_started: number;
+  automation_id: string;
+  dismissals: { reason: string; title: string }[];
+  dismissed: number;
+  merged: number;
+  pending: number;
+  reverted: number;
+  /** Proposals considered — the newest twenty. */
+  sample: number;
+}
+
+/** A signal source a run can be fed from, as the editor lists them. */
+export interface SignalSourceInfo {
+  /** False when the source has nothing to answer with — no `gh`, no MCP. */
+  available: boolean;
+  id: string;
+  label: string;
+  /** `native` = Argus fetches it; `agent` = the run's agent fetches it. */
+  mode: "agent" | "native";
+}
+
+/** Fields accepted when creating an automation. */
+export interface CreateAutomationInput {
+  autonomy?: AutonomyLevel | null;
+  description?: string;
+  enabled?: boolean;
+  guardrails?: Partial<AutomationGuardrails>;
+  model?: string | null;
+  name: string;
+  playbook: string;
+  scope?: { repo_roots: string[] };
+  source_ids?: string[];
+  template_id?: string | null;
+  trigger: AutomationTrigger;
+}
+
+export type UpdateAutomationInput = Partial<
+  Omit<Automation, "created_at" | "id" | "updated_at">
+>;
+
+/** A Claude-drafted automation, plus what Argus had to correct about it. */
+export interface AutomationDraft {
+  /** Ready to save — always disabled, never above the default autonomy. */
+  input: CreateAutomationInput;
+  /** Repairs and drops, shown above the draft so nothing is silent. */
+  notes: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Proposals
+// ---------------------------------------------------------------------------
+
+export type ProposalStatus =
+  | "accepted"
+  | "auto_started"
+  | "dismissed"
+  | "pending";
+
+export type ProposalAction =
+  | "ignore"
+  | "needs_info"
+  | "review"
+  | "start_session";
+
+/** The work item a proposal came from, when it has one. */
+export interface ProposalSourceRef {
+  /** Id within the source, e.g. `plexinc/app#412`. */
+  external_id: string;
+  /** Signal source that produced it, e.g. `github`. */
+  source_id: string;
+  url: string;
+}
+
+/** One thing an automation run wants you to do. */
+export interface Proposal {
+  automation_id: string;
+  /** 0..1, self-reported by the run's agent. */
+  confidence: number;
+  created_at: number;
+  /** Why it was dismissed, verbatim. */
+  dismissed_reason: string | null;
+  id: string;
+  /** Why the run ranked it where it did. */
+  rationale: string;
+  /** What the run thinks should happen. */
+  recommended_action: ProposalAction;
+  /** Project the work would happen in. Null when it maps to no local repo. */
+  repo_root: string | null;
+  run_id: string;
+  /** Session doing the work, once the proposal was started. */
+  session_id: string | null;
+  source_ref: ProposalSourceRef | null;
+  status: ProposalStatus;
+  /** What the work is, in markdown. */
+  summary: string;
+  title: string;
+}
+
+/** What accepting a proposal produced. */
+export interface AcceptProposalResult {
+  agent_id: string;
+  proposal: Proposal;
+  session_id: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -839,15 +1137,7 @@ export interface ClaudeAccountsState {
 // Onboarding
 // ---------------------------------------------------------------------------
 
-export const ONBOARDING_STEPS = [
-  "welcome",
-  "permissions",
-  "tools",
-  "preflight",
-  "claude_auth",
-  "telemetry",
-  "completion",
-] as const;
+export const ONBOARDING_STEPS = ["welcome", "telemetry"] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -862,18 +1152,6 @@ export interface OnboardingStateData {
 export interface OnboardingConfigFile {
   onboarding: OnboardingStateData;
   recentProjects: string[];
-}
-
-/**
- * Onboarding step contributed by a registered LLM runner. Mirrors the
- * electron-side `RunnerOnboardingStep`; the renderer maps `kind` to a
- * concrete component via {@link runnerOnboardingComponents}.
- */
-export interface RunnerOnboardingStep {
-  id: string;
-  kind: string;
-  runnerId: string;
-  title: string;
 }
 
 export type PrereqId =
@@ -1044,6 +1322,41 @@ export interface PullRequestDetail {
 // Remote access (phone/web control)
 // ---------------------------------------------------------------------------
 
+/**
+ * One snapshot of everything the backend is running. Remote mode rebuilds from
+ * this on connect; local mode never drops, so it never needs it.
+ */
+export interface HostSnapshot {
+  agents: AgentStatus[];
+  projects: ProjectEntry[];
+  sessions: Session[];
+}
+
+/** A directory on the host, for the remote project picker. */
+export interface HostDirectoryEntry {
+  /** True when the directory looks like a git repo — a candidate project root. */
+  is_repo: boolean;
+  name: string;
+  path: string;
+}
+
+export interface HostDirectoryListing {
+  entries: HostDirectoryEntry[];
+  /** The host's home directory, for a "start over" affordance. */
+  home: string;
+  /** Absolute parent path, or null at the filesystem root. */
+  parent: string | null;
+  path: string;
+}
+
+/** Where a client-side file landed after being uploaded to the host. */
+export interface UploadedAttachment {
+  name: string;
+  /** Absolute path on the host. */
+  path: string;
+  size: number;
+}
+
 export interface RemoteDevicePush {
   environment?: "production" | "sandbox";
   /** Web Push only — the subscription's encryption keys. */
@@ -1158,3 +1471,14 @@ export interface RemotePairingStart {
   pairingCode: string;
   qrPayload: string;
 }
+
+/**
+ * Huddle rooms — a temporary link that lets a guest talk to one agent and
+ * drive one device. The shapes are the host's, re-exported here so components
+ * import them like every other backend type.
+ */
+export type {
+  HuddleGuest,
+  HuddleGuestState,
+  HuddleRoom,
+} from "@argus/remote-protocol";

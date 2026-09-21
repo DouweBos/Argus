@@ -1,37 +1,39 @@
 /**
  * One page of the image viewer: pinch to zoom, drag to pan while zoomed,
- * double-tap to toggle zoom, and swipe down to dismiss at rest. Built on
- * PanResponder so the app stays free of native gesture dependencies.
+ * double-tap to toggle zoom, and swipe down to dismiss at rest. Gesture state
+ * lives on the UI thread so the transform never waits on a JS frame.
  */
 
-import { useEffect, useMemo, useRef } from "react";
-import { Animated, PanResponder, View, type GestureResponderEvent } from "react-native";
+import { useEffect } from "react";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  runOnUI,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 const MAX_SCALE = 4;
 const DOUBLE_TAP_SCALE = 2.5;
 const DOUBLE_TAP_MS = 280;
-const TAP_SLOP = 12;
 const DISMISS_DISTANCE = 120;
-const DISMISS_VELOCITY = 0.8;
-
-function distance(touches: { pageX: number; pageY: number }[]): number {
-  const [a, b] = touches;
-
-  return Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
-}
-
-function midpoint(touches: { pageX: number; pageY: number }[]) {
-  const [a, b] = touches;
-
-  return { x: (a.pageX + b.pageX) / 2, y: (a.pageY + b.pageY) / 2 };
-}
+/** Gesture handler reports px/s where PanResponder reported px/ms. */
+const DISMISS_VELOCITY = 800;
+/** Vertical travel before a drag at rest commits to dismissing, leaving
+ *  shorter horizontal swipes to the pager underneath. */
+const DRAG_SLOP = 8;
+const ZOOMED = 1.01;
+const SPRING = { damping: 22, stiffness: 220, mass: 0.6 } as const;
 
 export function ZoomableImage({
   uri,
   active,
+  zoomed,
   width,
   height,
-  dismissProgress,
+  onDismissProgress,
   onZoomChange,
   onTap,
   onDismiss,
@@ -39,246 +41,186 @@ export function ZoomableImage({
   uri: string;
   /** The page currently on screen; others reset their zoom when swiped away. */
   active: boolean;
+  /** Whether the viewer considers this page zoomed, which frees the pan
+   *  gesture to claim horizontal drags from the pager. */
+  zoomed: boolean;
   width: number;
   height: number;
-  /** 0…1 drag-to-dismiss progress, so the viewer can fade its backdrop. */
-  dismissProgress: Animated.Value;
+  /** Reports 0…1 drag-to-dismiss progress so the viewer can fade its backdrop.
+   *  A worklet — called from the gesture, on the UI thread. */
+  onDismissProgress: (value: number, animated: boolean) => void;
   onZoomChange: (zoomed: boolean) => void;
   onTap: () => void;
   onDismiss: () => void;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
+  const scale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
-  // Committed transform between gestures — Animated.Values can't be read
-  // synchronously, and the responder math needs the current values.
-  const view = useRef({ scale: 1, x: 0, y: 0 });
-  const gesture = useRef({
-    mode: "none" as "none" | "pan" | "pinch" | "dismiss",
-    startDistance: 0,
-    startScale: 1,
-    startX: 0,
-    startY: 0,
-    focalX: 0,
-    focalY: 0,
-    lastTapAt: 0,
-    lastTapX: 0,
-    lastTapY: 0,
-  });
+  // Committed transform as of the start of the current gesture.
+  const startScale = useSharedValue(1);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
+  const startFocalX = useSharedValue(0);
+  const startFocalY = useSharedValue(0);
+  const dismissing = useSharedValue(false);
 
-  const clamp = useMemo(
-    () => (next: { scale: number; x: number; y: number }) => {
-      const s = Math.min(Math.max(next.scale, 1), MAX_SCALE);
-      const maxX = Math.max((width * s - width) / 2, 0);
-      const maxY = Math.max((height * s - height) / 2, 0);
+  function clamp(s: number, x: number, y: number) {
+    "worklet";
+    const next = Math.min(Math.max(s, 1), MAX_SCALE);
+    const maxX = Math.max((width * next - width) / 2, 0);
+    const maxY = Math.max((height * next - height) / 2, 0);
 
-      return {
-        scale: s,
-        x: Math.min(Math.max(next.x, -maxX), maxX),
-        y: Math.min(Math.max(next.y, -maxY), maxY),
-      };
-    },
-    [width, height],
-  );
+    return {
+      scale: next,
+      x: Math.min(Math.max(x, -maxX), maxX),
+      y: Math.min(Math.max(y, -maxY), maxY),
+    };
+  }
 
-  const apply = useMemo(
-    () => (next: { scale: number; x: number; y: number }, animated: boolean) => {
-      const wasZoomed = view.current.scale > 1.01;
-      view.current = next;
-      if (animated) {
-        Animated.parallel([
-          Animated.spring(scale, { toValue: next.scale, useNativeDriver: true, bounciness: 0 }),
-          Animated.spring(translateX, { toValue: next.x, useNativeDriver: true, bounciness: 0 }),
-          Animated.spring(translateY, { toValue: next.y, useNativeDriver: true, bounciness: 0 }),
-        ]).start();
-      } else {
-        scale.setValue(next.scale);
-        translateX.setValue(next.x);
-        translateY.setValue(next.y);
-      }
-      const isZoomed = next.scale > 1.01;
-      if (isZoomed !== wasZoomed) {
-        onZoomChange(isZoomed);
+  function settle(s: number, x: number, y: number) {
+    "worklet";
+    const c = clamp(s, x, y);
+    scale.value = withSpring(c.scale, SPRING);
+    translateX.value = withSpring(c.x, SPRING);
+    translateY.value = withSpring(c.y, SPRING);
+  }
+
+  // One notification per crossing, whichever gesture caused it.
+  useAnimatedReaction(
+    () => scale.value > ZOOMED,
+    (is, was) => {
+      if (was !== null && is !== was) {
+        runOnJS(onZoomChange)(is);
       }
     },
-    [scale, translateX, translateY, onZoomChange],
   );
 
-  // Zoom toward the tapped point so the detail under the finger stays put.
-  const toggleZoom = useMemo(
-    () => (e: GestureResponderEvent) => {
-      if (view.current.scale > 1.01) {
-        apply({ scale: 1, x: 0, y: 0 }, true);
+  // A page swiped away gives up its zoom. It goes through the same worklet the
+  // gestures use: shared values written straight from an effect race them.
+  useEffect(() => {
+    if (!active) {
+      runOnUI(settle)(1, 0, 0);
+    }
+  }, [active, settle]);
+
+  const pinch = Gesture.Pinch()
+    .onStart((e) => {
+      startScale.value = scale.value;
+      startX.value = translateX.value;
+      startY.value = translateY.value;
+      startFocalX.value = e.focalX;
+      startFocalY.value = e.focalY;
+    })
+    .onUpdate((e) => {
+      const c = clamp(
+        startScale.value * e.scale,
+        startX.value * e.scale + (e.focalX - startFocalX.value),
+        startY.value * e.scale + (e.focalY - startFocalY.value),
+      );
+      scale.value = c.scale;
+      translateX.value = c.x;
+      translateY.value = c.y;
+    })
+    .onEnd(() => settle(scale.value, translateX.value, translateY.value));
+
+  const panBase = Gesture.Pan()
+    .maxPointers(1)
+    .onStart(() => {
+      startX.value = translateX.value;
+      startY.value = translateY.value;
+      dismissing.value = scale.value <= ZOOMED;
+    })
+    .onUpdate((e) => {
+      if (dismissing.value) {
+        translateX.value = e.translationX;
+        translateY.value = e.translationY;
+        const progress = Math.min(
+          Math.abs(e.translationY) / DISMISS_DISTANCE,
+          1,
+        );
+        onDismissProgress(progress, false);
+        scale.value = 1 - progress * 0.1;
 
         return;
       }
-      const dx = width / 2 - e.nativeEvent.locationX;
-      const dy = height / 2 - e.nativeEvent.locationY;
-      apply(
-        clamp({
-          scale: DOUBLE_TAP_SCALE,
-          x: dx * (DOUBLE_TAP_SCALE - 1),
-          y: dy * (DOUBLE_TAP_SCALE - 1),
-        }),
-        true,
+      const c = clamp(
+        scale.value,
+        startX.value + e.translationX,
+        startY.value + e.translationY,
       );
-    },
-    [apply, clamp, width, height],
+      translateX.value = c.x;
+      translateY.value = c.y;
+    })
+    .onEnd((e) => {
+      if (dismissing.value) {
+        if (
+          Math.abs(e.translationY) > DISMISS_DISTANCE ||
+          Math.abs(e.velocityY) > DISMISS_VELOCITY
+        ) {
+          runOnJS(onDismiss)();
+
+          return;
+        }
+        dismissing.value = false;
+        onDismissProgress(0, true);
+        settle(1, 0, 0);
+
+        return;
+      }
+      settle(scale.value, translateX.value, translateY.value);
+    });
+
+  // At rest only a vertical pull counts, so the pager still gets its swipes.
+  const pan = zoomed ? panBase : panBase.activeOffsetY([-DRAG_SLOP, DRAG_SLOP]);
+
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .maxDuration(DOUBLE_TAP_MS)
+    .onEnd((e) => {
+      if (scale.value > ZOOMED) {
+        settle(1, 0, 0);
+
+        return;
+      }
+      // Zoom toward the tapped point so the detail under the finger stays put.
+      const dx = width / 2 - e.x;
+      const dy = height / 2 - e.y;
+      settle(
+        DOUBLE_TAP_SCALE,
+        dx * (DOUBLE_TAP_SCALE - 1),
+        dy * (DOUBLE_TAP_SCALE - 1),
+      );
+    });
+
+  const singleTap = Gesture.Tap()
+    .numberOfTaps(1)
+    .onEnd(() => runOnJS(onTap)());
+
+  const gesture = Gesture.Race(
+    Gesture.Simultaneous(pinch, pan),
+    Gesture.Exclusive(doubleTap, singleTap),
   );
 
-  useEffect(() => {
-    if (!active && view.current.scale !== 1) {
-      apply({ scale: 1, x: 0, y: 0 }, false);
-    }
-  }, [active, apply]);
-
-  const responder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        // Let the pager own horizontal swipes until the image is zoomed in.
-        onMoveShouldSetPanResponder: (_e, g) =>
-          g.numberActiveTouches === 2 ||
-          view.current.scale > 1.01 ||
-          (Math.abs(g.dy) > 8 && Math.abs(g.dy) > Math.abs(g.dx)),
-        onPanResponderTerminationRequest: () => false,
-
-        onPanResponderGrant: (e) => {
-          const now = Date.now();
-          const { pageX, pageY } = e.nativeEvent;
-          const g = gesture.current;
-          const isDoubleTap =
-            now - g.lastTapAt < DOUBLE_TAP_MS &&
-            Math.hypot(pageX - g.lastTapX, pageY - g.lastTapY) < TAP_SLOP * 2;
-
-          g.lastTapAt = isDoubleTap ? 0 : now;
-          g.lastTapX = pageX;
-          g.lastTapY = pageY;
-          g.mode = "none";
-          g.startScale = view.current.scale;
-          g.startX = view.current.x;
-          g.startY = view.current.y;
-
-          if (isDoubleTap) {
-            toggleZoom(e);
-          }
-        },
-
-        onPanResponderMove: (e, state) => {
-          const g = gesture.current;
-          const touches = e.nativeEvent.touches;
-
-          if (touches.length === 2) {
-            const d = distance(touches);
-            if (g.mode !== "pinch") {
-              g.mode = "pinch";
-              g.startDistance = d;
-              g.startScale = view.current.scale;
-              g.startX = view.current.x;
-              g.startY = view.current.y;
-              const m = midpoint(touches);
-              g.focalX = m.x;
-              g.focalY = m.y;
-            }
-            const ratio = d / (g.startDistance || d);
-            const next = g.startScale * ratio;
-            const m = midpoint(touches);
-            apply(
-              clamp({
-                scale: next,
-                x: g.startX * ratio + (m.x - g.focalX),
-                y: g.startY * ratio + (m.y - g.focalY),
-              }),
-              false,
-            );
-
-            return;
-          }
-
-          if (g.mode === "pinch") {
-            return;
-          }
-
-          if (view.current.scale > 1.01) {
-            g.mode = "pan";
-            apply(
-              clamp({
-                scale: view.current.scale,
-                x: g.startX + state.dx,
-                y: g.startY + state.dy,
-              }),
-              false,
-            );
-
-            return;
-          }
-
-          // At rest a vertical drag pulls the image away to dismiss it.
-          if (g.mode === "dismiss" || Math.abs(state.dy) > Math.abs(state.dx)) {
-            g.mode = "dismiss";
-            translateX.setValue(state.dx);
-            translateY.setValue(state.dy);
-            const progress = Math.min(Math.abs(state.dy) / DISMISS_DISTANCE, 1);
-            dismissProgress.setValue(progress);
-            scale.setValue(1 - progress * 0.1);
-          }
-        },
-
-        onPanResponderRelease: (e, state) => {
-          const g = gesture.current;
-
-          if (g.mode === "dismiss") {
-            const shouldClose =
-              Math.abs(state.dy) > DISMISS_DISTANCE ||
-              Math.abs(state.vy) > DISMISS_VELOCITY;
-            if (shouldClose) {
-              onDismiss();
-
-              return;
-            }
-            dismissProgress.setValue(0);
-            apply({ scale: 1, x: 0, y: 0 }, true);
-            g.mode = "none";
-
-            return;
-          }
-
-          if (g.mode === "none") {
-            const moved =
-              Math.hypot(state.dx, state.dy) > TAP_SLOP ||
-              e.nativeEvent.touches.length > 0;
-            if (!moved && Date.now() - g.lastTapAt >= 0 && g.lastTapAt !== 0) {
-              // Wait out the double-tap window before treating it as a tap.
-              const tapAt = g.lastTapAt;
-              setTimeout(() => {
-                if (gesture.current.lastTapAt === tapAt) {
-                  onTap();
-                }
-              }, DOUBLE_TAP_MS);
-            }
-
-            return;
-          }
-
-          apply(clamp(view.current), true);
-          g.mode = "none";
-        },
-      }),
-    [apply, clamp, dismissProgress, onDismiss, onTap, scale, toggleZoom, translateX, translateY],
-  );
+  const imageStyle = useAnimatedStyle(() => ({
+    width,
+    height,
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
 
   return (
-    <View style={{ width, height }} {...responder.panHandlers}>
-      <Animated.Image
-        source={{ uri }}
-        resizeMode="contain"
-        style={{
-          width,
-          height,
-          transform: [{ translateX }, { translateY }, { scale }],
-        }}
-      />
-    </View>
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={{ width, height }}>
+        <Animated.Image
+          source={{ uri }}
+          resizeMode="contain"
+          style={imageStyle}
+        />
+      </Animated.View>
+    </GestureDetector>
   );
 }

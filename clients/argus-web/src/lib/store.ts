@@ -7,12 +7,22 @@
 import { create } from "zustand";
 import {
   clearIdentity,
+  credentialsFor,
   defaultDeviceName,
   loadIdentity,
   saveIdentity,
 } from "./keystore";
 import type { DeviceIdentity } from "./keystore";
+import { fetchHostKey, guestClientId, guestKeypair } from "./huddleIdentity";
+import {
+  applyHuddleState,
+  huddleCapabilities,
+  INITIAL_HUDDLE_VIEW,
+  requestJoin,
+  type HuddleView,
+} from "./huddleSession";
 import { showRemoteNotification } from "./notify";
+import { wsOrigin } from "./origin";
 import {
   clearPendingDecision,
   queuePendingDecision,
@@ -28,6 +38,9 @@ import {
 } from "./webpush";
 import type {
   EventEnvelope,
+  HuddleStatePayload,
+  RemoteDeviceClaim,
+  RemoteDeviceClaimState,
   RemoteAgentCapabilities,
   RemoteAgentStatus,
   RemoteQueuedMessage,
@@ -47,8 +60,12 @@ import type {
   RemoteTodo,
   RemoteTranscript,
 } from "./protocol";
-import { parseMediaMessage, type MediaMessage } from "./h264Decoder";
-import { Transport, type ConnectionState } from "./transport";
+import {
+  MediaRouter,
+  Transport,
+  type ConnectionState,
+  type MediaMessage,
+} from "@argus/remote-client";
 
 /** Cheap deep-equality via JSON — transcript pages are small and polled rarely. */
 const jsonEq = (a: unknown, b: unknown): boolean =>
@@ -97,6 +114,16 @@ interface AppState {
   effortByAgent: Record<string, string | null>;
   /** Connected simulators/emulators (from devices.list). */
   devices: RemoteDevice[];
+  /** Who holds input per device, so a locked-out client says so rather than
+   *  tapping at a picture that never answers. */
+  claimByDevice: Record<string, RemoteDeviceClaim | null>;
+  /** Our own connection id, learned the first time the host grants us a claim. */
+  claimConnectionId: string | null;
+  /**
+   * Guest standing when this tab was opened on a huddle link. Null for a
+   * paired device — the two modes never mix in one tab.
+   */
+  huddle: HuddleView | null;
   /** Whether the user wants background push in this browser. */
   pushEnabled: boolean;
   /** Where Web Push registration got to — drives the Settings copy. */
@@ -109,6 +136,14 @@ interface AppState {
     decision: "allow" | "deny",
   ) => Promise<void>;
   init: () => void;
+  /**
+   * Open a huddle link: handshake with an ephemeral key, present the token,
+   * then sit pending until the host approves — the socket is upgraded in
+   * place, so there is no second connection.
+   */
+  joinHuddle: (token: string, label: string) => Promise<void>;
+  /** Hang up on a huddle from the guest side. The link still works after. */
+  leaveHuddle: () => void;
   pairComplete: (identity: DeviceIdentity) => void;
   setDeviceName: (name: string) => Promise<void>;
   setPushEnabled: (enabled: boolean) => Promise<void>;
@@ -150,6 +185,7 @@ interface AppState {
   ) => Promise<void>;
   /** Drop a still-queued message before it's sent. */
   removeQueued: (agentId: string, id: string) => Promise<void>;
+  updateQueued: (agentId: string, id: string, message: string) => Promise<void>;
   /** Fetch the computer's queue for an agent (then follow `agent.queue`). */
   loadQueue: (agentId: string) => Promise<void>;
   interrupt: (agentId: string) => Promise<void>;
@@ -223,6 +259,11 @@ interface AppState {
     modifiers: number,
     isDown: boolean,
   ) => void;
+  /** Seed who holds a device before the first input, so the overlay is right. */
+  loadClaim: (deviceId: string) => Promise<void>;
+  /** Take the claim; `force` steals it from a live holder. */
+  claimDevice: (deviceId: string, force?: boolean) => Promise<void>;
+  releaseDevice: (deviceId: string) => void;
 }
 
 export function imageKey(agentId: string, imageId: string): string {
@@ -234,31 +275,7 @@ const TRANSCRIPT_PAGE = 80;
 
 export const useAppStore = create<AppState>((set, get) => {
   // Binary media routing (kept out of reactive state — hot path, no re-render).
-  // `mediaSinks` maps a stream id to the device view consuming it; frames that
-  // arrive before a view registers (e.g. the config sent just before the watch
-  // response) are briefly buffered so the decoder can still configure.
-  const mediaSinks = new Map<number, (msg: MediaMessage) => void>();
-  const mediaBuffer = new Map<number, MediaMessage[]>();
-  const MEDIA_BUFFER_CAP = 120;
-
-  function onMedia(bytes: Uint8Array): void {
-    const msg = parseMediaMessage(bytes);
-    if (!msg) {
-      return;
-    }
-    const sink = mediaSinks.get(msg.streamId);
-    if (sink) {
-      sink(msg);
-
-      return;
-    }
-    const buf = mediaBuffer.get(msg.streamId) ?? [];
-    buf.push(msg);
-    if (buf.length > MEDIA_BUFFER_CAP) {
-      buf.shift();
-    }
-    mediaBuffer.set(msg.streamId, buf);
-  }
+  const media = new MediaRouter();
 
   // Debounce live transcript refreshes so a burst of events → one refetch.
   const refetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -334,6 +351,40 @@ export const useAppStore = create<AppState>((set, get) => {
       scheduleTranscript(ev.agent_id);
     } else if (ev.event === "notification") {
       showRemoteNotification(ev.payload as RemoteNotification);
+    } else if (ev.event === "device.claim") {
+      const c = ev.payload as RemoteDeviceClaimState;
+      set((s) => ({
+        claimByDevice: { ...s.claimByDevice, [c.device_id]: c.holder },
+      }));
+    } else if (ev.event === "huddle.state") {
+      // Approval upgrades this very socket, so the grant arrives as an event
+      // rather than a reconnect. Denied and ended are terminal.
+      const view = applyHuddleState(ev.payload as HuddleStatePayload);
+      set({ huddle: view, capabilities: huddleCapabilities(view.state) });
+      if (view.state === "denied" || view.state === "ended") {
+        // The host drops the socket right after this. Stop dialling: a guest
+        // who was turned away or whose huddle ended should read that, not a
+        // reconnect spinner.
+        get().transport?.disconnect();
+      }
+    }
+  }
+
+  /** Adopt the holder a refused input reports, in case it beat the broadcast. */
+  function adoptClaimDenial(err: unknown): void {
+    const data =
+      err && typeof err === "object" && "data" in err
+        ? (err as { data: unknown }).data
+        : null;
+    if (
+      data &&
+      typeof data === "object" &&
+      typeof (data as RemoteDeviceClaimState).device_id === "string"
+    ) {
+      const state = data as RemoteDeviceClaimState;
+      set((s) => ({
+        claimByDevice: { ...s.claimByDevice, [state.device_id]: state.holder },
+      }));
     }
   }
 
@@ -380,7 +431,7 @@ export const useAppStore = create<AppState>((set, get) => {
   }
 
   function connect(identity: DeviceIdentity): Transport {
-    const transport = new Transport(identity, {
+    const transport = new Transport(credentialsFor(identity), {
       onState: (connection) => {
         set({ connection });
         // Push our display name once the secure channel is up, so the desktop's
@@ -405,8 +456,59 @@ export const useAppStore = create<AppState>((set, get) => {
         }
       },
       onEvent,
-      onMedia,
+      onMedia: (bytes) => media.push(bytes),
     });
+    transport.connect();
+
+    return transport;
+  }
+
+  /**
+   * A huddle guest's socket. Deliberately leaner than {@link connect}: a guest
+   * has no device record to rename, no push subscription and no parked
+   * decisions — it has no capabilities at all until the host approves it.
+   */
+  function connectGuest(token: string, label: string, hostPubB64: string): Transport {
+    const { privB64, pubB64 } = guestKeypair(token);
+    const transport = new Transport(
+      {
+        url: wsOrigin(),
+        devPrivB64: privB64,
+        devPubB64: pubB64,
+        hostPubB64,
+      },
+      {
+        onState: (connection) => {
+          set({ connection });
+          if (connection !== "ready") {
+            return;
+          }
+          // Re-present the token on every (re)connect: an already-approved key
+          // is re-granted silently, so a reload costs no second approval.
+          requestJoin(
+            transport,
+            token,
+            label,
+            get().huddle ?? undefined,
+            guestClientId(),
+          )
+            .then((view) => {
+              set({
+                huddle: view,
+                capabilities: huddleCapabilities(view.state),
+              });
+              // A refusal and a dead link are both final — retrying the join
+              // on every reconnect would only spin.
+              if (view.state === "denied" || view.state === "unavailable") {
+                transport.disconnect();
+              }
+            })
+            .catch(() => {});
+        },
+        onEvent,
+        onMedia: (bytes) => media.push(bytes),
+      },
+    );
     transport.connect();
 
     return transport;
@@ -439,6 +541,9 @@ export const useAppStore = create<AppState>((set, get) => {
     statusByAgent: {},
     effortByAgent: {},
     devices: [],
+    claimByDevice: {},
+    claimConnectionId: null,
+    huddle: null,
 
     init: () => {
       const identity = loadIdentity();
@@ -450,6 +555,31 @@ export const useAppStore = create<AppState>((set, get) => {
           transport: connect(identity),
         });
       }
+    },
+
+    joinHuddle: async (token, label) => {
+      get().transport?.disconnect();
+      set({ huddle: INITIAL_HUDDLE_VIEW, capabilities: [], identity: null });
+      try {
+        const hostPubB64 = await fetchHostKey();
+        set({ transport: connectGuest(token, label, hostPubB64) });
+      } catch {
+        // No key published means no open room: the link is dead, not broken.
+        set((s) => ({
+          huddle: { ...(s.huddle ?? INITIAL_HUDDLE_VIEW), state: "unavailable" },
+        }));
+      }
+    },
+
+    leaveHuddle: () => {
+      // Dropping the socket is what tells the host, via the connection's own
+      // teardown. Keep the view so the gate can offer to go back in.
+      get().transport?.disconnect();
+      set((s) => ({
+        transport: null,
+        capabilities: [],
+        huddle: { ...(s.huddle ?? INITIAL_HUDDLE_VIEW), state: "left" },
+      }));
     },
 
     pairComplete: (identity) => {
@@ -845,11 +975,35 @@ export const useAppStore = create<AppState>((set, get) => {
         },
       }));
 
-      await t.request("agents.send", {
+      const { queued } = await t.request<{ queued?: boolean }>("agents.send", {
         agent_id: agentId,
         message,
+        ...(displayText && displayText !== message
+          ? { display_text: displayText }
+          : {}),
         ...(images && images.length > 0 ? { images } : {}),
       });
+      // The computer may have found the agent mid-turn and parked this on the
+      // queue instead. It belongs in the queue strip, not the transcript, so
+      // retire the optimistic bubble rather than waiting for it to reconcile.
+      if (queued) {
+        set((s) => ({
+          optimisticByAgent: {
+            ...s.optimisticByAgent,
+            [agentId]: (s.optimisticByAgent[agentId] ?? []).filter(
+              (m) => m.id !== id,
+            ),
+          },
+        }));
+        get()
+          .loadQueue(agentId)
+          .catch(() => {});
+        get()
+          .loadAgentStatus(agentId)
+          .catch(() => {});
+
+        return;
+      }
       // Nudge a transcript refresh so the real message reconciles promptly.
       get()
         .loadTranscript(agentId)
@@ -873,6 +1027,16 @@ export const useAppStore = create<AppState>((set, get) => {
       await get().transport?.request("agents.queue_remove", {
         agent_id: agentId,
         id,
+      });
+    },
+
+    updateQueued: async (agentId, id, message) => {
+      // The queue lives on the computer, so the edit lands there and comes back
+      // to every client on `agent.queue` — no local mirror to keep in step.
+      await get().transport?.request("agents.queue_update", {
+        agent_id: agentId,
+        id,
+        message,
       });
     },
 
@@ -1080,23 +1244,7 @@ export const useAppStore = create<AppState>((set, get) => {
         .catch(() => {});
     },
 
-    registerMediaSink: (streamId, sink) => {
-      mediaSinks.set(streamId, sink);
-      // Flush anything buffered before this view registered (e.g. the initial
-      // config emitted right before the watch response arrived).
-      const buffered = mediaBuffer.get(streamId);
-      if (buffered) {
-        mediaBuffer.delete(streamId);
-        for (const msg of buffered) {
-          sink(msg);
-        }
-      }
-
-      return () => {
-        mediaSinks.delete(streamId);
-        mediaBuffer.delete(streamId);
-      };
-    },
+    registerMediaSink: (streamId, sink) => media.register(streamId, sink),
 
     deviceTouch: (deviceId, platform, x, y, eventType) => {
       // Unawaited: touch-move latency compounds if we round-trip each event.
@@ -1108,7 +1256,7 @@ export const useAppStore = create<AppState>((set, get) => {
           y,
           event_type: eventType,
         })
-        .catch(() => {});
+        .catch(adoptClaimDenial);
     },
 
     deviceButton: async (deviceId, platform, button) => {
@@ -1118,7 +1266,7 @@ export const useAppStore = create<AppState>((set, get) => {
           platform,
           button,
         })
-        .catch(() => {});
+        .catch(adoptClaimDenial);
     },
 
     deviceKeyboard: (deviceId, platform, keyCode, modifiers, isDown) => {
@@ -1130,6 +1278,52 @@ export const useAppStore = create<AppState>((set, get) => {
           modifiers,
           is_down: isDown,
         })
+        .catch(adoptClaimDenial);
+    },
+
+    loadClaim: async (deviceId) => {
+      const t = get().transport;
+      if (!t) {
+        return;
+      }
+      try {
+        const { holder } = await t.request<{
+          holder: RemoteDeviceClaim | null;
+        }>("devices.claim_status", { device_id: deviceId });
+        set((s) => ({
+          claimByDevice: { ...s.claimByDevice, [deviceId]: holder },
+        }));
+      } catch {
+        // Monitor-only clients can't ask; they can't drive either, so no overlay.
+      }
+    },
+
+    claimDevice: async (deviceId, force) => {
+      const t = get().transport;
+      if (!t) {
+        return;
+      }
+      try {
+        const res = await t.request<{
+          granted: boolean;
+          holder: RemoteDeviceClaim | null;
+        }>("devices.claim", { device_id: deviceId, force: force ?? false });
+        set((s) => ({
+          claimByDevice: { ...s.claimByDevice, [deviceId]: res.holder },
+          // The grant names us, which is the only way we learn our own
+          // connection id — there is no other place the host tells us.
+          claimConnectionId: res.granted
+            ? (res.holder?.connection_id ?? s.claimConnectionId)
+            : s.claimConnectionId,
+        }));
+      } catch (err) {
+        adoptClaimDenial(err);
+      }
+    },
+
+    releaseDevice: (deviceId) => {
+      get()
+        .transport?.request("devices.release", { device_id: deviceId })
         .catch(() => {});
     },
   };

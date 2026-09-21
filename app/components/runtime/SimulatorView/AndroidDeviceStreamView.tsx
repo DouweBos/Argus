@@ -1,4 +1,5 @@
-import { useAndroidVideoDecoder } from "../../../hooks/useAndroidVideoDecoder";
+import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
+import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
 import { CanvasStreamBody } from "./CanvasStreamBody";
@@ -10,6 +11,8 @@ export interface AndroidDeviceStreamViewProps {
   capturing: boolean;
   /** Platform toggle, rendered at the start of the title bar. */
   children?: React.ReactNode;
+  /** Host-side input arbitration for this device. */
+  claim?: DeviceClaimState;
   devicePicker: React.ReactNode;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onKeyUp: (e: React.KeyboardEvent<HTMLDivElement>) => void;
@@ -36,6 +39,7 @@ export function AndroidDeviceStreamView({
   actionButtons,
   capturing,
   children,
+  claim,
   devicePicker,
   placeholder,
   showFloatingActionBar = true,
@@ -49,11 +53,7 @@ export function AndroidDeviceStreamView({
   onTouch,
 }: AndroidDeviceStreamViewProps) {
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useAndroidVideoDecoder(
-      capturing && !!serial,
-      serial ? `android_video_config:${serial}` : "",
-      serial ? `android_video_frame:${serial}` : "",
-    );
+    useDeviceVideo(capturing, serial, "android");
 
   const titleChrome = (
     <RuntimeTitleBar
@@ -96,6 +96,7 @@ export function AndroidDeviceStreamView({
       {titleChrome}
       <CanvasStreamBody
         canvasRef={canvasRef}
+        claim={claim}
         isConfigured={isConfigured}
         isReceiving={isReceiving}
         videoHeight={videoHeight}

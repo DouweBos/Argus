@@ -6,11 +6,16 @@
 
 import { z } from "zod";
 import { REMOTE_EVENTS } from "./capabilities";
+import { HuddleStatePayload } from "./huddle";
 import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
+  RemoteAutomation,
+  RemoteAutomationRun,
   RemoteAgentVitals,
   RemoteDevice,
+  RemoteDeviceClaim,
+  RemoteDeviceClaimState,
   RemoteEndpoint,
   RemoteGitBranch,
   RemoteGitStatus,
@@ -25,6 +30,7 @@ import {
   RemoteTask,
   RemoteTodo,
 } from "./models";
+import { ReportBlock } from "./report";
 
 /**
  * Permission modes a control device may switch an agent to. Deliberately
@@ -123,6 +129,8 @@ export const MethodParams = {
     agent_id: z.string(),
     // Bounded to keep a remote from streaming an unbounded prompt into agent stdin.
     message: z.string().max(100_000),
+    /** What the clients show, when the sent text carries a preamble. */
+    display_text: z.string().max(100_000).optional(),
     images: z.array(RemoteImageAttachment).max(20).optional(),
   }),
   "agents.interrupt": z.object({ agent_id: z.string() }),
@@ -217,6 +225,16 @@ export const MethodParams = {
     platform: RemotePlatform,
   }),
   "devices.unwatch": z.object({ device_id: z.string() }),
+  /** Begin streaming an embedded browser's screen; returns its stream id. */
+  "browser.watch": z.object({ session_id: z.string() }),
+  "browser.unwatch": z.object({ session_id: z.string() }),
+  /** Take interaction on a device; `force` steals it from a live holder. */
+  "devices.claim": z.object({
+    device_id: z.string(),
+    force: z.boolean().optional(),
+  }),
+  "devices.release": z.object({ device_id: z.string() }),
+  "devices.claim_status": z.object({ device_id: z.string() }),
   /** Normalized [0..1] touch. event_type: 0=down, 1=move, 2=up. */
   "devices.touch": z.object({
     device_id: z.string(),
@@ -239,6 +257,15 @@ export const MethodParams = {
     modifiers: z.number(),
     is_down: z.boolean(),
   }),
+  "automations.list": z.object({}),
+  "automations.runs": z.object({
+    /** Omit for every run across every automation, newest first. */
+    automation_id: z.string().optional(),
+    limit: z.number().int().positive().max(100).optional(),
+  }),
+  "automations.run": z.object({ run_id: z.string() }),
+  "automations.run_now": z.object({ automation_id: z.string() }),
+  "automations.cancel_run": z.object({ run_id: z.string() }),
 } as const;
 
 // --- Result payloads per method --------------------------------------------
@@ -306,7 +333,11 @@ export const MethodResult = {
   }),
   "device.unregister_push": z.object({ accepted: z.boolean() }),
   "agents.capabilities": z.object({ capabilities: RemoteAgentCapabilities }),
-  "agents.send": z.object({ accepted: z.boolean() }),
+  "agents.send": z.object({
+    accepted: z.boolean(),
+    /** True when the agent was mid-turn, so the host parked it on the queue. */
+    queued: z.boolean().optional(),
+  }),
   "agents.interrupt": z.object({ accepted: z.boolean() }),
   "agents.stop": z.object({ accepted: z.boolean() }),
   "agents.set_model": z.object({ accepted: z.boolean() }),
@@ -345,9 +376,30 @@ export const MethodResult = {
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),
+  "browser.watch": z.object({ stream_id: z.number().int().nonnegative() }),
+  "browser.unwatch": z.object({ accepted: z.boolean() }),
+  /** `holder` is the incumbent when `granted` is false. */
+  "devices.claim": z.object({
+    granted: z.boolean(),
+    holder: RemoteDeviceClaim.nullable(),
+  }),
+  "devices.release": z.object({ accepted: z.boolean() }),
+  "devices.claim_status": z.object({ holder: RemoteDeviceClaim.nullable() }),
   "devices.touch": z.object({ accepted: z.boolean() }),
   "devices.button": z.object({ accepted: z.boolean() }),
   "devices.keyboard": z.object({ accepted: z.boolean() }),
+  "automations.list": z.object({ automations: z.array(RemoteAutomation) }),
+  "automations.runs": z.object({ runs: z.array(RemoteAutomationRun) }),
+  "automations.run": z.object({
+    run: RemoteAutomationRun,
+    /** Structured blocks when the run emitted them, else null. */
+    report_blocks: z.array(ReportBlock).nullable(),
+    /** The agent's final message. Null while the run is still going. */
+    report_markdown: z.string().nullable(),
+  }),
+  /** The run record as created — it is still queued when this returns. */
+  "automations.run_now": z.object({ run: RemoteAutomationRun }),
+  "automations.cancel_run": z.object({ accepted: z.boolean() }),
 } as const;
 
 // --- Envelopes -------------------------------------------------------------
@@ -376,6 +428,8 @@ export const ResponseEnvelope = z.object({
         "internal",
       ]),
       message: z.string(),
+      /** Structured payload for errors the client rehydrates (e.g. GitError). */
+      data: z.unknown().optional(),
     })
     .optional(),
 });
@@ -423,6 +477,12 @@ export const EventPayloads = {
     agent_id: z.string(),
     tool_use_id: z.string(),
   }),
+  /** `channel` is the renderer IPC channel; `args` its broadcast arguments. */
+  ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
+  /** The claim on a device changed — including being stolen from you. */
+  "device.claim": RemoteDeviceClaimState,
+  /** This guest's standing in its huddle room changed (host approved/denied/ended). */
+  "huddle.state": HuddleStatePayload,
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
   notification: z.object({

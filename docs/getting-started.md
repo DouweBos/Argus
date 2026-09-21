@@ -22,8 +22,8 @@ Updates install automatically.
 ## Prerequisites
 
 Argus orchestrates other tools rather than reimplementing them, so a few
-things should already be on your machine. The first-launch onboarding runs
-a Preflight check and tells you exactly what's missing.
+things should already be on your machine. Argus checks for them and shows a
+card on the home screen for anything that's missing.
 
 | Tool                       | Why                                                             |
 | -------------------------- | --------------------------------------------------------------- |
@@ -40,10 +40,12 @@ CLI authentication that's already on your machine.
 
 ## First launch
 
-The first time you open Argus, it walks you through:
+The first time you open Argus you get a short welcome and a telemetry
+choice, then the app itself. From there:
 
-1. **Preflight** — confirms `git`, `claude`, simulator support, etc. Each
-   row links to a fix if something's missing.
+1. **Fix anything flagged** — the home screen shows a card for each
+   missing piece (`claude` CLI, Claude sign-in, git identity, simulator
+   support, notifications) with a one-click fix.
 2. **Pick a project** — point at a git repo on disk.
 3. **Generate `.argus.json`** — Argus reads `package.json`, `Podfile`,
    `build.gradle`, and friends to infer how your project sets up. You can

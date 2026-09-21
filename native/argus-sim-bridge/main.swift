@@ -183,6 +183,25 @@ private func buttonToKey(_ button: String) -> KeyMapping? {
     }
 }
 
+// The Siri Remote rides the HID Consumer page (0x0C) menu-navigation usages.
+// tvOS ignores emulated keyboard key codes entirely, so these are the only way
+// to reach its focus engine.
+private let hidConsumerPage: UInt32 = 0x0C
+
+private func remoteButtonToUsage(_ button: String) -> UInt32? {
+    switch button {
+    case "menu":      return 0x40
+    case "select":    return 0x41
+    case "up":        return 0x42
+    case "down":      return 0x43
+    case "left":      return 0x44
+    case "right":     return 0x45
+    case "home":      return 0x30
+    case "playpause": return 0xCD
+    default:          return nil
+    }
+}
+
 // iOS hardware buttons routed through IndigoHIDMessageForButton (real button
 // HID) instead of a faked keyboard chord — doesn't depend on a focused keyboard
 // responder and can't misfire as text.
@@ -302,6 +321,27 @@ private func dispatch(_ obj: [String: Any]) {
         guard let udid = obj["udid"] as? String,
               let buttonName = obj["button"] as? String else {
             respondError("button: missing required field(s)")
+            return
+        }
+
+        // The Apple TV remote only responds to Consumer-page HID usages.
+        if isAppleTV(udid), let usage = remoteButtonToUsage(buttonName) {
+            let rcDown = udid.withCString {
+                scIndigoHIDUsage($0, hidConsumerPage, usage, 1)
+            }
+            guard rcDown == 0 else {
+                respondError("button: remote down returned \(rcDown)")
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.04)
+            let rcUp = udid.withCString {
+                scIndigoHIDUsage($0, hidConsumerPage, usage, 2)
+            }
+            guard rcUp == 0 else {
+                respondError("button: remote up returned \(rcUp)")
+                return
+            }
+            respond(ok: true)
             return
         }
 

@@ -1,0 +1,503 @@
+/**
+ * Handles the Claude Code CLI control protocol over stdin/stdout.
+ *
+ * Replaces the file-based {@link PermissionBroker} with native JSON messaging.
+ * When the CLI sends a `control_request` with `subtype: "can_use_tool"`, this
+ * handler either auto-approves via session allow-rules or forwards the request
+ * to the Electron renderer for interactive approval. The response is written
+ * back to the CLI's stdin as a `control_response`.
+ */
+
+import type {
+  ControlRequest,
+  ControlResponse,
+  InitializeResponse,
+  PermissionDecision,
+} from "./protocol";
+import { info, warn } from "@argus/host/logger";
+import {
+  type AllowRule,
+  parseAllowRule,
+  extractSpecifier,
+  globMatch,
+} from "../../../agent/allowRules";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/** A pending permission request awaiting user response. */
+interface PendingRequest {
+  requestId: string;
+  toolUseId: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+}
+
+/** Payload emitted to the renderer as `agent:permission:{agentId}`. */
+export interface PermissionRequestPayload {
+  request_id: string;
+  tool_input: Record<string, unknown>;
+  tool_name: string;
+  tool_use_id: string;
+  permission_suggestions?: {
+    type: string;
+    tool: string;
+    prefix?: string;
+  }[];
+  title?: string;
+  description?: string;
+}
+
+/** Payload emitted to the renderer as `agent:permission-cancel:{agentId}`. */
+export interface PermissionCancelPayload {
+  request_id: string;
+  tool_use_id: string;
+}
+
+// ---------------------------------------------------------------------------
+// ControlHandler
+// ---------------------------------------------------------------------------
+
+export class ControlHandler {
+  /** Pending requests keyed by `request_id`. */
+  private readonly pending = new Map<string, PendingRequest>();
+
+  /** Reverse lookup: `tool_use_id` → `request_id`. */
+  private readonly toolUseToRequestId = new Map<string, string>();
+
+  /** Session-level auto-approval rules. */
+  private readonly allowedRules: AllowRule[] = [];
+
+  /** The request_id of our outbound initialize request (if pending). */
+  private initializeRequestId: string | null = null;
+
+  /** Cached initialize response, captured when the CLI replies. */
+  private capabilities: InitializeResponse | null = null;
+
+  /** Resolves when the CLI's initialize `control_response` arrives. */
+  private initPromise: Promise<void> | null = null;
+  private initResolve: (() => void) | null = null;
+  private initReject: ((reason: string) => void) | null = null;
+
+  /** Outbound control requests awaiting a response, keyed by `request_id`. */
+  private readonly outboundRequests = new Map<
+    string,
+    {
+      resolve: (response: Record<string, unknown> | undefined) => void;
+      reject: (error: string) => void;
+    }
+  >();
+
+  constructor(private readonly agentId: string) {}
+
+  // -------------------------------------------------------------------------
+  // Initialize: send capabilities request, handle response
+  // -------------------------------------------------------------------------
+
+  /**
+   * Build a `control_request` with `subtype: "initialize"`.
+   * Returns the JSON string to write to stdin.
+   */
+  buildInitializeRequest(appendSystemPrompt?: string): string {
+    const requestId = crypto.randomUUID();
+    this.initializeRequestId = requestId;
+
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      this.initResolve = resolve;
+      this.initReject = reject;
+    });
+
+    const request: Record<string, unknown> = {
+      subtype: "initialize",
+    };
+    if (appendSystemPrompt) {
+      request.appendSystemPrompt = appendSystemPrompt;
+    }
+
+    return JSON.stringify({
+      type: "control_request",
+      request_id: requestId,
+      request,
+    });
+  }
+
+  /**
+   * Resolves when the CLI's initialize `control_response` is received, or
+   * rejects if the child exits / the handler is cleaned up first. Callers can
+   * `await` this before writing the first user message so the CLI has
+   * finished its capability handshake.
+   */
+  waitForInit(): Promise<void> {
+    return this.initPromise ?? Promise.resolve();
+  }
+
+  /** The cached initialize response, or `null` if init hasn't completed. */
+  getCapabilities(): InitializeResponse | null {
+    return this.capabilities;
+  }
+
+  /**
+   * Check if a `control_response` is the response to our initialize request.
+   * If so, parse the capabilities and emit them to the renderer.
+   *
+   * @returns `true` if the response was consumed (was our init response),
+   *   `false` if it's an unrelated response.
+   */
+  handleControlResponse(
+    response: ControlResponse,
+    emit: (channel: string, data: unknown) => void,
+  ): boolean {
+    const requestId = response.response.request_id;
+
+    // Check if this is a response to an outbound request (set_model, etc.).
+    const outbound = this.outboundRequests.get(requestId);
+    if (outbound) {
+      this.outboundRequests.delete(requestId);
+      if (response.response.subtype === "error") {
+        outbound.reject(response.response.error);
+      } else {
+        outbound.resolve(
+          response.response.response as Record<string, unknown> | undefined,
+        );
+      }
+
+      return true;
+    }
+
+    if (requestId !== this.initializeRequestId) {
+      return false; // Not our response.
+    }
+
+    this.initializeRequestId = null;
+
+    if (response.response.subtype === "error") {
+      warn(
+        `[agent:${this.agentId}] initialize failed: ${response.response.error}`,
+      );
+      this.initReject?.(response.response.error);
+      this.initResolve = null;
+      this.initReject = null;
+
+      return true;
+    }
+
+    const data = response.response.response as InitializeResponse | undefined;
+    if (data) {
+      this.capabilities = data;
+      const cmds = data.commands ?? [];
+      const models = data.models ?? [];
+      const agents = data.agents ?? [];
+      info(
+        `[agent:${this.agentId}] initialized — ` +
+          `${cmds.length} commands, ${models.length} models, ${agents.length} agents`,
+      );
+      if (cmds.length > 0) {
+        info(
+          `[agent:${this.agentId}] commands: ${cmds.map((c) => c.name).join(", ")}`,
+        );
+      }
+      emit(`agent:capabilities:${this.agentId}`, data);
+    }
+
+    this.initResolve?.();
+    this.initResolve = null;
+    this.initReject = null;
+
+    return true;
+  }
+
+  // -------------------------------------------------------------------------
+  // Inbound: process a control_request from the CLI's stdout
+  // -------------------------------------------------------------------------
+
+  /**
+   * Process a `control_request` from the CLI.
+   *
+   * @returns A `control_response` JSON string if auto-approved, or `null` if
+   *   the request was forwarded to the renderer for interactive approval.
+   */
+  handleControlRequest(
+    request: ControlRequest,
+    emit: (channel: string, data: unknown) => void,
+  ): string | null {
+    const payload = request.request;
+
+    if (payload.subtype !== "can_use_tool") {
+      // For non-permission control requests (initialize, elicitation, etc.)
+      // respond with an empty success so the CLI doesn't hang.
+      return buildControlResponse(request.request_id, {} as PermissionDecision);
+    }
+
+    const { tool_name, input, tool_use_id, permission_suggestions } = payload;
+
+    // Read is always auto-approved: filesystem reads are safe and prompting
+    // for every read is too noisy.
+    if (tool_name === "Read") {
+      return buildControlResponse(request.request_id, {
+        behavior: "allow",
+        updatedInput: input,
+      });
+    }
+
+    // Check session allow-rules for auto-approval.
+    const specifier = extractSpecifier(
+      tool_name,
+      input as Record<string, unknown>,
+    );
+    const isAllowed = this.allowedRules.some((rule) => {
+      if (rule.tool !== tool_name) {
+        return false;
+      }
+      if (rule.specifier === null) {
+        return true;
+      }
+      if (specifier === null) {
+        return false;
+      }
+
+      return globMatch(rule.specifier, specifier);
+    });
+
+    if (isAllowed) {
+      return buildControlResponse(request.request_id, {
+        behavior: "allow",
+        updatedInput: input,
+      });
+    }
+
+    // Store as pending and forward to the renderer.
+    const pending: PendingRequest = {
+      requestId: request.request_id,
+      toolUseId: tool_use_id,
+      toolName: tool_name,
+      toolInput: input,
+    };
+    this.pending.set(request.request_id, pending);
+    this.toolUseToRequestId.set(tool_use_id, request.request_id);
+
+    const permPayload: PermissionRequestPayload = {
+      request_id: request.request_id,
+      tool_use_id,
+      tool_name,
+      tool_input: input,
+      permission_suggestions,
+      title: payload.title,
+      description: payload.description,
+    };
+
+    emit(`agent:permission:${this.agentId}`, permPayload);
+
+    return null; // Awaiting user response.
+  }
+
+  // -------------------------------------------------------------------------
+  // Outbound: build a control_response from a user decision
+  // -------------------------------------------------------------------------
+
+  /**
+   * Build a `control_response` JSON string for a user permission decision.
+   *
+   * Accepts `toolUseId` (the frontend's key) and maps it to the protocol's
+   * `request_id` internally.
+   *
+   * @returns The JSON string to write to the CLI's stdin.
+   * @throws string if no pending request is found for the given `toolUseId`.
+   */
+  respond(
+    toolUseId: string,
+    decision: "allow" | "deny",
+    allowRule?: string,
+    allowAll?: boolean,
+    denyMessage?: string,
+  ): string {
+    const requestId = this.toolUseToRequestId.get(toolUseId);
+    if (!requestId) {
+      throw `No pending permission request for tool_use_id: ${toolUseId}`;
+    }
+
+    // Register session rule if the user chose "always allow".
+    if (allowAll === true && allowRule) {
+      this.addAllowRule(allowRule);
+    }
+
+    // Grab toolInput before cleanup.
+    const pending = this.pending.get(requestId);
+    const toolInput = pending?.toolInput ?? {};
+
+    // Clean up pending state.
+    this.pending.delete(requestId);
+    this.toolUseToRequestId.delete(toolUseId);
+
+    const body: PermissionDecision =
+      decision === "allow"
+        ? { behavior: "allow", updatedInput: toolInput }
+        : { behavior: "deny", message: denyMessage ?? "User denied" };
+
+    return buildControlResponse(requestId, body);
+  }
+
+  /**
+   * Build a programmatic deny response for a `can_use_tool` request without
+   * prompting the user. Used when the harness itself needs to block a tool
+   * call (e.g. a `conductor --device web` command when no webview is wired).
+   */
+  buildDenyResponse(requestId: string, message: string): string {
+    return buildControlResponse(requestId, { behavior: "deny", message });
+  }
+
+  // -------------------------------------------------------------------------
+  // Cancel: handle control_cancel_request from the CLI
+  // -------------------------------------------------------------------------
+
+  /**
+   * Handle a `control_cancel_request` — the CLI withdrew a pending permission.
+   * Removes the pending entry and notifies the renderer to clear the prompt.
+   */
+  cancelRequest(
+    requestId: string,
+    emit: (channel: string, data: unknown) => void,
+  ): void {
+    const pending = this.pending.get(requestId);
+    if (!pending) {
+      return;
+    }
+
+    this.pending.delete(requestId);
+    this.toolUseToRequestId.delete(pending.toolUseId);
+
+    const cancelPayload: PermissionCancelPayload = {
+      request_id: requestId,
+      tool_use_id: pending.toolUseId,
+    };
+    emit(`agent:permission-cancel:${this.agentId}`, cancelPayload);
+  }
+
+  // -------------------------------------------------------------------------
+  // Allow rules
+  // -------------------------------------------------------------------------
+
+  /** Add a session-level allow rule (e.g. `Bash(npm *)`, `Edit`). */
+  addAllowRule(ruleStr: string): void {
+    this.allowedRules.push(parseAllowRule(ruleStr));
+  }
+
+  // -------------------------------------------------------------------------
+  // Outbound control requests: set_model, set_permission_mode
+  // -------------------------------------------------------------------------
+
+  /**
+   * Build a `control_request` with `subtype: "set_model"` and track it for
+   * response matching. Returns `[jsonString, promise]`.
+   */
+  buildSetModelRequest(
+    model: string,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    return this.buildOutboundRequest({ subtype: "set_model", model });
+  }
+
+  /**
+   * Build a `control_request` with `subtype: "interrupt"` and track it for
+   * response matching. Returns `[jsonString, promise]`.
+   */
+  buildInterruptRequest(): [
+    string,
+    Promise<Record<string, unknown> | undefined>,
+  ] {
+    return this.buildOutboundRequest({ subtype: "interrupt" });
+  }
+
+  /**
+   * Build a `control_request` with `subtype: "set_permission_mode"` and track
+   * it for response matching. Returns `[jsonString, promise]`.
+   */
+  buildSetPermissionModeRequest(
+    mode: string,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    return this.buildOutboundRequest({ subtype: "set_permission_mode", mode });
+  }
+
+  /**
+   * Build a `control_request` with `subtype: "apply_flag_settings"` carrying
+   * the reasoning-effort level. Pass `null` to clear back to the model's
+   * default. Returns `[jsonString, promise]`.
+   *
+   * `"ultracode"` is not a model effort level — it's a session mode (xhigh +
+   * workflow orchestration), so it maps to the `ultracode` flag. Every other
+   * value clears `ultracode` alongside setting the effort level.
+   */
+  buildSetEffortRequest(
+    level: string | null,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    const settings =
+      level === "ultracode"
+        ? { ultracode: true }
+        : { effortLevel: level, ultracode: false };
+
+    return this.buildOutboundRequest({
+      subtype: "apply_flag_settings",
+      settings,
+    });
+  }
+
+  private buildOutboundRequest(
+    request: Record<string, unknown>,
+  ): [string, Promise<Record<string, unknown> | undefined>] {
+    const requestId = crypto.randomUUID();
+    const promise = new Promise<Record<string, unknown> | undefined>(
+      (resolve, reject) => {
+        this.outboundRequests.set(requestId, { resolve, reject });
+      },
+    );
+    const json = JSON.stringify({
+      type: "control_request",
+      request_id: requestId,
+      request,
+    });
+
+    return [json, promise];
+  }
+
+  // -------------------------------------------------------------------------
+  // Lifecycle
+  // -------------------------------------------------------------------------
+
+  /** Clean up pending state and reject outstanding outbound requests. */
+  cleanup(): void {
+    this.pending.clear();
+    this.toolUseToRequestId.clear();
+    for (const [, entry] of this.outboundRequests) {
+      entry.reject("Agent stopped");
+    }
+    this.outboundRequests.clear();
+    if (this.initReject) {
+      this.initReject("Agent stopped before initialize completed");
+    }
+    this.initResolve = null;
+    this.initReject = null;
+    this.initializeRequestId = null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a serialised `control_response` message.
+ */
+function buildControlResponse(
+  requestId: string,
+  decision: PermissionDecision,
+): string {
+  const response: ControlResponse = {
+    type: "control_response",
+    response: {
+      subtype: "success",
+      request_id: requestId,
+      response: decision as unknown as Record<string, unknown>,
+    },
+  };
+
+  return JSON.stringify(response);
+}

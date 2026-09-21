@@ -29,17 +29,17 @@ import {
   rmSync,
 } from "node:fs";
 import path from "node:path";
-import { log } from "../app/lib/logger";
 import {
   registryInstallArgs,
   writeShim as writeConductorShim,
-} from "../electron/services/conductor/install";
+} from "@argus/host/services/conductor/install";
+import { log } from "../app/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Configuration — bump this when upgrading conductor
 // ---------------------------------------------------------------------------
 
-const CONDUCTOR_VERSION = "0.32.0";
+const CONDUCTOR_VERSION = "0.33.3";
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -99,7 +99,7 @@ function installFromRegistry(): void {
   mkdirSync(OUT, { recursive: true });
 
   // Self-contained install with flat node_modules — same args the runtime
-  // provisioner uses (see electron/services/conductor/install.ts).
+  // provisioner uses (see packages/host/src/services/conductor/install.ts).
   execFileSync("npm", registryInstallArgs(CONDUCTOR_VERSION, OUT), {
     stdio: "inherit",
     cwd: ROOT,

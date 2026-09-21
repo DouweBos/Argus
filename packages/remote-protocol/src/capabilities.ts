@@ -4,7 +4,10 @@
  *
  * v1 grants only "monitor". The desktop gateway builds its dispatch allowlist
  * from `REMOTE_METHODS`, so adding a method here (and a handler there) is the
- * only way to widen the remote surface — there is no implicit escalation.
+ * only way to widen the remote surface for monitor/control — there is no
+ * implicit escalation. The "admin" tier is the one exception: it dispatches raw
+ * IPC command names, bounded by the tier its command registry declares —
+ * mirrored here as `HOST_ONLY_COMMANDS` for the renderer.
  */
 
 /**
@@ -15,9 +18,62 @@
  *   model/mode/effort, spawn agents, create sessions, and approve prompts.
  *   Opt-in per device. Deliberately never grants project creation — that
  *   stays host-only.
+ * - "admin": another Argus desktop driving this host as if sitting at its
+ *   keyboard. Inverts the model — any raw IPC command except
+ *   {@link HOST_ONLY_COMMANDS}. Only ever grant it to a paired Mac you own,
+ *   never to a browser.
  */
-export const CAPABILITIES = ["monitor", "control"] as const;
+export const CAPABILITIES = ["monitor", "control", "admin"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
+
+/**
+ * Commands that never cross the wire, at any tier. They act on the machine the
+ * *window* is on, or mutate the trust store that authorises the wire itself.
+ *
+ * The host registers these at the "host" tier in its command registry, which is
+ * what actually bars them; this set is the renderer-visible mirror (the
+ * registry lives in the main process) and is asserted equal to it by test.
+ *
+ * `updater_get_state` is deliberately absent: reading the host's update status
+ * is useful, restarting it under other clients is not.
+ */
+export const HOST_ONLY_COMMANDS = new Set([
+  // window/dialog surface — meaningless on a headless host
+  "show_open_dialog",
+  "show_image_context_menu",
+  "open_agent_popout",
+  "close_agent_popout",
+  "close_window",
+  // act on the client's machine, not the host's
+  "open_external_url",
+  "open_path",
+  "reveal_in_finder",
+  "open_in_editor",
+  "open_in_custom_editor",
+  // the host updates itself; a client must not restart it under other clients
+  "updater_check",
+  "updater_download",
+  "updater_quit_and_install",
+  // pairing/revocation is the root of trust — console-only, never remote
+  "remote_start_pairing",
+  "remote_confirm_pairing",
+  "remote_cancel_pairing",
+  "remote_revoke_device",
+  "remote_set_device_control",
+  "remote_set_config",
+  // Reconfiguring how the host is reachable is console-only, like pairing.
+  "remote_tailscale_diagnose",
+  "remote_tailscale_fix",
+  // Sharing an agent, letting a guest in, and ending a share are trust
+  // decisions — same root as pairing, and `huddle_list` hands back room tokens.
+  "huddle_start",
+  "huddle_stop",
+  "huddle_set_device",
+  "huddle_list",
+  "huddle_approve_guest",
+  "huddle_deny_guest",
+  "huddle_remove_guest",
+]);
 
 /** Every request method the remote client may send, and the grant it needs. */
 export const REMOTE_METHODS = {
@@ -97,10 +153,27 @@ export const REMOTE_METHODS = {
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */
   "devices.watch": "monitor",
   "devices.unwatch": "monitor",
+  /** Claim interaction on a device. Two clients may watch one screen, but both
+   *  injecting HID events into it is nonsense, so it is arbitrated. */
+  "devices.claim": "control",
+  "devices.release": "control",
+  "devices.claim_status": "control",
+  /** Begin/stop streaming an embedded browser's screen. Frames ride the same
+   *  binary channel as device video; watching is read-only, so monitor. */
+  "browser.watch": "monitor",
+  "browser.unwatch": "monitor",
   /** Drive a device — taps mutate it, so control-gated like agents.send. */
   "devices.touch": "control",
   "devices.button": "control",
   "devices.keyboard": "control",
+  /** Automations and their runs. The clock belongs to the host, so a phone
+   *  reads the host's automations; firing one starts an agent, hence control. */
+  "automations.list": "monitor",
+  "automations.runs": "monitor",
+  /** One run with its report — the list omits it because reports are large. */
+  "automations.run": "monitor",
+  "automations.run_now": "control",
+  "automations.cancel_run": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
 } as const satisfies Record<string, Capability>;
@@ -123,11 +196,18 @@ export const REMOTE_EVENTS = [
   "agent.capabilities",
   "permission.request",
   "permission.cancel",
+  /** Device interaction claim changed (taken, released or stolen). */
+  "device.claim",
   "sessions.changed",
   "projects.changed",
   /** A user-facing notification (agent finished, needs approval, MCP push). */
   "notification",
   /** The desktop's reachable addresses changed (a tunnel came up or died). */
   "host.endpoints",
+  /** A huddle guest's standing changed — approved, denied, or the room ended. */
+  "huddle.state",
+  /** Raw renderer broadcast, forwarded verbatim to "admin" devices only —
+   * another desktop wants the host's own IPC channels, not the typed mirrors. */
+  "ipc",
 ] as const;
 export type RemoteEventType = (typeof REMOTE_EVENTS)[number];

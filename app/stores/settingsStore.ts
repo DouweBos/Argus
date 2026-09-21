@@ -15,6 +15,27 @@ export const PERMISSION_MODE_LABELS: Record<PermissionMode, string> = {
   trusted: "Bypass permissions (yolo)",
 };
 
+/**
+ * A paired Argus host this Mac can attach to. Holds this device's Noise static
+ * keypair for that host — client-local, never sent anywhere but the host it was
+ * minted for. The host decides what the grant allows; driving a host as a
+ * second keyboard needs `admin`.
+ */
+export interface RemoteHost {
+  /** Capabilities the host granted at pairing (informational — the host enforces). */
+  capabilities: string[];
+  devPrivB64: string;
+  devPubB64: string;
+  hostPubB64: string;
+  /** Device id the host issued us. Stable across reconnects. */
+  id: string;
+  /** User-facing name for the machine ("Mac mini"). */
+  label: string;
+  pairedAt: number;
+  /** `ws://` or `wss://` origin of that host's gateway. */
+  url: string;
+}
+
 export interface CustomEditor {
   command: string;
   id: string;
@@ -26,16 +47,14 @@ export type DiffViewMode = "split" | "unified";
 export type CommitSigningFormat = "gpg" | "ssh";
 
 /**
- * Three telemetry levels:
- * - `off`: nothing is sent, ever. The privacy-maximum mode.
- * - `presence`: a single `app_heartbeat` event per launch carrying just the
+ * Two telemetry levels:
+ * - `presence`: a single anonymous heartbeat per launch carrying just the
  *   app version. Lets us count DAU without seeing what anyone does.
  * - `full`: the full event catalogue documented in `docs/telemetry-events.md`.
  */
-export type TelemetryMode = "full" | "off" | "presence";
+export type TelemetryMode = "full" | "presence";
 
 export const TELEMETRY_MODE_LABELS: Record<TelemetryMode, string> = {
-  off: "Off",
   presence: "Presence only",
   full: "Full analytics",
 };
@@ -50,6 +69,12 @@ export interface DefaultLlm {
 export const DEFAULT_LLM_RUNNER = "claude-code";
 
 interface SettingsState {
+  /**
+   * Hosts attached at launch. Several can be live at once — a Mac mini for
+   * iOS work, a Linux box for Android — and each keeps its own connection.
+   * Which one a screen *reads from* lives in the URL, not here.
+   */
+  attachedRemoteHostIds: string[];
   /** Map of `rememberKey` → user opted out of the corresponding confirm dialog. */
   confirmPreferences: Record<string, boolean>;
   /** Conventional Commits prefix picker on/off (Phase 2 W10). */
@@ -79,6 +104,8 @@ interface SettingsState {
    * Replayed as the default for new agents on the same runner.
    */
   lastEffortByRunner: Record<string, string | null>;
+  /** Paired hosts, in pairing order. */
+  remoteHosts: RemoteHost[];
   showAssumeUnchangedFiles: boolean;
   /**
    * Working copy view toggles.
@@ -110,24 +137,8 @@ function sanitizeDefaultLlm(input: unknown): DefaultLlm {
   return { runner, model };
 }
 
-/**
- * Map persisted telemetry state to a `TelemetryMode`. Honours the new
- * `telemetryMode` field if present; otherwise falls back to the legacy
- * `telemetryEnabled` boolean (true → `full`, false → `off` — preserves the
- * privacy promise that opting out meant zero events).
- */
-function sanitizeTelemetryMode(
-  mode: unknown,
-  legacyEnabled: unknown,
-): TelemetryMode {
-  if (mode === "off" || mode === "presence" || mode === "full") {
-    return mode;
-  }
-  if (typeof legacyEnabled === "boolean") {
-    return legacyEnabled ? "full" : "off";
-  }
-
-  return "off";
+function sanitizeTelemetryMode(mode: unknown): TelemetryMode {
+  return mode === "full" ? "full" : "presence";
 }
 
 function sanitizeLastEffortByRunner(
@@ -195,6 +206,53 @@ function sanitizeCustomEditors(input: unknown): CustomEditor[] {
   });
 }
 
+/**
+ * Reads both the current list and the single `activeRemoteHostId` written by
+ * versions that could only attach to one host at a time.
+ */
+function sanitizeHostIds(parsed: Record<string, unknown>): string[] {
+  const list = parsed.attachedRemoteHostIds;
+  if (Array.isArray(list)) {
+    return list.filter((id): id is string => typeof id === "string");
+  }
+
+  return typeof parsed.activeRemoteHostId === "string"
+    ? [parsed.activeRemoteHostId]
+    : [];
+}
+
+function sanitizeRemoteHosts(input: unknown): RemoteHost[] {
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return input.flatMap((raw): RemoteHost[] => {
+    if (!raw || typeof raw !== "object") {
+      return [];
+    }
+    const o = raw as Record<string, unknown>;
+    const strings = ["id", "url", "devPrivB64", "devPubB64", "hostPubB64"];
+    if (strings.some((k) => typeof o[k] !== "string" || !o[k])) {
+      return [];
+    }
+
+    return [
+      {
+        id: o.id as string,
+        label: typeof o.label === "string" ? o.label : "Host",
+        url: o.url as string,
+        devPrivB64: o.devPrivB64 as string,
+        devPubB64: o.devPubB64 as string,
+        hostPubB64: o.hostPubB64 as string,
+        capabilities: Array.isArray(o.capabilities)
+          ? o.capabilities.filter((c): c is string => typeof c === "string")
+          : [],
+        pairedAt: typeof o.pairedAt === "number" ? o.pairedAt : 0,
+      },
+    ];
+  });
+}
+
 function load(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -209,10 +267,7 @@ function load(): SettingsState {
           typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
         defaultLlm: sanitizeDefaultLlm(parsed.defaultLlm),
-        telemetryMode: sanitizeTelemetryMode(
-          parsed.telemetryMode,
-          (parsed as { telemetryEnabled?: unknown }).telemetryEnabled,
-        ),
+        telemetryMode: sanitizeTelemetryMode(parsed.telemetryMode),
         confirmPreferences:
           parsed.confirmPreferences &&
           typeof parsed.confirmPreferences === "object"
@@ -251,20 +306,22 @@ function load(): SettingsState {
         lastEffortByRunner: sanitizeLastEffortByRunner(
           parsed.lastEffortByRunner,
         ),
+        remoteHosts: sanitizeRemoteHosts(parsed.remoteHosts),
+        attachedRemoteHostIds: sanitizeHostIds(
+          parsed as Record<string, unknown>,
+        ),
       };
     }
   } catch {
     // fall through to defaults
   }
 
-  // Telemetry default opt-out — consent is collected explicitly during the
-  // telemetry onboarding step before any analytics events are sent.
   return {
     defaultPermissionMode: "auto",
     defaultModel: "",
     customEditors: [],
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
-    telemetryMode: "off",
+    telemetryMode: "presence",
     confirmPreferences: {},
     workingCopyView: "flat",
     diffView: "unified",
@@ -279,6 +336,8 @@ function load(): SettingsState {
     showAssumeUnchangedFiles: false,
     showNonModifiedFiles: false,
     lastEffortByRunner: {},
+    remoteHosts: [],
+    attachedRemoteHostIds: [],
   };
 }
 
@@ -570,3 +629,46 @@ export const hideSettingsDialog = () => dialogStore.setState({ open: false });
 export const useSettingsDialogOpen = () => dialogStore((s) => s.open);
 export const useSettingsInitialSection = () =>
   dialogStore((s) => s.initialSectionId);
+
+// --- Paired hosts -----------------------------------------------------------
+
+export const useRemoteHosts = (): RemoteHost[] => store((s) => s.remoteHosts);
+
+export const getRemoteHosts = (): RemoteHost[] => store.getState().remoteHosts;
+
+export const useAttachedRemoteHostIds = (): string[] =>
+  store((s) => s.attachedRemoteHostIds);
+
+export const getAttachedHostIds = (): string[] =>
+  store.getState().attachedRemoteHostIds;
+
+export const getRemoteHost = (id: string | null): RemoteHost | null =>
+  id ? (store.getState().remoteHosts.find((h) => h.id === id) ?? null) : null;
+
+export const addRemoteHost = (host: RemoteHost): void => {
+  store.setState((s) => ({
+    remoteHosts: [...s.remoteHosts.filter((h) => h.id !== host.id), host],
+  }));
+  persist(store.getState());
+};
+
+export const renameRemoteHost = (id: string, label: string): void => {
+  store.setState((s) => ({
+    remoteHosts: s.remoteHosts.map((h) => (h.id === id ? { ...h, label } : h)),
+  }));
+  persist(store.getState());
+};
+
+export const forgetRemoteHost = (id: string): void => {
+  store.setState((s) => ({
+    remoteHosts: s.remoteHosts.filter((h) => h.id !== id),
+    attachedRemoteHostIds: s.attachedRemoteHostIds.filter((h) => h !== id),
+  }));
+  persist(store.getState());
+};
+
+/** Remember which hosts to bring back up at the next launch. */
+export const setAttachedHostIds = (ids: string[]): void => {
+  store.setState({ attachedRemoteHostIds: ids });
+  persist(store.getState());
+};

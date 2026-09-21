@@ -5,13 +5,14 @@ import {
   useEffect,
   useState,
 } from "react";
+import { browserClaimId } from "@argus/remote-protocol";
+import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import {
   type BrowserPresetConfig,
   resolvePreset,
 } from "../../../lib/browserPresets";
 import {
-  browserGetMjpegPort,
   browserKeyboardEvent,
   browserMouseEvent,
   browserUpdatePreset,
@@ -23,6 +24,8 @@ import {
   browserWheelEvent,
   readArgusConfig,
 } from "../../../lib/ipc";
+import { useRouteHostId } from "../../../lib/routeHooks";
+import { subjectHostId } from "../../../lib/transport/hostRouting";
 import { normalizeUrl } from "../../../lib/webBrowserViewUtils";
 import { getSessionState } from "../../../stores/sessionStore";
 import {
@@ -37,10 +40,7 @@ interface BrowserNavEvent {
   url: string;
 }
 
-export function useWebBrowserView(
-  sessionId: string | null,
-  _isActive: boolean,
-) {
+export function useWebBrowserView(sessionId: string | null, isActive: boolean) {
   const {
     browserPreset,
     browserUrlBySession,
@@ -56,21 +56,9 @@ export function useWebBrowserView(
   const [canGoForward, setCanGoForward] = useState(false);
   const [hasLoadedDefault, setHasLoadedDefault] = useState(false);
   const [customPresets, setCustomPresets] = useState<BrowserPresetConfig[]>([]);
-  const [mjpegPort, setMjpegPort] = useState<number | null>(null);
 
   const preset = resolvePreset(browserPreset, customPresets);
   const { internalWidth, internalHeight } = preset;
-
-  // Fetch MJPEG server port once on mount.
-  useEffect(() => {
-    browserGetMjpegPort()
-      .then((port) => {
-        if (port > 0) {
-          setMjpegPort(port);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   // Pick the default URL once per session, and push it to the backend.
   useEffect(() => {
@@ -162,6 +150,14 @@ export function useWebBrowserView(
 
   // ── Input handlers ───────────────────────────────────────────────────────
 
+  // The browser runs on its session's host, and driving it arbitrates through
+  // the same claim a simulator does — namespaced so a session id can't collide
+  // with a UDID.
+  const routeHostId = useRouteHostId();
+  const hostId = subjectHostId({ sessionId: sessionId ?? "" }) ?? routeHostId;
+  const claim = useDeviceClaim(browserClaimId(storeKey), hostId, isActive);
+  const { reportInputError } = claim;
+
   const handleMouseEvent = useCallback(
     (
       type: "click" | "down" | "move" | "up",
@@ -169,23 +165,23 @@ export function useWebBrowserView(
       y: number,
       button?: "left" | "middle" | "right",
     ) => {
-      browserMouseEvent(storeKey, type, x, y, button).catch(() => {});
+      browserMouseEvent(storeKey, type, x, y, button).catch(reportInputError);
     },
-    [storeKey],
+    [storeKey, reportInputError],
   );
 
   const handleKeyboardEvent = useCallback(
     (type: "down" | "press" | "up", key: string) => {
-      browserKeyboardEvent(storeKey, type, key).catch(() => {});
+      browserKeyboardEvent(storeKey, type, key).catch(reportInputError);
     },
-    [storeKey],
+    [storeKey, reportInputError],
   );
 
   const handleWheelEvent = useCallback(
     (x: number, y: number, deltaX: number, deltaY: number) => {
-      browserWheelEvent(storeKey, x, y, deltaX, deltaY).catch(() => {});
+      browserWheelEvent(storeKey, x, y, deltaX, deltaY).catch(reportInputError);
     },
-    [storeKey],
+    [storeKey, reportInputError],
   );
 
   // ── Navigation & preset handlers ─────────────────────────────────────────
@@ -214,16 +210,16 @@ export function useWebBrowserView(
   );
 
   const handleBack = useCallback(() => {
-    browserViewBack(storeKey).catch(() => {});
-  }, [storeKey]);
+    browserViewBack(storeKey).catch(reportInputError);
+  }, [storeKey, reportInputError]);
 
   const handleForward = useCallback(() => {
-    browserViewForward(storeKey).catch(() => {});
-  }, [storeKey]);
+    browserViewForward(storeKey).catch(reportInputError);
+  }, [storeKey, reportInputError]);
 
   const handleReload = useCallback(() => {
-    browserViewReload(storeKey).catch(() => {});
-  }, [storeKey]);
+    browserViewReload(storeKey).catch(reportInputError);
+  }, [storeKey, reportInputError]);
 
   const handlePresetChange = useCallback(
     (event: ChangeEvent<HTMLSelectElement>) => {
@@ -245,6 +241,7 @@ export function useWebBrowserView(
     browserPreset,
     canGoBack,
     canGoForward,
+    claim,
     currentUrl,
     customPresets,
     handleBack,
@@ -258,7 +255,6 @@ export function useWebBrowserView(
     inputUrl,
     internalHeight,
     internalWidth,
-    mjpegPort,
     preset,
     setInputUrl,
   };

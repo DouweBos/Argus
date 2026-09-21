@@ -7,6 +7,7 @@ Electron agentic IDE for mobile development. Multiple Claude Code agents work in
 - `pnpm dev` — Vite + Electron (concurrently)
 - `pnpm build` — type-check + Vite + electron TS compile
 - `pnpm build:app` — build + electron-builder (.app/.dmg)
+- `pnpm hotswap` — build, splice into the installed `/Applications/Argus.app`, re-sign, and relaunch it (`--no-restart`, `--no-build`, `--web`; `ARGUS_APP`/`ARGUS_SIGN_IDENTITY` to retarget). Needs the Developer ID cert in the keychain — writing to the asar breaks the sealed-resource hash and macOS rejects the app as damaged without a re-sign. Agents can run this to ship their own change into the live app; the relaunch is detached, so it survives the app going down.
 - `pnpm lint` — `tsc --noEmit && eslint && prettier --check`
 - `pnpm storybook` — Peacock design system at :6006
 - Tooling via `mise.toml` (node 24, pnpm 10)
@@ -16,7 +17,8 @@ Electron agentic IDE for mobile development. Multiple Claude Code agents work in
 pnpm monorepo. Three-panel layout: workspace sidebar / agent control / runtime & testing.
 
 - `packages/peacock` → `@argus/peacock` design system (tokens, icons, components)
-- `app/` + `electron/` → desktop app, consumes Peacock via `workspace:*`
+- `packages/host` → `@argus/host` host core — sessions, agents, git, terminals, simulators, the command registry. **Plain Node, never imports `electron`** (enforced by `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule)
+- `app/` + `electron/` → desktop app, consumes both via `workspace:*`
 
 ### Frontend (`app/`, also `src/`)
 
@@ -27,16 +29,27 @@ React 19 + TypeScript + Vite 7. Zustand stores in `src/stores/`. CSS Modules col
 - Shared types: `src/lib/types.ts` (keep in sync with backend manually)
 - Components organized by panel: `layout/`, `sidebar/`, `agent/`, `runtime/`, `home/`
 
-### Backend (`electron/`)
+### Host core (`packages/host`)
 
-Node.js + TypeScript + Electron.
+Node.js + TypeScript. No Electron — a Linux box or a CLI can run it.
+
+- `src/state.ts` — `AppState` singleton with `Map`s (no locking; Node is single-threaded)
+- `src/platform.ts` — `HostPlatform`: the seam for everything plain Node can't do (`openExternal`, `openPath`, `revealInFinder`, `secretStorage`, `appVersion`, `isPackaged`, `resourcesPath`, `userDataPath`, `notify`, `isForeground`, `focusUi`, `closeDevicePopout`). `nodeHostPlatform()` is the headless implementation; every capability degrades to a documented no-op
+- `src/bus.ts` — transport-agnostic event fan-out. Services call `emitHostEvent(channel, payload)`; transports register an `addHostEventSink`
+- `src/services/` — one dir per domain: `session/` (git worktree + setup + merge), `agent/` (Claude Code subprocess, stream-json), `terminal/` (node-pty), `simulator/` (simctl + native bridge), `file/`, `command/` (the registry), `remote/` (the Noise/WS gateway)
+- `native/argus-sim-bridge/` — standalone Swift/ObjC binary for simulator capture + HID injection, JSON-over-stdio
+
+### Desktop shell (`electron/`)
+
+Thin. Window lifecycle and the bridges into the core.
 
 - `main.ts` — BrowserWindow, lifecycle, PATH fixup
 - `preload.ts` — exposes `window.argus` via `contextBridge`
-- `ipc.ts` — `ipcMain.handle` registrations, routes to services
-- `state.ts` — `AppState` singleton with `Map`s (no locking; Node is single-threaded)
-- `services/` — one dir per domain: `workspace/` (git worktree + setup + merge), `agent/` (Claude Code subprocess, stream-json), `terminal/` (node-pty), `simulator/` (simctl + native bridge), `file/`
-- `native/argus-sim-bridge/` — standalone Swift/ObjC binary for simulator capture + HID injection, JSON-over-stdio
+- `ipc.ts` — `defineCommand` registrations, routes to host services
+- `hostPlatform.ts` — the Electron `HostPlatform` implementation
+- `broadcast.ts` — forwards host bus events to every live renderer
+- `ipcBridge.ts` — publishes every registry command on `ipcMain`
+- `popouts.ts`, `services/tray/`, `services/updater/`, `services/fullDiskAccess.ts` — window-, tray- and dialog-bound; these stay Electron-only
 
 ## Conventions
 
@@ -47,7 +60,8 @@ Node.js + TypeScript + Electron.
 - IPC commands are `snake_case`
 - `child_process.execFile` for git (not libgit2); `node-pty` for terminals
 - Throw string errors from IPC handlers
-- Events: `getMainWindow()?.webContents.send(name, payload)`
+- Events: `emitHostEvent(name, payload)` from `@argus/host/bus` — never `webContents.send` from a service
+- Need the desktop shell (browser, keychain, notification, window)? Add it to `HostPlatform`, never `import { ... } from "electron"` inside `packages/host`
 - Access `appState` directly
 
 **Frontend:**
@@ -80,7 +94,7 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **IPC contract (adding a command):**
 
-1. Handler in `electron/services/<domain>/`
+1. Handler in `packages/host/src/services/<domain>/`
 2. Register in `electron/ipc.ts` via `handle('command_name', handler)`
 3. Typed wrapper in `src/lib/ipc.ts`
 4. Types in `src/lib/types.ts` if new
@@ -95,8 +109,8 @@ Every Peacock component ships with a Storybook story covering meaningful states.
 
 **Configurability of new features:** when adding a feature, ask whether the user might reasonably want to customize it. If yes, expose it as a setting:
 
-- **App-level** (per developer, machine-local) → add to `app/stores/settingsStore.ts`, surface in the Settings dialog (`app/components/shared/SettingsDialog/`), and document in [`docs/app-settings.md`](docs/app-settings.md). Use `SettingsScreenField` from Peacock for layout consistency. Per-project personal prefs (e.g. branch prefix) go in `~/.argus/user-project-settings.json` instead — see `electron/services/userProjectSettings/store.ts`.
-- **Project-level** (shared with the team, checked in) → add the field to `ArgusConfig` in `electron/services/session/models.ts`, parse/normalize it in `electron/services/session/setup.ts`, optionally extend onboarding inference in `electron/services/onboarding/argusJson.ts`, **wire it into the Project Settings dialog** (`app/components/sidebar/SetupConfigDialog/`) so it's editable in-app, and document in [`docs/project-settings.md`](docs/project-settings.md). Never mark a new project setting as "hand-edit only" in the docs unless the user explicitly asks for it — the dialog is the default surface.
+- **App-level** (per developer, machine-local) → add to `app/stores/settingsStore.ts`, surface in the Settings dialog (`app/components/shared/SettingsDialog/`), and document in [`docs/app-settings.md`](docs/app-settings.md). Use `SettingsScreenField` from Peacock for layout consistency. Per-project personal prefs (e.g. branch prefix) go in `~/.argus/user-project-settings.json` instead — see `packages/host/src/services/userProjectSettings/store.ts`.
+- **Project-level** (shared with the team, checked in) → add the field to `ArgusConfig` in `packages/host/src/services/session/models.ts`, parse/normalize it in `packages/host/src/services/session/setup.ts`, optionally extend onboarding inference in `packages/host/src/services/onboarding/argusJson.ts`, **wire it into the Project Settings dialog** (`app/components/sidebar/SetupConfigDialog/`) so it's editable in-app, and document in [`docs/project-settings.md`](docs/project-settings.md). Never mark a new project setting as "hand-edit only" in the docs unless the user explicitly asks for it — the dialog is the default surface.
 
 If the new setting needs UI primitives Peacock doesn't have, add them to Peacock first (with a story) — same rule as everywhere else.
 

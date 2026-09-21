@@ -45,21 +45,18 @@ export default function ChangesScreen() {
   const loadDiff = useAppStore((s) => s.loadDiff);
   const [mode, setMode] = useState<Mode>("branch");
   const [diff, setDiff] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(() => {
     loadGitStatus(sessionId).catch(() => {});
     loadDiff(sessionId, mode)
       .then((r) => setDiff(r.diff))
-      .catch(() => setDiff(""))
-      .finally(() => setLoading(false));
+      .catch(() => setDiff(""));
   }, [sessionId, mode, loadGitStatus, loadDiff]);
 
   useEffect(() => {
     if (connection !== "ready") {
       return;
     }
-    setLoading(true);
     refresh();
     const poll = setInterval(refresh, POLL_MS);
     const sub = AppState.addEventListener("change", (state) => {
@@ -96,7 +93,7 @@ export default function ChangesScreen() {
         </Row>
       )}
 
-      {loading && diff === null ? (
+      {diff === null ? (
         <Loading label="Loading changes…" />
       ) : files.length === 0 ? (
         <EmptyState

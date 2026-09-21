@@ -40,6 +40,7 @@
     "vite": "^7.0.4"
   },
   "dependencies": {
+    "@argus/remote-protocol": "workspace:*",
     "qrcode": "^1.5.4",
     "react-markdown": "^10.1.0",
     "remark-breaks": "^4.0.0",

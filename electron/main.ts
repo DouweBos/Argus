@@ -20,55 +20,73 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { log as emitLog } from "../app/lib/logger";
-import { broadcastToRenderers } from "./broadcast";
-import { registerIpcHandlers } from "./ipc";
-import { writeLogLine } from "./lib/logFile";
-import { setMainWindow } from "./mainWindow";
-import { destroyAllAgents } from "./services/agent/agentService";
-import { reapOrphanedAgentProcesses } from "./services/agent/reapOrphans";
-import { stopAllScreencasts } from "./services/browser/cdpScreencast";
-import { setColorScheme } from "./services/browser/conductorInput";
+import { emitHostEvent } from "@argus/host/bus";
+import { argusHomeDir } from "@argus/host/lib/argusHome";
+import { writeLogLine } from "@argus/host/lib/logFile";
+import {
+  isServerMode,
+  startPowerAssertion,
+  stopPowerAssertion,
+} from "@argus/host/serverMode";
+import { destroyAllAgents } from "@argus/host/services/agent/agentService";
+import { reapOrphanedAgentProcesses } from "@argus/host/services/agent/reapOrphans";
+import { initAutomations } from "@argus/host/services/automation/manager";
+import { initAutomationOutcomes } from "@argus/host/services/automation/outcomes";
+import { startAutomationScheduler } from "@argus/host/services/automation/scheduler";
+import { stopAllScreencasts } from "@argus/host/services/browser/cdpScreencast";
+import { setColorScheme } from "@argus/host/services/browser/conductorInput";
 import {
   startMjpegServer,
   stopMjpegServer,
-} from "./services/browser/mjpegServer";
-import { webBrowserPool } from "./services/browser/pool";
+} from "@argus/host/services/browser/mjpegServer";
+import { webBrowserPool } from "@argus/host/services/browser/pool";
 import {
   applyActiveAccountToProcessEnv,
   ensureDefaultAccountSeeded,
-} from "./services/claudeAuth/accounts";
-import { stopAllDebugStreams } from "./services/conductor/debug";
-import { initConductorOverride } from "./services/conductor/override";
-import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
-import { startMcpServer, stopMcpServer } from "./services/mcp/server";
+} from "@argus/host/services/claudeAuth/accounts";
+import { stopAllDebugStreams } from "@argus/host/services/conductor/debug";
+import { initConductorOverride } from "@argus/host/services/conductor/override";
+import { startMcpServer, stopMcpServer } from "@argus/host/services/mcp/server";
 import {
+  LOCAL_GATEWAY_PORT,
   applyRemoteSettings,
+  setRemoteConfig,
   setWebClientDir,
   stopRemote,
-} from "./services/remote/remoteService";
-import { refreshAllBranches } from "./services/session/watcher";
-import { stopAndroidCapture } from "./services/simulator/android";
-import { stopSimulatorCapture } from "./services/simulator/ios";
-import { getVideoDims } from "./services/simulator/videoForward";
+} from "@argus/host/services/remote/remoteService";
+import { refreshAllBranches } from "@argus/host/services/session/watcher";
+import { stopAndroidCapture } from "@argus/host/services/simulator/android";
+import { stopSimulatorCapture } from "@argus/host/services/simulator/ios";
+import { getVideoDims } from "@argus/host/services/simulator/videoForward";
 import {
   initTelemetry,
   shutdownTelemetry,
   capture as telemetryCapture,
-} from "./services/telemetry/telemetry";
+} from "@argus/host/services/telemetry/telemetry";
 import {
   destroyAllTerminals,
   destroyAllTerminalsAndWait,
-} from "./services/terminal/multiplexer";
-import { reapOrphanedSpawnHelpers } from "./services/terminal/reapOrphans";
-import { fixProcessPath } from "./services/terminal/shellEnv";
+} from "@argus/host/services/terminal/multiplexer";
+import { reapOrphanedSpawnHelpers } from "@argus/host/services/terminal/reapOrphans";
+import { fixProcessPath } from "@argus/host/services/terminal/shellEnv";
+import { appState } from "@argus/host/state";
+import { log as emitLog } from "../app/lib/logger";
+import { installRendererEventSink } from "./broadcast";
+import { installCrashHooks } from "./crashHooks";
+import { startDevTrust, stopDevTrust } from "./devTrust";
+import { installHostPlatform } from "./hostPlatform";
+import { registerIpcHandlers } from "./ipc";
+import { installIpcCommandBridge } from "./ipcBridge";
+import { setMainWindow } from "./mainWindow";
+import { agentPopouts, devicePopouts } from "./popouts";
+import { initServerUpdates } from "./serverUpdates";
+import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { destroyTray, initTray } from "./services/tray";
 import {
   checkForUpdates,
   initUpdater,
   setBeforeQuitAndInstallHook,
 } from "./services/updater";
-import { appState } from "./state";
 
 // Remote debugging port is no longer needed — Conductor now owns the browser
 // and Argus connects via CDP to Conductor's Chromium instance.
@@ -97,7 +115,10 @@ if (process.platform === "win32") {
 // side-by-side. The single-instance lock lives under userData, so sharing it
 // makes `pnpm dev` silently quit (exit 0) whenever the packaged app is open.
 if (!app.isPackaged) {
-  const devUserData = path.join(app.getPath("appData"), "argus-dev");
+  const devUserData = path.join(
+    app.getPath("appData"),
+    isServerMode() ? "argus-server-dev" : "argus-dev",
+  );
   app.setPath("userData", devUserData);
 }
 
@@ -172,7 +193,9 @@ function resolveMenuIconPath(filename: string): string | null {
 // external callers (MCP, Slack previews, custom URL openers) can jump straight
 // into a screen. Uses setAsDefaultProtocolClient; the actual URL is received
 // via `open-url` (macOS) or the `second-instance` argv on Linux/Windows.
-if (!app.isDefaultProtocolClient("argus")) {
+// Skipped on the server: claiming the scheme there would steal `argus://`
+// links from the desktop app on the same Mac.
+if (!isServerMode() && !app.isDefaultProtocolClient("argus")) {
   app.setAsDefaultProtocolClient("argus");
 }
 
@@ -383,6 +406,19 @@ function buildAppMenu(): Menu {
           click: () => invoke("open-palette"),
         },
         { type: "separator" },
+        {
+          label: "New Tab",
+          accelerator: "CmdOrCtrl+T",
+          registerAccelerator: false,
+          click: () => invoke("new-tab"),
+        },
+        {
+          label: "Close Tab",
+          accelerator: "CmdOrCtrl+W",
+          registerAccelerator: false,
+          click: () => invoke("close-tab"),
+        },
+        { type: "separator" },
         isMac ? { role: "close" } : { role: "quit" },
       ],
     },
@@ -418,28 +454,41 @@ function buildAppMenu(): Menu {
         { type: "separator" },
         {
           label: "Agents",
-          accelerator: "CmdOrCtrl+1",
+          accelerator: "CmdOrCtrl+Alt+1",
           click: () => goto("/agents"),
         },
         {
           label: "Devices",
-          accelerator: "CmdOrCtrl+2",
+          accelerator: "CmdOrCtrl+Alt+2",
           click: () => goto("/devices"),
         },
         {
           label: "Runtimes",
-          accelerator: "CmdOrCtrl+3",
+          accelerator: "CmdOrCtrl+Alt+3",
           click: () => goto("/runtimes"),
         },
         {
           label: "Pull Requests",
-          accelerator: "CmdOrCtrl+4",
+          accelerator: "CmdOrCtrl+Alt+4",
           click: () => goto("/pull-requests"),
         },
         {
           label: "Notifications",
-          accelerator: "CmdOrCtrl+5",
+          accelerator: "CmdOrCtrl+Alt+5",
           click: () => goto("/notifications"),
+        },
+        { type: "separator" },
+        {
+          label: "Next Tab",
+          accelerator: "Control+Tab",
+          registerAccelerator: false,
+          click: () => invoke("next-tab"),
+        },
+        {
+          label: "Previous Tab",
+          accelerator: "Control+Shift+Tab",
+          registerAccelerator: false,
+          click: () => invoke("prev-tab"),
         },
         { type: "separator" },
         {
@@ -657,7 +706,7 @@ function createWindow(): void {
 
 // macOS: keep process alive when all windows are closed (Cmd+W / traffic light).
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+  if (process.platform !== "darwin" && !isServerMode()) {
     app.quit();
   }
 });
@@ -688,7 +737,12 @@ app.on("before-quit", (e) => {
     }
   }
 
-  if (runningAgentIds.length > 0 && !bypassRunningAgentsGuard) {
+  // The server has no renderer to answer the guard prompt, so it never asks.
+  if (
+    runningAgentIds.length > 0 &&
+    !bypassRunningAgentsGuard &&
+    !isServerMode()
+  ) {
     log(
       "before-quit: %d running agents, asking renderer",
       runningAgentIds.length,
@@ -717,6 +771,8 @@ app.on("before-quit", (e) => {
   stopAllScreencasts();
   stopAllDebugStreams();
   destroyTray();
+  stopDevTrust();
+  stopPowerAssertion();
   webBrowserPool.releaseAll().catch((err) => {
     log("webBrowserPool.releaseAll failed: %s", err);
   });
@@ -763,6 +819,7 @@ function syncShutdownCleanup(): void {
   } catch {
     // Best-effort; we're on the way out.
   }
+  stopPowerAssertion();
 }
 app.on("will-quit", syncShutdownCleanup);
 process.on("exit", syncShutdownCleanup);
@@ -776,6 +833,9 @@ for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
 
 // macOS: re-show window when dock icon is clicked.
 app.on("activate", () => {
+  if (isServerMode()) {
+    return;
+  }
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   } else {
@@ -849,14 +909,28 @@ app.whenReady().then(() => {
     process.resourcesPath,
   );
 
-  // Anonymous telemetry. Starts disabled — the renderer pushes the user's
-  // consent state (collected during onboarding, kept in localStorage) once
-  // it boots. Until that arrives, no events are sent.
+  // Supply the core with the capabilities it can't reach as plain Node. The
+  // headless server app has no window, so its UI-shaped capabilities no-op.
+  installHostPlatform({ headless: isServerMode() });
+
+  // Renderers are the first sink on the host bus, so they keep receiving
+  // events in the order they were emitted even once the gateway taps it too.
+  installRendererEventSink();
+
+  // Anonymous telemetry. Starts in presence mode (one heartbeat per launch);
+  // the renderer raises it to full if the user opted in during onboarding.
   initTelemetry();
+  installCrashHooks();
 
   // Restore a user-pinned conductor version, installing it in the background
   // if it isn't provisioned yet. Falls back to the bundled version meanwhile.
   initConductorOverride();
+
+  // Automations. Nothing else starts the clock — the scheduler has no
+  // neighbours since organizations were removed.
+  initAutomations();
+  initAutomationOutcomes();
+  startAutomationScheduler();
 
   // Sweep up node-pty spawn-helpers from prior Argus runs that didn't get a
   // chance to clean up (SIGKILL'd dev process, OS crash, etc.) — they
@@ -871,7 +945,12 @@ app.whenReady().then(() => {
     log("reapOrphanedAgentProcesses failed: %s", err);
   });
 
-  if (process.platform === "darwin" && app.dock) {
+  if (isServerMode()) {
+    // Accessory app: no Dock tile, no window, just the tray. Also keeps the
+    // mini awake for as long as the server runs.
+    app.dock?.hide();
+    startPowerAssertion();
+  } else if (process.platform === "darwin" && app.dock) {
     const iconPath = resolveAppIconPath();
     if (iconPath) {
       const image = nativeImage.createFromPath(iconPath);
@@ -898,11 +977,15 @@ app.whenReady().then(() => {
     log("Failed to start MCP server: %s", String(e)),
   );
 
-  // Bring up phone/LAN remote access if the user has enabled it.
+  // Bring up phone/LAN remote access if the user has enabled it. On the server
+  // the gateway is the only way in, so it is forced on rather than a setting.
   setWebClientDir(resolveWebClientDir());
-  applyRemoteSettings().catch((e) =>
-    log("Failed to start remote access: %s", String(e)),
-  );
+  const remoteReady = isServerMode()
+    ? setRemoteConfig({ enabled: true, lanWeb: true }).then(() => undefined)
+    : applyRemoteSettings();
+  remoteReady
+    .then(() => startDevTrust())
+    .catch((e) => log("Failed to start remote access: %s", String(e)));
 
   // Start the MJPEG server for streaming browser frames via CDP screencast.
   startMjpegServer().catch((e) =>
@@ -988,8 +1071,11 @@ app.whenReady().then(() => {
         "style-src 'self' 'unsafe-inline'",
         "font-src 'self' data:",
         "img-src 'self' argus-file: data: blob: https: http://127.0.0.1:*",
-        "connect-src 'self' data: https://*.i.posthog.com" +
-          (isDev ? " ws://localhost:* http://localhost:*" : ""),
+        // ws:/wss: are open because remote mode dials an arbitrary paired host
+        // (LAN, Tailscale or tunnel). The gateway's Noise static-key pinning,
+        // not CSP, is what authenticates that connection.
+        "connect-src 'self' data: ws: wss: https://*.i.posthog.com" +
+          (isDev ? " http://localhost:*" : ""),
         "worker-src 'self' blob: data:",
       ].join("; ");
       headers["Content-Security-Policy"] = [csp];
@@ -999,16 +1085,29 @@ app.whenReady().then(() => {
   });
 
   // Register all IPC handlers before creating the window.
+  // Publish every registry command on ipcMain as it is defined.
+  installIpcCommandBridge();
   registerIpcHandlers();
 
-  Menu.setApplicationMenu(buildAppMenu());
-
-  createWindow();
+  if (!isServerMode()) {
+    Menu.setApplicationMenu(buildAppMenu());
+    createWindow();
+  }
 
   // Menu-bar tray with a live "running agents" dropdown. macOS-only — the
   // helper no-ops on other platforms.
   initTray({
+    describeHost: isServerMode()
+      ? () => [
+          `Argus Server ${app.getVersion()}`,
+          `Gateway: ws://127.0.0.1:${LOCAL_GATEWAY_PORT}`,
+          `State: ${argusHomeDir()}`,
+        ]
+      : undefined,
     navigateMainWindow: (route, agentId) => {
+      if (isServerMode()) {
+        return;
+      }
       if (!mainWindow || mainWindow.isDestroyed()) {
         createWindow();
       }
@@ -1032,6 +1131,9 @@ app.whenReady().then(() => {
     bypassRunningAgentsGuard = true;
   });
   initUpdater();
+  // The server has no window to show an update banner in, so its tray owns the
+  // flow instead. No-ops on the desktop.
+  initServerUpdates();
 
   // Refresh branch names when the window regains focus — fallback for cases
   // where fs.watch on .git/HEAD misses events (network drives, sleep/wake).
@@ -1132,7 +1234,7 @@ export function createFloatingDeviceWindow(options: {
   const { platform, deviceKey, deviceName, runtime, online, capturing } =
     options;
   const key = popoutKey(platform, deviceKey);
-  const existing = appState.devicePopouts.get(key);
+  const existing = devicePopouts.get(key);
   if (existing && !existing.isDestroyed()) {
     existing.show();
     existing.focus();
@@ -1189,7 +1291,7 @@ export function createFloatingDeviceWindow(options: {
 
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
-    appState.devicePopouts.delete(key);
+    devicePopouts.delete(key);
     // Release the capture reference acquired at open_device_popout. If the main
     // window still holds one for this device the bridge keeps running; other
     // devices are unaffected. Video inputs stream straight from the renderer,
@@ -1201,7 +1303,7 @@ export function createFloatingDeviceWindow(options: {
     }
   });
 
-  appState.devicePopouts.set(key, win);
+  devicePopouts.set(key, win);
 
   return win;
 }
@@ -1212,11 +1314,11 @@ export function closeFloatingDeviceWindow(
   deviceKey: string,
 ): void {
   const key = popoutKey(platform, deviceKey);
-  const win = appState.devicePopouts.get(key);
+  const win = devicePopouts.get(key);
   if (win && !win.isDestroyed()) {
     win.close();
   }
-  appState.devicePopouts.delete(key);
+  devicePopouts.delete(key);
 }
 
 /**
@@ -1240,7 +1342,7 @@ export function createFloatingAgentWindow(options: {
   cursorY?: number;
 }): BrowserWindow {
   const { agentId, sessionId, title, cursorX, cursorY } = options;
-  const existing = appState.agentPopouts.get(agentId);
+  const existing = agentPopouts.get(agentId);
   if (existing && !existing.isDestroyed()) {
     existing.show();
     existing.focus();
@@ -1290,20 +1392,20 @@ export function createFloatingAgentWindow(options: {
 
   win.once("ready-to-show", () => win.show());
   win.on("closed", () => {
-    appState.agentPopouts.delete(agentId);
-    broadcastToRenderers("agent:popout-closed", { agentId });
+    agentPopouts.delete(agentId);
+    emitHostEvent("agent:popout-closed", { agentId });
   });
 
-  appState.agentPopouts.set(agentId, win);
+  agentPopouts.set(agentId, win);
 
   return win;
 }
 
 /** Close the popout window for a given agentId, if any. */
 export function closeFloatingAgentWindow(agentId: string): void {
-  const win = appState.agentPopouts.get(agentId);
+  const win = agentPopouts.get(agentId);
   if (win && !win.isDestroyed()) {
     win.close();
   }
-  appState.agentPopouts.delete(agentId);
+  agentPopouts.delete(agentId);
 }

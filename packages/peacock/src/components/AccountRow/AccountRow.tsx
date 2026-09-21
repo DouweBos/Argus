@@ -14,6 +14,7 @@ export interface AccountRowProps {
   label: string;
   /** Signals the stored credentials no longer work; reveals the re-login. */
   needsReauth?: boolean;
+  /** Only shown once {@link needsReauth} is set. */
   onReauth?: () => void;
   onRemove?: () => void;
   /** Omit to make the row non-renamable. */
@@ -101,7 +102,7 @@ export function AccountRow({
       {plan ? <Badge tone="neutral">{plan}</Badge> : null}
 
       <div className={styles.actions}>
-        {onReauth ? (
+        {needsReauth && onReauth ? (
           <button
             type="button"
             className={styles.reauth}
