@@ -1,7 +1,6 @@
 import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useCallback, useEffect, useState } from "react";
 import { error } from "@logger";
-import { useDeviceInput } from "../../../hooks/useDeviceInput";
 import { simulatorButton } from "../../../lib/ipc";
 import styles from "./AppleTVRemote.module.css";
 
@@ -13,17 +12,6 @@ type Button =
   | "right"
   | "select"
   | "up";
-
-/** Conductor spells play/pause in camelCase; the rest of the names match. */
-const CONDUCTOR_BUTTON: Record<Button, string> = {
-  up: "up",
-  down: "down",
-  left: "left",
-  right: "right",
-  select: "select",
-  menu: "menu",
-  playpause: "playPause",
-};
 
 function resolveClickpadButton(e: React.PointerEvent<HTMLDivElement>): Button {
   const rect = e.currentTarget.getBoundingClientRect();
@@ -89,13 +77,6 @@ export function AppleTVRemote({ claim, udid }: AppleTVRemoteProps) {
   const blocked = claim?.blocked ?? false;
   const reportInputError = claim?.reportInputError;
 
-  // tvOS ignores the simulator bridge's keyboard-emulated remote, so drive the
-  // real remote through conductor when its socket is up. The bridge stays as
-  // the fallback for when conductor can't serve this device.
-  const { capabilities, client, ready } = useDeviceInput(udid, !blocked);
-  const useConductor =
-    ready && client !== null && (capabilities?.tvRemote ?? false);
-
   const press = useCallback(
     (button: Button) => {
       if (blocked) {
@@ -103,13 +84,6 @@ export function AppleTVRemote({ claim, udid }: AppleTVRemoteProps) {
       }
       setActiveButton(button);
       setTimeout(() => setActiveButton(null), 150);
-
-      if (useConductor) {
-        client.tvremote(CONDUCTOR_BUTTON[button]);
-
-        return;
-      }
-
       simulatorButton(udid, button).catch((err) => {
         // A refusal means someone else took the device — say so rather than
         // dropping the press into the log.
@@ -118,7 +92,7 @@ export function AppleTVRemote({ claim, udid }: AppleTVRemoteProps) {
         }
       });
     },
-    [blocked, client, reportInputError, udid, useConductor],
+    [blocked, reportInputError, udid],
   );
 
   const handleClickpad = useCallback(
