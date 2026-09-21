@@ -1,34 +1,113 @@
+<div align="center">
+
+<img src="build/icon.png" alt="Argus" width="128" height="128" />
+
 # Argus
 
-**Run a flock of agents. Watch every one.**
+### Run a flock of agents. Watch every one.
 
-Argus gives every Claude Code agent its own git worktree and its own iOS simulator or Android emulator — then lets it tap, type and scroll through the app it just built. Run five at once, watch them work on real devices, review the diffs, merge what survives.
+Argus gives every Claude Code agent its own git worktree and its own iOS simulator or Android
+emulator — then lets it tap, type and scroll through the app it just built.
+Run five at once, watch them work on real devices, review the diffs, merge what survives.
 
-![Five agents running in parallel, each with its own worktree and its own reserved device](shots/out/parallel-detail@dark.png)
+<a href="https://houwert.dev/argus"><img alt="Website" src="https://img.shields.io/badge/houwert.dev%2Fargus-website-4c6ef5?style=for-the-badge" /></a>
+<a href="https://houwert.dev/argus/docs"><img alt="Docs" src="https://img.shields.io/badge/docs-read-1f2937?style=for-the-badge" /></a>
+
+![macOS 13+ · Apple Silicon](https://img.shields.io/badge/macOS-13%2B%20Apple%20Silicon-black)
+![Electron + React 19](https://img.shields.io/badge/Electron-React%2019-47848f)
+![Node 24 · pnpm 10](https://img.shields.io/badge/Node-24%20%C2%B7%20pnpm%2010-5fa04e)
+![Claude Code](https://img.shields.io/badge/Claude%20Code-stream--json-d97757)
+
+<br />
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/flock@dark.png" />
+  <img alt="Five agents running in parallel, each with its own worktree and its own reserved device" src="shots/out/flock@light.png" />
+</picture>
+
+</div>
+
+<br />
+
+<div align="center">
+
+**Five agents, five worktrees, five devices — at once** · **The agent taps through the app it just
+built** · **Hand a teammate one agent, not your whole machine** · **Runs headless on a Mac mini;
+drive it from your phone**
+
+</div>
+
+---
 
 ## Why
 
-Coding agents are fast. What slows you down is the juggling — stashing to switch branches, resetting a simulator between attempts, waiting for one idea to finish before the next can start, poking at a device by hand to see if it worked. Death by a thousand context switches.
+Coding agents are fast. What slows you down is the juggling — stashing to switch branches,
+resetting a simulator between attempts, waiting for one idea to finish before the next can start,
+poking at a device by hand to see if it worked. Death by a thousand context switches.
 
-Argus opens another eye for each of those:
+Argus opens another eye for each of those.
 
-- **Parallel by default.** Every session is an isolated worktree with its own agent, its own device, its own terminals. Fan out five ideas at once; none of them collide.
-- **See what the agent sees.** Live iOS simulator and Android emulator mirroring, an embedded Chromium browser over CDP, and streaming tool-call cards — the agent's every move, rendered as it happens.
-- **Review like a human.** Branches, commits, stashes, hunk-level staging, and a diff viewer, all in the UI. Accept, reject, or refine without leaving the app.
-- **Not tied to your desk.** Pair a phone or a browser and check in from anywhere, hand a Mac mini the work with the headless server build, or drop someone a temporary link to exactly one agent and one device. End-to-end encrypted, your machines only.
+|                             |                                                                                                                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Parallel by default**     | Every session is an isolated worktree with its own agent, its own device, its own terminals. Fan out five ideas at once; none of them collide.                                       |
+| **See what the agent sees** | Live iOS simulator and Android emulator mirroring, an embedded Chromium browser over CDP, and streaming tool-call cards — the agent's every move, rendered as it happens.            |
+| **Review like a human**     | Branches, commits, stashes, hunk-level staging, and a diff viewer, all in the UI. Accept, reject, or refine without leaving the app.                                                 |
+| **Not tied to your desk**   | Pair a phone or a browser and check in from anywhere, hand a Mac mini the work with the headless server build, or drop someone a temporary link to exactly one agent and one device. |
 
-![The git panel: file list, unified diff, hunk-level staging](shots/out/review-detail@dark.png)
+Beyond the four: automations that start the work themselves, an orchestration tree for
+agent-spawned subagents, a permission broker with per-pattern allow/deny, organisations for
+multi-repo products, and a built-in MCP server. See [`docs/features.md`](docs/features.md).
 
-Beyond the four: automations that start the work themselves, an orchestration tree for agent-spawned subagents, a permission broker with per-pattern allow/deny, organisations for multi-repo products, and a built-in MCP server. See [`docs/features.md`](docs/features.md).
+---
+
+## Read the diff, not the promise
+
+An agent telling you it worked is not evidence. Every session carries a full git client — file
+list, unified or split diff, hunk-level staging, commits, stashes, conflicts — so you approve the
+branch that survives and throw the rest away without leaving the app.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/review-detail@dark.png" />
+  <img alt="The git panel: file list, unified diff, hunk-level staging" src="shots/out/review-detail@light.png" />
+</picture>
+
+## The work that starts before you do
+
+Automations run on a schedule or a signal, read your issues, pull requests and crash reports, and
+leave proposals in an inbox — each with a confidence, a rationale and the source it came from. An
+autonomy ladder decides how far a run may go on its own: propose, draft, open a PR, or merge when
+CI is green.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/automations-poster@dark.png" />
+  <img alt="The automations inbox: proposals with confidence, rationale and source" src="shots/out/automations-poster@light.png" />
+</picture>
+
+## Your Mac keeps working while you don't
+
+Pair a phone or any browser and check in from anywhere. Local network, Tailscale and Cloudflare run
+side by side; traffic is end-to-end encrypted with Noise IK, so a tunnel only ever sees ciphertext.
+Or hand a Mac mini the job with the headless server build.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="shots/out/remote-poster@dark.png" />
+  <img alt="Remote access: paired devices, two transports side by side, a Mac mini holding the admin grant" src="shots/out/remote-poster@light.png" />
+</picture>
+
+---
 
 ## Install
 
-**Prerequisites**
+<details open>
+<summary><b>Prerequisites</b></summary>
 
 - macOS 13+ (Apple Silicon)
 - [mise](https://mise.jdx.dev/) — pins Node 24 and pnpm 10 (see `mise.toml`)
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) on your `PATH`, with your own subscription or API key
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) on your `PATH`, with your own
+  subscription or API key
 - Xcode + iOS Simulators for the iOS features; Android SDK + an AVD for Android (optional)
+
+</details>
 
 ```sh
 mise install        # node, pnpm
@@ -36,7 +115,7 @@ pnpm install        # dependencies + conductor + scrcpy-server bootstrap
 pnpm build:bridge   # native iOS capture bridge (required for simulator mirroring)
 ```
 
-## Run
+### Run
 
 ```sh
 pnpm dev            # Vite dev server + Electron
@@ -47,6 +126,8 @@ pnpm test           # vitest
 pnpm storybook      # Peacock design system at :6006
 pnpm shots          # regenerate the product screenshots (see below)
 ```
+
+---
 
 ## Configure a project: `.argus.json`
 
@@ -79,11 +160,16 @@ Drop this in any repo root to make it Argus-ready:
 | `workspace_env`  | Env var set per-session with a unique port/offset                              |
 | `run`            | Command executed by the Run button                                             |
 
-`.argus.local.json` (gitignored) overrides or extends the base config. Everything here is also editable in-app under Project Settings; the full reference is in [`docs/project-settings.md`](docs/project-settings.md).
+`.argus.local.json` (gitignored) overrides or extends the base config. Everything here is also
+editable in-app under Project Settings; the full reference is in
+[`docs/project-settings.md`](docs/project-settings.md).
+
+---
 
 ## Architecture
 
-A pnpm monorepo behind a three-panel desktop shell: workspace sidebar on the left, agent control in the center, runtime and testing on the right.
+A pnpm monorepo behind a three-panel desktop shell: workspace sidebar on the left, agent control in
+the center, runtime and testing on the right.
 
 | Package            | What it is                                                                                     |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
@@ -94,13 +180,20 @@ A pnpm monorepo behind a three-panel desktop shell: workspace sidebar on the lef
 | `clients/`         | The LAN web client and the native Expo remote                                                  |
 | `native/`          | Swift/ObjC simulator bridge                                                                    |
 
-The interesting constraint is that **`packages/host` never imports `electron`** — enforced by `packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule. Anything the desktop shell alone can do (open a browser, reach the keychain, post a notification) goes through the `HostPlatform` seam in `packages/host/src/platform.ts`, which has a headless Node implementation where every capability degrades to a documented no-op. A Linux box or a bare CLI can run the core.
+The interesting constraint is that **`packages/host` never imports `electron`** — enforced by
+`packages/host/src/noElectron.test.ts` and a `no-restricted-imports` rule. Anything the desktop
+shell alone can do (open a browser, reach the keychain, post a notification) goes through the
+`HostPlatform` seam in `packages/host/src/platform.ts`, which has a headless Node implementation
+where every capability degrades to a documented no-op. A Linux box or a bare CLI can run the core.
 
-Host services live one directory per domain under `packages/host/src/services/`: `session/` (worktrees, setup, merge), `agent/` (the Claude Code subprocess and its stream-json), `terminal/` (node-pty), `simulator/` (simctl plus the native bridge), `command/` (the registry), `remote/` (the Noise/WS gateway), and about twenty more.
+Host services live one directory per domain under `packages/host/src/services/`: `session/`
+(worktrees, setup, merge), `agent/` (the Claude Code subprocess and its stream-json), `terminal/`
+(node-pty), `simulator/` (simctl plus the native bridge), `command/` (the registry), `remote/` (the
+Noise/WS gateway), and about twenty more.
 
 `CLAUDE.md` has the full map, the conventions, and the rules that matter when adding to any of it.
 
-## Session lifecycle
+### Session lifecycle
 
 1. **Create** — `git worktree add` from the base branch.
 2. **Setup** — the `.argus.json` pipeline runs: copy, symlink, commands.
@@ -109,9 +202,13 @@ Host services live one directory per domain under `packages/host/src/services/`:
 5. **Merge** — one-click merge back into the base branch.
 6. **Delete** — kills the agent and terminals, removes the worktree.
 
-Worktrees live at `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`, outside your project directory, so your primary checkout and your git client stay clean.
+Worktrees live at `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`, outside your project
+directory, so your primary checkout and your git client stay clean.
 
-## Key technical decisions
+<details>
+<summary><b>Key technical decisions</b></summary>
+
+<br />
 
 | Decision                                   | Why                                                               |
 | ------------------------------------------ | ----------------------------------------------------------------- |
@@ -124,30 +221,60 @@ Worktrees live at `~/.argus/worktrees/{RepoName}-argus-worktrees/{branch}/`, out
 | Noise IK for the remote gateway            | The tunnel only ever sees ciphertext; keys are pinned per device  |
 | MCP server baked in                        | Any MCP-aware agent can drive Argus sessions out of the box       |
 
-## Screenshots are generated, not taken
+</details>
 
-`pnpm shots` renders the real app in a plain browser tab against fixture data and captures it with [conductor](https://github.com/DouweBos/conductor). No Electron, no backend, no Claude auth, no simulator — so the output is identical run to run and safe to publish.
+<details>
+<summary><b>Screenshots are generated, not taken</b></summary>
 
-Scenarios with a `beats` list are **recorded**: the runner steps the fixture one beat at a time, screenshots between steps, and stitches the frames with ffmpeg. Conductor only records real devices, and a timed screen capture of a web page is not reproducible — a scripted sequence is.
+<br />
 
-Scenarios are plain data in `app/lib/fixture/scenarios/`, reached via `?fixture=<id>`; `app/lib/fixture/stubBridge.ts` stands in for the preload bridge. To add a shot, add a scenario and run `pnpm shots`. `pnpm shots --check` compares against the committed images, so a UI change that breaks the README or the website fails the build instead of rotting quietly.
+`pnpm shots` renders the real app in a plain browser tab against fixture data and captures it with
+[conductor](https://github.com/DouweBos/conductor). No Electron, no backend, no Claude auth, no
+simulator — so the output is identical run to run and safe to publish.
+
+Scenarios with a `beats` list are **recorded**: the runner steps the fixture one beat at a time,
+screenshots between steps, and stitches the frames with ffmpeg. Conductor only records real
+devices, and a timed screen capture of a web page is not reproducible — a scripted sequence is.
+
+Scenarios are plain data in `app/lib/fixture/scenarios/`, reached via `?fixture=<id>`;
+`app/lib/fixture/stubBridge.ts` stands in for the preload bridge. To add a shot, add a scenario and
+run `pnpm shots`. `pnpm shots --check` compares against the committed images, so a UI change that
+breaks the README or the website fails the build instead of rotting quietly.
+
+</details>
+
+---
 
 ## Contributing
 
-We just welcomed our first collaborator, so Argus is officially a flock — two pairs of eyes and room for more.
+We just welcomed our first collaborator, so Argus is officially a flock — two pairs of eyes and
+room for more.
 
-Argus is small, opinionated, and moving fast — which is the best time to join. Agent orchestration, the simulator pipeline, a new MCP primitive, an icon in Peacock, a thoughtful bug report: all of it counts.
+Argus is small, opinionated, and moving fast — which is the best time to join. Agent orchestration,
+the simulator pipeline, a new MCP primitive, an icon in Peacock, a thoughtful bug report: all of it
+counts.
 
 A few ground rules (the full list is in `CLAUDE.md`):
 
-- **Peacock first.** All UI primitives come from [`@argus/peacock`](./packages/peacock). No inline `<svg>` in `app/`, no Tailwind, no ad-hoc icon packs.
-- **Keep files focused.** ~500 LOC is the soft ceiling for a module, ~300 for a component. If it's growing, split it.
-- **Typed IPC everywhere.** Handlers in `packages/host/src/services/`, registered in `electron/ipc.ts`, wrapped in `app/lib/ipc.ts`. Keep `types.ts` in sync.
-- **Worktrees are sacred.** Changes to the worktree lifecycle touch real user repos. Tread lightly, and test with `pnpm dev` first.
+- **Peacock first.** All UI primitives come from [`@argus/peacock`](./packages/peacock). No inline
+  `<svg>` in `app/`, no Tailwind, no ad-hoc icon packs.
+- **Keep files focused.** ~500 LOC is the soft ceiling for a module, ~300 for a component. If it's
+  growing, split it.
+- **Typed IPC everywhere.** Handlers in `packages/host/src/services/`, registered in
+  `electron/ipc.ts`, wrapped in `app/lib/ipc.ts`. Keep `types.ts` in sync.
+- **Worktrees are sacred.** Changes to the worktree lifecycle touch real user repos. Tread lightly,
+  and test with `pnpm dev` first.
 - **Tokens only.** No hardcoded colors — they silently break the opposite theme.
 
 ---
 
-> _In the myth, Argus Panoptes had a hundred eyes — some always open, some always watching. When he was slain, the goddess Hera set his eyes into the tail of the peacock, where they glitter to this day._
+<div align="center">
+
+> _In the myth, Argus Panoptes had a hundred eyes — some always open, some always watching. When he
+> was slain, the goddess Hera set his eyes into the tail of the peacock, where they glitter to this
+> day._
 >
-> _This repo is those eyes. The [`@argus/peacock`](./packages/peacock) design system is where they live._
+> _This repo is those eyes. The [`@argus/peacock`](./packages/peacock) design system is where they
+> live._
+
+</div>
