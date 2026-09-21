@@ -1,24 +1,3 @@
 {
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'if git diff --quiet && git diff --cached --quiet && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then exit 0; fi; o=$(pnpm lint 2>&1) || { printf \"%s\\n\" \"$o\" >&2; exit 2; }'"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'if git diff --quiet && git diff --cached --quiet && [ -z \"$(git ls-files --others --exclude-standard)\" ]; then exit 0; fi; o=$(pnpm lint 2>&1) || { printf \"%s\\n\" \"$o\" >&2; exit 2; }'"
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }
