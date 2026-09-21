@@ -86,9 +86,9 @@ export function applyClientAuth(
   headers: Record<string, string>,
   client: { id: string; secret?: string; authMethod?: string },
 ): void {
-  // Basic carries the client_id itself; repeating it in the body counts as a
-  // second authentication method and gets rejected (Linear 400s on it).
   if (client.secret && client.authMethod === "client_secret_basic") {
+    // RFC 6749 §2.3: Basic-authenticating clients must not also put
+    // client_id in the body — Linear rejects that as multiple auth methods.
     const basic = Buffer.from(
       `${encodeURIComponent(client.id)}:${encodeURIComponent(client.secret)}`,
     ).toString("base64");
