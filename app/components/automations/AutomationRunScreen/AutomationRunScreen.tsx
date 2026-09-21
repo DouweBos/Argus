@@ -23,7 +23,11 @@ import {
   useAutomationRun,
 } from "../../../stores/automationStore";
 import { selectSession, useSessions } from "../../../stores/sessionStore";
-import { CancelRunButton, RunStatusBadge } from "../RunControls";
+import {
+  CancelRunButton,
+  DeleteRunButton,
+  RunStatusBadge,
+} from "../RunControls";
 import { SaveQuickRunButton } from "../SaveQuickRunButton";
 import styles from "./AutomationRunScreen.module.css";
 import { RunReport } from "./RunReport";
@@ -93,7 +97,16 @@ export function AutomationRunScreen() {
             Open transcript
           </Button>
         )}
-        {active && <CancelRunButton runId={run.id} />}
+        {active ? (
+          <CancelRunButton runId={run.id} />
+        ) : (
+          <DeleteRunButton
+            onDeleted={() =>
+              scratch ? openQuickRuns() : openAutomation(run.automation_id)
+            }
+            runId={run.id}
+          />
+        )}
       </header>
 
       <div className={styles.titleBlock}>

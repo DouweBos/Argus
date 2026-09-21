@@ -18,6 +18,7 @@ import {
   cancelAutomationRun as cancelAutomationRunIpc,
   createAutomation as createAutomationIpc,
   deleteAutomation as deleteAutomationIpc,
+  deleteAutomationRun as deleteAutomationRunIpc,
   listAutomationRuns,
   listAutomations,
   markAutomationRunRead as markAutomationRunReadIpc,
@@ -197,6 +198,9 @@ export const saveAutomation = updateAutomationIpc;
 export const createAutomation = createAutomationIpc;
 
 export const deleteAutomation = deleteAutomationIpc;
+
+/** Throw away a run and its report for good. The host re-emits the list. */
+export const deleteAutomationRun = deleteAutomationRunIpc;
 
 export const runAutomationNow = runAutomationNowIpc;
 

@@ -29,6 +29,7 @@ import { AutomationEditor } from "../AutomationEditor/AutomationEditor";
 import { AutomationTrackRecord } from "../AutomationTrackRecord";
 import {
   CancelRunButton,
+  DeleteRunButton,
   RunStatusBadge,
   TriggerRunButton,
 } from "../RunControls";
@@ -51,7 +52,13 @@ function HistoryRow({
       error={run.error ?? undefined}
       unread={isUnreadReport(run)}
       onClick={() => openAutomationRun(automationId, run.id)}
-      actions={isRunActive(run) ? <CancelRunButton runId={run.id} /> : null}
+      actions={
+        isRunActive(run) ? (
+          <CancelRunButton runId={run.id} />
+        ) : (
+          <DeleteRunButton runId={run.id} />
+        )
+      }
     />
   );
 }

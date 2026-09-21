@@ -21,6 +21,7 @@ vi.mock("../../../lib/ipc", () => ({
   createAutomation: vi.fn(),
   updateAutomation: vi.fn(),
   deleteAutomation: vi.fn(),
+  deleteAutomationRun: vi.fn(),
   setAutomationEnabled: vi.fn(),
   runAutomationNow: vi.fn(),
   cancelAutomationRun: vi.fn(),
