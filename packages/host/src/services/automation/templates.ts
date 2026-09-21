@@ -21,6 +21,7 @@ export const PR_SHEPHERD_TEMPLATE_ID = "pr-shepherd";
 export const REGRESSION_SWEEP_TEMPLATE_ID = "regression-sweep";
 export const BRANCH_JANITOR_TEMPLATE_ID = "branch-janitor";
 export const DEPENDENCY_WATCH_TEMPLATE_ID = "dependency-watch";
+export const LOCAL_BRANCH_CLEANUP_TEMPLATE_ID = "local-branch-cleanup";
 
 /** The machine's zone, so a seeded 07:30 means 07:30 where you are. */
 function localTimezone(): string {
@@ -281,6 +282,61 @@ security ones with a \`critical\` tone.
 - Do not call ExitPlanMode. Nobody is watching this run.
 `;
 
+const LOCAL_BRANCH_CLEANUP_PLAYBOOK = `# Local branch cleanup
+
+A merged pull request deletes the branch on the remote and leaves the local one
+behind. Find the local branches that have nothing left in them and propose
+deleting each one.
+
+For each project in scope:
+
+1. \`git fetch --prune\` so the remote-tracking refs are current. If the command
+   is refused, say so in the report and carry on — the rest still works, it is
+   just reading a staler view.
+2. \`git branch -vv\` — a branch marked \`[origin/<name>: gone]\` had its remote
+   deleted, which is what a merged and tidied-up PR looks like.
+3. \`git branch --merged <default branch>\` — fully merged into the default
+   branch, so deleting it loses nothing.
+4. For each candidate, \`git log <default branch>..<branch> --oneline\` to see
+   what deleting it would actually lose. Empty means safe.
+
+Never propose deleting:
+
+- the branch that is currently checked out, or the default branch itself;
+- a branch that has an Argus worktree on it — call \`list_sessions\` and match on
+  the branch name. Deleting it breaks the worktree; the **Branch janitor**
+  automation is what retires those;
+- anything you could not establish the state of. Say you skipped it and why.
+
+Then, **one \`emit_proposal\` per branch**:
+
+- **Safe** — the remote is gone *and* \`git log <default>..<branch>\` is empty.
+  Use \`recommended_action: "review"\`, name the branch, give its last commit date
+  and the PR it merged in if you can find it, and put the exact
+  \`git branch -d <branch>\` in the summary.
+- **Not safe** — the remote is gone but commits remain. Use
+  \`recommended_action: "needs_info"\`, list the commits that would be lost, and
+  say plainly that this needs \`-D\` and that nothing on the remote is holding
+  them.
+
+Omit \`cta\` on both. There is no session to start and no page to open — the
+proposal is the reminder, and the command in it is the whole job.
+
+Set \`repo_root\` to the project so the proposal says which one it means.
+
+Finish with \`emit_report\`: a \`stats\` block (branches checked, safe to delete,
+needs a look), a \`table\` of branch / last commit / remote / verdict, and the
+single \`git branch -d\` line that deletes every safe one at once.
+
+## Rules
+
+- This run is read-only. Do not delete a branch, do not check one out, do not
+  commit, and do not push. You read and propose.
+- Never propose a \`-D\` as if it were routine. Unmerged commits that exist
+  nowhere else are gone for good.
+- Do not call ExitPlanMode. Nobody is watching this run.
+`;
+
 /** Every template shipped with the app, keyed by its stable id. */
 export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
   [STANDUP_DIGEST_TEMPLATE_ID]: {
@@ -401,5 +457,21 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
     playbook: DEPENDENCY_WATCH_PLAYBOOK,
     autonomy: "propose",
     template_id: DEPENDENCY_WATCH_TEMPLATE_ID,
+  },
+  [LOCAL_BRANCH_CLEANUP_TEMPLATE_ID]: {
+    name: "Local branch cleanup",
+    description:
+      "Weekly: local branches whose pull request already merged and whose remote is gone, one proposal each.",
+    enabled: false,
+    trigger: {
+      kind: "schedule",
+      cron: "0 10 * * 1",
+      timezone: localTimezone(),
+      catch_up: true,
+    },
+    playbook: LOCAL_BRANCH_CLEANUP_PLAYBOOK,
+    // Deleting a branch is not undoable, so this one never leaves propose.
+    autonomy: "propose",
+    template_id: LOCAL_BRANCH_CLEANUP_TEMPLATE_ID,
   },
 };
