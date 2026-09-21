@@ -82,3 +82,20 @@ export const WithNewSession: Story = {
     </div>
   ),
 };
+
+/** The same repo can exist on several machines — the badge is what tells them apart. */
+export const OnAPairedMachine: Story = {
+  args: {
+    name: "Argus",
+    path: "~/Code/argus",
+    hostLabel: "Mac mini",
+    accent: "#4d9fff",
+    agents: [{ status: "running" }],
+    lastOpened: "just now",
+  },
+  render: (args) => (
+    <div style={{ width: 340 }}>
+      <ProjectCard {...args} />
+    </div>
+  ),
+};

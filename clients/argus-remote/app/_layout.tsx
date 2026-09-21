@@ -11,6 +11,7 @@ import {
   useRouter,
 } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ImageViewer } from "../src/components/ImageViewer";
 import { LockScreen } from "../src/components/LockScreen";
@@ -40,9 +41,11 @@ async function describeBiometry(): Promise<string | null> {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <Root />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <Root />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -80,7 +83,10 @@ function Root() {
   const pathname = usePathname();
   const { id } = useGlobalSearchParams<{ id?: string }>();
   const openAgentRef = useRef<string | null>(null);
-  openAgentRef.current = pathname.startsWith("/agent/") ? (id ?? null) : null;
+
+  useEffect(() => {
+    openAgentRef.current = pathname.startsWith("/agent/") ? (id ?? null) : null;
+  }, [pathname, id]);
 
   const openAgent = useCallback(
     (agentId: string, label: string) => {
@@ -187,6 +193,12 @@ function Root() {
         <Stack.Screen name="pair" options={{ title: "Pair a computer" }} />
         <Stack.Screen name="settings" options={{ title: "Settings" }} />
         <Stack.Screen name="devices" options={{ title: "Devices" }} />
+        <Stack.Screen name="automations" options={{ title: "Automations" }} />
+        <Stack.Screen
+          name="automation/[id]"
+          options={{ title: "Automation" }}
+        />
+        <Stack.Screen name="run/[id]" options={{ title: "Run" }} />
       </Stack>
       <ImageViewer />
     </>

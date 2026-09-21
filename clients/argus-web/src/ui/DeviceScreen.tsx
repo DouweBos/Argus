@@ -5,8 +5,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Banner, Button, Icons } from "@argus/peacock";
-import { H264CanvasDecoder } from "../lib/h264Decoder";
+import { Banner, Button, DeviceControlOverlay, Icons } from "@argus/peacock";
+import { H264CanvasDecoder } from "@argus/remote-client";
 import { toNativeKey } from "../lib/keymap";
 import type { RemotePlatform } from "../lib/protocol";
 import { useAppStore } from "../lib/store";
@@ -92,6 +92,14 @@ export function DeviceScreen({
   const deviceTouch = useAppStore((s) => s.deviceTouch);
   const deviceButton = useAppStore((s) => s.deviceButton);
   const deviceKeyboard = useAppStore((s) => s.deviceKeyboard);
+  const holder = useAppStore((s) => s.claimByDevice[deviceId] ?? null);
+  const claimConnectionId = useAppStore((s) => s.claimConnectionId);
+  const loadClaim = useAppStore((s) => s.loadClaim);
+  const claimDevice = useAppStore((s) => s.claimDevice);
+  const releaseDevice = useAppStore((s) => s.releaseDevice);
+  // Someone else is driving: their input wins until we take over, so say so
+  // rather than letting taps be refused silently.
+  const blocked = holder !== null && holder.connection_id !== claimConnectionId;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const decoderRef = useRef<H264CanvasDecoder | null>(null);
@@ -144,7 +152,7 @@ export function DeviceScreen({
               msg.codedHeight,
               msg.description,
             );
-          } else {
+          } else if (msg.kind === "frame") {
             decoder.decode(msg.data, msg.keyFrame, msg.timestamp);
           }
         });
@@ -172,6 +180,17 @@ export function DeviceScreen({
     unwatchDevice,
     registerMediaSink,
   ]);
+
+  // Who holds input, seeded before the first tap and released on the way out —
+  // a client that walks away must not leave the device locked to it.
+  useEffect(() => {
+    if (connection !== "ready" || !hasControl) {
+      return;
+    }
+    loadClaim(deviceId).catch(() => {});
+
+    return () => releaseDevice(deviceId);
+  }, [connection, hasControl, deviceId, loadClaim, releaseDevice]);
 
   // --- Pointer → normalized touch ---
   const lastDrag = useRef(0);
@@ -209,7 +228,7 @@ export function DeviceScreen({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!hasControl) {
+      if (!hasControl || blocked) {
         return;
       }
       pointerDown.current = true;
@@ -217,7 +236,7 @@ export function DeviceScreen({
       const { x, y } = normCoords(e);
       deviceTouch(deviceId, platform, x, y, 0);
     },
-    [hasControl, normCoords, deviceTouch, deviceId, platform],
+    [hasControl, blocked, normCoords, deviceTouch, deviceId, platform],
   );
 
   const onPointerMove = useCallback(
@@ -254,13 +273,13 @@ export function DeviceScreen({
 
   const onTvPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!hasControl) {
+      if (!hasControl || blocked) {
         return;
       }
       tvStart.current = { x: e.clientX, y: e.clientY };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
-    [hasControl],
+    [hasControl, blocked],
   );
 
   const onTvPointerUp = useCallback(
@@ -290,7 +309,7 @@ export function DeviceScreen({
 
   const onKey = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>, isDown: boolean) => {
-      if (!hasControl) {
+      if (!hasControl || blocked) {
         return;
       }
       // tvOS is driven by discrete remote presses, so fire on key-down only.
@@ -319,7 +338,15 @@ export function DeviceScreen({
         isDown,
       );
     },
-    [hasControl, isTv, platform, deviceButton, deviceKeyboard, deviceId],
+    [
+      hasControl,
+      blocked,
+      isTv,
+      platform,
+      deviceButton,
+      deviceKeyboard,
+      deviceId,
+    ],
   );
 
   if (!supported) {
@@ -364,6 +391,12 @@ export function DeviceScreen({
         {...stagePointerProps}
       >
         <canvas ref={canvasRef} className="aw-device-canvas" />
+        <DeviceControlOverlay
+          holderLabel={blocked ? holder.label : null}
+          onTakeControl={() => {
+            claimDevice(deviceId, true).catch(() => {});
+          }}
+        />
         {status !== "streaming" && (
           <div className="aw-device-placeholder">
             <p>{PLACEHOLDER[status]}</p>
@@ -379,6 +412,7 @@ export function DeviceScreen({
               variant="ghost"
               aria-label={b.label}
               title={b.label}
+              disabled={blocked}
               onClick={() =>
                 deviceButton(deviceId, platform, b.button).catch(() => {})
               }

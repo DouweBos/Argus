@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Icons } from "@argus/peacock";
+import { DeviceControlOverlay, Icons } from "@argus/peacock";
 import { error } from "@logger";
+import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
 import {
   bootSimulator,
   checkIosTools,
@@ -13,6 +14,7 @@ import {
   stopSimulatorCapture,
 } from "../../../lib/ipc";
 import { KEYCODE_MAP, modifierFlagsFromEvent } from "../../../lib/keycodeMap";
+import { useRouteHostId } from "../../../lib/routeHooks";
 import {
   isTvOS,
   useIosSimulatorViewState,
@@ -259,16 +261,27 @@ export function IosSimulatorView({
 
   // --- Touch / keyboard callbacks ---
 
+  // The device belongs to the host the view reads from; several may be
+  // attached and each arbitrates its own devices.
+  const hostId = useRouteHostId();
+  const claim = useDeviceClaim(selectedUdid, hostId, capturing);
+  const { reportInputError, takeControl } = claim;
+  const handleTakeControl = useCallback(() => takeControl(), [takeControl]);
+
   const handleTouch = useCallback(
     (x: number, y: number, eventType: number) => {
       if (!selectedUdid) {
         return;
       }
       simulatorTouch(selectedUdid, x, y, eventType).catch((err) => {
-        error("[Touch] failed:", err);
+        // A refusal means someone else took the device — show that rather
+        // than a dead log line, in case it beat the claim broadcast here.
+        if (!reportInputError(err)) {
+          error("[Touch] failed:", err);
+        }
       });
     },
-    [selectedUdid],
+    [selectedUdid, reportInputError],
   );
 
   const handleKeyDown = useCallback(
@@ -295,9 +308,9 @@ export function IosSimulatorView({
         keyCode,
         modifierFlagsFromEvent(e.nativeEvent),
         true,
-      );
+      ).catch(reportInputError);
     },
-    [selectedUdid],
+    [selectedUdid, reportInputError],
   );
 
   const handleKeyUp = useCallback(
@@ -324,9 +337,9 @@ export function IosSimulatorView({
         keyCode,
         modifierFlagsFromEvent(e.nativeEvent),
         false,
-      );
+      ).catch(reportInputError);
     },
-    [selectedUdid],
+    [selectedUdid, reportInputError],
   );
 
   // --- Device picker ---
@@ -449,6 +462,10 @@ export function IosSimulatorView({
                 height={videoHeight || undefined}
                 width={videoWidth || undefined}
               />
+              <DeviceControlOverlay
+                holderLabel={claim.holderLabel}
+                onTakeControl={handleTakeControl}
+              />
               {!isReceiving && (
                 <div className={styles.connecting}>
                   <p>
@@ -459,7 +476,7 @@ export function IosSimulatorView({
                 </div>
               )}
             </div>
-            <AppleTVRemote udid={selectedUdid} />
+            <AppleTVRemote claim={claim} udid={selectedUdid} />
           </div>
         )
       : undefined;
@@ -468,6 +485,7 @@ export function IosSimulatorView({
     <IosDeviceStreamView
       actionButtons={actionButtons}
       capturing={capturing}
+      claim={claim}
       devicePicker={hideDevicePicker ? null : devicePicker}
       placeholder={placeholderContent}
       showFloatingActionBar={deviceSessionActive}

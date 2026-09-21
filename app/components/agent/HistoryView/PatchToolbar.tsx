@@ -15,6 +15,7 @@ import {
   Input,
   type GitErrorKind,
 } from "@argus/peacock";
+import { resolveDroppedFilePaths } from "../../../lib/droppedFiles";
 import { GitError } from "../../../lib/gitError";
 import { gitAm, gitFormatPatch, revealInFinder } from "../../../lib/ipc";
 import styles from "./PatchToolbar.module.css";
@@ -55,24 +56,23 @@ export function PatchToolbar({ sessionId }: Props) {
     if (!files || files.length === 0) {
       return;
     }
-    const paths: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file) {
-        continue;
-      }
-      // Electron preload exposes getFilePath on the File instance.
-      const p = window.argus.getFilePath(file);
-      if (p) {
-        paths.push(p);
-      }
-    }
-    if (paths.length === 0) {
-      return;
-    }
     setBusy(true);
     setBanner(null);
     try {
+      // Locally the picked file's own path; against a host, the path it got
+      // after being uploaded there.
+      const { paths, errors } = await resolveDroppedFilePaths(
+        sessionId,
+        Array.from(files),
+      );
+      if (errors.length > 0) {
+        setBanner({ kind: "unknown", message: errors.join(" ") });
+
+        return;
+      }
+      if (paths.length === 0) {
+        return;
+      }
       await gitAm(sessionId, { patchPaths: paths });
     } catch (err) {
       handleErr(err, setBanner);

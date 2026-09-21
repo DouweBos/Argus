@@ -81,4 +81,4 @@ Pre-release versioning (beta/alpha) runs `pnpm changeset pre enter <channel>` �
 
 ## Tool assets
 
-Tool assets (`argus-sim-bridge`, `scrcpy-server.jar`, the conductor tree) ship bundled with the app via electron-builder's `extraResources`. Toggling tools on or off in onboarding/Settings affects whether their UI surfaces and IPC handlers are active — it doesn't move binaries around. Updating Argus updates its tool assets atomically as part of the standard auto-update flow.
+Tool assets (`argus-sim-bridge`, `scrcpy-server.jar`, the conductor tree) ship bundled with the app via electron-builder's `extraResources`. Toggling tools on or off in Settings affects whether their UI surfaces and IPC handlers are active — it doesn't move binaries around. Updating Argus updates its tool assets atomically as part of the standard auto-update flow.

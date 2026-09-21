@@ -3,6 +3,7 @@ import * as Icons from "../../icons/Icons";
 import {
   QueuedMessage,
   QueuedMessageAction,
+  QueuedMessageEditor,
   QueuedMessageList,
 } from "./QueuedMessage";
 
@@ -76,6 +77,33 @@ export const WithEditAndDelete: Story = {
           </>
         }
       />
+    </QueuedMessageList>
+  ),
+};
+
+/** Queued by a huddle guest, so the row says who it came from. */
+export const FromGuest: Story = {
+  render: () => (
+    <QueuedMessageList>
+      <QueuedMessage
+        author="Sam Rivera"
+        text="Also check the empty state while you're in there."
+      />
+    </QueuedMessageList>
+  ),
+};
+
+/** Mid-edit: the dashed bubble is replaced by the inline editor. */
+export const Editing: Story = {
+  render: () => (
+    <QueuedMessageList>
+      <QueuedMessage>
+        <QueuedMessageEditor
+          initialText="Also check the empty state while you're in there."
+          onSave={noop}
+          onCancel={noop}
+        />
+      </QueuedMessage>
     </QueuedMessageList>
   ),
 };

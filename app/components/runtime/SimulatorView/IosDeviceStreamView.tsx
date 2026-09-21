@@ -1,4 +1,5 @@
-import { useIosVideoDecoder } from "../../../hooks/useIosVideoDecoder";
+import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
+import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
 import { CanvasStreamBody } from "./CanvasStreamBody";
@@ -18,6 +19,8 @@ export interface IosDeviceStreamViewProps {
   capturing: boolean;
   /** Platform toggle, rendered at the start of the title bar. */
   children?: React.ReactNode;
+  /** Host-side input arbitration for this device. */
+  claim?: DeviceClaimState;
   devicePicker: React.ReactNode;
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onKeyUp: (e: React.KeyboardEvent<HTMLDivElement>) => void;
@@ -52,6 +55,7 @@ export function IosDeviceStreamView({
   actionButtons,
   capturing,
   children,
+  claim,
   devicePicker,
   placeholder,
   showFloatingActionBar = true,
@@ -66,7 +70,7 @@ export function IosDeviceStreamView({
   onTouch,
 }: IosDeviceStreamViewProps) {
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useIosVideoDecoder(capturing, udid);
+    useDeviceVideo(capturing, udid, "ios");
 
   const titleChrome = (
     <RuntimeTitleBar
@@ -124,6 +128,7 @@ export function IosDeviceStreamView({
       {titleChrome}
       <CanvasStreamBody
         canvasRef={canvasRef}
+        claim={claim}
         isConfigured={isConfigured}
         isReceiving={isReceiving}
         videoHeight={videoHeight}

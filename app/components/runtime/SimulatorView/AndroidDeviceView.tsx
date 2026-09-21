@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Icons } from "@argus/peacock";
 import { error } from "@logger";
+import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
 import {
   ANDROID_KEYCODE_MAP,
   androidMetaStateFromEvent,
@@ -16,6 +17,7 @@ import {
   startAndroidCapture,
   stopAndroidCapture,
 } from "../../../lib/ipc";
+import { useRouteHostId } from "../../../lib/routeHooks";
 import { useAndroidDeviceSimulatorState } from "../../../stores/simulatorStore";
 import chrome from "../RuntimeChrome.module.css";
 import { AndroidDeviceStreamView } from "./AndroidDeviceStreamView";
@@ -239,16 +241,26 @@ export function AndroidDeviceView({
 
   // --- Touch / keyboard callbacks ---
 
+  // The device belongs to the host the view reads from; several may be
+  // attached and each arbitrates its own devices.
+  const hostId = useRouteHostId();
+  const claim = useDeviceClaim(selectedSerial, hostId, androidCapturing);
+  const { reportInputError } = claim;
+
   const handleTouch = useCallback(
     (x: number, y: number, eventType: number) => {
       if (!selectedSerial) {
         return;
       }
       androidTouch(selectedSerial, x, y, eventType).catch((err) => {
-        error("[Touch] failed:", err);
+        // A refusal means someone else took the device — show that rather
+        // than a dead log line, in case it beat the claim broadcast here.
+        if (!reportInputError(err)) {
+          error("[Touch] failed:", err);
+        }
       });
     },
-    [selectedSerial],
+    [selectedSerial, reportInputError],
   );
 
   const handleKeyDown = useCallback(
@@ -269,9 +281,9 @@ export function AndroidDeviceView({
         keyCode,
         androidMetaStateFromEvent(e.nativeEvent),
         true,
-      );
+      ).catch(reportInputError);
     },
-    [selectedSerial],
+    [selectedSerial, reportInputError],
   );
 
   const handleKeyUp = useCallback(
@@ -292,9 +304,9 @@ export function AndroidDeviceView({
         keyCode,
         androidMetaStateFromEvent(e.nativeEvent),
         false,
-      );
+      ).catch(reportInputError);
     },
-    [selectedSerial],
+    [selectedSerial, reportInputError],
   );
 
   // --- Device picker ---
@@ -419,6 +431,7 @@ export function AndroidDeviceView({
     <AndroidDeviceStreamView
       actionButtons={actionButtons}
       capturing={androidCapturing}
+      claim={claim}
       devicePicker={hideDevicePicker ? null : devicePicker}
       placeholder={placeholderContent}
       serial={selectedSerial}

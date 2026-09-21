@@ -177,6 +177,9 @@ export default tseslint.config(
     ignores: [
       "dist",
       "dist-electron",
+      // Packaged app output — bundled vendor JS, never ours to lint.
+      "release",
+      "release-server",
       "vendor",
       "**/storybook-static/**",
       "packages/peacock/vite.config.ts",
@@ -200,8 +203,10 @@ export default tseslint.config(
             "./tsconfig.json",
             "./tsconfig.main.json",
             "./tsconfig.node.json",
+            "./packages/host/tsconfig.json",
             "./packages/peacock/tsconfig.json",
             "./packages/remote-protocol/tsconfig.json",
+            "./packages/remote-client/tsconfig.json",
           ],
         },
       },
@@ -215,8 +220,10 @@ export default tseslint.config(
           "./tsconfig.json",
           "./tsconfig.main.json",
           "./tsconfig.node.json",
+          "./packages/host/tsconfig.json",
           "./packages/peacock/tsconfig.json",
           "./packages/remote-protocol/tsconfig.json",
+          "./packages/remote-client/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },
@@ -280,12 +287,31 @@ export default tseslint.config(
     },
   },
   {
-    files: ["electron/**/*.ts"],
+    files: ["electron/**/*.ts", "packages/host/**/*.ts"],
     languageOptions: {
       globals: globals.node,
     },
     rules: {
       "no-restricted-globals": "off",
+    },
+  },
+  {
+    // `@argus/host` is plain Node — the desktop shell is reached through
+    // `HostPlatform`, never by importing electron.
+    files: ["packages/host/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["electron", "electron/*"],
+              message:
+                "@argus/host must stay Electron-free. Add the capability to HostPlatform instead.",
+            },
+          ],
+        },
+      ],
     },
   },
   {

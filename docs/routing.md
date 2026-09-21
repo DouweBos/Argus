@@ -8,13 +8,29 @@ bar navigation buttons) always returns to the previous URL.
 No Zustand store mirrors the route. Reads go through URL-derived hooks
 (`useCurrentRoute` and friends); writes go through `appNavigate(route)`.
 
+Every URL may also carry `?host=<hostId>`, naming the machine the screen reads
+from. Several hosts can be attached at once (this Mac plus any paired host), so
+"whose projects am I looking at" is part of what you are looking at, not
+transport state. Omitted for this Mac (`hostId: "local"`).
+
+The window is tabbed: each tab holds one saved route, and **the active tab's
+route is the window URL**. There is still exactly one live route at a time —
+switching tabs is a navigation, not a second source of truth. See
+[Window tabs](#window-tabs).
+
 ## URL inventory
 
 | URL                                             | Screen                             | Notes                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                                             | Home / project picker              | Default route on launch.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `/`                                             | Home / project picker              | Default route on launch (see `launch_route` in [App settings](./app-settings.md)).                                                                                                                                                                                                                                                                                                                                                |
 | `/agents`                                       | Agents overview                    | All agents across all sessions.                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `/automations`                                  | Automations                        | Every automation on the focused host: trigger, last run, next run, enable switch.                                                                                                                                                                                                                                                                                                                                                 |
+| `/automations/quick`                            | Quick run                          | Compose a one-off run — playbook and scope — and every ad-hoc run's history. No automation is created.                                                                                                                                                                                                                                                                                                                            |
+| `/automations/quick/runs/:runId`                | Quick run detail                   | One ad-hoc run: its report, and the button that turns it into a real automation.                                                                                                                                                                                                                                                                                                                                                  |
+| `/automations/:automationId`                    | Automation config + run history    | Name, playbook, trigger, model and the list of past runs.                                                                                                                                                                                                                                                                                                                                                                         |
+| `/automations/:automationId/runs/:runId`        | Automation run                     | Status, cost, duration, the run's markdown report and a link to its host session.                                                                                                                                                                                                                                                                                                                                                 |
 | `/devices`                                      | Devices                            | iOS simulators + Android emulators.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `/inbox`                                        | Inbox — the briefing               | What Argus wants from you: pending proposals to decide on, work it started that is waiting for review, and automation runs that failed. Grouped by what you would do, not by which automation produced it. Can be made the launch screen (**Settings → Appearance → Launch screen**).                                                                                                                                             |
 | `/notifications`                                | Notifications                      | Warnings & errors.                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/pull-requests`                                | Pull requests                      | GitHub PRs of interest across open projects.                                                                                                                                                                                                                                                                                                                                                                                      |
 | `/pull-requests/:owner/:repo/:number`           | Pull request detail                | Single PR view: description, checks, files, comments.                                                                                                                                                                                                                                                                                                                                                                             |
@@ -38,8 +54,10 @@ Every URL parses into a `ParsedRoute`:
 interface ParsedRoute {
   view:
     | "agents"
+    | "automations"
     | "devices"
     | "home"
+    | "inbox"
     | "notifications"
     | "pull-request-detail"
     | "pull-requests"
@@ -66,6 +84,10 @@ interface ParsedRoute {
     | "settings"
     | null; // only meaningful when panel === "git"
   gitRefName: string | null; // set when gitView is "branches"/"tags" and a name segment follows
+  automationId: string | null; // set on /automations/:automationId and below
+  automationQuick: boolean; // true on /automations/quick and below
+  automationRunId: string | null; // set on either …/runs/:runId
+  hostId: string; // "?host=" — the attached host this screen reads from; "local" for this Mac
 }
 ```
 
@@ -114,13 +136,26 @@ appNavigate({ view: "home" }, { replace: true });
 The following store helpers are thin wrappers around `appNavigate` — use
 whichever reads best:
 
-| Helper                       | Effect                                                   |
-| ---------------------------- | -------------------------------------------------------- |
-| `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                          |
-| `selectSession(null)`        | `/`                                                      |
-| `setCenterView(view)`        | `/{view}`                                                |
-| `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route) |
-| `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                 |
+| Helper                       | Effect                                                      |
+| ---------------------------- | ----------------------------------------------------------- |
+| `selectSession(id)`          | `/sessions/{id}/{currentPanel}`                             |
+| `selectSession(null)`        | `/`                                                         |
+| `setCenterView(view)`        | `/{view}`                                                   |
+| `openInbox()`                | `/inbox`                                                    |
+| `openAutomations()`          | `/automations`                                              |
+| `openAutomation(id)`         | `/automations/{id}`                                         |
+| `openAutomationRun(id, run)` | `/automations/{id}/runs/{run}`                              |
+| `openQuickRuns()`            | `/automations/quick`                                        |
+| `openQuickRun(run)`          | `/automations/quick/runs/{run}`                             |
+| `setActiveCenterView(panel)` | `/sessions/{currentSessionId}/{panel}` (no-op off-route)    |
+| `navigateToPath(path)`       | Raw path (used by deep-link IPC handler)                    |
+| `setFocusedHost(hostId)`     | `?host={hostId}` — points the view at another attached host |
+
+`appNavigate` carries the current `?host=` forward unless the descriptor names
+a different one, so moving between screens never silently drops you back onto
+this Mac. `selectSession(id)` names the session's own host: selecting a session
+that lives on the mini moves the view there. Detaching a host falls the view
+back to this Mac.
 
 ## Building paths
 
@@ -128,7 +163,41 @@ whichever reads best:
 Prefer `appNavigate(route)` in callers; use `routeToPath` only when you need
 the raw string (e.g. for an `<a href>` or to compare to another path).
 
+## Window tabs
+
+`app/stores/tabStore.ts` holds the tab list, the active tab, and each tab's
+back / forward stacks. A tab is a _saved route plus identity_ —
+`{ id, path, title, pinned }` — never a mirror of the live route:
+
+- The pinned `tab-local` tab ("This Mac") is always leftmost and cannot be
+  closed. Every other tab can be closed, dragged, and reordered after it.
+- A tab's host is **derived from its path** (`?host=`), never stored twice.
+- Switching tabs calls `navigateToPath(tab.path)`; navigating inside a tab
+  updates that tab's saved path via `recordNavigation()`
+  (`app/hooks/useTabRouteSync.ts`, mounted in `RouterGlue`).
+- Tabs and the active tab persist to `localStorage` (`argus:window-tabs`) and
+  are restored at launch. A tab whose host is not attached restores anyway,
+  marked disconnected — it shows its last snapshot rather than silently moving
+  to another machine.
+- Closing a tab is a view change only: the host stays attached and its agents
+  keep running.
+
+Openers: `app/lib/tabActions.ts` (`openHostTab`, `openSessionTab`), the "+" in
+the strip, `Cmd+T`, the session context menu ("Open in New Tab") and
+Cmd-clicking a session row.
+
+Keyboard: `Cmd+T` new tab, `Cmd+W` close tab (falls through to closing the
+window when only the pinned tab is left), `Cmd+1…9` jump to a tab,
+`Ctrl+Tab` / `Ctrl+Shift+Tab` cycle. Screen shortcuts that used to be
+`Cmd+1…6` moved to `Cmd+Alt+1…6`.
+
 ## Back / forward
+
+**Back / forward is per tab.** React Router's history is global and would
+interleave two machines' screens into one stack, so each tab keeps its own
+back / forward list in `tabStore` and `goBackInTab()` / `goForwardInTab()`
+navigate to the saved path. The router's own history is only ever pushed
+forward; nothing calls `navigate(-1)` any more.
 
 Wired in `app/components/layout/NavigationDeepLinkBridge.tsx`:
 
@@ -136,8 +205,9 @@ Wired in `app/components/layout/NavigationDeepLinkBridge.tsx`:
 - Mouse button 3 / 4 (back / forward)
 - `navigation:goto` IPC events from the main process (deep links)
 
-Title-bar buttons listen to the `router:historychange` event dispatched from
-`useRegisterNavigator` to know when they should enable / disable.
+Title-bar buttons read `useCanGoBack()` / `useCanGoForward()` from `tabStore`.
+The `router:historychange` event dispatched from `useRegisterNavigator` is now
+only a "the route changed" ping (the prewarm service listens to it).
 
 ## Deep links
 
@@ -154,3 +224,11 @@ forwards it to `navigate(path)`.
    session / view is active, it reads it from the URL.
 3. **State that is not in the URL is not routable.** If a "screen" is worth a
    back-button entry, add it to the URL inventory above.
+4. **Tab identity is store state; which screen is showing is not.** The tab
+   list, its order and the active tab live in `tabStore`. What that tab is
+   _showing_ is the URL, as always — never add a `selectedX` slice for a
+   screen a route segment can carry.
+5. **The focused host is route state; the connections are not.** `?host=`
+   says which machine a screen reads from. Which hosts are _attached_ lives in
+   `connectionStore` + app settings — they keep streaming whether or not you
+   are looking at them, and a shared link must not try to attach anything.

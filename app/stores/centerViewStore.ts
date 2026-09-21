@@ -9,8 +9,10 @@ import { appNavigate, getCurrentRoute } from "../lib/router";
 
 export type CenterView =
   | "agents"
+  | "automations"
   | "devices"
   | "home"
+  | "inbox"
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"

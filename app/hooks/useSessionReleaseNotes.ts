@@ -1,6 +1,7 @@
 import type { ReleaseNoteEntry } from "../lib/types";
 import { useEffect, useState } from "react";
 import { getSessionReleaseNotes } from "../lib/ipc";
+import { subscribe } from "../lib/transport";
 
 /**
  * Subscribe to the glob-driven release-note files for a session. Re-scans
@@ -31,11 +32,10 @@ export function useSessionReleaseNotes(sessionId: string): ReleaseNoteEntry[] {
 
     load();
 
-    const unlistenDiff = window.argus.on(
-      `session:diff-changed:${sessionId}`,
-      () => load(),
+    const unlistenDiff = subscribe(`session:diff-changed:${sessionId}`, () =>
+      load(),
     );
-    const unlistenMerged = window.argus.on("session:merged", () => load());
+    const unlistenMerged = subscribe("session:merged", () => load());
 
     return () => {
       cancelled = true;

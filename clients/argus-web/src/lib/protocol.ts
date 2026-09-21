@@ -56,7 +56,39 @@ export type RemoteMethod =
   | "devices.unwatch"
   | "devices.touch"
   | "devices.button"
-  | "devices.keyboard";
+  | "devices.keyboard"
+  | "devices.claim"
+  | "devices.release"
+  | "devices.claim_status"
+  | "huddle.join"
+  | "huddle.state";
+
+/** Where a huddle guest stands with the host; `ended` means the room is gone. */
+export type HuddleConnectionState = "approved" | "denied" | "ended" | "pending";
+
+/**
+ * The guest's own view of the room. `agent_id`/`device_key` stay null until
+ * approval — a pending guest is not told what it is waiting for.
+ */
+/** Another approved guest, as this client sees them. */
+export interface HuddleMember {
+  member_id: string;
+  label: string;
+  connected: boolean;
+  /** They hold the device claim. At most one member ever does. */
+  driving?: boolean;
+}
+
+export interface HuddleStatePayload {
+  room_id: string;
+  state: HuddleConnectionState;
+  agent_id: string | null;
+  device_key: string | null;
+  /** Everyone the host has let in. Empty until this guest is approved. */
+  members?: HuddleMember[];
+  /** Which of `members` is us. */
+  you?: string | null;
+}
 
 export type RemotePlatform = "ios" | "android";
 
@@ -71,6 +103,19 @@ export interface RemoteDevice {
   capturing: boolean;
   width?: number;
   height?: number;
+}
+
+/** Who currently holds input on a device — only the holder may inject events. */
+export interface RemoteDeviceClaim {
+  connection_id: string;
+  /** The paired client holding the claim, not the simulator. */
+  device_id: string;
+  label: string;
+}
+
+export interface RemoteDeviceClaimState {
+  device_id: string;
+  holder: RemoteDeviceClaim | null;
 }
 
 export type RemotePermissionMode =
@@ -173,6 +218,8 @@ export interface RemoteQueuedMessage {
   id: string;
   text: string;
   display_text?: string;
+  /** Who queued it, when a huddle guest rather than the host did. */
+  author?: string;
   images?: RemoteImageAttachment[];
   queued_at: number;
 }
@@ -222,6 +269,8 @@ export interface RemoteMessage {
   tool_calls: RemoteToolCall[];
   images?: RemoteImageRef[];
   source?: RemoteMessageSource;
+  /** Who sent a user message, when a huddle guest rather than the host did. */
+  author?: string;
   is_error?: boolean;
   timestamp?: number;
   usage?: RemoteTokenUsage;

@@ -1,0 +1,119 @@
+.browser {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--border-radius-md);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-3);
+}
+
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.toolButton:hover:not(:disabled) {
+  background: var(--surface-4);
+  color: var(--text-primary);
+}
+
+.toolButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
+
+.list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
+
+.selected,
+.selected:hover {
+  background: var(--accent-overlay-lg);
+  color: var(--text-primary);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enter {
+  opacity: 0;
+  font-size: var(--font-size-xs);
+  color: var(--accent);
+}
+
+.row:hover .enter {
+  opacity: 1;
+}
+
+.empty,
+.error {
+  margin: 0;
+  padding: 12px;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--error);
+}

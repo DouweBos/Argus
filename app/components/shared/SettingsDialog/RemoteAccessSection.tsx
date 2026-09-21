@@ -25,7 +25,7 @@ import {
   remoteGetStatus,
   remoteRevokeDevice,
   remoteSetConfig,
-  remoteSetDeviceControl,
+  remoteSetDeviceGrants,
   remoteStartPairing,
 } from "../../../lib/ipc";
 import styles from "./RemoteAccessSection.module.css";
@@ -118,6 +118,7 @@ export function RemoteAccessSection() {
   } | null>(null);
   const [sas, setSas] = useState<string | null>(null);
   const [grantControl, setGrantControl] = useState(false);
+  const [grantAdmin, setGrantAdmin] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -139,6 +140,7 @@ export function RemoteAccessSection() {
   useIpcEvent<RemoteStatus>("remote:status", (s) => setStatus(s));
 
   const resetPairing = useCallback(() => {
+    setGrantAdmin(false);
     setPhase("idle");
     setQr(null);
     setSas(null);
@@ -198,17 +200,20 @@ export function RemoteAccessSection() {
   const confirmPairing = async () => {
     setError(null);
     try {
-      await remoteConfirmPairing(grantControl);
+      await remoteConfirmPairing({ control: grantControl, admin: grantAdmin });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
   };
 
-  const setControl = async (id: string, control: boolean) => {
+  const setGrants = async (
+    id: string,
+    grants: { admin: boolean; control: boolean },
+  ) => {
     setBusy(true);
     setError(null);
     try {
-      await remoteSetDeviceControl(id, control);
+      await remoteSetDeviceGrants(id, grants);
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -505,10 +510,22 @@ export function RemoteAccessSection() {
                   </p>
                   <div className={styles.sas}>{sas}</div>
                   <label className={styles.controlToggle}>
-                    <Toggle checked={grantControl} onChange={setGrantControl} />
+                    <Toggle
+                      checked={grantControl || grantAdmin}
+                      disabled={grantAdmin}
+                      onChange={setGrantControl}
+                    />
                     <span>
                       Allow this device to control agents (send messages, spawn
                       agents, create sessions)
+                    </span>
+                  </label>
+                  <label className={styles.controlToggle}>
+                    <Toggle checked={grantAdmin} onChange={setGrantAdmin} />
+                    <span>
+                      Let this device drive Argus like a second keyboard — for
+                      another Mac of yours running the desktop app, never a
+                      browser or phone.
                     </span>
                   </label>
                   <div className={styles.pairActions}>
@@ -535,7 +552,7 @@ export function RemoteAccessSection() {
                   connected={status.connectedDeviceIds.includes(d.device_id)}
                   busy={busy}
                   onRevoke={revoke}
-                  onSetControl={setControl}
+                  onSetGrants={setGrants}
                 />
               ))}
             </div>

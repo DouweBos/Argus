@@ -1,4 +1,5 @@
 import type { ComponentType, MouseEvent, ReactNode, Ref } from "react";
+import { Avatar } from "../Avatar/Avatar";
 import { HoverActionBar } from "../HoverActionBar/HoverActionBar";
 import { Markdown } from "../Markdown/Markdown";
 import styles from "./MessageBubble.module.css";
@@ -26,6 +27,11 @@ export interface MessageBubbleProps {
   renderMarkdown?: (text: string) => ReactNode;
   /** MCP framing for a system message (renders a full-width card). */
   mcp?: { label: string };
+  /**
+   * Who sent this user message, when it wasn't the person reading it — a
+   * huddle guest or a remote client. Omitted for the local user's own sends.
+   */
+  author?: string;
   /** Hover action buttons (desktop copy/edit/fork/restore). */
   actions?: ReactNode;
   /** Rendered tool calls (assistant). */
@@ -107,6 +113,7 @@ export function MessageBubble({
   toolOnly,
   textBlocks,
   mcp,
+  author,
   actions,
   toolCalls,
   chips,
@@ -164,6 +171,12 @@ export function MessageBubble({
     return (
       <div className={styles.userMsg} ref={rootRef}>
         <TimestampGutter timestamp={timestamp} />
+        {author && (
+          <div className={styles.userAuthor}>
+            <Avatar name={author} size={16} />
+            <span className={styles.userAuthorName}>{author}</span>
+          </div>
+        )}
         {actions && (
           <HoverActionBar className={styles.actions} placement="top-right">
             {actions}

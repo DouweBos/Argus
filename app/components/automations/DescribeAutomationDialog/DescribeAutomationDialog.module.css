@@ -1,0 +1,77 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 2px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.description {
+  min-height: 72px;
+  line-height: 1.55;
+}
+
+.generateRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.notes {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  background: var(--surface-1);
+}
+
+.scheduleRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.playbook {
+  min-height: 240px;
+  line-height: 1.55;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--error);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}

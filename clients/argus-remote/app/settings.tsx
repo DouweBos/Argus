@@ -68,8 +68,13 @@ export default function SettingsScreen() {
   const [name, setName] = useState(deviceName);
   const [saved, setSaved] = useState(false);
   const [notify, setNotify] = useState<string>("unset");
+  const [syncedDeviceName, setSyncedDeviceName] = useState(deviceName);
 
-  useEffect(() => setName(deviceName), [deviceName]);
+  if (deviceName !== syncedDeviceName) {
+    setSyncedDeviceName(deviceName);
+    setName(deviceName);
+  }
+
   useEffect(() => {
     notificationStatus()
       .then(setNotify)

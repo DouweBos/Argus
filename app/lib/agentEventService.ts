@@ -663,15 +663,16 @@ export function startAgentListening(agentId: string): void {
   // so mirror them here into a real user message the transcript (and snapshot)
   // can show.
   remoteMessageListeners.set(agentId, () => {});
-  listen<{ images?: ImageAttachment[]; message: string }>(
-    `agent:remote-message:${agentId}`,
-    (event) => {
-      const { message, images } = event.payload;
-      addUserMessage(agentId, message, images);
-      maybeGenerateTitle(agentId, message);
-      scheduleAgentSave(agentId);
-    },
-  ).then((unlisten) => {
+  listen<{
+    author?: string | null;
+    images?: ImageAttachment[];
+    message: string;
+  }>(`agent:remote-message:${agentId}`, (event) => {
+    const { message, images, author } = event.payload;
+    addUserMessage(agentId, message, images, undefined, author ?? undefined);
+    maybeGenerateTitle(agentId, message);
+    scheduleAgentSave(agentId);
+  }).then((unlisten) => {
     if (!remoteMessageListeners.has(agentId)) {
       unlisten();
 
@@ -763,7 +764,7 @@ function trySendNextQueued(agentId: string): boolean {
         // Skip checkpoint.
       }
     }
-    addUserMessage(agentId, next.text, next.images, checkpointId);
+    addUserMessage(agentId, next.text, next.images, checkpointId, next.author);
     sendAgentMessage(agentId, next.text, next.images).catch(() => {});
     scheduleAgentSave(agentId);
   })().catch(() => {});

@@ -79,6 +79,11 @@ export interface SystemMessageSource {
 
 export interface ConversationMessage {
   /**
+   * Who sent this user message when it wasn't the local user — a huddle guest's
+   * chosen name. Absent for the engineer's own sends.
+   */
+  author?: string;
+  /**
    * Worktree snapshot captured immediately before this user message was sent
    * to the agent. Set only on user messages, and only when the snapshot
    * succeeded. Lets the user revert all file changes made after this turn.
@@ -804,6 +809,7 @@ export function addUserMessage(
   text: string,
   images?: ImageAttachment[],
   checkpointId?: string,
+  author?: string,
 ) {
   conversationStore.setState((state) => {
     const existing = state.conversations[agentId] ?? emptyConversation();
@@ -815,6 +821,7 @@ export function addUserMessage(
       timestamp: Date.now(),
       images: images?.length ? images : undefined,
       checkpointId,
+      author,
     };
 
     return {

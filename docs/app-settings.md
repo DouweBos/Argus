@@ -14,10 +14,11 @@ targets, related projects, …) see
 
 ## Appearance
 
-| Setting          | Default   | Description                                                                                                                  |
-| ---------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Theme**        | `system`  | `system`, `light`, or `dark`. `system` follows the OS appearance.                                                            |
-| **Display size** | `default` | One of `larger`, `large`, `default`, `small`, `smaller`. Scales the whole app — useful on very large or very small displays. |
+| Setting           | Default   | Description                                                                                                                                                                                                            |
+| ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Theme**         | `system`  | `system`, `light`, or `dark`. `system` follows the OS appearance.                                                                                                                                                      |
+| **Display size**  | `default` | One of `larger`, `large`, `default`, `small`, `smaller`. Scales the whole app — useful on very large or very small displays.                                                                                           |
+| **Launch screen** | `home`    | Which screen Argus opens on: **Home** (the project picker) or **Inbox** (what your automations want from you). A restored window tab still wins — the preference only applies when a window opens with no saved route. |
 
 ---
 
@@ -63,9 +64,45 @@ files across accounts.
 
 ## Agents
 
-| Setting                     | Default | Description                                                                                            |
-| --------------------------- | ------- | ------------------------------------------------------------------------------------------------------ |
-| **Default permission mode** | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker. |
+| Setting                               | Default | Description                                                                                                  |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| **Default permission mode**           | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
+| **Automations**                       | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
+| **Default autonomy**                  | Propose | How far an automation may go when it does not set its own level.                                             |
+| **Concurrent automation sessions**    | 3       | How many sessions automations may have open at once, across all of them.                                     |
+| **Daily automation budget**           | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                             |
+| **Extra commands for read-only runs** | none    | Shell commands a read-only automation may run beyond the built-in reads.                                     |
+| **Extra tools for read-only runs**    | none    | Tools a read-only automation may call beyond the built-in reads.                                             |
+
+A session counts against the concurrency limit from the moment an automation
+creates it until it is merged or deleted — not until its agent stops. A branch
+waiting for you to review it is still work in flight.
+
+### What a read-only run may do
+
+An automation at `propose` observes and reports; it does not act. Argus holds
+it to that rather than trusting the playbook: the run is refused anything that
+writes a file, installs a package, posts to GitHub, or sends data somewhere.
+Its shell is limited to commands that only read.
+
+That list cannot anticipate every tool your playbooks use. When a run is
+refused, the attempt is recorded under **Refused while running** in Settings →
+Automations, with the allowlist entry that would permit it. Allowing one is a
+click; ignoring it leaves the gate closed.
+
+Both lists are machine-local and yours alone. A project cannot add to them — a
+repo that could widen its own allowlist would be authorising itself. A project
+can still cap autonomy _lower_ via `.argus.json`, as before.
+
+An entry is either a bare command (`conductor`) or a prefix (`conductor
+screenshot`), matched on whole words: allowing `gh pr list` does not also allow
+`gh pr merge`.
+
+Once the day's automation spend reaches the daily budget, scheduled runs are
+skipped with the reason recorded, and no automation may start another session
+until tomorrow. Spend is counted per run, including the sessions a run started.
+Each automation also has its own per-run ceiling in its guardrails: a run that
+reaches it is stopped mid-flight.
 
 Permission modes:
 
@@ -80,6 +117,36 @@ Permission modes:
 The mode is applied at spawn time, so it takes effect for the agent's very
 first action. Agents restored to an earlier turn keep the mode they were
 running with.
+
+**Automations** is a master switch for the scheduler, not for automations
+themselves: with it off nothing fires on a clock, and every automation can
+still be run by hand. It is a host setting, so when you drive another Mac the
+switch belongs to that machine's automations. Automations shipped with Argus
+start disabled, so nothing ever runs until you turn one on. See
+[Automations](./automations.md) for what they are and what each rung permits.
+
+### Autonomy
+
+**Default autonomy** is the ladder an automation climbs, and each rung contains
+the one before it:
+
+- **Propose** — writes a proposal into the inbox and touches nothing.
+- **Draft** — opens a worktree, implements the change and commits, then stops.
+- **Pull request** — also pushes the branch and opens a draft PR.
+- **Auto-merge** — also merges once CI is green. Never a default; opt in per
+  automation.
+
+An automation can set its own level, and a project can set a ceiling in its
+Project Settings. Argus takes the **lowest** of the three, so a repository can
+always ask for less autonomy than this setting allows and never for more.
+
+The limits are enforced by Argus, not by the instructions an automation is
+given: a playbook that tells the agent to start a session anyway still produces
+a proposal that waits for you.
+
+**Concurrent automation sessions** caps how much work automations can have in
+flight at once. Once the cap is reached, further proposals land in the inbox
+instead of starting, and you can start them by hand.
 
 ---
 
@@ -190,9 +257,9 @@ should get, use the project-level `mcp_servers` in
 
 ## Privacy
 
-| Setting                      | Default | Description                                                                                                                                                                         |
-| ---------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Send anonymous telemetry** | `false` | Sends anonymous usage and crash events to PostHog so we can find bugs and prioritise features. Consent is collected once during onboarding (telemetry step); flip it any time here. |
+| Setting       | Default    | Description                                                                                                                                                                                                                                                  |
+| ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Telemetry** | `presence` | `Just count me` sends one anonymous heartbeat per launch (random install id + app version) so we can count daily active users. `Full analytics` adds usage, error and crash events. Chosen once on first launch; switch any time here. There is no full off. |
 
 ---
 
@@ -207,11 +274,11 @@ Argus's device tooling — recording, control, debug streams, the UI inspector �
 | **Device control**      | Drive devices via `conductor` — taps, keyboard, deep links, navigation.    | Android SDK (for Android), Playwright (for web)               |
 | **Device debug**        | Tail device logs, memory, and other conductor probes from the Debug panel. | Device control (auto)                                         |
 
-Pick tools during onboarding (the **Tools** step before Preflight) or at any time from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and IPC handlers are active.
+Pick tools from **Settings → Tools**. All tool assets ship bundled with the app — toggling a tool on or off only affects whether its UI surfaces and IPC handlers are active.
 
 Each tool row in Settings runs its declared prereq checks live and surfaces **Install** buttons for the ones we know how to fix. Failed prereqs don't block the toggle, but the surfaces that depend on a missing prereq will error gracefully when used.
 
-The preflight onboarding step is filtered to your enabled tools' prereqs plus the four core checks (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`). A user who picks zero tools sees only the four core checks.
+The four core checks (`claude_cli`, `claude_auth`, `git_cli`, `git_identity`) run on the home screen instead, and only show a card when something needs fixing.
 
 ### Conductor version
 
@@ -235,6 +302,16 @@ Production users never see beta builds — they're published under a separate `b
 
 > Alpha builds (one-off cuts from any branch) are not exposed in this dialog. Repo collaborators install them manually by downloading the `.dmg` from the corresponding GitHub release.
 
+`Argus Server.app` has no Settings dialog, so it carries one extra update
+preference of its own, toggled from its tray menu and stored in the same
+`app-settings.json`:
+
+| Setting                             | Default | Description                                                                                                               |
+| ----------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Install Automatically When Idle** | off     | Server only. Installs a downloaded update and restarts as soon as no agent is running. Never interrupts an agent mid-run. |
+
+See [server-app.md](./server-app.md#updating-the-server) for the full flow.
+
 What we send (when the toggle is on):
 
 - Anonymous install id (random UUID). Wiping it rotates the id. The id
@@ -250,8 +327,8 @@ What we send (when the toggle is on):
   PostHog project, so the raw IP is not stored alongside the event —
   but PostHog still uses it at ingestion to derive these GeoIP fields
   before discarding. PostHog doesn't expose a switch to skip
-  enrichment entirely. If even city-level geography is unacceptable,
-  leave telemetry off.
+  enrichment entirely. `Just count me` keeps that exposure to one
+  request per launch.
 - Argus-specific events documented in
   [telemetry-events.md](./telemetry-events.md) — feature usage signals
   with the small, named props listed there. Never raw arguments, file
@@ -269,7 +346,7 @@ What we do **not** send:
   account.
 
 Telemetry is hard-disabled in development builds, regardless of the
-toggle.
+mode.
 
 For the full per-event catalogue and exhaustive property list, see
 [telemetry-events.md](./telemetry-events.md).
@@ -340,17 +417,17 @@ tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** 
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
-| Setting                                     | Default | Description                                                                                                                                                                            |
-| ------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                 |
-| **Ways in**                                 | All off | **Local network**, **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side. A tunnel needs that provider's CLI on your `PATH`. |
-| **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                              |
-| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                             |
-| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                       |
-| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                   |
-| **Paired devices**                          | —       | Each shows its label and last-seen time. **Revoke** deletes its pinned key and drops any live session immediately.                                                                     |
-| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                             |
-| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                  |
+| Setting                                     | Default | Description                                                                                                                                                                                                                 |
+| ------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                                                      |
+| **Ways in**                                 | All off | **Local network**, **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side. A tunnel needs that provider's CLI on your `PATH`.                                      |
+| **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                                                                   |
+| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                                                                  |
+| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                                                            |
+| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                                                        |
+| **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
+| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                                                                  |
+| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                       |
 
 ### Choosing ways in
 
@@ -410,6 +487,18 @@ so the list reads "Douwe's MacBook Pro" rather than a tunnel URL; you can rename
 it on the phone. Unpairing there removes the phone's copy of that computer's
 key — to cut a lost phone off for good, **Revoke** it under **Paired devices**
 on the computer as well.
+
+### Granting admin to another Mac
+
+**Control** is the phone's grant: watch agents, answer prompts, send messages.
+**Admin** is a different thing — it lets another Mac running Argus drive this
+one as if you were sitting at its keyboard, which is what the **Hosts** setting
+below attaches to. Tick it while confirming the pairing code, or on the device
+row afterwards. Admin implies control.
+
+Give it only to a Mac you own. A few things never cross the wire whatever the
+grant: opening Finder or an editor, the updater, the popout windows, and
+pairing or revoking devices — those stay on the machine they belong to.
 
 ### Background push notifications
 
@@ -520,10 +609,14 @@ focus.
 ### Web client on this network
 
 Toggling **Web client on this network** binds the gateway to your Wi-Fi
-interface and serves a browser client from it. Open `http://<your-ip>:47615` on
-any device on the same network — no app install, no tunnel. It still pairs and
-Noise-authenticates exactly like the phone, so being on the LAN grants no
-access on its own. You can also reach it from the Home screen's **Remote access**
+interface. Open `http://<your-ip>:47615` on any device on the same network — no
+app install, no tunnel. It still pairs and Noise-authenticates exactly like the
+phone, so being on the LAN grants no access on its own.
+
+The browser client itself is served over **every** way in, not just the LAN: a
+Tailscale or Cloudflare URL opens the same app in a browser. This toggle only
+decides whether the gateway also listens on your Wi-Fi interface — leave it off
+and the gateway stays loopback-only, reachable solely through a tunnel. You can also reach it from the Home screen's **Remote access**
 button. (Build the bundle once with `pnpm --filter argus-web build`.)
 
 **Pairing** shows a QR code (and a copy-paste code) plus a 6-digit confirmation
@@ -537,6 +630,50 @@ The desktop identity key lives in `~/.argus/remote-devices.json` (encrypted via
 
 ---
 
+## Hosts
+
+The other side of remote access: machines **this** Mac can run agents on. A
+paired host can be a headless Mac mini working overnight or a workstation
+running the ordinary app — from here they look identical.
+
+| Setting          | Default    | Description                                                                                                                                    |
+| ---------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pair a host**  | —          | Paste the pairing code from the other Mac's **Remote access** screen, compare the 6-digit code, and approve it there with **Admin** ticked.    |
+| **Paired hosts** | —          | Rename, **Attach** / **Detach**, **Show**, or **Forget**. Forgetting deletes this Mac's key for that host; revoke it there too to be thorough. |
+| **Machines**     | `This Mac` | The connection menu in the title bar: every machine this window drives, with its link state.                                                   |
+
+Several hosts can be attached at once — this Mac, a mini for iOS, a Linux box
+for Android — and their projects sit alongside each other in the sidebar.
+Attaching and showing are separate: **Attach** brings a host's projects in and
+keeps its agents streaming in the background, while **Show** points the current
+view at one. Attachments are remembered and restored on launch; a host that
+can't be reached is skipped with a banner, and the others carry on without it.
+
+Which host a view reads from _is_ part of the URL, so back/forward moves
+between machines. A link to a host you aren't attached to falls back to this
+Mac rather than stranding you.
+
+While reading from a host:
+
+- **Projects** come from the host's registered projects, not this Mac's recent
+  list. **Browse…** walks the _host's_ folders instead of opening a native
+  dialog, since the repos are on its disk.
+- **Sign-in links** open in the browser in front of you, not on the host.
+- **Reveal in Finder** and **Open in editor** are unavailable and say so —
+  those files live on the other machine. Use VS Code / Cursor over SSH.
+- **Terminals and device screens** come through on the same encrypted
+  connection as everything else — the simulator streams live video from the
+  host, and taps and keystrokes go back to it. Nothing arbitrates who is
+  driving a device yet, so avoid pointing two Macs at the same simulator.
+- If the connection drops, agents keep running on the host. The window shows a
+  disconnected banner, reconnects on its own, and re-pulls a fresh snapshot
+  when it does. Only that host is affected; the rest keep working.
+
+Host keys are stored in this Mac's `localStorage` alongside the other UI
+preferences.
+
+---
+
 ## Where things are stored
 
 Argus keeps everything under `~/.argus/`:
@@ -545,12 +682,15 @@ Argus keeps everything under `~/.argus/`:
 ~/.argus/
   worktrees/                  ← Session worktrees (one dir per repo)
   sessions/                   ← Session metadata
-  app-settings.json           ← MCP servers, remote-access tunnel + kill-switch
+  app-settings.json           ← MCP servers, remote-access tunnel + kill-switch, automations switch
+  automations.json            ← Your automations
+  automation-runs.json        ← Automation run history (last 50 per automation)
+  automation-runs/            ← One working directory per run
   claude-accounts.json        ← Signed-in Claude accounts + the active one
   claude-accounts/            ← Per-account Claude credentials
   remote-devices.json         ← Remote-access identity key, paired devices, push credentials (encrypted)
   user-project-settings.json  ← Per-developer project prefs (branch prefix, …)
-  telemetry-id                ← Anonymous install id (only present if telemetry is on)
+  telemetry-id                ← Anonymous install id
 ```
 
 UI preferences (theme, display size, default permission mode, default

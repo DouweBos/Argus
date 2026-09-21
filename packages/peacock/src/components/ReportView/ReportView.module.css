@@ -1,0 +1,10 @@
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.block {
+  min-width: 0;
+}

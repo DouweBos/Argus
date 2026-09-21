@@ -7,10 +7,20 @@
  *
  * ## Route inventory
  *
+ * Every URL may carry `?host=<hostId>` naming the machine the view reads from
+ * (omitted for this Mac). Several hosts can be attached at once, so which one
+ * a screen is showing is part of what you are looking at.
+ *
  * - `/`                                          → home / project picker
  * - `/agents`                                    → global agents overview
+ * - `/automations`                               → automations list
+ * - `/automations/quick`                         → ad-hoc runs: compose one, and their history
+ * - `/automations/quick/runs/:runId`             → a single ad-hoc run
+ * - `/automations/:automationId`                 → automation config + run history
+ * - `/automations/:automationId/runs/:runId`     → a single automation run
  * - `/devices`                                   → devices screen
  * - `/devices/:platform/:deviceKey`              → devices screen with device dialog open
+ * - `/inbox`                                     → the briefing: what Argus wants you to decide
  * - `/notifications`                             → notifications screen
  * - `/pull-requests`                             → outstanding PRs of interest
  * - `/pull-requests/:owner/:repo/:number`        → individual PR detail
@@ -39,11 +49,14 @@ import { useEffect } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import type { NavigateFunction } from "react-router-dom";
 import { capturePageview } from "./telemetry";
+import { LOCAL_HOST_ID, type HostId } from "./transport/hostId";
 
 export type AppView =
   | "agents"
+  | "automations"
   | "devices"
   | "home"
+  | "inbox"
   | "notifications"
   | "pull-request-detail"
   | "pull-requests"
@@ -98,6 +111,16 @@ export interface PullRequestRef {
 }
 
 export interface ParsedRoute {
+  /** Which automation is open. Only meaningful when view === "automations". */
+  automationId: string | null;
+  /**
+   * The ad-hoc surface at `/automations/quick`. Ad-hoc runs have no automation
+   * to hang off, so they get their own segment rather than borrowing the
+   * synthetic id the host runs them under.
+   */
+  automationQuick: boolean;
+  /** Which run of that automation is open, if any. */
+  automationRunId: string | null;
   /**
    * Trailing ref name for ref-scoped git sub-views. When `gitView` is
    * `"branches"` or `"tags"` the URL may carry an additional segment naming
@@ -108,6 +131,13 @@ export interface ParsedRoute {
   gitRefName: string | null;
   /** Sub-view inside the git panel (working/branches/history/…). */
   gitView: GitSubView | null;
+  /**
+   * Which attached host the view reads from. `?host=<id>` in the URL;
+   * `LOCAL_HOST_ID` (this Mac) when absent. Two hosts may hold a project at
+   * the same path, so screens that are not pinned to a session read this to
+   * know whose projects, devices and agents they are showing.
+   */
+  hostId: HostId;
   /** Session panel (agents/git/home). Only meaningful when view=session. */
   panel: SessionPanel;
   /** Identifies which PR to show when view === "pull-request-detail". */
@@ -118,13 +148,45 @@ export interface ParsedRoute {
 
 const VALID_PANELS: SessionPanel[] = ["agents", "git", "home"];
 
-/** Parse a pathname into a normalised route descriptor. */
-export function parseRoute(pathname: string): ParsedRoute {
+/**
+ * Parse a URL (pathname, optionally with a query string) into a normalised
+ * route descriptor. `?host=` names the attached host the view reads from.
+ */
+export function parseRoute(url: string): ParsedRoute {
+  const queryAt = url.indexOf("?");
+  const pathname = queryAt === -1 ? url : url.slice(0, queryAt);
+  const search = queryAt === -1 ? "" : url.slice(queryAt + 1);
+  const hostId = new URLSearchParams(search).get("host");
+
+  return {
+    ...parsePathname(pathname),
+    hostId: hostId && hostId.length > 0 ? hostId : LOCAL_HOST_ID,
+  };
+}
+
+function parsePathname(pathname: string): Omit<ParsedRoute, "hostId"> {
   const clean = pathname.replace(/\/+$/, "") || "/";
   const segments = clean.split("/").filter(Boolean);
 
   if (segments.length === 0) {
     return emptyRoute("home");
+  }
+
+  if (segments[0] === "automations") {
+    const quick = segments[1] === "quick";
+    const automationId =
+      !quick && segments[1] ? decodeSegment(segments[1]) : null;
+    const runId =
+      (quick || automationId) && segments[2] === "runs" && segments[3]
+        ? decodeSegment(segments[3])
+        : null;
+
+    return {
+      ...emptyRoute("automations"),
+      automationId,
+      automationQuick: quick,
+      automationRunId: runId,
+    };
   }
 
   if (segments[0] === "sessions" && segments[1]) {
@@ -152,6 +214,9 @@ export function parseRoute(pathname: string): ParsedRoute {
 
     return {
       view: "session",
+      automationId: null,
+      automationQuick: false,
+      automationRunId: null,
       sessionId: segments[1],
       panel: validPanel,
       gitView,
@@ -171,6 +236,9 @@ export function parseRoute(pathname: string): ParsedRoute {
     if (Number.isFinite(number)) {
       return {
         view: "pull-request-detail",
+        automationId: null,
+        automationQuick: false,
+        automationRunId: null,
         sessionId: null,
         panel: "agents",
         gitView: null,
@@ -187,6 +255,7 @@ export function parseRoute(pathname: string): ParsedRoute {
   if (
     segments[0] === "agents" ||
     segments[0] === "devices" ||
+    segments[0] === "inbox" ||
     segments[0] === "notifications" ||
     segments[0] === "pull-requests" ||
     segments[0] === "runtimes"
@@ -197,9 +266,20 @@ export function parseRoute(pathname: string): ParsedRoute {
   return emptyRoute("home");
 }
 
-function emptyRoute(view: AppView): ParsedRoute {
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+function emptyRoute(view: AppView): Omit<ParsedRoute, "hostId"> {
   return {
     view,
+    automationId: null,
+    automationQuick: false,
+    automationRunId: null,
     sessionId: null,
     panel: "agents",
     gitView: null,
@@ -220,8 +300,20 @@ export function routePattern(pathname: string): string {
   switch (route.view) {
     case "home":
       return "/";
+    case "automations":
+      if (route.automationQuick) {
+        return route.automationRunId
+          ? "/automations/quick/runs/:runId"
+          : "/automations/quick";
+      }
+      if (route.automationId && route.automationRunId) {
+        return "/automations/:automationId/runs/:runId";
+      }
+
+      return route.automationId ? "/automations/:automationId" : "/automations";
     case "agents":
     case "devices":
+    case "inbox":
     case "notifications":
     case "pull-requests":
     case "runtimes":
@@ -235,8 +327,24 @@ export function routePattern(pathname: string): string {
   }
 }
 
-/** Build a pathname for a given route descriptor. */
+/**
+ * Build a URL for a given route descriptor, including `?host=` when the view
+ * reads from a machine other than this one.
+ */
 export function routeToPath(route: Partial<ParsedRoute>): string {
+  return withHostParam(routePathname(route), route.hostId);
+}
+
+/** Append the focused host to a path, leaving any existing query intact. */
+export function withHostParam(path: string, hostId?: HostId): string {
+  if (!hostId || hostId === LOCAL_HOST_ID) {
+    return path;
+  }
+
+  return `${path}${path.includes("?") ? "&" : "?"}host=${encodeURIComponent(hostId)}`;
+}
+
+function routePathname(route: Partial<ParsedRoute>): string {
   if (route.view === "session" && route.sessionId) {
     const panel =
       route.panel && route.panel !== "home" ? `/${route.panel}` : "";
@@ -251,6 +359,21 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
 
     return `/sessions/${route.sessionId}${panel}${gitView}${gitRef}`;
   }
+  if (route.view === "automations") {
+    if (route.automationQuick) {
+      return route.automationRunId
+        ? `/automations/quick/runs/${encodeURIComponent(route.automationRunId)}`
+        : "/automations/quick";
+    }
+    if (!route.automationId) {
+      return "/automations";
+    }
+    const base = `/automations/${encodeURIComponent(route.automationId)}`;
+
+    return route.automationRunId
+      ? `${base}/runs/${encodeURIComponent(route.automationRunId)}`
+      : base;
+  }
   if (route.view === "pull-request-detail" && route.pr) {
     const { owner, repo, number } = route.pr;
 
@@ -259,6 +382,7 @@ export function routeToPath(route: Partial<ParsedRoute>): string {
   if (
     route.view === "agents" ||
     route.view === "devices" ||
+    route.view === "inbox" ||
     route.view === "notifications" ||
     route.view === "pull-requests" ||
     route.view === "runtimes"
@@ -286,22 +410,25 @@ export function useRegisterNavigator(): void {
 
   useEffect(() => {
     navigator = nav;
-    lastPath = loc.pathname;
+    // Search included: `?host=` is part of the route, and non-hook callers
+    // read the focused host back out of `getCurrentPath()`.
+    const full = `${loc.pathname}${loc.search}`;
+    lastPath = full;
 
     if (historyStack.length === 0) {
-      historyStack.push(loc.pathname);
+      historyStack.push(full);
       historyCursor = 0;
     } else if (navType === "PUSH") {
       historyStack.length = historyCursor + 1;
-      historyStack.push(loc.pathname);
+      historyStack.push(full);
       historyCursor = historyStack.length - 1;
     } else if (navType === "POP") {
-      const idx = historyStack.lastIndexOf(loc.pathname);
+      const idx = historyStack.lastIndexOf(full);
       if (idx >= 0) {
         historyCursor = idx;
       }
     } else if (navType === "REPLACE") {
-      historyStack[historyCursor] = loc.pathname;
+      historyStack[historyCursor] = full;
     }
 
     window.dispatchEvent(
@@ -318,7 +445,7 @@ export function useRegisterNavigator(): void {
     return () => {
       navigator = null;
     };
-  }, [nav, loc.pathname, navType]);
+  }, [nav, loc.pathname, loc.search, navType]);
 }
 
 /** Navigate to a route descriptor. No-op if already there. */
@@ -326,7 +453,12 @@ export function appNavigate(
   route: Partial<ParsedRoute>,
   options?: { replace?: boolean },
 ): void {
-  const path = routeToPath(route);
+  // The focused host sticks until something names a different one — moving
+  // between screens must not silently drop you back onto this Mac.
+  const path = routeToPath({
+    hostId: getCurrentRoute().hostId,
+    ...route,
+  });
   if (path === lastPath && !options?.replace) {
     return;
   }
@@ -337,13 +469,27 @@ export function appNavigate(
   navigator?.(path, { replace: options?.replace });
 }
 
-/** Navigate to a raw pathname (used for deep links from the main process). */
-export function navigateToPath(path: string): void {
+/**
+ * Navigate to a raw path (deep links from the main process, and the git
+ * sub-views that build their own query strings). Carries the focused host
+ * along unless the path names one itself.
+ *
+ * `exact` takes the path as given — window tabs restore a whole saved route,
+ * including "no host", and must not inherit the host of the tab being left.
+ */
+export function navigateToPath(
+  path: string,
+  options?: { exact?: boolean },
+): void {
+  const resolved =
+    options?.exact || path.includes("host=")
+      ? path
+      : withHostParam(path, getCurrentRoute().hostId);
   if (!navigator) {
     return;
   }
-  lastPath = path;
-  navigator(path);
+  lastPath = resolved;
+  navigator(resolved);
 }
 
 /** Current path as last observed by the registered navigator hook. */

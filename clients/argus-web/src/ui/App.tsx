@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AgentRow,
   type AgentStatus,
-  Badge,
   Banner,
   Button,
   ContextMenu,
@@ -17,26 +16,29 @@ import {
   SidebarRepoGroup,
   SidebarSection,
   Spinner,
-  StatusBulb,
 } from "@argus/peacock";
 import {
   notificationsSupported,
   requestNotificationPermission,
   setNotificationOpener,
 } from "../lib/notify";
-import { PairingClient, parsePairingInput } from "../lib/pairingClient";
+import { PairingClient, parsePairingInput } from "@argus/remote-client";
 import {
   setNotificationDecider,
   startServiceWorkerRouting,
 } from "../lib/webpush";
 import type { RemoteAgentStatus, RemoteSession } from "../lib/protocol";
-import type { ConnectionState } from "../lib/transport";
+import { parseHuddleToken } from "../lib/huddleIdentity";
+import { identityFromPairing } from "../lib/keystore";
+import { wsOrigin } from "../lib/origin";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChangesView } from "./ChangesView";
 import { ChatInput } from "./ChatInput";
+import { ConnectionBadge } from "./ConnectionBadge";
 import { DevicesView } from "./DevicesView";
 import { DeviceScreen } from "./DeviceScreen";
+import { HuddleGuest } from "./HuddleGuest";
 import { Settings } from "./Settings";
 import { useHistoryView, type View } from "./useHistoryView";
 import { useScrollRestore } from "./useScrollRestore";
@@ -45,10 +47,31 @@ import { useLiveRefresh } from "./useLiveRefresh";
 export function App() {
   const identity = useAppStore((s) => s.identity);
   const init = useAppStore((s) => s.init);
+  // Guest vs. paired mode is decided once — a live tab never switches between
+  // them — but a second share link pasted into a guest tab is a new room.
+  const [huddleToken, setHuddleToken] = useState(() =>
+    parseHuddleToken(window.location.hash),
+  );
 
   useEffect(() => {
-    init();
-  }, [init]);
+    const onHashChange = () => {
+      const next = parseHuddleToken(window.location.hash);
+      setHuddleToken((prev) => (prev && next ? next : prev));
+    };
+    window.addEventListener("hashchange", onHashChange);
+
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (!huddleToken) {
+      init();
+    }
+  }, [huddleToken, init]);
+
+  if (huddleToken) {
+    return <HuddleGuest token={huddleToken} />;
+  }
 
   return identity ? <Monitor /> : <Pair />;
 }
@@ -68,14 +91,20 @@ function Pair() {
     setError(null);
     try {
       const payload = parsePairingInput(code);
-      const client = new PairingClient(payload, {
+      const client = new PairingClient(
+        payload,
+        {
         onSas: setSas,
-        onPaired: (id) => pairComplete(id),
+        onPaired: (result) => pairComplete(identityFromPairing(result)),
         onError: (m) => {
           setError(m);
           setSas(null);
         },
-      });
+        },
+        // The host serves this bundle, so our own origin is the route that
+        // definitely works — the URL in the code may not be.
+        { url: wsOrigin() },
+      );
       clientRef.current = client;
       client.start();
     } catch {
@@ -127,35 +156,6 @@ function Pair() {
 }
 
 // --- Monitor ---------------------------------------------------------------
-
-/**
- * A healthy connection is the normal case and doesn't need saying, so it
- * shrinks to a dot — only trouble gets words.
- */
-function ConnectionBadge({ state }: { state: ConnectionState }) {
-  if (state === "ready") {
-    return (
-      <StatusBulb
-        tone="success"
-        size="sm"
-        aria-label="Connected"
-        className="aw-header-dot"
-      />
-    );
-  }
-  if (state === "offline") {
-    return <Badge tone="warning">Reconnecting…</Badge>;
-  }
-
-  return (
-    <span className="aw-inline">
-      <Spinner size="xs" />
-      <Badge tone="neutral">
-        {state === "handshaking" ? "Securing" : "Connecting"}
-      </Badge>
-    </span>
-  );
-}
 
 function Monitor() {
   const { view, push, back, canGoBack } = useHistoryView();

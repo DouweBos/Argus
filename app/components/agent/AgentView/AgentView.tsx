@@ -17,6 +17,7 @@ import { AgentSplitDropZone } from "../AgentChatDropZone";
 import { AgentTabBar } from "../AgentTabBar";
 import { AgentsEmptyState } from "../AgentsEmptyState";
 import { ChildAgentPills } from "../ChildAgentPills";
+import { HuddleJoinRequests, ShareAgentButton } from "../HuddleShare";
 import { SplitAgentPanes } from "../SplitAgentPanes";
 import styles from "./AgentView.module.css";
 
@@ -205,6 +206,12 @@ export function AgentView({ sessionId }: AgentViewProps) {
           <Icons.PlusIcon size={12} />
         </button>
         <div className={styles.agentBarSpacer} />
+        {activeAgent && (
+          <ShareAgentButton
+            agentId={activeAgent.agent_id}
+            sessionId={sessionId}
+          />
+        )}
         {recentMenuPos && (
           <ContextMenu
             items={recentMenuItems}
@@ -214,6 +221,7 @@ export function AgentView({ sessionId }: AgentViewProps) {
         )}
       </div>
 
+      <HuddleJoinRequests />
       {activeAgent && <ChildAgentPills parentAgentId={activeAgent.agent_id} />}
 
       {!activeAgent && <AgentsEmptyState sessionId={sessionId} />}

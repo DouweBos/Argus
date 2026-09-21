@@ -1,14 +1,18 @@
+import type { HostId } from "../lib/transport/hostId";
 import { useEffect, useRef } from "react";
+import { subscribe } from "../lib/transport";
 
 type UnlistenFn = () => void;
 
 /**
- * Subscribe to an Electron backend event. The handler is stable across
- * re-renders via a ref so callers do not need to memoize it.
+ * Subscribe to a backend event from every attached host, or from one named
+ * host. The handler is stable across re-renders via a ref so callers do not
+ * need to memoize it.
  */
 export function useIpcEvent<T>(
   event: string,
-  handler: (payload: T) => void,
+  handler: (payload: T, hostId: HostId) => void,
+  hostId?: HostId,
 ): void {
   const handlerRef = useRef(handler);
 
@@ -22,12 +26,16 @@ export function useIpcEvent<T>(
     }
     let unlisten: UnlistenFn | null = null;
 
-    unlisten = window.argus.on<T>(event, (payload) => {
-      handlerRef.current(payload);
-    });
+    unlisten = subscribe(
+      event,
+      (payload, from) => {
+        handlerRef.current(payload as T, from);
+      },
+      hostId,
+    );
 
     return () => {
       unlisten?.();
     };
-  }, [event]);
+  }, [event, hostId]);
 }

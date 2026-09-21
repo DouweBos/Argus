@@ -53,6 +53,8 @@ private var indigoKeyboardFnPtr: UnsafeMutableRawPointer?  // raw ptr to IndigoH
 private var indigoKeyboardLoaded = false
 private var indigoButtonFnPtr: UnsafeMutableRawPointer?    // raw ptr to IndigoHIDMessageForButton
 private var indigoButtonLoaded = false
+private var indigoArbitraryFnPtr: UnsafeMutableRawPointer?  // raw ptr to IndigoHIDMessageForHIDArbitrary
+private var indigoArbitraryLoaded = false
 
 // Per-UDID HID clients — allows simultaneous connections to multiple simulators.
 private var hidClients: [String: AnyObject] = [:]
@@ -75,6 +77,15 @@ func SHSendKeyboard(_ client: AnyObject, _ fnPtr: UnsafeMutableRawPointer,
 func SHSendButton(_ client: AnyObject, _ fnPtr: UnsafeMutableRawPointer,
                    _ udid: UnsafePointer<CChar>,
                    _ keyCode: UInt32, _ op: UInt32, _ target: UInt32) -> Int32
+
+@_silgen_name("SHSendHIDUsage")
+func SHSendHIDUsage(_ client: AnyObject, _ fnPtr: UnsafeMutableRawPointer,
+                     _ udid: UnsafePointer<CChar>,
+                     _ target: UInt32, _ usagePage: UInt32,
+                     _ usage: UInt32, _ op: UInt32) -> Int32
+
+@_silgen_name("SHProductFamilyID")
+func SHProductFamilyID(_ device: AnyObject) -> UInt32
 
 @_silgen_name("SHEnableHardwareKeyboard")
 func SHEnableHardwareKeyboard(_ device: AnyObject)
@@ -99,6 +110,27 @@ private func xcodeDevDir() -> String {
     return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
         .trimmingCharacters(in: .whitespacesAndNewlines)
         ?? "/Applications/Xcode.app/Contents/Developer"
+}
+
+private var simKitPathCache: String?
+
+/// Resolve SimulatorKit.framework — Xcode 27 moved it from the developer dir's
+/// PrivateFrameworks into the app bundle's SharedFrameworks.
+private func simKitFrameworkPath() -> String {
+    if let cached = simKitPathCache { return cached }
+
+    let devDir = xcodeDevDir()
+    let candidates = [
+        devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit",
+        URL(fileURLWithPath: devDir)
+            .deletingLastPathComponent()
+            .appendingPathComponent("SharedFrameworks/SimulatorKit.framework/SimulatorKit")
+            .path,
+    ]
+    let resolved = candidates.first { FileManager.default.fileExists(atPath: $0) }
+        ?? candidates[0]
+    simKitPathCache = resolved
+    return resolved
 }
 
 // MARK: - Framework loading
@@ -133,8 +165,7 @@ private func ensureSimKitLoaded() -> Bool {
 
     ensureCoreSimLoaded()
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
     guard dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) != nil else {
         NSLog("[SimKit] Failed to load SimulatorKit from %@", simKitPath)
         simKitOk = false
@@ -151,8 +182,7 @@ private func ensureIndigoLoaded() -> Bool {
 
     guard ensureSimKitLoaded() else { return false }
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
 
     guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
         NSLog("[IndigoHID] Failed to load SimulatorKit from %@", simKitPath)
@@ -174,8 +204,7 @@ private func ensureIndigoKeyboardLoaded() -> Bool {
 
     guard ensureSimKitLoaded() else { return false }
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
 
     guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
         NSLog("[IndigoHID] Failed to load SimulatorKit for keyboard")
@@ -197,8 +226,7 @@ private func ensureIndigoButtonLoaded() -> Bool {
 
     guard ensureSimKitLoaded() else { return false }
 
-    let devDir = xcodeDevDir()
-    let simKitPath = devDir + "/Library/PrivateFrameworks/SimulatorKit.framework/SimulatorKit"
+    let simKitPath = simKitFrameworkPath()
 
     guard let simKitHandle = dlopen(simKitPath, RTLD_NOW | RTLD_GLOBAL) else {
         NSLog("[IndigoHID] Failed to load SimulatorKit for button")
@@ -211,6 +239,26 @@ private func ensureIndigoButtonLoaded() -> Bool {
     }
     NSLog("[IndigoHID] IndigoHIDMessageForButton loaded")
     indigoButtonFnPtr = sym
+    return true
+}
+
+private func ensureIndigoArbitraryLoaded() -> Bool {
+    if indigoArbitraryLoaded { return indigoArbitraryFnPtr != nil }
+    indigoArbitraryLoaded = true
+
+    guard ensureSimKitLoaded() else { return false }
+
+    guard let simKitHandle = dlopen(simKitFrameworkPath(), RTLD_NOW | RTLD_GLOBAL) else {
+        NSLog("[IndigoHID] Failed to load SimulatorKit for arbitrary HID")
+        return false
+    }
+
+    guard let sym = dlsym(simKitHandle, "IndigoHIDMessageForHIDArbitrary") else {
+        NSLog("[IndigoHID] IndigoHIDMessageForHIDArbitrary symbol not found")
+        return false
+    }
+    NSLog("[IndigoHID] IndigoHIDMessageForHIDArbitrary loaded")
+    indigoArbitraryFnPtr = sym
     return true
 }
 
@@ -464,4 +512,75 @@ func scIndigoButton(_ udid: UnsafePointer<CChar>,
         hidClients.removeValue(forKey: udidStr)
     }
     return rc
+}
+
+// MARK: - Arbitrary HID usages (tvOS remote)
+
+/// Product family id reported by SimDeviceType for an Apple TV.
+private let appleTVProductFamily: UInt32 = 3
+
+/// Resolve SimDeviceScreen.buttonTarget without instantiating a screen.
+///
+/// Decompiled from SimulatorKit: an external-display device reporting the Apple
+/// TV product family targets 21, everything else targets 51. Sending the wrong
+/// one is not inert — on tvOS target 51 moves focus backwards instead of the
+/// direction asked for.
+func buttonTargetForDevice(_ udid: String) -> UInt32 {
+    guard let device = findSimDevice(udid: udid) else { return 51 }
+
+    return SHProductFamilyID(device) == appleTVProductFamily ? 21 : 51
+}
+
+/// Send a HID usage-page/usage pair as a down+up pair.
+///
+/// Returns 0 on success, negative on failure.
+@_cdecl("sc_indigo_hid_usage")
+func scIndigoHIDUsage(_ udid: UnsafePointer<CChar>,
+                       _ usagePage: UInt32, _ usage: UInt32,
+                       _ op: UInt32) -> Int32 {
+    let udidStr = String(cString: udid)
+
+    guard ensureIndigoArbitraryLoaded() else {
+        NSLog("[IndigoHID] ensureIndigoArbitraryLoaded failed")
+        return -1
+    }
+
+    if SHIsHIDClientInvalidForUDID(udid) {
+        hidClients.removeValue(forKey: udidStr)
+        SHResetHIDClientInvalidForUDID(udid)
+    }
+
+    guard ensureHIDClient(udid: udidStr) else {
+        NSLog("[IndigoHID] ensureHIDClient failed for %@", udidStr)
+        return -2
+    }
+    guard let fnPtr = indigoArbitraryFnPtr, let client = hidClients[udidStr] else {
+        return -3
+    }
+
+    let target = buttonTargetForDevice(udidStr)
+    let rc: Int32
+    if Thread.isMainThread {
+        rc = SHSendHIDUsage(client, fnPtr, udid, target, usagePage, usage, op)
+    } else {
+        rc = DispatchQueue.main.sync {
+            SHSendHIDUsage(client, fnPtr, udid, target, usagePage, usage, op)
+        }
+    }
+    if rc != 0 {
+        hidClients.removeValue(forKey: udidStr)
+    }
+    return rc
+}
+
+/// Whether a UDID names an Apple TV, cached per device — the button path needs
+/// it on every press and it can never change for a given simulator.
+private var appleTVByUDID: [String: Bool] = [:]
+
+func isAppleTV(_ udid: String) -> Bool {
+    if let known = appleTVByUDID[udid] { return known }
+    guard let device = findSimDevice(udid: udid) else { return false }
+    let result = SHProductFamilyID(device) == appleTVProductFamily
+    appleTVByUDID[udid] = result
+    return result
 }

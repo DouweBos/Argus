@@ -1,45 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Icons } from "@argus/peacock";
+import {
+  goBackInTab,
+  goForwardInTab,
+  useCanGoBack,
+  useCanGoForward,
+} from "../../../stores/tabStore";
 import styles from "./NavigationButtons.module.css";
 
 /**
- * Back/forward chrome buttons. React Router's memory history doesn't expose
- * a directional length, so we track history delta locally via a global
- * "router:navigated" event fired from useRouteSync. Buttons disable when
- * there's nothing to go to in that direction.
+ * Back/forward chrome buttons. History is per window tab — one global stack
+ * would interleave the screens of two machines — so these read the active
+ * tab's stacks rather than the router's.
  */
 export function NavigationButtons() {
-  const navigate = useNavigate();
-  const [canBack, setCanBack] = useState(false);
-  const [canForward, setCanForward] = useState(false);
-
-  useEffect(() => {
-    const update = (e: Event) => {
-      const detail = (e as CustomEvent<HistoryDelta>).detail;
-      setCanBack(detail.canBack);
-      setCanForward(detail.canForward);
-    };
-    window.addEventListener("router:historychange", update as EventListener);
-
-    return () =>
-      window.removeEventListener(
-        "router:historychange",
-        update as EventListener,
-      );
-  }, []);
-
-  const onBack = useCallback(() => {
-    if (canBack) {
-      navigate(-1);
-    }
-  }, [canBack, navigate]);
-
-  const onForward = useCallback(() => {
-    if (canForward) {
-      navigate(1);
-    }
-  }, [canForward, navigate]);
+  const canBack = useCanGoBack();
+  const canForward = useCanGoForward();
 
   return (
     <div className={styles.group}>
@@ -47,7 +22,7 @@ export function NavigationButtons() {
         aria-label="Back"
         className={styles.btn}
         disabled={!canBack}
-        onClick={onBack}
+        onClick={goBackInTab}
         type="button"
       >
         <Icons.ArrowBackIcon size={12} />
@@ -56,16 +31,11 @@ export function NavigationButtons() {
         aria-label="Forward"
         className={styles.btn}
         disabled={!canForward}
-        onClick={onForward}
+        onClick={goForwardInTab}
         type="button"
       >
         <Icons.ArrowForwardIcon size={12} />
       </button>
     </div>
   );
-}
-
-interface HistoryDelta {
-  canBack: boolean;
-  canForward: boolean;
 }

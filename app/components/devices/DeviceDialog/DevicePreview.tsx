@@ -1,7 +1,7 @@
 import type { DeviceInfo } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAndroidVideoDecoder } from "../../../hooks/useAndroidVideoDecoder";
-import { useIosVideoDecoder } from "../../../hooks/useIosVideoDecoder";
+import { useBrowserStream } from "../../../hooks/useBrowserStream";
+import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import { useVideoInputStream } from "../../../hooks/useVideoInputStream";
 import {
   androidMetaStateFromEvent,
@@ -11,7 +11,6 @@ import {
   androidButton,
   androidKeyboard,
   androidTouch,
-  browserGetMjpegPort,
   browserKeyboardEvent,
   browserMouseEvent,
   browserViewEnsure,
@@ -109,7 +108,7 @@ function IosPreview({
   const [active, setActive] = useState(false);
   const udid = device.reservationKey;
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useIosVideoDecoder(active, udid);
+    useDeviceVideo(active, udid, "ios");
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -270,11 +269,7 @@ function AndroidPreview({
   const [active, setActive] = useState(false);
   const serial = device.reservationKey;
   const { canvasRef, isReceiving, isConfigured, videoWidth, videoHeight } =
-    useAndroidVideoDecoder(
-      active,
-      `android_video_config:${serial}`,
-      `android_video_frame:${serial}`,
-    );
+    useDeviceVideo(active, serial, "android");
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -435,34 +430,29 @@ function WebPreview({
   device: DeviceInfo;
   interactive: boolean;
 }) {
-  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  // Local or remote is the hook's problem — it picks the host's MJPEG port or
+  // the gateway's media channel depending on where the browser actually runs.
+  const { imgRef, isReceiving, streamUrl } = useBrowserStream(
+    device.reservationKey,
+    started,
+  );
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        await browserViewEnsure(device.reservationKey);
-        const port = await browserGetMjpegPort();
-        if (cancelled) {
-          return;
+    browserViewEnsure(device.reservationKey)
+      .then(() => {
+        if (!cancelled) {
+          setStarted(true);
         }
-        if (!port) {
-          setLoadError("MJPEG server not available");
-
-          return;
-        }
-        setStreamUrl(
-          `http://127.0.0.1:${String(port)}/stream/${encodeURIComponent(device.reservationKey)}`,
-        );
-      } catch (e) {
+      })
+      .catch((e: unknown) => {
         if (!cancelled) {
           setLoadError(e instanceof Error ? e.message : String(e));
         }
-      }
-    })();
+      });
 
     return () => {
       cancelled = true;
@@ -497,7 +487,7 @@ function WebPreview({
         y: Math.round((e.clientY - rect.top - offsetY) / scale),
       };
     },
-    [],
+    [imgRef],
   );
 
   const onMouseDown = useCallback(
@@ -576,14 +566,13 @@ function WebPreview({
   return (
     <>
       <div ref={stageRef} className={styles.stageWrap}>
-        {streamUrl ? (
-          <img
-            ref={imgRef}
-            src={streamUrl}
-            alt={device.name}
-            className={styles.previewImg}
-          />
-        ) : (
+        <img
+          ref={imgRef}
+          src={streamUrl ?? undefined}
+          alt={device.name}
+          className={styles.previewImg}
+        />
+        {!isReceiving && (
           <div className={styles.previewPlaceholder}>
             Starting browser capture…
           </div>

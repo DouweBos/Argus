@@ -20,6 +20,7 @@ import {
   QuestionForm,
   QueuedMessage,
   QueuedMessageAction,
+  QueuedMessageEditor,
   QueuedMessageList,
   Spinner,
   TaskList,
@@ -28,7 +29,15 @@ import {
   type ToolCallData,
   type ToolResultBlockData,
 } from "@argus/peacock";
-import type { RemoteMessage, RemoteToolCall } from "../lib/protocol";
+import type {
+  RemoteMessage,
+  RemoteQueuedMessage,
+  RemoteToolCall,
+} from "../lib/protocol";
+import {
+  buildLinkedProjectsPreamble,
+  parseLinkedProjectsPreamble,
+} from "../lib/linkedProjects";
 import { imageKey, useAppStore } from "../lib/store";
 import { Mermaid } from "./Mermaid";
 import { WorkingIndicator } from "./WorkingIndicator";
@@ -236,6 +245,7 @@ const Message = memo(function Message({
     <MessageBubble
       role={msg.role}
       mcp={mcp}
+      author={msg.author}
       isError={msg.is_error}
       timestamp={msg.timestamp}
       toolOnly={trimmed.length === 0 && !!toolCalls}
@@ -258,8 +268,8 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const loadOlderMessages = useAppStore((s) => s.loadOlderMessages);
   const loadImage = useAppStore((s) => s.loadImage);
   const watchAgent = useAppStore((s) => s.watchAgent);
+  const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const queued = useAppStore((s) => s.queuedByAgent[agentId]);
-  const removeQueued = useAppStore((s) => s.removeQueued);
   const endRef = useRef<HTMLDivElement>(null);
   const loadingOlderRef = useRef(false);
   // Scroll height captured just before prepending older messages, so we can
@@ -267,6 +277,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
   const preScrollHeightRef = useRef<number | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [editingQueuedId, setEditingQueuedId] = useState<string | null>(null);
 
   // Combine the authoritative snapshot with any not-yet-confirmed optimistic
   // user messages so a just-sent message shows instantly. Memoized so unrelated
@@ -289,7 +300,12 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
     if (connection !== "ready") {
       return;
     }
-    const refresh = () => loadTranscript(agentId).catch(() => {});
+    // Status rides along with the transcript: a missed `agent.status` event
+    // otherwise leaves the composer showing "send" through a whole turn.
+    const refresh = () => {
+      loadTranscript(agentId).catch(() => {});
+      loadAgentStatus(agentId).catch(() => {});
+    };
     // The queue lives on the computer; fetch it once, then follow agent.queue.
     loadQueue(agentId).catch(() => {});
     refresh();
@@ -315,7 +331,7 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
-  }, [connection, agentId, loadQueue, loadTranscript, watchAgent]);
+  }, [connection, agentId, loadQueue, loadTranscript, loadAgentStatus, watchAgent]);
 
   // Track scroll position: toggle the bottom pill, and lazy-load older history
   // when the user nears the top.
@@ -430,27 +446,13 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
       {queued && queued.length > 0 && (
         <QueuedMessageList>
           {queued.map((q) => (
-            <QueuedMessage
+            <QueuedRow
               key={q.id}
-              text={q.display_text ?? q.text}
-              actions={
-                <QueuedMessageAction
-                  icon={<Icons.CloseIcon size={12} />}
-                  label="Remove queued message"
-                  onClick={() => {
-                    // Dropping it throws away what you typed, so ask first.
-                    const preview = q.display_text ?? q.text;
-                    if (
-                      !window.confirm(
-                        `Remove this queued message?\n\n${preview.slice(0, 200)}`,
-                      )
-                    ) {
-                      return;
-                    }
-                    removeQueued(agentId, q.id).catch(() => {});
-                  }}
-                />
-              }
+              agentId={agentId}
+              editing={editingQueuedId === q.id}
+              message={q}
+              onStartEdit={() => setEditingQueuedId(q.id)}
+              onStopEdit={() => setEditingQueuedId(null)}
             />
           ))}
         </QueuedMessageList>
@@ -467,5 +469,87 @@ export function AgentTranscript({ agentId }: { agentId: string }) {
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * One message still waiting in the queue: editable in place, since a remote is
+ * usually where you notice you've typed the wrong thing.
+ */
+function QueuedRow({
+  agentId,
+  editing,
+  message,
+  onStartEdit,
+  onStopEdit,
+}: {
+  agentId: string;
+  editing: boolean;
+  message: RemoteQueuedMessage;
+  onStartEdit: () => void;
+  onStopEdit: () => void;
+}) {
+  const removeQueued = useAppStore((s) => s.removeQueued);
+  const updateQueued = useAppStore((s) => s.updateQueued);
+
+  // `text` carries the linked-projects preamble; the editor only ever shows
+  // what the user typed, and the preamble is rebuilt around whatever they save.
+  const parsed = parseLinkedProjectsPreamble(message.text);
+  const linkedPaths = parsed?.paths ?? [];
+  const displayText = parsed?.rest ?? message.display_text ?? message.text;
+
+  const remove = () => {
+    // Dropping it throws away what you typed, so ask first.
+    if (
+      !window.confirm(
+        `Remove this queued message?\n\n${displayText.slice(0, 200)}`,
+      )
+    ) {
+      return;
+    }
+    removeQueued(agentId, message.id).catch(() => {});
+  };
+
+  return (
+    <QueuedMessage
+      author={message.author}
+      text={editing ? undefined : displayText}
+      actions={
+        editing ? undefined : (
+          <>
+            <QueuedMessageAction
+              icon={<Icons.PencilIcon size={11} />}
+              label="Edit queued message"
+              onClick={onStartEdit}
+            />
+            <QueuedMessageAction
+              icon={<Icons.CloseIcon size={12} />}
+              label="Remove queued message"
+              onClick={remove}
+            />
+          </>
+        )
+      }
+    >
+      {editing ? (
+        <QueuedMessageEditor
+          initialText={displayText}
+          onCancel={onStopEdit}
+          onSave={(text) => {
+            // Cleared to nothing with no projects attached is a delete — there
+            // would be no message left to send.
+            if (text.length === 0 && linkedPaths.length === 0) {
+              removeQueued(agentId, message.id).catch(() => {});
+            } else {
+              const next = buildLinkedProjectsPreamble(linkedPaths, text);
+              if (next !== message.text) {
+                updateQueued(agentId, message.id, next).catch(() => {});
+              }
+            }
+            onStopEdit();
+          }}
+        />
+      ) : undefined}
+    </QueuedMessage>
   );
 }

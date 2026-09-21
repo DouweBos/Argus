@@ -75,3 +75,35 @@
   border-color: var(--accent-border-strong);
   background: var(--surface-6);
 }
+
+/* Attribution for a message someone else queued (a huddle guest). */
+.author {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.authorName {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Inline editor replacing the dashed bubble while a queued message is edited. */
+.editArea {
+  flex: 1;
+  font: var(--type-body);
+  font-family: inherit;
+  color: var(--text-primary);
+  padding: var(--space-4) var(--space-6);
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-border-strong);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+  resize: vertical;
+  min-height: 36px;
+  width: 100%;
+  box-sizing: border-box;
+}

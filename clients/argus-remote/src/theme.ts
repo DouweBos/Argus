@@ -5,7 +5,7 @@
  */
 
 import { useEffect } from "react";
-import { Appearance, type ColorSchemeName } from "react-native";
+import { Appearance } from "react-native";
 import { create } from "zustand";
 import { readString, writeString } from "./lib/storage";
 
@@ -44,6 +44,9 @@ export interface Theme {
   errorSoft: string;
   brandPurple: string;
   mediaBg: string;
+  /** Nav-bar glyphs. The header capsule is a light material in both themes, so
+   *  this stays dark either way rather than inverting with the palette. */
+  headerIcon: string;
   radius: number;
   radiusSm: number;
   space: number;
@@ -73,6 +76,7 @@ const DARK: Theme = {
   errorSoft: "rgba(255, 68, 102, 0.12)",
   brandPurple: "#7c5cfc",
   mediaBg: "#000000",
+  headerIcon: "#15151c",
   radius: 12,
   radiusSm: 8,
   space: 12,
@@ -101,6 +105,7 @@ const LIGHT: Theme = {
   warningSoft: "rgba(214, 154, 0, 0.16)",
   error: "#dc2c49",
   errorSoft: "rgba(220, 44, 73, 0.12)",
+  headerIcon: "#0d0d14",
 };
 
 interface ThemeState {
@@ -146,11 +151,9 @@ export function useThemeBootstrap(): void {
         }
       })
       .catch(() => {});
-    const sub = Appearance.addChangeListener(
-      ({ colorScheme }: { colorScheme: ColorSchemeName }) => {
-        store.setState({ system: colorScheme === "light" ? "light" : "dark" });
-      },
-    );
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      store.setState({ system: colorScheme === "light" ? "light" : "dark" });
+    });
 
     return () => sub.remove();
   }, []);

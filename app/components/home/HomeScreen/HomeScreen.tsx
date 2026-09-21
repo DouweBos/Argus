@@ -1,5 +1,4 @@
-import type { DependencyStatus } from "../../../lib/types";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   AgentRow,
   Banner,
@@ -10,10 +9,11 @@ import {
   ProjectCard,
 } from "@argus/peacock";
 import { useProjects } from "../../../hooks/useSessions";
-import { checkDependencies } from "../../../lib/ipc";
+import { LOCAL_HOST_ID } from "../../../lib/transport/hostId";
 import { setActiveAgent } from "../../../stores/agentStore";
 import { setCenterView } from "../../../stores/centerViewStore";
-import { useDevicePoller } from "../../../stores/deviceStore";
+import { useHostConnections } from "../../../stores/connectionStore";
+import { deviceKeyFor, useDevicePoller } from "../../../stores/deviceStore";
 import {
   showCreateSessionDialog,
   showOpenProjectDialog,
@@ -27,7 +27,9 @@ import {
   openChangelogDialog,
   useUpdaterState,
 } from "../../../stores/updaterStore";
+import { SetupBanners } from "../SetupBanners";
 import styles from "./HomeScreen.module.css";
+import { RecentRunsSection } from "./RecentRunsSection";
 import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
 
@@ -51,22 +53,11 @@ function agentMeta(status: string): string {
 
 export function HomeScreen() {
   useDevicePoller(5000);
+  const connections = useHostConnections();
   const data = useHomeData();
   const { openProject } = useProjects();
   const [openingPath, setOpeningPath] = useState<string | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
-  const [missingDeps, setMissingDeps] = useState<DependencyStatus[]>([]);
-
-  useEffect(() => {
-    checkDependencies()
-      .then((report) =>
-        setMissingDeps(report.dependencies.filter((d) => !d.installed)),
-      )
-      .catch(() => setMissingDeps([]));
-  }, []);
-
-  const missingRequired = missingDeps.filter((d) => d.severity === "required");
-  const missingOptional = missingDeps.filter((d) => d.severity === "optional");
   const updater = useUpdaterState();
   const hasPendingUpdate =
     (updater.phase === "available" ||
@@ -75,15 +66,22 @@ export function HomeScreen() {
     updater.updateVersion !== null &&
     updater.updateVersion !== updater.currentVersion;
 
+  // Only name the machine when it isn't this one — with the same repos on both
+  // machines the badge is the only thing telling two cards apart.
+  const hostLabelFor = (hostId: string): string | undefined =>
+    hostId === LOCAL_HOST_ID
+      ? undefined
+      : (connections.find((c) => c.hostId === hostId)?.label ?? hostId);
+
   const handleOpenProject = async (p: HomeProject) => {
     setOpenError(null);
     setOpeningPath(p.path);
     try {
-      await openProject(p.path);
+      await openProject(p.path, { hostId: p.hostId });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setOpenError(msg);
-      removeRecentProject(p.path);
+      removeRecentProject(p.path, p.hostId);
     } finally {
       setOpeningPath(null);
     }
@@ -144,16 +142,7 @@ export function HomeScreen() {
             <strong>Argus {updater.updateVersion}</strong> is {updateLabel}.
           </Banner>
         )}
-        {missingRequired.map((dep) => (
-          <Banner key={dep.id} tone="error">
-            <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}
-          </Banner>
-        ))}
-        {missingOptional.map((dep) => (
-          <Banner key={dep.id} tone="warning">
-            <strong>{dep.name}</strong> not found. {dep.purpose} {dep.hint}
-          </Banner>
-        ))}
+        <SetupBanners />
         {openError && (
           <Banner tone="error">
             {openError}
@@ -235,6 +224,7 @@ export function HomeScreen() {
                         key={p.id}
                         name={p.name}
                         path={p.path}
+                        hostLabel={hostLabelFor(p.hostId)}
                         accent={p.accent}
                         agents={p.agents.map((a) => ({ status: a.status }))}
                         lastOpened={formatLastOpened(p.lastOpened)}
@@ -251,7 +241,7 @@ export function HomeScreen() {
                               `Remove ${p.name} from recent projects?`,
                             )
                           ) {
-                            removeRecentProject(p.path);
+                            removeRecentProject(p.path, p.hostId);
                           }
                         }}
                       />
@@ -320,7 +310,7 @@ export function HomeScreen() {
                     <div className={styles.rowList}>
                       {runningDevices.slice(0, 6).map((d) => (
                         <AgentRow
-                          key={`${d.platform}:${d.deviceKey}`}
+                          key={deviceKeyFor(d)}
                           name={d.name}
                           project={
                             d.repoRoot
@@ -339,6 +329,8 @@ export function HomeScreen() {
                   )}
                 </div>
               </div>
+
+              <RecentRunsSection />
             </div>
           )}
         </div>

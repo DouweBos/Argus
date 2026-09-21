@@ -90,6 +90,18 @@ export function identityEndpoints(identity: DeviceIdentity): RemoteEndpoint[] {
   return all.sort((a, b) => a.priority - b.priority);
 }
 
+/** Human label for where an address routes through. */
+export function endpointKindLabel(kind: RemoteEndpoint["kind"]): string {
+  switch (kind) {
+    case "lan":
+      return "Local network";
+    case "tailscale":
+      return "Tailscale";
+    default:
+      return "Cloudflare tunnel";
+  }
+}
+
 export interface PairedHosts {
   hosts: DeviceIdentity[];
   /** Which pairing the app connects to; null once the last one is removed. */

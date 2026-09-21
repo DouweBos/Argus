@@ -26,6 +26,7 @@ import {
   removeProject,
   removeSession,
   selectSession,
+  sessionHostId,
 } from "../stores/sessionStore";
 import { stopAgentListening } from "./agentEventService";
 import {
@@ -37,14 +38,18 @@ import {
   listSessions,
 } from "./ipc";
 import { refreshRepoBranch } from "./repoBranchSync";
+import { LOCAL_HOST_ID, hostScopedKey, type HostId } from "./transport/hostId";
+import { projectHost, rememberProjectHost } from "./transport/hostIndex";
 
-/** Repo roots that have been registered with the backend in this process. */
+/** Repo roots registered with a backend in this process, keyed by host. */
 const knownRepoRoots = new Set<string>();
 
 let bootstrapped = false;
 
 interface OpenProjectOptions {
   autoSelect?: boolean;
+  /** Machine the repo is on. Defaults to this Mac. */
+  hostId?: HostId;
   skipRecent?: boolean;
 }
 
@@ -52,23 +57,28 @@ export async function openProject(
   path: string,
   options?: OpenProjectOptions,
 ): Promise<void> {
+  const hostId = options?.hostId ?? LOCAL_HOST_ID;
   try {
-    if (!knownRepoRoots.has(path)) {
+    // Learn the owner before the first call so every command about this repo
+    // is routed to the machine holding it.
+    rememberProjectHost(path, hostId);
+    const known = hostScopedKey(hostId, path);
+    if (!knownRepoRoots.has(known)) {
       await apiAddRepoRoot(path);
-      knownRepoRoots.add(path);
+      knownRepoRoots.add(known);
     }
-    addProject(path);
+    addProject(path, hostId);
 
     await apiCreateHeadSession(path);
 
     const sessions = await listSessions(path);
-    mergeSessionsForProject(path, sessions);
+    mergeSessionsForProject(path, sessions, hostId);
 
-    await refreshRepoBranch(path);
+    await refreshRepoBranch(path, hostId);
 
     const shouldAutoSelect = options?.autoSelect !== false;
     const projectSessions = getSessionState().sessions.filter(
-      (w) => w.repo_root === path,
+      (w) => w.repo_root === path && sessionHostId(w.id) === hostId,
     );
     if (
       shouldAutoSelect &&
@@ -80,21 +90,24 @@ export async function openProject(
     }
 
     if (!options?.skipRecent) {
-      addRecentProject(path);
+      addRecentProject(path, hostId);
     }
-    addOpenProject(path);
+    addOpenProject(path, hostId);
   } catch (err) {
     pushError(err instanceof Error ? err.message : String(err), "open_project");
     throw err;
   }
 }
 
-export async function closeProject(repoRoot: string): Promise<void> {
+export async function closeProject(
+  repoRoot: string,
+  hostId: HostId = LOCAL_HOST_ID,
+): Promise<void> {
   try {
     await apiRemoveRepoRoot(repoRoot);
-    knownRepoRoots.delete(repoRoot);
-    removeProject(repoRoot);
-    removeOpenProject(repoRoot);
+    knownRepoRoots.delete(hostScopedKey(hostId, repoRoot));
+    removeProject(repoRoot, hostId);
+    removeOpenProject(repoRoot, hostId);
   } catch (err) {
     pushError(
       err instanceof Error ? err.message : String(err),
@@ -121,7 +134,7 @@ export async function createSessionInProject(
       llm,
     );
     if (!getSessionState().sessions.some((w) => w.id === session.id)) {
-      addSession(session);
+      addSession(session, projectHost(repoRoot) ?? LOCAL_HOST_ID);
     }
 
     return session;
@@ -160,7 +173,9 @@ export async function bootstrapProjects(): Promise<void> {
   }
   bootstrapped = true;
 
-  const open = getOpenProjects();
+  // Only this Mac's projects: an attached host hydrates its own, and a host
+  // that is not attached has no sidebar rows at all.
+  const open = getOpenProjects().filter((p) => p.hostId === LOCAL_HOST_ID);
   for (const p of open) {
     try {
       await openProject(p.path, { autoSelect: false, skipRecent: true });

@@ -1,3 +1,4 @@
+import type { DropProgress } from "../../../lib/droppedFiles";
 import type { ImageAttachment } from "../../../lib/ipc";
 import type { ProjectEntry, SlashCommand } from "../../../lib/types";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,8 +9,10 @@ import {
   ContextMeter,
   Icons,
   ImageAttachmentStrip,
+  ProgressBar,
 } from "@argus/peacock";
 import { useCombinedRef } from "../../../hooks/useCombinedRef";
+import { resolveDroppedFilePaths } from "../../../lib/droppedFiles";
 import {
   ACCEPTED_IMAGE_TYPES,
   extractImageFilesFromClipboard,
@@ -165,6 +168,10 @@ export function ChatInput({
   const [effortPickerOpen, setEffortPickerOpen] = useState(false);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectEntry[]>([]);
+  /** Bytes moving to a host; null locally, where a drop is already a path. */
+  const [uploadProgress, setUploadProgress] = useState<DropProgress | null>(
+    null,
+  );
   const linkedProjects = useLinkedProjects(agentId);
   const sessions = useSessions();
   const currentSession = sessionId
@@ -469,25 +476,27 @@ export function ChatInput({
       setIsDragOver(false);
 
       const imageFiles: File[] = [];
-      const paths: string[] = [];
+      const otherFiles: File[] = [];
       for (const file of Array.from(files)) {
-        if (file.type.startsWith("image/")) {
-          imageFiles.push(file);
-          continue;
-        }
-        const p = window.argus.getFilePath?.(file) ?? "";
-        if (p) {
-          paths.push(p);
-        }
+        (file.type.startsWith("image/") ? imageFiles : otherFiles).push(file);
       }
       if (imageFiles.length > 0) {
         addImageFiles(imageFiles);
       }
-      if (paths.length > 0) {
-        insertFilePathMentions(paths);
+      if (otherFiles.length === 0) {
+        return;
       }
+      // Attached to a host, the drop is uploaded before it can be mentioned.
+      resolveDroppedFilePaths(sessionId, otherFiles, setUploadProgress)
+        .then(({ paths, errors }) => {
+          errors.forEach((message) => pushError(message, "attachment"));
+          if (paths.length > 0) {
+            insertFilePathMentions(paths);
+          }
+        })
+        .catch((err: unknown) => pushError(String(err), "attachment"));
     },
-    [addImageFiles, insertFilePathMentions],
+    [addImageFiles, insertFilePathMentions, sessionId],
   );
 
   const handlePaste = useCallback(
@@ -639,6 +648,23 @@ export function ChatInput({
 
   const above = (
     <>
+      {uploadProgress && (
+        <div className={styles.upload}>
+          <span className={styles.uploadLabel}>
+            {uploadProgress.count > 1
+              ? `Uploading ${uploadProgress.name} (${String(uploadProgress.index)}/${String(uploadProgress.count)})`
+              : `Uploading ${uploadProgress.name}`}
+          </span>
+          <ProgressBar
+            aria-label={`Uploading ${uploadProgress.name}`}
+            progress={
+              uploadProgress.total > 0
+                ? uploadProgress.transferred / uploadProgress.total
+                : 0
+            }
+          />
+        </div>
+      )}
       {suggestions.length > 0 && (
         <div ref={suggestionsRef} className={styles.suggestions}>
           <div className={styles.suggestionsHeader}>Commands</div>

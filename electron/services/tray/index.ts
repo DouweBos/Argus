@@ -11,12 +11,32 @@
  * happening" at a glance.
  */
 
-import type { AgentSession } from "../agent/models";
-import type { Session } from "../session/models";
+import type { AgentSession } from "@argus/host/services/agent/models";
+import type { Session } from "@argus/host/services/session/models";
 import { Menu, Tray, app, nativeImage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
-import { appState } from "../../state";
+import { isServerMode } from "@argus/host/serverMode";
+import { appState } from "@argus/host/state";
+import {
+  cancelServerPairing,
+  confirmServerPairing,
+  dismissServerPairing,
+  getServerPairingState,
+  setServerPairingListener,
+  startServerPairing,
+} from "../../serverPairing";
+import {
+  canInstallServerUpdate,
+  checkServerUpdates,
+  downloadServerUpdate,
+  getServerUpdateState,
+  installServerUpdate,
+  isServerAutoInstallEnabled,
+  setServerAutoInstallEnabled,
+  setServerUpdateListener,
+} from "../../serverUpdates";
+import { isAgentActive } from "../agentActivity";
 
 let tray: Tray | null = null;
 let pollTimer: NodeJS.Timeout | null = null;
@@ -33,6 +53,11 @@ interface TrayHooks {
    * session and a plain navigate() would be a no-op.
    */
   navigateMainWindow: (path: string, agentId?: string) => void;
+  /**
+   * Extra read-only lines for the top of the menu. The headless server has no
+   * window, so the tray is where its gateway URL and state directory live.
+   */
+  describeHost?: () => string[];
 }
 
 let hooks: TrayHooks | null = null;
@@ -69,28 +94,6 @@ function loadTrayImage(active: boolean): Electron.NativeImage {
   image.setTemplateImage(true);
 
   return image;
-}
-
-/**
- * Whether the agent is doing work right now. The CLI's `session_state_changed`
- * can flip to `idle` between tool calls within the same turn, so process
- * status alone understates activity — we also count any in-flight prompt that
- * hasn't emitted its final `result` event yet. This mirrors the renderer's
- * `inflight` tracking so the tray view agrees with the agents screen.
- */
-function isAgentActive(a: AgentSession): boolean {
-  if (a.prewarmed) {
-    return false;
-  }
-  if (a.status === "stopped" || a.status === "error") {
-    return false;
-  }
-
-  return (
-    a.status === "running" ||
-    a.status === "requires_action" ||
-    a.inflightPrompts > 0
-  );
 }
 
 /** Whether at least one agent is in a "doing work" state. */
@@ -186,6 +189,13 @@ function buildMenu(): Menu {
   }
 
   const template: Electron.MenuItemConstructorOptions[] = [];
+  const hostLines = hooks?.describeHost?.() ?? [];
+  for (const line of hostLines) {
+    template.push({ label: line, enabled: false });
+  }
+  if (hostLines.length > 0) {
+    template.push({ type: "separator" });
+  }
   let runningCount = 0;
   let totalAgentCount = 0;
   for (const agents of sessionAgents.values()) {
@@ -259,13 +269,180 @@ function buildMenu(): Menu {
   }
 
   template.push({ type: "separator" });
-  template.push({
-    label: "Show Argus",
-    click: () => hooks?.navigateMainWindow("/"),
-  });
+  if (isServerMode()) {
+    for (const item of buildPairingItems()) {
+      template.push(item);
+    }
+    template.push({ type: "separator" });
+    for (const item of buildUpdateItems()) {
+      template.push(item);
+    }
+    template.push({ type: "separator" });
+  } else {
+    template.push({
+      label: "Show Argus",
+      click: () => hooks?.navigateMainWindow("/"),
+    });
+  }
   template.push({ role: "quit" });
 
   return Menu.buildFromTemplate(template);
+}
+
+/**
+ * The server's pairing flow, rendered as menu items.
+ *
+ * The SAS is shown so a human can compare it against the client's screen — the
+ * whole point of the confirmation — and the two grant choices are separate
+ * items so admin is never what you get by clicking the obvious one.
+ */
+function buildPairingItems(): Electron.MenuItemConstructorOptions[] {
+  const state = getServerPairingState();
+  switch (state.kind) {
+    case "idle":
+      return [
+        {
+          label: "Pair a device…",
+          click: () => {
+            startServerPairing().catch(() => undefined);
+          },
+        },
+      ];
+    case "armed":
+      return [
+        { label: "Pairing code copied to clipboard", enabled: false },
+        { label: "Waiting for a device to connect…", enabled: false },
+        { label: "Cancel pairing", click: () => cancelServerPairing() },
+      ];
+    case "awaiting_sas":
+      // Least privilege first: the top entry is the safe one, and admin — which
+      // hands over the whole machine — is the deliberate reach past two others.
+      return [
+        { label: `Confirm this matches: ${state.sas}`, enabled: false },
+        {
+          label: "Approve — watch only",
+          click: () => {
+            confirmServerPairing({ admin: false, control: false }).catch(
+              () => undefined,
+            );
+          },
+        },
+        {
+          label: "Approve — run agents",
+          click: () => {
+            confirmServerPairing({ admin: false, control: true }).catch(
+              () => undefined,
+            );
+          },
+        },
+        {
+          label: "Approve — full control of this Mac",
+          click: () => {
+            confirmServerPairing({ admin: true, control: true }).catch(
+              () => undefined,
+            );
+          },
+        },
+        { label: "Reject", click: () => cancelServerPairing() },
+      ];
+    case "paired":
+      return [
+        { label: `Paired with ${state.label}`, enabled: false },
+        { label: "Dismiss", click: () => dismissServerPairing() },
+      ];
+    case "error":
+      return [
+        { label: `Pairing failed: ${state.message}`, enabled: false },
+        { label: "Dismiss", click: () => dismissServerPairing() },
+      ];
+  }
+}
+
+/**
+ * The server's update flow, rendered as menu items.
+ *
+ * The running version is already the first line of the menu, so only the new
+ * version is named. Restarting is shown as a refusal with a count rather than
+ * hidden — "nothing happened" is the worst possible answer at a menu bar.
+ */
+function buildUpdateItems(): Electron.MenuItemConstructorOptions[] {
+  const state = getServerUpdateState();
+  const items: Electron.MenuItemConstructorOptions[] = [];
+  const check: Electron.MenuItemConstructorOptions = {
+    label: "Check for Updates…",
+    click: () => {
+      checkServerUpdates().catch(() => undefined);
+    },
+  };
+
+  switch (state.kind) {
+    case "idle":
+      items.push(check);
+      break;
+    case "checking":
+      items.push({ label: "Checking for updates…", enabled: false });
+      break;
+    case "up_to_date":
+      items.push({ label: "Up to date", enabled: false }, check);
+      break;
+    case "available":
+      items.push(
+        { label: `Update available: ${state.version}`, enabled: false },
+        {
+          label: "Download Update",
+          click: () => {
+            downloadServerUpdate().catch(() => undefined);
+          },
+        },
+      );
+      break;
+    case "downloading":
+      items.push({
+        label: `Downloading update — ${state.percent}%`,
+        enabled: false,
+      });
+      break;
+    case "ready":
+      items.push(
+        { label: `Update ready: ${state.version}`, enabled: false },
+        buildInstallItem(),
+      );
+      break;
+    case "error":
+      items.push(
+        { label: `Update failed: ${state.message}`, enabled: false },
+        check,
+      );
+      break;
+  }
+
+  items.push({
+    label: "Install Automatically When Idle",
+    type: "checkbox",
+    checked: isServerAutoInstallEnabled(),
+    click: (item) => setServerAutoInstallEnabled(item.checked),
+  });
+
+  return items;
+}
+
+function buildInstallItem(): Electron.MenuItemConstructorOptions {
+  const verdict = canInstallServerUpdate();
+  if (!verdict.ok && verdict.reason === "agents_running") {
+    const n = verdict.activeAgents;
+
+    return {
+      label: `${n} agent${n === 1 ? "" : "s"} running — cannot restart`,
+      enabled: false,
+    };
+  }
+
+  return {
+    label: "Restart and Install",
+    click: () => {
+      installServerUpdate();
+    },
+  };
 }
 
 function refreshTray(): void {
@@ -290,10 +467,11 @@ function refreshTray(): void {
       running += 1;
     }
   }
+  const name = isServerMode() ? "Argus Server" : "Argus";
   tray.setToolTip(
     total === 0
-      ? "Argus — no agents running"
-      : `Argus — ${running}/${total} agent${total === 1 ? "" : "s"} active`,
+      ? `${name} — no agents running`
+      : `${name} — ${running}/${total} agent${total === 1 ? "" : "s"} active`,
   );
 
   // Rebuild the dropdown so the next click reflects current state. We do this
@@ -313,6 +491,10 @@ export function initTray(initHooks: TrayHooks): void {
 
   hooks = initHooks;
   tray = new Tray(loadTrayImage(false));
+  // Pairing changes are event-driven; the 1.5s agent poll is too slow to watch
+  // a SAS appear while someone is standing at the machine.
+  setServerPairingListener(() => refreshTray());
+  setServerUpdateListener(() => refreshTray());
   tray.setIgnoreDoubleClickEvents(true);
   refreshTray();
 
@@ -327,6 +509,8 @@ export function refreshTrayNow(): void {
 }
 
 export function destroyTray(): void {
+  setServerPairingListener(null);
+  setServerUpdateListener(null);
   if (pollTimer) {
     clearInterval(pollTimer);
     pollTimer = null;

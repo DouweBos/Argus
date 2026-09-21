@@ -11,14 +11,20 @@ import type {
   PullRequestRef,
   SessionPanel,
 } from "./router";
+import type { HostId } from "./transport/hostId";
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { parseRoute } from "./router";
 
 export function useCurrentRoute(): ParsedRoute {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
 
-  return useMemo(() => parseRoute(pathname), [pathname]);
+  return useMemo(() => parseRoute(`${pathname}${search}`), [pathname, search]);
+}
+
+/** Which attached host the current view reads from. */
+export function useRouteHostId(): HostId {
+  return useCurrentRoute().hostId;
 }
 
 export function useRouteView(): AppView {

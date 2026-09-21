@@ -1,0 +1,99 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 260px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-medium);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pick:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.pick[aria-current="true"] {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.pick:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.label,
+.detail,
+.stateLabel {
+  font-family: var(--font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.detail {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.stateLabel {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.focus {
+  display: flex;
+  flex-shrink: 0;
+  width: 12px;
+  color: var(--accent);
+}
+
+.footer {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--surface-3);
+}

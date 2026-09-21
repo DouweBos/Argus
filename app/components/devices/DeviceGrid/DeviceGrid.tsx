@@ -1,4 +1,5 @@
 import type { DeviceInfo } from "../../../lib/types";
+import { deviceKeyFor } from "../../../stores/deviceStore";
 import styles from "./DeviceGrid.module.css";
 import { DeviceGridCell } from "./DeviceGridCell";
 
@@ -29,7 +30,7 @@ export function DeviceGrid({
     >
       {devices.map((d) => (
         <DeviceGridCell
-          key={`${d.platform}:${d.deviceKey}`}
+          key={deviceKeyFor(d)}
           device={d}
           interactive={interactiveKeys.has(d.deviceKey)}
         />

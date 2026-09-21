@@ -36,14 +36,14 @@ SDK             := $(shell xcrun --show-sdk-path)
 # Swift: compile main.swift and ArgusBridge.swift together in one pass so
 # they share the same module and can call each other's @_cdecl symbols.
 SWIFT_FLAGS     := \
-    -sdk $(SDK) \
+    -sdk "$(SDK)" \
     -target arm64-apple-macosx12.0 \
     -import-objc-header $(BRIDGE_HEADER) \
     -O
 
 # Clang: compile the ObjC file to an object.
 CLANG_FLAGS     := \
-    -isysroot $(SDK) \
+    -isysroot "$(SDK)" \
     -target arm64-apple-macosx12.0 \
     -fobjc-arc \
     -O2 \

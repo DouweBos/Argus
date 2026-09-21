@@ -3,7 +3,7 @@ import { Alert, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { AgentTranscript } from "../../src/components/AgentTranscript";
 import * as Icons from "../../src/components/Icons";
-import { Banner, Btn, IconBtn, Muted, Row } from "../../src/components/ui";
+import { Banner, Btn, HeaderIconBtn, Muted, Row } from "../../src/components/ui";
 import { stoppedAgentKey, useAppStore } from "../../src/stores/appStore";
 import { useTheme } from "../../src/theme";
 
@@ -59,17 +59,16 @@ export default function StoppedAgentScreen() {
           title: label ?? "Stopped agent",
           headerRight: () =>
             session ? (
-              <IconBtn
+              <HeaderIconBtn
                 label="View changes"
+                icon={Icons.Branch}
                 onPress={() =>
                   router.push({
                     pathname: "/changes/[session]",
                     params: { session: session.id, label: branch ?? "Session" },
                   })
                 }
-              >
-                <Icons.Branch size={16} color={theme.textSecondary} />
-              </IconBtn>
+              />
             ) : null,
         }}
       />
