@@ -89,6 +89,7 @@ import {
   listAutomationRuns,
   listAutomations,
   listScratchRuns,
+  markRunReportRead,
   setAutomationEnabled,
   updateAutomation,
 } from "@argus/host/services/automation/manager";
@@ -1074,6 +1075,9 @@ export function registerIpcHandlers(): void {
   );
   handle("automation_run_get", "admin", (a) =>
     getAutomationRun(a.runId as string),
+  );
+  handle("automation_run_mark_read", "admin", (a) =>
+    markRunReportRead(a.runId as string),
   );
   handle("signal_sources_list", "admin", () => describeSignalSources());
   handle("automation_gate_log_list", "admin", () => listGateLog());

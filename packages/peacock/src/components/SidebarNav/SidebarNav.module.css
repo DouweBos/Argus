@@ -87,6 +87,21 @@
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
+.attentionDot {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+  flex-shrink: 0;
+}
+
+/* The dot already pushed the row apart, so the count stops doing it too. */
+.attentionDot + .count {
+  margin-left: 6px;
+}
+
 .count {
   margin-left: auto;
   font-family: var(--font-mono);

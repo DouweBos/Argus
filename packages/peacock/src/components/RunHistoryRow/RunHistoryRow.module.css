@@ -99,3 +99,27 @@
   gap: 6px;
   flex-shrink: 0;
 }
+
+/* An unread report has to win against a list of read ones at a glance. */
+.unread {
+  border-color: var(--accent-border-soft);
+  background: var(--accent-overlay-md);
+}
+
+.unread:hover {
+  background: var(--accent-overlay-lg);
+}
+
+.unread .name,
+.unread .started {
+  color: var(--text-primary);
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}

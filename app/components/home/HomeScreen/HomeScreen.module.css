@@ -82,6 +82,16 @@
   gap: 8px;
 }
 
+/* Sits beside the eyebrow, not against the link, so it reads as a count. */
+.attentionCount {
+  margin-right: auto;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .linkBtn {
   font-size: 11px;
   color: var(--accent);

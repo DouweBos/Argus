@@ -833,6 +833,8 @@ export interface AutomationRun {
   report_blocks?: ReportBlock[] | null;
   /** The agent's final message. Plain markdown. */
   report_markdown: string | null;
+  /** False until the report has been looked at, or superseded by a newer one. */
+  report_read: boolean;
   /** Set only on an ad-hoc run: the one-off spec no automation backs. */
   scratch: AutomationScratchSpec | null;
   started_at: number;

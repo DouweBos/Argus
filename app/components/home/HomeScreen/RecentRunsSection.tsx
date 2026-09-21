@@ -12,6 +12,7 @@ import {
   formatCost,
   formatDuration,
   formatRelative,
+  isUnreadReport,
 } from "../../../lib/automations";
 import {
   openAutomationRun,
@@ -40,11 +41,22 @@ function runName(run: AutomationRun, automations: Automation[]): string {
 export function RecentRunsSection() {
   const runs = useAllRuns();
   const automations = useAutomations();
+  // Unread reports are the reason to look here at all, so they come first —
+  // and the count survives them being pushed past the cut by newer runs.
+  const ordered = [...runs].sort(
+    (a, b) => Number(isUnreadReport(b)) - Number(isUnreadReport(a)),
+  );
+  const unread = runs.filter(isUnreadReport).length;
 
   return (
     <div className={styles.section}>
       <div className={styles.sectionHead}>
         <span className={styles.eyebrow}>Recent runs</span>
+        {unread > 0 && (
+          <span className={styles.attentionCount}>
+            {unread} new {unread === 1 ? "report" : "reports"}
+          </span>
+        )}
         <button
           type="button"
           className={styles.linkBtn}
@@ -59,7 +71,7 @@ export function RecentRunsSection() {
         </div>
       ) : (
         <div className={styles.rowList}>
-          {runs.slice(0, LIMIT).map((run) => (
+          {ordered.slice(0, LIMIT).map((run) => (
             <RunHistoryRow
               key={run.id}
               variant="card"
@@ -70,6 +82,7 @@ export function RecentRunsSection() {
               duration={formatDuration(run)}
               cost={formatCost(run.cost_usd)}
               error={run.error ?? undefined}
+              unread={isUnreadReport(run)}
               onClick={() => {
                 if (run.scratch) {
                   openQuickRun(run.id);

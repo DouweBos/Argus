@@ -1550,6 +1550,10 @@ export const getAutomationRun = (
   runId: string,
 ): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
 
+/** Mark a run's report as read. Idempotent. */
+export const markAutomationRunRead = (runId: string): Promise<AutomationRun> =>
+  invoke("automation_run_mark_read", { runId });
+
 /** What the read-only gate turned away, newest first. */
 export const listGateLog = (): Promise<GateLogEntry[]> =>
   invoke("automation_gate_log_list", {});

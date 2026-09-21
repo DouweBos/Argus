@@ -66,7 +66,22 @@ function run(
     cost_usd: null,
     report_markdown: null,
     report_blocks: null,
+    report_read: false,
     error: null,
+  };
+}
+
+function scratchRun(id: string, startedAt: number): AutomationRun {
+  return {
+    ...run(id, startedAt, `scratch-${id}`),
+    scratch: {
+      name: "Quick run",
+      playbook: "do it",
+      scope: { repo_roots: [] },
+      source_ids: [],
+      model: null,
+      guardrails: DEFAULT_GUARDRAILS,
+    },
   };
 }
 
@@ -132,5 +147,21 @@ describe("automation store", () => {
     // The cap is per automation, so a quiet one keeps its single run.
     expect(retained.filter((r) => r.automation_id === "a2")).toHaveLength(1);
     expect(loadAutomationRuns()).toEqual(retained);
+  });
+
+  it("caps every ad-hoc run against one bucket, not its own synthetic id", () => {
+    // Each quick run invents an automation id, so per-id bucketing would keep
+    // all of them forever.
+    const many = Array.from({ length: MAX_RUNS_PER_AUTOMATION + 10 }, (_, i) =>
+      scratchRun(`s${i}`, i),
+    );
+
+    const retained = saveAutomationRuns(many);
+
+    expect(retained).toHaveLength(MAX_RUNS_PER_AUTOMATION);
+    expect(retained.map((r) => r.id)).not.toContain("s0");
+    expect(retained.map((r) => r.id)).toContain(
+      `s${MAX_RUNS_PER_AUTOMATION + 9}`,
+    );
   });
 });
