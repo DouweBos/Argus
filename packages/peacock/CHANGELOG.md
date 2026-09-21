@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.14.0
+
+### Minor Changes
+
+- b1600ee: New `SetupBlocker` component for explaining a blocked action: what went wrong, why, the steps to fix it, and a copyable command.
+
 ## 0.13.0
 
 ### Minor Changes
