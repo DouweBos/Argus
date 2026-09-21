@@ -445,6 +445,82 @@ int32_t SHSendButton(id client, void *fnPtr,
     return 0;
 }
 
+// IndigoHIDMessageForHIDArbitrary(IndigoHIDTarget, uint32_t usagePage,
+//   uint32_t usage, IndigoHIDButtonOp) -> IndigoHIDMessage*  (per SimulatorKit's
+// own assert string). This is the general path SimDisplayChromeView falls back
+// to for every usage it doesn't special-case, and unlike the keyboard variants
+// it carries the target — which is what makes it reach the tvOS focus engine.
+// Caller owns the returned message, same as IndigoHIDMessageForButton.
+typedef void* (*IndigoArbitraryFn)(uint32_t, uint32_t, uint32_t, uint32_t);
+
+/// Send a raw HID usage-page/usage pair (e.g. Consumer 0x0C / Menu Right 0x45)
+/// to a simulator. tvOS only acts on the remote through this path; emulated
+/// keyboard key codes are ignored outright.
+///
+/// Returns 0 on success, negative on failure.
+int32_t SHSendHIDUsage(id client, void *fnPtr,
+                       const char *udid,
+                       uint32_t target, uint32_t usagePage,
+                       uint32_t usage, uint32_t op) {
+    if (!client || !fnPtr || !udid) return -1;
+
+    IndigoArbitraryFn fn = (IndigoArbitraryFn)fnPtr;
+    void *msg = fn(target, usagePage, usage, op);
+    if (!msg) {
+        NSLog(@"[IndigoHID] IndigoHIDMessageForHIDArbitrary returned NULL for "
+              @"page=0x%x usage=0x%x op=%u", usagePage, usage, op);
+        return -3;
+    }
+
+    void *copy = malloc(SH_KEYBOARD_MSG_SIZE);
+    if (!copy) {
+        free(msg);
+        NSLog(@"[IndigoHID] HID usage message allocation failed");
+        return -5;
+    }
+    memcpy(copy, msg, SH_KEYBOARD_MSG_SIZE);
+    free(msg);
+
+    _Atomic(bool) *invalidFlag = NULL;
+    for (int i = 0; i < g_touchStateCount; i++) {
+        if (strcmp(g_touchStates[i].udid, udid) == 0) {
+            invalidFlag = &g_touchStates[i].invalid;
+            break;
+        }
+    }
+
+    SEL sel = NSSelectorFromString(@"sendWithMessage:freeWhenDone:completionQueue:completion:");
+    dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    void (^completion)(NSError *) = ^(NSError *error) {
+        if (error) {
+            NSLog(@"[IndigoHID] HID usage send error: %@", error);
+            if (invalidFlag) atomic_store(invalidFlag, true);
+        }
+    };
+
+    ((void (*)(id, SEL, void *, BOOL, dispatch_queue_t, void(^)(NSError *)))objc_msgSend)(
+        client, sel, copy, YES, queue, completion);
+
+    return 0;
+}
+
+/// Read the device's product family id (3 = Apple TV) off its SimDeviceType.
+/// Returns 0 when it can't be determined.
+uint32_t SHProductFamilyID(id device) {
+    if (!device) return 0;
+    @try {
+        id type = ((id (*)(id, SEL))objc_msgSend)(
+            device, NSSelectorFromString(@"deviceType"));
+        if (!type) return 0;
+        SEL sel = NSSelectorFromString(@"productFamilyID");
+        if (![type respondsToSelector:sel]) return 0;
+
+        return (uint32_t)((unsigned long long (*)(id, SEL))objc_msgSend)(type, sel);
+    } @catch (NSException *e) {
+        return 0;
+    }
+}
+
 /// Enable hardware-keyboard mode on the SimDevice so physical key events are
 /// routed to the focused text field. Called once per capture session; without
 /// it, text entry via the HID keyboard path is flaky.
