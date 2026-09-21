@@ -145,7 +145,10 @@ export interface AutomationRun {
   report_blocks: ReportBlock[] | null;
   /** Failure message, or — for a `skipped` run — why it did not fire. */
   error: string | null;
-  /** False until the report has been looked at, or superseded by a newer one. */
+  /**
+   * False until the run has been acknowledged — its report looked at, a newer
+   * report superseding it, or the run dismissed from the inbox.
+   */
   report_read: boolean;
 }
 

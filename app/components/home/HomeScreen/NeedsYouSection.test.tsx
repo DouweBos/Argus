@@ -5,8 +5,10 @@
  */
 
 import type { AutomationRun, Proposal } from "../../../lib/types";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const markAutomationRunRead = vi.fn();
 
 vi.mock("../../../lib/ipc", () => ({
   listProposals: () => Promise.resolve([]),
@@ -22,7 +24,7 @@ vi.mock("../../../lib/ipc", () => ({
   runAutomationNow: vi.fn(),
   cancelAutomationRun: vi.fn(),
   getAutomationRun: vi.fn(),
-  markAutomationRunRead: vi.fn(),
+  markAutomationRunRead: (runId: string) => markAutomationRunRead(runId),
   startScratchRun: vi.fn(),
   saveScratchRunAsAutomation: vi.fn(),
   listScratchRuns: vi.fn(),
@@ -74,13 +76,15 @@ function failedRun(id: string): AutomationRun {
     cost_usd: null,
     report_markdown: null,
     report_blocks: null,
-    report_read: true,
+    report_read: false,
     error: "The run's agent exited.",
   };
 }
 
 describe("needsYouSection", () => {
   beforeEach(() => {
+    markAutomationRunRead.mockReset();
+    markAutomationRunRead.mockResolvedValue(undefined);
     setProposalState({ proposals: [], loading: false, error: null });
     setAutomationState({
       automations: [],
@@ -117,6 +121,31 @@ describe("needsYouSection", () => {
 
     expect(screen.getByText("1 waiting")).toBeDefined();
     expect(screen.getByText("The run's agent exited.")).toBeDefined();
+  });
+
+  it("lets a failed run be dismissed from home", () => {
+    setAutomationState({
+      automations: [],
+      runs: [failedRun("r-1")],
+      loading: false,
+      error: null,
+    });
+    render(<NeedsYouSection />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(markAutomationRunRead).toHaveBeenCalledWith("r-1");
+  });
+
+  it("drops a dismissed run from what is waiting", () => {
+    setAutomationState({
+      automations: [],
+      runs: [{ ...failedRun("r-1"), report_read: true }],
+      loading: false,
+      error: null,
+    });
+    const { container } = render(<NeedsYouSection />);
+
+    expect(container.firstChild).toBeNull();
   });
 
   it("points at the inbox rather than listing everything", () => {

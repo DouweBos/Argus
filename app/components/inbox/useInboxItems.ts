@@ -16,7 +16,7 @@ const FAILED_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_FAILED_RUNS = 5;
 
 export interface InboxItems {
-  /** Recent failures — the automation itself needs a look. */
+  /** Recent failures nobody dismissed — the automation needs a look. */
   failed: AutomationRun[];
   /** Decisions waiting on you. */
   pending: Proposal[];
@@ -39,7 +39,10 @@ export function useInboxItems(): InboxItems {
 
   const failed = runs
     .filter(
-      (r) => r.status === "failed" && now - r.started_at < FAILED_RUN_WINDOW_MS,
+      (r) =>
+        r.status === "failed" &&
+        !r.report_read &&
+        now - r.started_at < FAILED_RUN_WINDOW_MS,
     )
     .slice(0, MAX_FAILED_RUNS);
 

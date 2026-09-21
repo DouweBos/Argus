@@ -211,6 +211,9 @@ export const markRunRead = (runId: string): void => {
   markAutomationRunReadIpc(runId).catch(() => undefined);
 };
 
+/** Dismissing a failed run from the inbox is acknowledging it, nothing more. */
+export const dismissRun = markRunRead;
+
 // ---------------------------------------------------------------------------
 // Navigation
 // ---------------------------------------------------------------------------
