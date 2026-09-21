@@ -9,6 +9,11 @@
 
 import type { SignalSource, WorkItem } from "./types";
 import { warn } from "@argus/host/logger";
+import {
+  fenceUntrusted,
+  redactFlagged,
+  scanForInjection,
+} from "./injectionScan";
 import { githubSource } from "./sources/github";
 import { githubPrsSource } from "./sources/githubPrs";
 import { linearSource } from "./sources/linear";
@@ -54,6 +59,8 @@ export interface GatheredSignals {
   instructions: string[];
   /** Ids of sources that were configured but could not answer. */
   unavailable: string[];
+  /** Items whose text was withheld as an attempted injection. */
+  withheld: { external_id: string; reason: string }[];
 }
 
 export async function gatherSignals(opts: {
@@ -64,6 +71,7 @@ export async function gatherSignals(opts: {
     items: [],
     instructions: [],
     unavailable: [],
+    withheld: [],
   };
 
   for (const id of opts.sourceIds) {
@@ -96,6 +104,14 @@ export async function gatherSignals(opts: {
 
   result.items.sort((a, b) => b.updated_at - a.updated_at);
 
+  // Everything above came from outside. Screen it before a run reads it.
+  const findings = await scanForInjection(result.items);
+  result.items = redactFlagged(result.items, findings);
+  result.withheld = findings.map((f) => ({
+    external_id: f.external_id,
+    reason: f.reason,
+  }));
+
   return result;
 }
 
@@ -110,5 +126,6 @@ export function serializeWorkItems(
       : "(no work items — say so in the report rather than inventing any)";
   }
 
-  return JSON.stringify(items, null, 2);
+  // Fenced, always: this is data a stranger wrote, not instructions.
+  return fenceUntrusted(JSON.stringify(items, null, 2));
 }
