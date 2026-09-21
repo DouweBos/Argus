@@ -30,12 +30,19 @@ export interface TunnelState {
   /** Public `wss://` URL once known, else null. */
   publicUrl: string | null;
   error: string | null;
+  /**
+   * Whether that URL was last seen to reach the gateway. `null` until probed —
+   * a published URL is not a reachable one (an offline Tailscale node still
+   * prints its funnel hostname).
+   */
+  reachable: boolean | null;
 }
 
 const STOPPED: TunnelState = {
   status: "stopped",
   publicUrl: null,
   error: null,
+  reachable: null,
 };
 
 interface Runtime {
@@ -248,6 +255,7 @@ export function startTunnel(opts: StartTunnelOpts): void {
     status: "starting",
     error: null,
     publicUrl: plan.presetUrl,
+    reachable: null,
   });
 
   let proc: ChildProcess;
@@ -274,6 +282,7 @@ export function startTunnel(opts: StartTunnelOpts): void {
         setState(provider, {
           status: "running",
           publicUrl: httpsToWss(match[0]),
+          reachable: null,
         });
       }
     } else if (plan.runningSignal?.test(text)) {
@@ -302,6 +311,26 @@ export function startTunnel(opts: StartTunnelOpts): void {
         });
       }
     }
+  });
+}
+
+/**
+ * Record what a reachability probe found. Ignored when the URL has moved on, so
+ * a slow probe can't overwrite a newer tunnel's verdict.
+ */
+export function markTunnelReachability(
+  provider: TunnelProvider,
+  url: string,
+  reachable: boolean,
+  error?: string,
+): void {
+  const state = getTunnelState(provider);
+  if (state.publicUrl !== url) {
+    return;
+  }
+  setState(provider, {
+    reachable,
+    error: reachable ? null : (error ?? state.error),
   });
 }
 

@@ -29,8 +29,10 @@ import {
 } from "./gateway";
 import { endAllRooms } from "./huddle";
 import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
+import { probeGatewayUrl } from "./reachability";
 import {
   getTunnelState,
+  markTunnelReachability,
   getTunnelStates,
   onTunnelChange,
   startTunnel,
@@ -358,13 +360,43 @@ function waitForTunnelUrl(
   });
 }
 
-function quickTunnelFailure(reason: string): Error {
+function quickTunnelFailure(reasons: string[]): Error {
+  const detail = reasons.filter(Boolean).join("\n");
+
   return new Error(
-    `Couldn't get a public link: ${reason}\n` +
+    `Couldn't get a public link:\n${detail}\n` +
       "Cloudflare rate-limits and rotates its free quick tunnels. Wait a minute " +
       "and try again, or set up Tailscale or a named Cloudflare tunnel in " +
       "Settings → Remote access for a link that doesn't depend on them.",
   );
+}
+
+/** Why a URL that exists still isn't usable, in terms the user can act on. */
+function unreachableReason(kind: EndpointKind, url: string): string {
+  if (kind === "tailscale") {
+    return `Tailscale published ${wssToHttps(url)} but nothing answered through it — this Mac probably isn't connected to your tailnet. Open the Tailscale app and sign in, then try again.`;
+  }
+
+  return `${wssToHttps(url)} didn't route back to Argus.`;
+}
+
+/**
+ * Verify a candidate before handing it to a guest, and record the verdict so
+ * Settings can explain a tunnel that looks up but isn't. Publishing a URL and
+ * being reachable on it are different things — an offline Tailscale node still
+ * prints its funnel hostname, and a link minted from it never loads.
+ */
+async function confirmReachable(
+  kind: EndpointKind,
+  url: string,
+): Promise<boolean> {
+  if (kind === "lan") {
+    return true;
+  }
+  const ok = await probeGatewayUrl(url);
+  markTunnelReachability(kind, url, ok, unreachableReason(kind, url));
+
+  return ok;
 }
 
 /** The gateway has to be listening before a tunnel has anything to point at. */
@@ -399,14 +431,22 @@ export async function acquirePublicUrl(
 ): Promise<PublicUrlLease> {
   const timeoutMs = opts.timeoutMs ?? QUICK_TUNNEL_TIMEOUT_MS;
   await ensureGatewayUp();
+  const failures: string[] = [];
 
-  // Already reachable — the user's own tunnel, a Tailscale funnel, or one an
-  // earlier huddle raised. getEndpoints() ranks Tailscale above Cloudflare.
-  const live = getEndpoints().find((e) => e.kind !== "lan");
-  if (live) {
-    publicUrlRefs += 1;
+  // Something may already reach us — the user's own tunnel, a Tailscale funnel,
+  // or one an earlier huddle raised — but only if it truly answers. A guest gets
+  // one URL and no fallback list, so each candidate is probed before it's used.
+  // getEndpoints() ranks Tailscale above Cloudflare.
+  for (const candidate of getEndpoints()) {
+    if (candidate.kind === "lan") {
+      continue;
+    }
+    if (await confirmReachable(candidate.kind, candidate.url)) {
+      publicUrlRefs += 1;
 
-    return leaseFor(live.kind, live.url);
+      return leaseFor(candidate.kind, candidate.url);
+    }
+    failures.push(unreachableReason(candidate.kind, candidate.url));
   }
 
   // A provider the user enabled is still coming up: wait for it rather than
@@ -417,13 +457,26 @@ export async function acquirePublicUrl(
   if (pending) {
     try {
       const url = await waitForTunnelUrl(pending, timeoutMs);
-      publicUrlRefs += 1;
+      if (await confirmReachable(pending, url)) {
+        publicUrlRefs += 1;
 
-      return leaseFor(pending, url);
-    } catch {
+        return leaseFor(pending, url);
+      }
+      failures.push(unreachableReason(pending, url));
+    } catch (e) {
       // Fall through: a failing Tailscale funnel is exactly when a quick
       // tunnel earns its keep.
+      failures.push(`${pending}: ${(e as Error).message}`);
     }
+  }
+
+  // Last resort. Never on top of a Cloudflare tunnel the user configured —
+  // starting ours would kill theirs and nothing here would put it back.
+  if (
+    enabledProviders().includes("cloudflare") &&
+    getTunnelState("cloudflare").publicUrl
+  ) {
+    throw quickTunnelFailure(failures);
   }
 
   startTunnel({
@@ -434,6 +487,9 @@ export async function acquirePublicUrl(
   huddleOwnsCloudflare = true;
   try {
     const url = await waitForTunnelUrl("cloudflare", timeoutMs);
+    if (!(await confirmReachable("cloudflare", url))) {
+      throw new Error(unreachableReason("cloudflare", url));
+    }
     publicUrlRefs += 1;
 
     return leaseFor("cloudflare", url);
@@ -445,7 +501,7 @@ export async function acquirePublicUrl(
         stopHuddleGateway();
       }
     }
-    throw quickTunnelFailure((e as Error).message);
+    throw quickTunnelFailure([...failures, (e as Error).message]);
   }
 }
 

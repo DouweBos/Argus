@@ -2,6 +2,8 @@ import type { TunnelProvider, TunnelState } from "./tunnelManager";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const settings = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+/** URLs the probe should report as published-but-dead. */
+const reach = vi.hoisted(() => ({ unreachable: new Set<string>() }));
 const gateway = vi.hoisted(() => ({
   starts: [] as { host: string; staticDir: string | null }[],
   stops: 0,
@@ -11,6 +13,7 @@ const tunnels = vi.hoisted(() => {
     status: "stopped",
     publicUrl: null,
     error: null,
+    reachable: null,
   });
 
   return {
@@ -89,10 +92,20 @@ vi.mock("./tunnelManager", () => ({
       status: "starting",
       publicUrl: null,
       error: null,
+      reachable: null,
     };
     const outcome = tunnels.outcome[opts.provider];
     if (outcome) {
       queueMicrotask(() => tunnels.set(opts.provider, outcome));
+    }
+  },
+  markTunnelReachability: (
+    provider: TunnelProvider,
+    url: string,
+    reachable: boolean,
+  ) => {
+    if (tunnels.states[provider].publicUrl === url) {
+      tunnels.set(provider, { reachable });
     }
   },
   stopTunnel: (provider?: TunnelProvider) => {
@@ -100,9 +113,17 @@ vi.mock("./tunnelManager", () => ({
     for (const p of provider
       ? [provider]
       : (["cloudflare", "tailscale"] as const)) {
-      tunnels.states[p] = { status: "stopped", publicUrl: null, error: null };
+      tunnels.states[p] = {
+        status: "stopped",
+        publicUrl: null,
+        error: null,
+        reachable: null,
+      };
     }
   },
+}));
+vi.mock("./reachability", () => ({
+  probeGatewayUrl: async (url: string) => reach.unreachable.has(url) === false,
 }));
 vi.mock("node:os", () => ({
   networkInterfaces: () => ({
@@ -136,6 +157,7 @@ function reset(): void {
   gateway.starts = [];
   gateway.stops = 0;
   tunnels.reset();
+  reach.unreachable.clear();
   settings.value = { remote_enabled: true };
   setWebClientDir(WEB_DIR);
 }
@@ -224,6 +246,45 @@ describe("acquirePublicUrl", () => {
       url: TS_URL,
       raised: false,
     });
+  });
+
+  it("skips a funnel that published a URL but answers nothing", async () => {
+    settings.value = { remote_enabled: true, remote_tailscale_enabled: true };
+    await applyRemoteSettings();
+    tunnels.set("tailscale", { status: "running", publicUrl: TS_URL });
+    reach.unreachable.add(TS_URL);
+    tunnels.starts = [];
+    willPublish("cloudflare", CF_URL);
+
+    const lease = await acquirePublicUrl({ timeoutMs: 1000 });
+
+    expect(lease).toMatchObject({ kind: "cloudflare", url: CF_URL });
+    expect(tunnels.states.tailscale.reachable).toBe(false);
+  });
+
+  it("does not clobber the user's Cloudflare tunnel when it is unreachable", async () => {
+    settings.value = { remote_enabled: true, remote_cloudflare_enabled: true };
+    await applyRemoteSettings();
+    tunnels.set("cloudflare", { status: "running", publicUrl: CF_URL });
+    reach.unreachable.add(CF_URL);
+    tunnels.starts = [];
+
+    await expect(acquirePublicUrl({ timeoutMs: 1000 })).rejects.toThrow(
+      /didn't route back/,
+    );
+    expect(tunnels.starts).toEqual([]);
+    expect(publicUrlLeaseCount()).toBe(0);
+  });
+
+  it("fails rather than leasing a quick tunnel nothing answers on", async () => {
+    willPublish("cloudflare", CF_URL);
+    reach.unreachable.add(CF_URL);
+
+    await expect(acquirePublicUrl({ timeoutMs: 1000 })).rejects.toThrow(
+      /Couldn't get a public link/,
+    );
+    expect(publicUrlLeaseCount()).toBe(0);
+    expect(tunnels.stops).toContain("cloudflare");
   });
 
   it("waits for a user tunnel that is still coming up", async () => {
