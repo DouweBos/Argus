@@ -1,5 +1,23 @@
 # @argus/peacock
 
+## 0.13.0
+
+### Minor Changes
+
+- 1de4556: GuestList can remove a guest who has already been decided on.
+- 1de4556: MessageBubble can attribute a user message to a named sender.
+- 1de4556: New DirectoryBrowser component for picking a folder from a caller-supplied listing, plus Laptop and Host icons.
+- 1de4556: QueuedMessage can attribute a queued message to a named sender.
+- 1de4556: New QueuedMessageEditor for editing a queued message in place.
+- 226eb2b: Remove organizations and cross-repo tasks. Argus is now built around projects and sessions only — the Organizations screen, sidebar section, and task orchestration are gone, along with the agent prompts and MCP tools that went with them.
+- 1de4556: Automation reports can now come back as a dashboard: headings, stat strips, tables, lists, bar and line charts, plus live cards for the sessions and proposals they mention. Reports written as plain markdown keep rendering exactly as before.
+- 1de4556: Run history rows can show which automation a run belongs to.
+- 1de4556: First launch is now just a welcome screen and a telemetry choice. Missing setup — the Claude CLI, a signed-in Claude account, git, your git identity, notification permission — shows up as a card on the home screen with a one-click fix instead of a wizard step, and your git identity is now editable in Settings → Git.
+
+### Patch Changes
+
+- 1de4556: Fix the Claude account switcher showing "Sign in again" on every account, and stop agents from running against a removed account — which made them fail with authentication errors.
+
 ## 0.12.3
 
 ### Patch Changes
