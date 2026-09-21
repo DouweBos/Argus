@@ -64,17 +64,39 @@ files across accounts.
 
 ## Agents
 
-| Setting                            | Default | Description                                                                                                  |
-| ---------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| **Default permission mode**        | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
-| **Automations**                    | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
-| **Default autonomy**               | Propose | How far an automation may go when it does not set its own level.                                             |
-| **Concurrent automation sessions** | 3       | How many sessions automations may have open at once, across all of them.                                     |
-| **Daily automation budget**        | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                             |
+| Setting                               | Default | Description                                                                                                  |
+| ------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| **Default permission mode**           | `auto`  | The permission mode applied to every new agent — at spawn — unless overridden in the new-agent picker.       |
+| **Automations**                       | On      | Whether automations start agents on their own schedule. Turning it off leaves the manual Run button working. |
+| **Default autonomy**                  | Propose | How far an automation may go when it does not set its own level.                                             |
+| **Concurrent automation sessions**    | 3       | How many sessions automations may have open at once, across all of them.                                     |
+| **Daily automation budget**           | 0       | Spend automations may reach in a day, in USD. 0 means no budget.                                             |
+| **Extra commands for read-only runs** | none    | Shell commands a read-only automation may run beyond the built-in reads.                                     |
+| **Extra tools for read-only runs**    | none    | Tools a read-only automation may call beyond the built-in reads.                                             |
 
 A session counts against the concurrency limit from the moment an automation
 creates it until it is merged or deleted — not until its agent stops. A branch
 waiting for you to review it is still work in flight.
+
+### What a read-only run may do
+
+An automation at `propose` observes and reports; it does not act. Argus holds
+it to that rather than trusting the playbook: the run is refused anything that
+writes a file, installs a package, posts to GitHub, or sends data somewhere.
+Its shell is limited to commands that only read.
+
+That list cannot anticipate every tool your playbooks use. When a run is
+refused, the attempt is recorded under **Refused while running** in Settings →
+Automations, with the allowlist entry that would permit it. Allowing one is a
+click; ignoring it leaves the gate closed.
+
+Both lists are machine-local and yours alone. A project cannot add to them — a
+repo that could widen its own allowlist would be authorising itself. A project
+can still cap autonomy _lower_ via `.argus.json`, as before.
+
+An entry is either a bare command (`conductor`) or a prefix (`conductor
+screenshot`), matched on whole words: allowing `gh pr list` does not also allow
+`gh pr merge`.
 
 Once the day's automation spend reaches the daily budget, scheduled runs are
 skipped with the reason recorded, and no automation may start another session

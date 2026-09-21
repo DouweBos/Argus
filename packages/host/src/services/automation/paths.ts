@@ -35,6 +35,11 @@ export function outcomesFilePath(): string {
   return path.join(argusHomeDir(), "automation-outcomes.json");
 }
 
+/** What the read-only gate refused, pending your decision. */
+export function gateLogFilePath(): string {
+  return path.join(argusHomeDir(), "automation-gate-log.json");
+}
+
 /** Proposals emitted by runs, across every automation. */
 export function proposalsFilePath(): string {
   return path.join(argusHomeDir(), "automation-proposals.json");

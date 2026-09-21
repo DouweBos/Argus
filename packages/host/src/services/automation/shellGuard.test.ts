@@ -116,6 +116,11 @@ function attempt(
   const parsed = JSON.parse(written) as {
     response: { response: { behavior: string; message?: string } };
   };
+  // A read-only run is answered either way, so an allow is a written response
+  // too — it just is not a refusal.
+  if (parsed.response.response.behavior === "allow") {
+    return { handled: decision?.kind === "handled", deny: null };
+  }
   expect(parsed.response.response.behavior).toBe("deny");
 
   return {
@@ -359,6 +364,43 @@ describe("the shell guard", () => {
         behavior: "deny",
       });
     }
+  });
+
+  it("opens the gate for a command the user allowed", () => {
+    seedAppSettings({
+      default_autonomy: "auto_merge",
+      automation_allowed_commands: ["conductor screenshot"],
+    });
+    autoStartedSession("propose");
+    appState.sessions.set(HOST_SESSION_ID, {
+      ...registerWorkSession(HOST_SESSION_ID),
+      kind: "automation_host",
+    });
+
+    expect(
+      attempt(HOST_SESSION_ID, "conductor screenshot /tmp/a.png").deny,
+    ).toBeNull();
+    // Only what was allowed — the prefix is not a blank cheque for the tool.
+    expect(attempt(HOST_SESSION_ID, "conductor tap 10 20").deny).toContain(
+      "Refused",
+    );
+  });
+
+  it("opens the gate for a tool the user allowed", () => {
+    seedAppSettings({
+      default_autonomy: "auto_merge",
+      automation_allowed_tools: ["mcp__argus__trigger_run"],
+    });
+    autoStartedSession("propose");
+    appState.sessions.set(HOST_SESSION_ID, {
+      ...registerWorkSession(HOST_SESSION_ID),
+      kind: "automation_host",
+    });
+
+    expect(attemptTool(HOST_SESSION_ID, "mcp__argus__trigger_run")).toEqual({
+      handled: true,
+      behavior: "allow",
+    });
   });
 
   it("refuses egress from a read-only run, not just writes", () => {

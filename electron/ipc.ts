@@ -78,6 +78,11 @@ import {
 } from "@argus/host/services/appSettings/store";
 import { draftAutomation } from "@argus/host/services/automation/authoring";
 import {
+  clearGateLog,
+  dismissGateLogEntry,
+  listGateLog,
+} from "@argus/host/services/automation/gateLog";
+import {
   createAutomation,
   deleteAutomation,
   getAutomationRun,
@@ -1064,6 +1069,11 @@ export function registerIpcHandlers(): void {
     getAutomationRun(a.runId as string),
   );
   handle("signal_sources_list", "admin", () => describeSignalSources());
+  handle("automation_gate_log_list", "admin", () => listGateLog());
+  handle("automation_gate_log_dismiss", "admin", (a) =>
+    dismissGateLogEntry(a.id as string),
+  );
+  handle("automation_gate_log_clear", "admin", () => clearGateLog());
   // Drafting is deliberately separate from creating: what comes back is a
   // draft the user reviews and saves, never a live automation.
   handle("automation_draft", "admin", (a) =>

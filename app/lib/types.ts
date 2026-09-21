@@ -636,6 +636,14 @@ export interface McpOAuthStatus {
 
 /** Machine-local app settings persisted in `~/.argus/app-settings.json`. */
 export interface AppSettings {
+  /**
+   * Extra shell commands a read-only automation may run, beyond the built-in
+   * reads. A bare command or a prefix. Machine-local: a project cannot widen
+   * it, or a repo could authorise itself.
+   */
+  automation_allowed_commands?: string[];
+  /** Extra tools a read-only automation may call, by exact name. */
+  automation_allowed_tools?: string[];
   /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
   automation_daily_budget_usd?: number;
   /**
@@ -794,6 +802,22 @@ export interface StartScratchRunInput {
 }
 
 /** One firing of an automation. */
+/** One thing a read-only automation was refused, and what would allow it. */
+export interface GateLogEntry {
+  automation_id: string;
+  automation_name: string;
+  command: string | null;
+  count: number;
+  first_seen_at: number;
+  id: string;
+  kind: "command" | "tool";
+  last_seen_at: number;
+  run_id: string;
+  /** Add this to the matching allowlist to permit it. */
+  suggested_entry: string;
+  tool_name: string;
+}
+
 export interface AutomationRun {
   /** For an ad-hoc run, the synthetic id of its `scratch` spec. */
   automation_id: string;

@@ -63,6 +63,20 @@ export interface AppSettings {
   /** Spend automations may reach in a day, in USD. 0 or unset = no budget. */
   automation_daily_budget_usd?: number;
   /**
+   * Extra shell commands a read-only automation may run, on top of the
+   * built-in reads. A bare command (`conductor`) or a prefix (`gh pr list`);
+   * a prefix must match from the start of the command.
+   *
+   * Machine-local on purpose. A project cannot widen this — a repo granting
+   * itself `curl` would be authorising itself.
+   */
+  automation_allowed_commands?: string[];
+  /**
+   * Extra tools a read-only automation may call, by exact name, e.g.
+   * `mcp__argus__trigger_run`. Same reasoning as the commands list.
+   */
+  automation_allowed_tools?: string[];
+  /**
    * Master kill-switch for phone remote access. When false (default) the local
    * gateway + tunnel stay down and pairing is refused.
    */

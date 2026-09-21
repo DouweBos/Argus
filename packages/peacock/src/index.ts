@@ -136,3 +136,4 @@ export * from "./lib/dnd";
 export * from "./lib/modalStack";
 export * from "./lib/projectAccent";
 export * from "./components/DragLayer/DragLayer";
+export * from "./components/GateLogRow/GateLogRow";

@@ -24,7 +24,9 @@
 import type { Automation, AutonomyLevel } from "./models";
 import type { PermissionPreHook } from "../llm/runners/types";
 import { appState } from "../../state";
+import { loadAppSettings } from "../appSettings/store";
 import { resolveHostAutonomy, resolvePolicy } from "./autonomy";
+import { recordGateRefusal } from "./gateLog";
 import { atLeastAutonomy } from "./guardrails";
 import { getAutomation, listAutomationRuns } from "./manager";
 import { automationOwningSession } from "./ownedSessions";
@@ -694,8 +696,39 @@ const READ_ONLY_BUILTINS = new Set([
 const READING_MCP_VERB =
   /^mcp__[^_]+(?:_[^_]+)*__(get|list|read|search|find|fetch|view|describe|show|query|status|count|diff|check)(_|$)/;
 
+/** Extra allowances the user added, from the Settings screen. */
+function configuredAllowances(): { commands: string[]; tools: string[] } {
+  const settings = loadAppSettings();
+
+  return {
+    commands: (settings.automation_allowed_commands ?? []).filter(
+      (entry) => typeof entry === "string" && entry.trim().length > 0,
+    ),
+    tools: (settings.automation_allowed_tools ?? []).filter(
+      (entry) => typeof entry === "string" && entry.trim().length > 0,
+    ),
+  };
+}
+
+/**
+ * Whether `command` starts with one of the user's allowed prefixes. Matched on
+ * whole words, so allowing `gh pr list` does not also allow `gh pr listen`.
+ */
+function matchesAllowedPrefix(words: string[], allowed: string[]): boolean {
+  const bare = words.map((w) => basename(w));
+
+  return allowed.some((entry) => {
+    const prefix = entry.trim().split(/\s+/);
+
+    return prefix.every((word, i) => bare[i] === word);
+  });
+}
+
 /** Whether a tool call only observes, and so is safe at `propose`. */
 function isReadOnlyTool(toolName: string): boolean {
+  if (configuredAllowances().tools.includes(toolName)) {
+    return true;
+  }
   if (
     READ_ONLY_ARGUS_TOOLS.has(toolName) ||
     READ_ONLY_BUILTINS.has(toolName) ||
@@ -831,6 +864,10 @@ function segmentReads(raw: string[]): boolean {
     }
 
     return segmentReads(rest);
+  }
+
+  if (matchesAllowedPrefix(words, configuredAllowances().commands)) {
+    return true;
   }
 
   if (head === "git") {
@@ -994,6 +1031,19 @@ export function automationPermissionPreHook(
 
         return { kind: "handled" };
       }
+      const command =
+        req.toolName === "Bash" && typeof req.input?.command === "string"
+          ? req.input.command
+          : null;
+      // Recorded so the refusal becomes a decision you can make later, rather
+      // than a line in a report nobody reads.
+      recordGateRefusal({
+        automationId: owner.automation.id,
+        automationName: owner.automation.name,
+        runId: runIdForSession(sessionId),
+        toolName: req.toolName,
+        command,
+      });
       controlResponse(req, {
         behavior: "deny",
         message: readOnlyRefusal(owner, req.toolName, req.input),
@@ -1019,6 +1069,13 @@ export function automationPermissionPreHook(
 
     return { kind: "handled" };
   };
+}
+
+function runIdForSession(sessionId: string): string {
+  return (
+    listAutomationRuns().find((run) => run.host_session_id === sessionId)?.id ??
+    ""
+  );
 }
 
 function bashReads(input: Record<string, unknown> | null | undefined): boolean {

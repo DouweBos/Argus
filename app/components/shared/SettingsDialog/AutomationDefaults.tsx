@@ -7,6 +7,7 @@ import {
   AUTONOMY_LEVELS,
 } from "../../../lib/automations";
 import { getAppSettings, setAppSettings } from "../../../lib/ipc";
+import { AutomationAllowlist } from "./AutomationAllowlist";
 
 const OPTIONS = AUTONOMY_LEVELS.map((level) => ({
   label: AUTONOMY_LABELS[level],
@@ -115,6 +116,8 @@ export function AutomationDefaults() {
           }
         />
       </SettingsScreenField>
+
+      <AutomationAllowlist />
     </>
   );
 }

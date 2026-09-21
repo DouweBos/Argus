@@ -20,6 +20,7 @@ import type {
   AutomationCalibration,
   AutomationDraft,
   AutomationRun,
+  GateLogEntry,
   CreateAutomationInput,
   Proposal,
   ProposalStatus,
@@ -1545,6 +1546,16 @@ export const listAutomationRuns = (
 export const getAutomationRun = (
   runId: string,
 ): Promise<AutomationRun | null> => invoke("automation_run_get", { runId });
+
+/** What the read-only gate turned away, newest first. */
+export const listGateLog = (): Promise<GateLogEntry[]> =>
+  invoke("automation_gate_log_list", {});
+
+export const dismissGateLogEntry = (id: string): Promise<void> =>
+  invoke("automation_gate_log_dismiss", { id });
+
+export const clearGateLog = (): Promise<void> =>
+  invoke("automation_gate_log_clear", {});
 
 /**
  * Run a playbook once, against these repos, with nothing saved. Resolves as
