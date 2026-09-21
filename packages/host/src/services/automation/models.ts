@@ -145,6 +145,8 @@ export interface AutomationRun {
   report_blocks: ReportBlock[] | null;
   /** Failure message, or — for a `skipped` run — why it did not fire. */
   error: string | null;
+  /** False until the report has been looked at, or superseded by a newer one. */
+  report_read: boolean;
 }
 
 /** Fields accepted when creating an automation. */

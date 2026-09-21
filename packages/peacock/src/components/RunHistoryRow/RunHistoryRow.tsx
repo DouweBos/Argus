@@ -17,6 +17,8 @@ export interface RunHistoryRowProps {
   status: ReactNode;
   /** Why the run fired — "manual", "schedule 07:30", "catch-up". */
   triggerReason: ReactNode;
+  /** Report nobody has read yet — the row is emphasized and dotted. */
+  unread?: boolean;
   /** "card" gives the row its own surface — for lists that float on a page. */
   variant?: "card" | "plain";
 }
@@ -33,6 +35,7 @@ export function RunHistoryRow({
   startedAt,
   status,
   triggerReason,
+  unread,
   variant = "plain",
 }: RunHistoryRowProps) {
   return (
@@ -41,12 +44,14 @@ export function RunHistoryRow({
         styles.row,
         variant === "card" ? styles.card : "",
         selected ? styles.selected : "",
+        unread ? styles.unread : "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
       <button type="button" className={styles.main} onClick={onClick}>
         <span className={styles.top}>
+          {unread && <span className={styles.dot} aria-label="Unread report" />}
           {status}
           {name != null && <span className={styles.name}>{name}</span>}
           <span className={styles.started}>{startedAt}</span>

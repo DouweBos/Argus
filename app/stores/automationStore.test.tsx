@@ -93,6 +93,7 @@ function run(id: string, status: AutomationRun["status"]): AutomationRun {
     report_markdown: null,
     scratch: null,
     error: null,
+    report_read: true,
   };
 }
 

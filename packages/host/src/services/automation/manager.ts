@@ -57,6 +57,11 @@ function automationCache(): Automation[] {
 function runCache(): AutomationRun[] {
   if (!runs) {
     runs = loadAutomationRuns();
+    // History written before reports were tracked is history you have already
+    // lived through — it must not light the home screen up on first launch.
+    for (const run of runs) {
+      run.report_read ??= true;
+    }
   }
 
   return runs;
@@ -380,6 +385,7 @@ export function createRun(
     report_markdown: null,
     report_blocks: null,
     error,
+    report_read: false,
   };
 
   runCache().push(run);
@@ -396,7 +402,67 @@ export function updateRun(
   if (!run) {
     throw `Automation run not found: ${runId}`;
   }
+  const hadReport = hasReport(run);
   Object.assign(run, patch);
+  const superseded = hadReport || !hasReport(run) ? [] : supersedeReports(run);
+  persistRun(run);
+  for (const other of superseded) {
+    emitHostEvent("automation_run:changed", { ...other });
+  }
+
+  return { ...run };
+}
+
+/** A report worth chasing: written, unread, and not yet replaced. */
+export function hasUnreadReport(run: AutomationRun): boolean {
+  return !run.report_read && hasReport(run);
+}
+
+function hasReport(run: AutomationRun): boolean {
+  return (
+    (run.report_blocks?.length ?? 0) > 0 || (run.report_markdown ?? "") !== ""
+  );
+}
+
+/**
+ * Only the newest report of an automation is worth chasing, so an earlier one
+ * counts as read the moment it is replaced. Returns what changed, for the bus.
+ *
+ * Ad-hoc runs supersede nothing: they share a retention bucket but not an
+ * identity, so one quick run must not retire an unrelated one's report.
+ */
+function supersedeReports(run: AutomationRun): AutomationRun[] {
+  if (run.scratch) {
+    return [];
+  }
+  const superseded: AutomationRun[] = [];
+  for (const other of runCache()) {
+    if (
+      other.id === run.id ||
+      other.scratch ||
+      other.report_read ||
+      other.started_at > run.started_at ||
+      other.automation_id !== run.automation_id
+    ) {
+      continue;
+    }
+    other.report_read = true;
+    superseded.push(other);
+  }
+
+  return superseded;
+}
+
+/** Mark a report as looked at. Idempotent — an already-read run emits nothing. */
+export function markRunReportRead(runId: string): AutomationRun {
+  const run = runCache().find((r) => r.id === runId);
+  if (!run) {
+    throw `Automation run not found: ${runId}`;
+  }
+  if (run.report_read) {
+    return { ...run };
+  }
+  run.report_read = true;
   persistRun(run);
 
   return { ...run };

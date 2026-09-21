@@ -58,6 +58,20 @@ export const Default: Story = {
   ),
 };
 
+export const Attention: Story = {
+  name: "Item · unread dot",
+  render: () => (
+    <SidebarNav style={{ width: 240 }}>
+      <SidebarItem leading={<HomeIcon size={12} />} count="—">
+        Home
+      </SidebarItem>
+      <SidebarItem attention leading={<CommitIcon size={12} />} count={3}>
+        Automations
+      </SidebarItem>
+    </SidebarNav>
+  ),
+};
+
 export const FramedHome: Story = {
   name: "Framed · Home shell",
   render: () => (

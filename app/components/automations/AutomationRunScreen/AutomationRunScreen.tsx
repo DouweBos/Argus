@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Button,
   EmptyState,
@@ -11,10 +12,12 @@ import {
   formatDuration,
   formatTimestamp,
   isRunActive,
+  isUnreadReport,
 } from "../../../lib/automations";
 import { renderedReport } from "../../../lib/report";
 import { useCurrentRoute } from "../../../lib/routeHooks";
 import {
+  markRunRead,
   openAutomation,
   openQuickRuns,
   useAutomation,
@@ -39,6 +42,15 @@ export function AutomationRunScreen() {
   const run = useAutomationRun(automationRunId);
   const sessions = useSessions();
   const { resolveProposal, resolveSession } = useReportRefResolvers();
+
+  // Opening the run is reading its report, so home stops flagging it.
+  const unread = run !== null && isUnreadReport(run);
+  const runId = run?.id ?? null;
+  useEffect(() => {
+    if (runId && unread) {
+      markRunRead(runId);
+    }
+  }, [runId, unread]);
 
   if (!run) {
     return (

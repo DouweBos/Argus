@@ -34,12 +34,15 @@ export function SidebarNav({
 
 export interface SidebarItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
+  /** Accent dot before the count — something in here is waiting to be seen. */
+  attention?: boolean;
   leading?: ReactNode;
   count?: ReactNode;
 }
 
 export function SidebarItem({
   active,
+  attention,
   leading,
   count,
   children,
@@ -55,6 +58,9 @@ export function SidebarItem({
     <button type={type} className={classes} {...rest}>
       {leading}
       <span className={styles.itemLabel}>{children}</span>
+      {attention && (
+        <span className={styles.attentionDot} aria-label="Unread" />
+      )}
       {count != null && <span className={styles.count}>{count}</span>}
     </button>
   );

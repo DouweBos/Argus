@@ -108,6 +108,17 @@ export function isRunActive(run: AutomationRun): boolean {
   return run.status === "queued" || run.status === "running";
 }
 
+/** A finished run whose report nobody has looked at, and nothing has replaced. */
+export function isUnreadReport(run: AutomationRun): boolean {
+  if (run.report_read || isRunActive(run)) {
+    return false;
+  }
+
+  return (
+    (run.report_blocks?.length ?? 0) > 0 || (run.report_markdown ?? "") !== ""
+  );
+}
+
 /** Wall-clock time and date, in the viewer's zone. */
 export function formatTimestamp(ms: number | null): string {
   if (ms === null) {

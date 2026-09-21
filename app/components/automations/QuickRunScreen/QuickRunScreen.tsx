@@ -14,6 +14,7 @@ import {
   formatDuration,
   formatTimestamp,
   isRunActive,
+  isUnreadReport,
 } from "../../../lib/automations";
 import {
   openAutomations,
@@ -34,6 +35,7 @@ function HistoryRow({ run }: { run: AutomationRun }) {
       duration={formatDuration(run)}
       cost={formatCost(run.cost_usd)}
       error={run.error ?? undefined}
+      unread={isUnreadReport(run)}
       onClick={() => openQuickRun(run.id)}
       actions={isRunActive(run) ? <CancelRunButton runId={run.id} /> : null}
     />

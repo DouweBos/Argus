@@ -92,6 +92,7 @@ describe("labels", () => {
       report_markdown: null,
       scratch: null,
       error: null,
+      report_read: true,
     };
     expect(formatDuration(run, START + 90_000)).toBe("1m 30s");
   });

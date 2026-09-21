@@ -5,6 +5,7 @@ import { SidebarItem } from "@argus/peacock";
 import { appNavigate, parseRoute } from "../../../lib/router";
 
 interface SidebarNavItemProps {
+  attention?: boolean;
   children: ReactNode;
   count?: ReactNode;
   leading?: ReactNode;
@@ -15,6 +16,7 @@ export function SidebarNavItem({
   view,
   leading,
   count,
+  attention,
   children,
 }: SidebarNavItemProps) {
   const location = useLocation();
@@ -24,6 +26,7 @@ export function SidebarNavItem({
   return (
     <SidebarItem
       active={active}
+      attention={attention}
       leading={leading}
       count={count}
       onClick={() => appNavigate({ view })}

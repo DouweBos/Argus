@@ -64,3 +64,8 @@ export const Card: Story = {
     error: "Timeout waiting for agent b6cedde8 after 1200000ms.",
   },
 };
+
+/** A report nobody has read. Home leans on this to draw the eye. */
+export const Unread: Story = {
+  args: { unread: true, variant: "card", name: "Morning triage" },
+};

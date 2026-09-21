@@ -13,12 +13,14 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 import { useIpcEvent } from "../hooks/useIpcEvent";
+import { isUnreadReport } from "../lib/automations";
 import {
   cancelAutomationRun as cancelAutomationRunIpc,
   createAutomation as createAutomationIpc,
   deleteAutomation as deleteAutomationIpc,
   listAutomationRuns,
   listAutomations,
+  markAutomationRunRead as markAutomationRunReadIpc,
   runAutomationNow as runAutomationNowIpc,
   saveScratchRunAsAutomation as saveScratchRunAsAutomationIpc,
   setAutomationEnabled as setAutomationEnabledIpc,
@@ -159,6 +161,10 @@ export const useScratchRuns = (): AutomationRun[] =>
 /** Every cached run, newest first — the inbox needs them across automations. */
 export const useAllRuns = (): AutomationRun[] => store((s) => s.runs);
 
+/** How many reports are waiting to be read, across every automation. */
+export const useUnreadReportCount = (): number =>
+  store((s) => s.runs.filter(isUnreadReport).length);
+
 /** The newest run of an automation, whatever its status. */
 export const useLatestRun = (automationId: string): AutomationRun | null =>
   store((s) => s.runs.find((r) => r.automation_id === automationId) ?? null);
@@ -199,6 +205,11 @@ export const cancelAutomationRun = cancelAutomationRunIpc;
 export const startScratchRun = startScratchRunIpc;
 
 export const saveScratchRunAsAutomation = saveScratchRunAsAutomationIpc;
+
+/** Reading a report is opening it — the run screen calls this on view. */
+export const markRunRead = (runId: string): void => {
+  markAutomationRunReadIpc(runId).catch(() => undefined);
+};
 
 // ---------------------------------------------------------------------------
 // Navigation
