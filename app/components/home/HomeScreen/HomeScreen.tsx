@@ -29,6 +29,7 @@ import {
 } from "../../../stores/updaterStore";
 import { SetupBanners } from "../SetupBanners";
 import styles from "./HomeScreen.module.css";
+import { NeedsYouSection } from "./NeedsYouSection";
 import { RecentRunsSection } from "./RecentRunsSection";
 import { HOME_SHORTCUTS } from "./homeContent";
 import { useHomeData, type HomeProject } from "./useHomeData";
@@ -210,6 +211,8 @@ export function HomeScreen() {
                   </Button>
                 </div>
               </div>
+
+              <NeedsYouSection />
 
               <div className={styles.section}>
                 <span className={styles.eyebrow}>Recent projects</span>
