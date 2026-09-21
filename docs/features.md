@@ -84,13 +84,92 @@ A real git workflow lives inside Argus:
 
 ---
 
-## VS Code editor
+## Remote access
 
-- A real, embedded VS Code instance.
-- Extensions, multi-file edits, project-wide search, IntelliSense, the
-  command palette — all functional.
-- The editor opens the session's worktree, so what you see is what the
-  agent has been changing.
+Reach your projects and agents from a phone or any browser. Argus runs a
+gateway on your Mac; a paired device connects straight to it and the
+traffic is end-to-end encrypted (Noise IK), so a tunnel only ever sees
+ciphertext.
+
+- **Ways in** — **Local network**, **Tailscale** (`tailscale funnel`)
+  and **Cloudflare** (`cloudflared`) toggle independently and run side
+  by side. Phones try the live addresses in order.
+- **Grants per device** — paired devices are monitor + approve by
+  default. **Control** lets a device drive agents.
+- **Background push** — wakes paired phones and browsers with a real
+  notification when they aren't connected.
+- **Revoke** drops a device's pinned key and kills any live session
+  immediately.
+
+Off by default; turn it on under **Settings → Remote access**. See
+[App settings → Remote Access](/argus/docs/app-settings).
+
+---
+
+## Working across several Macs
+
+Argus attaches to more than one host at once. Each call is routed to the
+machine that owns its subject — the session, agent, terminal or repo it
+names — so one window can drive your laptop and a Mac mini in the corner
+at the same time, with both sets of projects in the sidebar.
+
+- Pair another Mac with the **Admin** grant to hand it the keyboard.
+- A host that goes offline leaves what it already loaded on screen;
+  anything new fails loudly rather than silently hitting the wrong Mac.
+- Projects registered on a remote host stay on that host — they are
+  paths on a different disk.
+
+---
+
+## Huddles — sharing one session
+
+Hand someone a temporary link to exactly one agent and one device. They
+open it in a browser and watch the transcript and the live simulator
+alongside you until you end the huddle.
+
+- The guest's grant is **scoped to that one agent and device** and dies
+  with the room.
+- Guests never see your other projects, sessions, automations or
+  proposals.
+
+---
+
+## Argus Server — the headless host
+
+`Argus Server.app` is Argus with no window: the whole service layer —
+agents, worktrees, terminals, simulators, the gateway — on a machine
+nobody is sitting at, typically a Mac mini, so agents keep working while
+your laptop comes and goes.
+
+- Ships as a separate build target with its own app id and its own
+  state, so a server and a desktop can run on the same Mac.
+- The gateway is forced on: it is the only way in.
+- Serves the web client to phones and browsers itself.
+- Tray item only — no dock tile, no window.
+
+See [Argus Server](/argus/docs/server-app).
+
+---
+
+## Automations
+
+Work Argus starts on its own: triggers on a schedule or a signal,
+proposals queued in an inbox for you to accept or dismiss, and an
+autonomy ladder that decides how far a run may go unsupervised.
+
+Signal sources today are GitHub issues and pull requests natively, plus
+anything an agent can reach over MCP (e.g. Linear).
+
+See [Automations](/argus/docs/automations) for the full story.
+
+---
+
+## MCP server
+
+Argus exposes its own primitives — sessions, agents, files, projects,
+terminals, merges — over the Model Context Protocol, so an agent can
+spawn and drive sibling sessions. Automation runs are gated: a `propose`
+automation is refused `create_session` and `spawn_agent`.
 
 ---
 
@@ -185,8 +264,8 @@ and beta builds can break your install).
 
 ## What Argus deliberately does _not_ do
 
-- **No cloud sync.** Sessions, worktrees, and conversations live on your
-  machine.
+- **No cloud sync.** Sessions, worktrees, and conversations live on the
+  machine that hosts them — your laptop, or your own Mac mini.
 - **No mandatory account.** You sign into the `claude` CLI; Argus has no
   account of its own.
 - **Telemetry stops at a headcount by default.** Argus sends one
@@ -199,5 +278,9 @@ and beta builds can break your install).
   discard. No session replay, no DOM autocapture, no prompts, no file
   contents, no project names — full audit in
   [Telemetry](/argus/docs/telemetry).
-- **No proprietary editor.** Argus embeds VS Code; your existing
-  extensions and muscle memory carry over.
+- **No editor of its own.** Argus shows diffs, not a code editor — you
+  review and stage here and keep editing in the editor you already use.
+  The worktree is a normal directory on disk.
+- **No cloud service.** Remote access, huddles and the server app are
+  all your own machines talking to each other. There is no Argus
+  account and no server of ours in the path.
