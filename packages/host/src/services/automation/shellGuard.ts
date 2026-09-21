@@ -282,7 +282,8 @@ function sessionAutonomy(
  * an accident and of the easy attack, it is not a sandbox. Nor is there a
  * sandbox behind it: a run's cwd is a scratch dir, but the playbooks read the
  * scope repos at their absolute paths, so this is what stands between a
- * `propose` run and the working copy.
+ * `propose` run's shell and the working copy. Tools that write by design —
+ * `trigger_run`, `conductor screenshot` — answer to the MCP gate, not here.
  */
 const WRITE_COMMANDS = new Set([
   "chgrp",
