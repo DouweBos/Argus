@@ -31,7 +31,9 @@ vi.mock("node:child_process", () => {
   return { execFile: mockExecFile };
 });
 
-vi.mock("../../mcp/projects", () => ({ collectAllProjects: vi.fn(() => []) }));
+vi.mock("../../mcp/projectDiscovery", () => ({
+  collectAllProjects: vi.fn(() => []),
+}));
 
 vi.mock("../../github/pullRequests", () => ({
   getGithubSlugs: vi.fn(async () => []),

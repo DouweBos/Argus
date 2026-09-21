@@ -14,7 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { loadAppMcpServers } from "../appSettings/store";
-import { loadArgusConfig } from "../session/setup";
+import { loadArgusConfig } from "../session/argusConfig";
 import { getActiveAccessToken } from "./oauth";
 
 type McpServerConfig = Record<string, unknown>;

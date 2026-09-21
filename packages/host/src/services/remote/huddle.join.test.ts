@@ -52,7 +52,9 @@ vi.mock("../agent/agentService", () => ({
   respondToPermission: vi.fn(),
   sendAgentMessage: vi.fn(async () => undefined),
 }));
-vi.mock("../mcp/projects", () => ({ collectAllProjects: () => [] }));
+vi.mock("../mcp/projectDiscovery", () => ({
+  collectAllProjects: () => [],
+}));
 vi.mock("../session/manager", () => ({ listSessions: async () => [] }));
 vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: async () => "",

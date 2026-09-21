@@ -36,7 +36,7 @@ import {
   envForAccount,
   resolveAccountForSession,
 } from "../claudeAuth/accounts";
-import { loadArgusConfig } from "../session/setup";
+import { loadArgusConfig } from "../session/argusConfig";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pty = require("node-pty") as typeof NodePty;

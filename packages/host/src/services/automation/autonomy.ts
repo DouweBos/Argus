@@ -8,7 +8,7 @@
 
 import type { Automation, AutomationGuardrails, AutonomyLevel } from "./models";
 import { loadAppSettings } from "../appSettings/store";
-import { loadArgusConfig } from "../session/setup";
+import { loadArgusConfig } from "../session/argusConfig";
 import {
   DEFAULT_AUTONOMY,
   isAutonomyLevel,

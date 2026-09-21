@@ -10,7 +10,9 @@ vi.mock("../../state", () => ({
     agentPendingPermissions: new Map(),
   },
 }));
-vi.mock("../mcp/projects", () => ({ collectAllProjects: vi.fn(() => []) }));
+vi.mock("../mcp/projectDiscovery", () => ({
+  collectAllProjects: vi.fn(() => []),
+}));
 
 const { DeviceConnection } = await import("./gateway");
 const { emitBrowserFrame, resetBrowserFrames } =

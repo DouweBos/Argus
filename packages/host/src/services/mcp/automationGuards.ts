@@ -20,7 +20,7 @@ import {
 } from "../automation/ownedSessions";
 import { listProposals } from "../automation/proposals/manager";
 import { branchChecksClean } from "../github/checks";
-import { automationRunForAgent } from "./automationTools";
+import { automationRunForAgent } from "./automationCaller";
 
 /** The automation behind a caller, with its policy resolved for `repoRoot`. */
 export function callerPolicy(

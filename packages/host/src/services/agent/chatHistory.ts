@@ -12,8 +12,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
+import { loadArgusConfig } from "../session/argusConfig";
 import { worktreesRoot } from "../session/git";
-import { loadArgusConfig } from "../session/setup";
 
 const HISTORY_DIR_NAME = ".argus-chat-history";
 const INDEX_FILENAME = "index.json";

@@ -27,8 +27,8 @@ import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
 import { appState } from "../../state";
+import { loadArgusConfig } from "./argusConfig";
 import { git } from "./git";
-import { loadArgusConfig } from "./setup";
 
 export interface ReleaseNoteLabel {
   name: string;

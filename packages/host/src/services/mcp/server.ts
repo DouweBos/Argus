@@ -68,11 +68,8 @@ import {
   recordAutomationSessionForCaller,
 } from "./automationGuards";
 import { registerAutomationTools } from "./automationTools";
-import {
-  isGitRepo,
-  ensureRepoRegistered,
-  collectAllProjects,
-} from "./projects";
+import { isGitRepo, collectAllProjects } from "./projectDiscovery";
+import { ensureRepoRegistered } from "./projects";
 
 // ---------------------------------------------------------------------------
 // State

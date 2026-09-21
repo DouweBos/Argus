@@ -11,7 +11,7 @@ import { ReportDocument } from "@argus/remote-protocol";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { updateRun } from "../automation/manager";
-import { automationRunForAgent } from "./automationTools";
+import { automationRunForAgent } from "./automationCaller";
 
 /**
  * The union, restated for the model. The JSON schema the SDK derives from a

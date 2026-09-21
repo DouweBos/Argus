@@ -40,7 +40,9 @@ vi.mock("../file/operations", () => ({
   listSessionFiles: vi.fn(async () => []),
   resolveMentionPath: vi.fn(async () => ({ entries: [], resolvedPath: "" })),
 }));
-vi.mock("../mcp/projects", () => ({ collectAllProjects: vi.fn(() => []) }));
+vi.mock("../mcp/projectDiscovery", () => ({
+  collectAllProjects: vi.fn(() => []),
+}));
 vi.mock("../session/manager", () => ({
   listSessions: vi.fn(async () => []),
   createSession: vi.fn(),
@@ -61,7 +63,7 @@ const { defineCommand } = await import("../command/registry");
 
 const { releaseDevice, resetClaims } = await import("./deviceClaims");
 const { resolveMentionPath } = await import("../file/operations");
-const { collectAllProjects } = await import("../mcp/projects");
+const { collectAllProjects } = await import("../mcp/projectDiscovery");
 const { GitError } = await import("../session/gitError");
 
 /** Stand-in for the real registrations made by `registerIpcHandlers()`. */

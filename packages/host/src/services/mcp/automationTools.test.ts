@@ -30,8 +30,8 @@ vi.mock("../automation/proposals/manager", () => ({
 
 const { listAutomationRuns } = await import("../automation/manager");
 const { createProposal } = await import("../automation/proposals/manager");
-const { isAutomationHostAgent, registerAutomationTools } =
-  await import("./automationTools");
+const { isAutomationHostAgent } = await import("./automationCaller");
+const { registerAutomationTools } = await import("./automationTools");
 
 const mockListAutomationRuns = vi.mocked(listAutomationRuns);
 const mockCreateProposal = vi.mocked(createProposal);

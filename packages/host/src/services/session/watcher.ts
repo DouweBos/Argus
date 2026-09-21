@@ -15,9 +15,9 @@ import path from "node:path";
 import { emitHostEvent } from "@argus/host/bus";
 import { warn } from "@argus/host/logger";
 import { appState } from "../../state";
+import { loadArgusConfig } from "./argusConfig";
 import { effectiveAutoFetchMinutes, reconfigureAutoFetch } from "./autoFetch";
 import { git } from "./git";
-import { loadArgusConfig } from "./setup";
 
 /** Diff statistics emitted to the frontend. */
 export interface DiffStats {

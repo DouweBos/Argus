@@ -2,11 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appState } from "../../state";
-import {
-  isGitRepo,
-  ensureRepoRegistered,
-  collectAllProjects,
-} from "./projects";
+import { isGitRepo, collectAllProjects } from "./projectDiscovery";
+import { ensureRepoRegistered } from "./projects";
 
 // Mock fs so we don't hit the real filesystem.
 vi.mock("node:fs", async () => {

@@ -16,13 +16,14 @@ import {
   generateSessionTitle,
   humanizeBranchName,
 } from "../llm/titleGenerator";
-import { collectAllProjects } from "../mcp/projects";
+import { collectAllProjects } from "../mcp/projectDiscovery";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { createTerminal, setupShellCommand } from "../terminal/multiplexer";
 import {
   applyBranchPrefix,
   loadUserProjectSettings,
 } from "../userProjectSettings/store";
+import { loadArgusConfig } from "./argusConfig";
 import {
   effectiveAutoFetchMinutes,
   reconfigureAutoFetch,
@@ -45,7 +46,7 @@ import {
   type SessionMeta,
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
-import { loadArgusConfig, runSetupPipeline } from "./setup";
+import { runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
 
 // ---------------------------------------------------------------------------

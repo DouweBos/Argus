@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { loadArgusConfig } from "./setup";
+import { loadArgusConfig } from "./argusConfig";
 
 // Mock fs so we don't hit the real filesystem
 vi.mock("node:fs", async () => {

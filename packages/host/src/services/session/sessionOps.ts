@@ -14,6 +14,7 @@ import { emitHostEvent } from "@argus/host/bus";
 import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import { listClaudeAccounts } from "../claudeAuth/accounts";
+import { isBranchProtected, loadArgusConfig } from "./argusConfig";
 import { git, worktreesRoot } from "./git";
 import { withGitLock } from "./gitLock";
 import { attachGitWatcher } from "./gitWatcher";
@@ -29,7 +30,6 @@ import {
 import { loadMetadata, saveMetadata } from "./metadata";
 import { defaultArgusConfig, type ArgusConfig } from "./models";
 import { buildPullRequestUrl, pickPullRequestTemplate } from "./pullRequest";
-import { isBranchProtected, loadArgusConfig } from "./setup";
 import { startWatcher, type WatcherHandle } from "./watcher";
 
 // ---------------------------------------------------------------------------

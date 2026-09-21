@@ -34,7 +34,9 @@ vi.mock("../file/operations", () => ({
   listSessionFiles: vi.fn(async () => ["a.ts"]),
   resolveMentionPath: vi.fn(async () => ({ entries: [], resolvedPath: "" })),
 }));
-vi.mock("../mcp/projects", () => ({ collectAllProjects: vi.fn(() => []) }));
+vi.mock("../mcp/projectDiscovery", () => ({
+  collectAllProjects: vi.fn(() => []),
+}));
 vi.mock("../session/manager", () => ({
   listSessions: vi.fn(async () => []),
   createSession: vi.fn(),

@@ -213,7 +213,7 @@ import {
   signOut,
 } from "@argus/host/services/mcp/oauth";
 import { listAuthorized, loadToken } from "@argus/host/services/mcp/oauthStore";
-import { collectAllProjects } from "@argus/host/services/mcp/projects";
+import { collectAllProjects } from "@argus/host/services/mcp/projectDiscovery";
 import { listInheritedMcpServers } from "@argus/host/services/mcp/userConfig";
 import {
   showAgentNotification,

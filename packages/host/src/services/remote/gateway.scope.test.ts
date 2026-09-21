@@ -26,7 +26,9 @@ vi.mock("../agent/agentService", () => ({
   listAgents: vi.fn(() => []),
   respondToPermission: vi.fn(),
 }));
-vi.mock("../mcp/projects", () => ({ collectAllProjects: vi.fn(() => []) }));
+vi.mock("../mcp/projectDiscovery", () => ({
+  collectAllProjects: vi.fn(() => []),
+}));
 vi.mock("../session/manager", () => ({ listSessions: vi.fn(async () => []) }));
 vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: vi.fn(async () => ""),

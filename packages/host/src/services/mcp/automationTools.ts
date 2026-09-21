@@ -9,35 +9,14 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { appState } from "../../state";
 import { autoStartIfAllowed } from "../automation/autoStart";
-import { listAutomationRuns } from "../automation/manager";
 import { createProposal } from "../automation/proposals/manager";
+import {
+  automationRunForAgent,
+  isAutomationHostAgent,
+} from "./automationCaller";
 import { registerAutomationPrTool } from "./automationPrTool";
 import { registerAutomationReportTool } from "./automationReportTool";
-
-/** The run an agent is the host of, or null if it is not an automation host. */
-export function automationRunForAgent(
-  callerAgentId: string | null,
-): { automationId: string; runId: string } | null {
-  if (!callerAgentId) {
-    return null;
-  }
-  const sessionId = appState.agents.get(callerAgentId)?.sessionId;
-  if (!sessionId) {
-    return null;
-  }
-  if (appState.sessions.get(sessionId)?.kind !== "automation_host") {
-    return null;
-  }
-  const run = listAutomationRuns().find((r) => r.host_session_id === sessionId);
-
-  return run ? { automationId: run.automation_id, runId: run.id } : null;
-}
-
-export function isAutomationHostAgent(callerAgentId: string | null): boolean {
-  return automationRunForAgent(callerAgentId) !== null;
-}
 
 export function registerAutomationTools(
   server: McpServer,

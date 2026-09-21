@@ -21,7 +21,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { runClaudePrint } from "../llm/oneShot";
-import { collectAllProjects } from "../mcp/projects";
+import { collectAllProjects } from "../mcp/projectDiscovery";
 import { describeSignalSources } from "../signals/registry";
 import { computeNextRun, isValidCron } from "./cron";
 import { autonomyRank, isAutonomyLevel } from "./guardrails";

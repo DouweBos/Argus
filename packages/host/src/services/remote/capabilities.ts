@@ -61,7 +61,7 @@ import { cancelAutomationRun } from "../automation/runner";
 import { startAutomationRun } from "../automation/runner";
 import { getCommand, invokeCommand } from "../command/registry";
 import { listSessionFiles, resolveMentionPath } from "../file/operations";
-import { collectAllProjects } from "../mcp/projects";
+import { collectAllProjects } from "../mcp/projectDiscovery";
 import {
   gitCheckout,
   gitCreateBranch,

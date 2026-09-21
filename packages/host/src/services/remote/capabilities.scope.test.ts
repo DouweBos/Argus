@@ -40,7 +40,7 @@ vi.mock("../file/operations", () => ({
   listSessionFiles: vi.fn(async () => ["a.ts"]),
   resolveMentionPath: vi.fn(async () => ({ entries: [], resolvedPath: "" })),
 }));
-vi.mock("../mcp/projects", () => ({
+vi.mock("../mcp/projectDiscovery", () => ({
   collectAllProjects: vi.fn(() => [
     { path: "/repo/one" },
     { path: "/repo/two" },

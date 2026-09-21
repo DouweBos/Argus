@@ -17,7 +17,7 @@ vi.mock("../agent/agentService", () => ({
   listAgents: vi.fn(() => []),
   respondToPermission: vi.fn(),
 }));
-vi.mock("../mcp/projects", () => ({
+vi.mock("../mcp/projectDiscovery", () => ({
   collectAllProjects: vi.fn(() => [
     { path: "/repos/argus", description: "", registered: true, source: "" },
   ]),

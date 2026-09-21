@@ -71,8 +71,10 @@ vi.mock("../session/setup", () => ({
 }));
 
 vi.mock("./projects", () => ({
-  isGitRepo: vi.fn(),
   ensureRepoRegistered: vi.fn(),
+}));
+vi.mock("./projectDiscovery", () => ({
+  isGitRepo: vi.fn(),
   collectAllProjects: vi.fn(),
 }));
 
@@ -92,8 +94,8 @@ const { startAgent, sendAgentMessage, listAgents } =
   await import("../agent/claude");
 const { createRunTerminal, startTerminal } =
   await import("../terminal/multiplexer");
-const { isGitRepo, ensureRepoRegistered, collectAllProjects } =
-  await import("./projects");
+const { ensureRepoRegistered } = await import("./projects");
+const { isGitRepo, collectAllProjects } = await import("./projectDiscovery");
 
 const mockExistsSync = vi.mocked(fs.existsSync);
 const mockCreateSession = vi.mocked(createSession);

@@ -65,8 +65,10 @@ vi.mock("../session/sessionOps", async () => {
   };
 });
 vi.mock("./projects", () => ({
-  isGitRepo: vi.fn(() => true),
   ensureRepoRegistered: vi.fn(),
+}));
+vi.mock("./projectDiscovery", () => ({
+  isGitRepo: vi.fn(() => true),
   collectAllProjects: vi.fn(() => []),
 }));
 

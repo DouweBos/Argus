@@ -30,7 +30,9 @@ vi.mock("../agent/agentService", () => ({
   listAgents: () => [],
   respondToPermission: () => {},
 }));
-vi.mock("../mcp/projects", () => ({ collectAllProjects: () => [] }));
+vi.mock("../mcp/projectDiscovery", () => ({
+  collectAllProjects: () => [],
+}));
 vi.mock("../session/manager", () => ({ listSessions: async () => [] }));
 vi.mock("../session/sessionOps", () => ({
   getSessionBranchDiff: async () => "",
