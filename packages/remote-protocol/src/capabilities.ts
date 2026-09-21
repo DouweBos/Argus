@@ -67,6 +67,7 @@ export const HOST_ONLY_COMMANDS = new Set([
   // Sharing an agent, letting a guest in, and ending a share are trust
   // decisions — same root as pairing, and `huddle_list` hands back room tokens.
   "huddle_start",
+  "huddle_share_readiness",
   "huddle_stop",
   "huddle_set_device",
   "huddle_list",
@@ -174,6 +175,15 @@ export const REMOTE_METHODS = {
   "automations.run": "monitor",
   "automations.run_now": "control",
   "automations.cancel_run": "control",
+  /** Reading a report on the phone is reading it — it clears nowhere else.
+   *  Monitor, not control: it records that you looked, and can do nothing else. */
+  "automations.mark_run_read": "monitor",
+  /** The inbox. Reading it is monitor; deciding is not — accepting one spins
+   *  up a worktree and starts an agent, which is code execution, and
+   *  dismissing writes the signal that calibrates the automation. */
+  "proposals.list": "monitor",
+  "proposals.accept": "control",
+  "proposals.dismiss": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",
 } as const satisfies Record<string, Capability>;

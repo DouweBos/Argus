@@ -6,7 +6,7 @@
  * question.
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { View } from "react-native";
 import * as Icons from "../../src/components/Icons";
@@ -53,6 +53,7 @@ export default function RunScreen() {
   const error = useAutomationsStore((s) => s.error);
   const loadRun = useAutomationsStore((s) => s.loadRun);
   const cancelRun = useAutomationsStore((s) => s.cancelRun);
+  const markRunRead = useAutomationsStore((s) => s.markRunRead);
 
   // A finished run's report never changes, so stop polling once it has one.
   const settled = detail !== undefined && !isRunActive(detail.run);
@@ -60,6 +61,15 @@ export default function RunScreen() {
     loadRun(id).catch(() => {});
   }, [id, loadRun]);
   useLiveRefresh(connection === "ready" && !settled, refresh);
+
+  // Opening the report on the phone is reading it, so the computer stops
+  // flagging it too.
+  const unread = detail?.run.unread_report ?? false;
+  useEffect(() => {
+    if (unread) {
+      markRunRead(id).catch(() => {});
+    }
+  }, [id, markRunRead, unread]);
 
   if (!detail) {
     return (

@@ -232,6 +232,12 @@ export const Clock = (p: IconProps) => (
     <Path d="M12 7v5.2l3.2 1.9" />
   </Icon>
 );
+export const Envelope = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="3" y="5.5" width="18" height="13.5" rx="2.25" />
+    <Path d="M3.75 6.75 12 13.5l8.25-6.75" />
+  </Icon>
+);
 export const Play = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M8 5.5v13l10.5-6.5z" />

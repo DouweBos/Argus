@@ -101,6 +101,7 @@ import {
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
 import {
+  markRemoteRunRead,
   remoteAutomationRun,
   remoteAutomationRuns,
   remoteAutomations,
@@ -120,6 +121,11 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
+import {
+  acceptRemoteProposal,
+  dismissRemoteProposal,
+  remoteProposals,
+} from "./proposalsRemote";
 import {
   ensureVapidPublicKey,
   getPushConfigStatus,
@@ -1482,6 +1488,35 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => cancelAutomationRun(run_id));
 
     return { accepted: true };
+  },
+  "proposals.list": async (params) =>
+    remoteProposals(parse("proposals.list", params)),
+  "proposals.accept": async (params) => {
+    const { proposal_id } = parse("proposals.accept", params);
+
+    // Starting a worktree and an agent is code execution, so it goes through
+    // the same control gate a remote `agents.send` does.
+    return control(() => acceptRemoteProposal(proposal_id));
+  },
+  "proposals.dismiss": async (params) => {
+    const { proposal_id, reason } = parse("proposals.dismiss", params);
+    const dismissed = await control(() =>
+      dismissRemoteProposal(proposal_id, reason),
+    );
+    if (!dismissed) {
+      throw new GatewayError("not_found", `no proposal ${proposal_id}`);
+    }
+
+    return dismissed;
+  },
+  "automations.mark_run_read": async (params) => {
+    const { run_id } = parse("automations.mark_run_read", params);
+    const marked = markRemoteRunRead(run_id);
+    if (!marked) {
+      throw new GatewayError("not_found", `no run ${run_id}`);
+    }
+
+    return marked;
   },
   "devices.list": async () => {
     // A missing toolchain (no Xcode / no Android SDK) contributes an empty

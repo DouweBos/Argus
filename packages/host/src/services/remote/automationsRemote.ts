@@ -23,6 +23,8 @@ import {
   hasActiveRun,
   listAutomationRuns,
   listAutomations,
+  hasUnreadReport,
+  markRunReportRead,
 } from "../automation/manager";
 
 /** How many runs a client gets when it doesn't say. */
@@ -71,6 +73,7 @@ export function toRemoteAutomationRun(run: AutomationRun): RemoteAutomationRun {
     finished_at: run.finished_at,
     cost_usd: run.cost_usd,
     error: run.error,
+    unread_report: hasUnreadReport(run),
     host_session_id: run.host_session_id,
     host_agent_id: run.host_agent_id,
   };
@@ -108,4 +111,18 @@ export function remoteAutomationRun(runId: string): {
     report_blocks: run.report_blocks ?? null,
     report_markdown: run.report_markdown,
   };
+}
+
+/**
+ * Reading a report on a phone reads it everywhere — there is one inbox, and
+ * the desktop is watching the same bus. Null when the run is unknown.
+ */
+export function markRemoteRunRead(
+  runId: string,
+): { run: RemoteAutomationRun } | null {
+  if (!getAutomationRun(runId)) {
+    return null;
+  }
+
+  return { run: toRemoteAutomationRun(markRunReportRead(runId)) };
 }

@@ -362,16 +362,21 @@ computer's automations from the Automations button on its projects screen: the
 automations themselves, the recent runs across all of them, and one run with
 its report — structured blocks included.
 
-It is deliberately narrower than the desktop. A phone **watches and fires**;
-it does not author. There is no playbook editor, no schedule picker and no
-inbox — those are the desktop's, and a paired Mac driving a headless mini still
-gets all of them through the admin passthrough.
+The Inbox button next to it opens the decisions: every pending proposal, with
+the run's own button to start the work and a Dismiss that takes a reason. A
+report you have not read yet is dotted in the run list, and opening it on the
+phone clears it on the computer too — there is one inbox, not two.
 
-- **Run now and Cancel need the `control` grant.** Firing an automation starts
-  an agent on the computer, which is code execution; a monitor-only device sees
-  the runs and no buttons.
+It is deliberately narrower than the desktop. A phone **watches, decides and
+fires**; it does not author. There is no playbook editor and no schedule
+picker — those are the desktop's, and a paired Mac driving a headless mini
+still gets all of them through the admin passthrough.
+
+- **Run now, Cancel, Start and Dismiss need the `control` grant.** Firing an
+  automation or accepting a proposal starts an agent on the computer, which is
+  code execution; a monitor-only device sees the lists and no buttons.
 - **A huddle guest reaches none of it**, the same as everywhere else — every
-  `automations.*` method is denied to a scoped grant.
+  `automations.*` and `proposals.*` method is denied to a scoped grant.
 - The lists poll rather than stream, like every other list on the phone.
 
 ---
