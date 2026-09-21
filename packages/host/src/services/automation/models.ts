@@ -75,6 +75,11 @@ export interface Automation {
   model: string | null;
   /** Built-in template this was seeded from, for upgrade-on-release. */
   template_id: string | null;
+  /**
+   * Hash of the playbook as seeded. Still matching means nobody edited it, so
+   * a new release may replace it. Null on user-made automations.
+   */
+  seeded_playbook_hash: string | null;
   created_at: number;
   updated_at: number;
   last_run_at: number | null;

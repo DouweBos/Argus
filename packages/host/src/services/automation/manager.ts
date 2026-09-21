@@ -31,6 +31,7 @@ import {
   saveAutomationRuns,
   saveAutomations,
 } from "./store";
+import { playbookHash, refreshBuiltIns } from "./templateSync";
 import { BUILT_IN_TEMPLATES } from "./templates";
 
 let automations: Automation[] | null = null;
@@ -45,6 +46,7 @@ function automationCache(): Automation[] {
       automation.source_ids ??= [];
       automation.autonomy ??= null;
       automation.guardrails = normalizeGuardrails(automation.guardrails);
+      automation.seeded_playbook_hash ??= null;
     }
     seedBuiltIns(automations);
   }
@@ -75,7 +77,10 @@ function seedBuiltIns(list: Automation[]): void {
     list.push(buildAutomation(template));
     seeded = true;
   }
-  if (seeded) {
+  // A template whose playbook improved in this release reaches the copy on
+  // disk here, but only while you have not edited it yourself.
+  const refreshed = refreshBuiltIns(list);
+  if (seeded || refreshed) {
     saveAutomations(list);
   }
 }
@@ -100,6 +105,10 @@ function buildAutomation(input: CreateAutomationInput): Automation {
     guardrails: normalizeGuardrails(input.guardrails),
     model: input.model ?? null,
     template_id: input.template_id ?? null,
+    // Only a built-in has a fingerprint to compare a future release against.
+    seeded_playbook_hash: input.template_id
+      ? playbookHash(input.playbook)
+      : null,
     created_at: now,
     updated_at: now,
     last_run_at: null,
@@ -213,6 +222,7 @@ export function scratchAutomationForRun(run: AutomationRun): Automation | null {
     guardrails: normalizeGuardrails(spec.guardrails),
     model: spec.model,
     template_id: null,
+    seeded_playbook_hash: null,
     created_at: run.started_at,
     updated_at: run.started_at,
     last_run_at: run.started_at,
