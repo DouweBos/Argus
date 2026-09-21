@@ -1,5 +1,16 @@
+import type { ShareError } from "./shareError";
 import type { TunnelProvider, TunnelState } from "./tunnelManager";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/** The typed failure a share attempt rejected with. */
+async function shareFailure(pending: Promise<unknown>): Promise<ShareError> {
+  try {
+    await pending;
+  } catch (e) {
+    return e as ShareError;
+  }
+  throw new Error("expected the share to fail");
+}
 
 const settings = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 /** URLs the probe should report as published-but-dead. */
@@ -26,8 +37,11 @@ const tunnels = vi.hoisted(() => {
     starts: [] as TunnelProvider[],
     stops: [] as (TunnelProvider | undefined)[],
     listeners: new Set<() => void>(),
+    /** Whether `cloudflared` resolves on PATH. */
+    installed: true,
     reset(): void {
       this.states = { cloudflare: stopped(), tailscale: stopped() };
+      this.installed = true;
       this.outcome = {};
       this.starts = [];
       this.stops = [];
@@ -77,6 +91,7 @@ vi.mock("./localGatewayServer", () => ({
   },
 }));
 vi.mock("./tunnelManager", () => ({
+  binaryOnPath: () => tunnels.installed,
   TUNNEL_PROVIDERS: ["tailscale", "cloudflare"] as TunnelProvider[],
   getTunnelState: (p: TunnelProvider) => tunnels.states[p],
   getTunnelStates: () => tunnels.states,
@@ -269,9 +284,9 @@ describe("acquirePublicUrl", () => {
     reach.unreachable.add(CF_URL);
     tunnels.starts = [];
 
-    await expect(acquirePublicUrl({ timeoutMs: 1000 })).rejects.toThrow(
-      /didn't route back/,
-    );
+    const failure = await shareFailure(acquirePublicUrl({ timeoutMs: 1000 }));
+
+    expect(failure.detail).toMatch(/didn't route back/);
     expect(tunnels.starts).toEqual([]);
     expect(publicUrlLeaseCount()).toBe(0);
   });
@@ -320,17 +335,35 @@ describe("acquirePublicUrl", () => {
       error: "429 too many requests",
     };
 
-    await expect(acquirePublicUrl({ timeoutMs: 1000 })).rejects.toThrow(
-      /429 too many requests[\s\S]*rate-limits/,
-    );
+    const failure = await shareFailure(acquirePublicUrl({ timeoutMs: 1000 }));
+
+    expect(failure.kind).toBe("quick-tunnel-failed");
+    expect(failure.detail).toMatch(/429 too many requests/);
+    expect(failure.explanation).toMatch(/rate-limits/);
     expect(publicUrlLeaseCount()).toBe(0);
     expect(tunnels.stops).toContain("cloudflare");
   });
 
   it("times out with actionable advice", async () => {
-    await expect(acquirePublicUrl({ timeoutMs: 10 })).rejects.toThrow(
-      /no URL after[\s\S]*Settings → Remote access/,
-    );
+    const failure = await shareFailure(acquirePublicUrl({ timeoutMs: 10 }));
+
+    expect(failure.detail).toMatch(/no URL after/);
+    expect(failure.steps.join(" ")).toMatch(/Settings → Remote access/);
+  });
+
+  it("explains the missing CLI instead of blaming Cloudflare", async () => {
+    tunnels.installed = false;
+    tunnels.outcome.cloudflare = {
+      status: "error",
+      error: "`cloudflared` isn't on Argus's PATH.",
+    };
+
+    const failure = await shareFailure(acquirePublicUrl({ timeoutMs: 1000 }));
+
+    expect(failure.kind).toBe("cloudflared-missing");
+    expect(failure.command).toBe("brew install cloudflared");
+    expect(failure.explanation).not.toMatch(/rate-limit/);
+    expect(publicUrlLeaseCount()).toBe(0);
   });
 });
 

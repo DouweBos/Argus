@@ -22,6 +22,10 @@ import type {
   PrereqResult,
 } from "@argus/host/services/onboarding/types";
 import type { Session } from "@argus/host/services/session/models";
+import type {
+  DeviceOrientation,
+  FoldPose,
+} from "@argus/host/services/simulator/deviceState";
 import type { ToolId } from "@argus/host/services/tools/types";
 import {
   Menu,
@@ -275,6 +279,7 @@ import {
   setRemoteConfig,
   setRemoteStatusListener,
 } from "@argus/host/services/remote/remoteService";
+import { checkShareReadiness } from "@argus/host/services/remote/shareReadiness";
 import {
   applyTailscaleFix,
   diagnoseTailscale,
@@ -492,10 +497,6 @@ import {
   androidKeyboard,
   androidButton,
 } from "@argus/host/services/simulator/android";
-import type {
-  DeviceOrientation,
-  FoldPose,
-} from "@argus/host/services/simulator/deviceState";
 import { getDeviceInputEndpoint } from "@argus/host/services/simulator/deviceInput";
 import {
   checkIosTools,
@@ -1219,6 +1220,9 @@ export function registerIpcHandlers(): void {
       device_key: (a.deviceKey as string | null) ?? "",
     }),
   );
+  // Asked before the user commits to sharing, so a missing prerequisite is
+  // explained in the dialog instead of thrown after the spinner.
+  handle("huddle_share_readiness", "host", () => checkShareReadiness());
   handle("huddle_stop", "host", (a) => stopHuddle(a.roomId as string));
   handle("huddle_set_device", "host", (a) =>
     setHuddleDevice(a.roomId as string, (a.deviceKey as string | null) ?? ""),

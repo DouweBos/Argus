@@ -4,8 +4,8 @@ import { ChevronDownIcon, ChevronRightIcon } from "../../icons/Icons";
 import styles from "./Disclosure.module.css";
 
 export interface DisclosureProps {
-  /** The one line that is always visible. */
-  summary: ReactNode;
+  /** The one line that is always visible; omit for a bare toggle. */
+  summary?: ReactNode;
   /** The label on the toggle, e.g. "What they can do". */
   toggleLabel?: string;
   children: ReactNode;
@@ -32,7 +32,7 @@ export function Disclosure({
 
   return (
     <div className={[styles.wrap, className].filter(Boolean).join(" ")}>
-      <p className={styles.summary}>{summary}</p>
+      {summary && <p className={styles.summary}>{summary}</p>}
       <button
         type="button"
         aria-controls={bodyId}

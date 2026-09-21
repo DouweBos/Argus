@@ -6,8 +6,12 @@
  */
 
 import type * as IpcModule from "../../../lib/ipc";
-import type { HuddleGuest, HuddleRoom } from "../../../lib/types";
-import { act, render, screen } from "@testing-library/react";
+import type {
+  HuddleGuest,
+  HuddleRoom,
+  ShareReadiness,
+} from "../../../lib/types";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type Handler = (event: { hostId: string; payload: unknown }) => void;
@@ -19,6 +23,20 @@ const approveMock = vi.fn((_roomId: string, _pub: string) =>
 const denyMock = vi.fn((_roomId: string, _pub: string) =>
   Promise.resolve(true),
 );
+const readinessMock = vi.fn<() => Promise<ShareReadiness>>(() =>
+  Promise.resolve({ ready: true }),
+);
+
+/** What the host reports when `cloudflared` is nowhere to be found. */
+const CLOUDFLARED_BLOCKER = {
+  __shareError: true as const,
+  kind: "cloudflared-missing" as const,
+  message: "Argus needs cloudflared to hand out a share link",
+  explanation:
+    "It uses Cloudflare's free quick tunnel, and that CLI is missing.",
+  steps: ["Run the command below in a terminal."],
+  command: "brew install cloudflared",
+};
 
 vi.mock("../../../lib/events", () => ({
   listen: (event: string, handler: Handler) => {
@@ -33,8 +51,22 @@ vi.mock("../../../lib/ipc", async (importOriginal) => ({
   huddleApproveGuest: (roomId: string, pub: string) => approveMock(roomId, pub),
   huddleDenyGuest: (roomId: string, pub: string) => denyMock(roomId, pub),
   huddleList: () => Promise.resolve([]),
+  huddleShareReadiness: () => readinessMock(),
 }));
 
+/** The dialog's subtree reaches for the preload bridge on mount. */
+function stubPreloadBridge(): void {
+  Object.defineProperty(window, "argus", {
+    configurable: true,
+    value: {
+      invoke: () => Promise.resolve(null),
+      send: () => {},
+      on: () => () => {},
+    },
+  });
+}
+
+const { HuddleDialog } = await import("./HuddleDialog");
 const { HuddleJoinRequests } = await import("./HuddleJoinRequests");
 const { ShareAgentButton } = await import("./ShareAgentButton");
 const { initHuddleRooms, setHuddleState } =
@@ -79,6 +111,9 @@ describe("huddle host UI", () => {
     handlers.clear();
     approveMock.mockClear();
     denyMock.mockClear();
+    stubPreloadBridge();
+    readinessMock.mockClear();
+    readinessMock.mockResolvedValue({ ready: true });
     setHuddleState({ rooms: [] });
     initHuddleRooms();
   });
@@ -154,5 +189,24 @@ describe("huddle host UI", () => {
     expect(screen.getByRole("button").title).toBe(
       "Share this agent in a huddle",
     );
+  });
+
+  it("explains a missing prerequisite before the host commits to sharing", async () => {
+    readinessMock.mockResolvedValue({
+      ready: false,
+      blocker: CLOUDFLARED_BLOCKER,
+    });
+
+    render(
+      <HuddleDialog agentId="agent-1" sessionId="ws-1" onClose={() => {}} />,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Argus needs cloudflared to hand out a share link"),
+      ).toBeTruthy();
+    });
+    expect(screen.getByText("brew install cloudflared")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Check again" })).toBeTruthy();
   });
 });

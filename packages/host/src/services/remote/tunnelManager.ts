@@ -20,6 +20,24 @@
  */
 
 import { spawn, type ChildProcess } from "node:child_process";
+import { accessSync, constants } from "node:fs";
+import { delimiter, join } from "node:path";
+
+/** Whether a command resolves on Argus's PATH — the daemons are CLIs. */
+export function binaryOnPath(bin: string): boolean {
+  return (process.env.PATH ?? "")
+    .split(delimiter)
+    .filter(Boolean)
+    .some((dir) => {
+      try {
+        accessSync(join(dir, bin), constants.X_OK);
+
+        return true;
+      } catch {
+        return false;
+      }
+    });
+}
 
 export type TunnelProvider = "cloudflare" | "tailscale";
 export type CloudflareMode = "quick" | "token";

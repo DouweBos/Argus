@@ -125,6 +125,7 @@ export * from "./components/ContextMeter/ContextMeter";
 export * from "./components/QueuedMessage/QueuedMessage";
 export * from "./components/SessionCard/SessionCard";
 export * from "./components/SettingsScreen/SettingsScreen";
+export * from "./components/SetupBlocker/SetupBlocker";
 export * from "./components/SettingsDialogShell/SettingsDialogShell";
 export * from "./components/TreeNode/TreeNode";
 export * from "./components/WindowTabStrip/WindowTabStrip";
