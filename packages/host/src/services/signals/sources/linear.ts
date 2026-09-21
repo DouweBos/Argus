@@ -12,8 +12,7 @@
 import type { SignalSource } from "../types";
 import { loadAppMcpServers } from "../../appSettings/store";
 import { listInheritedMcpServers } from "../../mcp/userConfig";
-
-export const LINEAR_SOURCE_ID = "linear";
+import { LINEAR_SOURCE_ID } from "../sourceIds";
 
 /** A server counts as Linear if its name says so — the config is opaque JSON. */
 function isLinearServer(name: string): boolean {
@@ -77,3 +76,5 @@ export const linearSource: SignalSource = {
 
   agentInstructions: linearInstructions,
 };
+
+export { LINEAR_SOURCE_ID };

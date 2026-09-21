@@ -15,11 +15,10 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getPullRequestDetail } from "../../github/prDetail";
 import { listInterestingPullRequests } from "../../github/pullRequests";
-import { collectAllProjects } from "../../mcp/projects";
+import { collectAllProjects } from "../../mcp/projectDiscovery";
+import { GITHUB_PRS_SOURCE_ID } from "../sourceIds";
 
 const execFileAsync = promisify(execFile);
-
-export const GITHUB_PRS_SOURCE_ID = "github-prs";
 
 /** Detail is a GraphQL round trip each, so only the freshest PRs get one. */
 const MAX_DETAILED = 12;
@@ -193,3 +192,5 @@ export const githubPrsSource: SignalSource = {
     );
   },
 };
+
+export { GITHUB_PRS_SOURCE_ID };

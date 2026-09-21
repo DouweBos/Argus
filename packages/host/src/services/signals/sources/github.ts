@@ -13,11 +13,10 @@ import type { SignalSource, WorkItem } from "../types";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getGithubSlugs } from "../../github/pullRequests";
-import { collectAllProjects } from "../../mcp/projects";
+import { collectAllProjects } from "../../mcp/projectDiscovery";
+import { GITHUB_SOURCE_ID } from "../sourceIds";
 
 const execFileAsync = promisify(execFile);
-
-export const GITHUB_SOURCE_ID = "github";
 
 /** Fields requested from `gh search`; identical for issues and PRs. */
 const SEARCH_FIELDS =
@@ -167,3 +166,5 @@ export const githubSource: SignalSource = {
     return [...items.values()].sort((a, b) => b.updated_at - a.updated_at);
   },
 };
+
+export { GITHUB_SOURCE_ID };
