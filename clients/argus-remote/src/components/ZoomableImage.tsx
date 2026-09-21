@@ -4,7 +4,7 @@
  * lives on the UI thread so the transform never waits on a JS frame.
  */
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -65,32 +65,26 @@ export function ZoomableImage({
   const startFocalY = useSharedValue(0);
   const dismissing = useSharedValue(false);
 
-  const clamp = useCallback(
-    (s: number, x: number, y: number) => {
-      "worklet";
-      const next = Math.min(Math.max(s, 1), MAX_SCALE);
-      const maxX = Math.max((width * next - width) / 2, 0);
-      const maxY = Math.max((height * next - height) / 2, 0);
+  function clamp(s: number, x: number, y: number) {
+    "worklet";
+    const next = Math.min(Math.max(s, 1), MAX_SCALE);
+    const maxX = Math.max((width * next - width) / 2, 0);
+    const maxY = Math.max((height * next - height) / 2, 0);
 
-      return {
-        scale: next,
-        x: Math.min(Math.max(x, -maxX), maxX),
-        y: Math.min(Math.max(y, -maxY), maxY),
-      };
-    },
-    [width, height],
-  );
+    return {
+      scale: next,
+      x: Math.min(Math.max(x, -maxX), maxX),
+      y: Math.min(Math.max(y, -maxY), maxY),
+    };
+  }
 
-  const settle = useCallback(
-    (s: number, x: number, y: number) => {
-      "worklet";
-      const c = clamp(s, x, y);
-      scale.value = withSpring(c.scale, SPRING);
-      translateX.value = withSpring(c.x, SPRING);
-      translateY.value = withSpring(c.y, SPRING);
-    },
-    [clamp, scale, translateX, translateY],
-  );
+  function settle(s: number, x: number, y: number) {
+    "worklet";
+    const c = clamp(s, x, y);
+    scale.value = withSpring(c.scale, SPRING);
+    translateX.value = withSpring(c.x, SPRING);
+    translateY.value = withSpring(c.y, SPRING);
+  }
 
   // One notification per crossing, whichever gesture caused it.
   useAnimatedReaction(
@@ -101,14 +95,6 @@ export function ZoomableImage({
       }
     },
   );
-
-  // A page swiped away gives up its zoom. It goes through the same worklet the
-  // gestures use: shared values written straight from an effect race them.
-  useEffect(() => {
-    if (!active) {
-      runOnUI(settle)(1, 0, 0);
-    }
-  }, [active, settle]);
 
   const pinch = Gesture.Pinch()
     .onStart((e) => {
@@ -207,6 +193,19 @@ export function ZoomableImage({
     Gesture.Simultaneous(pinch, pan),
     Gesture.Exclusive(doubleTap, singleTap),
   );
+
+  // A page swiped away gives up its zoom, on the UI thread: shared values
+  // written straight from JS race an in-flight gesture.
+  useEffect(() => {
+    if (!active) {
+      runOnUI(() => {
+        "worklet";
+        scale.value = withSpring(1, SPRING);
+        translateX.value = withSpring(0, SPRING);
+        translateY.value = withSpring(0, SPRING);
+      })();
+    }
+  }, [active, scale, translateX, translateY]);
 
   const imageStyle = useAnimatedStyle(() => ({
     width,
