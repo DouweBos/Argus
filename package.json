@@ -48,7 +48,8 @@
     "typecheck:app": "tsc --noEmit",
     "typecheck:electron": "tsc -p tsconfig.main.json --noEmit",
     "typecheck:host": "tsc -p packages/host/tsconfig.json --noEmit",
-    "postinstall": "tsx scripts/fix-node-pty-helper.ts && tsx scripts/fetch-scrcpy-server.ts && tsx scripts/prepare-conductor.ts"
+    "postinstall": "tsx scripts/fix-node-pty-helper.ts && tsx scripts/fetch-scrcpy-server.ts && tsx scripts/prepare-conductor.ts",
+    "shots": "tsx scripts/shots.ts"
   },
   "dependencies": {
     "@argus/host": "workspace:*",
