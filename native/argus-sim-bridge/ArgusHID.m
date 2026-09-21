@@ -24,9 +24,13 @@
 // MARK: - HID touch injection
 // ---------------------------------------------------------------------------
 
-// Function pointer type for IndigoHIDMessageForMouseNSEvent.
-// Args: point, prevMsg, 0x32, nsEventType, direction → 320-byte static buffer.
-// prevMsg: NULL for mouseDown (new touch), previous message for drag/up (continuity).
+// Function pointer type for IndigoHIDMessageForMouseNSEvent, whose real
+// signature (per SimulatorKit's own assert string) is:
+//   (CGPoint *point, CGPoint *prevPoint, IndigoHIDTarget, NSEventType,
+//    NSSize scale, IndigoHIDEdge)
+// It returns a freshly calloc'd message the caller owns: a 0x20 header plus one
+// 0xa0 record per touch, so 0x160 for the usual two and 0x200 when prevPoint
+// adds a third.
 // IndigoHIDMessageForMouseNSEvent takes 4 trailing `double` args (scale/pressure)
 // beyond the visible params. They land in FP registers d0–d3 per the ARM64
 // calling convention; the function requires them = 1.0 or the built touch has no
@@ -40,7 +44,6 @@ typedef void* (*IndigoMouseFn)(CGPoint*, void*, int, int, int,
 // independent touch sequences without interfering with each other.
 typedef struct {
     char udid[64];
-    void *lastIndigoMsg;
     uint64_t lastTouchTime;
     _Atomic(bool) invalid;
 } SHTouchState;
@@ -60,23 +63,16 @@ static SHTouchState *_touchStateForUDID(const char *udid) {
     if (g_touchStateCount < MAX_TOUCH_STATES) {
         SHTouchState *s = &g_touchStates[g_touchStateCount++];
         strlcpy(s->udid, udid, sizeof(s->udid));
-        s->lastIndigoMsg = NULL;
         s->lastTouchTime = 0;
         atomic_store(&s->invalid, false);
         return s;
     }
     // Evict oldest (slot 0) and shift — unlikely to hit with ≤8 simulators.
-    // Free its owned continuity snapshot first so eviction doesn't leak.
-    if (g_touchStates[0].lastIndigoMsg) {
-        free(g_touchStates[0].lastIndigoMsg);
-        g_touchStates[0].lastIndigoMsg = NULL;
-    }
     for (int i = 1; i < MAX_TOUCH_STATES; i++) {
         g_touchStates[i - 1] = g_touchStates[i];
     }
     SHTouchState *s = &g_touchStates[MAX_TOUCH_STATES - 1];
     strlcpy(s->udid, udid, sizeof(s->udid));
-    s->lastIndigoMsg = NULL;
     s->lastTouchTime = 0;
     atomic_store(&s->invalid, false);
     return s;
@@ -86,13 +82,10 @@ static SHTouchState *_touchStateForUDID(const char *udid) {
 // The function's internal threshold is ~16ms.  We use 17ms for safety.
 #define INDIGO_MIN_INTERVAL_NS 17000000ULL
 
-// Reverse-engineered sizes of the Indigo HID message buffers returned by
-// IndigoHIDMessageForMouseNSEvent (touch) and IndigoHIDMessageForKeyboardNSEvent
-// (keyboard). These are the fixed static-buffer sizes observed in the
-// SimulatorKit disassembly; the functions return a pointer into that buffer.
-// We only ever copy exactly this many bytes, so an under-read is the failure
-// mode to guard against — we NULL-check the returned pointer before copying.
-#define SH_TOUCH_MSG_SIZE 320
+// The keyboard/button Indigo builders calloc a fixed 0xc0-byte message (a 0x20
+// header plus one 0xa0 record). The touch builder's size varies with its record
+// count, so that path hands the returned buffer straight to the HID client
+// instead of copying it into a fixed-size block.
 #define SH_KEYBOARD_MSG_SIZE 192
 
 static void _ensureTimebase(mach_timebase_info_data_t *out) {
@@ -124,10 +117,6 @@ void SHResetHIDClientInvalidForUDID(const char *udid) {
 void SHClearTouchStateForUDID(const char *udid) {
     for (int i = 0; i < g_touchStateCount; i++) {
         if (strcmp(g_touchStates[i].udid, udid) == 0) {
-            if (g_touchStates[i].lastIndigoMsg) {
-                free(g_touchStates[i].lastIndigoMsg);
-            }
-            g_touchStates[i].lastIndigoMsg = NULL;
             g_touchStates[i].lastTouchTime = 0;
             return;
         }
@@ -164,7 +153,9 @@ static void* SHCallIndigoMouseFn(IndigoMouseFn fn,
 /// udid: simulator UDID (used to look up per-simulator touch state).
 /// normX, normY: normalized screen coordinates in [0.0, 1.0].
 /// nsEventType: 1=mouseDown, 2=mouseUp, 6=mouseDragged (NSEvent.EventType raw values).
-/// direction: 1=down, 2=up, 0=drag.
+/// direction: 1=down, 2=up, 0=drag. Also doubles as the builder's IndigoHIDEdge
+///   argument; passing 0 for every phase stops drags registering, so the
+///   mapping stays as-is.
 ///
 /// Returns 0 on success, negative on failure.
 ///
@@ -205,41 +196,25 @@ int32_t SHSendTouch(id client, void *fnPtr,
     if (normY < 0.0f) normY = 0.0f; else if (normY > 1.0f) normY = 1.0f;
     CGPoint pt = { (double)normX, (double)normY };
 
-    // Touch continuity: pass our OWN snapshot of the previous message, never
-    // IndigoHID's process-global static buffer. That buffer is overwritten by
-    // the next fn() call for THIS or ANY other simulator, so handing it back as
-    // prevMsg can splice a different device's touch into this sequence — a
-    // stale/mismatched continuity record that wedges SpringBoard. DOWN
-    // (direction=1) starts a fresh sequence, so it passes NULL.
-    void *prevMsg = (direction == 1) ? NULL : ts->lastIndigoMsg;
-
-    void *msg = SHCallIndigoMouseFn(fn, &pt, prevMsg, nsEventType, direction);
+    // prevPoint stays NULL: a non-NULL argument makes IndigoHID append a second
+    // touch record built from the previous point, which is not what a
+    // single-finger drag wants. (The old code passed the previous *message*
+    // here, where the API wants a CGPoint *.)
+    void *msg = SHCallIndigoMouseFn(fn, &pt, NULL, nsEventType, direction);
     if (!msg) {
         NSLog(@"[IndigoHID] IndigoHIDMessageForMouseNSEvent returned NULL for "
-              @"(%.4f, %.4f) nsEventType=%d direction=%d prevMsg=%p",
-              normX, normY, nsEventType, direction, prevMsg);
+              @"(%.4f, %.4f) nsEventType=%d direction=%d",
+              normX, normY, nsEventType, direction);
         return -2;
     }
 
     ts->lastTouchTime = now;
 
-    // Snapshot the shared static buffer into two independent owned copies: one
-    // handed to the HID client for sending (freed by it via freeWhenDone:YES),
-    // and one retained as this UDID's continuity record for the next drag/up.
-    void *copy = malloc(SH_TOUCH_MSG_SIZE);
-    void *owned = malloc(SH_TOUCH_MSG_SIZE);
-    if (!copy || !owned) {
-        free(copy);
-        free(owned);
-        NSLog(@"[IndigoHID] touch message allocation failed");
-        return -7;
-    }
-    memcpy(copy, msg, SH_TOUCH_MSG_SIZE);
-    memcpy(owned, msg, SH_TOUCH_MSG_SIZE);
-
-    // Replace the retained continuity snapshot, freeing the previous one.
-    if (ts->lastIndigoMsg) free(ts->lastIndigoMsg);
-    ts->lastIndigoMsg = owned;
+    // The builder calloc's a fresh message per call whose size varies with the
+    // record count, so hand that buffer straight to the client (it frees it via
+    // freeWhenDone:YES). Copying it into a fixed-size block truncated every
+    // message mid-record.
+    void *copy = msg;
 
     // Capture a pointer to this simulator's invalidation flag so the async
     // completion marks the RIGHT simulator as invalid (not a different one).
@@ -266,8 +241,6 @@ int32_t SHSendTouch(id client, void *fnPtr,
         if (sendError) {
             NSLog(@"[IndigoHID] DOWN send error: %@", sendError);
             atomic_store(invalidFlag, true);
-            free(ts->lastIndigoMsg);
-            ts->lastIndigoMsg = NULL;
             ts->lastTouchTime = 0;
             return -6;  // caller will recreate client and retry
         }
@@ -291,10 +264,8 @@ int32_t SHSendTouch(id client, void *fnPtr,
             client, sel, copy, YES, queue, completion);
     }
 
-    // Free the owned continuity snapshot on mouseUp — sequence is complete.
+    // The sequence is complete on mouseUp — let the next DOWN start unthrottled.
     if (direction == 2) {
-        free(ts->lastIndigoMsg);
-        ts->lastIndigoMsg = NULL;
         ts->lastTouchTime = 0;
     }
 
@@ -558,6 +529,11 @@ static id g_ioClient = nil;
 static id g_displayDescriptor = nil;   // SimDisplayIOSurfaceRenderable proxy
 static id g_captureDevice = nil;       // SimDevice retained for IOClient recreation
 
+/// Every framebuffer descriptor that had a surface when the client was built.
+/// A foldable lights a different panel as the hinge moves, so the live one is
+/// re-picked from this list rather than pinned at capture start.
+static NSArray *g_displayCandidates = nil;
+
 // ---------------------------------------------------------------------------
 // MARK: - VideoToolbox H.264 encoder
 //
@@ -769,9 +745,58 @@ static IOSurfaceRef _surfaceForDescriptor(id desc) {
 /// Sample the seeds and take the panel that moves, so we stream the cover
 /// screen while closed and the inner screen once unfolded. Single-display
 /// devices skip the sampling entirely.
+/// Whether a panel is showing nothing. A foldable keeps every panel powered and
+/// surfaced even when only one is lit, so `powerState` cannot tell them apart —
+/// but the one that is folded away is black, and a sparse sample finds that for
+/// far less than the cost of reading the whole buffer.
+static BOOL _surfaceIsDark(IOSurfaceRef surface) {
+    if (!surface) return YES;
+    if (IOSurfaceLock(surface, kIOSurfaceLockReadOnly, NULL) != kIOReturnSuccess) {
+        return NO;  // Can't tell — assume lit rather than skip a good panel.
+    }
+    const uint8_t *base = IOSurfaceGetBaseAddress(surface);
+    size_t stride = IOSurfaceGetBytesPerRow(surface);
+    size_t w = IOSurfaceGetWidth(surface), h = IOSurfaceGetHeight(surface);
+    BOOL dark = YES;
+    if (base && w && h) {
+        const int kSteps = 16;
+        for (int gy = 0; gy < kSteps && dark; gy++) {
+            const uint8_t *row = base + (h * gy / kSteps) * stride;
+            for (int gx = 0; gx < kSteps; gx++) {
+                const uint8_t *px = row + (w * gx / kSteps) * 4;
+                // BGRA; anything clearly above black counts as lit.
+                if (px[0] > 12 || px[1] > 12 || px[2] > 12) {
+                    dark = NO;
+                    break;
+                }
+            }
+        }
+    }
+    IOSurfaceUnlock(surface, kIOSurfaceLockReadOnly, NULL);
+
+    return dark;
+}
+
 static id _pickLiveDisplay(NSArray *candidates) {
     if (candidates.count <= 1) {
         return candidates.firstObject;
+    }
+
+    // A single lit panel is the answer outright — no need to watch for redraws,
+    // which a still screen never produces.
+    NSMutableArray *lit = [NSMutableArray array];
+    for (id desc in candidates) {
+        if (!_surfaceIsDark(_surfaceForDescriptor(desc))) {
+            [lit addObject:desc];
+        }
+    }
+    if (lit.count == 1) {
+        NSLog(@"[Framebuffer] %lu displays, one lit — capturing it",
+              (unsigned long)candidates.count);
+        return lit.firstObject;
+    }
+    if (lit.count > 1) {
+        candidates = lit;
     }
 
     NSMutableArray<NSNumber *> *seeds = [NSMutableArray array];
@@ -799,6 +824,83 @@ static id _pickLiveDisplay(NSArray *candidates) {
     NSLog(@"[Framebuffer] %lu displays, none redrawing — capturing the first",
           (unsigned long)candidates.count);
     return candidates.firstObject;
+}
+
+/// Ticks the current panel may go without redrawing before we start looking for
+/// a livelier one. ~1s at 30fps: long enough that a still screen is not mistaken
+/// for a dark one, short enough that a fold is followed promptly.
+#define SH_STALE_TICKS 30
+
+/**
+ * Follow the hinge: when the current panel stops redrawing but another one
+ * starts, the system has swapped displays (the Duo lights its cover panel when
+ * folded and its inner panel when open) and capture has to move with it.
+ *
+ * Only a candidate that is *actively* redrawing wins, so a genuinely static
+ * screen — every panel idle — leaves the current choice alone.
+ */
+static void _followLiveDisplay(IOSurfaceRef current) {
+    static uint32_t staleTicks = 0;
+    static uint32_t lastSeed = 0;
+    static NSArray *seedSnapshot = nil;
+
+    // A panel going black is the fold's clearest signal, and it arrives long
+    // before the redraw timeout would.
+    if (_surfaceIsDark(current) && g_displayCandidates.count > 1) {
+        for (id desc in g_displayCandidates) {
+            if (desc == g_displayDescriptor) continue;
+            IOSurfaceRef s = _surfaceForDescriptor(desc);
+            if (!s || _surfaceIsDark(s)) continue;
+
+            NSLog(@"[Framebuffer] Panel went dark — following the lit one (%zux%zu)",
+                  IOSurfaceGetWidth(s), IOSurfaceGetHeight(s));
+            g_displayDescriptor = desc;
+            staleTicks = 0;
+            lastSeed = 0;
+            seedSnapshot = nil;
+            return;
+        }
+    }
+
+    uint32_t seed = IOSurfaceGetSeed(current);
+    if (seed != lastSeed) {
+        lastSeed = seed;
+        staleTicks = 0;
+        seedSnapshot = nil;
+        return;
+    }
+    if (++staleTicks < SH_STALE_TICKS || g_displayCandidates.count < 2) {
+        return;
+    }
+
+    // First tick past the threshold just records where every panel stands; the
+    // comparison needs two samples separated in time.
+    if (!seedSnapshot) {
+        NSMutableArray *seeds = [NSMutableArray array];
+        for (id desc in g_displayCandidates) {
+            IOSurfaceRef s = _surfaceForDescriptor(desc);
+            [seeds addObject:@(s ? IOSurfaceGetSeed(s) : 0)];
+        }
+        seedSnapshot = seeds;
+        return;
+    }
+
+    for (NSUInteger i = 0; i < g_displayCandidates.count; i++) {
+        id desc = g_displayCandidates[i];
+        if (desc == g_displayDescriptor) continue;
+        IOSurfaceRef s = _surfaceForDescriptor(desc);
+        if (!s || IOSurfaceGetSeed(s) == [seedSnapshot[i] unsignedIntValue]) continue;
+
+        NSLog(@"[Framebuffer] Display swapped — following panel #%lu (%zux%zu)",
+              (unsigned long)i, IOSurfaceGetWidth(s), IOSurfaceGetHeight(s));
+        g_displayDescriptor = desc;
+        staleTicks = 0;
+        lastSeed = 0;
+        seedSnapshot = nil;
+        return;
+    }
+    seedSnapshot = nil;
+    staleTicks = 0;
 }
 
 /// (Re)create the SimDeviceIOClient and find the display descriptor.
@@ -853,16 +955,63 @@ static BOOL _rebuildIOClient(void) {
         }
     }
 
+    g_displayCandidates = candidates;
     g_displayDescriptor = _pickLiveDisplay(candidates) ?: fallbackDescriptor;
 
     if (!g_displayDescriptor) {
         NSLog(@"[Framebuffer] No com.apple.framebuffer.display port found (%lu ports total)",
               (unsigned long)ports.count);
+        g_displayCandidates = nil;
         g_ioClient = nil;
         return NO;
     }
 
     return YES;
+}
+
+/// Describe the panel being captured: its buffer size and the UI orientation
+/// the system is rendering into it. The framebuffer is always panel-native, so
+/// a rotated UI arrives rotated and only `uiOrientation` says by how much.
+/// Returns NO when there is nothing to report.
+BOOL SHDisplayInfo(int32_t *width, int32_t *height,
+                   uint32_t *uiOrientation, uint32_t *screenID) {
+    if (!g_displayDescriptor) return NO;
+
+    IOSurfaceRef surface = _surfaceForDescriptor(g_displayDescriptor);
+    if (!surface) return NO;
+    *width = (int32_t)IOSurfaceGetWidth(surface);
+    *height = (int32_t)IOSurfaceGetHeight(surface);
+    *uiOrientation = 0;
+    *screenID = 0;
+
+    @try {
+        id props = ((id (*)(id, SEL))objc_msgSend)(
+            g_displayDescriptor, NSSelectorFromString(@"screenProperties"));
+        if (props) {
+            *uiOrientation = ((uint32_t (*)(id, SEL))objc_msgSend)(
+                props, NSSelectorFromString(@"uiOrientation"));
+            *screenID = ((uint32_t (*)(id, SEL))objc_msgSend)(
+                props, NSSelectorFromString(@"screenID"));
+        }
+    } @catch (NSException *e) {
+        // Older runtimes may not carry screenProperties — size alone still helps.
+    }
+
+    return YES;
+}
+
+/// Re-pick the live panel right now, for when the caller already knows the
+/// hinge moved. The tick's own follow eventually gets there, but only after the
+/// old panel has stayed dark for a while.
+void SHRefreshDisplay(void) {
+    if (g_displayCandidates.count < 2) return;
+    id live = _pickLiveDisplay(g_displayCandidates);
+    if (live && live != g_displayDescriptor) {
+        IOSurfaceRef s = _surfaceForDescriptor(live);
+        NSLog(@"[Framebuffer] Display refreshed — now on %zux%zu",
+              s ? IOSurfaceGetWidth(s) : 0, s ? IOSurfaceGetHeight(s) : 0);
+        g_displayDescriptor = live;
+    }
 }
 
 int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
@@ -948,6 +1097,8 @@ int32_t SHStartFramebuffer(id device, SHFrameCallback callback) {
                   IOSurfaceGetWidth(surface), IOSurfaceGetHeight(surface), nilSurfaceCount);
             nilSurfaceCount = 0;
         }
+
+        _followLiveDisplay(surface);
 
         int32_t w = (int32_t)IOSurfaceGetWidth(surface);
         int32_t h = (int32_t)IOSurfaceGetHeight(surface);

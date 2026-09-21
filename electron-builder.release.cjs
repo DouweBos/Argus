@@ -37,6 +37,10 @@ module.exports = {
       from: "native/argus-sim-bridge/argus-sim-bridge",
       to: "argus-sim-bridge",
     },
+    {
+      from: "native/argus-sim-input/argus-sim-input",
+      to: "argus-sim-input",
+    },
     { from: "native/scrcpy-server/scrcpy-server.jar", to: "scrcpy-server.jar" },
     {
       from: "native/emulator-proto/emulator_controller.proto",

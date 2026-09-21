@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-dev}\" pnpm ensure:bridge && ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47616}\" concurrently -n vite,electron \"vite\" \"pnpm build:electron && electron .\"",
     "dev:prod-state": "concurrently -n vite,electron \"vite\" \"pnpm build:electron && electron .\"",
-    "ensure:bridge": "pnpm build:bridge || test -x native/argus-sim-bridge/argus-sim-bridge",
+    "ensure:bridge": "pnpm build:bridge || (test -x native/argus-sim-bridge/argus-sim-bridge && test -x native/argus-sim-input/argus-sim-input)",
     "dev:vite": "vite",
     "dev:electron": "ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-dev}\" pnpm build:electron && ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-dev}\" electron .",
     "dev:server": "ARGUS_SERVER=1 ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-server-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47617}\" pnpm build:electron && ARGUS_SERVER=1 ARGUS_HOME=\"${ARGUS_HOME:-$HOME/.argus-server-dev}\" ARGUS_REMOTE_PORT=\"${ARGUS_REMOTE_PORT:-47617}\" electron dist-electron/server.js",
@@ -33,7 +33,7 @@
     "preview": "vite preview",
     "storybook": "pnpm --filter @argus/peacock storybook",
     "lint": "tsc --noEmit && pnpm typecheck:electron && pnpm typecheck:host && eslint . && prettier --check . && pnpm run lint:css-modules && pnpm run lint:cycles",
-    "build:bridge": "make -C native/argus-sim-bridge",
+    "build:bridge": "make -C native/argus-sim-bridge && make -C native/argus-sim-input",
     "build:icon": "tsx scripts/generate-icon.ts",
     "build:mobile-icon": "tsx scripts/generate-mobile-icon.ts",
     "build:menu-icons": "tsx scripts/rasterize-menu-icons.ts",

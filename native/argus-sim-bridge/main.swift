@@ -7,6 +7,8 @@
 // Protocol:
 //   {"cmd":"start_capture","udid":"..."}              → {"ok":true,"port":12345}
 //   {"cmd":"stop_capture"}                            → {"ok":true}
+//   {"cmd":"refresh_display"}                         → {"ok":true}
+//   {"cmd":"display_info"}    → {"ok":true,"width":..,"height":..,"uiOrientation":..}
 //   {"cmd":"touch","udid":"...","x":0.5,"y":0.5,"type":0}  → {"ok":true}
 //   {"cmd":"button","udid":"...","button":"home"}          → {"ok":true}
 //   {"cmd":"keyboard","udid":"...","keyCode":36,
@@ -207,9 +209,15 @@ private func remoteButtonToUsage(_ button: String) -> UInt32? {
 // responder and can't misfire as text.
 //
 // `target` is SimDeviceScreen.buttonTarget: 51 for a device's primary internal
-// display (verified on iPhone; the 21 variant is for secondary/external
-// displays). An invalid target aborts backboardd, so this is intentionally a
-// single verified constant rather than a guess. keyCode 1 = Home (verified).
+// display (the 21 variant is for secondary/external displays). An invalid target
+// aborts backboardd, so this is intentionally a single verified constant rather
+// than a guess.
+//
+// Simulators ignore this whole path — the message sends without error and
+// nothing reaches the device, for every keyCode and every target, on every
+// runtime from iOS 18.3 up. Keyboard and buttons are injected from inside the
+// guest instead (see argus-sim-input). Also note keyCode 1 is Power, not Home;
+// SimDisplayChromeView maps Home (Consumer usage 0x40) to 0x191.
 private let iosButtonTarget: UInt32 = 51
 
 private func iosHardwareButtonKeyCode(_ button: String) -> UInt32? {
@@ -285,6 +293,28 @@ private func dispatch(_ obj: [String: Any]) {
         }
 
         respond(ok: true, extras: ["port": port])
+
+    // ------------------------------------------------------------------
+    // display_info — size + UI orientation of the panel being captured
+    // ------------------------------------------------------------------
+    case "display_info":
+        guard let info = csDisplayInfo() else {
+            respondError("display_info: no display being captured")
+            return
+        }
+        respond(ok: true, extras: [
+            "width": Int(info.width),
+            "height": Int(info.height),
+            "uiOrientation": Int(info.uiOrientation),
+            "screenID": Int(info.screenID),
+        ])
+
+    // ------------------------------------------------------------------
+    // refresh_display — re-pick the live panel after a fold
+    // ------------------------------------------------------------------
+    case "refresh_display":
+        csRefreshDisplay()
+        respond(ok: true)
 
     // ------------------------------------------------------------------
     // stop_capture — stop IOSurface framebuffer capture

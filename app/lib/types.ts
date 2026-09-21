@@ -1484,3 +1484,41 @@ export type {
   HuddleGuestState,
   HuddleRoom,
 } from "@argus/remote-protocol";
+
+/** Named hinge poses for a foldable simulator (iPhone Duo). */
+export type FoldPose = "book" | "closed" | "open" | "partial";
+
+/** Orientations an iOS simulator can be rotated to. */
+export type DeviceOrientation =
+  | "landscapeLeft"
+  | "landscapeRight"
+  | "portrait"
+  | "portraitUpsideDown";
+
+export interface FoldState {
+  /** Hinge angle in degrees: 0 is shut, 180 is flat open. */
+  angle: number;
+  pose: FoldPose;
+}
+
+/** The panel being captured, and how its contents are rotated. */
+export interface DisplayInfo {
+  /** Framebuffer height in pixels, before rotation. */
+  height: number;
+  /** Clockwise degrees the view must rotate the stream by to sit upright. */
+  rotation: 0 | 90 | 180 | 270;
+  /** CoreSimulator screen ID — changes when a fold lights the other panel. */
+  screenID: number;
+  /** Framebuffer width in pixels, before rotation. */
+  width: number;
+}
+
+/** How a simulator is currently being held — drives how the view presents it. */
+export interface SimulatorDeviceState {
+  /** Null while nothing is being captured. */
+  display: DisplayInfo | null;
+  /** Null on devices with no hinge. */
+  fold: FoldState | null;
+  orientation: DeviceOrientation;
+  udid: string;
+}

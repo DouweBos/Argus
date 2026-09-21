@@ -74,6 +74,9 @@ import type {
   TailscaleFixResult,
   Session,
   UploadedAttachment,
+  DeviceOrientation,
+  FoldPose,
+  SimulatorDeviceState,
   UserProjectSettings,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
@@ -2013,6 +2016,22 @@ export const simulatorTouch = (
 
 export const simulatorButton = (udid: string, button: string): Promise<void> =>
   invoke("simulator_button", { udid, button });
+
+export const simulatorDeviceState = (
+  udid: string,
+): Promise<SimulatorDeviceState> => invoke("simulator_device_state", { udid });
+
+export const simulatorSetFold = (
+  udid: string,
+  pose: FoldPose,
+): Promise<SimulatorDeviceState> =>
+  invoke("simulator_set_fold", { udid, pose });
+
+export const simulatorSetOrientation = (
+  udid: string,
+  orientation: DeviceOrientation,
+): Promise<SimulatorDeviceState> =>
+  invoke("simulator_set_orientation", { udid, orientation });
 
 export interface DeviceInputEndpoint {
   device: string;

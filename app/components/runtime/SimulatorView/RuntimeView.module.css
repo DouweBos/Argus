@@ -328,6 +328,7 @@
 
 /* Live canvas container */
 .canvasContainer {
+  container-type: size;
   flex: 1;
   display: flex;
   align-items: center;
@@ -349,6 +350,32 @@
   touch-action: none;
   pointer-events: none;
   -webkit-user-drag: none;
+}
+
+/*
+ * The simulator framebuffer is always panel-native, so a device held sideways
+ * streams sideways. Rotating here — rather than in the decoder — keeps the
+ * canvas at the stream's own pixel size, so nothing is resampled twice.
+ *
+ * On a quarter turn the rotated box swaps axes, so the fit has to be capped
+ * against the *other* dimension of the container.
+ */
+.canvas[data-rotation="90"],
+.canvas[data-rotation="270"] {
+  max-width: 100cqh;
+  max-height: 100cqw;
+}
+
+.canvas[data-rotation="90"] {
+  transform: rotate(90deg);
+}
+
+.canvas[data-rotation="180"] {
+  transform: rotate(180deg);
+}
+
+.canvas[data-rotation="270"] {
+  transform: rotate(270deg);
 }
 
 .tvCanvas {

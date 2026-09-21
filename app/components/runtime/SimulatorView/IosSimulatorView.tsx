@@ -1,7 +1,9 @@
+import type { DeviceOrientation } from "../../../lib/types";
 import { useCallback, useEffect, useRef } from "react";
 import { DeviceControlOverlay, Icons } from "@argus/peacock";
 import { error } from "@logger";
 import { useDeviceClaim } from "../../../hooks/useDeviceClaim";
+import { useSimulatorDeviceState } from "../../../hooks/useSimulatorDeviceState";
 import {
   bootSimulator,
   checkIosTools,
@@ -9,6 +11,8 @@ import {
   listSimulators,
   simulatorButton,
   simulatorKeyboard,
+  simulatorSetFold,
+  simulatorSetOrientation,
   simulatorTouch,
   startSimulatorCapture,
   stopSimulatorCapture,
@@ -248,6 +252,45 @@ export function IosSimulatorView({
     setDisconnected,
   ]);
 
+  // Fold and orientation decide how the stream has to be presented, so the
+  // view reads them rather than assuming portrait.
+  const deviceState = useSimulatorDeviceState(selectedUdid, capturing);
+  const rotation = deviceState?.display?.rotation ?? 0;
+  const fold = deviceState?.fold ?? null;
+
+  const handleRotate = useCallback(async () => {
+    if (!selectedUdid) {
+      return;
+    }
+    const order: DeviceOrientation[] = [
+      "portrait",
+      "landscapeLeft",
+      "portraitUpsideDown",
+      "landscapeRight",
+    ];
+    const current = deviceState?.orientation ?? "portrait";
+    const next = order[(order.indexOf(current) + 1) % order.length]!;
+    try {
+      await simulatorSetOrientation(selectedUdid, next);
+    } catch (err) {
+      error("[Rotate] failed:", err);
+    }
+  }, [selectedUdid, deviceState?.orientation]);
+
+  const handleFold = useCallback(async () => {
+    if (!selectedUdid || !fold) {
+      return;
+    }
+    try {
+      await simulatorSetFold(
+        selectedUdid,
+        fold.pose === "open" ? "closed" : "open",
+      );
+    } catch (err) {
+      error("[Fold] failed:", err);
+    }
+  }, [selectedUdid, fold]);
+
   const handleHomePress = useCallback(async () => {
     if (!selectedUdid) {
       return;
@@ -404,6 +447,26 @@ export function IosSimulatorView({
           <Icons.HomeIcon size={12} />
         </button>
       )}
+      {capturing && (
+        <button
+          className={chrome.titleBarButton}
+          title="Rotate device"
+          type="button"
+          onClick={handleRotate}
+        >
+          <Icons.RotateDeviceIcon size={12} />
+        </button>
+      )}
+      {capturing && fold && (
+        <button
+          className={chrome.titleBarButton}
+          title={fold.pose === "open" ? "Fold device" : "Unfold device"}
+          type="button"
+          onClick={handleFold}
+        >
+          <Icons.FoldIcon size={12} />
+        </button>
+      )}
       {capturing && selectedUdid && (
         <RuntimeLinkButton deviceKey={selectedUdid} sessionId={sessionId} />
       )}
@@ -501,6 +564,7 @@ export function IosSimulatorView({
         ),
       }}
       renderStream={renderTvStream}
+      rotation={rotation}
       udid={selectedUdid}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
