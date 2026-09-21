@@ -4,7 +4,7 @@
  * lives on the UI thread so the transform never waits on a JS frame.
  */
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -65,26 +65,32 @@ export function ZoomableImage({
   const startFocalY = useSharedValue(0);
   const dismissing = useSharedValue(false);
 
-  function clamp(s: number, x: number, y: number) {
-    "worklet";
-    const next = Math.min(Math.max(s, 1), MAX_SCALE);
-    const maxX = Math.max((width * next - width) / 2, 0);
-    const maxY = Math.max((height * next - height) / 2, 0);
+  const clamp = useCallback(
+    (s: number, x: number, y: number) => {
+      "worklet";
+      const next = Math.min(Math.max(s, 1), MAX_SCALE);
+      const maxX = Math.max((width * next - width) / 2, 0);
+      const maxY = Math.max((height * next - height) / 2, 0);
 
-    return {
-      scale: next,
-      x: Math.min(Math.max(x, -maxX), maxX),
-      y: Math.min(Math.max(y, -maxY), maxY),
-    };
-  }
+      return {
+        scale: next,
+        x: Math.min(Math.max(x, -maxX), maxX),
+        y: Math.min(Math.max(y, -maxY), maxY),
+      };
+    },
+    [width, height],
+  );
 
-  function settle(s: number, x: number, y: number) {
-    "worklet";
-    const c = clamp(s, x, y);
-    scale.value = withSpring(c.scale, SPRING);
-    translateX.value = withSpring(c.x, SPRING);
-    translateY.value = withSpring(c.y, SPRING);
-  }
+  const settle = useCallback(
+    (s: number, x: number, y: number) => {
+      "worklet";
+      const c = clamp(s, x, y);
+      scale.value = withSpring(c.scale, SPRING);
+      translateX.value = withSpring(c.x, SPRING);
+      translateY.value = withSpring(c.y, SPRING);
+    },
+    [clamp, scale, translateX, translateY],
+  );
 
   // One notification per crossing, whichever gesture caused it.
   useAnimatedReaction(
