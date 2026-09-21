@@ -2,15 +2,38 @@
  * iOS Simulator control.
  *
  * Runs xcrun simctl commands via child_process.execFile and delegates
- * framebuffer capture / HID injection to SimBridge (bridge.ts).
+ * framebuffer capture and touch injection to SimBridge (bridge.ts). Keyboard
+ * and hardware buttons go through SimInput (simInput.ts) instead — the Indigo
+ * path SimBridge uses only still carries digitizer events.
  */
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { warn } from "@argus/host/logger";
 import { hostPlatform } from "@argus/host/platform";
 import { appState } from "../../state";
 import { SimBridge } from "./bridge";
+import {
+  type DeviceOrientation,
+  type DisplayInfo,
+  type FoldPose,
+  type SimulatorDeviceState,
+  forgetSimulatorDeviceState,
+  getSimulatorDeviceState,
+  publishSimulatorDeviceState,
+  rotationForUiOrientation,
+  setSimulatorFold,
+  setSimulatorOrientation,
+} from "./deviceState";
+import {
+  HID_CONSUMER_USAGE,
+  HID_PAGE_CONSUMER,
+  HID_PAGE_KEYBOARD,
+  hidUsageForKeyCode,
+  modifierUsages,
+} from "./hidUsage";
 import { startIosVideoStream, stopIosVideoStream } from "./ios-video";
+import { sendButtonUsage, sendKeyUsage, stopSimInput } from "./simInput";
 
 const execFileAsync = promisify(execFile);
 
@@ -372,6 +395,10 @@ async function spawnSimulatorCapture(udid: string): Promise<number> {
   });
   captureRefsByUdid.set(udid, 1);
 
+  // The hinge and orientation drive how the view has to present the stream, so
+  // they need watching for as long as there is one.
+  startDeviceStatePolling(udid);
+
   return port;
 }
 
@@ -411,6 +438,9 @@ export function stopSimulatorCapture(udid: string): void {
  */
 export function forceStopSimulatorCapture(udid: string): void {
   stopIosVideoStream(udid);
+  stopSimInput(udid);
+  stopDeviceStatePolling(udid);
+  forgetSimulatorDeviceState(udid);
 
   const bridge = bridgesByUdid.get(udid);
   if (bridge) {
@@ -479,6 +509,13 @@ export async function simulatorButton(
     throw "No active simulator session";
   }
 
+  // iOS hardware buttons go through the in-guest helper: the bridge's Indigo
+  // button messages send without error but never reach the device.
+  const consumerUsage = HID_CONSUMER_USAGE[button];
+  if (consumerUsage !== undefined) {
+    return sendButtonUsage(udid, HID_PAGE_CONSUMER, consumerUsage);
+  }
+
   const bridge = bridgesByUdid.get(udid);
   if (!bridge) {
     throw "Simulator bridge is not running";
@@ -494,10 +531,10 @@ export async function simulatorButton(
  * Send a raw keyboard event (down or up) to the active simulator.
  *
  * Unlike {@link simulatorButton}, this accepts an arbitrary macOS virtual
- * keycode and modifier flags with no name mapping and no automatic down+up
- * pairing.
+ * keycode with no name mapping and no automatic down+up pairing. Modifiers are
+ * sent as their own key events by the caller, so `modifierFlags` is unused.
  *
- * @throws string if there is no active session, or the bridge returns an error.
+ * @throws string if there is no active session, or the helper returns an error.
  */
 export async function simulatorKeyboard(
   udid: string,
@@ -509,19 +546,112 @@ export async function simulatorKeyboard(
     throw "No active simulator session";
   }
 
-  const bridge = bridgesByUdid.get(udid);
-  if (!bridge) {
-    throw "Simulator bridge is not running";
+  const usage = hidUsageForKeyCode(keyCode);
+  if (usage === null) {
+    throw `Keyboard failed: no HID usage for key code ${String(keyCode)}`;
   }
 
-  const response = await bridge.sendCommand({
-    cmd: "keyboard",
-    udid,
-    keyCode,
-    modifierFlags,
-    isDown,
-  });
-  if (!response.ok) {
-    throw `Keyboard failed: ${String(response.error ?? "unknown error")}`;
+  // Modifiers are plain key presses to the guest: hold them around the key so
+  // chords land, pressing before the key down and releasing after the key up.
+  const modifiers = modifierUsages(modifierFlags);
+  for (const modifier of isDown ? modifiers : []) {
+    await sendKeyUsage(udid, HID_PAGE_KEYBOARD, modifier, true);
   }
+  await sendKeyUsage(udid, HID_PAGE_KEYBOARD, usage, isDown);
+  for (const modifier of isDown ? [] : modifiers) {
+    await sendKeyUsage(udid, HID_PAGE_KEYBOARD, modifier, false);
+  }
+}
+
+/**
+ * Ask the bridge which panel it is capturing and how its contents are rotated.
+ * Null when nothing is being captured for this UDID.
+ */
+async function readDisplayInfo(udid: string): Promise<DisplayInfo | null> {
+  const bridge = bridgesByUdid.get(udid);
+  if (!bridge) {
+    return null;
+  }
+  try {
+    const res = await bridge.sendCommand({ cmd: "display_info" });
+    if (!res.ok) {
+      return null;
+    }
+
+    return {
+      width: res.width as number,
+      height: res.height as number,
+      screenID: res.screenID as number,
+      rotation: rotationForUiOrientation(res.uiOrientation as number),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Fold, orientation and captured-panel geometry for a simulator. */
+export async function simulatorDeviceState(
+  udid: string,
+): Promise<SimulatorDeviceState> {
+  return getSimulatorDeviceState(udid, await readDisplayInfo(udid));
+}
+
+/**
+ * Watch a captured device. The hinge and orientation can be moved from Device
+ * Hub or an agent's conductor call as easily as from Argus, so the view can
+ * only stay truthful by re-reading rather than trusting its own last write.
+ */
+const POLL_MS = 2000;
+const pollersByUdid = new Map<string, NodeJS.Timeout>();
+
+function startDeviceStatePolling(udid: string): void {
+  if (pollersByUdid.has(udid)) {
+    return;
+  }
+  const tick = () => {
+    simulatorDeviceState(udid)
+      .then(publishSimulatorDeviceState)
+      .catch((e) => warn(`[Simulator] device state poll failed:`, e));
+  };
+  const timer = setInterval(tick, POLL_MS);
+  timer.unref?.();
+  pollersByUdid.set(udid, timer);
+  tick();
+}
+
+function stopDeviceStatePolling(udid: string): void {
+  const timer = pollersByUdid.get(udid);
+  if (timer) {
+    clearInterval(timer);
+    pollersByUdid.delete(udid);
+  }
+}
+
+/**
+ * Move the hinge, then tell the bridge to re-pick the live panel. Folding
+ * swaps which display the system lights, and waiting for the capture to notice
+ * on its own leaves the view on a panel that just went dark.
+ */
+export async function simulatorSetFold(
+  udid: string,
+  pose: FoldPose | number,
+): Promise<SimulatorDeviceState> {
+  await setSimulatorFold(udid, pose);
+  await bridgesByUdid.get(udid)?.sendCommand({ cmd: "refresh_display" });
+  const state = await simulatorDeviceState(udid);
+  publishSimulatorDeviceState(state);
+
+  return state;
+}
+
+/** Rotate the device and publish the new orientation. */
+export async function simulatorSetOrientation(
+  udid: string,
+  orientation: DeviceOrientation,
+): Promise<SimulatorDeviceState> {
+  await setSimulatorOrientation(udid, orientation);
+  const state = await simulatorDeviceState(udid);
+  publishSimulatorDeviceState(state);
+
+  return state;
 }

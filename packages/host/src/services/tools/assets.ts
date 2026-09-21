@@ -23,6 +23,10 @@ const ASSET_SPECS: Record<string, AssetSpec> = {
     name: "argus-sim-bridge",
     source: "native/argus-sim-bridge/argus-sim-bridge",
   },
+  "argus-sim-input": {
+    name: "argus-sim-input",
+    source: "native/argus-sim-input/argus-sim-input",
+  },
   "scrcpy-server.jar": {
     name: "scrcpy-server.jar",
     source: "native/scrcpy-server/scrcpy-server.jar",

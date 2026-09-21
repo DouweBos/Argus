@@ -5,6 +5,9 @@ import styles from "./RuntimeView.module.css";
 
 const DRAG_THROTTLE_MS = 17;
 
+/** Clockwise degrees the stream is rotated by before it is presented. */
+export type StreamRotation = 0 | 90 | 180 | 270;
+
 interface CanvasStreamBodyProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   /** Input arbitration on the host. Omitted where nothing can contend for it. */
@@ -15,8 +18,31 @@ interface CanvasStreamBodyProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onKeyUp: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   onTouch: (x: number, y: number, eventType: number) => void;
+  /** Clockwise rotation applied to the canvas; touches are un-rotated to match. */
+  rotation?: StreamRotation;
   videoHeight: number;
   videoWidth: number;
+}
+
+/**
+ * Undo the presentation rotation, turning a point in the displayed image back
+ * into the stream's own coordinate space. Both are normalized to [0, 1].
+ */
+function unrotate(
+  x: number,
+  y: number,
+  rotation: StreamRotation,
+): { x: number; y: number } {
+  switch (rotation) {
+    case 90:
+      return { x: y, y: 1 - x };
+    case 180:
+      return { x: 1 - x, y: 1 - y };
+    case 270:
+      return { x: 1 - y, y: x };
+    default:
+      return { x, y };
+  }
 }
 
 /**
@@ -34,6 +60,7 @@ export function CanvasStreamBody({
   onTouch,
   onKeyDown,
   onKeyUp,
+  rotation = 0,
 }: CanvasStreamBodyProps) {
   const blocked = claim?.blocked ?? false;
   const takeControl = claim?.takeControl;
@@ -52,33 +79,31 @@ export function CanvasStreamBody({
         };
       }
 
+      // A quarter turn presents the stream with its axes swapped, so the
+      // on-screen box is fitted from the transposed size.
+      const quarterTurn = rotation === 90 || rotation === 270;
+      const shownW = quarterTurn ? videoHeight : videoWidth;
+      const shownH = quarterTurn ? videoWidth : videoHeight;
+
       const scale = Math.min(
-        containerRect.width / videoWidth,
-        containerRect.height / videoHeight,
+        containerRect.width / shownW,
+        containerRect.height / shownH,
       );
-      const renderedW = videoWidth * scale;
-      const renderedH = videoHeight * scale;
+      const renderedW = shownW * scale;
+      const renderedH = shownH * scale;
       const offsetX = (containerRect.width - renderedW) / 2;
       const offsetY = (containerRect.height - renderedH) / 2;
 
-      return {
-        x: Math.max(
-          0,
-          Math.min(
-            0.9999,
-            (e.clientX - containerRect.left - offsetX) / renderedW,
-          ),
-        ),
-        y: Math.max(
-          0,
-          Math.min(
-            0.9999,
-            (e.clientY - containerRect.top - offsetY) / renderedH,
-          ),
-        ),
-      };
+      const clamp = (v: number) => Math.max(0, Math.min(0.9999, v));
+      const shown = unrotate(
+        clamp((e.clientX - containerRect.left - offsetX) / renderedW),
+        clamp((e.clientY - containerRect.top - offsetY) / renderedH),
+        rotation,
+      );
+
+      return { x: clamp(shown.x), y: clamp(shown.y) };
     },
-    [videoWidth, videoHeight],
+    [videoWidth, videoHeight, rotation],
   );
 
   const handlePointerDown = useCallback(
@@ -156,6 +181,7 @@ export function CanvasStreamBody({
         <canvas
           ref={canvasRef}
           className={styles.canvas}
+          data-rotation={rotation}
           height={videoHeight || undefined}
           width={videoWidth || undefined}
         />

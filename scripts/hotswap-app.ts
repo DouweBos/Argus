@@ -314,6 +314,16 @@ if (
 }
 renameSync(staged, asarPath);
 rmSync(staging, { recursive: true, force: true });
+
+// The native helpers live beside the asar in extraResources, so a code change
+// that depends on a rebuilt one needs it copied across too.
+for (const binary of ["argus-sim-bridge", "argus-sim-input"]) {
+  const built = path.join(repoRoot, "native", binary, binary);
+  if (existsSync(built)) {
+    cpSync(built, path.join(resources, binary));
+  }
+}
+
 step(`Swapped into ${appPath}`);
 
 resign();

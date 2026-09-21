@@ -491,6 +491,10 @@ import {
   androidKeyboard,
   androidButton,
 } from "@argus/host/services/simulator/android";
+import type {
+  DeviceOrientation,
+  FoldPose,
+} from "@argus/host/services/simulator/deviceState";
 import { getDeviceInputEndpoint } from "@argus/host/services/simulator/deviceInput";
 import {
   checkIosTools,
@@ -502,7 +506,10 @@ import {
   stopSimulatorCapture,
   simulatorTouch,
   simulatorButton,
+  simulatorDeviceState,
   simulatorKeyboard,
+  simulatorSetFold,
+  simulatorSetOrientation,
 } from "@argus/host/services/simulator/ios";
 import { getAnonymousId } from "@argus/host/services/telemetry/anonymousId";
 import {
@@ -1826,6 +1833,18 @@ export function registerIpcHandlers(): void {
       a.x as number,
       a.y as number,
       a.eventType as number,
+    ),
+  );
+  toolHandle("simulator_device_state", "monitor", "device-control", (a) =>
+    simulatorDeviceState(a.udid as string),
+  );
+  toolHandle("simulator_set_fold", "admin", "device-control", (a) =>
+    simulatorSetFold(a.udid as string, a.pose as FoldPose),
+  );
+  toolHandle("simulator_set_orientation", "admin", "device-control", (a) =>
+    simulatorSetOrientation(
+      a.udid as string,
+      a.orientation as DeviceOrientation,
     ),
   );
   toolHandle("simulator_button", "admin", "device-control", (a) =>

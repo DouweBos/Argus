@@ -1626,6 +1626,50 @@ export function BlameIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+/** Rotate a device a quarter turn — a phone outline with a turn arrow. */
+export function RotateDeviceIcon({ size = 13, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="9" rx="1.4" width="6.5" x="2" y="5" />
+      <path d="M11 3.5a4.5 4.5 0 0 1 3 4.2" />
+      <path d="M9.4 4.9 11 3.4 12.5 5" />
+    </svg>
+  );
+}
+
+/** Fold state of a foldable device — two panels meeting at a hinge. */
+export function FoldIcon({ size = 13, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.6"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M8 2.5v11" />
+      <path d="M8 3.2 3 5v6l5 1.8" />
+      <path d="M8 3.2 13 5v6l-5 1.8" />
+    </svg>
+  );
+}
+
 export function UndoIcon({ size = 13, className, ...rest }: IconProps) {
   return (
     <svg

@@ -16,6 +16,15 @@ func SHStartFramebuffer(_ device: AnyObject, _ callback: FrameCallback) -> Int32
 @_silgen_name("SHStopFramebuffer")
 func SHStopFramebuffer()
 
+@_silgen_name("SHRefreshDisplay")
+func SHRefreshDisplay()
+
+@_silgen_name("SHDisplayInfo")
+func SHDisplayInfo(_ width: UnsafeMutablePointer<Int32>,
+                   _ height: UnsafeMutablePointer<Int32>,
+                   _ uiOrientation: UnsafeMutablePointer<UInt32>,
+                   _ screenID: UnsafeMutablePointer<UInt32>) -> Bool
+
 /// Start capturing the simulator framebuffer via CoreSimulator's IOSurface.
 /// Calls `callback` with JPEG bytes at ~30fps.
 /// Returns 0 on success, non-zero on failure.
@@ -42,6 +51,21 @@ func csStartFramebuffer(_ udid: UnsafePointer<CChar>, _ callback: @escaping Fram
 @_cdecl("cs_stop_framebuffer")
 func csStopFramebuffer() {
     SHStopFramebuffer()
+}
+
+/// Re-pick the live panel — call after the device's hinge moves.
+@_cdecl("cs_refresh_display")
+func csRefreshDisplay() {
+    SHRefreshDisplay()
+}
+
+/// Size and UI orientation of the panel currently being captured.
+func csDisplayInfo() -> (width: Int32, height: Int32,
+                         uiOrientation: UInt32, screenID: UInt32)? {
+    var w: Int32 = 0, h: Int32 = 0
+    var o: UInt32 = 0, id: UInt32 = 0
+    guard SHDisplayInfo(&w, &h, &o, &id) else { return nil }
+    return (w, h, o, id)
 }
 
 // MARK: - Indigo HID Touch Injection

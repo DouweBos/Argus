@@ -2,13 +2,14 @@ import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
-import { CanvasStreamBody } from "./CanvasStreamBody";
+import { type StreamRotation, CanvasStreamBody } from "./CanvasStreamBody";
 import styles from "./RuntimeView.module.css";
 
 interface StreamRenderProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   isConfigured: boolean;
   isReceiving: boolean;
+  rotation: StreamRotation;
   videoHeight: number;
   videoWidth: number;
 }
@@ -29,6 +30,8 @@ export interface IosDeviceStreamViewProps {
   placeholder: React.ReactNode;
   /** Override the default stream body (e.g. tvOS side-by-side remote layout). */
   renderStream?: (props: StreamRenderProps) => React.ReactNode;
+  /** Clockwise rotation the panel's contents need to sit upright. */
+  rotation?: StreamRotation;
   /**
    * When false, the floating bar is hidden. When true but the device session is
    * idle, the bar can still show session actions such as Run (see simulator
@@ -64,6 +67,7 @@ export function IosDeviceStreamView({
   toolsAvailable,
   toolsMissing,
   renderStream,
+  rotation = 0,
   udid,
   onKeyDown,
   onKeyUp,
@@ -116,6 +120,7 @@ export function IosDeviceStreamView({
           canvasRef,
           isReceiving,
           isConfigured,
+          rotation,
           videoWidth,
           videoHeight,
         })}
@@ -131,6 +136,7 @@ export function IosDeviceStreamView({
         claim={claim}
         isConfigured={isConfigured}
         isReceiving={isReceiving}
+        rotation={rotation}
         videoHeight={videoHeight}
         videoWidth={videoWidth}
         onKeyDown={onKeyDown}
