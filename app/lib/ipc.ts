@@ -50,6 +50,7 @@ import type {
   ReleaseNoteEntry,
   ReleaseNotePatternConfig,
   SessionReleaseNotesResult,
+  ShareReadiness,
   OnboardingConfigFile,
   OnboardingStep,
   PrereqId,
@@ -74,12 +75,13 @@ import type {
   TailscaleFixResult,
   Session,
   UploadedAttachment,
+  UserProjectSettings,
   DeviceOrientation,
   FoldPose,
   SimulatorDeviceState,
-  UserProjectSettings,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
+import { rehydrateShareError } from "./shareError";
 import { getTransportForCommand } from "./transport";
 import { runOnHost } from "./transport/hostRouting";
 
@@ -111,13 +113,17 @@ function invoke<T>(
   return getTransportForCommand(channel, args)
     .invoke<T>(channel, args)
     .catch((err: unknown) => {
-      // Rehydrate structured GitError payloads. Local IPC keeps the
+      // Rehydrate structured GitError / ShareError payloads. Local IPC keeps the
       // `__gitError` envelope as own props on the thrown Error; the gateway
       // carries it in the wire error's `data` field.
       const data = (err as { data?: unknown } | null)?.data;
       const gitErr = rehydrateGitError(data) ?? rehydrateGitError(err);
       if (gitErr) {
         throw gitErr;
+      }
+      const shareErr = rehydrateShareError(data) ?? rehydrateShareError(err);
+      if (shareErr) {
+        throw shareErr;
       }
       throw err;
     });
@@ -1697,6 +1703,13 @@ export const huddleStart = (
   agentId: string,
   deviceKey: string,
 ): Promise<HuddleRoom> => invoke("huddle_start", { agentId, deviceKey });
+
+/**
+ * Whether this Mac can hand out a link at all, asked before the user commits
+ * to sharing so a missing prerequisite is explained up front.
+ */
+export const huddleShareReadiness = (): Promise<ShareReadiness> =>
+  invoke("huddle_share_readiness");
 
 /**
  * Re-point a live room at the device the host now has open. Guests mirror the

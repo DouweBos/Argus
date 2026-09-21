@@ -9,6 +9,7 @@
  */
 
 import { createLogger } from "@argus/host/logger";
+import { ShareError } from "../remote/shareError";
 import { GitError, serializeGitError } from "../session/gitError";
 
 /**
@@ -74,8 +75,8 @@ export function defineCommand(name: string, options: CommandOptions): void {
 }
 
 /**
- * Run a command for a local transport: log what threw, and flatten `GitError`
- * into a plain `Error` carrying the structured payload as own enumerable props
+ * Run a command for a local transport: log what threw, and flatten structured
+ * errors into a plain `Error` carrying the payload as own enumerable props
  * (Electron preserves those across IPC). The gateway carries the same payload
  * in the wire error's `data` field, so it dispatches through `invokeCommand`.
  */
@@ -91,8 +92,9 @@ export async function dispatchCommand(
     return await definition.handler(args);
   } catch (err) {
     createLogger(`ipc:${name}`).error("handler threw:", err);
-    if (err instanceof GitError) {
-      const { message, ...rest } = serializeGitError(err);
+    if (err instanceof GitError || err instanceof ShareError) {
+      const { message, ...rest } =
+        err instanceof GitError ? serializeGitError(err) : err.toPayload();
       const wrapped = new Error(message);
       Object.assign(wrapped, rest);
       throw wrapped;

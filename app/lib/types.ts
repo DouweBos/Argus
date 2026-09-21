@@ -1,3 +1,4 @@
+import type { ShareErrorPayload } from "./shareError";
 import type { ReportBlock } from "@argus/remote-protocol";
 
 export interface Session {
@@ -1503,6 +1504,12 @@ export type {
   HuddleGuestState,
   HuddleRoom,
 } from "@argus/remote-protocol";
+
+/** Whether sharing can mint a link, and what's in the way when it can't. */
+export interface ShareReadiness {
+  blocker?: ShareErrorPayload;
+  ready: boolean;
+}
 
 /** Named hinge poses for a foldable simulator (iPhone Duo). */
 export type FoldPose = "book" | "closed" | "open" | "partial";

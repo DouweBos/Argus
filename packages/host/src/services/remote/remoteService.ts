@@ -30,7 +30,9 @@ import {
 import { endAllRooms } from "./huddle";
 import { startLocalGateway, stopLocalGateway } from "./localGatewayServer";
 import { probeGatewayUrl } from "./reachability";
+import { cloudflaredMissingError, quickTunnelError } from "./shareError";
 import {
+  binaryOnPath,
   getTunnelState,
   markTunnelReachability,
   getTunnelStates,
@@ -362,13 +364,13 @@ function waitForTunnelUrl(
 
 function quickTunnelFailure(reasons: string[]): Error {
   const detail = reasons.filter(Boolean).join("\n");
+  // A missing binary has one fix and reads nothing like a flaky tunnel, so it
+  // gets its own explanation rather than the rate-limit one.
+  if (!binaryOnPath("cloudflared")) {
+    return cloudflaredMissingError(detail || undefined);
+  }
 
-  return new Error(
-    `Couldn't get a public link:\n${detail}\n` +
-      "Cloudflare rate-limits and rotates its free quick tunnels. Wait a minute " +
-      "and try again, or set up Tailscale or a named Cloudflare tunnel in " +
-      "Settings → Remote access for a link that doesn't depend on them.",
-  );
+  return quickTunnelError(detail);
 }
 
 /** Why a URL that exists still isn't usable, in terms the user can act on. */

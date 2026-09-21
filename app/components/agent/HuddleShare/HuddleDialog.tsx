@@ -1,5 +1,5 @@
 import type { GuestListItem } from "@argus/peacock";
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   Banner,
   Button,
@@ -7,6 +7,7 @@ import {
   Dialog,
   GuestList,
   Icons,
+  SetupBlocker,
   Spinner,
 } from "@argus/peacock";
 import { shareableDeviceKey } from "../../../lib/huddleDevice";
@@ -14,11 +15,18 @@ import {
   huddleApproveGuest,
   huddleDenyGuest,
   huddleRemoveGuest,
+  huddleShareReadiness,
   huddleStart,
   huddleStop,
 } from "../../../lib/ipc";
+import {
+  genericShareError,
+  rehydrateShareError,
+  type ShareError,
+} from "../../../lib/shareError";
 import { findDevice } from "../../../stores/deviceStore";
 import { useHuddleRoomForAgent } from "../../../stores/huddleStore";
+import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useRuntimeTargetState } from "../../../stores/simulatorStore";
 import styles from "./HuddleDialog.module.css";
 import { ShareDisclosure } from "./shareDisclosure";
@@ -45,7 +53,7 @@ export function HuddleDialog({
   const titleId = useId();
   const room = useHuddleRoomForAgent(agentId);
   const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [blocker, setBlocker] = useState<ShareError | null>(null);
 
   const target = useRuntimeTargetState(sessionId);
   const deviceKey = useMemo(
@@ -70,14 +78,32 @@ export function HuddleDialog({
     [room, drivingLabel],
   );
 
+  // Ask before the user commits: a missing `cloudflared` is a two-minute
+  // install, and finding that out after a spinner helps nobody.
+  const preflight = useCallback(() => {
+    huddleShareReadiness()
+      .then((readiness) => {
+        setBlocker(
+          readiness.blocker
+            ? (rehydrateShareError(readiness.blocker) ?? null)
+            : null,
+        );
+      })
+      .catch(() => setBlocker(null));
+  }, []);
+
+  useEffect(() => {
+    if (!room) {
+      preflight();
+    }
+  }, [room, preflight]);
+
   const start = useCallback(() => {
     setStarting(true);
-    setError(null);
+    setBlocker(null);
     huddleStart(agentId, deviceKey)
       .catch((err: unknown) => {
-        setError(
-          err instanceof Error ? err.message : "Could not get a share link.",
-        );
+        setBlocker(rehydrateShareError(err) ?? genericShareError(err));
       })
       .finally(() => setStarting(false));
   }, [agentId, deviceKey]);
@@ -106,7 +132,33 @@ export function HuddleDialog({
               sharing if you want guests to drive it.
             </Banner>
           )}
-          {error && <Banner tone="error">{error}</Banner>}
+          {blocker && (
+            <SetupBlocker
+              actions={
+                <>
+                  <Button size="sm" variant="secondary" onClick={preflight}>
+                    Check again
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => showSettingsDialog("remote-access")}
+                  >
+                    Open Remote access
+                  </Button>
+                </>
+              }
+              alternative={blocker.alternative}
+              command={blocker.command}
+              detail={blocker.detail}
+              explanation={blocker.explanation}
+              steps={blocker.steps}
+              title={blocker.message}
+              tone={
+                blocker.kind === "quick-tunnel-failed" ? "warning" : "error"
+              }
+            />
+          )}
         </div>
         <div className={styles.footer}>
           <Button variant="secondary" onClick={onClose}>
