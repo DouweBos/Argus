@@ -71,7 +71,11 @@ export type RemoteMethod =
   | "automations.runs"
   | "automations.run"
   | "automations.run_now"
-  | "automations.cancel_run";
+  | "automations.cancel_run"
+  | "automations.mark_run_read"
+  | "proposals.list"
+  | "proposals.accept"
+  | "proposals.dismiss";
 
 export type RemotePlatform = "ios" | "android";
 
@@ -411,6 +415,8 @@ export interface RemoteAutomationRun {
   finished_at: number | null;
   cost_usd: number | null;
   error: string | null;
+  /** It wrote a report, nobody has read it, and nothing newer has replaced it. */
+  unread_report: boolean;
   host_session_id: string | null;
   host_agent_id: string | null;
 }
@@ -447,4 +453,31 @@ export interface RemoteAutomationRunDetail {
   run: RemoteAutomationRun;
   report_blocks: RemoteReportBlock[] | null;
   report_markdown: string | null;
+}
+
+/** What a proposal's one button does. `start_session` spins up a worktree. */
+export interface RemoteProposalCta {
+  kind: "open_url" | "start_session";
+  label: string;
+  url: string | null;
+}
+
+/** One thing an automation wants you to decide on. Names resolved by the computer. */
+export interface RemoteProposal {
+  id: string;
+  automation_id: string;
+  automation_name: string;
+  title: string;
+  summary: string;
+  rationale: string;
+  /** 0..1, self-reported by the run's agent. */
+  confidence: number;
+  cta: RemoteProposalCta | null;
+  status: "accepted" | "auto_started" | "dismissed" | "pending";
+  /** Project name, never a path. */
+  project: string | null;
+  source_label: string | null;
+  source_url: string | null;
+  session_id: string | null;
+  created_at: number;
 }

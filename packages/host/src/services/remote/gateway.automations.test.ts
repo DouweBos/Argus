@@ -315,6 +315,8 @@ describe("the typed automations methods", () => {
     expect(tier("automations.list")).toBe("monitor");
     expect(tier("automations.runs")).toBe("monitor");
     expect(tier("automations.run")).toBe("monitor");
+    // Clearing a report is recording that you read it, nothing more.
+    expect(tier("automations.mark_run_read")).toBe("monitor");
     // Firing one starts an agent on the host, which is code execution.
     expect(tier("automations.run_now")).toBe("control");
     expect(tier("automations.cancel_run")).toBe("control");
@@ -323,6 +325,29 @@ describe("the typed automations methods", () => {
   /** A guest is handed one agent, never the clock that could start more. */
   it("denies every one of them to a scoped grant", () => {
     for (const method of TYPED_AUTOMATION_METHODS) {
+      expect(METHOD_SCOPE[method].kind).toBe("denied");
+    }
+  });
+});
+
+/** The inbox over the wire: reading it is one thing, deciding is another. */
+describe("the typed proposals methods", () => {
+  const PROPOSAL_METHODS = ALL_REMOTE_METHODS.filter((m) =>
+    m.startsWith("proposals."),
+  );
+
+  it("reads at monitor and decides at control", () => {
+    const tier = (m: RemoteMethod) => REMOTE_METHODS[m];
+
+    expect(tier("proposals.list")).toBe("monitor");
+    // Accepting builds a worktree and starts an agent; dismissing writes the
+    // signal that calibrates the automation. Neither is a read.
+    expect(tier("proposals.accept")).toBe("control");
+    expect(tier("proposals.dismiss")).toBe("control");
+  });
+
+  it("denies every one of them to a scoped grant", () => {
+    for (const method of PROPOSAL_METHODS) {
       expect(METHOD_SCOPE[method].kind).toBe("denied");
     }
   });

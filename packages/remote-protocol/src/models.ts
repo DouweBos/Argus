@@ -461,8 +461,61 @@ export const RemoteAutomationRun = z.object({
   finished_at: z.number().nullable(),
   cost_usd: z.number().nullable(),
   error: z.string().nullable(),
+  /** It wrote a report, nobody has read it, and nothing newer has replaced it. */
+  unread_report: z.boolean(),
   /** The run's own session, so a client can open the agent that did the work. */
   host_session_id: z.string().nullable(),
   host_agent_id: z.string().nullable(),
 });
 export type RemoteAutomationRun = z.infer<typeof RemoteAutomationRun>;
+
+// --- Proposals -------------------------------------------------------------
+
+/** The one action a proposal asks for. `start_session` is the only one that works. */
+export const RemoteProposalCta = z.object({
+  kind: z.enum(["open_url", "start_session"]),
+  /** Button text, written by the run: "Start", "Open PR #6478". */
+  label: z.string(),
+  /** Where `open_url` goes. Null for `start_session`. */
+  url: z.string().nullable(),
+});
+export type RemoteProposalCta = z.infer<typeof RemoteProposalCta>;
+
+export const RemoteProposalStatus = z.enum([
+  "accepted",
+  "auto_started",
+  "dismissed",
+  "pending",
+]);
+export type RemoteProposalStatus = z.infer<typeof RemoteProposalStatus>;
+
+/**
+ * One thing an automation wants you to decide on, as a phone needs it.
+ *
+ * The automation's name and the project's are resolved host-side for the same
+ * reason the run's is: a phone has no automations file to join against, and no
+ * business knowing a path on someone else's disk.
+ */
+export const RemoteProposal = z.object({
+  id: z.string(),
+  automation_id: z.string(),
+  automation_name: z.string(),
+  title: z.string(),
+  /** What the work is, in markdown. */
+  summary: z.string(),
+  /** Why the run ranked it where it did. */
+  rationale: z.string(),
+  /** 0..1, self-reported by the run's agent. */
+  confidence: z.number(),
+  cta: RemoteProposalCta.nullable(),
+  status: RemoteProposalStatus,
+  /** Project the work would happen in, by name. Null when it maps to none. */
+  project: z.string().nullable(),
+  /** The work item it came from, e.g. `acme/app#412`, and where it lives. */
+  source_label: z.string().nullable(),
+  source_url: z.string().nullable(),
+  /** Set once it has been started — the session doing the work. */
+  session_id: z.string().nullable(),
+  created_at: z.number(),
+});
+export type RemoteProposal = z.infer<typeof RemoteProposal>;

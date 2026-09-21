@@ -24,6 +24,7 @@ import {
   RemoteMessage,
   RemotePermissionRequest,
   RemoteProject,
+  RemoteProposal,
   RemoteQueuedMessage,
   RemoteSession,
   RemoteStoppedAgent,
@@ -266,6 +267,20 @@ export const MethodParams = {
   "automations.run": z.object({ run_id: z.string() }),
   "automations.run_now": z.object({ automation_id: z.string() }),
   "automations.cancel_run": z.object({ run_id: z.string() }),
+  "automations.mark_run_read": z.object({ run_id: z.string() }),
+  "proposals.list": z.object({
+    /** Omit for everything; the inbox asks for `pending`. */
+    status: z
+      .enum(["accepted", "auto_started", "dismissed", "pending"])
+      .optional(),
+    limit: z.number().int().positive().max(100).optional(),
+  }),
+  "proposals.accept": z.object({ proposal_id: z.string() }),
+  "proposals.dismiss": z.object({
+    proposal_id: z.string(),
+    /** Kept verbatim — it is what teaches the automation. */
+    reason: z.string().optional(),
+  }),
 } as const;
 
 // --- Result payloads per method --------------------------------------------
@@ -400,6 +415,16 @@ export const MethodResult = {
   /** The run record as created — it is still queued when this returns. */
   "automations.run_now": z.object({ run: RemoteAutomationRun }),
   "automations.cancel_run": z.object({ accepted: z.boolean() }),
+  /** The run as it now stands — read. */
+  "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
+  "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),
+  /** The session the accepted proposal is now being worked in. */
+  "proposals.accept": z.object({
+    proposal: RemoteProposal,
+    session_id: z.string(),
+    agent_id: z.string(),
+  }),
+  "proposals.dismiss": z.object({ proposal: RemoteProposal }),
 } as const;
 
 // --- Envelopes -------------------------------------------------------------

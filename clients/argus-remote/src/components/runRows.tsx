@@ -72,8 +72,15 @@ export function RunRow({
   const theme = useTheme();
 
   return (
-    <Card onPress={onPress} style={{ paddingVertical: 10 }}>
+    <Card
+      onPress={onPress}
+      style={{ paddingVertical: 10 }}
+      tone={run.unread_report ? "accent" : undefined}
+    >
       <Row gap={9}>
+        {run.unread_report ? (
+          <StatusDot tone="accent" size={6} accessibilityLabel="Unread report" />
+        ) : null}
         <Badge label={run.status} tone={runTone(run.status)} />
         <View style={{ flex: 1, gap: 2 }}>
           {showName ? (

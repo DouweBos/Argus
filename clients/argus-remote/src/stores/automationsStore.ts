@@ -33,6 +33,8 @@ interface AutomationsState {
   clear: () => void;
   refresh: () => Promise<void>;
   loadRun: (runId: string) => Promise<void>;
+  /** Reading a report clears it on the computer too — there is one inbox. */
+  markRunRead: (runId: string) => Promise<void>;
   runNow: (automationId: string) => Promise<void>;
   cancelRun: (runId: string) => Promise<void>;
 }
@@ -94,6 +96,27 @@ export const useAutomationsStore = create<AutomationsState>((set, get) => ({
       set((s) => ({ detailByRun: { ...s.detailByRun, [runId]: detail } }));
     } catch (err) {
       set({ error: message(err) });
+    }
+  },
+
+  markRunRead: async (runId) => {
+    const t = useAppStore.getState().transport;
+    if (!t) {
+      return;
+    }
+    try {
+      const { run } = await t.request<{ run: RemoteAutomationRun }>(
+        "automations.mark_run_read",
+        { run_id: runId },
+      );
+      set((s) => ({
+        runs: s.runs.map((r) => (r.id === run.id ? run : r)),
+        detailByRun: s.detailByRun[runId]
+          ? { ...s.detailByRun, [runId]: { ...s.detailByRun[runId], run } }
+          : s.detailByRun,
+      }));
+    } catch {
+      // Losing a read receipt is not worth a banner — the next open retries.
     }
   },
 

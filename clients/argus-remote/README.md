@@ -17,6 +17,13 @@ desktop gateway, not this UI.
 run's report, reached from the Automations button on the projects screen.
 Watching is `monitor`; **Run now** and **Cancel** need `control`, because
 firing one starts an agent on the computer. Authoring stays on the desktop.
+An unread report is dotted in the run list, and opening it here marks it read
+on the computer too.
+
+**Inbox.** What the automations are proposing, reached from the Inbox button
+next to it. Reading is `monitor`; **Start** and **Dismiss** need `control` —
+starting one builds a worktree and puts an agent in it, and the dismiss reason
+is what calibrates the automation.
 
 Native iOS/Android. The crypto/transport/protocol modules under `src/lib` mirror
 the desktop's byte-for-byte, so they interoperate by construction.
