@@ -16,7 +16,6 @@ import {
   type ScrollViewInstance,
 } from "react-native";
 import Animated, {
-  runOnUI,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -68,7 +67,7 @@ export function ImageViewer() {
   // Jump to the tapped image once the pager has its width.
   useEffect(() => {
     if (open && index !== null) {
-      runOnUI(setDismissProgress)(0, false);
+      dismissProgress.value = 0;
       scrollRef.current?.scrollTo({ x: index * width, animated: false });
     }
   }, [open, index, width, dismissProgress]);
