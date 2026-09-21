@@ -1,5 +1,13 @@
 # argus
 
+## 0.47.0
+
+### Minor Changes
+
+- 256e8c8: Proposals on home are now short summaries that open a full proposal page, where the summary, rationale and the decision itself live.
+
+  Proposals mentioned in an automation's report now link straight to that proposal.
+
 ## 0.46.0
 
 ### Minor Changes

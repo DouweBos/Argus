@@ -1,10 +1,7 @@
 
 ### Minor Changes
 
-- 844011e: Automations show their trail in the window title bar — Argus · Automations · the automation · the run — instead of a back link inside the page, and every step is clickable. The session an automation run spawns its agent into now sits under that run too, rather than looking like one of your own worktrees.
+- 256e8c8: Proposals on home are now short summaries that open a full proposal page, where the summary, rationale and the decision itself live.
 
-### Patch Changes
-
-- Updated dependencies [844011e]
-  - @argus/peacock@0.15.0
+  Proposals mentioned in an automation's report now link straight to that proposal.
 
