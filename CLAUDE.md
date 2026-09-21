@@ -7,6 +7,7 @@ Electron agentic IDE for mobile development. Multiple Claude Code agents work in
 - `pnpm dev` — Vite + Electron (concurrently)
 - `pnpm build` — type-check + Vite + electron TS compile
 - `pnpm build:app` — build + electron-builder (.app/.dmg)
+- `pnpm hotswap` — build, splice into the installed `/Applications/Argus.app`, re-sign, and relaunch it (`--no-restart`, `--no-build`, `--web`; `ARGUS_APP`/`ARGUS_SIGN_IDENTITY` to retarget). Needs the Developer ID cert in the keychain — writing to the asar breaks the sealed-resource hash and macOS rejects the app as damaged without a re-sign. Agents can run this to ship their own change into the live app; the relaunch is detached, so it survives the app going down.
 - `pnpm lint` — `tsc --noEmit && eslint && prettier --check`
 - `pnpm storybook` — Peacock design system at :6006
 - Tooling via `mise.toml` (node 24, pnpm 10)
