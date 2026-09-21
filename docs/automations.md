@@ -185,6 +185,22 @@ A run asks for work by calling `emit_proposal`: a title, a summary, a rationale,
 a self-reported confidence, the project it applies to, and what it thinks should
 happen (`start_session`, `review`, `needs_info` or `ignore`).
 
+It also writes the proposal's **call to action** — the button you see in the
+inbox. Not everything a run finds is code to write, so the run says which of
+these it is:
+
+| `cta`                                        | Button            | What pressing it does                 |
+| -------------------------------------------- | ----------------- | ------------------------------------- |
+| `{ kind: "start_session", label: "Start" }`  | **Start**         | Creates the worktree and starts a run |
+| `{ kind: "open_url", label: "…", url: "…" }` | The run's wording | Opens the link in your browser        |
+| omitted                                      | none              | Only **Dismiss** — nothing to act on  |
+
+A proposal that names no `cta` falls back to **Start** when it recommends
+`start_session` and has a project, to opening its source item when it has one,
+and to no button at all otherwise. A proposal whose action is not
+`start_session` cannot be started — the session it would create would have
+nothing to do.
+
 Argus decides what happens next, synchronously, and the answer comes back in the
 tool result so the run can report what actually happened:
 
@@ -192,8 +208,8 @@ tool result so the run can report what actually happened:
   session slot is free and the budget holds. Argus creates the worktree session
   and prompts an agent with the proposal.
 - **Pending** — anything else. It waits in `/inbox` with the reason. You press
-  **Start** and get the same session you would have got, or **Dismiss** and the
-  reason is kept.
+  its button — **Start** and get the same session you would have got, or
+  whatever the run asked you to open — or **Dismiss**, and the reason is kept.
 
 The Inbox groups by what you would do about it, not by which automation produced
 it: proposals to decide on, work that was started and is waiting for review, and

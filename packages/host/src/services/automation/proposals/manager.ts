@@ -7,13 +7,18 @@
 import type { CreateProposalInput, Proposal, ProposalStatus } from "./models";
 import crypto from "node:crypto";
 import { emitHostEvent } from "@argus/host/bus";
+import { resolveCta } from "./cta";
 import { loadProposals, saveProposals } from "./store";
 
 let proposals: Proposal[] | null = null;
 
 function cache(): Proposal[] {
   if (!proposals) {
-    proposals = loadProposals();
+    // Proposals written before the CTA existed still have to render a button.
+    proposals = loadProposals().map((p) => ({
+      ...p,
+      cta: resolveCta(p.cta, p),
+    }));
   }
 
   return proposals;
@@ -80,6 +85,11 @@ export function createProposal(input: CreateProposalInput): Proposal {
     confidence: clampConfidence(input.confidence),
     rationale: input.rationale.trim(),
     recommended_action: input.recommended_action,
+    cta: resolveCta(input.cta, {
+      recommended_action: input.recommended_action,
+      repo_root: input.repo_root ?? null,
+      source_ref: input.source_ref ?? null,
+    }),
     source_ref: input.source_ref ?? null,
     repo_root: input.repo_root ?? null,
     // P2 has no autonomy ladder, so every proposal waits for a human.

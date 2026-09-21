@@ -6,6 +6,13 @@ import { ConfidenceMeter } from "../ConfidenceMeter/ConfidenceMeter";
 import { Input } from "../Input/Input";
 import styles from "./ProposalCard.module.css";
 
+export interface ProposalCardAction {
+  /** `start` spins up work; `open` sends the user somewhere. */
+  kind: "open" | "start";
+  label: string;
+  onClick: () => void;
+}
+
 export interface ProposalCardProps {
   /** Disables every action while one is in flight. */
   busy?: boolean;
@@ -16,7 +23,12 @@ export interface ProposalCardProps {
   onDismiss: (reason: string) => void;
   /** Absent when the proposal came from no external work item. */
   onOpenSource?: () => void;
-  onStart: () => void;
+  /**
+   * The one action the proposal is asking for. Omit it when there is nothing
+   * to do but dismiss — an offer to start work that does not exist is worse
+   * than no button.
+   */
+  primary?: ProposalCardAction;
   /** Why the run ranked it where it did. Shown under the summary. */
   rationale?: string;
   /** External work item this came from, e.g. `plexinc/app#412`. */
@@ -26,10 +38,11 @@ export interface ProposalCardProps {
 }
 
 /**
- * One thing an automation wants you to decide on. Exactly three actions:
- * start it, dismiss it (with an optional reason), or open the issue it came
- * from. The dismiss reason is a one-line inline field, never a dialog — it is
- * the signal that teaches the automation, so asking for it must cost nothing.
+ * One thing an automation wants you to decide on. At most three actions: the
+ * one the proposal asks for, dismiss it (with an optional reason), or open the
+ * issue it came from. The dismiss reason is a one-line inline field, never a
+ * dialog — it is the signal that teaches the automation, so asking for it must
+ * cost nothing.
  */
 export function ProposalCard({
   busy,
@@ -37,7 +50,7 @@ export function ProposalCard({
   meta,
   onDismiss,
   onOpenSource,
-  onStart,
+  primary,
   rationale,
   sourceLabel,
   summary,
@@ -104,14 +117,22 @@ export function ProposalCard({
         </div>
       ) : (
         <div className={styles.actions}>
-          <Button
-            disabled={busy}
-            leading={<PlayIcon size={11} />}
-            onClick={onStart}
-            size="sm"
-          >
-            Start
-          </Button>
+          {primary && (
+            <Button
+              disabled={busy}
+              leading={
+                primary.kind === "start" ? (
+                  <PlayIcon size={11} />
+                ) : (
+                  <ArrowUpRightIcon size={11} />
+                )
+              }
+              onClick={primary.onClick}
+              size="sm"
+            >
+              {primary.label}
+            </Button>
+          )}
           <Button
             disabled={busy}
             onClick={() => setDismissing(true)}

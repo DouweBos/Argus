@@ -923,12 +923,29 @@ export interface ProposalSourceRef {
   url: string;
 }
 
+/**
+ * What the proposal's primary button does. `start_session` is the only kind
+ * that spins up a worktree — everything else sends the user somewhere.
+ */
+export type ProposalCtaKind = "open_url" | "start_session";
+
+/** The one action a proposal is asking for, as rendered in the inbox. */
+export interface ProposalCta {
+  kind: ProposalCtaKind;
+  /** Button text, written by the run: "Start", "Open PR #6478". */
+  label: string;
+  /** Where `open_url` goes. Null for `start_session`. */
+  url: string | null;
+}
+
 /** One thing an automation run wants you to do. */
 export interface Proposal {
   automation_id: string;
   /** 0..1, self-reported by the run's agent. */
   confidence: number;
   created_at: number;
+  /** Primary action. Null when the only thing to do is read it and dismiss. */
+  cta: ProposalCta | null;
   /** Why it was dismissed, verbatim. */
   dismissed_reason: string | null;
   id: string;

@@ -54,6 +54,7 @@ function proposal(patch: Partial<Proposal> = {}): Proposal {
     confidence: 0.9,
     rationale: "Two-line fix.",
     recommended_action: "start_session",
+    cta: { kind: "start_session", label: "Start", url: null },
     source_ref: {
       external_id: "argus#412",
       source_id: "github",

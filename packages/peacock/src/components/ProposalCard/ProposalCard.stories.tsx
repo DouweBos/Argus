@@ -13,7 +13,7 @@ const meta: Meta<typeof ProposalCard> = {
     rationale: "Two-line fix, the failing path is already covered by a test.",
     confidence: 0.9,
     sourceLabel: "argus#412",
-    onStart: () => undefined,
+    primary: { kind: "start", label: "Start", onClick: () => undefined },
     onDismiss: () => undefined,
     onOpenSource: () => undefined,
     meta: (
@@ -37,6 +37,37 @@ export const Unsure: Story = {
     rationale: "No clear owner and the logs disagree — this may need a human.",
     confidence: 0.35,
     meta: <Badge tone="warning">needs info</Badge>,
+  },
+};
+
+/** The next move is a human's, so the card says so instead of offering work. */
+export const OpensSomething: Story = {
+  args: {
+    title: "Get PR #6478 reviewed and merged",
+    summary:
+      "The work is already written and mergeable. It has been sitting at REVIEW_REQUIRED with no human review.",
+    rationale: "Someone else is waiting on it and no code needs writing.",
+    confidence: 0.6,
+    sourceLabel: "STR-3486",
+    primary: {
+      kind: "open",
+      label: "Open PR #6478",
+      onClick: () => undefined,
+    },
+    meta: <Badge tone="accent">worth a review</Badge>,
+  },
+};
+
+/** Nothing to do but read it. Dismiss is the only action. */
+export const NothingToStart: Story = {
+  args: {
+    title: "Two Roku tickets are tracking the same campaignId change",
+    summary: "Noted so the duplicate does not surprise anyone at standup.",
+    confidence: 0.5,
+    primary: undefined,
+    onOpenSource: undefined,
+    sourceLabel: undefined,
+    meta: <Badge tone="neutral">suggests ignoring</Badge>,
   },
 };
 

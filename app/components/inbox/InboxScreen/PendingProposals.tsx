@@ -1,5 +1,5 @@
 import type { Proposal, ProposalAction } from "../../../lib/types";
-import type { BadgeTone } from "@argus/peacock";
+import type { BadgeTone, ProposalCardAction } from "@argus/peacock";
 import { useState } from "react";
 import { Badge, ProposalCard } from "@argus/peacock";
 import { openExternalUrl } from "../../../lib/ipc";
@@ -56,6 +56,38 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
     }
   };
 
+  // The run writes the CTA, so the button says what it is actually for — and
+  // a proposal with nothing to start offers nothing to start.
+  const primaryAction = (
+    proposal: Proposal,
+  ): ProposalCardAction | undefined => {
+    const cta = proposal.cta;
+    if (!cta) {
+      return undefined;
+    }
+    if (cta.kind === "start_session") {
+      return {
+        kind: "start",
+        label: cta.label,
+        onClick: () => {
+          start(proposal).catch(() => undefined);
+        },
+      };
+    }
+    const url = cta.url;
+
+    return url
+      ? {
+          kind: "open",
+          label: cta.label,
+          // Client-side by design, same as the source link below.
+          onClick: () => {
+            openExternalUrl(url).catch(() => undefined);
+          },
+        }
+      : undefined;
+  };
+
   return (
     <div className={styles.cards}>
       {proposals.map((proposal) => {
@@ -91,9 +123,7 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
                   }
                 : undefined
             }
-            onStart={() => {
-              start(proposal).catch(() => undefined);
-            }}
+            primary={primaryAction(proposal)}
             rationale={proposal.rationale || undefined}
             sourceLabel={source?.external_id}
             summary={proposal.summary}
