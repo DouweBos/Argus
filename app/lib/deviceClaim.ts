@@ -47,5 +47,7 @@ export function claimDenial(err: unknown): RemoteDeviceClaimState | null {
   return {
     device_id: data.device_id,
     holder: holder === null ? null : (holder as unknown as RemoteDeviceClaim),
+    // A refusal says who holds the device, not who else is queueing for it.
+    waiting: [],
   };
 }

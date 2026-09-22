@@ -215,7 +215,7 @@ describe("a scoped connection's broadcast events", () => {
 
     expect(events(g.fromGateway, "device.claim")).toEqual([
       expect.objectContaining({
-        payload: { device_id: "udid-1", holder: null },
+        payload: expect.objectContaining({ device_id: "udid-1", holder: null }),
       }),
     ]);
   });

@@ -103,3 +103,26 @@ export const SomeoneTyping: Story = {
     onRemove: () => {},
   },
 };
+
+/** One guest has the device and another is tapping at it getting nowhere. */
+export const WaitingForTheDevice: Story = {
+  args: {
+    guests: [
+      {
+        id: "a",
+        label: "Ana",
+        state: "approved",
+        connected: true,
+        driving: true,
+      },
+      {
+        id: "b",
+        label: "Chris",
+        state: "approved",
+        connected: true,
+        waiting: true,
+      },
+    ],
+    onRemove: () => {},
+  },
+};

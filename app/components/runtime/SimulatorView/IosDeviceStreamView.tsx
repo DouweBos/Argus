@@ -134,6 +134,7 @@ export function IosDeviceStreamView({
       <CanvasStreamBody
         canvasRef={canvasRef}
         claim={claim}
+        deviceKey={udid}
         isConfigured={isConfigured}
         isReceiving={isReceiving}
         rotation={rotation}

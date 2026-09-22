@@ -10,6 +10,7 @@ import type {
   ChatHistorySearchResult,
   SavedConversation,
 } from "./chatHistory";
+import type { RemoteDeviceClaimState } from "./deviceClaim";
 import type {
   AgentStatus,
   AndroidDevice,
@@ -1748,6 +1749,16 @@ export const huddleRemoveGuest = (
 ): Promise<boolean> => invoke("huddle_remove_guest", { roomId, devStaticPub });
 
 /** Every live room. Rooms are in memory, so this is empty after a restart. */
+/**
+ * Who holds input on one of this machine's devices, and who has just been
+ * refused it. Only meaningful while the device is shared — nothing arbitrates
+ * the engineer's own touches.
+ */
+export const deviceClaimStatus = (
+  deviceId: string,
+): Promise<RemoteDeviceClaimState> =>
+  invoke("device_claim_status", { deviceId });
+
 /**
  * Say something to the room. The huddle's side chat only — it never reaches the
  * agent, so a note to a colleague doesn't become a prompt.

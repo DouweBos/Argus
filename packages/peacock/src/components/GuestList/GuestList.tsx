@@ -21,6 +21,11 @@ export interface GuestListItem {
   driving?: boolean;
   /** Composing a message right now — replaces the status line while it lasts. */
   typing?: boolean;
+  /**
+   * Their input is being refused because `driving` belongs to someone else —
+   * they are tapping at a picture that isn't answering.
+   */
+  waiting?: boolean;
 }
 
 export interface GuestListProps {
@@ -105,6 +110,11 @@ export function GuestList({
               {guest.driving && (
                 <Badge size="pill" tone="accent">
                   Driving the device
+                </Badge>
+              )}
+              {guest.waiting && !guest.driving && (
+                <Badge size="pill" tone="warning">
+                  Waiting for the device
                 </Badge>
               )}
             </span>

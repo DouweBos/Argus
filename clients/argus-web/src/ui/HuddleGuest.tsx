@@ -25,6 +25,7 @@ import {
   type HuddlePane,
   type HuddleView,
 } from "../lib/huddleSession";
+
 import { readGuestLabel, rememberGuestLabel } from "../lib/huddleIdentity";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";

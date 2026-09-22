@@ -310,6 +310,12 @@ export type RemoteDeviceClaim = z.infer<typeof RemoteDeviceClaim>;
 export const RemoteDeviceClaimState = z.object({
   device_id: z.string(),
   holder: RemoteDeviceClaim.nullable(),
+  /**
+   * Clients whose input was refused a moment ago because someone else holds
+   * the device — they are tapping at a picture that isn't answering. Short
+   * lived: someone who has stopped trying stops being listed.
+   */
+  waiting: z.array(RemoteDeviceClaim).default([]),
 });
 export type RemoteDeviceClaimState = z.infer<typeof RemoteDeviceClaimState>;
 

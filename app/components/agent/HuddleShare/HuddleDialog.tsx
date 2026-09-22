@@ -12,6 +12,7 @@ import {
   SetupBlocker,
   Spinner,
 } from "@argus/peacock";
+import { useSharedDeviceDrivers } from "../../../hooks/useSharedDeviceDrivers";
 import { shareableDeviceKey } from "../../../lib/huddleDevice";
 import {
   huddleApproveGuest,
@@ -32,7 +33,6 @@ import { showSettingsDialog } from "../../../stores/settingsStore";
 import { useRuntimeTargetState } from "../../../stores/simulatorStore";
 import styles from "./HuddleDialog.module.css";
 import { ShareDisclosure } from "./shareDisclosure";
-import { useClaimHolderLabel } from "./useClaimHolderLabel";
 import { useHostName } from "./useHostName";
 import { useHuddleInvite } from "./useHuddleInvite";
 
@@ -68,7 +68,9 @@ export function HuddleDialog({
   const deviceName = sharedKey
     ? (findDevice(sharedKey)?.name ?? "the device you have open")
     : null;
-  const drivingLabel = useClaimHolderLabel(sharedKey);
+  // Seeded as well as live: opening this after someone took the device must
+  // not read as "nobody" until they next move their finger.
+  const drivers = useSharedDeviceDrivers(sharedKey);
   const hostName = useHostName(sessionId);
   const invite = useHuddleInvite(agentId, hostName, room?.url ?? null);
 
@@ -79,10 +81,12 @@ export function HuddleDialog({
         label: g.label,
         state: g.state,
         connected: g.connected,
-        driving: g.state === "approved" && g.label === drivingLabel,
+        driving: g.state === "approved" && g.label === drivers.holderLabel,
+        waiting:
+          g.state === "approved" && drivers.waitingLabels.includes(g.label),
         typing: g.typing,
       })),
-    [room, drivingLabel],
+    [room, drivers],
   );
 
   // Ask before the user commits: a missing `cloudflared` is a two-minute

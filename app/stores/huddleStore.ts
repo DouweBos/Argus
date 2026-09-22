@@ -69,3 +69,9 @@ export const subscribeHuddleRooms = (cb: () => void): (() => void) =>
 /** For tests */
 export const getHuddleState = () => huddleStore.getState();
 export const setHuddleState = huddleStore.setState.bind(huddleStore);
+
+/** True while some live room is sharing this device. */
+export const useDeviceIsShared = (deviceKey: string | null): boolean =>
+  huddleStore((s) =>
+    deviceKey ? s.rooms.some((r) => r.device_key === deviceKey) : false,
+  );

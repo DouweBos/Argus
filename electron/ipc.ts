@@ -250,6 +250,7 @@ import {
   suggestArgusJson as onboardingSuggestArgusJson,
   writeArgusJson as onboardingWriteArgusJson,
 } from "@argus/host/services/onboarding/index";
+import { claimState } from "@argus/host/services/remote/deviceClaims";
 import {
   listDevices as listRemoteDevices,
   revokeDevice,
@@ -261,11 +262,11 @@ import {
   denyGuest as denyHuddleGuest,
   listRooms as listHuddleRooms,
   removeGuest as removeHuddleGuest,
-  sayInHuddle,
   setHuddleDevice,
-  setHuddleHostTyping,
   startHuddle,
   stopHuddle,
+  sayInHuddle,
+  setHuddleHostTyping,
 } from "@argus/host/services/remote/huddleService";
 import {
   cancelPairing,
@@ -1238,6 +1239,11 @@ export function registerIpcHandlers(): void {
     setHuddleDevice(a.roomId as string, (a.deviceKey as string | null) ?? ""),
   );
   handle("huddle_list", "host", () => listHuddleRooms());
+  // The engineer's own input is never arbitrated, so the desktop asks purely to
+  // show who among the guests is driving what it has shared.
+  handle("device_claim_status", "admin", (a) =>
+    Promise.resolve(claimState(a.deviceId as string)),
+  );
   handle("huddle_say", "host", (a) =>
     Promise.resolve(sayInHuddle(a.roomId as string, a.text as string)),
   );

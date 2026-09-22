@@ -5,8 +5,10 @@ import {
   claimDevice,
   claimState,
   getClaim,
+  releaseConnection,
   releaseDevice,
   resetClaims,
+  WAITING_TTL_MS,
 } from "./deviceClaims";
 
 const holderA = {
@@ -47,7 +49,10 @@ describe("deviceClaims", () => {
 
     vi.advanceTimersByTime(CLAIM_IDLE_MS + 100);
 
-    expect(published.at(-1)).toEqual({ device_id: "sim-1", holder: null });
+    expect(published.at(-1)).toMatchObject({
+      device_id: "sim-1",
+      holder: null,
+    });
     expect(getClaim("sim-1")).toBeNull();
   });
 
@@ -87,5 +92,79 @@ describe("deviceClaims", () => {
 
     expect(claimState("sim-1").holder?.label).toBe("Laptop");
     expect(claimState("browser:sess-1").holder?.label).toBe("Mac mini");
+  });
+});
+
+describe("who is being refused the device", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    resetClaims();
+  });
+  afterEach(() => {
+    resetClaims();
+    vi.useRealTimers();
+  });
+
+  it("lists the refused client, so the holder knows someone is trying", () => {
+    claimDevice("sim-1", holderA);
+    claimDevice("sim-1", holderB);
+
+    expect(claimState("sim-1").waiting.map((w) => w.label)).toEqual([
+      "Mac mini",
+    ]);
+  });
+
+  it("announces the first refusal, and stays quiet for the rest of the run", () => {
+    const published: unknown[] = [];
+    resetHostEventSinks();
+    addHostEventSink((channel, args) => {
+      if (channel === "devices:claim-changed") {
+        published.push(args[0]);
+      }
+    });
+    claimDevice("sim-1", holderA);
+    published.length = 0;
+    // A finger held down refuses many times a second.
+    claimDevice("sim-1", holderB);
+    claimDevice("sim-1", holderB);
+    claimDevice("sim-1", holderB);
+
+    expect(published).toHaveLength(1);
+    resetHostEventSinks();
+  });
+
+  it("forgets someone who has given up", () => {
+    claimDevice("sim-1", holderA);
+    claimDevice("sim-1", holderB);
+    vi.advanceTimersByTime(WAITING_TTL_MS + 1);
+    // Keep the holder alive so the device is still contended.
+    claimDevice("sim-1", holderA);
+
+    expect(claimState("sim-1").waiting).toEqual([]);
+  });
+
+  it("stops listing them once they get the device", () => {
+    claimDevice("sim-1", holderA);
+    claimDevice("sim-1", holderB);
+    claimDevice("sim-1", holderB, true);
+
+    expect(claimState("sim-1").waiting).toEqual([]);
+    expect(claimState("sim-1").holder?.label).toBe("Mac mini");
+  });
+
+  it("nobody waits for a device nobody holds", () => {
+    claimDevice("sim-1", holderA);
+    claimDevice("sim-1", holderB);
+    releaseDevice("sim-1", holderA.connectionId);
+
+    expect(claimState("sim-1")).toMatchObject({ holder: null, waiting: [] });
+  });
+
+  it("drops a client that disconnected mid-attempt", () => {
+    claimDevice("sim-1", holderA);
+    claimDevice("sim-1", holderB);
+    releaseConnection(holderB.connectionId);
+
+    expect(claimState("sim-1").waiting).toEqual([]);
   });
 });
