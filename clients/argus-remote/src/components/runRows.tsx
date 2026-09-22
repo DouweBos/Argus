@@ -5,7 +5,6 @@
 
 import { View } from "react-native";
 import {
-  runCost,
   runDuration,
   runTone,
   triggerLabel,
@@ -96,10 +95,7 @@ export function RunRow({
             </Muted>
           ) : null}
         </View>
-        <View style={{ alignItems: "flex-end" }}>
-          <Mono>{runDuration(run)}</Mono>
-          <Mono>{runCost(run.cost_usd)}</Mono>
-        </View>
+        <Mono>{runDuration(run)}</Mono>
       </Row>
     </Card>
   );
