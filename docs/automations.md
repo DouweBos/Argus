@@ -203,7 +203,7 @@ these it is:
 | `{ kind: "open_url", label: "…", url: "…" }`          | The run's wording | Opens the link in your browser                |
 | `{ kind: "delete_branch", branch: "…", force: true }` | The run's wording | Deletes that branch, after one more confirm   |
 | `{ kind: "delete_session", session_id: "…" }`         | The run's wording | Retires that worktree, after one more confirm |
-| omitted                                               | none              | Only **Dismiss** — nothing to act on          |
+| omitted                                               | none              | Only **Mark as done** or **Dismiss**          |
 
 The two `delete_` kinds are how a run asks for cleanup without ever doing it: a
 run cannot delete a branch or a worktree at any autonomy level, so all it can do
@@ -228,6 +228,17 @@ tool result so the run can report what actually happened:
 - **Pending** — anything else. It waits in `/inbox` with the reason. You press
   its button — **Start** and get the same session you would have got, or
   whatever the run asked you to open — or **Dismiss**, and the reason is kept.
+
+### Already done
+
+Every pending proposal also carries **Mark as done**, for the case where you
+did what it asked outside Argus: deleted the branch yourself, answered the
+question, closed the issue. It takes the proposal out of the inbox the way a
+dismissal does, but it is the opposite signal — the proposal was right — so it
+counts towards the automation's acceptance rate rather than against it, and the
+note you leave ("what did you do?") is never filed as a dismissal reason. On a
+proposal with no button of its own it is the primary action, because dismissing
+something you agreed with is the wrong answer to the wrong question.
 
 ### Yes, but
 
@@ -375,7 +386,7 @@ exist, are dropped rather than saved.
 ## The calibration loop
 
 Argus records how each proposal turned out — started and merged, started and
-abandoned, dismissed and why, superseded or withdrawn by a later run — and hands the next run of the same automation a
+abandoned, dismissed and why, marked done by hand, superseded or withdrawn by a later run — and hands the next run of the same automation a
 short block of its own track record. An automation whose high-confidence
 proposals keep getting dismissed is told so, in its own prompt, before it ranks
 anything.
@@ -441,7 +452,8 @@ automations themselves, the recent runs across all of them, and one run with
 its report — structured blocks included.
 
 The Inbox button next to it opens the decisions: every pending proposal, with
-the run's own button to start the work and a Dismiss that takes a reason. A
+the run's own button to start the work, a Mark as done for what you already
+handled, and a Dismiss that takes a reason. A
 report you have not read yet is dotted in the run list, and opening it on the
 phone clears it on the computer too — there is one inbox, not two.
 
@@ -450,7 +462,7 @@ fires**; it does not author. There is no playbook editor and no schedule
 picker — those are the desktop's, and a paired Mac driving a headless mini
 still gets all of them through the admin passthrough.
 
-- **Run now, Cancel, Start and Dismiss need the `control` grant.** Firing an
+- **Run now, Cancel, Start, Mark as done and Dismiss need the `control` grant.** Firing an
   automation or accepting a proposal starts an agent on the computer, which is
   code execution; a monitor-only device sees the lists and no buttons.
 - **A huddle guest reaches none of it**, the same as everywhere else — every

@@ -301,6 +301,12 @@ export const MethodParams = {
     /** Kept verbatim — it is what teaches the automation. */
     reason: z.string().optional(),
   }),
+  /** Mark it done: the user handled what it asked, outside Argus. */
+  "proposals.resolve": z.object({
+    proposal_id: z.string(),
+    /** What they did, kept verbatim. */
+    note: z.string().optional(),
+  }),
 } as const;
 
 // --- Result payloads per method --------------------------------------------
@@ -454,6 +460,7 @@ export const MethodResult = {
   /** Carry out a cleanup proposal's button. Destructive, so `control`-gated. */
   "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),
   "proposals.dismiss": z.object({ proposal: RemoteProposal }),
+  "proposals.resolve": z.object({ proposal: RemoteProposal }),
 } as const;
 
 // --- Envelopes -------------------------------------------------------------

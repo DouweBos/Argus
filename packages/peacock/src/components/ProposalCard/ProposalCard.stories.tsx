@@ -15,6 +15,7 @@ const meta: Meta<typeof ProposalCard> = {
     sourceLabel: "argus#412",
     primary: { kind: "start", label: "Start", onClick: () => undefined },
     onDismiss: () => undefined,
+    onResolve: () => undefined,
     onOpenSource: () => undefined,
     meta: (
       <>
@@ -58,7 +59,7 @@ export const OpensSomething: Story = {
   },
 };
 
-/** Nothing to do but read it. Dismiss is the only action. */
+/** Nothing to press, so marking it done is the card's own primary action. */
 export const NothingToStart: Story = {
   args: {
     title: "Two Roku tickets are tracking the same campaignId change",
@@ -69,6 +70,11 @@ export const NothingToStart: Story = {
     sourceLabel: undefined,
     meta: <Badge tone="neutral">suggests ignoring</Badge>,
   },
+};
+
+/** No "Mark as done": every ending this one has runs through Argus. */
+export const WithoutResolve: Story = {
+  args: { onResolve: undefined },
 };
 
 export const WithoutSource: Story = {

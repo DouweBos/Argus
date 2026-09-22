@@ -18,6 +18,7 @@ import {
   requestProposalRevision as requestProposalRevisionIpc,
   dismissProposal as dismissProposalIpc,
   listProposals,
+  resolveProposal as resolveProposalIpc,
 } from "../lib/ipc";
 import { useRouteHostId } from "../lib/routeHooks";
 import { appNavigate } from "../lib/router";
@@ -138,6 +139,9 @@ export const dismissProposal = (
   id: string,
   reason?: string,
 ): Promise<Proposal> => dismissProposalIpc(id, reason);
+
+export const resolveProposal = (id: string, note?: string): Promise<Proposal> =>
+  resolveProposalIpc(id, note);
 
 // ---------------------------------------------------------------------------
 // Navigation

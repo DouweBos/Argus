@@ -105,6 +105,7 @@ import {
   dismissProposal,
   getProposal,
   listProposals,
+  resolveProposal,
 } from "@argus/host/services/automation/proposals/manager";
 import { requestProposalRevision } from "@argus/host/services/automation/proposals/revise";
 import {
@@ -1138,6 +1139,9 @@ export function registerIpcHandlers(): void {
   );
   handle("proposal_dismiss", "admin", (a) =>
     dismissProposal(a.id as string, a.reason as string | undefined),
+  );
+  handle("proposal_resolve", "admin", (a) =>
+    resolveProposal(a.id as string, a.note as string | undefined),
   );
 
   handle("get_app_settings", "admin", () => loadAppSettings());

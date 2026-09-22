@@ -82,6 +82,25 @@ final class ProposalsStore {
     await refresh()
   }
 
+  /// You already did what it asked — the opposite signal from a dismissal.
+  func resolve(id: String, note: String?) async {
+    guard let transport = app.transport else { return }
+    busy.insert(id)
+    defer { busy.remove(id) }
+
+    struct Params: Encodable {
+      let proposal_id: String
+      let note: String?
+    }
+    do {
+      try await transport.request(
+        .proposalsResolve, Params(proposal_id: id, note: note), as: IgnoredResult.self)
+    } catch {
+      self.error = "Couldn't mark that proposal done — \(AppStore.describe(error))"
+    }
+    await refresh()
+  }
+
   func performCleanup(id: String) async {
     guard let transport = app.transport else { return }
     busy.insert(id)

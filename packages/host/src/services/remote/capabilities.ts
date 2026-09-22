@@ -132,6 +132,7 @@ import {
   dismissRemoteProposal,
   performRemoteProposalCleanup,
   remoteProposals,
+  resolveRemoteProposal,
 } from "./proposalsRemote";
 import {
   ensureVapidPublicKey,
@@ -1551,6 +1552,17 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // Deleting a branch or a worktree is not recoverable, so it is gated the
     // same way starting one is: never a monitor, never a huddle guest.
     return control(() => performRemoteProposalCleanup(proposal_id));
+  },
+  "proposals.resolve": async (params) => {
+    const { proposal_id, note } = parse("proposals.resolve", params);
+    const resolved = await control(() =>
+      resolveRemoteProposal(proposal_id, note),
+    );
+    if (!resolved) {
+      throw new GatewayError("not_found", `no proposal ${proposal_id}`);
+    }
+
+    return resolved;
   },
   "proposals.dismiss": async (params) => {
     const { proposal_id, reason } = parse("proposals.dismiss", params);

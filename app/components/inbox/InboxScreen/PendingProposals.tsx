@@ -13,8 +13,14 @@ import styles from "./InboxScreen.module.css";
 
 export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
   const automations = useAutomations();
-  const { busyId, dismiss, primaryAction, requestRevision, startWithNote } =
-    useProposalActions();
+  const {
+    busyId,
+    dismiss,
+    primaryAction,
+    requestRevision,
+    resolve,
+    startWithNote,
+  } = useProposalActions();
 
   return (
     <div className={styles.cards}>
@@ -52,6 +58,7 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
                 : undefined
             }
             onRequestRevision={requestRevision(proposal)}
+            onResolve={resolve(proposal)}
             onStartWithNote={startWithNote(proposal)}
             primary={primaryAction(proposal)}
             rationale={proposal.rationale || undefined}

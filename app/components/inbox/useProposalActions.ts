@@ -1,8 +1,8 @@
 /**
  * Everything you can do with a proposal — start it (with or without a note),
- * ask the automation for a better one, dismiss it, follow its CTA — shared by
- * the inbox list and the proposal's own page so both behave identically and
- * stay busy on the same card.
+ * ask the automation for a better one, mark it done, dismiss it, follow its
+ * CTA — shared by the inbox list and the proposal's own page so both behave
+ * identically and stay busy on the same card.
  */
 
 import type { Proposal } from "../../lib/types";
@@ -13,6 +13,7 @@ import {
   acceptProposal,
   dismissProposal,
   requestProposalRevision,
+  resolveProposal,
 } from "../../stores/proposalStore";
 import { selectSession } from "../../stores/sessionStore";
 
@@ -23,6 +24,8 @@ export interface ProposalActions {
   primaryAction: (proposal: Proposal) => ProposalCardAction | undefined;
   /** Ask the automation to redo it. Undefined when it cannot be redone. */
   requestRevision: (proposal: Proposal) => ((note: string) => void) | undefined;
+  /** Mark it done by hand. Undefined once it has already been decided. */
+  resolve: (proposal: Proposal) => ((note: string) => void) | undefined;
   /** Start it with a note. Undefined when the proposal starts nothing. */
   startWithNote: (proposal: Proposal) => ((note: string) => void) | undefined;
 }
@@ -69,6 +72,18 @@ export function useProposalActions(): ProposalActions {
       ? (note: string) => {
           setBusyId(proposal.id);
           requestProposalRevision(proposal.id, note)
+            .catch(() => undefined)
+            .finally(() => setBusyId(null));
+        }
+      : undefined;
+
+  // You did it yourself: the proposal was right, so this is not a dismissal
+  // and must not be recorded as one.
+  const resolve = (proposal: Proposal) =>
+    proposal.status === "pending"
+      ? (note: string) => {
+          setBusyId(proposal.id);
+          resolveProposal(proposal.id, note || undefined)
             .catch(() => undefined)
             .finally(() => setBusyId(null));
         }
@@ -122,5 +137,12 @@ export function useProposalActions(): ProposalActions {
       : undefined;
   };
 
-  return { busyId, dismiss, primaryAction, requestRevision, startWithNote };
+  return {
+    busyId,
+    dismiss,
+    primaryAction,
+    requestRevision,
+    resolve,
+    startWithNote,
+  };
 }

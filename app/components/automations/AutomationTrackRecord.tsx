@@ -29,7 +29,8 @@ export function AutomationTrackRecord({
     return null;
   }
 
-  const { accepted, acceptance_rate, auto_started, dismissed } = calibration;
+  const { accepted, acceptance_rate, auto_started, dismissed, resolved } =
+    calibration;
   const poor =
     acceptance_rate !== null && acceptance_rate < POOR_ACCEPTANCE
       ? "negative"
@@ -44,7 +45,7 @@ export function AutomationTrackRecord({
         <StatCell
           label="Acceptance"
           value={ratePercent(acceptance_rate)}
-          delta={`${accepted + auto_started} kept · ${dismissed} dismissed`}
+          delta={`${accepted + auto_started + resolved} kept · ${dismissed} dismissed`}
           deltaTone={poor}
         />
         <StatCell label="Auto-started" value={String(auto_started)} />

@@ -1656,6 +1656,10 @@ export const dismissProposal = (
   reason?: string,
 ): Promise<Proposal> => invoke("proposal_dismiss", { id, reason });
 
+/** Mark a proposal done — you did what it asked, outside Argus. */
+export const resolveProposal = (id: string, note?: string): Promise<Proposal> =>
+  invoke("proposal_resolve", { id, note });
+
 // Remote access (phone/web control).
 export const remoteGetStatus = (): Promise<RemoteStatus> =>
   invoke("remote_get_status", {});

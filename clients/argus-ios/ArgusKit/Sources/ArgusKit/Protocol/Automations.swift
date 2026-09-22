@@ -260,6 +260,8 @@ public enum RemoteProposalStatus: String, Codable, Sendable {
   case accepted
   case autoStarted = "auto_started"
   case dismissed, pending
+  /// You did what it asked, outside Argus. Agreement, not rejection.
+  case resolved
   /// Cleared by a later run of the same automation, not by the user.
   case superseded, withdrawn
 }

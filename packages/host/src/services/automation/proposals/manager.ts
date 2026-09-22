@@ -30,6 +30,8 @@ function cache(): Proposal[] {
       accepted_note: p.accepted_note ?? null,
       revision_request: p.revision_request ?? null,
       revision_requested_at: p.revision_requested_at ?? null,
+      resolved_note: p.resolved_note ?? null,
+      resolved_at: p.resolved_at ?? null,
     }));
   }
 
@@ -108,6 +110,8 @@ export function createProposal(input: CreateProposalInput): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    resolved_note: null,
+    resolved_at: null,
     accepted_note: null,
     revision_request: null,
     revision_requested_at: null,
@@ -142,6 +146,24 @@ export function dismissProposal(id: string, reason?: string): Proposal {
   return updateProposal(id, {
     status: "dismissed",
     dismissed_reason: reason?.trim() ? reason.trim() : null,
+  });
+}
+
+/**
+ * Mark a proposal done: the user handled what it asked, outside Argus. It
+ * leaves the inbox like a dismissal does, but it is the opposite signal —
+ * the proposal was right — so it is kept apart from `dismissed_reason`.
+ */
+export function resolveProposal(id: string, note?: string): Proposal {
+  const proposal = requireProposal(id);
+  if (proposal.status !== "pending") {
+    throw `Proposal ${id} is ${proposal.status}, not pending`;
+  }
+
+  return updateProposal(id, {
+    status: "resolved",
+    resolved_note: note?.trim() ? note.trim() : null,
+    resolved_at: Date.now(),
   });
 }
 

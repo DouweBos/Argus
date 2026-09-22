@@ -2,7 +2,8 @@
  * Proposals — the unit Argus puts in front of you.
  *
  * A run's agent emits them through the `emit_proposal` MCP tool; they land in
- * the inbox and you either start one or dismiss it. In P2 every proposal is
+ * the inbox and you either start one, mark it done once you have handled it
+ * yourself, or dismiss it. In P2 every proposal is
  * `pending`: the autonomy ladder that can turn one into `auto_started` arrives
  * with the guardrail gate.
  *
@@ -16,6 +17,8 @@ export type ProposalStatus =
   | "auto_started"
   | "dismissed"
   | "pending"
+  /** The user did what it asked, outside Argus. Agreement, not rejection. */
+  | "resolved"
   | "superseded"
   | "withdrawn";
 
@@ -84,6 +87,10 @@ export interface Proposal {
   session_id: string | null;
   /** Why it was dismissed. The training signal; kept verbatim. */
   dismissed_reason: string | null;
+  /** What the user said when they marked it done. Kept verbatim. */
+  resolved_note: string | null;
+  /** When the user marked it done. Null while nobody has. */
+  resolved_at: number | null;
   /** What the user added when they started it. Goes into the agent's brief. */
   accepted_note: string | null;
   /**

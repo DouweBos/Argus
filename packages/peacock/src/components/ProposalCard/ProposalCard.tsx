@@ -1,6 +1,11 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { useState } from "react";
-import { ArrowUpRightIcon, PlayIcon, TrashIcon } from "../../icons/Icons";
+import {
+  ArrowUpRightIcon,
+  CheckIcon,
+  PlayIcon,
+  TrashIcon,
+} from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { ConfidenceMeter } from "../ConfidenceMeter/ConfidenceMeter";
 import { Input } from "../Input/Input";
@@ -41,6 +46,12 @@ export interface ProposalCardProps {
    */
   onRequestRevision?: (note: string) => void;
   /**
+   * Mark it done — the user already did what it asked, outside Argus. Without
+   * it a proposal with nothing to press can only be dismissed, which reads as
+   * disagreement when the opposite happened.
+   */
+  onResolve?: (note: string) => void;
+  /**
    * Start the proposal with a note appended to the agent's brief. Omit when
    * there is nothing to start — the note has nowhere to go.
    */
@@ -76,8 +87,8 @@ function PrimaryIcon({ kind }: { kind: ProposalCardAction["kind"] }) {
 }
 
 /**
- * One thing an automation wants you to decide on. Yes, no, and the answer most
- * proposals actually deserve: yes but — a note that either rides along into
+ * One thing an automation wants you to decide on. Yes, no, already done, and
+ * the answer most proposals actually deserve: yes but — a note that either rides along into
  * the agent's brief or goes back to the automation as the revision to make.
  * Every field is inline, never a dialog: a note that costs a dialog does not
  * get written, and the note is the whole signal.
@@ -90,6 +101,7 @@ export function ProposalCard({
   onDismiss,
   onOpenSource,
   onRequestRevision,
+  onResolve,
   onStartWithNote,
   primary,
   rationale,
@@ -107,15 +119,23 @@ export function ProposalCard({
     );
 
   const [dismissing, setDismissing] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [noting, setNoting] = useState(false);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
+  const [done, setDone] = useState("");
 
   const confirmDismiss = () => {
     setDismissing(false);
     onDismiss(reason.trim());
     setReason("");
+  };
+
+  const confirmResolve = () => {
+    setResolving(false);
+    onResolve?.(done.trim());
+    setDone("");
   };
 
   const canNote = onStartWithNote != null || onRequestRevision != null;
@@ -161,7 +181,7 @@ export function ProposalCard({
 
       {decided != null && <p className={styles.decided}>{decided}</p>}
 
-      {decided == null && confirming && primary && (
+      {decided == null && !resolving && confirming && primary && (
         <div className={styles.dismissRow}>
           <span className={styles.confirmText}>
             {primary.confirm ?? "This cannot be undone."}
@@ -188,90 +208,95 @@ export function ProposalCard({
         </div>
       )}
 
-      {decided == null && !confirming && !dismissing && noting && (
-        <div className={styles.noteRow}>
-          <textarea
-            aria-label="Add a note to this proposal"
-            autoFocus
-            className={styles.note}
-            disabled={busy}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={noteKeyDown}
-            placeholder={
-              onStartWithNote
-                ? "Mostly right, but… — ⌘↵ to start with this note"
-                : "What should the next proposal do differently?"
-            }
-            rows={2}
-            value={note}
-          />
-          <div className={styles.noteActions}>
-            {onStartWithNote && (
-              <Button
-                disabled={busy || !trimmedNote}
-                leading={<PlayIcon size={11} />}
-                onClick={() => submitNote(onStartWithNote)}
-                size="sm"
-                variant="primary"
-              >
-                Start with this note
-              </Button>
-            )}
-            {onRequestRevision && (
-              <Button
-                disabled={busy || !trimmedNote}
-                onClick={() => submitNote(onRequestRevision)}
-                size="sm"
-                title="Keeps it in the inbox and asks the automation to redo it"
-                variant="secondary"
-              >
-                Ask for a better one
-              </Button>
-            )}
-            <Button
+      {decided == null &&
+        !resolving &&
+        !confirming &&
+        !dismissing &&
+        noting && (
+          <div className={styles.noteRow}>
+            <textarea
+              aria-label="Add a note to this proposal"
+              autoFocus
+              className={styles.note}
               disabled={busy}
-              onClick={() => setNoting(false)}
-              size="sm"
-              variant="ghost"
-            >
-              Cancel
-            </Button>
+              onChange={(e) => setNote(e.target.value)}
+              onKeyDown={noteKeyDown}
+              placeholder={
+                onStartWithNote
+                  ? "Mostly right, but… — ⌘↵ to start with this note"
+                  : "What should the next proposal do differently?"
+              }
+              rows={2}
+              value={note}
+            />
+            <div className={styles.noteActions}>
+              {onStartWithNote && (
+                <Button
+                  disabled={busy || !trimmedNote}
+                  leading={<PlayIcon size={11} />}
+                  onClick={() => submitNote(onStartWithNote)}
+                  size="sm"
+                  variant="primary"
+                >
+                  Start with this note
+                </Button>
+              )}
+              {onRequestRevision && (
+                <Button
+                  disabled={busy || !trimmedNote}
+                  onClick={() => submitNote(onRequestRevision)}
+                  size="sm"
+                  title="Keeps it in the inbox and asks the automation to redo it"
+                  variant="secondary"
+                >
+                  Ask for a better one
+                </Button>
+              )}
+              <Button
+                disabled={busy}
+                onClick={() => setNoting(false)}
+                size="sm"
+                variant="ghost"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {decided == null && !confirming && !noting && dismissing && (
+      {decided == null && resolving && (
         <div className={styles.dismissRow}>
           <Input
-            aria-label="Why are you dismissing this?"
+            aria-label="What did you do?"
             autoFocus
             className={styles.reason}
             disabled={busy}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={(e) => setDone(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                confirmDismiss();
+                confirmResolve();
               }
               if (e.key === "Escape") {
                 e.preventDefault();
-                setDismissing(false);
+                setResolving(false);
               }
             }}
-            placeholder="Why not? (optional)"
-            value={reason}
+            placeholder="What did you do? (optional)"
+            value={done}
           />
           <Button
             disabled={busy}
-            onClick={confirmDismiss}
+            leading={<CheckIcon size={11} />}
+            onClick={confirmResolve}
             size="sm"
-            variant="secondary"
+            variant="primary"
           >
-            Dismiss
+            Mark as done
           </Button>
           <Button
             disabled={busy}
-            onClick={() => setDismissing(false)}
+            onClick={() => setResolving(false)}
             size="sm"
             variant="ghost"
           >
@@ -280,55 +305,115 @@ export function ProposalCard({
         </div>
       )}
 
-      {decided == null && !dismissing && !confirming && !noting && (
-        <div className={styles.actions}>
-          {primary && (
+      {decided == null &&
+        !resolving &&
+        !confirming &&
+        !noting &&
+        dismissing && (
+          <div className={styles.dismissRow}>
+            <Input
+              aria-label="Why are you dismissing this?"
+              autoFocus
+              className={styles.reason}
+              disabled={busy}
+              onChange={(e) => setReason(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  confirmDismiss();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setDismissing(false);
+                }
+              }}
+              placeholder="Why not? (optional)"
+              value={reason}
+            />
             <Button
               disabled={busy}
-              leading={<PrimaryIcon kind={primary.kind} />}
-              onClick={() =>
-                primary.kind === "destroy"
-                  ? setConfirming(true)
-                  : primary.onClick()
-              }
-              size="sm"
-              variant={primary.kind === "destroy" ? "danger" : "primary"}
-            >
-              {primary.label}
-            </Button>
-          )}
-          {canNote && (
-            <Button
-              disabled={busy}
-              onClick={() => setNoting(true)}
+              onClick={confirmDismiss}
               size="sm"
               variant="secondary"
             >
-              Add a note
+              Dismiss
             </Button>
-          )}
-          <Button
-            disabled={busy}
-            onClick={() => setDismissing(true)}
-            size="sm"
-            variant="ghost"
-          >
-            Dismiss
-          </Button>
-          <span className={styles.spacer} />
-          {onOpenSource && (
             <Button
               disabled={busy}
-              onClick={onOpenSource}
+              onClick={() => setDismissing(false)}
               size="sm"
-              trailing={<ArrowUpRightIcon size={11} />}
               variant="ghost"
             >
-              {sourceLabel ?? "Open source"}
+              Cancel
             </Button>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+
+      {decided == null &&
+        !resolving &&
+        !dismissing &&
+        !confirming &&
+        !noting && (
+          <div className={styles.actions}>
+            {primary && (
+              <Button
+                disabled={busy}
+                leading={<PrimaryIcon kind={primary.kind} />}
+                onClick={() =>
+                  primary.kind === "destroy"
+                    ? setConfirming(true)
+                    : primary.onClick()
+                }
+                size="sm"
+                variant={primary.kind === "destroy" ? "danger" : "primary"}
+              >
+                {primary.label}
+              </Button>
+            )}
+            {onResolve && (
+              <Button
+                disabled={busy}
+                leading={<CheckIcon size={11} />}
+                onClick={() => setResolving(true)}
+                size="sm"
+                title="You already did this — keeps it as agreement, not a rejection"
+                variant={primary ? "secondary" : "primary"}
+              >
+                Mark as done
+              </Button>
+            )}
+            {canNote && (
+              <Button
+                disabled={busy}
+                onClick={() => setNoting(true)}
+                size="sm"
+                variant="secondary"
+              >
+                Add a note
+              </Button>
+            )}
+            <Button
+              disabled={busy}
+              onClick={() => setDismissing(true)}
+              size="sm"
+              variant="ghost"
+            >
+              Dismiss
+            </Button>
+            <span className={styles.spacer} />
+            {onOpenSource && (
+              <Button
+                disabled={busy}
+                onClick={onOpenSource}
+                size="sm"
+                trailing={<ArrowUpRightIcon size={11} />}
+                variant="ghost"
+              >
+                {sourceLabel ?? "Open source"}
+              </Button>
+            )}
+          </div>
+        )}
     </article>
   );
 }
