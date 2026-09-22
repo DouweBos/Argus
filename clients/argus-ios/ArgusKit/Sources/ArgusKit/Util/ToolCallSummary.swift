@@ -34,12 +34,4 @@ public enum ToolCallSummary {
       return ""
     }
   }
-
-  /// The expanded input view: a raw command for Bash, pretty JSON otherwise.
-  public static func formatInput(name: String, input: [String: JSONValue]) -> String {
-    if name == "Bash", let command = input["command"]?.stringValue {
-      return command
-    }
-    return JSONValue.object(input).prettyPrinted
-  }
 }
