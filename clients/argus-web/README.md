@@ -19,6 +19,20 @@ approve/deny permission prompts; it can't spawn agents or run commands.
 It always talks to the gateway on its own origin (whatever address you opened),
 so it works over the LAN IP or a tunnel hostname without reconfiguration.
 
+## Layout
+
+Below 900px it is a single column: one screen at a time, backed by the browser
+history stack so back and swipe-back work.
+
+At 900px and up (an iPad in either orientation, or a desktop browser) it splits
+into two panes — projects/sessions on the left, the agent, device, diff or
+settings screen on the right — using Peacock's `SplitShell`. The divider drags
+with a finger or a mouse and the width is remembered. Navigation is the same
+stack underneath; the panes just show its topmost master and detail entries.
+
+With a hardware keyboard: `Cmd+[` / `Cmd+]` go back and forward, `Cmd+\`
+toggles the sidebar, and `Cmd+K` focuses the composer.
+
 ## Build
 
 Argus serves `dist/`. Build it once (and after changes):

@@ -7,7 +7,14 @@
  */
 
 import { type ReactNode, useState } from "react";
-import { Button, EmptyState, Icons, Input, Spinner } from "@argus/peacock";
+import {
+  Button,
+  Card,
+  EmptyState,
+  Icons,
+  Input,
+  Spinner,
+} from "@argus/peacock";
 import type { HuddleState } from "../lib/huddleSession";
 
 export interface HuddleGateProps {
@@ -89,7 +96,7 @@ export function HuddleGate({
   if (!asked) {
     return (
       <Shell>
-        <div className="aw-card">
+        <Card size="sm" stack>
           <p className="aw-muted">
             You've been invited to a huddle. The host sees your name when they
             decide whether to let you in.
@@ -114,7 +121,7 @@ export function HuddleGate({
               Ask to join
             </Button>
           </div>
-        </div>
+        </Card>
       </Shell>
     );
   }

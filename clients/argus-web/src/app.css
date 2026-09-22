@@ -32,14 +32,60 @@ button {
   padding: 0;
 }
 
+/* iOS zooms the whole page when a focused field is under 16px. Only the touch
+   layouts need the bump — desktop keeps Peacock's compact sizing. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 .aw-shell {
+  /* The gutter the topbar and dock cancel with negative margins, so they can
+     bleed full-width. Landscape and Stage Manager put the rounded corner inside
+     the viewport, so the safe-area insets fold into it. */
+  --aw-gutter-left: calc(16px + env(safe-area-inset-left, 0px));
+  --aw-gutter-right: calc(16px + env(safe-area-inset-right, 0px));
+
+  /* Single-column screens (pairing, huddles, a phone) stay capped so the text
+     measure keeps reading well on a wide display. */
   max-width: 720px;
   height: 100dvh;
   overflow: hidden;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 var(--aw-gutter-right) 0 var(--aw-gutter-left);
   display: flex;
   flex-direction: column;
+}
+
+/* Two panes: they own the gutter, the shell spans the screen. */
+.aw-shell-wide {
+  max-width: none;
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+}
+
+/* One pane — sticky bar, scrolling body, optional dock. On a phone it is the
+   whole screen; on a tablet there are two side by side. */
+.aw-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.aw-shell-wide .aw-pane {
+  --aw-gutter-left: 16px;
+  --aw-gutter-right: 16px;
+
+  padding: 0 var(--aw-gutter-right) 0 var(--aw-gutter-left);
+}
+
+.aw-empty-detail {
+  justify-content: center;
 }
 
 /* Scrollable body between the pinned nav and the (optional) docked input. */
@@ -63,8 +109,10 @@ button {
 .aw-topbar {
   flex: 0 0 auto;
   z-index: 10;
-  margin: 0 -16px 4px;
-  padding: 12px 16px;
+  margin: 0 calc(-1 * var(--aw-gutter-right)) 4px
+    calc(-1 * var(--aw-gutter-left));
+  padding: calc(12px + env(safe-area-inset-top, 0px)) var(--aw-gutter-right)
+    12px var(--aw-gutter-left);
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border);
 }
@@ -143,6 +191,11 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* A paste target for a multi-line pairing code wants room to show it. */
+.aw-pair-code {
+  min-height: 72px;
 }
 
 .aw-truncate {
@@ -296,9 +349,12 @@ button {
     color var(--transition-base);
 }
 
-.aw-scroll-bottom:hover {
-  background: var(--surface-6, var(--surface-3));
-  color: var(--text-primary);
+/* Hover is a mouse affordance — on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .aw-scroll-bottom:hover {
+    background: var(--surface-6, var(--surface-3));
+    color: var(--text-primary);
+  }
 }
 
 .aw-mermaid {
@@ -330,8 +386,11 @@ button {
 /* In-flow dock pinned at the bottom of the fixed-height shell. */
 .aw-chat-dock {
   flex: 0 0 auto;
-  margin: 0 -16px;
-  padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  margin: 0 calc(-1 * var(--aw-gutter-right)) 0
+    calc(-1 * var(--aw-gutter-left));
+  padding: 8px var(--aw-gutter-right)
+    calc(8px + var(--aw-keyboard-inset, 0px) + env(safe-area-inset-bottom, 0px))
+    var(--aw-gutter-left);
   background: var(--bg-secondary-85, var(--bg-primary-85));
   border-top: 1px solid var(--glass-border);
   backdrop-filter: blur(12px);
@@ -372,158 +431,18 @@ button {
   border-radius: var(--border-radius-sm);
 }
 
-.aw-attach-btn:hover {
-  color: var(--text-primary);
-  background: var(--surface-4, var(--surface-3));
+/* Hover is a mouse affordance — on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .aw-attach-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-4, var(--surface-3));
+  }
 }
 
 /* Picker chips anchor their dropdowns. */
 .aw-picker-anchor {
   position: relative;
   display: inline-flex;
-}
-
-.aw-dropdown-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-}
-
-.aw-dropdown {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  z-index: 31;
-  min-width: 180px;
-  max-width: 280px;
-  max-height: 260px;
-  overflow: auto;
-  padding: 4px;
-  /* Opaque: surface tint composited over the solid page bg so the input and
-     transcript don't bleed through the menu. */
-  background: var(--bg-primary);
-  background-image: linear-gradient(var(--surface-4), var(--surface-4));
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-md);
-  box-shadow: 0 8px 24px var(--scrim-lg);
-}
-
-.aw-dropdown-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  text-align: left;
-  padding: 6px 8px;
-  background: transparent;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-sm, 13px);
-  cursor: pointer;
-}
-
-.aw-dropdown-item:hover {
-  background: var(--surface-4, var(--surface-2));
-}
-
-.aw-dropdown-item-active {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-}
-
-.aw-dropdown-hint {
-  font-size: 11px;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.aw-dropdown-empty {
-  padding: 8px;
-  font-size: var(--font-size-sm, 13px);
-  color: var(--text-secondary);
-}
-
-/* Slash-command + mention autocomplete list. */
-.aw-suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  max-height: 220px;
-  overflow: auto;
-  margin-bottom: 6px;
-  padding: 4px;
-  background: var(--bg-primary);
-  background-image: linear-gradient(var(--surface-4), var(--surface-4));
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-md);
-}
-
-.aw-suggestions-header {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  padding: 4px 6px;
-}
-
-.aw-suggestion {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: transparent;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-sm, 13px);
-  cursor: pointer;
-  text-align: left;
-}
-
-.aw-suggestion-active,
-.aw-suggestion:hover {
-  background: var(--surface-4, var(--surface-2));
-}
-
-.aw-suggestion-slash {
-  color: var(--text-secondary);
-}
-
-.aw-suggestion-name {
-  font-family: var(--font-mono, monospace);
-}
-
-.aw-suggestion-desc {
-  color: var(--text-secondary);
-  font-size: 11px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* "Use this directory" action pinned atop the browse list — accented and
-   separated so selecting the current dir (and closing the picker) is obvious. */
-.aw-suggestion-link {
-  border-bottom: 1px solid var(--glass-border, var(--border));
-  border-radius: 0;
-  color: var(--accent);
-}
-
-.aw-suggestion-link svg {
-  color: var(--accent);
-}
-
-.aw-suggestion-link .aw-suggestion-name {
-  font-family: inherit;
-  font-weight: 600;
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.aw-suggestion-link .aw-suggestion-desc {
-  font-family: var(--font-mono, monospace);
 }
 
 /* Context-window meter sitting alongside the input chips. */
@@ -536,17 +455,6 @@ button {
 /* Control affordances on the project screen. */
 .aw-control-bar {
   padding: 8px 0;
-}
-
-/* One session rendered as a Peacock SessionCard; this override adds the
-   persistent bordered-card look and roomier touch padding (scoped so it wins
-   over the Peacock `.card` padding/radius). */
-.aw-sidebar .aw-session-card {
-  margin-bottom: 6px;
-  padding: 6px 8px 8px;
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-md);
-  background: var(--surface-2);
 }
 
 /* Branch name in the SessionCard subtitle slot. */
@@ -570,9 +478,12 @@ button {
   background: transparent;
 }
 
-.aw-icon-btn:hover {
-  color: var(--text-primary);
-  background: var(--surface-4, var(--surface-3));
+/* Hover is a mouse affordance — on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .aw-icon-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-4, var(--surface-3));
+  }
 }
 
 /* Changes (diff) view. */
@@ -622,9 +533,12 @@ button {
   cursor: pointer;
 }
 
-.aw-new-agent:hover {
-  color: var(--text-primary);
-  background: var(--surface-4, var(--surface-3));
+/* Hover is a mouse affordance — on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .aw-new-agent:hover {
+    color: var(--text-primary);
+    background: var(--surface-4, var(--surface-3));
+  }
 }
 
 /* --- Live device view --------------------------------------------------- */
