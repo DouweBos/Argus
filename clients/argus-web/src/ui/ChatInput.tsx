@@ -28,6 +28,7 @@ import {
   filesToPendingImages,
   type PendingImage,
 } from "../lib/images";
+import { hasHardwareKeyboard } from "../lib/keyboard";
 import { buildLinkedProjectsPreamble } from "../lib/linkedProjects";
 import type {
   RemoteModelInfo,
@@ -156,6 +157,9 @@ export function ChatInput({
   // mirror lets the buttons react (e.g. show "queue" while the agent is busy).
   const [hasText, setHasText] = useState(false);
   const dragDepth = useRef(0);
+  // Read once: a keyboard case being attached mid-message is not worth a
+  // listener, and the send button works either way.
+  const [sendsOnEnter] = useState(hasHardwareKeyboard);
 
   const {
     mentionContext,
@@ -322,6 +326,12 @@ export function ChatInput({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Enter confirming an IME candidate is not Enter meaning anything here —
+      // it must reach neither the pickers below nor the composer.
+      if (e.nativeEvent.isComposing) {
+        return;
+      }
+
       if (suggestions.length > 0) {
         if (e.key === "ArrowDown") {
           e.preventDefault();
@@ -390,9 +400,18 @@ export function ChatInput({
         return;
       }
 
-      // Enter inserts a newline (native textarea behavior); send with the
-      // button or ⌘/Ctrl+Enter, so multi-line messages are easy on a phone.
+      // ⌘/Ctrl+Enter always sends, whatever plain Enter is doing.
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        submit();
+
+        return;
+      }
+
+      // With a real keyboard, Enter sends and Shift+Enter breaks the line, like
+      // the desktop app. On a phone there is no Shift to reach the newline
+      // with, so Enter stays the newline and the send button does the sending.
+      if (e.key === "Enter" && !e.shiftKey && sendsOnEnter) {
         e.preventDefault();
         submit();
       }
@@ -411,6 +430,7 @@ export function ChatInput({
       adjustHeight,
       mode,
       agentId,
+      sendsOnEnter,
       setPermissionMode,
     ],
   );
@@ -671,7 +691,11 @@ export function ChatInput({
         ref={textareaRef}
         aria-label="Message the agent"
         className="aw-chat-textarea"
-        placeholder="Message the agent… (⌘/Ctrl+Enter to send, / for commands, @ for files)"
+        placeholder={
+          sendsOnEnter
+            ? "Message the agent… (Enter to send, / for commands, @ for files)"
+            : "Message the agent… (⌘/Ctrl+Enter to send, / for commands, @ for files)"
+        }
         rows={1}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
