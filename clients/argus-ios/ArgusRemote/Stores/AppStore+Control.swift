@@ -439,6 +439,57 @@ extension AppStore {
       .devicesUnwatch, Params(device_id: deviceId), as: IgnoredResult.self)
   }
 
+  /// How the device is being held. Null on Android, which rotates its own
+  /// framebuffer and has no hinge to report.
+  func deviceState(deviceId: String, platform: RemotePlatform) async -> RemoteDeviceState? {
+    guard let transport else { return nil }
+    struct Params: Encodable {
+      let device_id: String
+      let platform: String
+    }
+    struct Result: Decodable { let state: RemoteDeviceState? }
+    let result = try? await transport.request(
+      .devicesState, Params(device_id: deviceId, platform: platform.rawValue), as: Result.self)
+    return result?.state
+  }
+
+  @discardableResult
+  func setDeviceOrientation(
+    deviceId: String, platform: RemotePlatform, orientation: RemoteDeviceOrientation
+  ) async -> RemoteDeviceState? {
+    guard let transport else { return nil }
+    struct Params: Encodable {
+      let device_id: String
+      let platform: String
+      let orientation: String
+    }
+    struct Result: Decodable { let state: RemoteDeviceState? }
+    let result = try? await transport.request(
+      .devicesSetOrientation,
+      Params(
+        device_id: deviceId, platform: platform.rawValue, orientation: orientation.rawValue),
+      as: Result.self)
+    return result?.state
+  }
+
+  @discardableResult
+  func setDeviceFold(
+    deviceId: String, platform: RemotePlatform, pose: RemoteFoldPose
+  ) async -> RemoteDeviceState? {
+    guard let transport else { return nil }
+    struct Params: Encodable {
+      let device_id: String
+      let platform: String
+      let pose: String
+    }
+    struct Result: Decodable { let state: RemoteDeviceState? }
+    let result = try? await transport.request(
+      .devicesSetFold,
+      Params(device_id: deviceId, platform: platform.rawValue, pose: pose.rawValue),
+      as: Result.self)
+    return result?.state
+  }
+
   /// Fire-and-forget: a touch that waits for a round trip feels broken.
   func deviceTouch(
     deviceId: String, platform: RemotePlatform, x: Double, y: Double, eventType: Int

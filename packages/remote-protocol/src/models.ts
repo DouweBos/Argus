@@ -246,6 +246,50 @@ export const RemoteDevice = z.object({
 });
 export type RemoteDevice = z.infer<typeof RemoteDevice>;
 
+/** Named hinge poses, matching conductor's vocabulary. */
+export const RemoteFoldPose = z.enum(["book", "closed", "open", "partial"]);
+export type RemoteFoldPose = z.infer<typeof RemoteFoldPose>;
+
+export const RemoteDeviceOrientation = z.enum([
+  "landscapeLeft",
+  "landscapeRight",
+  "portrait",
+  "portraitUpsideDown",
+]);
+export type RemoteDeviceOrientation = z.infer<typeof RemoteDeviceOrientation>;
+
+/**
+ * How the device is being held. A client has to know: the framebuffer is
+ * panel-native, so a rotated device arrives sideways in the stream, and a
+ * folded Duo lights a different panel at a different size.
+ */
+export const RemoteDeviceState = z.object({
+  device_id: z.string(),
+  /** Null on devices with no hinge, which is every simulator but the Duo. */
+  fold: z
+    .object({ angle: z.number(), pose: RemoteFoldPose })
+    .nullable()
+    .default(null),
+  orientation: RemoteDeviceOrientation,
+  /** Null while nothing is being captured. */
+  display: z
+    .object({
+      width: z.number(),
+      height: z.number(),
+      /** Clockwise degrees the client must rotate the stream by to sit upright. */
+      rotation: z.union([
+        z.literal(0),
+        z.literal(90),
+        z.literal(180),
+        z.literal(270),
+      ]),
+      screen_id: z.number(),
+    })
+    .nullable()
+    .default(null),
+});
+export type RemoteDeviceState = z.infer<typeof RemoteDeviceState>;
+
 /**
  * Who currently holds interaction on a device. Two clients may both watch a
  * screen, but only the holder may inject HID events.

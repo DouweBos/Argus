@@ -456,6 +456,61 @@ public struct RemoteDevice: Codable, Hashable, Sendable, Identifiable {
   }
 }
 
+/// Named hinge poses, matching conductor's vocabulary.
+public enum RemoteFoldPose: String, Codable, Sendable {
+  case book, closed, open, partial
+}
+
+public enum RemoteDeviceOrientation: String, Codable, Sendable, CaseIterable {
+  case portrait
+  case landscapeLeft
+  case landscapeRight
+  case portraitUpsideDown
+
+  /// The order the rotate button walks, matching the desktop's.
+  public var next: RemoteDeviceOrientation {
+    switch self {
+    case .portrait: .landscapeLeft
+    case .landscapeLeft: .portraitUpsideDown
+    case .portraitUpsideDown: .landscapeRight
+    case .landscapeRight: .portrait
+    }
+  }
+}
+
+public struct RemoteFoldState: Codable, Hashable, Sendable {
+  /// Hinge angle in degrees: 0 is shut, 180 is flat open.
+  public var angle: Double
+  public var pose: RemoteFoldPose
+}
+
+public struct RemoteDisplayInfo: Codable, Hashable, Sendable {
+  public var width: Int
+  public var height: Int
+  /// Clockwise degrees the client must rotate the stream by to sit upright.
+  public var rotation: Int
+  public var screenId: Int
+
+  enum CodingKeys: String, CodingKey {
+    case width, height, rotation
+    case screenId = "screen_id"
+  }
+}
+
+/// How the device is being held. The framebuffer is panel-native, so a rotated
+/// device arrives sideways and a folded Duo lights a different panel.
+public struct RemoteDeviceState: Codable, Hashable, Sendable {
+  public var deviceId: String
+  public var fold: RemoteFoldState?
+  public var orientation: RemoteDeviceOrientation
+  public var display: RemoteDisplayInfo?
+
+  enum CodingKeys: String, CodingKey {
+    case fold, orientation, display
+    case deviceId = "device_id"
+  }
+}
+
 // MARK: - Agent capabilities
 
 public struct RemoteModelInfo: Codable, Hashable, Sendable, Identifiable {
