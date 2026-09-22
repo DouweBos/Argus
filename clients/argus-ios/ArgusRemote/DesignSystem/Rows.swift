@@ -1,0 +1,136 @@
+import ArgusKit
+import SwiftUI
+
+extension RemoteAgentState {
+  var tone: Tone {
+    switch self {
+    case .running: .accent
+    case .requiresAction: .warning
+    case .error: .danger
+    case .stopped: .success
+    case .idle: .muted
+    }
+  }
+}
+
+extension RemoteAutomationRunStatus {
+  var tone: Tone {
+    switch self {
+    case .running, .queued: .accent
+    case .succeeded: .success
+    case .failed, .cancelled: .danger
+    case .skipped: .warning
+    }
+  }
+}
+
+struct AgentRow: View {
+  @Environment(\.theme) private var theme
+  let name: String
+  var status: RemoteAgentState
+  var attention: String?
+  var model: String?
+  var meta: String?
+
+  var body: some View {
+    HStack(spacing: 10) {
+      // An agent waiting on you gets a steady warning dot, not a pulse —
+      // the pulse means "busy", and this one is the opposite.
+      StatusDot(
+        tone: attention != nil ? .warning : status.tone,
+        pulse: attention == nil && status == .running)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(name).lineLimit(1)
+        if let subtitle {
+          Text(subtitle).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+        }
+      }
+      Spacer(minLength: 6)
+      if let attention {
+        Badge(label: attention, tone: .warning)
+      }
+    }
+  }
+
+  private var subtitle: String? {
+    [meta, model].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+      .nilIfEmpty
+  }
+}
+
+struct StoppedAgentRow: View {
+  let agent: RemoteStoppedAgent
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Label(agent.title, systemImage: Icon.history).lineLimit(1)
+      Text(
+        "\(Labels.timeAgo(agent.endedAt)) · \(agent.messageCount) messages · \(agent.branch)"
+      )
+      .font(.footnote)
+      .foregroundStyle(.secondary)
+      .lineLimit(1)
+    }
+  }
+}
+
+struct AutomationRow: View {
+  let automation: RemoteAutomation
+
+  var body: some View {
+    HStack(spacing: 10) {
+      StatusDot(
+        tone: automation.running ? .accent : (automation.enabled ? .success : .muted),
+        pulse: automation.running)
+      VStack(alignment: .leading, spacing: 2) {
+        Text(automation.name).lineLimit(1)
+        Text("\(Labels.triggerLabel(automation)) · \(state)")
+          .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+      }
+      Spacer(minLength: 0)
+    }
+  }
+
+  /// A paused automation can still be run by hand, so it says "paused" rather
+  /// than "off".
+  private var state: String {
+    if automation.running { return "running" }
+    if !automation.enabled { return "paused" }
+    return Labels.until(automation.nextRunAt).map { "next \($0)" } ?? "enabled"
+  }
+}
+
+struct RunRow: View {
+  @Environment(\.theme) private var theme
+  let run: RemoteAutomationRun
+  var showName = false
+
+  var body: some View {
+    HStack(spacing: 10) {
+      if run.unreadReport {
+        Circle().fill(theme.accent).frame(width: 6, height: 6)
+      }
+      VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 6) {
+          Badge(label: run.status.rawValue, tone: run.status.tone)
+          if showName {
+            Text(run.automationName).lineLimit(1)
+          }
+        }
+        Text("\(Labels.timeAgo(run.startedAt)) · \(run.triggerReason)")
+          .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+        if let error = run.error, !error.isEmpty {
+          Text(error).font(.footnote).foregroundStyle(theme.error).lineLimit(2)
+        }
+      }
+      Spacer(minLength: 6)
+      Text(Labels.runDuration(run))
+        .font(.system(size: 11, design: .monospaced))
+        .foregroundStyle(.secondary)
+    }
+  }
+}
+
+extension String {
+  var nilIfEmpty: String? { isEmpty ? nil : self }
+}

@@ -1,0 +1,722 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1C0FFEE000000000000AA02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE000000000000AA01 /* Assets.xcassets */; };
+		0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4510F50B6943CA7B6707AABE /* AutomationsView.swift */; };
+		0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1224C5EDD5114E7605FB5DA9 /* Icons.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFDFED9EA8E78D4D3534270 /* Icons.swift */; };
+		13456ADD7949ABDDB1D3C08E /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10210A36E3035B5174018F /* MarkdownView.swift */; };
+		1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */; };
+		18E1680F774BE67751984A6B /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA1C76CC7A23652BD96252A /* InboxView.swift */; };
+		18EFB58E16C55EB320F81E62 /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565206689485901440F7B7B5 /* Controls.swift */; };
+		2861E9669ED0132B42988497 /* DevicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */; };
+		2EE744D7FAD18A7F942920DA /* PermissionForms.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */; };
+		343F631DC088AF54631A9834 /* ChatInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6D2A84238A0C55977F8E1D /* ChatInputView.swift */; };
+		3B4F2C2914843FAE0FF0A249 /* ImageViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FD4EE5D9C994C062F2455A /* ImageViewer.swift */; };
+		3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */; };
+		48CC138E7D34EAA49C6BE7DF /* AppStore+Control.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29DE2042E4C73E7833B0914E /* AppStore+Control.swift */; };
+		5094B5F4DB527FD61509F340 /* ProposalsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0081824BC6F0B57CD618D8 /* ProposalsStore.swift */; };
+		537F1ADEAD50351B8B16F53D /* AppStore+Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481431411DDC5E55EA30D7BD /* AppStore+Data.swift */; };
+		55304875735519F780DBE883 /* RunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6502F79F862A2272184C48C6 /* RunView.swift */; };
+		5DA37A387097310627848D08 /* PastingTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82EFACA3CB48542C70620670 /* PastingTextView.swift */; };
+		61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52F0BACB5B899C018843EAC8 /* Theme.swift */; };
+		62E03119A15A5081356F0C0E /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 6625E1D6BCC577429BF7B696 /* ArgusKit */; };
+		64FE76CEEDF39BCA4BD104E6 /* ReportBlocksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */; };
+		6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0194276208D56EEC2428E4B /* ProjectView.swift */; };
+		71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46E305D96C871BB99B7DB468 /* ComputerView.swift */; };
+		774DC572A2AF220B00F3CF38 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6C14566E26586DC89C61830 /* HomeView.swift */; };
+		78D4FE1094D45E9E13B8CFD7 /* Primitives.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9284C23631B2C0808717D64 /* Primitives.swift */; };
+		792DC62433CAABA830D81267 /* ArgusKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7C60136A1C7D698866F581E8 /* ArgusKit */; };
+		79ABC516E0AC2C4AE453BB1A /* AgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8501B834EC04B6A657B28A71 /* AgentView.swift */; };
+		7AA1037BBC567AD386AFFF03 /* AgentTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52033C720665E0E6497370F2 /* AgentTranscriptView.swift */; };
+		85B885DE197E4591E333C07D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6939D496D536368D99A574 /* SettingsView.swift */; };
+		8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */; };
+		9649E2679831459D3DE191FD /* TranscriptMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70547DEE3CB7476148D6FCEE /* TranscriptMessageView.swift */; };
+		9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E737A68AD0170E2CC50F7 /* ProjectsView.swift */; };
+		A02801135DF7D4CE5879D439 /* LockScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */; };
+		A508D8619967FC0AFC236F9C /* Rows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71C88AD86DD08D257E315A5C /* Rows.swift */; };
+		A5D4478D135C8571D9B0C25E /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9798D9FC585435B89959E156 /* RootView.swift */; };
+		A7CA00EFEA917C9540802DFC /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B226438808577288DF012 /* NotificationService.swift */; };
+		AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B760406B1B2B956C52E89F9 /* DeviceView.swift */; };
+		AC7A4FE03EB3A80E8D83B5C5 /* ToolCallCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4111D014B48BB329971BE /* ToolCallCard.swift */; };
+		AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */; };
+		AE5043C2BADDF974895EAC5C /* Route.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCAD11D552D483C0C92312A /* Route.swift */; };
+		B77BE7692399E9374B9372E5 /* PushTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */; };
+		C230860282D4938F66D435CF /* PairView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2978877FCC50AC76553762A /* PairView.swift */; };
+		C8931130A09BC59FE9ED43A8 /* Indicators.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEFE8FA87A629C3762937F62 /* Indicators.swift */; };
+		C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC699CB84E030428A8060A13 /* ChangesView.swift */; };
+		DB3CB7A94B9F37E5A9E28251 /* DeviceVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD8CDED00DE55F5C4FE1C4E /* DeviceVideoView.swift */; };
+		DF3A5B1A8FDA279FDAA8D8FF /* ArgusRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */; };
+		E79376838450019576305370 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A254961B044F508401BE46 /* AppStore.swift */; };
+		EE06026353BBE58BEA99D675 /* AutomationsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7641C7D13FE7BC5C8A6D9FF8 /* AutomationsStore.swift */; };
+		EFFBE7FDF2A9E08BA38A75C2 /* LiveRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B20E2749E785C2B43D9006 /* LiveRefresh.swift */; };
+		FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		28A7D58F39398B637F359DD6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AD9C612A8E5AE985CEA06BA0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8CECFF1D74073176AD704531;
+			remoteInfo = ArgusNotificationService;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DCB06D29917C12D12CD8F8D3 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A1C0FFEE000000000000AA01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Push.swift"; sourceTree = "<group>"; };
+		0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationRouter.swift; sourceTree = "<group>"; };
+		117E737A68AD0170E2CC50F7 /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
+		12FD4EE5D9C994C062F2455A /* ImageViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageViewer.swift; sourceTree = "<group>"; };
+		13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoppedAgentView.swift; sourceTree = "<group>"; };
+		1D00B47DC68F09613A0A0769 /* ArgusKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ArgusKit; path = ArgusKit; sourceTree = SOURCE_ROOT; };
+		20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArgusRemoteApp.swift; sourceTree = "<group>"; };
+		21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationView.swift; sourceTree = "<group>"; };
+		22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ArgusRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		29DE2042E4C73E7833B0914E /* AppStore+Control.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Control.swift"; sourceTree = "<group>"; };
+		2AA1C76CC7A23652BD96252A /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
+		3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen.swift; sourceTree = "<group>"; };
+		4510F50B6943CA7B6707AABE /* AutomationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsView.swift; sourceTree = "<group>"; };
+		46E305D96C871BB99B7DB468 /* ComputerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComputerView.swift; sourceTree = "<group>"; };
+		481431411DDC5E55EA30D7BD /* AppStore+Data.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppStore+Data.swift"; sourceTree = "<group>"; };
+		4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ArgusNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		52033C720665E0E6497370F2 /* AgentTranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentTranscriptView.swift; sourceTree = "<group>"; };
+		52F0BACB5B899C018843EAC8 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		565206689485901440F7B7B5 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
+		57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicesView.swift; sourceTree = "<group>"; };
+		5A10210A36E3035B5174018F /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
+		63A254961B044F508401BE46 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		6502F79F862A2272184C48C6 /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
+		6FCAD11D552D483C0C92312A /* Route.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Route.swift; sourceTree = "<group>"; };
+		70547DEE3CB7476148D6FCEE /* TranscriptMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptMessageView.swift; sourceTree = "<group>"; };
+		71C88AD86DD08D257E315A5C /* Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rows.swift; sourceTree = "<group>"; };
+		7641C7D13FE7BC5C8A6D9FF8 /* AutomationsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomationsStore.swift; sourceTree = "<group>"; };
+		7B760406B1B2B956C52E89F9 /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
+		82EFACA3CB48542C70620670 /* PastingTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastingTextView.swift; sourceTree = "<group>"; };
+		8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ArgusRemote.entitlements; sourceTree = "<group>"; };
+		8501B834EC04B6A657B28A71 /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentView.swift; sourceTree = "<group>"; };
+		8CC4111D014B48BB329971BE /* ToolCallCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolCallCard.swift; sourceTree = "<group>"; };
+		95ACC76BC6E417BE6A706B18 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		9798D9FC585435B89959E156 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		98B20E2749E785C2B43D9006 /* LiveRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveRefresh.swift; sourceTree = "<group>"; };
+		9C7B226438808577288DF012 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		A0194276208D56EEC2428E4B /* ProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectView.swift; sourceTree = "<group>"; };
+		A58F4C884C7B7188F58DA736 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionForms.swift; sourceTree = "<group>"; };
+		AC6939D496D536368D99A574 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AEFE8FA87A629C3762937F62 /* Indicators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Indicators.swift; sourceTree = "<group>"; };
+		AFFDFED9EA8E78D4D3534270 /* Icons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Icons.swift; sourceTree = "<group>"; };
+		B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushTokens.swift; sourceTree = "<group>"; };
+		B6C14566E26586DC89C61830 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchesView.swift; sourceTree = "<group>"; };
+		D2978877FCC50AC76553762A /* PairView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairView.swift; sourceTree = "<group>"; };
+		DCD8CDED00DE55F5C4FE1C4E /* DeviceVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceVideoView.swift; sourceTree = "<group>"; };
+		E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
+		E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportBlocksView.swift; sourceTree = "<group>"; };
+		E9284C23631B2C0808717D64 /* Primitives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Primitives.swift; sourceTree = "<group>"; };
+		EA0081824BC6F0B57CD618D8 /* ProposalsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProposalsStore.swift; sourceTree = "<group>"; };
+		EB6D2A84238A0C55977F8E1D /* ChatInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInputView.swift; sourceTree = "<group>"; };
+		EC699CB84E030428A8060A13 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		17A8D1673F0AF65B486FC7B2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				62E03119A15A5081356F0C0E /* ArgusKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		203FF265C6120B779BC20147 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				792DC62433CAABA830D81267 /* ArgusKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1C0FFEE000000000000AA04 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A1C0FFEE000000000000AA01 /* Assets.xcassets */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		148C30112785E45D10938128 = {
+			isa = PBXGroup;
+			children = (
+				A1C0FFEE000000000000AA04 /* Resources */,
+				554FDC8717D9CC35677B42B3 /* ArgusRemote */,
+				664BEF247131A39B00FDFB6F /* NotificationService */,
+				2542E15A24347C94BC63C98B /* Packages */,
+				2367FD0131C0CDC27F4B7B30 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2367FD0131C0CDC27F4B7B30 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */,
+				22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2542E15A24347C94BC63C98B /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				1D00B47DC68F09613A0A0769 /* ArgusKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		26C51FB4782FB6B8B8DC3671 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				8501B834EC04B6A657B28A71 /* AgentView.swift */,
+				4510F50B6943CA7B6707AABE /* AutomationsView.swift */,
+				21E6D65A1867F4CE9D6BE42E /* AutomationView.swift */,
+				C01FFCA8035ABC8A01D2C6CF /* BranchesView.swift */,
+				EC699CB84E030428A8060A13 /* ChangesView.swift */,
+				46E305D96C871BB99B7DB468 /* ComputerView.swift */,
+				57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */,
+				7B760406B1B2B956C52E89F9 /* DeviceView.swift */,
+				B6C14566E26586DC89C61830 /* HomeView.swift */,
+				2AA1C76CC7A23652BD96252A /* InboxView.swift */,
+				D2978877FCC50AC76553762A /* PairView.swift */,
+				117E737A68AD0170E2CC50F7 /* ProjectsView.swift */,
+				A0194276208D56EEC2428E4B /* ProjectView.swift */,
+				6502F79F862A2272184C48C6 /* RunView.swift */,
+				AC6939D496D536368D99A574 /* SettingsView.swift */,
+				13099DE3A6A5F9047693B53C /* StoppedAgentView.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		38AF2122DBE897D9F8A04315 /* Stores */ = {
+			isa = PBXGroup;
+			children = (
+				63A254961B044F508401BE46 /* AppStore.swift */,
+				29DE2042E4C73E7833B0914E /* AppStore+Control.swift */,
+				481431411DDC5E55EA30D7BD /* AppStore+Data.swift */,
+				000942DD08EA0A5619FDAD77 /* AppStore+Push.swift */,
+				7641C7D13FE7BC5C8A6D9FF8 /* AutomationsStore.swift */,
+				EA0081824BC6F0B57CD618D8 /* ProposalsStore.swift */,
+			);
+			path = Stores;
+			sourceTree = "<group>";
+		};
+		51086224F685027B0138C994 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				52033C720665E0E6497370F2 /* AgentTranscriptView.swift */,
+				EB6D2A84238A0C55977F8E1D /* ChatInputView.swift */,
+				DCD8CDED00DE55F5C4FE1C4E /* DeviceVideoView.swift */,
+				12FD4EE5D9C994C062F2455A /* ImageViewer.swift */,
+				5A10210A36E3035B5174018F /* MarkdownView.swift */,
+				82EFACA3CB48542C70620670 /* PastingTextView.swift */,
+				A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */,
+				E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */,
+				8CC4111D014B48BB329971BE /* ToolCallCard.swift */,
+				70547DEE3CB7476148D6FCEE /* TranscriptMessageView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		554FDC8717D9CC35677B42B3 /* ArgusRemote */ = {
+			isa = PBXGroup;
+			children = (
+				7C47A51B23D4CA449EB51A60 /* App */,
+				D55B3409E7A62F22981B2169 /* DesignSystem */,
+				26C51FB4782FB6B8B8DC3671 /* Screens */,
+				38AF2122DBE897D9F8A04315 /* Stores */,
+				51086224F685027B0138C994 /* Views */,
+				8346E6C1D03B823ABD7DCA02 /* ArgusRemote.entitlements */,
+				95ACC76BC6E417BE6A706B18 /* Info.plist */,
+			);
+			path = ArgusRemote;
+			sourceTree = "<group>";
+		};
+		664BEF247131A39B00FDFB6F /* NotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				A58F4C884C7B7188F58DA736 /* Info.plist */,
+				E3E0EB550BA6630F2052ABE5 /* NotificationService.entitlements */,
+				9C7B226438808577288DF012 /* NotificationService.swift */,
+			);
+			path = NotificationService;
+			sourceTree = "<group>";
+		};
+		7C47A51B23D4CA449EB51A60 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				20BFB66C676863B8775FDB91 /* ArgusRemoteApp.swift */,
+				3E4CF7C9E04D0A1D6F57EDA5 /* LockScreen.swift */,
+				0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */,
+				B33859C3DC1F6B2FE094BDF8 /* PushTokens.swift */,
+				9798D9FC585435B89959E156 /* RootView.swift */,
+				6FCAD11D552D483C0C92312A /* Route.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D55B3409E7A62F22981B2169 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				565206689485901440F7B7B5 /* Controls.swift */,
+				AFFDFED9EA8E78D4D3534270 /* Icons.swift */,
+				AEFE8FA87A629C3762937F62 /* Indicators.swift */,
+				98B20E2749E785C2B43D9006 /* LiveRefresh.swift */,
+				E9284C23631B2C0808717D64 /* Primitives.swift */,
+				71C88AD86DD08D257E315A5C /* Rows.swift */,
+				52F0BACB5B899C018843EAC8 /* Theme.swift */,
+			);
+			path = DesignSystem;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8CECFF1D74073176AD704531 /* ArgusNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7E1A91C98B2DD4A4C39D1147 /* Build configuration list for PBXNativeTarget "ArgusNotificationService" */;
+			buildPhases = (
+				8AD6F62C20A6CA9B895F2BFE /* Sources */,
+				17A8D1673F0AF65B486FC7B2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ArgusNotificationService;
+			packageProductDependencies = (
+				6625E1D6BCC577429BF7B696 /* ArgusKit */,
+			);
+			productName = ArgusNotificationService;
+			productReference = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		FD27DF58294A7821099F159D /* ArgusRemote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 12725D0AC6D3310570087CD2 /* Build configuration list for PBXNativeTarget "ArgusRemote" */;
+			buildPhases = (
+				8EC8248269B9636DC065CFE7 /* Sources */,
+				A1C0FFEE000000000000AA03 /* Resources */,
+				203FF265C6120B779BC20147 /* Frameworks */,
+				DCB06D29917C12D12CD8F8D3 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4BCA19C70CB5094155DF75C2 /* PBXTargetDependency */,
+			);
+			name = ArgusRemote;
+			packageProductDependencies = (
+				7C60136A1C7D698866F581E8 /* ArgusKit */,
+			);
+			productName = ArgusRemote;
+			productReference = 22BC770CA5DFEDFB0344DB2D /* ArgusRemote.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AD9C612A8E5AE985CEA06BA0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					8CECFF1D74073176AD704531 = {
+						DevelopmentTeam = CKZT75PN5T;
+						ProvisioningStyle = Automatic;
+					};
+					FD27DF58294A7821099F159D = {
+						DevelopmentTeam = CKZT75PN5T;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 49A44FFF4341489D11593708 /* Build configuration list for PBXProject "ArgusRemote" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 148C30112785E45D10938128;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2367FD0131C0CDC27F4B7B30 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8CECFF1D74073176AD704531 /* ArgusNotificationService */,
+				FD27DF58294A7821099F159D /* ArgusRemote */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1C0FFEE000000000000AA03 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1C0FFEE000000000000AA02 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8AD6F62C20A6CA9B895F2BFE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A7CA00EFEA917C9540802DFC /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8EC8248269B9636DC065CFE7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7AA1037BBC567AD386AFFF03 /* AgentTranscriptView.swift in Sources */,
+				79ABC516E0AC2C4AE453BB1A /* AgentView.swift in Sources */,
+				48CC138E7D34EAA49C6BE7DF /* AppStore+Control.swift in Sources */,
+				537F1ADEAD50351B8B16F53D /* AppStore+Data.swift in Sources */,
+				FAEB2F8A18B2B7EEA189693B /* AppStore+Push.swift in Sources */,
+				E79376838450019576305370 /* AppStore.swift in Sources */,
+				DF3A5B1A8FDA279FDAA8D8FF /* ArgusRemoteApp.swift in Sources */,
+				AD0D5B2D0F246BA5D6CAF9F2 /* AutomationView.swift in Sources */,
+				EE06026353BBE58BEA99D675 /* AutomationsStore.swift in Sources */,
+				0C2CEA8B85053A238EB47BA7 /* AutomationsView.swift in Sources */,
+				8B82B5637BDFB9252A8D9AD0 /* BranchesView.swift in Sources */,
+				C8A9E8FF4A15285665BCF2F8 /* ChangesView.swift in Sources */,
+				343F631DC088AF54631A9834 /* ChatInputView.swift in Sources */,
+				71F924F0B3BDE15E0083BDEE /* ComputerView.swift in Sources */,
+				18EFB58E16C55EB320F81E62 /* Controls.swift in Sources */,
+				DB3CB7A94B9F37E5A9E28251 /* DeviceVideoView.swift in Sources */,
+				AAC53DE55E408A8C4899520D /* DeviceView.swift in Sources */,
+				2861E9669ED0132B42988497 /* DevicesView.swift in Sources */,
+				774DC572A2AF220B00F3CF38 /* HomeView.swift in Sources */,
+				1224C5EDD5114E7605FB5DA9 /* Icons.swift in Sources */,
+				3B4F2C2914843FAE0FF0A249 /* ImageViewer.swift in Sources */,
+				18E1680F774BE67751984A6B /* InboxView.swift in Sources */,
+				C8931130A09BC59FE9ED43A8 /* Indicators.swift in Sources */,
+				EFFBE7FDF2A9E08BA38A75C2 /* LiveRefresh.swift in Sources */,
+				A02801135DF7D4CE5879D439 /* LockScreen.swift in Sources */,
+				13456ADD7949ABDDB1D3C08E /* MarkdownView.swift in Sources */,
+				1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */,
+				C230860282D4938F66D435CF /* PairView.swift in Sources */,
+				5DA37A387097310627848D08 /* PastingTextView.swift in Sources */,
+				2EE744D7FAD18A7F942920DA /* PermissionForms.swift in Sources */,
+				78D4FE1094D45E9E13B8CFD7 /* Primitives.swift in Sources */,
+				6897D3167EEB3794CED55DDA /* ProjectView.swift in Sources */,
+				9EC0F026CA4FC53AA74669D9 /* ProjectsView.swift in Sources */,
+				5094B5F4DB527FD61509F340 /* ProposalsStore.swift in Sources */,
+				B77BE7692399E9374B9372E5 /* PushTokens.swift in Sources */,
+				64FE76CEEDF39BCA4BD104E6 /* ReportBlocksView.swift in Sources */,
+				A5D4478D135C8571D9B0C25E /* RootView.swift in Sources */,
+				AE5043C2BADDF974895EAC5C /* Route.swift in Sources */,
+				A508D8619967FC0AFC236F9C /* Rows.swift in Sources */,
+				55304875735519F780DBE883 /* RunView.swift in Sources */,
+				85B885DE197E4591E333C07D /* SettingsView.swift in Sources */,
+				3C1C0796FCE5D8AA678463BF /* StoppedAgentView.swift in Sources */,
+				61C10B6C7968E2DD39CBFDC4 /* Theme.swift in Sources */,
+				AC7A4FE03EB3A80E8D83B5C5 /* ToolCallCard.swift in Sources */,
+				9649E2679831459D3DE191FD /* TranscriptMessageView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4BCA19C70CB5094155DF75C2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8CECFF1D74073176AD704531 /* ArgusNotificationService */;
+			targetProxy = 28A7D58F39398B637F359DD6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		541EB4B835D17021CA770FDD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = CKZT75PN5T;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		6841714172BD72C061C90015 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = development;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ArgusRemote/ArgusRemote.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = ArgusRemote/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.remote;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		746A113C4E08F9BDFDF30077 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.remote.NotificationService;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		83F730D4D28BE96C0BD777C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APS_ENVIRONMENT = production;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = ArgusRemote/ArgusRemote.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = ArgusRemote/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.remote;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A7CBB9619CB6FEAD5B08E003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationService/NotificationService.entitlements;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.houwert.argus.remote.NotificationService;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BE0C5AD133C8B0B1A2870B6B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CKZT75PN5T;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		12725D0AC6D3310570087CD2 /* Build configuration list for PBXNativeTarget "ArgusRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6841714172BD72C061C90015 /* Debug */,
+				83F730D4D28BE96C0BD777C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		49A44FFF4341489D11593708 /* Build configuration list for PBXProject "ArgusRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				541EB4B835D17021CA770FDD /* Debug */,
+				BE0C5AD133C8B0B1A2870B6B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7E1A91C98B2DD4A4C39D1147 /* Build configuration list for PBXNativeTarget "ArgusNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A7CBB9619CB6FEAD5B08E003 /* Debug */,
+				746A113C4E08F9BDFDF30077 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		B68ECC6C3B58529FD4EC56FE /* XCLocalSwiftPackageReference "ArgusKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ArgusKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6625E1D6BCC577429BF7B696 /* ArgusKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ArgusKit;
+		};
+		7C60136A1C7D698866F581E8 /* ArgusKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ArgusKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = AD9C612A8E5AE985CEA06BA0 /* Project object */;
+}
