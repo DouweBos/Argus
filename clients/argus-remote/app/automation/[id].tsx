@@ -7,7 +7,7 @@
  * going to get it by tapping.
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { View } from "react-native";
 import * as Icons from "../../src/components/Icons";
@@ -43,8 +43,12 @@ export default function AutomationScreen() {
   const automation = useAutomationsStore((s) =>
     s.automations.find((a) => a.id === id),
   );
-  const runs = useAutomationsStore((s) =>
-    s.runs.filter((r) => r.automation_id === id),
+  // Select the whole list and narrow it here — a selector that returns a new
+  // array every call re-renders forever under zustand's snapshot comparison.
+  const allRuns = useAutomationsStore((s) => s.runs);
+  const runs = useMemo(
+    () => allRuns.filter((r) => r.automation_id === id),
+    [allRuns, id],
   );
   const triggering = useAutomationsStore((s) => Boolean(s.triggering[id]));
   const error = useAutomationsStore((s) => s.error);
