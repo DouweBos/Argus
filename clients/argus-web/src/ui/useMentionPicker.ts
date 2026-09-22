@@ -6,14 +6,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { MentionPickerItem } from "@argus/peacock";
 import { useAppStore } from "../lib/store";
 
-export interface MentionPickerItem {
-  display: string;
-  hint?: string;
-  isDir: boolean;
-  isLinkAction?: boolean;
-}
+// Re-export so callers keep importing the row shape from the hook they use.
+export type { MentionPickerItem };
 
 interface MentionContext {
   query: string;

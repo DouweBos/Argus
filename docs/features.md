@@ -98,6 +98,9 @@ ciphertext.
   default. **Control** lets a device drive agents.
 - **Background push** — wakes paired phones and browsers with a real
   notification when they aren't connected.
+- **Phone or tablet** — the web client is one column on a phone and
+  splits into a two-pane layout on an iPad or a desktop browser, with the
+  session list beside whatever you have open.
 - **Revoke** drops a device's pinned key and kills any live session
   immediately.
 

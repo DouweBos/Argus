@@ -6,14 +6,16 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   Button,
   ChatInputShell,
   Chip,
   ContextMeter,
+  FileMentionPicker,
   Icons,
   ImageAttachmentStrip,
+  PickerPopover,
+  SlashCommandList,
 } from "@argus/peacock";
 import {
   contextLimitForModel,
@@ -68,80 +70,6 @@ function readLinked(agentId: string): string[] {
   } catch {
     return [];
   }
-}
-
-interface Option {
-  value: string;
-  label: string;
-  hint?: string;
-}
-
-/**
- * Options list anchored above its trigger chip. Rendered in a portal so it
- * isn't clipped by the toolbar's `overflow` (the chips scroll horizontally).
- */
-function Dropdown({
-  anchorRef,
-  options,
-  current,
-  multi,
-  selected,
-  onSelect,
-  onClose,
-  empty,
-}: {
-  anchorRef: React.RefObject<HTMLElement | null>;
-  options: Option[];
-  current?: string | null;
-  /** Multi-select (checkbox) mode — keeps the menu open on click. */
-  multi?: boolean;
-  selected?: string[];
-  onSelect: (value: string) => void;
-  onClose: () => void;
-  empty?: string;
-}) {
-  const rect = anchorRef.current?.getBoundingClientRect();
-  const style: React.CSSProperties = rect
-    ? {
-        position: "fixed",
-        left: rect.left,
-        bottom: window.innerHeight - rect.top + 6,
-        minWidth: Math.max(rect.width, 180),
-      }
-    : { display: "none" };
-
-  return createPortal(
-    <>
-      <div className="aw-dropdown-scrim" onClick={onClose} />
-      <div className="aw-dropdown" role="listbox" style={style}>
-        {options.length === 0 && empty && (
-          <div className="aw-dropdown-empty">{empty}</div>
-        )}
-        {options.map((o) => {
-          const active = multi
-            ? (selected ?? []).includes(o.value)
-            : o.value === current;
-
-          return (
-            <button
-              key={o.value}
-              className={`aw-dropdown-item${active ? " aw-dropdown-item-active" : ""}`}
-              onClick={() => {
-                onSelect(o.value);
-                if (!multi) {
-                  onClose();
-                }
-              }}
-            >
-              <span>{o.label}</span>
-              {o.hint && <span className="aw-dropdown-hint">{o.hint}</span>}
-            </button>
-          );
-        })}
-      </div>
-    </>,
-    document.body,
-  );
 }
 
 /**
@@ -489,70 +417,24 @@ export function ChatInput({
 
   const above = (
     <>
-      {suggestions.length > 0 && (
-        <div className="aw-suggestions">
-          <div className="aw-suggestions-header">Commands</div>
-          {suggestions.map((cmd, i) => (
-            <button
-              key={cmd.name}
-              className={`aw-suggestion${i === selectedIndex ? " aw-suggestion-active" : ""}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                applySuggestion(cmd);
-              }}
-              onMouseEnter={() => setSelectedIndex(i)}
-            >
-              <span className="aw-suggestion-slash">/</span>
-              <span className="aw-suggestion-name">{cmd.name}</span>
-              {cmd.description && (
-                <span className="aw-suggestion-desc">{cmd.description}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      <SlashCommandList
+        items={suggestions}
+        selectedIndex={selectedIndex}
+        onSelect={(i) => applySuggestion(suggestions[i])}
+        onSelectedIndexChange={setSelectedIndex}
+      />
 
       {mentionContext && suggestions.length === 0 && (
-        <div className="aw-suggestions">
-          <div className="aw-suggestions-header">{mentionHeaderText}</div>
-          {mentionItems.map((item, i) => (
-            <button
-              key={`${item.display}-${i}`}
-              className={[
-                "aw-suggestion",
-                i === mentionSelectedIndex ? "aw-suggestion-active" : "",
-                item.isLinkAction ? "aw-suggestion-link" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                selectMentionItem(textareaRef.current, i);
-                adjustHeight();
-              }}
-              onMouseEnter={() => setMentionSelectedIndex(i)}
-            >
-              {item.isDir ? (
-                <Icons.FolderIcon size={12} />
-              ) : (
-                <Icons.FileIcon size={12} />
-              )}
-              {item.isLinkAction ? (
-                <>
-                  <span className="aw-suggestion-name">Use this directory</span>
-                  <span className="aw-suggestion-desc">{item.display}</span>
-                </>
-              ) : (
-                <>
-                  <span className="aw-suggestion-name">{item.display}</span>
-                  {item.hint && (
-                    <span className="aw-suggestion-desc">{item.hint}</span>
-                  )}
-                </>
-              )}
-            </button>
-          ))}
-        </div>
+        <FileMentionPicker
+          headerText={mentionHeaderText}
+          items={mentionItems}
+          selectedIndex={mentionSelectedIndex}
+          onSelect={(index) => {
+            selectMentionItem(textareaRef.current, index);
+            adjustHeight();
+          }}
+          onSelectedIndexChange={setMentionSelectedIndex}
+        />
       )}
 
       <ImageAttachmentStrip
@@ -587,18 +469,26 @@ export function ChatInput({
             {modelLabel}
           </Chip>
           {openPicker === "model" && (
-            <Dropdown
-              anchorRef={modelChipRef}
-              current={modelValue}
-              empty="Loading models…"
-              options={models.map((m) => ({
-                value: m.value,
-                label: m.displayName,
-                hint: m.description,
-              }))}
-              onSelect={(v) => setModel(agentId, v).catch(() => {})}
+            <PickerPopover
+              triggerRef={modelChipRef}
               onClose={() => setOpenPicker(null)}
-            />
+            >
+              {models.length === 0 && (
+                <PickerPopover.Empty>Loading models…</PickerPopover.Empty>
+              )}
+              {models.map((m) => (
+                <PickerPopover.Option
+                  key={m.value}
+                  name={m.displayName}
+                  description={m.description}
+                  selected={m.value === modelValue}
+                  onSelect={() => {
+                    setOpenPicker(null);
+                    setModel(agentId, m.value).catch(() => {});
+                  }}
+                />
+              ))}
+            </PickerPopover>
           )}
         </div>
       )}
@@ -612,20 +502,22 @@ export function ChatInput({
           {PERMISSION_LABELS[mode]}
         </Chip>
         {openPicker === "mode" && (
-          <Dropdown
-            anchorRef={modeChipRef}
-            current={mode}
-            options={PERMISSION_MODES.map((m) => ({
-              value: m,
-              label: PERMISSION_LABELS[m],
-            }))}
-            onSelect={(v) =>
-              setPermissionMode(agentId, v as RemotePermissionMode).catch(
-                () => {},
-              )
-            }
+          <PickerPopover
+            triggerRef={modeChipRef}
             onClose={() => setOpenPicker(null)}
-          />
+          >
+            {PERMISSION_MODES.map((m) => (
+              <PickerPopover.Option
+                key={m}
+                name={PERMISSION_LABELS[m]}
+                selected={m === mode}
+                onSelect={() => {
+                  setOpenPicker(null);
+                  setPermissionMode(agentId, m).catch(() => {});
+                }}
+              />
+            ))}
+          </PickerPopover>
         )}
       </div>
       {effortLevels.length > 0 && (
@@ -641,16 +533,24 @@ export function ChatInput({
             {effort ?? "Effort"}
           </Chip>
           {openPicker === "effort" && (
-            <Dropdown
-              anchorRef={effortChipRef}
-              current={effort ?? ""}
-              options={[
-                { value: "", label: "Default" },
-                ...effortLevels.map((l) => ({ value: l, label: l })),
-              ]}
-              onSelect={(v) => setEffort(agentId, v || null).catch(() => {})}
+            <PickerPopover
+              triggerRef={effortChipRef}
               onClose={() => setOpenPicker(null)}
-            />
+            >
+              {[{ value: "", label: "Default" }, ...effortLevels.map((l) => ({ value: l, label: l }))].map(
+                (o) => (
+                  <PickerPopover.Option
+                    key={o.value || "default"}
+                    name={o.label}
+                    selected={o.value === (effort ?? "")}
+                    onSelect={() => {
+                      setOpenPicker(null);
+                      setEffort(agentId, o.value || null).catch(() => {});
+                    }}
+                  />
+                ),
+              )}
+            </PickerPopover>
           )}
         </div>
       )}
@@ -668,19 +568,23 @@ export function ChatInput({
           {linked.length === 0 ? "Link project" : `${linked.length} linked`}
         </Chip>
         {openPicker === "project" && (
-          <Dropdown
-            anchorRef={projectChipRef}
-            multi
-            selected={linked}
-            empty="No other projects open"
-            options={projects.map((p) => ({
-              value: p.repo_root,
-              label: p.name,
-              hint: p.repo_root,
-            }))}
-            onSelect={toggleLinked}
+          <PickerPopover
+            triggerRef={projectChipRef}
             onClose={() => setOpenPicker(null)}
-          />
+          >
+            {projects.length === 0 && (
+              <PickerPopover.Empty>No other projects open</PickerPopover.Empty>
+            )}
+            {projects.map((p) => (
+              <PickerPopover.Option
+                key={p.repo_root}
+                name={p.name}
+                description={p.repo_root}
+                selected={linked.includes(p.repo_root)}
+                onSelect={() => toggleLinked(p.repo_root)}
+              />
+            ))}
+          </PickerPopover>
         )}
       </div>
     </>
