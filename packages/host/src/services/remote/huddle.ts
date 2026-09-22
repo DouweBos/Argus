@@ -125,6 +125,7 @@ function statePayload(
           }))
       : [],
     you: approved ? (guest?.member_id ?? null) : null,
+    host_label: approved ? room.host_label : "",
   };
 }
 
@@ -167,6 +168,8 @@ export interface CreateRoomOpts {
   agent_id: string;
   /** Whatever device the host has open; empty string when there is none. */
   device_key: string;
+  /** What to call the engineer in this room. Empty when nothing is known. */
+  host_label?: string;
   /** Override the backstop lifetime (tests, mostly). */
   ttl_ms?: number;
 }
@@ -182,6 +185,7 @@ export function createRoom(opts: CreateRoomOpts): HuddleRoom {
     created_at: now,
     expires_at: now + (opts.ttl_ms ?? ROOM_TTL_MS),
     guests: [],
+    host_label: opts.host_label ?? "",
   };
   rooms.set(room.id, { room, links: new Map() });
   scheduleSweep();
@@ -234,6 +238,21 @@ export function getRoom(roomId: string): HuddleRoom | null {
   const entry = rooms.get(roomId);
 
   return entry ? structuredClone(entry.room) : null;
+}
+
+/**
+ * What the engineer is called in the room sharing this agent, if any. Lets a
+ * send arriving from the host's own devices be attributed too — inside a
+ * huddle, an unattributed message could have come from anyone in it.
+ */
+export function hostLabelForAgent(agentId: string): string | undefined {
+  for (const entry of rooms.values()) {
+    if (entry.room.agent_id === agentId) {
+      return entry.room.host_label || undefined;
+    }
+  }
+
+  return undefined;
 }
 
 /** True while at least one room is open — the gate on accepting guest sockets. */

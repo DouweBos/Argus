@@ -88,6 +88,8 @@ export interface HuddleStatePayload {
   members?: HuddleMember[];
   /** Which of `members` is us. */
   you?: string | null;
+  /** What to call the engineer. Empty when the desktop knows no name for them. */
+  host_label?: string;
 }
 
 export type RemotePlatform = "ios" | "android";

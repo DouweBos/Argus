@@ -1713,7 +1713,9 @@ export const remoteCancelPairing = (): Promise<void> =>
 export const huddleStart = (
   agentId: string,
   deviceKey: string,
-): Promise<HuddleRoom> => invoke("huddle_start", { agentId, deviceKey });
+  hostLabel: string,
+): Promise<HuddleRoom> =>
+  invoke("huddle_start", { agentId, deviceKey, hostLabel });
 
 /**
  * Whether this Mac can hand out a link at all, asked before the user commits
@@ -1955,8 +1957,10 @@ export const queueMessage = (
   text: string,
   images?: QueuedImage[],
   displayText?: string,
+  /** Who queued it. Set while the agent is shared, so a huddle reads clearly. */
+  author?: string,
 ): Promise<QueuedMessage> =>
-  invoke("queue_message", { agentId, text, images, displayText });
+  invoke("queue_message", { agentId, text, images, displayText, author });
 
 export const removeQueuedMessage = (
   agentId: string,

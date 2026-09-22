@@ -26,6 +26,7 @@ import {
   tokensInContext,
 } from "../../../lib/contextWindow";
 import { editAndRestoreFromMessage } from "../../../lib/editRestoreChat";
+import { huddleAuthor } from "../../../lib/huddleAuthor";
 import {
   type ImageAttachment,
   createCheckpoint,
@@ -919,7 +920,13 @@ export function AgentChat({
 
       // If the agent is busy (running/starting), queue the message for later.
       if (status === "running") {
-        queueMessage(agentId, message, images);
+        queueMessage(
+          agentId,
+          message,
+          images,
+          undefined,
+          huddleAuthor(agentId),
+        );
 
         return;
       }
@@ -934,7 +941,13 @@ export function AgentChat({
       } catch {
         // Skip checkpoint — the message still goes through.
       }
-      addUserMessage(agentId, message, images, checkpointId);
+      addUserMessage(
+        agentId,
+        message,
+        images,
+        checkpointId,
+        huddleAuthor(agentId),
+      );
       notifyMessageSent(agentId);
       updateAgent(agentId, { status: "running" });
       try {
