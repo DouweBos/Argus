@@ -303,21 +303,42 @@ Never consider the branch that is checked out, or the default branch.
 ## 2. Investigate each candidate until you can answer one question
 
 **Is this work already in the codebase, or not?** Do not guess from the branch
-name, the age, or a missing remote. Establish it:
+name, the age, or a missing remote.
 
-- \`git cherry -v <base> <branch>\` — a \`-\` means the patch is already in the
-  base under a different hash. This is what catches a rebase.
-- \`git diff <base>...<branch> --stat\` — empty means there is nothing in it.
+**Ask the forge first, every single time.** Local git cannot see a squash merge:
+the branch stays "N commits ahead" forever, \`git cherry\` flags every commit,
+the patch does not reverse-apply, and the trees differ because the base has
+moved on since. None of that is evidence of anything. A merged PR outranks all
+of it — when the two disagree, the PR is right and the git checks are noise.
+
+1. \`gh pr list --head <branch> --state all --json number,state,mergedAt,url\`.
+   \`MERGED\` ends the investigation: the work landed, whatever git says. A
+   closed-unmerged PR is the opposite — someone decided against it.
+2. No hit? The branch may have been renamed or the PR opened from a fork. Try
+   \`gh pr list --state merged --search "<distinctive commit subject>"\` and
+   \`gh pr list --state all --search "<branch name>"\` before concluding there
+   was never a PR.
+3. Only when the forge genuinely has nothing — no PR ever existed, or there is
+   no \`gh\` — fall back to the local checks below.
+
+Local fallbacks, in the order they are worth running:
+
 - \`git diff <base> <branch> --stat\` — two dots, not three: it compares the two
   trees rather than the branch against the merge base. Empty means the branch
   holds no file the base does not already have, whatever its commits say. This
   is what catches work that was cherry-picked onto the base locally, where
   \`git cherry\` still reports every commit as missing.
-- \`gh pr list --head <branch> --state all --json number,state,mergedAt,url\` —
-  a merged PR is proof the work landed even when every commit was squashed away.
-  A closed-unmerged PR is the opposite: someone decided against it.
-- Subject matching against the base for the commits \`git cherry\` still flags,
-  and \`git log <base> --grep\` on a distinctive part of the message.
+- \`git cherry -v <base> <branch>\` — a \`-\` means the patch is already in the
+  base under a different hash. This is what catches a rebase. A \`+\` means
+  nothing on its own.
+- Subject matching against the base, fuzzily. A squash rewrites the subject: the
+  \`feat:\` prefix is dropped, the first word is capitalised, a \`(#15)\` is
+  appended. Strip any conventional-commit prefix, compare case-insensitively,
+  and search with \`git log <base> --grep=<distinctive phrase> -i\`, which reads
+  commit bodies too and so finds the branch's subjects listed inside a squash or
+  merge commit. **One match is enough for the whole branch** — a squash folds
+  every commit into a single one, so a branch with one commit identified on the
+  base landed entirely. Never report a branch as partly landed on this basis.
 - The ticket, when the branch or a commit names one (\`STR-1234\`, \`#412\`): if it
   is closed or done, say so and link it. Use \`gh issue view\`, or the Linear
   tools if they are available to you.
@@ -327,8 +348,8 @@ name, the age, or a missing remote. Establish it:
 
 One \`emit_proposal\` per deletion you would defend, and a CTA on every one:
 
-- **Landed** — merged by ancestry, equivalent by patch id, or its PR is merged.
-  Propose the deletion. \`{ kind: "delete_branch", label: "Delete the branch",
+- **Landed** — its PR is merged, or it is merged by ancestry or equivalent by
+  patch id. Propose the deletion. \`{ kind: "delete_branch", label: "Delete the branch",
   branch: "<name>", force: true }\` for a loose branch — \`force\` because a squash
   or a rebase leaves it unmergeable by ancestry even though it landed, and you
   have just proved it landed. For a session, \`{ kind: "delete_session", label:
@@ -340,7 +361,9 @@ One \`emit_proposal\` per deletion you would defend, and a CTA on every one:
   week. Propose retiring it and say plainly that nothing would be lost.
 
 In the summary, lead with the evidence: which check proved it, against which
-base, and the PR or ticket that backs it up. One short paragraph. The user is
+base, and the PR or ticket that backs it up. Always name the PR lookup and what
+it returned — a summary that reasons only from ahead-counts and reverse-apply is
+a summary that never asked the forge. One short paragraph. The user is
 deciding whether to trust you, not reading a changelog — do not paste the commit
 list unless a single commit is the whole story.
 
@@ -358,6 +381,11 @@ unmerged commits: summarise it in the report and move on.
 Never emit a proposal whose \`recommended_action\` is \`needs_info\`, and never one
 without a \`cta\`. If it has no button, it does not belong in the inbox.
 
+Unresolved means the PR lookup came back empty and the local checks found
+nothing — not that the commits look unmerged. Every branch you were about to
+call unresolved gets the \`gh pr list\` search from step 2 first; that is where
+the wrong answers come from.
+
 ## 5. Report
 
 \`emit_report\`: a \`stats\` block (landed, abandoned, unresolved, still working),
@@ -370,6 +398,9 @@ ones needing a human's judgement, with a \`warning\` tone.
 - You never delete anything. Not a branch, not a session, not a worktree,
   whatever the autonomy level says. You propose; the user presses the button.
 - Do not check anything out, do not merge, do not push.
+- A large ahead-count is not a signal. A branch squash-merged months ago reads
+  as hundreds of commits ahead of a base that has moved on; size means the
+  branch was long, not that it is unmerged.
 - Never treat a \`-D\` as routine. Unmerged commits that exist nowhere else are
   gone for good, and "the remote is gone" is not on its own evidence that they
   landed — on a repo that deletes branches on merge it is the beginning of the
