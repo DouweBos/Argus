@@ -1190,7 +1190,8 @@ export function registerIpcHandlers(): void {
   });
   handle("remote_start_pairing", "host", () =>
     startPairing(getPublicUrl(), {
-      onSas: (sas) => emitHostEvent("remote:pairing-sas", { sas }),
+      onSas: (sas, client) =>
+        emitHostEvent("remote:pairing-sas", { sas, client }),
       onPaired: (device) =>
         emitHostEvent("remote:pairing-complete", { device }),
       onError: (message) => emitHostEvent("remote:pairing-error", { message }),

@@ -103,18 +103,24 @@ export function HostsSection() {
     setError(null);
     try {
       const payload = parsePairingInput(code);
-      const client = new PairingClient(payload, {
-        onSas: (next) => {
-          setSas(next);
-          setPhase("awaiting-sas");
+      const client = new PairingClient(
+        payload,
+        {
+          onSas: (next) => {
+            setSas(next);
+            setPhase("awaiting-sas");
+          },
+          onPaired,
+          onError: (message) => {
+            setError(message);
+            setSas(null);
+            setPhase("idle");
+          },
         },
-        onPaired,
-        onError: (message) => {
-          setError(message);
-          setSas(null);
-          setPhase("idle");
-        },
-      });
+        // A desktop is the one client that can be handed the keyboard, so the
+        // other Mac's confirm screen is the only one that offers it.
+        { client: { product: "Argus for Mac", kind: "desktop" } },
+      );
       clientRef.current = client;
       setPhase("pairing");
       client.start();

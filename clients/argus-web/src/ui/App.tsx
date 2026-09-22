@@ -9,7 +9,7 @@ import {
 } from "@argus/peacock";
 import { PairingClient, parsePairingInput } from "@argus/remote-client";
 import { parseHuddleToken } from "../lib/huddleIdentity";
-import { identityFromPairing } from "../lib/keystore";
+import { defaultDeviceName, identityFromPairing } from "../lib/keystore";
 import { wsOrigin } from "../lib/origin";
 import { useAppStore } from "../lib/store";
 import { HuddleGuest } from "./HuddleGuest";
@@ -72,9 +72,16 @@ function Pair() {
           setSas(null);
         },
         },
-        // The host serves this bundle, so our own origin is the route that
-        // definitely works — the URL in the code may not be.
-        { url: wsOrigin() },
+        {
+          // The host serves this bundle, so our own origin is the route that
+          // definitely works — the URL in the code may not be.
+          url: wsOrigin(),
+          client: {
+            product: "Argus Web",
+            kind: "web",
+            device: defaultDeviceName(),
+          },
+        },
       );
       clientRef.current = client;
       client.start();

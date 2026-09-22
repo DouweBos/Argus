@@ -1,4 +1,5 @@
 import type {
+  PairingClient,
   RemoteEndpointKind,
   RemoteDevice,
   RemoteStatus,
@@ -29,6 +30,7 @@ import {
   remoteSetDeviceGrants,
   remoteStartPairing,
 } from "../../../lib/ipc";
+import { canDriveArgus, pairingClientLabel } from "../../../lib/pairingClient";
 import styles from "./RemoteAccessSection.module.css";
 import { RemoteDeviceRow } from "./RemoteDeviceRow";
 import { RemotePushFields } from "./RemotePushFields";
@@ -127,6 +129,9 @@ export function RemoteAccessSection() {
     qrPayload: string;
   } | null>(null);
   const [sas, setSas] = useState<string | null>(null);
+  const [pairingClient, setPairingClient] = useState<PairingClient | null>(
+    null,
+  );
   const [grantControl, setGrantControl] = useState(false);
   const [grantAdmin, setGrantAdmin] = useState(false);
 
@@ -154,13 +159,24 @@ export function RemoteAccessSection() {
     setPhase("idle");
     setQr(null);
     setSas(null);
+    setPairingClient(null);
     setGrantControl(false);
   }, []);
 
-  useIpcEvent<{ sas: string }>("remote:pairing-sas", (p) => {
-    setSas(p.sas);
-    setPhase("awaiting-sas");
-  });
+  useIpcEvent<{ client: PairingClient | null; sas: string }>(
+    "remote:pairing-sas",
+    (p) => {
+      setSas(p.sas);
+      setPairingClient(p.client ?? null);
+      // Only another desktop can drive this one, so a phone or a browser is
+      // never offered the keyboard — the toggle is not hidden from you, it is
+      // absent because it would do nothing.
+      if (p.client && p.client.kind !== "desktop") {
+        setGrantAdmin(false);
+      }
+      setPhase("awaiting-sas");
+    },
+  );
   useIpcEvent<{ device: RemoteDevice }>("remote:pairing-complete", () => {
     resetPairing();
     refresh();
@@ -510,7 +526,9 @@ export function RemoteAccessSection() {
               {phase === "awaiting-sas" && sas && (
                 <>
                   <p className={styles.muted}>
-                    Confirm this code matches the one on your device:
+                    {pairingClient
+                      ? `${pairingClientLabel(pairingClient)} wants to pair. Confirm this code matches the one on its screen:`
+                      : "Confirm this code matches the one on your device:"}
                   </p>
                   <div className={styles.sas}>{sas}</div>
                   <label className={styles.controlToggle}>
@@ -524,14 +542,16 @@ export function RemoteAccessSection() {
                       agents, create sessions)
                     </span>
                   </label>
-                  <label className={styles.controlToggle}>
-                    <Toggle checked={grantAdmin} onChange={setGrantAdmin} />
-                    <span>
-                      Let this device drive Argus like a second keyboard — for
-                      another Mac of yours running the desktop app, never a
-                      browser or phone.
-                    </span>
-                  </label>
+                  {canDriveArgus(pairingClient) && (
+                    <label className={styles.controlToggle}>
+                      <Toggle checked={grantAdmin} onChange={setGrantAdmin} />
+                      <span>
+                        Let this device drive Argus like a second keyboard — for
+                        another Mac of yours running the desktop app, never a
+                        browser or phone.
+                      </span>
+                    </label>
+                  )}
                   <div className={styles.pairActions}>
                     <Button variant="ghost" onClick={cancelPairing}>
                       Cancel

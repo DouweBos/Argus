@@ -20,6 +20,30 @@ export const PairingPayload = z.object({
 });
 export type PairingPayload = z.infer<typeof PairingPayload>;
 
+/** What kind of thing is asking to pair, which decides what it may be granted. */
+export const PairingClientKind = z.enum(["desktop", "mobile", "web"]);
+export type PairingClientKind = z.infer<typeof PairingClientKind>;
+
+/**
+ * Who is pairing, carried in the client's first handshake message.
+ *
+ * Unauthenticated by nature — it is what the client says about itself, inside
+ * the PSK-authenticated handshake but before any human has confirmed anything.
+ * So it is only ever used to describe the device on the confirm screen and to
+ * decide which grants to *offer*; the human still chooses, and the host still
+ * enforces. A client that sends nothing is shown as unknown.
+ */
+export const PairingClientInfo = z.object({
+  /** The product, for the human: "Argus Remote", "Argus for Mac". */
+  product: z.string().max(64),
+  kind: PairingClientKind,
+  /** What it runs on, when the client knows: "iPhone 17 Pro", "Safari". */
+  device: z.string().max(64).optional(),
+  /** Client version, for the paired-devices list. */
+  version: z.string().max(32).optional(),
+});
+export type PairingClientInfo = z.infer<typeof PairingClientInfo>;
+
 /**
  * Delivered from desktop to client INSIDE the encrypted pairing handshake. The
  * client is identified on future connections by its pinned static key, so no

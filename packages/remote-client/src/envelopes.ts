@@ -56,6 +56,18 @@ export interface PairingPayload {
   pairing_secret: string;
 }
 
+/**
+ * What the client says it is, sent in its first handshake message so the
+ * confirm screen can name the product asking to pair. Mirrors
+ * `PairingClientInfo` in `@argus/remote-protocol`.
+ */
+export interface PairingClientInfo {
+  product: string;
+  kind: "desktop" | "mobile" | "web";
+  device?: string;
+  version?: string;
+}
+
 /** What the host sends back once the user confirms the SAS. */
 export interface PairingGrant {
   device_id: string;
