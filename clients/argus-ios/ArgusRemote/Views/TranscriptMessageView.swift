@@ -30,30 +30,46 @@ struct TranscriptMessageView: View {
       VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
         badges
         chips
-        ForEach(Array(textBlocks.enumerated()), id: \.offset) { _, block in
-          MarkdownView(text: block, baseSize: 15)
-        }
+        // Attachments sit beside the bubble, not inside it: an image in the
+        // background makes the bubble stretch to the image's width and reads
+        // as part of the message body rather than something sent with it.
         images
-        ForEach(message.toolCalls) { call in
-          ToolCallCard(agentKey: agentKey, call: call, depth: 0)
-          if app.isToolCallPending(agentKey: agentKey, call: call) {
-            pendingForm(for: call)
-          }
-        }
+        if hasBubbleContent { bubble }
         if let timestamp = message.timestamp {
-          Text(Date(timeIntervalSince1970: timestamp / 1000).formatted(date: .omitted, time: .shortened))
-            .font(.system(size: 10))
-            .foregroundStyle(theme.textMuted)
+          Text(
+            Date(timeIntervalSince1970: timestamp / 1000)
+              .formatted(date: .omitted, time: .shortened)
+          )
+          .font(.caption2)
+          .foregroundStyle(.tertiary)
         }
       }
-      .padding(message.toolCalls.isEmpty ? 11 : 6)
-      .background(isUser ? theme.accentSoft : theme.bgSecondary)
-      .clipShape(RoundedRectangle(cornerRadius: theme.radius))
-      .overlay(
-        RoundedRectangle(cornerRadius: theme.radius)
-          .stroke(isUser ? theme.accentBorder : theme.border, lineWidth: 1))
       if !isUser { Spacer(minLength: 24) }
     }
+  }
+
+  private var hasBubbleContent: Bool {
+    !textBlocks.isEmpty || !message.toolCalls.isEmpty
+  }
+
+  private var bubble: some View {
+    VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
+      ForEach(Array(textBlocks.enumerated()), id: \.offset) { _, block in
+        MarkdownView(text: block, baseSize: 15)
+      }
+      ForEach(message.toolCalls) { call in
+        ToolCallCard(agentKey: agentKey, call: call, depth: 0)
+        if app.isToolCallPending(agentKey: agentKey, call: call) {
+          pendingForm(for: call)
+        }
+      }
+    }
+    .padding(message.toolCalls.isEmpty ? 11 : 6)
+    .background(isUser ? theme.accentSoft : theme.bgSecondary)
+    .clipShape(RoundedRectangle(cornerRadius: theme.radius))
+    .overlay(
+      RoundedRectangle(cornerRadius: theme.radius)
+        .stroke(isUser ? theme.accentBorder : theme.border, lineWidth: 1))
   }
 
   @ViewBuilder
@@ -89,12 +105,17 @@ struct TranscriptMessageView: View {
   @ViewBuilder
   private var images: some View {
     if let refs = message.images, !refs.isEmpty {
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 6)], spacing: 6) {
-        ForEach(refs, id: \.imageId) { ref in
+      HStack(alignment: .top, spacing: 6) {
+        ForEach(refs.prefix(3), id: \.imageId) { ref in
           TranscriptImage(
             agentKey: agentKey, imageId: ref.imageId,
-            siblings: refs.map(\.imageId), maxHeight: 96)
+            siblings: refs.map(\.imageId), maxHeight: 140)
         }
+      }
+      if refs.count > 3 {
+        Text("+\(refs.count - 3) more")
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
     }
   }

@@ -206,6 +206,22 @@ struct QueuedMessageCard: View {
     parsed?.rest ?? message.displayText ?? message.text
   }
 
+  /// A queued message carries its attachments inline as base64, not as image
+  /// refs to fetch. Seeding them into the same cache the transcript uses lets
+  /// the ordinary thumbnail and the full-screen pager work unchanged.
+  private var attachmentIds: [String] {
+    (message.images ?? []).indices.map { "queued:\(message.id):img:\($0)" }
+  }
+
+  private func seedAttachments() {
+    for (index, image) in (message.images ?? []).enumerated() {
+      app.seedImage(
+        agentId: agentKey,
+        imageId: "queued:\(message.id):img:\(index)",
+        dataURI: "data:\(image.mediaType);base64,\(image.data)")
+    }
+  }
+
   var body: some View {
     Card {
       if editing {
@@ -227,8 +243,18 @@ struct QueuedMessageCard: View {
             confirmingRemove = true
           }
         }
+        if !attachmentIds.isEmpty {
+          HStack(spacing: 6) {
+            ForEach(attachmentIds, id: \.self) { imageId in
+              TranscriptImage(
+                agentKey: agentKey, imageId: imageId,
+                siblings: attachmentIds, maxHeight: 56)
+            }
+          }
+        }
       }
     }
+    .task(id: message.id) { seedAttachments() }
     .confirmationDialog(
       "Remove this queued message?", isPresented: $confirmingRemove, titleVisibility: .visible
     ) {
