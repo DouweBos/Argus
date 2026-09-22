@@ -13,7 +13,13 @@ import {
   saveIdentity,
 } from "./keystore";
 import type { DeviceIdentity } from "./keystore";
-import { fetchHostKey, guestClientId, guestKeypair } from "./huddleIdentity";
+import {
+  fetchHostKey,
+  guestClientId,
+  guestKeypair,
+  readGuestLabel,
+  rememberGuestLabel,
+} from "./huddleIdentity";
 import {
   applyHuddleChat,
   applyHuddleState,
@@ -43,6 +49,10 @@ import type {
   HuddleStatePayload,
   RemoteDeviceClaim,
   RemoteDeviceClaimState,
+  RemoteDeviceOrientation,
+  RemoteMethod,
+  RemoteDeviceState,
+  RemoteFoldPose,
   RemoteAgentCapabilities,
   RemoteAgentStatus,
   RemoteQueuedMessage,
@@ -121,6 +131,8 @@ interface AppState {
   claimByDevice: Record<string, RemoteDeviceClaim | null>;
   /** Our own connection id, learned the first time the host grants us a claim. */
   claimConnectionId: string | null;
+  /** How each watched device is being held, so the stream is presented upright. */
+  deviceStateById: Record<string, RemoteDeviceState | null>;
   /**
    * Guest standing when this tab was opened on a huddle link. Null for a
    * paired device — the two modes never mix in one tab.
@@ -148,6 +160,11 @@ interface AppState {
   leaveHuddle: () => void;
   /** Say something to the room. Never reaches the agent. */
   sayInHuddle: (text: string) => void;
+  /**
+   * Change the name the room sees. Re-presents the token on the same key, so
+   * the grant survives and nobody has to approve the guest a second time.
+   */
+  renameInHuddle: (label: string) => void;
   /**
    * Tell the room we are (or are no longer) composing. Presence only: the draft
    * never leaves this browser, and a drop expires the flag host-side anyway,
@@ -244,6 +261,23 @@ interface AppState {
   /** Start streaming a device's screen; returns the binary-frame stream id. */
   watchDevice: (deviceId: string, platform: RemotePlatform) => Promise<number>;
   unwatchDevice: (deviceId: string) => Promise<void>;
+  /** Seed a device's pose; the host pushes `device.state` while we watch it. */
+  loadDeviceState: (
+    deviceId: string,
+    platform: RemotePlatform,
+  ) => Promise<void>;
+  /** Rotate the device. Arbitrated by the same claim as a tap. */
+  setDeviceOrientation: (
+    deviceId: string,
+    platform: RemotePlatform,
+    orientation: RemoteDeviceOrientation,
+  ) => Promise<void>;
+  /** Move a foldable's hinge. */
+  setDeviceFold: (
+    deviceId: string,
+    platform: RemotePlatform,
+    pose: RemoteFoldPose,
+  ) => Promise<void>;
   /** Route parsed media frames for a stream to a sink (the device view). */
   registerMediaSink: (
     streamId: number,
@@ -286,6 +320,9 @@ const TRANSCRIPT_PAGE = 80;
 export const useAppStore = create<AppState>((set, get) => {
   // Binary media routing (kept out of reactive state — hot path, no re-render).
   const media = new MediaRouter();
+
+  // The room this tab is in, so a rename can re-present the same token.
+  let huddleToken: string | null = null;
 
   // Debounce live transcript refreshes so a burst of events → one refetch.
   const refetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -361,6 +398,13 @@ export const useAppStore = create<AppState>((set, get) => {
       scheduleTranscript(ev.agent_id);
     } else if (ev.event === "notification") {
       showRemoteNotification(ev.payload as RemoteNotification);
+    } else if (ev.event === "device.state") {
+      // The hinge and orientation move from the desktop or an agent as easily
+      // as from here, so the host is the only source worth trusting.
+      const state = ev.payload as RemoteDeviceState;
+      set((s) => ({
+        deviceStateById: { ...s.deviceStateById, [state.device_id]: state },
+      }));
     } else if (ev.event === "device.claim") {
       const c = ev.payload as RemoteDeviceClaimState;
       set((s) => ({
@@ -404,6 +448,32 @@ export const useAppStore = create<AppState>((set, get) => {
       set((s) => ({
         claimByDevice: { ...s.claimByDevice, [state.device_id]: state.holder },
       }));
+    }
+  }
+
+  /**
+   * Run a pose write and adopt the state it answers with, so the picture turns
+   * with the press rather than waiting on the host's next poll.
+   */
+  async function applyDeviceStateWrite(
+    method: RemoteMethod,
+    deviceId: string,
+    params: Record<string, unknown>,
+  ): Promise<void> {
+    const t = get().transport;
+    if (!t) {
+      return;
+    }
+    try {
+      const { state } = await t.request<{ state: RemoteDeviceState | null }>(
+        method,
+        params,
+      );
+      set((s) => ({
+        deviceStateById: { ...s.deviceStateById, [deviceId]: state },
+      }));
+    } catch (err) {
+      adoptClaimDenial(err);
     }
   }
 
@@ -507,7 +577,7 @@ export const useAppStore = create<AppState>((set, get) => {
           requestJoin(
             transport,
             token,
-            label,
+            readGuestLabel() || label,
             get().huddle ?? undefined,
             guestClientId(),
           )
@@ -562,6 +632,7 @@ export const useAppStore = create<AppState>((set, get) => {
     devices: [],
     claimByDevice: {},
     claimConnectionId: null,
+    deviceStateById: {},
     huddle: null,
 
     init: () => {
@@ -577,6 +648,7 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     joinHuddle: async (token, label) => {
+      huddleToken = token;
       get().transport?.disconnect();
       set({ huddle: INITIAL_HUDDLE_VIEW, capabilities: [], identity: null });
       try {
@@ -596,6 +668,29 @@ export const useAppStore = create<AppState>((set, get) => {
       }
       get()
         .transport?.request("huddle.say", { text })
+        .catch(() => {});
+    },
+
+    renameInHuddle: (label) => {
+      const name = label.trim();
+      if (!name) {
+        return;
+      }
+      rememberGuestLabel(name);
+      const transport = get().transport;
+      if (!transport || !huddleToken || get().connection !== "ready") {
+        return;
+      }
+      requestJoin(
+        transport,
+        huddleToken,
+        name,
+        get().huddle ?? undefined,
+        guestClientId(),
+      )
+        .then((view) => {
+          set({ huddle: view, capabilities: huddleCapabilities(view.state) });
+        })
         .catch(() => {});
     },
 
@@ -1281,6 +1376,25 @@ export const useAppStore = create<AppState>((set, get) => {
         .catch(() => {});
     },
 
+    loadDeviceState: async (deviceId, platform) => {
+      const t = get().transport;
+      if (!t) {
+        return;
+      }
+      try {
+        const { state } = await t.request<{ state: RemoteDeviceState | null }>(
+          "devices.state",
+          { device_id: deviceId, platform },
+        );
+        set((s) => ({
+          deviceStateById: { ...s.deviceStateById, [deviceId]: state },
+        }));
+      } catch {
+        // Android reports no pose, and an older host may not answer at all —
+        // either way, portrait is the right assumption.
+      }
+    },
+
     registerMediaSink: (streamId, sink) => media.register(streamId, sink),
 
     deviceTouch: (deviceId, platform, x, y, eventType) => {
@@ -1333,6 +1447,22 @@ export const useAppStore = create<AppState>((set, get) => {
       } catch {
         // Monitor-only clients can't ask; they can't drive either, so no overlay.
       }
+    },
+
+    setDeviceOrientation: async (deviceId, platform, orientation) => {
+      await applyDeviceStateWrite("devices.set_orientation", deviceId, {
+        device_id: deviceId,
+        platform,
+        orientation,
+      });
+    },
+
+    setDeviceFold: async (deviceId, platform, pose) => {
+      await applyDeviceStateWrite("devices.set_fold", deviceId, {
+        device_id: deviceId,
+        platform,
+        pose,
+      });
     },
 
     claimDevice: async (deviceId, force) => {

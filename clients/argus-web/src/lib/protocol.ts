@@ -60,6 +60,9 @@ export type RemoteMethod =
   | "devices.claim"
   | "devices.release"
   | "devices.claim_status"
+  | "devices.state"
+  | "devices.set_orientation"
+  | "devices.set_fold"
   | "huddle.join"
   | "huddle.say"
   | "huddle.state"
@@ -141,6 +144,34 @@ export interface RemoteDeviceClaim {
 export interface RemoteDeviceClaimState {
   device_id: string;
   holder: RemoteDeviceClaim | null;
+}
+
+/** Orientations a simulator can be rotated to. */
+export type RemoteDeviceOrientation =
+  | "landscapeLeft"
+  | "landscapeRight"
+  | "portrait"
+  | "portraitUpsideDown";
+
+/** Named hinge poses of a foldable. */
+export type RemoteFoldPose = "book" | "closed" | "open" | "partial";
+
+/**
+ * How a device is being held. The framebuffer is always panel-native, so a
+ * client has to rotate the stream by `display.rotation` to present it upright.
+ */
+export interface RemoteDeviceState {
+  device_id: string;
+  /** Null on devices with no hinge, which is every simulator but the Duo. */
+  fold: { angle: number; pose: RemoteFoldPose } | null;
+  orientation: RemoteDeviceOrientation;
+  /** Null while nothing is being captured. */
+  display: {
+    width: number;
+    height: number;
+    rotation: 0 | 90 | 180 | 270;
+    screen_id: number;
+  } | null;
 }
 
 export type RemotePermissionMode =

@@ -68,13 +68,6 @@ textarea {
   color: var(--text-primary);
 }
 
-/* Simulator touch: suppress all text selection while dragging */
-body.sim-touching,
-body.sim-touching * {
-  user-select: none !important;
-  -webkit-user-select: none !important;
-}
-
 /* GFM task-list checkboxes rendered by `renderMarkdown` / `renderHtml`.
    The sanitiser replaces `<input type="checkbox">` with
    `<span data-task-check="checked|unchecked">`, which sidesteps the global

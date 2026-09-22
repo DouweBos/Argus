@@ -2,6 +2,7 @@
 export * from "./components/AccountRow/AccountRow";
 export * from "./components/AgentRow/AgentRow";
 export * from "./components/AnsweredQuestion/AnsweredQuestion";
+export * from "./components/AppleTVRemote/AppleTVRemote";
 export * from "./components/AutomationRow/AutomationRow";
 export * from "./components/Avatar/Avatar";
 export * from "./components/Badge/Badge";
@@ -45,6 +46,7 @@ export * from "./components/CronSchedulePreview/CronSchedulePreview";
 export * from "./components/Disclosure/Disclosure";
 export * from "./components/DeviceControlOverlay/DeviceControlOverlay";
 export * from "./components/DeviceDriverBadge/DeviceDriverBadge";
+export * from "./components/DeviceStage/DeviceStage";
 export * from "./components/DiffStat/DiffStat";
 export * from "./components/DirectoryBrowser/DirectoryBrowser";
 export * from "./components/EmptyHome/EmptyHome";
