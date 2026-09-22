@@ -308,6 +308,11 @@ name, the age, or a missing remote. Establish it:
 - \`git cherry -v <base> <branch>\` — a \`-\` means the patch is already in the
   base under a different hash. This is what catches a rebase.
 - \`git diff <base>...<branch> --stat\` — empty means there is nothing in it.
+- \`git diff <base> <branch> --stat\` — two dots, not three: it compares the two
+  trees rather than the branch against the merge base. Empty means the branch
+  holds no file the base does not already have, whatever its commits say. This
+  is what catches work that was cherry-picked onto the base locally, where
+  \`git cherry\` still reports every commit as missing.
 - \`gh pr list --head <branch> --state all --json number,state,mergedAt,url\` —
   a merged PR is proof the work landed even when every commit was squashed away.
   A closed-unmerged PR is the opposite: someone decided against it.
