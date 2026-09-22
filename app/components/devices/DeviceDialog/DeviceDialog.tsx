@@ -1,6 +1,6 @@
 import type { DeviceInfo } from "../../../lib/types";
 import { useState } from "react";
-import { Button, Dialog, Icons } from "@argus/peacock";
+import { Button, Dialog, DialogBody, Icons } from "@argus/peacock";
 import { bootSimulator, openDevicePopout, stopDevice } from "../../../lib/ipc";
 import { refreshDevices } from "../../../stores/deviceStore";
 import { useDeviceNavigation } from "../deviceNav";
@@ -77,22 +77,14 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
       title={device.name}
       titleId="device-dialog-title"
       titleExtra={
-        <span
-          style={{
-            marginLeft: 10,
-            fontSize: 11,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-            color: "var(--text-muted)",
-          }}
-        >
+        <span className={styles.titleExtra}>
           {device.platform}
           {device.online ? " · online" : " · offline"}
         </span>
       }
       onClose={onClose}
     >
-      <div className={styles.body}>
+      <DialogBody>
         <div className={styles.col}>
           <div className={styles.meta}>
             <span className={styles.metaLabel}>Key</span>
@@ -183,7 +175,7 @@ export function DeviceDialog({ device, onClose }: DeviceDialogProps) {
             </Button>
           </div>
         </div>
-      </div>
+      </DialogBody>
     </Dialog>
   );
 }

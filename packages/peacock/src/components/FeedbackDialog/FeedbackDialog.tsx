@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import styles from "./FeedbackDialog.module.css";
 
 export type FeedbackSubmitState = "error" | "idle" | "sending" | "sent";
@@ -62,7 +64,7 @@ export function FeedbackDialog({
       title="Send feedback"
       titleId="feedback-dialog-title"
     >
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         {unavailableReason && (
           <div className={styles.warning} role="alert">
             {unavailableReason}
@@ -90,18 +92,23 @@ export function FeedbackDialog({
           Sent anonymously alongside your install id, app version, and OS.
           Nothing about your projects, prompts, or files is included.
         </p>
-      </div>
-      <div className={styles.footer}>
-        {state === "error" && (
-          <span className={`${styles.status} ${styles.statusError}`}>
-            Couldn&apos;t send. Try again?
-          </span>
-        )}
-        {state === "sent" && (
-          <span className={`${styles.status} ${styles.statusSuccess}`}>
-            Thanks — sent.
-          </span>
-        )}
+      </DialogBody>
+      <DialogFooter
+        leading={
+          <>
+            {state === "error" && (
+              <span className={`${styles.status} ${styles.statusError}`}>
+                Couldn&apos;t send. Try again?
+              </span>
+            )}
+            {state === "sent" && (
+              <span className={`${styles.status} ${styles.statusSuccess}`}>
+                Thanks — sent.
+              </span>
+            )}
+          </>
+        }
+      >
         <Button
           variant="secondary"
           onClick={onClose}
@@ -112,7 +119,7 @@ export function FeedbackDialog({
         <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit}>
           {state === "sending" ? "Sending…" : "Send"}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

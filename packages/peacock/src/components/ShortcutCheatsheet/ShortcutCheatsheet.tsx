@@ -1,5 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
 import { Input } from "../Input/Input";
 import { Kbd } from "../Kbd/Kbd";
 import styles from "./ShortcutCheatsheet.module.css";
@@ -150,7 +151,7 @@ export function ShortcutCheatsheet({
       title="Keyboard shortcuts"
       titleId={titleId}
     >
-      <div className={styles.body}>
+      <DialogBody>
         <Input
           autoFocus
           aria-label="Filter shortcuts"
@@ -179,7 +180,7 @@ export function ShortcutCheatsheet({
             ))
           )}
         </div>
-      </div>
+      </DialogBody>
     </Dialog>
   );
 }

@@ -1,8 +1,4 @@
 .body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  padding: var(--space-6) var(--space-8);
   font: var(--type-body);
   color: var(--text-secondary);
 }
@@ -29,12 +25,4 @@
   width: 14px;
   height: 14px;
   accent-color: var(--accent);
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-8);
-  border-top: 1px solid var(--border-subtle);
 }

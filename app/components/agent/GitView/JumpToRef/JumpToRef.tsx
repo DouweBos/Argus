@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Dialog, Icons, Input } from "@argus/peacock";
+import { Dialog, DialogBody, Icons, Input } from "@argus/peacock";
 import { gitLog, listBranches, type GitCommit } from "../../../../lib/ipc";
 import styles from "./JumpToRef.module.css";
 
@@ -152,7 +152,7 @@ export function JumpToRef({
       title="Jump to ref"
       titleId={titleId}
     >
-      <div className={styles.body}>
+      <DialogBody>
         <Input
           autoFocus
           aria-label="Filter refs"
@@ -200,7 +200,7 @@ export function JumpToRef({
           })}
           <li className={styles.tagsHint}>Tags coming in Phase 6</li>
         </ul>
-      </div>
+      </DialogBody>
     </Dialog>
   );
 }

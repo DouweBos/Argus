@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Chip,
+  DialogBody,
+  DialogFooter,
   FileMentionPicker,
   Icons,
   ImageAttachmentStrip,
@@ -497,7 +499,7 @@ export function StartAgentDialog({
       titleId="start-agent-title"
       onClose={onClose}
     >
-      <form className={styles.form} onSubmit={onFormSubmit}>
+      <DialogBody as="form" id="start-agent-form" onSubmit={onFormSubmit}>
         <p className={styles.bodyText}>{modeBlurb}</p>
 
         <div className={styles.field}>
@@ -685,18 +687,22 @@ export function StartAgentDialog({
             onChange={handleFileSelect}
           />
         </div>
-
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" disabled={!canSubmit} type="submit">
-            {permissionMode === "auto"
-              ? "Start agent"
-              : `Start in ${permissionModeDisplayName(permissionMode).toLowerCase()} mode`}
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={!canSubmit}
+          form="start-agent-form"
+          type="submit"
+        >
+          {permissionMode === "auto"
+            ? "Start agent"
+            : `Start in ${permissionModeDisplayName(permissionMode).toLowerCase()} mode`}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

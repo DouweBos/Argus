@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { Button, Dialog, Icons, Input, TextArea, Toggle } from "@argus/peacock";
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  Icons,
+  Input,
+  TextArea,
+  Toggle,
+} from "@argus/peacock";
 import {
   autofillPrTemplate,
   ghPrCreate,
@@ -172,7 +181,7 @@ export function CreatePullRequestDialog({
       onClose={onClose}
       size="medium"
     >
-      <div className={styles.body}>
+      <DialogBody>
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`${titleId}-title`}>
             Title
@@ -265,11 +274,11 @@ export function CreatePullRequestDialog({
           </div>
           <Toggle checked={draft} onChange={setDraft} disabled={busy} />
         </div>
-      </div>
 
-      {error && <p className={styles.error}>{error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
+      </DialogBody>
 
-      <div className={styles.footer}>
+      <DialogFooter>
         <Button variant="secondary" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
@@ -282,7 +291,7 @@ export function CreatePullRequestDialog({
         >
           {pushing ? "Pushing branch…" : submitLabel(submitting)}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

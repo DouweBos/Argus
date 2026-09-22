@@ -2,6 +2,8 @@ import { useId, useState } from "react";
 import type { ReactNode } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import styles from "./DestructiveConfirm.module.css";
 
 export interface DestructiveConfirmProps {
@@ -50,7 +52,7 @@ export function DestructiveConfirm({
 
   return (
     <Dialog onClose={onCancel} title={title} titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <div className={styles.description}>{description}</div>
         {rememberKey && (
           <label className={styles.rememberRow}>
@@ -66,8 +68,8 @@ export function DestructiveConfirm({
             </span>
           </label>
         )}
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           {cancelLabel}
         </Button>
@@ -77,7 +79,7 @@ export function DestructiveConfirm({
         >
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

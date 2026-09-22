@@ -5,6 +5,8 @@ import {
   Button,
   CopyField,
   Dialog,
+  DialogBody,
+  DialogFooter,
   GuestList,
   Icons,
   SetupBlocker,
@@ -124,7 +126,7 @@ export function HuddleDialog({
         title="Share this agent"
         titleId={titleId}
       >
-        <div className={styles.body}>
+        <DialogBody className={styles.body}>
           <ShareDisclosure deviceName={deviceName} />
           {!deviceKey && (
             <Banner tone="info">
@@ -159,8 +161,8 @@ export function HuddleDialog({
               }
             />
           )}
-        </div>
-        <div className={styles.footer}>
+        </DialogBody>
+        <DialogFooter>
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
@@ -172,14 +174,14 @@ export function HuddleDialog({
           >
             {starting ? "Getting a link…" : "Start sharing"}
           </Button>
-        </div>
+        </DialogFooter>
       </Dialog>
     );
   }
 
   return (
     <Dialog onClose={onClose} size="medium" title="Huddle" titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <div className={styles.section}>
           <p className={styles.sectionTitle}>Share this link</p>
           <CopyField
@@ -210,15 +212,15 @@ export function HuddleDialog({
           />
         </div>
         <ShareDisclosure deviceName={deviceName} />
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onClose}>
           Done
         </Button>
         <Button variant="danger" onClick={end}>
           End huddle
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

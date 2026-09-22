@@ -1,14 +1,5 @@
 .body {
-  padding: var(--space-8) var(--space-10);
   color: var(--text-secondary);
   font: var(--type-body);
   line-height: 1.5;
-}
-
-.footer {
-  display: flex;
-  gap: var(--space-4);
-  justify-content: flex-end;
-  padding: var(--space-6) var(--space-10) var(--space-8);
-  border-top: 1px solid var(--border);
 }

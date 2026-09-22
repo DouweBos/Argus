@@ -1,6 +1,6 @@
 import type { Session } from "../../../lib/types";
 import { useState } from "react";
-import { Button } from "@argus/peacock";
+import { Button, DialogBody, DialogFooter } from "@argus/peacock";
 import { renameSession } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -39,7 +39,7 @@ export function RenameSessionDialog({
 
   return (
     <Dialog title="Rename Session" titleId="rename-ws-title" onClose={onClose}>
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <DialogBody as="form" id="rename-ws-form" onSubmit={handleSubmit}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="rename-ws-name">
             Display Name
@@ -56,16 +56,20 @@ export function RenameSessionDialog({
         </div>
 
         {error && <p className={styles.errorMsg}>{error}</p>}
-
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" disabled={isSaving} type="submit">
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={isSaving}
+          form="rename-ws-form"
+          type="submit"
+        >
+          {isSaving ? "Saving..." : "Save"}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

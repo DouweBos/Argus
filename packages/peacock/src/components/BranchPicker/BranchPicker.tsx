@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import { Input } from "../Input/Input";
 import styles from "./BranchPicker.module.css";
 
@@ -162,8 +164,7 @@ export function BranchPicker({
 
   return (
     <Dialog onClose={onCancel} title={title} titleId={titleId} size="medium">
-      <div
-        className={styles.body}
+      <DialogBody
         onKeyDown={(e) => {
           if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -201,8 +202,8 @@ export function BranchPicker({
             )}
           </div>
         )}
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -213,7 +214,7 @@ export function BranchPicker({
         >
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

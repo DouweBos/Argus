@@ -1,6 +1,6 @@
 import type { AgentStatus } from "../../../lib/types";
 import { useCallback } from "react";
-import { Button, Dialog } from "@argus/peacock";
+import { Button, Dialog, DialogBody } from "@argus/peacock";
 import { focusAgent } from "../../../lib/agentLifecycle";
 import { useConversation } from "../../../stores/conversationStore";
 import { useSessions } from "../../../stores/sessionStore";
@@ -54,14 +54,14 @@ export function AgentPreviewDialog({
         </Button>
       }
     >
-      <div className={styles.body}>
+      <DialogBody flush>
         <AgentChat
           agentId={agent.agent_id}
           permissionMode={agent.permission_mode}
           sessionId={agent.session_id}
           readOnly
         />
-      </div>
+      </DialogBody>
     </Dialog>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Input } from "@argus/peacock";
+import { Button, DialogBody, DialogFooter, Input } from "@argus/peacock";
 import { setConversationTitle } from "../../../stores/conversationStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -32,7 +32,7 @@ export function RenameAgentDialog({
 
   return (
     <Dialog title="Rename Agent" titleId="rename-agent-title" onClose={onClose}>
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <DialogBody as="form" id="rename-agent-form" onSubmit={handleSubmit}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="rename-agent-input">
             Title
@@ -46,15 +46,20 @@ export function RenameAgentDialog({
             autoFocus
           />
         </div>
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" disabled={!value.trim()}>
-            Rename
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          type="submit"
+          form="rename-agent-form"
+          disabled={!value.trim()}
+        >
+          Rename
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

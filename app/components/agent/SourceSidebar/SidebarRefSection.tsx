@@ -28,6 +28,8 @@ import {
   ContextMenu,
   DestructiveConfirm,
   Dialog,
+  DialogBody,
+  DialogFooter,
   Icons,
   Input,
   PushDialog,
@@ -202,13 +204,13 @@ function DirtyCheckoutDialog({
 
   return (
     <Dialog title="Uncommitted changes" titleId={titleId} onClose={onCancel}>
-      <div className={styles.dialogBody}>
+      <DialogBody>
         <p className={styles.dialogDesc}>
           You have uncommitted changes. Choose how to handle them before
           switching to &ldquo;{branch}&rdquo;.
         </p>
-      </div>
-      <div className={styles.dialogFooter}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -218,7 +220,7 @@ function DirtyCheckoutDialog({
         <Button variant="primary" onClick={onStash}>
           Stash &amp; switch
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -254,7 +256,7 @@ function UpstreamDialog({
       titleId={titleId}
       onClose={onCancel}
     >
-      <div className={styles.dialogBody}>
+      <DialogBody>
         <p className={styles.dialogDesc}>
           Enter the upstream tracking branch (e.g. <code>origin/main</code>).
         </p>
@@ -270,15 +272,15 @@ function UpstreamDialog({
             }
           }}
         />
-      </div>
-      <div className={styles.dialogFooter}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
         <Button variant="primary" onClick={submit}>
           Set upstream
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

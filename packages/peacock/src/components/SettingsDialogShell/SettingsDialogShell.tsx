@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
 import {
   SettingsScreen,
   SettingsScreenSection,
@@ -71,27 +72,29 @@ export function SettingsDialogShell({
       titleId={titleId}
       onClose={onClose}
     >
-      <SettingsScreen className={styles.screen}>
-        <SettingsScreenSidebar>
-          {groups.map((g, i) => (
-            <SettingsScreenSectionGroup key={i} label={g.label}>
-              {g.sections.map((s) => (
-                <SettingsScreenSection
-                  key={s.id}
-                  active={activeId === s.id}
-                  description={s.description}
-                  icon={s.icon}
-                  onClick={() => setActiveId(s.id)}
-                >
-                  {s.label}
-                </SettingsScreenSection>
-              ))}
-            </SettingsScreenSectionGroup>
-          ))}
-        </SettingsScreenSidebar>
+      <DialogBody flush>
+        <SettingsScreen className={styles.screen}>
+          <SettingsScreenSidebar>
+            {groups.map((g, i) => (
+              <SettingsScreenSectionGroup key={i} label={g.label}>
+                {g.sections.map((s) => (
+                  <SettingsScreenSection
+                    key={s.id}
+                    active={activeId === s.id}
+                    description={s.description}
+                    icon={s.icon}
+                    onClick={() => setActiveId(s.id)}
+                  >
+                    {s.label}
+                  </SettingsScreenSection>
+                ))}
+              </SettingsScreenSectionGroup>
+            ))}
+          </SettingsScreenSidebar>
 
-        {active?.render()}
-      </SettingsScreen>
+          {active?.render()}
+        </SettingsScreen>
+      </DialogBody>
 
       {footer}
     </Dialog>

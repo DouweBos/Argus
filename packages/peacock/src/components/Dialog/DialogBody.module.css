@@ -1,0 +1,16 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  padding: var(--space-8) var(--space-10) var(--space-10);
+  /* Owns the scroll so the header and footer stay pinned. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.flush {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}

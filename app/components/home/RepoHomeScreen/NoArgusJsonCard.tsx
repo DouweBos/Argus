@@ -3,6 +3,8 @@ import {
   Button,
   CalloutCard,
   CodeBlock,
+  DialogBody,
+  DialogFooter,
   IconBadge,
   Icons,
   Spinner,
@@ -147,21 +149,22 @@ export function NoArgusJsonCard({
           size="medium"
         >
           {mode === "reviewing" || mode === "saving" ? (
-            <div className={styles.form}>
-              <p className={styles.helpText}>
-                {proposedSource === "claude"
-                  ? "Claude proposed the following .argus.json. Review the contents and save it to write the file to the repo root."
-                  : "Argus inferred the following .argus.json from your project. Review the contents and save it to write the file to the repo root."}
-              </p>
+            <>
+              <DialogBody>
+                <p className={styles.helpText}>
+                  {proposedSource === "claude"
+                    ? "Claude proposed the following .argus.json. Review the contents and save it to write the file to the repo root."
+                    : "Argus inferred the following .argus.json from your project. Review the contents and save it to write the file to the repo root."}
+                </p>
 
-              <CodeBlock
-                code={JSON.stringify(proposed ?? {}, null, 2)}
-                language="json"
-              />
+                <CodeBlock
+                  code={JSON.stringify(proposed ?? {}, null, 2)}
+                  language="json"
+                />
 
-              {error && <p className={styles.errorMsg}>{error}</p>}
-
-              <div className={styles.footer}>
+                {error && <p className={styles.errorMsg}>{error}</p>}
+              </DialogBody>
+              <DialogFooter>
                 <Button
                   variant="ghost"
                   disabled={isSaving}
@@ -183,75 +186,76 @@ export function NoArgusJsonCard({
                 >
                   {isSaving ? "Saving…" : "Save .argus.json"}
                 </Button>
-              </div>
-            </div>
+              </DialogFooter>
+            </>
           ) : (
-            <div className={styles.form}>
-              <p className={styles.helpText}>
-                An <code>.argus.json</code> file tells Argus how to set up new
-                worktrees for this project — which directories to copy (
-                <code>node_modules</code>, <code>Pods</code>), which files to
-                symlink (<code>.env</code>), which install commands to run, and
-                which ports to allocate per session. It&apos;s checked in so the
-                whole team shares the same setup.
-              </p>
-
-              <div className={styles.field}>
-                <label className={styles.label}>Quick generate</label>
+            <>
+              <DialogBody>
                 <p className={styles.helpText}>
-                  Inspect <code>package.json</code>, lockfiles, and platform
-                  dirs and write a sensible default. Fast, no network, no LLM.
+                  An <code>.argus.json</code> file tells Argus how to set up new
+                  worktrees for this project — which directories to copy (
+                  <code>node_modules</code>, <code>Pods</code>), which files to
+                  symlink (<code>.env</code>), which install commands to run,
+                  and which ports to allocate per session. It&apos;s checked in
+                  so the whole team shares the same setup.
                 </p>
-                <Button
-                  variant="secondary"
-                  disabled={isGenerating}
-                  onClick={runQuick}
-                  leading={
-                    mode === "generating-quick" ? (
-                      <Spinner size="sm" tone="muted" />
-                    ) : undefined
-                  }
-                >
-                  {mode === "generating-quick"
-                    ? "Generating…"
-                    : "Quick generate"}
-                </Button>
-              </div>
 
-              <div className={styles.field}>
-                <label className={styles.label}>Generate with Claude</label>
-                <p className={styles.helpText}>
-                  Run the Claude CLI in this project to refine the config — it
-                  reads your scripts, native targets, and env files and produces
-                  a tailored result. Takes ~30–90s. Requires the{" "}
-                  <code>claude</code> CLI to be installed and authenticated.
-                </p>
-                <Button
-                  variant="primary"
-                  disabled={isGenerating}
-                  onClick={runClaude}
-                  leading={
-                    mode === "generating-claude" ? (
-                      <Spinner size="sm" tone="neutral" />
-                    ) : (
-                      <Icons.AgentStartIcon size={12} />
-                    )
-                  }
-                >
-                  {mode === "generating-claude"
-                    ? "Asking Claude…"
-                    : "Generate with Claude"}
-                </Button>
-              </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Quick generate</label>
+                  <p className={styles.helpText}>
+                    Inspect <code>package.json</code>, lockfiles, and platform
+                    dirs and write a sensible default. Fast, no network, no LLM.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    disabled={isGenerating}
+                    onClick={runQuick}
+                    leading={
+                      mode === "generating-quick" ? (
+                        <Spinner size="sm" tone="muted" />
+                      ) : undefined
+                    }
+                  >
+                    {mode === "generating-quick"
+                      ? "Generating…"
+                      : "Quick generate"}
+                  </Button>
+                </div>
 
-              {error && <p className={styles.errorMsg}>{error}</p>}
+                <div className={styles.field}>
+                  <label className={styles.label}>Generate with Claude</label>
+                  <p className={styles.helpText}>
+                    Run the Claude CLI in this project to refine the config — it
+                    reads your scripts, native targets, and env files and
+                    produces a tailored result. Takes ~30–90s. Requires the{" "}
+                    <code>claude</code> CLI to be installed and authenticated.
+                  </p>
+                  <Button
+                    variant="primary"
+                    disabled={isGenerating}
+                    onClick={runClaude}
+                    leading={
+                      mode === "generating-claude" ? (
+                        <Spinner size="sm" tone="neutral" />
+                      ) : (
+                        <Icons.AgentStartIcon size={12} />
+                      )
+                    }
+                  >
+                    {mode === "generating-claude"
+                      ? "Asking Claude…"
+                      : "Generate with Claude"}
+                  </Button>
+                </div>
 
-              <div className={styles.footer}>
+                {error && <p className={styles.errorMsg}>{error}</p>}
+              </DialogBody>
+              <DialogFooter>
                 <Button variant="ghost" disabled={isGenerating} onClick={close}>
                   Cancel
                 </Button>
-              </div>
-            </div>
+              </DialogFooter>
+            </>
           )}
         </Dialog>
       )}

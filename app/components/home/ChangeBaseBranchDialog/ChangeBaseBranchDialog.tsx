@@ -1,6 +1,6 @@
 import type { Session } from "../../../lib/types";
 import { useEffect, useState } from "react";
-import { Button } from "@argus/peacock";
+import { Button, DialogBody, DialogFooter } from "@argus/peacock";
 import { listBranches, setSessionBaseBranch } from "../../../lib/ipc";
 import { updateSession } from "../../../stores/sessionStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
@@ -85,7 +85,11 @@ export function ChangeBaseBranchDialog({
       titleId="change-base-branch-title"
       onClose={onClose}
     >
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <DialogBody
+        as="form"
+        id="change-base-branch-form"
+        onSubmit={handleSubmit}
+      >
         <p className={styles.bodyText}>
           Pick the branch that this session is compared against for merges,
           rebases, and diffs. This only updates the reference — no git state
@@ -124,20 +128,20 @@ export function ChangeBaseBranchDialog({
         </div>
 
         {error && <p className={styles.errorMsg}>{error}</p>}
-
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={isSaving || isLoading || !selected}
-            type="submit"
-          >
-            {isSaving ? "Saving…" : "Save"}
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={isSaving || isLoading || !selected}
+          form="change-base-branch-form"
+          type="submit"
+        >
+          {isSaving ? "Saving…" : "Save"}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

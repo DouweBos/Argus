@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import { Input } from "../Input/Input";
 import styles from "./BranchDialog.module.css";
 
@@ -78,7 +80,7 @@ export function BranchDialog({
 
   return (
     <Dialog onClose={onCancel} title="New branch" titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <label className={styles.label} htmlFor={nameId}>
           Branch name
         </label>
@@ -134,15 +136,15 @@ export function BranchDialog({
           />
           <span>Switch to branch after create</span>
         </label>
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
         <Button variant="primary" onClick={submit} disabled={!name.trim()}>
           Create branch
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

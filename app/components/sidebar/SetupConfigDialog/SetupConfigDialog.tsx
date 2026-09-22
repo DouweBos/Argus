@@ -14,6 +14,7 @@ import {
   Button,
   Chip,
   CodeBlock,
+  DialogFooter,
   EmptyState,
   Icons,
   Input,
@@ -2721,7 +2722,7 @@ export function SetupConfigDialog({
           <p className={styles.errorMsg}>{error}</p>
         </div>
       )}
-      <div className={styles.stickyFooter}>
+      <DialogFooter>
         <Button type="button" variant="secondary" onClick={onClose}>
           Cancel
         </Button>
@@ -2735,7 +2736,7 @@ export function SetupConfigDialog({
         >
           {isSaving ? "Saving…" : "Save"}
         </Button>
-      </div>
+      </DialogFooter>
     </>
   );
 

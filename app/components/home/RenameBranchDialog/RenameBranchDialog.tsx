@@ -1,6 +1,6 @@
 import type { Session } from "../../../lib/types";
 import { useState } from "react";
-import { Button } from "@argus/peacock";
+import { Button, DialogBody, DialogFooter } from "@argus/peacock";
 import { renameSessionBranch } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -43,7 +43,7 @@ export function RenameBranchDialog({
       titleId="rename-branch-title"
       onClose={onClose}
     >
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <DialogBody as="form" id="rename-branch-form" onSubmit={handleSubmit}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="rename-branch-name">
             Branch name
@@ -61,16 +61,20 @@ export function RenameBranchDialog({
         </div>
 
         {error && <p className={styles.errorMsg}>{error}</p>}
-
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" disabled={isSaving} type="submit">
-            {isSaving ? "Renaming…" : "Rename"}
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={isSaving}
+          form="rename-branch-form"
+          type="submit"
+        >
+          {isSaving ? "Renaming…" : "Rename"}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
