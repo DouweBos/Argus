@@ -1632,10 +1632,10 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
 
     return { accepted: true };
   },
-  "devices.claim_status": async (params) => {
+  "devices.claim_status": async (params, ctx) => {
     const { device_id } = parse("devices.claim_status", params);
 
-    return { holder: getClaim(device_id) };
+    return { holder: getClaim(device_id), connection_id: ctx.connectionId };
   },
   "devices.state": async (params) => {
     const { device_id, platform } = parse("devices.state", params);

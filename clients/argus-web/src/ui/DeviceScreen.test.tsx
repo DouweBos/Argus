@@ -8,6 +8,11 @@ const setDeviceOrientation = vi.fn().mockResolvedValue(undefined);
 const setDeviceFold = vi.fn().mockResolvedValue(undefined);
 const loadDeviceState = vi.fn().mockResolvedValue(undefined);
 const deviceButton = vi.fn().mockResolvedValue(undefined);
+const claimDevice = vi.fn().mockResolvedValue(undefined);
+const releaseDevice = vi.fn();
+
+let claimByDevice: Record<string, { connection_id: string; label: string } | null> = {};
+let claimConnectionId: string | null = null;
 
 let deviceState: RemoteDeviceState = {
   device_id: "sim-1",
@@ -37,11 +42,11 @@ vi.mock("../lib/store", () => ({
       deviceTouch: vi.fn(),
       deviceButton,
       deviceKeyboard: vi.fn(),
-      claimByDevice: {},
-      claimConnectionId: null,
+      claimByDevice,
+      claimConnectionId,
       loadClaim: vi.fn().mockResolvedValue(undefined),
-      claimDevice: vi.fn().mockResolvedValue(undefined),
-      releaseDevice: vi.fn(),
+      claimDevice,
+      releaseDevice,
       loadDeviceState,
       setDeviceOrientation,
       setDeviceFold,
@@ -53,6 +58,10 @@ beforeEach(() => {
   deviceButton.mockClear();
   setDeviceOrientation.mockClear();
   setDeviceFold.mockClear();
+  claimDevice.mockClear();
+  releaseDevice.mockClear();
+  claimByDevice = {};
+  claimConnectionId = null;
 });
 
 function renderScreen() {
@@ -139,5 +148,43 @@ describe("a tvOS device", () => {
     fireEvent.pointerDown(clickpadIn(container), { clientX: 92, clientY: 48 });
 
     expect(deviceButton).toHaveBeenCalledWith("sim-1", "ios", "right");
+  });
+});
+
+describe("the device claim bar", () => {
+  it("offers control of a device nobody is driving", () => {
+    renderScreen();
+
+    expect(screen.getByText("Nobody is driving")).toBeTruthy();
+
+    fireEvent.click(screen.getByText("Take control"));
+
+    // Nothing to steal, so no forced takeover.
+    expect(claimDevice).toHaveBeenCalledWith("sim-1", false);
+  });
+
+  it("hands a held device back rather than sitting on it until it idles out", () => {
+    claimConnectionId = "conn-1";
+    claimByDevice = { "sim-1": { connection_id: "conn-1", label: "Ana" } };
+    renderScreen();
+
+    expect(screen.getByText("You're driving")).toBeTruthy();
+
+    fireEvent.click(screen.getByText("Hand back"));
+
+    expect(releaseDevice).toHaveBeenCalledWith("sim-1");
+  });
+
+  it("names the driver and takes over explicitly when it is someone else", () => {
+    claimConnectionId = "conn-1";
+    claimByDevice = { "sim-1": { connection_id: "conn-2", label: "Ana" } };
+    renderScreen();
+
+    expect(screen.getByText("Ana is driving")).toBeTruthy();
+
+    // The blocking scrim offers the same takeover; the bar's is the first.
+    fireEvent.click(screen.getAllByText("Take control")[0]!);
+
+    expect(claimDevice).toHaveBeenCalledWith("sim-1", true);
   });
 });

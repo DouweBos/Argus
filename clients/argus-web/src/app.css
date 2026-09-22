@@ -622,3 +622,28 @@ button {
   padding: 8px 0;
   border-top: 1px solid var(--border);
 }
+
+/* --- Huddle ------------------------------------------------------------- */
+
+/* Conversation and (on a wide screen) the device panel, side by side. */
+.aw-huddle-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+/* With a device beside it the composer no longer reaches the screen edge, so
+   it must stop bleeding past its own column. */
+.aw-huddle-split .aw-chat-dock {
+  margin-right: 0;
+  padding-right: 12px;
+}
+
+/* The device panel's own column: claim bar, picture, hardware buttons. */
+.aw-huddle-device {
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
