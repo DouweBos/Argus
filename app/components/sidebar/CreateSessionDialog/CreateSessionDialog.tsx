@@ -55,6 +55,8 @@ interface CreateSessionDialogProps {
     sourceSessionId: string;
   } | null;
   onClose: () => void;
+  /** Prefills the prompt and opens straight into the branch-off flow. */
+  prefilledPrompt?: string;
   repoRoot: string;
   /** When set, the new session forks from this session's branch instead of project root HEAD. */
   sourceSession?: { branch: string; display_name?: string | null } | null;
@@ -391,16 +393,19 @@ export function CreateSessionDialog({
   onClose,
   sourceSession,
   forkContext,
+  prefilledPrompt,
 }: CreateSessionDialogProps) {
   const { sessions, createSession, repoBranch } = useProjectSessions(repoRoot);
 
-  const [flow, setFlow] = useState<Flow>(sourceSession ? "branch-off" : "pick");
+  const [flow, setFlow] = useState<Flow>(
+    sourceSession || prefilledPrompt ? "branch-off" : "pick",
+  );
 
   // branch-off state
   const [sourceBranch, setSourceBranch] = useState<string>(
     sourceSession?.branch ?? "",
   );
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(prefilledPrompt ?? "");
   const [newBranch, setNewBranch] = useState("");
 
   // adopt state

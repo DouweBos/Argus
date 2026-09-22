@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { ResizablePanel } from "@argus/peacock";
 import { useGlobalShortcuts } from "../../../hooks/useGlobalShortcuts";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useProjects } from "../../../hooks/useSessions";
@@ -26,6 +27,7 @@ import {
   showCreateSessionDialog,
   showOpenProjectDialog,
   triggerNewSession,
+  useCreateSessionPrompt,
   useCreateSessionRepoRoot,
   useNewSessionPickerOpen,
   useOpenProjectVisible,
@@ -84,7 +86,6 @@ import { BottomPanel } from "../BottomPanel";
 import { ConnectionBanner } from "../ConnectionBanner";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { PermissionBanner } from "../PermissionBanner";
-import { ResizablePanel } from "../ResizablePanel";
 import { TitleBar } from "../TitleBar";
 import { WindowTabs } from "../WindowTabs";
 import styles from "./AppShell.module.css";
@@ -323,6 +324,7 @@ export function AppShell() {
   const openProjectVisible = useOpenProjectVisible();
   const newSessionPickerOpen = useNewSessionPickerOpen();
   const createSessionRepoRoot = useCreateSessionRepoRoot();
+  const createSessionPrompt = useCreateSessionPrompt();
   const homeData = useHomeData();
   const { openProject } = useProjects();
 
@@ -426,6 +428,7 @@ export function AppShell() {
 
       {createSessionRepoRoot && (
         <CreateSessionDialog
+          prefilledPrompt={createSessionPrompt ?? undefined}
           repoRoot={createSessionRepoRoot}
           onClose={hideCreateSessionDialog}
         />
