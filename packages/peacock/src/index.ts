@@ -37,6 +37,8 @@ export * from "./components/TodoList/TodoList";
 export * from "./components/ToolCall/ToolCall";
 export * from "./components/ToolCall/helpers";
 export * from "./components/ToolCall/questions";
+export * from "./components/ToolInputFields/fields";
+export * from "./components/ToolInputFields/ToolInputFields";
 export * from "./components/ToolResultImage/ToolResultImage";
 export * from "./components/ConfirmDialog/ConfirmDialog";
 export * from "./components/DestructiveConfirm/DestructiveConfirm";
