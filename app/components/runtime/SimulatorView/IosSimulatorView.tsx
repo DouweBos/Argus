@@ -115,20 +115,27 @@ export function IosSimulatorView({
       storeKey !== prevSessionIdRef.current &&
       prevSessionIdRef.current !== null
     ) {
-      const prevUdid = prevUdidRef.current;
-      if (prevUdid) {
-        stopSimulatorCapture(prevUdid).catch(() => {});
-      }
-      setCapturing(false);
       setDisconnected(false);
     }
 
     prevSessionIdRef.current = storeKey;
-  }, [storeKey, setCapturing, setDisconnected]);
+  }, [storeKey, setDisconnected]);
 
+  // Single owner of "the selected device changed": the runtime target picker
+  // swaps the selection without going through the dropdown's own handler, and
+  // leaving `capturing` set made the view render a dead stream for a device
+  // nothing was capturing.
   useEffect(() => {
+    const prevUdid = prevUdidRef.current;
     prevUdidRef.current = selectedUdid;
-  }, [selectedUdid]);
+    if (prevUdid === null || prevUdid === selectedUdid) {
+      return;
+    }
+    autoStartingRef.current = null;
+    setCapturing(false);
+    setMjpegPort(prevUdid, null);
+    stopSimulatorCapture(prevUdid).catch(() => {});
+  }, [selectedUdid, setCapturing, setMjpegPort]);
 
   // Release the capture ref on unmount. Without this, dismissing the
   // runtime panel leaks the ref and the bridge never tears down.
@@ -150,13 +157,12 @@ export function IosSimulatorView({
     [setMjpegPort, setCapturing],
   );
 
-  // Auto-start capture when a simulator is booted (either because the user
-  // just booted it, because it was booted externally before Argus opened, or
-  // because a simctl poll observed the transition). Applies uniformly to iOS
-  // and tvOS simulators — both render through this component.
+  // Auto-start capture for the selected simulator, booting it first when it is
+  // shut down — picking a device is the request to see it. The guard is left
+  // set on failure so a device that can't come up doesn't retry every render;
+  // reselecting it clears the guard.
   useEffect(() => {
     if (
-      !isBooted ||
       capturing ||
       booting ||
       disconnected ||
@@ -165,44 +171,35 @@ export function IosSimulatorView({
     ) {
       return;
     }
-    autoStartingRef.current = selectedUdid;
-    startCapture(selectedUdid)
+    const udid = selectedUdid;
+    autoStartingRef.current = udid;
+    (isBooted ? Promise.resolve() : bootSimulator(udid))
+      .then(() => startCapture(udid))
+      .then(() => {
+        refreshDevices();
+      })
       .catch((err) => {
         // Surface but don't wedge — user can retry via the boot button or by
         // reselecting the device.
         error("Auto-capture failed:", err);
-      })
-      .finally(() => {
-        autoStartingRef.current = null;
       });
-  }, [isBooted, capturing, booting, disconnected, selectedUdid, startCapture]);
+  }, [
+    isBooted,
+    capturing,
+    booting,
+    disconnected,
+    selectedUdid,
+    startCapture,
+    refreshDevices,
+  ]);
 
   // --- Title bar handlers ---
 
   const handleDeviceChange = useCallback(
-    async (udid: string | null) => {
-      const prev = selectedUdid;
-      if (capturing && prev) {
-        try {
-          await stopSimulatorCapture(prev);
-        } catch {
-          // Capture may already be stopped
-        }
-
-        setCapturing(false);
-        setMjpegPort(prev, null);
-      }
-
+    (udid: string | null) => {
       selectDevice(storeKey, udid);
     },
-    [
-      capturing,
-      selectedUdid,
-      storeKey,
-      selectDevice,
-      setCapturing,
-      setMjpegPort,
-    ],
+    [storeKey, selectDevice],
   );
 
   const handleBoot = useCallback(async () => {
@@ -213,7 +210,6 @@ export function IosSimulatorView({
     setDisconnected(false);
     try {
       await bootSimulator(selectedUdid);
-      await new Promise((r) => setTimeout(r, 2000));
       await startCapture(selectedUdid);
       refreshDevices();
     } catch (err) {

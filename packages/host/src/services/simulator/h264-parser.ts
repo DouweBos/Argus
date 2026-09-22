@@ -261,6 +261,15 @@ function buildAvccDescription(sps: Uint8Array, pps: Uint8Array): Uint8Array {
 // NAL unit start code scanner
 // ---------------------------------------------------------------------------
 
+/** Whether two NAL bodies are byte-identical. */
+function sameBytes(a: Uint8Array | null, b: Uint8Array): boolean {
+  if (!a || a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((byte, i) => byte === b[i]);
+}
+
 /** Find the index of the next NAL start code (00 00 01 or 00 00 00 01). */
 function findStartCode(
   buf: Uint8Array,
@@ -286,8 +295,9 @@ function findStartCode(
 
 /**
  * Streaming parser that accepts raw H.264 Annex B byte chunks and emits
- * complete access units (frames) plus a one-time configuration event when
- * SPS+PPS are first encountered.
+ * complete access units (frames) plus a configuration event whenever the
+ * stream's SPS/PPS change — folding a device swaps to a panel of a different
+ * size, and the encoder restarts mid-stream at the new resolution.
  */
 export class H264AccessUnitParser {
   private buffer = new Uint8Array(0);
@@ -370,13 +380,19 @@ export class H264AccessUnitParser {
 
     // Collect SPS/PPS for configuration
     if (nalType === NAL_SPS) {
-      this.sps = nal;
+      if (!sameBytes(this.sps, nal)) {
+        this.sps = nal;
+        this.configEmitted = false;
+      }
       this.emitConfigIfReady();
 
       return;
     }
     if (nalType === NAL_PPS) {
-      this.pps = nal;
+      if (!sameBytes(this.pps, nal)) {
+        this.pps = nal;
+        this.configEmitted = false;
+      }
       this.emitConfigIfReady();
 
       return;
