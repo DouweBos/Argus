@@ -1749,6 +1749,13 @@ export const huddleRemoveGuest = (
 
 /** Every live room. Rooms are in memory, so this is empty after a restart. */
 /**
+ * Say something to the room. The huddle's side chat only — it never reaches the
+ * agent, so a note to a colleague doesn't become a prompt.
+ */
+export const huddleSay = (roomId: string, text: string): Promise<boolean> =>
+  invoke("huddle_say", { roomId, text });
+
+/**
  * Report the engineer as composing (or done), so guests see them as busy the
  * same way the host sees them. Presence only — no draft text crosses the wire.
  */

@@ -1,0 +1,133 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.empty {
+  margin: auto;
+  padding: var(--space-5);
+  font: var(--type-caption);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.fresh {
+  margin-top: var(--space-5);
+}
+
+.fresh:first-child {
+  margin-top: 0;
+}
+
+.continued {
+  margin-top: 2px;
+}
+
+.gutter {
+  flex: 0 0 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.author {
+  font: var(--type-h2);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  flex-shrink: 0;
+  font: var(--type-caption);
+  color: var(--text-muted);
+}
+
+.text {
+  font: var(--type-body);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--glass-border);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  max-height: 96px;
+  padding: 6px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font: var(--type-ui);
+  resize: none;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-border-soft);
+}
+
+.send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--border-radius-sm);
+  color: var(--text-muted);
+  transition:
+    background var(--transition-base),
+    color var(--transition-base);
+}
+
+.send:hover:not(:disabled) {
+  background: var(--surface-4);
+  color: var(--text-primary);
+}
+
+.send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

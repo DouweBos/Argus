@@ -61,6 +61,7 @@ export type RemoteMethod =
   | "devices.release"
   | "devices.claim_status"
   | "huddle.join"
+  | "huddle.say"
   | "huddle.state"
   | "huddle.typing";
 
@@ -80,6 +81,23 @@ export interface HuddleMember {
   driving?: boolean;
   /** Composing a message to the agent right now. */
   typing?: boolean;
+}
+
+/** One line in the room's side chat. Never seen by the agent. */
+export interface HuddleChatMessage {
+  id: string;
+  author: string;
+  /** Who said it; null when the host did. */
+  member_id: string | null;
+  text: string;
+  at: number;
+}
+
+/** `replace` marks the backlog handed over on approval, not an append. */
+export interface HuddleChatPayload {
+  room_id: string;
+  messages: HuddleChatMessage[];
+  replace?: boolean;
 }
 
 export interface HuddleStatePayload {

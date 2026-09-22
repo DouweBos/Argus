@@ -5,6 +5,7 @@ import {
   huddleCapabilities,
   huddlePanes,
   INITIAL_HUDDLE_VIEW,
+  applyHuddleChat,
   requestJoin,
   typingNames,
   type HuddleView,
@@ -48,7 +49,7 @@ describe("joining a huddle", () => {
       state: "pending",
       roomId: "room-1",
       agentId: null,
-      deviceKey: null, members: [], you: null, hostTyping: false, hostLabel: ""
+      deviceKey: null, members: [], you: null, hostTyping: false, hostLabel: "", chat: []
     });
   });
 
@@ -67,7 +68,7 @@ describe("joining a huddle", () => {
       state: "approved",
       roomId: "room-1",
       agentId: "ag1",
-      deviceKey: "udid-1", members: [], you: null, hostTyping: false, hostLabel: ""
+      deviceKey: "udid-1", members: [], you: null, hostTyping: false, hostLabel: "", chat: []
     });
     expect(huddleCapabilities(view.state)).toEqual(["monitor", "control"]);
   });
@@ -123,17 +124,17 @@ describe("what a guest is offered", () => {
   };
 
   it("offers one agent and one device, and nothing else", () => {
-    expect(huddlePanes(approved)).toEqual(["agent", "device"]);
+    expect(huddlePanes(approved)).toEqual(["agent", "chat", "device"]);
   });
 
   it("drops the device pane when the room has no device", () => {
-    expect(huddlePanes({ ...approved, deviceKey: "", members: [], you: null })).toEqual(["agent"]);
+    expect(huddlePanes({ ...approved, deviceKey: "", members: [], you: null })).toEqual(["agent", "chat"]);
   });
 
   it("drops the device pane for an embedded browser it cannot render", () => {
-    expect(huddlePanes({ ...approved, deviceKey: "browser:s1", members: [], you: null })).toEqual([
-      "agent",
-    ]);
+    expect(
+      huddlePanes({ ...approved, deviceKey: "browser:s1", members: [], you: null }),
+    ).toEqual(["agent", "chat"]);
   });
 
   it.each(["connecting", "pending", "denied", "ended", "unavailable"] as const)(
@@ -186,3 +187,54 @@ describe("naming the host", () => {
   });
 });
 
+
+describe("the room's side chat, as a guest folds it in", () => {
+  const view = (chat: HuddleView["chat"] = []): HuddleView => ({
+    ...INITIAL_HUDDLE_VIEW,
+    state: "approved",
+    chat,
+  });
+  const line = (id: string, text: string) => ({
+    id,
+    author: "Ana",
+    member_id: null,
+    text,
+    at: 1,
+  });
+
+  it("appends what someone just said", () => {
+    const next = applyHuddleChat(
+      { room_id: "r", messages: [line("2", "second")] },
+      view([line("1", "first")]),
+    );
+
+    expect(next.chat.map((m) => m.text)).toEqual(["first", "second"]);
+  });
+
+  it("replaces the log with the backlog handed over on approval", () => {
+    const next = applyHuddleChat(
+      { room_id: "r", messages: [line("9", "the room's own record")], replace: true },
+      view([line("1", "stale")]),
+    );
+
+    expect(next.chat.map((m) => m.text)).toEqual(["the room's own record"]);
+  });
+
+  it("never doubles a line it already holds", () => {
+    const next = applyHuddleChat(
+      { room_id: "r", messages: [line("1", "first")] },
+      view([line("1", "first")]),
+    );
+
+    expect(next.chat).toHaveLength(1);
+  });
+
+  it("survives a roster change — typing must not wipe what was said", () => {
+    const next = applyHuddleState(
+      { room_id: "r", state: "approved", agent_id: "ag1", device_key: null },
+      view([line("1", "first")]),
+    );
+
+    expect(next.chat.map((m) => m.text)).toEqual(["first"]);
+  });
+});

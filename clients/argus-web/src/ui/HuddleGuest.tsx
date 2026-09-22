@@ -11,11 +11,13 @@ import { useEffect, useRef, useState } from "react";
 import {
   Button,
   GuestList,
+  HuddleChat,
   Icons,
   SidebarHeader,
   SidebarHeaderAction,
   Spinner,
   TypingIndicator,
+  useUnreadCount,
 } from "@argus/peacock";
 import {
   huddlePanes,
@@ -78,7 +80,9 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const loadAgentStatus = useAppStore((s) => s.loadAgentStatus);
   const devices = useAppStore((s) => s.devices);
   const refreshDevices = useAppStore((s) => s.refreshDevices);
+  const sayInHuddle = useAppStore((s) => s.sayInHuddle);
   const hasDevice = panes.includes("device");
+  const unread = useUnreadCount(view.chat.length, pane === "chat");
 
   useEffect(() => {
     if (connection === "ready" && agentId) {
@@ -131,6 +135,14 @@ function HuddleRoom({ view }: { view: HuddleView }) {
                 <span className="aw-people-count">{view.members.length}</span>
               )}
             </SidebarHeaderAction>
+            <SidebarHeaderAction
+              onClick={() => setPane(pane === "chat" ? "agent" : "chat")}
+              title="Chat with the room"
+              aria-label="Chat with the room"
+            >
+              <Icons.ChatIcon size={14} />
+              {unread > 0 && <span className="aw-people-count">{unread}</span>}
+            </SidebarHeaderAction>
             {hasDevice && (
               <SidebarHeaderAction
                 onClick={() => setPane(pane === "device" ? "agent" : "device")}
@@ -169,6 +181,19 @@ function HuddleRoom({ view }: { view: HuddleView }) {
 
       <div className="aw-main">
         {pane === "agent" && <AgentTranscript agentId={agentId} />}
+        {pane === "chat" && (
+          <HuddleChat
+            emptyLabel="Nothing said yet. This stays between the people here — the agent never sees it."
+            messages={view.chat.map((m) => ({
+              id: m.id,
+              author: m.author,
+              text: m.text,
+              at: m.at,
+              mine: m.member_id != null && m.member_id === view.you,
+            }))}
+            onSend={sayInHuddle}
+          />
+        )}
         {pane === "device" &&
           (device ? (
             <DeviceScreen

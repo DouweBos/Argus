@@ -13,6 +13,8 @@
 
 import type {
   GrantScope,
+  HuddleChatMessage,
+  HuddleChatPayload,
   HuddleGuest,
   HuddleRoom,
   HuddleStatePayload,
@@ -42,6 +44,14 @@ export const TYPING_TTL_MS = 8_000;
 export const CHAT_BACKLOG = 200;
 
 
+/**
+ * How much side chat a room keeps. Enough that someone let in ten minutes late
+ * can read what they walked into, bounded so a long huddle can't grow without
+ * limit in memory that is never written anywhere.
+ */
+export const CHAT_BACKLOG = 200;
+
+
 /** A live guest socket, as far as the room store needs to care. */
 export interface GuestLink {
   /**
@@ -56,6 +66,8 @@ export interface GuestLink {
   revoke: () => void;
   /** Push the guest its current standing. */
   notify: (payload: HuddleStatePayload) => void;
+  /** Push the guest room chat — the backlog on approval, then each new line. */
+  chat: (payload: HuddleChatPayload) => void;
 }
 
 interface RoomEntry {
@@ -206,6 +218,7 @@ export function createRoom(opts: CreateRoomOpts): HuddleRoom {
     guests: [],
     host_typing: false,
     host_label: opts.host_label ?? "",
+    chat: [],
   };
   rooms.set(room.id, { room, links: new Map(), typingTimers: new Map() });
   scheduleSweep();
@@ -258,6 +271,82 @@ export function getRoom(roomId: string): HuddleRoom | null {
   const entry = rooms.get(roomId);
 
   return entry ? structuredClone(entry.room) : null;
+}
+
+/**
+ * Hand one guest the whole backlog. Called on approval and on a rejoin, so
+ * someone let in late — or reloading their tab — reads what they walked into
+ * rather than an empty panel that fills only from the next line on.
+ */
+function pushBacklog(entry: RoomEntry, devStaticPub: string): void {
+  entry.links.get(devStaticPub)?.chat({
+    room_id: entry.room.id,
+    messages: entry.room.chat,
+    replace: true,
+  });
+}
+
+/** Fan one new line out to everyone the host has let in. */
+function pushChat(entry: RoomEntry, message: HuddleChatMessage): void {
+  const payload: HuddleChatPayload = {
+    room_id: entry.room.id,
+    messages: [message],
+    replace: false,
+  };
+  for (const [pub, link] of entry.links) {
+    const guest = entry.room.guests.find((g) => g.dev_static_pub === pub);
+    if (guest?.state === "approved") {
+      link.chat(payload);
+    }
+  }
+}
+
+export interface SayOpts {
+  /** Display name to show. The room stores it, so a rename doesn't rewrite it. */
+  author: string;
+  /** Who said it; omit for the host, who has no member row. */
+  member_id?: string | null;
+  text: string;
+}
+
+/**
+ * Say something to the room. Deliberately separate from `agents.send`: this
+ * never reaches the agent, so "try it on the iPad" stays a note to a colleague
+ * instead of becoming a prompt.
+ */
+export function say(roomId: string, opts: SayOpts): HuddleChatMessage | null {
+  const entry = rooms.get(roomId);
+  const text = opts.text.trim();
+  if (!entry || !text) {
+    return null;
+  }
+  const message: HuddleChatMessage = {
+    id: randomUUID(),
+    author: opts.author,
+    member_id: opts.member_id ?? null,
+    text,
+    at: Date.now(),
+  };
+  entry.room.chat = [...entry.room.chat, message].slice(-CHAT_BACKLOG);
+  pushChat(entry, message);
+  emitChanged();
+
+  return message;
+}
+
+/** What one guest may say as: their own name, and only once approved. */
+export function guestChatIdentity(
+  roomId: string,
+  devStaticPub: string,
+): { author: string; member_id: string } | null {
+  const entry = rooms.get(roomId);
+  const guest = entry?.room.guests.find(
+    (g) => g.dev_static_pub === devStaticPub,
+  );
+
+  return guest && guest.state === "approved"
+    ? { author: guest.label, member_id: guest.member_id }
+    : null;
 }
 
 /** The host's slot in `typingTimers`. No guest key is ever the empty string. */
@@ -461,6 +550,7 @@ export function joinRoom(
   entry.links.set(devStaticPub, link);
   if (guest.state === "approved") {
     link.grant(guestScope(room));
+    pushBacklog(entry, devStaticPub);
   }
   pushRoster(entry);
   emitChanged();
@@ -525,6 +615,7 @@ export function approveGuest(roomId: string, devStaticPub: string): boolean {
   guest.approved_at = Date.now();
   const link = entry.links.get(devStaticPub);
   link?.grant(guestScope(entry.room));
+  pushBacklog(entry, devStaticPub);
   pushRoster(entry);
   emitChanged();
 

@@ -55,6 +55,7 @@ function room(overrides: Partial<HuddleRoom> = {}): HuddleRoom {
     agent_id: "agent-1",
     device_key: "SIM-1",
     host_typing: false,
+    chat: [],
     host_label: "Ana Dev",
     url: "https://example.test/#/huddle/tok",
     created_at: 1,

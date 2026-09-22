@@ -1730,6 +1730,26 @@ export function EnvelopeIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+/** The side chat in a huddle — people talking to each other, not to an agent. */
+export function ChatIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <path d="M13.5 9.5a1.5 1.5 0 0 1-1.5 1.5H6l-3 2.5V11h-.5A1.5 1.5 0 0 1 2.5 9.5v-5A1.5 1.5 0 0 1 4 3h8a1.5 1.5 0 0 1 1.5 1.5Z" />
+    </svg>
+  );
+}
+
 /** This machine — the local, "This Mac" side of the connection picker. */
 export function LaptopIcon({ size = 12, className, ...rest }: IconProps) {
   return (
