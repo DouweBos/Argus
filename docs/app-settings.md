@@ -428,6 +428,7 @@ but cannot spawn agents, send messages, or run commands.
 | **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
 | **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                                                                  |
 | **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                       |
+| **Your name on a huddle invite**            | `""`    | The name in "… wants you to join". Empty falls back to the git `user.name` of the session you're sharing — set this if you commit under a name you don't go by.                                                             |
 
 ### Choosing ways in
 

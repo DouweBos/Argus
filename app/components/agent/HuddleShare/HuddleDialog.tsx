@@ -3,12 +3,12 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   Banner,
   Button,
-  CopyField,
   Dialog,
   DialogBody,
   DialogFooter,
   GuestList,
   Icons,
+  InviteMessage,
   SetupBlocker,
   Spinner,
 } from "@argus/peacock";
@@ -34,6 +34,7 @@ import styles from "./HuddleDialog.module.css";
 import { ShareDisclosure } from "./shareDisclosure";
 import { useClaimHolderLabel } from "./useClaimHolderLabel";
 import { useHostName } from "./useHostName";
+import { useHuddleInvite } from "./useHuddleInvite";
 
 interface HuddleDialogProps {
   agentId: string;
@@ -69,6 +70,7 @@ export function HuddleDialog({
     : null;
   const drivingLabel = useClaimHolderLabel(sharedKey);
   const hostName = useHostName(sessionId);
+  const invite = useHuddleInvite(agentId, hostName, room?.url ?? null);
 
   const guests: GuestListItem[] = useMemo(
     () =>
@@ -186,11 +188,11 @@ export function HuddleDialog({
     <Dialog onClose={onClose} size="medium" title="Huddle" titleId={titleId}>
       <DialogBody className={styles.body}>
         <div className={styles.section}>
-          <p className={styles.sectionTitle}>Share this link</p>
-          <CopyField
-            copyLabel="Copy huddle link"
+          <p className={styles.sectionTitle}>Send this to them</p>
+          <InviteMessage
+            link={room.url ?? undefined}
+            message={room.url ? invite : ""}
             placeholder="Getting a link…"
-            value={room.url ?? ""}
           />
           <p className={styles.hint}>
             The link alone gets nobody in — you approve each person here.

@@ -31,6 +31,10 @@ import {
   remoteStartPairing,
 } from "../../../lib/ipc";
 import { canDriveArgus, pairingClientLabel } from "../../../lib/pairingClient";
+import {
+  setHuddleDisplayName,
+  useHuddleDisplayName,
+} from "../../../stores/settingsStore";
 import styles from "./RemoteAccessSection.module.css";
 import { RemoteDeviceRow } from "./RemoteDeviceRow";
 import { RemotePushFields } from "./RemotePushFields";
@@ -116,6 +120,7 @@ function reachabilityLabel(status: RemoteStatus): string {
 }
 
 export function RemoteAccessSection() {
+  const huddleDisplayName = useHuddleDisplayName();
   const [status, setStatus] = useState<RemoteStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -582,6 +587,17 @@ export function RemoteAccessSection() {
             </div>
           </SettingsScreenField>
         )}
+
+        <SettingsScreenField
+          label="Your name on a huddle invite"
+          caption="Used in “… wants you to join”. Empty uses the name you commit under."
+        >
+          <Input
+            placeholder="Your name"
+            value={huddleDisplayName}
+            onChange={(e) => setHuddleDisplayName(e.target.value)}
+          />
+        </SettingsScreenField>
 
         {error && <p className={styles.error}>{error}</p>}
       </SettingsScreenDetailBody>
