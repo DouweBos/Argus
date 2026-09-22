@@ -50,6 +50,7 @@ import { pushError } from "../../../stores/notificationsStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { updateSession, useSessions } from "../../../stores/sessionStore";
 import { EffortPicker, effortDisplayName } from "../EffortPicker";
+import { useHuddleTyping } from "../HuddleShare";
 import {
   type AccountSelection,
   type ModelOption,
@@ -173,6 +174,7 @@ export function ChatInput({
     null,
   );
   const linkedProjects = useLinkedProjects(agentId);
+  const huddleTyping = useHuddleTyping(agentId);
   const sessions = useSessions();
   const currentSession = sessionId
     ? (sessions.find((s) => s.id === sessionId) ?? null)
@@ -339,10 +341,18 @@ export function ChatInput({
     updateSuggestions();
     updateArgHint();
     updateMentions(textareaRef.current);
+    huddleTyping.keystroke();
     if (agentId) {
       setDraft(agentId, textareaRef.current?.value ?? "");
     }
-  }, [adjustHeight, updateSuggestions, updateArgHint, updateMentions, agentId]);
+  }, [
+    adjustHeight,
+    updateSuggestions,
+    updateArgHint,
+    updateMentions,
+    huddleTyping,
+    agentId,
+  ]);
 
   const submit = useCallback(() => {
     const value = textareaRef.current?.value.trim() ?? "";
@@ -380,12 +390,14 @@ export function ChatInput({
     }
     setSuggestions([]);
     dismissMention();
+    huddleTyping.stop();
   }, [
     onSend,
     disabled,
     adjustHeight,
     pendingImages,
     dismissMention,
+    huddleTyping,
     agentId,
     linkedProjects,
   ]);

@@ -262,6 +262,7 @@ import {
   listRooms as listHuddleRooms,
   removeGuest as removeHuddleGuest,
   setHuddleDevice,
+  setHuddleHostTyping,
   startHuddle,
   stopHuddle,
 } from "@argus/host/services/remote/huddleService";
@@ -1236,6 +1237,9 @@ export function registerIpcHandlers(): void {
     setHuddleDevice(a.roomId as string, (a.deviceKey as string | null) ?? ""),
   );
   handle("huddle_list", "host", () => listHuddleRooms());
+  handle("huddle_set_typing", "host", (a) =>
+    setHuddleHostTyping(a.roomId as string, a.typing as boolean),
+  );
   handle("huddle_approve_guest", "host", (a) =>
     approveHuddleGuest(a.roomId as string, a.devStaticPub as string),
   );

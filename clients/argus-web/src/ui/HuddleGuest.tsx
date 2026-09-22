@@ -15,9 +15,11 @@ import {
   SidebarHeader,
   SidebarHeaderAction,
   Spinner,
+  TypingIndicator,
 } from "@argus/peacock";
 import {
   huddlePanes,
+  typingNames,
   type HuddlePane,
   type HuddleView,
 } from "../lib/huddleSession";
@@ -156,6 +158,7 @@ function HuddleRoom({ view }: { view: HuddleView }) {
               state: "approved" as const,
               connected: m.connected,
               driving: m.driving,
+              typing: m.typing,
             }))}
           />
           <Button variant="danger" onClick={leaveHuddle}>
@@ -183,6 +186,10 @@ function HuddleRoom({ view }: { view: HuddleView }) {
 
       {pane === "agent" && (
         <div className="aw-chat-dock">
+          {/* Always present, so the composer doesn't jump when it fills. */}
+          <div className="aw-typing">
+            <TypingIndicator names={typingNames(view)} />
+          </div>
           <ChatInput agentId={agentId} sessionId={status?.session_id} />
         </div>
       )}

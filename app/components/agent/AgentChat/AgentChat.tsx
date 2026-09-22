@@ -83,6 +83,7 @@ import { ChatSearchBar } from "../ChatSearchBar";
 import { CollapsedToolGroup } from "../CollapsedToolGroup";
 import { ULTRACODE_EFFORT } from "../EffortPicker";
 import { ForkSessionDialog } from "../ForkSessionDialog";
+import { HuddleTypingBar } from "../HuddleShare";
 import { TaskList } from "../TaskList";
 import { TodoList } from "../TodoList";
 import styles from "./AgentChat.module.css";
@@ -1125,6 +1126,7 @@ export function AgentChat({
         />
       )}
 
+      {!readOnly && agentId && <HuddleTypingBar agentId={agentId} />}
       {!readOnly && (
         <ChatInput
           agentId={agentId}

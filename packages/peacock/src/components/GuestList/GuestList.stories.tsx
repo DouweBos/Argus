@@ -86,3 +86,20 @@ export const Removable: Story = {
     onRemove: () => {},
   },
 };
+
+/** Someone mid-sentence — the typing line replaces the standing line. */
+export const SomeoneTyping: Story = {
+  args: {
+    guests: [
+      {
+        id: "a",
+        label: "Ana",
+        state: "approved",
+        connected: true,
+        typing: true,
+      },
+      { id: "b", label: "Bo", state: "approved", connected: true },
+    ],
+    onRemove: () => {},
+  },
+};

@@ -43,6 +43,7 @@ function guest(overrides: Partial<HuddleGuest> = {}): HuddleGuest {
     joined_at: 1,
     approved_at: null,
     connected: true,
+    typing: false,
     ...overrides,
   };
 }
@@ -53,6 +54,7 @@ function room(overrides: Partial<HuddleRoom> = {}): HuddleRoom {
     token: "tok",
     agent_id: "agent-1",
     device_key: "SIM-1",
+    host_typing: false,
     host_label: "Ana Dev",
     url: "https://example.test/#/huddle/tok",
     created_at: 1,

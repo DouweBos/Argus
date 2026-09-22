@@ -70,6 +70,7 @@ export const HOST_ONLY_COMMANDS = new Set([
   "huddle_share_readiness",
   "huddle_stop",
   "huddle_set_device",
+  "huddle_set_typing",
   "huddle_list",
   "huddle_approve_guest",
   "huddle_deny_guest",

@@ -144,6 +144,12 @@ interface AppState {
   joinHuddle: (token: string, label: string) => Promise<void>;
   /** Hang up on a huddle from the guest side. The link still works after. */
   leaveHuddle: () => void;
+  /**
+   * Tell the room we are (or are no longer) composing. Presence only: the draft
+   * never leaves this browser, and a drop expires the flag host-side anyway,
+   * so a failed send is nothing to recover from.
+   */
+  setHuddleTyping: (typing: boolean) => void;
   pairComplete: (identity: DeviceIdentity) => void;
   setDeviceName: (name: string) => Promise<void>;
   setPushEnabled: (enabled: boolean) => Promise<void>;
@@ -569,6 +575,15 @@ export const useAppStore = create<AppState>((set, get) => {
           huddle: { ...(s.huddle ?? INITIAL_HUDDLE_VIEW), state: "unavailable" },
         }));
       }
+    },
+
+    setHuddleTyping: (typing) => {
+      if (get().huddle?.state !== "approved") {
+        return;
+      }
+      get()
+        .transport?.request("huddle.typing", { typing })
+        .catch(() => {});
     },
 
     leaveHuddle: () => {

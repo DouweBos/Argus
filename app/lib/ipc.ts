@@ -1748,6 +1748,15 @@ export const huddleRemoveGuest = (
 ): Promise<boolean> => invoke("huddle_remove_guest", { roomId, devStaticPub });
 
 /** Every live room. Rooms are in memory, so this is empty after a restart. */
+/**
+ * Report the engineer as composing (or done), so guests see them as busy the
+ * same way the host sees them. Presence only — no draft text crosses the wire.
+ */
+export const huddleSetTyping = (
+  roomId: string,
+  typing: boolean,
+): Promise<boolean> => invoke("huddle_set_typing", { roomId, typing });
+
 export const huddleList = (): Promise<HuddleRoom[]> =>
   invoke("huddle_list", {});
 

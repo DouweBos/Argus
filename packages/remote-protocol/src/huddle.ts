@@ -15,7 +15,11 @@
 import { z } from "zod";
 
 /** Methods a guest socket may call. Handled pre-`dispatch`, ungated by tier. */
-export const HUDDLE_METHODS = ["huddle.join", "huddle.state"] as const;
+export const HUDDLE_METHODS = [
+  "huddle.join",
+  "huddle.state",
+  "huddle.typing",
+] as const;
 export type HuddleMethod = (typeof HUDDLE_METHODS)[number];
 
 export function isHuddleMethod(value: string): value is HuddleMethod {
@@ -51,6 +55,17 @@ export const HuddleJoinParams = z.object({
 export type HuddleJoinParams = z.infer<typeof HuddleJoinParams>;
 
 /**
+ * "I am composing something." Presence only — it carries no text, so a draft
+ * never leaves the browser that is writing it. The host expires the flag on its
+ * own (see `TYPING_TTL_MS`), so a guest whose socket dies mid-sentence stops
+ * showing as typing without anyone having to send the `false`.
+ */
+export const HuddleTypingParams = z.object({
+  typing: z.boolean(),
+});
+export type HuddleTypingParams = z.infer<typeof HuddleTypingParams>;
+
+/**
  * One other person in the room, as a guest sees them. Deliberately thin: a
  * display name and whether they are here right now. Never the key they
  * handshook with or the browser id they presented — a guest has no business
@@ -63,6 +78,8 @@ export const HuddleMember = z.object({
   connected: z.boolean(),
   /** They hold the device claim. At most one member ever does. */
   driving: z.boolean().default(false),
+  /** They are composing a message to the agent right now. */
+  typing: z.boolean().default(false),
 });
 export type HuddleMember = z.infer<typeof HuddleMember>;
 
@@ -80,6 +97,11 @@ export const HuddleStatePayload = z.object({
   members: z.array(HuddleMember).default([]),
   /** Which of `members` is the recipient, so a client can mark "you". */
   you: z.string().nullable().default(null),
+  /**
+   * The engineer is composing. They are not a member — they own the room — so
+   * their typing rides alongside the roster rather than in it.
+   */
+  host_typing: z.boolean().default(false),
   /** What to call the engineer, so a guest reads a name and not "the host". */
   host_label: z.string().default(""),
 });
@@ -88,11 +110,13 @@ export type HuddleStatePayload = z.infer<typeof HuddleStatePayload>;
 export const HuddleMethodParams = {
   "huddle.join": HuddleJoinParams,
   "huddle.state": z.object({}),
+  "huddle.typing": HuddleTypingParams,
 } as const satisfies Record<HuddleMethod, z.ZodTypeAny>;
 
 export const HuddleMethodResult = {
   "huddle.join": HuddleStatePayload,
   "huddle.state": HuddleStatePayload,
+  "huddle.typing": z.object({}),
 } as const satisfies Record<HuddleMethod, z.ZodTypeAny>;
 
 // --- Host-side views (the desktop's own UI, not the wire) -------------------
@@ -118,6 +142,8 @@ export interface HuddleGuest {
   approved_at: number | null;
   /** Whether their socket is live right now (they may reload the tab). */
   connected: boolean;
+  /** Composing a message right now. Expires on its own — see `TYPING_TTL_MS`. */
+  typing: boolean;
 }
 
 /**
@@ -138,6 +164,8 @@ export interface HuddleRoom {
   /** Backstop only — the engineer normally ends the huddle by hand. */
   expires_at: number;
   guests: HuddleGuest[];
+  /** The engineer is composing. Mirrored to guests, never persisted. */
+  host_typing: boolean;
   /**
    * What the engineer is called in this room: on their own messages, and in
    * the typing line. Empty when the desktop couldn't work out a name, which

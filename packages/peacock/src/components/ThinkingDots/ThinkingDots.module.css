@@ -30,3 +30,60 @@
     transform: translateY(-1px);
   }
 }
+
+/*
+ * Trailing a sentence in place of an ellipsis: smaller, and nudged off the
+ * line's centre onto its baseline, where the ellipsis they replace would sit.
+ */
+.slow {
+  gap: 3px;
+  transform: translateY(2px);
+}
+
+/*
+ * Long enough that only one dot is up at a time, so the three read as a wave
+ * travelling left to right rather than as three lights blinking together.
+ */
+.slow .dot {
+  width: 3px;
+  height: 3px;
+  animation: thinking-slow 2s ease-in-out infinite;
+}
+
+.slow .dot:nth-child(2) {
+  animation-delay: 0.25s;
+}
+.slow .dot:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+@keyframes thinking-slow {
+  0%,
+  65%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* Keep the rhythm, drop the travel. */
+@media (prefers-reduced-motion: reduce) {
+  .dot,
+  .slow .dot {
+    animation-name: thinking-fade;
+  }
+
+  @keyframes thinking-fade {
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}

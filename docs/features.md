@@ -134,6 +134,16 @@ alongside you until you end the huddle.
   with the room.
 - Guests never see your other projects, sessions, automations or
   proposals.
+- Everyone sees who is typing — you and the guests both — so two people
+  don't send the agent the same thing at once. Presence only: no draft
+  leaves the browser writing it.
+- The device says who is driving it, and flags anyone whose taps are
+  being refused — contention over one simulator is visible to everyone
+  rather than only to the person it's happening to.
+- **A side chat** for the people in the room, so "which build is this?"
+  doesn't send anyone back to Slack. The agent never sees it: it isn't in
+  the transcript or its context. Like the room, it lives in memory only
+  and goes when the huddle ends.
 
 ---
 

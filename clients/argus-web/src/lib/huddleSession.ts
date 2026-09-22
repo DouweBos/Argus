@@ -34,6 +34,8 @@ export interface HuddleView {
   members: HuddleMember[];
   /** Our own `member_id`, so the list can mark which row is us. */
   you: string | null;
+  /** The engineer is composing right now. */
+  hostTyping: boolean;
   /** What the engineer is called. Empty when the desktop knows no name. */
   hostLabel: string;
 }
@@ -45,6 +47,7 @@ export const INITIAL_HUDDLE_VIEW: HuddleView = {
   deviceKey: null,
   members: [],
   you: null,
+  hostTyping: false,
   hostLabel: "",
 };
 
@@ -57,6 +60,7 @@ export function applyHuddleState(payload: HuddleStatePayload): HuddleView {
     deviceKey: payload.device_key,
     members: payload.members ?? [],
     you: payload.you ?? null,
+    hostTyping: payload.host_typing ?? false,
     hostLabel: payload.host_label ?? "",
   };
 }
@@ -81,6 +85,19 @@ export function applyJoinFailure(code: string, prev: HuddleView): HuddleView {
 /** What to call the engineer. A name when the desktop knows one. */
 export function hostLabel(view: HuddleView): string {
   return view.hostLabel.trim() || "The host";
+}
+
+/**
+ * Everyone but us who is mid-sentence, as a rendered list of names. The host
+ * has no member row — they own the room — so they come in as a name, not a
+ * member, and sort first because they're the one the guests are waiting on.
+ */
+export function typingNames(view: HuddleView): string[] {
+  const guests = view.members
+    .filter((m) => m.typing && m.member_id !== view.you)
+    .map((m) => m.label);
+
+  return view.hostTyping ? [hostLabel(view), ...guests] : guests;
 }
 
 export interface HuddleRequester {
