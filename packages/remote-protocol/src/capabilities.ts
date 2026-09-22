@@ -193,6 +193,7 @@ export const REMOTE_METHODS = {
   "proposals.list": "monitor",
   "proposals.accept": "control",
   "proposals.dismiss": "control",
+  "proposals.resolve": "control",
   "proposals.perform_cleanup": "control",
   /** Every address this desktop is reachable on, so a client can pick one. */
   "host.endpoints": "monitor",

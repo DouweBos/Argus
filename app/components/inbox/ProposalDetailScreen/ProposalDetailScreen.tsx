@@ -3,8 +3,8 @@
  *
  * Home and the inbox both show proposals, but only in summary; this is where
  * the whole of one is readable and where it gets decided. Deciding ends the
- * proposal, so both outcomes leave: a start follows the session it created, a
- * dismissal goes back to the inbox. One that is already decided — or that a
+ * proposal, so every outcome leaves: a start follows the session it created,
+ * a dismissal or a "done" goes back to the inbox. One that is already decided — or that a
  * later run cleared — still reads here, with its buttons gone.
  */
 
@@ -53,6 +53,10 @@ function decidedNote(
       return proposal.dismissed_reason
         ? `You dismissed this: ${proposal.dismissed_reason}`
         : "You dismissed this.";
+    case "resolved":
+      return proposal.resolved_note
+        ? `You marked this done: ${proposal.resolved_note}`
+        : "You marked this done — you handled it yourself.";
     case "superseded":
       return `A later run of ${by} proposed the same work again${proposal.cleared_reason ? `: ${proposal.cleared_reason}` : "."}`;
     case "withdrawn":
@@ -64,8 +68,14 @@ export function ProposalDetailScreen() {
   const proposalId = useRouteProposalId();
   const proposal = useProposal(proposalId);
   const automations = useAutomations();
-  const { busyId, dismiss, primaryAction, requestRevision, startWithNote } =
-    useProposalActions();
+  const {
+    busyId,
+    dismiss,
+    primaryAction,
+    requestRevision,
+    resolve,
+    startWithNote,
+  } = useProposalActions();
 
   if (!proposal) {
     return (
@@ -88,6 +98,7 @@ export function ProposalDetailScreen() {
   const project = proposalProjectName(proposal.repo_root);
   const source = proposal.source_ref;
   const decided = decidedNote(proposal, automation?.name);
+  const markDone = resolve(proposal);
 
   return (
     <div className={styles.screen}>
@@ -129,6 +140,13 @@ export function ProposalDetailScreen() {
             : undefined
         }
         onRequestRevision={requestRevision(proposal)}
+        onResolve={
+          markDone &&
+          ((note) => {
+            markDone(note);
+            openInbox();
+          })
+        }
         onStartWithNote={startWithNote(proposal)}
         primary={decided ? undefined : primaryAction(proposal)}
         rationale={proposal.rationale || undefined}

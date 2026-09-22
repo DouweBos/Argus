@@ -851,8 +851,8 @@ export interface AutomationRun {
 export interface AutomationCalibration {
   abandoned: number;
   /**
-   * Accepted + auto-started over everything decided. Null while nothing has
-   * been decided.
+   * Accepted + auto-started + resolved over everything decided. Null while
+   * nothing has been decided.
    */
   acceptance_rate: number | null;
   accepted: number;
@@ -862,6 +862,8 @@ export interface AutomationCalibration {
   dismissed: number;
   merged: number;
   pending: number;
+  /** Marked done by you — you did what they asked, outside Argus. */
+  resolved: number;
   reverted: number;
   /** Proposals considered — the newest twenty. */
   sample: number;
@@ -917,6 +919,8 @@ export type ProposalStatus =
   | "auto_started"
   | "dismissed"
   | "pending"
+  /** You did what it asked, outside Argus — agreement, not rejection. */
+  | "resolved"
   /** Replaced by a later run of the same automation. */
   | "superseded"
   /** Taken out of the inbox by a later run: the signal behind it went away. */
@@ -986,6 +990,10 @@ export interface Proposal {
   recommended_action: ProposalAction;
   /** Project the work would happen in. Null when it maps to no local repo. */
   repo_root: string | null;
+  /** When you marked it done. Null while nobody has. */
+  resolved_at: number | null;
+  /** What you said when you marked it done, verbatim. */
+  resolved_note: string | null;
   /** What the user wants changed before this is worth starting, verbatim. */
   revision_request: string | null;
   /** When the revision was asked for. Null while nobody has asked. */

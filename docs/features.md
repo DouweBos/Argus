@@ -167,7 +167,7 @@ See [Argus Server](/argus/docs/server-app).
 ## Automations
 
 Work Argus starts on its own: triggers on a schedule or a signal,
-proposals queued in an inbox for you to accept or dismiss, and an
+proposals queued in an inbox for you to accept, mark as done or dismiss, and an
 autonomy ladder that decides how far a run may go unsupervised.
 
 Signal sources today are GitHub issues and pull requests natively, plus

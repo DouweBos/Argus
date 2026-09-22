@@ -14,6 +14,7 @@ import {
   dismissProposal,
   listProposals,
   resetProposalCache,
+  resolveProposal,
   supersedeProposals,
   withdrawProposal,
 } from "./manager";
@@ -100,6 +101,31 @@ describe("proposal manager", () => {
 
     it("throws for an unknown id", () => {
       expect(() => dismissProposal("nope")).toThrow();
+    });
+  });
+
+  describe("resolveProposal", () => {
+    it("keeps the note apart from a dismissal — it is the opposite signal", () => {
+      const proposal = createProposal(input());
+      resolveProposal(proposal.id, "  deleted the branch by hand  ");
+
+      resetProposalCache();
+      const [reloaded] = listProposals();
+      expect(reloaded.status).toBe("resolved");
+      expect(reloaded.resolved_note).toBe("deleted the branch by hand");
+      expect(reloaded.resolved_at).not.toBeNull();
+      expect(reloaded.dismissed_reason).toBeNull();
+    });
+
+    it("stores null when nothing was said", () => {
+      const proposal = createProposal(input());
+      expect(resolveProposal(proposal.id).resolved_note).toBeNull();
+    });
+
+    it("refuses one that was already decided on", () => {
+      const proposal = createProposal(input());
+      dismissProposal(proposal.id);
+      expect(() => resolveProposal(proposal.id)).toThrow();
     });
   });
 

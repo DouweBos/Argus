@@ -547,6 +547,8 @@ export const RemoteProposalStatus = z.enum([
   "auto_started",
   "dismissed",
   "pending",
+  /** The user did what it asked, outside Argus. Agreement, not rejection. */
+  "resolved",
   /** Cleared by a later run of the same automation, not by the user. */
   "superseded",
   "withdrawn",

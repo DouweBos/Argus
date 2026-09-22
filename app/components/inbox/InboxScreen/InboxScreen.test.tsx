@@ -76,6 +76,8 @@ function proposal(patch: Partial<Proposal> = {}): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    resolved_note: null,
+    resolved_at: null,
     accepted_note: null,
     revision_request: null,
     revision_requested_at: null,

@@ -139,6 +139,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "proposals.list": DENIED,
   "proposals.accept": DENIED,
   "proposals.dismiss": DENIED,
+  "proposals.resolve": DENIED,
   "proposals.perform_cleanup": DENIED,
 
   // Browser streams share the claim table under a `browser:` prefix, so the

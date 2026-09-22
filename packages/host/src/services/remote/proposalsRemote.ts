@@ -22,6 +22,7 @@ import {
   dismissProposal,
   getProposal,
   listProposals,
+  resolveProposal,
 } from "../automation/proposals/manager";
 
 /** How many a client gets when it doesn't say. */
@@ -97,6 +98,21 @@ export async function performRemoteProposalCleanup(
   return {
     proposal: toRemoteProposal(await performProposalCleanup(proposalId)),
   };
+}
+
+/**
+ * Mark it done from the phone — the user already did what it asked. Null when
+ * the proposal is unknown.
+ */
+export function resolveRemoteProposal(
+  proposalId: string,
+  note?: string,
+): { proposal: RemoteProposal } | null {
+  if (!getProposal(proposalId)) {
+    return null;
+  }
+
+  return { proposal: toRemoteProposal(resolveProposal(proposalId, note)) };
 }
 
 /** Dismiss it, with the reason verbatim. Null when the proposal is unknown. */

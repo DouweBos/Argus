@@ -139,6 +139,8 @@ export interface AutomationCalibration {
   auto_started: number;
   dismissed: number;
   pending: number;
+  /** The user did what it asked themselves — agreement without a session. */
+  resolved: number;
   /** Cleared by a later run: replaced, or withdrawn because the signal went. */
   superseded: number;
   withdrawn: number;
@@ -146,8 +148,8 @@ export interface AutomationCalibration {
   abandoned: number;
   reverted: number;
   /**
-   * Accepted + auto-started over everything decided. Null while nothing has
-   * been decided — a rate off zero proposals is a lie, not a zero.
+   * Accepted + auto-started + resolved over everything decided. Null while
+   * nothing has been decided — a rate off zero proposals is a lie, not a zero.
    */
   acceptance_rate: number | null;
   /** Verbatim dismissal reasons, newest first. The training signal. */
@@ -176,7 +178,8 @@ export function calibrationFor(automationId: string): AutomationCalibration {
   const accepted = countBy(proposals, "accepted");
   const autoStarted = countBy(proposals, "auto_started");
   const dismissed = countBy(proposals, "dismissed");
-  const decided = accepted + autoStarted + dismissed;
+  const resolved = countBy(proposals, "resolved");
+  const decided = accepted + autoStarted + dismissed + resolved;
 
   return {
     automation_id: automationId,
@@ -185,12 +188,14 @@ export function calibrationFor(automationId: string): AutomationCalibration {
     auto_started: autoStarted,
     dismissed,
     pending: countBy(proposals, "pending"),
+    resolved,
     superseded: countBy(proposals, "superseded"),
     withdrawn: countBy(proposals, "withdrawn"),
     merged: relevant.filter((o) => o.outcome === "merged").length,
     abandoned: relevant.filter((o) => o.outcome === "abandoned").length,
     reverted: relevant.filter((o) => o.outcome === "reverted").length,
-    acceptance_rate: decided === 0 ? null : (accepted + autoStarted) / decided,
+    acceptance_rate:
+      decided === 0 ? null : (accepted + autoStarted + resolved) / decided,
     dismissals: proposals
       .filter((p) => p.status === "dismissed" && p.dismissed_reason)
       .slice(0, QUOTED_REASONS)
@@ -219,6 +224,15 @@ export function calibrationBlock(automationId: string): string | null {
     "",
     `Your last ${c.sample} proposal(s) for this automation: ${c.accepted} accepted, ${c.auto_started} auto-started, ${c.dismissed} dismissed, ${c.pending} still waiting.`,
   ];
+
+  // Done by hand is the proposal being right and Argus not being needed for
+  // it — worth separating from both an accept and a dismissal.
+  if (c.resolved > 0) {
+    lines.push(
+      "",
+      `${c.resolved} were marked done by the user, who handled them outside Argus.`,
+    );
+  }
 
   // Worth saying out loud: a run that keeps proposing what a later run has to
   // replace is generating work for itself, not for the user.

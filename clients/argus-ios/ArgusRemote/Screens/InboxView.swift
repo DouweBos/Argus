@@ -37,6 +37,9 @@ struct InboxView: View {
               onCleanup: { Task { await proposals.performCleanup(id: proposal.id) } },
               onDismiss: { reason in
                 Task { await proposals.dismiss(id: proposal.id, reason: reason) }
+              },
+              onResolve: { note in
+                Task { await proposals.resolve(id: proposal.id, note: note) }
               })
           }
         }
@@ -66,9 +69,12 @@ struct ProposalCard: View {
   let onAccept: () -> Void
   let onCleanup: () -> Void
   let onDismiss: (String?) -> Void
+  let onResolve: (String?) -> Void
 
   @State private var dismissing = false
+  @State private var resolving = false
   @State private var reason = ""
+  @State private var done = ""
   @State private var confirmingCleanup = false
 
   var body: some View {
@@ -92,6 +98,8 @@ struct ProposalCard: View {
 
       if dismissing {
         dismissForm
+      } else if resolving {
+        resolveForm
       } else {
         actions
       }
@@ -123,6 +131,10 @@ struct ProposalCard: View {
         }
       }
       if canDecide {
+        Btn(
+          label: "Mark as done", tone: proposal.cta == nil ? .primary : .secondary,
+          small: true, icon: Icon.check
+        ) { resolving = true }
         Btn(label: "Dismiss", tone: .ghost, small: true) { dismissing = true }
       }
       Spacer()
@@ -143,6 +155,27 @@ struct ProposalCard: View {
         Btn(label: "Cancel", tone: .ghost, small: true) { dismissing = false }
       }
     }
+  }
+
+  /// The same bargain as the dismiss form: what you did, if you feel like
+  /// saying — never a required field.
+  private var resolveForm: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      ThemedTextField(placeholder: "What did you do? (optional)", text: $done) {
+        submitResolve()
+      }
+      HStack(spacing: 8) {
+        Btn(label: "Mark as done", small: true, icon: Icon.check) { submitResolve() }
+        Btn(label: "Cancel", tone: .ghost, small: true) { resolving = false }
+      }
+    }
+  }
+
+  private func submitResolve() {
+    let trimmed = done.trimmingCharacters(in: .whitespacesAndNewlines)
+    onResolve(trimmed.isEmpty ? nil : trimmed)
+    resolving = false
+    done = ""
   }
 
   private func submitDismiss() {
