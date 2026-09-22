@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icons } from "@argus/peacock";
+import { ResizablePanel } from "@argus/peacock";
 import {
   type ToolRailId,
   TOOL_PLACEMENT,
@@ -10,7 +11,6 @@ import {
   useMountedToolIds,
 } from "../../../stores/layoutStore";
 import { useEffectiveToolEnabled } from "../../../tools/store";
-import { ResizablePanel } from "../../layout/ResizablePanel";
 import { ChangesSummary } from "../tools/ChangesSummary";
 import { SimulatorTool } from "../tools/SimulatorTool";
 import styles from "./ToolPanel.module.css";

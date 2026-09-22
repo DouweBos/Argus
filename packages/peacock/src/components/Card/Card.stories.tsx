@@ -29,3 +29,21 @@ export const Tight: Story = {
     style: { width: 260 },
   },
 };
+
+export const Stacked: Story = {
+  args: {
+    size: "sm",
+    stack: true,
+    style: { width: 300 },
+    children: (
+      <>
+        <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: 13 }}>
+          Confirm this matches the code in Argus.
+        </p>
+        <strong style={{ color: "var(--accent)", letterSpacing: 6 }}>
+          481-902
+        </strong>
+      </>
+    ),
+  },
+};

@@ -4,10 +4,10 @@ interface UseDragResizeOptions {
   axis: "horizontal" | "vertical";
   /** Initial size value (px or fraction) */
   initialSize: number;
-  /** If true, dragging in the positive mouse direction shrinks */
+  /** If true, dragging in the positive pointer direction shrinks */
   invert?: boolean;
   /**
-   * Convert mouse delta (px) to size delta.
+   * Convert pointer delta (px) to size delta.
    * For fractions: (delta) => delta / containerWidth
    * For pixels: (delta) => delta
    */
@@ -18,11 +18,15 @@ interface UseDragResizeOptions {
 
 interface UseDragResizeResult {
   isDragging: boolean;
-  onMouseDown: (e: React.MouseEvent) => void;
+  onPointerDown: (e: React.PointerEvent) => void;
   setSize: (size: number) => void;
   size: number;
 }
 
+/**
+ * Pointer events (not mouse) so the divider drags with a finger or pencil on
+ * touch devices as well as a mouse.
+ */
 export function useDragResize({
   axis,
   initialSize,
@@ -32,16 +36,16 @@ export function useDragResize({
   invert = false,
 }: UseDragResizeOptions): UseDragResizeResult {
   const [size, setSize] = useState(initialSize);
-  const dragging = useRef(false);
+  const pointerId = useRef<number | null>(null);
   const startPos = useRef(0);
   const startSize = useRef(0);
 
   const cursor = axis === "vertical" ? "row-resize" : "col-resize";
 
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
       e.preventDefault();
-      dragging.current = true;
+      pointerId.current = e.pointerId;
       startPos.current = axis === "vertical" ? e.clientY : e.clientX;
       startSize.current = size;
       document.body.style.cursor = cursor;
@@ -51,8 +55,8 @@ export function useDragResize({
   );
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!dragging.current) {
+    const onPointerMove = (e: PointerEvent) => {
+      if (pointerId.current !== e.pointerId) {
         return;
       }
 
@@ -67,23 +71,30 @@ export function useDragResize({
       setSize(newSize);
     };
 
-    const onMouseUp = () => {
-      if (!dragging.current) {
+    const onPointerUp = (e: PointerEvent) => {
+      if (pointerId.current !== e.pointerId) {
         return;
       }
-      dragging.current = false;
+      pointerId.current = null;
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
 
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
 
     return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     };
   }, [axis, min, max, mapDelta, invert]);
 
-  return { size, setSize, onMouseDown, isDragging: dragging.current };
+  return {
+    size,
+    setSize,
+    onPointerDown,
+    isDragging: pointerId.current !== null,
+  };
 }

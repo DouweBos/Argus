@@ -12,6 +12,16 @@
   position: relative;
 }
 
+/* Bordered surface with a bigger touch target — for phone/tablet lists, where
+   a flat row with hover-revealed actions reads as nothing. */
+.framed {
+  margin-bottom: 6px;
+  padding: 6px 8px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-md);
+  background: var(--surface-2);
+}
+
 .card[role="option"] {
   cursor: pointer;
 }

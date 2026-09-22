@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useDragResize } from "../../../hooks/useDragResize";
 import styles from "./ResizablePanel.module.css";
+import { useDragResize } from "./useDragResize";
 
 export type PanelSide = "bottom" | "left" | "right";
 
@@ -59,7 +59,7 @@ export function ResizablePanel({
     [isVertical, isPixel],
   );
 
-  const { size: sizeFraction, onMouseDown } = useDragResize({
+  const { size: sizeFraction, onPointerDown } = useDragResize({
     axis: isVertical ? "vertical" : "horizontal",
     initialSize: defaultWidth,
     min: minWidth,
@@ -69,21 +69,25 @@ export function ResizablePanel({
   });
 
   const [isDragging, setIsDragging] = useState(false);
-  const handleDividerMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handleDividerPointerDown = useCallback(
+    (e: React.PointerEvent) => {
       setIsDragging(true);
-      onMouseDown(e);
+      onPointerDown(e);
     },
-    [onMouseDown],
+    [onPointerDown],
   );
   useEffect(() => {
     if (!isDragging) {
       return;
     }
-    const handleMouseUp = () => setIsDragging(false);
-    window.addEventListener("mouseup", handleMouseUp);
+    const stop = () => setIsDragging(false);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
 
-    return () => window.removeEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
   }, [isDragging]);
 
   useEffect(() => {
@@ -146,7 +150,7 @@ export function ResizablePanel({
           aria-orientation={isVertical ? "horizontal" : "vertical"}
           className={`${styles.divider} ${dividerSideClass}`}
           role="separator"
-          onMouseDown={handleDividerMouseDown}
+          onPointerDown={handleDividerPointerDown}
         />
       )}
     </div>

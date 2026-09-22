@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Chip,
+  FileMentionPicker,
   Icons,
   ImageAttachmentStrip,
   TextArea,
@@ -33,7 +34,6 @@ import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { updateSession, useSessions } from "../../../stores/sessionStore";
 import { getDefaultPermissionMode } from "../../../stores/settingsStore";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
-import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { useMentionPicker } from "../ChatInput/useMentionPicker";
 import { ModelPicker, type RunnerSelection } from "../ModelPicker";
 import { PermissionModePicker } from "../PermissionModePicker";

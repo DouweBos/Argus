@@ -7,6 +7,8 @@ import {
   ChatInputShell,
   Chip,
   ContextMeter,
+  FileMentionPicker,
+  SlashCommandList,
   Icons,
   ImageAttachmentStrip,
   ProgressBar,
@@ -47,7 +49,6 @@ import { openImageViewer } from "../../../stores/imageViewerStore";
 import { pushError } from "../../../stores/notificationsStore";
 import { useRegisteredRunners } from "../../../stores/runnersStore";
 import { updateSession, useSessions } from "../../../stores/sessionStore";
-import { FileMentionPicker } from "../../shared/FileMentionPicker";
 import { EffortPicker, effortDisplayName } from "../EffortPicker";
 import {
   type AccountSelection,
@@ -158,7 +159,6 @@ export function ChatInput({
   const [argHint, setArgHint] = useState<{ hint: string; text: string } | null>(
     null,
   );
-  const suggestionsRef = useRef<HTMLDivElement>(null);
   const projectChipRef = useRef<HTMLDivElement>(null);
   const modelChipRef = useRef<HTMLDivElement>(null);
   const permissionChipRef = useRef<HTMLDivElement>(null);
@@ -637,15 +637,6 @@ export function ChatInput({
     ],
   );
 
-  useEffect(() => {
-    const container = suggestionsRef.current;
-    if (!container) {
-      return;
-    }
-    const selected = container.children[selectedIndex + 1] as HTMLElement;
-    selected?.scrollIntoView({ block: "nearest" });
-  }, [selectedIndex]);
-
   const above = (
     <>
       {uploadProgress && (
@@ -665,28 +656,12 @@ export function ChatInput({
           />
         </div>
       )}
-      {suggestions.length > 0 && (
-        <div ref={suggestionsRef} className={styles.suggestions}>
-          <div className={styles.suggestionsHeader}>Commands</div>
-          {suggestions.map((cmd, i) => (
-            <button
-              key={cmd.name}
-              className={`${styles.suggestion} ${i === selectedIndex ? styles.suggestionActive : ""}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                applySuggestion(cmd);
-              }}
-              onMouseEnter={() => setSelectedIndex(i)}
-            >
-              <span className={styles.suggestionSlash}>/</span>
-              <span className={styles.suggestionName}>{cmd.name}</span>
-              {cmd.description && (
-                <span className={styles.suggestionDesc}>{cmd.description}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      <SlashCommandList
+        items={suggestions}
+        selectedIndex={selectedIndex}
+        onSelect={(i) => applySuggestion(suggestions[i])}
+        onSelectedIndexChange={setSelectedIndex}
+      />
 
       {mentionContext && suggestions.length === 0 && (
         <FileMentionPicker

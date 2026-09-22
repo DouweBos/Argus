@@ -46,6 +46,11 @@ export interface SessionCardProps extends Omit<
   subtitle?: ReactNode;
 
   selected?: boolean;
+  /**
+   * Draw the card as a bordered surface with roomier padding. For touch
+   * layouts, where the desktop's hover-revealed flat row reads as nothing.
+   */
+  framed?: boolean;
   /** Wires role/tabIndex/aria-selected/cursor + Enter-to-select. */
   interactive?: boolean;
   /** The event is passed so callers can treat a modifier-click differently. */
@@ -70,6 +75,7 @@ export function SessionCard({
   actionReveal = "always",
   subtitle,
   selected,
+  framed,
   interactive,
   onSelect,
   onContextMenu,
@@ -79,6 +85,7 @@ export function SessionCard({
 }: SessionCardProps) {
   const classes = [
     styles.card,
+    framed ? styles.framed : "",
     selected ? styles.selected : "",
     className ?? "",
   ]

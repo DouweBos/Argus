@@ -1,7 +1,7 @@
 import type { HierarchyNode } from "./types";
 import { useEffect, useMemo } from "react";
 import { Banner, Button, Icons, Spinner } from "@argus/peacock";
-import { useDragResize } from "../../hooks/useDragResize";
+import { useDragResize } from "@argus/peacock";
 import { HierarchySearch } from "./HierarchySearch";
 import { HierarchyTree } from "./HierarchyTree";
 import { InspectionLauncher } from "./InspectionLauncher";
@@ -107,7 +107,7 @@ export function InspectionPanel({
     });
   };
 
-  const { size: sidebarWidth, onMouseDown: onSidebarResize } = useDragResize({
+  const { size: sidebarWidth, onPointerDown: onSidebarResize } = useDragResize({
     axis: "horizontal",
     initialSize: loadSidebarWidth(),
     min: SIDEBAR_MIN,
@@ -227,7 +227,7 @@ export function InspectionPanel({
               aria-orientation="vertical"
               aria-label="Resize hierarchy"
               className={styles.sidebarResizer}
-              onMouseDown={onSidebarResize}
+              onPointerDown={onSidebarResize}
             />
           </div>
         )}

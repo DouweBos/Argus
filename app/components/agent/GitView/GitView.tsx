@@ -18,6 +18,7 @@ import {
   type StashDialogResult,
   type TagDialogConfirm,
 } from "@argus/peacock";
+import { ResizablePanel } from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
 import { GitError } from "../../../lib/gitError";
 import {
@@ -53,7 +54,6 @@ import {
   useGitSidebarCollapsed,
   useGitSidebarWidth,
 } from "../../../stores/settingsStore";
-import { ResizablePanel } from "../../layout/ResizablePanel";
 import { Dialog, dialogStyles } from "../../shared/Dialog";
 import { BranchView } from "../BranchView";
 import { ChangesToolbar } from "../ChangesToolbar";

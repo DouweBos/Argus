@@ -1,14 +1,6 @@
 import type { RegisteredRunner } from "../../../lib/types";
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
-import { createPortal } from "react-dom";
-import { useOutsideClick } from "../../../hooks/useOutsideClick";
-import styles from "./ModelPicker.module.css";
+import type { RefObject } from "react";
+import { PickerPopover } from "@argus/peacock";
 
 export interface ModelOption {
   /** Optional short description shown below the name. */
@@ -77,11 +69,6 @@ interface ModelPickerProps {
   triggerRef: RefObject<HTMLElement | null>;
 }
 
-interface PickerRect {
-  bottom: number;
-  left: number;
-}
-
 export function ModelPicker({
   models,
   currentModel,
@@ -91,84 +78,24 @@ export function ModelPicker({
   runner,
   triggerRef,
 }: ModelPickerProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [rect, setRect] = useState<PickerRect | null>(null);
-
-  useLayoutEffect(() => {
-    const updateRect = () => {
-      const node = triggerRef.current;
-      if (!node) {
-        return;
-      }
-      const r = node.getBoundingClientRect();
-      setRect({ left: r.left, bottom: window.innerHeight - r.top + 6 });
-    };
-
-    updateRect();
-    window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
-
-    return () => {
-      window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
-    };
-  }, [triggerRef]);
-
-  useOutsideClick(ref, true, onClose, (target) => {
-    return triggerRef.current?.contains(target) ?? false;
-  });
-
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    }
-    document.addEventListener("keydown", handleEscape);
-
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
-
-  if (!rect) {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      ref={ref}
-      className={styles.picker}
-      style={{ left: rect.left, bottom: rect.bottom }}
-    >
+  return (
+    <PickerPopover triggerRef={triggerRef} onClose={onClose}>
       {account && account.available.length > 0 && (
         <AccountSection account={account} />
       )}
       {runner && <RunnerSection runner={runner} />}
 
-      <div className={styles.header}>Switch model</div>
-      {models.map((model) => {
-        const isActive = model.value === currentModel;
-
-        return (
-          <button
-            key={model.value}
-            className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              onSelect(model.value);
-            }}
-          >
-            <div className={styles.optionLabel}>
-              <span className={styles.optionName}>{model.displayName}</span>
-              {model.description && (
-                <span className={styles.optionDesc}>{model.description}</span>
-              )}
-            </div>
-            {isActive && <span className={styles.optionCheck}>✓</span>}
-          </button>
-        );
-      })}
-    </div>,
-    document.body,
+      <PickerPopover.Header>Switch model</PickerPopover.Header>
+      {models.map((model) => (
+        <PickerPopover.Option
+          key={model.value}
+          name={model.displayName}
+          description={model.description}
+          selected={model.value === currentModel}
+          onSelect={() => onSelect(model.value)}
+        />
+      ))}
+    </PickerPopover>
   );
 }
 
@@ -178,11 +105,7 @@ function AccountSection({ account }: { account: AccountSelection }) {
     "app default";
 
   const options: { description?: string; id: string | null; name: string }[] = [
-    {
-      id: null,
-      name: "Follow app default",
-      description: followLabel,
-    },
+    { id: null, name: "Follow app default", description: followLabel },
     ...account.available.map((a) => ({
       id: a.id,
       name: a.displayName,
@@ -192,29 +115,16 @@ function AccountSection({ account }: { account: AccountSelection }) {
 
   return (
     <>
-      <div className={styles.header}>Account</div>
-      {options.map((opt) => {
-        const isActive = opt.id === account.currentId;
-
-        return (
-          <button
-            key={opt.id ?? "default"}
-            className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              account.onSelect(opt.id);
-            }}
-          >
-            <div className={styles.optionLabel}>
-              <span className={styles.optionName}>{opt.name}</span>
-              {opt.description && (
-                <span className={styles.optionDesc}>{opt.description}</span>
-              )}
-            </div>
-            {isActive && <span className={styles.optionCheck}>✓</span>}
-          </button>
-        );
-      })}
+      <PickerPopover.Header>Account</PickerPopover.Header>
+      {options.map((opt) => (
+        <PickerPopover.Option
+          key={opt.id ?? "default"}
+          name={opt.name}
+          description={opt.description}
+          selected={opt.id === account.currentId}
+          onSelect={() => account.onSelect(opt.id)}
+        />
+      ))}
     </>
   );
 }
@@ -232,41 +142,26 @@ function RunnerSection({ runner }: { runner: RunnerSelection }) {
   if (!selectable) {
     return (
       <>
-        <div className={styles.header}>Runner</div>
-        <div className={styles.runnerStatic} aria-label="Runner">
-          <div className={styles.optionLabel}>
-            <span className={styles.optionName}>{current.displayName}</span>
-            {runner.locked && (
-              <span className={styles.optionDesc}>Fixed for this session</span>
-            )}
-          </div>
-        </div>
+        <PickerPopover.Header>Runner</PickerPopover.Header>
+        <PickerPopover.Static
+          name={current.displayName}
+          description={runner.locked ? "Fixed for this session" : undefined}
+        />
       </>
     );
   }
 
   return (
     <>
-      <div className={styles.header}>Runner</div>
-      {available.map((opt) => {
-        const isActive = opt.id === runner.currentId;
-
-        return (
-          <button
-            key={opt.id}
-            className={`${styles.option} ${isActive ? styles.optionActive : ""}`}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              runner.onSelect?.(opt.id);
-            }}
-          >
-            <div className={styles.optionLabel}>
-              <span className={styles.optionName}>{opt.displayName}</span>
-            </div>
-            {isActive && <span className={styles.optionCheck}>✓</span>}
-          </button>
-        );
-      })}
+      <PickerPopover.Header>Runner</PickerPopover.Header>
+      {available.map((opt) => (
+        <PickerPopover.Option
+          key={opt.id}
+          name={opt.displayName}
+          selected={opt.id === runner.currentId}
+          onSelect={() => runner.onSelect?.(opt.id)}
+        />
+      ))}
     </>
   );
 }

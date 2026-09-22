@@ -1,4 +1,4 @@
-import type { MentionPickerItem } from "../../shared/FileMentionPicker";
+import type { MentionPickerItem } from "@argus/peacock";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listSessionFiles, resolveMentionPath } from "../../../lib/ipc";
 

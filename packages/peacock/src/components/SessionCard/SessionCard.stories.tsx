@@ -129,3 +129,16 @@ export const WebWorktree: Story = {
     actions: ellipsis,
   },
 };
+
+export const Framed: Story = {
+  args: {
+    framed: true,
+    icon: <BranchIcon size={13} />,
+    title: "Tidy the settings screen",
+    actionReveal: "always",
+    kind: { label: "worktree", tone: "neutralFilled" },
+    diff: { added: 42, removed: 8 },
+    subtitle: "douwe/tidy-settings",
+    actions: ellipsis,
+  },
+};

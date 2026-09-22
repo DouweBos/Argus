@@ -8,6 +8,7 @@ import {
   Icons,
   type GitErrorKind,
 } from "@argus/peacock";
+import { ResizablePanel } from "@argus/peacock";
 import { parseDiff } from "../../../lib/diffParser";
 import { GitError } from "../../../lib/gitError";
 import {
@@ -23,7 +24,6 @@ import {
   getConfirmPreference,
   setConfirmPreference,
 } from "../../../stores/settingsStore";
-import { ResizablePanel } from "../../layout/ResizablePanel";
 import { ViewHeader } from "../GitView/ViewHeader";
 import { StashDetailPanel, type StashDetailTab } from "./StashDetailPanel";
 import styles from "./StashesView.module.css";
