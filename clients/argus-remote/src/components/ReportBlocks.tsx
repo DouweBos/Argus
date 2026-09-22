@@ -7,9 +7,11 @@
  * surface, so they are named rather than faked.
  */
 
+import { useRouter } from "expo-router";
 import { ScrollView, View } from "react-native";
 import type { RemoteReportBlock, RemoteReportTone } from "../lib/protocol";
 import { useTheme } from "../theme";
+import * as Icons from "./Icons";
 import { Markdown } from "./Markdown";
 import { Body, Card, Mono, Muted, Row, Title } from "./ui";
 
@@ -136,6 +138,30 @@ function Series({
   );
 }
 
+/** The run's proposals live in the inbox, which is a screen away on the phone. */
+function Proposals({
+  block,
+}: {
+  block: Extract<RemoteReportBlock, { type: "proposals" }>;
+}) {
+  const theme = useTheme();
+  const router = useRouter();
+  const count = block.ids.length;
+
+  return (
+    <Card onPress={() => router.push("/inbox")}>
+      <Row gap={8}>
+        <Icons.Envelope size={14} color={theme.textSecondary} />
+        <Body style={{ flex: 1 }}>
+          {count} proposal{count === 1 ? "" : "s"} to decide on
+        </Body>
+        <Muted>Inbox</Muted>
+        <Icons.ChevronRight size={14} color={theme.textMuted} />
+      </Row>
+    </Card>
+  );
+}
+
 function Block({ block }: { block: RemoteReportBlock }) {
   const theme = useTheme();
 
@@ -169,15 +195,10 @@ function Block({ block }: { block: RemoteReportBlock }) {
           ))}
         </Card>
       );
-    // Live objects the desktop resolves into cards. Naming the count is honest;
-    // rendering an id would not be.
     case "proposals":
-      return (
-        <Muted>
-          {block.ids.length} proposal{block.ids.length === 1 ? "" : "s"} — open
-          the inbox on your computer to act on them.
-        </Muted>
-      );
+      return <Proposals block={block} />;
+    // A session id is not an agent id, so there is nothing to open — naming the
+    // count is honest; rendering an id would not be.
     case "sessions":
       return (
         <Muted>
