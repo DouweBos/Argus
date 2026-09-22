@@ -592,11 +592,9 @@ out sandbox vs. production on its own — if the first send is rejected as the
 wrong environment it retries the other one and remembers which worked.
 
 **Firebase (Android)** — from Firebase → Project settings → **Service
-accounts**, generate a private key and paste the whole JSON blob. The Android
-build also needs the matching `google-services.json` at
-`clients/argus-remote/google-services.json` plus
-`"googleServicesFile": "./google-services.json"` under `android` in
-`app.json`, otherwise the app can't obtain an FCM token to register.
+accounts**, generate a private key and paste the whole JSON blob. There is no
+Android client to register right now (the Expo one is gone and the native app
+is iOS), so this is only worth setting once one ships.
 
 Credentials are stored in the same `safeStorage`-encrypted file as the device
 keys (`~/.argus/remote-devices.json`), never in plaintext `app-settings.json`,

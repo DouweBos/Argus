@@ -177,7 +177,7 @@ the center, runtime and testing on the right.
 | `packages/peacock` | `@argus/peacock` — the design system: tokens, icons, components                                |
 | `app/`             | React 19 + Vite renderer                                                                       |
 | `electron/`        | Thin desktop shell — window lifecycle and the bridges into the host                            |
-| `clients/`         | The LAN web client and the native Expo remote                                                  |
+| `clients/`         | The LAN web client and the native iOS remote                                                   |
 | `native/`          | Swift/ObjC simulator bridge                                                                    |
 
 The interesting constraint is that **`packages/host` never imports `electron`** — enforced by

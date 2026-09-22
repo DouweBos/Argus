@@ -1,5 +1,7 @@
-import { NoiseHandshake, type NoiseKeypair } from "../../argus-remote/src/crypto/noise.ts";
-import { derivePairingPsk, deriveSas } from "../../argus-remote/src/crypto/derive.ts";
+// Generated against the desktop gateway's own crypto — the peer the phone
+// actually handshakes with, so drift shows up here rather than in the field.
+import { NoiseHandshake, type NoiseKeypair } from "../../../packages/host/src/services/remote/noise.ts";
+import { derivePairingPsk, deriveSas } from "../../../packages/host/src/services/remote/derive.ts";
 import { x25519 } from "@noble/curves/ed25519.js";
 
 const b64 = (u: Uint8Array) => Buffer.from(u).toString("base64");

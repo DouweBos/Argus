@@ -2,9 +2,9 @@ import Foundation
 import Testing
 @testable import ArgusKit
 
-/// Interop vectors generated from the TypeScript implementation the desktop and
-/// the Expo client share (`clients/argus-remote/src/crypto/noise.ts`). If any of
-/// these fail, this port has drifted and no phone will complete a handshake.
+/// Interop vectors generated from the desktop gateway's own implementation
+/// (`packages/host/src/services/remote/noise.ts`) — the peer this port actually
+/// handshakes with. If any of these fail, no phone will complete a handshake.
 ///
 /// Regenerate with the script documented in `clients/argus-ios/README.md`.
 struct NoiseVectors: Decodable {
