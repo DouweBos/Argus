@@ -41,16 +41,20 @@ describe("huddle ipc wrappers", () => {
   });
 
   it("starts a share for one agent plus whatever device is open", async () => {
-    await huddleStart("agent-1", "SIM-UDID");
+    await huddleStart("agent-1", "SIM-UDID", "Ana Dev");
     expect(lastCall()).toEqual([
       "huddle_start",
-      { agentId: "agent-1", deviceKey: "SIM-UDID" },
+      { agentId: "agent-1", deviceKey: "SIM-UDID", hostLabel: "Ana Dev" },
     ]);
   });
 
   it("starts a chat-only share when no device is open", async () => {
-    await huddleStart("agent-1", "");
-    expect(lastCall()[1]).toEqual({ agentId: "agent-1", deviceKey: "" });
+    await huddleStart("agent-1", "", "Ana Dev");
+    expect(lastCall()[1]).toEqual({
+      agentId: "agent-1",
+      deviceKey: "",
+      hostLabel: "Ana Dev",
+    });
   });
 
   it("ends one room by id", async () => {
@@ -77,7 +81,7 @@ describe("huddle ipc wrappers", () => {
   });
 
   it("only speaks host-only commands — none of this may cross the wire", async () => {
-    await huddleStart("a", "");
+    await huddleStart("a", "", "Ana Dev");
     await huddleStop("r");
     await huddleList();
     await huddleApproveGuest("r", "p");

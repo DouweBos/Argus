@@ -53,6 +53,7 @@ function room(overrides: Partial<HuddleRoom> = {}): HuddleRoom {
     token: "tok",
     agent_id: "agent-1",
     device_key: "SIM-1",
+    host_label: "Ana Dev",
     url: "https://example.test/#/huddle/tok",
     created_at: 1,
     expires_at: 2,

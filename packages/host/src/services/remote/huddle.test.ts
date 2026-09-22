@@ -26,6 +26,7 @@ const {
   leaveGuest,
   listRooms,
   refreshDriving,
+  hostLabelForAgent,
   removeGuest,
   resetRooms,
   setRoomDevice,
@@ -696,5 +697,52 @@ describe("who is driving the shared device", () => {
     refreshDriving("udid-other");
 
     expect(drivingLabels(ana)).toEqual([]);
+  });
+});
+
+describe("naming the host", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  it("carries the name into every approved guest's view", () => {
+    const r = createRoom({
+      agent_id: "ag1",
+      device_key: "",
+      host_label: "Ana Dev",
+    });
+    const ana = link();
+    joinRoom(r.token, "pub-a", "Bo", ana);
+    approveGuest(r.id, "pub-a");
+
+    expect(ana.notify.mock.calls.at(-1)?.[0].host_label).toBe("Ana Dev");
+  });
+
+  it("tells a pending guest nothing, not even who is sharing", () => {
+    const r = createRoom({
+      agent_id: "ag1",
+      device_key: "",
+      host_label: "Ana Dev",
+    });
+    const outcome = joinRoom(r.token, "pub-a", "Bo", link());
+
+    expect(outcome.ok && outcome.payload.host_label).toBe("");
+  });
+
+  it("attributes a send arriving from the host's own phone", () => {
+    createRoom({ agent_id: "ag1", device_key: "", host_label: "Ana Dev" });
+
+    expect(hostLabelForAgent("ag1")).toBe("Ana Dev");
+  });
+
+  it("leaves an unshared agent's messages bare", () => {
+    createRoom({ agent_id: "ag1", device_key: "", host_label: "Ana Dev" });
+
+    expect(hostLabelForAgent("ag2")).toBeUndefined();
+  });
+
+  it("stays bare rather than inventing a name the desktop didn't send", () => {
+    createRoom({ agent_id: "ag1", device_key: "" });
+
+    expect(hostLabelForAgent("ag1")).toBeUndefined();
   });
 });

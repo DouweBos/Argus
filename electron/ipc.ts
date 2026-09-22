@@ -1225,6 +1225,7 @@ export function registerIpcHandlers(): void {
     startHuddle({
       agent_id: a.agentId as string,
       device_key: (a.deviceKey as string | null) ?? "",
+      host_label: (a.hostLabel as string | undefined) ?? "",
     }),
   );
   // Asked before the user commits to sharing, so a missing prerequisite is
@@ -1976,6 +1977,7 @@ export function registerIpcHandlers(): void {
         text: a.text as string,
         displayText: a.displayText as string | undefined,
         images: a.images as QueuedImage[] | undefined,
+        author: a.author as string | undefined,
       }),
     ),
   );

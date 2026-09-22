@@ -80,6 +80,8 @@ export const HuddleStatePayload = z.object({
   members: z.array(HuddleMember).default([]),
   /** Which of `members` is the recipient, so a client can mark "you". */
   you: z.string().nullable().default(null),
+  /** What to call the engineer, so a guest reads a name and not "the host". */
+  host_label: z.string().default(""),
 });
 export type HuddleStatePayload = z.infer<typeof HuddleStatePayload>;
 
@@ -136,4 +138,10 @@ export interface HuddleRoom {
   /** Backstop only — the engineer normally ends the huddle by hand. */
   expires_at: number;
   guests: HuddleGuest[];
+  /**
+   * What the engineer is called in this room: on their own messages, and in
+   * the typing line. Empty when the desktop couldn't work out a name, which
+   * the clients render as "the host".
+   */
+  host_label: string;
 }

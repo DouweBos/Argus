@@ -257,6 +257,7 @@ describe("joining a huddle", () => {
     expect(join.ok).toEqual({
       room_id: r.id,
       state: "pending",
+      host_label: "",
       agent_id: null,
       device_key: null,
       // Not even who else is in the room — that's the host's to announce.

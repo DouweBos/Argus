@@ -33,6 +33,7 @@ import { useRuntimeTargetState } from "../../../stores/simulatorStore";
 import styles from "./HuddleDialog.module.css";
 import { ShareDisclosure } from "./shareDisclosure";
 import { useClaimHolderLabel } from "./useClaimHolderLabel";
+import { useHostName } from "./useHostName";
 
 interface HuddleDialogProps {
   agentId: string;
@@ -67,6 +68,7 @@ export function HuddleDialog({
     ? (findDevice(sharedKey)?.name ?? "the device you have open")
     : null;
   const drivingLabel = useClaimHolderLabel(sharedKey);
+  const hostName = useHostName(sessionId);
 
   const guests: GuestListItem[] = useMemo(
     () =>
@@ -103,12 +105,12 @@ export function HuddleDialog({
   const start = useCallback(() => {
     setStarting(true);
     setBlocker(null);
-    huddleStart(agentId, deviceKey)
+    huddleStart(agentId, deviceKey, hostName)
       .catch((err: unknown) => {
         setBlocker(rehydrateShareError(err) ?? genericShareError(err));
       })
       .finally(() => setStarting(false));
-  }, [agentId, deviceKey]);
+  }, [agentId, deviceKey, hostName]);
 
   const end = useCallback(() => {
     if (!room) {

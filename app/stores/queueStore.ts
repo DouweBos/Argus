@@ -88,9 +88,10 @@ export function queueMessage(
   text: string,
   images?: QueuedImage[],
   displayText?: string,
+  author?: string,
 ): void {
   watchQueue(agentId);
-  apiQueue(agentId, text, images, displayText).catch(() => {});
+  apiQueue(agentId, text, images, displayText, author).catch(() => {});
 }
 
 export function removeQueuedMessage(agentId: string, id: string): void {

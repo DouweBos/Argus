@@ -126,6 +126,7 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
+import { hostLabelForAgent } from "./huddle";
 import {
   acceptRemoteProposal,
   dismissRemoteProposal,
@@ -825,6 +826,26 @@ function isUnmergedBranch(err: unknown): boolean {
   return /not fully merged/i.test(text);
 }
 
+/**
+ * Who to credit a message to, or undefined to leave it bare.
+ *
+ * A shared transcript has to say whose message each one is: several people are
+ * writing into it, so unattributed means "could be anyone". Outside a huddle
+ * there is only the engineer, and labelling every message would be noise.
+ */
+function messageAuthor(
+  agentId: string,
+  ctx: GatewayContext,
+): string | undefined {
+  // A scoped connection is a guest, and they answer to their own name.
+  if (ctx.scope) {
+    return ctx.device.label || undefined;
+  }
+
+  // Otherwise it is the engineer, reaching in from one of their own devices.
+  return hostLabelForAgent(agentId);
+}
+
 /** Look up a live agent or throw a gateway not_found. */
 function requireAgent(agentId: string): AgentSession {
   const agent = appState.agents.get(agentId);
@@ -1142,10 +1163,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       params,
     );
     const agent = requireAgent(agent_id);
-    // A scoped connection is a huddle guest, and a shared transcript has to say
-    // whose message this is; a paired device is the engineer's own, so it stays
-    // bare.
-    const author = ctx.scope ? ctx.device.label || undefined : undefined;
+    const author = messageAuthor(agent_id, ctx);
 
     // Queue-or-send is decided here, not by the client: a remote's view of the
     // agent's status can lag a turn that started a moment ago, and in a huddle
@@ -1256,7 +1274,7 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
       enqueueMessage(agent_id, {
         text: message,
         displayText: display_text,
-        author: ctx.scope ? ctx.device.label || undefined : undefined,
+        author: messageAuthor(agent_id, ctx),
         images,
       }),
     );

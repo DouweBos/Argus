@@ -14,6 +14,7 @@ import { queueMessage } from "../stores/queueStore";
 import { selectSession } from "../stores/sessionStore";
 import { getDefaultPermissionMode } from "../stores/settingsStore";
 import { notifyMessageSent, startAgentListening } from "./agentEventService";
+import { huddleAuthor } from "./huddleAuthor";
 import {
   claimPrewarmAgent,
   createCheckpoint,
@@ -210,7 +211,7 @@ export async function sendUserMessageToAgent(
   const status = getAgent(agentId)?.status;
 
   if (!options.assumeIdle && status === "running") {
-    queueMessage(agentId, text, images);
+    queueMessage(agentId, text, images, undefined, huddleAuthor(agentId));
 
     return;
   }
@@ -227,7 +228,7 @@ export async function sendUserMessageToAgent(
       // Skip checkpoint.
     }
   }
-  addUserMessage(agentId, text, images, checkpointId);
+  addUserMessage(agentId, text, images, checkpointId, huddleAuthor(agentId));
   notifyMessageSent(agentId);
   updateAgent(agentId, { status: "running" });
   await sendAgentMessage(agentId, text, images);

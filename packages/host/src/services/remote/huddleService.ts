@@ -50,6 +50,8 @@ export interface StartHuddleOpts {
   agent_id: string;
   /** Whatever device the host has open; empty when there is none. */
   device_key: string;
+  /** What to call the engineer in this room. */
+  host_label?: string;
   ttl_ms?: number;
 }
 

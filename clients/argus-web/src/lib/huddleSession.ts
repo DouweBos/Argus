@@ -34,6 +34,8 @@ export interface HuddleView {
   members: HuddleMember[];
   /** Our own `member_id`, so the list can mark which row is us. */
   you: string | null;
+  /** What the engineer is called. Empty when the desktop knows no name. */
+  hostLabel: string;
 }
 
 export const INITIAL_HUDDLE_VIEW: HuddleView = {
@@ -43,6 +45,7 @@ export const INITIAL_HUDDLE_VIEW: HuddleView = {
   deviceKey: null,
   members: [],
   you: null,
+  hostLabel: "",
 };
 
 /** What the host can tell us, folded into our view. */
@@ -54,6 +57,7 @@ export function applyHuddleState(payload: HuddleStatePayload): HuddleView {
     deviceKey: payload.device_key,
     members: payload.members ?? [],
     you: payload.you ?? null,
+    hostLabel: payload.host_label ?? "",
   };
 }
 
@@ -72,6 +76,11 @@ export function applyJoinFailure(code: string, prev: HuddleView): HuddleView {
   }
 
   return { ...prev, state: "connecting" };
+}
+
+/** What to call the engineer. A name when the desktop knows one. */
+export function hostLabel(view: HuddleView): string {
+  return view.hostLabel.trim() || "The host";
 }
 
 export interface HuddleRequester {
