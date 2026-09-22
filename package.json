@@ -10,7 +10,7 @@
   },
   "homepage": "https://github.com/DouweBos/Argus",
   "bugs": "https://github.com/DouweBos/Argus/issues",
-  "version": "0.51.0",
+  "version": "0.52.0",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
