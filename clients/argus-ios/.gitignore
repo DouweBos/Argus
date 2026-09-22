@@ -1,0 +1,5 @@
+# Per-user Xcode state — the project itself is checked in.
+xcuserdata/
+*.xcuserstate
+.build/
+DerivedData/
