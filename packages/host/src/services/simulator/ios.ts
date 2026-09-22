@@ -188,7 +188,7 @@ export async function listSimulators(): Promise<SimulatorDevice[]> {
 }
 
 /**
- * Boot a simulator by UDID and open Simulator.app.
+ * Boot a simulator by UDID and wait until it is usable.
  *
  * "Already booted" is not treated as an error, mirroring the Rust
  * implementation's tolerance for the "Booted" error message from simctl.
@@ -205,23 +205,45 @@ export async function bootSimulator(udid: string): Promise<void> {
     }
   }
 
+  await waitForBoot(udid);
+
   // Bring Simulator.app to the foreground showing this device
   activateSimulatorWindow(udid);
+}
+
+/** How long to wait for a freshly booted simulator to finish coming up. */
+const BOOT_WAIT_MS = 120_000;
+
+/**
+ * Block until the device reports a finished boot. `simctl boot` returns as soon
+ * as the request is accepted, and capture against a half-booted device only
+ * ever sees a nil framebuffer surface.
+ */
+async function waitForBoot(udid: string): Promise<void> {
+  try {
+    await execFileAsync("xcrun", ["simctl", "bootstatus", udid, "-b"], {
+      timeout: BOOT_WAIT_MS,
+    });
+  } catch (e) {
+    // bootstatus is advisory — an older runtime may not support `-b`, and the
+    // capture loop retries anyway. Don't fail the boot over it.
+    warn(`[Simulator] bootstatus failed for ${udid}:`, e);
+  }
 }
 
 /**
  * Switch Simulator.app to display the given device.
  *
- * Required when multiple simulators are booted — the app shows one at a time
- * and framebuffer capture only works for the currently displayed device.
- * Fire-and-forget: failures are silently ignored.
+ * Only matters up to Xcode 25 — Xcode 26 dropped Simulator.app for the Device
+ * Hub, which has no equivalent CLI, and capture reads CoreSimulator's
+ * framebuffer directly either way. Fire-and-forget: failures are ignored.
  */
 function activateSimulatorWindow(udid: string): void {
   execFile(
     "open",
     ["-g", "-a", "Simulator", "--args", "-CurrentDeviceUDID", udid],
     () => {
-      // Ignore errors — Simulator.app may not be installed
+      // Ignore errors — Simulator.app is gone as of Xcode 26.
     },
   );
 }
@@ -359,8 +381,14 @@ async function spawnSimulatorCapture(udid: string): Promise<number> {
     throw `No simulator found with UDID ${udid}`;
   }
 
-  // Ensure Simulator.app is showing this device before capture
-  activateSimulatorWindow(udid);
+  // Up to Xcode 25 activating Simulator.app booted the device as a side effect;
+  // with the Device Hub there is nothing to activate, so boot it explicitly or
+  // capture just waits forever on a framebuffer a shut-down device never has.
+  if (!device.booted) {
+    await bootSimulator(udid);
+  } else {
+    activateSimulatorWindow(udid);
+  }
 
   // Spawn a new bridge binary dedicated to this UDID.
   const bridge = new SimBridge();
