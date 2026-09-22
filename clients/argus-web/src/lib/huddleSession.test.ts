@@ -120,7 +120,8 @@ describe("what a guest is offered", () => {
     state: "approved",
     roomId: "room-1",
     agentId: "ag1",
-    deviceKey: "udid-1", members: [], you: null
+    deviceKey: "udid-1", members: [], you: null,
+    hostTyping: false, hostLabel: "", chat: []
   };
 
   it("offers one agent and one device, and nothing else", () => {
