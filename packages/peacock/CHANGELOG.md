@@ -1,19 +1,5 @@
 # @argus/peacock
 
-## 0.16.0
-
-### Minor Changes
-
-- 29c4584: New `DeviceDriverBadge` showing who is driving a shared device and who is being refused it, and `GuestList` rows can now say someone is waiting for the device.
-- f9151b6: New `HuddleChat` for a room's side conversation, a `ChatIcon`, and a `useUnreadCount` hook for "3 since you last looked" badges.
-- d4617a8: New `InviteMessage` for showing a ready-to-paste invitation with copy actions for the message and the bare link.
-- 66b122c: New `TypingIndicator` for showing who is composing a message, with the dots bouncing where its ellipsis would be. `GuestList` rows can now say someone is typing, and `ThinkingDots` takes a `slow` variant for dots that sit in running text.
-- 50e9e3e: The remote web client now uses the full screen on an iPad or a desktop browser: your projects and sessions stay in a resizable sidebar beside whatever agent, device or diff you have open. Phones keep the single-column layout.
-
-  Touch handling got a pass too — pinch-zoom works again, the composer stays above the keyboard, the layout clears the notch in landscape, and hover styles no longer stick after a tap. With a hardware keyboard, Cmd+[ and Cmd+] move back and forward, Cmd+\ toggles the sidebar, Cmd+K jumps to the composer and Cmd+/ lists the lot.
-
-  The remote client's model, mode and project pickers, its slash-command list and its @-mention picker now look and behave exactly like the desktop's, and its session cards pick up the desktop styling.
-
 ## 0.15.0
 
 ### Minor Changes
