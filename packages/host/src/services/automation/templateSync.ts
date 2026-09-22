@@ -50,6 +50,7 @@ const SUPERSEDED_DESCRIPTIONS: Record<string, string[]> = {
   ],
   "standup-digest": [
     "A daily read-only summary of what every agent and branch did yesterday.",
+    "A daily read-only summary of what every agent and branch did yesterday, and what is finished and waiting to ship.",
   ],
 };
 
