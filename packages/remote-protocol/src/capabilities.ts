@@ -70,6 +70,7 @@ export const HOST_ONLY_COMMANDS = new Set([
   "huddle_share_readiness",
   "huddle_stop",
   "huddle_set_device",
+  "huddle_say",
   "huddle_set_typing",
   "huddle_list",
   "huddle_approve_guest",
@@ -227,6 +228,8 @@ export const REMOTE_EVENTS = [
   "host.endpoints",
   /** A huddle guest's standing changed — approved, denied, or the room ended. */
   "huddle.state",
+  /** Someone in the huddle said something to the room (not to the agent). */
+  "huddle.chat",
   /** Raw renderer broadcast, forwarded verbatim to "admin" devices only —
    * another desktop wants the host's own IPC channels, not the typed mirrors. */
   "ipc",

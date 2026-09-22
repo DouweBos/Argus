@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { REMOTE_EVENTS } from "./capabilities";
-import { HuddleStatePayload } from "./huddle";
+import { HuddleChatPayload, HuddleStatePayload } from "./huddle";
 import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
@@ -535,6 +535,8 @@ export const EventPayloads = {
   "device.state": RemoteDeviceState,
   /** This guest's standing in its huddle room changed (host approved/denied/ended). */
   "huddle.state": HuddleStatePayload,
+  /** Someone in the huddle said something to the room. */
+  "huddle.chat": HuddleChatPayload,
   "sessions.changed": z.object({ repo_root: z.string() }),
   "projects.changed": z.object({}),
   notification: z.object({

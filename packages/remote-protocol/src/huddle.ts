@@ -17,6 +17,7 @@ import { z } from "zod";
 /** Methods a guest socket may call. Handled pre-`dispatch`, ungated by tier. */
 export const HUDDLE_METHODS = [
   "huddle.join",
+  "huddle.say",
   "huddle.state",
   "huddle.typing",
 ] as const;
@@ -65,6 +66,45 @@ export const HuddleTypingParams = z.object({
 });
 export type HuddleTypingParams = z.infer<typeof HuddleTypingParams>;
 
+/** The longest thing anyone can say in one go. A side chat, not an essay. */
+export const HUDDLE_CHAT_MAX = 2000;
+
+export const HuddleSayParams = z.object({
+  text: z.string().trim().min(1).max(HUDDLE_CHAT_MAX),
+});
+export type HuddleSayParams = z.infer<typeof HuddleSayParams>;
+
+/**
+ * One line in the room's side chat — what the people in the huddle say to each
+ * other, as opposed to what they say to the agent.
+ *
+ * Never reaches the agent: it is not in its transcript, not in its context, and
+ * not in anything it can read. "Try it on the iPad" is a note to a colleague,
+ * not a prompt.
+ */
+export const HuddleChatMessage = z.object({
+  id: z.string(),
+  /** Display name as it stood when they sent it. */
+  author: z.string(),
+  /** Who said it, or null when the host did — they have no member row. */
+  member_id: z.string().nullable(),
+  text: z.string(),
+  at: z.number(),
+});
+export type HuddleChatMessage = z.infer<typeof HuddleChatMessage>;
+
+/**
+ * Chat arriving at a guest. `replace` distinguishes the backlog handed over on
+ * approval from the single message appended when someone speaks, so a client
+ * never has to guess whether to concatenate or start again.
+ */
+export const HuddleChatPayload = z.object({
+  room_id: z.string(),
+  messages: z.array(HuddleChatMessage),
+  replace: z.boolean().default(false),
+});
+export type HuddleChatPayload = z.infer<typeof HuddleChatPayload>;
+
 /**
  * One other person in the room, as a guest sees them. Deliberately thin: a
  * display name and whether they are here right now. Never the key they
@@ -109,12 +149,14 @@ export type HuddleStatePayload = z.infer<typeof HuddleStatePayload>;
 
 export const HuddleMethodParams = {
   "huddle.join": HuddleJoinParams,
+  "huddle.say": HuddleSayParams,
   "huddle.state": z.object({}),
   "huddle.typing": HuddleTypingParams,
 } as const satisfies Record<HuddleMethod, z.ZodTypeAny>;
 
 export const HuddleMethodResult = {
   "huddle.join": HuddleStatePayload,
+  "huddle.say": z.object({}),
   "huddle.state": HuddleStatePayload,
   "huddle.typing": z.object({}),
 } as const satisfies Record<HuddleMethod, z.ZodTypeAny>;
@@ -172,4 +214,6 @@ export interface HuddleRoom {
    * the clients render as "the host".
    */
   host_label: string;
+  /** The room's side chat, newest last. Bounded — see `CHAT_BACKLOG`. */
+  chat: HuddleChatMessage[];
 }

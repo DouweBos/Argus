@@ -8,7 +8,12 @@
  * room id and nothing else, and holds no capabilities, so it must offer nothing.
  */
 
-import type { HuddleMember, HuddleStatePayload } from "./protocol";
+import type {
+  HuddleChatMessage,
+  HuddleChatPayload,
+  HuddleMember,
+  HuddleStatePayload,
+} from "./protocol";
 
 /**
  * Where the guest stands. `connecting` covers the socket and the join round
@@ -38,6 +43,8 @@ export interface HuddleView {
   hostTyping: boolean;
   /** What the engineer is called. Empty when the desktop knows no name. */
   hostLabel: string;
+  /** The room's side chat, oldest first. */
+  chat: HuddleChatMessage[];
 }
 
 export const INITIAL_HUDDLE_VIEW: HuddleView = {
@@ -49,11 +56,39 @@ export const INITIAL_HUDDLE_VIEW: HuddleView = {
   you: null,
   hostTyping: false,
   hostLabel: "",
+  chat: [],
 };
 
-/** What the host can tell us, folded into our view. */
-export function applyHuddleState(payload: HuddleStatePayload): HuddleView {
+/**
+ * Chat arriving, folded into the view. The backlog replaces whatever we had —
+ * it is the room's own record — and anything else appends, skipping an id we
+ * already hold so a re-sent backlog can't double a line.
+ */
+export function applyHuddleChat(
+  payload: HuddleChatPayload,
+  prev: HuddleView,
+): HuddleView {
+  if (payload.replace) {
+    return { ...prev, chat: payload.messages };
+  }
+  const known = new Set(prev.chat.map((m) => m.id));
+
   return {
+    ...prev,
+    chat: [...prev.chat, ...payload.messages.filter((m) => !known.has(m.id))],
+  };
+}
+
+/**
+ * What the host can tell us, folded into our view. The chat is carried on its
+ * own event, so a roster change must not wipe what has already been said.
+ */
+export function applyHuddleState(
+  payload: HuddleStatePayload,
+  prev: HuddleView = INITIAL_HUDDLE_VIEW,
+): HuddleView {
+  return {
+    chat: prev.chat,
     state: payload.state,
     roomId: payload.room_id,
     agentId: payload.agent_id,
@@ -138,8 +173,8 @@ export function huddleCapabilities(state: HuddleState): string[] {
   return state === "approved" ? ["monitor", "control"] : [];
 }
 
-/** Screens a guest may open. There is no third one: no projects, no sessions. */
-export type HuddlePane = "agent" | "device";
+/** Screens a guest may open. Still no projects and no sessions. */
+export type HuddlePane = "agent" | "chat" | "device";
 
 /**
  * The panes an approved guest gets. The device pane needs a simulator the
@@ -152,6 +187,6 @@ export function huddlePanes(view: HuddleView): HuddlePane[] {
   }
 
   return view.deviceKey && !view.deviceKey.startsWith("browser:")
-    ? ["agent", "device"]
-    : ["agent"];
+    ? ["agent", "chat", "device"]
+    : ["agent", "chat"];
 }

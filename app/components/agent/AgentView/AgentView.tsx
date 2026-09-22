@@ -17,7 +17,12 @@ import { AgentSplitDropZone } from "../AgentChatDropZone";
 import { AgentTabBar } from "../AgentTabBar";
 import { AgentsEmptyState } from "../AgentsEmptyState";
 import { ChildAgentPills } from "../ChildAgentPills";
-import { HuddleJoinRequests, ShareAgentButton } from "../HuddleShare";
+import {
+  HuddleChatPanel,
+  HuddleChatToggle,
+  HuddleJoinRequests,
+  ShareAgentButton,
+} from "../HuddleShare";
 import { SplitAgentPanes } from "../SplitAgentPanes";
 import styles from "./AgentView.module.css";
 
@@ -49,6 +54,7 @@ export function AgentView({ sessionId }: AgentViewProps) {
   }, [activeAgent, poppedOut, sessionId]);
 
   const splitPair = useSplitPair(sessionId);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const openOnRight = useCallback(
     (agentId: string) => {
@@ -207,6 +213,13 @@ export function AgentView({ sessionId }: AgentViewProps) {
         </button>
         <div className={styles.agentBarSpacer} />
         {activeAgent && (
+          <HuddleChatToggle
+            agentId={activeAgent.agent_id}
+            open={chatOpen}
+            onToggle={() => setChatOpen((open) => !open)}
+          />
+        )}
+        {activeAgent && (
           <ShareAgentButton
             agentId={activeAgent.agent_id}
             sessionId={sessionId}
@@ -224,29 +237,39 @@ export function AgentView({ sessionId }: AgentViewProps) {
       <HuddleJoinRequests />
       {activeAgent && <ChildAgentPills parentAgentId={activeAgent.agent_id} />}
 
-      {!activeAgent && <AgentsEmptyState sessionId={sessionId} />}
-      {activeAgent && showSplit && resolvedPair && (
-        <SplitAgentPanes
-          left={resolvedPair.left}
-          right={resolvedPair.right}
-          sessionId={sessionId}
-          onRestart={(id) => restartAgent(id)}
-        />
-      )}
-      {activeAgent && !showSplit && (
-        <AgentSplitDropZone
-          ignoreIds={[activeAgent.agent_id]}
-          onDropLeft={openOnLeft}
-          onDropRight={openOnRight}
-        >
-          <AgentChat
+      <div className={styles.body}>
+        <div className={styles.main}>
+          {!activeAgent && <AgentsEmptyState sessionId={sessionId} />}
+          {activeAgent && showSplit && resolvedPair && (
+            <SplitAgentPanes
+              left={resolvedPair.left}
+              right={resolvedPair.right}
+              sessionId={sessionId}
+              onRestart={(id) => restartAgent(id)}
+            />
+          )}
+          {activeAgent && !showSplit && (
+            <AgentSplitDropZone
+              ignoreIds={[activeAgent.agent_id]}
+              onDropLeft={openOnLeft}
+              onDropRight={openOnRight}
+            >
+              <AgentChat
+                agentId={activeAgent.agent_id}
+                permissionMode={activeAgent.permission_mode}
+                sessionId={sessionId}
+                onRestart={() => restartAgent(activeAgent.agent_id)}
+              />
+            </AgentSplitDropZone>
+          )}
+        </div>
+        {activeAgent && chatOpen && (
+          <HuddleChatPanel
             agentId={activeAgent.agent_id}
-            permissionMode={activeAgent.permission_mode}
-            sessionId={sessionId}
-            onRestart={() => restartAgent(activeAgent.agent_id)}
+            onClose={() => setChatOpen(false)}
           />
-        </AgentSplitDropZone>
-      )}
+        )}
+      </div>
     </>
   );
 }

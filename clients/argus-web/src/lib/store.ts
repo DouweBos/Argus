@@ -15,6 +15,7 @@ import {
 import type { DeviceIdentity } from "./keystore";
 import { fetchHostKey, guestClientId, guestKeypair } from "./huddleIdentity";
 import {
+  applyHuddleChat,
   applyHuddleState,
   huddleCapabilities,
   INITIAL_HUDDLE_VIEW,
@@ -38,6 +39,7 @@ import {
 } from "./webpush";
 import type {
   EventEnvelope,
+  HuddleChatPayload,
   HuddleStatePayload,
   RemoteDeviceClaim,
   RemoteDeviceClaimState,
@@ -144,6 +146,8 @@ interface AppState {
   joinHuddle: (token: string, label: string) => Promise<void>;
   /** Hang up on a huddle from the guest side. The link still works after. */
   leaveHuddle: () => void;
+  /** Say something to the room. Never reaches the agent. */
+  sayInHuddle: (text: string) => void;
   /**
    * Tell the room we are (or are no longer) composing. Presence only: the draft
    * never leaves this browser, and a drop expires the flag host-side anyway,
@@ -362,10 +366,19 @@ export const useAppStore = create<AppState>((set, get) => {
       set((s) => ({
         claimByDevice: { ...s.claimByDevice, [c.device_id]: c.holder },
       }));
+    } else if (ev.event === "huddle.chat") {
+      set((s) => ({
+        huddle: s.huddle
+          ? applyHuddleChat(ev.payload as HuddleChatPayload, s.huddle)
+          : s.huddle,
+      }));
     } else if (ev.event === "huddle.state") {
       // Approval upgrades this very socket, so the grant arrives as an event
       // rather than a reconnect. Denied and ended are terminal.
-      const view = applyHuddleState(ev.payload as HuddleStatePayload);
+      const view = applyHuddleState(
+        ev.payload as HuddleStatePayload,
+        get().huddle ?? undefined,
+      );
       set({ huddle: view, capabilities: huddleCapabilities(view.state) });
       if (view.state === "denied" || view.state === "ended") {
         // The host drops the socket right after this. Stop dialling: a guest
@@ -575,6 +588,15 @@ export const useAppStore = create<AppState>((set, get) => {
           huddle: { ...(s.huddle ?? INITIAL_HUDDLE_VIEW), state: "unavailable" },
         }));
       }
+    },
+
+    sayInHuddle: (text) => {
+      if (get().huddle?.state !== "approved") {
+        return;
+      }
+      get()
+        .transport?.request("huddle.say", { text })
+        .catch(() => {});
     },
 
     setHuddleTyping: (typing) => {

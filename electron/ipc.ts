@@ -261,6 +261,7 @@ import {
   denyGuest as denyHuddleGuest,
   listRooms as listHuddleRooms,
   removeGuest as removeHuddleGuest,
+  sayInHuddle,
   setHuddleDevice,
   setHuddleHostTyping,
   startHuddle,
@@ -1237,6 +1238,9 @@ export function registerIpcHandlers(): void {
     setHuddleDevice(a.roomId as string, (a.deviceKey as string | null) ?? ""),
   );
   handle("huddle_list", "host", () => listHuddleRooms());
+  handle("huddle_say", "host", (a) =>
+    Promise.resolve(sayInHuddle(a.roomId as string, a.text as string)),
+  );
   handle("huddle_set_typing", "host", (a) =>
     setHuddleHostTyping(a.roomId as string, a.typing as boolean),
   );

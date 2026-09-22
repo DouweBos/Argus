@@ -4,7 +4,10 @@
  * host approving does.
  */
 
-import type { HuddleStatePayload } from "@argus/remote-protocol";
+import type {
+  HuddleChatPayload,
+  HuddleStatePayload,
+} from "@argus/remote-protocol";
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,15 +30,18 @@ const {
   leaveGuest,
   listRooms,
   refreshDriving,
+  guestChatIdentity,
   hostLabelForAgent,
   removeGuest,
   resetRooms,
+  say,
   setGuestTyping,
   setHostTyping,
   setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
   sweepRooms,
+  CHAT_BACKLOG,
   TYPING_TTL_MS,
 } = await import("./huddle");
 
@@ -45,6 +51,7 @@ function link(connectionId = `conn-${randomUUID()}`) {
     grant: vi.fn(),
     revoke: vi.fn(),
     notify: vi.fn(),
+    chat: vi.fn(),
   };
 }
 
@@ -827,3 +834,106 @@ describe("typing presence", () => {
   });
 });
 
+
+describe("the room's side chat", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  function shared() {
+    const r = createRoom({
+      agent_id: "ag1",
+      device_key: "",
+      host_label: "Ana Dev",
+    });
+    const guest = link();
+    joinRoom(r.token, "pub-a", "Bo", guest);
+    approveGuest(r.id, "pub-a");
+
+    return { r, guest };
+  }
+
+  it("fans a line out to everyone the host let in", () => {
+    const { r, guest } = shared();
+    guest.chat.mockClear();
+    say(r.id, { author: "Ana Dev", text: "Try it on the iPad" });
+
+    const payload: HuddleChatPayload = guest.chat.mock.calls.at(-1)?.[0];
+    expect(payload.messages[0].text).toBe("Try it on the iPad");
+    expect(payload.messages[0].member_id).toBeNull();
+    expect(payload.replace).toBe(false);
+  });
+
+  it("says nothing to a guest still waiting to be let in", () => {
+    const r = createRoom({ agent_id: "ag1", device_key: "" });
+    const pending = link();
+    joinRoom(r.token, "pub-a", "Bo", pending);
+    pending.chat.mockClear();
+    say(r.id, { author: "Ana Dev", text: "secret" });
+
+    expect(pending.chat).not.toHaveBeenCalled();
+  });
+
+  it("hands the backlog over on approval, so a late arrival reads the room", () => {
+    const r = createRoom({ agent_id: "ag1", device_key: "" });
+    say(r.id, { author: "Ana Dev", text: "earlier" });
+    const late = link();
+    joinRoom(r.token, "pub-b", "Cai", late);
+    late.chat.mockClear();
+    approveGuest(r.id, "pub-b");
+
+    const payload: HuddleChatPayload = late.chat.mock.calls.at(-1)?.[0];
+    expect(payload.replace).toBe(true);
+    expect(payload.messages.map((m) => m.text)).toEqual(["earlier"]);
+  });
+
+  it("hands it over again when they reload the tab", () => {
+    const { r } = shared();
+    say(r.id, { author: "Ana Dev", text: "earlier" });
+    const reconnect = link();
+    joinRoom(r.token, "pub-a", "Bo", reconnect);
+
+    expect(reconnect.chat.mock.calls.at(-1)?.[0].replace).toBe(true);
+  });
+
+  it("keeps only the most recent backlog, however long the huddle runs", () => {
+    const r = createRoom({ agent_id: "ag1", device_key: "" });
+    for (let i = 0; i < CHAT_BACKLOG + 20; i++) {
+      say(r.id, { author: "Ana Dev", text: `line ${i}` });
+    }
+    const chat = getRoom(r.id)?.chat ?? [];
+
+    expect(chat).toHaveLength(CHAT_BACKLOG);
+    expect(chat.at(-1)?.text).toBe(`line ${CHAT_BACKLOG + 19}`);
+  });
+
+  it("drops an empty line rather than posting a blank", () => {
+    const r = createRoom({ agent_id: "ag1", device_key: "" });
+
+    expect(say(r.id, { author: "Ana Dev", text: "   " })).toBeNull();
+    expect(getRoom(r.id)?.chat).toEqual([]);
+  });
+
+  it("lets an approved guest speak as themselves", () => {
+    const { r } = shared();
+
+    expect(guestChatIdentity(r.id, "pub-a")).toEqual({
+      author: "Bo",
+      member_id: expect.any(String),
+    });
+  });
+
+  it("gives a pending guest nothing to speak as", () => {
+    const r = createRoom({ agent_id: "ag1", device_key: "" });
+    joinRoom(r.token, "pub-a", "Bo", link());
+
+    expect(guestChatIdentity(r.id, "pub-a")).toBeNull();
+  });
+
+  it("takes the chat with the room when it ends", () => {
+    const { r } = shared();
+    say(r.id, { author: "Ana Dev", text: "bye" });
+    endRoom(r.id);
+
+    expect(getRoom(r.id)).toBeNull();
+  });
+});

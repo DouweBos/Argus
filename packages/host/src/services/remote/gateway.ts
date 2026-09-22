@@ -17,6 +17,7 @@ import {
   Envelope,
   EventPayloads,
   HuddleJoinParams,
+  HuddleSayParams,
   HuddleTypingParams,
   isAgentInScope,
   isBrowserInScope,
@@ -24,6 +25,7 @@ import {
   isHuddleMethod,
   type Capability,
   type GrantScope,
+  type HuddleChatPayload,
   type HuddleStatePayload,
   type RemoteEndpoint,
   type RemoteEventType,
@@ -61,9 +63,11 @@ import {
 } from "./capabilities";
 import { releaseConnection, releaseDevice } from "./deviceClaims";
 import {
+  guestChatIdentity,
   guestState,
   joinRoom,
   leaveGuest,
+  say,
   setGuestTyping,
 } from "./huddle";
 
@@ -317,6 +321,11 @@ export class DeviceConnection implements DeviceMediaController {
     this.pushEvent("huddle.state", null, payload);
   }
 
+  /** Push this guest room chat — the backlog, or one new line. */
+  pushHuddleChat(payload: HuddleChatPayload): void {
+    this.pushEvent("huddle.chat", null, payload);
+  }
+
   close(): void {
     this.closer?.();
   }
@@ -564,6 +573,23 @@ export class DeviceConnection implements DeviceMediaController {
 
       return {};
     }
+    if (method === "huddle.say") {
+      const said = HuddleSayParams.safeParse(params);
+      if (!said.success) {
+        throw new GatewayError("bad_request", "invalid huddle.say");
+      }
+      // Speaking is for the people the host let in. An unapproved guest has no
+      // identity in the room, so it has nothing to say as.
+      const who = guest.roomId
+        ? guestChatIdentity(guest.roomId, guest.devStaticPub)
+        : null;
+      if (!who || !guest.roomId) {
+        throw new GatewayError("capability_denied", "not in this huddle");
+      }
+      say(guest.roomId, { ...who, text: said.data.text });
+
+      return {};
+    }
     if (method === "huddle.state") {
       const state = guest.roomId
         ? guestState(guest.roomId, guest.devStaticPub)
@@ -590,6 +616,7 @@ export class DeviceConnection implements DeviceMediaController {
         grant: (scope) => this.applyGuestGrant(scope),
         revoke: () => this.revokeGuestGrant(),
         notify: (payload) => this.pushHuddleState(payload),
+        chat: (payload) => this.pushHuddleChat(payload),
       },
       parsed.data.client_id,
     );

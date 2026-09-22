@@ -19,6 +19,7 @@ import {
   listRooms,
   refreshDriving,
   removeGuest,
+  say,
   setHostTyping,
   setRoomDevice,
   setRoomEndedListener,
@@ -35,6 +36,18 @@ export { approveGuest, denyGuest, getRoom, listRooms, removeGuest };
  */
 export function setHuddleHostTyping(roomId: string, typing: boolean): boolean {
   return setHostTyping(roomId, typing);
+}
+
+/**
+ * The engineer says something to the room. Their own name comes off the room
+ * rather than the caller, so the desktop can't label a message as anyone else.
+ */
+export function sayInHuddle(roomId: string, text: string): boolean {
+  const room = getRoom(roomId);
+
+  return room
+    ? say(roomId, { author: room.host_label || "Host", text }) !== null
+    : false;
 }
 
 /**
