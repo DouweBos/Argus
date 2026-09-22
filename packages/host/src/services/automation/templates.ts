@@ -41,7 +41,39 @@ Rank the work items, highest first, by:
 3. **Stale** — untouched for a week or more, still open, still assigned. Worth
    a decision even if that decision is to close it.
 
-Anything that is none of those goes last, or not at all. Do not pad the list.
+Anything that is none of those goes last, or not at all. Never invent work that
+is not in front of you.
+
+## How much to propose
+
+Aim to keep **about four things in flight**. Under that, the morning is too
+quiet to be useful; over it, you are stacking up work nobody can get to.
+
+Count what is already in flight before you rank anything:
+
+- Your open pull requests, including the ones merely waiting on a review or a
+  merge — they are work in flight, not new work. Not among the signals you were
+  given? Ask for them:
+  \`gh pr list --author @me --state open --json number,title,url,isDraft\`.
+- Argus sessions still going: \`list_sessions\`, and \`list_agents\` for any that
+  looks active.
+- Proposals still waiting in the inbox. You were handed them above, and
+  \`list_open_proposals\` has them in full.
+
+Then propose enough to top the total up to four:
+
+- **Well under four** — reach further down. Go past the obviously blocking
+  items into the small-and-clear and the stale ones, and take the ones you
+  would normally leave for tomorrow. Say in the rationale that it is a top-up.
+  Do not inflate \`confidence\` to justify it; a 0.5 you explain is worth more
+  than a 0.9 you do not.
+- **At or over four** — propose only something that clearly outranks what is
+  already there, and say in the summary what it should displace. Otherwise
+  propose nothing and say so in one line.
+
+A nudge to merge or review something already in flight does not count as
+finding work. If the only thing you have to say is "go merge that PR", you have
+not reached far enough down the list.
 
 Then:
 
