@@ -1438,11 +1438,15 @@ export const useAppStore = create<AppState>((set, get) => {
         return;
       }
       try {
-        const { holder } = await t.request<{
+        const { holder, connection_id } = await t.request<{
           holder: RemoteDeviceClaim | null;
+          connection_id: string;
         }>("devices.claim_status", { device_id: deviceId });
         set((s) => ({
           claimByDevice: { ...s.claimByDevice, [deviceId]: holder },
+          // Our own id, so "who holds it" can be answered however the claim was
+          // taken — including implicitly, by a tap.
+          claimConnectionId: connection_id,
         }));
       } catch {
         // Monitor-only clients can't ask; they can't drive either, so no overlay.
@@ -1477,8 +1481,6 @@ export const useAppStore = create<AppState>((set, get) => {
         }>("devices.claim", { device_id: deviceId, force: force ?? false });
         set((s) => ({
           claimByDevice: { ...s.claimByDevice, [deviceId]: res.holder },
-          // The grant names us, which is the only way we learn our own
-          // connection id — there is no other place the host tells us.
           claimConnectionId: res.granted
             ? (res.holder?.connection_id ?? s.claimConnectionId)
             : s.claimConnectionId,

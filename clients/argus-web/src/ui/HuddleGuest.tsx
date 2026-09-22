@@ -7,7 +7,7 @@
  * UI simply never offers it.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   Dialog,
@@ -17,6 +17,7 @@ import {
   HuddleChat,
   Icons,
   Input,
+  ResizablePanel,
   SettingsScreenField,
   SidebarHeader,
   SidebarHeaderAction,
@@ -32,12 +33,15 @@ import {
 } from "../lib/huddleSession";
 
 import { readGuestLabel, rememberGuestLabel } from "../lib/huddleIdentity";
+import type { RemoteDevice } from "../lib/protocol";
 import { useAppStore } from "../lib/store";
 import { AgentTranscript } from "./AgentTranscript";
 import { ChatInput } from "./ChatInput";
 import { ConnectionBadge } from "./ConnectionBadge";
 import { DeviceScreen } from "./DeviceScreen";
 import { HuddleGate } from "./HuddleGate";
+import { loadDevicePanelWidth, saveDevicePanelWidth } from "./sidebarWidth";
+import { useIsWide } from "./useIsWide";
 
 export function HuddleGuest({ token }: { token: string }) {
   const huddle = useAppStore((s) => s.huddle);
@@ -90,6 +94,11 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const sayInHuddle = useAppStore((s) => s.sayInHuddle);
   const hasDevice = panes.includes("device");
   const unread = useUnreadCount(view.chat.length, pane === "chat");
+  // Wide enough for both at once: the device stops being a pane you switch to
+  // and becomes a panel beside the conversation, the way the desktop shows it.
+  const isWide = useIsWide();
+  const splitDevice = isWide && hasDevice;
+  const onDeviceResize = useCallback((w: number) => saveDevicePanelWidth(w), []);
 
   useEffect(() => {
     if (connection === "ready" && agentId) {
@@ -105,13 +114,13 @@ function HuddleRoom({ view }: { view: HuddleView }) {
     }
   }, [connection, hasDevice, view.deviceKey, refreshDevices]);
 
-  // The host closed the device out from under us — don't strand the guest on a
-  // pane that no longer has anything to show.
+  // Nothing to show on the device pane — the host closed it, or it moved into
+  // its own panel beside us.
   useEffect(() => {
-    if (!hasDevice) {
-      setPane("agent");
+    if (!hasDevice || splitDevice) {
+      setPane((p) => (p === "device" ? "agent" : p));
     }
-  }, [hasDevice]);
+  }, [hasDevice, splitDevice]);
 
   // The list is already scoped to the room, so this is the device or nothing.
   const device = devices.find((d) => d.id === view.deviceKey) ?? null;
@@ -157,7 +166,7 @@ function HuddleRoom({ view }: { view: HuddleView }) {
               <Icons.ChatIcon size={14} />
               {unread > 0 && <span className="aw-people-count">{unread}</span>}
             </SidebarHeaderAction>
-            {hasDevice && (
+            {hasDevice && !splitDevice && (
               <SidebarHeaderAction
                 onClick={() => setPane(pane === "device" ? "agent" : "device")}
                 title={pane === "device" ? "Conversation" : "Device"}
@@ -193,50 +202,77 @@ function HuddleRoom({ view }: { view: HuddleView }) {
         </div>
       )}
 
-      <div className="aw-main">
-        {pane === "agent" && <AgentTranscript agentId={agentId} />}
-        {pane === "chat" && (
-          <HuddleChat
-            emptyLabel="Nothing said yet. This stays between the people here — the agent never sees it."
-            messages={view.chat.map((m) => ({
-              id: m.id,
-              author: m.author,
-              text: m.text,
-              at: m.at,
-              mine: m.member_id != null && m.member_id === view.you,
-            }))}
-            onSend={sayInHuddle}
-          />
-        )}
-        {pane === "device" &&
-          (device ? (
-            <DeviceScreen
-              deviceId={device.id}
-              platform={device.platform}
-              isTv={device.is_tv}
-            />
-          ) : (
-            <div className="aw-center">
-              <Spinner />
-              <span className="aw-muted">Waiting for the device…</span>
+      <div className={`aw-huddle-body${splitDevice ? " aw-huddle-split" : ""}`}>
+        <div className="aw-pane">
+          <div className="aw-main">
+            {pane === "agent" && <AgentTranscript agentId={agentId} />}
+            {pane === "chat" && (
+              <HuddleChat
+                emptyLabel="Nothing said yet. This stays between the people here — the agent never sees it."
+                messages={view.chat.map((m) => ({
+                  id: m.id,
+                  author: m.author,
+                  text: m.text,
+                  at: m.at,
+                  mine: m.member_id != null && m.member_id === view.you,
+                }))}
+                onSend={sayInHuddle}
+              />
+            )}
+            {pane === "device" && <DevicePane device={device} />}
+          </div>
+
+          {pane === "agent" && (
+            <div className="aw-chat-dock">
+              {/* Always present, so the composer doesn't jump when it fills. */}
+              <div className="aw-typing">
+                <TypingIndicator names={typingNames(view)} />
+              </div>
+              <ChatInput agentId={agentId} sessionId={status?.session_id} />
             </div>
-          ))}
+          )}
+        </div>
+
+        {splitDevice && (
+          <ResizablePanel
+            defaultWidth={loadDevicePanelWidth()}
+            maxWidth={900}
+            minWidth={280}
+            side="right"
+            unit="pixel"
+            onResize={onDeviceResize}
+          >
+            <div className="aw-huddle-device">
+              <DevicePane device={device} />
+            </div>
+          </ResizablePanel>
+        )}
       </div>
 
       {settingsOpen && (
         <HuddleSettingsDialog onClose={() => setSettingsOpen(false)} />
       )}
-
-      {pane === "agent" && (
-        <div className="aw-chat-dock">
-          {/* Always present, so the composer doesn't jump when it fills. */}
-          <div className="aw-typing">
-            <TypingIndicator names={typingNames(view)} />
-          </div>
-          <ChatInput agentId={agentId} sessionId={status?.session_id} />
-        </div>
-      )}
     </div>
+  );
+}
+
+/** The shared device, or the wait for it to show up. */
+function DevicePane({ device }: { device: RemoteDevice | null }) {
+  if (!device) {
+    return (
+      <div className="aw-center">
+        <Spinner />
+        <span className="aw-muted">Waiting for the device…</span>
+      </div>
+    );
+  }
+
+  return (
+    <DeviceScreen
+      deviceId={device.id}
+      isTv={device.is_tv}
+      platform={device.platform}
+    />
   );
 }
 

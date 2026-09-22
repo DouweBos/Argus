@@ -422,7 +422,11 @@ export const MethodResult = {
     holder: RemoteDeviceClaim.nullable(),
   }),
   "devices.release": z.object({ accepted: z.boolean() }),
-  "devices.claim_status": z.object({ holder: RemoteDeviceClaim.nullable() }),
+  "devices.claim_status": z.object({
+    holder: RemoteDeviceClaim.nullable(),
+    /** The asking connection's own id — the only way a client learns it. */
+    connection_id: z.string(),
+  }),
   "devices.touch": z.object({ accepted: z.boolean() }),
   "devices.button": z.object({ accepted: z.boolean() }),
   "devices.keyboard": z.object({ accepted: z.boolean() }),

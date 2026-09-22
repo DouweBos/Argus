@@ -9,6 +9,7 @@ import {
   AppleTVRemote,
   Banner,
   Button,
+  DeviceClaimBar,
   DeviceControlOverlay,
   DeviceStage,
   Icons,
@@ -113,6 +114,7 @@ export function DeviceScreen({
   // Someone else is driving: their input wins until we take over, so say so
   // rather than letting taps be refused silently.
   const blocked = holder !== null && holder.connection_id !== claimConnectionId;
+  const driving = holder !== null && holder.connection_id === claimConnectionId;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const decoderRef = useRef<H264CanvasDecoder | null>(null);
@@ -402,6 +404,16 @@ export function DeviceScreen({
 
   return (
     <div className="aw-device">
+      {hasControl && (
+        <DeviceClaimBar
+          holderLabel={holder?.label ?? null}
+          mine={driving}
+          onRelease={() => releaseDevice(deviceId)}
+          onTakeControl={() => {
+            claimDevice(deviceId, blocked).catch(() => {});
+          }}
+        />
+      )}
       {isTv ? (
         // tvOS maps pointer gestures to the dpad rather than forwarding
         // touches, and a TV never rotates — so it keeps its own plain stage.
