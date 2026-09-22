@@ -28,7 +28,9 @@ export function Avatar({ name, src, size, className }: AvatarProps) {
   }, [src]);
 
   const classes = [styles.avatar, className].filter(Boolean).join(" ");
-  const sizeStyle = size ? { width: size } : undefined;
+  // Height as well as width: a stretching flex parent would otherwise
+  // override `aspect-ratio` and squash the circle.
+  const sizeStyle = size ? { width: size, height: size } : undefined;
 
   if (src && !failed) {
     return (

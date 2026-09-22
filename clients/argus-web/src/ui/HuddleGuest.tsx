@@ -10,9 +10,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
   GuestList,
   HuddleChat,
   Icons,
+  Input,
+  SettingsScreenField,
   SidebarHeader,
   SidebarHeaderAction,
   Spinner,
@@ -75,6 +80,7 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const panes = huddlePanes(view);
   const [pane, setPane] = useState<HuddlePane>("agent");
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const leaveHuddle = useAppStore((s) => s.leaveHuddle);
   const connection = useAppStore((s) => s.connection);
   const status = useAppStore((s) => s.statusByAgent[agentId]);
@@ -112,7 +118,7 @@ function HuddleRoom({ view }: { view: HuddleView }) {
   const title = status?.title?.trim() || "Shared agent";
 
   return (
-    <div className="aw-shell">
+    <div className="aw-shell aw-shell-fluid">
       <SidebarHeader
         className="aw-topbar"
         brand={
@@ -126,6 +132,13 @@ function HuddleRoom({ view }: { view: HuddleView }) {
         actions={
           <>
             <ConnectionBadge state={connection} />
+            <SidebarHeaderAction
+              onClick={() => setSettingsOpen(true)}
+              title="Settings"
+              aria-label="Settings"
+            >
+              <Icons.GearIcon size={14} />
+            </SidebarHeaderAction>
             <SidebarHeaderAction
               onClick={() => setPeopleOpen((open) => !open)}
               title="People in this huddle"
@@ -210,6 +223,10 @@ function HuddleRoom({ view }: { view: HuddleView }) {
           ))}
       </div>
 
+      {settingsOpen && (
+        <HuddleSettingsDialog onClose={() => setSettingsOpen(false)} />
+      )}
+
       {pane === "agent" && (
         <div className="aw-chat-dock">
           {/* Always present, so the composer doesn't jump when it fills. */}
@@ -220,5 +237,52 @@ function HuddleRoom({ view }: { view: HuddleView }) {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The only thing a guest owns in a huddle: their name. Saving re-presents the
+ * room token on the same key, so the host sees the new name immediately and
+ * nobody is asked to approve anyone again.
+ */
+function HuddleSettingsDialog({ onClose }: { onClose: () => void }) {
+  const renameInHuddle = useAppStore((s) => s.renameInHuddle);
+  const [name, setName] = useState(readGuestLabel);
+  const dirty = name.trim().length > 0 && name.trim() !== readGuestLabel();
+  const save = () => {
+    renameInHuddle(name.trim());
+    onClose();
+  };
+
+  return (
+    <Dialog title="Settings" titleId="huddle-settings" onClose={onClose}>
+      <DialogBody>
+        <SettingsScreenField
+          label="Your name"
+          caption="What the host and everyone else in the huddle see."
+        >
+          <Input
+            autoFocus
+            maxLength={60}
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && dirty) {
+                save();
+              }
+            }}
+          />
+        </SettingsScreenField>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="primary" disabled={!dirty} onClick={save}>
+          Save
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }

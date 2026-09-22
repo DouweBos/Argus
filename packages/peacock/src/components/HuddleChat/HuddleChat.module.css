@@ -43,6 +43,8 @@
 .gutter {
   flex: 0 0 20px;
   display: flex;
+  /* Not stretch: a multi-line message would pull the round avatar into an oval. */
+  align-items: flex-start;
   justify-content: center;
 }
 
