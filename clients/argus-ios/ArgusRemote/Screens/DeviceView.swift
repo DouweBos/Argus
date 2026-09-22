@@ -22,15 +22,23 @@ struct DeviceView: View {
   @FocusState private var keyboardField: Bool
   @State private var unregister: (() -> Void)?
   @State private var lastDragPoint: CGPoint?
-  @State private var tvDragStart: CGPoint?
+  @State private var busy = false
 
   /// Booted but producing nothing decodable — worth saying so rather than
   /// spinning forever.
   private static let noVideoTimeout = Duration.seconds(10)
   /// Minimum finger travel, in points, between injected drag samples.
   private static let dragMinTravel: CGFloat = 2
-  /// A drag shorter than this counts as a tap, which on a TV is Select.
-  private static let tvSwipeThreshold: CGFloat = 24
+
+  /// The host's own reading, preferred over the reply we last got: the hinge
+  /// and orientation move from Device Hub or an agent as easily as from here.
+  private var deviceState: RemoteDeviceState? { app.deviceStates[deviceId] }
+
+  /// Clockwise degrees the stream has to be turned to sit upright. The
+  /// framebuffer is panel-native, so a rotated device arrives sideways.
+  private var rotation: Double { Double(deviceState?.display?.rotation ?? 0) }
+
+  private var quarterTurn: Bool { rotation == 90 || rotation == 270 }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -41,10 +49,15 @@ struct DeviceView: View {
             "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to tap and type here."
         )
         .padding(theme.space)
+      } else if isTv {
+        TVRemoteView(press: sendButton, isAndroid: platform == .android)
+          .background(theme.bgSecondary)
+          .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+        HardwareKeyCatcher(press: sendButton).frame(width: 0, height: 0)
       } else {
         buttonBar
+        keyboardCapture
       }
-      keyboardCapture
     }
     .background(theme.bg)
     .navigationTitle(name)
@@ -57,7 +70,7 @@ struct DeviceView: View {
     GeometryReader { geometry in
       ZStack {
         theme.mediaBg
-        DeviceVideoView(handle: handle) { status = .streaming }
+        video
         if status != .streaming {
           Text(placeholder)
             .font(.system(size: 13))
@@ -67,10 +80,39 @@ struct DeviceView: View {
         }
       }
       .contentShape(Rectangle())
-      .gesture(app.hasControl ? touchGesture : nil)
+      // A TV is driven by the remote below, not by tapping its picture —
+      // a tap there is nothing, not a click of the dpad's centre.
+      .gesture(app.hasControl && !isTv ? touchGesture : nil)
       .onAppear { stageSize = geometry.size }
       .onChange(of: geometry.size) { _, size in stageSize = size }
     }
+  }
+
+  /// Sized in the stream's own axes and then turned, so a landscape device
+  /// fills the width instead of being letterboxed into a portrait box.
+  private var video: some View {
+    let rendered = renderedVideoSize
+    return DeviceVideoView(handle: handle) { status = .streaming }
+      .frame(width: rendered.width, height: rendered.height)
+      .rotationEffect(.degrees(rotation))
+  }
+
+  /// The video's size before rotation. Zero until the first config lands,
+  /// which is fine — there is nothing to show yet.
+  private var renderedVideoSize: CGSize {
+    guard codedSize.width > 0, codedSize.height > 0,
+      stageSize.width > 0, stageSize.height > 0
+    else { return stageSize }
+    let shown = shownSize
+    let scale = min(stageSize.width / shown.width, stageSize.height / shown.height)
+    return CGSize(width: codedSize.width * scale, height: codedSize.height * scale)
+  }
+
+  /// The stream's footprint on screen, with its axes swapped on a quarter turn.
+  private var shownSize: CGSize {
+    quarterTurn
+      ? CGSize(width: codedSize.height, height: codedSize.width)
+      : codedSize
   }
 
   private var placeholder: String {
@@ -87,10 +129,6 @@ struct DeviceView: View {
   private var touchGesture: some Gesture {
     DragGesture(minimumDistance: 0)
       .onChanged { value in
-        if isTv {
-          if tvDragStart == nil { tvDragStart = value.startLocation }
-          return
-        }
         if lastDragPoint == nil {
           lastDragPoint = value.location
           send(value.location, phase: 0)
@@ -105,11 +143,6 @@ struct DeviceView: View {
         send(value.location, phase: 1)
       }
       .onEnded { value in
-        if isTv {
-          sendTvDirection(from: tvDragStart ?? value.startLocation, to: value.location)
-          tvDragStart = nil
-          return
-        }
         lastDragPoint = nil
         send(value.location, phase: 2)
       }
@@ -121,15 +154,26 @@ struct DeviceView: View {
     guard codedSize.width > 0, codedSize.height > 0,
       stageSize.width > 0, stageSize.height > 0
     else { return nil }
-    let scale = min(stageSize.width / codedSize.width, stageSize.height / codedSize.height)
-    let rendered = CGSize(
-      width: codedSize.width * scale, height: codedSize.height * scale)
+    let shown = shownSize
+    let scale = min(stageSize.width / shown.width, stageSize.height / shown.height)
+    let rendered = CGSize(width: shown.width * scale, height: shown.height * scale)
     let origin = CGPoint(
       x: (stageSize.width - rendered.width) / 2,
       y: (stageSize.height - rendered.height) / 2)
-    return CGPoint(
-      x: min(max(0, (point.x - origin.x) / rendered.width), 0.9999),
-      y: min(max(0, (point.y - origin.y) / rendered.height), 0.9999))
+    let x = min(max(0, (point.x - origin.x) / rendered.width), 0.9999)
+    let y = min(max(0, (point.y - origin.y) / rendered.height), 0.9999)
+    return unrotate(CGPoint(x: x, y: y))
+  }
+
+  /// Undo the presentation rotation: the device wants the point in its own
+  /// panel's coordinates, not in the ones we drew.
+  private func unrotate(_ point: CGPoint) -> CGPoint {
+    switch rotation {
+    case 90: CGPoint(x: point.y, y: 1 - point.x)
+    case 180: CGPoint(x: 1 - point.x, y: 1 - point.y)
+    case 270: CGPoint(x: 1 - point.y, y: point.x)
+    default: point
+    }
   }
 
   private func send(_ point: CGPoint, phase: Int) {
@@ -139,28 +183,11 @@ struct DeviceView: View {
       x: normalized.x, y: normalized.y, eventType: phase)
   }
 
-  /// A TV has no touchscreen: a tap is Select and a drag is a d-pad direction.
-  private func sendTvDirection(from start: CGPoint, to end: CGPoint) {
-    let dx = end.x - start.x
-    let dy = end.y - start.y
-    let button: String
-    if abs(dx) < Self.tvSwipeThreshold && abs(dy) < Self.tvSwipeThreshold {
-      button = "select"
-    } else if abs(dx) > abs(dy) {
-      button = dx > 0 ? "right" : "left"
-    } else {
-      button = dy > 0 ? "down" : "up"
-    }
+  private func sendButton(_ button: String) {
     app.deviceButton(deviceId: deviceId, platform: platform, button: button)
   }
 
   private var buttons: [(id: String, label: String, icon: String)] {
-    if isTv {
-      return [
-        (platform == .ios ? "menu" : "back", platform == .ios ? "Menu" : "Back", Icon.arrowBack),
-        ("home", "Home", Icon.home),
-      ]
-    }
     if platform == .ios {
       return [("ios_home", "Home", Icon.home)]
     }
@@ -175,20 +202,45 @@ struct DeviceView: View {
     HStack(spacing: 4) {
       Spacer()
       ForEach(buttons, id: \.id) { button in
-        IconBtn(systemName: button.icon, label: button.label) {
-          app.deviceButton(deviceId: deviceId, platform: platform, button: button.id)
-        }
+        IconBtn(systemName: button.icon, label: button.label) { sendButton(button.id) }
       }
-      if !isTv {
-        IconBtn(systemName: Icon.keyboard, label: "Keyboard") {
-          keyboardFocused = true
-        }
+      IconBtn(systemName: Icon.keyboard, label: "Keyboard") { keyboardFocused = true }
+      if platform == .ios {
+        IconBtn(systemName: Icon.rotate, label: "Rotate") { rotate() }
+          .disabled(busy)
+      }
+      if let fold = deviceState?.fold {
+        IconBtn(
+          systemName: Icon.fold,
+          label: fold.pose == .open ? "Fold device" : "Unfold device"
+        ) { toggleFold(fold) }
+        .disabled(busy)
       }
       Spacer()
     }
     .padding(.vertical, 8)
     .background(theme.bgSecondary)
     .overlay(alignment: .top) { Rectangle().fill(theme.border).frame(height: 1) }
+  }
+
+  private func rotate() {
+    let next = (deviceState?.orientation ?? .portrait).next
+    busy = true
+    Task {
+      await app.setDeviceOrientation(
+        deviceId: deviceId, platform: platform, orientation: next)
+      busy = false
+    }
+  }
+
+  private func toggleFold(_ fold: RemoteFoldState) {
+    busy = true
+    Task {
+      await app.setDeviceFold(
+        deviceId: deviceId, platform: platform,
+        pose: fold.pose == .open ? .closed : .open)
+      busy = false
+    }
   }
 
   /// An off-screen field that forwards each character as a key event and keeps
@@ -238,6 +290,12 @@ struct DeviceView: View {
       case .frame(_, let keyFrame, let timestamp, let data):
         handle.enqueue(data, isKeyFrame: keyFrame, timestampMillis: timestamp)
       }
+    }
+
+    // Seed the pose; the host pushes `device.state` from here on while it is
+    // being watched.
+    if let state = await app.deviceState(deviceId: deviceId, platform: platform) {
+      app.deviceStates[deviceId] = state
     }
 
     Task {

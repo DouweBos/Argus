@@ -12,6 +12,8 @@
 		0DAAD89A3BF90D72CFF2E3A9 /* ArgusNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4B819AF7F05F8000A0B5D08A /* ArgusNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1224C5EDD5114E7605FB5DA9 /* Icons.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFDFED9EA8E78D4D3534270 /* Icons.swift */; };
 		13456ADD7949ABDDB1D3C08E /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A10210A36E3035B5174018F /* MarkdownView.swift */; };
+		801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */; };
+		CBCF0B460627D2236818AA6E /* TVRemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F68517AC0A4A5246D5734125 /* TVRemoteView.swift */; };
 		1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E2171FDF4B199BD1A0795D6 /* NotificationRouter.swift */; };
 		18E1680F774BE67751984A6B /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA1C76CC7A23652BD96252A /* InboxView.swift */; };
 		18EFB58E16C55EB320F81E62 /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565206689485901440F7B7B5 /* Controls.swift */; };
@@ -106,6 +108,8 @@
 		565206689485901440F7B7B5 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
 		57ADDE446C44DCB7D8E5AA3C /* DevicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicesView.swift; sourceTree = "<group>"; };
 		5A10210A36E3035B5174018F /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
+		195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareKeyCatcher.swift; sourceTree = "<group>"; };
+		F68517AC0A4A5246D5734125 /* TVRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVRemoteView.swift; sourceTree = "<group>"; };
 		63A254961B044F508401BE46 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		6502F79F862A2272184C48C6 /* RunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunView.swift; sourceTree = "<group>"; };
 		6FCAD11D552D483C0C92312A /* Route.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Route.swift; sourceTree = "<group>"; };
@@ -240,6 +244,8 @@
 				DCD8CDED00DE55F5C4FE1C4E /* DeviceVideoView.swift */,
 				12FD4EE5D9C994C062F2455A /* ImageViewer.swift */,
 				5A10210A36E3035B5174018F /* MarkdownView.swift */,
+				195DBDEBD1CDBCE511CAA5C8 /* HardwareKeyCatcher.swift */,
+				F68517AC0A4A5246D5734125 /* TVRemoteView.swift */,
 				82EFACA3CB48542C70620670 /* PastingTextView.swift */,
 				A80D3688BF3DDFD90F4E6F55 /* PermissionForms.swift */,
 				E7C0246BC72131C6D235C946 /* ReportBlocksView.swift */,
@@ -436,6 +442,8 @@
 				EFFBE7FDF2A9E08BA38A75C2 /* LiveRefresh.swift in Sources */,
 				A02801135DF7D4CE5879D439 /* LockScreen.swift in Sources */,
 				13456ADD7949ABDDB1D3C08E /* MarkdownView.swift in Sources */,
+				801B94D184E882085D5A21C1 /* HardwareKeyCatcher.swift in Sources */,
+				CBCF0B460627D2236818AA6E /* TVRemoteView.swift in Sources */,
 				1346FB8C6E0119391A82DC4B /* NotificationRouter.swift in Sources */,
 				C230860282D4938F66D435CF /* PairView.swift in Sources */,
 				5DA37A387097310627848D08 /* PastingTextView.swift in Sources */,

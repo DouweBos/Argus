@@ -154,6 +154,13 @@ export const REMOTE_METHODS = {
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */
   "devices.watch": "monitor",
   "devices.unwatch": "monitor",
+  /** How the device is being held. The client has to know to present the
+   *  stream upright, so it is readable by anyone who may watch it. */
+  "devices.state": "monitor",
+  /** Rotating or folding changes what the device shows, so it is control —
+   *  same bar as a tap, and it is arbitrated by the same claim. */
+  "devices.set_orientation": "control",
+  "devices.set_fold": "control",
   /** Claim interaction on a device. Two clients may watch one screen, but both
    *  injecting HID events into it is nonsense, so it is arbitrated. */
   "devices.claim": "control",
@@ -209,6 +216,8 @@ export const REMOTE_EVENTS = [
   "permission.cancel",
   /** Device interaction claim changed (taken, released or stolen). */
   "device.claim",
+  /** A watched device's hinge or orientation moved. */
+  "device.state",
   "sessions.changed",
   "projects.changed",
   /** A user-facing notification (agent finished, needs approval, MCP push). */

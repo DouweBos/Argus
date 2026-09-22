@@ -10,6 +10,7 @@ enum Icon {
   static let chevronRight = "chevron.right"
   static let chevronDown = "chevron.down"
   static let chevronLeft = "chevron.left"
+  static let chevronUp = "chevron.up"
   static let folder = "folder"
   static let file = "doc"
   static let branch = "arrow.triangle.branch"
@@ -44,6 +45,10 @@ enum Icon {
   static let link = "link"
   static let warning = "exclamationmark.triangle"
   static let image = "photo"
+  static let rotate = "rotate.right"
+  static let fold = "book.closed"
+  static let playPause = "playpause"
+  static let menu = "line.3.horizontal"
   static let androidBack = "arrow.left"
   static let androidRecents = "square.on.square"
 }

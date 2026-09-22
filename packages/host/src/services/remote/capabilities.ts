@@ -11,6 +11,7 @@
 import type { AgentSession } from "../agent/models";
 import type { InitializeResponse } from "../llm/runners/claudeCode/protocol";
 import type { Session } from "../session/models";
+import type { SimulatorDeviceState } from "../simulator/deviceState";
 import {
   browserClaimId,
   isAgentInScope,
@@ -26,6 +27,7 @@ import {
   type RemoteGitStatus,
   type RemoteMessage,
   type RemoteDevice,
+  type RemoteDeviceState,
   type RemoteGitBranch,
   type RemoteMethod,
   type RemotePlatform,
@@ -96,7 +98,10 @@ import {
   isSimulatorCapturing,
   listSimulators,
   simulatorButton,
+  simulatorDeviceState,
   simulatorKeyboard,
+  simulatorSetFold,
+  simulatorSetOrientation,
   simulatorTouch,
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
@@ -209,6 +214,29 @@ function requireDeviceInput(deviceId: string, ctx: GatewayContext): void {
       claimState(deviceId),
     );
   }
+}
+
+/**
+ * Map the host's simulator state onto the wire shape. Only iOS reports one —
+ * Android emulators have no hinge and rotate the framebuffer themselves, so
+ * there is nothing for a client to correct for.
+ */
+export function toRemoteDeviceState(
+  state: SimulatorDeviceState,
+): RemoteDeviceState {
+  return {
+    device_id: state.udid,
+    fold: state.fold,
+    orientation: state.orientation,
+    display: state.display
+      ? {
+          width: state.display.width,
+          height: state.display.height,
+          rotation: state.display.rotation,
+          screen_id: state.display.screenID,
+        }
+      : null,
+  };
 }
 
 /** Map a booted iOS simulator to the remote device shape. */
@@ -1590,6 +1618,41 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const { device_id } = parse("devices.claim_status", params);
 
     return { holder: getClaim(device_id) };
+  },
+  "devices.state": async (params) => {
+    const { device_id, platform } = parse("devices.state", params);
+    if (platform !== "ios") {
+      return { state: null };
+    }
+
+    return {
+      state: toRemoteDeviceState(await simulatorDeviceState(device_id)),
+    };
+  },
+  "devices.set_orientation": async (params, ctx) => {
+    const { device_id, platform, orientation } = parse(
+      "devices.set_orientation",
+      params,
+    );
+    if (platform !== "ios") {
+      throw new GatewayError("bad_request", "rotation is iOS-only");
+    }
+    requireDeviceInput(device_id, ctx);
+    const state = await control(() =>
+      simulatorSetOrientation(device_id, orientation),
+    );
+
+    return { state: toRemoteDeviceState(state) };
+  },
+  "devices.set_fold": async (params, ctx) => {
+    const { device_id, platform, pose } = parse("devices.set_fold", params);
+    if (platform !== "ios") {
+      throw new GatewayError("bad_request", "folding is iOS-only");
+    }
+    requireDeviceInput(device_id, ctx);
+    const state = await control(() => simulatorSetFold(device_id, pose));
+
+    return { state: toRemoteDeviceState(state) };
   },
   "devices.touch": async (params, ctx) => {
     const { device_id, platform, x, y, event_type } = parse(

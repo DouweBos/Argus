@@ -64,6 +64,8 @@ final class AppStore {
   /// Locally-chosen effort per agent; the monitor snapshot doesn't carry it.
   var effortByAgent: [String: String] = [:]
   var devices: [RemoteDevice] = []
+  /// Fold and orientation for watched devices, keyed by device id.
+  var deviceStates: [String: RemoteDeviceState] = [:]
   var pushState: PushState = .off
   var pushEnabled = true
 
@@ -275,6 +277,7 @@ final class AppStore {
     statusByAgent = [:]
     effortByAgent = [:]
     devices = []
+    deviceStates = [:]
     pushState = .off
     lastError = nil
     mediaSinks = [:]
@@ -343,6 +346,11 @@ final class AppStore {
       // Never rendered raw — it only tells us the snapshot is stale.
       guard let agentId = envelope.agentId else { return }
       scheduleTranscriptRefresh(agentId)
+
+    case .deviceState:
+      guard let state = try? ProtocolCodec.convert(
+        envelope.payload, to: RemoteDeviceState.self) else { return }
+      deviceStates[state.deviceId] = state
 
     case .notification:
       guard let notification = try? ProtocolCodec.convert(

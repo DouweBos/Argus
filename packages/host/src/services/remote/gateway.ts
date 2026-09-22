@@ -11,6 +11,7 @@
 import type { PairedDevice } from "./deviceStore";
 import type { NoiseSession } from "./noise";
 import type { PermissionRequestPayload } from "../llm/runners/claudeCode/controlHandler";
+import type { SimulatorDeviceState } from "../simulator/deviceState";
 import type { H264Config } from "../simulator/h264-parser";
 import {
   Envelope,
@@ -53,6 +54,7 @@ import {
   scopeSafeCapabilities,
   toRemoteAgentCapabilities,
   toRemoteAgentStatus,
+  toRemoteDeviceState,
   type DeviceMediaController,
   type GatewayContext,
 } from "./capabilities";
@@ -684,6 +686,19 @@ export class DeviceConnection implements DeviceMediaController {
         return;
       }
       this.pushEvent("notification", agentId, p);
+
+      return;
+    }
+
+    // The hinge and orientation move from Device Hub or an agent's conductor
+    // call as easily as from a client, and a client that trusted its own last
+    // write would present the stream the wrong way up until the next tap.
+    if (channel === "simulator_device_state") {
+      const state = args[0] as SimulatorDeviceState | undefined;
+      if (!state || !this.watched.has(state.udid)) {
+        return;
+      }
+      this.pushEvent("device.state", null, toRemoteDeviceState(state));
 
       return;
     }

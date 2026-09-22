@@ -16,6 +16,8 @@ import {
   RemoteDevice,
   RemoteDeviceClaim,
   RemoteDeviceClaimState,
+  RemoteDeviceOrientation,
+  RemoteDeviceState,
   RemoteEndpoint,
   RemoteGitBranch,
   RemoteGitStatus,
@@ -28,6 +30,7 @@ import {
   RemoteProposalStatus,
   RemoteQueuedMessage,
   RemoteSession,
+  RemoteFoldPose,
   RemoteStoppedAgent,
   RemoteTask,
   RemoteTodo,
@@ -227,6 +230,22 @@ export const MethodParams = {
     platform: RemotePlatform,
   }),
   "devices.unwatch": z.object({ device_id: z.string() }),
+  /** How the device is being held; null on platforms that can't report it. */
+  "devices.state": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+  }),
+  "devices.set_orientation": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+    orientation: RemoteDeviceOrientation,
+  }),
+  /** Move the hinge of a foldable. Named pose or a raw angle in degrees. */
+  "devices.set_fold": z.object({
+    device_id: z.string(),
+    platform: RemotePlatform,
+    pose: z.union([RemoteFoldPose, z.number()]),
+  }),
   /** Begin streaming an embedded browser's screen; returns its stream id. */
   "browser.watch": z.object({ session_id: z.string() }),
   "browser.unwatch": z.object({ session_id: z.string() }),
@@ -392,6 +411,9 @@ export const MethodResult = {
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),
+  "devices.state": z.object({ state: RemoteDeviceState.nullable() }),
+  "devices.set_orientation": z.object({ state: RemoteDeviceState.nullable() }),
+  "devices.set_fold": z.object({ state: RemoteDeviceState.nullable() }),
   "browser.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "browser.unwatch": z.object({ accepted: z.boolean() }),
   /** `holder` is the incumbent when `granted` is false. */
@@ -509,6 +531,8 @@ export const EventPayloads = {
   ipc: z.object({ channel: z.string(), args: z.array(z.unknown()) }),
   /** The claim on a device changed — including being stolen from you. */
   "device.claim": RemoteDeviceClaimState,
+  /** The hinge or orientation moved — from here, Device Hub, or an agent. */
+  "device.state": RemoteDeviceState,
   /** This guest's standing in its huddle room changed (host approved/denied/ended). */
   "huddle.state": HuddleStatePayload,
   "sessions.changed": z.object({ repo_root: z.string() }),
