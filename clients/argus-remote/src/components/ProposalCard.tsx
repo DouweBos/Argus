@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { Linking, View } from "react-native";
+import { Alert, Linking, View } from "react-native";
 import type { RemoteProposal } from "../lib/protocol";
 import { useTheme } from "../theme";
 import * as Icons from "./Icons";
@@ -16,12 +16,20 @@ import { Markdown } from "./Markdown";
 import { timeAgo } from "./rows";
 import { Badge, Body, Btn, Card, Muted, Row, TextField } from "./ui";
 
+/** What the confirm says it is about to destroy. */
+function cleanupWarning(cta: NonNullable<RemoteProposal["cta"]>): string {
+  return cta.kind === "delete_branch"
+    ? `${cta.force ? "git branch -D" : "git branch -d"} ${cta.branch ?? ""} on the computer. Commits only on this branch are gone for good.`
+    : "Deletes the worktree and anything uncommitted in it. The branch is left alone.";
+}
+
 export function ProposalCard({
   proposal,
   busy,
   canDecide,
   onAccept,
   onDismiss,
+  onCleanup,
 }: {
   proposal: RemoteProposal;
   busy?: boolean;
@@ -29,6 +37,8 @@ export function ProposalCard({
   canDecide: boolean;
   onAccept: () => void;
   onDismiss: (reason: string) => void;
+  /** Runs the proposal's cleanup on the computer. Absent = no cleanup button. */
+  onCleanup?: () => void;
 }) {
   const theme = useTheme();
   const [dismissing, setDismissing] = useState(false);
@@ -94,6 +104,27 @@ export function ProposalCard({
               disabled={busy}
               icon={<Icons.Play size={11} color={theme.onAccent} />}
               onPress={onAccept}
+            />
+          ) : null}
+          {canDecide &&
+          onCleanup &&
+          (cta?.kind === "delete_branch" || cta?.kind === "delete_session") ? (
+            <Btn
+              label={cta.label}
+              tone="danger"
+              size="sm"
+              disabled={busy}
+              // A phone is where a mis-tap is easiest, and this deletes work.
+              onPress={() =>
+                Alert.alert(cta.label, cleanupWarning(cta), [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: cta.label,
+                    style: "destructive",
+                    onPress: onCleanup,
+                  },
+                ])
+              }
             />
           ) : null}
           {cta?.kind === "open_url" && cta.url ? (

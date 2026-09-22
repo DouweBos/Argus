@@ -100,6 +100,7 @@ import {
 } from "@argus/host/services/automation/manager";
 import { calibrationFor } from "@argus/host/services/automation/outcomes";
 import { acceptProposal } from "@argus/host/services/automation/proposals/accept";
+import { performProposalCleanup } from "@argus/host/services/automation/proposals/cleanup";
 import {
   dismissProposal,
   getProposal,
@@ -1123,6 +1124,9 @@ export function registerIpcHandlers(): void {
   );
   handle("proposal_get", "admin", (a) => getProposal(a.id as string));
   handle("proposal_accept", "admin", (a) => acceptProposal(a.id as string));
+  handle("proposal_perform_cleanup", "admin", (a) =>
+    performProposalCleanup(a.id as string),
+  );
   handle("proposal_dismiss", "admin", (a) =>
     dismissProposal(a.id as string, a.reason as string | undefined),
   );

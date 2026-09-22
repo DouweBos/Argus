@@ -75,7 +75,8 @@ export type RemoteMethod =
   | "automations.mark_run_read"
   | "proposals.list"
   | "proposals.accept"
-  | "proposals.dismiss";
+  | "proposals.dismiss"
+  | "proposals.perform_cleanup";
 
 export type RemotePlatform = "ios" | "android";
 
@@ -455,11 +456,17 @@ export interface RemoteAutomationRunDetail {
   report_markdown: string | null;
 }
 
-/** What a proposal's one button does. `start_session` spins up a worktree. */
+/**
+ * What a proposal's one button does. `start_session` spins up a worktree; the
+ * two `delete_` kinds run a cleanup on the computer, behind a confirm.
+ */
 export interface RemoteProposalCta {
-  kind: "open_url" | "start_session";
+  kind: "delete_branch" | "delete_session" | "open_url" | "start_session";
   label: string;
   url: string | null;
+  branch: string | null;
+  force: boolean;
+  session_id: string | null;
 }
 
 /** One thing an automation wants you to decide on. Names resolved by the computer. */

@@ -28,7 +28,14 @@ function proposal(overrides: Partial<Proposal> = {}): Proposal {
     confidence: 0.8,
     rationale: "Two people are blocked on it.",
     recommended_action: "start_session",
-    cta: { kind: "start_session", label: "Start", url: null },
+    cta: {
+      kind: "start_session",
+      label: "Start",
+      url: null,
+      branch: null,
+      force: false,
+      session_id: null,
+    },
     source_ref: {
       source_id: "github",
       external_id: "plexinc/app#412",

@@ -189,11 +189,21 @@ It also writes the proposal's **call to action** — the button you see in the
 inbox. Not everything a run finds is code to write, so the run says which of
 these it is:
 
-| `cta`                                        | Button            | What pressing it does                 |
-| -------------------------------------------- | ----------------- | ------------------------------------- |
-| `{ kind: "start_session", label: "Start" }`  | **Start**         | Creates the worktree and starts a run |
-| `{ kind: "open_url", label: "…", url: "…" }` | The run's wording | Opens the link in your browser        |
-| omitted                                      | none              | Only **Dismiss** — nothing to act on  |
+| `cta`                                                 | Button            | What pressing it does                         |
+| ----------------------------------------------------- | ----------------- | --------------------------------------------- |
+| `{ kind: "start_session", label: "Start" }`           | **Start**         | Creates the worktree and starts a run         |
+| `{ kind: "open_url", label: "…", url: "…" }`          | The run's wording | Opens the link in your browser                |
+| `{ kind: "delete_branch", branch: "…", force: true }` | The run's wording | Deletes that branch, after one more confirm   |
+| `{ kind: "delete_session", session_id: "…" }`         | The run's wording | Retires that worktree, after one more confirm |
+| omitted                                               | none              | Only **Dismiss** — nothing to act on          |
+
+The two `delete_` kinds are how a run asks for cleanup without ever doing it: a
+run cannot delete a branch or a worktree at any autonomy level, so all it can do
+is make the case and hand you the button. Pressing one asks again — naming the
+exact `git branch -d`/`-D`, or saying that the worktree and anything uncommitted
+in it go — and only then does Argus do it. `delete_session` never takes the
+branch with it; a branch worth deleting is its own proposal with its own
+evidence.
 
 A proposal that names no `cta` falls back to **Start** when it recommends
 `start_session` and has a project, to opening its source item when it has one,
@@ -290,13 +300,19 @@ watch are pinned at Propose on purpose: deleting a worktree or a branch with
 unpushed work in it is not undoable, and no major version bump is ever as easy
 as it looks.
 
-Branch janitor counts a branch as finished on either of two signals: its base
-has fully merged it, or its remote is gone. The second one matters because a
-squash merge rewrites the commits, so the branch never becomes an ancestor of
-its base and the first check never fires — on a repo that deletes branches on
-merge, the vanished remote is the only evidence left. It covers branches with
-no Argus session too, proposing the `git branch -d` rather than a worktree to
-retire.
+Branch janitor answers one question per branch — **is this work already in the
+codebase?** — and proposes only when it can prove the answer. A merged ancestry
+proves it; so does `git cherry` reporting the patch as equivalent, which is what
+catches a rebase; so does a merged PR, which is the only evidence left after a
+squash. A closed-unmerged PR or a won't-do ticket proves the opposite, which is
+equally actionable. Anything it could not establish goes in the report rather
+than the inbox, because a proposal you can only dismiss is the investigation it
+failed to finish, handed to you.
+
+What it proposes carries the deletion as its button: `delete_branch` for a loose
+branch (with `force`, since a squashed or rebased branch is unmergeable by
+ancestry even though it landed), `delete_session` for a worktree. It never
+deletes anything itself.
 
 ---
 

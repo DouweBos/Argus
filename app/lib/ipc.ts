@@ -1626,6 +1626,13 @@ export const getProposal = (id: string): Promise<Proposal | null> =>
 export const acceptProposal = (id: string): Promise<AcceptProposalResult> =>
   invoke("proposal_accept", { id });
 
+/**
+ * Carry out a cleanup proposal's button — deleting the branch or retiring the
+ * session it argued for. Destructive, so the caller confirms first.
+ */
+export const performProposalCleanup = (id: string): Promise<Proposal> =>
+  invoke("proposal_perform_cleanup", { id });
+
 /** Dismiss a proposal. The reason is kept — it is the training signal. */
 export const dismissProposal = (
   id: string,

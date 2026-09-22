@@ -20,18 +20,36 @@ export type ProposalStatus =
   | "withdrawn";
 
 /**
- * What the proposal's primary button does. `start_session` is the only kind
- * that spins up a worktree — everything else sends the user somewhere.
+ * What the proposal's primary button does. `start_session` spins up a
+ * worktree; `open_url` sends the user somewhere; the two `delete_` kinds
+ * carry out the cleanup the run argued for, which is destructive and so is
+ * always confirmed before it runs.
  */
-export type ProposalCtaKind = "open_url" | "start_session";
+export type ProposalCtaKind =
+  | "delete_branch"
+  | "delete_session"
+  | "open_url"
+  | "start_session";
 
-/** The one action the proposal is asking for, as rendered in the inbox. */
+/**
+ * The one action the proposal is asking for, as rendered in the inbox.
+ *
+ * Flat rather than a union per kind: it is persisted JSON, mirrored in the
+ * wire protocol and in the renderer's types, and every field is null for the
+ * kinds that do not use it.
+ */
 export interface ProposalCta {
   kind: ProposalCtaKind;
   /** Button text, written by the run: "Start", "Open PR #6478". */
   label: string;
-  /** Where `open_url` goes. Null for `start_session`. */
+  /** Where `open_url` goes. Null for every other kind. */
   url: string | null;
+  /** Branch a `delete_branch` clears, in the proposal's own project. */
+  branch: string | null;
+  /** `git branch -D` rather than `-d`. Only ever what the run asked for. */
+  force: boolean;
+  /** Session a `delete_session` retires. Its branch is left alone. */
+  session_id: string | null;
 }
 
 export type ProposalAction =
@@ -101,9 +119,12 @@ export interface ClearedProposal {
   reason: string | null;
 }
 
-/** What `emit_proposal` accepts for the CTA — `url` optional, unvalidated. */
+/** What `emit_proposal` accepts for the CTA — every target optional. */
 export interface ProposalCtaInput {
   kind: ProposalCtaKind;
   label: string;
   url?: string | null;
+  branch?: string | null;
+  force?: boolean;
+  session_id?: string | null;
 }

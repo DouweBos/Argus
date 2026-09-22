@@ -136,6 +136,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "proposals.list": DENIED,
   "proposals.accept": DENIED,
   "proposals.dismiss": DENIED,
+  "proposals.perform_cleanup": DENIED,
 
   // Browser streams share the claim table under a `browser:` prefix, so the
   // session id has to be namespaced before it is matched against device_keys.
