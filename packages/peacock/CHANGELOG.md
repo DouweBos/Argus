@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.18.0
+
+### Minor Changes
+
+- f5369e0: Proposals you already handled yourself can be marked as done instead of dismissed, so agreeing with one no longer reads as rejecting it.
+
 ## 0.17.0
 
 ### Minor Changes
