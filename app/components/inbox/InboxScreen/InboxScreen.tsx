@@ -15,6 +15,7 @@ import {
   useProposalsLoading,
 } from "../../../stores/proposalStore";
 import { useInboxItems } from "../useInboxItems";
+import { ClearedProposals } from "./ClearedProposals";
 import { FailedRuns } from "./FailedRuns";
 import styles from "./InboxScreen.module.css";
 import { PendingProposals } from "./PendingProposals";
@@ -27,14 +28,17 @@ import { StartedWork } from "./StartedWork";
  * that already failed.
  */
 export function InboxScreen() {
-  const { failed, pending, started } = useInboxItems();
+  const { cleared, failed, pending, started } = useInboxItems();
   const all = useProposals();
   const loading = useProposalsLoading();
   const error = useProposalsError();
   const automations = useAutomations();
 
   const empty =
-    pending.length === 0 && started.length === 0 && failed.length === 0;
+    pending.length === 0 &&
+    started.length === 0 &&
+    failed.length === 0 &&
+    cleared.length === 0;
 
   let body = (
     <div className={styles.sections}>
@@ -51,6 +55,15 @@ export function InboxScreen() {
       {failed.length > 0 && (
         <SectionPanel meta={`${failed.length}`} plain title="Needs a look">
           <FailedRuns runs={failed} />
+        </SectionPanel>
+      )}
+      {cleared.length > 0 && (
+        <SectionPanel
+          meta={`${cleared.length}`}
+          plain
+          title="Argus cleared these"
+        >
+          <ClearedProposals proposals={cleared} />
         </SectionPanel>
       )}
     </div>

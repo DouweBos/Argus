@@ -18,6 +18,11 @@ export interface ProposalCardProps {
   busy?: boolean;
   /** 0..1, self-reported by the run that emitted the proposal. */
   confidence: number;
+  /**
+   * What already happened to it — started, dismissed, cleared by a later run.
+   * Set it and the card reads rather than acts: there is nothing left to press.
+   */
+  decided?: ReactNode;
   /** Optional trailing chips — project, recommended action, automation. */
   meta?: ReactNode;
   onDismiss: (reason: string) => void;
@@ -47,6 +52,7 @@ export interface ProposalCardProps {
 export function ProposalCard({
   busy,
   confidence,
+  decided,
   meta,
   onDismiss,
   onOpenSource,
@@ -77,7 +83,9 @@ export function ProposalCard({
 
       {meta != null && <div className={styles.meta}>{meta}</div>}
 
-      {dismissing ? (
+      {decided != null && <p className={styles.decided}>{decided}</p>}
+
+      {decided == null && dismissing && (
         <div className={styles.dismissRow}>
           <Input
             aria-label="Why are you dismissing this?"
@@ -115,7 +123,9 @@ export function ProposalCard({
             Cancel
           </Button>
         </div>
-      ) : (
+      )}
+
+      {decided == null && !dismissing && (
         <div className={styles.actions}>
           {primary && (
             <Button

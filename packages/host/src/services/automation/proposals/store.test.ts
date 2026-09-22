@@ -38,6 +38,9 @@ function proposal(overrides: Partial<Proposal> = {}): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    cleared_reason: null,
+    cleared_at: null,
+    superseded_by: null,
     created_at: 1,
     ...overrides,
   };

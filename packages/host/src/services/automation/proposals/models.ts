@@ -5,13 +5,19 @@
  * the inbox and you either start one or dismiss it. In P2 every proposal is
  * `pending`: the autonomy ladder that can turn one into `auto_started` arrives
  * with the guardrail gate.
+ *
+ * A later run can also clear one it raised itself — `superseded` when it
+ * re-proposes the same work, `withdrawn` when the signal behind it is gone —
+ * so an inbox nobody emptied does not fill up with the same thing daily.
  */
 
 export type ProposalStatus =
   | "accepted"
   | "auto_started"
   | "dismissed"
-  | "pending";
+  | "pending"
+  | "superseded"
+  | "withdrawn";
 
 /**
  * What the proposal's primary button does. `start_session` is the only kind
@@ -60,6 +66,15 @@ export interface Proposal {
   session_id: string | null;
   /** Why it was dismissed. The training signal; kept verbatim. */
   dismissed_reason: string | null;
+  /**
+   * Why a later run cleared it, in the run's words. Separate from
+   * `dismissed_reason` so calibration keeps quoting the user, not the machine.
+   */
+  cleared_reason: string | null;
+  /** When a later run cleared it. Null while nobody has. */
+  cleared_at: number | null;
+  /** The proposal that replaced this one, for `superseded`. */
+  superseded_by: string | null;
   created_at: number;
 }
 
@@ -76,6 +91,14 @@ export interface CreateProposalInput {
   cta?: ProposalCtaInput | null;
   source_ref?: ProposalSourceRef | null;
   repo_root?: string | null;
+}
+
+/** A proposal a run cleared, and why — what the tools hand back. */
+export interface ClearedProposal {
+  id: string;
+  title: string;
+  status: Extract<ProposalStatus, "superseded" | "withdrawn">;
+  reason: string | null;
 }
 
 /** What `emit_proposal` accepts for the CTA — `url` optional, unvalidated. */

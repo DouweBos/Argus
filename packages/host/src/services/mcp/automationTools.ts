@@ -5,16 +5,23 @@
  * on the connection only when that connection's agent lives in an
  * `automation_host` session. An ordinary agent cannot call `emit_proposal`
  * or `emit_report` because they are not on its tool list at all.
+ *
+ * The inbox tools are scoped tighter still: a run reads and clears only its
+ * own automation's proposals, so one automation can never decide for another.
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { autoStartIfAllowed } from "../automation/autoStart";
-import { createProposal } from "../automation/proposals/manager";
+import {
+  createProposal,
+  supersedeProposals,
+} from "../automation/proposals/manager";
 import {
   automationRunForAgent,
   isAutomationHostAgent,
 } from "./automationCaller";
+import { registerAutomationInboxTools } from "./automationInboxTools";
 import { registerAutomationPrTool } from "./automationPrTool";
 import { registerAutomationReportTool } from "./automationReportTool";
 
@@ -28,10 +35,11 @@ export function registerAutomationTools(
 
   registerAutomationPrTool(server, callerAgentId);
   registerAutomationReportTool(server, callerAgentId);
+  registerAutomationInboxTools(server, callerAgentId);
 
   server.tool(
     "emit_proposal",
-    "Propose one piece of work to the user. Call it once per item you want to put in front of them — never batch several items into one proposal, and never propose something you did not actually find in the data you were given. Proposals land in the user's inbox, where they either start a session from one or dismiss it. This does not start any work.",
+    "Propose one piece of work to the user. Call it once per item you want to put in front of them — never batch several items into one proposal, and never propose something you did not actually find in the data you were given. Proposals land in the user's inbox, where they either start a session from one or dismiss it. This does not start any work. An earlier run may already have proposed the same thing — check `list_open_proposals` and pass `supersedes` rather than adding a second copy of it.",
     {
       title: z
         .string()
@@ -101,6 +109,12 @@ export function registerAutomationTools(
         .describe(
           "Absolute path of the project the work would happen in. Required for the user to be able to start a session from this proposal — use the work item's repo_root when it has one.",
         ),
+      supersedes: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "Ids of this automation's still-waiting proposals that this one replaces, from `list_open_proposals`. They leave the inbox pointing at this proposal, so the user decides once instead of on three copies of the same thing. Only pass ids covering the same work — a proposal about something else is not superseded, it is withdrawn or left alone.",
+        ),
     },
     async ({
       title,
@@ -111,6 +125,7 @@ export function registerAutomationTools(
       cta,
       source_ref,
       repo_root,
+      supersedes,
     }) => {
       const context = automationRunForAgent(callerAgentId);
       if (!context) {
@@ -138,6 +153,12 @@ export function registerAutomationTools(
         repo_root: repo_root ?? null,
       });
 
+      // Clearing the ones it replaces happens before the gate: what the run
+      // needs back is what the inbox now holds, gate decision included.
+      const superseded = supersedes?.length
+        ? supersedeProposals(supersedes, created)
+        : [];
+
       // The gate. Every rung, threshold and cap is decided in Node from
       // persisted state — a playbook instructing the agent to start work
       // regardless changes nothing about what happens on this line.
@@ -153,6 +174,7 @@ export function registerAutomationTools(
                 status: proposal.status,
                 cta: proposal.cta,
                 gate: decision.reason,
+                superseded,
               },
               null,
               2,

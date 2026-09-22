@@ -473,7 +473,13 @@ export interface RemoteProposal {
   /** 0..1, self-reported by the run's agent. */
   confidence: number;
   cta: RemoteProposalCta | null;
-  status: "accepted" | "auto_started" | "dismissed" | "pending";
+  status:
+    | "accepted"
+    | "auto_started"
+    | "dismissed"
+    | "pending"
+    | "superseded"
+    | "withdrawn";
   /** Project name, never a path. */
   project: string | null;
   source_label: string | null;

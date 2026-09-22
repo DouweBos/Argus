@@ -100,6 +100,24 @@ export const useStartedProposals = (): Proposal[] =>
     ),
   );
 
+/**
+ * Cleared by a later run rather than by you — shown for a day so a proposal
+ * never just vanishes out of the inbox unexplained.
+ */
+export const CLEARED_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export const useClearedProposals = (): Proposal[] =>
+  store(
+    useShallow((s) =>
+      s.proposals.filter(
+        (p) =>
+          (p.status === "superseded" || p.status === "withdrawn") &&
+          p.cleared_at !== null &&
+          Date.now() - p.cleared_at < CLEARED_WINDOW_MS,
+      ),
+    ),
+  );
+
 export const useProposal = (id: string | null): Proposal | null =>
   store((s) => (id ? (s.proposals.find((p) => p.id === id) ?? null) : null));
 
