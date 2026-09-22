@@ -1,5 +1,17 @@
 # @argus/peacock
 
+## 0.17.0
+
+### Minor Changes
+
+- 4338b81: A huddle on a wide screen now shows the conversation and the shared device side by side in a resizable split, and the device gets a claim bar that says who's driving with buttons to take control or hand it back.
+- 1111d9a: New DeviceStage component: a live device picture presented at the device's real orientation, with pointer input mapped back into the device's own coordinates. The Apple TV Siri Remote moved here too, so every surface driving a TV shares one.
+- a4613c1: New ToolInputFields component: a tool call's input as labelled values, with nested objects and arrays flattened into readable paths.
+
+### Patch Changes
+
+- 7e0d47d: Huddle guests can rename themselves from a new settings button, the huddle now fills a landscape tablet instead of a narrow column, and chat avatars stay round next to multi-line messages.
+
 ## 0.16.0
 
 ### Minor Changes
