@@ -23,33 +23,6 @@ enum Route: Hashable {
   case computers
 }
 
-extension Route {
-  /// Which column a route belongs to when there are three.
-  ///
-  /// The middle column continues the browsing hierarchy, so it keeps a
-  /// project's sessions and agents on screen while you read one of them.
-  /// Everything you actually read or drive lands in the detail column.
-  var isDetail: Bool {
-    switch self {
-    case .project, .computers, .pair:
-      false
-    default:
-      true
-    }
-  }
-
-  /// Secondary detail routes stack on top of what is already open, so an
-  /// agent's changes get a back button rather than replacing the agent.
-  var stacksOnDetail: Bool {
-    switch self {
-    case .changes, .branches:
-      true
-    default:
-      false
-    }
-  }
-}
-
 /// The top-level sections. These are tabs on a phone and a sidebar on an
 /// iPad — one `TabView` with `.sidebarAdaptable` gives both, so there is no
 /// separate split-view hierarchy to keep in step.
@@ -84,7 +57,31 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
 /// cannot do across columns — it only ever pushes onto its own stack.
 enum SidebarItem: Hashable {
   case section(AppSection)
-  case agent(id: String, label: String)
+  /// Carries its project so selecting it can seed the same stack the user
+  /// would have built by hand.
+  case agent(id: String, label: String, repoRoot: String, projectName: String)
+
+  /// Identity is the agent id alone — the surrounding detail is there to
+  /// build the path, not to tell two selections apart. Without this, a
+  /// selection made from the sidebar wouldn't match one made by navigating.
+  static func == (lhs: SidebarItem, rhs: SidebarItem) -> Bool {
+    switch (lhs, rhs) {
+    case (.section(let a), .section(let b)): a == b
+    case (.agent(let a, _, _, _), .agent(let b, _, _, _)): a == b
+    default: false
+    }
+  }
+
+  func hash(into hasher: inout Hasher) {
+    switch self {
+    case .section(let section):
+      hasher.combine(0)
+      hasher.combine(section)
+    case .agent(let id, _, _, _):
+      hasher.combine(1)
+      hasher.combine(id)
+    }
+  }
 }
 
 /// Navigation state, owned by the root so a notification can drive it from
@@ -102,26 +99,26 @@ final class Router {
   /// The sidebar's selection, and which project groups are open in it.
   var sidebarSelection: SidebarItem? = .section(.projects)
   var expandedProjects: Set<String> = []
-  /// The detail column's root, and anything stacked on it.
-  var detailRoot: Route?
+  /// The detail column's stack, on top of the current section's own screen.
+  ///
+  /// One array, not a root plus a stack: swapping the root view changes its
+  /// identity, which re-creates the `NavigationStack` and throws away a path
+  /// set in the same update — so seeding a path underneath never arrived.
   var detailStack: [Route] = []
 
 
   func path(for section: AppSection) -> [Route] { paths[section] ?? [] }
 
   func push(_ route: Route) {
-    guard isSplit, route.isDetail else {
+    guard isSplit else {
       paths[section, default: []].append(route)
       return
     }
-    if route.stacksOnDetail, detailRoot != nil {
-      detailStack.append(route)
-    } else {
-      detailRoot = route
-      detailStack = []
-      if case .agent(let id, let label) = route {
-        sidebarSelection = .agent(id: id, label: label)
-      }
+    detailStack.append(route)
+    if case .agent(let id, let label) = route {
+      // Equality is by id, so the empty project fields still match the
+      // sidebar's own entry and keep its row highlighted.
+      sidebarSelection = .agent(id: id, label: label, repoRoot: "", projectName: "")
     }
   }
 
@@ -130,7 +127,6 @@ final class Router {
   func select(_ section: AppSection) {
     guard section != self.section else { return }
     self.section = section
-    detailRoot = nil
     detailStack = []
   }
 
@@ -140,12 +136,19 @@ final class Router {
     guard let item else { return }
     switch item {
     case .section(let section):
-      self.section = section
-      detailRoot = nil
+      if self.section != section { self.section = section }
       detailStack = []
-    case .agent(let id, let label):
-      detailRoot = .agent(id: id, label: label)
-      detailStack = []
+    case .agent(let id, let label, let repoRoot, let projectName):
+      // A shortcut into the normal path, not a replacement for it: the
+      // project goes underneath so back lands where it always does.
+      // An agent always lives under Projects, but only write that when it
+      // actually changes — an `@Observable` write invalidates on assignment,
+      // not on difference.
+      if section != .projects { section = .projects }
+      detailStack =
+        repoRoot.isEmpty
+        ? [.agent(id: id, label: label)]
+        : [.project(repoRoot: repoRoot, name: projectName), .agent(id: id, label: label)]
     }
     sidebarSelection = item
   }
@@ -153,15 +156,11 @@ final class Router {
   /// Carry open destinations across a rotation or a Split View resize.
   func adopt(split: Bool) {
     guard split != isSplit else { return }
-    let stack = paths[section] ?? []
     if split {
-      paths[section] = stack.filter { !$0.isDetail }
-      let detail = stack.filter(\.isDetail)
-      detailRoot = detail.first
-      detailStack = Array(detail.dropFirst())
+      detailStack = paths[section] ?? []
+      paths[section] = []
     } else {
-      paths[section] = stack + (detailRoot.map { [$0] } ?? []) + detailStack
-      detailRoot = nil
+      paths[section] = detailStack
       detailStack = []
     }
     isSplit = split
@@ -170,9 +169,8 @@ final class Router {
   /// Switch section and open something — used by a notification tap.
   func open(_ route: Route, in section: AppSection) {
     self.section = section
-    if isSplit, route.isDetail {
-      detailRoot = route
-      detailStack = []
+    if isSplit {
+      detailStack = [route]
     } else {
       paths[section] = [route]
     }
@@ -180,14 +178,13 @@ final class Router {
 
   func popToRoot() {
     paths[section] = []
-    detailRoot = nil
     detailStack = []
   }
 
   /// True when that agent is already the top of the current stack, so a
   /// repeated notification doesn't stack a second copy of it.
   func isShowingAgent(_ agentId: String) -> Bool {
-    let top = isSplit ? (detailStack.last ?? detailRoot) : paths[section]?.last
+    let top = isSplit ? detailStack.last : paths[section]?.last
     if case .agent(let id, _) = top { return id == agentId }
     return false
   }

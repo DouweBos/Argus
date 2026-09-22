@@ -15,6 +15,9 @@ struct RootView: View {
   @State private var automations: AutomationsStore?
   @State private var proposals: ProposalsStore?
   @State private var imageViewer = ImageViewerState()
+  /// The project a new session is being named for, and the name being typed.
+  @State private var newSessionProject: RemoteProject?
+  @State private var newSessionDescription = ""
 
   @State private var unlocked = false
   @State private var canAuthenticate = false
@@ -101,14 +104,8 @@ struct RootView: View {
         .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 380)
     } detail: {
       NavigationStack(path: $router.detailStack) {
-        Group {
-          if let root = router.detailRoot {
-            destination(root)
-          } else {
-            root(for: router.section)
-          }
-        }
-        .navigationDestination(for: Route.self) { destination($0) }
+        DetailRoot()
+          .navigationDestination(for: Route.self) { destination($0) }
       }
     }
     .navigationSplitViewStyle(.balanced)
@@ -149,11 +146,35 @@ struct RootView: View {
                         tone: agent.awaiting != nil ? .warning : agent.status.tone,
                         pulse: agent.awaiting == nil && agent.status == .running)
                     }
-                    .tag(SidebarItem.agent(id: agent.agentId, label: Labels.agentName(agent)))
+                    .tag(
+                      SidebarItem.agent(
+                        id: agent.agentId, label: Labels.agentName(agent),
+                        repoRoot: project.repoRoot, projectName: project.name))
+                  }
+                  if app.hasControl {
+                    Button {
+                      spawnAgent(in: group.id, project: project)
+                    } label: {
+                      Label("New agent", systemImage: Icon.plus)
+                        .font(.footnote)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(theme.accent)
                   }
                 } label: {
                   Label(group.label, systemImage: Icon.branch).lineLimit(1)
                 }
+              }
+              if app.hasControl {
+                Button {
+                  newSessionDescription = ""
+                  newSessionProject = project
+                } label: {
+                  Label("New session", systemImage: Icon.plus)
+                    .font(.footnote)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(theme.accent)
               }
             } label: {
               Label(project.name, systemImage: Icon.folder).lineLimit(1)
@@ -163,6 +184,43 @@ struct RootView: View {
       }
     }
     .listStyle(.sidebar)
+    .alert(
+      "New session in \(newSessionProject?.name ?? "")",
+      isPresented: Binding(
+        get: { newSessionProject != nil },
+        set: { if !$0 { newSessionProject = nil } })
+    ) {
+      TextField("What should this session do?", text: $newSessionDescription)
+      Button("Cancel", role: .cancel) { newSessionProject = nil }
+      Button("Create") { createSession() }
+    } message: {
+      Text("Argus derives the branch from the description.")
+    }
+  }
+
+  private func spawnAgent(in sessionId: String, project: RemoteProject) {
+    Task {
+      guard let agent = await app.spawnAgent(sessionId: sessionId) else { return }
+      router.apply(
+        .agent(
+          id: agent.agentId, label: Labels.agentName(agent),
+          repoRoot: project.repoRoot, projectName: project.name))
+      await app.loadRecentAgents()
+    }
+  }
+
+  private func createSession() {
+    guard let project = newSessionProject else { return }
+    let description = newSessionDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+    newSessionProject = nil
+    guard !description.isEmpty else { return }
+    Task {
+      _ = await app.createSession(
+        repoRoot: project.repoRoot, branch: "", description: description)
+      // Show it straight away rather than waiting for the next poll.
+      await app.loadSessions(repoRoot: project.repoRoot)
+      router.expandedProjects.insert(project.repoRoot)
+    }
   }
 
   /// A session in the sidebar tree, with whatever is running inside it.
@@ -253,13 +311,6 @@ struct RootView: View {
           router.expandedProjects.remove(repoRoot)
         }
       })
-  }
-
-  private var detailPlaceholder: some View {
-    ContentUnavailableView(
-      "Nothing open",
-      systemImage: Icon.agent,
-      description: Text("Pick an agent, a device or a run to see it here."))
   }
 
   private var tabs: some View {
@@ -370,6 +421,25 @@ struct RootView: View {
       unlocked = true
       await app.initialize()
       NotificationRouter.shared.replayPendingOpen()
+    }
+  }
+}
+
+/// The detail column's root.
+///
+/// Deliberately its own view: the stack's root identity is this type, so
+/// changing section re-renders it instead of re-creating the stack and
+/// dropping whatever was pushed.
+private struct DetailRoot: View {
+  @Environment(Router.self) private var router
+
+  var body: some View {
+    switch router.section {
+    case .projects: ProjectsView()
+    case .inbox: InboxView()
+    case .automations: AutomationsView()
+    case .devices: DevicesView()
+    case .settings: SettingsView()
     }
   }
 }

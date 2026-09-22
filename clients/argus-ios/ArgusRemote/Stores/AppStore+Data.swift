@@ -215,7 +215,15 @@ extension AppStore {
 
   // MARK: Images
 
+  /// Locally-seeded attachments — an optimistic send's images, or a queued
+  /// message's — carry their bytes with them and have no server-side id.
+  /// Asking the computer for one is a request that can only fail.
+  static func isLocallySeeded(imageId: String) -> Bool {
+    imageId.contains(":img:")
+  }
+
   func loadImage(agentId key: String, imageId: String) async {
+    guard !Self.isLocallySeeded(imageId: imageId) else { return }
     let cacheKey = imageKey(key, imageId)
     guard imageCache[cacheKey] == nil, let transport else { return }
 

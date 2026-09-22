@@ -1,3 +1,4 @@
+import ArgusKit
 import SwiftUI
 
 /// Markdown, rendered as SwiftUI text.
@@ -46,6 +47,8 @@ struct MarkdownView: View {
           }
         }
       }
+    case .table(let columns, let rows):
+      MarkdownTable(columns: columns, rows: rows, inline: inline)
     case .rule:
       Rectangle().fill(theme.border).frame(height: 1)
     }
@@ -97,106 +100,39 @@ struct CodeBlockView: View {
   }
 }
 
-enum MarkdownBlock {
-  case heading(level: Int, text: String)
-  case paragraph(String)
-  case code(language: String?, body: String)
-  case quote(String)
-  case list(items: [String], ordered: Bool)
-  case rule
+/// A markdown table. Scrolls sideways rather than wrapping cells into
+/// unreadable slivers — a transcript column is narrow and tables rarely are.
+private struct MarkdownTable: View {
+  @Environment(\.theme) private var theme
+  let columns: [String]
+  let rows: [[String]]
+  let inline: (String) -> Text
 
-  static func parse(_ source: String) -> [MarkdownBlock] {
-    var blocks: [MarkdownBlock] = []
-    var paragraph: [String] = []
-    var listItems: [String] = []
-    var listOrdered = false
-    var quote: [String] = []
-
-    func flushParagraph() {
-      guard !paragraph.isEmpty else { return }
-      blocks.append(.paragraph(paragraph.joined(separator: "\n")))
-      paragraph = []
-    }
-    func flushList() {
-      guard !listItems.isEmpty else { return }
-      blocks.append(.list(items: listItems, ordered: listOrdered))
-      listItems = []
-    }
-    func flushQuote() {
-      guard !quote.isEmpty else { return }
-      blocks.append(.quote(quote.joined(separator: "\n")))
-      quote = []
-    }
-    func flushAll() {
-      flushParagraph()
-      flushList()
-      flushQuote()
-    }
-
-    var lines = source.components(separatedBy: "\n")[...]
-    while let line = lines.first {
-      lines = lines.dropFirst()
-
-      if line.hasPrefix("```") {
-        flushAll()
-        let language = String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces)
-        var body: [String] = []
-        while let next = lines.first, !next.hasPrefix("```") {
-          body.append(next)
-          lines = lines.dropFirst()
+  var body: some View {
+    ScrollView(.horizontal, showsIndicators: false) {
+      VStack(alignment: .leading, spacing: 0) {
+        row(columns.map { $0 }, isHeader: true)
+        ForEach(Array(rows.enumerated()), id: \.offset) { index, cells in
+          Divider().overlay(theme.borderSubtle)
+          row(cells, isHeader: false)
         }
-        // Drop the closing fence, if the block was actually closed.
-        if lines.first?.hasPrefix("```") == true { lines = lines.dropFirst() }
-        blocks.append(
-          .code(language: language.isEmpty ? nil : language, body: body.joined(separator: "\n")))
-        continue
       }
-
-      let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-      if trimmed.isEmpty {
-        flushAll()
-        continue
-      }
-      if trimmed == "---" || trimmed == "***" || trimmed == "___" {
-        flushAll()
-        blocks.append(.rule)
-        continue
-      }
-      if let match = trimmed.firstMatch(of: /^(#{1,6})\s+(.*)$/) {
-        flushAll()
-        blocks.append(
-          .heading(level: match.1.count, text: String(match.2)))
-        continue
-      }
-      if trimmed.hasPrefix("> ") {
-        flushParagraph()
-        flushList()
-        quote.append(String(trimmed.dropFirst(2)))
-        continue
-      }
-      if let match = trimmed.firstMatch(of: /^[-*+]\s+(.*)$/) {
-        flushParagraph()
-        flushQuote()
-        if !listItems.isEmpty && listOrdered { flushList() }
-        listOrdered = false
-        listItems.append(String(match.1))
-        continue
-      }
-      if let match = trimmed.firstMatch(of: /^\d+[.)]\s+(.*)$/) {
-        flushParagraph()
-        flushQuote()
-        if !listItems.isEmpty && !listOrdered { flushList() }
-        listOrdered = true
-        listItems.append(String(match.1))
-        continue
-      }
-
-      flushList()
-      flushQuote()
-      paragraph.append(line)
+      .padding(.vertical, 4)
     }
-    flushAll()
-    return blocks
+    .background(theme.bgTertiary.opacity(0.5))
+    .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+  }
+
+  private func row(_ cells: [String], isHeader: Bool) -> some View {
+    HStack(alignment: .top, spacing: 0) {
+      ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+        inline(cell)
+          .font(.system(size: 13, weight: isHeader ? .semibold : .regular))
+          .frame(width: 160, alignment: .leading)
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(.horizontal, 8)
+          .padding(.vertical, 5)
+      }
+    }
   }
 }
