@@ -23,17 +23,12 @@
 }
 
 .summary {
-  font: var(--type-body);
-  color: var(--text-secondary);
-  margin: 0;
-  white-space: pre-wrap;
+  --markdown-color: var(--text-secondary);
 }
 
 .rationale {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0;
-  white-space: pre-wrap;
+  --markdown-color: var(--text-muted);
+  --markdown-font-size: 12px;
 }
 
 .meta {
@@ -72,4 +67,49 @@
   flex: 1;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+/* The note, and the two things it can be: a brief to start with, or the
+   revision the automation should make. */
+.noteRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.note {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 44px;
+  padding: 8px 10px;
+  font: var(--type-ui);
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--scrim-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  outline: none;
+}
+
+.note:focus {
+  border-color: var(--accent);
+}
+
+.noteActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A revision already asked for — it stays visible until a run answers it. */
+.revision {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 6px 8px;
+  background: var(--scrim-sm);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--border-radius-xs);
 }

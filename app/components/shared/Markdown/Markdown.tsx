@@ -56,6 +56,8 @@ function rehypeFileLinks() {
 }
 
 interface MarkdownProps {
+  /** Opt into Peacock's prose stylesheet instead of the caller's own. */
+  baseProse?: boolean;
   className?: string;
   text: string;
 }
@@ -70,10 +72,14 @@ const renderMermaid = (code: string) => <MermaidChart code={code} />;
  * and inline mermaid injected. Callers keep supplying their own prose
  * `className`, so base prose is disabled to avoid double-styling.
  */
-export function Markdown({ className, text }: MarkdownProps) {
+export function Markdown({
+  baseProse = false,
+  className,
+  text,
+}: MarkdownProps) {
   return (
     <PeacockMarkdown
-      baseProse={false}
+      baseProse={baseProse}
       className={className}
       rehypePlugins={REHYPE_PLUGINS}
       renderMermaid={renderMermaid}

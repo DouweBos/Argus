@@ -28,6 +28,7 @@ import {
   useProposal,
 } from "../../../stores/proposalStore";
 import { selectSession } from "../../../stores/sessionStore";
+import { renderProposalMarkdown } from "../proposalMarkdown";
 import { useProposalActions } from "../useProposalActions";
 import styles from "./ProposalDetailScreen.module.css";
 
@@ -63,7 +64,8 @@ export function ProposalDetailScreen() {
   const proposalId = useRouteProposalId();
   const proposal = useProposal(proposalId);
   const automations = useAutomations();
-  const { busyId, dismiss, primaryAction } = useProposalActions();
+  const { busyId, dismiss, primaryAction, requestRevision, startWithNote } =
+    useProposalActions();
 
   if (!proposal) {
     return (
@@ -126,8 +128,12 @@ export function ProposalDetailScreen() {
               }
             : undefined
         }
+        onRequestRevision={requestRevision(proposal)}
+        onStartWithNote={startWithNote(proposal)}
         primary={decided ? undefined : primaryAction(proposal)}
         rationale={proposal.rationale || undefined}
+        renderMarkdown={renderProposalMarkdown}
+        revisionRequest={proposal.revision_request || undefined}
         sourceLabel={source?.external_id}
         summary={proposal.summary}
         title={proposal.title}

@@ -11,11 +11,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dismissProposal = vi.fn();
 const acceptProposal = vi.fn();
+const requestProposalRevision = vi.fn();
 const openExternalUrl = vi.fn();
 
 vi.mock("../../../lib/ipc", () => ({
   listProposals: () => Promise.resolve([]),
-  acceptProposal: (id: string) => acceptProposal(id),
+  acceptProposal: (id: string, note?: string) => acceptProposal(id, note),
+  requestProposalRevision: (id: string, note: string) =>
+    requestProposalRevision(id, note),
   dismissProposal: (id: string, reason?: string) => dismissProposal(id, reason),
   openExternalUrl: (url: string) => openExternalUrl(url),
   getSessionCommitsAhead: () => Promise.resolve(0),
@@ -73,6 +76,9 @@ function proposal(patch: Partial<Proposal> = {}): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    accepted_note: null,
+    revision_request: null,
+    revision_requested_at: null,
     cleared_reason: null,
     cleared_at: null,
     superseded_by: null,
@@ -106,6 +112,11 @@ describe("inboxScreen", () => {
     dismissProposal.mockReset();
     dismissProposal.mockResolvedValue(proposal({ status: "dismissed" }));
     acceptProposal.mockReset();
+    requestProposalRevision.mockReset();
+    requestProposalRevision.mockResolvedValue({
+      proposal: proposal(),
+      run_started: true,
+    });
     acceptProposal.mockResolvedValue({
       agent_id: "ag-1",
       session_id: "s-1",
@@ -167,6 +178,43 @@ describe("inboxScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
 
     expect(dismissProposal).toHaveBeenCalledWith("p-1", undefined);
+  });
+
+  it("starts a proposal with the note the user added", () => {
+    setProposalState({ proposals: [proposal()], loading: false, error: null });
+    render(<InboxScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
+    fireEvent.change(screen.getByLabelText("Add a note to this proposal"), {
+      target: { value: "right fix, but do it in the host package" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Start with this note/ }),
+    );
+
+    expect(acceptProposal).toHaveBeenCalledWith(
+      "p-1",
+      "right fix, but do it in the host package",
+    );
+  });
+
+  it("sends the note back to the automation when asked for a better one", () => {
+    setProposalState({ proposals: [proposal()], loading: false, error: null });
+    render(<InboxScreen />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
+    fireEvent.change(screen.getByLabelText("Add a note to this proposal"), {
+      target: { value: "scope it to the flaky test, not the whole suite" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ask for a better one" }),
+    );
+
+    expect(requestProposalRevision).toHaveBeenCalledWith(
+      "p-1",
+      "scope it to the flaky test, not the whole suite",
+    );
+    expect(acceptProposal).not.toHaveBeenCalled();
   });
 
   it("puts decisions above work already under way", () => {

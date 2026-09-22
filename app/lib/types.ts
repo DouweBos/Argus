@@ -965,6 +965,8 @@ export interface ProposalCta {
 
 /** One thing an automation run wants you to do. */
 export interface Proposal {
+  /** What the user added when they started it — part of the agent's brief. */
+  accepted_note: string | null;
   automation_id: string;
   /** When a later run cleared it. Null while nobody has. */
   cleared_at: number | null;
@@ -984,6 +986,10 @@ export interface Proposal {
   recommended_action: ProposalAction;
   /** Project the work would happen in. Null when it maps to no local repo. */
   repo_root: string | null;
+  /** What the user wants changed before this is worth starting, verbatim. */
+  revision_request: string | null;
+  /** When the revision was asked for. Null while nobody has asked. */
+  revision_requested_at: number | null;
   run_id: string;
   /** Session doing the work, once the proposal was started. */
   session_id: string | null;
@@ -1001,6 +1007,13 @@ export interface AcceptProposalResult {
   agent_id: string;
   proposal: Proposal;
   session_id: string;
+}
+
+/** What asking for a better proposal produced. */
+export interface RequestRevisionResult {
+  proposal: Proposal;
+  /** False when no run started — the note waits for the next scheduled one. */
+  run_started: boolean;
 }
 
 // ---------------------------------------------------------------------------

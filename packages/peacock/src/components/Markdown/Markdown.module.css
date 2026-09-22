@@ -1,6 +1,8 @@
+/* Callers restyle prose by setting these on (or above) the wrapper — inherited
+   custom properties avoid cross-module specificity fights. */
 .markdown {
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
+  font-size: var(--markdown-font-size, var(--font-size-sm));
+  color: var(--markdown-color, var(--text-primary));
   line-height: 1.7;
   user-select: text;
   -webkit-user-select: text;

@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { useState } from "react";
 import { ArrowUpRightIcon, PlayIcon, TrashIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { ConfidenceMeter } from "../ConfidenceMeter/ConfidenceMeter";
 import { Input } from "../Input/Input";
+import { Markdown } from "../Markdown/Markdown";
 import styles from "./ProposalCard.module.css";
 
 export interface ProposalCardAction {
@@ -34,6 +35,17 @@ export interface ProposalCardProps {
   /** Absent when the proposal came from no external work item. */
   onOpenSource?: () => void;
   /**
+   * Hand the note back to the automation instead of to an agent: the proposal
+   * is close but not right, and the next run should do better. Omit and the
+   * note can only be used to start.
+   */
+  onRequestRevision?: (note: string) => void;
+  /**
+   * Start the proposal with a note appended to the agent's brief. Omit when
+   * there is nothing to start — the note has nowhere to go.
+   */
+  onStartWithNote?: (note: string) => void;
+  /**
    * The one action the proposal is asking for. Omit it when there is nothing
    * to do but dismiss — an offer to start work that does not exist is worse
    * than no button.
@@ -41,6 +53,10 @@ export interface ProposalCardProps {
   primary?: ProposalCardAction;
   /** Why the run ranked it where it did. Shown under the summary. */
   rationale?: string;
+  /** A revision already asked for, shown so a second ask is an informed one. */
+  revisionRequest?: string;
+  /** Render the markdown body (default: Peacock Markdown; desktop linkifies). */
+  renderMarkdown?: (text: string, className?: string) => ReactNode;
   /** External work item this came from, e.g. `plexinc/app#412`. */
   sourceLabel?: string;
   summary: string;
@@ -60,11 +76,11 @@ function PrimaryIcon({ kind }: { kind: ProposalCardAction["kind"] }) {
 }
 
 /**
- * One thing an automation wants you to decide on. At most three actions: the
- * one the proposal asks for, dismiss it (with an optional reason), or open the
- * issue it came from. The dismiss reason is a one-line inline field, never a
- * dialog — it is the signal that teaches the automation, so asking for it must
- * cost nothing.
+ * One thing an automation wants you to decide on. Yes, no, and the answer most
+ * proposals actually deserve: yes but — a note that either rides along into
+ * the agent's brief or goes back to the automation as the revision to make.
+ * Every field is inline, never a dialog: a note that costs a dialog does not
+ * get written, and the note is the whole signal.
  */
 export function ProposalCard({
   busy,
@@ -73,20 +89,56 @@ export function ProposalCard({
   meta,
   onDismiss,
   onOpenSource,
+  onRequestRevision,
+  onStartWithNote,
   primary,
   rationale,
+  renderMarkdown,
+  revisionRequest,
   sourceLabel,
   summary,
   title,
 }: ProposalCardProps) {
+  const render = (text: string, className: string) =>
+    renderMarkdown ? (
+      renderMarkdown(text, className)
+    ) : (
+      <Markdown className={className} text={text} />
+    );
+
   const [dismissing, setDismissing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [noting, setNoting] = useState(false);
   const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
 
   const confirmDismiss = () => {
     setDismissing(false);
     onDismiss(reason.trim());
     setReason("");
+  };
+
+  const canNote = onStartWithNote != null || onRequestRevision != null;
+  const trimmedNote = note.trim();
+
+  const submitNote = (send: ((note: string) => void) | undefined) => {
+    if (!send || !trimmedNote) {
+      return;
+    }
+    setNoting(false);
+    setNote("");
+    send(trimmedNote);
+  };
+
+  const noteKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      submitNote(onStartWithNote ?? onRequestRevision);
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setNoting(false);
+    }
   };
 
   return (
@@ -96,10 +148,16 @@ export function ProposalCard({
         <ConfidenceMeter value={confidence} />
       </header>
 
-      <p className={styles.summary}>{summary}</p>
-      {rationale && <p className={styles.rationale}>{rationale}</p>}
+      {render(summary, styles.summary)}
+      {rationale && render(rationale, styles.rationale)}
 
       {meta != null && <div className={styles.meta}>{meta}</div>}
+
+      {revisionRequest && (
+        <p className={styles.revision}>
+          You asked for a better one: {revisionRequest}
+        </p>
+      )}
 
       {decided != null && <p className={styles.decided}>{decided}</p>}
 
@@ -130,7 +188,59 @@ export function ProposalCard({
         </div>
       )}
 
-      {decided == null && !confirming && dismissing && (
+      {decided == null && !confirming && !dismissing && noting && (
+        <div className={styles.noteRow}>
+          <textarea
+            aria-label="Add a note to this proposal"
+            autoFocus
+            className={styles.note}
+            disabled={busy}
+            onChange={(e) => setNote(e.target.value)}
+            onKeyDown={noteKeyDown}
+            placeholder={
+              onStartWithNote
+                ? "Mostly right, but… — ⌘↵ to start with this note"
+                : "What should the next proposal do differently?"
+            }
+            rows={2}
+            value={note}
+          />
+          <div className={styles.noteActions}>
+            {onStartWithNote && (
+              <Button
+                disabled={busy || !trimmedNote}
+                leading={<PlayIcon size={11} />}
+                onClick={() => submitNote(onStartWithNote)}
+                size="sm"
+                variant="primary"
+              >
+                Start with this note
+              </Button>
+            )}
+            {onRequestRevision && (
+              <Button
+                disabled={busy || !trimmedNote}
+                onClick={() => submitNote(onRequestRevision)}
+                size="sm"
+                title="Keeps it in the inbox and asks the automation to redo it"
+                variant="secondary"
+              >
+                Ask for a better one
+              </Button>
+            )}
+            <Button
+              disabled={busy}
+              onClick={() => setNoting(false)}
+              size="sm"
+              variant="ghost"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {decided == null && !confirming && !noting && dismissing && (
         <div className={styles.dismissRow}>
           <Input
             aria-label="Why are you dismissing this?"
@@ -170,7 +280,7 @@ export function ProposalCard({
         </div>
       )}
 
-      {decided == null && !dismissing && !confirming && (
+      {decided == null && !dismissing && !confirming && !noting && (
         <div className={styles.actions}>
           {primary && (
             <Button
@@ -185,6 +295,16 @@ export function ProposalCard({
               variant={primary.kind === "destroy" ? "danger" : "primary"}
             >
               {primary.label}
+            </Button>
+          )}
+          {canNote && (
+            <Button
+              disabled={busy}
+              onClick={() => setNoting(true)}
+              size="sm"
+              variant="secondary"
+            >
+              Add a note
             </Button>
           )}
           <Button

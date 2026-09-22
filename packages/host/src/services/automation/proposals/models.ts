@@ -84,6 +84,16 @@ export interface Proposal {
   session_id: string | null;
   /** Why it was dismissed. The training signal; kept verbatim. */
   dismissed_reason: string | null;
+  /** What the user added when they started it. Goes into the agent's brief. */
+  accepted_note: string | null;
+  /**
+   * The user wants this proposal reworked rather than started or dismissed.
+   * Kept verbatim and handed to the next run, which supersedes it with a
+   * better one. Null once a run has been asked.
+   */
+  revision_request: string | null;
+  /** When the revision was asked for, so a stale ask is visible as stale. */
+  revision_requested_at: number | null;
   /**
    * Why a later run cleared it, in the run's words. Separate from
    * `dismissed_reason` so calibration keeps quoting the user, not the machine.

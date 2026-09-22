@@ -7,12 +7,14 @@ import {
   proposalProjectName,
 } from "../../../lib/proposals";
 import { useAutomations } from "../../../stores/automationStore";
+import { renderProposalMarkdown } from "../proposalMarkdown";
 import { useProposalActions } from "../useProposalActions";
 import styles from "./InboxScreen.module.css";
 
 export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
   const automations = useAutomations();
-  const { busyId, dismiss, primaryAction } = useProposalActions();
+  const { busyId, dismiss, primaryAction, requestRevision, startWithNote } =
+    useProposalActions();
 
   return (
     <div className={styles.cards}>
@@ -49,8 +51,12 @@ export function PendingProposals({ proposals }: { proposals: Proposal[] }) {
                   }
                 : undefined
             }
+            onRequestRevision={requestRevision(proposal)}
+            onStartWithNote={startWithNote(proposal)}
             primary={primaryAction(proposal)}
             rationale={proposal.rationale || undefined}
+            renderMarkdown={renderProposalMarkdown}
+            revisionRequest={proposal.revision_request || undefined}
             sourceLabel={source?.external_id}
             summary={proposal.summary}
             title={proposal.title}

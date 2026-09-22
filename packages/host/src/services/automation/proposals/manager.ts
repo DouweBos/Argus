@@ -27,6 +27,9 @@ function cache(): Proposal[] {
       cleared_reason: p.cleared_reason ?? null,
       cleared_at: p.cleared_at ?? null,
       superseded_by: p.superseded_by ?? null,
+      accepted_note: p.accepted_note ?? null,
+      revision_request: p.revision_request ?? null,
+      revision_requested_at: p.revision_requested_at ?? null,
     }));
   }
 
@@ -105,6 +108,9 @@ export function createProposal(input: CreateProposalInput): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    accepted_note: null,
+    revision_request: null,
+    revision_requested_at: null,
     cleared_reason: null,
     cleared_at: null,
     superseded_by: null,

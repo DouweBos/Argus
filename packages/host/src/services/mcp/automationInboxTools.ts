@@ -54,6 +54,8 @@ export function registerAutomationInboxTools(
         created_at: p.created_at,
         /** True when this run raised it, so re-proposing it is your own echo. */
         from_this_run: p.run_id === context.runId,
+        /** Set when the user read it and asked for a better one, in their words. */
+        revision_request: p.revision_request,
       }));
 
       return jsonResult({ count: proposals.length, proposals });
