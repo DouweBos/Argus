@@ -66,10 +66,33 @@ export const DEFAULT_GUARDRAILS: AutomationGuardrails = {
   confidence_threshold: 0.8,
   max_concurrent_sessions: 2,
   max_files_changed: 25,
-  max_cost_usd_per_run: 5,
+  // Off. A spend ceiling is a decision about your own money, so it is one you
+  // make per automation in the editor, not one Argus makes for you.
+  max_cost_usd_per_run: 0,
   path_denylist: [],
   require_clean_ci: true,
 };
+
+/**
+ * The ceiling every automation used to be created with, back when the field
+ * was not editable in the app. Anything still carrying it was given it rather
+ * than choosing it, so {@link migrateSpendCeiling} clears it once.
+ */
+export const LEGACY_DEFAULT_MAX_COST_USD = 5;
+
+/**
+ * Turn the old imposed ceiling off, once, in place. A number that is not the
+ * old default was picked by hand and is left alone. Returns true when it
+ * changed something, so the caller knows to persist.
+ */
+export function migrateSpendCeiling(guardrails: AutomationGuardrails): boolean {
+  if (guardrails.max_cost_usd_per_run !== LEGACY_DEFAULT_MAX_COST_USD) {
+    return false;
+  }
+  guardrails.max_cost_usd_per_run = 0;
+
+  return true;
+}
 
 function positiveNumber(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0

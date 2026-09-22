@@ -494,7 +494,7 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
     playbook: REGRESSION_SWEEP_PLAYBOOK,
     // Needs a session to run the app in, and nothing beyond it.
     autonomy: "draft",
-    guardrails: { max_concurrent_sessions: 1, max_cost_usd_per_run: 10 },
+    guardrails: { max_concurrent_sessions: 1 },
     template_id: REGRESSION_SWEEP_TEMPLATE_ID,
   },
   [BRANCH_JANITOR_TEMPLATE_ID]: {

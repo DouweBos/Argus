@@ -20,7 +20,7 @@ import fs from "node:fs";
 import { emitHostEvent } from "@argus/host/bus";
 import { info, warn } from "@argus/host/logger";
 import { computeNextRun, isValidCron } from "./cron";
-import { normalizeGuardrails } from "./guardrails";
+import { migrateSpendCeiling, normalizeGuardrails } from "./guardrails";
 import { disposeAutomationHostSession } from "./hostSession";
 import { automationRunDir, automationRunsDir } from "./paths";
 import {
@@ -45,13 +45,15 @@ function automationCache(): Automation[] {
     automations = loadAutomations();
     // Fields added after an automation was written stay absent on disk until
     // the next save, so fill them in on the way out of the file.
+    let migrated = false;
     for (const automation of automations) {
       automation.source_ids ??= [];
       automation.autonomy ??= null;
       automation.guardrails = normalizeGuardrails(automation.guardrails);
+      migrated = migrateSpendCeiling(automation.guardrails) || migrated;
       automation.seeded_playbook_hash ??= null;
     }
-    seedBuiltIns(automations);
+    seedBuiltIns(automations, migrated);
   }
 
   return automations;
@@ -76,7 +78,8 @@ export function resetAutomationCache(): void {
   runs = null;
 }
 
-function seedBuiltIns(list: Automation[]): void {
+/** `force` persists even when nothing was seeded — a migration ran. */
+function seedBuiltIns(list: Automation[], force = false): void {
   let seeded = false;
   for (const [templateId, template] of Object.entries(BUILT_IN_TEMPLATES)) {
     if (list.some((a) => a.template_id === templateId)) {
@@ -88,7 +91,7 @@ function seedBuiltIns(list: Automation[]): void {
   // A template whose playbook improved in this release reaches the copy on
   // disk here, but only while you have not edited it yourself.
   const refreshed = refreshBuiltIns(list);
-  if (seeded || refreshed) {
+  if (seeded || refreshed || force) {
     saveAutomations(list);
   }
 }
