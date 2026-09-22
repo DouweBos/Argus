@@ -25,16 +25,56 @@ vi.mock("../automation/proposals/manager", () => ({
     ...input,
     id: "p1",
     status: "pending",
+    title: input.title,
   })),
+  supersedeProposals: vi.fn(() => [
+    { id: "p0", title: "Old one", status: "superseded", reason: "Re-proposed" },
+  ]),
+  withdrawProposal: vi.fn((id: string, reason: string) => ({
+    id,
+    status: "withdrawn",
+    cleared_reason: reason,
+  })),
+  getProposal: vi.fn(() => null),
+  listProposals: vi.fn(() => []),
 }));
 
 const { listAutomationRuns } = await import("../automation/manager");
-const { createProposal } = await import("../automation/proposals/manager");
+const {
+  createProposal,
+  getProposal,
+  listProposals,
+  supersedeProposals,
+  withdrawProposal,
+} = await import("../automation/proposals/manager");
 const { isAutomationHostAgent } = await import("./automationCaller");
 const { registerAutomationTools } = await import("./automationTools");
 
 const mockListAutomationRuns = vi.mocked(listAutomationRuns);
 const mockCreateProposal = vi.mocked(createProposal);
+const mockGetProposal = vi.mocked(getProposal);
+const mockListProposals = vi.mocked(listProposals);
+const mockSupersede = vi.mocked(supersedeProposals);
+const mockWithdraw = vi.mocked(withdrawProposal);
+
+/** A stored proposal, only as much of one as the tools read. */
+function stored(patch: Record<string, unknown> = {}) {
+  return {
+    id: "p-old",
+    run_id: "run-0",
+    automation_id: "auto-1",
+    title: "Get PR #6478 reviewed",
+    summary: "It has been sitting at REVIEW_REQUIRED.",
+    rationale: "Nobody is looking at it.",
+    confidence: 0.7,
+    recommended_action: "review",
+    source_ref: null,
+    repo_root: "/src/app",
+    status: "pending",
+    created_at: Date.now() - 90_000_000,
+    ...patch,
+  } as never;
+}
 
 function registerAgent(agentId: string, session: Partial<Session>): void {
   const full: Session = {
@@ -94,6 +134,8 @@ describe("automation MCP tools", () => {
     appState.sessions.clear();
     appState.agents.clear();
     mockListAutomationRuns.mockReturnValue([]);
+    mockListProposals.mockReturnValue([]);
+    mockGetProposal.mockReturnValue(null);
   });
 
   describe("isAutomationHostAgent", () => {
@@ -165,6 +207,113 @@ describe("automation MCP tools", () => {
       });
       expect(result.isError).toBe(true);
       expect(mockCreateProposal).not.toHaveBeenCalled();
+      await client.close();
+    });
+  });
+
+  describe("supersedes", () => {
+    it("clears the proposals the new one replaces and says which", async () => {
+      registerAgent("a-host", { id: "s2", kind: "automation_host" });
+      registerRun("s2");
+      const client = await connect("a-host");
+
+      const result = await client.callTool({
+        name: "emit_proposal",
+        arguments: { ...ARGS, supersedes: ["p0"] },
+      });
+
+      expect(mockSupersede).toHaveBeenCalledWith(
+        ["p0"],
+        expect.objectContaining({ id: "p1" }),
+      );
+      const text = (result.content as { text: string }[])[0].text;
+      expect(JSON.parse(text).superseded).toHaveLength(1);
+      await client.close();
+    });
+
+    it("leaves the inbox alone when nothing was named", async () => {
+      registerAgent("a-host", { id: "s2", kind: "automation_host" });
+      registerRun("s2");
+      const client = await connect("a-host");
+
+      await client.callTool({ name: "emit_proposal", arguments: ARGS });
+
+      expect(mockSupersede).not.toHaveBeenCalled();
+      await client.close();
+    });
+  });
+
+  describe("list_open_proposals", () => {
+    it("reads only this automation's undecided proposals", async () => {
+      registerAgent("a-host", { id: "s2", kind: "automation_host" });
+      registerRun("s2");
+      mockListProposals.mockReturnValue([stored()]);
+      const client = await connect("a-host");
+
+      const result = await client.callTool({
+        name: "list_open_proposals",
+        arguments: {},
+      });
+
+      expect(mockListProposals).toHaveBeenCalledWith({
+        automationId: "auto-1",
+        status: "pending",
+      });
+      const payload = JSON.parse(
+        (result.content as { text: string }[])[0].text,
+      );
+      expect(payload.count).toBe(1);
+      expect(payload.proposals[0]).toMatchObject({
+        proposal_id: "p-old",
+        from_this_run: false,
+      });
+      await client.close();
+    });
+
+    it("is not registered for an ordinary agent", async () => {
+      registerAgent("a-worktree", { id: "s1", kind: "worktree" });
+      const client = await connect("a-worktree");
+
+      await expect(
+        client.callTool({ name: "list_open_proposals", arguments: {} }),
+      ).rejects.toThrow();
+      await client.close();
+    });
+  });
+
+  describe("withdraw_proposal", () => {
+    it("withdraws its own automation's proposal with the reason", async () => {
+      registerAgent("a-host", { id: "s2", kind: "automation_host" });
+      registerRun("s2");
+      mockGetProposal.mockReturnValue(stored());
+      const client = await connect("a-host");
+
+      const result = await client.callTool({
+        name: "withdraw_proposal",
+        arguments: { proposal_id: "p-old", reason: "PR #6478 merged Tuesday" },
+      });
+
+      expect(result.isError).toBeFalsy();
+      expect(mockWithdraw).toHaveBeenCalledWith(
+        "p-old",
+        "PR #6478 merged Tuesday",
+      );
+      await client.close();
+    });
+
+    it("refuses a proposal belonging to another automation", async () => {
+      registerAgent("a-host", { id: "s2", kind: "automation_host" });
+      registerRun("s2");
+      mockGetProposal.mockReturnValue(stored({ automation_id: "auto-2" }));
+      const client = await connect("a-host");
+
+      const result = await client.callTool({
+        name: "withdraw_proposal",
+        arguments: { proposal_id: "p-old", reason: "not mine" },
+      });
+
+      expect(result.isError).toBe(true);
+      expect(mockWithdraw).not.toHaveBeenCalled();
       await client.close();
     });
   });

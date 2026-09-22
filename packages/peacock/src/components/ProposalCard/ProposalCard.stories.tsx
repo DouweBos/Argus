@@ -76,3 +76,11 @@ export const WithoutSource: Story = {
 };
 
 export const Busy: Story = { args: { busy: true } };
+
+/** Cleared by a later run of the same automation — readable, not actionable. */
+export const Cleared: Story = {
+  args: {
+    decided: "Withdrawn by Morning triage — PR #6478 was merged on Tuesday.",
+    meta: <Badge tone="neutral">withdrawn</Badge>,
+  },
+};

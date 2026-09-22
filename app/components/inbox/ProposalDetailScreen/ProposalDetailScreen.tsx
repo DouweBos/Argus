@@ -4,9 +4,11 @@
  * Home and the inbox both show proposals, but only in summary; this is where
  * the whole of one is readable and where it gets decided. Deciding ends the
  * proposal, so both outcomes leave: a start follows the session it created, a
- * dismissal goes back to the inbox.
+ * dismissal goes back to the inbox. One that is already decided — or that a
+ * later run cleared — still reads here, with its buttons gone.
  */
 
+import type { Proposal } from "../../../lib/types";
 import { Badge, Button, EmptyState, Icons, ProposalCard } from "@argus/peacock";
 import { openExternalUrl } from "../../../lib/ipc";
 import {
@@ -20,10 +22,42 @@ import {
   openAutomationRun,
   useAutomations,
 } from "../../../stores/automationStore";
-import { openInbox, useProposal } from "../../../stores/proposalStore";
+import {
+  openInbox,
+  openProposal,
+  useProposal,
+} from "../../../stores/proposalStore";
 import { selectSession } from "../../../stores/sessionStore";
 import { useProposalActions } from "../useProposalActions";
 import styles from "./ProposalDetailScreen.module.css";
+
+/**
+ * What happened to a proposal nobody can act on any more, or null while it is
+ * still waiting. A withdrawal names the automation: it was Argus's call, not
+ * yours, and the reason is the evidence it had.
+ */
+function decidedNote(
+  proposal: Proposal,
+  automationName: string | undefined,
+): string | null {
+  const by = automationName ?? "the automation";
+  switch (proposal.status) {
+    case "pending":
+      return null;
+    case "accepted":
+      return "You started this. It is in the session below.";
+    case "auto_started":
+      return "Argus started this itself — the guardrails allowed it.";
+    case "dismissed":
+      return proposal.dismissed_reason
+        ? `You dismissed this: ${proposal.dismissed_reason}`
+        : "You dismissed this.";
+    case "superseded":
+      return `A later run of ${by} proposed the same work again${proposal.cleared_reason ? `: ${proposal.cleared_reason}` : "."}`;
+    case "withdrawn":
+      return `${by} withdrew this${proposal.cleared_reason ? `: ${proposal.cleared_reason}` : " — the signal behind it went away."}`;
+  }
+}
 
 export function ProposalDetailScreen() {
   const proposalId = useRouteProposalId();
@@ -51,6 +85,7 @@ export function ProposalDetailScreen() {
   const automation = automations.find((a) => a.id === proposal.automation_id);
   const project = proposalProjectName(proposal.repo_root);
   const source = proposal.source_ref;
+  const decided = decidedNote(proposal, automation?.name);
 
   return (
     <div className={styles.screen}>
@@ -68,6 +103,7 @@ export function ProposalDetailScreen() {
       <ProposalCard
         busy={busyId === proposal.id}
         confidence={proposal.confidence}
+        decided={decided}
         meta={
           <>
             <Badge tone={PROPOSAL_ACTION_TONES[proposal.recommended_action]}>
@@ -90,7 +126,7 @@ export function ProposalDetailScreen() {
               }
             : undefined
         }
-        primary={primaryAction(proposal)}
+        primary={decided ? undefined : primaryAction(proposal)}
         rationale={proposal.rationale || undefined}
         sourceLabel={source?.external_id}
         summary={proposal.summary}
@@ -117,6 +153,15 @@ export function ProposalDetailScreen() {
             variant="ghost"
           >
             The automation
+          </Button>
+        )}
+        {proposal.superseded_by && (
+          <Button
+            onClick={() => openProposal(proposal.superseded_by as string)}
+            size="sm"
+            variant="ghost"
+          >
+            The proposal that replaced it
           </Button>
         )}
         {proposal.session_id && (

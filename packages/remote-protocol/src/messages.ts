@@ -25,6 +25,7 @@ import {
   RemotePermissionRequest,
   RemoteProject,
   RemoteProposal,
+  RemoteProposalStatus,
   RemoteQueuedMessage,
   RemoteSession,
   RemoteStoppedAgent,
@@ -270,9 +271,7 @@ export const MethodParams = {
   "automations.mark_run_read": z.object({ run_id: z.string() }),
   "proposals.list": z.object({
     /** Omit for everything; the inbox asks for `pending`. */
-    status: z
-      .enum(["accepted", "auto_started", "dismissed", "pending"])
-      .optional(),
+    status: RemoteProposalStatus.optional(),
     limit: z.number().int().positive().max(100).optional(),
   }),
   "proposals.accept": z.object({ proposal_id: z.string() }),

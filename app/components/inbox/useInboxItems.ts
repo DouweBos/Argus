@@ -7,6 +7,7 @@ import type { AutomationRun, Proposal } from "../../lib/types";
 import { useEffect, useState } from "react";
 import { useAllRuns } from "../../stores/automationStore";
 import {
+  useClearedProposals,
   usePendingProposals,
   useStartedProposals,
 } from "../../stores/proposalStore";
@@ -16,6 +17,8 @@ const FAILED_RUN_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_FAILED_RUNS = 5;
 
 export interface InboxItems {
+  /** Taken off your hands by a later run, for information. */
+  cleared: Proposal[];
   /** Recent failures nobody dismissed — the automation needs a look. */
   failed: AutomationRun[];
   /** Decisions waiting on you. */
@@ -27,6 +30,7 @@ export interface InboxItems {
 export function useInboxItems(): InboxItems {
   const pending = usePendingProposals();
   const started = useStartedProposals();
+  const cleared = useClearedProposals();
   const runs = useAllRuns();
   // The cut-off below is relative to now, so it has to move while the screen
   // stays open.
@@ -46,7 +50,7 @@ export function useInboxItems(): InboxItems {
     )
     .slice(0, MAX_FAILED_RUNS);
 
-  return { failed, pending, started };
+  return { cleared, failed, pending, started };
 }
 
 /** How many things are actually waiting on you — what a badge would show. */

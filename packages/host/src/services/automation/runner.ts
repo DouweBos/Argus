@@ -33,6 +33,7 @@ import {
   updateRun,
 } from "./manager";
 import { calibrationBlock } from "./outcomes";
+import { outstandingBlock } from "./proposals/outstanding";
 import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
 
 /**
@@ -281,6 +282,7 @@ function buildPrompt(
     "You are in a neutral working directory that is not a checkout of any of them. Read the projects at their absolute paths; never write to them.",
     ...autonomySection(automation, autonomy),
     ...signalSections(automation, signals),
+    ...(outstandingBlock(automation.id)?.split("\n") ?? []),
     ...(calibrationBlock(automation.id)?.split("\n") ?? []),
     "",
     "## Output",

@@ -486,6 +486,9 @@ export const RemoteProposalStatus = z.enum([
   "auto_started",
   "dismissed",
   "pending",
+  /** Cleared by a later run of the same automation, not by the user. */
+  "superseded",
+  "withdrawn",
 ]);
 export type RemoteProposalStatus = z.infer<typeof RemoteProposalStatus>;
 

@@ -66,6 +66,9 @@ function proposal(patch: Partial<Proposal> = {}): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    cleared_reason: null,
+    cleared_at: null,
+    superseded_by: null,
     created_at: 1_000,
     ...patch,
   };
@@ -154,5 +157,44 @@ describe("inboxScreen", () => {
     ).map((h) => h.textContent);
     expect(headings[0]).toContain("Decide");
     expect(headings[1]).toContain("Argus is on it");
+  });
+
+  it("says what a later run cleared, rather than dropping it silently", () => {
+    setProposalState({
+      proposals: [
+        proposal({
+          id: "p-3",
+          title: "Get PR #6478 reviewed",
+          status: "withdrawn",
+          cleared_reason: "PR #6478 was merged on Tuesday",
+          cleared_at: Date.now() - 60_000,
+        }),
+      ],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.getByText("Get PR #6478 reviewed")).toBeDefined();
+    expect(screen.getByText(/merged on Tuesday/)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+  });
+
+  it("forgets a cleared proposal once it is a day old", () => {
+    setProposalState({
+      proposals: [
+        proposal({
+          id: "p-4",
+          status: "superseded",
+          cleared_reason: "Re-proposed today",
+          cleared_at: Date.now() - 25 * 60 * 60 * 1000,
+        }),
+      ],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.getByText("Nothing needs you")).toBeDefined();
   });
 });

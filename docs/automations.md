@@ -212,8 +212,37 @@ tool result so the run can report what actually happened:
   whatever the run asked you to open — or **Dismiss**, and the reason is kept.
 
 The Inbox groups by what you would do about it, not by which automation produced
-it: proposals to decide on, work that was started and is waiting for review, and
-runs that failed.
+it: proposals to decide on, work that was started and is waiting for review,
+runs that failed, and what a run cleared for you.
+
+### The same thing, proposed twice
+
+An inbox you did not empty used to fill up: yesterday's proposal was still
+waiting, and today's run — which could not see it — proposed the same work
+again. So every run is now handed **its own automation's undecided proposals**
+before it thinks, and two tools to act on them:
+
+| Tool                           | What it does                                                                        |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `list_open_proposals`          | This automation's proposals still waiting on you, in full, with their ids and ages. |
+| `emit_proposal` + `supersedes` | Emits the new one and takes the ones it replaces out of the inbox, pointing at it.  |
+| `withdraw_proposal`            | Drops one on your behalf, with the evidence, when what it asked about is gone.      |
+
+Withdrawal is for the case Argus cannot see by itself: you closed the PR, the
+issue was resolved, someone did the work by hand. The run has to have checked
+and say what it found — "PR #6478 was merged on Tuesday" — and that line is what
+you see where the proposal was. A proposal that is merely old is still your
+decision and is left alone.
+
+Both are scoped to the automation that raised the proposal: a run can clear its
+own, never another automation's, and never one you already decided on.
+
+Nothing vanishes quietly. Cleared proposals are listed under **Argus cleared
+these** in the Inbox for a day, and the proposal's own page keeps the reason for
+good. They are counted separately from dismissals in the automation's track
+record too, because a machine withdrawing its own proposal teaches nothing about
+whether you wanted it — though a run that keeps proposing what a later run has
+to replace is told so in its next prompt.
 
 ---
 
@@ -299,7 +328,7 @@ exist, are dropped rather than saved.
 ## The calibration loop
 
 Argus records how each proposal turned out — started and merged, started and
-abandoned, dismissed and why — and hands the next run of the same automation a
+abandoned, dismissed and why, superseded or withdrawn by a later run — and hands the next run of the same automation a
 short block of its own track record. An automation whose high-confidence
 proposals keep getting dismissed is told so, in its own prompt, before it ranks
 anything.

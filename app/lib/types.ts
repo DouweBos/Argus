@@ -865,6 +865,10 @@ export interface AutomationCalibration {
   reverted: number;
   /** Proposals considered — the newest twenty. */
   sample: number;
+  /** Replaced by a later run rather than decided on. */
+  superseded: number;
+  /** Cleared by a later run because the signal behind them went away. */
+  withdrawn: number;
 }
 
 /** A signal source a run can be fed from, as the editor lists them. */
@@ -912,7 +916,11 @@ export type ProposalStatus =
   | "accepted"
   | "auto_started"
   | "dismissed"
-  | "pending";
+  | "pending"
+  /** Replaced by a later run of the same automation. */
+  | "superseded"
+  /** Taken out of the inbox by a later run: the signal behind it went away. */
+  | "withdrawn";
 
 export type ProposalAction =
   | "ignore"
@@ -947,6 +955,10 @@ export interface ProposalCta {
 /** One thing an automation run wants you to do. */
 export interface Proposal {
   automation_id: string;
+  /** When a later run cleared it. Null while nobody has. */
+  cleared_at: number | null;
+  /** Why a later run cleared it, in the run's words. */
+  cleared_reason: string | null;
   /** 0..1, self-reported by the run's agent. */
   confidence: number;
   created_at: number;
@@ -968,6 +980,8 @@ export interface Proposal {
   status: ProposalStatus;
   /** What the work is, in markdown. */
   summary: string;
+  /** The proposal that replaced this one, when it was superseded. */
+  superseded_by: string | null;
   title: string;
 }
 

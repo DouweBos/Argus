@@ -139,6 +139,9 @@ export interface AutomationCalibration {
   auto_started: number;
   dismissed: number;
   pending: number;
+  /** Cleared by a later run: replaced, or withdrawn because the signal went. */
+  superseded: number;
+  withdrawn: number;
   merged: number;
   abandoned: number;
   reverted: number;
@@ -177,6 +180,8 @@ export function calibrationFor(automationId: string): AutomationCalibration {
     auto_started: autoStarted,
     dismissed,
     pending: countBy(proposals, "pending"),
+    superseded: countBy(proposals, "superseded"),
+    withdrawn: countBy(proposals, "withdrawn"),
     merged: relevant.filter((o) => o.outcome === "merged").length,
     abandoned: relevant.filter((o) => o.outcome === "abandoned").length,
     reverted: relevant.filter((o) => o.outcome === "reverted").length,
@@ -205,6 +210,15 @@ export function calibrationBlock(automationId: string): string | null {
     "",
     `Your last ${c.sample} proposal(s) for this automation: ${c.accepted} accepted, ${c.auto_started} auto-started, ${c.dismissed} dismissed, ${c.pending} still waiting.`,
   ];
+
+  // Worth saying out loud: a run that keeps proposing what a later run has to
+  // replace is generating work for itself, not for the user.
+  if (c.superseded + c.withdrawn > 0) {
+    lines.push(
+      "",
+      `${c.superseded} were superseded by a later run and ${c.withdrawn} withdrawn once the signal behind them went away.`,
+    );
+  }
 
   if (c.merged + c.abandoned + c.reverted > 0) {
     lines.push(

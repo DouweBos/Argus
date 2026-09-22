@@ -4,7 +4,12 @@
  * inbox on a paired Mac updates without polling.
  */
 
-import type { CreateProposalInput, Proposal, ProposalStatus } from "./models";
+import type {
+  ClearedProposal,
+  CreateProposalInput,
+  Proposal,
+  ProposalStatus,
+} from "./models";
 import crypto from "node:crypto";
 import { emitHostEvent } from "@argus/host/bus";
 import { resolveCta } from "./cta";
@@ -14,10 +19,14 @@ let proposals: Proposal[] | null = null;
 
 function cache(): Proposal[] {
   if (!proposals) {
-    // Proposals written before the CTA existed still have to render a button.
+    // Proposals written before the CTA and the clearing fields existed still
+    // have to render a button and answer to the same shape.
     proposals = loadProposals().map((p) => ({
       ...p,
       cta: resolveCta(p.cta, p),
+      cleared_reason: p.cleared_reason ?? null,
+      cleared_at: p.cleared_at ?? null,
+      superseded_by: p.superseded_by ?? null,
     }));
   }
 
@@ -96,6 +105,9 @@ export function createProposal(input: CreateProposalInput): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    cleared_reason: null,
+    cleared_at: null,
+    superseded_by: null,
     created_at: Date.now(),
   };
 
@@ -124,6 +136,65 @@ export function dismissProposal(id: string, reason?: string): Proposal {
   return updateProposal(id, {
     status: "dismissed",
     dismissed_reason: reason?.trim() ? reason.trim() : null,
+  });
+}
+
+/**
+ * Clear proposals a later run replaced. Only that automation's own pending
+ * ones move: superseding is a run correcting itself, never one automation
+ * deciding for another, and a proposal the user already acted on is history.
+ */
+export function supersedeProposals(
+  ids: string[],
+  replacement: Proposal,
+  reason?: string,
+): ClearedProposal[] {
+  const cleared: ClearedProposal[] = [];
+  for (const id of new Set(ids)) {
+    const proposal = cache().find((p) => p.id === id);
+    if (
+      !proposal ||
+      proposal.id === replacement.id ||
+      proposal.status !== "pending" ||
+      proposal.automation_id !== replacement.automation_id
+    ) {
+      continue;
+    }
+    Object.assign(proposal, {
+      status: "superseded" satisfies ProposalStatus,
+      superseded_by: replacement.id,
+      cleared_reason: reason?.trim() || `Re-proposed as "${replacement.title}"`,
+      cleared_at: Date.now(),
+    });
+    cleared.push({
+      id: proposal.id,
+      title: proposal.title,
+      status: "superseded",
+      reason: proposal.cleared_reason,
+    });
+  }
+  if (cleared.length > 0) {
+    persist();
+  }
+
+  return cleared;
+}
+
+/**
+ * Withdraw a proposal on the user's behalf — the signal behind it is gone, so
+ * asking them to decide on it is asking about nothing. Only pending proposals
+ * can be withdrawn; the reason is what the inbox shows for it.
+ */
+export function withdrawProposal(id: string, reason: string): Proposal {
+  const proposal = requireProposal(id);
+  if (proposal.status !== "pending") {
+    throw `Proposal ${id} is ${proposal.status}, not pending`;
+  }
+
+  return updateProposal(id, {
+    status: "withdrawn",
+    cleared_reason: reason.trim() || null,
+    cleared_at: Date.now(),
   });
 }
 

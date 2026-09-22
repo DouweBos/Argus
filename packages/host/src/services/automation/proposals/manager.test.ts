@@ -14,6 +14,8 @@ import {
   dismissProposal,
   listProposals,
   resetProposalCache,
+  supersedeProposals,
+  withdrawProposal,
 } from "./manager";
 
 let home: string;
@@ -120,6 +122,62 @@ describe("proposal manager", () => {
       deleteProposalsForAutomation("a1");
 
       expect(listProposals().map((p) => p.automation_id)).toEqual(["a2"]);
+    });
+  });
+
+  describe("supersedeProposals", () => {
+    it("points the old one at the new one and takes it out of the inbox", () => {
+      const old = createProposal(input());
+      const fresh = createProposal(input({ run_id: "r2" }));
+
+      const cleared = supersedeProposals([old.id], fresh);
+
+      expect(cleared).toEqual([
+        {
+          id: old.id,
+          title: old.title,
+          status: "superseded",
+          reason: `Re-proposed as "${fresh.title}"`,
+        },
+      ]);
+      resetProposalCache();
+      const reloaded = listProposals().find((p) => p.id === old.id);
+      expect(reloaded?.status).toBe("superseded");
+      expect(reloaded?.superseded_by).toBe(fresh.id);
+      expect(reloaded?.cleared_at).toBeGreaterThan(0);
+    });
+
+    it("refuses another automation's proposal, and one already decided", () => {
+      const other = createProposal(input({ automation_id: "a2" }));
+      const dismissed = createProposal(input());
+      dismissProposal(dismissed.id, "no");
+      const fresh = createProposal(input({ run_id: "r2" }));
+
+      expect(
+        supersedeProposals([other.id, dismissed.id, fresh.id], fresh),
+      ).toEqual([]);
+      expect(listProposals({ status: "superseded" })).toHaveLength(0);
+    });
+  });
+
+  describe("withdrawProposal", () => {
+    it("clears it with the run's reason, kept separate from a dismissal", () => {
+      const proposal = createProposal(input());
+      const withdrawn = withdrawProposal(
+        proposal.id,
+        " PR #6478 was merged on Tuesday ",
+      );
+
+      expect(withdrawn.status).toBe("withdrawn");
+      expect(withdrawn.cleared_reason).toBe("PR #6478 was merged on Tuesday");
+      expect(withdrawn.dismissed_reason).toBeNull();
+    });
+
+    it("refuses one the user already decided on", () => {
+      const proposal = createProposal(input());
+      dismissProposal(proposal.id, "not interested");
+
+      expect(() => withdrawProposal(proposal.id, "gone")).toThrow();
     });
   });
 });
