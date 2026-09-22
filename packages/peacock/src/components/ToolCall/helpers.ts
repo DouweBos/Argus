@@ -86,15 +86,3 @@ export function safeResultText(result: ToolCallData["result"]): string {
     .map((block) => (block.type === "text" ? block.text : `[${block.type}]`))
     .join("\n");
 }
-
-/** Format input params for display — Bash commands plain, others as JSON. */
-export function formatInput(
-  name: string,
-  input: Record<string, unknown>,
-): string {
-  if (name === "Bash" && input.command) {
-    return input.command as string;
-  }
-
-  return JSON.stringify(input, null, 2);
-}

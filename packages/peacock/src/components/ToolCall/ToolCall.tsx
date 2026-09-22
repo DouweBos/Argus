@@ -14,12 +14,13 @@ import {
 } from "../HoverActionBar/HoverActionBar";
 import { Markdown } from "../Markdown/Markdown";
 import { Spinner } from "../Spinner/Spinner";
+import { ToolInputFields } from "../ToolInputFields/ToolInputFields";
+import { toolInputFields, toolInputText } from "../ToolInputFields/fields";
 import { ToolResultImage } from "../ToolResultImage/ToolResultImage";
 import styles from "./ToolCall.module.css";
 import {
   type ToolCallData,
   type ToolResultBlockData,
-  formatInput,
   isPathTool,
   safeResultText,
   toolSummary,
@@ -136,7 +137,11 @@ export function ToolCall(props: ToolCallProps) {
     ? parseAnswerSelections(questions, safeResultText(toolCall.result))
     : [];
   const alwaysShowInputPreview = isEdit || isWrite || isAnsweredQuestion;
-  const inputText = formatInput(toolCall.name, toolCall.input);
+  // Bash is a command, not a parameter list; everything else copies as the
+  // same labelled fields it shows.
+  const inputText = isBash
+    ? ((toolCall.input.command ?? "") as string)
+    : toolInputText(toolCall.input);
 
   let editStats: { additions: number; deletions: number } | null = null;
   if (isEdit) {
@@ -256,9 +261,16 @@ export function ToolCall(props: ToolCallProps) {
             onClick={() => copy(inputText)}
           />
         </HoverActionBar>
-        <pre className={`${styles.code} ${isBash ? styles.bash : ""}`}>
-          {renderText(inputText)}
-        </pre>
+        {isBash ? (
+          <pre className={`${styles.code} ${styles.bash}`}>
+            {renderText(inputText)}
+          </pre>
+        ) : (
+          <ToolInputFields
+            fields={toolInputFields(toolCall.input)}
+            renderText={renderText}
+          />
+        )}
       </div>
     );
   }
