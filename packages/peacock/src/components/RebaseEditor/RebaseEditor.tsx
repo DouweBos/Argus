@@ -6,6 +6,8 @@ import {
 } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import { Input } from "../Input/Input";
 import styles from "./RebaseEditor.module.css";
 
@@ -164,7 +166,7 @@ export function RebaseEditor({
       title={isPaused ? "Rebase paused" : "Interactive rebase"}
       titleId={titleId}
     >
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <div className={styles.metaRow}>
           <span className={styles.fieldLabel}>Base</span>
           <code className={styles.baseRef}>{baseRef}</code>
@@ -260,9 +262,9 @@ export function RebaseEditor({
         {!validation.ok && (
           <div className={styles.errorMsg}>{validation.message}</div>
         )}
-      </div>
+      </DialogBody>
 
-      <div className={styles.footer}>
+      <DialogFooter>
         {isPaused && onAbort && (
           <Button variant="danger" onClick={onAbort}>
             Abort rebase
@@ -287,7 +289,7 @@ export function RebaseEditor({
             </Button>
           </>
         )}
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

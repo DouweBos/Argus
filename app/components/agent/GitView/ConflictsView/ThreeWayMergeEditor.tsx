@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Spinner, ThreeWayMerge } from "@argus/peacock";
+import {
+  Button,
+  DialogBody,
+  DialogFooter,
+  Spinner,
+  ThreeWayMerge,
+} from "@argus/peacock";
 import {
   gitGetConflict,
   gitWriteConflictMerged,
@@ -68,8 +74,13 @@ export function ThreeWayMergeEditor({
   }, [sessionId, filePath, merged, onMarkResolved]);
 
   return (
-    <Dialog title={filePath} titleId="three-way-merge-title" onClose={onClose}>
-      <div className={styles.body}>
+    <Dialog
+      size="full"
+      title={filePath}
+      titleId="three-way-merge-title"
+      onClose={onClose}
+    >
+      <DialogBody flush>
         {!blobs && !error && (
           <div className={styles.loading}>
             <Spinner /> Loading conflict…
@@ -86,8 +97,8 @@ export function ThreeWayMergeEditor({
             onMarkResolved={handleMarkResolved}
           />
         )}
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onClose}>
           Close
         </Button>
@@ -98,7 +109,7 @@ export function ThreeWayMergeEditor({
         >
           {saving ? "Saving…" : "Save & mark resolved"}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

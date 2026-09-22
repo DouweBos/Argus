@@ -1,5 +1,5 @@
 import type { HomeProject } from "../useHomeData";
-import { Icons } from "@argus/peacock";
+import { DialogBody, Icons } from "@argus/peacock";
 import { Dialog } from "../../../shared/Dialog";
 import styles from "./NewSessionPicker.module.css";
 
@@ -21,7 +21,7 @@ export function NewSessionPicker({
       title="New session"
       titleId="new-session-picker-title"
     >
-      <div className={styles.container}>
+      <DialogBody>
         <p className={styles.caption}>Pick a repository for the new session.</p>
         <div className={styles.list}>
           {projects.map((p) => (
@@ -47,7 +47,7 @@ export function NewSessionPicker({
             </button>
           ))}
         </div>
-      </div>
+      </DialogBody>
     </Dialog>
   );
 }

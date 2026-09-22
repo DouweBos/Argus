@@ -1,8 +1,4 @@
 .body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-8) var(--space-10);
   color: var(--text-secondary);
   font: var(--type-body);
   line-height: 1.5;
@@ -48,17 +44,7 @@
   color: var(--text-muted);
 }
 
-.footer {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  justify-content: flex-end;
-  padding: var(--space-6) var(--space-10) var(--space-8);
-  border-top: 1px solid var(--border);
-}
-
 .status {
-  margin-right: auto;
   font: var(--type-caption);
   color: var(--text-muted);
 }

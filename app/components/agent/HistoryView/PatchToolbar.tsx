@@ -11,6 +11,8 @@ import { useRef, useState } from "react";
 import {
   Button,
   Dialog,
+  DialogBody,
+  DialogFooter,
   GitErrorBanner,
   Input,
   type GitErrorKind,
@@ -125,7 +127,7 @@ export function PatchToolbar({ sessionId }: Props) {
           title="Export commits as patches"
           titleId="patch-export-title"
         >
-          <div className={styles.body}>
+          <DialogBody className={styles.body}>
             <span className={styles.fieldLabel}>Commit range</span>
             <Input
               autoFocus
@@ -138,8 +140,8 @@ export function PatchToolbar({ sessionId }: Props) {
               git format-patch will write one .patch file per commit to a
               temporary directory.
             </div>
-          </div>
-          <div className={styles.footer}>
+          </DialogBody>
+          <DialogFooter>
             <Button variant="secondary" onClick={() => setExportOpen(false)}>
               Cancel
             </Button>
@@ -150,7 +152,7 @@ export function PatchToolbar({ sessionId }: Props) {
             >
               {busy ? "Exporting…" : "Export"}
             </Button>
-          </div>
+          </DialogFooter>
         </Dialog>
       )}
     </div>

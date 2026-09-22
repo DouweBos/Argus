@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import styles from "./PullDialog.module.css";
 
 export type PullStrategy = "ff-only" | "merge" | "rebase";
@@ -68,7 +70,7 @@ export function PullDialog({
 
   return (
     <Dialog onClose={onCancel} title="Pull" titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <span className={styles.fieldLabel}>Strategy</span>
         <div className={styles.radioGroup}>
           {STRATEGIES.map((s) => (
@@ -107,15 +109,15 @@ export function PullDialog({
           />
           <span>Include tags</span>
         </label>
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
         <Button variant="primary" onClick={submit}>
           Pull
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

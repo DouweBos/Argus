@@ -9,6 +9,8 @@ import {
   Button,
   CronSchedulePreview,
   Dialog,
+  DialogBody,
+  DialogFooter,
   FormField,
   Input,
   SegmentedControl,
@@ -150,7 +152,7 @@ export function DescribeAutomationDialog({ onClose }: { onClose: () => void }) {
       size="medium"
       onClose={onClose}
     >
-      <div className={styles.body}>
+      <DialogBody>
         <FormField
           label="What should it do?"
           helper="One or two sentences. Say when it should run and what you want back."
@@ -276,34 +278,33 @@ export function DescribeAutomationDialog({ onClose }: { onClose: () => void }) {
         )}
 
         {error && <p className={styles.error}>{error}</p>}
-
-        <div className={styles.footer}>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          {fields && (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={generating || description.trim().length === 0}
-              onClick={() => {
-                generate().catch(() => undefined);
-              }}
-            >
-              {generating ? "Regenerating…" : "Regenerate"}
-            </Button>
-          )}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          Cancel
+        </Button>
+        {fields && (
           <Button
-            variant="primary"
-            disabled={!fields || saving || scheduleError !== null}
+            size="sm"
+            variant="secondary"
+            disabled={generating || description.trim().length === 0}
             onClick={() => {
-              save().catch(() => undefined);
+              generate().catch(() => undefined);
             }}
           >
-            {saving ? "Saving…" : "Save automation"}
+            {generating ? "Regenerating…" : "Regenerate"}
           </Button>
-        </div>
-      </div>
+        )}
+        <Button
+          variant="primary"
+          disabled={!fields || saving || scheduleError !== null}
+          onClick={() => {
+            save().catch(() => undefined);
+          }}
+        >
+          {saving ? "Saving…" : "Save automation"}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

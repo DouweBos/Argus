@@ -4,6 +4,8 @@ import {
   BranchDialog,
   Button,
   DestructiveConfirm,
+  DialogBody,
+  DialogFooter,
   GitErrorBanner,
   Input,
   PullDialog,
@@ -802,7 +804,7 @@ function RenameBranchDialog({
       titleId="rename-branch-title"
       onClose={onClose}
     >
-      <form className={dialogStyles.form} onSubmit={submit}>
+      <DialogBody as="form" id="git-rename-branch-form" onSubmit={submit}>
         <div className={dialogStyles.field}>
           <label className={dialogStyles.label} htmlFor="rename-branch-input">
             Branch name
@@ -815,19 +817,20 @@ function RenameBranchDialog({
             autoFocus
           />
         </div>
-        <div className={dialogStyles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            type="submit"
-            disabled={busy || !value.trim() || value.trim() === currentBranch}
-          >
-            {busy ? "Renaming…" : "Rename"}
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          type="submit"
+          form="git-rename-branch-form"
+          disabled={busy || !value.trim() || value.trim() === currentBranch}
+        >
+          {busy ? "Renaming…" : "Rename"}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Dialog } from "@argus/peacock";
+import { Dialog, DialogBody } from "@argus/peacock";
 import { useSessionAgents } from "../../../hooks/useAgent";
 import { saveAgentConversation } from "../../../lib/agentEventService";
 import { listChatHistory, loadChatHistory } from "../../../lib/ipc";
@@ -14,7 +14,6 @@ import { RepoHomeScreen } from "../../home/RepoHomeScreen";
 import { SessionHomeScreen } from "../../home/SessionHomeScreen";
 import { AgentChat } from "../AgentChat";
 import { StartAgentDialog } from "../StartAgentDialog";
-import styles from "./HomePanel.module.css";
 
 interface HomePanelProps {
   sessionId: string;
@@ -178,7 +177,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
           titleId="chat-history-preview-title"
           onClose={handleCloseHistory}
         >
-          <div className={styles.body}>
+          <DialogBody flush>
             <AgentChat
               agentId={historyAgentId}
               readOnly
@@ -190,7 +189,7 @@ export function HomePanel({ sessionId }: HomePanelProps) {
                   : undefined
               }
             />
-          </div>
+          </DialogBody>
         </Dialog>
       )}
     </>

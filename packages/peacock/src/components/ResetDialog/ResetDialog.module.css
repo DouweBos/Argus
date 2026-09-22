@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-6) var(--space-8);
   font: var(--type-body);
   color: var(--text-secondary);
   min-width: 380px;
@@ -46,12 +45,4 @@
 .warning {
   font: var(--type-caption);
   color: var(--warning);
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-8);
-  border-top: 1px solid var(--border-subtle);
 }

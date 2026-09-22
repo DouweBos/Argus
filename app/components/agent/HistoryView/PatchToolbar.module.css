@@ -12,10 +12,6 @@
 }
 
 .body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-7);
   font: var(--type-body);
   color: var(--text-secondary);
   min-width: 380px;
@@ -31,12 +27,4 @@
 .help {
   font: var(--type-caption);
   color: var(--text-muted);
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-7);
-  border-top: 1px solid var(--border-subtle);
 }

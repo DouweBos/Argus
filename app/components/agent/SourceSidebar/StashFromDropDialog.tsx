@@ -4,7 +4,13 @@
  * stash (`git stash push -- <paths>`) runs.
  */
 import { useId, useState } from "react";
-import { Button, Dialog, Input } from "@argus/peacock";
+import {
+  Button,
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  Input,
+} from "@argus/peacock";
 import styles from "./SidebarRefSection.module.css";
 
 interface StashFromDropDialogProps {
@@ -33,7 +39,7 @@ export function StashFromDropDialog({
 
   return (
     <Dialog title="Stash dropped files" titleId={titleId} onClose={onCancel}>
-      <div className={styles.dialogBody}>
+      <DialogBody>
         <p className={styles.dialogDesc}>
           Stash {summary} into a new entry. The stash will only contain the
           selected paths.
@@ -50,15 +56,15 @@ export function StashFromDropDialog({
             }
           }}
         />
-      </div>
-      <div className={styles.dialogFooter}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
         <Button variant="primary" onClick={submit}>
           Stash
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

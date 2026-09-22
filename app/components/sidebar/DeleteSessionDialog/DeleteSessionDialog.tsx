@@ -1,6 +1,6 @@
 import type { Session } from "../../../lib/types";
 import { useEffect, useState } from "react";
-import { Banner, Button } from "@argus/peacock";
+import { Banner, Button, DialogBody, DialogFooter } from "@argus/peacock";
 import { getSessionCommitsAhead, getSessionStatus } from "../../../lib/ipc";
 import { Dialog, dialogStyles as styles } from "../../shared/Dialog";
 
@@ -75,7 +75,7 @@ export function DeleteSessionDialog({
 
   return (
     <Dialog title="Delete Session" titleId="delete-ws-title" onClose={onClose}>
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <DialogBody as="form" id="delete-ws-form" onSubmit={handleSubmit}>
         <p className={styles.bodyText}>
           Are you sure you want to delete <strong>{displayName}</strong>? This
           will remove the worktree and any uncommitted changes.
@@ -98,16 +98,20 @@ export function DeleteSessionDialog({
         </label>
 
         {error && <p className={styles.errorMsg}>{error}</p>}
-
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="danger" disabled={isDeleting} type="submit">
-            {isDeleting ? "Deleting..." : "Delete"}
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          disabled={isDeleting}
+          form="delete-ws-form"
+          type="submit"
+        >
+          {isDeleting ? "Deleting..." : "Delete"}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

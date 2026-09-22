@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import { Input } from "../Input/Input";
 import styles from "./TagDialog.module.css";
 
@@ -86,7 +88,7 @@ export function TagDialog({
 
   return (
     <Dialog onClose={onCancel} title={title} titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <label className={styles.fieldLabel} htmlFor={nameId}>
           Tag name
         </label>
@@ -161,8 +163,8 @@ export function TagDialog({
             remote separately.
           </div>
         )}
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -173,7 +175,7 @@ export function TagDialog({
         >
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

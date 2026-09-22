@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
 import styles from "./ToolResultImage.module.css";
 
 export interface ToolResultImageProps {
@@ -58,7 +59,9 @@ export function ToolResultImage({
           titleId="tool-result-image"
           className={styles.lightbox}
         >
-          <img alt={alt} className={styles.zoomImage} src={src} />
+          <DialogBody flush>
+            <img alt={alt} className={styles.zoomImage} src={src} />
+          </DialogBody>
         </Dialog>
       )}
     </>

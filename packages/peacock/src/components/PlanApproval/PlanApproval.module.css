@@ -40,13 +40,8 @@
 }
 
 .dialogBody {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px 16px;
+  /* The plan pane owns the scroll, not the body. */
   overflow: hidden;
-  flex: 1;
-  min-height: 0;
 }
 
 .dialogPlan {

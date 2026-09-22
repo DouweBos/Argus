@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import styles from "./ConfirmDialog.module.css";
 
 export interface ConfirmDialogProps {
@@ -59,8 +61,8 @@ export function ConfirmDialog({
 
   return (
     <Dialog onClose={onCancel} title={title} titleId={titleId}>
-      <div className={styles.body}>{children}</div>
-      <div className={styles.footer}>
+      <DialogBody className={styles.body}>{children}</DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel} disabled={busy}>
           {cancelLabel}
         </Button>
@@ -71,7 +73,7 @@ export function ConfirmDialog({
         >
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Button, Icons } from "@argus/peacock";
+import { Button, DialogBody, Icons } from "@argus/peacock";
 import { showOpenDirectoryDialog } from "../../../lib/ipc";
 import { LOCAL_HOST_ID, type HostId } from "../../../lib/transport/hostId";
 import { useFocusedConnection } from "../../../stores/connectionStore";
@@ -61,7 +61,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
 
   return createPortal(
     <Dialog title="Open Project" titleId="open-project-title" onClose={onClose}>
-      <div className={projectStyles.body}>
+      <DialogBody>
         {browsingHost ? (
           <HostProjectBrowser
             hostLabel={connection.label ?? "the host"}
@@ -122,7 +122,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
             </ul>
           </div>
         )}
-      </div>
+      </DialogBody>
     </Dialog>,
     document.body,
   );

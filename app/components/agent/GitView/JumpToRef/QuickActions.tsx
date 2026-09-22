@@ -20,6 +20,7 @@ import {
 import {
   DestructiveConfirm,
   Dialog,
+  DialogBody,
   GitErrorBanner,
   Icons,
   Input,
@@ -929,7 +930,7 @@ export function QuickActions({
         title="Quick Actions"
         titleId={titleId}
       >
-        <div className={styles.body}>
+        <DialogBody>
           {banner && (
             <GitErrorBanner
               kind={banner.kind}
@@ -970,7 +971,7 @@ export function QuickActions({
             Enter to confirm &middot; Tab cycles tabs &middot; &uarr;&darr;
             navigate &middot; chevron for alternates
           </p>
-        </div>
+        </DialogBody>
       </Dialog>
 
       {deleteState && (

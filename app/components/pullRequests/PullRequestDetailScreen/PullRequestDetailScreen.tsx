@@ -12,6 +12,8 @@ import {
   Chip,
   DestructiveConfirm,
   Dialog,
+  DialogBody,
+  DialogFooter,
   DiffStat,
   EmptyState,
   FileDiffCard,
@@ -508,7 +510,7 @@ export function PullRequestDetailScreen() {
           </header>
         )}
 
-        <div className={styles.dialogBody}>{content}</div>
+        <DialogBody>{content}</DialogBody>
       </Dialog>
     </>
   );
@@ -557,7 +559,7 @@ function MergeConfirmDialog({
       titleId="pr-merge-confirm"
       onClose={onCancel}
     >
-      <div className={styles.mergeDialogBody}>
+      <DialogBody>
         <p className={styles.mergeDialogText}>
           Select a merge strategy and confirm.
         </p>
@@ -567,8 +569,8 @@ function MergeConfirmDialog({
           value={strategy}
           onChange={onStrategyChange}
         />
-      </div>
-      <div className={styles.mergeDialogFooter}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -579,7 +581,7 @@ function MergeConfirmDialog({
         >
           {mergeBtnLabel(strategy)}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

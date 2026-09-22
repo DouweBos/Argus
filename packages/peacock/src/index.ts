@@ -15,6 +15,8 @@ export * from "./components/RefBadge/RefBadge";
 export * from "./components/RunHistoryRow/RunHistoryRow";
 export * from "./components/RefBadgeList/RefBadgeList";
 export * from "./components/Dialog/Dialog";
+export * from "./components/Dialog/DialogBody";
+export * from "./components/Dialog/DialogFooter";
 export * from "./components/Button/Button";
 export * from "./components/CalloutCard/CalloutCard";
 export * from "./components/Card/Card";

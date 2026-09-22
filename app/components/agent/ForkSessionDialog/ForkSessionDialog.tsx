@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Button, Input, SegmentedControl, TextArea } from "@argus/peacock";
+import {
+  Button,
+  DialogBody,
+  DialogFooter,
+  Input,
+  SegmentedControl,
+  TextArea,
+} from "@argus/peacock";
 import {
   forkChatFromMessage,
   forkChatIntoNewAgent,
@@ -185,7 +192,7 @@ export function ForkSessionDialog({
       titleId="fork-session-title"
       onClose={onClose}
     >
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <DialogBody as="form" id="fork-session-form" onSubmit={handleSubmit}>
         <div className={styles.field}>
           <SegmentedControl
             aria-label="Fork target"
@@ -301,28 +308,28 @@ export function ForkSessionDialog({
         )}
 
         {error && <p className={styles.errorMsg}>{error}</p>}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={isForking || !canSubmit}
+          form="fork-session-form"
+          type="submit"
+        >
+          {(() => {
+            if (isForking) {
+              return "Forking…";
+            }
 
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={isForking || !canSubmit}
-            type="submit"
-          >
-            {(() => {
-              if (isForking) {
-                return "Forking…";
-              }
-
-              return mode === "agent"
-                ? "Fork into new agent"
-                : "Fork into new session";
-            })()}
-          </Button>
-        </div>
-      </form>
+            return mode === "agent"
+              ? "Fork into new agent"
+              : "Fork into new session";
+          })()}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

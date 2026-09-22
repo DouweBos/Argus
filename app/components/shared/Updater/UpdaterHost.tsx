@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Button, Dialog } from "@argus/peacock";
+import { Button, Dialog, DialogBody, DialogFooter } from "@argus/peacock";
 import { openExternalUrl } from "../../../lib/ipc";
 import {
   closeChangelogDialog,
@@ -108,17 +108,19 @@ function ChangelogDialog() {
       title={headerVersion ? `What's new in ${headerVersion}` : "What's new"}
       titleId="updater-changelog"
     >
-      <div className={styles.body}>{body}</div>
-      <div className={styles.footer}>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            openExternalUrl("https://houwert.dev/argus").catch(() => {});
-          }}
-        >
-          View all releases
-        </Button>
-        <div className={styles.spacer} />
+      <DialogBody>{body}</DialogBody>
+      <DialogFooter
+        leading={
+          <Button
+            variant="ghost"
+            onClick={() => {
+              openExternalUrl("https://houwert.dev/argus").catch(() => {});
+            }}
+          >
+            View all releases
+          </Button>
+        }
+      >
         {state.phase === "available" && (
           <>
             <Button variant="secondary" onClick={closeChangelogDialog}>
@@ -167,7 +169,7 @@ function ChangelogDialog() {
               Close
             </Button>
           )}
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import styles from "./ResetDialog.module.css";
 
 export type ResetMode = "hard" | "mixed" | "soft";
@@ -66,7 +68,7 @@ export function ResetDialog({
 
   return (
     <Dialog onClose={onCancel} title="Reset HEAD" titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <span className={styles.fieldLabel}>Target</span>
         <div className={styles.target}>
           {targetRef}
@@ -97,8 +99,8 @@ export function ResetDialog({
             Hard reset deletes uncommitted changes. This cannot be undone.
           </div>
         )}
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -108,7 +110,7 @@ export function ResetDialog({
         >
           Reset {mode}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

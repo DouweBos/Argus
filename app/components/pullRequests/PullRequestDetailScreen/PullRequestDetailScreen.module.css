@@ -13,16 +13,6 @@
   min-width: 0;
 }
 
-.dialogBody {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 20px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
 .header {
   display: flex;
   flex-direction: column;
@@ -598,25 +588,10 @@
 }
 
 /* ── Merge confirm dialog ── */
-.mergeDialogBody {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 24px;
-}
-
 .mergeDialogText {
   font-size: 13px;
   color: var(--text-secondary);
   margin: 0;
-}
-
-.mergeDialogFooter {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 24px 20px;
-  border-top: 1px solid var(--border-subtle);
 }
 
 /* ── Comment composer ── */

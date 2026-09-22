@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "../Button/Button";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
+import { DialogFooter } from "../Dialog/DialogFooter";
 import { Input } from "../Input/Input";
 import styles from "./PushDialog.module.css";
 
@@ -107,7 +109,7 @@ export function PushDialog({
 
   return (
     <Dialog onClose={onCancel} title={title} titleId={titleId}>
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         {confirmingForce ? (
           <div className={styles.warning}>
             This will rewrite the history of the remote branch. The push aborts
@@ -205,8 +207,8 @@ export function PushDialog({
             </details>
           </>
         )}
-      </div>
-      <div className={styles.footer}>
+      </DialogBody>
+      <DialogFooter>
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -217,7 +219,7 @@ export function PushDialog({
         >
           {confirmLabel}
         </Button>
-      </div>
+      </DialogFooter>
     </Dialog>
   );
 }

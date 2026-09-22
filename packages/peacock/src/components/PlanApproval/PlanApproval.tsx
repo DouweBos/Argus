@@ -6,6 +6,7 @@ import {
 } from "react";
 import { EnlargeIcon } from "../../icons/Icons";
 import { Dialog } from "../Dialog/Dialog";
+import { DialogBody } from "../Dialog/DialogBody";
 import { Markdown } from "../Markdown/Markdown";
 import styles from "./PlanApproval.module.css";
 
@@ -169,11 +170,11 @@ export function PlanApproval({
           title="Proposed plan"
           titleId="plan-approval-dialog"
         >
-          <div className={styles.dialogBody}>
+          <DialogBody className={styles.dialogBody}>
             {renderPlan(styles.dialogPlan)}
             {feedbackBlock}
             {actionsBlock}
-          </div>
+          </DialogBody>
         </Dialog>
       )}
     </div>

@@ -13,6 +13,8 @@ import { createPortal } from "react-dom";
 import {
   Button,
   Chip,
+  DialogBody,
+  DialogFooter,
   Icons,
   ImageAttachmentStrip,
   Input,
@@ -842,7 +844,7 @@ export function CreateSessionDialog({
         titleId="create-ws-title"
         onClose={onClose}
       >
-        <div className={styles.form}>
+        <DialogBody>
           <p className={styles.bodyText}>How do you want to start?</p>
           <div className={styles.flowPicker}>
             <SegmentedCard
@@ -869,12 +871,12 @@ export function CreateSessionDialog({
               onClick={() => setFlow("adopt-remote")}
             />
           </div>
-          <div className={styles.footer}>
-            <Button variant="secondary" type="button" onClick={onClose}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="secondary" type="button" onClick={onClose}>
+            Cancel
+          </Button>
+        </DialogFooter>
       </Dialog>
     );
   }
@@ -923,7 +925,11 @@ export function CreateSessionDialog({
         titleId="create-ws-title"
         onClose={onClose}
       >
-        <form className={styles.form} onSubmit={handleSubmitBranchOff}>
+        <DialogBody
+          as="form"
+          id="create-ws-branch-off-form"
+          onSubmit={handleSubmitBranchOff}
+        >
           <div className={styles.field}>
             <label className={styles.label} htmlFor="description-input">
               Prompt{" "}
@@ -1124,25 +1130,25 @@ export function CreateSessionDialog({
           )}
 
           {error && <p className={styles.errorMsg}>{error}</p>}
-
-          <div className={styles.footer}>
-            {!sourceSession && (
-              <Button variant="secondary" type="button" onClick={goPick}>
-                Back
-              </Button>
-            )}
-            <Button variant="secondary" type="button" onClick={onClose}>
-              Cancel
+        </DialogBody>
+        <DialogFooter>
+          {!sourceSession && (
+            <Button variant="secondary" type="button" onClick={goPick}>
+              Back
             </Button>
-            <Button
-              variant="primary"
-              disabled={!canSubmitBranchOff}
-              type="submit"
-            >
-              {getSubmitLabel(Boolean(forkContext))}
-            </Button>
-          </div>
-        </form>
+          )}
+          <Button variant="secondary" type="button" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!canSubmitBranchOff}
+            form="create-ws-branch-off-form"
+            type="submit"
+          >
+            {getSubmitLabel(Boolean(forkContext))}
+          </Button>
+        </DialogFooter>
       </Dialog>
     );
   }
@@ -1160,7 +1166,11 @@ export function CreateSessionDialog({
       titleId="create-ws-title"
       onClose={onClose}
     >
-      <form className={styles.form} onSubmit={handleSubmitAdopt}>
+      <DialogBody
+        as="form"
+        id="create-ws-adopt-form"
+        onSubmit={handleSubmitAdopt}
+      >
         <div className={styles.field}>
           <label className={styles.label}>
             {isRemote ? "Remote branch" : "Local branch"}
@@ -1194,23 +1204,23 @@ export function CreateSessionDialog({
         </div>
 
         {error && <p className={styles.errorMsg}>{error}</p>}
-
-        <div className={styles.footer}>
-          <Button variant="secondary" type="button" onClick={goPick}>
-            Back
-          </Button>
-          <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            disabled={isRemote ? !canSubmitAdoptRemote : !canSubmitAdoptLocal}
-            type="submit"
-          >
-            Create Session
-          </Button>
-        </div>
-      </form>
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="secondary" type="button" onClick={goPick}>
+          Back
+        </Button>
+        <Button variant="secondary" type="button" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          disabled={isRemote ? !canSubmitAdoptRemote : !canSubmitAdoptLocal}
+          form="create-ws-adopt-form"
+          type="submit"
+        >
+          Create Session
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

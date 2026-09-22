@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, Input } from "@argus/peacock";
+import { Dialog, DialogBody, DialogFooter, Input } from "@argus/peacock";
 import { checkoutBranch, listBranches } from "../../../lib/ipc";
 import {
   hideBranchPicker,
@@ -81,7 +81,7 @@ function BranchPickerDialogContent({
       titleId="branch-picker-title"
       onClose={hideBranchPicker}
     >
-      <div className={styles.body}>
+      <DialogBody className={styles.body}>
         <Input
           autoFocus
           placeholder="Filter branches…"
@@ -110,16 +110,19 @@ function BranchPickerDialogContent({
             </button>
           ))}
         </div>
+      </DialogBody>
 
-        <div className={styles.footer}>
+      <DialogFooter
+        leading={
           <span className={styles.caption}>
             Changes the HEAD of this session&apos;s worktree.
           </span>
-          <span className={styles.caption} data-muted>
-            {sessionId.slice(0, 8)}
-          </span>
-        </div>
-      </div>
+        }
+      >
+        <span className={styles.caption} data-muted>
+          {sessionId.slice(0, 8)}
+        </span>
+      </DialogFooter>
     </Dialog>
   );
 }
