@@ -105,6 +105,26 @@ export function AutonomyFields({
             }
           />
         </FormField>
+
+        <FormField
+          label="Spend ceiling (USD)"
+          helper={
+            guardrails.max_cost_usd_per_run > 0
+              ? "A run crossing this finishes its turn, then stops."
+              : "Off — a run spends what the work costs."
+          }
+        >
+          <Input
+            mono
+            min={0}
+            step={1}
+            type="number"
+            value={String(guardrails.max_cost_usd_per_run)}
+            onChange={(e) =>
+              patch({ max_cost_usd_per_run: numberInput(e.target.value, 0) })
+            }
+          />
+        </FormField>
       </div>
 
       <FormField

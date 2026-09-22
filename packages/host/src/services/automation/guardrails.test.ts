@@ -7,12 +7,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_GUARDRAILS,
+  LEGACY_DEFAULT_MAX_COST_USD,
   atLeastAutonomy,
   deniedPaths,
   evaluateAutoStart,
   evaluateMerge,
   evaluatePush,
   minAutonomy,
+  migrateSpendCeiling,
   normalizeGuardrails,
 } from "./guardrails";
 
@@ -173,5 +175,27 @@ describe("post-conditions", () => {
         ciClean: null,
       }).allowed,
     ).toBe(true);
+  });
+});
+
+describe("the spend ceiling", () => {
+  it("is off unless the automation asks for one", () => {
+    expect(DEFAULT_GUARDRAILS.max_cost_usd_per_run).toBe(0);
+    expect(normalizeGuardrails({}).max_cost_usd_per_run).toBe(0);
+    expect(
+      normalizeGuardrails({ max_cost_usd_per_run: 12 }).max_cost_usd_per_run,
+    ).toBe(12);
+  });
+
+  it("clears the ceiling nobody chose, and only that one", () => {
+    const imposed = normalizeGuardrails({
+      max_cost_usd_per_run: LEGACY_DEFAULT_MAX_COST_USD,
+    });
+    expect(migrateSpendCeiling(imposed)).toBe(true);
+    expect(imposed.max_cost_usd_per_run).toBe(0);
+
+    const chosen = normalizeGuardrails({ max_cost_usd_per_run: 12 });
+    expect(migrateSpendCeiling(chosen)).toBe(false);
+    expect(chosen.max_cost_usd_per_run).toBe(12);
   });
 });

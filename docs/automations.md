@@ -136,14 +136,21 @@ Per-automation limits, applied to every proposal before it may start work:
 | `confidence_threshold`    | `0.8`   | A proposal the run is less sure about than this never auto-starts. |
 | `max_concurrent_sessions` | `2`     | Sessions this automation may have in flight at once.               |
 | `max_files_changed`       | `25`    | A branch touching more files than this cannot be pushed.           |
-| `max_cost_usd_per_run`    | `5`     | Ceiling on one run's spend.                                        |
+| `max_cost_usd_per_run`    | `0`     | Ceiling on one run's spend. `0` is off, which is the default.      |
 | `path_denylist`           | empty   | Globs no automation-started branch may touch, e.g. `["infra/**"]`. |
 | `require_clean_ci`        | `true`  | Gates auto-merge: CI must be green.                                |
 
+All six are edited per automation in **Automations → the automation → Autonomy**,
+including the spend ceiling. It ships **off**: how much a run may cost is a
+decision about your own money, so nothing is capped until you say so — for a
+built-in template as much as for one you wrote. An automation created before it
+was editable had a $5 ceiling imposed on it; that one is cleared for you on
+upgrade, and a number you picked by hand is left alone.
+
 Two more caps live above the individual automation, in
 [App settings](./app-settings.md#autonomy): **concurrent automation sessions**
-across all of them (default 3), and a **daily spend budget** in USD (unset means
-no budget).
+across all of them (default 3), and a **daily spend budget** in USD, also off
+unless you set it.
 
 A "session in flight" frees its slot when the session is **deleted**, not when
 its agent goes idle — the branch is still open, unreviewed and unmerged, and
@@ -158,7 +165,8 @@ Nothing is killed mid-thought. A proposal that fails the gate lands as
 **pending** in the Inbox with the reason attached, and you can start it by hand.
 **Cost ceilings stop the next turn, not the current one** — a run that crosses
 its ceiling finishes what it is saying, records what it spent, and is marked
-failed with the reason; it does not lose its work.
+failed with the reason; it does not lose its work. With the ceiling off, a run
+is bounded by its own timeout and by the daily budget if you set one.
 
 ---
 
