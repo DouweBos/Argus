@@ -71,15 +71,4 @@ public indirect enum JSONValue: Codable, Hashable, Sendable {
   public subscript(key: String) -> JSONValue? {
     objectValue?[key]
   }
-
-  /// Pretty-printed JSON, matching the desktop's 2-space `formatInput` output.
-  public var prettyPrinted: String {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-    guard let data = try? encoder.encode(self),
-      let text = String(data: data, encoding: .utf8)
-    else { return "" }
-    // Foundation indents with 2 spaces already; normalise nothing else.
-    return text
-  }
 }

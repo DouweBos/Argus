@@ -144,13 +144,27 @@ struct ToolCallCard: View {
     isPending && PendingForm.of(name: call.name, input: call.input).ownsInput
   }
 
+  /// The answer text an AskUserQuestion came back with, once it has one.
+  private var answeredQuestions: (questions: [Questions.Question], answer: String)? {
+    guard call.name == "AskUserQuestion", !isPending,
+      let questions = Questions.parse(call.input)
+    else { return nil }
+    let answer = call.resultBlocks.compactMap { block -> String? in
+      if case .text(let text) = block { return text }
+      return nil
+    }.joined(separator: "\n")
+    return answer.isEmpty ? nil : (questions, answer)
+  }
+
   @ViewBuilder
   private var expandedBody: some View {
     if !formOwnsInput {
       inputBody
     }
 
-    if !call.resultBlocks.isEmpty {
+    // The answer view already shows what came back; the raw text is the same
+    // thing again, one formatting layer down.
+    if !call.resultBlocks.isEmpty && answeredQuestions == nil {
       resultBlocks
     }
 
@@ -169,20 +183,20 @@ struct ToolCallCard: View {
     }
   }
 
+  /// What the call was asked to do. Every shape gets a view — nothing here
+  /// ever falls back to printing the input as JSON.
   @ViewBuilder
   private var inputBody: some View {
     if let lines = inlineDiffLines {
       DiffLinesView(lines: lines)
     } else if call.name == "ExitPlanMode", let plan = call.input["plan"]?.stringValue {
       MarkdownView(text: plan, baseSize: 13)
+    } else if let answered = answeredQuestions {
+      AnsweredQuestionsView(questions: answered.questions, answer: answered.answer)
+    } else if call.name == "Bash", let command = call.input["command"]?.stringValue {
+      MonoText(text: command, size: 11)
     } else {
-      ScrollView(.horizontal, showsIndicators: false) {
-        Text(ToolCallSummary.formatInput(name: call.name, input: call.input))
-          .font(.system(size: 11, design: .monospaced))
-          .foregroundStyle(theme.textSecondary)
-          .fixedSize(horizontal: true, vertical: false)
-      }
-      .frame(maxHeight: 200)
+      ToolInputFieldsView(fields: ToolInput.fields(call.input))
     }
   }
 
