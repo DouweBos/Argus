@@ -1,6 +1,8 @@
 .card {
   display: flex;
   flex-direction: column;
+  /* A <button> is centred by the UA stylesheet, which shrink-wraps the rows. */
+  align-items: stretch;
   gap: 6px;
   width: 100%;
   padding: 12px 14px;
