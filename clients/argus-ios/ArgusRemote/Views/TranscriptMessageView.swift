@@ -123,12 +123,13 @@ struct TranscriptMessageView: View {
   /// Which form a pending call gets: a question, a plan, or plain allow/deny.
   @ViewBuilder
   private func pendingForm(for call: RemoteToolCall) -> some View {
-    if call.name == "AskUserQuestion", let questions = Questions.parse(call.input) {
+    switch PendingForm.of(name: call.name, input: call.input) {
+    case .question(let questions):
       QuestionFormView(
         questions: questions,
         onSubmit: { answer in respond(call, "deny", answer) },
         onCancel: { respond(call, "deny", CannedReply.cancelQuestion) })
-    } else if call.name == "ExitPlanMode", let plan = call.input["plan"]?.stringValue {
+    case .plan(let plan):
       PlanApprovalView(
         plan: plan,
         onApprove: { respond(call, "allow", nil) },
@@ -136,7 +137,7 @@ struct TranscriptMessageView: View {
         onFeedback: { feedback in
           respond(call, "deny", CannedReply.planFeedback(feedback))
         })
-    } else {
+    case .buttons:
       PermissionButtons(
         onAllow: { respond(call, "allow", nil) },
         onDeny: { respond(call, "deny", nil) })
