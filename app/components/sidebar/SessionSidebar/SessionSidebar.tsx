@@ -183,6 +183,7 @@ export function SessionSidebar() {
           view="inbox"
           leading={<Icons.EnvelopeIcon size={12} />}
           count={pendingProposals}
+          attention={unreadReports > 0}
         >
           Inbox
         </SidebarNavItem>
@@ -211,7 +212,6 @@ export function SessionSidebar() {
           view="automations"
           leading={<Icons.ClockIcon size={12} />}
           count={enabledAutomations}
-          attention={unreadReports > 0}
         >
           Automations
         </SidebarNavItem>

@@ -5,6 +5,7 @@
 
 import type { AutomationRun, Proposal } from "../../lib/types";
 import { useEffect, useState } from "react";
+import { isUnreadReport } from "../../lib/automations";
 import { useAllRuns } from "../../stores/automationStore";
 import {
   useClearedProposals,
@@ -23,6 +24,8 @@ export interface InboxItems {
   failed: AutomationRun[];
   /** Decisions waiting on you. */
   pending: Proposal[];
+  /** Finished runs whose report nobody has opened yet. */
+  reports: AutomationRun[];
   /** Work Argus already started, for information. */
   started: Proposal[];
 }
@@ -50,10 +53,16 @@ export function useInboxItems(): InboxItems {
     )
     .slice(0, MAX_FAILED_RUNS);
 
-  return { cleared, failed, pending, started };
+  // A failed run is already listed as a failure; listing its report too would
+  // ask twice for the same acknowledgement.
+  const reports = runs.filter(
+    (r) => r.status !== "failed" && isUnreadReport(r),
+  );
+
+  return { cleared, failed, pending, reports, started };
 }
 
 /** How many things are actually waiting on you — what a badge would show. */
 export function inboxActionCount(items: InboxItems): number {
-  return items.pending.length + items.failed.length;
+  return items.pending.length + items.failed.length + items.reports.length;
 }
