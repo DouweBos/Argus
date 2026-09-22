@@ -138,20 +138,16 @@ struct ToolCallCard: View {
     }
   }
 
+  /// The form below a pending call already shows its questions or its plan, so
+  /// the card would otherwise print the same thing — as raw JSON — above it.
+  private var formOwnsInput: Bool {
+    isPending && PendingForm.of(name: call.name, input: call.input).ownsInput
+  }
+
   @ViewBuilder
   private var expandedBody: some View {
-    if let lines = inlineDiffLines {
-      DiffLinesView(lines: lines)
-    } else if call.name == "ExitPlanMode", let plan = call.input["plan"]?.stringValue {
-      MarkdownView(text: plan, baseSize: 13)
-    } else {
-      ScrollView(.horizontal, showsIndicators: false) {
-        Text(ToolCallSummary.formatInput(name: call.name, input: call.input))
-          .font(.system(size: 11, design: .monospaced))
-          .foregroundStyle(theme.textSecondary)
-          .fixedSize(horizontal: true, vertical: false)
-      }
-      .frame(maxHeight: 200)
+    if !formOwnsInput {
+      inputBody
     }
 
     if !call.resultBlocks.isEmpty {
@@ -170,6 +166,23 @@ struct ToolCallCard: View {
           ToolCallCard(agentKey: agentKey, call: nested, depth: depth + 1)
         }
       }
+    }
+  }
+
+  @ViewBuilder
+  private var inputBody: some View {
+    if let lines = inlineDiffLines {
+      DiffLinesView(lines: lines)
+    } else if call.name == "ExitPlanMode", let plan = call.input["plan"]?.stringValue {
+      MarkdownView(text: plan, baseSize: 13)
+    } else {
+      ScrollView(.horizontal, showsIndicators: false) {
+        Text(ToolCallSummary.formatInput(name: call.name, input: call.input))
+          .font(.system(size: 11, design: .monospaced))
+          .foregroundStyle(theme.textSecondary)
+          .fixedSize(horizontal: true, vertical: false)
+      }
+      .frame(maxHeight: 200)
     }
   }
 
