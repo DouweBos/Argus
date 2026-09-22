@@ -17,6 +17,7 @@ import type {
   ArgusConfig,
   ArgusConfigSuggestion,
   AcceptProposalResult,
+  RequestRevisionResult,
   Automation,
   AutomationCalibration,
   AutomationDraft,
@@ -1623,9 +1624,24 @@ export const listProposals = (filter?: {
 export const getProposal = (id: string): Promise<Proposal | null> =>
   invoke("proposal_get", { id });
 
-/** Start a proposal: creates its session and spawns an agent prompted with it. */
-export const acceptProposal = (id: string): Promise<AcceptProposalResult> =>
-  invoke("proposal_accept", { id });
+/**
+ * Start a proposal: creates its session and spawns an agent prompted with it.
+ * The note, when there is one, ends the brief and outranks the proposal.
+ */
+export const acceptProposal = (
+  id: string,
+  note?: string,
+): Promise<AcceptProposalResult> => invoke("proposal_accept", { id, note });
+
+/**
+ * Ask the automation for a better version of this proposal. It stays in the
+ * inbox with the note attached until a run supersedes or withdraws it.
+ */
+export const requestProposalRevision = (
+  id: string,
+  note: string,
+): Promise<RequestRevisionResult> =>
+  invoke("proposal_request_revision", { id, note });
 
 /**
  * Carry out a cleanup proposal's button — deleting the branch or retiring the

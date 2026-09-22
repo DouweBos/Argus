@@ -106,6 +106,7 @@ import {
   getProposal,
   listProposals,
 } from "@argus/host/services/automation/proposals/manager";
+import { requestProposalRevision } from "@argus/host/services/automation/proposals/revise";
 import {
   cancelAutomationRun,
   startAutomationRun,
@@ -1126,7 +1127,12 @@ export function registerIpcHandlers(): void {
     }),
   );
   handle("proposal_get", "admin", (a) => getProposal(a.id as string));
-  handle("proposal_accept", "admin", (a) => acceptProposal(a.id as string));
+  handle("proposal_accept", "admin", (a) =>
+    acceptProposal(a.id as string, { note: a.note as string | undefined }),
+  );
+  handle("proposal_request_revision", "admin", (a) =>
+    requestProposalRevision(a.id as string, a.note as string),
+  );
   handle("proposal_perform_cleanup", "admin", (a) =>
     performProposalCleanup(a.id as string),
   );

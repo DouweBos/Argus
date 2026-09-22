@@ -31,6 +31,11 @@ export interface AcceptProposalResult {
 export interface AcceptProposalOptions {
   /** `auto_started` when the autonomy gate opened it, not a human. */
   status?: "accepted" | "auto_started";
+  /**
+   * What the user added on the way in — "mostly right, but do X instead".
+   * Ends the brief, so it is the last thing the agent reads.
+   */
+  note?: string;
 }
 
 export async function acceptProposal(
@@ -38,6 +43,7 @@ export async function acceptProposal(
   options: AcceptProposalOptions = {},
 ): Promise<AcceptProposalResult> {
   const status = options.status ?? "accepted";
+  const note = options.note?.trim() || null;
   const proposal = requireProposal(proposalId);
   if (proposal.session_id) {
     throw `Proposal already started in session ${proposal.session_id}`;
@@ -73,11 +79,11 @@ export async function acceptProposal(
       session.id,
     );
   }
-  updateProposal(proposal.id, { session_id: session.id });
+  updateProposal(proposal.id, { session_id: session.id, accepted_note: note });
 
   await waitForSessionReady(session.id);
 
-  const prompt = buildPrompt(proposal, status);
+  const prompt = buildPrompt(proposal, status, note);
   const agent = await startAgent(session.id);
 
   // Backend-initiated spawns are invisible to the UI without this — the
@@ -132,6 +138,7 @@ async function waitForSessionReady(sessionId: string): Promise<void> {
 function buildPrompt(
   proposal: Proposal,
   status: "accepted" | "auto_started",
+  note: string | null,
 ): string {
   const lines = [
     `# ${proposal.title}`,
@@ -152,13 +159,19 @@ function buildPrompt(
     );
   }
 
+  if (note) {
+    // Last, and named as the user's: where the proposal and the note
+    // disagree, the note is the one a human actually wrote.
+    lines.push("", "## What the user added when they started this", "", note);
+  }
+
   lines.push(
     "",
     "---",
     "",
     status === "auto_started"
       ? "This came from an Argus automation that started it on its own — no human has read it yet. Start by confirming the proposal still matches what the code and the source item actually say; if it does not, stop and say so rather than changing anything."
-      : "This came from an Argus automation and a human accepted it. Start by confirming the proposal still matches what the code and the source item actually say; if it does not, say so before changing anything.",
+      : `This came from an Argus automation and a human accepted it. Start by confirming the proposal still matches what the code and the source item actually say; if it does not, say so before changing anything.${note ? " The note above is theirs and takes precedence over the proposal where the two disagree." : ""}`,
   );
 
   return lines.join("\n");

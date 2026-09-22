@@ -104,3 +104,48 @@ export const Destructive: Story = {
     meta: <Badge tone="neutral">vizbee-chromecast-receiver</Badge>,
   },
 };
+
+/** Automations write markdown — code spans, lists and links all render. */
+export const MarkdownBody: Story = {
+  args: {
+    title: "Harden the two iOS modal-dismissal assertions that flake nightly",
+    summary: [
+      "Two of the three iOS phone failures last night share one root cause: a",
+      "`tapOn` that is supposed to dismiss a modal is treated as guaranteed.",
+      "",
+      "**1. `ratings-and-reviews.responsive` — no wait after the Save tap**",
+      "",
+      "```yaml",
+      "- tapOn:",
+      "    id: review-action-editReview",
+      "- assertVisible:",
+      "    id: ${output.movieList[0].screenId}",
+      "```",
+      "",
+      "- Wrap both post-tap asserts in `extendedWaitUntil`",
+      "- Retry the Done tap instead of waiting harder",
+      "",
+      "See [run 35679331976](https://github.com/acme/app/actions).",
+    ].join("\n"),
+    rationale:
+      "Both failures are confirmed from screenshots, and both have a _same-repo precedent_ for the fix.",
+    confidence: 0.8,
+  },
+};
+
+/** "Mostly right, but…" — the note either starts it or goes back for a rework. */
+export const WithNote: Story = {
+  args: {
+    onRequestRevision: () => undefined,
+    onStartWithNote: () => undefined,
+  },
+};
+
+/** A revision already asked for, waiting on the automation's next run. */
+export const RevisionPending: Story = {
+  args: {
+    onRequestRevision: () => undefined,
+    onStartWithNote: () => undefined,
+    revisionRequest: "Scope it to the flaky test, not the whole suite.",
+  },
+};

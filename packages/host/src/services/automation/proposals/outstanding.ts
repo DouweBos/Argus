@@ -42,7 +42,27 @@ export function outstandingLine(proposal: Proposal, now = Date.now()): string {
     parts.push(proposal.source_ref.external_id);
   }
 
-  return `- \`${proposal.id}\` — "${proposal.title}" (${parts.join(", ")})`;
+  const line = `- \`${proposal.id}\` — "${proposal.title}" (${parts.join(", ")})`;
+
+  return proposal.revision_request
+    ? `${line}\n  - The user asked for a better version of this one: "${proposal.revision_request}"`
+    : line;
+}
+
+/**
+ * The one case where re-proposing is the point: the user read it, wanted it
+ * reworked, and said how. Spelled out separately because the rules above tell
+ * the run not to re-propose.
+ */
+function revisionInstruction(pending: Proposal[]): string[] {
+  if (!pending.some((p) => p.revision_request)) {
+    return [];
+  }
+
+  return [
+    "",
+    'The proposals with a revision request are the exception to the rule above: the user wants a better version of each, not the same one again. Redo the work behind it, take the note as the requirement it is, and emit the replacement with `supersedes: ["<id>"]`. If the note convinces you there is nothing worth proposing, call `withdraw_proposal` and say why.',
+  ];
 }
 
 /**
@@ -73,5 +93,6 @@ export function outstandingBlock(
     "- Still valid and still worth a decision? Leave it alone and do not re-propose it.",
     "",
     "Use `list_open_proposals` if you need the full text of one.",
+    ...revisionInstruction(pending),
   ].join("\n");
 }

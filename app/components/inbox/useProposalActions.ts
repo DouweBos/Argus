@@ -1,14 +1,19 @@
 /**
- * The three things you can do with a proposal — start it, dismiss it, follow
- * its CTA — shared by the inbox list and the proposal's own page so both
- * behave identically and stay busy on the same card.
+ * Everything you can do with a proposal — start it (with or without a note),
+ * ask the automation for a better one, dismiss it, follow its CTA — shared by
+ * the inbox list and the proposal's own page so both behave identically and
+ * stay busy on the same card.
  */
 
 import type { Proposal } from "../../lib/types";
 import type { ProposalCardAction } from "@argus/peacock";
 import { useState } from "react";
 import { openExternalUrl, performProposalCleanup } from "../../lib/ipc";
-import { acceptProposal, dismissProposal } from "../../stores/proposalStore";
+import {
+  acceptProposal,
+  dismissProposal,
+  requestProposalRevision,
+} from "../../stores/proposalStore";
 import { selectSession } from "../../stores/sessionStore";
 
 export interface ProposalActions {
@@ -16,17 +21,21 @@ export interface ProposalActions {
   dismiss: (proposal: Proposal, reason: string) => void;
   /** The CTA the run wrote, or nothing when there is nothing to start. */
   primaryAction: (proposal: Proposal) => ProposalCardAction | undefined;
+  /** Ask the automation to redo it. Undefined when it cannot be redone. */
+  requestRevision: (proposal: Proposal) => ((note: string) => void) | undefined;
+  /** Start it with a note. Undefined when the proposal starts nothing. */
+  startWithNote: (proposal: Proposal) => ((note: string) => void) | undefined;
 }
 
 export function useProposalActions(): ProposalActions {
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const start = async (proposal: Proposal) => {
+  const start = async (proposal: Proposal, note?: string) => {
     setBusyId(proposal.id);
     try {
       // The backend creates the session and spawns the agent; all that is
       // left is to take the user to the work it just started.
-      const result = await acceptProposal(proposal.id);
+      const result = await acceptProposal(proposal.id, note);
       selectSession(result.session_id);
     } catch {
       // The list refreshes from `proposals:changed`; a failed accept leaves
@@ -52,6 +61,25 @@ export function useProposalActions(): ProposalActions {
       .catch(() => undefined)
       .finally(() => setBusyId(null));
   };
+
+  // The proposal stays put: the automation answers it on its next run, by
+  // superseding it or withdrawing it, and the inbox follows that.
+  const requestRevision = (proposal: Proposal) =>
+    proposal.status === "pending"
+      ? (note: string) => {
+          setBusyId(proposal.id);
+          requestProposalRevision(proposal.id, note)
+            .catch(() => undefined)
+            .finally(() => setBusyId(null));
+        }
+      : undefined;
+
+  const startWithNote = (proposal: Proposal) =>
+    proposal.cta?.kind === "start_session" && proposal.status === "pending"
+      ? (note: string) => {
+          start(proposal, note).catch(() => undefined);
+        }
+      : undefined;
 
   const primaryAction = (
     proposal: Proposal,
@@ -94,5 +122,5 @@ export function useProposalActions(): ProposalActions {
       : undefined;
   };
 
-  return { busyId, dismiss, primaryAction };
+  return { busyId, dismiss, primaryAction, requestRevision, startWithNote };
 }

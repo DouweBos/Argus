@@ -35,6 +35,7 @@ const dismiss = vi.fn();
 vi.mock("../lib/ipc", () => ({
   listProposals: () => listProposals(),
   acceptProposal: vi.fn(),
+  requestProposalRevision: vi.fn(),
   dismissProposal: (id: string, reason?: string) => dismiss(id, reason),
 }));
 
@@ -72,6 +73,9 @@ function proposal(id: string, patch: Partial<Proposal> = {}): Proposal {
     status: "pending",
     session_id: null,
     dismissed_reason: null,
+    accepted_note: null,
+    revision_request: null,
+    revision_requested_at: null,
     cleared_reason: null,
     cleared_at: null,
     superseded_by: null,

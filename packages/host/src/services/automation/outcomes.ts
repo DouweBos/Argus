@@ -152,6 +152,11 @@ export interface AutomationCalibration {
   acceptance_rate: number | null;
   /** Verbatim dismissal reasons, newest first. The training signal. */
   dismissals: { title: string; reason: string }[];
+  /**
+   * Notes the user added when starting one. A proposal that always needs the
+   * same correction is a proposal that should have said so itself.
+   */
+  accepted_notes: { title: string; note: string }[];
 }
 
 function countBy(proposals: Proposal[], status: Proposal["status"]): number {
@@ -190,6 +195,10 @@ export function calibrationFor(automationId: string): AutomationCalibration {
       .filter((p) => p.status === "dismissed" && p.dismissed_reason)
       .slice(0, QUOTED_REASONS)
       .map((p) => ({ title: p.title, reason: p.dismissed_reason ?? "" })),
+    accepted_notes: proposals
+      .filter((p) => p.accepted_note)
+      .slice(0, QUOTED_REASONS)
+      .map((p) => ({ title: p.title, note: p.accepted_note ?? "" })),
   };
 }
 
@@ -231,6 +240,13 @@ export function calibrationBlock(automationId: string): string | null {
     lines.push("", "Dismissed, in the user's own words:", "");
     for (const d of c.dismissals) {
       lines.push(`- "${d.title}" — ${d.reason}`);
+    }
+  }
+
+  if (c.accepted_notes.length > 0) {
+    lines.push("", "Started, but only after the user corrected them:", "");
+    for (const n of c.accepted_notes) {
+      lines.push(`- "${n.title}" — ${n.note}`);
     }
   }
 

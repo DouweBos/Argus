@@ -15,6 +15,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useIpcEvent } from "../hooks/useIpcEvent";
 import {
   acceptProposal as acceptProposalIpc,
+  requestProposalRevision as requestProposalRevisionIpc,
   dismissProposal as dismissProposalIpc,
   listProposals,
 } from "../lib/ipc";
@@ -130,6 +131,8 @@ export const setProposalState = store.setState.bind(store);
 // ---------------------------------------------------------------------------
 
 export const acceptProposal = acceptProposalIpc;
+
+export const requestProposalRevision = requestProposalRevisionIpc;
 
 export const dismissProposal = (
   id: string,

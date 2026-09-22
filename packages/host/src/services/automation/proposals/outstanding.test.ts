@@ -7,7 +7,12 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createProposal, dismissProposal, resetProposalCache } from "./manager";
+import {
+  createProposal,
+  dismissProposal,
+  resetProposalCache,
+  updateProposal,
+} from "./manager";
 import { outstandingBlock, proposalAge } from "./outstanding";
 
 let home: string;
@@ -67,6 +72,18 @@ describe("outstanding proposals", () => {
     expect(block).toContain("acme/app#6478");
     expect(block).toContain("supersedes");
     expect(block).toContain("withdraw_proposal");
+  });
+
+  it("quotes a revision request and licenses the re-proposal it needs", () => {
+    const pending = createProposal(input());
+    updateProposal(pending.id, {
+      revision_request: "scope it to the flaky test",
+      revision_requested_at: Date.now(),
+    });
+
+    const block = outstandingBlock("a1") ?? "";
+    expect(block).toContain("scope it to the flaky test");
+    expect(block).toContain("the exception to the rule above");
   });
 
   it("ages a proposal in the units that decide whether it is stale", () => {
