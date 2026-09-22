@@ -52,6 +52,7 @@ vi.mock("../../../lib/ipc", async (importOriginal) => ({
   huddleDenyGuest: (roomId: string, pub: string) => denyMock(roomId, pub),
   huddleList: () => Promise.resolve([]),
   huddleShareReadiness: () => readinessMock(),
+  getGitAuthor: () => Promise.resolve(["Ana Dev", "ana@example.test"]),
 }));
 
 /** The dialog's subtree reaches for the preload bridge on mount. */
@@ -69,6 +70,8 @@ function stubPreloadBridge(): void {
 const { HuddleDialog } = await import("./HuddleDialog");
 const { HuddleJoinRequests } = await import("./HuddleJoinRequests");
 const { ShareAgentButton } = await import("./ShareAgentButton");
+const { setConversationState } =
+  await import("../../../stores/conversationStore");
 const { initHuddleRooms, setHuddleState } =
   await import("../../../stores/huddleStore");
 
@@ -192,6 +195,29 @@ describe("huddle host UI", () => {
     expect(screen.getByRole("button").title).toBe(
       "Share this agent in a huddle",
     );
+  });
+
+  it("hands the host a sentence to paste, not a bare link", async () => {
+    setConversationState((state) => ({
+      conversations: {
+        ...state.conversations,
+        "agent-1": { messages: [], title: "Fix the login flow" },
+      },
+    }));
+    render(
+      <HuddleDialog agentId="agent-1" sessionId="ws-1" onClose={() => {}} />,
+    );
+    broadcast([room([])]);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Ana Dev wants you to join “Fix the login flow” in Argus — https://example.test/#/huddle/tok",
+        ),
+      ).toBeTruthy();
+    });
+    expect(screen.getByRole("button", { name: /Copy invite/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Copy link only/ })).toBeTruthy();
   });
 
   it("explains a missing prerequisite before the host commits to sharing", async () => {

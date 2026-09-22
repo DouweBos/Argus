@@ -100,6 +100,12 @@ interface SettingsState {
   /** Width of the git source sidebar as a fraction of the GitView container. */
   gitSidebarWidth: number;
   /**
+   * The name on a huddle invite ("Ana wants you to join…"). Empty falls back to
+   * the repo's git `user.name`, which is right for most people and wrong for
+   * anyone who commits under a name they don't go by.
+   */
+  huddleDisplayName: string;
+  /**
    * Last reasoning-effort level chosen by the user, keyed by runner id.
    * Replayed as the default for new agents on the same runner.
    */
@@ -265,6 +271,10 @@ function load(): SettingsState {
         ),
         defaultModel:
           typeof parsed.defaultModel === "string" ? parsed.defaultModel : "",
+        huddleDisplayName:
+          typeof parsed.huddleDisplayName === "string"
+            ? parsed.huddleDisplayName
+            : "",
         customEditors: sanitizeCustomEditors(parsed.customEditors),
         defaultLlm: sanitizeDefaultLlm(parsed.defaultLlm),
         telemetryMode: sanitizeTelemetryMode(parsed.telemetryMode),
@@ -319,6 +329,7 @@ function load(): SettingsState {
   return {
     defaultPermissionMode: "auto",
     defaultModel: "",
+    huddleDisplayName: "",
     customEditors: [],
     defaultLlm: { runner: DEFAULT_LLM_RUNNER, model: null },
     telemetryMode: "presence",
@@ -366,6 +377,13 @@ export const setDefaultModel = (model: string) => {
   store.setState({ defaultModel: model });
   persist(store.getState());
 };
+
+export const setHuddleDisplayName = (name: string) => {
+  store.setState({ huddleDisplayName: name });
+  persist(store.getState());
+};
+
+export const useHuddleDisplayName = () => store((s) => s.huddleDisplayName);
 
 export const useDefaultModel = () => store((s) => s.defaultModel);
 
