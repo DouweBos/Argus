@@ -60,6 +60,12 @@ button {
   flex-direction: column;
 }
 
+/* A huddle is a shared screen, not a document: it takes whatever display it
+   lands on rather than sitting in a 720px column on a landscape tablet. */
+.aw-shell-fluid {
+  max-width: none;
+}
+
 /* Two panes: they own the gutter, the shell spans the screen. */
 .aw-shell-wide {
   max-width: none;
@@ -567,6 +573,28 @@ button {
   justify-content: center;
   background: var(--bg-primary);
   outline: none;
+  touch-action: none;
+}
+
+/* tvOS: the stream and its Siri Remote side by side. */
+.aw-device-tv {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aw-device-tv .aw-device-stage {
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+/* Wrapper for Peacock's DeviceStage, which owns the layout inside it. */
+.aw-device-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg-primary);
   touch-action: none;
 }
 

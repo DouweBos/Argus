@@ -5,13 +5,18 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Banner, Button, DeviceControlOverlay, Icons } from "@argus/peacock";
+import {
+  AppleTVRemote,
+  Banner,
+  Button,
+  DeviceControlOverlay,
+  DeviceStage,
+  Icons,
+} from "@argus/peacock";
 import { H264CanvasDecoder } from "@argus/remote-client";
 import { toNativeKey } from "../lib/keymap";
-import type { RemotePlatform } from "../lib/protocol";
+import type { RemoteDeviceOrientation, RemotePlatform } from "../lib/protocol";
 import { useAppStore } from "../lib/store";
-
-const DRAG_THROTTLE_MS = 17;
 
 const PLACEHOLDER: Record<string, string> = {
   connecting: "Connecting to device…",
@@ -93,6 +98,14 @@ export function DeviceScreen({
   const deviceButton = useAppStore((s) => s.deviceButton);
   const deviceKeyboard = useAppStore((s) => s.deviceKeyboard);
   const holder = useAppStore((s) => s.claimByDevice[deviceId] ?? null);
+  const loadDeviceState = useAppStore((s) => s.loadDeviceState);
+  const setDeviceOrientation = useAppStore((s) => s.setDeviceOrientation);
+  const setDeviceFold = useAppStore((s) => s.setDeviceFold);
+  const deviceState = useAppStore((s) => s.deviceStateById[deviceId] ?? null);
+  // The framebuffer is panel-native, so a device held sideways streams
+  // sideways — present it the way it is actually being held.
+  const rotation = deviceState?.display?.rotation ?? 0;
+  const fold = deviceState?.fold ?? null;
   const claimConnectionId = useAppStore((s) => s.claimConnectionId);
   const loadClaim = useAppStore((s) => s.loadClaim);
   const claimDevice = useAppStore((s) => s.claimDevice);
@@ -103,7 +116,9 @@ export function DeviceScreen({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const decoderRef = useRef<H264CanvasDecoder | null>(null);
-  const dimsRef = useRef({ width: 0, height: 0 });
+  // Rendered dimensions drive the stage's fit and its touch mapping, so they
+  // are state rather than a ref.
+  const [dims, setDims] = useState({ width: 0, height: 0 });
   const [status, setStatus] = useState<
     "connecting" | "streaming" | "error" | "novideo"
   >("connecting");
@@ -129,9 +144,7 @@ export function DeviceScreen({
     }, NO_VIDEO_TIMEOUT_MS);
 
     const decoder = new H264CanvasDecoder({
-      onDimensions: (width, height) => {
-        dimsRef.current = { width, height };
-      },
+      onDimensions: (width, height) => setDims({ width, height }),
       onFirstFrame: () => setStatus("streaming"),
     });
     decoder.attachCanvas(canvasRef.current);
@@ -181,6 +194,14 @@ export function DeviceScreen({
     registerMediaSink,
   ]);
 
+  // Seed the pose; the host pushes `device.state` from here on while we watch.
+  useEffect(() => {
+    if (connection !== "ready") {
+      return;
+    }
+    loadDeviceState(deviceId, platform).catch(() => {});
+  }, [connection, deviceId, platform, loadDeviceState]);
+
   // Who holds input, seeded before the first tap and released on the way out —
   // a client that walks away must not leave the device locked to it.
   useEffect(() => {
@@ -192,81 +213,40 @@ export function DeviceScreen({
     return () => releaseDevice(deviceId);
   }, [connection, hasControl, deviceId, loadClaim, releaseDevice]);
 
-  // --- Pointer → normalized touch ---
-  const lastDrag = useRef(0);
-  const pointerDown = useRef(false);
-
-  const normCoords = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const { width, height } = dimsRef.current;
-      if (!width || !height) {
-        return {
-          x: (e.clientX - rect.left) / rect.width,
-          y: (e.clientY - rect.top) / rect.height,
-        };
-      }
-      const scale = Math.min(rect.width / width, rect.height / height);
-      const renderedW = width * scale;
-      const renderedH = height * scale;
-      const offsetX = (rect.width - renderedW) / 2;
-      const offsetY = (rect.height - renderedH) / 2;
-
-      return {
-        x: Math.max(
-          0,
-          Math.min(0.9999, (e.clientX - rect.left - offsetX) / renderedW),
-        ),
-        y: Math.max(
-          0,
-          Math.min(0.9999, (e.clientY - rect.top - offsetY) / renderedH),
-        ),
-      };
-    },
-    [],
-  );
-
-  const onPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
+  // --- Touch: DeviceStage hands us normalized, un-rotated coordinates ---
+  const onTouch = useCallback(
+    (x: number, y: number, eventType: number) => {
       if (!hasControl || blocked) {
         return;
       }
-      pointerDown.current = true;
-      e.currentTarget.setPointerCapture(e.pointerId);
-      const { x, y } = normCoords(e);
-      deviceTouch(deviceId, platform, x, y, 0);
+      deviceTouch(deviceId, platform, x, y, eventType as 0 | 1 | 2);
     },
-    [hasControl, blocked, normCoords, deviceTouch, deviceId, platform],
+    [hasControl, blocked, deviceTouch, deviceId, platform],
   );
 
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!pointerDown.current || e.buttons === 0) {
-        return;
-      }
-      const now = performance.now();
-      if (now - lastDrag.current < DRAG_THROTTLE_MS) {
-        return;
-      }
-      lastDrag.current = now;
-      const { x, y } = normCoords(e);
-      deviceTouch(deviceId, platform, x, y, 1);
-    },
-    [normCoords, deviceTouch, deviceId, platform],
-  );
+  // Rotating and folding are control, arbitrated by the same claim as a tap.
+  const onRotate = useCallback(() => {
+    const order: RemoteDeviceOrientation[] = [
+      "portrait",
+      "landscapeLeft",
+      "portraitUpsideDown",
+      "landscapeRight",
+    ];
+    const current = deviceState?.orientation ?? "portrait";
+    const next = order[(order.indexOf(current) + 1) % order.length]!;
+    setDeviceOrientation(deviceId, platform, next).catch(() => {});
+  }, [deviceState, setDeviceOrientation, deviceId, platform]);
 
-  const onPointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!pointerDown.current) {
-        return;
-      }
-      pointerDown.current = false;
-      e.currentTarget.releasePointerCapture(e.pointerId);
-      const { x, y } = normCoords(e);
-      deviceTouch(deviceId, platform, x, y, 2);
-    },
-    [normCoords, deviceTouch, deviceId, platform],
-  );
+  const onFold = useCallback(() => {
+    if (!fold) {
+      return;
+    }
+    setDeviceFold(
+      deviceId,
+      platform,
+      fold.pose === "open" ? "closed" : "open",
+    ).catch(() => {});
+  }, [fold, setDeviceFold, deviceId, platform]);
 
   // --- tvOS: pointer → dpad. A tap is Select; a drag is a directional swipe. ---
   const tvStart = useRef<{ x: number; y: number } | null>(null);
@@ -305,6 +285,13 @@ export function DeviceScreen({
       deviceButton(deviceId, platform, button).catch(() => {});
     },
     [hasControl, deviceButton, deviceId, platform],
+  );
+
+  const onRemotePress = useCallback(
+    (button: string) => {
+      deviceButton(deviceId, platform, button).catch(() => {});
+    },
+    [deviceButton, deviceId, platform],
   );
 
   const onKey = useCallback(
@@ -366,43 +353,90 @@ export function DeviceScreen({
       ? IOS_BUTTONS
       : ANDROID_BUTTONS;
 
-  // tvOS maps pointer gestures to the remote dpad; phones/emulators forward
-  // the raw touch.
-  const stagePointerProps = isTv
-    ? {
-        onPointerDown: onTvPointerDown,
-        onPointerUp: onTvPointerUp,
-        onPointerCancel: onTvPointerUp,
-      }
-    : {
-        onPointerDown,
-        onPointerMove,
-        onPointerUp,
-        onPointerCancel: onPointerUp,
-      };
+  // Rotating and folding are iOS-only: an Android emulator rotates its own
+  // framebuffer and no simulator but the Duo has a hinge.
+  const poseButtons = platform === "ios" && !isTv && (
+    <>
+      <Button
+        variant="ghost"
+        aria-label="Rotate device"
+        title="Rotate device"
+        disabled={blocked}
+        onClick={onRotate}
+      >
+        <Icons.RotateDeviceIcon size={16} />
+      </Button>
+      {fold && (
+        <Button
+          variant="ghost"
+          aria-label={fold.pose === "open" ? "Fold device" : "Unfold device"}
+          title={fold.pose === "open" ? "Fold device" : "Unfold device"}
+          disabled={blocked}
+          onClick={onFold}
+        >
+          <Icons.FoldIcon size={16} />
+        </Button>
+      )}
+    </>
+  );
+
+  const overlays = (
+    <>
+      <DeviceControlOverlay
+        holderLabel={blocked ? holder.label : null}
+        onTakeControl={() => {
+          claimDevice(deviceId, true).catch(() => {});
+        }}
+      />
+      {status !== "streaming" && (
+        <div className="aw-device-placeholder">
+          <p>{PLACEHOLDER[status]}</p>
+        </div>
+      )}
+    </>
+  );
+
+  // The Siri Remote owns the arrow keys for a tvOS device, so the stage does
+  // not also handle them — two listeners would double every press.
+  const siriRemote = isTv && platform === "ios";
 
   return (
     <div className="aw-device">
-      <div
-        className="aw-device-stage"
-        tabIndex={0}
-        onKeyDown={(e) => onKey(e, true)}
-        onKeyUp={(e) => onKey(e, false)}
-        {...stagePointerProps}
-      >
-        <canvas ref={canvasRef} className="aw-device-canvas" />
-        <DeviceControlOverlay
-          holderLabel={blocked ? holder.label : null}
-          onTakeControl={() => {
-            claimDevice(deviceId, true).catch(() => {});
-          }}
-        />
-        {status !== "streaming" && (
-          <div className="aw-device-placeholder">
-            <p>{PLACEHOLDER[status]}</p>
+      {isTv ? (
+        // tvOS maps pointer gestures to the dpad rather than forwarding
+        // touches, and a TV never rotates — so it keeps its own plain stage.
+        <div className="aw-device-tv">
+          <div
+            className="aw-device-stage"
+            tabIndex={0}
+            onKeyDown={siriRemote ? undefined : (e) => onKey(e, true)}
+            onKeyUp={siriRemote ? undefined : (e) => onKey(e, false)}
+            onPointerCancel={onTvPointerUp}
+            onPointerDown={onTvPointerDown}
+            onPointerUp={onTvPointerUp}
+          >
+            <canvas ref={canvasRef} className="aw-device-canvas" />
+            {overlays}
           </div>
-        )}
-      </div>
+          {siriRemote && hasControl && (
+            <AppleTVRemote blocked={blocked} onPress={onRemotePress} />
+          )}
+        </div>
+      ) : (
+        <DeviceStage
+          blocked={blocked}
+          canvasRef={canvasRef}
+          className="aw-device-frame"
+          rotation={rotation}
+          videoHeight={dims.height}
+          videoWidth={dims.width}
+          onKeyDown={(e) => onKey(e, true)}
+          onKeyUp={(e) => onKey(e, false)}
+          onTouch={onTouch}
+        >
+          {overlays}
+        </DeviceStage>
+      )}
 
       {hasControl && (
         <div className="aw-device-buttons">
@@ -420,6 +454,7 @@ export function DeviceScreen({
               {b.icon}
             </Button>
           ))}
+          {poseButtons}
         </div>
       )}
     </div>

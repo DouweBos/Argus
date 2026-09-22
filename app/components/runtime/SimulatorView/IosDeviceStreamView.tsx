@@ -1,8 +1,9 @@
 import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
+import type { StreamRotation } from "@argus/peacock";
 import { useDeviceVideo } from "../../../hooks/useDeviceVideo";
 import chrome from "../RuntimeChrome.module.css";
 import { RuntimeTitleBar } from "../RuntimeTitleBar";
-import { type StreamRotation, CanvasStreamBody } from "./CanvasStreamBody";
+import { CanvasStreamBody } from "./CanvasStreamBody";
 import styles from "./RuntimeView.module.css";
 
 interface StreamRenderProps {
