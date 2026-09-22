@@ -7,8 +7,12 @@
 
 import { NoiseHandshake, type NoiseSession } from "../crypto/noise";
 import { derivePairingPsk, deriveSas } from "../crypto/derive";
-import { fromBase64Url, toBase64, toUtf8 } from "./base64";
-import { freshKeypair, type DeviceIdentity } from "./keystore";
+import { fromBase64Url, fromUtf8, toBase64, toUtf8 } from "./base64";
+import {
+  defaultDeviceName,
+  freshKeypair,
+  type DeviceIdentity,
+} from "./keystore";
 import type { PairingGrant, PairingPayload } from "./protocol";
 import { GatewaySocket } from "./socket";
 
@@ -30,6 +34,20 @@ export function parsePairingInput(input: string): PairingPayload {
   return payload;
 }
 
+/**
+ * What we tell the computer we are, so its confirm screen can name us and drop
+ * the grants a phone has no use for. Sent in the first handshake message.
+ */
+function identity(): Uint8Array {
+  return fromUtf8(
+    JSON.stringify({
+      product: "Argus Remote",
+      kind: "mobile",
+      device: defaultDeviceName(),
+    }),
+  );
+}
+
 export class PairingClient {
   private socket: GatewaySocket;
   private hs: NoiseHandshake | null = null;
@@ -49,7 +67,7 @@ export class PairingClient {
           remoteStatic: fromBase64Url(this.payload.ds_pub),
           psk: derivePairingPsk(fromBase64Url(this.payload.pairing_secret)),
         });
-        this.socket.send(this.hs.writeMessage(new Uint8Array(0)));
+        this.socket.send(this.hs.writeMessage(identity()));
       },
       onFrame: (bytes) => this.onData(bytes),
       onClose: () => {},

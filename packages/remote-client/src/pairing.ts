@@ -4,8 +4,12 @@
  * compare, and receives the encrypted grant the host sends after confirmation.
  */
 
-import type { PairingGrant, PairingPayload } from "./envelopes";
-import { fromBase64Url, toBase64, toUtf8 } from "./base64";
+import type {
+  PairingClientInfo,
+  PairingGrant,
+  PairingPayload,
+} from "./envelopes";
+import { fromBase64Url, fromUtf8, toBase64, toUtf8 } from "./base64";
 import { derivePairingPsk, deriveSas } from "./derive";
 import { generateKeypair, NoiseHandshake, type NoiseSession } from "./noise";
 import { GatewaySocket } from "./socket";
@@ -47,6 +51,11 @@ export interface PairingOptions {
    * the desktop uses the URL from the pairing code.
    */
   url?: string;
+  /**
+   * Who we are, shown on the host's confirm screen. Omitted, the host describes
+   * the device as unknown and offers no shortcuts.
+   */
+  client?: PairingClientInfo;
 }
 
 export class PairingClient {
@@ -60,7 +69,7 @@ export class PairingClient {
   constructor(
     private readonly payload: PairingPayload,
     private readonly handlers: PairingHandlers,
-    options: PairingOptions = {},
+    private readonly options: PairingOptions = {},
   ) {
     this.url = options.url ?? payload.url;
     this.socket = new GatewaySocket(`${this.url}/pair`, {
@@ -71,11 +80,18 @@ export class PairingClient {
           remoteStatic: fromBase64Url(this.payload.ds_pub),
           psk: derivePairingPsk(fromBase64Url(this.payload.pairing_secret)),
         });
-        this.socket.send(this.hs.writeMessage(new Uint8Array(0)));
+        this.socket.send(this.hs.writeMessage(this.identity()));
       },
       onFrame: (bytes) => this.onData(bytes),
       onClose: () => {},
     });
+  }
+
+  /** Our identity, as handshake payload bytes. Empty when we were not told. */
+  private identity(): Uint8Array {
+    const client = this.options.client;
+
+    return client ? fromUtf8(JSON.stringify(client)) : new Uint8Array(0);
   }
 
   start(): void {

@@ -1415,6 +1415,20 @@ export interface RemoteDevicePush {
   updated_at: number;
 }
 
+/**
+ * What a device says it is while pairing, for the confirm screen. Its own
+ * claim, not a verified fact — it names the product and decides which grants
+ * are worth offering, never what the host allows.
+ */
+export interface PairingClient {
+  /** What it runs on, when it knows: "iPhone 17 Pro", "Safari". */
+  device?: string;
+  kind: "desktop" | "mobile" | "web";
+  /** The product: "Argus Remote", "Argus for Mac". */
+  product: string;
+  version?: string;
+}
+
 export interface RemoteDevice {
   capabilities: string[];
   created_at: number;

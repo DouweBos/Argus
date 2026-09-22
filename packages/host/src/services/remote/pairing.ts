@@ -11,6 +11,7 @@
  */
 
 import {
+  PairingClientInfo,
   PairingGrant,
   PairingPayload,
   type Capability,
@@ -54,6 +55,35 @@ async function computerName(): Promise<string> {
   return hostname().replace(/\.local$/, "");
 }
 
+/**
+ * What the client said it is, or null when it said nothing the schema accepts.
+ *
+ * Never trusted for a decision the host enforces — it is unauthenticated until
+ * the human confirms the SAS. It names the thing on the confirm screen, and
+ * decides which grants are worth offering for it.
+ */
+function parseClientInfo(payload: Uint8Array): PairingClientInfo | null {
+  if (payload.length === 0) {
+    return null;
+  }
+  try {
+    const parsed = PairingClientInfo.safeParse(
+      JSON.parse(Buffer.from(payload).toString("utf8")),
+    );
+
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** "Argus Remote on iPhone", or just the product when it did not say. */
+export function clientLabel(client: PairingClientInfo): string {
+  return client.device
+    ? `${client.product} on ${client.device}`
+    : client.product;
+}
+
 export interface PairingStart {
   /** JSON payload to render as a QR code. */
   qrPayload: string;
@@ -62,7 +92,7 @@ export interface PairingStart {
 }
 
 export interface PairingCallbacks {
-  onSas: (sas: string) => void;
+  onSas: (sas: string, client: PairingClientInfo | null) => void;
   onPaired: (device: PairedDevice) => void;
   onError: (message: string) => void;
 }
@@ -101,12 +131,14 @@ class PairingSession {
       staticKey: this.desktopStatic,
       psk: this.psk,
     });
+    let identity: Uint8Array;
     try {
-      handshake.readMessage(bytes);
+      identity = handshake.readMessage(bytes);
     } catch {
       // Wrong PSK (or a MITM) — cannot complete. Wait for a legitimate client.
       return;
     }
+    const client = parseClientInfo(identity);
     const clientPub = Buffer.from(handshake.remoteStaticKey()).toString(
       "base64",
     );
@@ -115,13 +147,14 @@ class PairingSession {
     this.sendFn = send;
     this.pendingDevice = {
       device_id: randomUUID(),
-      label: "New device",
+      // Named by what it said it is, until it renames itself on first connect.
+      label: client ? clientLabel(client) : "New device",
       dev_static_pub: clientPub,
       capabilities: ["monitor"] satisfies Capability[],
       created_at: Date.now(),
       last_seen: null,
     };
-    this.cb.onSas(deriveSas(handshake.handshakeHash()));
+    this.cb.onSas(deriveSas(handshake.handshakeHash()), client);
   }
 
   async confirm(grants: DeviceGrants = {}): Promise<void> {

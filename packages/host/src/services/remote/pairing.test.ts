@@ -1,3 +1,4 @@
+import type { PairingClientInfo } from "@argus/remote-protocol";
 import { PairingPayload, PairingGrant } from "@argus/remote-protocol";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import WebSocket from "ws";
@@ -62,6 +63,7 @@ class PairingClient {
   constructor(
     private readonly payload: PairingPayload,
     private readonly psk: Uint8Array,
+    private readonly identity: Uint8Array = new Uint8Array(0),
     private readonly clientStatic = generateKeypair(),
   ) {
     this.grantReceived = new Promise((r) => (this.onGrant = r));
@@ -79,7 +81,7 @@ class PairingClient {
         ),
         psk: this.psk,
       });
-      this.ws.send(this.hs.writeMessage(new Uint8Array(0)));
+      this.ws.send(this.hs.writeMessage(this.identity));
     });
     this.ws.on("message", (raw: WebSocket.RawData) => {
       const bytes = new Uint8Array(raw as Buffer);
@@ -164,5 +166,69 @@ describe("device pairing (IKpsk1 over local gateway)", () => {
 
     cancelPairing();
     client.close();
+  });
+
+  it("surfaces what the client says it is, for the confirm screen", async () => {
+    saved.length = 0;
+    let client: PairingClientInfo | null = null;
+    const start = await startPairing(url, {
+      onSas: (_sas, info) => (client = info),
+      onPaired: () => {},
+      onError: () => {},
+    });
+    const payload = PairingPayload.parse(JSON.parse(start.qrPayload));
+    const psk = derivePairingPsk(
+      new Uint8Array(Buffer.from(payload.pairing_secret, "base64url")),
+    );
+
+    const device = new PairingClient(
+      payload,
+      psk,
+      new TextEncoder().encode(
+        JSON.stringify({
+          product: "Argus Remote",
+          kind: "mobile",
+          device: "iPhone 17 Pro",
+        }),
+      ),
+    );
+    device.connect();
+    await vi.waitFor(() => expect(client).not.toBeNull());
+    expect(client).toMatchObject({ kind: "mobile", product: "Argus Remote" });
+
+    cancelPairing();
+    device.close();
+  });
+
+  it("is unbothered by a client that says nothing, or nonsense", async () => {
+    for (const identity of [
+      new Uint8Array(0),
+      new TextEncoder().encode("{not json"),
+      new TextEncoder().encode(JSON.stringify({ kind: "toaster" })),
+    ]) {
+      saved.length = 0;
+      let client: PairingClientInfo | null = null;
+      let sas = "";
+      const start = await startPairing(url, {
+        onSas: (s, info) => {
+          sas = s;
+          client = info;
+        },
+        onPaired: () => {},
+        onError: () => {},
+      });
+      const payload = PairingPayload.parse(JSON.parse(start.qrPayload));
+      const psk = derivePairingPsk(
+        new Uint8Array(Buffer.from(payload.pairing_secret, "base64url")),
+      );
+
+      const device = new PairingClient(payload, psk, identity);
+      device.connect();
+      await vi.waitFor(() => expect(sas).not.toBe(""));
+      expect(client).toBeNull();
+
+      cancelPairing();
+      device.close();
+    }
   });
 });
