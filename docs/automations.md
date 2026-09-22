@@ -277,7 +277,7 @@ that holds even for the read-only ones.
 
 | Template               | Default schedule  | Autonomy | What it does                                                                                                            |
 | ---------------------- | ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Standup digest**     | `09:00`, weekdays | Propose  | Read-only summary of what landed, what is in flight and what stalled across your projects.                              |
+| **Standup digest**     | `09:00`, weekdays | Propose  | Summary of what landed, what is in flight and what stalled, plus a proposal per follow-up worth chasing.                |
 | **Morning triage**     | `07:30`, weekdays | Propose  | Ranks assigned issues and review requests, one proposal each.                                                           |
 | **Take the easy ones** | `08:00`, weekdays | Draft    | Implements the assigned issues it is confident about in their own worktrees, stops at the commit.                       |
 | **PR shepherd**        | every 30 minutes  | Draft    | Red CI on your PRs goes back to the session that wrote the branch; new review comments get a reply drafted.             |

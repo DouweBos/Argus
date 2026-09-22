@@ -93,10 +93,43 @@ Then write the digest as your final message, in markdown:
 Keep it under 350 words. If a project has no activity, say so in one line rather
 than padding it out. Leave out any section that has nothing in it.
 
+## Then propose the follow-ups
+
+A digest nobody can act on is a newsletter. For the things in it that have an
+obvious next step, call \`emit_proposal\` — **at most three**, the ones you would
+actually chase:
+
+- **A finished branch with no PR** — \`{ kind: "start_session", label: "Open the PR" }\`
+  when it needs a human to write the description, or no \`cta\` and
+  \`recommended_action: "review"\` when all it needs is your eyes.
+- **A green PR waiting on a merge** — \`{ kind: "open_url", label: "Open PR #6478", url }\`.
+  Say in the summary that it is green and mergeable.
+- **A stalled session** — three days untouched. Propose finishing it or retiring
+  it, and say which you would do. Never propose deleting anything yourself.
+
+Set \`repo_root\` to the project it belongs to, \`confidence\` to how sure you are
+the next step is the right one, and keep the summary to what the reader needs to
+decide: the branch, what it does, what is in the way.
+
+Nothing else gets a proposal. A shipped commit, a branch still being written and
+a project with no activity are digest lines, not decisions.
+
+### What is already waiting
+
+This runs every day, so yesterday's proposals may still be in the inbox — you
+were handed them above, and \`list_open_proposals\` has them in full. Before you
+emit anything:
+
+- The same branch or PR as yesterday, still waiting? Emit the new proposal with
+  \`supersedes\` naming the old one instead of adding a second copy.
+- Merged, closed or dealt with since? Call \`withdraw_proposal\` with what you
+  found in the git log or from \`gh\` — that is the evidence the user sees.
+
 ## Rules
 
 - This run is read-only. Do not edit, create or delete any file in any project,
-  do not commit, do not push, and do not start any session or agent.
+  do not commit, do not push, and do not start any session or agent —
+  \`emit_proposal\` is how you ask for anything to happen.
 - Do not call ExitPlanMode. Your final assistant message *is* the report — no
   approval step, nobody is watching this run.
 - If a project directory is unreadable, note it and carry on with the rest.
@@ -315,7 +348,7 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
   [STANDUP_DIGEST_TEMPLATE_ID]: {
     name: "Standup digest",
     description:
-      "A daily read-only summary of what every agent and branch did yesterday, and what is finished and waiting to ship.",
+      "A daily summary of what every agent and branch did yesterday, what is finished and waiting to ship, and a proposal for each follow-up worth chasing.",
     // Seeded off: an automation that spawns an agent unprompted should be a
     // deliberate choice, not something an update turns on.
     enabled: false,
