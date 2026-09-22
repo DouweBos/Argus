@@ -28,3 +28,10 @@ export const Default: Story = {
     onSubmitFeedback: (f) => alert(`feedback: ${f}`),
   },
 };
+
+export const WithNewSessionHandoff: Story = {
+  args: {
+    ...Default.args,
+    onApproveInNewSession: () => alert("approve in new session"),
+  },
+};

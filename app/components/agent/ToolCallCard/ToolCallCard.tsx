@@ -17,12 +17,15 @@ import {
   type ToolCallData,
   type ToolResultBlockData,
 } from "@argus/peacock";
+import { getAgent } from "../../../stores/agentStore";
 import {
   clearToolDraft,
   getToolDraft,
   setToolDraft,
 } from "../../../stores/conversationStore";
+import { showCreateSessionDialog } from "../../../stores/dialogStore";
 import { openImageViewer } from "../../../stores/imageViewerStore";
+import { getSessionState } from "../../../stores/sessionStore";
 import { Markdown } from "../../shared/Markdown";
 import { FileLinkHandler, LinkifiedText } from "../FileLinkHandler";
 import { alwaysAllowRule } from "../alwaysAllowRule";
@@ -249,6 +252,41 @@ export function ToolCallCard({
     );
   }, [onPermissionRespond, toolCall.id]);
 
+  // Repo the plan's session lives in — needed to seed a sibling session.
+  const planRepoRoot = useMemo(() => {
+    if (!isExitPlanMode || !agentId) {
+      return null;
+    }
+    const agent = getAgent(agentId);
+    if (!agent) {
+      return null;
+    }
+
+    return (
+      getSessionState().sessions.find((s) => s.id === agent.session_id)
+        ?.repo_root ?? null
+    );
+  }, [isExitPlanMode, agentId]);
+
+  // Hand the plan to a fresh session so the current one can keep planning
+  // (or stay busy with another agent) instead of implementing it here.
+  const handleApproveInNewSession = useCallback(() => {
+    if (!planRepoRoot) {
+      return;
+    }
+    showCreateSessionDialog(
+      planRepoRoot,
+      `Implement the following plan:\n\n${planText}`,
+    );
+    onPermissionRespond?.(
+      toolCall.id,
+      "deny",
+      undefined,
+      false,
+      "The user approved this plan but handed it off to a new session to implement. Do not implement it here — stay in plan mode and wait for further instructions.",
+    );
+  }, [planRepoRoot, planText, onPermissionRespond, toolCall.id]);
+
   const handlePlanFeedback = useCallback(
     (feedback: string) => {
       onPermissionRespond?.(
@@ -314,6 +352,9 @@ export function ToolCallCard({
     pendingForm = (
       <PlanApproval
         onApprove={handleAllow}
+        onApproveInNewSession={
+          planRepoRoot ? handleApproveInNewSession : undefined
+        }
         onReject={handleRejectPlan}
         onSubmitFeedback={handlePlanFeedback}
         plan={planText}

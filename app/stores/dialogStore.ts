@@ -3,6 +3,8 @@ import { getSessionState } from "./sessionStore";
 
 interface DialogState {
   /** Shows the CreateSessionDialog rooted at this repo path when non-null. */
+  /** Prefills the new session's prompt (e.g. an approved plan handed off). */
+  createSessionPrompt: string | null;
   createSessionRepoRoot: string | null;
   /** Shows the NewSessionPicker (repo chooser) when true. */
   newSessionPickerOpen: boolean;
@@ -13,6 +15,7 @@ const store = create<DialogState>(() => ({
   openProjectVisible: false,
   newSessionPickerOpen: false,
   createSessionRepoRoot: null,
+  createSessionPrompt: null,
 }));
 
 export const showOpenProjectDialog = () =>
@@ -25,10 +28,13 @@ export const showNewSessionPicker = () =>
 export const hideNewSessionPicker = () =>
   store.setState({ newSessionPickerOpen: false });
 
-export const showCreateSessionDialog = (repoRoot: string) =>
-  store.setState({ createSessionRepoRoot: repoRoot });
+export const showCreateSessionDialog = (repoRoot: string, prompt?: string) =>
+  store.setState({
+    createSessionRepoRoot: repoRoot,
+    createSessionPrompt: prompt ?? null,
+  });
 export const hideCreateSessionDialog = () =>
-  store.setState({ createSessionRepoRoot: null });
+  store.setState({ createSessionRepoRoot: null, createSessionPrompt: null });
 
 /**
  * Smart "new session" trigger: routes to the right dialog based on how many
@@ -38,19 +44,22 @@ export const hideCreateSessionDialog = () =>
 export const triggerNewSession = () => {
   const { projects } = getSessionState();
   if (projects.length === 0) {
-    store.setState({ openProjectVisible: true });
+    store.setState({ openProjectVisible: true, createSessionPrompt: null });
 
     return;
   }
   if (projects.length === 1) {
     const only = projects[0];
     if (only) {
-      store.setState({ createSessionRepoRoot: only.repoRoot });
+      store.setState({
+        createSessionRepoRoot: only.repoRoot,
+        createSessionPrompt: null,
+      });
     }
 
     return;
   }
-  store.setState({ newSessionPickerOpen: true });
+  store.setState({ newSessionPickerOpen: true, createSessionPrompt: null });
 };
 
 export const useOpenProjectVisible = () => store((s) => s.openProjectVisible);
@@ -58,3 +67,4 @@ export const useNewSessionPickerOpen = () =>
   store((s) => s.newSessionPickerOpen);
 export const useCreateSessionRepoRoot = () =>
   store((s) => s.createSessionRepoRoot);
+export const useCreateSessionPrompt = () => store((s) => s.createSessionPrompt);

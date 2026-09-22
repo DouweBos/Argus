@@ -23,6 +23,8 @@ export interface PlanApprovalDrafts {
 export interface PlanApprovalProps {
   plan: string;
   onApprove: () => void;
+  /** Hand the plan off to a fresh session instead of running it here. Omit to hide. */
+  onApproveInNewSession?: () => void;
   onReject: () => void;
   onSubmitFeedback: (feedback: string) => void;
   /** Render the plan markdown (default: Peacock Markdown; desktop linkifies). */
@@ -39,6 +41,7 @@ export interface PlanApprovalProps {
 export function PlanApproval({
   plan,
   onApprove,
+  onApproveInNewSession,
   onReject,
   onSubmitFeedback,
   renderMarkdown,
@@ -71,6 +74,11 @@ export function PlanApproval({
     drafts?.clear();
     onApprove();
   }, [onApprove, drafts]);
+
+  const handleApproveInNewSession = useCallback(() => {
+    drafts?.clear();
+    onApproveInNewSession?.();
+  }, [onApproveInNewSession, drafts]);
 
   const handleSend = useCallback(() => {
     const trimmed = feedback.trim();
@@ -121,6 +129,16 @@ export function PlanApproval({
       <button className={styles.approveBtn} onClick={handleApprove}>
         Approve &amp; exit plan mode
       </button>
+      {onApproveInNewSession && (
+        <button
+          className={styles.secondaryBtn}
+          onClick={handleApproveInNewSession}
+          title="Create a new session in this project seeded with this plan"
+          type="button"
+        >
+          Approve in new session
+        </button>
+      )}
       <button className={styles.rejectBtn} onClick={onReject}>
         Keep planning
       </button>
