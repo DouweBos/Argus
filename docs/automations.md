@@ -222,8 +222,13 @@ tool result so the run can report what actually happened:
   whatever the run asked you to open — or **Dismiss**, and the reason is kept.
 
 The Inbox groups by what you would do about it, not by which automation produced
-it: proposals to decide on, work that was started and is waiting for review,
-runs that failed, and what a run cleared for you.
+it: proposals to decide on, reports nobody has read yet, work that was started
+and is waiting for review, runs that failed, and what a run cleared for you.
+
+A finished run that wrote a report shows up under **New reports** — open it to
+read it, or **Mark read** to clear it. The dot on the Inbox in the sidebar is
+that list; a newer report from the same automation retires the older one, so a
+report you never opened stops asking once it is out of date.
 
 ### The same thing, proposed twice
 

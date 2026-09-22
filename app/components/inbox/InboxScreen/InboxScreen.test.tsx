@@ -5,7 +5,7 @@
  * the automation ever gets.
  */
 
-import type { Proposal } from "../../../lib/types";
+import type { AutomationRun, Proposal } from "../../../lib/types";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -77,6 +77,26 @@ function proposal(patch: Partial<Proposal> = {}): Proposal {
     cleared_at: null,
     superseded_by: null,
     created_at: 1_000,
+    ...patch,
+  };
+}
+
+function run(patch: Partial<AutomationRun> = {}): AutomationRun {
+  return {
+    id: "r-1",
+    automation_id: "a-1",
+    scratch: null,
+    status: "succeeded",
+    trigger_reason: "schedule 07:30",
+    started_at: Date.now() - 60_000,
+    finished_at: Date.now(),
+    host_session_id: null,
+    host_agent_id: null,
+    cost_usd: null,
+    report_markdown: "## Standup\nTwo PRs landed overnight.",
+    report_blocks: null,
+    error: null,
+    report_read: false,
     ...patch,
   };
 }
@@ -164,6 +184,32 @@ describe("inboxScreen", () => {
     ).map((h) => h.textContent);
     expect(headings[0]).toContain("Decide");
     expect(headings[1]).toContain("Argus is on it");
+  });
+
+  it("lists an unread report so nobody has to hunt for it in Automations", () => {
+    setAutomationState({
+      automations: [],
+      runs: [run()],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.getByText("Standup")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Mark read" })).toBeDefined();
+  });
+
+  it("leaves a failed run to the failures section rather than listing it twice", () => {
+    setAutomationState({
+      automations: [],
+      runs: [run({ status: "failed", error: "Agent exited 1" })],
+      loading: false,
+      error: null,
+    });
+    render(<InboxScreen />);
+
+    expect(screen.getByText("Agent exited 1")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Mark read" })).toBeNull();
   });
 
   it("says what a later run cleared, rather than dropping it silently", () => {

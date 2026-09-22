@@ -20,6 +20,7 @@ import { FailedRuns } from "./FailedRuns";
 import styles from "./InboxScreen.module.css";
 import { PendingProposals } from "./PendingProposals";
 import { StartedWork } from "./StartedWork";
+import { UnreadReports } from "./UnreadReports";
 
 /**
  * `/inbox` — what Argus wants from you, grouped by what you would do about
@@ -28,7 +29,7 @@ import { StartedWork } from "./StartedWork";
  * that already failed.
  */
 export function InboxScreen() {
-  const { cleared, failed, pending, started } = useInboxItems();
+  const { cleared, failed, pending, reports, started } = useInboxItems();
   const all = useProposals();
   const loading = useProposalsLoading();
   const error = useProposalsError();
@@ -36,6 +37,7 @@ export function InboxScreen() {
 
   const empty =
     pending.length === 0 &&
+    reports.length === 0 &&
     started.length === 0 &&
     failed.length === 0 &&
     cleared.length === 0;
@@ -45,6 +47,11 @@ export function InboxScreen() {
       {pending.length > 0 && (
         <SectionPanel meta={`${pending.length} waiting`} plain title="Decide">
           <PendingProposals proposals={pending} />
+        </SectionPanel>
+      )}
+      {reports.length > 0 && (
+        <SectionPanel meta={`${reports.length}`} plain title="New reports">
+          <UnreadReports runs={reports} />
         </SectionPanel>
       )}
       {started.length > 0 && (

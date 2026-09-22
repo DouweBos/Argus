@@ -119,6 +119,32 @@ export function isUnreadReport(run: AutomationRun): boolean {
   );
 }
 
+/** One line of what a report says, for a list row that links to the full one. */
+export function reportPreview(run: AutomationRun): string {
+  for (const block of run.report_blocks ?? []) {
+    if (block.type === "heading") {
+      return block.text;
+    }
+    if (block.type === "markdown") {
+      const line = firstLine(block.text);
+      if (line) {
+        return line;
+      }
+    }
+  }
+
+  return firstLine(run.report_markdown ?? "") || "Report ready to read.";
+}
+
+function firstLine(markdown: string): string {
+  return (
+    markdown
+      .split("\n")
+      .map((l) => l.replace(/^[#>\-*\s]+/, "").trim())
+      .find((l) => l.length > 0) ?? ""
+  );
+}
+
 /** Wall-clock time and date, in the viewer's zone. */
 export function formatTimestamp(ms: number | null): string {
   if (ms === null) {
