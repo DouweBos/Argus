@@ -434,12 +434,16 @@ private struct DetailRoot: View {
   @Environment(Router.self) private var router
 
   var body: some View {
-    switch router.section {
-    case .projects: ProjectsView()
-    case .inbox: InboxView()
-    case .automations: AutomationsView()
-    case .devices: DevicesView()
-    case .settings: SettingsView()
+    if let project = router.detailProject {
+      ProjectView(repoRoot: project.repoRoot, name: project.name)
+    } else {
+      switch router.section {
+      case .projects: ProjectsView()
+      case .inbox: InboxView()
+      case .automations: AutomationsView()
+      case .devices: DevicesView()
+      case .settings: SettingsView()
+      }
     }
   }
 }

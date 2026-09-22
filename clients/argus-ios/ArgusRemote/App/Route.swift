@@ -55,6 +55,11 @@ enum AppSection: String, Hashable, CaseIterable, Identifiable {
 /// What the iPad sidebar can have selected: a section, or something inside
 /// one. Selection drives the detail column, which is what a `NavigationLink`
 /// cannot do across columns — it only ever pushes onto its own stack.
+struct ProjectRef: Hashable {
+  var repoRoot: String
+  var name: String
+}
+
 enum SidebarItem: Hashable {
   case section(AppSection)
   /// Carries its project so selecting it can seed the same stack the user
@@ -99,7 +104,12 @@ final class Router {
   /// The sidebar's selection, and which project groups are open in it.
   var sidebarSelection: SidebarItem? = .section(.projects)
   var expandedProjects: Set<String> = []
-  /// The detail column's stack, on top of the current section's own screen.
+  /// When set, the detail column is rooted on this project instead of the
+  /// section's own screen — so an agent opened from the sidebar has its
+  /// project behind it without needing a second entry in the path.
+  var detailProject: ProjectRef?
+
+  /// The detail column's stack, on top of whatever roots it.
   ///
   /// One array, not a root plus a stack: swapping the root view changes its
   /// identity, which re-creates the `NavigationStack` and throws away a path
@@ -137,6 +147,7 @@ final class Router {
     switch item {
     case .section(let section):
       if self.section != section { self.section = section }
+      detailProject = nil
       detailStack = []
     case .agent(let id, let label, let repoRoot, let projectName):
       // A shortcut into the normal path, not a replacement for it: the
@@ -145,10 +156,27 @@ final class Router {
       // actually changes — an `@Observable` write invalidates on assignment,
       // not on difference.
       if section != .projects { section = .projects }
-      detailStack =
-        repoRoot.isEmpty
-        ? [.agent(id: id, label: label)]
-        : [.project(repoRoot: repoRoot, name: projectName), .agent(id: id, label: label)]
+      // Root the column on the project and push only the agent. Assigning a
+      // two-element path in one update loses the second push; one push
+      // against a stable root does not.
+      let project = repoRoot.isEmpty ? nil : ProjectRef(repoRoot: repoRoot, name: projectName)
+      let agent = Route.agent(id: id, label: label)
+      guard detailProject != project else {
+        // Same project already rooting the column: nothing about the root
+        // changes, so the push lands on its own.
+        detailStack = [agent]
+        break
+      }
+      // Changing what roots the column and pushing onto it in the same
+      // update loses the push — SwiftUI rebuilds the stack around the new
+      // root first. Let the root land, then push. This is exactly the second
+      // tap the user was having to make.
+      detailProject = project
+      detailStack = []
+      Task { @MainActor [weak self] in
+        guard let self, self.detailProject == project, self.detailStack.isEmpty else { return }
+        self.detailStack = [agent]
+      }
     }
     sidebarSelection = item
   }
@@ -178,6 +206,7 @@ final class Router {
 
   func popToRoot() {
     paths[section] = []
+    detailProject = nil
     detailStack = []
   }
 
