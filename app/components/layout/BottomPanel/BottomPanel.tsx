@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Icons } from "@argus/peacock";
+import { ResizablePanel } from "@argus/peacock";
 import {
   type ToolRailId,
   TOOL_PLACEMENT,
@@ -12,7 +13,6 @@ import { useEffectiveToolEnabled } from "../../../tools/store";
 import { DebugTool } from "../../toolrail/tools/DebugTool";
 import { NotificationsTool } from "../../toolrail/tools/NotificationsTool";
 import { TerminalTool } from "../../toolrail/tools/TerminalTool";
-import { ResizablePanel } from "../ResizablePanel";
 import styles from "./BottomPanel.module.css";
 
 const TOOL_LABELS: Record<ToolRailId, string> = {

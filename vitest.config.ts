@@ -14,6 +14,7 @@ export default defineConfig({
       "app/**/*.test.{ts,tsx}",
       "electron/**/*.test.ts",
       "packages/host/**/*.test.ts",
+      "packages/peacock/src/**/*.test.{ts,tsx}",
       "clients/argus-web/src/**/*.test.{ts,tsx}",
     ],
     environment: "node",

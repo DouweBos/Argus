@@ -6,12 +6,12 @@ import {
   useState,
   type KeyboardEvent,
 } from "react";
-import { Input } from "@argus/peacock";
-import { listPath } from "../../../lib/ipc";
 import {
   FileMentionPicker,
+  Input,
   type MentionPickerItem,
-} from "../../shared/FileMentionPicker";
+} from "@argus/peacock";
+import { listPath } from "../../../lib/ipc";
 import styles from "./GlobPathInput.module.css";
 
 interface GlobPathInputProps {

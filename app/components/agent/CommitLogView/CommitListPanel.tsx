@@ -13,10 +13,10 @@ import {
   RefBadge,
   RefBadgeList,
 } from "@argus/peacock";
+import { ResizablePanel } from "@argus/peacock";
 import { GitError } from "../../../lib/gitError";
 import { gitCreateTag, type GitCommit } from "../../../lib/ipc";
 import { gravatarUrl as buildGravatarUrl } from "../../../lib/md5";
-import { ResizablePanel } from "../../layout/ResizablePanel";
 import { GraphCell } from "../GraphCell";
 import styles from "../HistoryView/HistoryView.module.css";
 import { CommitRow } from "./CommitRow";

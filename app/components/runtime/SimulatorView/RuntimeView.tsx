@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo } from "react";
 import { Icons, SegmentedControl } from "@argus/peacock";
+import { useDragResize } from "@argus/peacock";
 import { InspectionPanel } from "../../../features/inspection/InspectionPanel";
 import { NodeMetadataPanel } from "../../../features/inspection/NodeMetadataPanel";
-import { useDragResize } from "../../../hooks/useDragResize";
 import {
   useVideoInputDevices,
   videoInputLabel,
@@ -111,7 +111,7 @@ export function RuntimeView({
   const videoInputs = useVideoInputDevices();
   const canPopout = !isPopout && platform !== "web" && !!activeDeviceKey;
 
-  const { size: sidePanelWidth, onMouseDown: onSidePanelResize } =
+  const { size: sidePanelWidth, onPointerDown: onSidePanelResize } =
     useDragResize({
       axis: "horizontal",
       initialSize: loadSidePanelWidth(),
@@ -287,7 +287,7 @@ export function RuntimeView({
               aria-orientation="vertical"
               aria-label="Resize side panel"
               className={styles.sidePanelResizer}
-              onMouseDown={onSidePanelResize}
+              onPointerDown={onSidePanelResize}
             />
             <NodeMetadataPanel deviceKey={activeDeviceKey} />
           </div>

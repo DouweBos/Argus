@@ -9,6 +9,8 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   size?: CardSize;
   hoverable?: boolean;
   selected?: boolean;
+  /** Stack the children in a column with a consistent gap. */
+  stack?: boolean;
 }
 
 export function Card({
@@ -16,6 +18,7 @@ export function Card({
   size = "md",
   hoverable,
   selected,
+  stack,
   className,
   children,
   ...rest
@@ -28,6 +31,7 @@ export function Card({
     size === "lg" ? styles.lg : "",
     hoverable ? styles.hoverable : "",
     selected ? styles.selected : "",
+    stack ? styles.stack : "",
     className ?? "",
   ]
     .filter(Boolean)

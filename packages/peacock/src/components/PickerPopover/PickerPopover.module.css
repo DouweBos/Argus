@@ -1,6 +1,6 @@
-.picker {
+.popover {
   position: fixed;
-  width: clamp(260px, 40vw, 600px);
+  width: clamp(220px, 40vw, 600px);
   max-height: 320px;
   overflow-y: auto;
   background: var(--bg-secondary-90);
@@ -11,10 +11,10 @@
   -webkit-backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
-  /* Sits above dialogs (z-index 1000–2000) so it stays usable from inside
-     the start-agent / new-session forms without being clipped by the
-     dialog scrim. */
+  /* Sits above dialogs (z-index 1000–2000) so it stays usable from inside the
+     start-agent / new-session forms without being clipped by the dialog scrim. */
   z-index: 2100;
+  overscroll-behavior: contain;
 }
 
 .header {
@@ -31,6 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   padding: 6px 12px 6px 14px;
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
@@ -42,43 +43,50 @@
   line-height: 1.4;
 }
 
-.option:hover {
-  background: var(--surface-3);
-  color: var(--text-primary);
+/* Hover is a mouse affordance — on touch it sticks after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .option:hover {
+    background: var(--surface-3);
+    color: var(--text-primary);
+  }
 }
 
-.optionActive {
+.selected {
   background: var(--accent-overlay-md);
   border-left-color: var(--accent);
   color: var(--text-primary);
 }
 
-.optionLabel {
+.label {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
 
-.optionName {
+.name {
   font: var(--type-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.optionDesc {
+.description {
   font: var(--type-caption);
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.optionCheck {
+.check {
   font-size: var(--font-size-xs);
   color: var(--accent);
   flex-shrink: 0;
 }
 
-/* Read-only runner row shown when the runner is locked (existing session)
-   or there's only one registered runner. Mirrors `.option` layout but
-   without hover/cursor affordances. */
-.runnerStatic {
+/* Read-only row — mirrors `.option` without the hover/cursor affordances. */
+.static {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -88,4 +96,19 @@
   border-left: 2px solid transparent;
   line-height: 1.4;
   user-select: none;
+}
+
+.empty {
+  padding: var(--space-4) var(--space-6);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+/* Touch rows need a real target; a 26px row is not tappable. */
+@media (pointer: coarse) {
+  .option,
+  .static {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
 }

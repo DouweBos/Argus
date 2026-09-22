@@ -45,6 +45,8 @@
   background: transparent;
   transition: background var(--transition-base);
   z-index: 10;
+  /* Pointer-driven drag: stop the browser scrolling/zooming the gesture away. */
+  touch-action: none;
 }
 
 .divider.right,
@@ -63,10 +65,16 @@
   cursor: row-resize;
 }
 
-.divider:hover,
 .divider:active {
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent-glow);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .divider:hover {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
 }
 
 .divider.right {
@@ -75,4 +83,17 @@
 
 .divider.left {
   left: 0;
+}
+
+/* A 4px target is unhittable with a finger — grow it inward on touch. The
+   panel clips overflow, so it can only extend into the content, not past it. */
+@media (pointer: coarse) {
+  .divider.right,
+  .divider.left {
+    width: 12px;
+  }
+
+  .divider.top {
+    height: 12px;
+  }
 }
