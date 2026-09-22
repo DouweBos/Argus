@@ -1,7 +1,0 @@
-{
-  "name": "argus-paste",
-  "version": "0.1.0",
-  "description": "Lets iOS's native Paste action put an image into the chat input",
-  "main": "index.ts",
-  "private": true
-}

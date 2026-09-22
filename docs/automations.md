@@ -229,6 +229,24 @@ tool result so the run can report what actually happened:
   its button — **Start** and get the same session you would have got, or
   whatever the run asked you to open — or **Dismiss**, and the reason is kept.
 
+### Yes, but
+
+Most proposals are neither right nor wrong — they are close. **Add a note** on
+any pending proposal opens one field with two ways to spend it:
+
+- **Start with this note** — the work begins as it would have, and the note ends
+  the agent's brief, named as yours. Where the note and the proposal disagree,
+  the agent is told the note wins.
+- **Ask for a better one** — nothing starts. The proposal stays in the inbox
+  with your note attached, and the automation is run again so it can supersede
+  it with a version that takes the note into account (or withdraw it, if your
+  note convinced it there was nothing there). If a run is already going or the
+  day's budget is spent, the note simply waits for the next scheduled run.
+
+Both are kept. Notes you added on the way in are quoted back to the automation
+in its calibration block, because a proposal that always needs the same
+correction is a proposal that should have said so itself.
+
 The Inbox groups by what you would do about it, not by which automation produced
 it: proposals to decide on, reports nobody has read yet, work that was started
 and is waiting for review, runs that failed, and what a run cleared for you.
@@ -417,7 +435,7 @@ Two things to know when the host is headless:
 
 ## From your phone
 
-[Argus Remote](../clients/argus-remote/README.md) reaches the connected
+[Argus Remote](../clients/argus-ios/README.md) reaches the connected
 computer's automations from the Automations button on its projects screen: the
 automations themselves, the recent runs across all of them, and one run with
 its report — structured blocks included.

@@ -1,7 +1,0 @@
-{
-  "name": "argus-push",
-  "version": "0.1.0",
-  "description": "Shares the push decryption key with the notification service extension",
-  "main": "index.ts",
-  "private": true
-}

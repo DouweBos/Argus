@@ -5,9 +5,9 @@ import Foundation
 /// optional `psk1` variant used only during device pairing.
 ///
 /// A faithful port of the documented Noise state machine (revision 34), kept
-/// byte-for-byte compatible with `clients/argus-remote/src/crypto/noise.ts` and
+/// byte-for-byte compatible with the desktop gateway's
 /// `packages/host/src/services/remote/noise.ts`. Any drift here breaks every
-/// handshake — change all three or none.
+/// handshake — change both or neither.
 ///
 /// IK:
 ///     <- s                       (pre-message: initiator knows responder static)

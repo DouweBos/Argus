@@ -1,5 +1,0 @@
-{
-  "platforms": ["ios", "android"],
-  "ios": { "modules": ["ArgusVideoModule"] },
-  "android": { "modules": ["dev.houwert.argus.video.ArgusVideoModule"] }
-}

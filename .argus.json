@@ -24,24 +24,6 @@
       "title": "Storybook",
       "command": "pnpm storybook",
       "restartOnRerun": true
-    },
-    {
-      "title": "Remote: Install iOS",
-      "command": "npm install --silent && npx expo run:ios --configuration Release --no-bundler --device \"${ARGUS_IOS_DEVICE:-00008120-001979643C9B401E}\"",
-      "cwd": "clients/argus-remote",
-      "restartOnRerun": true
-    },
-    {
-      "title": "Remote: Install Android",
-      "command": "npm install --silent && npx expo run:android --variant release --no-bundler",
-      "cwd": "clients/argus-remote",
-      "restartOnRerun": true
-    },
-    {
-      "title": "Remote: Metro",
-      "command": "npm install --silent && npx expo start --dev-client",
-      "cwd": "clients/argus-remote",
-      "restartOnRerun": true
     }
   ],
   "single_runtime": true,

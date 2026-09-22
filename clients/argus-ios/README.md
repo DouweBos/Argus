@@ -6,8 +6,8 @@ lists the paired computers and the app talks to one at a time. The desktop
 runs a local gateway exposed through a Cloudflare or Tailscale tunnel; the
 tunnel only ever sees ciphertext.
 
-Native Swift and SwiftUI. Replaces the Expo client in `clients/argus-remote`,
-which remains the Android client for now.
+Native Swift and SwiftUI. Replaced the Expo client, which is gone; this is the
+only mobile client.
 
 **Scope: whatever the desktop granted this device.** Every paired device can
 monitor — projects, sessions, agents, transcripts, changes — and approve or
@@ -49,14 +49,14 @@ xcodebuild -project ArgusRemote.xcodeproj -scheme ArgusRemote \
 The crypto, wire protocol, media framing and several text formats must match
 the desktop **byte for byte**. Rather than trusting a careful reading, the
 fixtures in `ArgusKit/Tests/ArgusKitTests/Fixtures/` are generated from the
-TypeScript implementations the desktop and the Expo client actually run, and
+TypeScript implementations the desktop actually runs, and
 the Swift port is asserted against them:
 
 | Fixture | Generated from | Covers |
 |---|---|---|
-| `noise-vectors.json` | `clients/argus-remote/src/crypto/noise.ts` | IK and IKpsk1 handshakes, transport frames, SAS, pairing PSK |
-| `diff-sample.json` | `clients/argus-remote/src/lib/diff.ts` | unified-diff parsing over a real four-status `git diff` |
-| `linked-projects.json` | `clients/argus-remote/src/lib/linkedProjects.ts` | the message preamble, which is also a live instruction to the agent |
+| `noise-vectors.json` | `packages/host/src/services/remote/noise.ts` | IK and IKpsk1 handshakes, transport frames, SAS, pairing PSK |
+| `diff-sample.json` | `app/lib/diffParser.ts` | unified-diff parsing over a real four-status `git diff` |
+| `linked-projects.json` | `app/lib/linkedProjectsPreamble.ts` | the message preamble, which is also a live instruction to the agent |
 
 Regenerate the Noise vectors after any change to the shared crypto:
 
@@ -105,7 +105,7 @@ connects to it and drops the previous one's data.
 - **iPad is one stretched column.** `supportsTablet` is on, but there is no
   two-pane layout like the web client's.
 
-Carried over deliberately from the Expo client, and worth revisiting:
+Scoped out deliberately so far, and worth revisiting:
 
 - No terminal or run-command surface, though the host exposes both.
 - Changes is read-only: no commit, push, stash or conflict resolution.

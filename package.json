@@ -35,7 +35,6 @@
     "lint": "tsc --noEmit && pnpm typecheck:electron && pnpm typecheck:host && eslint . && prettier --check . && pnpm run lint:css-modules && pnpm run lint:cycles",
     "build:bridge": "make -C native/argus-sim-bridge && make -C native/argus-sim-input",
     "build:icon": "tsx scripts/generate-icon.ts",
-    "build:mobile-icon": "tsx scripts/generate-mobile-icon.ts",
     "build:menu-icons": "tsx scripts/rasterize-menu-icons.ts",
     "server:install-agent": "bash scripts/install-server-agent.sh",
     "lint:css-modules": "tsx scripts/check-css-module-usage.ts",
