@@ -1,0 +1,15 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  /* Tight: the dots stand in for an ellipsis, so they hug the last word. */
+  gap: 4px;
+  font: var(--type-caption);
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

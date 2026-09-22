@@ -6,6 +6,7 @@ import {
   huddlePanes,
   INITIAL_HUDDLE_VIEW,
   requestJoin,
+  typingNames,
   type HuddleView,
 } from "./huddleSession";
 import type { HuddleStatePayload } from "./protocol";
@@ -47,7 +48,7 @@ describe("joining a huddle", () => {
       state: "pending",
       roomId: "room-1",
       agentId: null,
-      deviceKey: null, members: [], you: null
+      deviceKey: null, members: [], you: null, hostTyping: false, hostLabel: ""
     });
   });
 
@@ -66,7 +67,7 @@ describe("joining a huddle", () => {
       state: "approved",
       roomId: "room-1",
       agentId: "ag1",
-      deviceKey: "udid-1", members: [], you: null
+      deviceKey: "udid-1", members: [], you: null, hostTyping: false, hostLabel: ""
     });
     expect(huddleCapabilities(view.state)).toEqual(["monitor", "control"]);
   });
@@ -143,3 +144,45 @@ describe("what a guest is offered", () => {
     },
   );
 });
+
+describe("naming the host", () => {
+  const view = (over: Partial<HuddleView> = {}): HuddleView => ({
+    ...INITIAL_HUDDLE_VIEW,
+    state: "approved",
+    ...over,
+  });
+
+  it("uses the name the desktop sent", () => {
+    expect(
+      typingNames(view({ hostTyping: true, hostLabel: "Ana Dev" })),
+    ).toEqual(["Ana Dev"]);
+  });
+
+  it("falls back to 'The host' when the desktop knows no name", () => {
+    expect(typingNames(view({ hostTyping: true }))).toEqual(["The host"]);
+  });
+
+  it("puts the host first — they are the one everyone is waiting on", () => {
+    expect(
+      typingNames(
+        view({
+          hostTyping: true,
+          hostLabel: "Ana Dev",
+          members: [
+            {
+              member_id: "m1",
+              label: "Bo",
+              connected: true,
+              typing: true,
+            },
+          ],
+        }),
+      ),
+    ).toEqual(["Ana Dev", "Bo"]);
+  });
+
+  it("says nobody is typing when nobody is", () => {
+    expect(typingNames(view({ hostLabel: "Ana Dev" }))).toEqual([]);
+  });
+});
+

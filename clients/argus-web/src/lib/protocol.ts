@@ -61,7 +61,8 @@ export type RemoteMethod =
   | "devices.release"
   | "devices.claim_status"
   | "huddle.join"
-  | "huddle.state";
+  | "huddle.state"
+  | "huddle.typing";
 
 /** Where a huddle guest stands with the host; `ended` means the room is gone. */
 export type HuddleConnectionState = "approved" | "denied" | "ended" | "pending";
@@ -77,6 +78,8 @@ export interface HuddleMember {
   connected: boolean;
   /** They hold the device claim. At most one member ever does. */
   driving?: boolean;
+  /** Composing a message to the agent right now. */
+  typing?: boolean;
 }
 
 export interface HuddleStatePayload {
@@ -88,6 +91,8 @@ export interface HuddleStatePayload {
   members?: HuddleMember[];
   /** Which of `members` is us. */
   you?: string | null;
+  /** The engineer is composing. They own the room, so they are not a member. */
+  host_typing?: boolean;
   /** What to call the engineer. Empty when the desktop knows no name for them. */
   host_label?: string;
 }

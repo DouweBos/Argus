@@ -17,6 +17,7 @@ import {
   Envelope,
   EventPayloads,
   HuddleJoinParams,
+  HuddleTypingParams,
   isAgentInScope,
   isBrowserInScope,
   isDeviceInScope,
@@ -59,7 +60,12 @@ import {
   type GatewayContext,
 } from "./capabilities";
 import { releaseConnection, releaseDevice } from "./deviceClaims";
-import { guestState, joinRoom, leaveGuest } from "./huddle";
+import {
+  guestState,
+  joinRoom,
+  leaveGuest,
+  setGuestTyping,
+} from "./huddle";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -540,10 +546,23 @@ export class DeviceConnection implements DeviceMediaController {
    * else — no agent, no transcript, no device — until the host approves them,
    * which is what mints the grant (see `plan/huddle-rooms.md` §6).
    */
-  private handleHuddle(method: string, params: unknown): HuddleStatePayload {
+  private handleHuddle(method: string, params: unknown): unknown {
     const guest = this.guest;
     if (!guest) {
       throw new GatewayError("capability_denied", `unknown method ${method}`);
+    }
+    if (method === "huddle.typing") {
+      const typing = HuddleTypingParams.safeParse(params);
+      if (!typing.success) {
+        throw new GatewayError("bad_request", "invalid huddle.typing");
+      }
+      // Presence, not content: the store refuses anyone it hasn't approved, so
+      // a pending guest cannot announce itself into an approved guest's UI.
+      if (guest.roomId) {
+        setGuestTyping(guest.roomId, guest.devStaticPub, typing.data.typing);
+      }
+
+      return {};
     }
     if (method === "huddle.state") {
       const state = guest.roomId

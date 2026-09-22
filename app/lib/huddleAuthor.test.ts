@@ -18,6 +18,8 @@ function room(overrides: Partial<HuddleRoom> = {}): HuddleRoom {
     created_at: 1,
     expires_at: 2,
     guests: [],
+    host_typing: false,
+    host_typing: false,
     host_label: "Ana Dev",
     ...overrides,
   };

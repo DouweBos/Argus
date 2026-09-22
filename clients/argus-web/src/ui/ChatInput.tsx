@@ -11,6 +11,7 @@ import {
   ChatInputShell,
   Chip,
   ContextMeter,
+  createTypingReporter,
   FileMentionPicker,
   Icons,
   ImageAttachmentStrip,
@@ -138,6 +139,15 @@ export function ChatInput({
   const setEffort = useAppStore((s) => s.setEffort);
   const projects = useAppStore((s) => s.projects);
   const refreshProjects = useAppStore((s) => s.refreshProjects);
+  const setHuddleTyping = useAppStore((s) => s.setHuddleTyping);
+
+  // A no-op outside a huddle, so the composer reports either way and never has
+  // to know which kind of connection it is sitting on.
+  const typingReporter = useMemo(
+    () => createTypingReporter(setHuddleTyping),
+    [setHuddleTyping],
+  );
+  useEffect(() => () => typingReporter.stop(), [typingReporter]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -259,9 +269,10 @@ export function ChatInput({
     adjustHeight();
     updateSuggestions();
     updateMentions(textareaRef.current);
+    typingReporter.keystroke();
     setHasText((textareaRef.current?.value.trim().length ?? 0) > 0);
     localStorage.setItem(draftKey(agentId), textareaRef.current?.value ?? "");
-  }, [adjustHeight, updateSuggestions, updateMentions, agentId]);
+  }, [adjustHeight, updateSuggestions, updateMentions, typingReporter, agentId]);
 
   const submit = useCallback(() => {
     const value = textareaRef.current?.value.trim() ?? "";
@@ -291,8 +302,10 @@ export function ChatInput({
     setPending([]);
     setSuggestions([]);
     dismissMention();
+    typingReporter.stop();
   }, [
     agentId,
+    typingReporter,
     pending,
     sendMessage,
     queueMessage,

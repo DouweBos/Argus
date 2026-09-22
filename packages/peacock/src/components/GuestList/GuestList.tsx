@@ -2,6 +2,7 @@ import { Avatar } from "../Avatar/Avatar";
 import { Badge } from "../Badge/Badge";
 import { Button } from "../Button/Button";
 import { StatusBulb } from "../StatusBulb/StatusBulb";
+import { TypingIndicator } from "../TypingIndicator/TypingIndicator";
 import styles from "./GuestList.module.css";
 
 export type GuestListItemState = "approved" | "denied" | "pending";
@@ -18,6 +19,8 @@ export interface GuestListItem {
    * the same with two people or with six: one row is marked, the rest are not.
    */
   driving?: boolean;
+  /** Composing a message right now — replaces the status line while it lasts. */
+  typing?: boolean;
 }
 
 export interface GuestListProps {
@@ -106,12 +109,18 @@ export function GuestList({
               )}
             </span>
             <span className={styles.status}>
-              <StatusBulb
-                size="sm"
-                tone={bulbTone(guest)}
-                pulse={guest.state === "pending"}
-              />
-              {statusLine(guest)}
+              {guest.typing && guest.state === "approved" ? (
+                <TypingIndicator label="Typing" />
+              ) : (
+                <>
+                  <StatusBulb
+                    size="sm"
+                    tone={bulbTone(guest)}
+                    pulse={guest.state === "pending"}
+                  />
+                  {statusLine(guest)}
+                </>
+              )}
             </span>
           </span>
           {guest.state === "pending" && onApprove && onDeny && (

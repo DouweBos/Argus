@@ -19,6 +19,7 @@ import {
   listRooms,
   refreshDriving,
   removeGuest,
+  setHostTyping,
   setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
@@ -26,6 +27,15 @@ import {
 import { acquirePublicUrl, releasePublicUrl } from "./remoteService";
 
 export { approveGuest, denyGuest, getRoom, listRooms, removeGuest };
+
+/**
+ * The engineer started or stopped composing in the shared agent's chat, so the
+ * room can show them as busy the same way it shows a guest. Presence only — the
+ * draft itself never leaves the desktop.
+ */
+export function setHuddleHostTyping(roomId: string, typing: boolean): boolean {
+  return setHostTyping(roomId, typing);
+}
 
 /**
  * Re-point a live room at whatever device the host now has open. Guests mirror

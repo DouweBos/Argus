@@ -4,6 +4,7 @@
  * host approving does.
  */
 
+import type { HuddleStatePayload } from "@argus/remote-protocol";
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,10 +30,13 @@ const {
   hostLabelForAgent,
   removeGuest,
   resetRooms,
+  setGuestTyping,
+  setHostTyping,
   setRoomDevice,
   setRoomEndedListener,
   setRoomUrl,
   sweepRooms,
+  TYPING_TTL_MS,
 } = await import("./huddle");
 
 function link(connectionId = `conn-${randomUUID()}`) {
@@ -746,3 +750,80 @@ describe("naming the host", () => {
     expect(hostLabelForAgent("ag1")).toBeUndefined();
   });
 });
+
+describe("typing presence", () => {
+  beforeEach(reset);
+  afterEach(resetRooms);
+
+  it("only an approved guest can be typing", () => {
+    const r = room();
+    joinRoom(r.token, "pub-a", "Ana", link());
+
+    expect(setGuestTyping(r.id, "pub-a", true)).toBe(false);
+    expect(getRoom(r.id)?.guests[0].typing).toBe(false);
+  });
+
+  it("tells the other guests who is composing, but never what", () => {
+    const r = room();
+    joinRoom(r.token, "pub-a", "Ana", link());
+    const bo = link();
+    joinRoom(r.token, "pub-b", "Bo", bo);
+    approveGuest(r.id, "pub-a");
+    approveGuest(r.id, "pub-b");
+    bo.notify.mockClear();
+    setGuestTyping(r.id, "pub-a", true);
+
+    const roster: HuddleStatePayload = bo.notify.mock.calls.at(-1)?.[0];
+    expect(roster.members.find((m) => m.label === "Ana")?.typing).toBe(true);
+    expect(JSON.stringify(roster)).not.toContain("draft");
+  });
+
+  it("mirrors the host composing to every approved guest", () => {
+    const r = room();
+    const ana = link();
+    joinRoom(r.token, "pub-a", "Ana", ana);
+    approveGuest(r.id, "pub-a");
+    ana.notify.mockClear();
+    setHostTyping(r.id, true);
+
+    expect(ana.notify.mock.calls.at(-1)?.[0].host_typing).toBe(true);
+  });
+
+  it("re-sending the same flag costs no fan-out", () => {
+    const r = room();
+    const ana = link();
+    joinRoom(r.token, "pub-a", "Ana", ana);
+    approveGuest(r.id, "pub-a");
+    setGuestTyping(r.id, "pub-a", true);
+    ana.notify.mockClear();
+    setGuestTyping(r.id, "pub-a", true);
+
+    expect(ana.notify).not.toHaveBeenCalled();
+  });
+
+  it("expires a flag nobody renewed, so a closed tab stops looking busy", async () => {
+    vi.useFakeTimers();
+    try {
+      const r = room();
+      joinRoom(r.token, "pub-a", "Ana", link());
+      approveGuest(r.id, "pub-a");
+      setGuestTyping(r.id, "pub-a", true);
+      vi.advanceTimersByTime(TYPING_TTL_MS + 1);
+
+      expect(getRoom(r.id)?.guests[0].typing).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clears the flag when the guest's socket goes away", () => {
+    const r = room();
+    joinRoom(r.token, "pub-a", "Ana", link());
+    approveGuest(r.id, "pub-a");
+    setGuestTyping(r.id, "pub-a", true);
+    leaveGuest(r.id, "pub-a");
+
+    expect(getRoom(r.id)?.guests[0].typing).toBe(false);
+  });
+});
+

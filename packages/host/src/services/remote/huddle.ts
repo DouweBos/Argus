@@ -27,6 +27,21 @@ export const ROOM_TTL_MS = 4 * 60 * 60 * 1000;
 /** How often the backstop is checked. Cheap: rooms are a handful at most. */
 const SWEEP_INTERVAL_MS = 60_000;
 
+/**
+ * How long a "typing" flag survives without being renewed. Clients re-send
+ * while the caret moves, so this only ever fires when someone walked away
+ * mid-sentence or their socket died — and the room stops claiming they're busy.
+ */
+export const TYPING_TTL_MS = 8_000;
+
+/**
+ * How much side chat a room keeps. Enough that someone let in ten minutes late
+ * can read what they walked into, bounded so a long huddle can't grow without
+ * limit in memory that is never written anywhere.
+ */
+export const CHAT_BACKLOG = 200;
+
+
 /** A live guest socket, as far as the room store needs to care. */
 export interface GuestLink {
   /**
@@ -47,6 +62,8 @@ interface RoomEntry {
   room: HuddleRoom;
   /** Live sockets by guest key. A guest with no link has closed their tab. */
   links: Map<string, GuestLink>;
+  /** Expiry timers for the typing flags, by guest key (`""` = the host). */
+  typingTimers: Map<string, ReturnType<typeof setTimeout>>;
 }
 
 const rooms = new Map<string, RoomEntry>();
@@ -122,9 +139,11 @@ function statePayload(
             driving:
               holder != null &&
               connections?.get(g.dev_static_pub) === holder.connection_id,
+            typing: g.typing,
           }))
       : [],
     you: approved ? (guest?.member_id ?? null) : null,
+    host_typing: approved && room.host_typing,
     host_label: approved ? room.host_label : "",
   };
 }
@@ -185,9 +204,10 @@ export function createRoom(opts: CreateRoomOpts): HuddleRoom {
     created_at: now,
     expires_at: now + (opts.ttl_ms ?? ROOM_TTL_MS),
     guests: [],
+    host_typing: false,
     host_label: opts.host_label ?? "",
   };
-  rooms.set(room.id, { room, links: new Map() });
+  rooms.set(room.id, { room, links: new Map(), typingTimers: new Map() });
   scheduleSweep();
   emitChanged();
 
@@ -238,6 +258,98 @@ export function getRoom(roomId: string): HuddleRoom | null {
   const entry = rooms.get(roomId);
 
   return entry ? structuredClone(entry.room) : null;
+}
+
+/** The host's slot in `typingTimers`. No guest key is ever the empty string. */
+const HOST_TYPING_KEY = "";
+
+function clearTypingTimer(entry: RoomEntry, key: string): void {
+  const timer = entry.typingTimers.get(key);
+  if (timer) {
+    clearTimeout(timer);
+    entry.typingTimers.delete(key);
+  }
+}
+
+/**
+ * Arm the expiry for a flag that was just raised. Clients renew while the caret
+ * keeps moving, so this only ever fires for someone who stopped without saying
+ * so — a closed tab, a dropped socket, a walk to the coffee machine.
+ */
+function armTypingExpiry(
+  entry: RoomEntry,
+  key: string,
+  clear: () => void,
+): void {
+  clearTypingTimer(entry, key);
+  const timer = setTimeout(() => {
+    entry.typingTimers.delete(key);
+    clear();
+    pushRoster(entry);
+    emitChanged();
+  }, TYPING_TTL_MS);
+  timer.unref?.();
+  entry.typingTimers.set(key, timer);
+}
+
+/**
+ * One guest started or stopped composing. Presence only — no draft text ever
+ * reaches the host, so this is safe to fan out to everyone else in the room.
+ * Only an approved guest can be typing at the agent; a pending one has no
+ * composer to type into.
+ */
+export function setGuestTyping(
+  roomId: string,
+  devStaticPub: string,
+  typing: boolean,
+): boolean {
+  const entry = rooms.get(roomId);
+  const guest = entry?.room.guests.find(
+    (g) => g.dev_static_pub === devStaticPub,
+  );
+  if (!entry || !guest || guest.state !== "approved") {
+    return false;
+  }
+  if (typing) {
+    armTypingExpiry(entry, devStaticPub, () => {
+      guest.typing = false;
+    });
+  } else {
+    clearTypingTimer(entry, devStaticPub);
+  }
+  // Renewing an already-raised flag re-arms the timer above but changes
+  // nothing anyone can see, so it costs no fan-out.
+  if (guest.typing === typing) {
+    return true;
+  }
+  guest.typing = typing;
+  pushRoster(entry);
+  emitChanged();
+
+  return true;
+}
+
+/** The engineer started or stopped composing, mirrored to every guest. */
+export function setHostTyping(roomId: string, typing: boolean): boolean {
+  const entry = rooms.get(roomId);
+  if (!entry) {
+    return false;
+  }
+  if (typing) {
+    armTypingExpiry(entry, HOST_TYPING_KEY, () => {
+      entry.room.host_typing = false;
+    });
+  } else {
+    clearTypingTimer(entry, HOST_TYPING_KEY);
+  }
+  if (entry.room.host_typing === typing) {
+    return true;
+  }
+  entry.room.host_typing = typing;
+  pushRoster(entry);
+  emitChanged();
+
+  return true;
 }
 
 /**
@@ -324,6 +436,7 @@ export function joinRoom(
       joined_at: Date.now(),
       approved_at: null,
       connected: true,
+      typing: false,
     };
     room.guests.push(guest);
   } else if (returning) {
@@ -337,6 +450,7 @@ export function joinRoom(
     guest.state = "pending";
     guest.approved_at = null;
     guest.connected = true;
+    guest.typing = false;
   } else {
     guest.label = label;
     guest.connected = true;
@@ -377,6 +491,7 @@ export function removeGuest(roomId: string, devStaticPub: string): boolean {
   );
   const link = entry.links.get(devStaticPub);
   entry.links.delete(devStaticPub);
+  clearTypingTimer(entry, devStaticPub);
   link?.revoke();
   pushRoster(entry);
   emitChanged();
@@ -428,6 +543,8 @@ export function denyGuest(roomId: string, devStaticPub: string): boolean {
   guest.state = "denied";
   guest.approved_at = null;
   guest.connected = false;
+  guest.typing = false;
+  clearTypingTimer(entry, devStaticPub);
   const link = entry.links.get(devStaticPub);
   entry.links.delete(devStaticPub);
   link?.notify(statePayload(entry.room, guest, "denied"));
@@ -449,12 +566,14 @@ export function leaveGuest(roomId: string, devStaticPub: string): void {
     return;
   }
   entry.links.delete(devStaticPub);
+  clearTypingTimer(entry, devStaticPub);
   const guest = entry.room.guests.find(
     (g) => g.dev_static_pub === devStaticPub,
   );
   if (!guest) {
     return;
   }
+  guest.typing = false;
   if (guest.state === "pending") {
     entry.room.guests = entry.room.guests.filter(
       (g) => g.dev_static_pub !== devStaticPub,
@@ -467,6 +586,10 @@ export function leaveGuest(roomId: string, devStaticPub: string): void {
 }
 
 function closeRoom(entry: RoomEntry): void {
+  for (const timer of entry.typingTimers.values()) {
+    clearTimeout(timer);
+  }
+  entry.typingTimers.clear();
   for (const [pub, link] of entry.links) {
     const guest = entry.room.guests.find((g) => g.dev_static_pub === pub);
     link.notify(statePayload(entry.room, guest ?? null, "ended"));
@@ -521,6 +644,11 @@ export function sweepRooms(now: number = Date.now()): number {
 
 /** Test-only: forget every room without notifying anyone. */
 export function resetRooms(): void {
+  for (const entry of rooms.values()) {
+    for (const timer of entry.typingTimers.values()) {
+      clearTimeout(timer);
+    }
+  }
   rooms.clear();
   stopSweep();
   roomEnded = null;

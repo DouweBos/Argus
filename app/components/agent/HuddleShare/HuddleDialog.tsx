@@ -78,6 +78,7 @@ export function HuddleDialog({
         state: g.state,
         connected: g.connected,
         driving: g.state === "approved" && g.label === drivingLabel,
+        typing: g.typing,
       })),
     [room, drivingLabel],
   );

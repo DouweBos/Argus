@@ -398,6 +398,13 @@ button {
   z-index: 15;
 }
 
+/* Sits above the composer without moving it — it is empty most of the time. */
+.aw-typing {
+  display: flex;
+  min-height: 16px;
+  padding: 0 2px 4px;
+}
+
 .aw-chat-textarea {
   width: 100%;
   resize: none;
