@@ -1,16 +1,21 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { ArrowUpRightIcon, PlayIcon } from "../../icons/Icons";
+import { ArrowUpRightIcon, PlayIcon, TrashIcon } from "../../icons/Icons";
 import { Button } from "../Button/Button";
 import { ConfidenceMeter } from "../ConfidenceMeter/ConfidenceMeter";
 import { Input } from "../Input/Input";
 import styles from "./ProposalCard.module.css";
 
 export interface ProposalCardAction {
-  /** `start` spins up work; `open` sends the user somewhere. */
-  kind: "open" | "start";
+  /**
+   * `start` spins up work, `open` sends the user somewhere, `destroy` deletes
+   * something — and so asks once more before it runs.
+   */
+  kind: "destroy" | "open" | "start";
   label: string;
   onClick: () => void;
+  /** What the confirm step says it is about to do. Required for `destroy`. */
+  confirm?: string;
 }
 
 export interface ProposalCardProps {
@@ -42,6 +47,18 @@ export interface ProposalCardProps {
   title: string;
 }
 
+function PrimaryIcon({ kind }: { kind: ProposalCardAction["kind"] }) {
+  if (kind === "start") {
+    return <PlayIcon size={11} />;
+  }
+
+  return kind === "destroy" ? (
+    <TrashIcon size={11} />
+  ) : (
+    <ArrowUpRightIcon size={11} />
+  );
+}
+
 /**
  * One thing an automation wants you to decide on. At most three actions: the
  * one the proposal asks for, dismiss it (with an optional reason), or open the
@@ -63,6 +80,7 @@ export function ProposalCard({
   title,
 }: ProposalCardProps) {
   const [dismissing, setDismissing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [reason, setReason] = useState("");
 
   const confirmDismiss = () => {
@@ -85,7 +103,34 @@ export function ProposalCard({
 
       {decided != null && <p className={styles.decided}>{decided}</p>}
 
-      {decided == null && dismissing && (
+      {decided == null && confirming && primary && (
+        <div className={styles.dismissRow}>
+          <span className={styles.confirmText}>
+            {primary.confirm ?? "This cannot be undone."}
+          </span>
+          <Button
+            disabled={busy}
+            onClick={() => {
+              setConfirming(false);
+              primary.onClick();
+            }}
+            size="sm"
+            variant="danger"
+          >
+            {primary.label}
+          </Button>
+          <Button
+            disabled={busy}
+            onClick={() => setConfirming(false)}
+            size="sm"
+            variant="ghost"
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      {decided == null && !confirming && dismissing && (
         <div className={styles.dismissRow}>
           <Input
             aria-label="Why are you dismissing this?"
@@ -125,20 +170,19 @@ export function ProposalCard({
         </div>
       )}
 
-      {decided == null && !dismissing && (
+      {decided == null && !dismissing && !confirming && (
         <div className={styles.actions}>
           {primary && (
             <Button
               disabled={busy}
-              leading={
-                primary.kind === "start" ? (
-                  <PlayIcon size={11} />
-                ) : (
-                  <ArrowUpRightIcon size={11} />
-                )
+              leading={<PrimaryIcon kind={primary.kind} />}
+              onClick={() =>
+                primary.kind === "destroy"
+                  ? setConfirming(true)
+                  : primary.onClick()
               }
-              onClick={primary.onClick}
               size="sm"
+              variant={primary.kind === "destroy" ? "danger" : "primary"}
             >
               {primary.label}
             </Button>

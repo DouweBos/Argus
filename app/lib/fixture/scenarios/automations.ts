@@ -84,13 +84,23 @@ function fixtureCta(
   sourceRef: ProposalSourceRef | null,
 ): ProposalCta | null {
   if (action === "start_session") {
-    return { kind: "start_session", label: "Start", url: null };
+    return {
+      kind: "start_session",
+      label: "Start",
+      url: null,
+      branch: null,
+      force: false,
+      session_id: null,
+    };
   }
   if (sourceRef) {
     return {
       kind: "open_url",
       label: `Open ${sourceRef.external_id}`,
       url: sourceRef.url,
+      branch: null,
+      force: false,
+      session_id: null,
     };
   }
 

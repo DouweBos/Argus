@@ -84,3 +84,23 @@ export const Cleared: Story = {
     meta: <Badge tone="neutral">withdrawn</Badge>,
   },
 };
+
+/** A cleanup the janitor is sure about. The button asks once more first. */
+export const Destructive: Story = {
+  args: {
+    title: "douwe/cast-pms-logging landed in staging four weeks ago",
+    summary:
+      "All six commits are in `origin/staging` by patch id, and PR #118 was squash-merged on 8 September.",
+    rationale: "Nothing on the remote is holding it and nothing would be lost.",
+    confidence: 0.95,
+    primary: {
+      kind: "destroy",
+      label: "Delete the branch",
+      confirm: "git branch -D douwe/cast-pms-logging — this cannot be undone.",
+      onClick: () => undefined,
+    },
+    onOpenSource: undefined,
+    sourceLabel: undefined,
+    meta: <Badge tone="neutral">vizbee-chromecast-receiver</Badge>,
+  },
+};

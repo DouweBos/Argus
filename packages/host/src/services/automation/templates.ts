@@ -282,61 +282,93 @@ screenshot path and a \`critical\` tone.
 const BRANCH_JANITOR_PLAYBOOK = `# Branch janitor
 
 Tidy up after finished work — the worktrees and the plain local branches both.
-Nothing here is urgent, so nothing here should be destructive on its own.
+
+Your output is not a list of branches. It is a small number of deletions the
+user will agree with on sight, each one already investigated to the point where
+there is nothing left to think about. Everything you are unsure about belongs in
+the report, not in the inbox.
+
+## 1. Gather
 
 For each project in scope:
 
 1. \`git fetch --prune\` so the remote-tracking refs are current. If the command
    is refused, say so in the report and carry on with the staler view.
-2. Call \`list_sessions\` and, for each session, \`list_session_changes\` and
+2. \`list_sessions\`, and for each session \`list_session_changes\` and
    \`merge_status\`.
-3. \`git branch -vv\` for the project, so the branches no session owns are in
-   front of you too.
+3. \`git branch -vv\` so the branches no session owns are in front of you too.
 
-A branch is **finished** when either of these holds:
+Never consider the branch that is checked out, or the default branch.
 
-- \`merge_status\` says it is fully merged into its base; or
-- it is marked \`[origin/<name>: gone]\`. A squash merge rewrites the commits, so
-  the branch never becomes an ancestor of its base and the first check misses
-  it entirely — the deleted remote is the only evidence left. On a repo that
-  deletes branches on merge this is the common case, not the exception.
+## 2. Investigate each candidate until you can answer one question
 
-Then, one \`emit_proposal\` each:
+**Is this work already in the codebase, or not?** Do not guess from the branch
+name, the age, or a missing remote. Establish it:
 
-- **Session, finished, nothing uncommitted** — propose deleting the session.
-  Name the branch and say which of the two checks found it.
-- **Session with no commits and nothing uncommitted, older than a week** —
-  stale. Propose deleting it, and say plainly that nothing would be lost.
-- **Session with unmerged commits untouched for more than two weeks** —
-  stalled. Summarise what it was doing in two lines, use
-  \`recommended_action: "review"\` and no \`cta\`: the decision is the user's to
-  make from the summary. Never propose deleting one.
-- **Branch with no session, finished** — there is no worktree to retire, only
-  the branch. Use \`recommended_action: "review"\`, no \`cta\`, and put the exact
-  \`git branch -d <branch>\` in the summary.
-- **Branch with no session whose remote is gone but that still has commits** —
-  use \`recommended_action: "needs_info"\`, list the commits that would be lost,
-  and say plainly that it would take \`-D\` and that nothing on the remote is
-  holding them any more.
+- \`git cherry -v <base> <branch>\` — a \`-\` means the patch is already in the
+  base under a different hash. This is what catches a rebase.
+- \`git diff <base>...<branch> --stat\` — empty means there is nothing in it.
+- \`gh pr list --head <branch> --state all --json number,state,mergedAt,url\` —
+  a merged PR is proof the work landed even when every commit was squashed away.
+  A closed-unmerged PR is the opposite: someone decided against it.
+- Subject matching against the base for the commits \`git cherry\` still flags,
+  and \`git log <base> --grep\` on a distinctive part of the message.
+- The ticket, when the branch or a commit names one (\`STR-1234\`, \`#412\`): if it
+  is closed or done, say so and link it. Use \`gh issue view\`, or the Linear
+  tools if they are available to you.
+- \`git log -1 --format=%cr <branch>\` for how long it has actually been still.
 
-Never propose anything for the branch that is currently checked out or for the
-default branch. If you could not establish a branch's state, skip it and say
-why.
+## 3. Propose only what you are sure about
 
-Finish with \`emit_report\`: a \`stats\` block (done, stale, stalled, loose
-branches), a \`table\` of session / branch / age / verdict, and the single
-\`git branch -d\` line that clears every finished loose branch at once.
+One \`emit_proposal\` per deletion you would defend, and a CTA on every one:
+
+- **Landed** — merged by ancestry, equivalent by patch id, or its PR is merged.
+  Propose the deletion. \`{ kind: "delete_branch", label: "Delete the branch",
+  branch: "<name>", force: true }\` for a loose branch — \`force\` because a squash
+  or a rebase leaves it unmergeable by ancestry even though it landed, and you
+  have just proved it landed. For a session, \`{ kind: "delete_session", label:
+  "Retire the worktree", session_id: "<id>" }\`.
+- **Abandoned on purpose** — the PR was closed unmerged, or the ticket was
+  closed as won't-do, and nothing is in the base. Propose the deletion the same
+  way, and say in the summary who decided against it and when.
+- **Empty** — a session with no commits and nothing uncommitted, older than a
+  week. Propose retiring it and say plainly that nothing would be lost.
+
+In the summary, lead with the evidence: which check proved it, against which
+base, and the PR or ticket that backs it up. One short paragraph. The user is
+deciding whether to trust you, not reading a changelog — do not paste the commit
+list unless a single commit is the whole story.
+
+Set \`confidence\` to how sure you are the work is already safe, not to how tidy
+the deletion would be.
+
+## 4. Everything else goes in the report, not the inbox
+
+If you could not establish that the work landed, **do not propose anything**. A
+branch with commits that exist nowhere else is not a cleanup candidate — it is
+someone's unfinished work, and asking about it is asking the user to do the
+investigation you could not finish. The same goes for a stalled session with
+unmerged commits: summarise it in the report and move on.
+
+Never emit a proposal whose \`recommended_action\` is \`needs_info\`, and never one
+without a \`cta\`. If it has no button, it does not belong in the inbox.
+
+## 5. Report
+
+\`emit_report\`: a \`stats\` block (landed, abandoned, unresolved, still working),
+a \`table\` of branch / age / verdict / evidence covering everything you looked
+at — including what you decided not to propose and why — and a \`list\` of the
+ones needing a human's judgement, with a \`warning\` tone.
 
 ## Rules
 
-- Never call \`delete_session\` yourself, whatever the autonomy level says. A
-  worktree with unpushed work in it is not recoverable, so a human presses the
-  button.
-- This run does not delete branches either, and does not check one out. You
-  read and propose.
-- Never merge anything.
+- You never delete anything. Not a branch, not a session, not a worktree,
+  whatever the autonomy level says. You propose; the user presses the button.
+- Do not check anything out, do not merge, do not push.
 - Never treat a \`-D\` as routine. Unmerged commits that exist nowhere else are
-  gone for good.
+  gone for good, and "the remote is gone" is not on its own evidence that they
+  landed — on a repo that deletes branches on merge it is the beginning of the
+  investigation, not the end of it.
 - Do not call ExitPlanMode. Nobody is watching this run.
 `;
 

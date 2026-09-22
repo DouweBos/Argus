@@ -71,14 +71,19 @@ export function registerAutomationTools(
       cta: z
         .object({
           kind: z
-            .enum(["open_url", "start_session"])
+            .enum([
+              "delete_branch",
+              "delete_session",
+              "open_url",
+              "start_session",
+            ])
             .describe(
-              "'start_session' when an agent should go and do the work in a worktree. 'open_url' when the next move is a human's — read a PR, request a review, reply on a ticket.",
+              "'start_session' when an agent should go and do the work in a worktree. 'open_url' when the next move is a human's — read a PR, request a review, reply on a ticket. 'delete_branch' and 'delete_session' clean something up: the user presses the button, Argus does the deleting, and neither ever happens on your say-so alone.",
             ),
           label: z
             .string()
             .describe(
-              "Button text. Imperative and specific: 'Start', 'Open PR #6478', 'Review the migration plan'.",
+              "Button text. Imperative and specific: 'Start', 'Open PR #6478', 'Delete the branch'.",
             ),
           url: z
             .string()
@@ -86,10 +91,28 @@ export function registerAutomationTools(
             .describe(
               "Where 'open_url' goes. Defaults to the source_ref url. Point it at whatever the user should actually look at, which is not always the item the proposal came from.",
             ),
+          branch: z
+            .string()
+            .optional()
+            .describe(
+              "Branch a 'delete_branch' clears, in the proposal's own repo_root. Required for that kind — without it there is no button.",
+            ),
+          force: z
+            .boolean()
+            .optional()
+            .describe(
+              "Use 'git branch -D' instead of '-d'. Only ask for it when you have established the commits exist somewhere else — a squash merge or a rebase leaves a branch unmergeable by ancestry but fully landed. Never as a shortcut past a '-d' that refused.",
+            ),
+          session_id: z
+            .string()
+            .optional()
+            .describe(
+              "Session a 'delete_session' retires. Required for that kind. Its branch is left alone — a branch worth deleting is its own proposal.",
+            ),
         })
         .optional()
         .describe(
-          "The single action you are asking for. Omit it when there is nothing to do but read the proposal and dismiss it — the inbox then shows no button rather than offering work that does not exist.",
+          "The single action you are asking for. Omit it when there is nothing to do but read the proposal and dismiss it — but a proposal with no action is one the user can only dismiss, so ask yourself whether it belongs in the report instead.",
         ),
       source_ref: z
         .object({

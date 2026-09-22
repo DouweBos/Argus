@@ -471,13 +471,24 @@ export type RemoteAutomationRun = z.infer<typeof RemoteAutomationRun>;
 
 // --- Proposals -------------------------------------------------------------
 
-/** The one action a proposal asks for. `start_session` is the only one that works. */
+/** The one action a proposal asks for. The `delete_` kinds are destructive. */
 export const RemoteProposalCta = z.object({
-  kind: z.enum(["open_url", "start_session"]),
+  kind: z.enum([
+    "delete_branch",
+    "delete_session",
+    "open_url",
+    "start_session",
+  ]),
   /** Button text, written by the run: "Start", "Open PR #6478". */
   label: z.string(),
-  /** Where `open_url` goes. Null for `start_session`. */
+  /** Where `open_url` goes. Null for every other kind. */
   url: z.string().nullable(),
+  /** Branch a `delete_branch` clears, in the proposal's own project. */
+  branch: z.string().nullable(),
+  /** `git branch -D` rather than `-d`. */
+  force: z.boolean(),
+  /** Session a `delete_session` retires. */
+  session_id: z.string().nullable(),
 });
 export type RemoteProposalCta = z.infer<typeof RemoteProposalCta>;
 

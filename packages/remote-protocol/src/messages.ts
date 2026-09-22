@@ -275,6 +275,8 @@ export const MethodParams = {
     limit: z.number().int().positive().max(100).optional(),
   }),
   "proposals.accept": z.object({ proposal_id: z.string() }),
+  /** Carry out a cleanup proposal's button. Destructive, so `control`-gated. */
+  "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),
   "proposals.dismiss": z.object({
     proposal_id: z.string(),
     /** Kept verbatim — it is what teaches the automation. */
@@ -423,6 +425,8 @@ export const MethodResult = {
     session_id: z.string(),
     agent_id: z.string(),
   }),
+  /** Carry out a cleanup proposal's button. Destructive, so `control`-gated. */
+  "proposals.perform_cleanup": z.object({ proposal_id: z.string() }),
   "proposals.dismiss": z.object({ proposal: RemoteProposal }),
 } as const;
 

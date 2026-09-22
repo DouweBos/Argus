@@ -23,6 +23,8 @@ interface ProposalsState {
   /** Start the work. Resolves to the agent doing it, so the caller can watch it. */
   accept: (proposalId: string) => Promise<string | null>;
   dismiss: (proposalId: string, reason?: string) => Promise<void>;
+  /** Run the proposal's cleanup on the computer — a deletion, already confirmed. */
+  cleanup: (proposalId: string) => Promise<void>;
 }
 
 const message = (err: unknown): string =>
@@ -75,6 +77,32 @@ export const useProposalsStore = create<ProposalsState>((set, get) => ({
       set({ error: message(err) });
 
       return null;
+    } finally {
+      set((s) => {
+        const busy = { ...s.busy };
+        delete busy[proposalId];
+
+        return { busy };
+      });
+    }
+  },
+
+  cleanup: async (proposalId) => {
+    const t = useAppStore.getState().transport;
+    if (!t) {
+      return;
+    }
+    set((s) => ({ busy: { ...s.busy, [proposalId]: true } }));
+    try {
+      await t.request("proposals.perform_cleanup", {
+        proposal_id: proposalId,
+      });
+      set((s) => ({
+        proposals: s.proposals.filter((p) => p.id !== proposalId),
+        error: null,
+      }));
+    } catch (err) {
+      set({ error: message(err) });
     } finally {
       set((s) => {
         const busy = { ...s.busy };

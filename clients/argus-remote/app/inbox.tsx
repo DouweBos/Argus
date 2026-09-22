@@ -36,6 +36,7 @@ export default function InboxScreen() {
   const refreshProposals = useProposalsStore((s) => s.refresh);
   const accept = useProposalsStore((s) => s.accept);
   const dismiss = useProposalsStore((s) => s.dismiss);
+  const cleanup = useProposalsStore((s) => s.cleanup);
 
   const refresh = useCallback(() => {
     refreshProposals().catch(() => {});
@@ -89,6 +90,9 @@ export default function InboxScreen() {
               busy={busy[proposal.id]}
               canDecide={hasControl}
               onAccept={() => start(proposal.id, proposal.title)}
+              onCleanup={() => {
+                cleanup(proposal.id).catch(() => {});
+              }}
               onDismiss={(reason) => {
                 dismiss(proposal.id, reason || undefined).catch(() => {});
               }}

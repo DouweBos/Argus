@@ -7,7 +7,7 @@
 import type { Proposal } from "../../lib/types";
 import type { ProposalCardAction } from "@argus/peacock";
 import { useState } from "react";
-import { openExternalUrl } from "../../lib/ipc";
+import { openExternalUrl, performProposalCleanup } from "../../lib/ipc";
 import { acceptProposal, dismissProposal } from "../../stores/proposalStore";
 import { selectSession } from "../../stores/sessionStore";
 
@@ -36,6 +36,15 @@ export function useProposalActions(): ProposalActions {
     }
   };
 
+  // Deleting is the backend's to do and the inbox's to reflect: the card goes
+  // when `proposals:changed` says it went, not when the button was pressed.
+  const cleanup = (proposal: Proposal) => {
+    setBusyId(proposal.id);
+    performProposalCleanup(proposal.id)
+      .catch(() => undefined)
+      .finally(() => setBusyId(null));
+  };
+
   const dismiss = (proposal: Proposal, reason: string) => {
     setBusyId(proposal.id);
     dismissProposal(proposal.id, reason || undefined)
@@ -58,6 +67,17 @@ export function useProposalActions(): ProposalActions {
         onClick: () => {
           start(proposal).catch(() => undefined);
         },
+      };
+    }
+    if (cta.kind === "delete_branch" || cta.kind === "delete_session") {
+      return {
+        kind: "destroy",
+        label: cta.label,
+        confirm:
+          cta.kind === "delete_branch"
+            ? `${cta.force ? "git branch -D" : "git branch -d"} ${cta.branch ?? ""} — commits only on this branch are gone for good.`
+            : "The worktree and anything uncommitted in it are deleted. The branch is left alone.",
+        onClick: () => cleanup(proposal),
       };
     }
     const url = cta.url;

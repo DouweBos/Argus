@@ -124,6 +124,7 @@ import { getEndpoints } from "./endpoints";
 import {
   acceptRemoteProposal,
   dismissRemoteProposal,
+  performRemoteProposalCleanup,
   remoteProposals,
 } from "./proposalsRemote";
 import {
@@ -1497,6 +1498,13 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     // Starting a worktree and an agent is code execution, so it goes through
     // the same control gate a remote `agents.send` does.
     return control(() => acceptRemoteProposal(proposal_id));
+  },
+  "proposals.perform_cleanup": async (params) => {
+    const { proposal_id } = parse("proposals.perform_cleanup", params);
+
+    // Deleting a branch or a worktree is not recoverable, so it is gated the
+    // same way starting one is: never a monitor, never a huddle guest.
+    return control(() => performRemoteProposalCleanup(proposal_id));
   },
   "proposals.dismiss": async (params) => {
     const { proposal_id, reason } = parse("proposals.dismiss", params);

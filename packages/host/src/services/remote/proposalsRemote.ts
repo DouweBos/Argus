@@ -82,6 +82,23 @@ export async function acceptRemoteProposal(proposalId: string): Promise<{
   };
 }
 
+/**
+ * Press a cleanup proposal's button from the phone. The deletion itself is the
+ * same call the desktop inbox makes — a branch cleared from a sofa is cleared.
+ */
+export async function performRemoteProposalCleanup(
+  proposalId: string,
+): Promise<{ proposal: RemoteProposal }> {
+  // Loaded on use, like accepting: the cleanup reaches the session stack,
+  // which reaches back to this gateway.
+  const { performProposalCleanup } =
+    await import("../automation/proposals/cleanup");
+
+  return {
+    proposal: toRemoteProposal(await performProposalCleanup(proposalId)),
+  };
+}
+
 /** Dismiss it, with the reason verbatim. Null when the proposal is unknown. */
 export function dismissRemoteProposal(
   proposalId: string,

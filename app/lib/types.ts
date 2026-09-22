@@ -938,17 +938,28 @@ export interface ProposalSourceRef {
 }
 
 /**
- * What the proposal's primary button does. `start_session` is the only kind
- * that spins up a worktree — everything else sends the user somewhere.
+ * What the proposal's primary button does. `start_session` spins up a
+ * worktree, `open_url` sends the user somewhere, and the two `delete_` kinds
+ * carry out a cleanup — destructive, so always confirmed first.
  */
-export type ProposalCtaKind = "open_url" | "start_session";
+export type ProposalCtaKind =
+  | "delete_branch"
+  | "delete_session"
+  | "open_url"
+  | "start_session";
 
 /** The one action a proposal is asking for, as rendered in the inbox. */
 export interface ProposalCta {
+  /** Branch a `delete_branch` clears, in the proposal's own project. */
+  branch: string | null;
+  /** `git branch -D` rather than `-d`. */
+  force: boolean;
   kind: ProposalCtaKind;
   /** Button text, written by the run: "Start", "Open PR #6478". */
   label: string;
-  /** Where `open_url` goes. Null for `start_session`. */
+  /** Session a `delete_session` retires. Its branch is left alone. */
+  session_id: string | null;
+  /** Where `open_url` goes. Null for every other kind. */
   url: string | null;
 }
 
