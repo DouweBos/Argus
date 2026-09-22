@@ -43,15 +43,6 @@ export const TYPING_TTL_MS = 8_000;
  */
 export const CHAT_BACKLOG = 200;
 
-
-/**
- * How much side chat a room keeps. Enough that someone let in ten minutes late
- * can read what they walked into, bounded so a long huddle can't grow without
- * limit in memory that is never written anywhere.
- */
-export const CHAT_BACKLOG = 200;
-
-
 /** A live guest socket, as far as the room store needs to care. */
 export interface GuestLink {
   /**
@@ -183,94 +174,6 @@ export function refreshDriving(deviceId: string): void {
       pushRoster(entry);
     }
   }
-}
-
-/** What a scoped grant for this room's guests may address. */
-export function guestScope(room: HuddleRoom): GrantScope {
-  return {
-    agent_ids: [room.agent_id],
-    // An empty device_key means the host had nothing open: chat-only by
-    // circumstance, so the grant names no device at all.
-    device_keys: room.device_key ? [room.device_key] : [],
-  };
-}
-
-export interface CreateRoomOpts {
-  agent_id: string;
-  /** Whatever device the host has open; empty string when there is none. */
-  device_key: string;
-  /** What to call the engineer in this room. Empty when nothing is known. */
-  host_label?: string;
-  /** Override the backstop lifetime (tests, mostly). */
-  ttl_ms?: number;
-}
-
-export function createRoom(opts: CreateRoomOpts): HuddleRoom {
-  const now = Date.now();
-  const room: HuddleRoom = {
-    id: randomUUID(),
-    token: randomBytes(32).toString("base64url"),
-    agent_id: opts.agent_id,
-    device_key: opts.device_key,
-    url: null,
-    created_at: now,
-    expires_at: now + (opts.ttl_ms ?? ROOM_TTL_MS),
-    guests: [],
-    host_typing: false,
-    host_label: opts.host_label ?? "",
-    chat: [],
-  };
-  rooms.set(room.id, { room, links: new Map(), typingTimers: new Map() });
-  scheduleSweep();
-  emitChanged();
-
-  return room;
-}
-
-/**
- * Point a live room at a different device — the host opened, switched or closed
- * one while sharing. Guests mirror whatever the engineer has in front of them,
- * so the grant is re-minted on every approved socket and each is told the new
- * key; an empty key drops the device and leaves the huddle chat-only.
- */
-export function setRoomDevice(roomId: string, deviceKey: string): boolean {
-  const entry = rooms.get(roomId);
-  if (!entry || entry.room.device_key === deviceKey) {
-    return false;
-  }
-  entry.room.device_key = deviceKey;
-  const scope = guestScope(entry.room);
-  for (const [pub, link] of entry.links) {
-    const guest = entry.room.guests.find((g) => g.dev_static_pub === pub);
-    if (guest?.state !== "approved") {
-      continue;
-    }
-    link.grant(scope);
-    link.notify(statePayload(entry.room, guest, "approved"));
-  }
-  emitChanged();
-
-  return true;
-}
-
-/** Attach the shareable link once the tunnel has one. */
-export function setRoomUrl(roomId: string, url: string | null): void {
-  const entry = rooms.get(roomId);
-  if (!entry) {
-    return;
-  }
-  entry.room.url = url;
-  emitChanged();
-}
-
-export function listRooms(): HuddleRoom[] {
-  return [...rooms.values()].map((e) => structuredClone(e.room));
-}
-
-export function getRoom(roomId: string): HuddleRoom | null {
-  const entry = rooms.get(roomId);
-
-  return entry ? structuredClone(entry.room) : null;
 }
 
 /**
@@ -439,6 +342,94 @@ export function setHostTyping(roomId: string, typing: boolean): boolean {
   emitChanged();
 
   return true;
+}
+
+/** What a scoped grant for this room's guests may address. */
+export function guestScope(room: HuddleRoom): GrantScope {
+  return {
+    agent_ids: [room.agent_id],
+    // An empty device_key means the host had nothing open: chat-only by
+    // circumstance, so the grant names no device at all.
+    device_keys: room.device_key ? [room.device_key] : [],
+  };
+}
+
+export interface CreateRoomOpts {
+  agent_id: string;
+  /** Whatever device the host has open; empty string when there is none. */
+  device_key: string;
+  /** What to call the engineer in this room. Empty when nothing is known. */
+  host_label?: string;
+  /** Override the backstop lifetime (tests, mostly). */
+  ttl_ms?: number;
+}
+
+export function createRoom(opts: CreateRoomOpts): HuddleRoom {
+  const now = Date.now();
+  const room: HuddleRoom = {
+    id: randomUUID(),
+    token: randomBytes(32).toString("base64url"),
+    agent_id: opts.agent_id,
+    device_key: opts.device_key,
+    url: null,
+    created_at: now,
+    expires_at: now + (opts.ttl_ms ?? ROOM_TTL_MS),
+    guests: [],
+    host_typing: false,
+    host_label: opts.host_label ?? "",
+    chat: [],
+  };
+  rooms.set(room.id, { room, links: new Map(), typingTimers: new Map() });
+  scheduleSweep();
+  emitChanged();
+
+  return room;
+}
+
+/**
+ * Point a live room at a different device — the host opened, switched or closed
+ * one while sharing. Guests mirror whatever the engineer has in front of them,
+ * so the grant is re-minted on every approved socket and each is told the new
+ * key; an empty key drops the device and leaves the huddle chat-only.
+ */
+export function setRoomDevice(roomId: string, deviceKey: string): boolean {
+  const entry = rooms.get(roomId);
+  if (!entry || entry.room.device_key === deviceKey) {
+    return false;
+  }
+  entry.room.device_key = deviceKey;
+  const scope = guestScope(entry.room);
+  for (const [pub, link] of entry.links) {
+    const guest = entry.room.guests.find((g) => g.dev_static_pub === pub);
+    if (guest?.state !== "approved") {
+      continue;
+    }
+    link.grant(scope);
+    link.notify(statePayload(entry.room, guest, "approved"));
+  }
+  emitChanged();
+
+  return true;
+}
+
+/** Attach the shareable link once the tunnel has one. */
+export function setRoomUrl(roomId: string, url: string | null): void {
+  const entry = rooms.get(roomId);
+  if (!entry) {
+    return;
+  }
+  entry.room.url = url;
+  emitChanged();
+}
+
+export function listRooms(): HuddleRoom[] {
+  return [...rooms.values()].map((e) => structuredClone(e.room));
+}
+
+export function getRoom(roomId: string): HuddleRoom | null {
+  const entry = rooms.get(roomId);
+
+  return entry ? structuredClone(entry.room) : null;
 }
 
 /**

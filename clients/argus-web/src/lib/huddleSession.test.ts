@@ -187,7 +187,6 @@ describe("naming the host", () => {
   });
 });
 
-
 describe("the room's side chat, as a guest folds it in", () => {
   const view = (chat: HuddleView["chat"] = []): HuddleView => ({
     ...INITIAL_HUDDLE_VIEW,

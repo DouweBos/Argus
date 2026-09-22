@@ -1,6 +1,8 @@
 import type { DeviceClaimState } from "../../../hooks/useDeviceClaim";
 import { useCallback, useRef } from "react";
 import { DeviceControlOverlay } from "@argus/peacock";
+import { DeviceDriverBadge } from "@argus/peacock";
+import { useSharedDeviceDrivers } from "../../../hooks/useSharedDeviceDrivers";
 import styles from "./RuntimeView.module.css";
 
 const DRAG_THROTTLE_MS = 17;
@@ -12,6 +14,11 @@ interface CanvasStreamBodyProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   /** Input arbitration on the host. Omitted where nothing can contend for it. */
   claim?: DeviceClaimState;
+  /**
+   * The device this is a picture of, so a shared one can say who is driving.
+   * Omitted where there is nothing to share (a preview, a test harness).
+   */
+  deviceKey?: string | null;
   /** Whether the decoder has received its H.264 config (SPS/PPS). */
   isConfigured: boolean;
   isReceiving: boolean;
@@ -53,6 +60,7 @@ function unrotate(
 export function CanvasStreamBody({
   canvasRef,
   claim,
+  deviceKey,
   videoWidth,
   videoHeight,
   isReceiving,
@@ -64,6 +72,7 @@ export function CanvasStreamBody({
 }: CanvasStreamBodyProps) {
   const blocked = claim?.blocked ?? false;
   const takeControl = claim?.takeControl;
+  const drivers = useSharedDeviceDrivers(deviceKey ?? null);
   const handleTakeControl = useCallback(() => takeControl?.(), [takeControl]);
   const touchFailed = useRef(false);
   const lastDragTime = useRef(0);
@@ -191,6 +200,11 @@ export function CanvasStreamBody({
             onTakeControl={handleTakeControl}
           />
         )}
+        {/* Awareness, not arbitration — this never blocks the pointer. */}
+        <DeviceDriverBadge
+          holderLabel={drivers.holderLabel}
+          waitingLabels={drivers.waitingLabels}
+        />
         {!isReceiving && (
           <div className={styles.connecting}>
             <p>

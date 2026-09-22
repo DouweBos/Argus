@@ -97,6 +97,7 @@ export function AndroidDeviceStreamView({
       <CanvasStreamBody
         canvasRef={canvasRef}
         claim={claim}
+        deviceKey={serial}
         isConfigured={isConfigured}
         isReceiving={isReceiving}
         videoHeight={videoHeight}

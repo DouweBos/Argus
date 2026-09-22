@@ -44,6 +44,7 @@ export * from "./components/CopyField/CopyField";
 export * from "./components/CronSchedulePreview/CronSchedulePreview";
 export * from "./components/Disclosure/Disclosure";
 export * from "./components/DeviceControlOverlay/DeviceControlOverlay";
+export * from "./components/DeviceDriverBadge/DeviceDriverBadge";
 export * from "./components/DiffStat/DiffStat";
 export * from "./components/DirectoryBrowser/DirectoryBrowser";
 export * from "./components/EmptyHome/EmptyHome";
