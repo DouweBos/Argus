@@ -15,11 +15,21 @@ final class NotificationRouter: NSObject {
   private weak var app: AppStore?
   private weak var router: Router?
   private var pendingOpen: (agentId: String, label: String)?
+  /// Nothing can be opened until the gate is passed and the stack exists.
+  private var ready = false
+
+  /// Claim the delegate during launch.
+  ///
+  /// iOS hands over a launch tap only if a delegate is already set by the time
+  /// `didFinishLaunching` returns; claiming it from a SwiftUI `.task` is too
+  /// late and the tap is dropped. The response is parked until `configure`.
+  func attach() {
+    UNUserNotificationCenter.current().delegate = self
+  }
 
   func configure(app: AppStore, router: Router) {
     self.app = app
     self.router = router
-    UNUserNotificationCenter.current().delegate = self
   }
 
   /// iOS draws a notification's buttons from a category the app registers up
@@ -48,14 +58,15 @@ final class NotificationRouter: NSObject {
   }
 
   /// Called once the gate is passed, for a tap that arrived while locked.
-  func replayPendingOpen() {
+  func unlocked() {
+    ready = true
     guard let pending = pendingOpen else { return }
     pendingOpen = nil
     open(agentId: pending.agentId, label: pending.label)
   }
 
   private func open(agentId: String, label: String) {
-    guard let app, let router else {
+    guard ready, let app, let router else {
       pendingOpen = (agentId, label)
       return
     }
@@ -68,7 +79,9 @@ final class NotificationRouter: NSObject {
       if let hostId = app.host(forAgent: agentId), hostId != app.activeHostId {
         await app.selectHost(hostId)
       }
-      router.push(.agent(id: agentId, label: label))
+      // `open` rather than `push`: an agent belongs under Projects, and a tap
+      // should land there whatever section was last on screen.
+      router.open(.agent(id: agentId, label: label), in: .projects)
     }
   }
 }
@@ -111,8 +124,18 @@ extension NotificationRouter: UNUserNotificationCenterDelegate {
   }
 }
 
-/// APNs token plumbing — the one thing SwiftUI has no hook for.
+/// APNs token plumbing and the launch-time notification delegate — the things
+/// SwiftUI has no hook for.
 final class AppDelegate: NSObject, UIApplicationDelegate {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions:
+      [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    MainActor.assumeIsolated { NotificationRouter.shared.attach() }
+    return true
+  }
+
   func application(
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
