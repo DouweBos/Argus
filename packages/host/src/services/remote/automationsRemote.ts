@@ -11,13 +11,23 @@
  * huddle guest is handed one agent, never the clock behind it.
  */
 
-import type { Automation, AutomationRun } from "../automation/models";
 import type {
+  Automation,
+  AutomationRun,
+  CreateAutomationInput,
+  UpdateAutomationInput,
+} from "../automation/models";
+import type {
+  AutomationInput,
   RemoteAutomation,
+  RemoteAutomationDetail,
   RemoteAutomationRun,
+  RemoteSignalSource,
 } from "@argus/remote-protocol";
 import path from "node:path";
 import {
+  createAutomation,
+  deleteAutomation,
   getAutomation,
   getAutomationRun,
   hasActiveRun,
@@ -25,7 +35,10 @@ import {
   listAutomations,
   hasUnreadReport,
   markRunReportRead,
+  requireAutomation,
+  updateAutomation,
 } from "../automation/manager";
+import { describeSignalSources } from "../signals/registry";
 
 /** How many runs a client gets when it doesn't say. */
 const DEFAULT_RUN_LIMIT = 30;
@@ -76,6 +89,146 @@ export function toRemoteAutomationRun(run: AutomationRun): RemoteAutomationRun {
     unread_report: hasUnreadReport(run),
     host_session_id: run.host_session_id,
     host_agent_id: run.host_agent_id,
+  };
+}
+
+function toRemoteAutomationDetail(
+  automation: Automation,
+): RemoteAutomationDetail {
+  const { trigger } = automation;
+
+  return {
+    id: automation.id,
+    name: automation.name,
+    description: automation.description,
+    enabled: automation.enabled,
+    trigger_kind: trigger.kind,
+    cron: trigger.kind === "schedule" ? trigger.cron : null,
+    timezone: trigger.kind === "schedule" ? trigger.timezone : null,
+    catch_up: trigger.kind === "schedule" ? trigger.catch_up : true,
+    repo_roots: automation.scope.repo_roots,
+    source_ids: automation.source_ids,
+    playbook: automation.playbook,
+    autonomy: automation.autonomy,
+    model: automation.model,
+    guardrails: automation.guardrails,
+  };
+}
+
+/** The wire shape carries the trigger flat; the host keeps it as a union. */
+function toTrigger(input: AutomationInput): Automation["trigger"] {
+  return input.trigger_kind === "schedule"
+    ? {
+        kind: "schedule",
+        cron: input.cron,
+        timezone: input.timezone,
+        catch_up: input.catch_up,
+      }
+    : { kind: "manual" };
+}
+
+function both(automation: Automation): {
+  automation: RemoteAutomation;
+  detail: RemoteAutomationDetail;
+} {
+  return {
+    automation: toRemoteAutomation(automation),
+    detail: toRemoteAutomationDetail(automation),
+  };
+}
+
+export function remoteAutomation(
+  id: string,
+): { automation: RemoteAutomationDetail } | null {
+  const automation = getAutomation(id);
+
+  return automation
+    ? { automation: toRemoteAutomationDetail(automation) }
+    : null;
+}
+
+export async function remoteSignalSources(): Promise<{
+  sources: RemoteSignalSource[];
+}> {
+  return { sources: await describeSignalSources() };
+}
+
+export function createRemoteAutomation(input: AutomationInput): {
+  automation: RemoteAutomation;
+  detail: RemoteAutomationDetail;
+} {
+  const create: CreateAutomationInput = {
+    name: input.name,
+    description: input.description,
+    enabled: input.enabled,
+    trigger: toTrigger(input),
+    scope: { repo_roots: input.repo_roots },
+    source_ids: input.source_ids,
+    playbook: input.playbook,
+    autonomy: input.autonomy,
+    guardrails: input.guardrails,
+    model: input.model,
+  };
+
+  return both(createAutomation(create));
+}
+
+/**
+ * Only the fields the client sent are touched — an editor that never showed
+ * the playbook must not be able to blank it by omission.
+ */
+export function updateRemoteAutomation(
+  id: string,
+  patch: Partial<AutomationInput>,
+): { automation: RemoteAutomation; detail: RemoteAutomationDetail } {
+  const current = requireAutomation(id);
+  const update: UpdateAutomationInput = {
+    ...(patch.name !== undefined && { name: patch.name }),
+    ...(patch.description !== undefined && { description: patch.description }),
+    ...(patch.enabled !== undefined && { enabled: patch.enabled }),
+    ...(patch.repo_roots !== undefined && {
+      scope: { repo_roots: patch.repo_roots },
+    }),
+    ...(patch.source_ids !== undefined && { source_ids: patch.source_ids }),
+    ...(patch.playbook !== undefined && { playbook: patch.playbook }),
+    ...(patch.autonomy !== undefined && { autonomy: patch.autonomy }),
+    ...(patch.model !== undefined && { model: patch.model }),
+    ...(patch.guardrails !== undefined && { guardrails: patch.guardrails }),
+  };
+
+  // The trigger is four wire fields; rebuild it from the current one so a
+  // partial patch can change the cron without restating the timezone.
+  const schedule = current.trigger.kind === "schedule" ? current.trigger : null;
+  const touchesTrigger =
+    patch.trigger_kind !== undefined ||
+    patch.cron !== undefined ||
+    patch.timezone !== undefined ||
+    patch.catch_up !== undefined;
+  if (touchesTrigger) {
+    update.trigger = toTrigger({
+      trigger_kind: patch.trigger_kind ?? current.trigger.kind,
+      cron: patch.cron ?? schedule?.cron ?? "",
+      timezone: patch.timezone ?? schedule?.timezone ?? "UTC",
+      catch_up: patch.catch_up ?? schedule?.catch_up ?? true,
+    } as AutomationInput);
+  }
+
+  return both(updateAutomation(id, update));
+}
+
+export function deleteRemoteAutomation(id: string): { accepted: boolean } {
+  requireAutomation(id);
+  deleteAutomation(id);
+
+  return { accepted: true };
+}
+
+export function setRemoteAutomationEnabled(
+  id: string,
+  enabled: boolean,
+): { automation: RemoteAutomation } {
+  return {
+    automation: toRemoteAutomation(updateAutomation(id, { enabled })),
   };
 }
 

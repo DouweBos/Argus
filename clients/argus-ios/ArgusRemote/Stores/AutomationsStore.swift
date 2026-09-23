@@ -4,12 +4,14 @@ import Observation
 
 /// The connected computer's automations, their runs and each run's report.
 ///
-/// Authoring stays on the desktop; this views them and fires them. Cleared
-/// whenever the active computer changes — none of it belongs to the next one.
+/// Cleared whenever the active computer changes — none of it belongs to the
+/// next one.
 @MainActor
 @Observable
 final class AutomationsStore {
   var automations: [RemoteAutomation] = []
+  var detailById: [String: RemoteAutomationDetail] = [:]
+  var sources: [RemoteSignalSource] = []
   /// Newest first, across every automation.
   var runs: [RemoteAutomationRun] = []
   var detailByRun: [String: RemoteAutomationRunDetail] = [:]
@@ -27,6 +29,8 @@ final class AutomationsStore {
 
   func clear() {
     automations = []
+    detailById = [:]
+    sources = []
     runs = []
     detailByRun = [:]
     triggering = []
@@ -57,6 +61,103 @@ final class AutomationsStore {
       error = "Couldn't read automations."
     } else {
       error = nil
+    }
+  }
+
+  // MARK: Authoring
+
+  /// The editable shape, fetched only for the automation being opened.
+  @discardableResult
+  func loadDetail(id: String) async -> RemoteAutomationDetail? {
+    guard let transport = app.transport else { return nil }
+    struct Params: Encodable { let automation_id: String }
+    struct Result: Decodable { let automation: RemoteAutomationDetail }
+    guard let result = try? await transport.request(
+      .automationsGet, Params(automation_id: id), as: Result.self) else { return nil }
+    detailById[id] = result.automation
+
+    return result.automation
+  }
+
+  /// Which signal sources this computer can actually answer with.
+  func loadSources() async {
+    guard let transport = app.transport else { return }
+    struct Result: Decodable { let sources: [RemoteSignalSource] }
+    guard let result = try? await transport.request(
+      .automationsSources, EmptyParams(), as: Result.self) else { return }
+    sources = result.sources
+  }
+
+  struct SaveResult: Decodable {
+    let automation: RemoteAutomation
+    let detail: RemoteAutomationDetail
+  }
+
+  /// Create when `id` is nil, otherwise patch. Returns the saved automation's
+  /// id so a new one can be opened straight after.
+  func save(id: String?, input: RemoteAutomationInput) async -> String? {
+    guard let transport = app.transport else { return nil }
+    struct CreateParams: Encodable { let input: RemoteAutomationInput }
+    struct UpdateParams: Encodable {
+      let automation_id: String
+      let patch: RemoteAutomationInput
+    }
+    do {
+      let result: SaveResult =
+        if let id {
+          try await transport.request(
+            .automationsUpdate, UpdateParams(automation_id: id, patch: input), as: SaveResult.self)
+        } else {
+          try await transport.request(
+            .automationsCreate, CreateParams(input: input), as: SaveResult.self)
+        }
+      detailById[result.detail.id] = result.detail
+      await refresh()
+
+      return result.detail.id
+    } catch {
+      self.error = "Couldn't save that automation — \(AppStore.describe(error))"
+
+      return nil
+    }
+  }
+
+  func setEnabled(id: String, enabled: Bool) async {
+    guard let transport = app.transport else { return }
+    struct Params: Encodable {
+      let automation_id: String
+      let enabled: Bool
+    }
+    struct Result: Decodable { let automation: RemoteAutomation }
+    do {
+      let updated = try await transport.request(
+        .automationsSetEnabled, Params(automation_id: id, enabled: enabled),
+        as: Result.self
+      ).automation
+      if let index = automations.firstIndex(where: { $0.id == id }) {
+        automations[index] = updated
+      }
+      detailById[id]?.enabled = updated.enabled
+    } catch {
+      self.error = "Couldn't change that automation — \(AppStore.describe(error))"
+    }
+  }
+
+  @discardableResult
+  func delete(id: String) async -> Bool {
+    guard let transport = app.transport else { return false }
+    struct Params: Encodable { let automation_id: String }
+    do {
+      try await transport.request(
+        .automationsDelete, Params(automation_id: id), as: IgnoredResult.self)
+      automations.removeAll { $0.id == id }
+      detailById.removeValue(forKey: id)
+
+      return true
+    } catch {
+      self.error = "Couldn't delete that automation — \(AppStore.describe(error))"
+
+      return false
     }
   }
 

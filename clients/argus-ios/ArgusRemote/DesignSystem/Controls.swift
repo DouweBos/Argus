@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// A labelled option row grid, used instead of nav-bar actions so screen
 /// titles keep their width.
@@ -72,18 +73,22 @@ struct ThemedTextField: View {
   let placeholder: String
   @Binding var text: String
   var multiline = false
+  var lines: ClosedRange<Int> = 2...6
+  var keyboard: UIKeyboardType = .default
+  var mono = false
   var onSubmit: (() -> Void)?
 
   var body: some View {
     Group {
       if multiline {
-        TextField(placeholder, text: $text, axis: .vertical).lineLimit(2...6)
+        TextField(placeholder, text: $text, axis: .vertical).lineLimit(lines)
       } else {
         TextField(placeholder, text: $text)
       }
     }
-    .font(.system(size: 15))
+    .font(mono ? .system(size: 14, design: .monospaced) : .system(size: 15))
     .foregroundStyle(theme.text)
+    .keyboardType(keyboard)
     .textInputAutocapitalization(.never)
     .autocorrectionDisabled()
     .padding(.horizontal, 10)

@@ -492,6 +492,53 @@ export const RemoteAutomation = z.object({
 });
 export type RemoteAutomation = z.infer<typeof RemoteAutomation>;
 
+/** The limits a run is held to, whatever its playbook says. */
+export const RemoteAutomationGuardrails = z.object({
+  confidence_threshold: z.number(),
+  max_concurrent_sessions: z.number(),
+  max_files_changed: z.number(),
+  max_cost_usd_per_run: z.number(),
+  path_denylist: z.array(z.string()),
+  require_clean_ci: z.boolean(),
+});
+export type RemoteAutomationGuardrails = z.infer<
+  typeof RemoteAutomationGuardrails
+>;
+
+/** A signal source an automation can subscribe to, and whether it works here. */
+export const RemoteSignalSource = z.object({
+  id: z.string(),
+  label: z.string(),
+  /** `native` = Argus fetches it; `agent` = the run's agent fetches it. */
+  mode: z.enum(["agent", "native"]),
+  /** False when the source has nothing to answer with — no `gh`, no MCP. */
+  available: z.boolean(),
+});
+export type RemoteSignalSource = z.infer<typeof RemoteSignalSource>;
+
+/**
+ * Everything needed to edit one automation. The list shape stays deliberately
+ * small; this is only fetched for the automation actually being opened.
+ */
+export const RemoteAutomationDetail = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  trigger_kind: z.enum(["manual", "schedule"]),
+  cron: z.string().nullable(),
+  timezone: z.string().nullable(),
+  catch_up: z.boolean(),
+  /** Full repo paths — an editor has to write them back unchanged. */
+  repo_roots: z.array(z.string()),
+  source_ids: z.array(z.string()),
+  playbook: z.string(),
+  autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  model: z.string().nullable(),
+  guardrails: RemoteAutomationGuardrails,
+});
+export type RemoteAutomationDetail = z.infer<typeof RemoteAutomationDetail>;
+
 export const RemoteAutomationRunStatus = z.enum([
   "cancelled",
   "failed",

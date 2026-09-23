@@ -11,6 +11,8 @@ import {
   RemoteAgentCapabilities,
   RemoteAgentStatus,
   RemoteAutomation,
+  RemoteAutomationDetail,
+  RemoteAutomationGuardrails,
   RemoteAutomationRun,
   RemoteAgentVitals,
   RemoteDevice,
@@ -30,6 +32,7 @@ import {
   RemoteProposalStatus,
   RemoteQueuedMessage,
   RemoteSession,
+  RemoteSignalSource,
   RemoteFoldPose,
   RemoteStoppedAgent,
   RemoteTask,
@@ -50,6 +53,28 @@ export const RemotePlatform = z.enum(["ios", "android"]);
 export type RemotePlatform = z.infer<typeof RemotePlatform>;
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
+
+/**
+ * The editable half of an automation. Create sends it whole; update sends a
+ * partial. `repo_roots` carries real paths — the host rejects any it doesn't
+ * know, so a phone can't point a run at an unregistered directory.
+ */
+export const AutomationInput = z.object({
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  trigger_kind: z.enum(["manual", "schedule"]),
+  cron: z.string(),
+  timezone: z.string(),
+  catch_up: z.boolean(),
+  repo_roots: z.array(z.string()),
+  source_ids: z.array(z.string()),
+  playbook: z.string(),
+  autonomy: z.enum(["auto_merge", "draft", "pr", "propose"]).nullable(),
+  model: z.string().nullable(),
+  guardrails: RemoteAutomationGuardrails,
+});
+export type AutomationInput = z.infer<typeof AutomationInput>;
 
 // --- Request params per method ---------------------------------------------
 
@@ -285,6 +310,19 @@ export const MethodParams = {
     limit: z.number().int().positive().max(100).optional(),
   }),
   "automations.run": z.object({ run_id: z.string() }),
+  "automations.get": z.object({ automation_id: z.string() }),
+  "automations.sources": z.object({}),
+  "automations.create": z.object({ input: AutomationInput }),
+  /** Every field optional: an editor sends only what it changed. */
+  "automations.update": z.object({
+    automation_id: z.string(),
+    patch: AutomationInput.partial(),
+  }),
+  "automations.delete": z.object({ automation_id: z.string() }),
+  "automations.set_enabled": z.object({
+    automation_id: z.string(),
+    enabled: z.boolean(),
+  }),
   "automations.run_now": z.object({ automation_id: z.string() }),
   "automations.cancel_run": z.object({ run_id: z.string() }),
   "automations.mark_run_read": z.object({ run_id: z.string() }),
@@ -445,6 +483,19 @@ export const MethodResult = {
     /** The agent's final message. Null while the run is still going. */
     report_markdown: z.string().nullable(),
   }),
+  "automations.get": z.object({ automation: RemoteAutomationDetail }),
+  "automations.sources": z.object({ sources: z.array(RemoteSignalSource) }),
+  /** Both shapes back, so a client can refresh its list and its editor. */
+  "automations.create": z.object({
+    automation: RemoteAutomation,
+    detail: RemoteAutomationDetail,
+  }),
+  "automations.update": z.object({
+    automation: RemoteAutomation,
+    detail: RemoteAutomationDetail,
+  }),
+  "automations.delete": z.object({ accepted: z.boolean() }),
+  "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The run record as created — it is still queued when this returns. */
   "automations.run_now": z.object({ run: RemoteAutomationRun }),
   "automations.cancel_run": z.object({ accepted: z.boolean() }),

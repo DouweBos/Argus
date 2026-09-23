@@ -3,12 +3,25 @@ import Foundation
 /// Automations, their runs and the reports they write. Ported from
 /// `packages/remote-protocol/src/{models,report}.ts`.
 ///
-/// Authoring stays on the desktop — a phone views these and fires them, so the
-/// playbook, guardrails and signal sources are deliberately absent.
+/// The list shape stays small; `RemoteAutomationDetail` carries the playbook,
+/// guardrails and sources, and is only fetched for the one being edited.
 
-public enum RemoteAutonomy: String, Codable, Sendable {
+public enum RemoteAutonomy: String, Codable, Sendable, CaseIterable {
   case autoMerge = "auto_merge"
   case draft, pr, propose
+
+  /// Weakest first, the order the desktop ladder reads in.
+  public static let allRungs: [RemoteAutonomy] = [.propose, .draft, .pr, .autoMerge]
+
+  /// What picking this rung lets a run do.
+  public var caption: String {
+    switch self {
+    case .propose: "Write a proposal into the inbox; touch nothing."
+    case .draft: "Create the worktree, implement, commit — then stop."
+    case .pr: "Draft, then push and open a draft PR."
+    case .autoMerge: "PR, then merge once CI is green."
+    }
+  }
 
   public var label: String {
     switch self {
@@ -46,6 +59,145 @@ public struct RemoteAutomation: Codable, Hashable, Sendable, Identifiable {
     case triggerKind = "trigger_kind"
     case lastRunAt = "last_run_at"
     case nextRunAt = "next_run_at"
+  }
+}
+
+/// The limits a run is held to, whatever its playbook says.
+public struct RemoteAutomationGuardrails: Codable, Hashable, Sendable {
+  public var confidenceThreshold: Double
+  public var maxConcurrentSessions: Double
+  public var maxFilesChanged: Double
+  public var maxCostUsdPerRun: Double
+  public var pathDenylist: [String]
+  public var requireCleanCi: Bool
+
+  public init(
+    confidenceThreshold: Double = 0.8, maxConcurrentSessions: Double = 2,
+    maxFilesChanged: Double = 25, maxCostUsdPerRun: Double = 0,
+    pathDenylist: [String] = [], requireCleanCi: Bool = true
+  ) {
+    self.confidenceThreshold = confidenceThreshold
+    self.maxConcurrentSessions = maxConcurrentSessions
+    self.maxFilesChanged = maxFilesChanged
+    self.maxCostUsdPerRun = maxCostUsdPerRun
+    self.pathDenylist = pathDenylist
+    self.requireCleanCi = requireCleanCi
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case confidenceThreshold = "confidence_threshold"
+    case maxConcurrentSessions = "max_concurrent_sessions"
+    case maxFilesChanged = "max_files_changed"
+    case maxCostUsdPerRun = "max_cost_usd_per_run"
+    case pathDenylist = "path_denylist"
+    case requireCleanCi = "require_clean_ci"
+  }
+}
+
+/// A signal source an automation can subscribe to, and whether it works on the
+/// computer this phone is paired with.
+public struct RemoteSignalSource: Codable, Hashable, Sendable, Identifiable {
+  public enum Mode: String, Codable, Sendable {
+    case agent, native
+  }
+
+  public var id: String
+  public var label: String
+  public var mode: Mode
+  /// False when the source has nothing to answer with — no `gh`, no MCP.
+  public var available: Bool
+}
+
+/// Everything needed to edit one automation.
+public struct RemoteAutomationDetail: Codable, Hashable, Sendable, Identifiable {
+  public var id: String
+  public var name: String
+  public var description: String
+  public var enabled: Bool
+  public var triggerKind: RemoteAutomation.TriggerKind
+  public var cron: String?
+  public var timezone: String?
+  public var catchUp: Bool
+  /// Full repo paths: an editor has to write them back unchanged.
+  public var repoRoots: [String]
+  public var sourceIds: [String]
+  public var playbook: String
+  public var autonomy: RemoteAutonomy?
+  public var model: String?
+  public var guardrails: RemoteAutomationGuardrails
+
+  public init(
+    id: String = "", name: String = "", description: String = "",
+    enabled: Bool = true, triggerKind: RemoteAutomation.TriggerKind = .schedule,
+    cron: String? = "0 9 * * 1-5", timezone: String? = TimeZone.current.identifier,
+    catchUp: Bool = true, repoRoots: [String] = [], sourceIds: [String] = [],
+    playbook: String = "", autonomy: RemoteAutonomy? = nil, model: String? = nil,
+    guardrails: RemoteAutomationGuardrails = .init()
+  ) {
+    self.id = id
+    self.name = name
+    self.description = description
+    self.enabled = enabled
+    self.triggerKind = triggerKind
+    self.cron = cron
+    self.timezone = timezone
+    self.catchUp = catchUp
+    self.repoRoots = repoRoots
+    self.sourceIds = sourceIds
+    self.playbook = playbook
+    self.autonomy = autonomy
+    self.model = model
+    self.guardrails = guardrails
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, name, description, enabled, cron, timezone, playbook, autonomy, model, guardrails
+    case triggerKind = "trigger_kind"
+    case catchUp = "catch_up"
+    case repoRoots = "repo_roots"
+    case sourceIds = "source_ids"
+  }
+}
+
+/// The editable half of an automation, as the gateway wants it: create sends
+/// it whole, update sends the same shape and the host patches what it gets.
+public struct RemoteAutomationInput: Codable, Hashable, Sendable {
+  public var name: String
+  public var description: String
+  public var enabled: Bool
+  public var triggerKind: RemoteAutomation.TriggerKind
+  public var cron: String
+  public var timezone: String
+  public var catchUp: Bool
+  public var repoRoots: [String]
+  public var sourceIds: [String]
+  public var playbook: String
+  public var autonomy: RemoteAutonomy?
+  public var model: String?
+  public var guardrails: RemoteAutomationGuardrails
+
+  public init(_ detail: RemoteAutomationDetail) {
+    name = detail.name
+    description = detail.description
+    enabled = detail.enabled
+    triggerKind = detail.triggerKind
+    cron = detail.cron ?? ""
+    timezone = detail.timezone ?? TimeZone.current.identifier
+    catchUp = detail.catchUp
+    repoRoots = detail.repoRoots
+    sourceIds = detail.sourceIds
+    playbook = detail.playbook
+    autonomy = detail.autonomy
+    model = detail.model
+    guardrails = detail.guardrails
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case name, description, enabled, cron, timezone, playbook, autonomy, model, guardrails
+    case triggerKind = "trigger_kind"
+    case catchUp = "catch_up"
+    case repoRoots = "repo_roots"
+    case sourceIds = "source_ids"
   }
 }
 

@@ -34,6 +34,17 @@ struct AutomationView: View {
     }
     .navigationTitle(automation?.name ?? label)
     .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      if app.hasControl {
+        ToolbarItem(placement: .topBarTrailing) {
+          NavigationLink(
+            value: Route.automationEditor(id: automationId, label: automation?.name ?? label)
+          ) {
+            Label("Edit", systemImage: Icon.pencil)
+          }
+        }
+      }
+    }
     .liveRefresh(enabled: app.connection == .ready) { await store.refresh() }
   }
 
@@ -46,9 +57,20 @@ struct AutomationView: View {
           .foregroundStyle(theme.textSecondary)
         BodyText(Labels.triggerLabel(automation))
         Spacer(minLength: 6)
-        Badge(
-          label: automation.enabled ? "Enabled" : "Paused",
-          tone: automation.enabled ? .success : .muted)
+        if app.hasControl {
+          // The one dial worth flipping without opening the editor.
+          Toggle("", isOn: Binding(
+            get: { automation.enabled },
+            set: { enabled in
+              Task { await store.setEnabled(id: automationId, enabled: enabled) }
+            }))
+            .labelsHidden()
+            .tint(theme.accent)
+        } else {
+          Badge(
+            label: automation.enabled ? "Enabled" : "Paused",
+            tone: automation.enabled ? .success : .muted)
+        }
       }
       if !automation.description.isEmpty {
         MutedText(automation.description)

@@ -106,11 +106,17 @@ import {
 } from "../simulator/ios";
 import { getVideoDims } from "../simulator/videoForward";
 import {
+  createRemoteAutomation,
+  deleteRemoteAutomation,
   markRemoteRunRead,
+  remoteAutomation,
   remoteAutomationRun,
   remoteAutomationRuns,
   remoteAutomations,
+  remoteSignalSources,
+  setRemoteAutomationEnabled,
   toRemoteAutomationRun,
+  updateRemoteAutomation,
 } from "./automationsRemote";
 import {
   claimDevice,
@@ -886,6 +892,10 @@ function requireKnownRepoRoot(repoRoot: string): void {
  * already excludes it, but an unattended host auto-approving every tool call is
  * the one failure worth checking twice.
  */
+function requireKnownRepoRoots(repoRoots: string[]): void {
+  repoRoots.forEach(requireKnownRepoRoot);
+}
+
 function requireRemotePermissionMode(mode: string | undefined): void {
   if (mode && !["ask", "auto", "plan", "review"].includes(mode)) {
     throw new GatewayError("capability_denied", `permission mode ${mode}`);
@@ -1526,6 +1536,42 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     }
 
     return detail;
+  },
+  "automations.get": async (params) => {
+    const { automation_id } = parse("automations.get", params);
+    const detail = remoteAutomation(automation_id);
+    if (!detail) {
+      throw new GatewayError("not_found", `no automation ${automation_id}`);
+    }
+
+    return detail;
+  },
+  "automations.sources": async () => await remoteSignalSources(),
+  "automations.create": async (params) => {
+    const { input } = parse("automations.create", params);
+    requireKnownRepoRoots(input.repo_roots);
+
+    return await control(() => createRemoteAutomation(input));
+  },
+  "automations.update": async (params) => {
+    const { automation_id, patch } = parse("automations.update", params);
+    if (patch.repo_roots) {
+      requireKnownRepoRoots(patch.repo_roots);
+    }
+
+    return await control(() => updateRemoteAutomation(automation_id, patch));
+  },
+  "automations.delete": async (params) => {
+    const { automation_id } = parse("automations.delete", params);
+
+    return await control(() => deleteRemoteAutomation(automation_id));
+  },
+  "automations.set_enabled": async (params) => {
+    const { automation_id, enabled } = parse("automations.set_enabled", params);
+
+    return await control(() =>
+      setRemoteAutomationEnabled(automation_id, enabled),
+    );
   },
   "automations.run_now": async (params) => {
     const { automation_id } = parse("automations.run_now", params);
