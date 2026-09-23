@@ -39,14 +39,28 @@ public struct RemoteSession: Codable, Hashable, Sendable, Identifiable {
   public var branch: String
   public var displayName: String?
   public var status: RemoteSessionStatus
+  /// Whether the computer can currently reach this session's files. Separate
+  /// from `status` — the usual cause is an external drive unplugged from the
+  /// computer, which the phone can only report, not fix. Absent on older
+  /// computers, which is why it defaults to available.
+  public var availability: RemoteSessionAvailability?
+  /// The drive to reconnect, by name.
+  public var unavailableVolume: String?
+
+  public var isUnavailable: Bool { availability == .unavailable }
 
   enum CodingKeys: String, CodingKey {
     case id
     case repoRoot = "repo_root"
     case kind, branch
     case displayName = "display_name"
-    case status
+    case status, availability
+    case unavailableVolume = "unavailable_volume"
   }
+}
+
+public enum RemoteSessionAvailability: String, Codable, Sendable {
+  case available, unavailable
 }
 
 public enum RemoteAgentState: String, Codable, Sendable {

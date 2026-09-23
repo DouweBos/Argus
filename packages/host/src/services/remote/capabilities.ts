@@ -298,6 +298,12 @@ function toRemoteSession(s: Session): RemoteSession {
     branch: s.branch,
     display_name: s.display_name ?? null,
     status: sessionStatus(s.status),
+    availability: s.availability ?? "available",
+    // The drive's name, not its mount point — this schema keeps host paths
+    // off the wire, and the name is what the user has to go and plug in.
+    unavailable_volume: s.unavailable_volume
+      ? (s.unavailable_volume.split("/").pop() ?? null)
+      : null,
   };
 }
 

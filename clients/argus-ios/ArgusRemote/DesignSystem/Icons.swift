@@ -17,6 +17,8 @@ enum Icon {
   static let repo = "shippingbox"
   static let agent = "sparkle"
   static let desktop = "desktopcomputer"
+  /// An external drive a project's worktrees can live on.
+  static let drive = "externaldrive"
   static let trash = "trash"
   static let gear = "gearshape"
   static let refresh = "arrow.clockwise"

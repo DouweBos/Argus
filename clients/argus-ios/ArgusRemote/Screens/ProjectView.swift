@@ -51,22 +51,26 @@ struct ProjectView: View {
             }
           }
 
-          NavigationLink(value: Route.changes(sessionId: group.sessionId, label: group.label)) {
-            Label("Changes", systemImage: Icon.branch)
-          }
-          if canManageBranches(group.session) {
-            NavigationLink(
-              value: Route.branches(
-                sessionId: group.sessionId, repoRoot: repoRoot, label: group.label)
-            ) {
-              Label("Branches", systemImage: Icon.repo)
+          // Changes, branches and new agents all need the session's files.
+          // Offering them would only produce a failure from the computer.
+          if group.session?.isUnavailable != true {
+            NavigationLink(value: Route.changes(sessionId: group.sessionId, label: group.label)) {
+              Label("Changes", systemImage: Icon.branch)
             }
-          }
-          if app.hasControl {
-            Button {
-              spawn(in: group.sessionId)
-            } label: {
-              Label("New agent", systemImage: Icon.plus)
+            if canManageBranches(group.session) {
+              NavigationLink(
+                value: Route.branches(
+                  sessionId: group.sessionId, repoRoot: repoRoot, label: group.label)
+              ) {
+                Label("Branches", systemImage: Icon.repo)
+              }
+            }
+            if app.hasControl {
+              Button {
+                spawn(in: group.sessionId)
+              } label: {
+                Label("New agent", systemImage: Icon.plus)
+              }
             }
           }
         } header: {
@@ -131,17 +135,31 @@ struct ProjectView: View {
         if group.session?.kind == .projectRoot {
           Badge(label: "root")
         }
-        if let status = group.session?.status, status != .ready {
+        if group.session?.isUnavailable == true {
+          Badge(label: "unavailable", tone: .muted)
+        } else if let status = group.session?.status, status != .ready {
           Badge(label: status.rawValue, tone: status == .error ? .danger : .warning)
         }
         Spacer(minLength: 4)
         if app.hasControl { sessionMenu(group) }
       }
-      if let git = app.gitStatusBySession[group.sessionId] {
+      if group.session?.isUnavailable == true {
+        Label(
+          "\(group.session?.unavailableVolume ?? "The drive") isn't connected to your computer",
+          systemImage: Icon.drive
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      } else if let git = app.gitStatusBySession[group.sessionId] {
         gitSummary(git)
       }
     }
-    .task { await app.loadGitStatus(sessionId: group.sessionId) }
+    .opacity(group.session?.isUnavailable == true ? 0.55 : 1)
+    // Nothing to fetch for a session the computer itself can't read.
+    .task {
+      guard group.session?.isUnavailable != true else { return }
+      await app.loadGitStatus(sessionId: group.sessionId)
+    }
   }
 
   private func gitSummary(_ git: RemoteGitStatus) -> some View {
@@ -164,7 +182,18 @@ struct ProjectView: View {
     .textCase(nil)
   }
 
+  @ViewBuilder
   private func sessionMenu(_ group: Group) -> some View {
+    // Every action here rewrites the worktree or its branch; none of them can
+    // run while the computer can't reach the files.
+    if group.session?.isUnavailable == true {
+      EmptyView()
+    } else {
+      sessionActions(group)
+    }
+  }
+
+  private func sessionActions(_ group: Group) -> some View {
     Menu {
       Button("Rename", systemImage: Icon.pencil) {
         renameTarget = group
