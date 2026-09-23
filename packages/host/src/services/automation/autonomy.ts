@@ -9,6 +9,7 @@
 import type { Automation, AutomationGuardrails, AutonomyLevel } from "./models";
 import { loadAppSettings } from "../appSettings/store";
 import { loadArgusConfig } from "../session/argusConfig";
+import { isOnMissingVolume } from "../session/volumeAvailability";
 import {
   DEFAULT_AUTONOMY,
   isAutonomyLevel,
@@ -68,6 +69,18 @@ export function resolvePolicy(
 ): AutomationPolicy {
   const project = projectAutomationConfig(repoRoot);
   const guardrails = normalizeGuardrails(automation.guardrails);
+
+  // A project on a disconnected drive reads as "no config", which would drop
+  // whatever ceiling and denylist it declares. We cannot know what it asked
+  // for, so assume the most cautious answer rather than the most permissive.
+  if (repoRoot && isOnMissingVolume(repoRoot)) {
+    return {
+      autonomy: "propose",
+      guardrails,
+      maxTotalSessions: maxConcurrentAutomationSessions(),
+      disabledByProject: false,
+    };
+  }
 
   // Project denylists are additive: a repo can forbid more paths, never fewer.
   const projectDenylist = project?.path_denylist ?? [];

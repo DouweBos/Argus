@@ -34,6 +34,11 @@ import {
 } from "./manager";
 import { calibrationBlock } from "./outcomes";
 import { outstandingBlock } from "./proposals/outstanding";
+import {
+  scopeAvailability,
+  scopeAvailabilityBlock,
+  type ScopeAvailability,
+} from "./scopeAvailability";
 import { dailyBudgetBlock, runBudgetBlock, runSpendUsd } from "./spend";
 
 /**
@@ -90,6 +95,18 @@ export function startAutomationRun(
     );
   }
 
+  // Nothing in scope is readable — usually an external drive that isn't
+  // plugged in. A report written from no evidence is worse than no report.
+  const unreachable = scopeAvailabilityBlock(automation.scope.repo_roots);
+  if (unreachable) {
+    return createRun(
+      automationId,
+      "skipped",
+      triggerReason,
+      `Skipped — ${unreachable}.`,
+    );
+  }
+
   const run = createRun(automationId, "running", triggerReason);
   markAutomationFired(automationId, run.started_at);
   executeRun({ ...automation }, run.id);
@@ -127,7 +144,17 @@ function finish(
 }
 
 async function execute(automation: Automation, runId: string): Promise<void> {
-  for (const repoRoot of automation.scope.repo_roots) {
+  // A project whose drive is out is dropped from the run rather than failing
+  // it: the other projects in scope are still worth looking at, and the agent
+  // is told which ones it could not see.
+  const scope = scopeAvailability(automation.scope.repo_roots);
+  for (const skipped of scope.unavailable) {
+    info(
+      `automation ${automation.id}: ${skipped.repo_root} is on ${skipped.volume}, which isn't connected`,
+    );
+  }
+
+  for (const repoRoot of scope.available) {
     try {
       ensureRepoRegistered(repoRoot);
     } catch (e) {
@@ -139,7 +166,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   // sources hand the agent instructions and let it do the fetching itself.
   const signals = await gatherSignals({
     sourceIds: automation.source_ids,
-    repoRoots: automation.scope.repo_roots,
+    repoRoots: scope.available,
   });
 
   const session = createAutomationHostSession({
@@ -159,7 +186,7 @@ async function execute(automation: Automation, runId: string): Promise<void> {
   );
   updateRun(runId, { host_agent_id: agentInfo.agent_id });
 
-  const prompt = buildPrompt(automation, signals, autonomy);
+  const prompt = buildPrompt(automation, signals, autonomy, scope);
 
   // Without this the renderer never registers the agent or subscribes to its
   // event channels, and the session view falls back to the "Start agent"
@@ -260,10 +287,11 @@ function buildPrompt(
   automation: Automation,
   signals: GatheredSignals,
   autonomy: AutonomyLevel,
+  scope: ScopeAvailability,
 ): string {
   const scopeLines =
-    automation.scope.repo_roots.length > 0
-      ? automation.scope.repo_roots.map((r) => `- \`${r}\``).join("\n")
+    scope.available.length > 0
+      ? scope.available.map((r) => `- \`${r}\``).join("\n")
       : "- (no projects configured — say so in the report rather than guessing)";
 
   return [
@@ -280,6 +308,18 @@ function buildPrompt(
     scopeLines,
     "",
     "You are in a neutral working directory that is not a checkout of any of them. Read the projects at their absolute paths; never write to them.",
+    // Same contract as an unavailable signal source: say so, don't infer
+    // absence of work from absence of evidence.
+    ...(scope.unavailable.length > 0
+      ? [
+          "",
+          `Not readable this run: ${scope.unavailable
+            .map((u) => `\`${u.repo_root}\` (${u.volume} isn't connected)`)
+            .join(
+              ", ",
+            )}. Note this in the report; do not treat it as "there is no work" in those projects.`,
+        ]
+      : []),
     ...autonomySection(automation, autonomy),
     ...signalSections(automation, signals),
     ...(outstandingBlock(automation.id)?.split("\n") ?? []),

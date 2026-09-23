@@ -12,6 +12,7 @@ import { info } from "@argus/host/logger";
 import { appState } from "../../../state";
 import { gitDeleteBranch } from "../../session/gitBranchOps";
 import { deleteSession } from "../../session/manager";
+import { assertVolumeConnected } from "../../session/volumeAvailability";
 import { requireProposal, updateProposal } from "./manager";
 
 /**
@@ -45,6 +46,7 @@ export async function performProposalCleanup(
     if (!cta.branch || !proposal.repo_root) {
       throw "The proposal does not say which branch to delete.";
     }
+    assertVolumeConnected(proposal.repo_root);
     await gitDeleteBranch(projectRootSessionId(proposal.repo_root), {
       name: cta.branch,
       force: cta.force,
@@ -53,6 +55,13 @@ export async function performProposalCleanup(
   } else if (cta.kind === "delete_session") {
     if (!cta.session_id) {
       throw "The proposal does not say which session to retire.";
+    }
+    // Deleting a worktree that is merely unreachable leaves git's registration
+    // behind, which breaks every later git call in the repo. One that is
+    // genuinely gone is exactly what this button is for.
+    const target = appState.sessions.get(cta.session_id);
+    if (target) {
+      assertVolumeConnected(target.path);
     }
     // Never the branch as well: a branch worth deleting is its own proposal,
     // with its own evidence and its own button.

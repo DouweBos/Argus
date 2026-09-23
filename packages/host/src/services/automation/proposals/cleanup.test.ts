@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appState } from "../../../state";
+import { resetAvailabilityCache } from "../../session/volumeAvailability";
 
 const gitDeleteBranch =
   vi.fn<
@@ -168,5 +169,56 @@ describe("performProposalCleanup", () => {
     await expect(performProposalCleanup(proposal.id)).rejects.toContain(
       "not a cleanup",
     );
+  });
+});
+
+/**
+ * A cleanup acts on files. Doing that against a drive that is merely unplugged
+ * is how a worktree ends up half-deleted with git still holding a registration
+ * for it — while a worktree that is genuinely gone is exactly what this button
+ * is for, so only the disconnected case is refused.
+ */
+describe("performProposalCleanup on a disconnected drive", () => {
+  beforeEach(() => {
+    previousHome = process.env.ARGUS_HOME;
+    home = fs.mkdtempSync(path.join(os.tmpdir(), "argus-cleanup-vol-"));
+    process.env.ARGUS_HOME = home;
+    resetProposalCache();
+    appState.sessions.clear();
+    vi.clearAllMocks();
+    resetAvailabilityCache();
+  });
+
+  afterEach(() => {
+    appState.sessions.clear();
+    vi.restoreAllMocks();
+    if (previousHome === undefined) {
+      delete process.env.ARGUS_HOME;
+    } else {
+      process.env.ARGUS_HOME = previousHome;
+    }
+    fs.rmSync(home, { force: true, recursive: true });
+  });
+
+  it("refuses to delete a branch in a project whose drive is out", async () => {
+    // Nothing under /Volumes exists: the drive is unplugged.
+    vi.spyOn(fs, "existsSync").mockImplementation(
+      (p) => !String(p).startsWith("/Volumes/"),
+    );
+    registerProjectRoot("/Volumes/Blackbox/app");
+    const proposal = createProposal({
+      ...input({
+        kind: "delete_branch",
+        label: "Delete the branch",
+        branch: "douwe/refactor",
+        force: false,
+      }),
+      repo_root: "/Volumes/Blackbox/app",
+    });
+
+    await expect(performProposalCleanup(proposal.id)).rejects.toContain(
+      "Blackbox isn't connected",
+    );
+    expect(gitDeleteBranch).not.toHaveBeenCalled();
   });
 });

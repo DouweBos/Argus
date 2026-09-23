@@ -31,6 +31,7 @@ import {
   scratchAutomationForRun,
 } from "./manager";
 import { executeRun } from "./runner";
+import { scopeAvailabilityBlock } from "./scopeAvailability";
 import { dailyBudgetBlock } from "./spend";
 
 const DEFAULT_NAME = "Quick run";
@@ -69,6 +70,19 @@ export function startScratchRun(input: StartScratchRunInput): AutomationRun {
       "skipped",
       SCRATCH_TRIGGER_REASON,
       `Skipped — ${overBudget}.`,
+      spec,
+    );
+  }
+
+  // Same reasoning as a scheduled run, and the person who pressed the button
+  // is right there to read why nothing happened.
+  const unreachable = scopeAvailabilityBlock(spec.scope.repo_roots);
+  if (unreachable) {
+    return createRun(
+      crypto.randomUUID(),
+      "skipped",
+      SCRATCH_TRIGGER_REASON,
+      `Skipped — ${unreachable}.`,
       spec,
     );
   }
