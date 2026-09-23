@@ -21,6 +21,15 @@ export const RemoteSession = z.object({
   branch: z.string(),
   display_name: z.string().nullable().optional(),
   status: z.enum(["deleting", "initializing", "ready", "error"]),
+  /**
+   * Whether the session's files are reachable. Orthogonal to `status`: the
+   * usual cause is the external drive holding its worktree being unplugged
+   * from the host, which a phone can do nothing about but should still show.
+   * Absent means available, so older hosts read correctly.
+   */
+  availability: z.enum(["available", "unavailable"]).optional(),
+  /** Name of the drive to reconnect, e.g. "Blackbox". Not its mount path. */
+  unavailable_volume: z.string().nullable().optional(),
 });
 export type RemoteSession = z.infer<typeof RemoteSession>;
 
