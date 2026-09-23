@@ -37,11 +37,18 @@ struct PastingTextView: UIViewRepresentable {
   func updateUIView(_ view: ImagePastingTextView, context: Context) {
     // Setting `text` programmatically (a send clearing the field) does not
     // fire the delegate, so the height has to be recomputed here too — and
-    // TextKit only relays out on the next layout pass, so `sizeThatFits`
-    // would otherwise still report the height of the message just sent.
+    // TextKit lays out lazily, so without forcing it `sizeThatFits` still
+    // reports the height of the message that was just sent. `layoutIfNeeded`
+    // is not enough: it lays out the view, not the text.
     if view.text != text {
       view.text = text
-      view.layoutIfNeeded()
+      if let layout = view.textLayoutManager {
+        layout.ensureLayout(for: layout.documentRange)
+      } else {
+        // TextKit 1 fallback. Only reached when the view already downgraded —
+        // touching `layoutManager` on a TextKit 2 view is what downgrades it.
+        view.layoutManager.ensureLayout(for: view.textContainer)
+      }
     }
     view.onPasteImages = onPasteImages
     view.textColor = UIColor(context.environment.theme.text)
@@ -70,6 +77,15 @@ struct PastingTextView: UIViewRepresentable {
       let width = textView.bounds.width
       guard width > 0 else { return }
 
+      // An empty field is one line — say so outright rather than trusting a
+      // measurement of text that is no longer there.
+      guard !textView.text.isEmpty else {
+        textView.isScrollEnabled = false
+        apply(minHeight)
+
+        return
+      }
+
       // A scrollable text view reports its *bounds* from `sizeThatFits`, not
       // its content — so once the field had grown past the cap it would never
       // measure small again. Always measure unscrollable, then decide.
@@ -79,9 +95,14 @@ struct PastingTextView: UIViewRepresentable {
       // Past the cap the field stops growing and scrolls internally instead.
       textView.isScrollEnabled = fitting.height > maxHeight
 
-      let clamped = min(max(fitting.height, minHeight), maxHeight)
-      guard abs(clamped - height.wrappedValue) > 0.5 else { return }
-      Task { @MainActor in height.wrappedValue = clamped }
+      apply(min(max(fitting.height, minHeight), maxHeight))
+    }
+
+    /// Writing straight from `updateUIView` would mutate state mid-update, so
+    /// the new height lands on the next turn of the loop.
+    private func apply(_ newHeight: CGFloat) {
+      guard abs(newHeight - height.wrappedValue) > 0.5 else { return }
+      Task { @MainActor in height.wrappedValue = newHeight }
     }
   }
 }
