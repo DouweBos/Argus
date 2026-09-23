@@ -1997,6 +1997,9 @@ export const closeAgentPopout = (agentId: string): Promise<void> =>
 // advertising (`sessionId: null`) when the screen isn't a session.
 // Where a project's worktrees live. `probe` validates a candidate directory
 // before it is saved; it never creates anything.
+export const getWorktreesDefaultBase = (): Promise<string> =>
+  invoke("get_worktrees_default_base");
+
 export const getWorktreeStorage = (
   repoRoot: string,
 ): Promise<WorktreeStorage> => invoke("get_worktree_storage", { repoRoot });

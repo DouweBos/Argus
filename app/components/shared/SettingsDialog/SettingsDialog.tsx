@@ -93,6 +93,7 @@ import { HostsSection } from "./HostsSection";
 import { RemoteAccessSection } from "./RemoteAccessSection";
 import styles from "./SettingsDialog.module.css";
 import { ToolsSection } from "./ToolsSection";
+import { WorktreesSection } from "./WorktreesSection";
 
 const MODES: PermissionMode[] = ["auto", "ask", "plan", "review", "trusted"];
 
@@ -160,6 +161,13 @@ function SettingsDialogContent() {
           description: "Custom editors",
           icon: <Icons.FolderIcon size={12} />,
           render: () => <OpenInAppsSection />,
+        },
+        {
+          id: "worktrees",
+          label: "Worktrees",
+          description: "Where sessions are stored",
+          icon: <Icons.DriveIcon size={12} />,
+          render: () => <WorktreesSection />,
         },
         {
           id: "mcp",

@@ -681,6 +681,11 @@ export interface AppSettings {
    * pre-release feeds for internal testing. Defaults to `latest`.
    */
   updater_channel?: "alpha" | "beta" | "latest";
+  /**
+   * Base directory new worktrees are created in, for every project that does
+   * not set its own. Absent means `<argusHome>/worktrees`.
+   */
+  worktrees_base_dir?: string;
 }
 
 /**
@@ -704,11 +709,21 @@ export interface UserProjectSettings {
    */
   pinned_branches?: string[];
   /**
+   * Roots this project's worktrees used to live under, so worktrees left
+   * behind by a location change stay visible until they are moved.
+   */
+  previous_worktrees_roots?: string[];
+  /**
    * When true, the git-lfs "not installed" and "tracked files" banners are
    * hidden for this project regardless of auto-detection. Personal preference;
    * never written into the repo.
    */
   suppress_lfs_warning?: boolean;
+  /**
+   * Base directory this project's worktrees are created in, overriding the
+   * app-wide setting. Personal and machine-local — never in `.argus.json`.
+   */
+  worktrees_base_dir?: string;
 }
 
 // ---------------------------------------------------------------------------
