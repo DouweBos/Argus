@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
 import { GitError, classifyGitStderr } from "./gitError";
+import { isOnMissingVolume } from "./volumeAvailability";
 
 const execFileAsync = promisify(execFile);
 
@@ -179,6 +180,15 @@ export async function git(cwd: string, args: string[]): Promise<string> {
  *    back-reference was removed but the working directory was left intact.
  */
 export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
+  // An unmounted drive looks exactly like a deleted worktree to git, and
+  // pruning it is unrecoverable: prune removes `.git/worktrees/<name>`, after
+  // which neither a remount nor `git worktree repair` brings the worktree
+  // back, and the repair pass below would then delete the directory — with any
+  // uncommitted work in it. Do nothing at all until the volume is back.
+  if (isOnMissingVolume(repoRoot) || isOnMissingVolume(worktreesRoot(repoRoot))) {
+    return;
+  }
+
   // Drop git's metadata for worktrees whose directory is gone — e.g. when an
   // external tool (Claude Code's Agent tool, a script, manual `rm -rf`) deletes
   // the working dir without `git worktree remove`. The leftover entries under

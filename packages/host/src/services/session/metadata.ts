@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
+import { isOnMissingVolume } from "./volumeAvailability";
 
 const METADATA_FILENAME = ".argus-sessions.json";
 const LEGACY_METADATA_FILENAME = ".argus-workspaces.json";
@@ -139,15 +140,25 @@ export function saveMetadata(
     sessions: Object.fromEntries(sessions.entries()),
   };
 
+  // `mkdirSync -p` under an absent mount point happily creates the directory
+  // on the boot disk, which then shadows the real volume when it is plugged
+  // back in. Skip the write entirely rather than fabricate the mount.
+  if (isOnMissingVolume(worktreesRootDir)) {
+    return;
+  }
+
   const json = JSON.stringify(file, null, 2);
   fs.mkdirSync(worktreesRootDir, { recursive: true });
   fs.writeFileSync(metadataPath(worktreesRootDir), json, "utf8");
 }
 
 /**
- * Remove metadata entries for worktrees that no longer exist on disk or whose
- * `.git` file is missing. Returns the migrated map and whether any entries
- * were removed.
+ * Remove metadata entries for worktrees that are genuinely gone. Returns the
+ * migrated map and whether any entries were removed.
+ *
+ * Entries on an unmounted volume are kept: they are what the sidebar renders
+ * while the drive is away, and dropping them would lose the session's name and
+ * description for good.
  */
 export function migrateOrphaned(
   worktreesRootDir: string,
@@ -157,7 +168,7 @@ export function migrateOrphaned(
   let removed = false;
 
   for (const [pathKey, entry] of meta) {
-    if (isValidWorktree(pathKey)) {
+    if (isValidWorktree(pathKey) || isOnMissingVolume(pathKey)) {
       migrated.set(pathKey, entry);
     } else {
       removed = true;
