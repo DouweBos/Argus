@@ -1,5 +1,11 @@
 # @argus/peacock
 
+## 0.18.1
+
+### Patch Changes
+
+- 4d2a9a2: Proposal cards on the home screen now read left-aligned instead of centred.
+
 ## 0.18.0
 
 ### Minor Changes
