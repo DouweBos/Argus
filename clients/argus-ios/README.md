@@ -13,8 +13,9 @@ only mobile client.
 monitor — projects, sessions, agents, transcripts, changes — and approve or
 deny permission prompts. Devices granted **control** can also message agents,
 spawn them, create/rename/delete sessions, manage the project root's branches,
-switch model / permission mode / effort, and touch and type on mirrored
-simulators. That boundary is enforced by the desktop gateway, not this UI.
+switch model / permission mode / effort, commit/push/merge a session's work,
+open and merge pull requests, author automations, and touch and type on
+mirrored simulators. That boundary is enforced by the desktop gateway, not this UI.
 
 ## Layout
 
@@ -108,8 +109,10 @@ connects to it and drops the previous one's data.
 Scoped out deliberately so far, and worth revisiting:
 
 - No terminal or run-command surface, though the host exposes both.
-- Changes is read-only: no commit, push, stash or conflict resolution.
+- Changes can commit, push and merge into the base branch, but not stage
+  per file, stash or resolve conflicts.
 - Branch operations work only on a `project_root` session.
 - Huddles and browser streams are not reachable from the phone.
+- No file viewer: `sessions.files` lists paths, nothing returns contents.
 - Lists are polled (4 s); only transcripts, prompts, agent status/queue/
-  capabilities and notifications arrive as events.
+  capabilities, device claims and notifications arrive as events.

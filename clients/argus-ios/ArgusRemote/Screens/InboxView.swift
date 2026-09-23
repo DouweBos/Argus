@@ -10,11 +10,26 @@ struct InboxView: View {
   @Environment(AppStore.self) private var app
   @Environment(Router.self) private var router
   @Environment(ProposalsStore.self) private var proposals
+  @Environment(PullRequestsStore.self) private var pullRequests
 
   var body: some View {
     List {
       if let error = proposals.error {
         Banner(text: error, tone: .danger).listRowBackground(Color.clear)
+      }
+
+      // PRs are the other thing waiting on a decision, and they arrive the
+      // same way: while nobody was looking.
+      Section {
+        NavigationLink(value: Route.pullRequests) {
+          HStack(spacing: 8) {
+            Label("Pull requests", systemImage: Icon.repo)
+            Spacer(minLength: 4)
+            if !pullRequests.pullRequests.isEmpty {
+              Badge(label: "\(pullRequests.pullRequests.count)", tone: .accent)
+            }
+          }
+        }
       }
 
       if !proposals.loaded {
@@ -46,8 +61,15 @@ struct InboxView: View {
       }
     }
     .navigationTitle("Inbox")
-    .refreshable { await proposals.refresh() }
+    .refreshable {
+      await proposals.refresh()
+      await pullRequests.refresh()
+    }
     .liveRefresh(enabled: app.connection == .ready) { await proposals.refresh() }
+    .task(id: app.connection) {
+      guard app.connection == .ready, !pullRequests.loaded else { return }
+      await pullRequests.refresh()
+    }
   }
 
   /// Accepting spawns the agent that does the work, so go and watch it.

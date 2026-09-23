@@ -16,6 +16,8 @@ enum Route: Hashable {
   case devices
   case device(id: String, platform: RemotePlatform, name: String, isTv: Bool)
   case inbox
+  case pullRequests
+  case pullRequest(repo: String, number: Int, label: String)
   case automations
   case automation(id: String, label: String)
   /// Nil id creates a new automation.

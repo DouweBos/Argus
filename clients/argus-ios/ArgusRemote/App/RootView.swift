@@ -14,6 +14,7 @@ struct RootView: View {
   @State private var router = Router()
   @State private var automations: AutomationsStore?
   @State private var proposals: ProposalsStore?
+  @State private var pullRequests: PullRequestsStore?
   @State private var imageViewer = ImageViewerState()
   /// The project a new session is being named for, and the name being typed.
   @State private var newSessionProject: RemoteProject?
@@ -27,7 +28,7 @@ struct RootView: View {
 
   var body: some View {
     Group {
-      if unlocked, let automations, let proposals {
+      if unlocked, let automations, let proposals, let pullRequests {
         navigation
         // One presenter for the whole app, so any transcript image can open
         // without threading modal state through every view between.
@@ -36,6 +37,7 @@ struct RootView: View {
         .environment(router)
         .environment(automations)
         .environment(proposals)
+        .environment(pullRequests)
         .environment(imageViewer)
         .tint(theme.accent)
       } else {
@@ -386,6 +388,10 @@ struct RootView: View {
       DeviceView(deviceId: id, platform: platform, name: name, isTv: isTv)
     case .inbox:
       InboxView()
+    case .pullRequests:
+      PullRequestsView()
+    case .pullRequest(let repo, let number, let label):
+      PullRequestView(repo: repo, number: number, label: label)
     case .automations:
       AutomationsView()
     case .automation(let id, let label):
@@ -404,6 +410,7 @@ struct RootView: View {
   private func bootstrap() async {
     if automations == nil { automations = AutomationsStore(app: app) }
     if proposals == nil { proposals = ProposalsStore(app: app) }
+    if pullRequests == nil { pullRequests = PullRequestsStore(app: app) }
     router.adopt(split: sizeClass == .regular)
     NotificationRouter.shared.configure(app: app, router: router)
     await NotificationRouter.shared.registerCategories()
