@@ -95,7 +95,8 @@ ciphertext.
   and **Cloudflare** (`cloudflared`) toggle independently and run side
   by side. Phones try the live addresses in order.
 - **Grants per device** — paired devices are monitor + approve by
-  default. **Control** lets a device drive agents.
+  default. **Control** lets a device drive agents and land their work —
+  commit, push, merge, open a pull request, author an automation.
 - **Background push** — wakes paired phones and browsers with a real
   notification when they aren't connected.
 - **Phone or tablet** — the web client is one column on a phone and
