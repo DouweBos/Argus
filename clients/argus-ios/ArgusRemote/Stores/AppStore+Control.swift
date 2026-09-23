@@ -633,6 +633,57 @@ extension AppStore {
     }
   }
 
+  // MARK: Device claims
+  //
+  // Two clients may watch one screen; both injecting touches into it is
+  // nonsense, so the host arbitrates. Taking the claim up front means the
+  // phone can say who is driving instead of silently dropping taps.
+
+  /// Take the device. `force` steals it from whoever holds it.
+  @discardableResult
+  func claimDevice(deviceId: String, force: Bool = false) async -> Bool {
+    guard let transport else { return false }
+    struct Params: Encodable {
+      let device_id: String
+      let force: Bool
+    }
+    struct Result: Decodable {
+      let granted: Bool
+      let holder: RemoteDeviceClaim?
+    }
+    guard let result = try? await transport.request(
+      .devicesClaim, Params(device_id: deviceId, force: force), as: Result.self)
+    else { return false }
+    deviceClaims[deviceId] = RemoteDeviceClaimState(
+      deviceId: deviceId, holder: result.holder, waiting: [])
+
+    return result.granted
+  }
+
+  func releaseDevice(deviceId: String) async {
+    guard let transport else { return }
+    struct Params: Encodable { let device_id: String }
+    try? await transport.request(
+      .devicesRelease, Params(device_id: deviceId), as: IgnoredResult.self)
+    deviceClaims.removeValue(forKey: deviceId)
+  }
+
+  /// Who holds the device — and, as a side effect, this connection's own id,
+  /// which the host reports nowhere else.
+  func loadClaimStatus(deviceId: String) async {
+    guard let transport else { return }
+    struct Params: Encodable { let device_id: String }
+    struct Result: Decodable {
+      let holder: RemoteDeviceClaim?
+      let connection_id: String
+    }
+    guard let result = try? await transport.request(
+      .devicesClaimStatus, Params(device_id: deviceId), as: Result.self) else { return }
+    connectionId = result.connection_id
+    deviceClaims[deviceId] = RemoteDeviceClaimState(
+      deviceId: deviceId, holder: result.holder, waiting: [])
+  }
+
   func deviceButton(deviceId: String, platform: RemotePlatform, button: String) {
     guard let transport else { return }
     struct Params: Encodable {

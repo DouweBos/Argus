@@ -58,6 +58,9 @@ public enum RemoteMethod: String, Codable, Sendable {
   case deviceUnregisterPush = "device.unregister_push"
 
   case devicesList = "devices.list"
+  case devicesClaim = "devices.claim"
+  case devicesRelease = "devices.release"
+  case devicesClaimStatus = "devices.claim_status"
   case devicesWatch = "devices.watch"
   case devicesUnwatch = "devices.unwatch"
   case devicesState = "devices.state"
@@ -99,6 +102,7 @@ public enum RemoteEventName: String, Sendable {
   case permissionRequest = "permission.request"
   case permissionCancel = "permission.cancel"
   case deviceState = "device.state"
+  case deviceClaim = "device.claim"
   case notification = "notification"
 }
 

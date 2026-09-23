@@ -470,6 +470,39 @@ public struct RemoteDevice: Codable, Hashable, Sendable, Identifiable {
   }
 }
 
+/// Who is driving a device. The paired phone or Mac holding it, not the
+/// simulator being held.
+public struct RemoteDeviceClaim: Codable, Hashable, Sendable {
+  public var connectionId: String
+  public var deviceId: String
+  public var label: String
+
+  enum CodingKeys: String, CodingKey {
+    case connectionId = "connection_id"
+    case deviceId = "device_id"
+    case label
+  }
+}
+
+/// A claim as the host publishes it: who holds the device, and who has been
+/// tapping at a picture that isn't answering them.
+public struct RemoteDeviceClaimState: Codable, Hashable, Sendable {
+  public var deviceId: String
+  public var holder: RemoteDeviceClaim?
+  public var waiting: [RemoteDeviceClaim]
+
+  public init(deviceId: String, holder: RemoteDeviceClaim?, waiting: [RemoteDeviceClaim] = []) {
+    self.deviceId = deviceId
+    self.holder = holder
+    self.waiting = waiting
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case deviceId = "device_id"
+    case holder, waiting
+  }
+}
+
 /// Named hinge poses, matching conductor's vocabulary.
 public enum RemoteFoldPose: String, Codable, Sendable {
   case book, closed, open, partial
