@@ -14,6 +14,7 @@ struct ToolCallCard: View {
   let depth: Int
 
   @State private var userExpanded = false
+  @State private var showingFullPlan = false
 
   private var isPending: Bool {
     app.isToolCallPending(agentKey: agentKey, call: call)
@@ -41,6 +42,9 @@ struct ToolCallCard: View {
     .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
     .overlay(
       RoundedRectangle(cornerRadius: theme.radiusSmall).stroke(borderColor, lineWidth: 1))
+    .fullScreenCover(isPresented: $showingFullPlan) {
+      PlanFullScreenView(plan: call.input["plan"]?.stringValue ?? "")
+    }
   }
 
   private var displayName: String {
@@ -191,6 +195,9 @@ struct ToolCallCard: View {
       DiffLinesView(lines: lines)
     } else if call.name == "ExitPlanMode", let plan = call.input["plan"]?.stringValue {
       MarkdownView(text: plan, baseSize: 13)
+        .overlay(alignment: .topTrailing) {
+          PlanExpandButton { showingFullPlan = true }
+        }
     } else if let answered = answeredQuestions {
       AnsweredQuestionsView(questions: answered.questions, answer: answered.answer)
     } else if call.name == "Bash", let command = call.input["command"]?.stringValue {

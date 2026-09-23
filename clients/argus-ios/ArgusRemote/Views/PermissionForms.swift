@@ -10,6 +10,7 @@ struct PlanApprovalView: View {
   let onFeedback: (String) -> Void
 
   @State private var feedback = ""
+  @State private var showingFullScreen = false
 
   var body: some View {
     VStack(alignment: .leading, spacing: 10) {
@@ -20,17 +21,118 @@ struct PlanApprovalView: View {
       .padding(10)
       .background(theme.bgTertiary)
       .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+      .overlay(alignment: .topTrailing) {
+        PlanExpandButton { showingFullScreen = true }
+      }
 
+      PlanActions(
+        feedback: $feedback,
+        onApprove: onApprove,
+        onKeepPlanning: onKeepPlanning,
+        onFeedback: onFeedback)
+    }
+    .fullScreenCover(isPresented: $showingFullScreen) {
+      PlanFullScreenView(
+        plan: plan,
+        actions: .init(
+          feedback: $feedback,
+          onApprove: onApprove,
+          onKeepPlanning: onKeepPlanning,
+          onFeedback: onFeedback))
+    }
+  }
+}
+
+/// Opens the plan full screen. Sits over the corner of a clamped plan box, so
+/// it carries its own backing to stay legible on top of text.
+struct PlanExpandButton: View {
+  @Environment(\.theme) private var theme
+  let action: () -> Void
+
+  var body: some View {
+    IconBtn(systemName: Icon.expand, label: "View full plan", size: 14, action: action)
+      .background(theme.bgSecondary.opacity(0.9), in: Circle())
+      .overlay(Circle().stroke(theme.borderSubtle, lineWidth: 1))
+      .padding(6)
+  }
+}
+
+/// The feedback field and the decision buttons, shared by the inline card and
+/// the full-screen plan so both edit the same draft.
+private struct PlanActions: View {
+  @Binding var feedback: String
+  let onApprove: () -> Void
+  let onKeepPlanning: () -> Void
+  let onFeedback: (String) -> Void
+
+  private var trimmed: String {
+    feedback.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 10) {
       ThemedTextField(placeholder: "Feedback (optional)", text: $feedback, multiline: true)
 
       HStack(spacing: 8) {
         Btn(label: "Approve", small: true, action: onApprove)
         // The second button changes meaning once there is something to send.
-        if feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if trimmed.isEmpty {
           Btn(label: "Keep planning", tone: .ghost, small: true, action: onKeepPlanning)
         } else {
-          Btn(label: "Send feedback", tone: .secondary, small: true) {
-            onFeedback(feedback.trimmingCharacters(in: .whitespacesAndNewlines))
+          Btn(label: "Send feedback", tone: .secondary, small: true) { onFeedback(trimmed) }
+        }
+      }
+    }
+  }
+}
+
+/// The plan at full size. A plan is many screens long on a phone, so reading
+/// it in the transcript's clamped box means dragging a keyhole around.
+struct PlanFullScreenView: View {
+  /// Absent for a plan that has already been answered — history is read-only.
+  struct Actions {
+    var feedback: Binding<String>
+    var onApprove: () -> Void
+    var onKeepPlanning: () -> Void
+    var onFeedback: (String) -> Void
+  }
+
+  @Environment(\.theme) private var theme
+  @Environment(\.dismiss) private var dismiss
+  let plan: String
+  var actions: Actions?
+
+  var body: some View {
+    NavigationStack {
+      ScrollView {
+        MarkdownView(text: plan, baseSize: 15)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(16)
+      }
+      .background(theme.bg)
+      .navigationTitle("Plan")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarTrailing) {
+          IconBtn(systemName: Icon.close, label: "Close") { dismiss() }
+        }
+      }
+      .safeAreaInset(edge: .bottom) {
+        if let actions {
+          // Answering closes the cover first: the card underneath resolves as
+          // soon as the response goes out, and it should be the thing on screen.
+          PlanActions(
+            feedback: actions.feedback,
+            onApprove: { dismiss(); actions.onApprove() },
+            onKeepPlanning: { dismiss(); actions.onKeepPlanning() },
+            onFeedback: { feedback in
+              dismiss()
+              actions.onFeedback(feedback)
+            })
+          .padding(16)
+          .background(theme.bgSecondary)
+          .overlay(alignment: .top) {
+            Rectangle().fill(theme.border).frame(height: 1)
           }
         }
       }
