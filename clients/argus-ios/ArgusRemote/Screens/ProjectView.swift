@@ -111,8 +111,14 @@ struct ProjectView: View {
       Button("Cancel", role: .cancel) { renameTarget = nil }
       Button("Save", action: submitRename)
     }
-    .refreshable { await refresh() }
+    .refreshable {
+      await refresh()
+      await refreshGitStatus()
+    }
     .liveRefresh(enabled: app.connection == .ready) { await refresh() }
+    // Git state is fetched per session rather than polled, so it goes stale
+    // while the phone is locked.
+    .onResume(connected: app.connection == .ready) { await refreshGitStatus() }
   }
 
   private func delete(_ group: Group, branch: Bool) {
@@ -337,6 +343,12 @@ struct ProjectView: View {
         await app.renameSessionBranch(id: group.sessionId, repoRoot: repoRoot, branch: value)
       }
       await refresh()
+    }
+  }
+
+  private func refreshGitStatus() async {
+    for group in groups where group.session?.isUnavailable != true {
+      await app.loadGitStatus(sessionId: group.sessionId)
     }
   }
 
