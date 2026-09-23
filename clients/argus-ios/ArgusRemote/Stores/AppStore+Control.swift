@@ -205,6 +205,16 @@ extension AppStore {
     } catch { report(error) }
   }
 
+  /// Approving a plan drops the CLI out of plan mode, but that only reaches us
+  /// on the next status poll — move the chip now so it doesn't lie. A pre-plan
+  /// mode other than `auto` is restored by the next snapshot.
+  func noteLeftPlanMode(agentId: String) {
+    guard statusByAgent[agentId]?.permissionMode == RemotePermissionMode.plan.rawValue else {
+      return
+    }
+    statusByAgent[agentId]?.permissionMode = RemotePermissionMode.auto.rawValue
+  }
+
   func setEffort(agentId: String, level: String?) async {
     guard let transport else { return }
     struct Params: Encodable {
