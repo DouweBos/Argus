@@ -154,6 +154,13 @@ export const REMOTE_METHODS = {
   "sessions.delete_branch": "control",
   /** Read a session's diff (what the agent changed) as unified-diff text. */
   "sessions.diff": "monitor",
+  "sessions.merge_blockers": "monitor",
+  /** Writing history. Committing and pushing are the point of the session;
+   *  merging lands it on the base branch, which the host still refuses for a
+   *  protected branch or a conflicting tree. */
+  "sessions.commit": "control",
+  "sessions.push": "control",
+  "sessions.merge_base": "control",
   /** List connected simulators/emulators. */
   "devices.list": "monitor",
   /** Begin/stop streaming a device's screen (frames ride the binary channel). */

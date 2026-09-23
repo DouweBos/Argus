@@ -248,6 +248,15 @@ export const MethodParams = {
     session_id: z.string(),
     mode: z.enum(["branch", "working"]).optional(),
   }),
+  "sessions.commit": z.object({
+    session_id: z.string(),
+    message: z.string().trim().min(1),
+    /** Stage everything first. A phone has no per-file staging UI. */
+    stage_all: z.boolean().optional(),
+  }),
+  "sessions.push": z.object({ session_id: z.string() }),
+  "sessions.merge_blockers": z.object({ session_id: z.string() }),
+  "sessions.merge_base": z.object({ session_id: z.string() }),
   "devices.list": z.object({}),
   /** Begin streaming a device's screen; returns a stream id for binary frames. */
   "devices.watch": z.object({
@@ -452,6 +461,17 @@ export const MethodResult = {
     diff: z.string(),
     base_branch: z.string().nullable().optional(),
   }),
+  /** Git's own output, so a refusal reads the same as it does in a terminal. */
+  "sessions.commit": z.object({ output: z.string() }),
+  "sessions.push": z.object({
+    branch: z.string(),
+    remote: z.string(),
+    /** GitHub's "create a PR" link, when the push printed one. */
+    pr_url: z.string().nullable(),
+  }),
+  /** Empty means the merge would go through. */
+  "sessions.merge_blockers": z.object({ blockers: z.array(z.string()) }),
+  "sessions.merge_base": z.object({ accepted: z.boolean() }),
   "devices.list": z.object({ devices: z.array(RemoteDevice) }),
   "devices.watch": z.object({ stream_id: z.number().int().nonnegative() }),
   "devices.unwatch": z.object({ accepted: z.boolean() }),

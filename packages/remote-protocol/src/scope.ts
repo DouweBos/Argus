@@ -105,6 +105,7 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.git_status": session(),
   "sessions.branches": session(),
   "sessions.diff": session(),
+  "sessions.merge_blockers": session(),
 
   // Creating, destroying or re-pointing a session/branch is the engineer's
   // call, never a guest's — even for the session their agent runs in.
@@ -113,6 +114,10 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "sessions.rename": DENIED,
   "sessions.rename_branch": DENIED,
   "sessions.checkout": DENIED,
+  // Landing work is the engineer's call too — a guest reviews, never ships.
+  "sessions.commit": DENIED,
+  "sessions.push": DENIED,
+  "sessions.merge_base": DENIED,
   "sessions.create_branch": DENIED,
   "sessions.delete_branch": DENIED,
 

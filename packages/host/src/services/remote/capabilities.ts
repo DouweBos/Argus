@@ -85,6 +85,11 @@ import {
 import {
   getSessionBranchDiff,
   getSessionFullDiff,
+  getSessionMergeBlockers,
+  gitCommit,
+  mergeSessionIntoBase,
+  pushSessionBranch,
+  stageAll,
 } from "../session/sessionOps";
 import { computeSessionDiffStats } from "../session/watcher";
 import {
@@ -1524,6 +1529,48 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     const base = appState.sessions.get(session_id)?.base_branch ?? null;
 
     return { diff, base_branch: base };
+  },
+  "sessions.commit": async (params) => {
+    const { session_id, message, stage_all } = parse("sessions.commit", params);
+    requireSession(session_id);
+    const output = await control(async () => {
+      // A phone reviews whole files, so everything goes in unless the caller
+      // says otherwise — a commit of nothing is the confusing alternative.
+      if (stage_all !== false) {
+        await stageAll(session_id);
+      }
+
+      return await gitCommit(session_id, message, false);
+    });
+
+    return { output };
+  },
+  "sessions.push": async (params) => {
+    const { session_id } = parse("sessions.push", params);
+    requireSession(session_id);
+    const result = await control(() => pushSessionBranch(session_id));
+
+    return {
+      branch: result.branch,
+      remote: result.remoteName,
+      pr_url: result.prUrl,
+    };
+  },
+  "sessions.merge_blockers": async (params) => {
+    const { session_id } = parse("sessions.merge_blockers", params);
+    requireSession(session_id);
+    const blockers = await control(() => getSessionMergeBlockers(session_id));
+
+    return { blockers };
+  },
+  "sessions.merge_base": async (params) => {
+    const { session_id } = parse("sessions.merge_base", params);
+    requireSession(session_id);
+    // The host refuses a protected base branch and pre-checks for conflicts,
+    // so nothing extra is gated here.
+    await control(() => mergeSessionIntoBase(session_id));
+
+    return { accepted: true };
   },
   "automations.list": async () => remoteAutomations(),
   "automations.runs": async (params) =>

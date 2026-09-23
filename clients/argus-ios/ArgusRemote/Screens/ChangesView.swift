@@ -1,9 +1,10 @@
 import ArgusKit
 import SwiftUI
 
-/// Read-only changes review: the git status summary plus the diff of what the
-/// agent changed. Committing, pushing and conflict resolution stay on the
-/// desktop — a phone is where you check, not where you land it.
+/// Review what the agent changed, then land it: the git status summary, the
+/// diff, and commit/push/merge for a device holding `control`. Conflict
+/// resolution stays on the desktop — the computer refuses a conflicting merge
+/// rather than dropping a half-merged tree on a phone.
 struct ChangesView: View {
   @Environment(\.theme) private var theme
   @Environment(AppStore.self) private var app
@@ -42,6 +43,10 @@ struct ChangesView: View {
         ForEach(files) { file in
           FileDiffCard(file: file)
         }
+      }
+
+      if app.hasControl {
+        LandWorkCard(sessionId: sessionId) { await refresh() }
       }
     }
     .navigationTitle("Changes · \(label)")
