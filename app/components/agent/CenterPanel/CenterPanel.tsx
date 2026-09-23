@@ -10,6 +10,7 @@ import { RunControl } from "../../layout/RunControl";
 import { AgentView } from "../AgentView";
 import { GitView } from "../GitView";
 import { HomePanel } from "../HomePanel";
+import { SessionUnavailable } from "../SessionUnavailable";
 import styles from "./CenterPanel.module.css";
 
 interface CenterPanelProps {
@@ -24,11 +25,30 @@ export function CenterPanel({ sessionId }: CenterPanelProps) {
     [sessionId, sessions],
   );
 
+  const projectSessionId = useMemo(
+    () =>
+      sessions.find(
+        (w) => w.kind === "project_root" && w.repo_root === session?.repo_root,
+      )?.id,
+    [sessions, session?.repo_root],
+  );
+
   const activeView = useActiveCenterView();
   const setActiveView = setActiveCenterView;
 
   if (!sessionId || !session) {
     return <HomeScreen />;
+  }
+
+  // Every panel below reads the session's files; against a disconnected drive
+  // they would each fail in their own way.
+  if (session.availability === "unavailable") {
+    return (
+      <SessionUnavailable
+        session={session}
+        projectSessionId={projectSessionId}
+      />
+    );
   }
 
   return (

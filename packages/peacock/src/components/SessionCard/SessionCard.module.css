@@ -157,3 +157,19 @@
   min-height: 18px;
   min-width: 0;
 }
+
+/*
+ * A session whose drive is disconnected. Dimmed rather than hidden: it still
+ * says what is on that drive, it just cannot be opened until it is back.
+ */
+.unavailable {
+  opacity: var(--opacity-disabled);
+}
+
+.unavailable[role="option"] {
+  cursor: not-allowed;
+}
+
+.unavailable[role="option"]:hover {
+  background: transparent;
+}

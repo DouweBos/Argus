@@ -2,6 +2,13 @@ import type { ShareErrorPayload } from "./shareError";
 import type { ReportBlock } from "@argus/remote-protocol";
 
 export interface Session {
+  /**
+   * Whether the session's files are reachable right now. Orthogonal to
+   * `status`: a session can be mid-setup *and* on a drive that just got
+   * unplugged, and it has to come back as whatever it was. Absent means
+   * available, so anything that predates this field reads correctly.
+   */
+  availability?: "available" | "unavailable";
   /** The branch this session was created from (e.g. "main"). */
   base_branch?: string | null;
   branch: string;
@@ -31,13 +38,6 @@ export interface Session {
   /** Transient terminal id for the setup PTY; only present on create_session. */
   setup_terminal_id?: string | null;
   status: "deleting" | "initializing" | "ready" | { error: string };
-  /**
-   * Whether the session's files are reachable right now. Orthogonal to
-   * `status`: a session can be mid-setup *and* on a drive that just got
-   * unplugged, and it has to come back as whatever it was. Absent means
-   * available, so anything that predates this field reads correctly.
-   */
-  availability?: "available" | "unavailable";
   /** Why it is unreachable. Only set when `availability` is "unavailable". */
   unavailable_reason?: "volume_missing";
   /** Mount point the session lives on, for the message naming the drive. */
@@ -1621,4 +1621,33 @@ export interface SimulatorDeviceState {
   fold: FoldState | null;
   orientation: DeviceOrientation;
   udid: string;
+}
+
+/** Where a project's worktrees live, and whether that drive is connected. */
+export interface WorktreeStorage {
+  /** Base dir set app-wide, if any. */
+  app_base: string | null;
+  /** The base dir used when neither is set. */
+  default_base: string;
+  /** Base dir set for this project, if any. Personal, never checked in. */
+  project_base: string | null;
+  /** Absolute dir holding this project's worktrees right now. */
+  root: string;
+  source: "app" | "default" | "project";
+  state: "available" | "unavailable";
+  /** Mount point the root depends on; null when it is on the internal disk. */
+  volume: string | null;
+  volume_label: string | null;
+}
+
+/** Result of checking a candidate worktree location before saving it. */
+export interface WorktreeLocationProbe {
+  exists: boolean;
+  /** Set when the path can't be used, phrased for the user. */
+  reason: string | null;
+  /** True when the path is on a drive that can be disconnected. */
+  removable: boolean;
+  volume: string | null;
+  volume_label: string | null;
+  writable: boolean;
 }

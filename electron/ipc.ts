@@ -482,6 +482,10 @@ import {
   gitCheckoutPaths,
 } from "@argus/host/services/session/sessionOps";
 import {
+  getWorktreeStorage,
+  probeWorktreeLocation,
+} from "@argus/host/services/session/worktreeStorage";
+import {
   listEditors,
   openInCustomEditor,
   openInEditor,
@@ -1038,6 +1042,19 @@ export function registerIpcHandlers(): void {
     saveUserProjectSettings(
       a.repoRoot as string,
       a.settings as UserProjectSettings,
+    ),
+  );
+
+  // Where a project's worktrees live, and whether that drive is connected.
+  handle("get_worktree_storage", "admin", (a) =>
+    Promise.resolve(getWorktreeStorage(a.repoRoot as string)),
+  );
+  handle("probe_worktree_location", "admin", (a) =>
+    Promise.resolve(
+      probeWorktreeLocation(
+        a.baseDir as string,
+        a.repoRoot as string | undefined,
+      ),
     ),
   );
   handle("git_archive_branch", "admin", (a) =>

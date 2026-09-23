@@ -135,8 +135,18 @@ export function SessionCard({
     [agents, session.id, unreadByAgent],
   );
 
+  // Nothing to observe on a disconnected drive, and every git call against
+  // the missing path would fail.
+  // Orthogonal to status: the session may be perfectly healthy and simply
+  // sitting on a drive that is not plugged in.
+  const isUnavailable = session.availability === "unavailable";
+  const unavailableTitle = `${
+    session.unavailable_volume?.split("/").pop() ??
+    "The drive holding this session"
+  } isn't connected — showing the last known state`;
+
   const { diffStats } = useGitObservation(session.id, {
-    enabled: isSessionReady(session.status),
+    enabled: isSessionReady(session.status) && !isUnavailable,
   });
   const isRunning = useSessionIsRunning(session.id);
   const closeMenu = useCallback(() => setMenuPosition(null), []);
@@ -144,6 +154,9 @@ export function SessionCard({
   // Cmd-click opens the session in its own tab, as a browser would.
   const handleSelect = useCallback(
     (event?: React.MouseEvent<HTMLElement>) => {
+      if (isUnavailable) {
+        return;
+      }
       if (event?.metaKey || event?.ctrlKey) {
         openSessionTab(session.id, session.display_name ?? session.branch);
 
@@ -151,7 +164,7 @@ export function SessionCard({
       }
       onSelect();
     },
-    [onSelect, session.id, session.display_name, session.branch],
+    [isUnavailable, onSelect, session.id, session.display_name, session.branch],
   );
 
   const handleDelete = async () => {
@@ -195,7 +208,7 @@ export function SessionCard({
     ? (repoBranch ?? session.branch)
     : session.branch;
   const statusLabel = sessionStatusLabel(session.status);
-  const showStatusBadge = statusLabel !== "ready";
+  const showStatusBadge = statusLabel !== "ready" || isUnavailable;
   const isDeletingStatus = session.status === "deleting";
   const errorMessage =
     typeof session.status === "object" && "error" in session.status
@@ -214,16 +227,23 @@ export function SessionCard({
   const showDiff =
     !isProject &&
     !isDeletingStatus &&
+    !isUnavailable &&
     Boolean(diffStats) &&
     (diffStats!.additions > 0 || diffStats!.deletions > 0);
 
   const copyItems: ContextMenuItem[] = [
-    {
-      icon: <Icons.PlusIcon size={12} />,
-      label: "Open in New Tab",
-      onClick: () => openSessionTab(session.id, projectName),
-    },
-    { separator: true },
+    // Everything that needs the files is dropped while the drive is out; the
+    // copy items still work, and are how you find out where it went.
+    ...(isUnavailable
+      ? []
+      : [
+          {
+            icon: <Icons.PlusIcon size={12} />,
+            label: "Open in New Tab",
+            onClick: () => openSessionTab(session.id, projectName),
+          },
+          { separator: true } as ContextMenuItem,
+        ]),
     {
       icon: <Icons.CopyIcon size={12} />,
       label: "Copy Absolute Path",
@@ -239,26 +259,30 @@ export function SessionCard({
       label: "Copy Branch Name",
       onClick: () => navigator.clipboard.writeText(branchName),
     },
-    { separator: true },
-    {
-      icon: <Icons.FolderIcon size={12} />,
-      label: "Reveal in Finder",
-      onClick: () => revealInFinder(session.path),
-    },
-    {
-      icon: <Icons.TerminalIcon size={12} />,
-      label: "Open in Terminal",
-      onClick: () => {
-        createTerminal(session.id);
-      },
-    },
+    ...(isUnavailable
+      ? []
+      : [
+          { separator: true } as ContextMenuItem,
+          {
+            icon: <Icons.FolderIcon size={12} />,
+            label: "Reveal in Finder",
+            onClick: () => revealInFinder(session.path),
+          },
+          {
+            icon: <Icons.TerminalIcon size={12} />,
+            label: "Open in Terminal",
+            onClick: () => {
+              createTerminal(session.id);
+            },
+          },
+        ]),
   ];
   const menuItems: ContextMenuItem[] = isProject
     ? copyItems
     : [
         ...copyItems,
         { separator: true },
-        ...(onRename
+        ...(onRename && !isUnavailable
           ? [
               {
                 icon: <Icons.PencilIcon size={12} />,
@@ -272,9 +296,32 @@ export function SessionCard({
           label: isDeleting ? "Deleting..." : "Delete Session",
           onClick: handleDelete,
           danger: true,
-          disabled: isDeleting,
+          // Removing a worktree git cannot reach leaves its registration
+          // behind, which breaks every later git call in the repo.
+          disabled: isDeleting || isUnavailable,
         },
       ];
+
+  // A frozen badge, not the last live one: showing "ready" for a session you
+  // cannot open reads as an invitation to click it.
+  const statusBadge = (() => {
+    if (!showStatusBadge) {
+      return undefined;
+    }
+    if (isUnavailable) {
+      return {
+        label: "unavailable",
+        tone: "neutral" as BadgeTone,
+        title: unavailableTitle,
+      };
+    }
+
+    return {
+      label: statusLabel,
+      tone: statusTone,
+      title: errorMessage ?? undefined,
+    };
+  })();
 
   const menuSlot = (
     <span onClick={(e) => e.stopPropagation()}>
@@ -308,15 +355,9 @@ export function SessionCard({
       actionReveal="hover"
       onSelect={handleSelect}
       onContextMenu={handleContextMenu}
-      status={
-        showStatusBadge
-          ? {
-              label: statusLabel,
-              tone: statusTone,
-              title: errorMessage ?? undefined,
-            }
-          : undefined
-      }
+      unavailable={isUnavailable}
+      unavailableTitle={unavailableTitle}
+      status={statusBadge}
       diff={
         showDiff
           ? {

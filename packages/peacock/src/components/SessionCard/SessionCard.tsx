@@ -53,6 +53,17 @@ export interface SessionCardProps extends Omit<
   framed?: boolean;
   /** Wires role/tabIndex/aria-selected/cursor + Enter-to-select. */
   interactive?: boolean;
+  /**
+   * The session's files are out of reach (its drive is disconnected). The row
+   * keeps its last known content but is dimmed and cannot be selected.
+   *
+   * Composes with `selected` — the URL may still point here — and deliberately
+   * keeps `role="option"` and the context menu, because the tooltip and the
+   * menu are what explain the state.
+   */
+  unavailable?: boolean;
+  /** Tooltip naming the drive, e.g. "Blackbox isn't connected". */
+  unavailableTitle?: string;
   /** The event is passed so callers can treat a modifier-click differently. */
   onSelect?: (event?: MouseEvent<HTMLDivElement>) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
@@ -77,6 +88,8 @@ export function SessionCard({
   selected,
   framed,
   interactive,
+  unavailable,
+  unavailableTitle,
   onSelect,
   onContextMenu,
   className,
@@ -87,6 +100,7 @@ export function SessionCard({
     styles.card,
     framed ? styles.framed : "",
     selected ? styles.selected : "",
+    unavailable ? styles.unavailable : "",
     className ?? "",
   ]
     .filter(Boolean)
@@ -94,7 +108,13 @@ export function SessionCard({
 
   const hasMetrics = Boolean(status || diff || divergence);
 
-  const handleKeyDown = interactive
+  const selectable = interactive && !unavailable;
+  let tabIndex: number | undefined;
+  if (interactive) {
+    tabIndex = unavailable ? -1 : 0;
+  }
+
+  const handleKeyDown = selectable
     ? (e: KeyboardEvent<HTMLDivElement>) => {
         if (e.key === "Enter") {
           onSelect?.();
@@ -107,9 +127,13 @@ export function SessionCard({
       className={classes}
       data-reveal={actionReveal}
       aria-selected={interactive ? selected : undefined}
+      aria-disabled={unavailable || undefined}
       role={interactive ? "option" : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      onClick={interactive ? onSelect : undefined}
+      // Still reachable programmatically, but out of the tab order: tabbing
+      // onto a row you cannot open is a dead end.
+      tabIndex={tabIndex}
+      title={unavailable ? unavailableTitle : undefined}
+      onClick={selectable ? onSelect : undefined}
       onContextMenu={onContextMenu}
       onKeyDown={handleKeyDown}
       {...rest}

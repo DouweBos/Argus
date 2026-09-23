@@ -1771,6 +1771,28 @@ export function LaptopIcon({ size = 12, className, ...rest }: IconProps) {
   );
 }
 
+/** An external drive — where a project's worktrees can be kept. */
+export function DriveIcon({ size = 12, className, ...rest }: IconProps) {
+  return (
+    <svg
+      className={className}
+      {...rest}
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.4"
+      viewBox="0 0 16 16"
+      width={size}
+    >
+      <rect height="8" rx="1.5" width="12" x="2" y="4" />
+      <path d="M4.5 10.5h4" />
+      <circle cx="12" cy="10.5" r="0.75" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 /** A paired Argus host — headless mini or another Mac, the client can't tell. */
 export function HostIcon({ size = 12, className, ...rest }: IconProps) {
   return (

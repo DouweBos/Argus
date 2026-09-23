@@ -147,6 +147,7 @@ export * from "./components/SettingsScreen/SettingsScreen";
 export * from "./components/SetupBlocker/SetupBlocker";
 export * from "./components/SettingsDialogShell/SettingsDialogShell";
 export * from "./components/TreeNode/TreeNode";
+export * from "./components/VolumeBadge/VolumeBadge";
 export * from "./components/WindowTabStrip/WindowTabStrip";
 
 export * as Icons from "./icons/Icons";

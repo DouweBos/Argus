@@ -10,6 +10,7 @@ import {
   projectAccent,
   SidebarRepoAction,
   SidebarRepoGroup,
+  VolumeBadge,
 } from "@argus/peacock";
 import { useGitObservation } from "../../../hooks/useGitObservation";
 import { useProjectSessions } from "../../../hooks/useSessions";
@@ -130,6 +131,14 @@ export function ProjectSegment({
 
   const repoRootSession = sessions.find((w) => w.kind === "project_root");
   const worktrees = sessions.filter((w) => w.kind !== "project_root");
+  // Derived from the sessions rather than fetched separately: they already
+  // carry the verdict, and two sources would eventually disagree. The repo
+  // root is deliberately excluded — it lives in the project directory, which
+  // is usually still on the internal disk and perfectly usable.
+  const unavailableVolume =
+    worktrees.find((w) => w.availability === "unavailable")
+      ?.unavailable_volume ?? null;
+  const volumeLabel = unavailableVolume?.split("/").pop() ?? null;
   const isProjectSelected =
     repoRootSession != null && repoRootSession.id === selectedId;
 
@@ -178,6 +187,7 @@ export function ProjectSegment({
       <SidebarRepoGroup
         name={projectName}
         title={repoRoot}
+        dim={unavailableVolume != null}
         expanded={!isCollapsed && hasSessions}
         hideChevron={!hasSessions}
         active={isProjectSelected}
@@ -219,6 +229,9 @@ export function ProjectSegment({
                 label={hostLabel}
                 state={hostOffline ? "offline" : "connected"}
               />
+            )}
+            {volumeLabel && (
+              <VolumeBadge label={volumeLabel} state="unavailable" />
             )}
             {repoRootSession && <RepoHeaderMeta session={repoRootSession} />}
           </>
