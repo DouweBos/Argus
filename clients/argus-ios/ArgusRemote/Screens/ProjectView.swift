@@ -12,13 +12,16 @@ struct ProjectView: View {
   let name: String
 
   @State private var creatingSession = false
-  @State private var newSessionDescription = ""
+  @State private var spawningIn: SpawnTarget?
   @State private var showingStopped = false
   @State private var renameTarget: Group?
   @State private var renameKind: RenameKind?
   @State private var renameValue = ""
 
   enum RenameKind { case name, branch }
+
+  /// A session id, wrapped so it can drive a `sheet(item:)`.
+  struct SpawnTarget: Identifiable { let id: String }
 
   private var sessions: [RemoteSession] { app.sessionsByRepo[repoRoot] ?? [] }
   private var agents: [RemoteAgentStatus] { app.agentsByRepo[repoRoot] ?? [] }
@@ -67,7 +70,7 @@ struct ProjectView: View {
             }
             if app.hasControl {
               Button {
-                spawn(in: group.sessionId)
+                spawningIn = SpawnTarget(id: group.sessionId)
               } label: {
                 Label("New agent", systemImage: Icon.plus)
               }
@@ -86,7 +89,6 @@ struct ProjectView: View {
       if app.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
           Button {
-            newSessionDescription = ""
             creatingSession = true
           } label: {
             Label("New session", systemImage: Icon.plus)
@@ -94,12 +96,16 @@ struct ProjectView: View {
         }
       }
     }
-    .alert("New session", isPresented: $creatingSession) {
-      TextField("What should this session do?", text: $newSessionDescription)
-      Button("Cancel", role: .cancel) {}
-      Button("Create", action: create)
-    } message: {
-      Text("Argus derives the branch from the description.")
+    .sheet(isPresented: $creatingSession) {
+      NewSessionSheet(repoRoot: repoRoot, branchSessionId: branchSessionId) { _ in
+        Task { await refresh() }
+      }
+    }
+    .sheet(item: $spawningIn) { target in
+      NewAgentSheet(sessionId: target.id, models: knownModels) { agent in
+        router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
+        Task { await refresh() }
+      }
     }
     .alert(
       renameKind == .branch ? "Rename branch" : "Rename session",
@@ -311,22 +317,17 @@ struct ProjectView: View {
       .map(\.element)
   }
 
-  private func spawn(in sessionId: String) {
-    Task {
-      guard let agent = await app.spawnAgent(sessionId: sessionId) else { return }
-      router.push(.agent(id: agent.agentId, label: Labels.agentName(agent)))
-      await refresh()
-    }
+  /// Branches are addressed by session; the project root is the one that is
+  /// always there, so it answers for the whole project.
+  private var branchSessionId: String? {
+    (sessions.first { $0.kind == .projectRoot } ?? sessions.first)?.id
   }
 
-  private func create() {
-    let description = newSessionDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !description.isEmpty else { return }
-    Task {
-      _ = await app.createSession(repoRoot: repoRoot, branch: "", description: description)
-      newSessionDescription = ""
-      await refresh()
-    }
+  /// Models are reported per agent, so a new agent is offered whatever a live
+  /// one in this project last reported.
+  private var knownModels: [RemoteModelInfo] {
+    agents.compactMap { app.capabilitiesByAgent[$0.agentId] }
+      .first { !$0.models.isEmpty }?.models ?? []
   }
 
   private func submitRename() {

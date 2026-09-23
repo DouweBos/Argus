@@ -17,7 +17,6 @@ struct RootView: View {
   @State private var imageViewer = ImageViewerState()
   /// The project a new session is being named for, and the name being typed.
   @State private var newSessionProject: RemoteProject?
-  @State private var newSessionDescription = ""
 
   @State private var unlocked = false
   @State private var canAuthenticate = false
@@ -197,7 +196,6 @@ struct RootView: View {
               }
               if app.hasControl {
                 Button {
-                  newSessionDescription = ""
                   newSessionProject = project
                 } label: {
                   Label("New session", systemImage: Icon.plus)
@@ -214,17 +212,18 @@ struct RootView: View {
       }
     }
     .listStyle(.sidebar)
-    .alert(
-      "New session in \(newSessionProject?.name ?? "")",
-      isPresented: Binding(
-        get: { newSessionProject != nil },
-        set: { if !$0 { newSessionProject = nil } })
-    ) {
-      TextField("What should this session do?", text: $newSessionDescription)
-      Button("Cancel", role: .cancel) { newSessionProject = nil }
-      Button("Create") { createSession() }
-    } message: {
-      Text("Argus derives the branch from the description.")
+    .sheet(item: $newSessionProject) { project in
+      NewSessionSheet(
+        repoRoot: project.repoRoot,
+        branchSessionId: app.sessionsByRepo[project.repoRoot]?
+          .first { $0.kind == .projectRoot }?.id
+      ) { _ in
+        Task {
+          // Show it straight away rather than waiting for the next poll.
+          await app.loadSessions(repoRoot: project.repoRoot)
+          router.expandedProjects.insert(project.repoRoot)
+        }
+      }
     }
   }
 
@@ -236,20 +235,6 @@ struct RootView: View {
           id: agent.agentId, label: Labels.agentName(agent),
           repoRoot: project.repoRoot, projectName: project.name))
       await app.loadRecentAgents()
-    }
-  }
-
-  private func createSession() {
-    guard let project = newSessionProject else { return }
-    let description = newSessionDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-    newSessionProject = nil
-    guard !description.isEmpty else { return }
-    Task {
-      _ = await app.createSession(
-        repoRoot: project.repoRoot, branch: "", description: description)
-      // Show it straight away rather than waiting for the next poll.
-      await app.loadSessions(repoRoot: project.repoRoot)
-      router.expandedProjects.insert(project.repoRoot)
     }
   }
 
