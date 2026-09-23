@@ -158,6 +158,22 @@ export function assertWorktreeBaseAvailable(baseDir: string): void {
   throw `${volumeLabel(availability.volume)} isn't connected. Reconnect the drive, or change where this project stores its worktrees.`;
 }
 
+/**
+ * Refuse only when the drive is disconnected.
+ *
+ * Unlike {@link assertWorktreePresent}, a path that is simply gone is fine —
+ * for a cleanup that is the normal case, and the thing worth stopping is
+ * acting on files that exist but cannot currently be seen.
+ */
+export function assertVolumeConnected(target: string): void {
+  const availability = pathAvailability(target);
+  if (availability.state !== "volume_missing") {
+    return;
+  }
+
+  throw `${volumeLabel(availability.volume)} isn't connected, so Argus can't safely change anything there. Reconnect the drive and try again.`;
+}
+
 /** Test seam — drops the mount-root cache. */
 export function resetAvailabilityCache(): void {
   volumeCache.clear();
