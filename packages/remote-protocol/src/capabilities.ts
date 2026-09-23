@@ -44,6 +44,9 @@ export const HOST_ONLY_COMMANDS = new Set([
   "open_agent_popout",
   "close_agent_popout",
   "close_window",
+  // Handoff advertises what *this* Mac has on screen; a phone driving it
+  // would make the Mac offer a screen nobody is looking at.
+  "publish_handoff",
   // act on the client's machine, not the host's
   "open_external_url",
   "open_path",
