@@ -150,6 +150,10 @@ struct PickerSheet<Value: Hashable>: View {
                       .foregroundStyle(theme.accent)
                   }
                 }
+                // Without a hit shape the tap target collapses onto the glyphs.
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
               }
               .buttonStyle(.plain)
               .listRowBackground(theme.bgSecondary)
