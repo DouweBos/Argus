@@ -66,6 +66,10 @@ final class AppStore {
   var devices: [RemoteDevice] = []
   /// Fold and orientation for watched devices, keyed by device id.
   var deviceStates: [String: RemoteDeviceState] = [:]
+  /// Who is driving each watched device, and this connection's own id so the
+  /// app can tell "someone else" from "me".
+  var deviceClaims: [String: RemoteDeviceClaimState] = [:]
+  var connectionId: String?
   var pushState: PushState = .off
   var pushEnabled = true
 
@@ -278,6 +282,8 @@ final class AppStore {
     effortByAgent = [:]
     devices = []
     deviceStates = [:]
+    deviceClaims = [:]
+    connectionId = nil
     pushState = .off
     lastError = nil
     mediaSinks = [:]
@@ -351,6 +357,11 @@ final class AppStore {
       guard let state = try? ProtocolCodec.convert(
         envelope.payload, to: RemoteDeviceState.self) else { return }
       deviceStates[state.deviceId] = state
+
+    case .deviceClaim:
+      guard let claim = try? ProtocolCodec.convert(
+        envelope.payload, to: RemoteDeviceClaimState.self) else { return }
+      deviceClaims[claim.deviceId] = claim
 
     case .notification:
       guard let notification = try? ProtocolCodec.convert(

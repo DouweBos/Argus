@@ -49,6 +49,16 @@ struct DeviceView: View {
             "This device can watch but not control. Grant it control in Argus → Settings → Remote Access to tap and type here."
         )
         .padding(theme.space)
+      } else if let holder = otherHolder {
+        // Input would be refused outright, so say who has it and offer to take
+        // it rather than letting taps vanish.
+        VStack(alignment: .leading, spacing: 8) {
+          Banner(text: "\(holder.label) is controlling this device.", tone: .warning)
+          Btn(label: "Take control", tone: .secondary, small: true) {
+            Task { await app.claimDevice(deviceId: deviceId, force: true) }
+          }
+        }
+        .padding(theme.space)
       } else if isTv {
         TVRemoteView(press: sendButton, isAndroid: platform == .android)
           .background(theme.bgSecondary)
@@ -292,6 +302,15 @@ struct DeviceView: View {
       }
     }
 
+    // Take the device unless someone else is already driving it; the host
+    // pushes `device.claim` from here on.
+    if app.hasControl {
+      await app.loadClaimStatus(deviceId: deviceId)
+      if otherHolder == nil {
+        await app.claimDevice(deviceId: deviceId)
+      }
+    }
+
     // Seed the pose; the host pushes `device.state` from here on while it is
     // being watched.
     if let state = await app.deviceState(deviceId: deviceId, platform: platform) {
@@ -304,9 +323,21 @@ struct DeviceView: View {
     }
   }
 
+  /// The claim, when someone other than this phone holds it.
+  private var otherHolder: RemoteDeviceClaim? {
+    guard let holder = app.deviceClaims[deviceId]?.holder else { return nil }
+
+    return holder.connectionId == app.connectionId ? nil : holder
+  }
+
   private func teardown() {
     unregister?()
     unregister = nil
-    Task { await app.unwatchDevice(deviceId: deviceId) }
+    Task {
+      // Let go before leaving, so the next client isn't locked out by a screen
+      // nobody is looking at.
+      await app.releaseDevice(deviceId: deviceId)
+      await app.unwatchDevice(deviceId: deviceId)
+    }
   }
 }
