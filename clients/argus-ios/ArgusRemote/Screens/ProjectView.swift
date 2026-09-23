@@ -150,8 +150,18 @@ struct ProjectView: View {
         )
         .font(.caption)
         .foregroundStyle(.secondary)
-      } else if let git = app.gitStatusBySession[group.sessionId] {
-        gitSummary(git)
+      } else {
+        let git = app.gitStatusBySession[group.sessionId]
+        // The project root is named "Project root", so its branch — the one
+        // checked out in the repo itself — shows up nowhere else.
+        if let branch = branchLabel(group, git: git) {
+          Label(branch, systemImage: Icon.branch)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .textCase(nil)
+            .lineLimit(1)
+        }
+        if let git { gitSummary(git) }
       }
     }
     .opacity(group.session?.isUnavailable == true ? 0.55 : 1)
@@ -160,6 +170,14 @@ struct ProjectView: View {
       guard group.session?.isUnavailable != true else { return }
       await app.loadGitStatus(sessionId: group.sessionId)
     }
+  }
+
+  /// The branch behind a session, unless its own name already says it.
+  private func branchLabel(_ group: Group, git: RemoteGitStatus?) -> String? {
+    let branch = git?.branch ?? group.session?.branch ?? ""
+    guard !branch.isEmpty, branch != group.label else { return nil }
+
+    return branch
   }
 
   private func gitSummary(_ git: RemoteGitStatus) -> some View {
