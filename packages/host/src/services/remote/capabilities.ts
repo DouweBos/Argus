@@ -137,6 +137,13 @@ import {
   type PairedDevice,
 } from "./deviceStore";
 import { getEndpoints } from "./endpoints";
+import {
+  commentOnRemotePullRequest,
+  createRemotePullRequest,
+  mergeRemotePullRequest,
+  remotePullRequest,
+  remotePullRequests,
+} from "./githubRemote";
 import { hostLabelForAgent } from "./huddle";
 import {
   acceptRemoteProposal,
@@ -1635,6 +1642,47 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     await control(() => cancelAutomationRun(run_id));
 
     return { accepted: true };
+  },
+  "github.pull_requests": async (params) => {
+    const { repo_roots } = parse("github.pull_requests", params);
+    const roots = repo_roots ?? collectAllProjects().map((p) => p.path);
+    roots.forEach(requireKnownRepoRoot);
+
+    return await remotePullRequests(roots);
+  },
+  "github.pull_request": async (params) => {
+    const { repo, number } = parse("github.pull_request", params);
+
+    return await remotePullRequest(repo, number);
+  },
+  "github.create_pull_request": async (params) => {
+    const { session_id, title, body, draft } = parse(
+      "github.create_pull_request",
+      params,
+    );
+    requireSession(session_id);
+
+    return await control(() =>
+      createRemotePullRequest({
+        sessionId: session_id,
+        title,
+        body,
+        draft: draft ?? true,
+      }),
+    );
+  },
+  "github.merge_pull_request": async (params) => {
+    const { repo, number, strategy } = parse(
+      "github.merge_pull_request",
+      params,
+    );
+
+    return await control(() => mergeRemotePullRequest(repo, number, strategy));
+  },
+  "github.comment_pull_request": async (params) => {
+    const { repo, number, body } = parse("github.comment_pull_request", params);
+
+    return await control(() => commentOnRemotePullRequest(repo, number, body));
   },
   "proposals.list": async (params) =>
     remoteProposals(parse("proposals.list", params)),

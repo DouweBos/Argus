@@ -1,0 +1,174 @@
+import ArgusKit
+import SwiftUI
+
+/// One pull request: what it says, whether CI is happy, what was said about
+/// it, and — for a device holding `control` — merge and comment.
+struct PullRequestView: View {
+  @Environment(\.theme) private var theme
+  @Environment(AppStore.self) private var app
+  @Environment(PullRequestsStore.self) private var store
+
+  let repo: String
+  let number: Int
+  let label: String
+
+  @State private var comment = ""
+  @State private var busy = false
+  @State private var strategy: RemoteMergeStrategy = .squash
+  @State private var pickingStrategy = false
+  @State private var confirmingMerge = false
+
+  private var detail: RemotePullRequestDetail? { store.detailById["\(repo)#\(number)"] }
+
+  var body: some View {
+    Screen {
+      if let error = store.error {
+        Banner(text: error, tone: .danger)
+      }
+      if let detail {
+        header(detail)
+        if !detail.checks.isEmpty { checks(detail) }
+        if !detail.body.isEmpty {
+          Card { MarkdownView(text: detail.body, baseSize: 14) }
+        }
+        conversation(detail)
+        if app.hasControl && !detail.merged { actions(detail) }
+      } else {
+        Loading(label: "Reading the pull request…")
+      }
+    }
+    .navigationTitle(detail?.title ?? label)
+    .navigationBarTitleDisplayMode(.inline)
+    .sheet(isPresented: $pickingStrategy) { strategySheet }
+    .alert("Merge this pull request?", isPresented: $confirmingMerge) {
+      Button("Cancel", role: .cancel) {}
+      Button("Merge") { merge() }
+    } message: {
+      Text(strategy.label + " on GitHub. This can't be undone from here.")
+    }
+    .task(id: number) { await store.loadDetail(repo: repo, number: number) }
+    .liveRefresh(enabled: app.connection == .ready, every: .seconds(30)) {
+      await store.loadDetail(repo: repo, number: number)
+    }
+  }
+
+  private func header(_ detail: RemotePullRequestDetail) -> some View {
+    Card {
+      HStack(spacing: 6) {
+        MutedText("\(detail.repo) #\(detail.number)", lineLimit: 1)
+        Spacer(minLength: 4)
+        Badge(label: stateLabel(detail), tone: stateTone(detail))
+      }
+      MutedText("\(detail.headRef) → \(detail.baseRef)", lineLimit: 1)
+      HStack(spacing: 10) {
+        Text("+\(detail.additions)").foregroundStyle(theme.success)
+        Text("-\(detail.deletions)").foregroundStyle(theme.error)
+        MutedText("\(detail.changedFiles) files")
+        if let author = detail.author { MutedText("by \(author)") }
+      }
+      .font(.caption.monospacedDigit())
+      if detail.mergeable == "CONFLICTING" {
+        Banner(text: "This branch conflicts with its base.", tone: .warning)
+      }
+    }
+  }
+
+  private func checks(_ detail: RemotePullRequestDetail) -> some View {
+    Card {
+      SectionHeader(title: "Checks", count: detail.checks.count)
+      ForEach(detail.checks) { check in
+        HStack(spacing: 8) {
+          StatusDot(tone: tone(check), pulse: check.tone == .warning)
+          BodyText(check.name, lineLimit: 1)
+          Spacer(minLength: 4)
+          MutedText(check.conclusion ?? check.status ?? "", lineLimit: 1)
+        }
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func conversation(_ detail: RemotePullRequestDetail) -> some View {
+    if !detail.comments.isEmpty {
+      SectionHeader(title: "Conversation", count: detail.comments.count)
+      ForEach(detail.comments) { entry in
+        Card {
+          HStack(spacing: 6) {
+            BodyText(entry.author ?? "someone")
+            if let state = entry.reviewState {
+              Badge(label: state.lowercased(), tone: state == "APPROVED" ? .success : .muted)
+            }
+          }
+          MarkdownView(text: entry.body, baseSize: 13)
+        }
+      }
+    }
+  }
+
+  private func actions(_ detail: RemotePullRequestDetail) -> some View {
+    Card {
+      ThemedTextField(placeholder: "Leave a comment", text: $comment, multiline: true)
+      Btn(label: busy ? "Working…" : "Comment", tone: .secondary, small: true) { postComment() }
+        .disabled(busy || comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+      Btn(label: strategy.label, tone: .secondary, small: true) { pickingStrategy = true }
+      Btn(label: busy ? "Merging…" : "Merge", small: true) { confirmingMerge = true }
+        .disabled(busy || detail.mergeable == "CONFLICTING")
+      if !detail.checksPassing && !detail.checks.isEmpty {
+        MutedText("Checks aren't green yet.")
+      }
+    }
+  }
+
+  private var strategySheet: some View {
+    PickerSheet(
+      title: "Merge strategy",
+      options: RemoteMergeStrategy.allCases.map { .init(value: $0.rawValue, label: $0.label) },
+      selected: [strategy.rawValue]
+    ) { value in
+      strategy = RemoteMergeStrategy(rawValue: value) ?? .squash
+    }
+  }
+
+  private func stateLabel(_ detail: RemotePullRequestDetail) -> String {
+    if detail.merged { return "merged" }
+    if detail.isDraft { return "draft" }
+
+    return detail.state.lowercased()
+  }
+
+  private func stateTone(_ detail: RemotePullRequestDetail) -> Tone {
+    if detail.merged { return .accent }
+    if detail.state == "CLOSED" { return .danger }
+
+    return detail.isDraft ? .muted : .success
+  }
+
+  private func tone(_ check: RemotePullRequestCheck) -> Tone {
+    switch check.tone {
+    case .success: .success
+    case .danger: .danger
+    case .warning: .warning
+    case .muted: .muted
+    }
+  }
+
+  private func postComment() {
+    busy = true
+    Task {
+      let body = comment.trimmingCharacters(in: .whitespacesAndNewlines)
+      if await store.comment(repo: repo, number: number, body: body) {
+        comment = ""
+      }
+      busy = false
+    }
+  }
+
+  private func merge() {
+    busy = true
+    Task {
+      await store.merge(repo: repo, number: number, strategy: strategy)
+      busy = false
+    }
+  }
+}

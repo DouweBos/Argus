@@ -30,6 +30,8 @@ import {
   RemoteProject,
   RemoteProposal,
   RemoteProposalStatus,
+  RemotePullRequest,
+  RemotePullRequestDetail,
   RemoteQueuedMessage,
   RemoteSession,
   RemoteSignalSource,
@@ -335,6 +337,32 @@ export const MethodParams = {
   "automations.run_now": z.object({ automation_id: z.string() }),
   "automations.cancel_run": z.object({ run_id: z.string() }),
   "automations.mark_run_read": z.object({ run_id: z.string() }),
+  "github.pull_requests": z.object({
+    /** Omit for every registered project. */
+    repo_roots: z.array(z.string()).optional(),
+  }),
+  "github.pull_request": z.object({
+    /** `owner/repo`. */
+    repo: z.string(),
+    number: z.number().int().positive(),
+  }),
+  /** Addressed by session: the branch and its base are the host's to know. */
+  "github.create_pull_request": z.object({
+    session_id: z.string(),
+    title: z.string().trim().min(1),
+    body: z.string(),
+    draft: z.boolean().optional(),
+  }),
+  "github.merge_pull_request": z.object({
+    repo: z.string(),
+    number: z.number().int().positive(),
+    strategy: z.enum(["merge", "rebase", "squash"]),
+  }),
+  "github.comment_pull_request": z.object({
+    repo: z.string(),
+    number: z.number().int().positive(),
+    body: z.string().trim().min(1),
+  }),
   "proposals.list": z.object({
     /** Omit for everything; the inbox asks for `pending`. */
     status: RemoteProposalStatus.optional(),
@@ -521,6 +549,16 @@ export const MethodResult = {
   "automations.cancel_run": z.object({ accepted: z.boolean() }),
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),
+  "github.pull_requests": z.object({
+    pull_requests: z.array(RemotePullRequest),
+  }),
+  "github.pull_request": z.object({ pull_request: RemotePullRequestDetail }),
+  "github.create_pull_request": z.object({
+    number: z.number(),
+    url: z.string(),
+  }),
+  "github.merge_pull_request": z.object({ accepted: z.boolean() }),
+  "github.comment_pull_request": z.object({ accepted: z.boolean() }),
   "proposals.list": z.object({ proposals: z.array(RemoteProposal) }),
   /** The session the accepted proposal is now being worked in. */
   "proposals.accept": z.object({

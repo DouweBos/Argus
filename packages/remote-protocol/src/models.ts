@@ -492,6 +492,71 @@ export const RemoteAutomation = z.object({
 });
 export type RemoteAutomation = z.infer<typeof RemoteAutomation>;
 
+/** A pull request as a list reads it. */
+export const RemotePullRequest = z.object({
+  number: z.number(),
+  title: z.string(),
+  /** `owner/repo`, which is also how the write methods address it. */
+  repo: z.string(),
+  /** The Argus project this PR's repo maps to, for opening a session on it. */
+  repo_root: z.string(),
+  author: z.string().nullable(),
+  is_draft: z.boolean(),
+  /** `APPROVED` | `CHANGES_REQUESTED` | `REVIEW_REQUIRED` | null. */
+  review_decision: z.string().nullable(),
+  head_ref: z.string(),
+  base_ref: z.string(),
+  url: z.string(),
+  updated_at: z.string(),
+  /** Why it is in your list: assigned, review requested, authored by you… */
+  reasons: z.array(z.string()),
+});
+export type RemotePullRequest = z.infer<typeof RemotePullRequest>;
+
+export const RemotePullRequestCheck = z.object({
+  name: z.string(),
+  status: z.string().nullable(),
+  conclusion: z.string().nullable(),
+});
+export type RemotePullRequestCheck = z.infer<typeof RemotePullRequestCheck>;
+
+export const RemotePullRequestComment = z.object({
+  id: z.string(),
+  author: z.string().nullable(),
+  body: z.string(),
+  created_at: z.string(),
+  kind: z.enum(["issue", "review"]),
+  /** Review verdict for a `review` entry. */
+  review_state: z.string().nullable(),
+});
+export type RemotePullRequestComment = z.infer<typeof RemotePullRequestComment>;
+
+/**
+ * One pull request, narrowed for a phone: the body, whether CI is happy, and
+ * the conversation. The file-by-file diff stays on the desktop.
+ */
+export const RemotePullRequestDetail = z.object({
+  number: z.number(),
+  title: z.string(),
+  repo: z.string(),
+  url: z.string(),
+  author: z.string().nullable(),
+  body: z.string(),
+  state: z.string(),
+  is_draft: z.boolean(),
+  merged: z.boolean(),
+  /** GitHub's own word: `MERGEABLE`, `CONFLICTING`, `UNKNOWN`. */
+  mergeable: z.string(),
+  head_ref: z.string(),
+  base_ref: z.string(),
+  additions: z.number(),
+  deletions: z.number(),
+  changed_files: z.number(),
+  checks: z.array(RemotePullRequestCheck),
+  comments: z.array(RemotePullRequestComment),
+});
+export type RemotePullRequestDetail = z.infer<typeof RemotePullRequestDetail>;
+
 /** The limits a run is held to, whatever its playbook says. */
 export const RemoteAutomationGuardrails = z.object({
   confidence_threshold: z.number(),

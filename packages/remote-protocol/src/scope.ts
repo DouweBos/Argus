@@ -147,6 +147,12 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.run_now": DENIED,
   "automations.cancel_run": DENIED,
   "automations.mark_run_read": DENIED,
+  // A guest reviews the agent it was handed; it does not speak on GitHub.
+  "github.pull_requests": DENIED,
+  "github.pull_request": DENIED,
+  "github.create_pull_request": DENIED,
+  "github.merge_pull_request": DENIED,
+  "github.comment_pull_request": DENIED,
   "proposals.list": DENIED,
   "proposals.accept": DENIED,
   "proposals.dismiss": DENIED,

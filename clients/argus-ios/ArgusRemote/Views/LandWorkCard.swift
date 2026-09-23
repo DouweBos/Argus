@@ -18,6 +18,7 @@ struct LandWorkCard: View {
   @State private var busy: String?
   @State private var blockers: [String] = []
   @State private var confirmingMerge = false
+  @State private var openingPullRequest = false
   @State private var note: String?
 
   private var status: RemoteGitStatus? { app.gitStatusBySession[sessionId] }
@@ -51,6 +52,11 @@ struct LandWorkCard: View {
       ) { push() }
         .disabled(busy != nil)
 
+      Btn(label: "Open pull request", tone: .secondary, small: true, icon: Icon.repo) {
+        openingPullRequest = true
+      }
+      .disabled(busy != nil)
+
       if !blockers.isEmpty {
         // The computer would refuse anyway; saying why beats a failed tap.
         ForEach(blockers, id: \.self) { blocker in
@@ -68,6 +74,11 @@ struct LandWorkCard: View {
       Button("Merge") { merge() }
     } message: {
       Text("Uncommitted changes are committed first. A conflict stops the merge.")
+    }
+    .sheet(isPresented: $openingPullRequest) {
+      OpenPullRequestSheet(sessionId: sessionId, defaultTitle: status?.branch ?? "") { url in
+        note = "Opened \(url)"
+      }
     }
     .task(id: status?.dirtyCount) { blockers = await app.mergeBlockers(sessionId: sessionId) }
   }
@@ -117,5 +128,59 @@ struct LandWorkCard: View {
   private func finish() async {
     blockers = await app.mergeBlockers(sessionId: sessionId)
     await onChanged()
+  }
+}
+
+/// Open a pull request for this session's branch. The computer works out the
+/// base and head from the session, so this only asks what to call it.
+struct OpenPullRequestSheet: View {
+  @Environment(PullRequestsStore.self) private var store
+  @Environment(\.dismiss) private var dismiss
+
+  let sessionId: String
+  let defaultTitle: String
+  let onOpened: (String) -> Void
+
+  @State private var title = ""
+  @State private var summary = ""
+  @State private var draft = true
+  @State private var opening = false
+
+  var body: some View {
+    NavigationStack {
+      Screen {
+        Field(label: "PULL REQUEST", caption: "Push the branch first — GitHub needs it.") {
+          ThemedTextField(placeholder: "Title", text: $title)
+          ThemedTextField(
+            placeholder: "Description", text: $summary, multiline: true, lines: 4...12)
+          Toggle("Open as a draft", isOn: $draft)
+            .font(.system(size: 14))
+        }
+        Btn(label: opening ? "Opening…" : "Open pull request") { open() }
+          .disabled(opening || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+      }
+      .navigationTitle("New pull request")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Cancel") { dismiss() }
+        }
+      }
+      .task { if title.isEmpty { title = defaultTitle } }
+    }
+  }
+
+  private func open() {
+    opening = true
+    Task {
+      let url = await store.create(
+        sessionId: sessionId,
+        title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+        body: summary, draft: draft)
+      opening = false
+      guard let url else { return }
+      onOpened(url)
+      dismiss()
+    }
   }
 }

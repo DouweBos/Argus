@@ -49,6 +49,12 @@ public enum RemoteMethod: String, Codable, Sendable {
   case agentsQueueRemove = "agents.queue_remove"
   case agentsQueueUpdate = "agents.queue_update"
 
+  case githubPullRequests = "github.pull_requests"
+  case githubPullRequest = "github.pull_request"
+  case githubCreatePullRequest = "github.create_pull_request"
+  case githubMergePullRequest = "github.merge_pull_request"
+  case githubCommentPullRequest = "github.comment_pull_request"
+
   case permissionRespond = "permission.respond"
 
   case deviceRename = "device.rename"
