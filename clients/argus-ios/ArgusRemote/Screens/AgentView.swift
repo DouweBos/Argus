@@ -14,6 +14,21 @@ struct AgentView: View {
   @State private var confirmingStop = false
 
   private var sessionId: String? { app.statusByAgent[agentId]?.sessionId }
+
+  /// Nothing to hand over until the session behind the agent is known — the
+  /// desktop addresses screens by session, not by agent.
+  private var handoff: Handoff? {
+    guard let sessionId, let identity = app.identity else { return nil }
+    let status = app.statusByAgent[agentId]
+
+    return Handoff(
+      hostKey: ArgusBase64.encodeURL(identity.desktopStaticKey ?? Data()),
+      sessionId: sessionId,
+      agentId: agentId,
+      label: label,
+      projectName: status?.projectName,
+      repoRoot: nil)
+  }
   private var isRunning: Bool { app.statusByAgent[agentId]?.status == .running }
 
   var body: some View {
@@ -24,6 +39,13 @@ struct AgentView: View {
       }
     }
     .background(theme.bg.ignoresSafeArea())
+    // Handoff: the Mac this agent runs on offers to take it back over.
+    .userActivity(Handoff.activityType, isActive: handoff != nil) { activity in
+      guard let handoff else { return }
+      activity.title = label
+      activity.isEligibleForHandoff = true
+      activity.addUserInfoEntries(from: handoff.userInfo)
+    }
     .navigationTitle(label)
     .navigationBarTitleDisplayMode(.inline)
     .toolbar {

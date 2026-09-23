@@ -2,8 +2,9 @@ import ArgusKit
 import SwiftUI
 import UserNotifications
 
-/// Turns a tapped notification into a screen, and an Approve/Deny button into
-/// an answer.
+/// Turns a tapped notification into a screen, an Approve/Deny button into an
+/// answer, and a Handoff from the desktop into the same screen the Mac had
+/// open.
 ///
 /// Registered before the biometric gate is passed, because a background tap
 /// must never be dropped. A tap that lands while the app is still locked is
@@ -14,7 +15,7 @@ final class NotificationRouter: NSObject {
 
   private weak var app: AppStore?
   private weak var router: Router?
-  private var pendingOpen: (agentId: String, label: String)?
+  private var pendingOpen: PendingOpen?
   /// Nothing can be opened until the gate is passed and the stack exists.
   private var ready = false
 
@@ -62,12 +63,43 @@ final class NotificationRouter: NSObject {
     ready = true
     guard let pending = pendingOpen else { return }
     pendingOpen = nil
-    open(agentId: pending.agentId, label: pending.label)
+    switch pending {
+    case .agent(let id, let label): open(agentId: id, label: label)
+    case .handoff(let handoff): open(handoff)
+    }
+  }
+
+  /// Continue what the Mac had on screen. The desktop is session-centric and
+  /// this app agent-centric, so an agent is preferred and the project is the
+  /// fallback for a session with nothing running in it.
+  func open(_ handoff: Handoff) {
+    guard ready, let app, let router else {
+      pendingOpen = .handoff(handoff)
+      return
+    }
+    guard let host = app.hosts.first(where: { handoff.names(desktopKey: $0.desktopPubB64) })
+    else {
+      app.lastError = "That computer isn't paired with this phone."
+      return
+    }
+    if let agentId = handoff.agentId, router.isShowingAgent(agentId) { return }
+
+    Task {
+      if host.deviceId != app.activeHostId { await app.selectHost(host.deviceId) }
+      if let agentId = handoff.agentId {
+        router.open(
+          .agent(id: agentId, label: handoff.label ?? "Agent"), in: .projects)
+      } else if let repoRoot = handoff.repoRoot {
+        router.open(
+          .project(repoRoot: repoRoot, name: handoff.projectName ?? "Project"),
+          in: .projects)
+      }
+    }
   }
 
   private func open(agentId: String, label: String) {
     guard ready, let app, let router else {
-      pendingOpen = (agentId, label)
+      pendingOpen = .agent(id: agentId, label: label)
       return
     }
     // Repeated alerts for the same agent shouldn't stack copies of its screen.
@@ -84,6 +116,12 @@ final class NotificationRouter: NSObject {
       router.open(.agent(id: agentId, label: label), in: .projects)
     }
   }
+}
+
+/// A destination that arrived before there was anywhere to put it.
+private enum PendingOpen {
+  case agent(id: String, label: String)
+  case handoff(Handoff)
 }
 
 extension NotificationRouter: UNUserNotificationCenterDelegate {

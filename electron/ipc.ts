@@ -568,6 +568,7 @@ import {
   markQuitConfirmedDespiteAgents,
 } from "./main";
 import { agentPopouts } from "./popouts";
+import { publishActivity } from "./services/continuity";
 import {
   checkForUpdates as updaterCheck,
   downloadUpdate as updaterDownload,
@@ -1988,6 +1989,24 @@ export function registerIpcHandlers(): void {
 
     return Promise.resolve();
   });
+  // Handoff — the renderer owns "what am I looking at", the main process owns
+  // the NSUserActivity that advertises it to the phone.
+  handle("publish_handoff", "host", (a) => {
+    const sessionId = a.sessionId as string | null;
+
+    return publishActivity(
+      sessionId
+        ? {
+            sessionId,
+            agentId: a.agentId as string | undefined,
+            label: a.label as string | undefined,
+            projectName: a.projectName as string | undefined,
+            repoRoot: a.repoRoot as string | undefined,
+          }
+        : null,
+    );
+  });
+
   handle("list_popped_out_agents", "admin", () =>
     Promise.resolve(Array.from(agentPopouts.keys())),
   );

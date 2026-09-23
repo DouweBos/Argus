@@ -80,6 +80,7 @@ import { installIpcCommandBridge } from "./ipcBridge";
 import { setMainWindow } from "./mainWindow";
 import { agentPopouts, devicePopouts } from "./popouts";
 import { initServerUpdates } from "./serverUpdates";
+import { initContinuity } from "./services/continuity";
 import { nudgeForFullDiskAccess } from "./services/fullDiskAccess";
 import { destroyTray, initTray } from "./services/tray";
 import {
@@ -227,6 +228,29 @@ function deliverDeepLink(url: string): void {
     mainWindow.focus();
   } else {
     pendingDeepLink = target;
+  }
+}
+
+/**
+ * Bring the window up on a route. Shared by the tray and by Handoff: both are
+ * "something outside the window decided what you should be looking at".
+ */
+function navigateMainWindow(route: string, agentId?: string): void {
+  if (isServerMode()) {
+    return;
+  }
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+  }
+  mainWindow?.show();
+  mainWindow?.focus();
+  if (mainWindow?.webContents.isLoading()) {
+    pendingDeepLink = route;
+  } else {
+    mainWindow?.webContents.send("navigation:goto", {
+      path: route,
+      agentId,
+    });
   }
 }
 
@@ -1104,25 +1128,12 @@ app.whenReady().then(() => {
           `State: ${argusHomeDir()}`,
         ]
       : undefined,
-    navigateMainWindow: (route, agentId) => {
-      if (isServerMode()) {
-        return;
-      }
-      if (!mainWindow || mainWindow.isDestroyed()) {
-        createWindow();
-      }
-      mainWindow?.show();
-      mainWindow?.focus();
-      if (mainWindow?.webContents.isLoading()) {
-        pendingDeepLink = route;
-      } else {
-        mainWindow?.webContents.send("navigation:goto", {
-          path: route,
-          agentId,
-        });
-      }
-    },
+    navigateMainWindow,
   });
+
+  // Handoff from the phone — same destination as a tray click, so it goes
+  // through the same navigator.
+  initContinuity(navigateMainWindow);
 
   // Auto-updater. Skips itself in dev; in packaged builds it kicks off an
   // initial feed check after a short delay and re-checks hourly.
