@@ -101,6 +101,9 @@ ciphertext.
 - **Phone or tablet** — the web client is one column on a phone and
   splits into a two-pane layout on an iPad or a desktop browser, with the
   session list beside whatever you have open.
+- **Handoff** — the iPhone app and the Mac advertise whatever session
+  you have open to each other, so you can pick an agent up on the phone
+  from the lock screen and put it back down on the Mac from the Dock.
 - **Revoke** drops a device's pinned key and kills any live session
   immediately.
 

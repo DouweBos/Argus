@@ -1991,6 +1991,16 @@ export const openAgentPopout = (args: {
 export const closeAgentPopout = (agentId: string): Promise<void> =>
   invoke("close_agent_popout", { agentId });
 
+// Handoff — advertise the session on screen to the paired phone, or stop
+// advertising (`sessionId: null`) when the screen isn't a session.
+export const publishHandoff = (args: {
+  agentId?: string;
+  label?: string;
+  projectName?: string;
+  repoRoot?: string;
+  sessionId: string | null;
+}): Promise<void> => invoke("publish_handoff", args);
+
 export const listPoppedOutAgents = (): Promise<string[]> =>
   invoke("list_popped_out_agents");
 

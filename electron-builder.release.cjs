@@ -80,6 +80,8 @@ module.exports = {
     gatekeeperAssess: false,
     notarize: true,
     extendInfo: {
+      // Handoff — the activity the iOS app advertises and continues.
+      NSUserActivityTypes: ["dev.houwert.argus.session"],
       NSDesktopFolderUsageDescription:
         "Argus needs access to your Desktop so agents can read and edit files in projects you keep there.",
       NSDocumentsFolderUsageDescription:

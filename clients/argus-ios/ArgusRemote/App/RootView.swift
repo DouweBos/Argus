@@ -47,6 +47,12 @@ struct RootView: View {
       }
     }
     .environment(\.theme, theme)
+    // Outside the gate, like a notification tap: a handoff that lands while
+    // the app is locked is parked, not lost.
+    .onContinueUserActivity(Handoff.activityType) { activity in
+      guard let handoff = Handoff(userInfo: activity.userInfo) else { return }
+      NotificationRouter.shared.open(handoff)
+    }
     .preferredColorScheme(app.themePreference.colorScheme)
     .task { await bootstrap() }
     // Rotating an iPad, or resizing it in Split View, changes the column
