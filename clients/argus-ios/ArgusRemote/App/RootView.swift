@@ -424,6 +424,7 @@ struct RootView: View {
       // second password the user never set.
       unlocked = true
       await app.initialize()
+      NotificationRouter.shared.unlocked()
       return
     }
     biometryLabel = switch context.biometryType {
@@ -444,7 +445,7 @@ struct RootView: View {
       guard ok else { return }
       unlocked = true
       await app.initialize()
-      NotificationRouter.shared.replayPendingOpen()
+      NotificationRouter.shared.unlocked()
     }
   }
 }
