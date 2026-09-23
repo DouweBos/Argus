@@ -53,6 +53,15 @@ struct AutomationsView: View {
       }
     }
     .navigationTitle("Automations")
+    .toolbar {
+      if app.hasControl {
+        ToolbarItem(placement: .topBarTrailing) {
+          NavigationLink(value: Route.automationEditor(id: nil, label: "New automation")) {
+            Label("New automation", systemImage: Icon.plus)
+          }
+        }
+      }
+    }
     .refreshable { await store.refresh() }
     .liveRefresh(enabled: app.connection == .ready) { await store.refresh() }
   }

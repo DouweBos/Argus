@@ -18,6 +18,8 @@ enum Route: Hashable {
   case inbox
   case automations
   case automation(id: String, label: String)
+  /// Nil id creates a new automation.
+  case automationEditor(id: String?, label: String)
   case run(id: String, label: String)
   case settings
   case computers

@@ -309,6 +309,19 @@ describe("the typed automations methods", () => {
     );
   });
 
+  it("covers authoring one", () => {
+    expect(TYPED_AUTOMATION_METHODS).toEqual(
+      expect.arrayContaining([
+        "automations.get",
+        "automations.sources",
+        "automations.create",
+        "automations.update",
+        "automations.delete",
+        "automations.set_enabled",
+      ]),
+    );
+  });
+
   it("reads at monitor and acts at control", () => {
     const tier = (m: RemoteMethod) => REMOTE_METHODS[m];
 
@@ -320,6 +333,14 @@ describe("the typed automations methods", () => {
     // Firing one starts an agent on the host, which is code execution.
     expect(tier("automations.run_now")).toBe("control");
     expect(tier("automations.cancel_run")).toBe("control");
+    // Reading the editable shape is still reading.
+    expect(tier("automations.get")).toBe("monitor");
+    expect(tier("automations.sources")).toBe("monitor");
+    // A playbook is code that runs unattended, so writing one is control.
+    expect(tier("automations.create")).toBe("control");
+    expect(tier("automations.update")).toBe("control");
+    expect(tier("automations.delete")).toBe("control");
+    expect(tier("automations.set_enabled")).toBe("control");
   });
 
   /** A guest is handed one agent, never the clock that could start more. */

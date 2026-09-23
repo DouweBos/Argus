@@ -185,6 +185,13 @@ export const REMOTE_METHODS = {
   "automations.runs": "monitor",
   /** One run with its report — the list omits it because reports are large. */
   "automations.run": "monitor",
+  /** The editor's reads. Writing one is control: a playbook is code. */
+  "automations.get": "monitor",
+  "automations.sources": "monitor",
+  "automations.create": "control",
+  "automations.update": "control",
+  "automations.delete": "control",
+  "automations.set_enabled": "control",
   "automations.run_now": "control",
   "automations.cancel_run": "control",
   /** Reading a report on the phone is reading it — it clears nowhere else.

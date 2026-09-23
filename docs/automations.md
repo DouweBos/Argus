@@ -457,14 +457,16 @@ handled, and a Dismiss that takes a reason. A
 report you have not read yet is dotted in the run list, and opening it on the
 phone clears it on the computer too — there is one inbox, not two.
 
-It is deliberately narrower than the desktop. A phone **watches, decides and
-fires**; it does not author. There is no playbook editor and no schedule
-picker — those are the desktop's, and a paired Mac driving a headless mini
-still gets all of them through the admin passthrough.
+A phone authors them too. Edit on an automation, and + on the automations
+list, open the same fields the desktop editor has: name, description, trigger
+(cron, timezone, catch-up), projects, signal sources, model, autonomy, the
+guardrails and the playbook itself. Saving is explicit, and deleting asks
+first; past runs and their reports survive the automation.
 
-- **Run now, Cancel, Start, Mark as done and Dismiss need the `control` grant.** Firing an
-  automation or accepting a proposal starts an agent on the computer, which is
-  code execution; a monitor-only device sees the lists and no buttons.
+- **Editing, Run now, Cancel, Start, Mark as done and Dismiss need the
+  `control` grant.** Firing an automation or accepting a proposal starts an
+  agent on the computer, and a playbook is code that runs unattended; a
+  monitor-only device sees the lists and no buttons.
 - **A huddle guest reaches none of it**, the same as everywhere else — every
   `automations.*` and `proposals.*` method is denied to a scoped grant.
 - The lists poll rather than stream, like every other list on the phone.
