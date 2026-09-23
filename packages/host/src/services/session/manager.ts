@@ -70,11 +70,13 @@ export function addRepoRoot(dirPath: string): void {
   }
   info(`Adding repo root: ${dirPath}`);
   appState.repoRoots.add(dirPath);
+  emitHostEvent("project:added", dirPath);
 }
 
 /** Remove a repository root from the set of open projects. */
 export function removeRepoRoot(dirPath: string): void {
   appState.repoRoots.delete(dirPath);
+  emitHostEvent("project:removed", dirPath);
 
   // Find session IDs belonging to this repo root.
   const wsIds: string[] = [];

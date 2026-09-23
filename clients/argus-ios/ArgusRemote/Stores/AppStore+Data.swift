@@ -3,9 +3,9 @@ import Foundation
 
 /// Monitor-scoped loading: lists, transcripts, images, git state.
 ///
-/// Lists are polled — there is no push channel for the set of projects,
-/// sessions, devices or automations. Transcripts are event-driven with a poll
-/// as a backstop.
+/// Sessions and projects arrive as events (`sessions.changed`,
+/// `projects.changed`) with a slow poll behind them; devices and automations
+/// are polled outright. Transcripts are event-driven with a poll as a backstop.
 extension AppStore {
 
   // MARK: Lists
@@ -28,6 +28,22 @@ extension AppStore {
     if let hostId = activeHostId {
       agentHosts.remember(agentIds: result.agents.map(\.agentId), hostId: hostId)
     }
+  }
+
+  /// Answer a `sessions.changed` event. A named repo reloads just that one;
+  /// a nil repo means the computer couldn't say which, so everything the app
+  /// is already holding gets refetched.
+  func reloadSessions(for repoRoot: String?) async {
+    guard let repoRoot else {
+      for known in sessionsByRepo.keys {
+        await loadSessions(repoRoot: known)
+      }
+
+      return
+    }
+    // A repo this app has never listed has nothing to refresh.
+    guard sessionsByRepo[repoRoot] != nil else { return }
+    await loadSessions(repoRoot: repoRoot)
   }
 
   func loadSessions(repoRoot: String) async {

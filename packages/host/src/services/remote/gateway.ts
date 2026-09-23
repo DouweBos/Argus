@@ -193,6 +193,44 @@ const GUEST_CAPABILITIES: Capability[] = ["monitor", "control"];
 const EMPTY_SCOPE: GrantScope = { agent_ids: [], device_keys: [] };
 
 /** One authenticated device: a Noise transport plus its subscriptions. */
+/**
+ * Session-list channels worth a refetch. Deliberately an allowlist: the
+ * per-session firehose (`session:diff-changed:<id>`) shares the prefix and
+ * would turn every keystroke an agent makes into a broadcast.
+ */
+const SESSION_LIST_CHANNELS = new Set([
+  "session:commit-landed",
+  "session:created",
+  "session:delete-failed",
+  "session:deleted",
+  "session:merged",
+  "session:updated",
+  "session:worktrees-moved",
+]);
+
+/**
+ * The repo a session broadcast is about. The payloads are a mix — a whole
+ * session, a patch carrying an id, or the bare id of something already gone —
+ * so this resolves what it can and says null for the rest.
+ */
+function repoRootFromBroadcast(args: unknown[]): string | null {
+  const payload = args[0];
+  if (typeof payload === "string") {
+    return appState.sessions.get(payload)?.repo_root ?? null;
+  }
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  const record = payload as { id?: unknown; repo_root?: unknown };
+  if (typeof record.repo_root === "string") {
+    return record.repo_root;
+  }
+
+  return typeof record.id === "string"
+    ? (appState.sessions.get(record.id)?.repo_root ?? null)
+    : null;
+}
+
 export class DeviceConnection implements DeviceMediaController {
   /** Identifies this connection for claims; a reconnect is a new holder. */
   private readonly connectionId = crypto.randomUUID();
@@ -758,6 +796,26 @@ export class DeviceConnection implements DeviceMediaController {
         return;
       }
       this.pushEvent("device.claim", null, args[0]);
+
+      return;
+    }
+
+    // Session and project lists have no other way to learn they went stale:
+    // the typed client holds them and nothing in the agent channels mentions
+    // them. A guest is skipped — it was handed one agent, not the tree.
+    if (SESSION_LIST_CHANNELS.has(channel)) {
+      if (!this.scope) {
+        this.pushEvent("sessions.changed", null, {
+          repo_root: repoRootFromBroadcast(args),
+        });
+      }
+
+      return;
+    }
+    if (channel === "project:added" || channel === "project:removed") {
+      if (!this.scope) {
+        this.pushEvent("projects.changed", null, {});
+      }
 
       return;
     }

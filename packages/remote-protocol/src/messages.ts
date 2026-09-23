@@ -657,7 +657,9 @@ export const EventPayloads = {
   "huddle.state": HuddleStatePayload,
   /** Someone in the huddle said something to the room. */
   "huddle.chat": HuddleChatPayload,
-  "sessions.changed": z.object({ repo_root: z.string() }),
+  /** Null when the change is a deletion and the repo is no longer knowable —
+   *  a client that cares refetches whatever it holds. */
+  "sessions.changed": z.object({ repo_root: z.string().nullable() }),
   "projects.changed": z.object({}),
   notification: z.object({
     agent_id: z.string().nullable(),
