@@ -46,7 +46,11 @@ import {
   type SessionMeta,
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
-import { isOnMissingVolume } from "./volumeAvailability";
+import {
+  assertWorktreeBaseAvailable,
+  isOnMissingVolume,
+} from "./volumeAvailability";
+import { isKnownWorktreePath } from "./worktreeLocation";
 import { runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
 
@@ -1458,7 +1462,7 @@ async function createWorktree(
   const branchSlug = titleToBranchSlug(branch);
   const worktreesDir = worktreesRoot(repoRoot);
   const dirName = branchToDir(branchSlug);
-  const worktreePath = `${worktreesDir}/${dirName}`;
+  const worktreePath = path.join(worktreesDir, dirName);
 
   if (fs.existsSync(worktreePath)) {
     // Check if git actually knows about this worktree.
@@ -1481,6 +1485,7 @@ async function createWorktree(
     fs.rmSync(worktreePath, { recursive: true, force: true });
   }
 
+  assertWorktreeBaseAvailable(path.dirname(worktreesDir));
   fs.mkdirSync(worktreesDir, { recursive: true });
 
   await git(repoRoot, [
@@ -1517,6 +1522,7 @@ async function checkoutBranchIntoWorktree(
     suffix += 1;
   }
 
+  assertWorktreeBaseAvailable(path.dirname(worktreesDir));
   fs.mkdirSync(worktreesDir, { recursive: true });
 
   // The branch may exist only as a remote-tracking ref (e.g. a PR branch
@@ -1618,7 +1624,6 @@ async function listWorktrees(repoRoot: string): Promise<Session[]> {
   await repairOrphanedWorktrees(repoRoot);
 
   const raw = await git(repoRoot, ["worktree", "list", "--porcelain"]);
-  const root = worktreesRoot(repoRoot);
   const meta = loadMetadata(worktreesRoot(repoRoot));
 
   const sessions: Session[] = [];
@@ -1635,7 +1640,13 @@ async function listWorktrees(repoRoot: string): Promise<Session[]> {
     if (!currentPath) {
       return;
     }
-    if (!currentPath.startsWith(root) || !isValidWorktree(currentPath)) {
+    // Any known root, not just the current one: changing the location leaves
+    // existing worktrees behind, and they must stay visible until moved.
+    // Containment, not `startsWith` — that matches a sibling `…-backup` dir.
+    if (!isKnownWorktreePath(repoRoot, currentPath)) {
+      return;
+    }
+    if (!isValidWorktree(currentPath) && !isOnMissingVolume(currentPath)) {
       return;
     }
     const branch = currentBranch ?? resolveDetachedBranch(currentPath, meta);

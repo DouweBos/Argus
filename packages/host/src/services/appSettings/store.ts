@@ -12,10 +12,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
+import { invalidateWorktreeLocationCache } from "../session/worktreeLocation";
 
 const SCHEMA_VERSION = 1;
 
 export interface AppSettings {
+  /**
+   * Base directory new worktrees are created in, for every project that does
+   * not set its own. Absent means `<argusHome>/worktrees`.
+   */
+  worktrees_base_dir?: string;
   /**
    * App-level default LLM picked in Settings. Mirrored here from the renderer
    * so sessions created outside the UI (MCP, remote) resolve the same runner.
@@ -166,6 +172,8 @@ export function saveAppSettings(settings: AppSettings): AppSettings {
   const file = readFile();
   file.settings = { ...file.settings, ...settings };
   writeFile(file);
+  // The app-wide base dir feeds every project's resolved worktree root.
+  invalidateWorktreeLocationCache();
 
   return file.settings;
 }
