@@ -123,6 +123,12 @@ struct AgentTranscriptView: View {
     .liveRefresh(enabled: app.connection == .ready, every: .seconds(5)) {
       await app.loadTranscript(agentId: agentKey)
     }
+    // Queue changes only ever arrive over the agent subscription, which the
+    // lock screen takes down with the socket. Re-arm it and re-read the queue.
+    .onResume(enabled: isLive, connected: app.connection == .ready) {
+      await app.loadQueue(agentId: agentKey)
+      await app.watchAgent(agentKey, on: true)
+    }
     .onDisappear {
       guard isLive else { return }
       Task { await app.watchAgent(agentKey, on: false) }
