@@ -212,11 +212,11 @@ The server decides what the device may do. The device never asks for a tier, and
 nothing it sends afterwards can widen one — pairing and grant changes are
 host-tier commands that never cross the wire. Pick the narrowest that works:
 
-| choice                                 | grants    | what it can do                                                                                                   |
-| -------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| **Approve — watch only**               | `monitor` | Read agents, sessions and device screens. Cannot answer a tool-use prompt, which is a code-execution act.        |
-| **Approve — run agents**               | `control` | The above, plus send messages, spawn agents, create sessions and answer prompts. The right tier for a phone.     |
-| **Approve — full control of this Mac** | `admin`   | Drives the host as if you were at its keyboard — every command except the host-only set. Only for a Mac you own. |
+| choice                                 | grants    | what it can do                                                                                                                                                                                        |
+| -------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Approve — watch only**               | `monitor` | Read agents, sessions and device screens. Cannot answer a tool-use prompt, which is a code-execution act.                                                                                             |
+| **Approve — run agents**               | `control` | The above, plus send messages, spawn agents, create sessions, answer prompts, commit/push/merge a session's branch, open and merge pull requests, and author automations. The right tier for a phone. |
+| **Approve — full control of this Mac** | `admin`   | Drives the host as if you were at its keyboard — every command except the host-only set. Only for a Mac you own.                                                                                      |
 
 Least privilege is listed first deliberately: `admin` inverts the allowlist to a
 denylist, so it should be a deliberate reach rather than the obvious click. You

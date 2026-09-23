@@ -3,9 +3,9 @@
  *
  * A paired desktop drives the host's automations through the admin
  * passthrough — raw IPC, the whole `Automation`. A phone cannot: it speaks the
- * typed method vocabulary, and it wants to see what fired overnight and press
- * Run now, not edit a playbook. So this maps the host records onto the small
- * wire shapes in `@argus/remote-protocol` and nothing more.
+ * typed method vocabulary. So this maps the host records onto the small wire
+ * shapes in `@argus/remote-protocol` — the list stays cheap, and the editable
+ * half is fetched only for the automation actually being opened.
  *
  * Every method here is `denied` for a scoped grant (see `METHOD_SCOPE`): a
  * huddle guest is handed one agent, never the clock behind it.

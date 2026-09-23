@@ -436,18 +436,18 @@ tunnel only ever sees ciphertext. Paired devices are **monitor + approve only** 
 they can view projects/sessions/agents and approve or deny permission prompts,
 but cannot spawn agents, send messages, or run commands.
 
-| Setting                                     | Default | Description                                                                                                                                                                                                                 |
-| ------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                                                      |
-| **Ways in**                                 | All off | **Local network**, **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side. A tunnel needs that provider's CLI on your `PATH`.                                      |
-| **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                                                                   |
-| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                                                                  |
-| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                                                            |
-| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                                                        |
-| **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
-| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                                                                  |
-| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                       |
-| **Your name on a huddle invite**            | `""`    | The name in "… wants you to join". Empty falls back to the git `user.name` of the session you're sharing — set this if you commit under a name you don't go by.                                                             |
+| Setting                                     | Default | Description                                                                                                                                                                                                                                     |
+| ------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Enable remote access**                    | Off     | Master kill-switch. Off ⇒ the gateway + every tunnel stay down and pairing is refused.                                                                                                                                                          |
+| **Ways in**                                 | All off | **Local network**, **Tailscale** (`tailscale funnel`) and **Cloudflare** (`cloudflared`) toggle independently and run side by side. A tunnel needs that provider's CLI on your `PATH`.                                                          |
+| **Addresses**                               | —       | Read-only list of every address that's live right now, in the order phones try them. Synced to paired devices on connect.                                                                                                                       |
+| **Tunnel** (Cloudflare)                     | `quick` | **Quick** = ephemeral `*.trycloudflare.com` URL, no account. **Named** = stable hostname via a connector token + a domain.                                                                                                                      |
+| **Connector token**                         | `""`    | Cloudflare tunnel token (named mode). From `cloudflared tunnel token <name>` or the dashboard. Stored encrypted.                                                                                                                                |
+| **Public URL**                              | `""`    | The hostname mapped to this machine in Cloudflare (named mode). For quick tunnels it's discovered automatically and shown read-only.                                                                                                            |
+| **Paired devices**                          | —       | Each shows its label, last-seen time and grants. **Control** lets it drive agents and land their work; **Admin** hands another Mac of yours the keyboard (see below). **Revoke** deletes its pinned key and drops any live session immediately. |
+| **Background push**                         | Off     | Wake paired phones and browsers with a real notification when they aren't connected. Nothing to configure.                                                                                                                                      |
+| **Notify my devices while I'm using Argus** | Off     | Mirror notifications to phones and browsers even when the Argus window is focused. Off ⇒ they stay quiet while you're at the desktop.                                                                                                           |
+| **Your name on a huddle invite**            | `""`    | The name in "… wants you to join". Empty falls back to the git `user.name` of the session you're sharing — set this if you commit under a name you don't go by.                                                                                 |
 
 ### Choosing ways in
 
@@ -510,7 +510,9 @@ on the computer as well.
 
 ### Granting admin to another Mac
 
-**Control** is the phone's grant: watch agents, answer prompts, send messages.
+**Control** is the phone's grant: watch agents, answer prompts, send messages,
+land a session's work (commit, push, merge), open and merge pull requests, and
+author automations.
 **Admin** is a different thing — it lets another Mac running Argus drive this
 one as if you were sitting at its keyboard, which is what the **Hosts** setting
 below attaches to. Tick it while confirming the pairing code, or on the device
