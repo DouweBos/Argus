@@ -139,7 +139,10 @@ struct TranscriptMessageView: View {
     case .plan(let plan):
       PlanApprovalView(
         plan: plan,
-        onApprove: { respond(call, "allow", nil) },
+        onApprove: {
+          app.noteLeftPlanMode(agentId: agentKey)
+          respond(call, "allow", nil)
+        },
         onKeepPlanning: { respond(call, "deny", CannedReply.keepPlanning) },
         onFeedback: { feedback in
           respond(call, "deny", CannedReply.planFeedback(feedback))
