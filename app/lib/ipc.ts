@@ -83,6 +83,8 @@ import type {
   SimulatorDeviceState,
   WorktreeStorage,
   WorktreeLocationProbe,
+  MoveWorktreesPlan,
+  MoveWorktreesResult,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
 import { rehydrateShareError } from "./shareError";
@@ -1997,6 +1999,18 @@ export const closeAgentPopout = (agentId: string): Promise<void> =>
 // advertising (`sessionId: null`) when the screen isn't a session.
 // Where a project's worktrees live. `probe` validates a candidate directory
 // before it is saved; it never creates anything.
+// Relocating a project's worktrees. `plan` reports what would move and what
+// is holding it; `move` stops those agents and terminals and does it.
+export const planWorktreesMove = (args: {
+  repoRoot: string;
+  toBaseDir: string;
+}): Promise<MoveWorktreesPlan> => invoke("plan_worktrees_move", args);
+
+export const moveWorktrees = (args: {
+  repoRoot: string;
+  toBaseDir: string;
+}): Promise<MoveWorktreesResult> => invoke("move_worktrees", args);
+
 export const getWorktreesDefaultBase = (): Promise<string> =>
   invoke("get_worktrees_default_base");
 
