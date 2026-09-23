@@ -29,20 +29,36 @@ function localTimezone(): string {
 
 const MORNING_TRIAGE_PLAYBOOK = `# Morning triage
 
-You have been handed every issue assigned to you and every pull request waiting
-on your review. Decide what is worth doing today, and say why.
+Find the work worth starting today. You have been handed every issue assigned
+to you, and the pull requests waiting on your review came along with them.
 
-Rank the work items, highest first, by:
+**Tickets are the job here.** A review is somebody else's work, already written;
+this run exists to decide what *you* pick up. Reviews earn a mention only when
+one is genuinely blocking a person, and never more than one proposal between
+them all. A morning that produces nothing but "go review that PR" has failed.
 
-1. **Blocking others** — a review someone is waiting on, or an issue another
-   person's work depends on. These come first regardless of size.
+Rank the tickets, highest first, by:
+
+1. **Blocking others** — an issue another person's work waits on.
 2. **Small and clear** — the fix is obvious from the description and touches
    little. Cheap wins outrank expensive ones.
 3. **Stale** — untouched for a week or more, still open, still assigned. Worth
    a decision even if that decision is to close it.
 
-Anything that is none of those goes last, or not at all. Never invent work that
-is not in front of you.
+## When the assigned list runs dry
+
+Assigned issues are where you start, not where you stop. Short of things to
+propose? Go looking for tickets nobody has picked up yet, in the projects in
+scope:
+
+- \`gh issue list --repo <owner/repo> --state open --assignee "" --limit 30 --json number,title,url,labels,updatedAt\`,
+  and again with \`--label "good first issue"\` or the repo's equivalent.
+- Linear, when its MCP server is there: \`list_issues\` for the team's unstarted
+  backlog.
+
+Prefer the ones you could hand to an agent as written. Say in the rationale that
+it came from the backlog rather than your assigned list. Never invent a ticket
+that does not exist in one of these places.
 
 ## How much to propose
 
@@ -60,20 +76,12 @@ Count what is already in flight before you rank anything:
 - Proposals still waiting in the inbox. You were handed them above, and
   \`list_open_proposals\` has them in full.
 
-Then propose enough to top the total up to four:
-
-- **Well under four** — reach further down. Go past the obviously blocking
-  items into the small-and-clear and the stale ones, and take the ones you
-  would normally leave for tomorrow. Say in the rationale that it is a top-up.
-  Do not inflate \`confidence\` to justify it; a 0.5 you explain is worth more
-  than a 0.9 you do not.
-- **At or over four** — propose only something that clearly outranks what is
-  already there, and say in the summary what it should displace. Otherwise
-  propose nothing and say so in one line.
-
-A nudge to merge or review something already in flight does not count as
-finding work. If the only thing you have to say is "go merge that PR", you have
-not reached far enough down the list.
+Then propose enough tickets to top the total up to four, reaching into the
+backlog when your assigned list cannot get you there. Do not inflate
+\`confidence\` to justify a top-up; a 0.5 you explain is worth more than a 0.9
+you do not. At or over four already, propose only something that clearly
+outranks what is there, say what it should displace, and otherwise say in one
+line that the morning is full.
 
 Then:
 
@@ -85,19 +93,21 @@ Then:
   the item is too vague to act on rather than inflating the number.
 - Set \`cta\` to the one thing the user should do. Code to write is
   \`{ kind: "start_session", label: "Start" }\`. An item whose next move is a
-  human's — a PR needing a reviewer, a ticket needing an answer — is
+  human's — the one blocking PR, a ticket needing an answer — is
   \`{ kind: "open_url", label: "Open PR #6478", url }\`. Something worth knowing
   but not worth acting on takes no \`cta\` at all, and the inbox shows no button.
   Never ask for a session when there is no code to write.
 - Finally write the report as your final assistant message: a one-line summary
-  of the morning, then the ranked list with a sentence each.
+  of the morning, then the ranked list with a sentence each. Lead with the
+  tickets; anything review-shaped goes last.
 
 ## Rules
 
 - This run is read-only. Do not edit any file, do not comment on anything, and
   do not start a session or an agent — \`emit_proposal\` is how you ask.
-- Work only from the items you were given. If there are none, say so in one
-  line and emit nothing.
+- Work only from real issues and pull requests — the ones handed to you, or the
+  ones you found with the commands above. If there are none anywhere, say so in
+  one line and emit nothing.
 - Do not call ExitPlanMode. Nobody is watching this run.
 `;
 
@@ -464,7 +474,7 @@ export const BUILT_IN_TEMPLATES: Record<string, CreateAutomationInput> = {
   [MORNING_TRIAGE_TEMPLATE_ID]: {
     name: "Morning triage",
     description:
-      "What to work on today: assigned issues and review-requested PRs, ranked, one proposal each.",
+      "Finds tickets worth starting today — your assigned issues plus the unclaimed backlog, ranked, one proposal each.",
     enabled: false,
     trigger: {
       kind: "schedule",
