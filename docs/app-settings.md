@@ -233,6 +233,24 @@ Each entry has a **Name** and a **Command**. The command is either:
 
 ---
 
+## Worktrees
+
+| Setting               | Default              | Description                                       |
+| --------------------- | -------------------- | ------------------------------------------------- |
+| **Worktree location** | `~/.argus/worktrees` | Base folder new session worktrees are created in. |
+
+Argus creates `<this folder>/<Repo>-argus-worktrees/<branch>/` underneath,
+so one folder can hold several projects. Point it at an external drive to
+keep large checkouts off your boot disk; a project can override it from its
+own settings.
+
+**When the drive isn't connected**, that project's sessions stay in the
+sidebar showing their last known branch and name, greyed out and not
+selectable, and come back untouched when you plug it in. Nothing is pruned
+or deleted while a drive is away.
+
+---
+
 ## MCP servers
 
 | Setting         | Default | Description                                                         |
@@ -402,9 +420,10 @@ These are machine-local settings _about_ a specific project. They live
 in `~/.argus/user-project-settings.json` and never get committed to
 your repo.
 
-| Setting           | Default | Description                                                                                                                                                                         |
-| ----------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Branch prefix** | `""`    | Prepended to the branch name when creating a session in this project (e.g. `douwe/`, `team/feature-`). Leave empty to disable. Already-prefixed user-typed branches aren't doubled. |
+| Setting               | Default | Description                                                                                                                                                                         |
+| --------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Branch prefix**     | `""`    | Prepended to the branch name when creating a session in this project (e.g. `douwe/`, `team/feature-`). Leave empty to disable. Already-prefixed user-typed branches aren't doubled. |
+| **Worktree location** | `""`    | Base folder this project's worktrees are created in, overriding the app-wide setting. Empty follows the app-wide value. Changing it offers to move the worktrees you already have.  |
 
 ---
 

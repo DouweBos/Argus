@@ -482,6 +482,10 @@ import {
   gitCheckoutPaths,
 } from "@argus/host/services/session/sessionOps";
 import {
+  executeWorktreeMove,
+  planWorktreeMove,
+} from "@argus/host/services/session/worktreeMove";
+import {
   defaultWorktreesBase,
   getWorktreeStorage,
   probeWorktreeLocation,
@@ -1047,6 +1051,12 @@ export function registerIpcHandlers(): void {
   );
 
   // Where a project's worktrees live, and whether that drive is connected.
+  handle("plan_worktrees_move", "admin", (a) =>
+    planWorktreeMove(a.repoRoot as string, a.toBaseDir as string),
+  );
+  handle("move_worktrees", "admin", (a) =>
+    executeWorktreeMove(a.repoRoot as string, a.toBaseDir as string),
+  );
   handle("get_worktrees_default_base", "admin", () =>
     Promise.resolve(defaultWorktreesBase()),
   );

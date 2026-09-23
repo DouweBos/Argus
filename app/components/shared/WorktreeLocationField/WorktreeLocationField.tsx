@@ -10,6 +10,7 @@ import {
 } from "@argus/peacock";
 import { probeWorktreeLocation } from "../../../lib/ipc";
 import { HostDirectoryPicker } from "../HostDirectoryPicker";
+import { MoveWorktreesDialog } from "../MoveWorktreesDialog";
 import styles from "./WorktreeLocationField.module.css";
 
 interface WorktreeLocationFieldProps {
@@ -40,6 +41,7 @@ export function WorktreeLocationField({
   const [probe, setProbe] = useState<WorktreeLocationProbe | null>(null);
   const [browsing, setBrowsing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [offerMove, setOfferMove] = useState<string | null>(null);
 
   useEffect(() => setDraft(value), [value]);
 
@@ -66,10 +68,15 @@ export function WorktreeLocationField({
     setSaving(true);
     try {
       await onCommit(trimmed);
+      // Only a project can be relocated — the app-wide setting spans several,
+      // each of which has its own worktrees and its own blockers.
+      if (repoRoot && trimmed) {
+        setOfferMove(trimmed);
+      }
     } finally {
       setSaving(false);
     }
-  }, [onCommit, trimmed]);
+  }, [onCommit, repoRoot, trimmed]);
 
   const blocked = probe?.reason != null;
 
@@ -117,6 +124,14 @@ export function WorktreeLocationField({
           That folder doesn&apos;t exist yet — Argus creates it with the first
           session.
         </Banner>
+      )}
+
+      {offerMove != null && repoRoot != null && (
+        <MoveWorktreesDialog
+          repoRoot={repoRoot}
+          toBaseDir={offerMove}
+          onClose={() => setOfferMove(null)}
+        />
       )}
 
       {browsing && (

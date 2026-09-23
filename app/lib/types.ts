@@ -1666,3 +1666,22 @@ export interface WorktreeLocationProbe {
   volume_label: string | null;
   writable: boolean;
 }
+
+/** What a worktree relocation would do, and what is standing in its way. */
+export interface MoveWorktreesPlan {
+  blockers: {
+    detail: string;
+    kind: "agent_running" | "locked" | "mid_operation" | "terminal_open";
+    session_id: string;
+    session_label: string;
+  }[];
+  from_root: string;
+  sessions: { branch: string; from: string; id: string; to: string }[];
+  to_root: string;
+}
+
+export interface MoveWorktreesResult {
+  failed: { error: string; id: string }[];
+  moved: string[];
+  to_root: string;
+}
