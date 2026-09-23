@@ -11,7 +11,6 @@
 import { emitHostEvent } from "@argus/host/bus";
 import { appState } from "../../state";
 import { respawnAgent, stopAgent } from "../agent/agentService";
-import { worktreesRoot } from "../session/git";
 import { loadMetadata, saveMetadata } from "../session/metadata";
 import { getRunnerById } from "./registry";
 
@@ -53,15 +52,14 @@ export async function setSessionRunner(
   appState.sessions.set(sessionId, session);
 
   if (session.path) {
-    const worktreesDir = worktreesRoot(session.repo_root);
-    const meta = loadMetadata(worktreesDir);
+    const meta = loadMetadata(session.repo_root);
     const m = meta.get(session.path);
     if (m) {
       m.runner_id = session.runner_id;
       m.model = session.model;
       meta.set(session.path, m);
       try {
-        saveMetadata(worktreesDir, meta);
+        saveMetadata(session.repo_root, meta);
       } catch {
         // Non-fatal.
       }

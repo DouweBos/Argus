@@ -42,17 +42,19 @@ import {
   isValidWorktree,
   loadMetadata,
   migrateOrphaned,
+  normalizeMetaKey,
   saveMetadata,
   type SessionMeta,
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
+import { runSetupPipeline } from "./setup";
 import {
   assertWorktreeBaseAvailable,
   isOnMissingVolume,
+  pathAvailability,
 } from "./volumeAvailability";
-import { isKnownWorktreePath } from "./worktreeLocation";
-import { runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
+import { isKnownWorktreePath } from "./worktreeLocation";
 
 // ---------------------------------------------------------------------------
 // add_repo_root / remove_repo_root
@@ -133,6 +135,24 @@ export function removeRepoRoot(dirPath: string): void {
 // ---------------------------------------------------------------------------
 
 /**
+ * Mark a session unreachable when its drive is disconnected, so the UI can
+ * show it greyed out rather than having it silently disappear.
+ */
+function stampAvailability(ws: Session): void {
+  const availability = pathAvailability(ws.path);
+  if (availability.state === "volume_missing") {
+    ws.availability = "unavailable";
+    ws.unavailable_reason = "volume_missing";
+    ws.unavailable_volume = availability.volume;
+
+    return;
+  }
+  ws.availability = "available";
+  ws.unavailable_reason = undefined;
+  ws.unavailable_volume = null;
+}
+
+/**
  * Return all managed sessions for the given repo root.
  *
  * Merges live in-memory state (descriptions, statuses, display names) with the
@@ -140,12 +160,11 @@ export function removeRepoRoot(dirPath: string): void {
  * loaded and migrated to remove orphaned entries.
  */
 export async function listSessions(repoRoot: string): Promise<Session[]> {
-  const worktreesDir = worktreesRoot(repoRoot);
   const diskSessions = await listWorktrees(repoRoot);
 
   // Load persisted metadata and migrate away orphaned entries.
-  const rawMeta = loadMetadata(worktreesDir);
-  const [meta] = migrateOrphaned(worktreesDir, rawMeta);
+  const rawMeta = loadMetadata(repoRoot);
+  const [meta] = migrateOrphaned(repoRoot, rawMeta);
 
   // Remove from in-memory state any sessions whose paths no longer exist on
   // disk. We only drop a session if the directory is genuinely gone — if git
@@ -203,6 +222,8 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       ws.claude_account_id = m.claude_account_id ?? null;
     }
 
+    stampAvailability(ws);
+
     if (!appState.sessions.has(ws.id)) {
       appState.sessions.set(ws.id, { ...ws });
     }
@@ -210,11 +231,46 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
     return ws;
   });
 
-  // Persist metadata for all live worktrees.
-  const metaToSave = new Map<string, SessionMeta>();
+  // Sessions the index knows about that nothing above could see, because the
+  // drive holding them is disconnected. Without this they would only survive
+  // as long as the app stayed running — after a restart `appState` is empty
+  // and the index is the only place they exist.
+  for (const [pathKey, entry] of meta) {
+    if (livePaths.has(pathKey) || entry.kind === "project_root") {
+      continue;
+    }
+    const availability = pathAvailability(pathKey);
+    if (availability.state !== "volume_missing") {
+      continue;
+    }
+    merged.push({
+      id: entry.id,
+      kind: entry.kind ?? "worktree",
+      branch: entry.branch ?? "",
+      display_name: entry.display_name,
+      description: entry.description,
+      path: pathKey,
+      repo_root: repoRoot,
+      status: "ready",
+      env_index: null,
+      base_branch: entry.base_branch ?? null,
+      runner_id: entry.runner_id ?? null,
+      model: entry.model ?? null,
+      claude_account_id: entry.claude_account_id ?? null,
+      availability: "unavailable",
+      unavailable_reason: "volume_missing",
+      unavailable_volume: availability.volume,
+    });
+  }
+
+  // Persist metadata for all live worktrees. Entries we could not see this
+  // time are carried over untouched: `migrateOrphaned` has already dropped the
+  // genuinely deleted ones, so what is left is on a disconnected drive and is
+  // the only record of what those sessions were.
+  const metaToSave = new Map<string, SessionMeta>(meta);
   for (const w of merged) {
     if (w.kind === "worktree") {
-      metaToSave.set(w.path, {
+      metaToSave.set(normalizeMetaKey(w.path), {
         id: w.id,
         display_name: w.display_name,
         description: w.description,
@@ -222,11 +278,15 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
         runner_id: w.runner_id ?? null,
         model: w.model ?? null,
         claude_account_id: w.claude_account_id ?? null,
+        // Recorded so the row can still be drawn with the files unreachable.
+        branch: w.branch,
+        kind: w.kind,
+        last_seen_at: w.availability === "unavailable" ? undefined : Date.now(),
       });
     }
   }
   try {
-    saveMetadata(worktreesDir, metaToSave);
+    saveMetadata(repoRoot, metaToSave);
   } catch {
     // Non-fatal
   }
@@ -574,8 +634,7 @@ async function finalizeSession(
     signalWorktreeReady?.({ ...ws });
 
     // --- Phase 7: persist metadata --------------------------------------
-    const worktreesDir = worktreesRoot(repoRoot);
-    const meta = loadMetadata(worktreesDir);
+    const meta = loadMetadata(repoRoot);
     meta.set(ws.path, {
       id: ws.id,
       display_name: ws.display_name,
@@ -586,7 +645,7 @@ async function finalizeSession(
       claude_account_id: ws.claude_account_id ?? null,
     });
     try {
-      saveMetadata(worktreesDir, meta);
+      saveMetadata(repoRoot, meta);
     } catch {
       // Non-fatal
     }
@@ -611,14 +670,14 @@ async function finalizeSession(
           appState.sessions.set(id, current);
 
           try {
-            const metaNow = loadMetadata(worktreesDir);
+            const metaNow = loadMetadata(repoRoot);
             const entry = metaNow.get(titleSessionPath) ?? {
               id: current.id,
               description: current.description,
               base_branch: current.base_branch,
             };
             metaNow.set(titleSessionPath, { ...entry, display_name: title });
-            saveMetadata(worktreesDir, metaNow);
+            saveMetadata(repoRoot, metaNow);
           } catch {
             // Non-fatal
           }
@@ -1208,15 +1267,14 @@ export function renameSession(id: string, displayName: string): void {
   appState.sessions.set(id, session);
 
   try {
-    const worktreesDir = worktreesRoot(session.repo_root);
-    const meta = loadMetadata(worktreesDir);
+    const meta = loadMetadata(session.repo_root);
     const existing = meta.get(session.path) ?? {
       id: session.id,
       description: session.description,
       base_branch: session.base_branch,
     };
     meta.set(session.path, { ...existing, display_name: trimmed });
-    saveMetadata(worktreesDir, meta);
+    saveMetadata(session.repo_root, meta);
   } catch (e) {
     info(`renameSession: persist metadata failed for ${id}:`, e);
   }
@@ -1424,11 +1482,10 @@ export async function deleteSession(
       }
     }
 
-    const worktreesDir = worktreesRoot(taskRepoRoot);
-    const meta = loadMetadata(worktreesDir);
+    const meta = loadMetadata(taskRepoRoot);
     meta.delete(taskSessionPath);
     try {
-      saveMetadata(worktreesDir, meta);
+      saveMetadata(taskRepoRoot, meta);
     } catch {
       // Non-fatal
     }
@@ -1624,7 +1681,7 @@ async function listWorktrees(repoRoot: string): Promise<Session[]> {
   await repairOrphanedWorktrees(repoRoot);
 
   const raw = await git(repoRoot, ["worktree", "list", "--porcelain"]);
-  const meta = loadMetadata(worktreesRoot(repoRoot));
+  const meta = loadMetadata(repoRoot);
 
   const sessions: Session[] = [];
   let currentPath: string | null = null;

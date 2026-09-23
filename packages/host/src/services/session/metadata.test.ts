@@ -20,11 +20,13 @@ vi.mock("node:fs", async () => {
       readFileSync: vi.fn(),
       writeFileSync: vi.fn(),
       mkdirSync: vi.fn(),
+      renameSync: vi.fn(),
     },
     existsSync: vi.fn(),
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
     mkdirSync: vi.fn(),
+    renameSync: vi.fn(),
   };
 });
 
@@ -91,7 +93,7 @@ describe("loadMetadata", () => {
   it("loads valid metadata with normalized keys", () => {
     mockReadFileSync.mockReturnValue(
       JSON.stringify({
-        version: 1,
+        version: 2,
         sessions: {
           "/path/to/ws/": { id: "ws-1", description: "Test session" },
           "/path/to/ws2": { id: "ws-2", description: "Another" },
@@ -106,41 +108,57 @@ describe("loadMetadata", () => {
     expect(result.has("/path/to/ws2")).toBe(true);
   });
 
-  it("falls back to legacy .argus-workspaces.json when .argus-sessions.json is missing", () => {
-    // First call (primary .argus-sessions.json) throws, second call (legacy
-    // .argus-workspaces.json) returns data.
-    mockReadFileSync
-      .mockImplementationOnce(() => {
-        throw new Error("ENOENT");
-      })
-      .mockReturnValueOnce(
-        JSON.stringify({
+  it("migrates the index that used to live beside the worktrees", () => {
+    // Keyed by path, not call order: resolving the roots reads the settings
+    // files too, and those reads sit in the middle of this sequence.
+    mockReadFileSync.mockImplementation((file) => {
+      if (String(file).endsWith(".argus-sessions.json")) {
+        return JSON.stringify({
+          version: 1,
+          sessions: {
+            "/old/path": { id: "ws-old", description: "On the volume" },
+          },
+        });
+      }
+      throw new Error("ENOENT");
+    });
+
+    const result = loadMetadata("/repo");
+    expect(result.get("/old/path")?.id).toBe("ws-old");
+    // Written forward, so the drive is never needed for this again.
+    expect(fs.writeFileSync).toHaveBeenCalled();
+  });
+
+  it("still reads the pre-rename .argus-workspaces.json", () => {
+    mockReadFileSync.mockImplementation((file) => {
+      if (String(file).endsWith(".argus-workspaces.json")) {
+        return JSON.stringify({
           version: 1,
           workspaces: {
             "/legacy/path": { id: "ws-legacy", description: "Pre-rename" },
           },
-        }),
-      );
+        });
+      }
+      throw new Error("ENOENT");
+    });
 
-    const result = loadMetadata("/worktrees");
-    expect(result.size).toBe(1);
+    const result = loadMetadata("/repo");
     expect(result.get("/legacy/path")?.id).toBe("ws-legacy");
   });
 
-  it("prefers .argus-sessions.json over the legacy file when both exist", () => {
+  it("prefers the durable index over anything left on the volume", () => {
     mockReadFileSync.mockReturnValueOnce(
       JSON.stringify({
-        version: 1,
+        version: 2,
         sessions: {
-          "/new/path": { id: "ws-new", description: "New file" },
+          "/new/path": { id: "ws-new", description: "Durable index" },
         },
       }),
     );
 
-    const result = loadMetadata("/worktrees");
-    expect(result.size).toBe(1);
+    const result = loadMetadata("/repo");
     expect(result.get("/new/path")?.id).toBe("ws-new");
-    // Only the primary file should have been read.
+    // The volume is never touched once the index exists — that is the point.
     expect(mockReadFileSync).toHaveBeenCalledTimes(1);
   });
 });
@@ -163,6 +181,7 @@ describe("migrateOrphaned", () => {
     vi.mocked(fs.existsSync).mockReset();
     vi.mocked(fs.mkdirSync).mockClear();
     vi.mocked(fs.writeFileSync).mockClear();
+    vi.mocked(fs.renameSync).mockClear();
   });
 
   it("keeps entries whose volume is merely unplugged", () => {
@@ -189,13 +208,16 @@ describe("migrateOrphaned", () => {
     expect(migrated.size).toBe(0);
   });
 
-  it("never writes into an absent mount point", () => {
+  it("writes the index to the internal disk, not the worktrees volume", () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
-    saveMetadata("/Volumes/Blackbox/App", new Map([["/x", entry("ws-1")]]));
+    saveMetadata(
+      "/repo",
+      new Map([["/Volumes/Blackbox/App/x", entry("ws-1")]]),
+    );
 
-    // Creating the directory would shadow the real volume on the next plug-in.
-    expect(fs.mkdirSync).not.toHaveBeenCalled();
-    expect(fs.writeFileSync).not.toHaveBeenCalled();
+    const target = String(vi.mocked(fs.renameSync).mock.calls[0]?.[1] ?? "");
+    expect(target).not.toContain("/Volumes/");
+    expect(target).toContain("sessions.json");
   });
 });

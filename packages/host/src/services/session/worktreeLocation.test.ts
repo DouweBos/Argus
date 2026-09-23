@@ -55,8 +55,16 @@ describe("computeWorktreesRoot", () => {
 
   it("gives two repos sharing a base their own directories", () => {
     const base = "/Volumes/SSD/wt";
-    const a = computeWorktreesRoot({ repoRoot: "/a/MyApp", argusHome, appBase: base });
-    const b = computeWorktreesRoot({ repoRoot: "/b/Other", argusHome, appBase: base });
+    const a = computeWorktreesRoot({
+      repoRoot: "/a/MyApp",
+      argusHome,
+      appBase: base,
+    });
+    const b = computeWorktreesRoot({
+      repoRoot: "/b/Other",
+      argusHome,
+      appBase: base,
+    });
 
     expect(a.root).not.toBe(b.root);
   });

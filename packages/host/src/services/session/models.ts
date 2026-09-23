@@ -79,6 +79,17 @@ export interface Session {
    * different accounts.
    */
   claude_account_id?: string | null;
+  /**
+   * Whether the session's files are reachable right now. Orthogonal to
+   * `status`: a session can be mid-setup *and* on a drive that just got
+   * unplugged, and it has to come back as whatever it was. Absent means
+   * available, so anything that predates this field reads correctly.
+   */
+  availability?: "available" | "unavailable";
+  /** Why it is unreachable. Only set when `availability` is "unavailable". */
+  unavailable_reason?: "volume_missing";
+  /** Mount point the session lives on, for the message naming the drive. */
+  unavailable_volume?: string | null;
 }
 
 /**

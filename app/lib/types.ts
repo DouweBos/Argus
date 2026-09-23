@@ -31,6 +31,17 @@ export interface Session {
   /** Transient terminal id for the setup PTY; only present on create_session. */
   setup_terminal_id?: string | null;
   status: "deleting" | "initializing" | "ready" | { error: string };
+  /**
+   * Whether the session's files are reachable right now. Orthogonal to
+   * `status`: a session can be mid-setup *and* on a drive that just got
+   * unplugged, and it has to come back as whatever it was. Absent means
+   * available, so anything that predates this field reads correctly.
+   */
+  availability?: "available" | "unavailable";
+  /** Why it is unreachable. Only set when `availability` is "unavailable". */
+  unavailable_reason?: "volume_missing";
+  /** Mount point the session lives on, for the message naming the drive. */
+  unavailable_volume?: string | null;
 }
 
 /** Normalise session status to a simple display string. */
