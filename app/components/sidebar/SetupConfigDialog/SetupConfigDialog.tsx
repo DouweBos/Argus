@@ -31,6 +31,7 @@ import {
 import {
   getUserProjectSettings,
   readArgusConfig,
+  getWorktreeStorage,
   setUserProjectSettings,
   writeArgusConfig,
 } from "../../../lib/ipc";
@@ -44,6 +45,7 @@ import {
   mapToEntries,
   type McpEntry,
 } from "../../shared/McpServersField";
+import { WorktreeLocationField } from "../../shared/WorktreeLocationField";
 import { GlobPathInput } from "./GlobPathInput";
 import { ProjectAutomationsField } from "./ProjectAutomationsField";
 import { ProjectToolsField } from "./ProjectToolsField";
@@ -1782,6 +1784,8 @@ export function SetupConfigDialog({
   const [disabledTools, setDisabledTools] = useState<string[]>([]);
   const [automations, setAutomations] = useState<ProjectAutomationConfig>({});
   const [branchPrefix, setBranchPrefix] = useState("");
+  const [worktreeBase, setWorktreeBase] = useState("");
+  const [worktreeDefaultBase, setWorktreeDefaultBase] = useState("");
   const [initialBranchPrefix, setInitialBranchPrefix] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1936,6 +1940,7 @@ export function SetupConfigDialog({
         const prefix = personal.branch_prefix ?? "";
         setBranchPrefix(prefix);
         setInitialBranchPrefix(prefix);
+        setWorktreeBase(personal.worktrees_base_dir ?? "");
       } catch {
         // No personal settings yet — leave blank.
       } finally {
@@ -1944,6 +1949,14 @@ export function SetupConfigDialog({
         }
       }
     })();
+
+    getWorktreeStorage(repoRoot)
+      .then((storage) => {
+        if (!cancelled) {
+          setWorktreeDefaultBase(storage.app_base ?? storage.default_base);
+        }
+      })
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;
@@ -2685,6 +2698,33 @@ export function SetupConfigDialog({
                     the Create Session dialog.
                   </p>
                 </div>
+              </SettingsScreenDetailBody>
+            </SettingsScreenDetail>
+          ),
+        },
+        {
+          id: "worktree-location",
+          label: "Worktree location",
+          description: "Local to this machine",
+          icon: <Icons.DriveIcon size={12} />,
+          render: () => (
+            <SettingsScreenDetail>
+              <SettingsScreenDetailHeader
+                description="Where this project's worktrees are created. Stored in ~/.argus/user-project-settings.json — not in .argus.json — so it stays personal: your drives are not the team's."
+                title="Worktree location"
+              />
+              <SettingsScreenDetailBody>
+                <WorktreeLocationField
+                  defaultPath={worktreeDefaultBase}
+                  repoRoot={repoRoot}
+                  value={worktreeBase}
+                  onCommit={async (next) => {
+                    await setUserProjectSettings(repoRoot, {
+                      worktrees_base_dir: next,
+                    });
+                    setWorktreeBase(next);
+                  }}
+                />
               </SettingsScreenDetailBody>
             </SettingsScreenDetail>
           ),

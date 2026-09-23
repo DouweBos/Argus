@@ -46,6 +46,11 @@ export interface WorktreeLocationProbe {
   writable: boolean;
 }
 
+/** The base directory used when nothing is configured. */
+export function defaultWorktreesBase(): string {
+  return path.join(argusHomeDir(), "worktrees");
+}
+
 export function getWorktreeStorage(repoRoot: string): WorktreeStorage {
   const { root, source } = resolveWorktreeRoot(repoRoot);
   const availability = pathAvailability(root);
@@ -57,7 +62,7 @@ export function getWorktreeStorage(repoRoot: string): WorktreeStorage {
   return {
     app_base: loadAppSettings().worktrees_base_dir ?? null,
     project_base: loadUserProjectSettings(repoRoot).worktrees_base_dir ?? null,
-    default_base: path.join(argusHomeDir(), "worktrees"),
+    default_base: defaultWorktreesBase(),
     root,
     source,
     state:

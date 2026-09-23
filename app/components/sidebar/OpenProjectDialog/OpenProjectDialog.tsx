@@ -9,7 +9,7 @@ import {
   useRecentProjects,
 } from "../../../stores/recentProjectsStore";
 import { Dialog } from "../../shared/Dialog";
-import { HostProjectBrowser } from "./HostProjectBrowser";
+import { HostDirectoryPicker } from "../../shared/HostDirectoryPicker";
 import projectStyles from "./OpenProjectDialog.module.css";
 
 interface OpenProjectDialogProps {
@@ -63,7 +63,7 @@ export function OpenProjectDialog({ onOpen, onClose }: OpenProjectDialogProps) {
     <Dialog title="Open Project" titleId="open-project-title" onClose={onClose}>
       <DialogBody>
         {browsingHost ? (
-          <HostProjectBrowser
+          <HostDirectoryPicker
             hostLabel={connection.label ?? "the host"}
             onCancel={() => setBrowsingHost(false)}
             onPick={(path) => {

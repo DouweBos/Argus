@@ -2,18 +2,21 @@ import type { HostDirectoryListing } from "../../../lib/types";
 import { useCallback, useEffect, useState } from "react";
 import { Button, DirectoryBrowser } from "@argus/peacock";
 import { listHostDirectory } from "../../../lib/ipc";
-import styles from "./OpenProjectDialog.module.css";
+import styles from "./HostDirectoryPicker.module.css";
 
 /**
- * Picks a project root on the *host's* disk. A native open dialog would draw on
+ * Picks a directory on the *host's* disk. A native open dialog would draw on
  * this Mac and browse the wrong filesystem, so remote mode walks the host's
  * directories over the wire instead.
  */
-export function HostProjectBrowser({
+export function HostDirectoryPicker({
+  confirmLabel = "Open folder",
   hostLabel,
   onCancel,
   onPick,
 }: {
+  /** Verb for the confirm button — what picking this folder will do. */
+  confirmLabel?: string;
   hostLabel: string;
   onCancel: () => void;
   onPick: (path: string) => void;
@@ -44,8 +47,8 @@ export function HostProjectBrowser({
   const target = selected ?? listing?.path ?? null;
 
   return (
-    <div className={styles.hostBrowser}>
-      <p className={styles.hostBrowserHint}>Folders on {hostLabel}</p>
+    <div className={styles.picker}>
+      <p className={styles.hint}>Folders on {hostLabel}</p>
       <DirectoryBrowser
         entries={(listing?.entries ?? []).map((e) => ({
           name: e.name,
@@ -65,7 +68,7 @@ export function HostProjectBrowser({
         }}
         onSelect={setSelected}
       />
-      <div className={styles.hostBrowserActions}>
+      <div className={styles.actions}>
         <Button variant="ghost" onClick={onCancel}>
           Cancel
         </Button>
@@ -74,7 +77,7 @@ export function HostProjectBrowser({
           disabled={!target}
           onClick={() => target && onPick(target)}
         >
-          Open folder
+          {confirmLabel}
         </Button>
       </div>
     </div>

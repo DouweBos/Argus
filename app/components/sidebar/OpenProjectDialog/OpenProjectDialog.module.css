@@ -115,23 +115,3 @@
 .recentsRemove:hover {
   color: var(--text-primary);
 }
-
-.hostBrowser {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-  height: 320px;
-}
-
-.hostBrowserHint {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-}
-
-.hostBrowserActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
