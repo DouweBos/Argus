@@ -40,11 +40,13 @@ struct ReportBlocksView: View {
               .frame(width: 5, height: 5)
               .padding(.top, 6)
             if let href = item.href, let url = URL(string: href) {
-              Link(item.text, destination: url)
-                .font(.system(size: 14))
-                .foregroundStyle(theme.accent)
+              // A Link's label is a button label, and a button centres a
+              // wrapped one — spell out leading or long items read ragged.
+              Link(destination: url) {
+                listText(item.text, color: theme.accent)
+              }
             } else {
-              Text(item.text).font(.system(size: 14)).foregroundStyle(theme.text)
+              listText(item.text, color: theme.text)
             }
           }
         }
@@ -69,6 +71,14 @@ struct ReportBlocksView: View {
       // A session id isn't an agent id, so there is nothing honest to open.
       MutedText("\(ids.count) session\(ids.count == 1 ? "" : "s") touched")
     }
+  }
+
+  private func listText(_ text: String, color: Color) -> some View {
+    Text(text)
+      .font(.system(size: 14))
+      .foregroundStyle(color)
+      .multilineTextAlignment(.leading)
+      .frame(maxWidth: .infinity, alignment: .leading)
   }
 
   private func tone(_ reportTone: RemoteReportTone?) -> Tone {
