@@ -1,6 +1,13 @@
 import fs from "node:fs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { getMeta, loadMetadata, type SessionMeta } from "./metadata";
+import {
+  getMeta,
+  loadMetadata,
+  migrateOrphaned,
+  saveMetadata,
+  type SessionMeta,
+} from "./metadata";
+import { resetAvailabilityCache } from "./volumeAvailability";
 
 vi.mock("node:fs", async () => {
   const actual = await vi.importActual<typeof fs>("node:fs");
@@ -135,5 +142,60 @@ describe("loadMetadata", () => {
     expect(result.get("/new/path")?.id).toBe("ws-new");
     // Only the primary file should have been read.
     expect(mockReadFileSync).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * An ejected drive and a deleted directory are indistinguishable to
+ * `existsSync`, and treating the first as the second is unrecoverable: the
+ * metadata carries the session's name and description, and nothing else does.
+ */
+describe("migrateOrphaned", () => {
+  const entry = (id: string): SessionMeta => ({
+    id,
+    display_name: null,
+    description: "",
+    base_branch: null,
+  });
+
+  beforeEach(() => {
+    resetAvailabilityCache();
+    vi.mocked(fs.existsSync).mockReset();
+    vi.mocked(fs.mkdirSync).mockClear();
+    vi.mocked(fs.writeFileSync).mockClear();
+  });
+
+  it("keeps entries whose volume is merely unplugged", () => {
+    // Nothing under /Volumes exists: the drive is out.
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const meta = new Map([["/Volumes/Blackbox/App/feature", entry("ws-1")]]);
+    const [migrated, removed] = migrateOrphaned("/Volumes/Blackbox/App", meta);
+
+    expect(removed).toBe(false);
+    expect(migrated.get("/Volumes/Blackbox/App/feature")?.id).toBe("ws-1");
+  });
+
+  it("still drops entries that are genuinely deleted", () => {
+    // The drive is mounted; the worktree under it is not there.
+    vi.mocked(fs.existsSync).mockImplementation(
+      (p) => String(p) === "/Volumes/Blackbox",
+    );
+
+    const meta = new Map([["/Volumes/Blackbox/App/feature", entry("ws-1")]]);
+    const [migrated, removed] = migrateOrphaned("/Volumes/Blackbox/App", meta);
+
+    expect(removed).toBe(true);
+    expect(migrated.size).toBe(0);
+  });
+
+  it("never writes into an absent mount point", () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    saveMetadata("/Volumes/Blackbox/App", new Map([["/x", entry("ws-1")]]));
+
+    // Creating the directory would shadow the real volume on the next plug-in.
+    expect(fs.mkdirSync).not.toHaveBeenCalled();
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
   });
 });

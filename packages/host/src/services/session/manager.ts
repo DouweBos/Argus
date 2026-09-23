@@ -46,6 +46,7 @@ import {
   type SessionMeta,
 } from "./metadata";
 import { defaultArgusConfig, type Session, type SessionStatus } from "./models";
+import { isOnMissingVolume } from "./volumeAvailability";
 import { runSetupPipeline } from "./setup";
 import { startBranchWatcher } from "./watcher";
 
@@ -162,7 +163,9 @@ export async function listSessions(repoRoot: string): Promise<Session[]> {
       if (!ws.path) {
         continue;
       }
-      if (isValidWorktree(ws.path)) {
+      if (isValidWorktree(ws.path) || isOnMissingVolume(ws.path)) {
+        // Unreachable is not gone: a session whose drive is unplugged keeps
+        // its place so the sidebar can show it, greyed out.
         diskSessions.push({ ...ws });
         livePaths.add(ws.path);
       } else {

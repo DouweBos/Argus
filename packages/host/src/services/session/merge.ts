@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { capture as telemetryCapture } from "../telemetry/telemetry";
 import { git } from "./git";
+import { assertWorktreePresent } from "./volumeAvailability";
 
 // ---------------------------------------------------------------------------
 // check_merge_conflicts
@@ -120,9 +121,7 @@ export async function mergeSessionIntoBase(
   sessionBranch: string,
   baseBranch: string,
 ): Promise<void> {
-  if (!fs.existsSync(wsPath)) {
-    throw `Session worktree not found at ${wsPath}`;
-  }
+  assertWorktreePresent(wsPath);
 
   await commitStagedChanges(wsPath, sessionBranch);
 
@@ -207,9 +206,7 @@ export async function getSessionMergeStatus(
   sessionBranch: string,
   baseBranch: string | null,
 ): Promise<SessionMergeStatus> {
-  if (!fs.existsSync(wsPath)) {
-    throw `Session worktree not found at ${wsPath}`;
-  }
+  assertWorktreePresent(wsPath);
 
   const status = await git(wsPath, [
     "status",
@@ -303,9 +300,7 @@ export async function attemptMergeSession(
 ): Promise<
   { state: "conflicted"; conflicting_files: string[] } | { state: "merged" }
 > {
-  if (!fs.existsSync(wsPath)) {
-    throw `Session worktree not found at ${wsPath}`;
-  }
+  assertWorktreePresent(wsPath);
 
   // Refuse to start a new attempt while another is in progress.
   const existing = await detectInProgressMerge(wsPath);
@@ -562,9 +557,7 @@ export async function rebaseSessionOnBase(
   sessionBranch: string,
   baseBranch: string,
 ): Promise<void> {
-  if (!fs.existsSync(wsPath)) {
-    throw `Session worktree not found at ${wsPath}`;
-  }
+  assertWorktreePresent(wsPath);
 
   await commitStagedChanges(wsPath, sessionBranch);
 
