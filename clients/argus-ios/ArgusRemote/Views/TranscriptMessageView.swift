@@ -120,6 +120,13 @@ struct TranscriptMessageView: View {
     }
   }
 
+  /// The repo behind this agent, for seeding a sibling session from a plan.
+  private var planRepoRoot: String? {
+    guard let sessionId = app.statusByAgent[agentKey]?.sessionId else { return nil }
+
+    return app.repoRoot(forSessionId: sessionId)
+  }
+
   /// Which form a pending call gets: a question, a plan, or plain allow/deny.
   @ViewBuilder
   private func pendingForm(for call: RemoteToolCall) -> some View {
@@ -136,6 +143,13 @@ struct TranscriptMessageView: View {
         onKeepPlanning: { respond(call, "deny", CannedReply.keepPlanning) },
         onFeedback: { feedback in
           respond(call, "deny", CannedReply.planFeedback(feedback))
+        },
+        // No repo, nowhere to put the session — same rule as the desktop.
+        onApproveInNewSession: planRepoRoot.map { repoRoot in
+          {
+            Task { await app.handOffPlan(repoRoot: repoRoot, plan: plan) }
+            respond(call, "deny", CannedReply.planHandoff)
+          }
         })
     case .buttons:
       PermissionButtons(

@@ -278,6 +278,39 @@ extension AppStore {
     }
   }
 
+  /// Hand a plan to a fresh session: create it, wait for its worktree, then
+  /// start an agent on the plan. The desktop seeds the prompt renderer-side
+  /// once the session turns ready; there is no host-side equivalent, so the
+  /// wait happens here.
+  func handOffPlan(repoRoot: String, plan: String) async {
+    let prompt = "Implement the following plan:\n\n\(plan)"
+    guard let session = await createSession(repoRoot: repoRoot, branch: "", description: prompt)
+    else { return }
+
+    // Spawning before the worktree exists would give the agent the wrong cwd.
+    var ready = session.status == .ready
+    for _ in 0..<60 where !ready {
+      try? await Task.sleep(for: .seconds(2))
+      await loadSessions(repoRoot: repoRoot)
+      guard let current = sessionsByRepo[repoRoot]?.first(where: { $0.id == session.id }) else {
+        break
+      }
+      if current.status == .error {
+        lastError = "The new session failed to set up, so the plan wasn't handed off."
+        return
+      }
+      ready = current.status == .ready
+    }
+    guard ready else {
+      lastError = "The new session is still setting up — start the plan from it once it's ready."
+      return
+    }
+
+    guard let agent = await spawnAgent(sessionId: session.id) else { return }
+    await sendMessage(agentId: agent.agentId, message: prompt)
+    await loadAgents(repoRoot: repoRoot)
+  }
+
   func deleteSession(id: String, repoRoot: String, deleteBranch: Bool = false) async {
     guard let transport else { return }
     struct Params: Encodable {

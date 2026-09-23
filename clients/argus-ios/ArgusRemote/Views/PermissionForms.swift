@@ -8,6 +8,9 @@ struct PlanApprovalView: View {
   let onApprove: () -> Void
   let onKeepPlanning: () -> Void
   let onFeedback: (String) -> Void
+  /// Absent when the plan's repo can't be resolved — there is nowhere to put
+  /// the new session.
+  var onApproveInNewSession: (() -> Void)?
 
   @State private var feedback = ""
   @State private var showingFullScreen = false
@@ -29,7 +32,8 @@ struct PlanApprovalView: View {
         feedback: $feedback,
         onApprove: onApprove,
         onKeepPlanning: onKeepPlanning,
-        onFeedback: onFeedback)
+        onFeedback: onFeedback,
+        onApproveInNewSession: onApproveInNewSession)
     }
     .fullScreenCover(isPresented: $showingFullScreen) {
       PlanFullScreenView(
@@ -38,7 +42,8 @@ struct PlanApprovalView: View {
           feedback: $feedback,
           onApprove: onApprove,
           onKeepPlanning: onKeepPlanning,
-          onFeedback: onFeedback))
+          onFeedback: onFeedback,
+          onApproveInNewSession: onApproveInNewSession))
     }
   }
 }
@@ -64,6 +69,9 @@ private struct PlanActions: View {
   let onApprove: () -> Void
   let onKeepPlanning: () -> Void
   let onFeedback: (String) -> Void
+  var onApproveInNewSession: (() -> Void)?
+
+  @State private var confirmingHandoff = false
 
   private var trimmed: String {
     feedback.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -82,6 +90,19 @@ private struct PlanActions: View {
           Btn(label: "Send feedback", tone: .secondary, small: true) { onFeedback(trimmed) }
         }
       }
+
+      // Its own row: three buttons don't fit across a phone.
+      if onApproveInNewSession != nil {
+        Btn(label: "Approve in new session", tone: .secondary, small: true) {
+          confirmingHandoff = true
+        }
+      }
+    }
+    .alert("Implement in a new session?", isPresented: $confirmingHandoff) {
+      Button("Cancel", role: .cancel) {}
+      Button("Create") { onApproveInNewSession?() }
+    } message: {
+      Text("Argus starts a new session on this plan. This one stays in plan mode.")
     }
   }
 }
@@ -95,6 +116,7 @@ struct PlanFullScreenView: View {
     var onApprove: () -> Void
     var onKeepPlanning: () -> Void
     var onFeedback: (String) -> Void
+    var onApproveInNewSession: (() -> Void)?
   }
 
   @Environment(\.theme) private var theme
@@ -128,6 +150,12 @@ struct PlanFullScreenView: View {
             onFeedback: { feedback in
               dismiss()
               actions.onFeedback(feedback)
+            },
+            onApproveInNewSession: actions.onApproveInNewSession.map { handOff in
+              {
+                dismiss()
+                handOff()
+              }
             })
           .padding(16)
           .background(theme.bgSecondary)

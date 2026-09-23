@@ -420,6 +420,22 @@ final class AppStore {
     mediaBuffer[message.streamId] = buffered
   }
 
+  // MARK: Lookups
+
+  /// The repo a session belongs to. Falls back to the agent's project name
+  /// when its repo's sessions haven't been loaded yet (deep link into an
+  /// agent), and gives up rather than guessing.
+  func repoRoot(forSessionId id: String) -> String? {
+    for (repoRoot, sessions) in sessionsByRepo where sessions.contains(where: { $0.id == id }) {
+      return repoRoot
+    }
+    guard
+      let projectName = statusByAgent.values.first(where: { $0.sessionId == id })?.projectName
+    else { return nil }
+
+    return projects.first { $0.name == projectName }?.repoRoot
+  }
+
   // MARK: Error surface
 
   func report(_ error: Error) {

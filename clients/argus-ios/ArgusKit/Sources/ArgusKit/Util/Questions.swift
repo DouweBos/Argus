@@ -112,6 +112,9 @@ public enum CannedReply {
   public static let keepPlanning =
     "The user rejected the plan and wants to keep refining it. Incorporate their feedback once provided."
 
+  public static let planHandoff =
+    "The user approved this plan but handed it off to a new session to implement. Do not implement it here — stay in plan mode and wait for further instructions."
+
   public static func planFeedback(_ feedback: String) -> String {
     """
     The user wants to refine the plan before approving it. Their feedback:
