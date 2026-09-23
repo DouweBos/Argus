@@ -309,6 +309,19 @@ describe("the typed automations methods", () => {
     );
   });
 
+  it("covers running a playbook once", () => {
+    expect(TYPED_AUTOMATION_METHODS).toEqual(
+      expect.arrayContaining([
+        "automations.run_scratch",
+        "automations.save_scratch_run",
+      ]),
+    );
+    const tier = (m: RemoteMethod) => REMOTE_METHODS[m];
+    // An ad-hoc run is an agent on the host, same as any other run.
+    expect(tier("automations.run_scratch")).toBe("control");
+    expect(tier("automations.save_scratch_run")).toBe("control");
+  });
+
   it("covers authoring one", () => {
     expect(TYPED_AUTOMATION_METHODS).toEqual(
       expect.arrayContaining([

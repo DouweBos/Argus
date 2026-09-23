@@ -86,6 +86,8 @@ public enum RemoteMethod: String, Codable, Sendable {
   case automationsDelete = "automations.delete"
   case automationsSetEnabled = "automations.set_enabled"
   case automationsRunNow = "automations.run_now"
+  case automationsRunScratch = "automations.run_scratch"
+  case automationsSaveScratchRun = "automations.save_scratch_run"
   case automationsCancelRun = "automations.cancel_run"
   case automationsMarkRunRead = "automations.mark_run_read"
 

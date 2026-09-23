@@ -396,6 +396,8 @@ struct RootView: View {
       AutomationsView()
     case .automation(let id, let label):
       AutomationView(automationId: id, label: label)
+    case .quickRun:
+      QuickRunView()
     case .automationEditor(let id, _):
       AutomationEditorView(automationId: id)
     case .run(let id, let label):

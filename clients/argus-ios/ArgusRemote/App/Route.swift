@@ -20,6 +20,7 @@ enum Route: Hashable {
   case pullRequest(repo: String, number: Int, label: String)
   case automations
   case automation(id: String, label: String)
+  case quickRun
   /// Nil id creates a new automation.
   case automationEditor(id: String?, label: String)
   case run(id: String, label: String)

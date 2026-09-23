@@ -335,6 +335,22 @@ export const MethodParams = {
     enabled: z.boolean(),
   }),
   "automations.run_now": z.object({ automation_id: z.string() }),
+  /** Run a playbook once, with nothing saved behind it. */
+  "automations.run_scratch": z.object({
+    name: z.string().optional(),
+    playbook: z.string().trim().min(1),
+    repo_roots: z.array(z.string()),
+    source_ids: z.array(z.string()),
+    model: z.string().nullable(),
+    guardrails: RemoteAutomationGuardrails,
+  }),
+  /** Promote a quick run into a real automation, prefilled from the run. */
+  "automations.save_scratch_run": z.object({
+    run_id: z.string(),
+    name: z.string().optional(),
+    description: z.string().optional(),
+    enabled: z.boolean().optional(),
+  }),
   "automations.cancel_run": z.object({ run_id: z.string() }),
   "automations.mark_run_read": z.object({ run_id: z.string() }),
   "github.pull_requests": z.object({
@@ -546,6 +562,8 @@ export const MethodResult = {
   "automations.set_enabled": z.object({ automation: RemoteAutomation }),
   /** The run record as created — it is still queued when this returns. */
   "automations.run_now": z.object({ run: RemoteAutomationRun }),
+  "automations.run_scratch": z.object({ run: RemoteAutomationRun }),
+  "automations.save_scratch_run": z.object({ automation: RemoteAutomation }),
   "automations.cancel_run": z.object({ accepted: z.boolean() }),
   /** The run as it now stands — read. */
   "automations.mark_run_read": z.object({ run: RemoteAutomationRun }),

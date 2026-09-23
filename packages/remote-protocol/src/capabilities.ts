@@ -200,6 +200,9 @@ export const REMOTE_METHODS = {
   "automations.delete": "control",
   "automations.set_enabled": "control",
   "automations.run_now": "control",
+  /** An ad-hoc run is an agent on the host, same as any other run. */
+  "automations.run_scratch": "control",
+  "automations.save_scratch_run": "control",
   "automations.cancel_run": "control",
   /** Reading a report on the phone is reading it — it clears nowhere else.
    *  Monitor, not control: it records that you looked, and can do nothing else. */

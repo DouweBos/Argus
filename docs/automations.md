@@ -463,6 +463,11 @@ list, open the same fields the desktop editor has: name, description, trigger
 guardrails and the playbook itself. Saving is explicit, and deleting asks
 first; past runs and their reports survive the automation.
 
+**Quick run** — the other half of + — runs a playbook once with nothing saved
+behind it, and drops you on the run as it goes. If it turns out to be worth
+keeping, **Save as automation** on the finished run promotes it, paused and
+without a schedule, into the editor.
+
 - **Editing, Run now, Cancel, Start, Mark as done and Dismiss need the
   `control` grant.** Firing an automation or accepting a proposal starts an
   agent on the computer, and a playbook is code that runs unattended; a
