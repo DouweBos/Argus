@@ -17,7 +17,6 @@ struct ProjectView: View {
   @State private var renameTarget: Group?
   @State private var renameKind: RenameKind?
   @State private var renameValue = ""
-  @State private var deleteTarget: Group?
 
   enum RenameKind { case name, branch }
 
@@ -108,26 +107,11 @@ struct ProjectView: View {
       Button("Cancel", role: .cancel) { renameTarget = nil }
       Button("Save", action: submitRename)
     }
-    .confirmationDialog(
-      "Delete “\(deleteTarget?.label ?? "")”?",
-      isPresented: Binding(
-        get: { deleteTarget != nil },
-        set: { if !$0 { deleteTarget = nil } }),
-      titleVisibility: .visible,
-      presenting: deleteTarget
-    ) { group in
-      Button("Delete session", role: .destructive) { delete(group, branch: false) }
-      Button("Delete session + branch", role: .destructive) { delete(group, branch: true) }
-      Button("Cancel", role: .cancel) {}
-    } message: { _ in
-      Text("This stops its agents and removes the worktree.")
-    }
     .refreshable { await refresh() }
     .liveRefresh(enabled: app.connection == .ready) { await refresh() }
   }
 
   private func delete(_ group: Group, branch: Bool) {
-    deleteTarget = nil
     Task {
       await app.deleteSession(id: group.sessionId, repoRoot: repoRoot, deleteBranch: branch)
       await refresh()
@@ -192,8 +176,9 @@ struct ProjectView: View {
         renameKind = .branch
         renameValue = group.session?.branch ?? ""
       }
-      Button("Delete session…", systemImage: Icon.trash, role: .destructive) {
-        deleteTarget = group
+      Menu("Delete", systemImage: Icon.trash) {
+        Button("Delete session", role: .destructive) { delete(group, branch: false) }
+        Button("Delete session + branch", role: .destructive) { delete(group, branch: true) }
       }
     } label: {
       Label("Session actions", systemImage: Icon.ellipsis)

@@ -73,6 +73,30 @@ struct RootView: View {
       }
     }
     .animation(.easeOut(duration: 0.25), value: app.connection)
+    // Not while offline: the reconnecting pill already says that, and better.
+    .overlay(alignment: .bottom) {
+      if let error = app.lastError, app.connection != .offline {
+        errorToast(error)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.easeOut(duration: 0.25), value: app.lastError)
+  }
+
+  /// Every failed request already sets `lastError`; without this the app just
+  /// appears to ignore the tap.
+  private func errorToast(_ message: String) -> some View {
+    Banner(text: message, tone: .danger)
+      .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+      .shadow(color: .black.opacity(0.25), radius: 10, y: 3)
+      .padding(.horizontal, 16)
+      .padding(.bottom, 12)
+      .onTapGesture { app.clearError() }
+      .task(id: message) {
+        try? await Task.sleep(for: .seconds(6))
+        app.clearError()
+      }
+      .accessibilityLabel(message)
   }
 
   /// Small, quiet, and out of the way — it retries on its own, so this is a

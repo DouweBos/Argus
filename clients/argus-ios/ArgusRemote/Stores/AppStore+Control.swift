@@ -281,12 +281,12 @@ extension AppStore {
   func deleteSession(id: String, repoRoot: String, deleteBranch: Bool = false) async {
     guard let transport else { return }
     struct Params: Encodable {
-      let session_id: String
+      let id: String
       let delete_branch: Bool
     }
     do {
       try await transport.request(
-        .sessionsDelete, Params(session_id: id, delete_branch: deleteBranch),
+        .sessionsDelete, Params(id: id, delete_branch: deleteBranch),
         as: IgnoredResult.self)
       await loadSessions(repoRoot: repoRoot)
       await loadAgents(repoRoot: repoRoot)
@@ -296,12 +296,12 @@ extension AppStore {
   func renameSession(id: String, repoRoot: String, name: String) async {
     guard let transport else { return }
     struct Params: Encodable {
-      let session_id: String
-      let name: String
+      let id: String
+      let display_name: String
     }
     do {
       try await transport.request(
-        .sessionsRename, Params(session_id: id, name: name), as: IgnoredResult.self)
+        .sessionsRename, Params(id: id, display_name: name), as: IgnoredResult.self)
       await loadSessions(repoRoot: repoRoot)
     } catch { report(error) }
   }
@@ -309,12 +309,12 @@ extension AppStore {
   func renameSessionBranch(id: String, repoRoot: String, branch: String) async {
     guard let transport else { return }
     struct Params: Encodable {
-      let session_id: String
+      let id: String
       let branch: String
     }
     do {
       try await transport.request(
-        .sessionsRenameBranch, Params(session_id: id, branch: branch), as: IgnoredResult.self)
+        .sessionsRenameBranch, Params(id: id, branch: branch), as: IgnoredResult.self)
       await loadSessions(repoRoot: repoRoot)
     } catch { report(error) }
   }
@@ -377,7 +377,7 @@ extension AppStore {
     guard let transport else { return .failed }
     struct Params: Encodable {
       let session_id: String
-      let branch: String
+      let name: String
       let force: Bool
     }
     struct Result: Decodable {
@@ -386,7 +386,7 @@ extension AppStore {
     }
     do {
       let result = try await transport.request(
-        .sessionsDeleteBranch, Params(session_id: sessionId, branch: name, force: force),
+        .sessionsDeleteBranch, Params(session_id: sessionId, name: name, force: force),
         as: Result.self)
       if result.blocked_by == "unmerged" { return .unmerged }
       return result.accepted ? .ok : .failed
