@@ -12,7 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
-import { invalidateWorktreeLocationCache } from "../session/worktreeLocation";
+import { invalidateWorktreeLocationCache } from "../session/worktreeRootCache";
 
 const SCHEMA_VERSION = 1;
 

@@ -139,6 +139,10 @@ html[data-theme="dark"] {
   --folder-icon-fill: #dcb67a;
   --folder-icon-shadow: #c09553;
 
+  /* ─── Opacity ─── one value for "switched off or out of reach": a disabled
+     button, a session whose drive is disconnected. */
+  --opacity-disabled: 0.45;
+
   /* ─── Surface overlay scale ─── theme-aware "tint on surface".
      On dark themes these are white at increasing opacity; on light themes
      they flip to dark at matching opacity so hover/glass surfaces still
@@ -318,6 +322,10 @@ html[data-theme="light"] {
   --brand-purple-overlay-sm: rgba(90, 61, 212, 0.08);
   --brand-purple-overlay-md: rgba(90, 61, 212, 0.14);
   --brand-purple-overlay-lg: rgba(90, 61, 212, 0.22);
+
+  /* ─── Opacity ─── one value for "switched off or out of reach": a disabled
+     button, a session whose drive is disconnected. */
+  --opacity-disabled: 0.45;
 
   /* Surface overlays inverted: dark tints on light surfaces */
   --surface-1: rgba(10, 10, 15, 0.025);

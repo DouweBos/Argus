@@ -142,3 +142,28 @@ export const Framed: Story = {
     actions: ellipsis,
   },
 };
+
+/**
+ * The drive holding this session is disconnected. It keeps its last known
+ * branch and name — that is the whole point, the row is a reminder of what is
+ * on the drive — but it is dimmed and cannot be opened.
+ */
+export const Unavailable: Story = {
+  args: {
+    icon: <BranchIcon size={13} />,
+    title: "Fix the login redirect",
+    interactive: true,
+    unavailable: true,
+    unavailableTitle: "Blackbox isn't connected — showing the last known state",
+    status: { label: "unavailable", tone: "neutral" },
+    subtitle: "douwe/fix-login-redirect",
+  },
+};
+
+/** Still the selected row: the URL points here until the drive comes back. */
+export const UnavailableSelected: Story = {
+  args: {
+    ...Unavailable.args,
+    selected: true,
+  },
+};

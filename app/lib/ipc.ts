@@ -81,6 +81,8 @@ import type {
   DeviceOrientation,
   FoldPose,
   SimulatorDeviceState,
+  WorktreeStorage,
+  WorktreeLocationProbe,
 } from "./types";
 import { rehydrateGitError } from "./gitError";
 import { rehydrateShareError } from "./shareError";
@@ -1993,6 +1995,17 @@ export const closeAgentPopout = (agentId: string): Promise<void> =>
 
 // Handoff — advertise the session on screen to the paired phone, or stop
 // advertising (`sessionId: null`) when the screen isn't a session.
+// Where a project's worktrees live. `probe` validates a candidate directory
+// before it is saved; it never creates anything.
+export const getWorktreeStorage = (
+  repoRoot: string,
+): Promise<WorktreeStorage> => invoke("get_worktree_storage", { repoRoot });
+
+export const probeWorktreeLocation = (args: {
+  baseDir: string;
+  repoRoot?: string;
+}): Promise<WorktreeLocationProbe> => invoke("probe_worktree_location", args);
+
 export const publishHandoff = (args: {
   agentId?: string;
   label?: string;

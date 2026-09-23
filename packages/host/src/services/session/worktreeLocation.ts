@@ -12,6 +12,10 @@ import path from "node:path";
 import { argusHomeDir } from "../../lib/argusHome";
 import { loadAppSettings } from "../appSettings/store";
 import { loadUserProjectSettings } from "../userProjectSettings/store";
+import {
+  getCachedWorktreeRoot,
+  setCachedWorktreeRoot,
+} from "./worktreeRootCache";
 
 /** The suffix that makes a worktrees directory obvious from the outside. */
 const SUFFIX = "-argus-worktrees";
@@ -69,12 +73,11 @@ export function computeWorktreesRoot(args: {
 
 /**
  * Memoized because this sits on the session-list refresh and neither settings
- * store caches its file read. Invalidated explicitly on write.
+ * store caches its file read. The cache lives in its own module so those
+ * stores can invalidate it on write without importing this one.
  */
-const cache = new Map<string, ResolvedWorktreeRoot>();
-
 export function resolveWorktreeRoot(repoRoot: string): ResolvedWorktreeRoot {
-  const hit = cache.get(repoRoot);
+  const hit = getCachedWorktreeRoot(repoRoot);
   if (hit) {
     return hit;
   }
@@ -85,7 +88,7 @@ export function resolveWorktreeRoot(repoRoot: string): ResolvedWorktreeRoot {
     appBase: loadAppSettings().worktrees_base_dir,
     argusHome: argusHomeDir(),
   });
-  cache.set(repoRoot, resolved);
+  setCachedWorktreeRoot(repoRoot, resolved);
 
   return resolved;
 }
@@ -119,13 +122,4 @@ export function isKnownWorktreePath(repoRoot: string, target: string): boolean {
   return worktreeRootsForRepo(repoRoot).some((root) =>
     isInsideRoot(root, target),
   );
-}
-
-export function invalidateWorktreeLocationCache(repoRoot?: string): void {
-  if (repoRoot === undefined) {
-    cache.clear();
-
-    return;
-  }
-  cache.delete(repoRoot);
 }
