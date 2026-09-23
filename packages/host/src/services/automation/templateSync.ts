@@ -45,6 +45,9 @@ export const LEGACY_PLAYBOOK_HASHES: Record<string, string[]> = {
  * text here whenever you change a template's description.
  */
 const SUPERSEDED_DESCRIPTIONS: Record<string, string[]> = {
+  "morning-triage": [
+    "What to work on today: assigned issues and review-requested PRs, ranked, one proposal each.",
+  ],
   "branch-janitor": [
     "Nightly: proposes cleanup for merged worktrees and summarises the sessions that have stalled.",
   ],

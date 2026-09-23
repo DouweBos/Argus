@@ -327,15 +327,15 @@ else — the playbook is yours to rewrite.
 unprompted has to be a deliberate choice, not something an update turns on, and
 that holds even for the read-only ones.
 
-| Template               | Default schedule  | Autonomy | What it does                                                                                                            |
-| ---------------------- | ----------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Standup digest**     | `09:00`, weekdays | Propose  | Summary of what landed, what is in flight and what stalled, plus a proposal per follow-up worth chasing.                |
-| **Morning triage**     | `07:30`, weekdays | Propose  | Ranks assigned issues and review requests, topping your in-flight work back up to about four.                           |
-| **Take the easy ones** | `08:00`, weekdays | Draft    | Implements the assigned issues it is confident about in their own worktrees, stops at the commit.                       |
-| **PR shepherd**        | every 30 minutes  | Draft    | Red CI on your PRs goes back to the session that wrote the branch; new review comments get a reply drafted.             |
-| **Regression sweep**   | `02:00`, nightly  | Draft    | Boots each project on a simulator, runs its run commands and a conductor smoke flow, reports failures with screenshots. |
-| **Branch janitor**     | `03:00`, nightly  | Propose  | Proposes cleanup for merged worktrees, summarises stalled sessions. Never deletes anything itself.                      |
-| **Dependency watch**   | `09:00`, Mondays  | Propose  | What is behind, what actually changed in it, and which upgrades are worth a branch.                                     |
+| Template               | Default schedule  | Autonomy | What it does                                                                                                                      |
+| ---------------------- | ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Standup digest**     | `09:00`, weekdays | Propose  | Summary of what landed, what is in flight and what stalled, plus a proposal per follow-up worth chasing.                          |
+| **Morning triage**     | `07:30`, weekdays | Propose  | Finds tickets to pick up — assigned issues first, then the unclaimed backlog — topping your in-flight work back up to about four. |
+| **Take the easy ones** | `08:00`, weekdays | Draft    | Implements the assigned issues it is confident about in their own worktrees, stops at the commit.                                 |
+| **PR shepherd**        | every 30 minutes  | Draft    | Red CI on your PRs goes back to the session that wrote the branch; new review comments get a reply drafted.                       |
+| **Regression sweep**   | `02:00`, nightly  | Draft    | Boots each project on a simulator, runs its run commands and a conductor smoke flow, reports failures with screenshots.           |
+| **Branch janitor**     | `03:00`, nightly  | Propose  | Proposes cleanup for merged worktrees, summarises stalled sessions. Never deletes anything itself.                                |
+| **Dependency watch**   | `09:00`, Mondays  | Propose  | What is behind, what actually changed in it, and which upgrades are worth a branch.                                               |
 
 Schedules are seeded in your machine's timezone. Branch janitor and dependency
 watch are pinned at Propose on purpose: deleting a worktree or a branch with
