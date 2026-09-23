@@ -298,16 +298,20 @@ struct Banner: View {
   var tone: Tone = .warning
 
   var body: some View {
-    HStack(alignment: .top, spacing: 0) {
-      Rectangle().fill(tone.color(theme)).frame(width: 3)
-      Text(text)
-        .font(.system(size: 13))
-        .foregroundStyle(theme.text)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
-    }
-    .background(tone.soft(theme))
-    .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
+    // The accent stripe is an overlay, not a row in an HStack: a bare
+    // Rectangle there takes whatever height it is offered, which stretches the
+    // banner to fill any container that proposes one (an overlay, say).
+    Text(text)
+      .font(.system(size: 13))
+      .foregroundStyle(theme.text)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(10)
+      .padding(.leading, 3)
+      .background(tone.soft(theme))
+      .overlay(alignment: .leading) {
+        Rectangle().fill(tone.color(theme)).frame(width: 3)
+      }
+      .clipShape(RoundedRectangle(cornerRadius: theme.radiusSmall))
   }
 }
 
