@@ -36,8 +36,13 @@ struct PastingTextView: UIViewRepresentable {
 
   func updateUIView(_ view: ImagePastingTextView, context: Context) {
     // Setting `text` programmatically (a send clearing the field) does not
-    // fire the delegate, so the height has to be recomputed here too.
-    if view.text != text { view.text = text }
+    // fire the delegate, so the height has to be recomputed here too — and
+    // TextKit only relays out on the next layout pass, so `sizeThatFits`
+    // would otherwise still report the height of the message just sent.
+    if view.text != text {
+      view.text = text
+      view.layoutIfNeeded()
+    }
     view.onPasteImages = onPasteImages
     view.textColor = UIColor(context.environment.theme.text)
     context.coordinator.recalculateHeight(view)
