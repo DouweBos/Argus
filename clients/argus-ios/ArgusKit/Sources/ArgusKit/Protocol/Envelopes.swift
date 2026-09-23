@@ -109,6 +109,8 @@ public enum RemoteEventName: String, Sendable {
   case permissionCancel = "permission.cancel"
   case deviceState = "device.state"
   case deviceClaim = "device.claim"
+  case sessionsChanged = "sessions.changed"
+  case projectsChanged = "projects.changed"
   case notification = "notification"
 }
 

@@ -363,6 +363,18 @@ final class AppStore {
         envelope.payload, to: RemoteDeviceClaimState.self) else { return }
       deviceClaims[claim.deviceId] = claim
 
+    case .sessionsChanged:
+      // Lists are held by the client, so a change on the computer is only
+      // visible if it says so. A null repo means "something went; refetch
+      // whatever you hold".
+      struct Payload: Decodable { let repo_root: String? }
+      let repoRoot = (try? ProtocolCodec.convert(
+        envelope.payload, to: Payload.self))?.repo_root
+      Task { await reloadSessions(for: repoRoot) }
+
+    case .projectsChanged:
+      Task { await refreshProjects() }
+
     case .notification:
       guard let notification = try? ProtocolCodec.convert(
         envelope.payload, to: RemoteNotification.self) else { return }
