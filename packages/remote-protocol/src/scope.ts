@@ -145,6 +145,8 @@ export const METHOD_SCOPE: Record<RemoteMethod, ScopeRule> = {
   "automations.delete": DENIED,
   "automations.set_enabled": DENIED,
   "automations.run_now": DENIED,
+  "automations.run_scratch": DENIED,
+  "automations.save_scratch_run": DENIED,
   "automations.cancel_run": DENIED,
   "automations.mark_run_read": DENIED,
   // A guest reviews the agent it was handed; it does not speak on GitHub.

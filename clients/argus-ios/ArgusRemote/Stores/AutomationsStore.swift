@@ -207,6 +207,68 @@ final class AutomationsStore {
     await refresh()
   }
 
+  /// Run a playbook once, with nothing saved behind it. Returns the run id so
+  /// the caller can go and watch it.
+  func runScratch(
+    name: String, playbook: String, repoRoots: [String], sourceIds: [String],
+    model: String?, guardrails: RemoteAutomationGuardrails
+  ) async -> String? {
+    guard let transport = app.transport else { return nil }
+    struct Params: Encodable {
+      let name: String
+      let playbook: String
+      let repo_roots: [String]
+      let source_ids: [String]
+      let model: String?
+      let guardrails: RemoteAutomationGuardrails
+    }
+    struct Result: Decodable { let run: RemoteAutomationRun }
+    do {
+      let run = try await transport.request(
+        .automationsRunScratch,
+        Params(
+          name: name, playbook: playbook, repo_roots: repoRoots,
+          source_ids: sourceIds, model: model, guardrails: guardrails),
+        as: Result.self
+      ).run
+      runs.insert(run, at: 0)
+      await refresh()
+
+      return run.id
+    } catch {
+      self.error = "Couldn't start that run — \(AppStore.describe(error))"
+
+      return nil
+    }
+  }
+
+  /// Keep a one-off: promote it to an automation, prefilled from the run.
+  func saveScratchRun(runId: String, name: String) async -> String? {
+    guard let transport = app.transport else { return nil }
+    struct Params: Encodable {
+      let run_id: String
+      let name: String
+      let enabled: Bool
+    }
+    struct Result: Decodable { let automation: RemoteAutomation }
+    do {
+      let automation = try await transport.request(
+        .automationsSaveScratchRun,
+        // Saved paused: a playbook that ran once by hand has no schedule the
+        // user has thought about yet.
+        Params(run_id: runId, name: name, enabled: false),
+        as: Result.self
+      ).automation
+      await refresh()
+
+      return automation.id
+    } catch {
+      self.error = "Couldn't save that run — \(AppStore.describe(error))"
+
+      return nil
+    }
+  }
+
   func cancelRun(id: String) async {
     guard let transport = app.transport else { return }
     struct Params: Encodable { let run_id: String }

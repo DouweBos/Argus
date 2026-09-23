@@ -15,6 +15,9 @@ struct RunView: View {
   let runId: String
   let label: String
 
+  /// The name being typed while promoting a quick run; nil when not saving.
+  @State private var savingName: String?
+
   private var detail: RemoteAutomationRunDetail? { store.detailByRun[runId] }
   private var run: RemoteAutomationRun? {
     detail?.run ?? store.runs.first { $0.id == runId }
@@ -39,6 +42,20 @@ struct RunView: View {
     // A settled run's report never changes, so stop asking.
     .liveRefresh(enabled: app.connection == .ready && (run?.isActive ?? true)) {
       await store.loadRun(id: runId)
+    }
+    .alert(
+      "Save as automation",
+      isPresented: Binding(
+        get: { savingName != nil },
+        set: { if !$0 { savingName = nil } })
+    ) {
+      TextField(
+        "Name",
+        text: Binding(get: { savingName ?? "" }, set: { savingName = $0 }))
+      Button("Cancel", role: .cancel) { savingName = nil }
+      Button("Save") { saveAsAutomation() }
+    } message: {
+      Text("Keeps the playbook and scope. It's saved paused, with no schedule.")
     }
   }
 
@@ -73,7 +90,23 @@ struct RunView: View {
             Task { await store.cancelRun(id: runId) }
           }
         }
+        // A one-off that turned out to be worth keeping.
+        if app.hasControl, run.isQuick, !run.isActive {
+          Btn(label: "Save as automation", tone: .secondary, small: true) {
+            savingName = run.automationName
+          }
+        }
       }
+    }
+  }
+
+  private func saveAsAutomation() {
+    guard let name = savingName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty
+    else { return }
+    savingName = nil
+    Task {
+      guard let id = await store.saveScratchRun(runId: runId, name: name) else { return }
+      router.push(.automationEditor(id: id, label: name))
     }
   }
 

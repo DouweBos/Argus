@@ -20,6 +20,7 @@ import type {
 import type {
   AutomationInput,
   RemoteAutomation,
+  RemoteAutomationGuardrails,
   RemoteAutomationDetail,
   RemoteAutomationRun,
   RemoteSignalSource,
@@ -38,6 +39,10 @@ import {
   requireAutomation,
   updateAutomation,
 } from "../automation/manager";
+import {
+  saveScratchRunAsAutomation,
+  startScratchRun,
+} from "../automation/scratch";
 import { describeSignalSources } from "../signals/registry";
 
 /** How many runs a client gets when it doesn't say. */
@@ -229,6 +234,43 @@ export function setRemoteAutomationEnabled(
 ): { automation: RemoteAutomation } {
   return {
     automation: toRemoteAutomation(updateAutomation(id, { enabled })),
+  };
+}
+
+/**
+ * Run a playbook once. The run is modelled as a synthetic automation host-side,
+ * so the ladder, the guardrails and the spend ceilings apply exactly as they do
+ * to a scheduled run — a refusal comes back as a `skipped` run, not an error.
+ */
+export function startRemoteScratchRun(input: {
+  guardrails: RemoteAutomationGuardrails;
+  model: string | null;
+  name?: string;
+  playbook: string;
+  repo_roots: string[];
+  source_ids: string[];
+}): { run: RemoteAutomationRun } {
+  const run = startScratchRun({
+    name: input.name,
+    playbook: input.playbook,
+    repo_roots: input.repo_roots,
+    source_ids: input.source_ids,
+    model: input.model,
+    guardrails: input.guardrails,
+  });
+
+  return { run: toRemoteAutomationRun(run) };
+}
+
+/** Keep a one-off: the bridge from "that was useful" to an automation. */
+export function saveRemoteScratchRun(
+  runId: string,
+  overrides: { description?: string; enabled?: boolean; name?: string },
+): { automation: RemoteAutomation } {
+  return {
+    automation: toRemoteAutomation(
+      saveScratchRunAsAutomation(runId, overrides),
+    ),
   };
 }
 

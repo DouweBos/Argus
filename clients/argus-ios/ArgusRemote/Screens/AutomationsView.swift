@@ -26,7 +26,7 @@ struct AutomationsView: View {
         EmptyState(
           icon: Icon.clock,
           title: "No automations",
-          body: "Create one in Argus on your computer and it'll show up here.")
+          body: "Use + to run a playbook once, or to set one on a schedule.")
         .listRowBackground(Color.clear)
       } else {
         let recent = Array(store.runs.prefix(Self.recentRuns))
@@ -56,8 +56,15 @@ struct AutomationsView: View {
     .toolbar {
       if app.hasControl {
         ToolbarItem(placement: .topBarTrailing) {
-          NavigationLink(value: Route.automationEditor(id: nil, label: "New automation")) {
-            Label("New automation", systemImage: Icon.plus)
+          Menu {
+            NavigationLink(value: Route.quickRun) {
+              Label("Quick run", systemImage: Icon.play)
+            }
+            NavigationLink(value: Route.automationEditor(id: nil, label: "New automation")) {
+              Label("New automation", systemImage: Icon.clock)
+            }
+          } label: {
+            Label("New", systemImage: Icon.plus)
           }
         }
       }

@@ -119,6 +119,8 @@ import {
   remoteAutomationRuns,
   remoteAutomations,
   remoteSignalSources,
+  saveRemoteScratchRun,
+  startRemoteScratchRun,
   setRemoteAutomationEnabled,
   toRemoteAutomationRun,
   updateRemoteAutomation,
@@ -1636,6 +1638,22 @@ const HANDLERS: Record<RemoteMethod, Handler> = {
     );
 
     return { run: toRemoteAutomationRun(run) };
+  },
+  "automations.run_scratch": async (params) => {
+    const input = parse("automations.run_scratch", params);
+    requireKnownRepoRoots(input.repo_roots);
+
+    return await control(() => startRemoteScratchRun(input));
+  },
+  "automations.save_scratch_run": async (params) => {
+    const { run_id, name, description, enabled } = parse(
+      "automations.save_scratch_run",
+      params,
+    );
+
+    return await control(() =>
+      saveRemoteScratchRun(run_id, { name, description, enabled }),
+    );
   },
   "automations.cancel_run": async (params) => {
     const { run_id } = parse("automations.cancel_run", params);
