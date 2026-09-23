@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
 import { argusHomeDir } from "../../lib/argusHome";
+import { invalidateWorktreeLocationCache } from "../session/worktreeLocation";
 
 const SCHEMA_VERSION = 1;
 
@@ -39,6 +40,17 @@ export interface UserProjectSettings {
    * the repo.
    */
   suppress_lfs_warning?: boolean;
+  /**
+   * Base directory this project's worktrees are created in, overriding the
+   * app-wide setting. Argus still creates `<base>/<Repo>-argus-worktrees/`
+   * underneath it. Empty or absent follows the app-wide value.
+   */
+  worktrees_base_dir?: string;
+  /**
+   * Roots this project's worktrees used to live under, kept so worktrees left
+   * behind by a location change stay visible until they are moved or deleted.
+   */
+  previous_worktrees_roots?: string[];
 }
 
 interface UserProjectSettingsFile {
@@ -115,6 +127,16 @@ export function saveUserProjectSettings(
   if (next.branch_prefix === "" || next.branch_prefix === undefined) {
     delete next.branch_prefix;
   }
+  if (!next.worktrees_base_dir?.trim()) {
+    delete next.worktrees_base_dir;
+  } else {
+    next.worktrees_base_dir = next.worktrees_base_dir.trim();
+  }
+  if (!next.previous_worktrees_roots?.length) {
+    delete next.previous_worktrees_roots;
+  } else {
+    next.previous_worktrees_roots = [...new Set(next.previous_worktrees_roots)];
+  }
   if (next.archived_branches !== undefined) {
     if (!Array.isArray(next.archived_branches)) {
       delete next.archived_branches;
@@ -156,6 +178,7 @@ export function saveUserProjectSettings(
 
   file.projects[repoRoot] = next;
   writeAll(file);
+  invalidateWorktreeLocationCache(repoRoot);
 
   return next;
 }

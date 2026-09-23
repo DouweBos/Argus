@@ -138,6 +138,22 @@ export function assertWorktreePresent(worktreePath: string): void {
   throw `Session worktree not found at ${worktreePath}`;
 }
 
+/**
+ * Refuse to create a worktrees directory on a drive that isn't connected.
+ *
+ * `mkdirSync -p` under an absent mount point succeeds against the boot disk
+ * and then shadows the real volume when it is plugged back in, which is far
+ * more confusing than an error.
+ */
+export function assertWorktreeBaseAvailable(baseDir: string): void {
+  const availability = pathAvailability(baseDir);
+  if (availability.state !== "volume_missing") {
+    return;
+  }
+
+  throw `${volumeLabel(availability.volume)} isn't connected. Reconnect the drive, or change where this project stores its worktrees.`;
+}
+
 /** Test seam — drops the mount-root cache. */
 export function resetAvailabilityCache(): void {
   volumeCache.clear();

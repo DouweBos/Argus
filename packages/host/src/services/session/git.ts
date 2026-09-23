@@ -7,8 +7,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
-import { argusHomeDir } from "../../lib/argusHome";
 import { GitError, classifyGitStderr } from "./gitError";
+import { resolveWorktreeRoot } from "./worktreeLocation";
 import { isOnMissingVolume } from "./volumeAvailability";
 
 const execFileAsync = promisify(execFile);
@@ -18,17 +18,19 @@ const execFileAsync = promisify(execFile);
 // ---------------------------------------------------------------------------
 
 /**
- * Compute the root directory that holds all worktrees for a given repo.
+ * The directory that holds all worktrees for a given repo.
  *
  * ```
  * repo  = /home/user/Projects/MyApp
- * roots = /home/user/.argus/worktrees/MyApp-argus-worktrees
+ * root  = /home/user/.argus/worktrees/MyApp-argus-worktrees
  * ```
+ *
+ * Configurable — see `worktreeLocation.ts` for the cascade. Worktrees created
+ * before a location change stay where they are, so anything that *searches*
+ * for worktrees must use `worktreeRootsForRepo`, not this.
  */
 export function worktreesRoot(repoRoot: string): string {
-  const name = path.basename(repoRoot) || "repo";
-
-  return path.join(argusHomeDir(), "worktrees", `${name}-argus-worktrees`);
+  return resolveWorktreeRoot(repoRoot).root;
 }
 
 /**
