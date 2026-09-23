@@ -54,7 +54,11 @@ export function mountRootFor(
   if (segments[0] === "media" && segments.length >= 3) {
     return `/media/${segments[1]}/${segments[2]}`;
   }
-  if (segments[0] === "run" && segments[1] === "media" && segments.length >= 4) {
+  if (
+    segments[0] === "run" &&
+    segments[1] === "media" &&
+    segments.length >= 4
+  ) {
     return `/run/media/${segments[2]}/${segments[3]}`;
   }
 

@@ -15,7 +15,7 @@ import { info } from "@argus/host/logger";
 import { appState } from "../../state";
 import { listClaudeAccounts } from "../claudeAuth/accounts";
 import { isBranchProtected, loadArgusConfig } from "./argusConfig";
-import { git, worktreesRoot } from "./git";
+import { git } from "./git";
 import { withGitLock } from "./gitLock";
 import { attachGitWatcher } from "./gitWatcher";
 import {
@@ -887,15 +887,14 @@ export async function setSessionBaseBranch(
   appState.sessions.set(id, ws);
 
   // Persist to metadata file.
-  const worktreesDir = worktreesRoot(ws.repo_root);
-  const meta = loadMetadata(worktreesDir);
+  const meta = loadMetadata(ws.repo_root);
   const m = meta.get(ws.path);
   if (m) {
     m.base_branch = baseBranch;
     meta.set(ws.path, m);
   }
   try {
-    saveMetadata(worktreesDir, meta);
+    saveMetadata(ws.repo_root, meta);
   } catch {
     // Non-fatal.
   }
@@ -921,15 +920,14 @@ export function setSessionClaudeAccount(
   ws.claude_account_id = accountId;
   appState.sessions.set(id, ws);
 
-  const worktreesDir = worktreesRoot(ws.repo_root);
-  const meta = loadMetadata(worktreesDir);
+  const meta = loadMetadata(ws.repo_root);
   const m = meta.get(ws.path);
   if (m) {
     m.claude_account_id = accountId;
     meta.set(ws.path, m);
   }
   try {
-    saveMetadata(worktreesDir, meta);
+    saveMetadata(ws.repo_root, meta);
   } catch {
     // Non-fatal.
   }

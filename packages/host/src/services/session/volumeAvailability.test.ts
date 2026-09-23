@@ -16,7 +16,7 @@ describe("mountRootFor", () => {
     expect(mountRootFor("/Volumes/Blackbox", "darwin")).toBe(
       "/Volumes/Blackbox",
     );
-    expect(mountRootFor("/Users/me/.argus/worktrees/x", "darwin")).toBe(null);
+    expect(mountRootFor("/Users/me/.argus/worktrees/x", "darwin")).toBeNull();
   });
 
   it("handles the conventional linux mount points", () => {
@@ -25,12 +25,12 @@ describe("mountRootFor", () => {
     expect(mountRootFor("/run/media/me/ssd/work", "linux")).toBe(
       "/run/media/me/ssd",
     );
-    expect(mountRootFor("/home/me/work", "linux")).toBe(null);
+    expect(mountRootFor("/home/me/work", "linux")).toBeNull();
   });
 
   it("treats the windows system drive as always present", () => {
     expect(mountRootFor("D:\\work\\feat", "win32")).toBe("D:\\");
-    expect(mountRootFor("C:\\Users\\me\\work", "win32")).toBe(null);
+    expect(mountRootFor("C:\\Users\\me\\work", "win32")).toBeNull();
   });
 });
 

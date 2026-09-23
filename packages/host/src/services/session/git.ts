@@ -8,8 +8,8 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { warn } from "@argus/host/logger";
 import { GitError, classifyGitStderr } from "./gitError";
-import { resolveWorktreeRoot } from "./worktreeLocation";
 import { isOnMissingVolume } from "./volumeAvailability";
+import { resolveWorktreeRoot } from "./worktreeLocation";
 
 const execFileAsync = promisify(execFile);
 
@@ -181,13 +181,36 @@ export async function git(cwd: string, args: string[]): Promise<string> {
  *    a valid `.git` file but are not known to git, fixing the case where the
  *    back-reference was removed but the working directory was left intact.
  */
+async function hasDisconnectedWorktree(repoRoot: string): Promise<boolean> {
+  if (isOnMissingVolume(repoRoot)) {
+    return true;
+  }
+
+  let raw: string;
+  try {
+    raw = await git(repoRoot, ["worktree", "list", "--porcelain"]);
+  } catch {
+    // Can't tell — assume the worst rather than prune blind.
+    return true;
+  }
+
+  return raw
+    .split("\n")
+    .filter((line) => line.startsWith("worktree "))
+    .map((line) => line.slice("worktree ".length).trim())
+    .some(isOnMissingVolume);
+}
+
 export async function repairOrphanedWorktrees(repoRoot: string): Promise<void> {
   // An unmounted drive looks exactly like a deleted worktree to git, and
   // pruning it is unrecoverable: prune removes `.git/worktrees/<name>`, after
   // which neither a remount nor `git worktree repair` brings the worktree
   // back, and the repair pass below would then delete the directory — with any
-  // uncommitted work in it. Do nothing at all until the volume is back.
-  if (isOnMissingVolume(repoRoot) || isOnMissingVolume(worktreesRoot(repoRoot))) {
+  // uncommitted work in it.
+  //
+  // Prune is all-or-nothing, so one disconnected worktree is enough to make
+  // the whole pass unsafe. Do nothing until the drive is back.
+  if (await hasDisconnectedWorktree(repoRoot)) {
     return;
   }
 

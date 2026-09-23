@@ -1,18 +1,26 @@
 /**
  * Persisted session metadata (display names, descriptions) keyed by path.
  *
- * Stored at `{worktreesRoot}/.argus-sessions.json`. Survives app restarts.
- * Migration removes entries for worktrees that no longer exist on disk.
+ * Stored at `<argusHome>/projects/<key>/sessions.json`, keyed by repo root.
+ * It deliberately does *not* live with the worktrees: when those sit on an
+ * external drive, this is the only record of what the sessions were called,
+ * and it has to survive the drive being unplugged. It also carries the branch
+ * and kind, so a session can be drawn with no access to its files at all.
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { warn } from "@argus/host/logger";
+import { argusHomeDir } from "../../lib/argusHome";
 import { isOnMissingVolume } from "./volumeAvailability";
+import { worktreeRootsForRepo } from "./worktreeLocation";
 
 const METADATA_FILENAME = ".argus-sessions.json";
 const LEGACY_METADATA_FILENAME = ".argus-workspaces.json";
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+/** The on-volume schema this replaced. Read once, then migrated. */
+const ON_VOLUME_SCHEMA_VERSION = 1;
 
 /** Persisted metadata for a single session. */
 export interface SessionMeta {
@@ -32,6 +40,15 @@ export interface SessionMeta {
   /** Claude account this session authenticates as. `null` follows the
    * app-wide active account. */
   claude_account_id?: string | null;
+  /**
+   * Last known branch. Recorded so a session whose drive is disconnected can
+   * still be listed — `git worktree list` is not readable for it.
+   */
+  branch?: string;
+  /** Last known session kind, for the same reason. */
+  kind?: "automation_host" | "project_root" | "worktree";
+  /** Epoch ms the worktree was last confirmed present on disk. */
+  last_seen_at?: number;
 }
 
 interface MetadataFile {
@@ -49,11 +66,26 @@ interface LegacyMetadataFile {
   workspaces: Record<string, SessionMeta>;
 }
 
-function metadataPath(worktreesRootDir: string): string {
-  return path.join(worktreesRootDir, METADATA_FILENAME);
+/** Stable per-repo directory name; the basename alone collides. */
+function projectKey(repoRoot: string): string {
+  const digest = crypto.createHash("sha1").update(repoRoot).digest("hex");
+
+  return `${path.basename(repoRoot) || "repo"}-${digest.slice(0, 8)}`;
+}
+
+function indexDir(repoRoot: string): string {
+  return path.join(argusHomeDir(), "projects", projectKey(repoRoot));
+}
+
+function indexPath(repoRoot: string): string {
+  return path.join(indexDir(repoRoot), "sessions.json");
 }
 
 /** Normalize path for consistent lookup (handles trailing slashes, separators). */
+export function normalizeMetaKey(p: string): string {
+  return normalizePathKey(p);
+}
+
 function normalizePathKey(p: string): string {
   return p.replace(/\\/g, "/").replace(/\/+$/, "");
 }
@@ -78,40 +110,18 @@ export function isValidWorktree(worktreePath: string): boolean {
   );
 }
 
-/**
- * Load persisted session metadata. Returns an empty Map if file is missing or invalid.
- */
-export function loadMetadata(
-  worktreesRootDir: string,
-): Map<string, SessionMeta> {
-  // Prefer the current file. Fall back to the legacy pre-rename file so
-  // upgrading users don't lose their session metadata. The legacy file is
-  // left in place for rollback safety.
-  const primaryPath = metadataPath(worktreesRootDir);
-  const legacyPath = path.join(worktreesRootDir, LEGACY_METADATA_FILENAME);
-  let raw: string;
-  try {
-    raw = fs.readFileSync(primaryPath, "utf8");
-  } catch {
-    try {
-      raw = fs.readFileSync(legacyPath, "utf8");
-    } catch {
-      return new Map();
-    }
-  }
-
+function parseEntries(raw: string, version: number): Map<string, SessionMeta> {
   let file: LegacyMetadataFile | MetadataFile;
   try {
     file = JSON.parse(raw) as LegacyMetadataFile | MetadataFile;
   } catch {
     return new Map();
   }
-
-  if (file.version !== SCHEMA_VERSION) {
+  if (file.version !== version) {
     return new Map();
   }
 
-  // Accept either the new `sessions` field or the legacy `workspaces` field.
+  // Accept either the current `sessions` field or the legacy `workspaces` one.
   let entries: Record<string, SessionMeta> = {};
   if ("sessions" in file && file.sessions) {
     entries = file.sessions;
@@ -128,11 +138,62 @@ export function loadMetadata(
 }
 
 /**
- * Save metadata to disk. Caller should pass only entries for paths that still
- * exist (filter out orphaned worktrees before calling).
+ * Read whatever an older Argus left beside the worktrees.
+ *
+ * Checked across every root this repo has used, because a location change can
+ * leave the only copy under the previous one.
+ */
+function loadFromVolume(repoRoot: string): Map<string, SessionMeta> {
+  for (const root of worktreeRootsForRepo(repoRoot)) {
+    for (const name of [METADATA_FILENAME, LEGACY_METADATA_FILENAME]) {
+      let raw: string;
+      try {
+        raw = fs.readFileSync(path.join(root, name), "utf8");
+      } catch {
+        continue;
+      }
+      const parsed = parseEntries(raw, ON_VOLUME_SCHEMA_VERSION);
+      if (parsed.size > 0) {
+        return parsed;
+      }
+    }
+  }
+
+  return new Map();
+}
+
+/**
+ * Load persisted session metadata for a repo. Empty when there is none.
+ *
+ * Migrates the pre-v2 file that lived beside the worktrees, leaving the
+ * original in place for rollback safety — the same courtesy the earlier
+ * `.argus-workspaces.json` rename got.
+ */
+export function loadMetadata(repoRoot: string): Map<string, SessionMeta> {
+  try {
+    const raw = fs.readFileSync(indexPath(repoRoot), "utf8");
+    const parsed = parseEntries(raw, SCHEMA_VERSION);
+    if (parsed.size > 0) {
+      return parsed;
+    }
+  } catch {
+    // Not written yet — fall through to the migration.
+  }
+
+  const migrated = loadFromVolume(repoRoot);
+  if (migrated.size > 0) {
+    saveMetadata(repoRoot, migrated);
+  }
+
+  return migrated;
+}
+
+/**
+ * Save metadata for a repo. Written atomically, and always to the internal
+ * disk, so an external drive going away can never take it with it.
  */
 export function saveMetadata(
-  worktreesRootDir: string,
+  repoRoot: string,
   sessions: Map<string, SessionMeta>,
 ): void {
   const file: MetadataFile = {
@@ -140,16 +201,11 @@ export function saveMetadata(
     sessions: Object.fromEntries(sessions.entries()),
   };
 
-  // `mkdirSync -p` under an absent mount point happily creates the directory
-  // on the boot disk, which then shadows the real volume when it is plugged
-  // back in. Skip the write entirely rather than fabricate the mount.
-  if (isOnMissingVolume(worktreesRootDir)) {
-    return;
-  }
-
-  const json = JSON.stringify(file, null, 2);
-  fs.mkdirSync(worktreesRootDir, { recursive: true });
-  fs.writeFileSync(metadataPath(worktreesRootDir), json, "utf8");
+  const target = indexPath(repoRoot);
+  const tmp = `${target}.tmp`;
+  fs.mkdirSync(indexDir(repoRoot), { recursive: true });
+  fs.writeFileSync(tmp, JSON.stringify(file, null, 2), "utf8");
+  fs.renameSync(tmp, target);
 }
 
 /**
@@ -161,7 +217,7 @@ export function saveMetadata(
  * description for good.
  */
 export function migrateOrphaned(
-  worktreesRootDir: string,
+  repoRoot: string,
   meta: Map<string, SessionMeta>,
 ): [Map<string, SessionMeta>, boolean] {
   const migrated = new Map<string, SessionMeta>();
@@ -177,7 +233,7 @@ export function migrateOrphaned(
 
   if (removed) {
     try {
-      saveMetadata(worktreesRootDir, migrated);
+      saveMetadata(repoRoot, migrated);
     } catch (e) {
       warn("Failed to persist migrated metadata:", e);
     }
