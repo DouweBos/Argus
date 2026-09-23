@@ -321,6 +321,84 @@ extension AppStore {
     await loadAgents(repoRoot: repoRoot)
   }
 
+  // MARK: Landing work
+
+  /// Stage everything and commit. Returns git's own output, or nil when it
+  /// refused — the message is already on `lastError` by then.
+  func commit(sessionId: String, message: String) async -> String? {
+    guard let transport else { return nil }
+    struct Params: Encodable {
+      let session_id: String
+      let message: String
+    }
+    struct Result: Decodable { let output: String }
+    do {
+      let output = try await transport.request(
+        .sessionsCommit, Params(session_id: sessionId, message: message),
+        as: Result.self
+      ).output
+      await loadGitStatus(sessionId: sessionId)
+
+      return output
+    } catch {
+      report(error)
+
+      return nil
+    }
+  }
+
+  struct PushResult: Decodable {
+    let branch: String
+    let remote: String
+    /// GitHub's "create a PR" link, when the push printed one.
+    let pr_url: String?
+  }
+
+  @discardableResult
+  func push(sessionId: String) async -> PushResult? {
+    guard let transport else { return nil }
+    struct Params: Encodable { let session_id: String }
+    do {
+      let result = try await transport.request(
+        .sessionsPush, Params(session_id: sessionId), as: PushResult.self)
+      await loadGitStatus(sessionId: sessionId)
+
+      return result
+    } catch {
+      report(error)
+
+      return nil
+    }
+  }
+
+  /// Empty means the merge would go through.
+  func mergeBlockers(sessionId: String) async -> [String] {
+    guard let transport else { return [] }
+    struct Params: Encodable { let session_id: String }
+    struct Result: Decodable { let blockers: [String] }
+    guard let result = try? await transport.request(
+      .sessionsMergeBlockers, Params(session_id: sessionId), as: Result.self) else { return [] }
+
+    return result.blockers
+  }
+
+  @discardableResult
+  func mergeIntoBase(sessionId: String) async -> Bool {
+    guard let transport else { return false }
+    struct Params: Encodable { let session_id: String }
+    do {
+      try await transport.request(
+        .sessionsMergeBase, Params(session_id: sessionId), as: IgnoredResult.self)
+      await loadGitStatus(sessionId: sessionId)
+
+      return true
+    } catch {
+      report(error)
+
+      return false
+    }
+  }
+
   func deleteSession(id: String, repoRoot: String, deleteBranch: Bool = false) async {
     guard let transport else { return }
     struct Params: Encodable {
