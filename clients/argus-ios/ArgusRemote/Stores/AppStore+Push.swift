@@ -21,8 +21,9 @@ enum PushState: String, Sendable {
       "Registered — your computer can wake this phone."
     case .conflict:
       """
-      A previous install of this app still holds this device's push slot. \
-      It clears itself within 90 days, or unpair and pair again.
+      The push relay still has this device claimed by an older install and is \
+      running a version that won't add a second key. Update the relay, or wait \
+      for the old claim to lapse.
       """
     case .unconfigured:
       "Registered, but Argus on your computer has no Apple push credentials yet."
