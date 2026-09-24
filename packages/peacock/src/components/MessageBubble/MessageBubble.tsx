@@ -14,7 +14,12 @@ export interface MessageImage {
 export interface MessageBubbleProps {
   role: "assistant" | "system" | "user";
   timestamp?: number;
-  isError?: boolean;
+  /**
+   * Severity of a system notice. `error` for a failure (stderr, a dead
+   * process), `warning` for a diagnostic the run survived. Omit for a plain
+   * divider.
+   */
+  tone?: "error" | "warning";
   unread?: boolean;
   messageId?: string;
   /** True for an assistant message that contains only tool calls (tight stack). */
@@ -107,7 +112,7 @@ function Attachments({
 export function MessageBubble({
   role,
   timestamp,
-  isError,
+  tone,
   unread,
   messageId,
   toolOnly,
@@ -156,7 +161,7 @@ export function MessageBubble({
 
     return (
       <div
-        className={`${styles.systemMsg}${isError ? ` ${styles.systemMsgError}` : ""}`}
+        className={`${styles.systemMsg}${toneClass(tone)}`}
         ref={rootRef}
       >
         <TimestampGutter timestamp={timestamp} />
@@ -227,4 +232,15 @@ export function MessageBubble({
       {toolCalls && <div className={styles.toolCallsSection}>{toolCalls}</div>}
     </div>
   );
+}
+
+function toneClass(tone: MessageBubbleProps["tone"]): string {
+  if (tone === "error") {
+    return ` ${styles.systemMsgError}`;
+  }
+  if (tone === "warning") {
+    return ` ${styles.systemMsgWarning}`;
+  }
+
+  return "";
 }

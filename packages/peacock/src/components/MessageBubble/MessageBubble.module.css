@@ -52,6 +52,11 @@
   border-bottom-color: var(--error-overlay-lg);
 }
 
+.systemMsgWarning {
+  color: var(--warning);
+  border-bottom-color: var(--warning-overlay-lg);
+}
+
 /* MCP-injected system message — full-width card. */
 .mcpMsg {
   display: flex;

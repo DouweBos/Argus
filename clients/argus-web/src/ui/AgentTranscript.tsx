@@ -246,7 +246,7 @@ const Message = memo(function Message({
       role={msg.role}
       mcp={mcp}
       author={msg.author}
-      isError={msg.is_error}
+      tone={msg.is_error ? "error" : undefined}
       timestamp={msg.timestamp}
       toolOnly={trimmed.length === 0 && !!toolCalls}
       textBlocks={trimmed}

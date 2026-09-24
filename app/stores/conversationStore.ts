@@ -92,13 +92,13 @@ export interface ConversationMessage {
   id: string;
   /** Image attachments accompanying this message. */
   images?: ImageAttachment[];
-  /** True for stderr / error system messages (styled differently). */
-  isError?: boolean;
   role: "assistant" | "system" | "user";
   /** Origin metadata for system messages (e.g. MCP tool calls). */
   source?: SystemMessageSource;
   textBlocks: string[];
   timestamp: number;
+  /** Severity of a system message — stderr is an error, a CLI diagnostic a warning. */
+  tone?: "error" | "warning";
   toolCalls: ToolCallInfo[];
   usage?: TokenUsage;
 }
