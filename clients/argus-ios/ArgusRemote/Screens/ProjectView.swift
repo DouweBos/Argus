@@ -323,11 +323,14 @@ struct ProjectView: View {
     (sessions.first { $0.kind == .projectRoot } ?? sessions.first)?.id
   }
 
-  /// Models are reported per agent, so a new agent is offered whatever a live
-  /// one in this project last reported.
+  /// Models are reported per agent, so a new agent is offered whatever any
+  /// agent last reported — this project's first, and otherwise whichever
+  /// agent has reported at all. Falling back keeps the very first agent in a
+  /// project from being the one spawn that cannot pick a model.
   private var knownModels: [RemoteModelInfo] {
-    agents.compactMap { app.capabilitiesByAgent[$0.agentId] }
-      .first { !$0.models.isEmpty }?.models ?? []
+    let mine = agents.compactMap { app.capabilitiesByAgent[$0.agentId] }
+      .first { !$0.models.isEmpty }?.models
+    return mine ?? app.capabilitiesByAgent.values.first { !$0.models.isEmpty }?.models ?? []
   }
 
   private func submitRename() {
